@@ -76,6 +76,14 @@ public interface QoLConfig extends Config {
     )
     String fletchingSection = "fletchingSection";
 
+    // Firemaking section
+    @ConfigSection(
+            name = "Firemaking",
+            description = "Firemaking settings",
+            position = 9
+    )
+    String firemakingSection = "firemakingSection";
+
     // boolean to render Max Hit Overlay
     @ConfigItem(
             keyName = "renderMaxHitOverlay",
@@ -687,6 +695,18 @@ public interface QoLConfig extends Config {
             section = fletchingSection
     )
     default boolean quickFletchHeadlessArrows() {
+        return false;
+    }
+
+    // boolean to quick firemake logs
+    @ConfigItem(
+            keyName = "quickFiremakeLogs",
+            name = "Quick Firemake Logs",
+            description = "Option to quick firemake logs",
+            position = 0,
+            section = firemakingSection
+    )
+    default boolean quickFiremakeLogs() {
         return false;
     }
 
