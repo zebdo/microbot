@@ -2,7 +2,10 @@ package net.runelite.client.plugins.microbot.runecrafting.gotr;
 
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
+import net.runelite.api.ChatMessageType;
+import net.runelite.api.GameObject;
+import net.runelite.api.GameState;
+import net.runelite.api.NPC;
 import net.runelite.api.events.*;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -15,7 +18,6 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import javax.inject.Inject;
 import java.awt.*;
 import java.time.Instant;
-import java.util.Arrays;
 import java.util.Optional;
 import java.util.regex.Matcher;
 
@@ -103,6 +105,8 @@ public class GotrPlugin extends Plugin {
 
         if (msg.contains("The rift becomes active!")) {
             GotrScript.nextGameStart = Optional.empty();
+            GotrScript.timeSincePortal = Optional.of(Instant.now());
+            GotrScript.isFirstPortal = true;
             GotrScript.state = GotrState.ENTER_GAME;
         } else if (msg.contains("The rift will become active in 30 seconds.")) {
             GotrScript.shouldMineGuardianRemains = true;
@@ -136,6 +140,10 @@ public class GotrPlugin extends Plugin {
 
         if (gameObject.getId() == GotrScript.portalId) {
             Microbot.getClient().setHintArrow(gameObject.getWorldLocation());
+            if(GotrScript.isFirstPortal) {
+                GotrScript.isFirstPortal = false;
+            }
+            GotrScript.timeSincePortal = Optional.of(Instant.now());
         }
     }
 
@@ -148,6 +156,7 @@ public class GotrPlugin extends Plugin {
 
         if (gameObject.getId() == GotrScript.portalId) {
             Microbot.getClient().clearHintArrow();
+            GotrScript.timeSincePortal = Optional.of(Instant.now());
         }
     }
 
