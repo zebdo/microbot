@@ -5,6 +5,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.playerassist.PlayerAssistConfig;
 import net.runelite.client.plugins.microbot.playerassist.enums.DefaultLooterStyle;
+import net.runelite.client.plugins.microbot.playerassist.enums.State;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
@@ -28,6 +29,8 @@ public class LootScript extends Script {
             if (!Microbot.isLoggedIn()) return;
             if (Rs2Inventory.isFull() || Rs2Inventory.getEmptySlots() <= config.minFreeSlots() || (Rs2Combat.inCombat() && !config.toggleForceLoot()))
                 return;
+
+            if (config.state().equals(State.BANKING)) return;
 
 
 

@@ -9,6 +9,7 @@ import net.runelite.client.plugins.microbot.playerassist.PlayerAssistConfig;
 import net.runelite.client.plugins.microbot.playerassist.PlayerAssistPlugin;
 import net.runelite.client.plugins.microbot.playerassist.enums.AttackStyle;
 import net.runelite.client.plugins.microbot.playerassist.enums.AttackStyleMapper;
+import net.runelite.client.plugins.microbot.playerassist.enums.State;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -47,6 +48,9 @@ public class AttackNpcScript extends Script {
                 if (!Microbot.isLoggedIn() || !super.run() || !config.toggleCombat())
                     return;
 
+                if(config.state().equals(State.BANKING))
+                    return;
+
                 List<String> npcsToAttack = Arrays.stream(config.attackableNpcs().split(","))
                         .map(x -> x.trim().toLowerCase())
                         .collect(Collectors.toList());
@@ -73,8 +77,10 @@ public class AttackNpcScript extends Script {
                                 .comparing((NPC npc) -> npc.getInteracting() == Microbot.getClient().getLocalPlayer() ? 0 : 1).thenComparingInt(npc -> Rs2Player.getRs2WorldPoint().distanceToPath(npc.getWorldLocation())))
                         .collect(Collectors.toList());
 
-                if (PlayerAssistPlugin.getCooldown() > 0 || Rs2Combat.inCombat())
+                if (PlayerAssistPlugin.getCooldown() > 0 || Rs2Combat.inCombat()) {
+                    PlayerAssistPlugin.setState(State.COMBAT);
                     return;
+                }
 
                 if (!attackableNpcs.isEmpty()) {
                     NPC npc = attackableNpcs.stream().findFirst().orElse(null);

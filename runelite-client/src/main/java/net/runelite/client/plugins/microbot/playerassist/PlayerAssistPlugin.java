@@ -16,13 +16,14 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
-import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.playerassist.bank.BankerScript;
 import net.runelite.client.plugins.microbot.playerassist.cannon.CannonScript;
 import net.runelite.client.plugins.microbot.playerassist.combat.*;
 import net.runelite.client.plugins.microbot.playerassist.enums.PrayerStyle;
+import net.runelite.client.plugins.microbot.playerassist.enums.State;
 import net.runelite.client.plugins.microbot.playerassist.loot.LootScript;
 import net.runelite.client.plugins.microbot.playerassist.skill.AttackStyleScript;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -49,7 +50,7 @@ import java.util.stream.Collectors;
 )
 @Slf4j
 public class PlayerAssistPlugin extends Plugin {
-    public static final String version = "1.2.4";
+    public static final String version = "1.2.5";
     private static final String SET = "Set";
     private static final String CENTER_TILE = ColorUtil.wrapWithColorTag("Center Tile", JagexColors.MENU_TARGET);
     // SAFE_SPOT = "Safe Spot";
@@ -174,6 +175,15 @@ public class PlayerAssistPlugin extends Plugin {
                 inventorySetup
         );
     }
+
+    public static void setState(State state) {
+        Microbot.getConfigManager().setConfiguration(
+                "PlayerAssistant",
+                "state",
+                state
+        );
+    }
+
     private void addNpcToList(String npcName) {
         configManager.setConfiguration(
                 "PlayerAssistant",
