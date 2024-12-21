@@ -155,7 +155,10 @@ public class GotrScript extends Script {
                     if (lootChisel()) return;
 
                     if (waitingForGameToStart(timeToStart)) return;
-
+                    if (!Rs2Inventory.hasItem("Uncharged cell") && !isInLargeMine() && !isInHugeMine()) {
+                        takeUnchargedCells();
+                        return;
+                    }
                     if (powerUpGreatGuardian()) return;
                     if (repairCells()) return;
 
@@ -225,7 +228,21 @@ public class GotrScript extends Script {
         if (isInHugeMine()) return false;
         if (getStartTimer() > Rs2Random.randomGaussian(35, Rs2Random.between(1, 5)) || getStartTimer() == -1 || timeToStart > 10) {
 
-            takeUnchargedCells();
+            // Only take cells if we don't already have them
+            if (!Rs2Inventory.hasItem("Uncharged cell")) {
+                // If in large mine and need cells, leave first
+                if (isInLargeMine()) {
+                    if (leaveLargeMine()) return true;
+                }
+                takeUnchargedCells();
+                // Return to large mine if we were there before
+                if (!isInLargeMine() && shouldMineGuardianRemains) {
+                    if (Rs2Walker.walkTo(new WorldPoint(3632, 9503, 0), 20)) {
+                        Rs2GameObject.interact(ObjectID.RUBBLE_43724);
+                        return true;
+                    }
+                }
+            }
             repairPouches();
 
             if (!shouldMineGuardianRemains) return true;
@@ -279,9 +296,13 @@ public class GotrScript extends Script {
     }
 
     private void takeUnchargedCells() {
-        if (!Rs2Inventory.isFull() && !Rs2Inventory.hasItem("Uncharged cell")) {
-            if(isInLargeMine())
-                leaveLargeMine();
+        if (!Rs2Inventory.hasItem("Uncharged cell")) {
+            // Drop one guardian essence if inventory is full
+            if (Rs2Inventory.isFull()) {
+                if (Rs2Inventory.drop(ItemID.GUARDIAN_ESSENCE)) {
+                    Microbot.log("Dropped one Guardian essence to make space for Uncharged cell");
+                }
+            }
             Rs2GameObject.interact(ObjectID.UNCHARGED_CELLS_43732, "Take-10");
             log("Taking uncharged cells...");
             Rs2Player.waitForAnimation();
