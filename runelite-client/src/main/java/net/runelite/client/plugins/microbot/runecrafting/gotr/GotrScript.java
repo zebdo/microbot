@@ -155,10 +155,13 @@ public class GotrScript extends Script {
                     if (lootChisel()) return;
 
                     if (waitingForGameToStart(timeToStart)) return;
+            
+
                     if (!Rs2Inventory.hasItem("Uncharged cell") && !isInLargeMine() && !isInHugeMine()) {
                         takeUnchargedCells();
                         return;
                     }
+
                     if (powerUpGreatGuardian()) return;
                     if (repairCells()) return;
 
@@ -226,6 +229,7 @@ public class GotrScript extends Script {
 
     private boolean waitingForGameToStart(int timeToStart) {
         if (isInHugeMine()) return false;
+
         if (getStartTimer() > Rs2Random.randomGaussian(35, Rs2Random.between(1, 5)) || getStartTimer() == -1 || timeToStart > 10) {
 
             // Only take cells if we don't already have them
@@ -243,10 +247,11 @@ public class GotrScript extends Script {
                     }
                 }
             }
+
             repairPouches();
-
+    
             if (!shouldMineGuardianRemains) return true;
-
+    
             mineGuardianRemains();
             return true;
         }
@@ -295,7 +300,9 @@ public class GotrScript extends Script {
         return false;
     }
 
+
     private void takeUnchargedCells() {
+
         if (!Rs2Inventory.hasItem("Uncharged cell")) {
             // Drop one guardian essence if inventory is full
             if (Rs2Inventory.isFull()) {
@@ -303,6 +310,7 @@ public class GotrScript extends Script {
                     Microbot.log("Dropped one Guardian essence to make space for Uncharged cell");
                 }
             }
+
             Rs2GameObject.interact(ObjectID.UNCHARGED_CELLS_43732, "Take-10");
             log("Taking uncharged cells...");
             Rs2Player.waitForAnimation();
@@ -608,13 +616,13 @@ public class GotrScript extends Script {
                 && Rs2Player.getWorldLocation().getRegionID() == 14484;
     }
 
-    public boolean isInLargeMine() {
+    public  boolean isInLargeMine() {
         int largeMineX = 3637;
         return Rs2Player.getWorldLocation().getRegionID() == 14484
                 && Microbot.getClient().getLocalPlayer().getWorldLocation().getX() >= largeMineX;
     }
 
-    public boolean isInHugeMine() {
+    public  boolean isInHugeMine() {
         int hugeMineX = 3594;
         return Rs2Player.getWorldLocation().getRegionID() == 14484
                 && Microbot.getClient().getLocalPlayer().getWorldLocation().getX() <= hugeMineX;
