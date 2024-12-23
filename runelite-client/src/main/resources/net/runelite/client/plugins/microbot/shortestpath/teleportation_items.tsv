@@ -118,6 +118,7 @@
 2757 3478 0		8010			T	19	4	Camelot tablet
 2661 3302 0		8011	Plague City		T	19	4	Ardougne tablet
 2549 3112 0		8012	Watchtower		T	19	4	Watchtower tablet
+
 # Varbit 4460 is DIARY_ARDOUGNE_HARD								
 2584 3097 0		8012	Watchtower	4460=1	T	19	4	Watchtower tablet: Yanille
 2953 3224 0		11741			T	19	4	Rimmington tablet
@@ -331,3 +332,4 @@
 #Quetzal Whistle								
 1585 3053 0		29271;29273;29275	Children of the Sun		T	19	4	Quetzal whistle
 3164 3478 0		8007		4480=1;4585=1	T	19	4	Varrock tablet: Grand exchange
+

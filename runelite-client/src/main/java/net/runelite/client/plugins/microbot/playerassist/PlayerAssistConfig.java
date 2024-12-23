@@ -6,6 +6,7 @@ import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.playerassist.enums.DefaultLooterStyle;
 import net.runelite.client.plugins.microbot.playerassist.enums.PlayStyle;
 import net.runelite.client.plugins.microbot.playerassist.enums.PrayerStyle;
+import net.runelite.client.plugins.microbot.playerassist.enums.State;
 
 @ConfigGroup(net.runelite.client.plugins.microbot.playerassist.PlayerAssistConfig.GROUP)
 @ConfigInformation("1. Make sure to place the cannon first before starting the plugin. <br />" +
@@ -761,6 +762,17 @@ public interface PlayerAssistConfig extends Config {
         return true;
     }
 
+
+    //hidden config item for state
+    @ConfigItem(
+            keyName = "state",
+            name = "State",
+            description = "State",
+            hidden = true
+    )
+    default State state() {
+        return State.IDLE;
+    }
 
     // Hidden config item for inventory setup
     @ConfigItem(

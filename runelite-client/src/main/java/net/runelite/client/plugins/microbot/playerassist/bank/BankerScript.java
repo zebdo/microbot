@@ -5,7 +5,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.playerassist.PlayerAssistConfig;
+import net.runelite.client.plugins.microbot.playerassist.PlayerAssistPlugin;
 import net.runelite.client.plugins.microbot.playerassist.constants.Constants;
+import net.runelite.client.plugins.microbot.playerassist.enums.State;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -63,6 +65,7 @@ public class BankerScript extends Script {
                 if (Microbot.isLoggedIn() && config.bank() && needsBanking()) {
                     handleBanking();
                 } else if (!needsBanking() && config.centerLocation().distanceTo(Rs2Player.getWorldLocation()) > config.attackRadius()) {
+                    PlayerAssistPlugin.setState(State.WALKING);
                     Microbot.pauseAllScripts = false;
                     Rs2Walker.walkTo(config.centerLocation());
                 }
@@ -138,6 +141,7 @@ public class BankerScript extends Script {
     }
 
     public boolean handleBanking() {
+        PlayerAssistPlugin.setState(State.BANKING);
         Microbot.pauseAllScripts = true;
         Rs2Prayer.disableAllPrayers();
         if (Rs2Bank.walkToBankAndUseBank()) {

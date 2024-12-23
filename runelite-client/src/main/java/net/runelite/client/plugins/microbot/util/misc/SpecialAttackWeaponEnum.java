@@ -68,6 +68,7 @@ public enum SpecialAttackWeaponEnum {
     STAFF_OF_LIGHT("staff of light", 1000, false),
     ROD_OF_IVANDIS("rod of ivandis", 100, false),
     IVANDIS_FLAIL("ivandis flail", 100, false),
+    VOIDWAKER("voidwaker", 500, false),
     DAWNBRINGER("dawnbringer", 350, false);
 
 
