@@ -28,9 +28,15 @@ public interface DriftNetConfig extends Config {
         default boolean showNetStatus() {
             return true;
         }
-
         @ConfigItem(
-                position = 2,
+                keyName = "Bank fish",
+                name = "Bank Fish?",
+                description = "Will bank fish, but will result in less xp/hr",
+                position = 2
+        )
+        default boolean bankFish() { return false; };
+        @ConfigItem(
+                position = 3,
                 keyName = "countColor",
                 name = "Fish count color",
                 description = "Color of the fish count text"
@@ -40,7 +46,7 @@ public interface DriftNetConfig extends Config {
         }
 
         @ConfigItem(
-                position = 3,
+                position = 4,
                 keyName = "highlightUntaggedFish",
                 name = "Highlight untagged fish",
                 description = "Highlight the untagged fish"
@@ -50,7 +56,7 @@ public interface DriftNetConfig extends Config {
         }
 
         @ConfigItem(
-                position = 4,
+                position = 5,
                 keyName = "timeoutDelay",
                 name = "Tagged timeout",
                 description = "Time required for a tag to expire"
@@ -69,7 +75,7 @@ public interface DriftNetConfig extends Config {
                 keyName = "untaggedFishColor",
                 name = "Untagged fish color",
                 description = "Color of untagged fish",
-                position = 5
+                position = 6
         )
         default Color untaggedFishColor() {
             return Color.CYAN;
@@ -79,7 +85,7 @@ public interface DriftNetConfig extends Config {
                 keyName = "tagAnnette",
                 name = "Tag Annette",
                 description = "Tag Annette when no nets in inventory",
-                position = 6
+                position = 7
         )
         default boolean tagAnnetteWhenNoNets() {
             return true;
@@ -90,7 +96,7 @@ public interface DriftNetConfig extends Config {
                 keyName = "annetteTagColor",
                 name = "Annette tag color",
                 description = "Color of Annette tag",
-                position = 7
+                position = 8
         )
         default Color annetteTagColor() {
             return Color.RED;

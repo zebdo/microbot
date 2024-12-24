@@ -58,8 +58,16 @@ public class DriftNetScript extends Script {
 
                         if (polygon != null) {
                             if (net.getStatus() == DriftNetStatus.FULL) {
-                                Rs2GameObject.interact(net.getNet());
-                                sleep(Random.randomGaussian(600, 150) * Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(net.getNet().getWorldLocation()));
+                                if(config.bankFish()) {
+                                    Rs2GameObject.interact(net.getNet());
+                                    sleepUntil(() -> Rs2Widget.getWidget(39780359)!= null);
+                                    Rs2Widget.clickWidget("Bank all");
+                                    sleepGaussian(1500, 300);
+                                    Rs2Widget.clickWidget("Bank all");
+                                } else {
+                                    Rs2GameObject.interact(net.getNet());
+                                    sleep(Random.randomGaussian(600, 150) * Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(net.getNet().getWorldLocation()));
+                                }
                                 break;
                             } else if (net.getStatus() == DriftNetStatus.UNSET) {
                                 Rs2GameObject.interact(net.getNet());
