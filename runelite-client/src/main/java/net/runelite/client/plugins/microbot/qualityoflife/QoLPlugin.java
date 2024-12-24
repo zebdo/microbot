@@ -346,7 +346,7 @@ public class QoLPlugin extends Plugin {
         String option = event.getOption();
         String target = event.getTarget();
         MenuEntry menuEntry = event.getMenuEntry();
-        boolean bankChestCheck = "Bank".equals(option) || ("Use".equals(option) && target.contains("Bank chest"));
+        boolean bankChestCheck = "Bank".equals(option) || ("Use".equals(option) && target.toLowerCase().contains("bank chest"));
 
         if (config.rightClickCameraTracking() && menuEntry.getNpc() != null && menuEntry.getNpc().getId() > 0) {
             addMenuEntry(event, "Track", target, this::customTrackOnClicked);
