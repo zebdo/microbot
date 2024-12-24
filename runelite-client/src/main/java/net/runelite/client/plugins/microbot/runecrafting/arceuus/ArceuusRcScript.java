@@ -90,7 +90,7 @@ public class ArceuusRcScript extends Script {
 
     public boolean shouldGoToRunestone() {
         return !Rs2Inventory.isFull()
-                && Rs2Player.getWorldLocation().distanceTo(DENSE_RUNESTONE) > 10
+                && Rs2Player.getWorldLocation().distanceTo(DENSE_RUNESTONE) > 8
                 && darkAltarTripCount < 2
                 && !(Rs2Player.getWorldLocation().distanceTo(ARCEUUS_BLOOD_ALTAR) < 5
                     && Rs2Inventory.hasItem(ItemID.DARK_ESSENCE_BLOCK,ItemID.DARK_ESSENCE_FRAGMENTS));
@@ -150,14 +150,14 @@ public class ArceuusRcScript extends Script {
     }
 
     public void mineEssence() {
-        GameObject runeStone = Rs2GameObject.findObject("Dense runestone", true,10,false,Rs2Player.getWorldLocation());
+        GameObject runeStone = Rs2GameObject.findObject("Dense runestone", true,11,false,Rs2Player.getWorldLocation());
         if (runeStone != null) {
             Rs2GameObject.interact(runeStone,"Chip");
             Rs2Player.waitForAnimation(10000);
         }
     }
     public static boolean shouldMineEssence() {
-        GameObject runeStone = Rs2GameObject.findObject("Dense runestone", true,10,false,Rs2Player.getWorldLocation());
+        GameObject runeStone = Rs2GameObject.findObject("Dense runestone", true,11,false,Rs2Player.getWorldLocation());
         return !Rs2Inventory.hasItem(ItemID.DARK_ESSENCE_BLOCK)
                 && !Rs2Inventory.isFull()
                 && !Rs2Player.isAnimating()
