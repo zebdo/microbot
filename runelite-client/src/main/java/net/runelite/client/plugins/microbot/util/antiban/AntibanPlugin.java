@@ -301,7 +301,9 @@ public class AntibanPlugin extends Plugin {
 
         if (activity != null && Rs2AntibanSettings.dynamicActivity) {
             Rs2Antiban.setActivity(activity);
-            Microbot.log("Activity changed, new activity: " + activity);
+            if (Rs2AntibanSettings.devDebug) {
+                Microbot.log("Activity changed, new activity: " + activity);
+            }
             if (Rs2AntibanSettings.universalAntiban) {
                 Rs2Antiban.actionCooldown();
                 Rs2Antiban.takeMicroBreakByChance();
@@ -310,7 +312,9 @@ public class AntibanPlugin extends Plugin {
 
         if (activityIntensity != null && Rs2AntibanSettings.dynamicIntensity) {
             Rs2Antiban.setActivityIntensity(activityIntensity);
-            Microbot.log("Activity changed, new activity intensity: " + activityIntensity);
+            if (Rs2AntibanSettings.devDebug) {
+                Microbot.log("Activity changed, new activity intensity: " + activityIntensity);
+            }
         }
     }
 
