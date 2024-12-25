@@ -55,6 +55,12 @@ public class GrapeFarmerScript extends Script {
                     if (!Rs2Inventory.contains(ItemID.GARDENING_TROWEL)) {
                         Rs2Bank.useBank();
                         Rs2Bank.depositAll();
+                        if (Rs2Bank.hasItem(ItemID.FARMING_CAPE) || Rs2Bank.hasItem(ItemID.FARMING_CAPET)) {
+                            Rs2Bank.withdrawAndEquip(Rs2Bank.hasItem(ItemID.FARMING_CAPE) ? ItemID.FARMING_CAPE : ItemID.FARMING_CAPET);
+                        }
+                        if (Rs2Bank.hasItem(ItemID.MAGIC_SECATEURS)) {
+                            Rs2Bank.withdrawAndEquip(ItemID.MAGIC_SECATEURS);
+                        }
                         Rs2Bank.withdrawAllButOne(ItemID.GRAPE_SEED);
                         Rs2Bank.withdrawOne(ItemID.GARDENING_TROWEL);
                         Rs2Bank.withdrawOne(ItemID.SEED_DIBBER);
@@ -62,16 +68,19 @@ public class GrapeFarmerScript extends Script {
                         Rs2Bank.withdrawAllButOne(ItemID.BOLOGAS_BLESSING);
                         Rs2Bank.withdrawX(ItemID.SALTPETRE, 12);
                         if (config.FARMING_OUTFIT()) {
+                            Rs2Bank.depositEquipment();
                             Rs2Bank.withdrawAndEquip(ItemID.FARMERS_STRAWHAT_13647);
                             Rs2Bank.withdrawAndEquip(ItemID.FARMERS_SHIRT);
                             Rs2Bank.withdrawAndEquip(ItemID.FARMERS_BORO_TROUSERS_13641);
                             Rs2Bank.withdrawAndEquip(ItemID.FARMERS_BOOTS_13645);
                         }
                         Rs2Bank.closeBank();
+                        sleep(300);
                     }
-                    if (Rs2Inventory.contains(ItemID.GARDENING_TROWEL)  && Rs2Inventory.count(ItemID.SALTPETRE) < 12) {
+                    if (Rs2Inventory.contains(ItemID.GARDENING_TROWEL)  && Rs2Inventory.count(ItemID.SALTPETRE) < 1) {
                         Rs2Bank.useBank();
                         Rs2Bank.depositAll(ItemID.ZAMORAKS_GRAPES);
+                        Rs2Bank.depositAll(ItemID.GRAPES);
                         Rs2Bank.withdrawX(ItemID.SALTPETRE, 12);
                         Rs2Bank.closeBank();
                     }
@@ -179,6 +188,7 @@ public class GrapeFarmerScript extends Script {
                 Rs2Inventory.use(ItemID.GRAPES);
                 Rs2Npc.interact(0);
                 sleepUntil(() -> !Rs2Inventory.contains(ItemID.GRAPES), 5000);
+                sleep(50, 500);
             }
 
         }
