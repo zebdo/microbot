@@ -1,19 +1,19 @@
 # Destination	Skills	Item IDs	Quests	Varbits	Consumable	Wilderness level	Duration	Display info
 # Ardougne Cloaks (2-4's farm teleport is limited to 3,5, or infinite times - can this be validated?)								
 2606 3221 0		13121;13122;13123;13124;20760			F	19	4	Ardougne cloak: Kandarin Monastery
-2664 3374 0		13122;13123;13124;20760			F	19	4	Ardougne cloak: Ardougne Farm
+2664 3374 0		13122;13123;13124;20760			T	19	4	Ardougne cloak: Ardougne Farm
 # Karamja Gloves								
 2840 9387 0		11140;13103			F	19	4	Karamja gloves
 # Desert Amulets (2 and 3 have one teleport per day, 4 is unlimited)								
-3420 2917 0		13134;13135		4558=0	F	19	4	Desert amulet
+3420 2917 0		13134;13135		4558=0	T	19	4	Desert amulet
 3426 2927 0		13136			F	19	4	Desert amulet
 # Morytania Legs (2 and 3 have 5 teleports per day to slime, 4 is unlimited)								
-3683 9888 0		13112		4542<2	F	19	4	Morytania legs: Ectofuntus Pit
-3683 9888 0		13113;13114		4542<5	F	19	4	Morytania legs: Ectofuntus Pit
+3683 9888 0		13112		4542<2	T	19	4	Morytania legs: Ectofuntus Pit
+3683 9888 0		13113;13114		4542<5	T	19	4	Morytania legs: Ectofuntus Pit
 3683 9888 0		13115			F	19	4	Morytania legs: Ectofuntus Pit
 3482 3230 0		13114;13115			F	19	4	Morytania legs: Burgh de Rott
 # Fremennik sea boots (1,2,3 have 1 teleport per day, 4 is unlimited)								
-2643 3675 0		13129;13130;13131		5005=0	F	19	4	Fremennik sea boots
+2643 3675 0		13129;13130;13131		5005=0	T	19	4	Fremennik sea boots
 2643 3675 0		13132			F	19	4	Fremennik sea boots
 # Kandarin headgear (3 has 1 teleport per day, 4 is unlimited)								
 2729 3409 0		13137;13138;13139;13140			F	19	4	Kandarin headgear
@@ -22,13 +22,13 @@
 # Western Banner (3 has 1 teleport per day, 4 is unlimited)								
 2339 3649 0		13143;13144			F	19	4	Western banner
 # Explorer's Ring (2 has 3 teleports per day, 3 and 4 are unlimited)								
-3052 3291 0		13126		4552<3	F	19	4	Explorer's ring
+3052 3291 0		13126		4552<3	T	19	4	Explorer's ring
 3052 3291 0		13127;13128			F	19	4	Explorer's ring
 # Rada's Blessing (Kourend Woodland, 1 has 3 teleports, 2 has 5 teleports, 3 and 4 have unlimited. For Mount Karuulum, 3 has 3 teleports and 4 has unlimited)								
-1554 3457 0		22941		7937<3	F	19	4	Rada's blessing: Kourend Woodland
-1554 3457 0		22943		7937<5	F	19	4	Rada's blessing: Kourend Woodland
+1554 3457 0		22941		7937<3	T	19	4	Rada's blessing: Kourend Woodland
+1554 3457 0		22943		7937<5	T	19	4	Rada's blessing: Kourend Woodland
 1554 3457 0		22945;22947			F	19	4	Rada's blessing: Kourend Woodland
-1311 3799 0		22945		7938<3	F	19	4	Rada's blessing: Mount Karuulm
+1311 3799 0		22945		7938<3	T	19	4	Rada's blessing: Mount Karuulm
 1311 3799 0		22947			F	19	4	Rada's blessing: Mount Karuulm
 								
 # Games Necklace								

@@ -367,7 +367,7 @@ public class PathfinderConfig {
         // If you don't have the required Items & Amount for transport (used for charters & minecarts)
         if (transport.getAmtItemRequired() > 0 && !Rs2Inventory.hasItemAmount(transport.getItemRequired(), transport.getAmtItemRequired())) return false;
         // Check Teleport Item Settings
-        if (transport.getType() == TELEPORTATION_ITEM) return isTeleportationItemUsable(transport);
+        if (transport.getType() == TELEPORTATION_ITEM || transport.getType() == TELEPORTATION_SPELL) return isTeleportationItemUsable(transport);
 
         return true;
     }
@@ -470,7 +470,7 @@ public class PathfinderConfig {
     private boolean isTeleportationItemUsable(Transport transport) {
         if (useTeleportationItems == TeleportationItem.NONE) return false;
         // Check consumable items configuration
-        if (useTeleportationItems == TeleportationItem.ALL_NON_CONSUMABLE && transport.isConsumable()) return false;
+        if (useTeleportationItems == TeleportationItem.INVENTORY_NON_CONSUMABLE && transport.isConsumable()) return false;
         
         return hasRequiredItems(transport);
     }

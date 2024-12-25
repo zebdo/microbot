@@ -8,9 +8,7 @@ import lombok.RequiredArgsConstructor;
 public enum TeleportationItem {
     NONE("None"),
     INVENTORY("Inventory"),
-    INVENTORY_NON_CONSUMABLE("Inventory (perm)"),
-    ALL("All"),
-    ALL_NON_CONSUMABLE("All (perm)");
+    INVENTORY_NON_CONSUMABLE("Inventory (perm)");
 
     private final String type;
 
