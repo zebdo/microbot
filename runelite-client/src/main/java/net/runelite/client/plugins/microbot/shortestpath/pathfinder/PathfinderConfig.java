@@ -367,7 +367,9 @@ public class PathfinderConfig {
         // If you don't have the required Items & Amount for transport (used for charters & minecarts)
         if (transport.getAmtItemRequired() > 0 && !Rs2Inventory.hasItemAmount(transport.getItemRequired(), transport.getAmtItemRequired())) return false;
         // Check Teleport Item Settings
-        if (transport.getType() == TELEPORTATION_ITEM || transport.getType() == TELEPORTATION_SPELL) return isTeleportationItemUsable(transport);
+        if (transport.getType() == TELEPORTATION_ITEM) return isTeleportationItemUsable(transport);
+        // Check Teleport Spell Settings
+        if (transport.getType() == TELEPORTATION_SPELL) return isTeleportationSpellUsable(transport);
 
         return true;
     }
@@ -490,15 +492,6 @@ public class PathfinderConfig {
                     .flatMap(Collection::stream)
                     .anyMatch(itemId -> Rs2Equipment.isWearing(itemId) || Rs2Inventory.hasItem(itemId));
         }
-        
-        // Handle teleportation spells
-        if (TransportType.TELEPORTATION_SPELL.equals(transport.getType())) {
-            boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
-            String displayInfo = hasMultipleDestination
-                    ? transport.getDisplayInfo().split(":")[0].trim().toLowerCase()
-                    : transport.getDisplayInfo();
-            return Rs2Magic.quickCanCast(displayInfo);
-        }
 
         // Check membership restrictions
         if (!client.getWorldType().contains(WorldType.MEMBERS)) return false;
@@ -508,6 +501,17 @@ public class PathfinderConfig {
                 .stream()
                 .flatMap(Collection::stream)
                 .anyMatch(itemId -> Rs2Equipment.isWearing(itemId) || Rs2Inventory.hasItem(itemId));
+    }
+    
+    private boolean isTeleportationSpellUsable(Transport transport) {
+        // Global flag to disable teleports
+        if (Rs2Walker.disableTeleports) return false;
+        
+        boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
+        String displayInfo = hasMultipleDestination
+                ? transport.getDisplayInfo().split(":")[0].trim().toLowerCase()
+                : transport.getDisplayInfo();
+        return Rs2Magic.quickCanCast(displayInfo);
     }
 
     /** Checks if the transport requires the Chronicle */
