@@ -55,7 +55,8 @@ import java.util.List;
 @PluginDescriptor(
         name = PluginDescriptor.zerozero + "Prayer Helper",
         description = "Prayer helper",
-        tags = {"timers", "overlays", "tick", "Lazy Flicking", "Prayer"}
+        tags = {"timers", "overlays", "tick", "Lazy Flicking", "Prayer"},
+        enabledByDefault = false
 )
 public class AttackTimerMetronomePlugin extends Plugin
 {
