@@ -206,11 +206,12 @@
 2756 3176 0		9789;9790			F	19	4	Construction cape: Brimhaven
 2545 3097 0		9789;9790			F	19	4	Construction cape: Yanille
 3239 6077 0		9789;9790			F	19	4	Construction cape: Prifddinas
-2604 3401 0		9798;9799			F	19	4	Fishing cape
-1248 3725 0		9810;9811			F	19	4	Farming cape
+2604 3401 0		9798;9799			F	19	4	Fishing cape: Fishing Guild
+2404 3484 0		9798;9799			F	19	4	Fishing cape: Otto's Grotto
+1248 3725 0		9810;9811			F	19	4	Farming cape: Teleport
 2556 2917 0		9948;9949			F	19	4	Hunter cape: Feldip Hills
 3144 3772 0		9948;9949			F	19	4	Hunter cape: Black chinchompa
-2865 3546 0		9750;9751			F	19	4	Strength cape
+2865 3546 0		9750;9751			F	19	4	Strength cape: Warriors' Guild
 # Max capes								
 # The Max cape's home teleports, determined by varbit 2187								
 # 0 - None								
