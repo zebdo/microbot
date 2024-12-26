@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.qualityoflife;
 
 import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.fletching.enums.FletchingItem;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.qualityoflife.enums.WintertodtActions;
 import net.runelite.client.plugins.microbot.util.misc.SpecialAttackWeaponEnum;
 
@@ -385,8 +386,8 @@ public interface QoLConfig extends Config {
             position = 2,
             section = inventorySection
     )
-    default String Setup1() {
-        return "";
+    default InventorySetup Setup1(){
+        return null;
     }
 
     // boolean to display Setup 2
@@ -409,8 +410,8 @@ public interface QoLConfig extends Config {
             position = 4,
             section = inventorySection
     )
-    default String Setup2() {
-        return "";
+    default InventorySetup Setup2(){
+        return null;
     }
 
     // boolean to display Setup 3
@@ -433,8 +434,8 @@ public interface QoLConfig extends Config {
             position = 6,
             section = inventorySection
     )
-    default String Setup3() {
-        return "";
+    default InventorySetup Setup3(){
+        return null;
     }
 
     // boolean to display Setup 4
@@ -457,8 +458,8 @@ public interface QoLConfig extends Config {
             position = 8,
             section = inventorySection
     )
-    default String Setup4() {
-        return "";
+    default InventorySetup Setup4(){
+        return null;
     }
 
     // Boolean to use auto drop

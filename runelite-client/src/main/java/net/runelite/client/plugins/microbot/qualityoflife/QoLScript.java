@@ -56,7 +56,7 @@ public class QoLScript extends Script {
                     handleWorkbenchActions();
                 }
 
-                if (QoLPlugin.executeLoadoutActions && !QoLPlugin.loadoutToLoad.isEmpty()) {
+                if (QoLPlugin.executeLoadoutActions && QoLPlugin.loadoutToLoad != null) {
                     handleInventorySetup();
                 }
 
@@ -89,7 +89,7 @@ public class QoLScript extends Script {
         if (!openBank()) {
             Microbot.log("Bank did not open");
             QoLPlugin.executeLoadoutActions = false;
-            QoLPlugin.loadoutToLoad = "";
+            QoLPlugin.loadoutToLoad = null;
             return;
         }
 
@@ -103,10 +103,10 @@ public class QoLScript extends Script {
                 inventorySetup.loadInventory();
             }
             QoLPlugin.executeLoadoutActions = false;
-            QoLPlugin.loadoutToLoad = "";
+            QoLPlugin.loadoutToLoad = null;
         } catch (Exception ignored) {
             QoLPlugin.executeLoadoutActions = false;
-            QoLPlugin.loadoutToLoad = "";
+            QoLPlugin.loadoutToLoad = null;
             Microbot.pauseAllScripts = false;
             Microbot.log("Failed to load inventory setup");
         }

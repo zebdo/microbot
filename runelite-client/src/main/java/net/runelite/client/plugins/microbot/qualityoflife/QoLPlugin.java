@@ -14,6 +14,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.config.ConfigPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.qualityoflife.enums.WintertodtActions;
 import net.runelite.client.plugins.microbot.qualityoflife.managers.FiremakingManager;
 import net.runelite.client.plugins.microbot.qualityoflife.managers.FletchingManager;
@@ -67,7 +68,7 @@ public class QoLPlugin extends Plugin {
     private static final int YAW_INDEX = 1;
     private static final BufferedImage SWITCHER_ON_IMG = getImageFromConfigResource("switcher_on");
     private static final BufferedImage STAR_ON_IMG = getImageFromConfigResource("star_on");
-    public static String loadoutToLoad = "";
+    public static InventorySetup loadoutToLoad = null;
     private static GameState lastGameState = GameState.UNKNOWN;
     private final int[] deltaCamera = new int[3];
     private final int[] previousCamera = new int[3];
@@ -429,16 +430,16 @@ public class QoLPlugin extends Plugin {
 
     private void addLoadoutMenuEntries(MenuEntryAdded event, String target) {
         if (config.displaySetup1()) {
-            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup1() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup1()));
+            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup1().getName() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup1()));
         }
         if (config.displaySetup2()) {
-            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup2() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup2()));
+            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup2().getName() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup2()));
         }
         if (config.displaySetup3()) {
-            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup3() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup3()));
+            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup3().getName() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup3()));
         }
         if (config.displaySetup4()) {
-            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup4() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup4()));
+            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup4().getName() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup4()));
         }
     }
 
@@ -481,9 +482,9 @@ public class QoLPlugin extends Plugin {
 
     // TODO: These OnClick methods should be moved to a separate class to reduce the size and make this class more manageable
 
-    private void customLoadoutOnClicked(MenuEntry event, String loadoutName) {
+    private void customLoadoutOnClicked(MenuEntry event, InventorySetup loadout) {
         recordActions = false;
-        loadoutToLoad = loadoutName;
+        loadoutToLoad = loadout;
         executeLoadoutActions = true;
     }
 
