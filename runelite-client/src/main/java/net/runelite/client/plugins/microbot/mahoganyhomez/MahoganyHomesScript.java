@@ -6,11 +6,16 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
+import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
@@ -24,7 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MahoganyHomesScript extends Script {
 
-    public static String version = "0.0.2";
+    public static String version = "0.0.4";
     @Inject
     MahoganyHomesPlugin plugin;
 
@@ -33,6 +38,7 @@ public class MahoganyHomesScript extends Script {
             try {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
+                checkPlankSack();
                 fix();
                 finish();
                 getNewContract();
@@ -90,6 +96,25 @@ public class MahoganyHomesScript extends Script {
     }
 
     // Tasks section
+
+    private void checkPlankSack() {
+        if(plugin.getConfig().usePlankSack() && plugin.getPlankCount() == -1) {
+            if (Rs2Inventory.contains(ItemID.PLANK_SACK)) {
+                Rs2Item plankSack = Rs2Inventory.get(ItemID.PLANK_SACK);
+                if (plankSack != null) {
+                    Rs2Inventory.interact(plankSack, "Check");
+                    sleep(Rs2Random.randomGaussian(800, 200));
+                }
+            }
+        }
+    }
+
+    private int planksInPlankSack() {
+        if (plugin.getPlankCount() == -1) {
+            return 0;
+        }
+        return plugin.getPlankCount();
+    }
 
     private void fix() {
         if (plugin.getCurrentHome() == null
@@ -235,6 +260,15 @@ public class MahoganyHomesScript extends Script {
         if (plugin.getCurrentHome() != null
                 && plugin.getCurrentHome().isInside(Rs2Player.getWorldLocation())
                 && Hotspot.isEverythingFixed()) {
+            if(plugin.getConfig().usePlankSack() && planksInPlankSack() > 0){
+                if (Rs2Inventory.contains(ItemID.PLANK_SACK)) {
+                    Rs2Item plankSack = Rs2Inventory.get(ItemID.PLANK_SACK);
+                    if (plankSack != null) {
+                        Rs2Inventory.interact(plankSack, "Empty");
+                        sleep(Rs2Random.randomGaussian(800, 200));
+                    }
+                }
+            }
             NPC npc = Rs2Npc.getNpc(plugin.getCurrentHome().getNpcId());
             if (npc == null && Rs2Player.getWorldLocation().getPlane() > 0) {
                 log("We are on the wrong floor, Trying to find ladder to go down");
@@ -268,6 +302,12 @@ public class MahoganyHomesScript extends Script {
     // Get new contract
     private void getNewContract() {
         if (plugin.getCurrentHome() == null) {
+            if(plugin.getConfig().useNpcContact()){
+                if (Rs2Magic.npcContact("amy")) {
+                    handleContractDialogue();
+                }
+                return;
+            }
             WorldPoint contractLocation = getClosestContractLocation();
             if (contractLocation.distanceTo2D(Rs2Player.getWorldLocation()) > 10) {
                 log("Walking to contract NPC");
@@ -283,12 +323,7 @@ public class MahoganyHomesScript extends Script {
                 }
                 log("NPC found: " + npc.getComposition().transform().getName());
                 if (Rs2Npc.interact(npc, "Contract")) {
-                    sleepUntil(Rs2Dialogue::hasSelectAnOption, 5000);
-                    Rs2Dialogue.keyPressForDialogueOption(plugin.getConfig().currentTier().getPlankSelection().getChatOption());
-                    sleepUntil(Rs2Dialogue::hasContinue, 10000);
-                    sleep(400, 800);
-                    sleepUntil(() -> !Rs2Dialogue.isInDialogue(), Rs2Dialogue::clickContinue, 6000, 300);
-                    sleep(1200, 2200);
+                    handleContractDialogue();
                 }
 
             }
@@ -297,29 +332,78 @@ public class MahoganyHomesScript extends Script {
 
     }
 
+    public void handleContractDialogue() {
+        sleepUntil(Rs2Dialogue::hasSelectAnOption, Rs2Dialogue::clickContinue, 10000, 300);
+        Rs2Dialogue.keyPressForDialogueOption(plugin.getConfig().currentTier().getPlankSelection().getChatOption());
+        sleepUntil(Rs2Dialogue::hasContinue, 10000);
+        sleep(400, 800);
+        sleepUntil(() -> !Rs2Dialogue.isInDialogue(), Rs2Dialogue::clickContinue, 6000, 300);
+        sleep(1200, 2200);
+    }
+
     // Bank if we need to
     private void bank() {
-        if (plugin.getCurrentHome() != null
-                && !plugin.getCurrentHome().isInside(Rs2Player.getWorldLocation())
+        Home currentHome = plugin.getCurrentHome();
+        if (currentHome != null
+                && plugin.distanceBetween(currentHome.getArea(), Rs2Player.getWorldLocation()) > 0
                 && isMissingItems()) {
-            if (Rs2Bank.walkToBankAndUseBank()) {
+
+            if (Rs2Bank.walkToBankAndUseBank(Rs2Bank.getNearestBank(currentHome.getLocation()))) {
                 sleep(600, 1200);
-                if (Rs2Inventory.getEmptySlots() - steelBarsNeeded() > 0)
-                    Rs2Bank.withdrawX(plugin.getConfig().currentTier().getPlankSelection().getPlankId(), Rs2Inventory.getEmptySlots() - steelBarsNeeded());
-                sleep(600, 1200);
-                if (steelBarsNeeded() > steelBarsInInventory()) {
-                    Rs2Bank.withdrawX(ItemID.STEEL_BAR, steelBarsNeeded());
+                if(plugin.getConfig().usePlankSack()){
+
+                    Rs2Bank.withdrawX(ItemID.STEEL_BAR, 4-steelBarsInInventory());
                     sleep(600, 1200);
+
+                    Global.sleepUntil(() -> planksInPlankSack() == 28,() -> {
+                        Rs2Bank.withdrawAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
+                        sleep(Rs2Random.randomGaussian(800, 200));
+                        Rs2Item plankSack = Rs2Inventory.get(ItemID.PLANK_SACK);
+                        if (plankSack != null) {
+                            // Custom menuEntry as Rs2Inventory.interact seem to set the wrong menuAction type
+                            NewMenuEntry plankSackEntry = new NewMenuEntry();
+                            plankSackEntry.setOption("Use");
+                            plankSackEntry.setTarget("<col=ff9040>Plank sack</col>");
+                            plankSackEntry.setIdentifier(9);
+                            plankSackEntry.setType(MenuAction.CC_OP);
+                            plankSackEntry.setParam0(plankSack.getSlot());
+                            plankSackEntry.setParam1(983043);
+                            plankSackEntry.setItemId(plankSack.getId());
+                            plankSackEntry.setWorldViewId(-1);
+                            plankSackEntry.setForceLeftClick(false);
+                            plankSackEntry.setDeprioritized(false);
+
+                            Microbot.doInvoke(plankSackEntry,Rs2Inventory.itemBounds(plankSack));
+                            //Rs2Inventory.interact(plankSack, "Use");
+                            sleep(Rs2Random.randomGaussian(800, 200));
+                        }
+                        }, 20000,1000);
+                    if (Rs2Inventory.getEmptySlots() > 0)
+                        Rs2Bank.withdrawAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
+
+
+                }
+
+                else  {
+                    if (Rs2Inventory.getEmptySlots() - steelBarsNeeded() > 0)
+                        Rs2Bank.withdrawX(plugin.getConfig().currentTier().getPlankSelection().getPlankId(), Rs2Inventory.getEmptySlots() - steelBarsNeeded());
+                    sleep(600, 1200);
+                    if (steelBarsNeeded() > steelBarsInInventory()) {
+                        Rs2Bank.withdrawX(ItemID.STEEL_BAR, steelBarsNeeded());
+                        sleep(600, 1200);
+                    }
                 }
                 Rs2Bank.closeBank();
+
             }
         }
     }
 
     // Walk to current home
     private void walkToHome() {
-        if (plugin.getCurrentHome() != null
-                && !plugin.getCurrentHome().isInside(Rs2Player.getWorldLocation())
+        Home currentHome = plugin.getCurrentHome();
+        if (currentHome != null
+                && plugin.distanceBetween(currentHome.getArea(), Rs2Player.getWorldLocation()) > 0
                 && !isMissingItems()) {
             Rs2Walker.walkWithState(plugin.getCurrentHome().getLocation(), 3);
         }

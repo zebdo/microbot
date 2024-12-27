@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.zerozero.birdhunter;
 
+import lombok.Getter;
 import net.runelite.api.GameObject;
 import net.runelite.api.ObjectID;
 import net.runelite.api.ItemID;
@@ -27,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 public class BirdHunterScript extends Script {
 
     public static String version = "1.0.1";
+    @Getter
     private WorldArea dynamicHuntingArea;
     private WorldPoint huntingCenter;
 
@@ -76,18 +78,13 @@ public class BirdHunterScript extends Script {
     }
 
     public void updateHuntingArea(BirdHunterConfig config) {
-        int radius = config.radius();
+        int radius = 1;
         dynamicHuntingArea = new WorldArea(
                 huntingCenter.getX() - radius,
                 huntingCenter.getY() - radius,
                 radius * 2, radius * 2,
                 huntingCenter.getPlane()
         );
-        Microbot.log("Hunting area radius updated to " + radius + " around center: " + huntingCenter);
-    }
-
-    public WorldArea getDynamicHuntingArea() {
-        return dynamicHuntingArea;
     }
 
     private boolean isInHuntingArea() {
@@ -193,7 +190,7 @@ public class BirdHunterScript extends Script {
         for (int x = targetPoint.getX() - searchRadius; x <= targetPoint.getX() + searchRadius; x++) {
             for (int y = targetPoint.getY() - searchRadius; y <= targetPoint.getY() + searchRadius; y++) {
                 WorldPoint candidateTile = new WorldPoint(x, y, targetPoint.getPlane());
-                LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient(), candidateTile);
+                LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), candidateTile);
 
                 if (localPoint != null && huntingArea.contains(candidateTile)) {
                     if (Rs2Tile.isWalkable(localPoint) && !isGameObjectAt(candidateTile)) {

@@ -76,6 +76,14 @@ public interface QoLConfig extends Config {
     )
     String fletchingSection = "fletchingSection";
 
+    // Firemaking section
+    @ConfigSection(
+            name = "Firemaking",
+            description = "Firemaking settings",
+            position = 9
+    )
+    String firemakingSection = "firemakingSection";
+
     // boolean to render Max Hit Overlay
     @ConfigItem(
             keyName = "renderMaxHitOverlay",
@@ -425,6 +433,43 @@ public interface QoLConfig extends Config {
         return "";
     }
 
+    // Boolean to use auto drop
+    @ConfigItem(
+            keyName = "autoDrop",
+            name = "Auto Drop",
+            description = "Auto Drop",
+            position = 9,
+            section = inventorySection
+    )
+    default boolean autoDrop() {
+        return false;
+    }
+
+    // String for item list to auto drop
+    @ConfigItem(
+            keyName = "autoDropItems",
+            name = "Items:",
+            description = "Items to auto drop, separated by commas",
+            position = 10,
+            section = inventorySection
+    )
+    default String autoDropItems() {
+        return "";
+    }
+
+    // Boolean to exclude items from auto drop
+    @ConfigItem(
+            keyName = "excludeItems",
+            name = "Exclude Items",
+            description = "Exclude Items instead of including them in auto drop",
+            position = 11,
+            section = inventorySection
+    )
+    default boolean excludeItems() {
+        return false;
+    }
+
+
     // boolean to fix camera pitch on login
     @ConfigItem(
             keyName = "fixCameraPitch",
@@ -650,6 +695,18 @@ public interface QoLConfig extends Config {
             section = fletchingSection
     )
     default boolean quickFletchHeadlessArrows() {
+        return false;
+    }
+
+    // boolean to quick firemake logs
+    @ConfigItem(
+            keyName = "quickFiremakeLogs",
+            name = "Quick Firemake Logs",
+            description = "Option to quick firemake logs",
+            position = 0,
+            section = firemakingSection
+    )
+    default boolean quickFiremakeLogs() {
         return false;
     }
 

@@ -8,16 +8,6 @@ import net.runelite.client.config.ConfigItem;
 public interface BirdHunterConfig extends Config {
 
     @ConfigItem(
-            keyName = "radius",
-            name = "Hunting Radius",
-            description = "Set the radius for the hunting area",
-            position = 1
-    )
-    default int radius() {
-        return 4;
-    }
-
-    @ConfigItem(
             keyName = "buryBones",
             name = "Bury Bones",
             description = "Select whether to bury bones during hunting",

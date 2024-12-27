@@ -9,7 +9,7 @@ import net.runelite.client.plugins.grounditems.GroundItem;
 import net.runelite.client.plugins.grounditems.GroundItemsPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.math.Random;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.models.RS2Item;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -18,8 +18,8 @@ import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 
 import java.awt.*;
 import java.time.Instant;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -263,7 +263,7 @@ public class Rs2GroundItem {
     public static boolean waitForGroundItemDespawn(Runnable actionWhileWaiting,GroundItem groundItem){
         sleepUntil(() ->  {
             actionWhileWaiting.run();
-            sleepUntil(() -> groundItem != GroundItemsPlugin.getCollectedGroundItems().get(groundItem.getLocation(), groundItem.getId()), Random.random(600, 2100));
+            sleepUntil(() -> groundItem != GroundItemsPlugin.getCollectedGroundItems().get(groundItem.getLocation(), groundItem.getId()), Rs2Random.between(600, 2100));
             return groundItem != GroundItemsPlugin.getCollectedGroundItems().get(groundItem.getLocation(), groundItem.getId());
         });
         return groundItem != GroundItemsPlugin.getCollectedGroundItems().get(groundItem.getLocation(), groundItem.getId());

@@ -812,6 +812,40 @@ public class Rs2Bank {
     }
 
     /**
+     * Withdraws the deficit of an item from the bank to meet the required amount.
+     *
+     * @param id             The ID of the item to withdraw.
+     * @param requiredAmount The required total amount of the item.
+     * @return True if any items were withdrawn, false otherwise.
+     */
+    public static boolean withdrawDeficit(int id, int requiredAmount) {
+        int currentAmount = Rs2Inventory.itemQuantity(id);
+        int deficit = requiredAmount - currentAmount;
+
+        if (deficit <= 0) return true;
+        if (!hasBankItem(id, deficit)) return false;
+
+        return withdrawX(id, deficit);
+    }
+
+    /**
+     * Withdraws the deficit of an item from the bank to meet the required amount.
+     *
+     * @param name           The name of the item to withdraw.
+     * @param requiredAmount The required total amount of the item.
+     * @return True if any items were withdrawn, false otherwise.
+     */
+    public static boolean withdrawDeficit(String name, int requiredAmount) {
+        int currentAmount = Rs2Inventory.itemQuantity(name);
+        int deficit = requiredAmount - currentAmount;
+
+        if (deficit <= 0) return true;
+        if (!hasBankItem(name, deficit)) return false;
+
+        return withdrawX(name, deficit);
+    }
+
+    /**
      * Checks inventory before withdrawing item
      *
      * @param checkInv check inventory before withdrawing item
@@ -853,8 +887,8 @@ public class Rs2Bank {
      * @param id     item id to search
      * @param amount amount to withdraw
      */
-    public static void withdrawX(int id, int amount) {
-        withdrawXItem(findBankItem(id), amount);
+    public static boolean withdrawX(int id, int amount) {
+        return withdrawXItem(findBankItem(id), amount);
     }
 
     /**
@@ -875,8 +909,8 @@ public class Rs2Bank {
      * @param name   item name to search
      * @param amount amount to withdraw
      */
-    public static void withdrawX(String name, int amount) {
-        withdrawXItem(findBankItem(name, false), amount);
+    public static boolean withdrawX(String name, int amount) {
+        return withdrawXItem(findBankItem(name, false), amount);
     }
 
     /**
@@ -1260,12 +1294,21 @@ public class Rs2Bank {
      * @return BankLocation
      */
     public static BankLocation getNearestBank() {
+        return getNearestBank(Microbot.getClient().getLocalPlayer().getWorldLocation());
+    }
+    /**
+     * Get the nearest bank to world point
+     *
+     * @return BankLocation
+     */
+
+    public static BankLocation getNearestBank(WorldPoint worldPoint) {
         Microbot.log("Calculating nearest bank path...");
         BankLocation nearest = null;
         double dist = Double.MAX_VALUE;
-        int y = Microbot.getClient().getLocalPlayer().getWorldLocation().getY();
-        boolean playerIsInCave = y > 6400;
-        WorldPoint playerLocation;
+        int y = worldPoint.getY();
+        boolean worldpointIsInCave = y > 6400;
+        WorldPoint location;
         double currDist;
         final int penalty = 10; // penalty if the bank is outside the cave and player is inside cave. This is to avoid being closer than banks in a cave
         for (BankLocation bankLocation : BankLocation.values()) {
@@ -1273,12 +1316,12 @@ public class Rs2Bank {
 
             boolean bankisInCave = bankLocation.getWorldPoint().getY() > 6400;
 
-            if (!bankisInCave && playerIsInCave) {
-                playerLocation = new WorldPoint(Microbot.getClient().getLocalPlayer().getWorldLocation().getX(),  Microbot.getClient().getLocalPlayer().getWorldLocation().getY() - 6400, Microbot.getClient().getPlane());
-                currDist = playerLocation.distanceTo2D(bankLocation.getWorldPoint()) + penalty;
+            if (!bankisInCave && worldpointIsInCave) {
+                location = new WorldPoint(worldPoint.getX(),  worldPoint.getY() - 6400, Microbot.getClient().getPlane());
+                currDist = location.distanceTo2D(bankLocation.getWorldPoint()) + penalty;
             } else {
-                playerLocation = new WorldPoint(Microbot.getClient().getLocalPlayer().getWorldLocation().getX(),  Microbot.getClient().getLocalPlayer().getWorldLocation().getY(), Microbot.getClient().getPlane());
-                currDist = playerLocation.distanceTo2D(bankLocation.getWorldPoint());
+                location = worldPoint;
+                currDist = location.distanceTo2D(bankLocation.getWorldPoint());
             }
 
 
@@ -1296,6 +1339,7 @@ public class Rs2Bank {
         }
         return nearest;
     }
+
 
     /**
      * Walk to the closest bank
@@ -1565,6 +1609,19 @@ public class Rs2Bank {
         return Arrays.stream(RunePouchType.values())
                 .anyMatch(pouch -> Rs2Bank.hasItem(pouch.getItemId()));
     }
+
+    /**
+     * Empty gem bag
+     *
+     * @return true if gem bag was emptied
+     */
+
+    public static boolean emptyGemBag() {
+        Rs2Item gemBag = Rs2Inventory.get(ItemID.GEM_BAG_12020,ItemID.OPEN_GEM_BAG);
+        if (gemBag == null) return false;
+        return Rs2Inventory.interact(gemBag, "Empty");
+    }
+
 
     /**
      * Withdraw items from the lootTrackerPlugin

@@ -4,6 +4,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.playerassist.PlayerAssistConfig;
+import net.runelite.client.plugins.microbot.playerassist.enums.DefaultLooterStyle;
+import net.runelite.client.plugins.microbot.playerassist.enums.State;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
@@ -28,10 +30,18 @@ public class LootScript extends Script {
             if (Rs2Inventory.isFull() || Rs2Inventory.getEmptySlots() <= config.minFreeSlots() || (Rs2Combat.inCombat() && !config.toggleForceLoot()))
                 return;
 
+            if (config.state().equals(State.BANKING)) return;
+
 
 
             if (!config.toggleLootItems()) return;
-            lootItemsByValue(config);
+            if (config.looterStyle().equals(DefaultLooterStyle.MIXED) || config.looterStyle().equals(DefaultLooterStyle.ITEM_LIST)) {
+                lootItemsOnName(config);
+            }
+
+            if (config.looterStyle().equals(DefaultLooterStyle.GE_PRICE_RANGE) || config.looterStyle().equals(DefaultLooterStyle.MIXED)) {
+                lootItemsByValue(config);
+            }
             lootBones(config);
             lootAshes(config);
             lootRunes(config);
@@ -160,6 +170,21 @@ public class LootScript extends Script {
                 config.toggleOnlyLootMyItems()
         );
         if (Rs2GroundItem.lootItemBasedOnValue(valueParams)) {
+            Microbot.pauseAllScripts = false;
+        }
+    }
+
+    private void lootItemsOnName(PlayerAssistConfig config) {
+        LootingParameters valueParams = new LootingParameters(
+                config.attackRadius(),
+                1,
+                1,
+                config.minFreeSlots(),
+                config.toggleDelayedLooting(),
+                config.toggleOnlyLootMyItems(),
+                config.listOfItemsToLoot().trim().split(",")
+        );
+        if (Rs2GroundItem.lootItemsBasedOnNames(valueParams)) {
             Microbot.pauseAllScripts = false;
         }
     }
