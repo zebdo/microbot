@@ -465,7 +465,9 @@ public enum Activity {
     KILLING_DARK_WIZARDS("Killing dark wizards", Category.COMBAT_LOW, ActivityIntensity.LOW),
     MINING_GOLD_ORE_FREE_TO_PLAY("Mining gold ore (free-to-play)", Category.SKILLING_MINING, ActivityIntensity.LOW),
     GETTING_INFINITE_MONEY("Getting infinite money", Category.COLLECTING_NONE, ActivityIntensity.HIGH),
-    SPLASHING("Splashing spells on monsters", Category.SKILLING_MAGIC, ActivityIntensity.VERY_LOW);
+    ALCHING("Low/High Alching", Category.SKILLING_MAGIC, ActivityIntensity.MODERATE),
+    SUPERHEATING("Superheating items", Category.SKILLING_MAGIC, ActivityIntensity.MODERATE),
+    SPLASHING("Splashing spells on monsters", Category.SKILLING_MAGIC, ActivityIntensity.LOW);
     
     @Getter
     private final String method;

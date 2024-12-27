@@ -51,6 +51,10 @@ public class GotrOverlay extends OverlayPanel {
                     .build());
 
             panelComponent.getChildren().add(LineComponent.builder()
+                    .left("Time since portal: " + GotrScript.getTimeSincePortal())
+                    .build());
+
+            panelComponent.getChildren().add(LineComponent.builder()
                     .left("Total time script loop: " + GotrScript.totalTime + "ms")
                     .build());
 

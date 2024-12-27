@@ -7,12 +7,15 @@ import net.runelite.api.*;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
+import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
-import net.runelite.client.plugins.microbot.util.math.Random;
+import net.runelite.client.plugins.microbot.util.inventory.RunePouch;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.settings.Rs2SpellBookSettings;
@@ -22,9 +25,10 @@ import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.awt.*;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
-import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static net.runelite.api.Varbits.SHADOW_VEIL;
 import static net.runelite.client.plugins.microbot.Microbot.log;
@@ -312,6 +316,19 @@ public class Rs2Magic {
         if (!didCast) return false;
         boolean result = sleepUntilTrue(() -> Rs2Widget.getWidget(chooseCharacterWidgetId) != null && !Rs2Widget.isHidden(chooseCharacterWidgetId), 100, 5000);
         if (!result) return false;
+        Widget chooseCharacterWidget = Rs2Widget.getWidget(chooseCharacterWidgetId);
+        Widget npcWidget = Rs2Widget.findWidget(npcName);
+        // check if npc widget is fully visible inside the choose character widget
+        Rectangle npcBounds = npcWidget.getBounds();
+        Rectangle chooseCharacterBounds = chooseCharacterWidget.getBounds();
+        if (!Rs2UiHelper.isRectangleWithinRectangle(chooseCharacterBounds, npcBounds)) {
+            Microbot.log("NPC widget is not fully visible inside the choose character widget, scrolling...");
+            Global.sleepUntil(() -> Rs2UiHelper.isRectangleWithinRectangle(chooseCharacterBounds, Rs2Widget.findWidget(npcName).getBounds()), () -> {
+                boolean isBelow = npcBounds.y > chooseCharacterBounds.y;
+                if (isBelow) Microbot.getMouse().scrollDown(Rs2UiHelper.getClickingPoint(chooseCharacterWidget.getBounds(),true));
+                else Microbot.getMouse().scrollUp(Rs2UiHelper.getClickingPoint(chooseCharacterWidget.getBounds(),true));
+            }, 5000, 300);
+        }
         boolean clickResult = Rs2Widget.clickWidget(npcName, Optional.of(75), 0, false);
         if (!clickResult) return false;
         Rs2Player.waitForAnimation();
@@ -321,15 +338,15 @@ public class Rs2Magic {
     public static boolean repairPouchesWithLunar() {
         log("Repairing pouches...");
         if (npcContact("dark mage")) {
-            sleep(Random.randomGaussian(Random.random(600, 1200), 300));
+            sleep(Rs2Random.randomGaussian(900, 300));
             Rs2Dialogue.clickContinue();
-            sleep(Random.randomGaussian(Random.random(1000, 2200), 300));
+            sleep(Rs2Random.randomGaussian(900, 500));
             Rs2Widget.sleepUntilHasWidget("Can you repair my pouches?");
-            sleep(Random.randomGaussian(Random.random(600, 1200), 300));
+            sleep(Rs2Random.randomGaussian(900, 300));
             Rs2Widget.clickWidget("Can you repair my pouches?", Optional.of(162), 0, true);
-            sleep(Random.randomGaussian(Random.random(1000, 2200), 300));
+            sleep(Rs2Random.randomGaussian(900, 500));
             Rs2Dialogue.clickContinue();
-            sleep(Random.randomGaussian(1500, 300));
+            sleep(Rs2Random.randomGaussian(1500, 300));
             Rs2Tab.switchToInventoryTab();
         }
         return !Rs2Inventory.hasDegradedPouch();
@@ -363,7 +380,104 @@ public class Rs2Magic {
         return Microbot.getVarbitValue(SHADOW_VEIL) == 1;
     }
 
+    /**
+     * Gets the currently selected auto-cast spell based on varbit 276.
+     *
+     * @return the matching Rs2CombatSpells or null if none matches.
+     */
+    public static Rs2CombatSpells getCurrentAutoCastSpell() {
+        int currentVarbitValue = Microbot.getVarbitValue(276);
+        for (Rs2CombatSpells spell : Rs2CombatSpells.values()) {
+            if (spell.getVarbitValue() == currentVarbitValue) {
+                return spell;
+            }
+        }
+        return null;
+    }
+    
+    public static Rs2Staff getRs2Staff(int itemID) {
+        return Stream.of(Rs2Staff.values())
+                .filter(staff -> staff.getItemID() == itemID)
+                .findFirst()
+                .orElse(Rs2Staff.NONE);
+    }
 
+    public static List<Rs2Staff> findStavesByRunes(List<Runes> runes) {
+        return Stream.of(Rs2Staff.values())
+                .filter(staff -> staff.getRunes().containsAll(runes))
+                .collect(Collectors.toList());
+    }
+    /**
+     * Calculates the runes required to cast a specified spell a certain number of times,
+     * taking into account equipped staves, inventory, and optionally, rune pouch runes.
+     *
+     * This method dynamically determines the number of runes still needed to meet the
+     * casting requirement by checking available runes in the inventory and rune pouch
+     * and accounting for any runes provided by equipped staves.
+     *
+     * @param spell          The combat spell to cast, represented as an {@link Rs2CombatSpells} enum.
+     * @param equippedStaff  The currently equipped staff, represented as an {@link Rs2Staff} object,
+     *                       which can reduce the number of required runes.
+     * @param casts          The number of times the spell should be cast. Must be greater than 0.
+     * @param checkRunePouch A boolean indicating whether to include runes from the rune pouch in the calculation.
+     * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune, 
+     *         and the value is an {@code Integer} representing the quantity of that rune still needed.
+     *         If all required runes are available, the map will be empty.
+     * @throws IllegalArgumentException if the {@code casts} parameter is less than or equal to 0.
+     */
+    public static Map<Runes, Integer> getRequiredRunes(Rs2CombatSpells spell, Rs2Staff equippedStaff, int casts, boolean checkRunePouch) {
+        if (casts <= 0) {
+            throw new IllegalArgumentException("Number of casts must be greater than 0.");
+        }
+
+        // Calculate total required runes for the desired number of casts
+        Map<Runes, Integer> requiredRunes = new HashMap<>();
+        spell.getRequiredRunes().forEach((rune, amount) -> requiredRunes.put(rune, amount * casts));
+
+        // Subtract runes provided by the equipped staff
+        if (equippedStaff != null) {
+            for (Runes providedRune : equippedStaff.getRunes()) {
+                requiredRunes.remove(providedRune);
+            }
+        }
+
+        // Gather available runes from inventory
+        Map<Runes, Integer> availableRunes = new HashMap<>();
+        for (Rs2Item item : Rs2Inventory.items()) {
+            Arrays.stream(Runes.values())
+                    .filter(rune -> rune.getItemId() == item.getId())
+                    .findFirst()
+                    .ifPresent(rune -> availableRunes.merge(rune, item.getQuantity(), Integer::sum));
+        }
+
+        // Optionally add runes from the rune pouch
+        if (checkRunePouch) {
+            RunePouch.getRunes().forEach((runeId, quantity) -> {
+                Arrays.stream(Runes.values())
+                        .filter(r -> r.getItemId() == runeId)
+                        .findFirst()
+                        .ifPresent(rune -> availableRunes.merge(rune, quantity, Integer::sum));
+            });
+        }
+
+        // Calculate remaining runes needed
+        for (Runes rune : requiredRunes.keySet()) {
+            int requiredAmount = requiredRunes.get(rune);
+            int availableAmount = availableRunes.getOrDefault(rune, 0);
+
+            if (availableAmount >= requiredAmount) {
+                requiredRunes.put(rune, 0);
+            } else {
+                requiredRunes.put(rune, requiredAmount - availableAmount);
+            }
+        }
+
+        // Remove runes that are fully satisfied
+        requiredRunes.entrySet().removeIf(entry -> entry.getValue() <= 0);
+
+        return requiredRunes;
+    }
+    
     //DATA
 
     @Getter

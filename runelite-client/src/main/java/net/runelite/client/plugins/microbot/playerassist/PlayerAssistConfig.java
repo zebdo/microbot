@@ -3,8 +3,10 @@ package net.runelite.client.plugins.microbot.playerassist;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
+import net.runelite.client.plugins.microbot.playerassist.enums.DefaultLooterStyle;
 import net.runelite.client.plugins.microbot.playerassist.enums.PlayStyle;
 import net.runelite.client.plugins.microbot.playerassist.enums.PrayerStyle;
+import net.runelite.client.plugins.microbot.playerassist.enums.State;
 
 @ConfigGroup(net.runelite.client.plugins.microbot.playerassist.PlayerAssistConfig.GROUP)
 @ConfigInformation("1. Make sure to place the cannon first before starting the plugin. <br />" +
@@ -231,10 +233,32 @@ public interface PlayerAssistConfig extends Config {
     }
 
     @ConfigItem(
+            name = "Loot Style",
+            keyName = "lootStyle",
+            position = 1,
+            description = "Choose Looting Style",
+            section = lootSection
+    )
+    default DefaultLooterStyle looterStyle() {
+        return DefaultLooterStyle.MIXED;
+    }
+
+    @ConfigItem(
+            name = "List of Items",
+            keyName = "listOfItemsToLoot",
+            position = 2,
+            description = "List of items to loot",
+            section = lootSection
+    )
+    default String listOfItemsToLoot() {
+        return "bones,ashes";
+    }
+
+    @ConfigItem(
             keyName = "Min Price of items to loot",
             name = "Min. Price of items to loot",
             description = "Min. Price of items to loot",
-            position = 1,
+            position = 10,
             section = lootSection
     )
     default int minPriceOfItemsToLoot() {
@@ -245,7 +269,7 @@ public interface PlayerAssistConfig extends Config {
             keyName = "Max Price of items to loot",
             name = "Max. Price of items to loot",
             description = "Max. Price of items to loot default is set to 10M",
-            position = 1,
+            position = 11,
             section = lootSection
     )
     default int maxPriceOfItemsToLoot() {
@@ -257,7 +281,7 @@ public interface PlayerAssistConfig extends Config {
             keyName = "Loot arrows",
             name = "Auto loot arrows",
             description = "Enable/disable loot arrows",
-            position = 2,
+            position = 20,
             section = lootSection
     )
     default boolean toggleLootArrows() {
@@ -269,7 +293,7 @@ public interface PlayerAssistConfig extends Config {
             keyName = "Loot runes",
             name = "Loot runes",
             description = "Enable/disable loot runes",
-            position = 3,
+            position = 30,
             section = lootSection
     )
     default boolean toggleLootRunes() {
@@ -281,7 +305,7 @@ public interface PlayerAssistConfig extends Config {
             keyName = "Loot coins",
             name = "Loot coins",
             description = "Enable/disable loot coins",
-            position = 4,
+            position = 40,
             section = lootSection
     )
     default boolean toggleLootCoins() {
@@ -293,7 +317,7 @@ public interface PlayerAssistConfig extends Config {
             keyName = "Loot untradables",
             name = "Loot untradables",
             description = "Enable/disable loot untradables",
-            position = 5,
+            position = 50,
             section = lootSection
     )
     default boolean toggleLootUntradables() {
@@ -738,6 +762,17 @@ public interface PlayerAssistConfig extends Config {
         return true;
     }
 
+
+    //hidden config item for state
+    @ConfigItem(
+            keyName = "state",
+            name = "State",
+            description = "State",
+            hidden = true
+    )
+    default State state() {
+        return State.IDLE;
+    }
 
     // Hidden config item for inventory setup
     @ConfigItem(

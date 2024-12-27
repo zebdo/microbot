@@ -31,7 +31,7 @@ public enum Runes {
     STEAM(19, ItemID.STEAM_RUNE),
     SMOKE(20, ItemID.SMOKE_RUNE),
     WRATH(21, ItemID.WRATH_RUNE),
-    SUNFIRE(22,   ItemID.SUNFIRE_RUNE);
+    SUNFIRE(22, ItemID.SUNFIRE_RUNE);
 
 
     @Getter(AccessLevel.PUBLIC)

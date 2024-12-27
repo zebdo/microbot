@@ -1,7 +1,10 @@
 package net.runelite.client.plugins.microbot.holidayevent;
 
 import com.google.inject.Provides;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -13,9 +16,9 @@ import javax.inject.Inject;
 import java.awt.*;
 
 @PluginDescriptor(
-        name = PluginDescriptor.Default + "Holiday events",
+        name = PluginDescriptor.Default + "Holiday event",
         description = "Holiday event plugin",
-        tags = {"holiday", "microbot"},
+        tags = {"holiday event", "microbot", "christmas"},
         enabledByDefault = false
 )
 
@@ -36,6 +39,10 @@ public class HolidayPlugin extends Plugin {
     @Inject
     HolidayScript holidayScript;
 
+    @Setter
+    @Getter
+    private boolean messageReceived = false;
+
 
     @Override
     protected void startUp() throws AWTException {
@@ -45,15 +52,25 @@ public class HolidayPlugin extends Plugin {
         holidayScript.run(config);
     }
 
+    @Subscribe
+    public void onChatMessage(ChatMessage chatMessage) {
+        if (chatMessage.getMessage().contains("an invitation."))  {
+            messageReceived = true;
+    }
+    }
     protected void shutDown() {
         holidayScript.shutdown();
         overlayManager.remove(holidayOverlay);
     }
+
     int ticks = 10;
     @Subscribe
-    public void onGameTick(GameTick tick)
+    public void onGameTick(GameTick event)
     {
-        //System.out.println(getName().chars().mapToObj(i -> (char)(i + 3)).map(String::valueOf).collect(Collectors.joining()));
+
+        if (config.collectSnow()) {
+            CollectSnow.onGameTick(event);
+        }
 
         if (ticks > 0) {
             ticks--;
