@@ -14,7 +14,7 @@ public class HighAlchScript extends Script {
 public boolean run(PlayerAssistConfig config) {
     mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
         try {
-            if (!Microbot.isLoggedIn() || !super.run() && !config.toggleHighAlchProfitable()) return;
+            if (!Microbot.isLoggedIn() || !super.run() || !config.toggleHighAlchProfitable()) return;
             Rs2Item item = Rs2Inventory.get(Rs2Item::isHaProfitable);
             if (item != null && Rs2Magic.canCast(MagicAction.HIGH_LEVEL_ALCHEMY)) {
                 Rs2Magic.alch(item);
