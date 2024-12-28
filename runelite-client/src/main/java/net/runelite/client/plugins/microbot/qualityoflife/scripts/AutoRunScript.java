@@ -24,8 +24,8 @@ public class AutoRunScript extends Script {
                 if(Microbot.useStaminaPotsIfNeeded != config.autoStamina()) {
                     configManager.setConfiguration("QoL", "autoStamina", Microbot.useStaminaPotsIfNeeded);
                 }
-                if(Microbot.runEnergyThreshold/1000 != config.staminaThreshold()) {
-                    configManager.setConfiguration("QoL", "staminaThreshold", Microbot.runEnergyThreshold/1000);
+                if(Microbot.runEnergyThreshold/100 != config.staminaThreshold()) {
+                    configManager.setConfiguration("QoL", "staminaThreshold", Microbot.runEnergyThreshold/100);
                 }
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());

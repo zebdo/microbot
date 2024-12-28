@@ -472,7 +472,7 @@ public class QoLPlugin extends Plugin {
         }
 
         if (ev.getKey().equals("staminaThreshold")) {
-            Microbot.runEnergyThreshold = config.staminaThreshold() * 1000;
+            Microbot.runEnergyThreshold = config.staminaThreshold() * 100;
         }
     }
 
