@@ -35,7 +35,6 @@ public class PrayerScript extends Script {
     private void handlePrayer(PlayerAssistConfig config) {
         if (!Microbot.isLoggedIn() || !config.togglePrayer()) return;
         if (config.prayerStyle() != PrayerStyle.CONTINUOUS && config.prayerStyle() != PrayerStyle.ALWAYS_ON) return;
-        log.info("Prayer style: " + config.prayerStyle().getName());
         if (config.prayerStyle() == PrayerStyle.CONTINUOUS) {
             boolean underAttack = !Rs2Npc.getNpcsForPlayer().isEmpty() || Rs2Combat.inCombat();
             Rs2Prayer.toggleQuickPrayer(underAttack);
