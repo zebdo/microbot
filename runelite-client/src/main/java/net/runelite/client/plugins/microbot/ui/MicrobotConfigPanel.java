@@ -612,6 +612,11 @@ class MicrobotConfigPanel extends PluginPanel
 	{
 		// Suppose MInventorySetupsPlugin.getInventorySetups() returns a List<InventorySetup>
 		List<InventorySetup> setups = MInventorySetupsPlugin.getInventorySetups();
+		if (setups.isEmpty())
+		{
+			// If there are no setups, return an empty combo box
+			return new JComboBox<>();
+		}
 		JComboBox<InventorySetup> box = new JComboBox<>(new DefaultComboBoxModel<>(setups.toArray(new InventorySetup[0])));
 
 
