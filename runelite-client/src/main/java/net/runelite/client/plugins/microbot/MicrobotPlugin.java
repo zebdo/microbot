@@ -252,10 +252,19 @@ public class MicrobotPlugin extends Plugin {
     @Subscribe
     public void onGameTick(GameTick event) {
         if (client.getLocalPlayer().isInteracting()) {
-            if (client.getLocalPlayer().getInteracting() instanceof Player 
-                    || client.getLocalPlayer().getInteracting() instanceof NPC) {
+            Actor interactingActor = client.getLocalPlayer().getInteracting();
+            if (interactingActor instanceof Player) {
                 if (ticks.get() == 2) {
                     ticks.set(0);
+                    Rs2Player.updateCombatTime();
+                    Rs2Player.lastInteractWasPlayer = true;
+                } else {
+                    ticks.incrementAndGet();
+                }
+            } else if (interactingActor instanceof NPC) {
+                if (ticks.get() == 2) {
+                    ticks.set(0);
+                    if (Rs2Player.lastInteractWasPlayer) Rs2Player.lastInteractWasPlayer = false;
                     Rs2Player.updateCombatTime();
                 } else {
                     ticks.incrementAndGet();
