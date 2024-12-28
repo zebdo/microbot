@@ -158,7 +158,7 @@ public class QoLPlugin extends Plugin {
         }
         if (config.autoStamina()) {
             Microbot.useStaminaPotsIfNeeded = true;
-            Microbot.runEnergyThreshold = config.staminaThreshold() * 100;
+            Microbot.runEnergyThreshold = config.staminaThreshold() * 1000;
         }
         autoRunScript.run(config);
         specialAttackScript.run(config);
@@ -469,6 +469,10 @@ public class QoLPlugin extends Plugin {
 
         if (ev.getKey().equals("autoStamina")) {
             Microbot.useStaminaPotsIfNeeded = config.autoStamina();
+        }
+
+        if (ev.getKey().equals("staminaThreshold")) {
+            Microbot.runEnergyThreshold = config.staminaThreshold() * 1000;
         }
     }
 
