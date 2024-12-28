@@ -835,6 +835,88 @@ public class Rs2Player {
         return false;
     }
 
+    public static boolean drinkCombatPotionAt(Skill skill) {
+        return drinkCombatPotionAt(skill, true);
+    }
+
+    /**
+     * Drink combat potion for skill
+     *
+     * @param skill
+     * @return
+     */
+    public static boolean drinkCombatPotionAt(Skill skill, boolean superCombat) {
+        if (Microbot.getClient().getBoostedSkillLevel(skill) - Microbot.getClient().getRealSkillLevel(skill) > 5) {
+            return false;
+        }
+
+        if (superCombat && (skill == Skill.ATTACK || skill == Skill.STRENGTH || skill == Skill.DEFENCE)) {
+            if (usePotion(ItemID.SUPER_COMBAT_POTION1, ItemID.SUPER_COMBAT_POTION2, ItemID.SUPER_COMBAT_POTION3, ItemID.SUPER_COMBAT_POTION4)) {
+                return true;
+            }
+            if (usePotion(ItemID.DIVINE_SUPER_COMBAT_POTION1, ItemID.DIVINE_SUPER_COMBAT_POTION2, ItemID.DIVINE_SUPER_COMBAT_POTION3, ItemID.DIVINE_SUPER_COMBAT_POTION4)) {
+                return true;
+            }
+        }
+
+        if (skill == Skill.ATTACK) {
+            if (usePotion(ItemID.ATTACK_POTION1, ItemID.ATTACK_POTION2, ItemID.ATTACK_POTION3, ItemID.ATTACK_POTION4)) {
+                return true;
+            }
+            if (usePotion(ItemID.SUPER_ATTACK1, ItemID.SUPER_ATTACK2, ItemID.SUPER_ATTACK3, ItemID.SUPER_ATTACK4)) {
+                return true;
+            }
+        }
+
+        if (skill == Skill.STRENGTH) {
+            if (usePotion(ItemID.STRENGTH_POTION1, ItemID.STRENGTH_POTION2, ItemID.STRENGTH_POTION3, ItemID.STRENGTH_POTION4)) {
+                return true;
+            }
+            if (usePotion(ItemID.SUPER_STRENGTH1, ItemID.SUPER_STRENGTH2, ItemID.SUPER_STRENGTH3, ItemID.SUPER_STRENGTH4)) {
+                return true;
+            }
+        }
+
+        if (skill == Skill.DEFENCE) {
+            if (usePotion(ItemID.DEFENCE_POTION1, ItemID.DEFENCE_POTION2, ItemID.DEFENCE_POTION3, ItemID.DEFENCE_POTION4)) {
+                return true;
+            }
+            if (usePotion(ItemID.SUPER_DEFENCE1, ItemID.SUPER_DEFENCE2, ItemID.SUPER_DEFENCE3, ItemID.SUPER_DEFENCE4)) {
+                return true;
+            }
+        }
+
+        if (skill == Skill.RANGED) {
+            if (usePotion(ItemID.RANGING_POTION1, ItemID.RANGING_POTION2, ItemID.RANGING_POTION3, ItemID.RANGING_POTION4)) {
+                return true;
+            }
+            if (usePotion(ItemID.BASTION_POTION1, ItemID.BASTION_POTION2, ItemID.BASTION_POTION3, ItemID.BASTION_POTION4)) {
+                return true;
+            }
+            if (usePotion(ItemID.DIVINE_RANGING_POTION1, ItemID.DIVINE_RANGING_POTION2, ItemID.DIVINE_RANGING_POTION3, ItemID.DIVINE_RANGING_POTION4)) {
+                return true;
+            }
+            if (usePotion(ItemID.DIVINE_BASTION_POTION1, ItemID.DIVINE_BASTION_POTION2, ItemID.DIVINE_BASTION_POTION3, ItemID.DIVINE_BASTION_POTION4)) {
+                return true;
+            }
+        }
+
+        if (skill == Skill.MAGIC) {
+            if (usePotion(ItemID.MAGIC_POTION1, ItemID.MAGIC_POTION2, ItemID.MAGIC_POTION3, ItemID.MAGIC_POTION4)) {
+                return true;
+            }
+            if (usePotion(ItemID.DIVINE_BATTLEMAGE_POTION1, ItemID.DIVINE_BATTLEMAGE_POTION2, ItemID.DIVINE_BATTLEMAGE_POTION3, ItemID.DIVINE_BATTLEMAGE_POTION4)) {
+                return true;
+            }
+            if (usePotion(ItemID.DIVINE_MAGIC_POTION1, ItemID.DIVINE_MAGIC_POTION2, ItemID.DIVINE_MAGIC_POTION3, ItemID.DIVINE_MAGIC_POTION4)) {
+                return true;
+            }
+            return usePotion(ItemID.BATTLEMAGE_POTION1, ItemID.BATTLEMAGE_POTION2, ItemID.BATTLEMAGE_POTION3, ItemID.BATTLEMAGE_POTION4);
+        }
+
+        return false;
+    }
+
     /**
      * Helper method to check for the presence of any item in the provided IDs and interact with it.
      *
