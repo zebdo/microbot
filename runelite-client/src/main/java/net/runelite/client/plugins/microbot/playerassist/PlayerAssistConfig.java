@@ -382,6 +382,18 @@ public interface PlayerAssistConfig extends Config {
         return false;
     }
 
+    //toggle High Alch profitable items
+    @ConfigItem(
+            keyName = "highAlchProfitable",
+            name = "High Alch Profitable",
+            description = "High Alch Profitable items",
+            position = 101,
+            section = lootSection
+    )
+    default boolean toggleHighAlchProfitable() {
+        return false;
+    }
+
     //set center tile manually
     @ConfigItem(
             keyName = "Center Tile",

@@ -63,10 +63,11 @@ public class BankerScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (Microbot.isLoggedIn() && config.bank() && needsBanking()) {
-                    handleBanking();
+                    if(handleBanking()){
+                        PlayerAssistPlugin.setState(State.IDLE);
+                    }
                 } else if (!needsBanking() && config.centerLocation().distanceTo(Rs2Player.getWorldLocation()) > config.attackRadius()) {
                     PlayerAssistPlugin.setState(State.WALKING);
-                    Microbot.pauseAllScripts = false;
                     Rs2Walker.walkTo(config.centerLocation());
                 }
             } catch (Exception ex) {
@@ -77,7 +78,7 @@ public class BankerScript extends Script {
     }
 
     public boolean needsBanking() {
-        return isUpkeepItemDepleted(config) || Rs2Inventory.getEmptySlots() <= config.minFreeSlots();
+        return (isUpkeepItemDepleted(config) && config.bank()) || (Rs2Inventory.getEmptySlots() <= config.minFreeSlots() && config.bank());
     }
 
     public boolean withdrawUpkeepItems(PlayerAssistConfig config) {
@@ -142,7 +143,6 @@ public class BankerScript extends Script {
 
     public boolean handleBanking() {
         PlayerAssistPlugin.setState(State.BANKING);
-        Microbot.pauseAllScripts = true;
         Rs2Prayer.disableAllPrayers();
         if (Rs2Bank.walkToBankAndUseBank()) {
             depositAllExcept(config);
