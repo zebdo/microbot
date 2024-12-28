@@ -929,8 +929,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     }
 
                     if (transport.getType() == TransportType.CHARTER_SHIP) {
-                        if (Rs2Widget.getWidget(885, 0) != null) {
-                            Widget destination = Rs2Widget.findWidget(transport.getDisplayInfo(), Arrays.stream(Rs2Widget.getWidget(885, 0).getStaticChildren()).collect(Collectors.toList()), false);
+                        if (Rs2Widget.getWidget(72, 0) != null) {
+                            Widget destination = Rs2Widget.findWidget(transport.getDisplayInfo(), Arrays.stream(Rs2Widget.getWidget(72, 0).getStaticChildren()).collect(Collectors.toList()), false);
                             if (destination == null) break;
 
                             Rs2Widget.clickWidget(destination);
@@ -1029,6 +1029,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     }
 
     private static void handleObject(Transport transport, TileObject tileObject) {
+        System.out.println("tile object");
         Rs2GameObject.interact(tileObject, transport.getAction());
         if (transport.getDestination().getPlane() == Rs2Player.getWorldLocation().getPlane()) {
             if (handleObjectExceptions(tileObject)) return;
@@ -1058,6 +1059,15 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             Rs2Player.waitForAnimation();
             Rs2Player.waitForAnimation();
             return true;
+        }
+        // Handle Leaves Traps in Isafdar Forest
+        if (tileObject.getId() == ObjectID.LEAVES_3925) {
+            Rs2Player.waitForAnimation(1200);
+            if (Rs2Player.getWorldLocation().getY() > 6400) {
+                Rs2GameObject.interact(ObjectID.PROTRUDING_ROCKS_3927);
+                sleepUntil(() -> Rs2Player.getWorldLocation().getY() < 6400);
+                return true;
+            }
         }
         return false;
     }
@@ -1111,7 +1121,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 
         List<String> locationKeyWords = Arrays.asList("farm", "monastery", "lletya", "prifddinas", "rellekka", "waterbirth island", "neitiznot", "jatiszo",
                 "ver sinhaza", "darkmeyer", "slepe", "troll stronghold", "weiss", "ecto", "burgh", "duradel", "gem mine", "nardah", "kalphite cave",
-                "kourend woodland", "mount karuulm", "outside");
+                "kourend woodland", "mount karuulm", "outside", "fishing guild", "otto's grotto");
         List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "rub", "break", "teleport", "reminisce", "signal", "play");
 
         boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
@@ -1381,7 +1391,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         if (transport.getDisplayInfo() == null || transport.getDisplayInfo().isEmpty()) return false;
 
         // Wait for the widget to become visible
-        boolean isAdventureLogVisible = sleepUntilTrue(() -> !Rs2Widget.isHidden(ComponentID.ADVENTURE_LOG_CONTAINER), 100, 10000);
+        boolean isAdventureLogVisible = sleepUntilTrue(() -> !Rs2Widget.isHidden(ComponentID.ADVENTURE_LOG_CONTAINER), Rs2Player::isMoving, 100, 10000);
 
         if (!isAdventureLogVisible) {
             Microbot.log("Widget did not become visible within the timeout.");
@@ -1428,7 +1438,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 
 
         // Wait for the widget to become visible
-        boolean widgetVisible = !Rs2Widget.isHidden(GLIDER_PARENT_WIDGET, GLIDER_CHILD_WIDGET);
+        boolean widgetVisible = sleepUntilTrue(() -> !Rs2Widget.isHidden(GLIDER_PARENT_WIDGET, GLIDER_CHILD_WIDGET), Rs2Player::isMoving, 100, 10000);
+        
         if (!widgetVisible) {
             Microbot.log("Widget did not become visible within the timeout.");
             return false;

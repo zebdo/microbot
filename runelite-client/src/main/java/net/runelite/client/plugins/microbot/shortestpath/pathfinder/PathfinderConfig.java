@@ -368,6 +368,8 @@ public class PathfinderConfig {
         if (transport.getAmtItemRequired() > 0 && !Rs2Inventory.hasItemAmount(transport.getItemRequired(), transport.getAmtItemRequired())) return false;
         // Check Teleport Item Settings
         if (transport.getType() == TELEPORTATION_ITEM) return isTeleportationItemUsable(transport);
+        // Check Teleport Spell Settings
+        if (transport.getType() == TELEPORTATION_SPELL) return isTeleportationSpellUsable(transport);
 
         return true;
     }
@@ -470,7 +472,7 @@ public class PathfinderConfig {
     private boolean isTeleportationItemUsable(Transport transport) {
         if (useTeleportationItems == TeleportationItem.NONE) return false;
         // Check consumable items configuration
-        if (useTeleportationItems == TeleportationItem.ALL_NON_CONSUMABLE && transport.isConsumable()) return false;
+        if (useTeleportationItems == TeleportationItem.INVENTORY_NON_CONSUMABLE && transport.isConsumable()) return false;
         
         return hasRequiredItems(transport);
     }
@@ -478,36 +480,25 @@ public class PathfinderConfig {
     /** Checks if the player has all the required equipment and inventory items for the transport */
     private boolean hasRequiredItems(Transport transport) {
         // Global flag to disable teleports
-        if (Rs2Walker.disableTeleports) return false;
+        if ((transport.getType() == TELEPORTATION_ITEM || transport.getType() == TELEPORTATION_SPELL) && Rs2Walker.disableTeleports) return false;
 
-        // Handle teleportation items
-        if (TransportType.TELEPORTATION_ITEM.equals(transport.getType())) {
-            // Special case for Chronicle teleport
-            if (requiresChronicle(transport)) return hasChronicleCharges();
-
-            return transport.getItemIdRequirements()
-                    .stream()
-                    .flatMap(Collection::stream)
-                    .anyMatch(itemId -> Rs2Equipment.isWearing(itemId) || Rs2Inventory.hasItem(itemId));
-        }
+        if (requiresChronicle(transport)) return hasChronicleCharges();
         
-        // Handle teleportation spells
-        if (TransportType.TELEPORTATION_SPELL.equals(transport.getType())) {
-            boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
-            String displayInfo = hasMultipleDestination
-                    ? transport.getDisplayInfo().split(":")[0].trim().toLowerCase()
-                    : transport.getDisplayInfo();
-            return Rs2Magic.quickCanCast(displayInfo);
-        }
-
-        // Check membership restrictions
-        if (!client.getWorldType().contains(WorldType.MEMBERS)) return false;
-
-        // General item requirements
         return transport.getItemIdRequirements()
                 .stream()
                 .flatMap(Collection::stream)
                 .anyMatch(itemId -> Rs2Equipment.isWearing(itemId) || Rs2Inventory.hasItem(itemId));
+    }
+    
+    private boolean isTeleportationSpellUsable(Transport transport) {
+        // Global flag to disable teleports
+        if (Rs2Walker.disableTeleports) return false;
+        
+        boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
+        String displayInfo = hasMultipleDestination
+                ? transport.getDisplayInfo().split(":")[0].trim().toLowerCase()
+                : transport.getDisplayInfo();
+        return Rs2Magic.quickCanCast(displayInfo);
     }
 
     /** Checks if the transport requires the Chronicle */

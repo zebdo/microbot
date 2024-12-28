@@ -1,16 +1,22 @@
 package net.runelite.client.plugins.microbot.util.combat;
 
 import net.runelite.api.VarPlayer;
+import net.runelite.api.Varbits;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.Global;
+import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
+import java.util.List;
+
 import static net.runelite.client.plugins.microbot.Microbot.log;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntilTrue;
 
 public class Rs2Combat {
 
@@ -29,6 +35,39 @@ public class Rs2Combat {
         log("Setting attack style to " + Rs2Widget.getWidget(widget.getId() + 3).getText());
         Rs2Widget.clickWidget(widget);
         return true;
+    }
+
+    /**
+     * Sets the auto-cast spell with an option to use defensive casting.
+     *
+     * @param combatSpell      The spell to auto-cast.
+     * @param useDefensiveCast Whether to use defensive casting mode.
+     * @return true if the spell is successfully set, false otherwise.
+     */
+    public static boolean setAutoCastSpell(Rs2CombatSpells combatSpell, boolean useDefensiveCast) {
+        if (combatSpell == null) return false;
+        if (!Rs2Magic.canCast(combatSpell.getMagicAction())) return false;
+        if (Rs2Magic.getCurrentAutoCastSpell() == combatSpell && Microbot.getVarbitValue(Varbits.DEFENSIVE_CASTING_MODE) == (useDefensiveCast ? 1 : 0)) return true;
+        
+        Rs2Tab.switchToCombatOptionsTab();
+        sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.COMBAT);
+
+        Widget autoCastWidget = useDefensiveCast
+                ? Rs2Widget.getWidget(WidgetInfo.COMBAT_DEFENSIVE_SPELL_BOX.getId())
+                : Rs2Widget.getWidget(WidgetInfo.COMBAT_SPELL_BOX.getId());
+
+        Rs2Widget.clickWidget(autoCastWidget);
+        sleepUntil(() -> Rs2Widget.isWidgetVisible(201, 1));
+        
+        Widget autoCastOptions = Rs2Widget.getWidget(201, 1);
+        if (autoCastOptions == null) return false;
+        
+        Widget spellSprite = Rs2Widget.findWidget(combatSpell.getMagicAction().getSprite(), List.of(autoCastOptions));
+        if (spellSprite == null) return false;
+
+        Rs2Widget.clickWidget(spellSprite);
+
+        return sleepUntilTrue(() -> Rs2Magic.getCurrentAutoCastSpell() == combatSpell && Microbot.getVarbitValue(Varbits.DEFENSIVE_CASTING_MODE) == (useDefensiveCast ? 1 : 0));
     }
 
     /**

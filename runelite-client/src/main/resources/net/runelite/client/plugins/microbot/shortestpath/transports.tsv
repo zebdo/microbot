@@ -4507,6 +4507,8 @@
 2578 2837 1	2578 2840 0	Cross;Gangplank;31756					1	
 2523 2860 0	2012 9004 1	Enter;Hole;31791					2	
 2012 9004 1	2523 2860 0	Climb;Vine ladder;31790					2	
+2483 2889 0	1971 9035 1	Enter;Cave;31766					2	
+1971 9035 1	2483 2889 0	Enter;Cave;31806					2	
 #mining guild								
 3021 9739 0	3021 3339 0	Climb-up;Ladder;17385						
 3021 3339 0	3021 9739 0	Climb-down;Ladder;30367						
@@ -4550,3 +4552,89 @@
 # Aldarin								
 1446 2976 1	1443 2976 0	Cross;Gangplank;55337					2	
 1443 2976 0	1446 2976 1	Cross;Gangplank;55336					2	
+								
+# Tyras								
+2142 3125 1	2142 3122 0	Cross;Gangplank;17409						
+2142 3122 0	2142 3125 1	Cross;Gangplank;17408						
+								
+# Isafdar Forest								
+2188 3162 0	2188 3165 0	Enter;Dense forest;3999						
+2188 3165 0	2188 3168 0	Enter;Dense forest;3939						
+2188 3168 0	2188 3171 0	Enter;Dense forest;3998						
+2188 3165 0	2188 3162 0	Enter;Dense forest;3999						
+2188 3168 0	2188 3165 0	Enter;Dense forest;3939						
+2188 3171 0	2188 3168 0	Enter;Dense forest;3998						
+2199 3169 0	2202 3169 0	Pass;Sticks;3922						
+2202 3169 0	2199 3169 0	Pass;Sticks;3922						
+2217 3169 0	2217 3166 0	Enter;Dense forest;3939						
+2217 3166 0	2217 3163 0	Enter;Dense forest;3938						
+2217 3163 0	2217 3160 0	Enter;Dense forest;3939						
+2217 3166 0	2217 3169 0	Enter;Dense forest;3939						
+2217 3163 0	2217 3166 0	Enter;Dense forest;3938						
+2217 3160 0	2217 3163 0	Enter;Dense forest;3939						
+2215 3156 0	2215 3153 0	Step-over;Tripwire;3921						
+2220 3155 0	2220 3152 0	Step-over;Tripwire;3921						
+2215 3153 0	2215 3156 0	Step-over;Tripwire;3921						
+2220 3152 0	2220 3155 0	Step-over;Tripwire;3921						
+2231 3149 0	2234 3149 0	Enter;Dense forest;3937						
+2234 3149 0	2237 3149 0	Enter;Dense forest;3938						
+2237 3149 0	2240 3149 0	Enter;Dense forest;3939						
+2234 3149 0	2231 3149 0	Enter;Dense forest;3937						
+2237 3149 0	2234 3149 0	Enter;Dense forest;3938						
+2240 3149 0	2237 3149 0	Enter;Dense forest;3939						
+2274 3172 0	2274 3176 0	Jump;Leaves;3925						
+2274 3176 0	2274 3172 0	Jump;Leaves;3925						
+2234 3181 0	2238 3181 0	Pass;Sticks;3922						
+2238 3181 0	2234 3181 0	Pass;Sticks;3922						
+2238 3219 0	2235 3219 0	Enter;Dense forest;3939						
+2235 3219 0	2232 3219 0	Enter;Dense forest;3937						
+2232 3219 0	2229 3219 0	Enter;Dense forest;3939						
+2229 3219 0	2226 3219 0	Enter;Dense forest;3938						
+2235 3219 0	2238 3219 0	Enter;Dense forest;3939						
+2232 3219 0	2235 3219 0	Enter;Dense forest;3937						
+2229 3219 0	2232 3219 0	Enter;Dense forest;3939						
+2226 3219 0	2229 3219 0	Enter;Dense forest;3938						
+2274 3192 0	2271 3192 0	Enter;Dense forest;3937						
+2271 3192 0	2268 3192 0	Enter;Dense forest;3939						
+2268 3192 0	2265 3192 0	Enter;Dense forest;3938						
+2271 3192 0	2274 3192 0	Enter;Dense forest;3937						
+2268 3192 0	2271 3192 0	Enter;Dense forest;3939						
+2265 3192 0	2268 3192 0	Enter;Dense forest;3938						
+2267 3201 0	2267 3205 0	Jump;Leaves;3925						
+2267 3205 0	2267 3201 0	Jump;Leaves;3925						
+2284 3188 0	2287 3188 0	Step-over;Tripwire;3921						
+2287 3188 0	2284 3188 0	Step-over;Tripwire;3921						
+2306 3194 0	2304 3194 0	Pass;Tree;8742						
+2306 3195 0	2304 3195 0	Pass;Tree;8742						
+2304 3194 0	2306 3195 0	Pass;Tree;8742						
+2304 3195 0	2306 3195 0	Pass;Tree;8742						
+2202 3237 0	2196 3237 0	Cross;Log balance;3931						
+2196 3237 0	2202 3237 0	Cross;Log balance;3931						
+2303 3213 0	2303 3216 0	Enter;Dense forest;3937						
+2303 3216 0	2303 3219 0	Enter;Dense forest;3938						
+2303 3219 0	2303 3222 0	Enter;Dense forest;3939						
+2303 3222 0	2303 3225 0	Enter;Dense forest;3938						
+2303 3216 0	2303 3213 0	Enter;Dense forest;3937						
+2303 3219 0	2303 3216 0	Enter;Dense forest;3938						
+2303 3222 0	2303 3219 0	Enter;Dense forest;3939						
+2303 3225 0	2303 3222 0	Enter;Dense forest;3938						
+2290 3232 0	2290 3239 0	Cross;Log balance;3933						
+2290 3239 0	2290 3232 0	Cross;Log balance;3933						
+2294 3242 0	2294 3245 0	Step-over;Tripwire;3921						
+2294 3245 0	2294 3242 0	Step-over;Tripwire;3921						
+2295 3215 0	2295 3217 0	Pass;Sticks;3922						
+2295 3217 0	2295 3215 0	Pass;Sticks;3922						
+2279 3221 0	2279 3225 0	Enter;Dense forest;3938						
+2279 3225 0	2279 3228 0	Enter;Dense forest;3937						
+2279 3228 0	2279 3231 0	Enter;Dense forest;3939						
+2279 3225 0	2279 3221 0	Enter;Dense forest;3938						
+2279 3228 0	2279 3225 0	Enter;Dense forest;3937						
+2279 3231 0	2279 3228 0	Enter;Dense forest;3939						
+2264 3250 0	2258 3250 0	Cross;Log balance;3932						
+2258 3250 0	2264 3250 0	Cross;Log balance;3932						
+2312 3216 0	2314 9624 0	Enter;Cave entrance;4006						
+2314 9624 0	2312 3216 0	Leave;Cave exit;4007						
+2385 3335 0	2385 3333 0	Enter;Huge Gate;3945						
+2386 3335 0	2386 3333 0	Enter;Huge Gate;3944						
+2385 3333 0	2385 3335 0	Enter;Huge Gate;3945						
+2386 3333 0	2386 3335 0	Enter;Huge Gate;3944						
