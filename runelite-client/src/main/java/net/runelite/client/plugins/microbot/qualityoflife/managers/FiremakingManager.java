@@ -27,12 +27,12 @@ public class FiremakingManager {
 
     @Subscribe
     private void onMenuEntryAdded(MenuEntryAdded event) {
-        if (!Microbot.isLoggedIn() && !config.quickFiremakeLogs()) return;
+        if (!Microbot.isLoggedIn()) return;
 
         String option = event.getOption();
         int itemId = event.getItemId();
 
-        if (itemId == ItemID.TINDERBOX && "Use".equals(option)) {
+        if (itemId == ItemID.TINDERBOX && "Use".equals(option) && config.quickFiremakeLogs()) {
             modifyMenuEntry(event, "<col=FFA500>Light Logs</col>", "", this::lightLogsOnClick);
         }
     }

@@ -146,7 +146,7 @@ public enum Category {
     SKILLING_THIEVING("Skilling/Thieving") {
         @Override
         public boolean isBusyInternal() {
-            return !Rs2Player.isAnimating();
+            return Rs2Player.isAnimating();
         }
     },
     SKILLING("Skilling") {

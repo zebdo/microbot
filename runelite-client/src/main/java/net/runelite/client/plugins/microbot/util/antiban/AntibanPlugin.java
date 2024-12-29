@@ -150,6 +150,7 @@ public class AntibanPlugin extends Plugin {
 
     @Override
     protected void startUp() throws AWTException {
+        Rs2Antiban.setActivityIntensity(ActivityIntensity.EXTREME);
         final MasterPanel panel = injector.getInstance(MasterPanel.class);
         final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "antiban.png");
         navButton = NavigationButton.builder()
@@ -301,7 +302,9 @@ public class AntibanPlugin extends Plugin {
 
         if (activity != null && Rs2AntibanSettings.dynamicActivity) {
             Rs2Antiban.setActivity(activity);
-            Microbot.log("Activity changed, new activity: " + activity);
+            if (Rs2AntibanSettings.devDebug) {
+                Microbot.log("Activity changed, new activity: " + activity);
+            }
             if (Rs2AntibanSettings.universalAntiban) {
                 Rs2Antiban.actionCooldown();
                 Rs2Antiban.takeMicroBreakByChance();
@@ -310,7 +313,9 @@ public class AntibanPlugin extends Plugin {
 
         if (activityIntensity != null && Rs2AntibanSettings.dynamicIntensity) {
             Rs2Antiban.setActivityIntensity(activityIntensity);
-            Microbot.log("Activity changed, new activity intensity: " + activityIntensity);
+            if (Rs2AntibanSettings.devDebug) {
+                Microbot.log("Activity changed, new activity intensity: " + activityIntensity);
+            }
         }
     }
 

@@ -3,9 +3,7 @@ package net.runelite.client.plugins.microbot.qualityoflife;
 import com.google.inject.Provides;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.GameState;
-import net.runelite.api.MenuEntry;
+import net.runelite.api.*;
 import net.runelite.api.events.*;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
@@ -16,6 +14,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.config.ConfigPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.qualityoflife.enums.WintertodtActions;
 import net.runelite.client.plugins.microbot.qualityoflife.managers.FiremakingManager;
 import net.runelite.client.plugins.microbot.qualityoflife.managers.FletchingManager;
@@ -26,6 +25,8 @@ import net.runelite.client.plugins.microbot.qualityoflife.scripts.wintertodt.Win
 import net.runelite.client.plugins.microbot.util.antiban.FieldUtil;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
+import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.ui.ColorScheme;
@@ -67,7 +68,7 @@ public class QoLPlugin extends Plugin {
     private static final int YAW_INDEX = 1;
     private static final BufferedImage SWITCHER_ON_IMG = getImageFromConfigResource("switcher_on");
     private static final BufferedImage STAR_ON_IMG = getImageFromConfigResource("star_on");
-    public static String loadoutToLoad = "";
+    public static InventorySetup loadoutToLoad = null;
     private static GameState lastGameState = GameState.UNKNOWN;
     private final int[] deltaCamera = new int[3];
     private final int[] previousCamera = new int[3];
@@ -157,7 +158,7 @@ public class QoLPlugin extends Plugin {
         }
         if (config.autoStamina()) {
             Microbot.useStaminaPotsIfNeeded = true;
-            Microbot.runEnergyThreshold = config.staminaThreshold() * 100;
+            Microbot.runEnergyThreshold = config.staminaThreshold() * 1000;
         }
         autoRunScript.run(config);
         specialAttackScript.run(config);
@@ -291,6 +292,41 @@ public class QoLPlugin extends Plugin {
                 updateLastWinthertodtAction(WintertodtActions.NONE);
                 updateWintertodtInterupted(false);
             }
+
+        }
+        if (config.smartWorkbench() && event.getMenuOption().contains("Smart Work-at") && event.getMenuEntry().getIdentifier() == ObjectID.WORKBENCH_43754) {
+            if(Rs2Inventory.anyPouchEmpty() && Rs2Inventory.hasItem(ItemID.GUARDIAN_ESSENCE)) {
+                event.consume();
+                Microbot.getClientThread().runOnSeperateThread(() -> {
+                    Rs2Inventory.fillPouches();
+                    Rs2GameObject.interact(ObjectID.WORKBENCH_43754);
+                    return null;
+                });
+
+            }
+        }
+        if (config.smartGotrMine() && event.getMenuOption().contains("Smart Mine") && event.getMenuEntry().getIdentifier() == ObjectID.HUGE_GUARDIAN_REMAINS) {
+            if(Rs2Inventory.anyPouchEmpty() && Rs2Inventory.hasItem(ItemID.GUARDIAN_ESSENCE)) {
+                event.consume();
+                Microbot.getClientThread().runOnSeperateThread(() -> {
+                    Rs2Inventory.fillPouches();
+                    Rs2GameObject.interact(ObjectID.HUGE_GUARDIAN_REMAINS);
+                    return null;
+                });
+
+            }
+        }
+        if (config.smartRunecraft() && event.getMenuOption().contains("Smart Craft-rune") && event.getMenuTarget().contains("Altar")) {
+            if(Rs2Inventory.anyPouchFull()) {
+                Microbot.getClientThread().runOnSeperateThread(() -> {
+                    Rs2Inventory.waitForInventoryChanges(50000);
+                    Rs2Inventory.emptyPouches();
+                    Rs2Inventory.waitForInventoryChanges(3000);
+                    Rs2GameObject.interact("Altar");
+                    return null;
+                });
+
+            }
         }
     }
 
@@ -346,7 +382,7 @@ public class QoLPlugin extends Plugin {
         String option = event.getOption();
         String target = event.getTarget();
         MenuEntry menuEntry = event.getMenuEntry();
-        boolean bankChestCheck = "Bank".equals(option) || ("Use".equals(option) && target.contains("Bank chest"));
+        boolean bankChestCheck = "Bank".equals(option) || ("Use".equals(option) && target.toLowerCase().contains("bank chest"));
 
         if (config.rightClickCameraTracking() && menuEntry.getNpc() != null && menuEntry.getNpc().getId() > 0) {
             addMenuEntry(event, "Track", target, this::customTrackOnClicked);
@@ -377,8 +413,14 @@ public class QoLPlugin extends Plugin {
             addMenuEntry(event, "<col=FFA500>Do-Last</col>", target, this::customAnvilOnClicked);
         }
 
-        if (config.useDoLastWorkbench() && "Work-at".equals(option)) {
-            menuEntry.onClick(this::customWorkbenchOnClicked);
+        if (config.smartWorkbench() && menuEntry.getOption().contains("Work-at") && menuEntry.getIdentifier() == ObjectID.WORKBENCH_43754) {
+            menuEntry.setOption("<col=FFA500>Smart Work-at</col>");
+        }
+        if (config.smartGotrMine() && menuEntry.getOption().contains("Mine") && menuEntry.getIdentifier() == ObjectID.HUGE_GUARDIAN_REMAINS) {
+            menuEntry.setOption("<col=FFA500>Smart Mine</col>");
+        }
+        if (config.smartRunecraft() && menuEntry.getOption().contains("Craft-rune") && menuEntry.getTarget().contains("Altar")) {
+            menuEntry.setOption("<col=FFA500>Smart Craft-rune</col>");
         }
 
         if (config.displayInventorySetups() && bankChestCheck && event.getItemId() == -1) {
@@ -388,16 +430,16 @@ public class QoLPlugin extends Plugin {
 
     private void addLoadoutMenuEntries(MenuEntryAdded event, String target) {
         if (config.displaySetup1()) {
-            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup1() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup1()));
+            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup1().getName() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup1()));
         }
         if (config.displaySetup2()) {
-            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup2() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup2()));
+            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup2().getName() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup2()));
         }
         if (config.displaySetup3()) {
-            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup3() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup3()));
+            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup3().getName() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup3()));
         }
         if (config.displaySetup4()) {
-            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup4() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup4()));
+            addLoadoutMenuEntry(event, "<col=FFA500>Equip: " + config.Setup4().getName() + "</col>", target, e -> customLoadoutOnClicked(e, config.Setup4()));
         }
     }
 
@@ -428,6 +470,10 @@ public class QoLPlugin extends Plugin {
         if (ev.getKey().equals("autoStamina")) {
             Microbot.useStaminaPotsIfNeeded = config.autoStamina();
         }
+
+        if (ev.getKey().equals("staminaThreshold")) {
+            Microbot.runEnergyThreshold = config.staminaThreshold() * 100;
+        }
     }
 
     @Subscribe
@@ -440,9 +486,9 @@ public class QoLPlugin extends Plugin {
 
     // TODO: These OnClick methods should be moved to a separate class to reduce the size and make this class more manageable
 
-    private void customLoadoutOnClicked(MenuEntry event, String loadoutName) {
+    private void customLoadoutOnClicked(MenuEntry event, InventorySetup loadout) {
         recordActions = false;
-        loadoutToLoad = loadoutName;
+        loadoutToLoad = loadout;
         executeLoadoutActions = true;
     }
 
@@ -487,13 +533,13 @@ public class QoLPlugin extends Plugin {
 
     private void customWorkbenchOnClicked(MenuEntry event) {
         Microbot.log("<col=245C2D>Workbench</col>");
-        executeWorkbenchActions = true;
+
     }
 
     private void recordNewActions(MenuEntry event) {
         recordActions = true;
         String option = event.getOption();
-        if (BANK_OPTION.equals(option) || "Use".equals(option) && event.getTarget().contains("Bank chest")){
+        if (BANK_OPTION.equals(option) || "Use".equals(option) && event.getTarget().toLowerCase().contains("bank chest")){
             bankMenuEntries.clear();
         } else if (SMELT_OPTION.equals(option)) {
             furnaceMenuEntries.clear();

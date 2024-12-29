@@ -1,28 +1,16 @@
 package net.runelite.client.plugins.microbot.gabplugs.glassmake;
 
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.GameObject;
-import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.widgets.Widget;
 import net.runelite.client.Notifier;
-import net.runelite.client.plugins.menuentryswapper.MenuEntrySwapperConfig;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
-import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
-import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
-import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
-import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
-import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
-import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
-import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import javax.inject.Inject;
@@ -30,18 +18,21 @@ import java.util.concurrent.TimeUnit;
 
 import static net.runelite.client.plugins.microbot.gabplugs.glassmake.GabulhasGlassMakeInfo.botStatus;
 import static net.runelite.client.plugins.microbot.gabplugs.glassmake.GabulhasGlassMakeInfo.states;
-import static net.runelite.client.plugins.microbot.util.Global.sleep;
-import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 @Slf4j
 public class GabulhasGlassMakeScript extends Script {
-    public static double version = 1.0;
+    public static String version = "1.0.1";
     @Inject
     private Notifier notifier;
 
     private GabulhasGlassMakeInfo.items currentItem;
 
+    private boolean oneTimeSpellBookCheck = false;
+
     public boolean run(GabulhasGlassMakeConfig config) {
+        oneTimeSpellBookCheck = false;
+        Rs2Antiban.antibanSetupTemplates.applyUniversalAntibanSetup();
+        Rs2AntibanSettings.actionCooldownChance = 0.2;
        currentItem= config.ITEM();
         Microbot.enableAutoRunOn = false;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
@@ -72,12 +63,13 @@ public class GabulhasGlassMakeScript extends Script {
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
             }
-        }, 0, 1000, TimeUnit.MILLISECONDS);
+        }, 0, 600, TimeUnit.MILLISECONDS);
         return true;
     }
 
     @Override
     public void shutdown() {
+        Rs2Antiban.resetAntibanSettings();
         super.shutdown();
     }
 
@@ -137,26 +129,19 @@ public class GabulhasGlassMakeScript extends Script {
     }
 
     private void glassblowing(){
-        Rs2Tab.switchToMagicTab();
-        sleep(60, 100);
         superglassmake();
         sleep(60, 100);
         sleepUntil(()-> Rs2Inventory.contains("Molten Glass"), 100);
     }
 
     private void superglassmake() {
-        sleepUntil(() -> {
-            Rs2Tab.switchToMagicTab();
-            sleep(50, 150);
-            return Rs2Tab.getCurrentTab() == InterfaceTab.MAGIC;
-        });
-        Widget superglass = Rs2Widget.findWidget(MagicAction.SUPERGLASS_MAKE.getName());
-        if (superglass.getSpriteId() == 1972) {
-            Microbot.click(superglass.getBounds());
-        } else {
-            superglass = Rs2Widget.findWidget("<col=00ff00>Superglass Make</col>", false);
-            System.out.println(superglass);
-            Microbot.click(superglass.getBounds());
+        if(!oneTimeSpellBookCheck) {
+            Rs2Magic.oneTimeSpellBookCheck();
+            oneTimeSpellBookCheck = true;
+        }
+        if (Rs2Magic.quickCast(MagicAction.SUPERGLASS_MAKE)) {
+            Rs2Bank.preHover();
+            sleep(600*2, 600*4);
         }
 
     }

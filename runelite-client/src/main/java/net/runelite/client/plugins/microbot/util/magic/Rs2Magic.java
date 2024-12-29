@@ -41,7 +41,7 @@ public class Rs2Magic {
     /**
      * Check if all the settings are correct before we start interacting with spellbook
      */
-    private static boolean oneTimeSpellBookCheck() {
+    public static boolean oneTimeSpellBookCheck() {
         // We add a one time check to avoid performanec issues. Checking varbits is expensive
         if (firstInteractionWithSpellBook && !Rs2SpellBookSettings.setAllFiltersOn()) {
             return false;
@@ -95,9 +95,9 @@ public class Rs2Magic {
             sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.MAGIC);
         }
 
-        Widget widget = Arrays.stream(Rs2Widget.getWidget(218, 3).getStaticChildren()).filter(x -> x.getSpriteId() == magicSpell.getSprite()).findFirst().orElse(null);
+        Widget widget = Rs2Widget.findWidget(magicSpell.getName());
+        return widget.getSpriteId() == magicSpell.getSprite();
 
-        return widget != null;
     }
 
     public static boolean quickCanCast(String spellName) {
@@ -132,6 +132,18 @@ public class Rs2Magic {
         Microbot.doInvoke(new NewMenuEntry(option, -1, magicSpell.getWidgetId(), menuAction.getId(), identifier, -1, magicSpell.getName()), new Rectangle(Rs2Widget.getWidget(magicSpell.getWidgetId()).getBounds()));
         //Rs2Reflection.invokeMenu(-1, magicSpell.getWidgetId(), menuAction.getId(), 1, -1, "Cast", "<col=00ff00>" + magicSpell.getName() + "</col>", -1, -1);
         return true;
+    }
+
+    public static boolean quickCast(MagicAction magicSpell) {
+        Microbot.status = "Casting " + magicSpell.getName();
+
+        if(quickCanCast(magicSpell)) {
+            Widget widget = Rs2Widget.findWidget(magicSpell.getName());
+            Microbot.click(widget.getBounds());
+            return true;
+        }
+        log("Unable to cast " + magicSpell.getName());
+        return false;
     }
 
     public static void castOn(MagicAction magicSpell, Actor actor) {

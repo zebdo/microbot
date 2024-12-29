@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.gabplugs.glassmake;
 
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
+import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
 
 import javax.inject.Inject;
@@ -22,6 +23,10 @@ public class GabulhasGlassMakeOverlay extends OverlayPanel {
             panelComponent.getChildren().add(TitleComponent.builder()
                     .text("Status: " + GabulhasGlassMakeInfo.botStatus.toString().replace("_", " "))
                     .color(Color.GREEN)
+                    .build());
+
+            panelComponent.getChildren().add(LineComponent.builder()
+                    .left("Version: " + GabulhasGlassMakeScript.version)
                     .build());
 
 

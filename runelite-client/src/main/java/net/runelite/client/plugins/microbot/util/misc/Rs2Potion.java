@@ -12,6 +12,14 @@ public class Rs2Potion {
         return Arrays.asList("ranging potion", "bastion potion", "divine bastion potion");
     }
 
+    public static List<String> getCombatPotionsVariants() {
+        return Arrays.asList("combat potion", "super combat potion", "divine super combat potion");
+    }
+
+    public static List<String> getMagicPotionsVariants() {
+        return Arrays.asList("magic potion", "divine magic potion", "battlemage potion", "divine battlemage potion");
+    }
+
     public static String getStaminaPotion() {
         return "Stamina potion";
     }

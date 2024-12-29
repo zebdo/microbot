@@ -45,6 +45,7 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.*;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.RunnableExceptionLogger;
@@ -1301,6 +1302,10 @@ public class ConfigManager
 				return gson.fromJson(str, parameterizedType);
 			}
 		}
+		if(type == InventorySetup.class)
+		{
+			return gson.fromJson(str, type);
+		}
 		if (type instanceof Class)
 		{
 			Class<?> clazz = (Class<?>) type;
@@ -1376,6 +1381,10 @@ public class ConfigManager
 		if (object instanceof Set)
 		{
 			return gson.toJson(object, Set.class);
+		}
+		if (object instanceof InventorySetup)
+		{
+			return gson.toJson(object, InventorySetup.class);
 		}
 		if (object != null)
 		{
