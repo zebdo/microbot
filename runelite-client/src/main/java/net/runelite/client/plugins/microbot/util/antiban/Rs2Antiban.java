@@ -551,7 +551,7 @@ public class Rs2Antiban {
         Rs2AntibanSettings.reset();
         Rs2Antiban.playStyle = null;
         Rs2Antiban.activity = null;
-        Rs2Antiban.activityIntensity = null;
+        Rs2Antiban.activityIntensity = ActivityIntensity.EXTREME;
         Rs2Antiban.category = null;
     }
 

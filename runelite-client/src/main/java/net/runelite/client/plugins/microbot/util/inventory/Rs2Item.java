@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.util.inventory;
 import lombok.Getter;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
+import net.runelite.api.ItemID;
 import net.runelite.api.ParamID;
 import net.runelite.client.plugins.microbot.Microbot;
 
@@ -28,6 +29,8 @@ public class Rs2Item {
     boolean isNoted;
     @Getter
     boolean isTradeable;
+    @Getter
+    ItemComposition itemComposition;
     int[] wearableActionIndexes = new int[]{
             ParamID.OC_ITEM_OP1,
             ParamID.OC_ITEM_OP2,
@@ -50,6 +53,7 @@ public class Rs2Item {
                 ? Microbot.getClientThread().runOnClientThread(() -> Microbot.getClient().getItemDefinition(this.id - 1)).isTradeable()
                 : itemComposition.isTradeable();
         this.inventoryActions = itemComposition.getInventoryActions();
+        this.itemComposition = itemComposition;
         addEquipmentActions(itemComposition);
     }
 
@@ -71,6 +75,17 @@ public class Rs2Item {
     public int getPrice() {
         return Microbot.getClientThread().runOnClientThread(() ->
                 Microbot.getItemManager().getItemPrice(id) * quantity);
+    }
+
+    public int getHaPrice() {
+        return itemComposition.getHaPrice();
+    }
+
+    public boolean isHaProfitable() {
+        int natureRunePrice = Microbot.getClientThread().runOnClientThread(() ->
+                Microbot.getItemManager().getItemPrice(ItemID.NATURE_RUNE));
+        return (getHaPrice() - natureRunePrice) > getPrice() && isTradeable;
+
     }
 
     @Override

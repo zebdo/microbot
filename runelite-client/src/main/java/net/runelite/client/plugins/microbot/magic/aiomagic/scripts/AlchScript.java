@@ -127,6 +127,14 @@ public class AlchScript extends Script {
                             plugin.getAlchItemNames().remove(0);
                             return;
                         }
+
+                        Rs2Item alchItem = Rs2Inventory.get(plugin.getAlchItemNames().get(0));
+                        int inventorySlot = Rs2Player.getRealSkillLevel(Skill.MAGIC) >= 55 ? 11 : 4;
+                        if (alchItem.getSlot() != inventorySlot) {
+                            Rs2Inventory.moveItemToSlot(alchItem, inventorySlot);
+                            return;
+                        }
+                        
                         Rs2Magic.alch(plugin.getAlchItemNames().get(0));
                         Rs2Player.waitForXpDrop(Skill.MAGIC, 10000, false);
                         break;

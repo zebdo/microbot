@@ -202,7 +202,6 @@ public class Rs2SpellBookSettings {
      * @return
      */
     public static boolean setAllFiltersOn() {
-        return Microbot.getClientThread().runOnClientThread(() -> {
             boolean success = toggleCombatSpells(true, false) &&
                     toggleTeleportSpells(true, false) &&
                     toggleUtilitySpells(true, false) &&
@@ -215,7 +214,6 @@ public class Rs2SpellBookSettings {
                 closeSpellBookFilter();
             }
             return success;
-        });
     }
 
     /**

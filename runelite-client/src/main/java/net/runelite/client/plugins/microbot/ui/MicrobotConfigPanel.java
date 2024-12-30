@@ -38,6 +38,8 @@ import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginManager;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
+import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
@@ -342,6 +344,10 @@ class MicrobotConfigPanel extends PluginPanel
 			{
 				item.add(createDimension(cd, cid), BorderLayout.EAST);
 			}
+			else if (cid.getType() == InventorySetup.class)
+			{
+				item.add(createInventorySetupsComboBox(cd, cid), BorderLayout.EAST);
+			}
 			else if (cid.getType() instanceof Class && ((Class<?>) cid.getType()).isEnum())
 			{
 				item.add(createComboBox(cd, cid), BorderLayout.EAST);
@@ -595,6 +601,70 @@ class MicrobotConfigPanel extends PluginPanel
 		dimensionPanel.add(heightSpinner, BorderLayout.EAST);
 
 		return dimensionPanel;
+	}
+
+	// ---------------------------------------------------------------------------
+// If the type is InventorySetup.class, create a combo box that uses
+// MInventorySetupsPlugin.getInventorySetups(), but stores the *entire* object
+// in config as a JSON string.
+// ---------------------------------------------------------------------------
+	private JComboBox<InventorySetup> createInventorySetupsComboBox(ConfigDescriptor cd, ConfigItemDescriptor cid)
+	{
+		// Suppose MInventorySetupsPlugin.getInventorySetups() returns a List<InventorySetup>
+		List<InventorySetup> setups = MInventorySetupsPlugin.getInventorySetups();
+		if (setups.isEmpty())
+		{
+			// If there are no setups, return an empty combo box
+			return new JComboBox<>();
+		}
+		JComboBox<InventorySetup> box = new JComboBox<>(new DefaultComboBoxModel<>(setups.toArray(new InventorySetup[0])));
+
+
+		// Set the renderer to display the setup name
+		box.setRenderer(new DefaultListCellRenderer()
+		{
+			@Override
+			public Component getListCellRendererComponent(JList<?> list, Object value, int index, boolean isSelected, boolean cellHasFocus)
+			{
+				super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
+				if (value instanceof InventorySetup)
+				{
+					InventorySetup setup = (InventorySetup) value;
+					setText(setup.getName());
+				}
+				return this;
+			}
+		});
+
+		// 1) Retrieve dezerialized InventorySetup from config
+		InventorySetup dezerialized = configManager.getConfiguration(cd.getGroup().value(), cid.getItem().keyName(),InventorySetup.class);
+		if (dezerialized == null)
+		{
+			dezerialized = setups.get(0);
+		}
+		for (InventorySetup setup : setups)
+		{
+			if (setup.getName().equals(dezerialized.getName()))
+			{
+				box.setSelectedItem(setup);
+				break;
+			}
+		}
+
+		// 3) Listen for changes
+		box.addItemListener(e ->
+		{
+			if (e.getStateChange() == ItemEvent.SELECTED)
+			{
+				InventorySetup chosen = (InventorySetup) box.getSelectedItem();
+				if (chosen != null)
+				{
+					configManager.setConfiguration(cd.getGroup().value(), cid.getItem().keyName(), chosen);
+				}
+			}
+		});
+
+		return box;
 	}
 
 	private JComboBox<Enum<?>> createComboBox(ConfigDescriptor cd, ConfigItemDescriptor cid) {

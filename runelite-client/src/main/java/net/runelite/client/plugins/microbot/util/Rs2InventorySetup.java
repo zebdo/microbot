@@ -1,10 +1,10 @@
 package net.runelite.client.plugins.microbot.util;
 
 import net.runelite.api.Varbits;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
-import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -41,6 +41,22 @@ public class Rs2InventorySetup {
         _mainScheduler = mainScheduler;
         if (inventorySetup == null) {
             Microbot.showMessage("Inventory load with name " + name + " not found!");
+            Microbot.pauseAllScripts = true;
+        }
+    }
+
+    /**
+     * Constructor to initialize the Rs2InventorySetup with a specific setup and scheduler.
+     * The setup can now directly be fetched from the new config selector.
+     *
+     * @param setup          The inventory setup to load.
+     * @param mainScheduler The scheduler to monitor for cancellation.
+     */
+    public Rs2InventorySetup(InventorySetup setup, ScheduledFuture<?> mainScheduler) {
+        inventorySetup = setup;
+        _mainScheduler = mainScheduler;
+        if (inventorySetup == null) {
+            Microbot.showMessage("Inventory load error!");
             Microbot.pauseAllScripts = true;
         }
     }
