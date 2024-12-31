@@ -94,10 +94,12 @@ public class Rs2Magic {
             Rs2Tab.switchToMagicTab();
             sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.MAGIC);
         }
-
-        Widget widget = Rs2Widget.findWidget(magicSpell.getName());
+        
+        Widget spellbookWidget = Rs2Widget.getWidget(218, 3);
+        if (spellbookWidget == null) return false;
+        Widget widget = Rs2Widget.findWidget(magicSpell.getName(), List.of(spellbookWidget));
+        if (widget == null) return false;
         return widget.getSpriteId() == magicSpell.getSprite();
-
     }
 
     public static boolean quickCanCast(String spellName) {
