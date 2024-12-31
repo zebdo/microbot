@@ -4,4 +4,6 @@ public enum MagicActivity {
     SPLASHING,
     ALCHING,
     SUPERHEAT,
+    TELEPORT,
+    TELEALCH,
 }

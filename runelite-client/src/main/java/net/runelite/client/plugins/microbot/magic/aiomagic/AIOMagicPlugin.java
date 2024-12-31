@@ -14,10 +14,10 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.magic.aiomagic.enums.MagicActivity;
 import net.runelite.client.plugins.microbot.magic.aiomagic.enums.SuperHeatItem;
-import net.runelite.client.plugins.microbot.magic.aiomagic.scripts.AlchScript;
-import net.runelite.client.plugins.microbot.magic.aiomagic.scripts.SplashScript;
-import net.runelite.client.plugins.microbot.magic.aiomagic.scripts.SuperHeatScript;
+import net.runelite.client.plugins.microbot.magic.aiomagic.enums.TeleportSpell;
+import net.runelite.client.plugins.microbot.magic.aiomagic.scripts.*;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Staff;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
@@ -53,6 +53,10 @@ public class AIOMagicPlugin extends Plugin {
 	private AlchScript alchScript;
 	@Inject
 	private SuperHeatScript superHeatScript;
+	@Inject
+	private TeleportScript teleportScript;
+	@Inject
+	private TeleAlchScript teleAlchScript;
 
 	public static String version = "1.0.0";
 	
@@ -64,6 +68,12 @@ public class AIOMagicPlugin extends Plugin {
 	private SuperHeatItem superHeatItem;
 	@Getter
 	private String npcName;
+	@Getter
+	private TeleportSpell teleportSpell;
+	@Getter
+	private Rs2Staff staff;
+	@Getter
+	private int totalCasts;
 	
 	@Override
 	protected void startUp() throws AWTException {
@@ -71,6 +81,9 @@ public class AIOMagicPlugin extends Plugin {
 		alchItemNames = updateItemList(config.alchItems());
 		superHeatItem = config.superHeatItem();
 		npcName = config.npcName();
+		teleportSpell = config.teleportSpell();
+		staff = config.staff();
+		totalCasts = config.castAmount();
 
 		if (overlayManager != null) {
 			overlayManager.add(aioMagicOverlay);
@@ -86,6 +99,12 @@ public class AIOMagicPlugin extends Plugin {
 			case SUPERHEAT:
 				superHeatScript.run();
 				break;
+			case TELEPORT:
+				teleportScript.run();
+				break;
+			case TELEALCH:
+				teleAlchScript.run();
+				break;
 		}
 	}
 
@@ -93,6 +112,8 @@ public class AIOMagicPlugin extends Plugin {
 		splashScript.shutdown();
 		alchScript.shutdown();
 		superHeatScript.shutdown();
+		teleportScript.shutdown();
+		teleAlchScript.shutdown();
 		overlayManager.remove(aioMagicOverlay);
 	}
 
@@ -113,6 +134,18 @@ public class AIOMagicPlugin extends Plugin {
 		
 		if (event.getKey().equals(AIOMagicConfig.npcName)) {
 			npcName = config.npcName();
+		}
+
+		if (event.getKey().equals(AIOMagicConfig.teleportSpell)) {
+			teleportSpell = config.teleportSpell();
+		}
+
+		if (event.getKey().equals(AIOMagicConfig.staff)) {
+			staff = config.staff();
+		}
+
+		if (event.getKey().equals(AIOMagicConfig.castAmount)) {
+			totalCasts = config.castAmount();
 		}
 	}
 	

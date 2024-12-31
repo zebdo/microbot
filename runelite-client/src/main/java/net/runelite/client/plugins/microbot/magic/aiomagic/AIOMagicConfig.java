@@ -6,7 +6,10 @@ import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.plugins.microbot.magic.aiomagic.enums.MagicActivity;
 import net.runelite.client.plugins.microbot.magic.aiomagic.enums.SuperHeatItem;
+import net.runelite.client.plugins.microbot.magic.aiomagic.enums.TeleportSpell;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Staff;
 
 @ConfigGroup(AIOMagicConfig.configGroup)
 public interface AIOMagicConfig extends Config {
@@ -16,6 +19,9 @@ public interface AIOMagicConfig extends Config {
 	String alchItems = "alchItems";
 	String superHeatItem = "superHeatItem";
 	String npcName = "npcName";
+	String staff = "staff";
+	String teleportSpell = "teleportSpell";
+	String castAmount = "castAmount";
 
 	@ConfigSection(
 			name = "General Settings",
@@ -44,6 +50,13 @@ public interface AIOMagicConfig extends Config {
 			position = 2
 	)
 	String superHeatSection = "superHeat";
+
+	@ConfigSection(
+			name = "Teleport Settings",
+			description = "Configure teleport settings",
+			position = 3
+	)
+	String teleportSection = "teleport";
 
 	@ConfigItem(
 			keyName = activity,
@@ -98,5 +111,38 @@ public interface AIOMagicConfig extends Config {
 	)
 	default SuperHeatItem superHeatItem() {
 		return SuperHeatItem.IRON;
+	}
+
+	@ConfigItem(
+			keyName = teleportSpell,
+			name = "Teleport Spell",
+			description = "Select the teleport spell you would like to use",
+			position = 0,
+			section = teleportSection
+	)
+	default TeleportSpell teleportSpell() {
+		return TeleportSpell.VARROCK_TELEPORT;
+	}
+
+	@ConfigItem(
+			keyName = staff,
+			name = "Staff",
+			description = "Select the staff you would like to use",
+			position = 1,
+			section = teleportSection
+	)
+	default Rs2Staff staff() {
+		return Rs2Staff.STAFF_OF_AIR;
+	}
+
+	@ConfigItem(
+			keyName = castAmount,
+			name = "Total amount of casts",
+			description = "Define the amount of teleport casts",
+			position = 2,
+			section = teleportSection
+	)
+	default int castAmount() {
+		return 1000;
 	}
 }

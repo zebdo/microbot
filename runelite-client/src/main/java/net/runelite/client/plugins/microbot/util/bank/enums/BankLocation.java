@@ -28,6 +28,7 @@ public enum BankLocation {
     CANIFIS(new WorldPoint(3512, 3480, 0)),
     CASTLE_WARS(new WorldPoint(2443, 3083, 0)),
     CATHERBY(new WorldPoint(2808, 3441, 0)),
+    CLAN_HALL(new WorldPoint(1747, 5476, 0)),
     COOKS_GUILD(new WorldPoint(3147,3450,0)),
     CORSAIR_COVE(new WorldPoint(2570, 2864, 0)),
     CRAFTING_GUILD(new WorldPoint(2936, 3281, 0)),
@@ -167,6 +168,9 @@ public enum BankLocation {
                 return Rs2Player.getQuestState(Quest.THE_CORSAIR_CURSE) == QuestState.FINISHED;
             case SOPHANEM:
                 return Rs2Player.getQuestState(Quest.CONTACT) == QuestState.FINISHED;
+            case CLAN_HALL:
+                // Requires Clan Membership, varbit 933
+                return Microbot.getVarbitValue(933) > 1;
             default:
                 return true;
         }
