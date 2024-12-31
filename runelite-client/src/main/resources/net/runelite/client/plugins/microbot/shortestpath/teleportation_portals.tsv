@@ -99,5 +99,5 @@
 3233 9313 0	3233 2887 0	Use;Portal;6550					1		
 3234 9312 0	3233 2887 0	Use;Portal;6550					1		
 3232 9312 0	3233 2887 0	Use;Portal;6550					1		
-3185 3472 0	1760 5487 0	Enter-member;Clan hall portal;41724				933>1			
-1760 5487 0	3185 3472 0	Leave;Portal;41617							
+3185 3472 0	1760 5487 0	Enter-member;Clan hall portal;41724				933>1	8		
+1760 5487 0	3185 3472 0	Leave;Portal;41617					8		
