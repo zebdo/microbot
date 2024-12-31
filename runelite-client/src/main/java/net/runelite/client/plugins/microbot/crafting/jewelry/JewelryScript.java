@@ -89,6 +89,11 @@ public class JewelryScript extends Script {
                             }
                             
                             if (!Rs2Inventory.hasItem(ItemID.CHISEL)) {
+                                if (!Rs2Bank.hasItem(ItemID.CHISEL)) {
+                                    Microbot.showMessage("Missing Chisel in Bank!");
+                                    shutdown();
+                                    return;
+                                }
                                 Rs2Bank.withdrawOne(ItemID.CHISEL);
                                 Rs2Inventory.waitForInventoryChanges(1200);
                             }
