@@ -71,6 +71,7 @@ public class JewelryScript extends Script {
                         Rs2Dialogue.clickCombinationOption(plugin.getJewelry().getGem().getUncutItemName());
                         sleepUntil(Rs2Player::isAnimating);
                         Rs2Antiban.actionCooldown();
+                        Rs2Antiban.takeMicroBreakByChance();
                         Rs2Bank.preHover();
                         break;
                     case BANKING:
@@ -319,6 +320,7 @@ public class JewelryScript extends Script {
                         sleepUntilTrue(() -> Rs2Widget.isGoldCraftingWidgetOpen() || Rs2Widget.isSilverCraftingWidgetOpen(), 500, 20000);
                         Rs2Widget.clickWidget(plugin.getJewelry().getItemName());
                         Rs2Antiban.actionCooldown();
+                        Rs2Antiban.takeMicroBreakByChance();
                         break;
                     case ALCHING:
                         if (!Rs2Equipment.hasEquipped(staffItemID)) {

@@ -52,6 +52,7 @@ public class Rs2Player {
     public static Instant lastAnimationTime = null;
     private static final long COMBAT_TIMEOUT_MS = 10000;
     private static long lastCombatTime = 0;
+    public static boolean lastInteractWasPlayer = false;
     @Getter
     public static int lastAnimationID = AnimationID.IDLE;
 
@@ -707,6 +708,9 @@ public class Rs2Player {
      * @return True if the player is in combat, false otherwise.
      */
     public static boolean isInCombat() {
+        if (lastInteractWasPlayer) {
+            return (System.currentTimeMillis() - lastCombatTime < COMBAT_TIMEOUT_MS) && Microbot.getVarbitPlayerValue(1075) != -1;
+        }
         return System.currentTimeMillis() - lastCombatTime < COMBAT_TIMEOUT_MS;
     }
 

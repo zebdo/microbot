@@ -467,6 +467,7 @@ public enum Activity {
     GETTING_INFINITE_MONEY("Getting infinite money", Category.COLLECTING_NONE, ActivityIntensity.HIGH),
     ALCHING("Low/High Alching", Category.SKILLING_MAGIC, ActivityIntensity.MODERATE),
     SUPERHEATING("Superheating items", Category.SKILLING_MAGIC, ActivityIntensity.MODERATE),
+    TELEPORT_TRAINING("Teleport training", Category.SKILLING_MAGIC, ActivityIntensity.MODERATE),
     SPLASHING("Splashing spells on monsters", Category.SKILLING_MAGIC, ActivityIntensity.LOW);
     
     @Getter
