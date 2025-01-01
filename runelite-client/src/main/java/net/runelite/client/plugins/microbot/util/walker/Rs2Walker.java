@@ -1307,10 +1307,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
      * @return distance
      */
     public static int getDistanceBetween(WorldPoint startpoint, WorldPoint endpoint) {
-        ExecutorService pathfindingExecutor = Executors.newSingleThreadExecutor();
         Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), startpoint, endpoint);
-        pathfindingExecutor.submit(pathfinder);
-        sleepUntil(pathfinder::isDone);
+        pathfinder.run();
         return pathfinder.getPath().size();
     }
 

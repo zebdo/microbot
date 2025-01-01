@@ -42,7 +42,7 @@ public class GlassblowingScript extends Script {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
 
-                if (Rs2Player.isAnimating(2400) || Rs2Antiban.getCategory().isBusy() || Microbot.pauseAllScripts) return;
+                if (Rs2Player.isAnimating(3000) || Rs2Antiban.getCategory().isBusy() || Microbot.pauseAllScripts) return;
                 if (Rs2AntibanSettings.actionCooldownActive) return;
 
                 if (config.glassType() == Glass.PROGRESSIVE) {
@@ -101,8 +101,7 @@ public class GlassblowingScript extends Script {
 
         Rs2Widget.sleepUntilHasNotWidgetText("How many do you wish to make?", 270, 5, false, 5000);
         Rs2Antiban.actionCooldown();
-
-        sleepUntil(() -> !Rs2Inventory.hasItem(moltenGlass), 60000);
+        Rs2Antiban.takeMicroBreakByChance();
     }
 
     public ProgressiveGlassblowingModel calculateItemToCraft() {

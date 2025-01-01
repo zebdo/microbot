@@ -117,6 +117,7 @@ public class GiantsFoundryScript extends Script {
             Microbot.getMouse().click(forte.getBounds());
             sleep(600, 1200);
             MouldHelper.selectBest();
+            sleep(600, 1200);
         }
 
         Widget blades = Rs2Widget.findWidget("Blades", null);
@@ -124,12 +125,14 @@ public class GiantsFoundryScript extends Script {
             Microbot.getMouse().click(blades.getBounds());
             sleep(600, 1200);
             MouldHelper.selectBest();
+            sleep(600, 1200);
         }
         Widget tips = Rs2Widget.findWidget("Tips", null);
         if (tips != null) {
             Microbot.getMouse().click(tips.getBounds());
             sleep(600, 1200);
             MouldHelper.selectBest();
+            sleep(600, 1200);
             Microbot.getMouse().click(forte.getBounds());
         }
         Widget setMould = Rs2Widget.getWidget(47054854);
