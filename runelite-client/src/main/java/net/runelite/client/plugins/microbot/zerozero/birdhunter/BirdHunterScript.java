@@ -78,7 +78,7 @@ public class BirdHunterScript extends Script {
     }
 
     public void updateHuntingArea(BirdHunterConfig config) {
-        int radius = 1;
+        int radius = 2;
         dynamicHuntingArea = new WorldArea(
                 huntingCenter.getX() - radius,
                 huntingCenter.getY() - radius,
