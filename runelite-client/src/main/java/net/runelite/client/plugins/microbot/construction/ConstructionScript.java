@@ -1,6 +1,9 @@
 package net.runelite.client.plugins.microbot.construction;
 
-import net.runelite.api.*;
+import net.runelite.api.ItemID;
+import net.runelite.api.NPC;
+import net.runelite.api.SpriteID;
+import net.runelite.api.TileObject;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -10,13 +13,12 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.math.Random;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
-import java.awt.event.KeyEvent;
 import java.util.concurrent.TimeUnit;
-
 
 
 public class ConstructionScript extends Script {
@@ -115,9 +117,9 @@ public class ConstructionScript extends Script {
         TileObject oaklarder = getOakLarder();
         if (oaklarder == null) return;
         if (Rs2GameObject.interact(oaklarder, "Remove")) {
-            sleepUntilOnClientThread(() -> hasRemoveLarderInterfaceOpen(), 5000);
+            Rs2Dialogue.sleepUntilHasQuestion("Really remove it?");
             Rs2Keyboard.keyPress('1');
-            sleepUntilOnClientThread(() -> getOakLarderSpace() != null, 5000);
+            sleepUntil(() -> getOakLarderSpace() != null, 5000);
         }
     }
 
@@ -129,7 +131,9 @@ public class ConstructionScript extends Script {
             int distance = butler.getWorldLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation());
             return distance > 3;
         });
-        if (butlerIsToFar) {
+        if (!butlerIsToFar) {
+            Rs2Npc.interact(butler, "talk-to");
+        } else {
             Rs2Tab.switchToSettingsTab();
             sleep(800, 1800);
             Widget houseOptionWidget = Rs2Widget.findWidget(SpriteID.OPTIONS_HOUSE_OPTIONS, null);
@@ -141,30 +145,35 @@ public class ConstructionScript extends Script {
                 Microbot.getMouse().click(callServantWidget.getCanvasLocation());
         }
 
+        Rs2Dialogue.sleepUntilInDialogue();
 
-        if (Rs2Dialogue.isInDialogue() || Rs2Npc.interact(butler, "Talk-to")) {
-            sleep(1200);
-            Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
-            sleep(1200, 2000);
-            if (Rs2Widget.findWidget("Go to the bank...", null) != null) {
-                Rs2Inventory.useItemOnNpc(ItemID.OAK_PLANK + 1, butler.getId()); // + 1  for noted item
-                sleepUntilOnClientThread(() -> Rs2Widget.hasWidget("Dost thou wish me to exchange that certificate"));
-                Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
-                sleepUntilOnClientThread(() -> Rs2Widget.hasWidget("Select an option"));
+        if (Rs2Dialogue.hasQuestion("Repeat last task?")) {
+            Rs2Keyboard.typeString("1");
+            Rs2Random.waitEx(2400, 300);
+            Rs2Dialogue.sleepUntilInDialogue();
+            return;
+        }
+
+        if (Rs2Dialogue.hasSelectAnOption()) {
+            if (Rs2Dialogue.hasDialogueOption("Go to the bank...")) {
+                Rs2Dialogue.sleepUntilHasDialogueText("Dost thou wish me to exchange that certificate");
+                Rs2Dialogue.clickContinue();
+                Rs2Dialogue.sleepUntilSelectAnOption();
                 Rs2Keyboard.typeString("1");
-                sleepUntilOnClientThread(() -> Rs2Widget.hasWidget("Enter amount:"));
+                Rs2Widget.sleepUntilHasWidget("Enter amount:");
                 Rs2Keyboard.typeString("28");
                 Rs2Keyboard.enter();
-            } else if (hasDialogueOptionToUnnote()) {
-                Rs2Keyboard.keyPress('1');
-                sleepUntilOnClientThread(() -> !hasDialogueOptionToUnnote());
-            } else if (hasPayButlerDialogue() || hasDialogueOptionToPay()) {
-                Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
-                sleep(1200, 2000);
-                if (hasDialogueOptionToPay()) {
-                    Rs2Keyboard.keyPress('1');
-                }
+                Rs2Dialogue.clickContinue();
+                Rs2Random.waitEx(2400, 300);
+                Rs2Dialogue.sleepUntilInDialogue();
+                return;
             }
+        }
+
+        if (Rs2Dialogue.hasDialogueText("must render unto me the 10,000 coins that are due")) {
+            Rs2Dialogue.clickContinue();
+            Rs2Dialogue.sleepUntilSelectAnOption();
+            Rs2Keyboard.typeString("1");
         }
     }
 }
