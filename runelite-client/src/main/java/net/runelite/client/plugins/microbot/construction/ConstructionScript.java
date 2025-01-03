@@ -12,7 +12,6 @@ import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.math.Random;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
@@ -24,8 +23,7 @@ import java.util.concurrent.TimeUnit;
 public class ConstructionScript extends Script {
 
     ConstructionState state = ConstructionState.Idle;
-
-
+    
     public TileObject getOakLarderSpace() {
         return Rs2GameObject.findObjectById(15403);
     }
@@ -38,24 +36,8 @@ public class ConstructionScript extends Script {
         return Rs2Npc.getNpc("Demon butler");
     }
 
-    public boolean hasDialogueOptionToUnnote() {
-        return Rs2Widget.findWidget("Un-note", null) != null;
-    }
-
-    public boolean hasPayButlerDialogue() {
-        return Rs2Widget.findWidget("must render unto me the 10,000 coins that are due", null) != null;
-    }
-
-    public boolean hasDialogueOptionToPay() {
-        return Rs2Widget.findWidget("Okay, here's 10,000 coins.", null) != null;
-    }
-
     public boolean hasFurnitureInterfaceOpen() {
         return Rs2Widget.findWidget("Furniture", null) != null;
-    }
-
-    public boolean hasRemoveLarderInterfaceOpen() {
-        return Rs2Widget.findWidget("Really remove it?", null) != null;
     }
 
     public boolean run(ConstructionConfig config) {
@@ -89,7 +71,7 @@ public class ConstructionScript extends Script {
         TileObject oakLarderSpace = getOakLarderSpace();
         TileObject oakLarder = getOakLarder();
         NPC butler = getButler();
-        boolean hasRequiredPlanks = Rs2Inventory.hasItemAmount(ItemID.OAK_PLANK, Random.random(8, 16)); //oak plank
+        boolean hasRequiredPlanks = Rs2Inventory.hasItemAmount(ItemID.OAK_PLANK, Rs2Random.between(8, 16));
         if (oakLarderSpace == null && oakLarder != null) {
             state = ConstructionState.Remove;
         } else if (oakLarderSpace != null && oakLarder == null && hasRequiredPlanks) {
