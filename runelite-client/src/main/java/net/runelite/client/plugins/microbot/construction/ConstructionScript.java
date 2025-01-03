@@ -118,7 +118,7 @@ public class ConstructionScript extends Script {
         if (oaklarder == null) return;
         if (Rs2GameObject.interact(oaklarder, "Remove")) {
             Rs2Dialogue.sleepUntilHasQuestion("Really remove it?");
-            Rs2Keyboard.keyPress('1');
+            Rs2Dialogue.keyPressForDialogueOption(1);
             sleepUntil(() -> getOakLarderSpace() != null, 5000);
         }
     }
@@ -148,7 +148,7 @@ public class ConstructionScript extends Script {
         Rs2Dialogue.sleepUntilInDialogue();
 
         if (Rs2Dialogue.hasQuestion("Repeat last task?")) {
-            Rs2Keyboard.typeString("1");
+            Rs2Dialogue.keyPressForDialogueOption(1);
             Rs2Random.waitEx(2400, 300);
             Rs2Dialogue.sleepUntilInDialogue();
             return;
@@ -159,7 +159,7 @@ public class ConstructionScript extends Script {
                 Rs2Dialogue.sleepUntilHasDialogueText("Dost thou wish me to exchange that certificate");
                 Rs2Dialogue.clickContinue();
                 Rs2Dialogue.sleepUntilSelectAnOption();
-                Rs2Keyboard.typeString("1");
+                Rs2Dialogue.keyPressForDialogueOption(1);
                 Rs2Widget.sleepUntilHasWidget("Enter amount:");
                 Rs2Keyboard.typeString("28");
                 Rs2Keyboard.enter();
@@ -173,7 +173,7 @@ public class ConstructionScript extends Script {
         if (Rs2Dialogue.hasDialogueText("must render unto me the 10,000 coins that are due")) {
             Rs2Dialogue.clickContinue();
             Rs2Dialogue.sleepUntilSelectAnOption();
-            Rs2Keyboard.typeString("1");
+            Rs2Dialogue.keyPressForDialogueOption(1);
         }
     }
 }
