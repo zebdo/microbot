@@ -154,6 +154,7 @@ public class ConstructionScript extends Script {
 
         if (Rs2Dialogue.hasDialogueText("must render unto me the 10,000 coins that are due")) {
             Rs2Dialogue.clickContinue();
+            Rs2Random.waitEx(1200, 300);
             Rs2Dialogue.sleepUntilSelectAnOption();
             Rs2Dialogue.keyPressForDialogueOption(1);
         }
