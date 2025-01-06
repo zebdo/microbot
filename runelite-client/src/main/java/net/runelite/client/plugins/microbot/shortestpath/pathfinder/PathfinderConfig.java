@@ -370,6 +370,8 @@ public class PathfinderConfig {
         if (transport.getType() == TELEPORTATION_ITEM) return isTeleportationItemUsable(transport);
         // Check Teleport Spell Settings
         if (transport.getType() == TELEPORTATION_SPELL) return isTeleportationSpellUsable(transport);
+        // Used for Generic Item Requirements
+        if (!transport.getItemIdRequirements().isEmpty()) return hasRequiredItems(transport);
 
         return true;
     }
