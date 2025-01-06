@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MahoganyHomesScript extends Script {
 
-    public static String version = "0.0.4";
+    public static String version = "0.0.5";
     @Inject
     MahoganyHomesPlugin plugin;
 

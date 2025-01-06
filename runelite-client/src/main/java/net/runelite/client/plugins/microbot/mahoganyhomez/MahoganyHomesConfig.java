@@ -6,7 +6,7 @@ import java.awt.*;
 
 @ConfigGroup(MahoganyHomesConfig.GROUP_NAME)
 @ConfigInformation("<h2>S-1D Home Raider</h2>\n" +
-        "<h3>BETA PREVIEW 4</h3>\n" +
+        "<h3>BETA PREVIEW 5</h3>\n" +
         "<p>1. <strong>Start anywhere:</strong> Just make sure to have teleports, saw and a hammer.</p>\n" +
         "<p>2. <strong>Contracts:</strong> Select your desired contract <em>BEFORE</em> starting.</p>\n" +
         "<p>3. <strong>Supplies:</strong> Stock up on the correct planks and Steel bars in the bank, the bot will handle resupplying on its own</p>\n" +
