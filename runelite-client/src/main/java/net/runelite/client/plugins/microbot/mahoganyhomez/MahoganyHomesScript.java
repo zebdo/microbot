@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MahoganyHomesScript extends Script {
 
-    public static String version = "0.0.4";
+    public static String version = "0.0.5";
     @Inject
     MahoganyHomesPlugin plugin;
 
@@ -261,7 +261,7 @@ public class MahoganyHomesScript extends Script {
                 && plugin.getCurrentHome().isInside(Rs2Player.getWorldLocation())
                 && Hotspot.isEverythingFixed()) {
             if(plugin.getConfig().usePlankSack() && planksInPlankSack() > 0){
-                if (Rs2Inventory.contains(ItemID.PLANK_SACK)) {
+                if (Rs2Inventory.contains(ItemID.PLANK_SACK) && Rs2Inventory.contains(ItemID.STEEL_BAR)) {
                     Rs2Item plankSack = Rs2Inventory.get(ItemID.PLANK_SACK);
                     if (plankSack != null) {
                         Rs2Inventory.interact(plankSack, "Empty");
@@ -351,7 +351,8 @@ public class MahoganyHomesScript extends Script {
             if (Rs2Bank.walkToBankAndUseBank(Rs2Bank.getNearestBank(currentHome.getLocation()))) {
                 sleep(600, 1200);
                 if(plugin.getConfig().usePlankSack()){
-
+                    if(Rs2Inventory.isFull() && !Rs2Inventory.contains(ItemID.STEEL_BAR))
+                        Rs2Bank.depositAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
                     Rs2Bank.withdrawX(ItemID.STEEL_BAR, 4-steelBarsInInventory());
                     sleep(600, 1200);
 
