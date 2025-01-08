@@ -8,81 +8,185 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.math.Random;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.Comparator;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import java.util.List;
 
+
+import static net.runelite.client.plugins.microbot.Microbot.log;
 import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
 
 public class DriftNetScript extends Script {
 
-    public static double version = 1.1;
+    // Script version
+    public static final double VERSION = 1.1;
 
-    int tries = 0;
+    private static final int MAX_FETCH_ATTEMPTS = 5;
+    private static final Logger log = LoggerFactory.getLogger(DriftNetScript.class);
+
+    // Current number of attempts to fetch nets
+    private int netFetchAttempts = 0;
+
 
     public boolean run(DriftNetConfig config) {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                if (!Microbot.isLoggedIn()) return;
-                if (!super.run()) return;
+                // 1 validations before continuing
+                if (!Microbot.isLoggedIn()) {
+                    return;
+                }
+                if (!super.run()) {
+                    return;
+                }
 
-                if (tries > 5) {
-                    Microbot.log("Script shutdown, no nets found");
+                // 2) Stop script if too many attempts were made to fetch nets
+                if (netFetchAttempts > MAX_FETCH_ATTEMPTS) {
+                    log("Script shutdown, no nets found");
                     shutdown();
+                    return;
                 }
 
+                // 3) Ensure we have drift nets in inventory; if not, try to fetch
                 if (!Rs2Inventory.hasItem(ItemID.DRIFT_NET)) {
-                    Rs2GameObject.interact(ObjectID.ANNETTE, "Nets");
-                    sleepUntil(() -> Rs2Widget.getWidget(20250629) != null);
-                    Rs2Widget.clickWidgetFast(Rs2Widget.getWidget(20250629), 0, 4);
-                    sleepGaussian(1500, 300);
-                    Rs2Keyboard.keyPress(KeyEvent.VK_ESCAPE);
-                    tries++;
+                    Microbot.log("No nets in inventory");
+                    fetchNetsFromAnnette();
                     return;
                 }
 
-                // just a quick solution to avoid trying to fetch nets when there are no nets left
-                // Proper solution would be to check the widget for nets available.
-                if (tries > 0)
-                    tries = 0;
+                // Reset attempt counter if we successfully have nets
+                if (netFetchAttempts > 0) {
+                    netFetchAttempts = 0;
+                }
 
-                if (DriftNetPlugin.getNETS().stream().anyMatch(x -> x.getStatus() == DriftNetStatus.FULL || x.getStatus() == DriftNetStatus.UNSET)) {
-                    for (DriftNet net : DriftNetPlugin.getNETS()) {
-                        final Shape polygon = Microbot.getClientThread().runOnClientThread(() -> net.getNet().getConvexHull());
-
-                        if (polygon != null) {
-                            if (net.getStatus() == DriftNetStatus.FULL) {
-                                Rs2GameObject.interact(net.getNet());
-                                sleep(Random.randomGaussian(600, 150) * Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(net.getNet().getWorldLocation()));
-                                break;
-                            } else if (net.getStatus() == DriftNetStatus.UNSET) {
-                                Rs2GameObject.interact(net.getNet());
-                                sleep(Random.randomGaussian(600, 150) * Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(net.getNet().getWorldLocation()));
-                                break;
-                            }
-                        }
-                    }
+                // 4) Handle any nets that are either FULL or UNSET
+                if (DriftNetPlugin.getNETS().stream().anyMatch(x ->
+                        x.getStatus() == DriftNetStatus.FULL ||
+                                x.getStatus() == DriftNetStatus.UNSET))
+                {
+                    processNets(config);
                     return;
                 }
 
-                for (NPC fish : DriftNetPlugin.getFish().stream().sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation()))).collect(Collectors.toList())) {
-                    if (!DriftNetPlugin.getTaggedFish().containsKey(fish) &&  Rs2Npc.getNpcByIndex(fish.getIndex()) != null) {
-                        Rs2Npc.interact(fish, "Chase");
-                        sleepGaussian(1500, 300);
-                        break;
-                    }
-                }
+                // 5) If no nets require attention, chase fish
+                chaseNearbyFish(DriftNetPlugin.getFish());
+
             } catch (Exception ex) {
+                // You might want more robust logging here
                 System.out.println(ex.getMessage());
             }
         }, 0, 600, TimeUnit.MILLISECONDS);
 
         return true;
+    }
+
+    /**
+     * Attempts to fetch drift nets from Annette.
+     * Increments netFetchAttempts if no nets were found
+     */
+    private void fetchNetsFromAnnette() {
+
+        Rs2GameObject.interact(ObjectID.ANNETTE, "Nets");
+        sleepUntil(() -> Rs2Widget.getWidget(20250629) != null);
+        Rs2Widget.clickWidgetFast(Rs2Widget.getWidget(20250629), 0, 4);
+
+        sleepGaussian(1500, 300);
+
+        Rs2Keyboard.keyPress(KeyEvent.VK_ESCAPE);
+
+        netFetchAttempts++;
+    }
+
+    /**
+     * Processes all known drift nets. If a net is FULL, we either bank fish
+     * or just loot them depending on the config. If a net is UNSET, we set it.
+     */
+    private void processNets(DriftNetConfig config) {
+        for (DriftNet net : DriftNetPlugin.getNETS()) {
+
+            final Shape netShape = Microbot.getClientThread().runOnClientThread(net.getNet()::getConvexHull);
+
+            if (netShape == null) {
+                continue;
+            }
+
+            switch (net.getStatus()) {
+                case FULL:
+                    handleFullNet(net, config);
+                    return;
+                case UNSET:
+                    handleUnsetNet(net);
+                default:
+
+            }
+        }
+
+    }
+
+    /**
+     * Handles a FULL net. If bankFish() is true in config, bank the fish.
+     * Otherwise, simply loot the net.
+     */
+    private void handleFullNet(DriftNet net, DriftNetConfig config) {
+
+            // 1) Interact with the net
+            Rs2GameObject.interact(net.getNet());
+
+            if (config.bankFish()) {
+
+                boolean initialWidgetLoaded = sleepUntil(
+                        () -> Rs2Widget.getWidget(39780359) != null,
+                        10000
+                );
+                    Rs2Widget.clickWidget(39780359);
+                    sleepUntil(() -> Rs2Widget.isWidgetVisible(39780365));
+                    Rs2Widget.clickWidget(39780365);
+
+
+            }
+    }
+
+    /**
+     * Handles an UNSET net by interacting with it once to set it.
+     */
+    private void handleUnsetNet(DriftNet net) {
+        Rs2GameObject.interact(net.getNet());
+        sleepUntil(() -> Rs2Player.isAnimating());
+    }
+
+    /**
+     * Iterates over nearby fish (sorted by distance to player) and chases the first
+     * fish that hasn’t been tagged yet.
+     */
+
+    private void chaseNearbyFish(Set<NPC> fishSet) {
+        List<NPC> sortedFish = fishSet.stream()
+                .sorted(Comparator.comparingInt(
+                        fish -> fish.getLocalLocation()
+                                .distanceTo(
+                                        Microbot.getClient().getLocalPlayer().getLocalLocation()
+                                )
+                ))
+                .collect(Collectors.toList());
+
+        for (NPC fish : sortedFish) {
+            if (!DriftNetPlugin.getTaggedFish().containsKey(fish)
+                    && Rs2Npc.getNpcByIndex(fish.getIndex()) != null) {
+
+                Rs2Npc.interact(fish, "Chase");
+                sleepGaussian(1500, 300);
+                break;
+            }
+        }
     }
 }
