@@ -351,8 +351,10 @@ public class MahoganyHomesScript extends Script {
             if (Rs2Bank.walkToBankAndUseBank(Rs2Bank.getNearestBank(currentHome.getLocation()))) {
                 sleep(600, 1200);
                 if(plugin.getConfig().usePlankSack()){
-                    if(Rs2Inventory.isFull() && !Rs2Inventory.contains(ItemID.STEEL_BAR))
+                    if(Rs2Inventory.isFull() && !Rs2Inventory.contains(ItemID.STEEL_BAR)) {
                         Rs2Bank.depositAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
+                        sleep(600, 1200);
+                    }
                     Rs2Bank.withdrawX(ItemID.STEEL_BAR, 4-steelBarsInInventory());
                     sleep(600, 1200);
 
