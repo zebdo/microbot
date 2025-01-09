@@ -1,5 +1,7 @@
 package net.runelite.client.plugins.microbot.util.grandexchange;
 
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.api.NPC;
 import net.runelite.api.widgets.ComponentID;
@@ -17,6 +19,11 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.io.StringReader;
+import java.net.*;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -32,6 +39,7 @@ public class Rs2GrandExchange {
     public static final int GRAND_EXCHANGE_OFFER_CONTAINER_QTY_X = 30474265;
     public static final int GRAND_EXCHANGE_OFFER_CONTAINER_QTY_1 = 30474265;
     public static final int COLLECT_BUTTON = 30474246;
+    private static final String GE_TRACKER_API_URL = "https://www.ge-tracker.com/api/items/";
 
     /**
      * close the grand exchange interface
@@ -618,5 +626,116 @@ public class Rs2GrandExchange {
 
     public static boolean walkToGrandExchange() {
         return Rs2Walker.walkTo(BankLocation.GRAND_EXCHANGE.getWorldPoint());
+    }
+
+
+    public static int getOfferPrice(int itemId) {
+        HttpClient httpClient = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(GE_TRACKER_API_URL + itemId))
+                .build();
+
+        try {
+            String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .join();
+            
+            JsonParser parser = new JsonParser();
+            JsonObject jsonElement = parser.parse(new StringReader(jsonResponse)).getAsJsonObject();
+            JsonObject data = jsonElement.getAsJsonObject("data");
+            
+            return data.get("buying").getAsInt();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public static int getSellPrice(int itemId) {
+        HttpClient httpClient = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(GE_TRACKER_API_URL + itemId))
+                .build();
+
+        try {
+            String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .join();
+            
+            JsonParser parser = new JsonParser();
+            JsonObject jsonElement = parser.parse(new StringReader(jsonResponse)).getAsJsonObject();
+            JsonObject data = jsonElement.getAsJsonObject("data");
+            
+            return data.get("selling").getAsInt();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public static int getPrice(int itemId) {
+        HttpClient httpClient = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(GE_TRACKER_API_URL + itemId))
+                .build();
+
+        try {
+            String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .join();
+
+            JsonParser parser = new JsonParser();
+            JsonObject jsonElement = parser.parse(new StringReader(jsonResponse)).getAsJsonObject();
+            JsonObject data = jsonElement.getAsJsonObject("data");
+
+            return data.get("overall").getAsInt();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public static int getBuyingVolume(int itemId) {
+        HttpClient httpClient = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(GE_TRACKER_API_URL + itemId))
+                .build();
+
+        try {
+            String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .join();
+
+            JsonParser parser = new JsonParser();
+            JsonObject jsonElement = parser.parse(new StringReader(jsonResponse)).getAsJsonObject();
+            JsonObject data = jsonElement.getAsJsonObject("data");
+
+            return data.get("buyingQuantity").getAsInt();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
+    }
+
+    public static int getSellingVolume(int itemId) {
+        HttpClient httpClient = HttpClient.newHttpClient();
+        HttpRequest request = HttpRequest.newBuilder()
+                .uri(URI.create(GE_TRACKER_API_URL + itemId))
+                .build();
+
+        try {
+            String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+                    .thenApply(HttpResponse::body)
+                    .join();
+
+            JsonParser parser = new JsonParser();
+            JsonObject jsonElement = parser.parse(new StringReader(jsonResponse)).getAsJsonObject();
+            JsonObject data = jsonElement.getAsJsonObject("data");
+
+            return data.get("sellingQuantity").getAsInt();
+        } catch (Exception e) {
+            e.printStackTrace();
+            return -1;
+        }
     }
 }

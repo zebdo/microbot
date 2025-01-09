@@ -20,6 +20,7 @@ import net.runelite.client.game.NPCManager;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.game.WorldService;
 import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.loottracker.LootTrackerPlugin;
 import net.runelite.client.plugins.loottracker.LootTrackerRecord;
@@ -271,16 +272,49 @@ public class Microbot {
         return null;
     }
 
+    /**
+     * Starts the specified plugin by enabling it and starting all plugins in the plugin manager.
+     * This method checks if the provided plugin is non-null before proceeding.
+     *
+     * @param plugin the plugin to be started.
+     */
     public static void startPlugin(Plugin plugin) {
         if (plugin == null) return;
-        Microbot.getPluginManager().setPluginEnabled(plugin, true);
-        Microbot.getPluginManager().startPlugins();
+        getPluginManager().setPluginEnabled(plugin, true);
+        getPluginManager().startPlugins();
+    }
 
+    /**
+     * Retrieves a plugin by its class name from the plugin manager.
+     * This method searches through the available plugins and returns the one matching the specified class name.
+     *
+     * @param className the fully qualified class name of the plugin to retrieve.
+     *                  For example: {@code BreakHandlerPlugin.getClass().getName()}.
+     * @return the plugin instance matching the specified class name, or {@code null} if no such plugin is found.
+     */
+    public static Plugin getPlugin(String className) {
+        return getPluginManager().getPlugins().stream()
+                .filter(plugin -> plugin.getClass().getName().equals(className))
+                .findFirst()
+                .orElse(null);
+    }
 
+    /**
+     * Stops the specified plugin using the plugin manager.
+     * If the plugin is non-null, this method attempts to stop it and handles any instantiation exceptions.
+     *
+     * @param plugin the plugin to be stopped.
+     */
+    public static void stopPlugin(Plugin plugin) {
+        if (plugin == null) return;
+        try {
+            getPluginManager().stopPlugin(plugin);
+        } catch (PluginInstantiationException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void doInvoke(NewMenuEntry entry, Rectangle rectangle) {
-
         try {
             if (Rs2UiHelper.isRectangleWithinCanvas(rectangle)) {
                 click(rectangle, entry);
