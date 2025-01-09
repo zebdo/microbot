@@ -117,7 +117,11 @@ public class Rs2Dialogue {
     public static boolean hasSelectAnOption() {
         boolean isWidgetVisible = Rs2Widget.isWidgetVisible(InterfaceID.DIALOG_OPTION, 1);
         if (!isWidgetVisible) return false;
-        return Rs2Widget.getWidget(InterfaceID.DIALOG_OPTION, 1).getDynamicChildren() != null;
+        
+        Widget widget = Rs2Widget.getWidget(InterfaceID.DIALOG_OPTION, 1);
+        if (widget == null) return false;
+        
+        return widget.getDynamicChildren() != null;
     }
 
     /**
@@ -335,6 +339,15 @@ public class Rs2Dialogue {
     }
 
     /**
+     * Pauses the current thread until the player is out of current dialogue.
+     *
+     * @return true if the player exits dialogue within the timeout period, otherwise false
+     */
+    public static boolean sleepUntilNotInDialogue() {
+        return sleepUntilTrue(() -> !isInDialogue());
+    }
+
+    /**
      * Pauses the current thread until the "Select an Option" dialogue appears.
      *
      * @return true if the "Select an Option" dialogue appears within the timeout period, otherwise false
@@ -418,7 +431,9 @@ public class Rs2Dialogue {
     public static String getDialogueText() {
         if (!isInDialogue()) return null;
 
-        if (Rs2Widget.isWidgetVisible(231, 6)) {
+        if (Rs2Widget.isWidgetVisible(229, 1)) {
+            return Rs2UiHelper.stripColTags(Rs2Widget.getWidget(229, 1).getText());
+        } else if (Rs2Widget.isWidgetVisible(231, 6)) {
             return Rs2UiHelper.stripColTags(Rs2Widget.getWidget(231, 6).getText());
         }
 
