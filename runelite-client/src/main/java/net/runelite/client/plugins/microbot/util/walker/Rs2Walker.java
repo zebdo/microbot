@@ -961,6 +961,13 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                             break;
                         }
                     }
+                    
+                    if (transport.getType() == TransportType.WILDERNESS_OBELISK) {
+                        if (handleWildernessObelisk(transport)) {
+                            sleep(600 * 2);
+                            break;
+                        }
+                    }
 
                     if (transport.getType() == TransportType.GNOME_GLIDER) {
                         if (handleGlider(transport)) {
@@ -1068,6 +1075,33 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 sleepUntil(() -> Rs2Player.getWorldLocation().getY() < 6400);
                 return true;
             }
+        }
+        // Handle Ferox Encalve Barrier
+        if (tileObject.getId() == ObjectID.BARRIER_39652 || tileObject.getId() == ObjectID.BARRIER_39653) {
+            if (Rs2Dialogue.isInDialogue()) {
+                if (Rs2Dialogue.getDialogueText() == null) return false;
+                if (Rs2Dialogue.getDialogueText().contains("When returning to the Enclave")) {
+                    Rs2Dialogue.clickContinue();
+                    Rs2Dialogue.sleepUntilSelectAnOption();
+                    Rs2Dialogue.keyPressForDialogueOption("Yes, and don't ask again.");
+                    Rs2Dialogue.sleepUntilNotInDialogue();
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    
+    private static boolean handleWildernessObelisk(Transport transport) {
+        GameObject obelisk = Rs2GameObject.getGameObjects(transport.getObjectId(), transport.getOrigin()).stream()
+                .findFirst()
+                .orElse(null);
+        
+        if (obelisk != null) {
+            Rs2GameObject.interact(obelisk, transport.getAction());
+            sleepUntil(() -> Rs2GameObject.getGameObjects(ObjectID.OBELISK_14825, transport.getOrigin()).stream().findFirst().orElse(null) != null);
+            walkFastCanvas(transport.getOrigin());
+            return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 10000);
         }
         return false;
     }
