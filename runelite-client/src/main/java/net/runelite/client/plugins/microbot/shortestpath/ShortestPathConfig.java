@@ -392,6 +392,28 @@ public interface ShortestPathConfig extends Config {
         return TileStyle.TILES;
     }
 
+    @ConfigItem(
+            keyName = "showETA",
+            name = "Show ETA Overlay",
+            description = "Whether to display the ETA in an overlay to your destination",
+            position = 29,
+            section = sectionDisplay
+    )
+    default boolean showETA() {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "showETAInSeconds",
+            name = "Show ETA in Seconds",
+            description = "Whether to display the ETA in seconds vs mins:seconds",
+            position = 30,
+            section = sectionDisplay
+    )
+    default boolean showInSeconds() {
+        return false;
+    }
+
     @ConfigSection(
             name = "Colours",
             description = "Colours for the path map, minimap and scene tiles",

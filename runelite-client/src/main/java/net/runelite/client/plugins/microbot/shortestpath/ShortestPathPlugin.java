@@ -52,6 +52,7 @@ import net.runelite.client.plugins.microbot.shortestpath.pathfinder.SplitFlagMap
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import net.runelite.client.plugins.runenergy.RunEnergyPlugin;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.JagexColors;
 import net.runelite.client.ui.NavigationButton;
@@ -102,6 +103,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
     private ClientThread clientThread;
 
     @Inject
+    @Getter(AccessLevel.PACKAGE)
     private ShortestPathConfig config;
 
     @Inject
@@ -124,6 +126,9 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
 
     @Inject
     private DebugOverlayPanel debugOverlayPanel;
+    
+    @Inject
+    private ETAOverlayPanel etaOverlayPanel;
 
     @Inject
     private SpriteManager spriteManager;
@@ -197,6 +202,9 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
         overlayManager.add(pathMinimapOverlay);
         overlayManager.add(pathMapOverlay);
         overlayManager.add(pathMapTooltipOverlay);
+        if (config.showETA()) {
+            overlayManager.add(etaOverlayPanel);
+        }
 
         if (config.drawDebugPanel()) {
             overlayManager.add(debugOverlayPanel);
@@ -281,6 +289,15 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
                 overlayManager.add(debugOverlayPanel);
             } else {
                 overlayManager.remove(debugOverlayPanel);
+            }
+            return;
+        }
+
+        if ("showETA".equals(event.getKey())) {
+            if (config.showETA()) {
+                overlayManager.add(etaOverlayPanel);
+            } else {
+                overlayManager.remove(etaOverlayPanel);
             }
             return;
         }
