@@ -50,6 +50,7 @@ public class Rs2Player {
     public static int staminaBuffTime = -1;
     public static int antiPoisonTime = -1;
     public static int teleBlockTime = -1;
+    public static int goadingTime = -1;
     public static Instant lastAnimationTime = null;
     private static final long COMBAT_TIMEOUT_MS = 10000;
     private static long lastCombatTime = 0;
@@ -79,6 +80,10 @@ public class Rs2Player {
 
     public static boolean hasDivineCombatActive() {
         return divineCombatTime > 0;
+    }
+
+    public static boolean hasGoadingActive() {
+        return goadingTime > 0;
     }
 
     public static boolean hasAttackActive(int threshold) {
@@ -132,6 +137,9 @@ public class Rs2Player {
         }
         if (event.getVarbitId() == Varbits.STAMINA_EFFECT) {
             staminaBuffTime = event.getValue();
+        }
+        if (event.getVarbitId() == Varbits.BUFF_GOADING_POTION) {
+            goadingTime = event.getValue();
         }
         if (event.getVarpId() == VarPlayer.POISON) {
             if (event.getValue() >= VENOM_VALUE_CUTOFF) {
@@ -937,6 +945,16 @@ public class Rs2Player {
             return true;
         }
         return usePotion(Rs2Potion.getAntifirePotionsVariants().toArray(new String[0]));
+    }
+
+    /**
+     * Drink a Goading potion
+     */
+    public static boolean drinkGoadingPotion() {
+        if (hasGoadingActive()) {
+            return false;
+        }
+        return usePotion(Rs2Potion.getGoadingPotion());
     }
 
 
