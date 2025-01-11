@@ -1126,6 +1126,27 @@ public class Rs2Player {
         return Microbot.getVarbitValue(Varbits.RUN_SLOWED_DEPLETION_ACTIVE) != 0;
     }
 
+    /**
+     * Retrieves the current graphic ID of the local player.
+     *
+     * @return the graphic ID of the local player
+     */
+    public static int getGraphicId() {
+        return Microbot.getClient().getLocalPlayer().getGraphic();
+    }
+    
+    /**
+     * Checks if the local player has a specific spot animation active.
+     * 
+     * @see GraphicID
+     *
+     * @param graphicId the graphic ID of the spot animation to check
+     * @return {@code true} if the local player has the specified spot animation, {@code false} otherwise
+     */
+    public static boolean hasSpotAnimation(int graphicId) {
+        return Microbot.getClient().getLocalPlayer().hasSpotAnim(graphicId);
+    }
+
     public static boolean isStunned() {
         return Microbot.getClient().getLocalPlayer().hasSpotAnim(245);
     }
