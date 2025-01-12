@@ -2,8 +2,10 @@ package net.runelite.client.plugins.microbot.combathotkeys;
 
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
@@ -11,20 +13,29 @@ import java.util.concurrent.TimeUnit;
 
 public class CombatHotkeysScript extends Script {
     public boolean isSwitchingGear = false;
+    public boolean dance = false;
     public ArrayList<Rs2Item> gearToSwitch = new ArrayList<>();
 
     public boolean run(CombatHotkeysConfig config) {
-        Microbot.enableAutoRunOn = false;
+        Microbot.enableAutoRunOn = true;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
 
-                if (isSwitchingGear) {
-                    for (Rs2Item item : gearToSwitch) {
-                        Rs2Inventory.equip(item.id);
+                if (dance) {
+                    if(Rs2Player.getWorldLocation().equals(config.tile1())){
+                        Rs2Walker.walkFastCanvas(config.tile2());
+                        Global.sleepUntil(() -> Rs2Player.getWorldLocation().equals(config.tile2()), 1000);
                     }
-                    isSwitchingGear = false;
+                    else if(Rs2Player.getWorldLocation().equals(config.tile2())){
+                        Rs2Walker.walkFastCanvas(config.tile1());
+                        Global.sleepUntil(() -> Rs2Player.getWorldLocation().equals(config.tile1()), 1000);
+                    }
+                    else{
+                        Rs2Walker.walkFastCanvas(config.tile1());
+                        Global.sleepUntil(() -> Rs2Player.getWorldLocation().equals(config.tile1()), 1000);
+                    }
                 }
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());

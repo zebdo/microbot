@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot;
 import com.google.inject.Injector;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.events.ItemContainerChanged;
@@ -49,8 +50,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -278,10 +279,18 @@ public class Microbot {
      *
      * @param plugin the plugin to be started.
      */
+    @SneakyThrows
     public static void startPlugin(Plugin plugin) {
         if (plugin == null) return;
-        getPluginManager().setPluginEnabled(plugin, true);
-        getPluginManager().startPlugins();
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try {
+                getPluginManager().setPluginEnabled(plugin, true);
+                getPluginManager().startPlugins();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     /**
@@ -305,13 +314,19 @@ public class Microbot {
      *
      * @param plugin the plugin to be stopped.
      */
+    @SneakyThrows
     public static void stopPlugin(Plugin plugin) {
         if (plugin == null) return;
+        SwingUtilities.invokeAndWait(() ->
+        {
         try {
+            getPluginManager().setPluginEnabled(plugin, false);
             getPluginManager().stopPlugin(plugin);
+            //getPluginManager().startPlugins();
         } catch (PluginInstantiationException e) {
             e.printStackTrace();
         }
+        });
     }
 
     public static void doInvoke(NewMenuEntry entry, Rectangle rectangle) {

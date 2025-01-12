@@ -5,15 +5,17 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import net.runelite.client.ui.overlay.OverlayUtil;
 
 import javax.inject.Inject;
 import java.awt.*;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
+import java.awt.image.BufferedImage;
 
 public class MicrobotMouseOverlay extends Overlay {
     private final Client client;
     private final DevToolsPlugin plugin;
+    private float angle = 0.0f; // Rotation angle
 
     @Inject
     MicrobotMouseOverlay(Client client, DevToolsPlugin plugin) {
@@ -22,7 +24,25 @@ public class MicrobotMouseOverlay extends Overlay {
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_WIDGETS);
         setPriority(Overlay.PRIORITY_LOW);
+        // Increase the angle
+        new Thread(() -> {
+            try {
+                while (true) {
+                    angle += 0.004f; // Increment angle
+                    if (angle >= 2 * Math.PI) {
+                        angle -= (float) (2 * Math.PI);
+                    }
+
+                    Thread.sleep(10); // Control frame rate
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+        }).start();
     }
+
+
+
 
     @Override
     public Dimension render(Graphics2D g) {
@@ -31,35 +51,143 @@ public class MicrobotMouseOverlay extends Overlay {
                 Microbot.getMouse().getPoints().clear();
                 Microbot.getMouse().getTimer().start();
             }
-            //g.setFont(new Font("Tahoma", Font.BOLD, 18));
-            g.setFont(g.getFont().deriveFont(40.0f));
-            // Get the FontMetrics for the current font
-            FontMetrics metrics = g.getFontMetrics(g.getFont());
+            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            // Enable anti-aliasing for smooth rendering
+            int CROSSHAIR_SIZE = 30; // Cursor image size
+            int CORNER_SIZE = 10;
 
-// Get the width and height of the character
-            int charWidth = metrics.stringWidth("⊹");
-            int charHeight = metrics.getAscent(); // ascent gives the height of the character above the baseline
+            BufferedImage cursorImage = new BufferedImage(CROSSHAIR_SIZE, CROSSHAIR_SIZE, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = cursorImage.createGraphics();
 
-// Calculate the new position
-            int x = Microbot.getMouse().getLastMove().getX() - (charWidth / 2);
-            int y = Microbot.getMouse().getLastMove().getY() + (charHeight / 2);
 
-            OverlayUtil.renderTextLocation(g, new net.runelite.api.Point(x, y), "⊹", Microbot.getMouse().getRainbowColor());
+            // Enable anti-aliasing for smooth rendering
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // Rotate the graphics
+            g2d.setColor(Microbot.getMouse().getRainbowColor());
+            g2d.setStroke(new BasicStroke(2f));
+
+            // Calculate the far edge (we subtract 1 because drawLine is inclusive)
+            int max = CROSSHAIR_SIZE - 1;
+
+            // ========= TOP-LEFT CORNER (inverted) =========
+            //
+            // The corner's "joint" is at (CORNER_SIZE, CORNER_SIZE).
+            // Draw lines outward toward the top edge and left edge:
+            //
+            // Vertical line: from (CORNER_SIZE, 0) down to the joint
+            // Horizontal line: from (0, CORNER_SIZE) right to the joint
+            //
+            g2d.drawLine(CORNER_SIZE, 0, CORNER_SIZE, CORNER_SIZE);
+            g2d.drawLine(0, CORNER_SIZE, CORNER_SIZE, CORNER_SIZE);
+
+            // ========= TOP-RIGHT CORNER (inverted) =========
+            //
+            // The corner's "joint" is at (max - CORNER_SIZE, CORNER_SIZE).
+            // Draw lines outward toward the top edge and right edge:
+            //
+            // Vertical line: from (max - CORNER_SIZE, 0) down to the joint
+            // Horizontal line: from (max, CORNER_SIZE) left to the joint
+            //
+            g2d.drawLine(max - CORNER_SIZE, 0, max - CORNER_SIZE, CORNER_SIZE);
+            g2d.drawLine(max, CORNER_SIZE, max - CORNER_SIZE, CORNER_SIZE);
+
+            // ========= BOTTOM-LEFT CORNER (inverted) =========
+            //
+            // The corner's "joint" is at (CORNER_SIZE, max - CORNER_SIZE).
+            // Draw lines outward toward the bottom edge and left edge:
+            //
+            // Vertical line: from (CORNER_SIZE, max) up to the joint
+            // Horizontal line: from (0, max - CORNER_SIZE) right to the joint
+            //
+            g2d.drawLine(CORNER_SIZE, max, CORNER_SIZE, max - CORNER_SIZE);
+            g2d.drawLine(0, max - CORNER_SIZE, CORNER_SIZE, max - CORNER_SIZE);
+
+            // ========= BOTTOM-RIGHT CORNER (inverted) =========
+            //
+            // The corner's "joint" is at (max - CORNER_SIZE, max - CORNER_SIZE).
+            // Draw lines outward toward the bottom edge and right edge:
+            //
+            // Vertical line: from (max - CORNER_SIZE, max) up to the joint
+            // Horizontal line: from (max, max - CORNER_SIZE) left to the joint
+            //
+            g2d.drawLine(max - CORNER_SIZE, max, max - CORNER_SIZE, max - CORNER_SIZE);
+            g2d.drawLine(max, max - CORNER_SIZE, max - CORNER_SIZE, max - CORNER_SIZE);
+
+            // Draw 4x4 dot in the center
+            g2d.fillRect(CROSSHAIR_SIZE / 2 - 2, CROSSHAIR_SIZE / 2 - 2, 4, 4);
+
+
+
+
+
+            g2d.dispose();
+            // Mouse position
+            int x = Microbot.getMouse().getLastMove().getX();
+            int y = Microbot.getMouse().getLastMove().getY();
+
+
+
+            // Draw the crosshair centered
+            float drawX = x - CROSSHAIR_SIZE / 2.0f;
+            float drawY = y - CROSSHAIR_SIZE / 2.0f;
+
+            // Save the original graphics transform
+            AffineTransform original = g.getTransform();
+            // Rotate the cursor image
+            g.rotate(angle, drawX + CROSSHAIR_SIZE / 2.0, drawY + CROSSHAIR_SIZE / 2.0);
+
+            g.drawImage(cursorImage, (int) drawX, (int) drawY, null);
+            //OverlayUtil.renderTextLocation(g, new net.runelite.api.Point(drawX, drawY), "✛", Microbot.getMouse().getRainbowColor());
+
+            // Restore the original graphics transform
+            g.setTransform(original);
+
 
             g.setStroke(new BasicStroke(3));
-            g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            //g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             var points = Microbot.getMouse().getPoints();
             if (points.size() > 1) {
                 Path2D path = new Path2D.Double();
+
+// Move to the first point
                 net.runelite.api.Point firstPoint = points.getFirst();
                 path.moveTo(firstPoint.getX(), firstPoint.getY());
 
-                for (int i = 1; i < points.size(); i++) {
-                    net.runelite.api.Point p = points.get(i);
-                    path.lineTo(p.getX(), p.getY());
-                    g.setColor(Microbot.getMouse().getRainbowColor());
+// For each intermediate pair of points, use a midpoint-based quadTo
+                for (int i = 1; i < points.size() - 2; i++)
+                {
+                    net.runelite.api.Point pCurrent = points.get(i);
+                    net.runelite.api.Point pNext = points.get(i + 1);
+
+                    // Calculate midpoints for a smoother curve
+                    double midX = (pCurrent.getX() + pNext.getX()) / 2.0;
+                    double midY = (pCurrent.getY() + pNext.getY()) / 2.0;
+
+                    // Draw a quadratic curve from pCurrent toward midX/midY
+                    path.quadTo(
+                            pCurrent.getX(), pCurrent.getY(),
+                            midX, midY
+                    );
                 }
 
+// Finally, connect the last two points with a final quadTo
+                net.runelite.api.Point secondLast = points.get(points.size() - 2);
+                net.runelite.api.Point last = points.getLast();
+                path.quadTo(
+                        secondLast.getX(), secondLast.getY(),
+                        last.getX(), last.getY()
+                );
+
+// Optionally set a thicker stroke with round caps/joins for a “brush” feel
+                g.setColor(Microbot.getMouse().getRainbowColor());
+                g.setStroke(new BasicStroke(
+                        3.0f,                      // thickness
+                        BasicStroke.CAP_ROUND,     // end cap
+                        BasicStroke.JOIN_ROUND     // join style
+                ));
+
+// Draw the smooth path
                 g.draw(path);
             }
             // draw trail of mouse movements

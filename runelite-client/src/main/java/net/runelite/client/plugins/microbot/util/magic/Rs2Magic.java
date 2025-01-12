@@ -10,6 +10,7 @@ import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
+import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
 import net.runelite.client.plugins.microbot.util.inventory.RunePouch;
@@ -25,8 +26,8 @@ import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 import org.apache.commons.lang3.NotImplementedException;
 
 import java.awt.*;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -401,8 +402,10 @@ public class Rs2Magic {
      */
     public static Rs2CombatSpells getCurrentAutoCastSpell() {
         int currentVarbitValue = Microbot.getVarbitValue(276);
+        int ancientVarbitOffset = 10;
+        int offset = isAncient() ? ancientVarbitOffset : 0;
         for (Rs2CombatSpells spell : Rs2CombatSpells.values()) {
-            if (spell.getVarbitValue() == currentVarbitValue) {
+            if ((spell.getVarbitValue() + offset) == currentVarbitValue) {
                 return spell;
             }
         }
@@ -414,6 +417,13 @@ public class Rs2Magic {
                 .filter(staff -> staff.getItemID() == itemID)
                 .findFirst()
                 .orElse(Rs2Staff.NONE);
+    }
+
+    public static Rs2Tome getRs2Tome(int itemID) {
+        return Stream.of(Rs2Tome.values())
+                .filter(tome -> tome.getItemID() == itemID)
+                .findFirst()
+                .orElse(Rs2Tome.NONE);
     }
 
     public static List<Rs2Staff> findStavesByRunes(List<Runes> runes) {
@@ -491,6 +501,58 @@ public class Rs2Magic {
         requiredRunes.entrySet().removeIf(entry -> entry.getValue() <= 0);
 
         return requiredRunes;
+    }
+
+    // Create a method that checks if we have the required runes to cast a combat spell once
+    public static boolean hasRequiredRunes(Rs2CombatSpells spell) {
+        // Get the required runes for the spell
+        Map<Runes, Integer> requiredRunes = new HashMap<>(spell.getRequiredRunes());
+        // Check if we have a staff equipped that provides the runes
+        Rs2Staff equippedStaff = getRs2Staff(Rs2Equipment.get(EquipmentInventorySlot.WEAPON).getId());
+        // If we have a staff equipped that provides the runes, remove them from the required runes
+        if (equippedStaff != Rs2Staff.NONE) {
+            for (Runes rune : equippedStaff.getRunes()) {
+                requiredRunes.remove(rune);
+            }
+        }
+        // Check if we have a tome equipped that provides the runes
+        Rs2Tome equippedTome = getRs2Tome(Rs2Equipment.get(EquipmentInventorySlot.SHIELD).getId());
+        // If we have a tome equipped that provides the runes, remove them from the required runes
+        if (equippedTome != Rs2Tome.NONE) {
+            for (Runes rune : equippedTome.getRunes()) {
+                requiredRunes.remove(rune);
+            }
+        }
+
+        // Setup a map to store the available runes in our inventory
+        Map<Runes, Integer> availableRunes = new HashMap<>();
+        // Loop through all the items in our inventory
+        for (Rs2Item item : Rs2Inventory.items()) {
+            // Check if the item is a rune
+            Arrays.stream(Runes.values())
+                    .filter(rune -> rune.getItemId() == item.getId())
+                    .findFirst()
+                    .ifPresent(rune -> availableRunes.merge(rune, item.getQuantity(), Integer::sum));
+        }
+
+        // Check available runes in rune pouch and add them to the available runes map
+        RunePouch.getRunes().forEach((runeId, quantity) -> {
+            Arrays.stream(Runes.values())
+                    .filter(r -> r.getItemId() == runeId)
+                    .findFirst()
+                    .ifPresent(rune -> availableRunes.merge(rune, quantity, Integer::sum));
+        });
+
+        // Check if we have the required runes in our inventory
+        for (Runes rune : requiredRunes.keySet()) {
+            int requiredAmount = requiredRunes.get(rune);
+            int availableAmount = availableRunes.getOrDefault(rune, 0);
+            if (availableAmount < requiredAmount) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     /**
