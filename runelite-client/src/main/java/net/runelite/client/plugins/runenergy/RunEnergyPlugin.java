@@ -61,13 +61,16 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.game.ItemVariationMapping;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.ui.overlay.OverlayManager;
 import org.apache.commons.lang3.StringUtils;
 
 @PluginDescriptor(
 	name = "Run Energy",
 	description = "Show various information related to run energy",
-	tags = {"overlay", "stamina"}
+	tags = {"overlay", "stamina"},
+	enabledByDefault = true,
+	alwaysOn = true
 )
 @Slf4j
 public class RunEnergyPlugin extends Plugin
@@ -128,7 +131,7 @@ public class RunEnergyPlugin extends Plugin
 
 	private int lastCheckTick;
 	private boolean roeWarningSent;
-	private boolean localPlayerRunningToDestination;
+	private static boolean localPlayerRunningToDestination;
 	private WorldPoint prevLocalPlayerLocation;
 
 	@Provides
@@ -154,9 +157,8 @@ public class RunEnergyPlugin extends Plugin
 		resetRunOrbText();
 	}
 
-	Integer getRingOfEnduranceCharges()
-	{
-		return configManager.getRSProfileConfiguration(RunEnergyConfig.GROUP_NAME, "ringOfEnduranceCharges", Integer.class);
+	static Integer getRingOfEnduranceCharges() {
+		return Microbot.getConfigManager().getRSProfileConfiguration(RunEnergyConfig.GROUP_NAME, "ringOfEnduranceCharges", Integer.class);
 	}
 
 	void setRingOfEnduranceCharges(int charges)
@@ -164,9 +166,8 @@ public class RunEnergyPlugin extends Plugin
 		configManager.setRSProfileConfiguration(RunEnergyConfig.GROUP_NAME, "ringOfEnduranceCharges", charges);
 	}
 
-	boolean isRingOfEnduranceEquipped()
-	{
-		final ItemContainer equipment = client.getItemContainer(InventoryID.EQUIPMENT);
+	static boolean isRingOfEnduranceEquipped() {
+		final ItemContainer equipment = Microbot.getClient().getItemContainer(InventoryID.EQUIPMENT);
 		return equipment != null && equipment.count(RING_OF_ENDURANCE) == 1;
 	}
 
@@ -285,53 +286,33 @@ public class RunEnergyPlugin extends Plugin
 		setRunOrbText(Integer.toString(client.getEnergy() / 100));
 	}
 
-	String getEstimatedRunTimeRemaining(boolean inSeconds)
-	{
+	String getEstimatedRunTimeRemaining(boolean inSeconds) {
 		// Calculate the amount of energy lost every tick.
 		// Negative weight has the same depletion effect as 0 kg. >64kg counts as 64kg.
-		final int effectiveWeight = Math.min(Math.max(client.getWeight(), 0), 64);
+		final int weight = Math.min(Math.max(client.getWeight(), 0), 64);
+		final int agilityLevel = client.getBoostedSkillLevel(Skill.AGILITY);
 
-		// 100% energy is 10000 energy units
-		int energyUnitsLost = effectiveWeight * 67 / 64 + 67;
+		// New drain rate formula
+		double drainRate = (60 + (67 * weight / 64.0)) * (1 - (agilityLevel / 300.0));
 
-		if (client.getVarbitValue(Varbits.RUN_SLOWED_DEPLETION_ACTIVE) != 0)
-		{
-			energyUnitsLost *= 0.3; // Stamina effect reduces energy depletion to 30%
-		}
-		else if (isRingOfEnduranceEquipped()) // Ring of Endurance passive effect does not stack with stamina potion
-		{
+		if (client.getVarbitValue(Varbits.RUN_SLOWED_DEPLETION_ACTIVE) != 0) {
+			drainRate *= 0.3; // Stamina effect reduces drain rate to 30%
+		} else if (isRingOfEnduranceEquipped()) {
 			Integer charges = getRingOfEnduranceCharges();
-			if (charges == null)
-			{
-				return "?";
-			}
-
-			if (charges >= RING_OF_ENDURANCE_PASSIVE_EFFECT)
-			{
-				energyUnitsLost *= 0.85; // Ring of Endurance passive effect reduces energy depletion to 85%
+			if (charges != null && charges >= RING_OF_ENDURANCE_PASSIVE_EFFECT) {
+				drainRate *= 0.85; // Ring of Endurance passive effect reduces drain rate to 85%
 			}
 		}
 
-		// Math.ceil is correct here - only need 1 energy unit to run
-		final double ticksLeft = Math.ceil(client.getEnergy() / (double) energyUnitsLost);
+		final double ticksLeft = Math.ceil(client.getEnergy() / drainRate);
 		final double secondsLeft = ticksLeft * Constants.GAME_TICK_LENGTH / 1000.0;
 
-		// Return the text
-		if (inSeconds)
-		{
-			return (int) Math.floor(secondsLeft) + "s";
-		}
-		else
-		{
-			final int minutes = (int) Math.floor(secondsLeft / 60.0);
-			final int seconds = (int) Math.floor(secondsLeft - (minutes * 60.0));
-			return minutes + ":" + StringUtils.leftPad(Integer.toString(seconds), 2, "0");
-		}
+		return formatTime(secondsLeft, inSeconds);
 	}
 
-	private int getGracefulRecoveryBoost()
+	private static int getGracefulRecoveryBoost()
 	{
-		final ItemContainer equipment = client.getItemContainer(InventoryID.EQUIPMENT);
+		final ItemContainer equipment = Microbot.getClient().getItemContainer(InventoryID.EQUIPMENT);
 
 		if (equipment == null)
 		{
@@ -365,20 +346,14 @@ public class RunEnergyPlugin extends Plugin
 		return boost;
 	}
 
-	int getEstimatedRecoverTimeRemaining()
-	{
-		if (localPlayerRunningToDestination)
-		{
-			return -1;
-		}
+	static int getEstimatedRecoverTimeRemaining() {
+		final int agilityLevel = Microbot.getClient().getBoostedSkillLevel(Skill.AGILITY);
 
-		// Calculate the amount of energy recovered every second
-		double recoverRate = (48 + client.getBoostedSkillLevel(Skill.AGILITY)) / 3.6;
-		recoverRate *= 1.0 + getGracefulRecoveryBoost() / 100.0;
+		double recoveryRate = (agilityLevel / 10.0) + 15.0;
+		recoveryRate *= 1.0 + (getGracefulRecoveryBoost() / 100.0);
 
-		// Calculate the number of seconds left
-		final double secondsLeft = (10000 - client.getEnergy()) / recoverRate;
-		return (int) secondsLeft;
+		final double secondsLeft = (10000 - Microbot.getClient().getEnergy()) / recoveryRate;
+		return (int) Math.ceil(secondsLeft);
 	}
 
 	private void checkDestroyWidget()
@@ -399,6 +374,80 @@ public class RunEnergyPlugin extends Plugin
 		if (widgetDestroyItemName.getText().equals("Ring of endurance"))
 		{
 			setRingOfEnduranceCharges(0);
+		}
+	}
+
+	public static String calculateTravelTime(int pathLength, boolean inSeconds) {
+		final double tickDurationInSeconds = Constants.GAME_TICK_LENGTH / 1000.0;
+		final int tilesPerTickRunning = 2; // Running covers 2 tiles per tick
+		final int tilesPerTickWalking = 1; // Walking covers 1 tile per tick
+
+		// Weight clamping: Treat negative weight as 0 and weights above 64 as 64
+		final int weight = Math.min(Math.max(Microbot.getClient().getWeight(), 0), 64);
+		final int agilityLevel = Microbot.getClient().getBoostedSkillLevel(Skill.AGILITY);
+
+		// Energy depletion rate per tick
+		double drainRate = (60 + (67 * weight / 64.0)) * (1 - (agilityLevel / 300.0));
+		if (Microbot.getClient().getVarbitValue(Varbits.RUN_SLOWED_DEPLETION_ACTIVE) != 0) {
+			drainRate *= 0.3; // Stamina effect
+		} else if (isRingOfEnduranceEquipped()) {
+			Integer charges = getRingOfEnduranceCharges();
+			if (charges != null && charges >= RING_OF_ENDURANCE_PASSIVE_EFFECT) {
+				drainRate *= 0.85; // Ring of Endurance effect
+			}
+		}
+
+		// Recovery rate (energy per second), factoring Graceful bonus
+		double recoveryRate = (agilityLevel / 10.0) + 15.0;
+		recoveryRate *= 1.0 + (getGracefulRecoveryBoost() / 100.0);
+
+		// Initial energy and ticks
+		double currentEnergy = Microbot.getClient().getEnergy();
+		int runningTicks = 0;
+		int walkingTicks = 0;
+		int remainingPath = pathLength;
+
+		// Running with available energy
+		double runningDistance = Math.min(currentEnergy / drainRate, (double) remainingPath / tilesPerTickRunning) * tilesPerTickRunning;
+		if (runningDistance > 0) {
+			runningTicks = (int) Math.ceil(runningDistance / tilesPerTickRunning);
+			remainingPath -= runningDistance;
+			currentEnergy -= runningTicks * drainRate;
+		}
+
+		// Walking and recovering
+		if (remainingPath > 0) {
+			double timeWalking = (double) remainingPath / tilesPerTickWalking * tickDurationInSeconds; // Time walking in seconds
+			double recoveredEnergy = timeWalking * recoveryRate;
+
+			// Energy recovered while walking
+			double totalEnergyAfterRecovery = Math.min(10000, currentEnergy + recoveredEnergy);
+
+			// Additional running after recovery
+			double additionalRunningDistance = Math.min(totalEnergyAfterRecovery / drainRate, (double) remainingPath / tilesPerTickRunning) * tilesPerTickRunning;
+			int additionalRunningTicks = (int) Math.ceil(additionalRunningDistance / tilesPerTickRunning);
+			remainingPath -= additionalRunningDistance;
+
+			// Final walking (if path is not fully completed by running)
+			walkingTicks = (int) Math.ceil((double) remainingPath / tilesPerTickWalking);
+
+			// Total ticks
+			runningTicks += additionalRunningTicks;
+		}
+
+		int totalTicks = runningTicks + walkingTicks;
+		double totalTimeInSeconds = totalTicks * tickDurationInSeconds;
+
+		return formatTime(totalTimeInSeconds, inSeconds);
+	}
+
+	private static String formatTime(double secondsLeft, boolean inSeconds) {
+		if (inSeconds) {
+			return (int) Math.floor(secondsLeft) + "s";
+		} else {
+			final int minutes = (int) Math.floor(secondsLeft / 60.0);
+			final int seconds = (int) Math.floor(secondsLeft - (minutes * 60.0));
+			return minutes + ":" + StringUtils.leftPad(Integer.toString(seconds), 2, "0");
 		}
 	}
 }

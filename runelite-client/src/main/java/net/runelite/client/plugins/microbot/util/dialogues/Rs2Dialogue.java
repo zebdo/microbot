@@ -134,7 +134,7 @@ public class Rs2Dialogue {
 
         Widget[] dynamicWidgetOptions = Rs2Widget.getWidget(InterfaceID.DIALOG_OPTION, 1).getDynamicChildren();
         if (dynamicWidgetOptions != null && dynamicWidgetOptions.length > 0) {
-            return dynamicWidgetOptions[0].getText();
+            return Rs2UiHelper.stripColTags(dynamicWidgetOptions[0].getText());
         }
         return null;
     }

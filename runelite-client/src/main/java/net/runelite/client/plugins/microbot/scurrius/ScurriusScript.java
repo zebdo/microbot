@@ -9,6 +9,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.scurrius.enums.State;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.coords.Rs2LocalPoint;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -285,7 +286,7 @@ public class ScurriusScript extends Script {
         );
 
         for (WorldPoint tile : nearbyTiles) {
-            if (!dangerousWorldPoints.contains(tile)) {
+            if (!dangerousWorldPoints.contains(tile) && Rs2Tile.isWalkable(Rs2LocalPoint.fromWorldInstance(tile))) {
                 Microbot.log("Found safe tile: " + tile);
                 return tile;
             }
