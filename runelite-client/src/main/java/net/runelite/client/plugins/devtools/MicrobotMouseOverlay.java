@@ -8,7 +8,7 @@ import net.runelite.client.ui.overlay.OverlayPosition;
 
 import javax.inject.Inject;
 import java.awt.*;
-import java.awt.font.TextLayout;
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Path2D;
 import java.awt.image.BufferedImage;
 
@@ -28,12 +28,12 @@ public class MicrobotMouseOverlay extends Overlay {
         new Thread(() -> {
             try {
                 while (true) {
-                    angle += 0.007f; // Increment angle
+                    angle += 0.004f; // Increment angle
                     if (angle >= 2 * Math.PI) {
                         angle -= (float) (2 * Math.PI);
                     }
 
-                    Thread.sleep(5); // Control frame rate
+                    Thread.sleep(10); // Control frame rate
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
@@ -52,38 +52,71 @@ public class MicrobotMouseOverlay extends Overlay {
                 Microbot.getMouse().getTimer().start();
             }
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
             // Enable anti-aliasing for smooth rendering
-            int size = 64; // Cursor image size
-            BufferedImage cursorImage = new BufferedImage(size, size, BufferedImage.TYPE_INT_ARGB);
-            cursorImage.setAccelerationPriority(1.0f);
+            int CROSSHAIR_SIZE = 30; // Cursor image size
+            int CORNER_SIZE = 10;
+
+            BufferedImage cursorImage = new BufferedImage(CROSSHAIR_SIZE, CROSSHAIR_SIZE, BufferedImage.TYPE_INT_ARGB);
             Graphics2D g2d = cursorImage.createGraphics();
 
 
             // Enable anti-aliasing for smooth rendering
             g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_LCD_HRGB);
 
             // Rotate the graphics
             g2d.setColor(Microbot.getMouse().getRainbowColor());
-            g2d.setFont(new Font("Serif", Font.PLAIN, 30));
-            String crosshair = "⛌";
+            g2d.setStroke(new BasicStroke(2f));
 
-            // Measure the bounds of the character
-            FontMetrics fm = g2d.getFontMetrics();
-            int charWidth = fm.stringWidth(crosshair);
-            int charHeight = fm.getAscent(); // Only use the ascent to avoid including descent
+            // Calculate the far edge (we subtract 1 because drawLine is inclusive)
+            int max = CROSSHAIR_SIZE - 1;
 
-            // Rotate and center the character
-            g2d.translate(size / 2.0, size / 2.0); // Move to the center of the cursor image
-            g2d.rotate(angle); // Apply rotation
-            g2d.translate(-charWidth / 2.0, charHeight / 4.0); // Center the character
+            // ========= TOP-LEFT CORNER (inverted) =========
+            //
+            // The corner's "joint" is at (CORNER_SIZE, CORNER_SIZE).
+            // Draw lines outward toward the top edge and left edge:
+            //
+            // Vertical line: from (CORNER_SIZE, 0) down to the joint
+            // Horizontal line: from (0, CORNER_SIZE) right to the joint
+            //
+            g2d.drawLine(CORNER_SIZE, 0, CORNER_SIZE, CORNER_SIZE);
+            g2d.drawLine(0, CORNER_SIZE, CORNER_SIZE, CORNER_SIZE);
 
-            TextLayout layout = new TextLayout(crosshair, g2d.getFont(), g2d.getFontRenderContext());
-            layout.draw(g2d, 0, 3);
-            // Draw the character
-            //g2d.drawString(crosshair, 0, 3);
-            // Dispose of the graphics
+            // ========= TOP-RIGHT CORNER (inverted) =========
+            //
+            // The corner's "joint" is at (max - CORNER_SIZE, CORNER_SIZE).
+            // Draw lines outward toward the top edge and right edge:
+            //
+            // Vertical line: from (max - CORNER_SIZE, 0) down to the joint
+            // Horizontal line: from (max, CORNER_SIZE) left to the joint
+            //
+            g2d.drawLine(max - CORNER_SIZE, 0, max - CORNER_SIZE, CORNER_SIZE);
+            g2d.drawLine(max, CORNER_SIZE, max - CORNER_SIZE, CORNER_SIZE);
+
+            // ========= BOTTOM-LEFT CORNER (inverted) =========
+            //
+            // The corner's "joint" is at (CORNER_SIZE, max - CORNER_SIZE).
+            // Draw lines outward toward the bottom edge and left edge:
+            //
+            // Vertical line: from (CORNER_SIZE, max) up to the joint
+            // Horizontal line: from (0, max - CORNER_SIZE) right to the joint
+            //
+            g2d.drawLine(CORNER_SIZE, max, CORNER_SIZE, max - CORNER_SIZE);
+            g2d.drawLine(0, max - CORNER_SIZE, CORNER_SIZE, max - CORNER_SIZE);
+
+            // ========= BOTTOM-RIGHT CORNER (inverted) =========
+            //
+            // The corner's "joint" is at (max - CORNER_SIZE, max - CORNER_SIZE).
+            // Draw lines outward toward the bottom edge and right edge:
+            //
+            // Vertical line: from (max - CORNER_SIZE, max) up to the joint
+            // Horizontal line: from (max, max - CORNER_SIZE) left to the joint
+            //
+            g2d.drawLine(max - CORNER_SIZE, max, max - CORNER_SIZE, max - CORNER_SIZE);
+            g2d.drawLine(max, max - CORNER_SIZE, max - CORNER_SIZE, max - CORNER_SIZE);
+
+            // Draw 4x4 dot in the center
+            g2d.fillRect(CROSSHAIR_SIZE / 2 - 2, CROSSHAIR_SIZE / 2 - 2, 4, 4);
+
 
 
 
@@ -96,12 +129,19 @@ public class MicrobotMouseOverlay extends Overlay {
 
 
             // Draw the crosshair centered
-            float drawX = x - size / 2.0f;
-            float drawY = y - size / 2.0f;
+            float drawX = x - CROSSHAIR_SIZE / 2.0f;
+            float drawY = y - CROSSHAIR_SIZE / 2.0f;
+
+            // Save the original graphics transform
+            AffineTransform original = g.getTransform();
+            // Rotate the cursor image
+            g.rotate(angle, drawX + CROSSHAIR_SIZE / 2.0, drawY + CROSSHAIR_SIZE / 2.0);
+
             g.drawImage(cursorImage, (int) drawX, (int) drawY, null);
             //OverlayUtil.renderTextLocation(g, new net.runelite.api.Point(drawX, drawY), "✛", Microbot.getMouse().getRainbowColor());
 
-
+            // Restore the original graphics transform
+            g.setTransform(original);
 
 
             g.setStroke(new BasicStroke(3));
