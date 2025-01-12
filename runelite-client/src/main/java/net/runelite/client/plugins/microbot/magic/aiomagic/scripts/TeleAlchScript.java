@@ -76,6 +76,12 @@ public class TeleAlchScript extends Script {
                         requiredTeleportRunes.forEach((rune, quantity) -> {
                             if (!isRunning()) return;
                             int itemID = rune.getItemId();
+                            
+                            if (!Rs2Bank.hasBankItem(itemID, quantity)) {
+                                Microbot.showMessage("Missing Runes");
+                                shutdown();
+                                return;
+                            }
 
                             if (!Rs2Bank.withdrawX(itemID, quantity)) {
                                 Microbot.log("Failed to withdraw " + quantity + " of " + rune.name());
