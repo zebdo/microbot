@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.chillRunecraft;
+package net.runelite.client.plugins.microbot.runecrafting.chillRunecraft;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;

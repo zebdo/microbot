@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.chillRunecraft;
+package net.runelite.client.plugins.microbot.runecrafting.chillRunecraft;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

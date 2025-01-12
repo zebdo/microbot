@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.chillRunecraft;
+package net.runelite.client.plugins.microbot.runecrafting.chillRunecraft;
 
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.ui.overlay.OverlayPanel;
@@ -9,7 +9,7 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 import javax.inject.Inject;
 import java.awt.*;
 
-import static net.runelite.client.plugins.microbot.chillRunecraft.RunecraftScript.*;
+import static net.runelite.client.plugins.microbot.runecrafting.chillRunecraft.RunecraftScript.*;
 
 public class RunecraftOverlay extends OverlayPanel
 {

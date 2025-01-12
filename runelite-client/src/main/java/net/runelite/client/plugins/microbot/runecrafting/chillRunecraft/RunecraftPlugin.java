@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.chillRunecraft;
+package net.runelite.client.plugins.microbot.runecrafting.chillRunecraft;
 
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
@@ -13,9 +13,9 @@ import javax.inject.Inject;
 import java.awt.*;
 
 @PluginDescriptor(
-        name = "ChillX Auto Runecraft",
+        name = PluginDescriptor.ChillX + "Auto Runecrafter",
         description = "F2P Auto Runecraft Plugin",
-        tags = {"Chill", "Runecraft", "rc"},
+        tags = {"Chill", "Runecraft", "rc", "f2p"},
         enabledByDefault = false
 )
 @Slf4j

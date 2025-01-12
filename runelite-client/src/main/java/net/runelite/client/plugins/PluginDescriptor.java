@@ -56,6 +56,7 @@ public @interface PluginDescriptor {
     String Girdy = "<html>[<font color=#3DED97>\u01E5</font>] ";
     String Cicire = "<html>[<font color=#68ff00>Ci</font>] ";
     String Budbomber = "<html>[<font color='#0077B6'>bb</font>]";
+    String ChillX = "<html>[<font color=#05e1f5>C</font>] ";
 
 
     String name();
