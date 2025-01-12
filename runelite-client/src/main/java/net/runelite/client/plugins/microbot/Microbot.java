@@ -279,10 +279,18 @@ public class Microbot {
      *
      * @param plugin the plugin to be started.
      */
+    @SneakyThrows
     public static void startPlugin(Plugin plugin) {
         if (plugin == null) return;
-        getPluginManager().setPluginEnabled(plugin, true);
-        getPluginManager().startPlugins();
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try {
+                getPluginManager().setPluginEnabled(plugin, false);
+                getPluginManager().startPlugins();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
     }
 
     /**
