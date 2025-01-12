@@ -285,7 +285,7 @@ public class Microbot {
         SwingUtilities.invokeAndWait(() ->
         {
             try {
-                getPluginManager().setPluginEnabled(plugin, false);
+                getPluginManager().setPluginEnabled(plugin, true);
                 getPluginManager().startPlugins();
             } catch (Exception e) {
                 e.printStackTrace();
