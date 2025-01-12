@@ -2157,7 +2157,7 @@ public class Rs2Inventory {
     public static boolean waitForInventoryChanges(int time) {
         final List<Rs2Item> initialInventory = new ArrayList<>(inventoryItems);
 
-        return sleepUntilTrue(() -> !hasInventoryUnchanged(initialInventory), time, time);
+        return sleepUntilTrue(() -> !hasInventoryUnchanged(initialInventory), 100, time);
     }
 
     /**
@@ -2199,6 +2199,7 @@ public class Rs2Inventory {
         List<Rs2Item> currentInventory = items();
 
         // Check if sizes differ
+        System.out.println("" + initialInventory.size() + " - " +  currentInventory.size());
         if (initialInventory.size() != currentInventory.size()) {
             return false;
         }
