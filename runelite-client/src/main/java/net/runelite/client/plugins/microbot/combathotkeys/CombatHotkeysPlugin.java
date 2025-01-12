@@ -2,14 +2,16 @@ package net.runelite.client.plugins.microbot.combathotkeys;
 
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.MenuAction;
+import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.input.KeyListener;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -17,8 +19,6 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import javax.inject.Inject;
 import java.awt.*;
 import java.awt.event.KeyEvent;
-import java.util.ArrayList;
-import java.util.Comparator;
 
 @PluginDescriptor(
         name = PluginDescriptor.Cicire + "Combat hotkeys",
@@ -75,6 +75,11 @@ public class CombatHotkeysPlugin extends Plugin implements KeyListener {
             return;
         }
 
+        if(config.dance().matches(e)){
+            e.consume();
+            script.dance = !script.dance;
+        }
+
         if (config.protectFromMagic().matches(e)) {
             e.consume();
             Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MAGIC);
@@ -91,49 +96,97 @@ public class CombatHotkeysPlugin extends Plugin implements KeyListener {
         }
 
         if (config.gear1().matches(e)) {
-            script.gearToSwitch = processGearList(config.gearList1());
-            script.isSwitchingGear = true;
+            e.consume();
+            Microbot.getClientThread().runOnSeperateThread(() -> {
+                equipGear(config.gearList1());
+                return null;
+            });
         }
 
         if (config.gear2().matches(e)) {
-            script.gearToSwitch = processGearList(config.gearList2());
-            script.isSwitchingGear = true;
+            e.consume();
+            Microbot.getClientThread().runOnSeperateThread(() -> {
+                equipGear(config.gearList2());
+                return null;
+            });
         }
 
         if (config.gear3().matches(e)) {
-            script.gearToSwitch = processGearList(config.gearList3());
-            script.isSwitchingGear = true;
+            e.consume();
+            Microbot.getClientThread().runOnSeperateThread(() -> {
+                equipGear(config.gearList3());
+                return null;
+            });
         }
 
         if (config.gear4().matches(e)) {
-            script.gearToSwitch = processGearList(config.gearList4());
-            script.isSwitchingGear = true;
+            e.consume();
+            Microbot.getClientThread().runOnSeperateThread(() -> {
+                equipGear(config.gearList4());
+                return null;
+            });
         }
 
         if (config.gear5().matches(e)) {
-            script.gearToSwitch = processGearList(config.gearList5());
-            script.isSwitchingGear = true;
+            e.consume();
+            Microbot.getClientThread().runOnSeperateThread(() -> {
+                equipGear(config.gearList5());
+                return null;
+            });
         }
     }
 
-    private static ArrayList<Rs2Item> processGearList(String gearListConfig) {
+
+    private static void equipGear(String gearListConfig) {
         String[] itemIDs = gearListConfig.split(",");
-        ArrayList<Rs2Item> gearList = new ArrayList<>();
 
         for (String value : itemIDs) {
             int itemId = Integer.parseInt(value);
-            if (Rs2Inventory.hasItem(itemId)) {
-                Rs2Item item = Rs2Inventory.get(itemId);
-                gearList.add(item);
-            }
+            Rs2Inventory.equip(itemId);
         }
-
-        // Sort the list based on the item slot
-        gearList.sort(Comparator.comparingInt(item -> item.slot));
-
-        return gearList;
     }
 
     @Override
     public void keyReleased(KeyEvent e) {}
+
+    @Subscribe
+    public void onMenuEntryAdded(MenuEntryAdded event)
+    {
+        if (event.getOption().equals("Walk here"))
+        {
+            Microbot.getClient().getMenu().createMenuEntry(-1)
+                    .setOption("Dancing -> mark tile 2")
+                    .setTarget(event.getTarget())
+                    .setType(MenuAction.RUNELITE)
+                    .onClick(e -> {
+                        final var target = Microbot.getClient().getTopLevelWorldView().getSelectedSceneTile();
+                        if (target != null)
+                        {
+                            final var location = target.getWorldLocation();
+                            Microbot.getConfigManager().setConfiguration(
+                                    "combathotkeys",
+                                    "tile2",
+                                    location
+                            );
+                        }
+                    });
+
+            Microbot.getClient().getMenu().createMenuEntry(-1)
+                    .setOption("Dancing -> mark tile 1")
+                    .setTarget(event.getTarget())
+                    .setType(MenuAction.RUNELITE)
+                    .onClick(e -> {
+                        final var target = Microbot.getClient().getTopLevelWorldView().getSelectedSceneTile();
+                        if (target != null)
+                        {
+                            final var location = target.getWorldLocation();
+                            Microbot.getConfigManager().setConfiguration(
+                                    "combathotkeys",
+                                    "tile1",
+                                    location
+                            );
+                        }
+                    });
+        }
+    }
 }

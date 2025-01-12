@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.combathotkeys;
 
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.config.*;
 
 @ConfigInformation("IMPORTANT!<br/>"
@@ -199,5 +200,36 @@ public interface CombatHotkeysConfig extends Config {
     )
     default String gearList5() {
         return "";
+    }
+
+    // config item for a keybind to enable the dance feature
+    @ConfigItem(
+            keyName = "dance",
+            name = "Dance",
+            description = "Dance",
+            position = 7
+    )
+    default Keybind dance() {
+        return Keybind.NOT_SET;
+    }
+
+    // hidden config for worldpoint called tile1
+    @ConfigItem(
+            keyName = "tile1",
+            name = "",
+            description = "",
+            hidden = true
+    )
+    default WorldPoint tile1() {
+        return null;
+    }
+    @ConfigItem(
+            keyName = "tile2",
+            name = "",
+            description = "",
+            hidden = true
+    )
+    default WorldPoint tile2() {
+        return null;
     }
 }
