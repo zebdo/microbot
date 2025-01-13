@@ -42,6 +42,7 @@ import net.runelite.client.game.NPCManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -101,6 +102,10 @@ public class AttackTimerMetronomePlugin extends Plugin
     // refers to the client.getGameCycle() method, a cycle occurs every 20ms, meaning 30 of them occur per
     // game tick.
     public AttackState renderedState = AttackState.NOT_ATTACKING;
+
+    public static final int RIGOUR_UNLOCKED = 5451;
+    public static final int AUGURY_UNLOCKED = 5452;
+    public static final int CAMELOT_TRAINING_ROOM_STATUS = 3909;
 
     public Color CurrentColor = Color.WHITE;
 
@@ -642,26 +647,58 @@ public class AttackTimerMetronomePlugin extends Plugin
     }
 
     private Rs2PrayerEnum determineOffensivePrayer(AttackStyle attackStyle) {
-        // Map attack styles to prayers
         switch (attackStyle) {
-            case ACCURATE: // Melee
+            case ACCURATE: // Melee styles
             case AGGRESSIVE:
             case CONTROLLED:
             case DEFENSIVE:
-                return Rs2PrayerEnum.PIETY;
+                if (Microbot.getVarbitValue(CAMELOT_TRAINING_ROOM_STATUS) > 8 &&
+                        Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.PIETY.getLevel()) {
+                    return Rs2PrayerEnum.PIETY;
+                }
+                if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.CHIVALRY.getLevel()) {
+                    return Rs2PrayerEnum.CHIVALRY;
+                }
+                if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.SUPERHUMAN_STRENGTH.getLevel()) {
+                    return Rs2PrayerEnum.SUPERHUMAN_STRENGTH;
+                }
+                break;
 
-            case RANGING: // Ranged
+            case RANGING: // Ranged styles
             case LONGRANGE:
-                return Rs2PrayerEnum.RIGOUR;
+                if (Microbot.getVarbitValue(RIGOUR_UNLOCKED) == 1 &&
+                        Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.RIGOUR.getLevel()) {
+                    return Rs2PrayerEnum.RIGOUR;
+                }
+                if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.EAGLE_EYE.getLevel()) {
+                    return Rs2PrayerEnum.EAGLE_EYE;
+                }
+                if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.HAWK_EYE.getLevel()) {
+                    return Rs2PrayerEnum.HAWK_EYE;
+                }
+                break;
 
-            case CASTING: // Magic
+            case CASTING: // Magic styles
             case DEFENSIVE_CASTING:
-                return Rs2PrayerEnum.AUGURY;
+                if (Microbot.getVarbitValue(AUGURY_UNLOCKED) == 1 &&
+                        Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.AUGURY.getLevel()) {
+                    return Rs2PrayerEnum.AUGURY;
+                }
+                if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.MYSTIC_MIGHT.getLevel()) {
+                    return Rs2PrayerEnum.MYSTIC_MIGHT;
+                }
+                if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.MYSTIC_LORE.getLevel()) {
+                    return Rs2PrayerEnum.MYSTIC_LORE;
+                }
+                break;
 
             default:
                 return null;
         }
+        return null;
     }
+
+
 
 
     public AttackStyle getCurrentAttackStyle()
