@@ -1084,8 +1084,9 @@
 3032 3223 1	3032 3225 2	Climb-up;Ship's ladder;245						
 3041 3202 0	3041 3199 1	Cross;Gangplank;14304					3	
 3041 3199 1	3041 3202 0	Cross;Gangplank;14305					3	
-3038 3192 0	3038 3189 1	Cross;Gangplank;17404					3	
-3038 3189 1	3038 3192 0	Cross;Gangplank;17405					3	
+3038 3192 0	3038 3189 1	Cross;Gangplank;17404						
+3038 3189 1	3038 3192 0	Cross;Gangplank;17405						
+
 #pest control								
 2662 2677 1	2659 2676 0	Cross;Gangplank;14307					3	
 3013 3204 0	3013 3204 1	Climb-up;Ladder;16683						
@@ -1869,6 +1870,8 @@
 1504 3399 0	1504 3396 1	Cross;Gangplank;29723					3	
 1512 3416 0	1512 3416 1	Climb-up;Ladder;18324						
 1512 3416 1	1512 3416 0	Climb-down;Ladder;18325						
+1493 3403 1	1496 3403 0	Cross;Gangplank;50066						
+1496 3403 0	1493 3403 1	Cross;Gangplank;50065						
 								
 # Shayzien								
 1483 3549 0	1483 9951 3	Enter;Crypt Entrance;32403						
@@ -4416,6 +4419,8 @@
 2836 3255 0	2833 9658 0	Enter;Hole;25154					1	
 2836 3256 0	2833 9658 0	Enter;Hole;25154					1	
 2836 3257 0	2833 9658 0	Enter;Hole;25154					1	
+2998 3032 1	3001 3032 0	Cross;Gangplank;17397						
+3001 3032 0	2998 3032 1	Cross;Gangplank;17396						
 								
 # Lunar Isle								
 2128 3893 2	2126 3893 1	Climb;Ladder;16961					2	
@@ -4546,12 +4551,16 @@
 2399 5177 0	2399 5175 0	Pass;Hot vent door;30266					2	
 								
 # Sunset Coast								
-1491 2985 1	1495 2985 0	Cross;Gangplank;55335					2	
-1495 2985 0	1491 2985 1	Cross;Gangplank;55334					2	
+1491 2985 1	1495 2985 0	Cross;Gangplank;55335						
+1495 2985 0	1491 2985 1	Cross;Gangplank;55334						
+1514 2968 1	1514 2971 0	Cross;Gangplank;50737						
+1514 2971 0	1514 2968 1	Cross;Gangplank;50736						
 								
 # Aldarin								
-1446 2976 1	1443 2976 0	Cross;Gangplank;55337					2	
-1443 2976 0	1446 2976 1	Cross;Gangplank;55336					2	
+1446 2976 1	1443 2976 0	Cross;Gangplank;55337						
+1443 2976 0	1446 2976 1	Cross;Gangplank;55336						
+1458 2968 1	1455 2968 0	Cross;Gangplank;55333						
+1455 2968 0	1458 2968 1	Cross;Gangplank;55332						
 								
 # Tyras								
 2142 3125 1	2142 3122 0	Cross;Gangplank;17409						
@@ -4648,3 +4657,39 @@
 3406 10145 0	3293 3749 0	Exit;Opening;40391						
 3434 10090 0	3434 10095 0	Squeeze-through;Crevice;53259						
 3434 10090 0	3434 10095 0	Squeeze-through;Crevice;53259						
+
+# Ourania Altar
+2453 3231 0	3015 5629 0	Climb;Ladder;29635						
+3015 5629 0	2453 3231 0	Climb;Ladder;29636						
+
+# Port Phasmatys
+3705 3503 1	3702 3503 0	Cross;Gangplank;17393						
+3702 3503 0	3705 3503 1	Cross;Gangplank;17392						
+
+# Port Khazard
+2674 3141 1	2674 3144 0	Cross;Gangplank;17403						
+2674 3144 0	2674 3141 1	Cross;Gangplank;17402						
+
+# Civitas illa Fortis
+1747 3136 1	1743 3136 0	Cross;Gangplank;50735						
+1743 3136 0	1747 3136 1	Cross;Gangplank;50734						
+
+# Prifddinas
+2157 3330 0	2157 3333 1	Cross;Gangplank;34948						
+2157 3333 1	2157 3330 0	Cross;Gangplank;34949						
+2181 3327 0	3208 6079 0	Enter;City Gate;36519	 					
+3208 6079 0	2181 3327 0	Exit;City Gate;36523	 					
+2181 3328 0	3208 6080 0	Enter;City Gate;36518	 					
+3208 6080 0	2181 3328 0	Exit;City Gate;36522	 					
+2239 3386 0	3263 6135 0	Enter;City Gate;36519	 					
+3263 6135 0	2239 3386 0	Exit;City Gate;36523	 					
+2240 3386 0	3264 6135 0	Enter;City Gate;36518	 					
+3264 6135 0	2240 3386 0	Exit;City Gate;36522	 					
+2298 3328 0	3319 6080 0	Enter;City Gate;36519	 					
+3319 6080 0	2298 3328 0	Exit;City Gate;36523	 					
+2298 3327 0	3319 6079 0	Enter;City Gate;36518	 					
+3319 6079 0	2298 3327 0	Exit;City Gate;36522	 					
+2240 3269 0	3264 6024 0	Enter;City Gate;36519	 					
+3264 6024 0	2240 3269 0	Exit;City Gate;36523	 					
+2239 3269 0	3263 6024 0	Enter;City Gate;36518	 					
+3263 6024 0	2239 3269 0	Exit;City Gate;36522	 					
