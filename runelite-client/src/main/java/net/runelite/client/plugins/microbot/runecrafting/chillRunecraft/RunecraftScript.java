@@ -8,6 +8,7 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -53,9 +54,9 @@ public class RunecraftScript extends Script
                     initialRunecraftXp = Microbot.getClient().getSkillExperience(Skill.RUNECRAFT);
                     initialRunecraftLevel = Rs2Player.getRealSkillLevel(Skill.RUNECRAFT);
 
-                    if (!Rs2Inventory.hasItem(altar.getTalismanName()))
+                    if (!Rs2Inventory.hasItem(altar.getTalismanName()) && !Rs2Equipment.isWearing(altar.getTiaraName()))
                     {
-                        System.out.println("No Talisman in inventory - banking");
+                        System.out.println("No Talisman / Tiara found - banking");
                         state = States.BANKING;
                         initialise = false;
                         return;
@@ -83,17 +84,24 @@ public class RunecraftScript extends Script
                         Microbot.status = "Walking to bank";
                         if (!isBankOpen || !Rs2Bank.isOpen()) return;
 
-                        if (!Rs2Inventory.hasItem(altar.getTalismanName()))
+                        if (!Rs2Inventory.hasItem(altar.getTalismanName()) && !Rs2Equipment.isWearing(altar.getTiaraName()))
                         {
-                            Microbot.status = "Withdrawing Talisman";
-                            System.out.println("Checking Talisman");
-                            if (!Rs2Bank.hasBankItem(altar.getTalismanName()))
+                            Microbot.status = "Withdrawing Tiara";
+                            System.out.println("Checking Tiara");
+
+                            if (!Rs2Bank.hasBankItem(altar.getTiaraName()))
                             {
-                                Microbot.showMessage("No talisman in bank!");
-                                shutdown();
-                                return;
+                                Microbot.status = "Withdrawing Talisman";
+                                System.out.println("Checking Talisman");
+                                if (!Rs2Bank.hasBankItem(altar.getTalismanName()))
+                                {
+                                    Microbot.showMessage("No tiara / talisman in bank!");
+                                    shutdown();
+                                    return;
+                                }
+                                Rs2Bank.withdrawOne(altar.getTalismanName());
                             }
-                            Rs2Bank.withdrawOne(altar.getTalismanName());
+                            Rs2Bank.withdrawAndEquip(altar.getTiaraName());
                             Rs2Random.wait(800,1600);
                         }
 
@@ -134,7 +142,14 @@ public class RunecraftScript extends Script
                         initialise = false;
                         System.out.println("Entering Altar");
                         Microbot.status = "Entering altar";
-                        Rs2Inventory.useItemOnObject(altar.getTalismanID(), altar.getAltarRuinsID());
+                        if (!Rs2Equipment.isWearing(altar.getTiaraName()))
+                        {
+                            Rs2Inventory.useItemOnObject(altar.getTalismanID(), altar.getAltarRuinsID());
+                        }
+                        else
+                        {
+                            Rs2GameObject.interact(altar.getAltarRuinsID(), "Enter");
+                        }
                         Rs2Random.wait(800, 1600);
                         sleepUntil(() -> !Rs2Player.isMoving());
                         Rs2Random.wait(2000, 2400);
@@ -145,7 +160,7 @@ public class RunecraftScript extends Script
                         initialise = false;
                         System.out.println("Crafting Runes");
                         Microbot.status = "Crafting runes";
-                        Rs2Inventory.useItemOnObject(ItemID.PURE_ESSENCE, altar.getAltarID());
+                        Rs2Inventory.useItemOnObject(ItemID.PURE_ESSENCE, altar.getAltarID()); //could just interact with altar, but I'm too lazy to change this now
                         Rs2Random.wait(800, 1600);
                         sleepUntil(() -> Rs2Player.waitForXpDrop(Skill.RUNECRAFT));
                         Rs2Random.wait(800, 1600);

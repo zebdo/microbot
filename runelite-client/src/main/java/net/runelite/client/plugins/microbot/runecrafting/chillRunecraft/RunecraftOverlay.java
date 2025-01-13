@@ -28,7 +28,7 @@ public class RunecraftOverlay extends OverlayPanel
         {
             panelComponent.setPreferredSize(new Dimension(200, 300));
             panelComponent.getChildren().add(TitleComponent.builder()
-                    .text("ChillX Auto RC v0.0.2")
+                    .text("ChillX Auto RC v1.0.3")
                     .color(Color.GREEN)
                     .build());
 
