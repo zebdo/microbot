@@ -6,6 +6,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.plugins.bank.BankPlugin;
 import net.runelite.client.plugins.loottracker.LootTrackerItem;
 import net.runelite.client.plugins.loottracker.LootTrackerRecord;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -1454,8 +1455,12 @@ public class Rs2Bank {
                     Microbot.log("Failed to detect instruction within timeout period: " + expectedInstruction);
                     return false;
                 }
-
-                Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
+                
+                if (isBankPluginEnabled() && hasKeyboardBankPinEnabled()) {
+                    Rs2Keyboard.typeString(String.valueOf(c));
+                } else {
+                    Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
+                }
             }
             return true;
         }
@@ -2065,5 +2070,13 @@ public class Rs2Bank {
         }
 
         return false;
+    }
+
+    private static boolean isBankPluginEnabled() {
+        return Microbot.isPluginEnabled(BankPlugin.class);
+    }
+    
+    private static boolean hasKeyboardBankPinEnabled() {
+        return Microbot.getConfigManager().getConfiguration("bank","bankPinKeyboard").equalsIgnoreCase("true");
     }
 }
