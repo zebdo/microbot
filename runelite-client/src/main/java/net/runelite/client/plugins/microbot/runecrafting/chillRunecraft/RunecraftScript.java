@@ -56,7 +56,7 @@ public class RunecraftScript extends Script
 
                     if (!Rs2Inventory.hasItem(altar.getTalismanName()) && !Rs2Equipment.isWearing(altar.getTiaraName()))
                     {
-                        System.out.println("No Talisman / Tiara found - banking");
+                        Microbot.log("No Talisman / Tiara found - banking");
                         state = States.BANKING;
                         initialise = false;
                         return;
@@ -64,7 +64,7 @@ public class RunecraftScript extends Script
 
                     if (!Rs2Inventory.hasItem("Pure Essence", false))
                     {
-                        System.out.println("No essence in inventory - banking");
+                        Microbot.log("No essence in inventory - banking");
                         state = States.BANKING;
                         initialise = false;
                         return;
@@ -87,12 +87,10 @@ public class RunecraftScript extends Script
                         if (!Rs2Inventory.hasItem(altar.getTalismanName()) && !Rs2Equipment.isWearing(altar.getTiaraName()))
                         {
                             Microbot.status = "Withdrawing Tiara";
-                            System.out.println("Checking Tiara");
 
                             if (!Rs2Bank.hasBankItem(altar.getTiaraName()))
                             {
                                 Microbot.status = "Withdrawing Talisman";
-                                System.out.println("Checking Talisman");
                                 if (!Rs2Bank.hasBankItem(altar.getTalismanName()))
                                 {
                                     Microbot.showMessage("No tiara / talisman in bank!");
@@ -107,13 +105,11 @@ public class RunecraftScript extends Script
 
                         if (Rs2Inventory.hasItem(altar.getRuneName(), false))
                         {
-                            System.out.println("Depositing Runes");
                             Microbot.status = "Depositing runes";
                             Rs2Bank.depositAll(altar.getRuneName(), false);
                             Rs2Random.wait(800, 1600);
                         }
 
-                        System.out.println("Withdrawing Essence");
                         Microbot.status = "Withdrawing pure essence";
 
                         if (!Rs2Bank.hasBankItem("Pure essence", false))
@@ -130,7 +126,6 @@ public class RunecraftScript extends Script
 
                     case WALKING_TO_ALTAR:
                         initialise = false;
-                        System.out.println("Walking to Altar");
                         Microbot.status = "Walking to altar";
                         boolean walked = Rs2Walker.walkTo(altar.getAltarWorldPoint(), 2);
                         if (!walked) return;
@@ -140,7 +135,6 @@ public class RunecraftScript extends Script
 
                     case ENTERING_ALTAR:
                         initialise = false;
-                        System.out.println("Entering Altar");
                         Microbot.status = "Entering altar";
                         if (!Rs2Equipment.isWearing(altar.getTiaraName()))
                         {
@@ -158,7 +152,6 @@ public class RunecraftScript extends Script
 
                     case CRAFTING_RUNES:
                         initialise = false;
-                        System.out.println("Crafting Runes");
                         Microbot.status = "Crafting runes";
                         Rs2Inventory.useItemOnObject(ItemID.PURE_ESSENCE, altar.getAltarID()); //could just interact with altar, but I'm too lazy to change this now
                         Rs2Random.wait(800, 1600);
