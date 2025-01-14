@@ -6,6 +6,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.plugins.bank.BankPlugin;
 import net.runelite.client.plugins.loottracker.LootTrackerItem;
 import net.runelite.client.plugins.loottracker.LootTrackerRecord;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -115,7 +116,7 @@ public class Rs2Bank {
      * @return true if the bank interface was open and successfully closed, false otherwise.
      */
     public static boolean isOpen() {
-        if (Rs2Widget.hasWidget("Please enter your PIN")) {
+        if (isBankPinWidgetVisible()) {
             try {
                 if (Login.activeProfile.getBankPin().isEmpty()) {
                     Microbot.showMessage("Your bankpin is empty. Please fill this field in your runelite profile.");
@@ -127,7 +128,7 @@ public class Rs2Bank {
             }
             return false;
         }
-        return Rs2Widget.findWidget("Rearrange mode", null) != null;
+        return Rs2Widget.hasWidgetText("Rearrange mode", 12, 18, false);
     }
 
     public static List<Rs2Item> bankItems() {
@@ -1121,14 +1122,13 @@ public class Rs2Bank {
             } else if (chest != null) {
                 action = Rs2GameObject.interact(chest, "use");
             } else {
-                NPC npc = Rs2Npc.getNpc("banker");
+                NPC npc = Rs2Npc.getBankerNPC();
                 if (npc == null) return false;
                 action = Rs2Npc.interact(npc, "bank");
             }
 
             if (action) {
-                sleepUntil(() -> isOpen() || Rs2Widget.hasWidget("Please enter your PIN"), 2500);
-                sleep(600, 1000);
+                sleepUntil(() -> isOpen() || isBankPinWidgetVisible(), 5000);
             }
             return action;
         } catch (Exception ex) {
@@ -1439,12 +1439,28 @@ public class Rs2Bank {
             Microbot.log("Unable to enter bankpin with value " + pin);
             return false;
         }
+        
+        String[] digitInstructions = {
+                "FIRST digit", "SECOND digit", "THIRD digit", "FOURTH digit"
+        };
 
         if (isBankPinWidgetVisible()) {
             for (int i = 0; i < pin.length(); i++){
                 char c = pin.charAt(i);
-                Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
-                sleep(1200, 1600);
+                String expectedInstruction = digitInstructions[i];
+                
+                boolean instructionVisible = sleepUntil(() -> Rs2Widget.hasWidgetText(expectedInstruction, 213, 10, false), 5000);
+
+                if (!instructionVisible) {
+                    Microbot.log("Failed to detect instruction within timeout period: " + expectedInstruction);
+                    return false;
+                }
+                
+                if (isBankPluginEnabled() && hasKeyboardBankPinEnabled()) {
+                    Rs2Keyboard.typeString(String.valueOf(c));
+                } else {
+                    Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
+                }
             }
             return true;
         }
@@ -2054,5 +2070,13 @@ public class Rs2Bank {
         }
 
         return false;
+    }
+
+    private static boolean isBankPluginEnabled() {
+        return Microbot.isPluginEnabled(BankPlugin.class);
+    }
+    
+    private static boolean hasKeyboardBankPinEnabled() {
+        return Microbot.getConfigManager().getConfiguration("bank","bankPinKeyboard").equalsIgnoreCase("true");
     }
 }

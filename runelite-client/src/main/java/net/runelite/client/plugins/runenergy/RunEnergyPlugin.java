@@ -349,7 +349,7 @@ public class RunEnergyPlugin extends Plugin
 	static int getEstimatedRecoverTimeRemaining() {
 		final int agilityLevel = Microbot.getClient().getBoostedSkillLevel(Skill.AGILITY);
 
-		double recoveryRate = (agilityLevel / 10.0) + 15.0;
+		double recoveryRate = 25 + Microbot.getClient().getBoostedSkillLevel(Skill.AGILITY) / 6.0;
 		recoveryRate *= 1.0 + (getGracefulRecoveryBoost() / 100.0);
 
 		final double secondsLeft = (10000 - Microbot.getClient().getEnergy()) / recoveryRate;
@@ -398,7 +398,7 @@ public class RunEnergyPlugin extends Plugin
 		}
 
 		// Recovery rate (energy per second), factoring Graceful bonus
-		double recoveryRate = (agilityLevel / 10.0) + 15.0;
+		double recoveryRate = 25 + agilityLevel / 6.0;
 		recoveryRate *= 1.0 + (getGracefulRecoveryBoost() / 100.0);
 
 		// Initial energy and ticks

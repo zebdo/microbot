@@ -1,61 +1,66 @@
-# Origin	Quests	Skills	Varbits
-# Varrock museum			
-3265 3442 0			
-3264 3442 0			
-3261 3446 0			
-# Gate between digsite and varrock			
-3296 3429 0			3637>152
-3296 3428 0			3637>152
-3595 3429 0			3637>152
-3595 3428 0			3637>152
-# keldagrim brown engine secretary			
-2890 10192 1			
-2896 10189 1			
-# magic guild			
-2584 3087 0		66 Magic	
-2584 3088 0		66 Magic	
-2597 3087 0		66 Magic	
-2597 3088 0		66 Magic	
-# RFD Room			
-3207 3217 0	Recipe for Disaster		
-3213 3222 0	Recipe for Disaster		
-3213 3221 0	Recipe for Disaster		
-# Al Kharid Gate			
-3267 3228 0	Prince Ali Rescue		
-3267 3227 0	Prince Ali Rescue		
-3268 3227 0	Prince Ali Rescue		
-3268 3228 0	Prince Ali Rescue
-2936 9810 0		63 Agility
-# Tree near Draynor Manor			
-3138 3352 0			
-# Fenkenstrain Castle			
-3537 3541 0			
-3537 3542 0			
-3537 3543 0			
-3537 3544 0			
-3538 3544 0			
-3538 3540 0			
-2556 3468 0			
-2558 3458 0			
-2563 3456 0			
-2573 3456 0			
-2577 3456 0			
-2569 3455 0			
-2567 3455 0			
-2569 3456 0			
-2566 3456 0			
-2555 3473 0			
-2555 3476 0			
-# Staircase in Draynor Manor			
-3113 3361 0			
-3113 3360 0			
-3113 3359 0			
-3113 3358 0			
-3113 3357 0			
-# Lunar Isle
-2112 3911 0			
-2112 3910 0			
-2112 3909 0			
-2112 3908 0			
-2112 3907 0			
-2112 3906 0			
+# Origin	Quests	Skills	isMembers	Varbits	Varplayers
+# Varrock museum					
+3265 3442 0					
+3264 3442 0					
+3261 3446 0					
+# Gate between digsite and varrock					
+3296 3429 0				3637>152	
+3296 3428 0				3637>152	
+3595 3429 0				3637>152	
+3595 3428 0				3637>152	
+# keldagrim brown engine secretary					
+2890 10192 1					
+2896 10189 1					
+# magic guild					
+2584 3087 0		66 Magic			
+2584 3088 0		66 Magic			
+2597 3087 0		66 Magic			
+2597 3088 0		66 Magic			
+# RFD Room					
+3207 3217 0	Recipe for Disaster				
+3213 3222 0	Recipe for Disaster				
+3213 3221 0	Recipe for Disaster				
+# Al Kharid Gate					
+3267 3228 0	Prince Ali Rescue				
+3267 3227 0	Prince Ali Rescue				
+3268 3227 0	Prince Ali Rescue				
+3268 3228 0	Prince Ali Rescue				
+2936 9810 0		63 Agility			
+# Tree near Draynor Manor					
+3138 3352 0					
+# Fenkenstrain Castle					
+3537 3541 0					
+3537 3542 0					
+3537 3543 0					
+3537 3544 0					
+3538 3544 0					
+3538 3540 0					
+2556 3468 0					
+2558 3458 0					
+2563 3456 0					
+2573 3456 0					
+2577 3456 0					
+2569 3455 0					
+2567 3455 0					
+2569 3456 0					
+2566 3456 0					
+2555 3473 0					
+2555 3476 0					
+# Staircase in Draynor Manor					
+3113 3361 0					
+3113 3360 0					
+3113 3359 0					
+3113 3358 0					
+3113 3357 0					
+# Lunar Isle					
+2112 3911 0					
+2112 3910 0					
+2112 3909 0					
+2112 3908 0					
+2112 3907 0					
+2112 3906 0					
+# Talvery Gates					
+2936 3450 0			Y		
+2936 3451 0			Y		
+2933 3319 0			Y		
+2934 3319 0			Y		

@@ -143,7 +143,6 @@
 2429 9807 0	2435 9807 0	Enter;Tunnel;30174	72 Agility				
 2429 9806 0	2435 9806 0	Enter;Tunnel;30174	72 Agility				
 1742 3854 0	1752 3854 0	Climb;Rocks;27984	73 Agility			4	
-1752 3854 0	1742 3854 0	Climb;Rocks;27985	73 Agility			4	
 2838 3693 0	2844 3693 0	Climb;Rocks;16464	73 Agility				
 2844 3693 0	2838 3693 0	Climb;Rocks;16464	73 Agility				
 2843 3692 0	2838 3693 0	Climb;Rocks;16464	73 Agility				
@@ -190,3 +189,5 @@
 3342 10148 0	3342 10154 0	Squeeze-through;Crevice;53259	77 Agility			4	
 3334 10122 0	3334 10118 0	Squeeze-through;Crevice;53259	77 Agility			4	
 3334 10118 0	3334 10122 0	Squeeze-through;Crevice;53259	77 Agility			4	
+3371 2958 0	3373 2955 0	Cross;Stepping stone;53241	71 Agility			2	
+3373 2955 0	3371 2958 0	Cross;Stepping stone;53241	71 Agility			2	

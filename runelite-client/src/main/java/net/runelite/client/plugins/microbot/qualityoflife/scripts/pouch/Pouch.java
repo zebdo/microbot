@@ -31,13 +31,13 @@ public enum Pouch {
 
     private final int degradedBaseHoldAmount;
 
-    @Getter(AccessLevel.PACKAGE)
+    @Getter(AccessLevel.PUBLIC)
     @Setter(AccessLevel.PACKAGE)
     private int[] itemIds;
     @Getter(AccessLevel.PUBLIC)
     @Setter(AccessLevel.PACKAGE)
     private int holding;
-    @Getter(AccessLevel.PACKAGE)
+    @Getter
     private boolean degraded;
     @Getter(AccessLevel.PUBLIC)
     @Setter(AccessLevel.PACKAGE)
@@ -156,10 +156,6 @@ public enum Pouch {
 
     public boolean hasPouchInInventory() {
         return Rs2Inventory.hasItem(itemIds);
-    }
-
-    public boolean isDegraded() {
-        return degraded;
     }
 
     public int getColossalHoldAmountIndex() {

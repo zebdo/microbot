@@ -1169,7 +1169,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 
         List<String> locationKeyWords = Arrays.asList("farm", "monastery", "lletya", "prifddinas", "rellekka", "waterbirth island", "neitiznot", "jatiszo",
                 "ver sinhaza", "darkmeyer", "slepe", "troll stronghold", "weiss", "ecto", "burgh", "duradel", "gem mine", "nardah", "kalphite cave",
-                "kourend woodland", "mount karuulm", "outside", "fishing guild", "otto's grotto");
+                "kourend woodland", "mount karuulm", "outside", "fishing guild", "otto's grotto", "stronghold slayer cave", "slayer tower", "fremennik", "tarn's lair", "dark beasts");
         List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "rub", "break", "teleport", "reminisce", "signal", "play");
 
         boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
@@ -1211,11 +1211,17 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 Rs2Dialogue.sleepUntilHasDialogueOption("Okay, teleport to level");
                 Rs2Dialogue.clickOption("Okay, teleport to level");
             }
+            
+            if (itemAction.equalsIgnoreCase("rub") && transport.getDisplayInfo().toLowerCase().contains("slayer ring")) {
+                Rs2Dialogue.sleepUntilSelectAnOption();
+                Rs2Dialogue.clickOption("teleport");
+                Rs2Dialogue.sleepUntilSelectAnOption();
+                Rs2Dialogue.clickOption(destination);
+            }
 
             if (itemAction.equalsIgnoreCase("rub") || itemAction.equalsIgnoreCase("reminisce")) {
-                sleepUntil(() -> Rs2Widget.getWidget(219, 1) != null);
-                Rs2Widget.sleepUntilHasWidgetText(destination, 219, 1, false, 5000);
-                Rs2Widget.clickWidget(destination, Optional.of(219), 1, false);
+                Rs2Dialogue.sleepUntilSelectAnOption();
+                Rs2Dialogue.clickOption(destination);
             }
 
             Microbot.log("Traveling to " + transport.getDisplayInfo());
@@ -1231,10 +1237,16 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 String[] values = transport.getDisplayInfo().split(":");
                 String destination = values[1].trim().toLowerCase();
                 Rs2Item rs2Item = Rs2Equipment.get(itemId);
-                Rs2Equipment.invokeMenu(rs2Item, destination);
-                if (transport.getDisplayInfo().toLowerCase().contains("burning amulet")) {
-                    Rs2Dialogue.sleepUntilInDialogue();
-                    Rs2Dialogue.clickOption("Okay, teleport to level");
+                if (transport.getDisplayInfo().toLowerCase().contains("slayer ring")) {
+                    Rs2Equipment.invokeMenu(rs2Item, "teleport");
+                    Rs2Dialogue.sleepUntilSelectAnOption();
+                    Rs2Dialogue.clickOption(destination);
+                } else {
+                    Rs2Equipment.invokeMenu(rs2Item, destination);
+                    if (transport.getDisplayInfo().toLowerCase().contains("burning amulet")) {
+                        Rs2Dialogue.sleepUntilInDialogue();
+                        Rs2Dialogue.clickOption("Okay, teleport to level");
+                    }
                 }
                 Microbot.log("Traveling to " + transport.getDisplayInfo());
                 return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 5000);
