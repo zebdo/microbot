@@ -120,21 +120,21 @@ public class Restriction {
         }
 
         if ((value = fieldMap.get("Varplayers")) != null && !value.trim().isEmpty()) {
-            for (String varbitCheck : value.split(DELIM_MULTI)) {
+            for (String  varplayerCheck : value.split(DELIM_MULTI)) {
                 String[] parts;
                 TransportVarPlayer.Operator operator;
 
-                if (varbitCheck.contains(">")) {
-                    parts = varbitCheck.split(">");
+                if (varplayerCheck.contains(">")) {
+                    parts = varplayerCheck.split(">");
                     operator = TransportVarPlayer.Operator.GREATER_THAN;
-                } else if (varbitCheck.contains("<")) {
-                    parts = varbitCheck.split("<");
+                } else if (varplayerCheck.contains("<")) {
+                    parts = varplayerCheck.split("<");
                     operator = TransportVarPlayer.Operator.LESS_THAN;
-                } else if (varbitCheck.contains("=")) {
-                    parts = varbitCheck.split("=");
+                } else if (varplayerCheck.contains("=")) {
+                    parts =  varplayerCheck.split("=");
                     operator = TransportVarPlayer.Operator.EQUAL;
                 } else {
-                    throw new IllegalArgumentException("Invalid varplayer format: " + varbitCheck);
+                    throw new IllegalArgumentException("Invalid varplayer format: " + varplayerCheck);
                 }
 
                 int varplayerId = Integer.parseInt(parts[0]);
