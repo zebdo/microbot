@@ -6,8 +6,19 @@ import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.plugins.microbot.util.antiban.enums.PlaySchedule;
 
-@ConfigGroup("Breakhandler")
+@ConfigGroup(BreakHandlerConfig.configGroup)
 public interface BreakHandlerConfig extends Config {
+    String configGroup = "break-handler";
+    String hideOverlay = "hideOverlay";
+
+    @ConfigItem(
+            keyName = "hideOverlay",
+            name = "Overlay Hider",
+            description = "Select this if you want to hide overlay"
+    )
+    default boolean isHideOverlay() {
+        return false;
+    }
 
     // Play Schedule section
     @ConfigSection(
