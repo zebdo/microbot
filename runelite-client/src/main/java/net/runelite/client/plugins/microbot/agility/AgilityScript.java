@@ -291,7 +291,7 @@ public class AgilityScript extends Script {
     }
 
     private boolean waitForAgilityObstabcleToFinish(final int agilityExp) {
-        sleepUntilOnClientThread(() -> agilityExp != Microbot.getClient().getSkillExperience(Skill.AGILITY), 10000);
+        sleepUntilOnClientThread(() -> agilityExp != Microbot.getClient().getSkillExperience(Skill.AGILITY), 15000);
 
 
         if (agilityExp != Microbot.getClient().getSkillExperience(Skill.AGILITY) || Microbot.getClient().getTopLevelWorldView().getPlane() == 0) {

@@ -756,6 +756,9 @@ public static GameObject findReachableObject(String objectName, boolean exact, i
             if (object.getId() == ObjectID.MARKET_STALL_14936) {
                 if (object instanceof GameObject && !Rs2Walker.canReach(object.getWorldLocation(), ((GameObject) object).sizeX(), ((GameObject) object).sizeY(), 4, 4))
                     continue;
+            } else if (object.getId() == ObjectID.BEAM_42220) {
+                if (object.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) > 6)
+                    continue;
             } else {
                 if (object instanceof GameObject && !Rs2Walker.canReach(object.getWorldLocation(), ((GameObject) object).sizeX(), ((GameObject) object).sizeY()))
                     continue;
