@@ -92,7 +92,7 @@ public class ArceuusRcScript extends Script {
 
     public boolean shouldGoToRunestone() {
         return !Rs2Inventory.isFull()
-                && Rs2Player.getWorldLocation().distanceTo(DENSE_RUNESTONE) > 10
+                && Rs2Player.getWorldLocation().distanceTo(DENSE_RUNESTONE) > 8
                 && darkAltarTripCount < 2
                 && !(Rs2Player.getWorldLocation().distanceTo(ARCEUUS_BLOOD_ALTAR) < 5
                     && Rs2Inventory.hasItem(ItemID.DARK_ESSENCE_BLOCK,ItemID.DARK_ESSENCE_FRAGMENTS));
