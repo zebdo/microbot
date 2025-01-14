@@ -18,6 +18,8 @@ public class ArceuusRcScript extends Script {
 
     public static String version = "1.0.0";
     public static int darkAltarTripCount = 0;
+    private final int BLOOD_ESSENCE_ACTIVE = ItemID.BLOOD_ESSENCE_ACTIVE;
+    private final int BLOOD_ESSENCE = ItemID.BLOOD_ESSENCE;
     public static final WorldPoint ARCEUUS_BLOOD_ALTAR = new WorldPoint(1720, 3828, 0);
     public static final WorldPoint ARCEUUS_DARK_ALTAR = new WorldPoint(1718, 3880, 0);
     public static final WorldPoint DENSE_RUNESTONE = new WorldPoint(1760, 3853, 0);
@@ -150,6 +152,9 @@ public class ArceuusRcScript extends Script {
     }
 
     public void mineEssence() {
+        if(!Rs2Inventory.hasItem(BLOOD_ESSENCE_ACTIVE)){
+            Rs2Inventory.interact(BLOOD_ESSENCE, "Activate");
+        }
         GameObject runeStone = Rs2GameObject.findObject("Dense runestone", true,11,false,Rs2Player.getWorldLocation());
         if (runeStone != null) {
             Rs2GameObject.interact(runeStone,"Chip");
