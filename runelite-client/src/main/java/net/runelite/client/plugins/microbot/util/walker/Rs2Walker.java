@@ -1220,9 +1220,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             }
 
             if (itemAction.equalsIgnoreCase("rub") || itemAction.equalsIgnoreCase("reminisce")) {
-                sleepUntil(() -> Rs2Widget.getWidget(219, 1) != null);
-                Rs2Widget.sleepUntilHasWidgetText(destination, 219, 1, false, 5000);
-                Rs2Widget.clickWidget(destination, Optional.of(219), 1, false);
+                Rs2Dialogue.sleepUntilSelectAnOption();
+                Rs2Dialogue.clickOption(destination);
             }
 
             Microbot.log("Traveling to " + transport.getDisplayInfo());
