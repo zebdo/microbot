@@ -23,6 +23,19 @@ public class Restriction {
      */
     @Getter
     private final Set<TransportVarbit> varbits = new HashSet<>();
+
+    /**
+     * Any varplayers to check for the restriction to be lifted.
+     */
+    @Getter
+    private final Set<TransportVarPlayer> varplayers = new HashSet<>();
+
+    /**
+     * Transport requires player to be in a members world
+     */
+    @Getter
+    private boolean isMembers = false;
+    
     /**
      * The restricted point (packed)
      */
@@ -78,6 +91,10 @@ public class Restriction {
             }
         }
 
+        if ((value = fieldMap.get("isMembers")) != null && !value.trim().isEmpty()) {
+            this.isMembers = "Y".equals(value.trim()) || "yes".equals(value.trim().toLowerCase());
+        }
+
         if ((value = fieldMap.get("Varbits")) != null) {
             for (String varbitCheck : value.split(DELIM_MULTI)) {
                 String[] parts;
@@ -99,6 +116,30 @@ public class Restriction {
                 int varbitId = Integer.parseInt(parts[0]);
                 int varbitValue = Integer.parseInt(parts[1]);
                 varbits.add(new TransportVarbit(varbitId, varbitValue, operator));
+            }
+        }
+
+        if ((value = fieldMap.get("Varplayers")) != null && !value.trim().isEmpty()) {
+            for (String varbitCheck : value.split(DELIM_MULTI)) {
+                String[] parts;
+                TransportVarPlayer.Operator operator;
+
+                if (varbitCheck.contains(">")) {
+                    parts = varbitCheck.split(">");
+                    operator = TransportVarPlayer.Operator.GREATER_THAN;
+                } else if (varbitCheck.contains("<")) {
+                    parts = varbitCheck.split("<");
+                    operator = TransportVarPlayer.Operator.LESS_THAN;
+                } else if (varbitCheck.contains("=")) {
+                    parts = varbitCheck.split("=");
+                    operator = TransportVarPlayer.Operator.EQUAL;
+                } else {
+                    throw new IllegalArgumentException("Invalid varplayer format: " + varbitCheck);
+                }
+
+                int varplayerId = Integer.parseInt(parts[0]);
+                int varplayerValue = Integer.parseInt(parts[1]);
+                varplayers.add(new TransportVarPlayer(varplayerId, varplayerValue, operator));
             }
         }
     }

@@ -82,6 +82,7 @@ public class PathfinderConfig {
     private final int[] boostedLevels = new int[Skill.values().length];
     private Map<Quest, QuestState> questStates = new HashMap<>();
     private Map<Integer, Integer> varbitValues = new HashMap<>();
+    private Map<Integer, Integer> varplayerValues = new HashMap<>();
 
     @Getter
     @Setter
@@ -209,6 +210,10 @@ public class PathfinderConfig {
                     for (TransportVarbit varbitCheck : transport.getVarbits()) {
                         varbitValues.put(varbitCheck.getVarbitId(), Microbot.getVarbitValue(varbitCheck.getVarbitId()));
                     }
+                    
+                    for (TransportVarPlayer varplayerCheck : transport.getVarplayers()) {
+                        varplayerValues.put(varplayerCheck.getVarplayerId(), Microbot.getVarbitPlayerValue(varplayerCheck.getVarplayerId()));
+                    }
                 }
             }
             return true;
@@ -238,13 +243,19 @@ public class PathfinderConfig {
 
         Set<Quest> questsToFetch = new HashSet<>();
         Set<Integer> varbitsToFetch = new HashSet<>();
+        Set<Integer> varplayersToFetch = new HashSet<>();
         List<Restriction> allRestrictions = Stream.concat(resourceRestrictions.stream(), customRestrictions.stream())
                 .collect(Collectors.toList());
 
         for (Restriction entry : allRestrictions) {
             questsToFetch.addAll(entry.getQuests());
+            
             for (TransportVarbit varbitCheck : entry.getVarbits()) {
                 varbitsToFetch.add(varbitCheck.getVarbitId());
+            }
+
+            for (TransportVarPlayer varplayerCheck : entry.getVarplayers()) {
+                varplayersToFetch.add(varplayerCheck.getVarplayerId());
             }
         }
 
@@ -266,12 +277,23 @@ public class PathfinderConfig {
             varbitValues.put(varbitId, Microbot.getVarbitValue(varbitId));
         }
 
+        for (Integer varplayerId : varplayersToFetch) {
+            varplayerValues.put(varplayerId, Microbot.getVarbitValue(varplayerId));
+        }
+
         for (Restriction entry : allRestrictions) {
             boolean restrictionApplies = false;
 
-            // Check if there are no quests, varbits, or skills, used for explicit restrictions
-            if (entry.getQuests().isEmpty() && entry.getVarbits().isEmpty() && Arrays.stream(entry.getSkillLevels()).allMatch(level -> level == 0)) {
+            // Check if there are no quests, varbits, varplayers, doesn't require a members world or skills, used for explicit restrictions
+            if (entry.getQuests().isEmpty() && entry.getVarbits().isEmpty() && entry.getVarplayers().isEmpty() && !entry.isMembers() && Arrays.stream(entry.getSkillLevels()).allMatch(level -> level == 0)) {
                 restrictionApplies = true;
+            }
+            
+            // Members World Check
+            if (!restrictionApplies) {
+                if (entry.isMembers() && !client.getWorldType().contains(WorldType.MEMBERS)) {
+                    restrictionApplies = true;
+                }
             }
 
             // Quest check
@@ -290,6 +312,18 @@ public class PathfinderConfig {
                     int varbitId = varbitCheck.getVarbitId();
                     int actualValue = varbitValues.getOrDefault(varbitId, -1);
                     if (!varbitCheck.matches(actualValue)) {
+                        restrictionApplies = true;
+                        break;
+                    }
+                }
+            }
+            
+            // Varplayer check
+            if (!restrictionApplies) {
+                for (TransportVarPlayer varplayerCheck : entry.getVarplayers()) {
+                    int varplayerId = varplayerCheck.getVarplayerId();
+                    int actualValue = varplayerValues.getOrDefault(varplayerId, -1);
+                    if (!varplayerCheck.matches(actualValue)) {
                         restrictionApplies = true;
                         break;
                     }
@@ -353,6 +387,17 @@ public class PathfinderConfig {
         return true;
     }
 
+    private boolean varplayerChecks(Transport transport) {
+        if (varplayerValues.isEmpty()) return true;
+        for (TransportVarPlayer varplayerCheck : transport.getVarplayers()) {
+            int actualValue = varplayerValues.getOrDefault(varplayerCheck.getVarplayerId(), -1);
+            if (!varplayerCheck.matches(actualValue)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
     private boolean useTransport(Transport transport) {
         // Check if the feature flag is disabled
         if (!isFeatureEnabled(transport)) return false;
@@ -364,6 +409,8 @@ public class PathfinderConfig {
         if (transport.isQuestLocked() && !completedQuests(transport)) return false;
         // If the transport has varbit requirements & the varbits do not match
         if (!varbitChecks(transport)) return false;
+        // If the transport has varplayer requirements & the varplayers do not match
+        if (!varplayerChecks(transport)) return false;
         // If you don't have the required Items & Amount for transport (used for charters & minecarts)
         if (transport.getAmtItemRequired() > 0 && !Rs2Inventory.hasItemAmount(transport.getItemRequired(), transport.getAmtItemRequired())) return false;
         // Check Teleport Item Settings
