@@ -23,6 +23,6 @@ public interface RuneBodyCrafterConfig extends Config {
             section = generalSection
     )
     default String about() {
-        return "This plugin crafts runes at the body altar.\n\nBe near the Edgeville bank before starting the script and have a Body Tiara in the Bank";
+        return "This plugin crafts runes at the body altar.\n\nBe near the Edgeville bank before starting the script and have a Body Tiara in the Bank. \n\n Only works with Pure essence. \n\n Thankyou to George and Harvest101 for the help!";
     }
 }
