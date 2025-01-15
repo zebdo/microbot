@@ -47,6 +47,11 @@ public enum Rs2Spells {
     HIGH_LEVEL_ALCHEMY(MagicAction.HIGH_LEVEL_ALCHEMY, Map.of(
             Runes.FIRE, 5,
             Runes.NATURE, 1
+    )),
+    NPC_CONTACT(MagicAction.NPC_CONTACT, Map.of(
+            Runes.AIR, 2,
+            Runes.COSMIC, 1,
+            Runes.ASTRAL, 1
     ));
 
     private final MagicAction action;
