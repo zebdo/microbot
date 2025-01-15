@@ -16,29 +16,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- *  @ObfuscatedName("cr")
- *  @ObfuscatedGetter(
- *  intValue = 1400873349 --> animationMultiplier
- *  )
- *  @Export("sequence")
- *  int sequence;
- *  @ObfuscatedName("cz")
- *  @ObfuscatedGetter(
- *  intValue = -1043355907
- )
- *
- *     @ObfuscatedName("hw")
- * @Implements("NPCComposition")
- * public class NPCComposition extends DualNode
- *
- *     @ObfuscatedName("bd")
- *     @Export("headIconSpriteIndex")
- *     short[] headIconSpriteIndex = null;
- *
- *     URL to check new gamepack: https://oldschool42.runescape.com/jav_config.ws
- */
-
 public class Rs2Reflection {
     static String animationField = null;
     static Method doAction = null;
