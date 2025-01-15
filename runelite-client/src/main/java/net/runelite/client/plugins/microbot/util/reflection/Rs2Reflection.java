@@ -47,7 +47,9 @@ public class Rs2Reflection {
      * sequence maps to an actor animation
      * actor can be an npc/player
      */
-    static int animationMultiplier = 1400873349;
+    static int animationMultiplier = 1430383743;
+    static String npcDefinition = "ap"; //NPCComposition definition in NPC.class
+    static String headIconSpriteIndex = "bw"; //headIconSpriteIndex in NPCComposition.class
 
     /**
      * Credits to EthanApi
@@ -188,14 +190,14 @@ public class Rs2Reflection {
      */
     @SneakyThrows
     public static HeadIcon getHeadIcon(NPC npc) {
-        Field ab = npc.getClass().getDeclaredField("ab");
+        Field ab = npc.getClass().getDeclaredField(npcDefinition);
         ab.setAccessible(true);
         Object aqObj = ab.get(npc);
         if (aqObj == null) {
             ab.setAccessible(false);
             return getOldHeadIcon(npc);
         }
-        Field bdField = aqObj.getClass().getDeclaredField("bd");
+        Field bdField = aqObj.getClass().getDeclaredField(headIconSpriteIndex);
         bdField.setAccessible(true);
         short[] bd = (short[]) bdField.get(aqObj);
         bdField.setAccessible(false);

@@ -127,9 +127,8 @@ public class PohTeleports {
         //TODO: Add config here to inform the user if the teleport is a wilderness teleport
         if (getPortalNexusInterface() == null) {
             List<Integer> portalNexuses = new ArrayList<>();
-            for (int i = ObjectID.PORTAL_NEXUS_33354; i < ObjectID.PORTAL_NEXUS_33391; i++) {
+            for (int i = ObjectID.PORTAL_NEXUS; i < ObjectID.PORTAL_NEXUS_33410; i++) {
                 portalNexuses.add(i);
-
             }
             TileObject tileObject = Rs2GameObject.findObject(portalNexuses.toArray(Integer[]::new));
             Rs2GameObject.interact(tileObject, "Teleport Menu");

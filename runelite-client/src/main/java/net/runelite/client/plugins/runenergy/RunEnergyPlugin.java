@@ -26,24 +26,9 @@ package net.runelite.client.plugins.runenergy;
 
 import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provides;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import javax.inject.Inject;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.Constants;
-import net.runelite.api.EquipmentInventorySlot;
-import net.runelite.api.InventoryID;
-import net.runelite.api.Item;
-import net.runelite.api.ItemContainer;
-import static net.runelite.api.ItemID.*;
-import net.runelite.api.ScriptID;
-import net.runelite.api.Skill;
-import net.runelite.api.Varbits;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
@@ -64,6 +49,14 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.ui.overlay.OverlayManager;
 import org.apache.commons.lang3.StringUtils;
+
+import javax.inject.Inject;
+import java.util.Arrays;
+import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static net.runelite.api.ItemID.*;
 
 @PluginDescriptor(
 	name = "Run Energy",
@@ -292,8 +285,8 @@ public class RunEnergyPlugin extends Plugin
 		final int weight = Math.min(Math.max(client.getWeight(), 0), 64);
 		final int agilityLevel = client.getBoostedSkillLevel(Skill.AGILITY);
 
-		// 100% energy is 10000 energy units
-		int energyUnitsLost = (int) ((60 + (67 * effectiveWeight / 64)) * (1 - client.getBoostedSkillLevel(Skill.AGILITY) / 300.0));
+		// New drain rate formula
+		double drainRate = (60 + (67 * weight / 64.0)) * (1 - (agilityLevel / 300.0));
 
 		if (client.getVarbitValue(Varbits.RUN_SLOWED_DEPLETION_ACTIVE) != 0) {
 			drainRate *= 0.3; // Stamina effect reduces drain rate to 30%
@@ -350,8 +343,8 @@ public class RunEnergyPlugin extends Plugin
 		final int agilityLevel = Microbot.getClient().getBoostedSkillLevel(Skill.AGILITY);
 
 		// Calculate the amount of energy recovered every second
-		double recoverRate = 25 + client.getBoostedSkillLevel(Skill.AGILITY) / 6.0;
-		recoverRate *= 1.0 + getGracefulRecoveryBoost() / 100.0;
+		double recoveryRate = 25 +  Microbot.getClient().getBoostedSkillLevel(Skill.AGILITY) / 6.0;
+		recoveryRate *= 1.0 + getGracefulRecoveryBoost() / 100.0;
 
 		final double secondsLeft = (10000 - Microbot.getClient().getEnergy()) / recoveryRate;
 		return (int) Math.ceil(secondsLeft);
