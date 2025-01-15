@@ -438,6 +438,11 @@ public final class Varbits
 	public static final int NMZ_POINTS = 3949;
 
 	/**
+	 * SOUL WARS
+	 */
+	public static final int SOUL_WARS_ACTIVITY = 9794;
+
+	/**
 	 * Blast Furnace
 	 */
 	public static final int BLAST_FURNACE_COPPER_ORE = 959;
