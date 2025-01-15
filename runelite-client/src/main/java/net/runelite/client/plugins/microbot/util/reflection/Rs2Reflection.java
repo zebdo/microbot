@@ -24,7 +24,7 @@ public class Rs2Reflection {
      * sequence maps to an actor animation
      * actor can be an npc/player
      */
-    static int animationMultiplier = 1052118849; //can be found in actor.java (int sequence)
+    static int animationMultiplier = 692374621; //can be found in actor.java (int sequence)
     static String npcDefinition = "ay"; //NPCComposition definition in NPC.class
     static String headIconSpriteIndex = "bj"; //headIconSpriteIndex in NPCComposition.class
 
