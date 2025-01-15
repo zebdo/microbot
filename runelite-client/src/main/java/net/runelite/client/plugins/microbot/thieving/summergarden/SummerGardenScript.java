@@ -6,10 +6,6 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
-import net.runelite.client.chat.ChatColorType;
-import net.runelite.client.chat.ChatMessageBuilder;
-import net.runelite.client.chat.ChatMessageManager;
-import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -58,7 +54,7 @@ public class SummerGardenScript extends Script {
     public boolean sendRs2InventoryFullNotification = false;
     private BotState botState = BotState.RUN;
 
-    public boolean run(SummerGardenConfig config, ChatMessageManager chatMessageManager) {
+    public boolean run(SummerGardenConfig config) {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             if (!super.run()) return;
             try {
@@ -101,14 +97,7 @@ public class SummerGardenScript extends Script {
                         if (config.sendInvFullNotification() && !sendRs2InventoryFullNotification) {
                             // this line causes a freeze when using dev mode
                             //Microbot.getClient().playSoundEffect(OUT_OF_SUPPLY_SOUND, SoundEffectVolume.HIGH);
-                            String message = new ChatMessageBuilder()
-                                    .append(ChatColorType.HIGHLIGHT)
-                                    .append("You need a beer glass and a pestle and mortar to make sq'irk juice.")
-                                    .build();
-                            chatMessageManager.queue(QueuedMessage.builder()
-                                    .type(ChatMessageType.CONSOLE)
-                                    .runeLiteFormattedMessage(message)
-                                    .build());
+                            Microbot.log("You need a beer glass and a pestle and mortar to make sq'irk juice.");
                             sendRs2InventoryFullNotification = true;
                         }
                         return;

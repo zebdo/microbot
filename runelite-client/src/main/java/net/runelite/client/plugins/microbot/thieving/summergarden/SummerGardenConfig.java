@@ -6,6 +6,13 @@ import net.runelite.client.config.*;
 import java.awt.*;
 
 @ConfigGroup(SummerGardenPlugin.CONFIG_GROUP)
+@ConfigInformation("Turn script on in the summer garden minigame <br />" +
+        "                \"For full automation, enable the 'Auto Hand in and Reset' and 'Auto Maze Completion' options. <br />" +
+        "                \"If the 'Auto Hand in and Reset' option is enabled your inventory should only contain a pestle and mortar (at the moment, it does not support stamina potions). <br />" +
+        "                \"Otherwise, if you only have the 'Auto Maze Completion' option enabled, <br />" +
+        "                \"you need to get enough beer glasses and manually hand in or bank your sq'irk before returning to the garden. <br />" +
+        "                \"Stamina potions are recommended if you're only using the 'Auto Maze Completion' option (you'll need to drink them manually). <br />" +
+        "                \"Note that if collision check is not disabled, the script might fail the first few attempts until it is tick perfect")
 public interface SummerGardenConfig extends Config {
 
     @ConfigItem(
@@ -173,24 +180,6 @@ public interface SummerGardenConfig extends Config {
             closedByDefault = false
     )
     String botSection = "botSection";
-
-    @ConfigItem(
-            keyName = "botGuide",
-            name = "How to use",
-            description = "How to use this plugin",
-            position = 1,
-            section = botSection
-    )
-    default String GUIDE() {
-        return "To start this script, right click the tree at summers garden and click 'Start' or toggle this plugin on. " +
-                "For full automation, enable the 'Auto Hand in and Reset' and 'Auto Maze Completion' options. " +
-                "If the 'Auto Hand in and Reset' option is enabled your inventory should only contain a pestle and mortar (at the moment, it does not support stamina potions). " +
-                "Otherwise, if you only have the 'Auto Maze Completion' option enabled, " +
-                "you need to get enough beer glasses and manually hand in or bank your sq'irk before returning to the garden. " +
-                "Stamina potions are recommended if you're only using the 'Auto Maze Completion' option (you'll need to drink them manually). " +
-                "Note that if collision check is not disabled, the script might fail the first few attempts until it is tick perfect";
-    }
-
     @ConfigItem(
             keyName = "autoMazeCompletion",
             name = "Auto Maze Completion",
