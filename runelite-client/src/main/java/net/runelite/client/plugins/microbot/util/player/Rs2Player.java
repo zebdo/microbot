@@ -19,6 +19,7 @@ import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
+import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -49,6 +50,7 @@ public class Rs2Player {
     public static int staminaBuffTime = -1;
     public static int antiPoisonTime = -1;
     public static int teleBlockTime = -1;
+    public static int goadingTime = -1;
     public static Instant lastAnimationTime = null;
     private static final long COMBAT_TIMEOUT_MS = 10000;
     private static long lastCombatTime = 0;
@@ -78,6 +80,10 @@ public class Rs2Player {
 
     public static boolean hasDivineCombatActive() {
         return divineCombatTime > 0;
+    }
+
+    public static boolean hasGoadingActive() {
+        return goadingTime > 0;
     }
 
     public static boolean hasAttackActive(int threshold) {
@@ -131,6 +137,9 @@ public class Rs2Player {
         }
         if (event.getVarbitId() == Varbits.STAMINA_EFFECT) {
             staminaBuffTime = event.getValue();
+        }
+        if (event.getVarbitId() == Varbits.BUFF_GOADING_POTION) {
+            goadingTime = event.getValue();
         }
         if (event.getVarpId() == VarPlayer.POISON) {
             if (event.getValue() >= VENOM_VALUE_CUTOFF) {
@@ -822,12 +831,7 @@ public class Rs2Player {
         }
 
         // Attempt to drink a prayer potion
-        if (usePotion(ItemID.PRAYER_POTION1, ItemID.PRAYER_POTION2, ItemID.PRAYER_POTION3, ItemID.PRAYER_POTION4)) {
-            return true;
-        }
-
-        // Attempt to drink a super restore potion
-        if (usePotion(ItemID.SUPER_RESTORE1, ItemID.SUPER_RESTORE2, ItemID.SUPER_RESTORE3, ItemID.SUPER_RESTORE4)) {
+        if (usePotion(Rs2Potion.getPrayerPotionsVariants().toArray(new String[0]))){
             return true;
         }
 
@@ -849,77 +853,110 @@ public class Rs2Player {
      * @param skill
      * @return
      */
-    public static boolean drinkCombatPotionAt(Skill skill, boolean superCombat) {
-        if (Microbot.getClient().getBoostedSkillLevel(skill) - Microbot.getClient().getRealSkillLevel(skill) > 5) {
+    public static boolean drinkCombatPotionAt(Skill skill, boolean superCombat)
+    {
+        // If the current boosted level is already 5 or more above the real level, don't drink
+        if (Microbot.getClient().getBoostedSkillLevel(skill)
+                - Microbot.getClient().getRealSkillLevel(skill) > 5)
+        {
             return false;
         }
 
-        if (superCombat && (skill == Skill.ATTACK || skill == Skill.STRENGTH || skill == Skill.DEFENCE)) {
-            if (usePotion(ItemID.SUPER_COMBAT_POTION1, ItemID.SUPER_COMBAT_POTION2, ItemID.SUPER_COMBAT_POTION3, ItemID.SUPER_COMBAT_POTION4)) {
-                return true;
-            }
-            if (usePotion(ItemID.DIVINE_SUPER_COMBAT_POTION1, ItemID.DIVINE_SUPER_COMBAT_POTION2, ItemID.DIVINE_SUPER_COMBAT_POTION3, ItemID.DIVINE_SUPER_COMBAT_POTION4)) {
+        // If superCombat is specified and the skill is ATK/STR/DEF, try super combat potions first
+        if (superCombat && (skill == Skill.ATTACK || skill == Skill.STRENGTH || skill == Skill.DEFENCE))
+        {
+            // For example, if you only want to try "Super combat potion" and "Divine super combat potion":
+            // if (usePotion("Super combat potion", "Divine super combat potion")) {
+            //    return true;
+            // }
+
+            // Or if you’re okay including "Combat potion" as well (all from getCombatPotionsVariants):
+            if (usePotion(Rs2Potion.getCombatPotionsVariants().toArray(new String[0])))
+            {
                 return true;
             }
         }
 
-        if (skill == Skill.ATTACK) {
-            if (usePotion(ItemID.ATTACK_POTION1, ItemID.ATTACK_POTION2, ItemID.ATTACK_POTION3, ItemID.ATTACK_POTION4)) {
-                return true;
-            }
-            if (usePotion(ItemID.SUPER_ATTACK1, ItemID.SUPER_ATTACK2, ItemID.SUPER_ATTACK3, ItemID.SUPER_ATTACK4)) {
-                return true;
-            }
-        }
+        // Then fall back to skill-specific potions based on which skill is requested
+        switch (skill)
+        {
+            case ATTACK:
+                if (usePotion(Rs2Potion.getAttackPotionsVariants().toArray(new String[0])))
+                {
+                    return true;
+                }
+                break;
 
-        if (skill == Skill.STRENGTH) {
-            if (usePotion(ItemID.STRENGTH_POTION1, ItemID.STRENGTH_POTION2, ItemID.STRENGTH_POTION3, ItemID.STRENGTH_POTION4)) {
-                return true;
-            }
-            if (usePotion(ItemID.SUPER_STRENGTH1, ItemID.SUPER_STRENGTH2, ItemID.SUPER_STRENGTH3, ItemID.SUPER_STRENGTH4)) {
-                return true;
-            }
-        }
+            case STRENGTH:
+                if (usePotion(Rs2Potion.getStrengthPotionsVariants().toArray(new String[0])))
+                {
+                    return true;
+                }
+                break;
 
-        if (skill == Skill.DEFENCE) {
-            if (usePotion(ItemID.DEFENCE_POTION1, ItemID.DEFENCE_POTION2, ItemID.DEFENCE_POTION3, ItemID.DEFENCE_POTION4)) {
-                return true;
-            }
-            if (usePotion(ItemID.SUPER_DEFENCE1, ItemID.SUPER_DEFENCE2, ItemID.SUPER_DEFENCE3, ItemID.SUPER_DEFENCE4)) {
-                return true;
-            }
-        }
+            case DEFENCE:
+                if (usePotion(Rs2Potion.getDefencePotionsVariants().toArray(new String[0])))
+                {
+                    return true;
+                }
+                break;
 
-        if (skill == Skill.RANGED) {
-            if (usePotion(ItemID.RANGING_POTION1, ItemID.RANGING_POTION2, ItemID.RANGING_POTION3, ItemID.RANGING_POTION4)) {
-                return true;
-            }
-            if (usePotion(ItemID.BASTION_POTION1, ItemID.BASTION_POTION2, ItemID.BASTION_POTION3, ItemID.BASTION_POTION4)) {
-                return true;
-            }
-            if (usePotion(ItemID.DIVINE_RANGING_POTION1, ItemID.DIVINE_RANGING_POTION2, ItemID.DIVINE_RANGING_POTION3, ItemID.DIVINE_RANGING_POTION4)) {
-                return true;
-            }
-            if (usePotion(ItemID.DIVINE_BASTION_POTION1, ItemID.DIVINE_BASTION_POTION2, ItemID.DIVINE_BASTION_POTION3, ItemID.DIVINE_BASTION_POTION4)) {
-                return true;
-            }
-        }
+            case RANGED:
+                if (usePotion(Rs2Potion.getRangePotionsVariants().toArray(new String[0])))
+                {
+                    return true;
+                }
+                break;
 
-        if (skill == Skill.MAGIC) {
-            if (usePotion(ItemID.MAGIC_POTION1, ItemID.MAGIC_POTION2, ItemID.MAGIC_POTION3, ItemID.MAGIC_POTION4)) {
-                return true;
-            }
-            if (usePotion(ItemID.DIVINE_BATTLEMAGE_POTION1, ItemID.DIVINE_BATTLEMAGE_POTION2, ItemID.DIVINE_BATTLEMAGE_POTION3, ItemID.DIVINE_BATTLEMAGE_POTION4)) {
-                return true;
-            }
-            if (usePotion(ItemID.DIVINE_MAGIC_POTION1, ItemID.DIVINE_MAGIC_POTION2, ItemID.DIVINE_MAGIC_POTION3, ItemID.DIVINE_MAGIC_POTION4)) {
-                return true;
-            }
-            return usePotion(ItemID.BATTLEMAGE_POTION1, ItemID.BATTLEMAGE_POTION2, ItemID.BATTLEMAGE_POTION3, ItemID.BATTLEMAGE_POTION4);
+            case MAGIC:
+                if (usePotion(Rs2Potion.getMagicPotionsVariants().toArray(new String[0])))
+                {
+                    return true;
+                }
+                break;
+
+            default:
+                // If the skill is not covered, do nothing
+                break;
         }
 
         return false;
     }
+
+    /**
+     * Drink a Anti Poison potion
+     *
+     * @return true if an Anti Poison potion was found and interacted with; false otherwise.
+     */
+
+    public static boolean drinkAntiPoisonPotion() {
+        if(hasAntiPoisonActive() || hasAntiVenomActive()) {
+            return true;
+        }
+        return usePotion(Rs2Potion.getAntiPoisonVariants().toArray(new String[0]));
+    }
+
+    /**
+     * Drink a Anti Fire potion
+     */
+
+    public static boolean drinkAntiFirePotion() {
+        if(hasAntiFireActive()) {
+            return true;
+        }
+        return usePotion(Rs2Potion.getAntifirePotionsVariants().toArray(new String[0]));
+    }
+
+    /**
+     * Drink a Goading potion
+     */
+    public static boolean drinkGoadingPotion() {
+        if (hasGoadingActive()) {
+            return false;
+        }
+        return usePotion(Rs2Potion.getGoadingPotion());
+    }
+
 
     /**
      * Helper method to check for the presence of any item in the provided IDs and interact with it.
@@ -936,6 +973,23 @@ public class Rs2Player {
         }
         return false;
     }
+
+    /**
+     * Helper method to check for the presence of any item in the provided names and interact with it.
+     *
+     * @param itemNames Array of item names to check in the inventory.
+     * @return true if an item was found and interacted with; false otherwise.
+     */
+    private static boolean usePotion(String... itemNames) {
+        if (Rs2Inventory.contains(x -> Arrays.stream(itemNames).anyMatch(name -> x.name.contains(name)))) {
+            Rs2Item potion = Rs2Inventory.get(Arrays.stream(itemNames).collect(Collectors.toList()),false);
+            if (potion != null) {
+                return Rs2Inventory.interact(potion, "drink");
+            }
+        }
+        return false;
+    }
+
 
 
     /**
@@ -1126,6 +1180,27 @@ public class Rs2Player {
         return Microbot.getVarbitValue(Varbits.RUN_SLOWED_DEPLETION_ACTIVE) != 0;
     }
 
+    /**
+     * Retrieves the current graphic ID of the local player.
+     *
+     * @return the graphic ID of the local player
+     */
+    public static int getGraphicId() {
+        return Microbot.getClient().getLocalPlayer().getGraphic();
+    }
+    
+    /**
+     * Checks if the local player has a specific spot animation active.
+     * 
+     * @see GraphicID
+     *
+     * @param graphicId the graphic ID of the spot animation to check
+     * @return {@code true} if the local player has the specified spot animation, {@code false} otherwise
+     */
+    public static boolean hasSpotAnimation(int graphicId) {
+        return Microbot.getClient().getLocalPlayer().hasSpotAnim(graphicId);
+    }
+
     public static boolean isStunned() {
         return Microbot.getClient().getLocalPlayer().hasSpotAnim(245);
     }
@@ -1166,6 +1241,9 @@ public class Rs2Player {
      * @param player the player to follow
      * @return true if the action was invoked successfully, false otherwise
      */
+
+    public static boolean cast(Player player) { return invokeMenu(player, "cast"); }
+
     public static boolean follow(Player player) {
         return invokeMenu(player, "follow");
     }
@@ -1177,6 +1255,7 @@ public class Rs2Player {
      * @param action the action to invoke (e.g., "attack", "walk here", "trade with", "follow")
      * @return true if the action was invoked successfully, false otherwise
      */
+
     private static boolean invokeMenu(Player player, String action) {
         if (player == null) return false;
 
@@ -1194,6 +1273,9 @@ public class Rs2Player {
             menuAction = MenuAction.PLAYER_THIRD_OPTION;
         } else if (action.equalsIgnoreCase("trade with")) {
             menuAction = MenuAction.PLAYER_FOURTH_OPTION;
+        }
+        else if (action.equalsIgnoreCase("cast")) {
+            menuAction = MenuAction.WIDGET_TARGET_ON_PLAYER;
         }
 
         // Invoke the menu entry using the selected action

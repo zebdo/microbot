@@ -405,42 +405,45 @@ public class MixologyScript extends Script {
     }
 
     private boolean canCreatePotion(PotionOrder potionOrder) {
-        GameObject mixer1 = (GameObject) Rs2GameObject.findObjectById(NULL_55392);
-        GameObject mixer2 = (GameObject) Rs2GameObject.findObjectById(NULL_55393);
-        GameObject mixer3 = (GameObject) Rs2GameObject.findObjectById(NULL_55394);
+        // Get the mixer game objects
+        GameObject[] mixers = {
+                (GameObject) Rs2GameObject.findObjectById(NULL_55394), // mixer3
+                (GameObject) Rs2GameObject.findObjectById(NULL_55393), // mixer2
+                (GameObject) Rs2GameObject.findObjectById(NULL_55392)  // mixer1
+        };
 
-        if (mixer1 == null || mixer2 == null || mixer3 == null) return false;
+        // Check if any mixers are missing
+        if (Arrays.stream(mixers).anyMatch(Objects::isNull)) {
+            return false;
+        }
 
-        int anim1 = ((DynamicObject) mixer1.getRenderable()).getAnimation().getId();
-        int anim2 = ((DynamicObject) mixer2.getRenderable()).getAnimation().getId();
-        int anim3 = ((DynamicObject) mixer3.getRenderable()).getAnimation().getId();
+        // Get animations in correct order
+        int[] currentAnimations = Arrays.stream(mixers)
+                .map(mixer -> ((DynamicObject) mixer.getRenderable()).getAnimation().getId())
+                .mapToInt(Integer::intValue)
+                .toArray();
 
-        int[] currentAnimations = new int[]{anim1, anim2, anim3};
-        List<Boolean> satisfied = new ArrayList<>();
+        // Map components to their valid animations
+        Map<Character, int[]> componentAnimations = Map.of(
+                'A', new int[]{11615, 11609, 11612}, // AGA animations
+                'M', new int[]{11617, 11614, 11607}, // MOX animations
+                'L', new int[]{11608, 11611, 11618}  // LYE animations
+        );
 
-        //blue = 11617
-        //red = 11608
-        //green 11615
-
-        final int AGA_ANIMATION = 11615; //green
-        final int MOX_ANIMATION = 11617; //blue
-        final int LYE_ANIMATION = 11608; //red
-
+        // Check each position
         for (int i = 0; i < potionOrder.potionType().components().length; i++) {
-            switch (potionOrder.potionType().components()[i].character()) {
-                case 'A':
-                    satisfied.add(currentAnimations[i] == AGA_ANIMATION || currentAnimations[i] == 11609 || currentAnimations[i] == 11612);
-                    break;
-                case 'L':
-                    satisfied.add(currentAnimations[i] == LYE_ANIMATION  || currentAnimations[i] == 11611 || currentAnimations[i] == 11618);
-                    break;
-                case 'M':
-                    satisfied.add(currentAnimations[i] == 11614 || currentAnimations[i] == 11607 || currentAnimations[i] == MOX_ANIMATION);
-                    break;
+            char expectedComponent = potionOrder.potionType().components()[i].character();
+            int currentAnimation = currentAnimations[i];
+
+            boolean isValid = Arrays.stream(componentAnimations.get(expectedComponent))
+                    .anyMatch(validAnim -> validAnim == currentAnimation);
+
+            if (!isValid) {
+                return false;
             }
         }
 
-        return satisfied.stream().allMatch(x -> x == true);
+        return true;
     }
 
     private int getMoxPoints() {

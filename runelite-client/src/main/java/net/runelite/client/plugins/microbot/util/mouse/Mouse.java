@@ -12,7 +12,7 @@ import java.util.LinkedList;
 
 @Getter
 public abstract class Mouse {
-    private static final int POINT_LIFETIME = 12;// Maximum number of points to store
+    private static final int POINT_LIFETIME = 14;// Maximum number of points to store
     final int MAX_POINTS = 500;
     LinkedList<Point> points = new LinkedList<>();
     Point lastClick = new Point(-1, -1); // getter for last click

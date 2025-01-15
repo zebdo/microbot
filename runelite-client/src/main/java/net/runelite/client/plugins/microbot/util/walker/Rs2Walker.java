@@ -227,10 +227,11 @@ public class Rs2Walker {
 
             // Edgeville/ardy wilderness lever warning
             if (Rs2Widget.isWidgetVisible(229, 1)) {
-                if (Rs2UiHelper.stripColTags(Rs2Widget.getWidget(229, 1).getText()).equalsIgnoreCase("Warning! The lever will teleport you deep into the Wilderness.")) {
+                if (Rs2Dialogue.getDialogueText() == null) return WalkerState.MOVING;
+                if (Rs2Dialogue.getDialogueText().equalsIgnoreCase("Warning! The lever will teleport you deep into the Wilderness.")) {
                     Microbot.log("Detected Wilderness lever warning, interacting...");
                     Rs2Dialogue.clickContinue();
-                    sleepUntil(() -> Rs2Dialogue.hasDialogueOption("Yes, I'm brave."));
+                    Rs2Dialogue.sleepUntilHasQuestion("Are you sure you wish to pull it?");
                     Rs2Dialogue.clickOption("Yes, I'm brave.");
                     sleep(1200, 2400);
                 }
@@ -961,6 +962,13 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                             break;
                         }
                     }
+                    
+                    if (transport.getType() == TransportType.WILDERNESS_OBELISK) {
+                        if (handleWildernessObelisk(transport)) {
+                            sleep(600 * 2);
+                            break;
+                        }
+                    }
 
                     if (transport.getType() == TransportType.GNOME_GLIDER) {
                         if (handleGlider(transport)) {
@@ -972,7 +980,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     }
 
                     if (transport.getType() == TransportType.FAIRY_RING && !Rs2Player.getWorldLocation().equals(transport.getDestination())) {
-                        handleFairyRing(transport.getOrigin(), transport.getDisplayInfo());
+                        handleFairyRing(transport);
                     }
 
                     if (transport.getType() == TransportType.TELEPORTATION_ITEM) {
@@ -1032,7 +1040,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         System.out.println("tile object");
         Rs2GameObject.interact(tileObject, transport.getAction());
         if (transport.getDestination().getPlane() == Rs2Player.getWorldLocation().getPlane()) {
-            if (handleObjectExceptions(tileObject)) return;
+            if (handleObjectExceptions(transport, tileObject)) return;
             if (transport.getType() == TransportType.AGILITY_SHORTCUT) {
                 Rs2Player.waitForAnimation();
                 sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) <= 2, 10000);
@@ -1053,9 +1061,9 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         }
     }
 
-    private static boolean handleObjectExceptions(TileObject tileObject) {
+    private static boolean handleObjectExceptions(Transport transport, TileObject tileObject) {
         //Al kharid broken wall will animate once and then stop and then animate again
-        if (tileObject.getId() == 33344 || tileObject.getId() == 33348) {
+        if (tileObject.getId() == ObjectID.BROKEN_WALL_33344 || tileObject.getId() == ObjectID.BIG_WINDOW) {
             Rs2Player.waitForAnimation();
             Rs2Player.waitForAnimation();
             return true;
@@ -1066,8 +1074,48 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             if (Rs2Player.getWorldLocation().getY() > 6400) {
                 Rs2GameObject.interact(ObjectID.PROTRUDING_ROCKS_3927);
                 sleepUntil(() -> Rs2Player.getWorldLocation().getY() < 6400);
-                return true;
+            } else {
+                sleepUntil(() -> !Rs2Player.isMoving() && !Rs2Player.isAnimating());
             }
+            return true;
+        }
+        // Handle Ferox Encalve Barrier
+        if (tileObject.getId() == ObjectID.BARRIER_39652 || tileObject.getId() == ObjectID.BARRIER_39653) {
+            if (Rs2Dialogue.isInDialogue()) {
+                if (Rs2Dialogue.getDialogueText() == null) return false;
+                if (Rs2Dialogue.getDialogueText().contains("When returning to the Enclave")) {
+                    Rs2Dialogue.clickContinue();
+                    Rs2Dialogue.sleepUntilSelectAnOption();
+                    Rs2Dialogue.keyPressForDialogueOption("Yes, and don't ask again.");
+                    Rs2Dialogue.sleepUntilNotInDialogue();
+                    return true;
+                }
+            }
+        }
+        // Handle Cobwebs blocking path
+        if (tileObject.getId() == ObjectID.WEB) {
+            sleepUntil(() -> !Rs2Player.isMoving());
+            if (Rs2GameObject.findObjectByIdAndDistance(ObjectID.WEB, 3) != null) {
+                Rs2Player.waitForAnimation();
+            } else {
+                walkFastCanvas(transport.getDestination());
+                sleepUntil(() -> Rs2Player.getWorldLocation().equals(transport.getDestination()));
+            }
+            return true;
+        }
+        return false;
+    }
+    
+    private static boolean handleWildernessObelisk(Transport transport) {
+        GameObject obelisk = Rs2GameObject.getGameObjects(transport.getObjectId(), transport.getOrigin()).stream()
+                .findFirst()
+                .orElse(null);
+        
+        if (obelisk != null) {
+            Rs2GameObject.interact(obelisk, transport.getAction());
+            sleepUntil(() -> Rs2GameObject.getGameObjects(ObjectID.OBELISK_14825, transport.getOrigin()).stream().findFirst().orElse(null) != null);
+            walkFastCanvas(transport.getOrigin());
+            return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 10000);
         }
         return false;
     }
@@ -1121,7 +1169,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 
         List<String> locationKeyWords = Arrays.asList("farm", "monastery", "lletya", "prifddinas", "rellekka", "waterbirth island", "neitiznot", "jatiszo",
                 "ver sinhaza", "darkmeyer", "slepe", "troll stronghold", "weiss", "ecto", "burgh", "duradel", "gem mine", "nardah", "kalphite cave",
-                "kourend woodland", "mount karuulm", "outside", "fishing guild", "otto's grotto");
+                "kourend woodland", "mount karuulm", "outside", "fishing guild", "otto's grotto", "stronghold slayer cave", "slayer tower", "fremennik", "tarn's lair", "dark beasts");
         List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "rub", "break", "teleport", "reminisce", "signal", "play");
 
         boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
@@ -1163,11 +1211,17 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 Rs2Dialogue.sleepUntilHasDialogueOption("Okay, teleport to level");
                 Rs2Dialogue.clickOption("Okay, teleport to level");
             }
+            
+            if (itemAction.equalsIgnoreCase("rub") && transport.getDisplayInfo().toLowerCase().contains("slayer ring")) {
+                Rs2Dialogue.sleepUntilSelectAnOption();
+                Rs2Dialogue.clickOption("teleport");
+                Rs2Dialogue.sleepUntilSelectAnOption();
+                Rs2Dialogue.clickOption(destination);
+            }
 
             if (itemAction.equalsIgnoreCase("rub") || itemAction.equalsIgnoreCase("reminisce")) {
-                sleepUntil(() -> Rs2Widget.getWidget(219, 1) != null);
-                Rs2Widget.sleepUntilHasWidgetText(destination, 219, 1, false, 5000);
-                Rs2Widget.clickWidget(destination, Optional.of(219), 1, false);
+                Rs2Dialogue.sleepUntilSelectAnOption();
+                Rs2Dialogue.clickOption(destination);
             }
 
             Microbot.log("Traveling to " + transport.getDisplayInfo());
@@ -1183,10 +1237,16 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 String[] values = transport.getDisplayInfo().split(":");
                 String destination = values[1].trim().toLowerCase();
                 Rs2Item rs2Item = Rs2Equipment.get(itemId);
-                Rs2Equipment.invokeMenu(rs2Item, destination);
-                if (transport.getDisplayInfo().toLowerCase().contains("burning amulet")) {
-                    Rs2Dialogue.sleepUntilInDialogue();
-                    Rs2Dialogue.clickOption("Okay, teleport to level");
+                if (transport.getDisplayInfo().toLowerCase().contains("slayer ring")) {
+                    Rs2Equipment.invokeMenu(rs2Item, "teleport");
+                    Rs2Dialogue.sleepUntilSelectAnOption();
+                    Rs2Dialogue.clickOption(destination);
+                } else {
+                    Rs2Equipment.invokeMenu(rs2Item, destination);
+                    if (transport.getDisplayInfo().toLowerCase().contains("burning amulet")) {
+                        Rs2Dialogue.sleepUntilInDialogue();
+                        Rs2Dialogue.clickOption("Okay, teleport to level");
+                    }
                 }
                 Microbot.log("Traveling to " + transport.getDisplayInfo());
                 return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 5000);
@@ -1480,23 +1540,27 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     private static final int SLOT_THREE_ACW_ROTATION = 26083352;
     private static Rs2Item startingWeapon = null;
     private static int startingWeaponId;
+    private static int fairyRingGraphicId = 569;
 
-    public static void handleFairyRing(WorldPoint origin, String fairyRingCode) {
+    public static void handleFairyRing(Transport transport) {
 
         // Check if the widget is already visible
         if (!Rs2Widget.isHidden(ComponentID.FAIRY_RING_TELEPORT_BUTTON)) {
-            rotateSlotToDesiredRotation(SLOT_ONE, Rs2Widget.getWidget(SLOT_ONE).getRotationY(), getDesiredRotation(fairyRingCode.charAt(0)), SLOT_ONE_ACW_ROTATION, SLOT_ONE_CW_ROTATION);
-            rotateSlotToDesiredRotation(SLOT_TWO, Rs2Widget.getWidget(SLOT_TWO).getRotationY(), getDesiredRotation(fairyRingCode.charAt(1)), SLOT_TWO_ACW_ROTATION, SLOT_TWO_CW_ROTATION);
-            rotateSlotToDesiredRotation(SLOT_THREE, Rs2Widget.getWidget(SLOT_THREE).getRotationY(), getDesiredRotation(fairyRingCode.charAt(2)), SLOT_THREE_ACW_ROTATION, SLOT_THREE_CW_ROTATION);
+            rotateSlotToDesiredRotation(SLOT_ONE, Rs2Widget.getWidget(SLOT_ONE).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(0)), SLOT_ONE_ACW_ROTATION, SLOT_ONE_CW_ROTATION);
+            rotateSlotToDesiredRotation(SLOT_TWO, Rs2Widget.getWidget(SLOT_TWO).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(1)), SLOT_TWO_ACW_ROTATION, SLOT_TWO_CW_ROTATION);
+            rotateSlotToDesiredRotation(SLOT_THREE, Rs2Widget.getWidget(SLOT_THREE).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(2)), SLOT_THREE_ACW_ROTATION, SLOT_THREE_CW_ROTATION);
             Rs2Widget.clickWidget(TELEPORT_BUTTON);
             
-            Rs2Player.waitForAnimation(Rs2Random.between(4200, 4800)); // Required due to long animation time
+            sleepUntil(() -> Rs2Player.hasSpotAnimation(fairyRingGraphicId));
+            sleepUntil(() -> Rs2Player.getWorldLocation().equals(transport.getDestination()) && !Rs2Player.hasSpotAnimation(fairyRingGraphicId), 10000);
             
             // Re-equip the starting weapon if it was unequipped
-            if (startingWeapon != null & !Rs2Equipment.isWearing(startingWeaponId)) {
+            if (startingWeapon != null && !Rs2Equipment.isWearing(startingWeaponId)) {
                 Microbot.log("Equipping Starting Weapon: " + startingWeaponId);
                 Rs2Inventory.equip(startingWeaponId);
-                sleep(600);
+                sleepUntil(() -> Rs2Equipment.isWearing(startingWeaponId));
+                startingWeapon = null;
+                startingWeaponId = 0;
             }
             return;
         }
@@ -1504,13 +1568,13 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         if (Microbot.getVarbitValue(Varbits.DIARY_LUMBRIDGE_ELITE) == 1) {
             // Direct interaction without staff if elite Lumbridge Diary is complete
             Microbot.log("Interacting with the fairy ring directly.");
-            var fairyRing = Rs2GameObject.findObjectByLocation(origin);
+            var fairyRing = Rs2GameObject.findObjectByLocation(transport.getOrigin());
             Rs2GameObject.interact(fairyRing, "Configure");
             Rs2Player.waitForWalking();
         } 
         else {
             // Manage weapon and staff as needed if elite Lumbridge Diary is not complete
-            if (startingWeapon == null) {
+            if (startingWeapon == null && Rs2Equipment.hasEquippedSlot(EquipmentInventorySlot.WEAPON)) {
                 startingWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
                 startingWeaponId = startingWeapon.getId();
             }
@@ -1527,8 +1591,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             }
 
             // Interact with fairy ring after equipping the staff
-            Microbot.log("Interacting with the fairy ring using a staff. " + origin.getX() + " " + origin.getY());
-            var fairyRing = Rs2GameObject.findObjectByLocation(origin);
+            Microbot.log("Interacting with the fairy ring using a staff. " + transport.getOrigin().getX() + " " + transport.getOrigin().getY());
+            var fairyRing = Rs2GameObject.findObjectByLocation(transport.getOrigin());
             if (Rs2GameObject.interact(fairyRing, "Configure")) {
                 Rs2Player.waitForWalking();
             } else {

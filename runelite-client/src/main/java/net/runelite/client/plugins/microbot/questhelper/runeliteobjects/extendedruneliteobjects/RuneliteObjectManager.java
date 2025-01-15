@@ -580,7 +580,7 @@ public class RuneliteObjectManager {
         LocalPoint lp = LocalPoint.fromWorld(client, rlObj.getWorldPoint());
         if (lp != null) {
             Point p = Perspective.localToCanvas(client, lp, client.getPlane(),
-                    rlObj.getRuneliteObject().getModelHeight());
+                    rlObj.getRuneliteObject().getBaseModel().getModelHeight());
             if (p != null) {
                 Font overheadFont = FontManager.getRunescapeBoldFont();
                 FontMetrics metrics = graphics.getFontMetrics(overheadFont);

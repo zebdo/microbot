@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot;
 import com.google.inject.Injector;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.SneakyThrows;
 import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.events.ItemContainerChanged;
@@ -20,6 +21,7 @@ import net.runelite.client.game.NPCManager;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.game.WorldService;
 import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.loottracker.LootTrackerPlugin;
 import net.runelite.client.plugins.loottracker.LootTrackerRecord;
@@ -48,8 +50,8 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
 import java.util.List;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -271,16 +273,63 @@ public class Microbot {
         return null;
     }
 
+    /**
+     * Starts the specified plugin by enabling it and starting all plugins in the plugin manager.
+     * This method checks if the provided plugin is non-null before proceeding.
+     *
+     * @param plugin the plugin to be started.
+     */
+    @SneakyThrows
     public static void startPlugin(Plugin plugin) {
         if (plugin == null) return;
-        Microbot.getPluginManager().setPluginEnabled(plugin, true);
-        Microbot.getPluginManager().startPlugins();
+        SwingUtilities.invokeAndWait(() ->
+        {
+            try {
+                getPluginManager().setPluginEnabled(plugin, true);
+                getPluginManager().startPlugins();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        });
+    }
 
+    /**
+     * Retrieves a plugin by its class name from the plugin manager.
+     * This method searches through the available plugins and returns the one matching the specified class name.
+     *
+     * @param className the fully qualified class name of the plugin to retrieve.
+     *                  For example: {@code BreakHandlerPlugin.getClass().getName()}.
+     * @return the plugin instance matching the specified class name, or {@code null} if no such plugin is found.
+     */
+    public static Plugin getPlugin(String className) {
+        return getPluginManager().getPlugins().stream()
+                .filter(plugin -> plugin.getClass().getName().equals(className))
+                .findFirst()
+                .orElse(null);
+    }
 
+    /**
+     * Stops the specified plugin using the plugin manager.
+     * If the plugin is non-null, this method attempts to stop it and handles any instantiation exceptions.
+     *
+     * @param plugin the plugin to be stopped.
+     */
+    @SneakyThrows
+    public static void stopPlugin(Plugin plugin) {
+        if (plugin == null) return;
+        SwingUtilities.invokeAndWait(() ->
+        {
+        try {
+            getPluginManager().setPluginEnabled(plugin, false);
+            getPluginManager().stopPlugin(plugin);
+            //getPluginManager().startPlugins();
+        } catch (PluginInstantiationException e) {
+            e.printStackTrace();
+        }
+        });
     }
 
     public static void doInvoke(NewMenuEntry entry, Rectangle rectangle) {
-
         try {
             if (Rs2UiHelper.isRectangleWithinCanvas(rectangle)) {
                 click(rectangle, entry);

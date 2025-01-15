@@ -20,7 +20,7 @@ enum State {
 public class AutoChinScript extends Script {
 
     public static boolean test = false;
-    public static String version = "1.0.0";
+    public static String version = "1.1.0";
     State currentState = State.IDLE;
     public boolean run(AutoHunterConfig config) {
         Microbot.enableAutoRunOn = false;
@@ -49,7 +49,7 @@ public class AutoChinScript extends Script {
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
             }
-        }, 0, 1000, TimeUnit.MILLISECONDS);
+        }, 0, 600, TimeUnit.MILLISECONDS);
         return true;
     }
 
@@ -68,6 +68,11 @@ public class AutoChinScript extends Script {
 
             // If there are shaking boxes, interact with them
             if (Rs2GameObject.interact(ObjectID.SHAKING_BOX_9383, "reset", 4)) {
+                currentState = State.CATCHING;
+                return;
+            }
+            // If there are shaking boxes, interact with them
+            if (Rs2GameObject.interact(ObjectID.SHAKING_BOX_9382, "reset", 4)) {
                 currentState = State.CATCHING;
                 return;
             }

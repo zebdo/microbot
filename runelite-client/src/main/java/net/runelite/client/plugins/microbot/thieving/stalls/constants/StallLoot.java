@@ -4,6 +4,7 @@ import lombok.Getter;
 import net.runelite.api.ItemID;
 
 public enum StallLoot {
+    TEA(new Integer[]{ItemID.CUP_OF_TEA_1978, ItemID.EMPTY_CUP}),
     BAKER(new Integer[]{ItemID.CAKE, ItemID.BREAD, ItemID.CHOCOLATE_SLICE}),
     SILK(new Integer[]{ItemID.SILK}),
     FRUIT(new Integer[]{ItemID.COOKING_APPLE, ItemID.BANANA, ItemID.STRAWBERRY,

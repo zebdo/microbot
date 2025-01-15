@@ -50,6 +50,12 @@ public class TeleAlchScript extends Script {
                     state = updateState();
                 }
 
+                if (state == null) {
+                    Microbot.showMessage("Unable to evaluate state");
+                    shutdown();
+                    return;
+                }
+
                 switch (state) {
                     case BANKING:
                         boolean isBankOpen = Rs2Bank.isNearBank(15) ? Rs2Bank.useBank() : Rs2Bank.walkToBankAndUseBank();
@@ -70,6 +76,12 @@ public class TeleAlchScript extends Script {
                         requiredTeleportRunes.forEach((rune, quantity) -> {
                             if (!isRunning()) return;
                             int itemID = rune.getItemId();
+                            
+                            if (!Rs2Bank.hasBankItem(itemID, quantity)) {
+                                Microbot.showMessage("Missing Runes");
+                                shutdown();
+                                return;
+                            }
 
                             if (!Rs2Bank.withdrawX(itemID, quantity)) {
                                 Microbot.log("Failed to withdraw " + quantity + " of " + rune.name());
@@ -139,13 +151,21 @@ public class TeleAlchScript extends Script {
     }
 
     private boolean hasStateChanged() {
+        if (state == null) return true;
         if (!getRequiredTeleportRunes(1).isEmpty() || !getRequiredAlchRunes(1).isEmpty()) return true;
-        return state == MagicState.BANKING && getRequiredTeleportRunes(plugin.getTotalCasts()).isEmpty();
+        return state == MagicState.BANKING && (getRequiredTeleportRunes(plugin.getTotalCasts()).isEmpty() && getRequiredAlchRunes(getAlchCastAmount()).isEmpty());
     }
 
     private MagicState updateState() {
-        if (!getRequiredTeleportRunes(1).isEmpty()) return MagicState.BANKING;
-        if (state == MagicState.BANKING && (getRequiredTeleportRunes(plugin.getTotalCasts()).isEmpty() || getRequiredAlchRunes(getAlchCastAmount()).isEmpty()))
+        if (state == null) {
+            if (!getRequiredTeleportRunes(1).isEmpty() || !getRequiredAlchRunes(getAlchCastAmount()).isEmpty()) {
+                return MagicState.BANKING;
+            } else {
+                return MagicState.CASTING;
+            }
+        }
+        if (!getRequiredTeleportRunes(1).isEmpty() || !getRequiredAlchRunes(1).isEmpty()) return MagicState.BANKING;
+        if (state == MagicState.BANKING && (getRequiredTeleportRunes(plugin.getTotalCasts()).isEmpty() && getRequiredAlchRunes(getAlchCastAmount()).isEmpty()))
             return MagicState.CASTING;
         return null;
     }

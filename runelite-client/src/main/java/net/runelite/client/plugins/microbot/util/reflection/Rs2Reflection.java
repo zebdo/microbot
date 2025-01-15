@@ -16,29 +16,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/**
- *  @ObfuscatedName("cr")
- *  @ObfuscatedGetter(
- *  intValue = 1400873349 --> animationMultiplier
- *  )
- *  @Export("sequence")
- *  int sequence;
- *  @ObfuscatedName("cz")
- *  @ObfuscatedGetter(
- *  intValue = -1043355907
- )
- *
- *     @ObfuscatedName("hw")
- * @Implements("NPCComposition")
- * public class NPCComposition extends DualNode
- *
- *     @ObfuscatedName("bd")
- *     @Export("headIconSpriteIndex")
- *     short[] headIconSpriteIndex = null;
- *
- *     URL to check new gamepack: https://oldschool42.runescape.com/jav_config.ws
- */
-
 public class Rs2Reflection {
     static String animationField = null;
     static Method doAction = null;
@@ -47,7 +24,9 @@ public class Rs2Reflection {
      * sequence maps to an actor animation
      * actor can be an npc/player
      */
-    static int animationMultiplier = 1400873349;
+    static int animationMultiplier = 1430383743;
+    static String npcDefinition = "ap"; //NPCComposition definition in NPC.class
+    static String headIconSpriteIndex = "bw"; //headIconSpriteIndex in NPCComposition.class
 
     /**
      * Credits to EthanApi
@@ -188,14 +167,14 @@ public class Rs2Reflection {
      */
     @SneakyThrows
     public static HeadIcon getHeadIcon(NPC npc) {
-        Field ab = npc.getClass().getDeclaredField("ab");
+        Field ab = npc.getClass().getDeclaredField(npcDefinition);
         ab.setAccessible(true);
         Object aqObj = ab.get(npc);
         if (aqObj == null) {
             ab.setAccessible(false);
             return getOldHeadIcon(npc);
         }
-        Field bdField = aqObj.getClass().getDeclaredField("bd");
+        Field bdField = aqObj.getClass().getDeclaredField(headIconSpriteIndex);
         bdField.setAccessible(true);
         short[] bd = (short[]) bdField.get(aqObj);
         bdField.setAccessible(false);

@@ -1,4 +1,4 @@
-# Origin	Destination	menuOption menuTarget objectID	Skills	Item IDs	Quest	Travel time	Info
+# Origin	Destination	menuOption menuTarget objectID	Skills	Item IDs	Quest	Duration	Info
 # Edgeville							
 3132 3510 0	3109 3415 0	Paddle Canoe;Canoe Station;12166	12 Woodcutting	1351;1349;1361;1353;1355;1357;1359		30	Barbarian Village
 3132 3510 0	3199 3344 0	Paddle Canoe;Canoe Station;12166	27 Woodcutting	1351;1349;1361;1353;1355;1357;1359		30	Champions Guild

@@ -149,21 +149,21 @@ public class MicroAgilityPlugin extends Plugin {
         agilityScript.ardougneCourse.add(new AgilityObstacleModel(GAP_15612));
 
         //Prifddinas
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(LADDER_36221));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36225));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(CHIMNEY_36227));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROOF_EDGE));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(DARK_HOLE_36229));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(LADDER_36231));
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(LADDER_36221, 3253, -1, Operation.LESS_EQUAL, Operation.GREATER));
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36225, 3258, -1, Operation.LESS_EQUAL, Operation.GREATER));
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(CHIMNEY_36227, -1, 6106, Operation.GREATER, Operation.LESS_EQUAL));
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROOF_EDGE, -1, 6115, Operation.GREATER, Operation.LESS_EQUAL));
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(DARK_HOLE_36229, -1, 6117, Operation.GREATER, Operation.LESS_EQUAL));
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(LADDER_36231, -1, 3392, Operation.GREATER, Operation.LESS_EQUAL));
         agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROPE_BRIDGE_36233, 2265, -1, Operation.GREATER_EQUAL, Operation.GREATER));
         agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36234, 2254, -1, Operation.GREATER_EQUAL, Operation.GREATER));
         agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROPE_BRIDGE_36235, -1, 3398, Operation.GREATER, Operation.LESS_EQUAL));
         agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36236, -1, 3409, Operation.GREATER, Operation.LESS_EQUAL));
         agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36237));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(DARK_HOLE_36238));
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(DARK_HOLE_36238, -1, 3431, Operation.GREATER, Operation.LESS_EQUAL));
 
         //Ape Atoll
-        agilityScript.apeatollCourse.add(new AgilityObstacleModel(STEPPING_STONE_15412, 2755, -1, Operation.GREATER_EQUAL, Operation.GREATER));
+        agilityScript.apeatollCourse.add(new AgilityObstacleModel(STEPPING_STONE_15412, 2755, 2742, Operation.GREATER_EQUAL, Operation.GREATER_EQUAL));
         agilityScript.apeatollCourse.add(new AgilityObstacleModel(TROPICAL_TREE_15414, -1, 2742, Operation.GREATER, Operation.GREATER_EQUAL));
         agilityScript.apeatollCourse.add(new AgilityObstacleModel(MONKEYBARS_15417));
         agilityScript.apeatollCourse.add(new AgilityObstacleModel(SKULL_SLOPE));
@@ -202,7 +202,7 @@ public class MicroAgilityPlugin extends Plugin {
         agilityScript.shayzienadvancedCourse.add(new AgilityObstacleModel(BEAM, -1, -3633, Operation.GREATER, Operation.GREATER_EQUAL));
         agilityScript.shayzienadvancedCourse.add(new AgilityObstacleModel(EDGE_42218, -1, 3635, Operation.GREATER, Operation.GREATER_EQUAL));
         agilityScript.shayzienadvancedCourse.add(new AgilityObstacleModel(EDGE_42219, -1, 3630, Operation.GREATER, Operation.LESS_EQUAL));
-        agilityScript.shayzienadvancedCourse.add(new AgilityObstacleModel(BEAM_42220));
+        agilityScript.shayzienadvancedCourse.add(new AgilityObstacleModel(BEAM_42220, 1511, -1, Operation.LESS_EQUAL, Operation.GREATER_EQUAL));
         agilityScript.shayzienadvancedCourse.add(new AgilityObstacleModel(ZIPLINE));
 
         //Penguin
@@ -232,6 +232,7 @@ public class MicroAgilityPlugin extends Plugin {
         agilityScript.wyrmadvancedCourse = new ArrayList<>();
         agilityScript.shayzienbasicCourse = new ArrayList<>();
         agilityScript.shayzienadvancedCourse = new ArrayList<>();
+        agilityScript.apeatollCourse = new ArrayList<>();
 
 
         overlayManager.remove(agilityOverlay);

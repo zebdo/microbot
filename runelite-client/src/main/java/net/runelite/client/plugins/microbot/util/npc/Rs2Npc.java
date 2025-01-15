@@ -209,8 +209,14 @@ public class Rs2Npc {
 
     public static NPC getBankerNPC() {
         return getNpcs()
-                .filter(value -> (value.getComposition() != null && value.getComposition().getActions() != null &&
-                        Arrays.asList(value.getComposition().getActions()).contains("Bank")))
+                .filter(value ->
+                        (value.getComposition() != null &&
+                                Objects.nonNull(value.getComposition().getActions()) &&
+                                Arrays.asList(value.getComposition().getActions()).contains("Bank")) ||
+                        (value.getTransformedComposition() != null &&
+                                Objects.nonNull(value.getTransformedComposition().getActions()) &&
+                                Arrays.asList(value.getTransformedComposition().getActions()).contains("Bank"))
+                )
                 .findFirst()
                 .orElse(null);
     }

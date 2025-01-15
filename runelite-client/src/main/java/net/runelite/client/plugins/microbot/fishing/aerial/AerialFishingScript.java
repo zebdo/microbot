@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit;
 import static net.runelite.client.plugins.microbot.util.npc.Rs2Npc.validateInteractable;
 
 public class AerialFishingScript extends Script {
-    public static final String version = "1.0.0";
+    public static final String version = "1.1.0";
     public static int timeout = 0;
     public static final WorldPoint FISHING_SPOT = new WorldPoint(1376, 3629, 0);
     public boolean run(AerialFishingConfig config) {
@@ -32,8 +32,8 @@ public class AerialFishingScript extends Script {
         Rs2AntibanSettings.simulateMistakes = true;
         Rs2AntibanSettings.takeMicroBreaks = true;
         Rs2AntibanSettings.microBreakChance = 0.01;
-        Rs2AntibanSettings.microBreakDurationLow = 0;
-        Rs2AntibanSettings.microBreakDurationHigh = 7;
+        Rs2AntibanSettings.microBreakDurationLow = 1;
+        Rs2AntibanSettings.microBreakDurationHigh = 5;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             if (!super.run() || !Microbot.isLoggedIn() || !Rs2Inventory.hasItem("fish chunks","king worm") || (!Rs2Equipment.isWearing(ItemID.CORMORANTS_GLOVE)&&!Rs2Equipment.isWearing(ItemID.CORMORANTS_GLOVE_22817))) {
                 return;
@@ -56,15 +56,18 @@ public class AerialFishingScript extends Script {
             if (fishingspot == null) {
                 return;
             }
+            if(Rs2Player.isInteracting()) {
+                return;
+            }
 
             if (!Rs2Camera.isTileOnScreen(fishingspot.getLocalLocation())) {
                 validateInteractable(fishingspot);
             }
 
             if (Rs2Npc.interact(fishingspot)) {
-                if(sleepUntil(() -> Rs2Equipment.isWearing(ItemID.CORMORANTS_GLOVE),1000)) {
+                if(sleepUntil(Rs2Player::isInteracting,1200)) {
                     sleepUntil(() -> Rs2Equipment.isWearing(ItemID.CORMORANTS_GLOVE_22817), () -> {
-                        if(Rs2Inventory.getEmptySlots() <= 1) {
+                        if((Rs2Inventory.getEmptySlots() <= 1 && Rs2Equipment.isWearing(ItemID.CORMORANTS_GLOVE)) || (Rs2Inventory.getEmptySlots() == 0 && Rs2Equipment.isWearing(ItemID.CORMORANTS_GLOVE_22817))) {
                             Microbot.log("Empty slot count:" + Rs2Inventory.getEmptySlots());
                             Rs2Item knife = Rs2Inventory.get(ItemID.KNIFE);
                             Rs2Inventory.hover(knife);
@@ -73,7 +76,12 @@ public class AerialFishingScript extends Script {
                         else {
                             NPC preHoverSpot = findPreHoverSpot(fishingspot);
                             if (preHoverSpot != null) {
-                                Rs2Npc.hoverOverActor(preHoverSpot);
+                               if (Rs2Npc.hoverOverActor(preHoverSpot)){
+
+                                   if(Rs2Random.dicePercentage(20)){
+                                       Microbot.getMouse().click();
+                                   }
+                               }
                             }
                         }
                     }, 5000, 100);

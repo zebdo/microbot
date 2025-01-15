@@ -31,6 +31,7 @@ import java.lang.annotation.*;
 @Target(ElementType.TYPE)
 @Documented
 public @interface PluginDescriptor {
+    String DrDeath = "<html>[<font color=#FF0000>DD</font>]";
     String Nate = "<html>[<font color=orange>N</font>] ";
     String Mocrosoft = "<html>[<font color=#b8f704M>M</font>] ";
     String OG = "<html>[<font color=#FF69B4>O</font>] ";
@@ -56,6 +57,7 @@ public @interface PluginDescriptor {
     String Girdy = "<html>[<font color=#3DED97>\u01E5</font>] ";
     String Cicire = "<html>[<font color=#68ff00>Ci</font>] ";
     String Budbomber = "<html>[<font color='#0077B6'>bb</font>]";
+    String ChillX = "<html>[<font color=#05e1f5>C</font>] ";
 
 
     String name();

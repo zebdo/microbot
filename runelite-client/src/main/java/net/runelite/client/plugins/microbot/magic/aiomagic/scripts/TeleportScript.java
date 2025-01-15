@@ -47,6 +47,12 @@ public class TeleportScript extends Script {
                 if (hasStateChanged()) {
                     state = updateState();
                 }
+
+                if (state == null) {
+                    Microbot.showMessage("Unable to evaluate state");
+                    shutdown();
+                    return;
+                }
                 
                 switch (state) {
                     case BANKING:
@@ -68,6 +74,12 @@ public class TeleportScript extends Script {
                         requiredRunes.forEach((rune, quantity) -> {
                             if (!isRunning()) return;
                             int itemID = rune.getItemId();
+
+                            if (!Rs2Bank.hasBankItem(itemID, quantity)) {
+                                Microbot.showMessage("Missing Runes");
+                                shutdown();
+                                return;
+                            }
                             
                             if (!Rs2Bank.withdrawX(itemID, quantity)) {
                                 Microbot.log("Failed to withdraw " + quantity + " of " + rune.name());
@@ -103,12 +115,20 @@ public class TeleportScript extends Script {
     }
     
     private boolean hasStateChanged() {
+        if (state == null) return true;
         if (!getRequiredRunes(1).isEmpty()) return true;
         if (state == MagicState.BANKING && getRequiredRunes(plugin.getTotalCasts()).isEmpty()) return true;
         return false;
     }
     
     private MagicState updateState() {
+        if (state == null) {
+            if (!getRequiredRunes(1).isEmpty()) {
+                return MagicState.BANKING;
+            } else {
+                return MagicState.CASTING;
+            }
+        }
         if (!getRequiredRunes(1).isEmpty()) return MagicState.BANKING;
         if (state == MagicState.BANKING && getRequiredRunes(plugin.getTotalCasts()).isEmpty()) return MagicState.CASTING;
         return null;

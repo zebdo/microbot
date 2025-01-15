@@ -71,7 +71,7 @@
 2824 10168 0		11988;11986;11984;11982;11980;20790;20789;20788;20787;20786	Between a Rock...		Y	T	29	4	Ring of wealth: Dondakan
 									
 # Slayer Ring (1-8, eternal)									
-2432 3423 0		11866;11867;11868;11869;11870;11871;11872;11873;21268			Y	T	29	4	Slayer ring: Stronghold
+2432 3423 0		11866;11867;11868;11869;11870;11871;11872;11873;21268			Y	T	29	4	Slayer ring: Stronghold Slayer Cave
 3421 3537 0		11866;11867;11868;11869;11870;11871;11872;11873;21268	Priest in Peril		Y	T	29	4	Slayer ring: Slayer Tower
 2802 10000 0		11866;11867;11868;11869;11870;11871;11872;11873;21268			Y	T	29	4	Slayer ring: Fremennik
 3185 4601 0		11866;11867;11868;11869;11870;11871;11872;11873;21268	Haunted Mine		Y	T	29	4	Slayer ring: Tarn's Lair
@@ -208,7 +208,7 @@
 2545 3097 0		9789;9790			Y	F	19	4	Construction cape: Yanille
 3239 6077 0		9789;9790			Y	F	19	4	Construction cape: Prifddinas
 2604 3401 0		9798;9799			Y	F	19	4	Fishing cape: Fishing Guild
-2404 3484 0		9798;9799			Y	F	19	4	Fishing cape: Otto's Grotto
+2504 3484 0		9798;9799			Y	F	19	4	Fishing cape: Otto's Grotto
 1248 3725 0		9810;9811			Y	F	19	4	Farming cape: Teleport
 2556 2917 0		9948;9949			Y	F	19	4	Hunter cape: Feldip Hills
 3144 3772 0		9948;9949			Y	F	19	4	Hunter cape: Black chinchompa
@@ -292,7 +292,7 @@
 1713 3612 0		21760;25818	The Depths of Despair	6035>1	Y	T	19	4	Kharedst's memoirs: Lunch by the Lancalliums
 1802 3748 0		21760;25818	The Queen of Thieves	6035>1	Y	T	19	4	Kharedst's memoirs: The Fisher's Flute
 1478 3576 0		21760;25818	Tale of the Righteous	6035>1	Y	T	19	4	Kharedst's memoirs: History and Hearsay
-1544 3762 0		21760;25818	The Forsaken Tower	6035>1	Y	T	19	4	Kharedst's memoirs: Jewelry of Jubilation
+1544 3762 0		21760;25818	The Forsaken Tower	6035>1	Y	T	19	4	Kharedst's memoirs: Jewellery of Jubilation
 1680 3746 0		21760;25818	The Ascent of Arceuus	6035>1	Y	T	19	4	Kharedst's memoirs: A Dark Disposition
 3649 3230 0		22400			Y	F	19	4	Drakan's medallion: Ver Sinhaza
 3592 3337 0		22400	Sins of the Father		Y	F	19	4	Drakan's medallion: Darkmeyer
@@ -319,10 +319,10 @@
 1254 3560 0		13393			Y	T	19	4	5. Xeric's talisman: Xeric's Honour
 3200 3355 0		13660				T	19	4	Chronicle: Teleport
 3615 9461 0		26914			Y	F	19	4	Amulet of the eye
-2981 3276 0		26818			Y	T	19	4	Ring of the elements: Air
-3170 3155 0		26818			Y	T	19	4	Ring of the elements: Water
-3288 3468 0		26818			Y	T	19	4	Ring of the elements: Earth
-3314 3279 0		26818			Y	T	19	4	Ring of the elements: Fire
+2981 3276 0		26818			Y	T	19	4	Ring of the elements: Air Altar
+3170 3155 0		26818			Y	T	19	4	Ring of the elements: Water Altar
+3288 3468 0		26818			Y	T	19	4	Ring of the elements: Earth Altar
+3314 3279 0		26818			Y	T	19	4	Ring of the elements: Fire Altar
 2400 5982 0		24709			Y	T	19	4	Hallowed crystal shard
 3296 6436 0		28327			Y	T	19	4	Ring of shadows: Ancient Vault
 # todo: The remaining Ring of shadows teleports require using a tablet on it once									

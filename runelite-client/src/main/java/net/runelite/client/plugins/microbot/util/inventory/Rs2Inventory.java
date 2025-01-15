@@ -2147,25 +2147,68 @@ public class Rs2Inventory {
         }
     }
 
+    /**
+     * Waits for the inventory to change within a specified time.
+     * Detects changes in inventory size, stackable size, or item quantities.
+     *
+     * @param time The maximum time to wait, in milliseconds.
+     * @return True if the inventory changes within the specified time, false otherwise.
+     */
     public static boolean waitForInventoryChanges(int time) {
-        final int currentInventorySize = size();
-        final int currentInventoryStackableSize = stackableSize();
-        sleepUntil(() -> currentInventorySize != size() || currentInventoryStackableSize != stackableSize(), time);
-        return currentInventorySize != size() || currentInventoryStackableSize != stackableSize();
+        final List<Rs2Item> initialInventory = new ArrayList<>(inventoryItems);
+
+        return sleepUntilTrue(() -> !hasInventoryUnchanged(initialInventory), 100, time);
     }
 
+    /**
+     * Waits for the inventory to change while running a specified action repeatedly.
+     * Detects changes in inventory size, stackable size, or item quantities.
+     *
+     * @param actionWhileWaiting The action to execute while waiting for the inventory to change.
+     * @return True if the inventory changes while waiting, false otherwise.
+     */
     public static boolean waitForInventoryChanges(Runnable actionWhileWaiting) {
         return waitForInventoryChanges(actionWhileWaiting, Rs2Random.between(300, 600), Rs2Random.between(600, 2400));
     }
 
+    /**
+     * Waits for the inventory to change within a specified timeout and executes a specified action repeatedly.
+     * Detects changes in inventory size, stackable size, or item quantities.
+     *
+     * @param actionWhileWaiting The action to execute while waiting for the inventory to change.
+     * @param time               The interval in milliseconds between checks for inventory changes.
+     * @param timeout            The maximum time to wait, in milliseconds.
+     * @return True if the inventory changes within the specified timeout, false otherwise.
+     */
     public static boolean waitForInventoryChanges(Runnable actionWhileWaiting, int time, int timeout) {
-        final int currentInventorySize = size();
-        final int currentInventoryStackableSize = stackableSize();
-        sleepUntil(() ->  {
+        final List<Rs2Item> initialInventory = new ArrayList<>(inventoryItems);
+
+        return sleepUntilTrue(() -> {
             actionWhileWaiting.run();
-            return sleepUntilTrue(() -> currentInventorySize != size() || currentInventoryStackableSize != stackableSize(), time, timeout);
-        });
-        return currentInventorySize != size() || currentInventoryStackableSize != stackableSize();
+            return !hasInventoryUnchanged(initialInventory);
+        }, time, timeout);
+    }
+
+    /**
+     * Checks whether the inventory remains unchanged based on size, item IDs, and item quantities.
+     *
+     * @param initialInventory The snapshot of the inventory to compare against.
+     * @return True if the inventory is unchanged, false otherwise.
+     */
+    private static boolean hasInventoryUnchanged(List<Rs2Item> initialInventory) {
+        List<Rs2Item> currentInventory = items();
+
+        // Check if sizes differ
+        System.out.println("" + initialInventory.size() + " - " +  currentInventory.size());
+        if (initialInventory.size() != currentInventory.size()) {
+            return false;
+        }
+
+        // Use allMatch to check if all items match
+        return initialInventory.stream()
+                .allMatch(initialItem -> currentInventory.stream()
+                        .anyMatch(currentItem ->
+                                initialItem.getId() == currentItem.getId() && initialItem.getQuantity() == currentItem.getQuantity()));
     }
 
     /**
@@ -2272,11 +2315,23 @@ public class Rs2Inventory {
     }
 
     public static boolean allPouchesEmpty() {
-        return Arrays.stream(Pouch.values()).filter(Pouch::hasPouchInInventory).allMatch(x -> (x.hasRequiredRunecraftingLevel() && x.getHoldAmount() <= 0) || !x.hasRequiredRunecraftingLevel());
+        return Arrays.stream(Pouch.values()).filter(Pouch::hasPouchInInventory).allMatch(x -> (x.hasRequiredRunecraftingLevel() && x.getHolding() <= 0) || !x.hasRequiredRunecraftingLevel());
     }
 
     public static boolean hasDegradedPouch() {
         return Arrays.stream(Pouch.values()).anyMatch(Pouch::isDegraded);
+    }
+
+    public static boolean hasAnyPouch() {
+        return Arrays.stream(Pouch.values()).anyMatch(Pouch::hasPouchInInventory);
+    }
+
+    public static int getRemainingCapacityInPouches() {
+        return Arrays.stream(Pouch.values())
+                .filter(Pouch::hasRequiredRunecraftingLevel)
+                .filter(Pouch::hasPouchInInventory)
+                .mapToInt(Pouch::getRemaining)
+                .sum();
     }
 
     /**

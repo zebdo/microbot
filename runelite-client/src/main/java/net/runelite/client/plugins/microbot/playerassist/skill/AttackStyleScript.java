@@ -9,6 +9,7 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.playerassist.PlayerAssistConfig;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 
 import java.util.*;
@@ -77,6 +78,13 @@ public class AttackStyleScript extends Script {
             resetLevels();
             log.info("Leveled up, resetting levels and timer.");
             leveledUp = true;
+        }
+
+        if(config.useMagic()){
+            if (Rs2Magic.getCurrentAutoCastSpell() != config.magicSpell()) {
+                Rs2Combat.setAutoCastSpell(config.magicSpell(), false);
+            }
+            return;
         }
 
         // Proceed if it's time to change the attack style or if we've just leveled up

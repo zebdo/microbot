@@ -60,6 +60,7 @@ public enum BankLocation {
     JATIZSO(new WorldPoint(2416, 3801, 0)),
     LANDS_END(new WorldPoint(1512, 3421, 0)),
     LEGENDS_GUILD(new WorldPoint(2732, 3379, 2)),
+    LLETYA(new WorldPoint(2353, 3163, 0)),
     LOVAKENGJ(new WorldPoint(1526, 3739, 0)),
     LUMBRIDGE_BASEMENT(new WorldPoint(3218, 9623, 0)),
     LUMBRIDGE_TOP(new WorldPoint(3209, 3220, 2)),
@@ -171,6 +172,12 @@ public enum BankLocation {
             case CLAN_HALL:
                 // Requires Clan Membership, varbit 933
                 return Microbot.getVarbitValue(933) > 1;
+            case LLETYA:
+                // Requires Mournings End Part 1 in progress or completed
+                return Rs2Player.getQuestState(Quest.MOURNINGS_END_PART_I) == QuestState.IN_PROGRESS || Rs2Player.getQuestState(Quest.MOURNINGS_END_PART_I) == QuestState.FINISHED;
+            case PRIFDDINAS:
+                // Requires Song of the elves to be completed
+                return Rs2Player.getQuestState(Quest.SONG_OF_THE_ELVES) == QuestState.FINISHED;
             default:
                 return true;
         }
