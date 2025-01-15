@@ -142,8 +142,10 @@ public class OuraniaScript extends Script {
                                 Rs2Inventory.waitForInventoryChanges(1800);
                                 Rs2Inventory.interact(Rs2Potion.getStaminaPotion(), "drink");
                                 Rs2Inventory.waitForInventoryChanges(1800);
-                                Rs2Bank.depositOne(Rs2Potion.getStaminaPotion());
-                                Rs2Inventory.waitForInventoryChanges(1800);
+                                if (Rs2Inventory.hasItem(Rs2Potion.getStaminaPotion())) {
+                                    Rs2Bank.depositOne(Rs2Potion.getStaminaPotion());
+                                    Rs2Inventory.waitForInventoryChanges(1800);
+                                }
                             }
                         }
 
