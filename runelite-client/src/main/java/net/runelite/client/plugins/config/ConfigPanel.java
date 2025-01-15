@@ -464,7 +464,9 @@ class ConfigPanel extends PluginPanel
 		Units units = cid.getUnits();
 		if (units != null)
 		{
-			spinnerTextField.setFormatterFactory(new UnitFormatterFactory(units.value()));
+			// The existing DefaultFormatterFactory with a NumberEditorFormatter. Its model is the same SpinnerModel above.
+			JFormattedTextField.AbstractFormatterFactory delegate = spinnerTextField.getFormatterFactory();
+			spinnerTextField.setFormatterFactory(new UnitFormatterFactory(delegate, units.value()));
 		}
 
 		return spinner;
@@ -484,7 +486,9 @@ class ConfigPanel extends PluginPanel
 		Units units = cid.getUnits();
 		if (units != null)
 		{
-			spinnerTextField.setFormatterFactory(new UnitFormatterFactory(units.value()));
+			// The existing DefaultFormatterFactory with a NumberEditorFormatter. Its model is the same SpinnerModel above.
+			JFormattedTextField.AbstractFormatterFactory delegate = spinnerTextField.getFormatterFactory();
+			spinnerTextField.setFormatterFactory(new UnitFormatterFactory(delegate, units.value()));
 		}
 
 		return spinner;

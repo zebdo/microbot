@@ -84,7 +84,7 @@ public class RunEnergyPlugin extends Plugin
 		GLOVES(EquipmentInventorySlot.GLOVES.getSlotIdx(), 3, GRACEFUL_GLOVES),
 		BOOTS(EquipmentInventorySlot.BOOTS.getSlotIdx(), 3, GRACEFUL_BOOTS),
 		// Agility skill capes and the non-cosmetic Max capes also count for the Graceful set effect
-		CAPE(EquipmentInventorySlot.CAPE.getSlotIdx(), 3, GRACEFUL_CAPE, AGILITY_CAPE, MAX_CAPE);
+		CAPE(EquipmentInventorySlot.CAPE.getSlotIdx(), 3, GRACEFUL_CAPE, AGILITY_CAPE, MAX_CAPE_13342);
 
 		private final int index;
 		private final int boost;
@@ -292,8 +292,8 @@ public class RunEnergyPlugin extends Plugin
 		final int weight = Math.min(Math.max(client.getWeight(), 0), 64);
 		final int agilityLevel = client.getBoostedSkillLevel(Skill.AGILITY);
 
-		// New drain rate formula
-		double drainRate = (60 + (67 * weight / 64.0)) * (1 - (agilityLevel / 300.0));
+		// 100% energy is 10000 energy units
+		int energyUnitsLost = (int) ((60 + (67 * effectiveWeight / 64)) * (1 - client.getBoostedSkillLevel(Skill.AGILITY) / 300.0));
 
 		if (client.getVarbitValue(Varbits.RUN_SLOWED_DEPLETION_ACTIVE) != 0) {
 			drainRate *= 0.3; // Stamina effect reduces drain rate to 30%
@@ -349,8 +349,9 @@ public class RunEnergyPlugin extends Plugin
 	static int getEstimatedRecoverTimeRemaining() {
 		final int agilityLevel = Microbot.getClient().getBoostedSkillLevel(Skill.AGILITY);
 
-		double recoveryRate = 25 + Microbot.getClient().getBoostedSkillLevel(Skill.AGILITY) / 6.0;
-		recoveryRate *= 1.0 + (getGracefulRecoveryBoost() / 100.0);
+		// Calculate the amount of energy recovered every second
+		double recoverRate = 25 + client.getBoostedSkillLevel(Skill.AGILITY) / 6.0;
+		recoverRate *= 1.0 + getGracefulRecoveryBoost() / 100.0;
 
 		final double secondsLeft = (10000 - Microbot.getClient().getEnergy()) / recoveryRate;
 		return (int) Math.ceil(secondsLeft);
