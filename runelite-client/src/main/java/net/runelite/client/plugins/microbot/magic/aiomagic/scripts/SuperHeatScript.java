@@ -57,7 +57,7 @@ public class SuperHeatScript extends Script {
                     shutdown();
                     return;
                 }
-                
+
                 if (!plugin.getSuperHeatItem().hasRequiredLevel()) {
                     Microbot.showMessage("You do not have the required level for this item");
                     shutdown();
@@ -161,7 +161,8 @@ public class SuperHeatScript extends Script {
     private boolean hasStateChanged() {
         if (state == null) return true;
         if (state == MagicState.BANKING && hasRequiredItems()) return true;
-        return state == MagicState.CASTING && !hasRequiredItems();
+        if (state == MagicState.CASTING && !hasRequiredItems()) return true;
+        return false;
     }
 
     private MagicState updateState() {
