@@ -19,12 +19,12 @@ import java.awt.*;
         enabledByDefault = false
 )
 @Slf4j
-public class RunecraftPlugin extends Plugin {
+public class AutoRunecraftPlugin extends Plugin {
     @Inject
-    private RunecraftConfig config;
+    private AutoRunecraftConfig config;
     @Provides
-    RunecraftConfig provideConfig(ConfigManager configManager) {
-        return configManager.getConfig(RunecraftConfig.class);
+    AutoRunecraftConfig provideConfig(ConfigManager configManager) {
+        return configManager.getConfig(AutoRunecraftConfig.class);
     }
 
     @Inject
@@ -33,7 +33,7 @@ public class RunecraftPlugin extends Plugin {
     private RunecraftOverlay runecraftOverlay;
 
     @Inject
-    RunecraftScript runecraftScript;
+    AutoRunecraftScript autoRunecraftScript;
 
 
     @Override
@@ -43,12 +43,12 @@ public class RunecraftPlugin extends Plugin {
         {
             overlayManager.add(runecraftOverlay);
         }
-        runecraftScript.run(config);
+        autoRunecraftScript.run(config);
     }
 
     protected void shutDown()
     {
-        runecraftScript.shutdown();
+        autoRunecraftScript.shutdown();
         overlayManager.remove(runecraftOverlay);
     }
     int ticks = 10;
