@@ -11,11 +11,11 @@ import java.awt.*;
 
 import static net.runelite.client.plugins.microbot.runecrafting.chillRunecraft.AutoRunecraftScript.*;
 
-public class RunecraftOverlay extends OverlayPanel
+public class AutoRunecraftOverlay extends OverlayPanel
 {
 
     @Inject
-    RunecraftOverlay(AutoRunecraftPlugin plugin)
+    AutoRunecraftOverlay(AutoRunecraftPlugin plugin)
     {
         super(plugin);
         setPosition(OverlayPosition.TOP_LEFT);

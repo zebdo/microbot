@@ -30,7 +30,7 @@ public class AutoRunecraftPlugin extends Plugin {
     @Inject
     private OverlayManager overlayManager;
     @Inject
-    private RunecraftOverlay runecraftOverlay;
+    private AutoRunecraftOverlay autoRunecraftOverlay;
 
     @Inject
     AutoRunecraftScript autoRunecraftScript;
@@ -41,7 +41,7 @@ public class AutoRunecraftPlugin extends Plugin {
     {
         if (overlayManager != null)
         {
-            overlayManager.add(runecraftOverlay);
+            overlayManager.add(autoRunecraftOverlay);
         }
         autoRunecraftScript.run(config);
     }
@@ -49,7 +49,7 @@ public class AutoRunecraftPlugin extends Plugin {
     protected void shutDown()
     {
         autoRunecraftScript.shutdown();
-        overlayManager.remove(runecraftOverlay);
+        overlayManager.remove(autoRunecraftOverlay);
     }
     int ticks = 10;
     @Subscribe
