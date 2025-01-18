@@ -19,6 +19,7 @@ import net.runelite.client.plugins.microbot.qualityoflife.enums.WintertodtAction
 import net.runelite.client.plugins.microbot.qualityoflife.managers.FiremakingManager;
 import net.runelite.client.plugins.microbot.qualityoflife.managers.FletchingManager;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.*;
+import net.runelite.client.plugins.microbot.qualityoflife.scripts.bank.BankpinScript;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pvp.PvpScript;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.wintertodt.WintertodtOverlay;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.wintertodt.WintertodtScript;
@@ -115,6 +116,9 @@ public class QoLPlugin extends Plugin {
     @Inject
     EventBus eventBus;
 
+    @Inject
+    BankpinScript bankpinScript;
+
     @Provides
     QoLConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(QoLConfig.class);
@@ -168,6 +172,7 @@ public class QoLPlugin extends Plugin {
         autoItemDropperScript.run(config);
         eventBus.register(fletchingManager);
         eventBus.register(firemakingManager);
+        bankpinScript.run(config);
         // pvpScript.run(config);
         awaitExecutionUntil(() ->Microbot.getClientThread().invokeLater(this::updateUiElements), () -> !SplashScreen.isOpen(), 600);
     }

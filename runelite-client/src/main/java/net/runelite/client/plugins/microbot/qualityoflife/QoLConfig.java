@@ -32,6 +32,13 @@ public interface QoLConfig extends Config {
             position = 2
     )
     String cameraSection = "cameraSection";
+    // Bank section
+    @ConfigSection(
+            name = "Bank Configurations",
+            description = "Bank settings",
+            position = 2
+    )
+    String bankSection = "bankSection";
     // Section for Dialogue Configurations
     @ConfigSection(
             name = "Dialogue Configurations",
@@ -208,6 +215,18 @@ public interface QoLConfig extends Config {
     )
     default boolean useDialogueAutoContinue() {
         return true;
+    }
+
+    // boolean to automatically enter bankpin
+    @ConfigItem(
+            keyName = "useBankPin",
+            name = "Use bankpin",
+            description = "Automatically uses bankpin",
+            position = 1,
+            section = bankSection
+    )
+    default String bankPin() {
+        return "";
     }
 
     // boolean to automate quest dialogue options
