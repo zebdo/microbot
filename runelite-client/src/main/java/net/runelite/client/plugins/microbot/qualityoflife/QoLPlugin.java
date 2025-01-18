@@ -22,6 +22,7 @@ import net.runelite.client.plugins.microbot.qualityoflife.scripts.*;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pvp.PvpScript;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.wintertodt.WintertodtOverlay;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.wintertodt.WintertodtScript;
+import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.antiban.FieldUtil;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
@@ -320,9 +321,13 @@ public class QoLPlugin extends Plugin {
             if(Rs2Inventory.anyPouchFull()) {
                 Microbot.getClientThread().runOnSeperateThread(() -> {
                     Rs2Inventory.waitForInventoryChanges(50000);
-                    Rs2Inventory.emptyPouches();
-                    Rs2Inventory.waitForInventoryChanges(3000);
-                    Rs2GameObject.interact("Altar");
+                    Global.sleepUntil(() -> !Rs2Inventory.anyPouchFull(), ()-> {
+                                Rs2Inventory.emptyPouches();
+                                Rs2Inventory.waitForInventoryChanges(3000);
+                                Rs2GameObject.interact("Altar");
+                                Rs2Inventory.waitForInventoryChanges(3000);
+                            }
+                            ,10000, 200);
                     return null;
                 });
 
