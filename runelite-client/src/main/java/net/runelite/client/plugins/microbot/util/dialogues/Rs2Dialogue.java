@@ -1,6 +1,5 @@
 package net.runelite.client.plugins.microbot.util.dialogues;
 
-import net.runelite.api.Varbits;
 import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -172,7 +171,9 @@ public class Rs2Dialogue {
         if (!hasSelectAnOption()) return Collections.emptyList();
 
         List<Widget> out = new ArrayList<>();
-        Widget[] dynamicWidgetOptions = Rs2Widget.getWidget(InterfaceID.DIALOG_OPTION, 1).getDynamicChildren();
+        Widget dialogueOption = Rs2Widget.getWidget(InterfaceID.DIALOG_OPTION, 1);
+        if (dialogueOption == null) return new ArrayList<>();
+        Widget[] dynamicWidgetOptions = dialogueOption.getDynamicChildren();
 
         // Skip the first dynamic widget option, as it is never an option
         for (int i = 1; i < dynamicWidgetOptions.length; i++) {

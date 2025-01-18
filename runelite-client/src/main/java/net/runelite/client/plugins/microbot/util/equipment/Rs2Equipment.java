@@ -310,14 +310,14 @@ public class Rs2Equipment {
     }
 
     /**
+     * Interacts with an item identified by its ID.
      *
-     * @param name
-     * @return
+     * This method retrieves the item with the given ID and performs an action on it if found.
+     *
+     * @param id The unique identifier of the item to interact with.
+     * @param action The action to perform on the item (e.g., "use", "equip").
+     * @return True if the item was found and the action was performed, otherwise false.
      */
-    public static boolean unEquip(String name) {
-        return interact(name, "remove");
-    }
-
     public static boolean interact(int id, String action) {
         Rs2Item item = get(id);
         if (item != null) {
@@ -327,6 +327,15 @@ public class Rs2Equipment {
         return false;
     }
 
+    /**
+     * Interacts with an item identified by its name.
+     *
+     * This method retrieves the item with the given name and performs an action on it if found.
+     *
+     * @param name The name of the item to interact with.
+     * @param action The action to perform on the item (e.g., "use", "equip").
+     * @return True if the item was found and the action was performed, otherwise false.
+     */
     public static boolean interact(String name, String action) {
         Rs2Item item = get(name);
         if (item != null) {
@@ -335,6 +344,28 @@ public class Rs2Equipment {
         }
         return false;
     }
+
+    /**
+     * Interacts with any item from a list of IDs.
+     *
+     * This method iterates over a list of item IDs, retrieves the first matching item,
+     * and performs an action on it if found.
+     *
+     * @param ids An array of item IDs to search through.
+     * @param action The action to perform on the first matching item (e.g., "use", "equip").
+     * @return True if any item from the list was found and the action was performed, otherwise false.
+     */
+    public static boolean interact(int[] ids, String action) {
+        for (Integer id : ids) {
+            Rs2Item item = get(id);
+            if (item != null) {
+                invokeMenu(item, action);
+                return true;
+            }
+        }
+        return false;
+    }
+
 
     /**
      * @param name

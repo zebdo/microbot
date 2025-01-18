@@ -132,4 +132,13 @@ public class Rs2Settings {
         if (!isAreaSoundEffectOff)
             Rs2Widget.clickWidget(7602298);
     }
+
+    /**
+     * When casting alchemy spells on items in your inventory
+     * if the item is worth more than this value, a warning will be shown
+     * @return
+     */
+    public static int getMinimumItemValueAlchemyWarning() {
+        return Microbot.getVarbitValue(6091);
+    }
 }
