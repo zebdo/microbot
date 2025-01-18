@@ -497,7 +497,7 @@ public class Rs2Bank {
         } else {
             invokeMenu(HANDLE_X_UNSET, rs2Item);
 
-            sleep(1200);
+            sleep(Rs2Random.randomGaussian(1100,200));
             Rs2Keyboard.typeString(String.valueOf(amount));
             Rs2Keyboard.enter();
             sleepUntil(() -> Rs2Inventory.hasItem(rs2Item.id), 2500);
@@ -577,7 +577,7 @@ public class Rs2Bank {
         for (Rs2Item item : items) {
             if (item == null) continue;
             depositAll(item);
-            sleep(300, 600);
+            sleep(Rs2Random.randomGaussian(400,200));
             result = true;
         }
         return result;
@@ -1152,7 +1152,7 @@ public class Rs2Bank {
             }
 
             sleepUntil(Rs2Bank::isOpen);
-            sleep(600, 1000);
+            sleep(Rs2Random.randomGaussian(800,200));
             return true;
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
@@ -1182,7 +1182,7 @@ public class Rs2Bank {
             }
 
             sleepUntil(Rs2Bank::isOpen);
-            sleep(600, 1000);
+            sleep(Rs2Random.randomGaussian(800,200));
             return true;
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
@@ -1569,7 +1569,7 @@ public class Rs2Bank {
     public static boolean setWithdrawAsNote() {
         if (hasWithdrawAsNote()) return true;
         Rs2Widget.clickWidget(786458);
-        sleep(600);
+        sleep(Rs2Random.randomGaussian(550,100));
         return hasWithdrawAsNote();
     }
 
@@ -1581,7 +1581,7 @@ public class Rs2Bank {
     public static boolean setWithdrawAsItem() {
         if (hasWithdrawAsItem()) return true;
         Rs2Widget.clickWidget(786456);
-        sleep(600);
+        sleep(Rs2Random.randomGaussian(550,100));
         return hasWithdrawAsItem();
     }
 
