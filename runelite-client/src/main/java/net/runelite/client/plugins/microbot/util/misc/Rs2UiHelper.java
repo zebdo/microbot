@@ -27,9 +27,7 @@ public class Rs2UiHelper {
         int canvasHeight = Microbot.getClient().getCanvasHeight();
         int canvasWidth = Microbot.getClient().getCanvasWidth();
 
-        return rectangle.getX() >= 0.0 &&
-                rectangle.getY() >= 0.0 &&
-                rectangle.getX() + rectangle.getWidth() <= (double) canvasWidth &&
+        return rectangle.getX() + rectangle.getWidth() <= (double) canvasWidth &&
                 rectangle.getY() + rectangle.getHeight() <= (double) canvasHeight;
     }
 

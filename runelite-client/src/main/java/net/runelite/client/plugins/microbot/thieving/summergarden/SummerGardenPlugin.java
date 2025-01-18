@@ -71,10 +71,13 @@ public class SummerGardenPlugin extends Plugin
 
     @Getter
     private GameObject treeObject;
+    SummerGardenScript summerGardenScript;
 
     @Override
     protected void startUp()
     {
+        summerGardenScript = new SummerGardenScript();
+        summerGardenScript.run(config);
         enableOverlay();
         if (config.showCountdownTimer())
         {
@@ -86,6 +89,7 @@ public class SummerGardenPlugin extends Plugin
     @Override
     protected void shutDown()
     {
+        summerGardenScript.shutdown();
         disableOverlay();
         disableCountdownTimerInfoBox();
     }
