@@ -79,6 +79,7 @@ public class AttackNpcScript extends Script {
 
                 if (PlayerAssistPlugin.getCooldown() > 0 || Rs2Combat.inCombat()) {
                     PlayerAssistPlugin.setState(State.COMBAT);
+                    handleItemOnNpcToKill();
                     return;
                 }
 
@@ -123,6 +124,18 @@ public class AttackNpcScript extends Script {
                 System.out.println(ex.getMessage());
             }
         }, 0, 600, TimeUnit.MILLISECONDS);
+    }
+
+
+    /**
+     * item on npcs that need to kill like rockslug
+     */
+    private void handleItemOnNpcToKill() {
+        NPC npc = Rs2Npc.getNpcsAttackingPlayer(Microbot.getClient().getLocalPlayer()).stream().findFirst().orElse(null);
+        if (npc.getName().equalsIgnoreCase("rockslug") && npc.getHealthRatio() < 10 && !npc.isDead()) {
+            Rs2Inventory.useItemOnNpc(4161, npc);
+            Rs2Player.waitForAnimation();
+        }
     }
 
     public void shutdown() {
