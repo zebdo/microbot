@@ -21,6 +21,7 @@ import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
+import net.runelite.client.plugins.microbot.util.woodcutting.Rs2Woodcutting;
 import net.runelite.client.plugins.microbot.wintertodt.enums.State;
 
 import java.util.ArrayList;
@@ -222,7 +223,7 @@ public class MWintertodtScript extends Script {
                         }
                         break;
                     case CHOP_ROOTS:
-                        if (Rs2Equipment.isWearing("dragon axe")) {
+                        if (Rs2Woodcutting.isWearingAxeWithSpecialAttack()) {
                             Rs2Combat.setSpecState(true, 1000);
                         }
                         if (!Rs2Player.isAnimating()) {

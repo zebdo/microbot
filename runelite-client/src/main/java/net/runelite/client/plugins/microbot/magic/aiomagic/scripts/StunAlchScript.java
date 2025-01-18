@@ -11,19 +11,20 @@ import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
 
-public class AlchScript extends Script {
+public class StunAlchScript extends Script {
 
     private MagicState state = MagicState.CASTING;
     private final AIOMagicPlugin plugin;
 
     @Inject
-    public AlchScript(AIOMagicPlugin plugin) {
+    public StunAlchScript(AIOMagicPlugin plugin) {
         this.plugin = plugin;
     }
 
@@ -35,34 +36,23 @@ public class AlchScript extends Script {
         Rs2AntibanSettings.nonLinearIntervals = true;
         Rs2AntibanSettings.contextualVariability = true;
         Rs2AntibanSettings.usePlayStyle = true;
-        Rs2Antiban.setActivity(Activity.ALCHING);
+        Rs2Antiban.setActivity(Activity.TELEPORT_TRAINING);
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
                 long startTime = System.currentTimeMillis();
 
-                if (plugin.getAlchItemNames().isEmpty()) {
-                    Microbot.showMessage("Alch Item list is empty");
-                    shutdown();
-                    return;
-                }
-
-                if (state == null) {
-                    Microbot.showMessage("Unable to evaluate state");
-                    shutdown();
-                    return;
-                }
 
                 switch (state) {
                     case CASTING:
-                        if (!Rs2Magic.canCast(MagicAction.HIGH_LEVEL_ALCHEMY) || !Rs2Magic.canCast(MagicAction.LOW_LEVEL_ALCHEMY)) {
-                            Microbot.log("Unable to cast alchemy spell");
+                        if (plugin.getAlchItemNames().isEmpty() || !Rs2Inventory.hasItem(plugin.getAlchItemNames().get(0))) {
+                            Microbot.log("Missing alch items...");
                             return;
                         }
 
-                        if (plugin.getAlchItemNames().isEmpty() || !Rs2Inventory.hasItem(plugin.getAlchItemNames().get(0))) {
-                            Microbot.log("Missing alch items...");
+                        if (!Rs2Magic.canCast(MagicAction.HIGH_LEVEL_ALCHEMY) || !Rs2Magic.canCast(MagicAction.LOW_LEVEL_ALCHEMY)) {
+                            Microbot.log("Unable to cast alchemy spell");
                             return;
                         }
 
@@ -72,9 +62,22 @@ public class AlchScript extends Script {
                             Rs2Inventory.moveItemToSlot(alchItem, inventorySlot);
                             return;
                         }
-                        
-                        Rs2Magic.alch(alchItem);
-                        Rs2Player.waitForXpDrop(Skill.MAGIC, 10000, false);
+
+                        net.runelite.api.NPC npc = (net.runelite.api.NPC) Microbot.getClient().getLocalPlayer().getInteracting();
+
+                        if (npc != null) {
+                            Rs2Magic.castOn(plugin.getStunSpell().getSpell(), npc);
+                        } else {
+                            Rs2Magic.castOn(plugin.getStunSpell().getSpell(), Rs2Npc.getNpc(plugin.getStunNpcName()));
+                        }
+
+                        if (Rs2AntibanSettings.naturalMouse) {
+                            Rs2Magic.alch(alchItem, 10, 50);
+                        } else {
+                            Rs2Magic.alch(alchItem);
+                            sleep(200, 300);
+                        }
+
                         break;
                 }
 
@@ -85,7 +88,7 @@ public class AlchScript extends Script {
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
             }
-        }, 0, 1000, TimeUnit.MILLISECONDS);
+        }, 0, 100, TimeUnit.MILLISECONDS);
         return true;
     }
 
@@ -94,5 +97,4 @@ public class AlchScript extends Script {
         Rs2Antiban.resetAntibanSettings();
         super.shutdown();
     }
-
 }

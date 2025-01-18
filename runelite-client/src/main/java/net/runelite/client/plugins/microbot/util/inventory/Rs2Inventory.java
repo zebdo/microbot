@@ -2222,7 +2222,10 @@ public class Rs2Inventory {
         if (item.slot == slot) return false;
 
         Widget inventory = getInventory();
-        if (inventory == null) return false;
+        if (inventory == null) {
+            Rs2Tab.switchToInventoryTab();
+            sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.INVENTORY);
+        }
         Rectangle itemBounds = itemBounds(item);
         Rectangle slotBounds = inventory.getDynamicChildren()[slot].getBounds();
 
