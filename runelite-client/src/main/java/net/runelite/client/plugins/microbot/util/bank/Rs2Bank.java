@@ -1639,6 +1639,18 @@ public class Rs2Bank {
         return Rs2Inventory.interact(gemBag, "Empty");
     }
 
+    /**
+     * Empty fish barrel
+     *
+     * @return true if fish barrel was emptied
+     */
+
+    public static boolean emptyFishBarrel() {
+        Rs2Item fishBarrel = Rs2Inventory.get(ItemID.FISH_BARREL,ItemID.OPEN_FISH_BARREL);
+        if (fishBarrel == null) return false;
+        return Rs2Inventory.interact(fishBarrel, "Empty");
+    }
+
 
     /**
      * Withdraw items from the lootTrackerPlugin
