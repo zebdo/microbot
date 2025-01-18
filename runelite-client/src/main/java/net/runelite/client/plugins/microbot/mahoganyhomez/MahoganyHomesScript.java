@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MahoganyHomesScript extends Script {
 
-    public static String version = "0.0.5";
+    public static String version = "0.0.6";
     @Inject
     MahoganyHomesPlugin plugin;
 
@@ -353,10 +353,12 @@ public class MahoganyHomesScript extends Script {
                 if(plugin.getConfig().usePlankSack()){
                     if(Rs2Inventory.isFull() && !Rs2Inventory.contains(ItemID.STEEL_BAR)) {
                         Rs2Bank.depositAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
-                        sleep(600, 1200);
+                        Rs2Inventory.waitForInventoryChanges(5000);
                     }
-                    Rs2Bank.withdrawX(ItemID.STEEL_BAR, 4-steelBarsInInventory());
-                    sleep(600, 1200);
+                    if(steelBarsInInventory() < 4) {
+                        Rs2Bank.withdrawX(ItemID.STEEL_BAR, 4 - steelBarsInInventory());
+                        Rs2Inventory.waitForInventoryChanges(5000);
+                    }
 
                     Global.sleepUntil(() -> planksInPlankSack() == 28,() -> {
                         Rs2Bank.withdrawAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
