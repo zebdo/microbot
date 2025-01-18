@@ -69,6 +69,11 @@ public class Rs2Magic {
             sleep(150, 300);
         }
 
+        if ( Microbot.getVarbitValue(Varbits.SPELLBOOK) != magicSpell.getSpellbook().getId()) {
+            Microbot.log("You need to be on the " + magicSpell.getSpellbook().getName() + " spellbook to cast " + magicSpell.getName() + ".");
+            return false;
+        }
+
         if (magicSpell.getName().toLowerCase().contains("enchant")){
             if (Rs2Widget.clickWidget("Jewellery Enchantments", Optional.of(218), 3, true)) {
                 sleepUntil(() -> Rs2Widget.hasWidgetText("Jewellery Enchantments", 218, 3, true), 2000);
