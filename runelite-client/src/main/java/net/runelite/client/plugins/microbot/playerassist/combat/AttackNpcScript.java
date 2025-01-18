@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.playerassist.combat;
 
 import net.runelite.api.Actor;
+import net.runelite.api.ItemID;
 import net.runelite.api.NPC;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -132,8 +133,14 @@ public class AttackNpcScript extends Script {
      */
     private void handleItemOnNpcToKill() {
         NPC npc = Rs2Npc.getNpcsAttackingPlayer(Microbot.getClient().getLocalPlayer()).stream().findFirst().orElse(null);
-        if (npc.getName().equalsIgnoreCase("rockslug") && npc.getHealthRatio() < 10 && !npc.isDead()) {
-            Rs2Inventory.useItemOnNpc(4161, npc);
+        if (npc.getName().equalsIgnoreCase("desert lizard") && npc.getHealthRatio() < 10 && !npc.isDead()) {
+            Rs2Inventory.useItemOnNpc(ItemID.ICE_COOLER, npc);
+            Rs2Player.waitForAnimation();
+        } else if (npc.getName().equalsIgnoreCase("rockslug") && npc.getHealthRatio() < 10 && !npc.isDead()) {
+            Rs2Inventory.useItemOnNpc(ItemID.BAG_OF_SALT, npc);
+            Rs2Player.waitForAnimation();
+        } else if (npc.getName().equalsIgnoreCase("gargoyle") && npc.getHealthRatio() < 10 && !npc.isDead()) {
+            Rs2Inventory.useItemOnNpc(ItemID.ROCK_HAMMER, npc);
             Rs2Player.waitForAnimation();
         }
     }
