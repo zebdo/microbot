@@ -528,11 +528,11 @@ public class Rs2Walker {
      * @param destination
      * @return
      */
-    public static int getTotalTiles(WorldPoint destination) {
+    public static int getTotalTiles(WorldPoint start, WorldPoint destination) {
         if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
             ShortestPathPlugin.getPathfinderConfig().refresh();
         }
-        Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), Rs2Player.getWorldLocation(), destination);
+        Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, destination);
         pathfinder.run();
         List<WorldPoint> path = pathfinder.getPath();
 
