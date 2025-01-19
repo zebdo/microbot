@@ -1304,28 +1304,22 @@ public class Rs2Bank {
 
     public static BankLocation getNearestBank(WorldPoint worldPoint) {
         Microbot.log("Calculating nearest bank path...");
-        BankLocation nearest = null;
-        double dist = Double.MAX_VALUE;
-        WorldPoint location;
-        double currDist;
-        for (BankLocation bankLocation : BankLocation.values()) {
-            if (!bankLocation.hasRequirements()) continue;
-
-            currDist = Rs2Walker.getTotalTiles(bankLocation.getWorldPoint());
-
-            if (nearest == null || currDist < dist) {
-                dist = currDist;
-                nearest = bankLocation;
-            }
-        }
-        if (nearest != null) {
-            Microbot.log("Found nearest bank: " + nearest.name());
+        
+        BankLocation bankLocation = Arrays.stream(BankLocation.values())
+                .parallel()
+                .filter(BankLocation::hasRequirements)
+                .min(Comparator.comparingDouble(bl ->
+                        Rs2Walker.getTotalTiles(worldPoint, bl.getWorldPoint())))
+                .orElse(null);
+        
+        if (bankLocation != null) {
+            Microbot.log("Found nearest bank: " + bankLocation.name());
+            return bankLocation;
         } else {
-            Microbot.log("Unable to find a bank");
+            Microbot.log("Unable to find nearest bank");
+            return null;
         }
-        return nearest;
     }
-
 
     /**
      * Walk to the closest bank
