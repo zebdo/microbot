@@ -178,6 +178,10 @@ public enum BankLocation {
             case PRIFDDINAS:
                 // Requires Song of the elves to be completed
                 return Rs2Player.getQuestState(Quest.SONG_OF_THE_ELVES) == QuestState.FINISHED;
+            case ROGUES_DEN_CHEST:
+            case CAMELOT:
+            case HALLOWED_SEPULCHRE:
+                return isMember();
             default:
                 return true;
         }
