@@ -1321,6 +1321,7 @@ public class Rs2Bank {
             Microbot.log("Unable to find nearest bank");
             return null;
         }
+        return nearest;
     }
 
     /**
