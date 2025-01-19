@@ -1304,20 +1304,15 @@ public class Rs2Bank {
 
     public static BankLocation getNearestBank(WorldPoint worldPoint) {
         Microbot.log("Calculating nearest bank path...");
-        BankLocation nearest = null;
-        double dist = Double.MAX_VALUE;
-        WorldPoint location;
-        double currDist;
-        for (BankLocation bankLocation : BankLocation.values()) {
-            if (!bankLocation.hasRequirements()) continue;
+        // Convert the enum values to a Stream, filter out those
+        // that don't meet requirements, then work in parallel.
+        BankLocation nearest = Arrays.stream(BankLocation.values())
+                .parallel()
+                .filter(BankLocation::hasRequirements)
+                .min(Comparator.comparingInt(bankLocation ->
+                        Rs2Walker.getTotalTiles(worldPoint,bankLocation.getWorldPoint())))
+                .orElse(null);
 
-            currDist = Rs2Walker.getTotalTiles(bankLocation.getWorldPoint());
-
-            if (nearest == null || currDist < dist) {
-                dist = currDist;
-                nearest = bankLocation;
-            }
-        }
         if (nearest != null) {
             Microbot.log("Found nearest bank: " + nearest.name());
         } else {
