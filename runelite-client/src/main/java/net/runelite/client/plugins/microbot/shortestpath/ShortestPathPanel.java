@@ -2,9 +2,10 @@ package net.runelite.client.plugins.microbot.shortestpath;
 
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.nateplugins.skilling.natefishing.enums.Fish;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
+import net.runelite.client.plugins.microbot.util.depositbox.DepositBoxLocation;
+import net.runelite.client.plugins.microbot.util.depositbox.Rs2DepositBox;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.walker.enums.*;
 import net.runelite.client.ui.PluginPanel;
@@ -18,6 +19,7 @@ import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.util.concurrent.CompletableFuture;
 
 public class ShortestPathPanel extends PluginPanel {
 
@@ -25,6 +27,7 @@ public class ShortestPathPanel extends PluginPanel {
 
     private JTextField xField, yField, zField;
     private JComboBox<BankLocation> bankComboBox;
+    private JComboBox<DepositBoxLocation> depositBoxComboBox;
     private JComboBox<SlayerMasters> slayerMasterComboBox;
     private JComboBox<Farming> farmingComboBox;
     private JComboBox<Allotments> allotmentsComboBox;
@@ -53,6 +56,8 @@ public class ShortestPathPanel extends PluginPanel {
         add(createCustomLocationPanel());
         add(Box.createRigidArea(new Dimension(0, 10)));
         add(createBankPanel());
+        add(Box.createRigidArea(new Dimension(0, 10)));
+        add(createDepositBoxPanel());
         add(Box.createRigidArea(new Dimension(0, 10)));
         add(createSlayerMasterPanel());
         add(Box.createRigidArea(new Dimension(0, 10)));
@@ -157,7 +162,18 @@ public class ShortestPathPanel extends PluginPanel {
         JPanel nearestBankPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
         JButton useNearestBankButton = new JButton("Go To Nearest Bank");
 
-        useNearestBankButton.addActionListener(e -> startWalking(Rs2Bank.getNearestBank().getWorldPoint()));
+        useNearestBankButton.addActionListener(e -> {
+            CompletableFuture.supplyAsync(Rs2Bank::getNearestBank)
+                    .thenAccept(nearestBank -> {
+                        if (nearestBank != null) {
+                            startWalking(nearestBank.getWorldPoint());
+                        }
+                    })
+                    .exceptionally(ex -> {
+                        Microbot.log("Error while finding the nearest bank: " + ex.getMessage());
+                        return null;
+                    });
+        });
         
         nearestBankPanel.add(useNearestBankButton);
 
@@ -169,6 +185,54 @@ public class ShortestPathPanel extends PluginPanel {
         panel.add(buttonPanel);
         panel.add(Box.createRigidArea(new Dimension(0, 2)));
         panel.add(nearestBankPanel);
+
+        return panel;
+    }
+
+    private JPanel createDepositBoxPanel() {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(createCenteredTitledBorder("Travel to DepositBox", "/net/runelite/client/plugins/microbot/shortestpath/Bank_icon.png"));
+
+        depositBoxComboBox = new JComboBox<>(DepositBoxLocation.values());
+        depositBoxComboBox.setRenderer(new ComboBoxListRenderer());
+        depositBoxComboBox.setAlignmentX(Component.CENTER_ALIGNMENT);
+        depositBoxComboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, bankComboBox.getPreferredSize().height));
+        ((JLabel)depositBoxComboBox.getRenderer()).setHorizontalAlignment(SwingConstants.CENTER);
+
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton startButton = new JButton("Start");
+        JButton stopButton = new JButton("Stop");
+
+        startButton.addActionListener(e -> startWalking(getSelectedDepositBox().getWorldPoint()));
+        stopButton.addActionListener(e -> stopWalking());
+
+        JPanel nearestDepositBoxPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JButton useNearestDepositBoxButton = new JButton("Go To Nearest Deposit Box");
+
+        useNearestDepositBoxButton.addActionListener(e -> {
+            CompletableFuture.supplyAsync(Rs2DepositBox::getNearestDepositBox)
+                    .thenAccept(nearestDepositBox -> {
+                        if (nearestDepositBox != null) {
+                            startWalking(nearestDepositBox.getWorldPoint());
+                        }
+                    })
+                    .exceptionally(ex -> {
+                        Microbot.log("Error while finding the nearest deposit box: " + ex.getMessage());
+                        return null;
+                    });
+        });
+
+        nearestDepositBoxPanel.add(useNearestDepositBoxButton);
+
+        buttonPanel.add(startButton);
+        buttonPanel.add(stopButton);
+
+        panel.add(depositBoxComboBox);
+        panel.add(Box.createRigidArea(new Dimension(0, 5)));
+        panel.add(buttonPanel);
+        panel.add(Box.createRigidArea(new Dimension(0, 2)));
+        panel.add(nearestDepositBoxPanel);
 
         return panel;
     }
@@ -350,6 +414,10 @@ public class ShortestPathPanel extends PluginPanel {
 
     public BankLocation getSelectedBank() {
         return (BankLocation) bankComboBox.getSelectedItem();
+    }
+
+    public DepositBoxLocation getSelectedDepositBox() {
+        return (DepositBoxLocation) depositBoxComboBox.getSelectedItem();
     }
 
     public SlayerMasters getSelectedSlayerMaster() {

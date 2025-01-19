@@ -1304,6 +1304,7 @@ public class Rs2Bank {
 
     public static BankLocation getNearestBank(WorldPoint worldPoint) {
         Microbot.log("Calculating nearest bank path...");
+
         // Convert the enum values to a Stream, filter out those
         // that don't meet requirements, then work in parallel.
         BankLocation nearest = Arrays.stream(BankLocation.values())
@@ -1315,12 +1316,12 @@ public class Rs2Bank {
 
         if (nearest != null) {
             Microbot.log("Found nearest bank: " + nearest.name());
-        } else {
-            Microbot.log("Unable to find a bank");
-        }
-        return nearest;
-    }
 
+        } else {
+            Microbot.log("Unable to find nearest bank");
+            return null;
+        }
+    }
 
     /**
      * Walk to the closest bank

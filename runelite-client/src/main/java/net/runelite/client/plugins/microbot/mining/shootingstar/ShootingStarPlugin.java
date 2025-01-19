@@ -23,6 +23,7 @@ import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingSt
 import net.runelite.client.plugins.microbot.mining.shootingstar.model.Star;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -422,7 +423,7 @@ public class ShootingStarPlugin extends Plugin {
                 
                 // Set distance to the distance that is found in the map for the duplicate location or calculate shortest distance if not found
                 int distance;
-                distance = Objects.requireNonNullElseGet(existingDistance, () -> Rs2Player.distanceTo(starLocation));
+                distance = Objects.requireNonNullElseGet(existingDistance, () -> Rs2Walker.getTotalTiles(Rs2Player.getWorldLocation(), starLocation));
 
                 distanceMap.computeIfAbsent(distance, k -> new ArrayList<>()).add(star);
             }
