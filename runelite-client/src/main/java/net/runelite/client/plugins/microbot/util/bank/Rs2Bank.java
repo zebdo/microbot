@@ -497,7 +497,7 @@ public class Rs2Bank {
         } else {
             invokeMenu(HANDLE_X_UNSET, rs2Item);
 
-            sleep(1200);
+            sleep(Rs2Random.randomGaussian(1100,200));
             Rs2Keyboard.typeString(String.valueOf(amount));
             Rs2Keyboard.enter();
             sleepUntil(() -> Rs2Inventory.hasItem(rs2Item.id), 2500);
@@ -577,7 +577,7 @@ public class Rs2Bank {
         for (Rs2Item item : items) {
             if (item == null) continue;
             depositAll(item);
-            sleep(300, 600);
+            sleep(Rs2Random.randomGaussian(400,200));
             result = true;
         }
         return result;
@@ -1152,7 +1152,7 @@ public class Rs2Bank {
             }
 
             sleepUntil(Rs2Bank::isOpen);
-            sleep(600, 1000);
+            sleep(Rs2Random.randomGaussian(800,200));
             return true;
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
@@ -1182,7 +1182,7 @@ public class Rs2Bank {
             }
 
             sleepUntil(Rs2Bank::isOpen);
-            sleep(600, 1000);
+            sleep(Rs2Random.randomGaussian(800,200));
             return true;
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
@@ -1304,17 +1304,19 @@ public class Rs2Bank {
 
     public static BankLocation getNearestBank(WorldPoint worldPoint) {
         Microbot.log("Calculating nearest bank path...");
-        
-        BankLocation bankLocation = Arrays.stream(BankLocation.values())
+
+        // Convert the enum values to a Stream, filter out those
+        // that don't meet requirements, then work in parallel.
+        BankLocation nearest = Arrays.stream(BankLocation.values())
                 .parallel()
                 .filter(BankLocation::hasRequirements)
-                .min(Comparator.comparingDouble(bl ->
-                        Rs2Walker.getTotalTiles(worldPoint, bl.getWorldPoint())))
+                .min(Comparator.comparingInt(bankLocation ->
+                        Rs2Walker.getTotalTiles(worldPoint,bankLocation.getWorldPoint())))
                 .orElse(null);
-        
-        if (bankLocation != null) {
-            Microbot.log("Found nearest bank: " + bankLocation.name());
-            return bankLocation;
+
+        if (nearest != null) {
+            Microbot.log("Found nearest bank: " + nearest.name());
+
         } else {
             Microbot.log("Unable to find nearest bank");
             return null;
@@ -1549,7 +1551,7 @@ public class Rs2Bank {
     public static boolean setWithdrawAsNote() {
         if (hasWithdrawAsNote()) return true;
         Rs2Widget.clickWidget(786458);
-        sleep(600);
+        sleep(Rs2Random.randomGaussian(550,100));
         return hasWithdrawAsNote();
     }
 
@@ -1561,7 +1563,7 @@ public class Rs2Bank {
     public static boolean setWithdrawAsItem() {
         if (hasWithdrawAsItem()) return true;
         Rs2Widget.clickWidget(786456);
-        sleep(600);
+        sleep(Rs2Random.randomGaussian(550,100));
         return hasWithdrawAsItem();
     }
 
@@ -1617,6 +1619,18 @@ public class Rs2Bank {
         Rs2Item gemBag = Rs2Inventory.get(ItemID.GEM_BAG_12020,ItemID.OPEN_GEM_BAG);
         if (gemBag == null) return false;
         return Rs2Inventory.interact(gemBag, "Empty");
+    }
+
+    /**
+     * Empty fish barrel
+     *
+     * @return true if fish barrel was emptied
+     */
+
+    public static boolean emptyFishBarrel() {
+        Rs2Item fishBarrel = Rs2Inventory.get(ItemID.FISH_BARREL,ItemID.OPEN_FISH_BARREL);
+        if (fishBarrel == null) return false;
+        return Rs2Inventory.interact(fishBarrel, "Empty");
     }
 
 

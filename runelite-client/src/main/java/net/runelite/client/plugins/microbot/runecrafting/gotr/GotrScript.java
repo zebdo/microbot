@@ -136,7 +136,7 @@ public class GotrScript extends Script {
                     timeToStart = ((int) ChronoUnit.SECONDS.between(Instant.now(), nextGameStart.get()));
                 }
 
-                if (Rs2Inventory.hasItem("portal talisman")) {
+                if (Rs2Inventory.hasItem("portal talisman") && !Rs2Inventory.hasItem(GUARDIAN_ESSENCE) && !Rs2Inventory.anyPouchFull()) {
                     Rs2Inventory.drop("portal talisman");
                     log("Dropping portal talisman...");
                 }

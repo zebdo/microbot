@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.util.walker;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
@@ -52,6 +53,7 @@ import static net.runelite.client.plugins.microbot.util.walker.Rs2MiniMap.worldT
  * TODO:
  * 1. fix teleports starting from inside the POH
  */
+@Slf4j
 public class Rs2Walker {
     @Setter
     public static ShortestPathConfig config;
@@ -525,14 +527,16 @@ public class Rs2Walker {
 
     /**
      * Gets the total amount of tiles to travel to destination
-     * @param destination
-     * @return
+     * @param source source
+     * @param destination destination
+     * @return total amount of tiles
      */
     public static int getTotalTiles(WorldPoint start, WorldPoint destination) {
         if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
             ShortestPathPlugin.getPathfinderConfig().refresh();
         }
         Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, destination);
+
         pathfinder.run();
         List<WorldPoint> path = pathfinder.getPath();
 
@@ -544,6 +548,15 @@ public class Rs2Walker {
         }
 
         return path.size();
+    }
+
+    /**
+     * Gets the total amount of tiles to travel to destination
+     * @param destination destination
+     * @return total amount of tiles
+     */
+    public static int getTotalTiles(WorldPoint destination) {
+        return getTotalTiles(Rs2Player.getWorldLocation(), destination);
     }
 
     // takes an avg 200-300 ms

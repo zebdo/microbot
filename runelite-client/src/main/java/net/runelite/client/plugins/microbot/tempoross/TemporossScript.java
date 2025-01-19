@@ -5,6 +5,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.plugins.gpu.GpuPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
@@ -34,7 +35,7 @@ import static net.runelite.client.plugins.microbot.Microbot.log;
 public class TemporossScript extends Script {
 
     // Version string
-    public static final String VERSION = "1.1.0";
+    public static final String VERSION = "1.1.1";
     public static final Pattern DIGIT_PATTERN = Pattern.compile("(\\d+)");
     public static final int TEMPOROSS_REGION = 12078;
 
@@ -494,7 +495,7 @@ public class TemporossScript extends Script {
                         return;
                     LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(),workArea.totemPoint);
                     Rs2Camera.turnTo(localPoint);
-                    if (Rs2Camera.isTileOnScreen(localPoint)) {
+                    if (Rs2Camera.isTileOnScreen(localPoint) && Microbot.isPluginEnabled(GpuPlugin.class)) {
                         Rs2Walker.walkFastLocal(localPoint);
                         log("Can't find the fish spot, walking to the totem pole");
                         Rs2Player.waitForWalking(2000);
@@ -614,7 +615,7 @@ public class TemporossScript extends Script {
         LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(),workArea.safePoint);
         WorldPoint worldPoint = WorldPoint.fromLocalInstance(Microbot.getClient(),localPoint);
         Rs2Camera.turnTo(localPoint);
-        if (Rs2Camera.isTileOnScreen(localPoint)) {
+        if (Rs2Camera.isTileOnScreen(localPoint) && Microbot.isPluginEnabled(GpuPlugin.class)) {
             Rs2Walker.walkFastLocal(localPoint);
             Rs2Player.waitForWalking(2000);
         } else {
@@ -628,7 +629,7 @@ public class TemporossScript extends Script {
         assert localPoint != null;
         if(Objects.equals(Microbot.getClient().getLocalDestinationLocation(), localPoint) || Objects.equals(Microbot.getClient().getLocalPlayer().getWorldLocation(), workArea.spiritPoolPoint))
             return;
-        if(Rs2Camera.isTileOnScreen(localPoint)) {
+        if(Rs2Camera.isTileOnScreen(localPoint) && Microbot.isPluginEnabled(GpuPlugin.class)) {
             Rs2Walker.walkFastLocal(localPoint);
             Rs2Player.waitForWalking(2000);
         }
