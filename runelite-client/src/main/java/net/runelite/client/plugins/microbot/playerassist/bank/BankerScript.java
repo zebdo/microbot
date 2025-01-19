@@ -63,7 +63,9 @@ public class BankerScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (Microbot.isLoggedIn() && config.bank() && needsBanking()) {
-                    if (Rs2Player.eatAt(100)) return;
+                    if (config.eatFoodForSpace())
+                        if (Rs2Player.eatAt(100))
+                            return;
 
                     if(handleBanking()){
                         PlayerAssistPlugin.setState(State.IDLE);
