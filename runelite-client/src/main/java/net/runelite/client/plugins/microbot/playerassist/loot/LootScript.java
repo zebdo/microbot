@@ -10,10 +10,7 @@ import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
-import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
@@ -30,7 +27,6 @@ public class LootScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             if (!super.run()) return;
             if (!Microbot.isLoggedIn()) return;
-
             if (Rs2Inventory.isFull() || Rs2Inventory.getEmptySlots() <= config.minFreeSlots() || (Rs2Combat.inCombat() && !config.toggleForceLoot()))
                 return;
 
