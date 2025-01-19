@@ -65,6 +65,7 @@ public class GildedAltarScript extends Script {
 
 
     public boolean run(GildedAltarConfig config) {
+        blacklistNames = new ArrayList<>();
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
