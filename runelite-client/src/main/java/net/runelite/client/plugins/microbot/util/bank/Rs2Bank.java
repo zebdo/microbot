@@ -1342,7 +1342,21 @@ public class Rs2Bank {
      */
     public static boolean walkToBank(BankLocation bankLocation) {
         if (Rs2Bank.isOpen()) return true;
-        if(Rs2Walker.config.runToBanks()){Rs2Player.toggleRunEnergy(true);}
+        Rs2Player.toggleRunEnergy(true);
+        Microbot.status = "Walking to nearest bank " + bankLocation.toString();
+        Rs2Walker.walkTo(bankLocation.getWorldPoint(), 4);
+        return bankLocation.getWorldPoint().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 4;
+    }
+
+        /**
+     * Walk to bank location
+     * 
+     * @param bankLocation 
+     * @return true if player location is less than 4 tiles away from the bank location
+     */
+    public static boolean walkToBank(BankLocation bankLocation, boolean toggleRun) {
+        if (Rs2Bank.isOpen()) return true;
+         Rs2Player.toggleRunEnergy(toggleRun);
         Microbot.status = "Walking to nearest bank " + bankLocation.toString();
         Rs2Walker.walkTo(bankLocation.getWorldPoint(), 4);
         return bankLocation.getWorldPoint().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 4;
