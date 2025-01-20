@@ -1347,7 +1347,6 @@ public class Rs2Bank {
         return bankLocation.getWorldPoint().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 4;
     }
 
-
     /**
      * Distance from the nearest bank location
      * 
