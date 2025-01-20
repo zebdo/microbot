@@ -30,7 +30,7 @@ public class LunarTabletsPlugin extends Plugin {
     @Inject
     private OverlayManager overlayManager;
     @Inject
-    private LunarTabletsOverlay exampleOverlay;
+    private LunarTabletsOverlay lunartabletOverlay;
 
     @Inject
     LunarTabletsScript lunartabletscript;
@@ -39,14 +39,14 @@ public class LunarTabletsPlugin extends Plugin {
     @Override
     protected void startUp() throws AWTException {
         if (overlayManager != null) {
-            overlayManager.add(exampleOverlay);
+            overlayManager.add(lunartabletOverlay);
         }
         lunartabletscript.run(config);
     }
 
     protected void shutDown() {
         lunartabletscript.shutdown();
-        overlayManager.remove(exampleOverlay);
+        overlayManager.remove(lunartabletOverlay);
     }
     int ticks = 10;
     @Subscribe
