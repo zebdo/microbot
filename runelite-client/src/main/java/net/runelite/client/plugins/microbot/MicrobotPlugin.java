@@ -91,7 +91,6 @@ public class MicrobotPlugin extends Plugin {
     private PouchScript pouchScript;
     @Inject
     private PouchOverlay pouchOverlay;
-    private volatile AtomicInteger ticks = new AtomicInteger(0);
 
     @Override
     protected void startUp() throws AWTException {
