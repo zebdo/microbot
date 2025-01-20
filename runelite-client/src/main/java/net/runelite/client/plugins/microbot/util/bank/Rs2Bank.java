@@ -47,7 +47,6 @@ import static net.runelite.client.plugins.microbot.util.npc.Rs2Npc.hoverOverActo
 @SuppressWarnings("unused")
 @Slf4j
 public class Rs2Bank {
-
     public static final int BANK_ITEM_WIDTH = 36;
     public static final int BANK_ITEM_HEIGHT = 32;
     public static final int BANK_ITEM_Y_PADDING = 4;
@@ -1348,19 +1347,6 @@ public class Rs2Bank {
         return bankLocation.getWorldPoint().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 4;
     }
 
-        /**
-     * Walk to bank location
-     * 
-     * @param bankLocation 
-     * @return true if player location is less than 4 tiles away from the bank location
-     */
-    public static boolean walkToBank(BankLocation bankLocation, boolean toggleRun) {
-        if (Rs2Bank.isOpen()) return true;
-         Rs2Player.toggleRunEnergy(toggleRun);
-        Microbot.status = "Walking to nearest bank " + bankLocation.toString();
-        Rs2Walker.walkTo(bankLocation.getWorldPoint(), 4);
-        return bankLocation.getWorldPoint().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 4;
-    }
 
     /**
      * Distance from the nearest bank location
@@ -1401,8 +1387,8 @@ public class Rs2Bank {
      */
     public static boolean walkToBankAndUseBank(BankLocation bankLocation) {
         if (Rs2Bank.isOpen()) return true;
-        Microbot.status = "Walking to nearest bank " + bankLocation.toString();
         Rs2Player.toggleRunEnergy(true);
+        Microbot.status = "Walking to nearest bank " + bankLocation.toString();
         boolean result = bankLocation.getWorldPoint().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 8;
         if (result) {
             return Rs2Bank.useBank();
