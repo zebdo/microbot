@@ -61,12 +61,23 @@ public class AlchScript extends Script {
                             return;
                         }
 
-                        if (plugin.getAlchItemNames().isEmpty() || !Rs2Inventory.hasItem(plugin.getAlchItemNames().get(0))) {
+                        if (plugin.getAlchItemNames().isEmpty() ||
+                                plugin.getAlchItemNames().stream().noneMatch(Rs2Inventory::hasItem)) {
                             Microbot.log("Missing alch items...");
                             return;
                         }
 
-                        Rs2Item alchItem = Rs2Inventory.get(plugin.getAlchItemNames().get(0));
+                        Rs2Item alchItem = null;
+                        for (String itemName : plugin.getAlchItemNames()) {
+                            if (Rs2Inventory.hasItem(itemName)) {
+                                alchItem = Rs2Inventory.get(itemName);
+                                break;
+                            }
+                        }
+                        if (alchItem == null) {
+                            Microbot.log("Missing alch items...");
+                            return;
+                        }
                         int inventorySlot = Rs2Player.getRealSkillLevel(Skill.MAGIC) >= 55 ? 11 : 4;
                         if (alchItem.getSlot() != inventorySlot) {
                             Rs2Inventory.moveItemToSlot(alchItem, inventorySlot);

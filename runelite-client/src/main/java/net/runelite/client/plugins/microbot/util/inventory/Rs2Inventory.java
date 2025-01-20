@@ -2252,6 +2252,7 @@ public class Rs2Inventory {
         if (inventory == null) {
             Rs2Tab.switchToInventoryTab();
             sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.INVENTORY);
+            inventory = getInventory();
         }
         Rectangle itemBounds = itemBounds(item);
         Rectangle slotBounds = inventory.getDynamicChildren()[slot].getBounds();
