@@ -113,6 +113,7 @@ public class BirdHunterScript extends Script {
         successfulTraps.addAll(Rs2GameObject.getGameObjects(ObjectID.BIRD_SNARE_9379));
         successfulTraps.addAll(Rs2GameObject.getGameObjects(ObjectID.BIRD_SNARE_9375));
         successfulTraps.addAll(Rs2GameObject.getGameObjects(ObjectID.BIRD_SNARE_9373));
+        successfulTraps.addAll(Rs2GameObject.getGameObjects(ObjectID.BIRD_SNARE_9348));
 
         List<GameObject> catchingTraps = new ArrayList<>();
         catchingTraps.addAll(Rs2GameObject.getGameObjects(ObjectID.BIRD_SNARE_9348));
