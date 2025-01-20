@@ -23,7 +23,7 @@ public class LunarTabletsOverlay extends OverlayPanel {
         try {
             panelComponent.setPreferredSize(new Dimension(200, 300));
             panelComponent.getChildren().add(TitleComponent.builder()
-                    .text("Micro Example V1.0.0")
+                    .text("Lunar Tablets")
                     .color(Color.GREEN)
                     .build());
 

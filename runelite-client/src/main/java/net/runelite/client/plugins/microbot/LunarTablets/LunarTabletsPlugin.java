@@ -33,7 +33,7 @@ public class LunarTabletsPlugin extends Plugin {
     private LunarTabletsOverlay exampleOverlay;
 
     @Inject
-    LunarTabletsScript exampleScript;
+    LunarTabletsScript lunartabletscript;
 
 
     @Override
@@ -41,11 +41,11 @@ public class LunarTabletsPlugin extends Plugin {
         if (overlayManager != null) {
             overlayManager.add(exampleOverlay);
         }
-        exampleScript.run(config);
+        lunartabletscript.run(config);
     }
 
     protected void shutDown() {
-        exampleScript.shutdown();
+        lunartabletscript.shutdown();
         overlayManager.remove(exampleOverlay);
     }
     int ticks = 10;
