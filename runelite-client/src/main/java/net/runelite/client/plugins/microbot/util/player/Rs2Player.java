@@ -930,7 +930,7 @@ public class Rs2Player {
      */
 
     public static boolean drinkAntiPoisonPotion() {
-        if(hasAntiPoisonActive() || hasAntiVenomActive()) {
+        if(!hasAntiPoisonActive() || hasAntiVenomActive()) {
             return true;
         }
         return usePotion(Rs2Potion.getAntiPoisonVariants().toArray(new String[0]));

@@ -2,10 +2,7 @@ package net.runelite.client.plugins.microbot.util.bank.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.runelite.api.Quest;
-import net.runelite.api.QuestState;
-import net.runelite.api.Skill;
-import net.runelite.api.Varbits;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
@@ -14,6 +11,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 @Getter
 @RequiredArgsConstructor
 public enum BankLocation {
+    ALDARIN(new WorldPoint(1398, 2927, 0)),
     AL_KHARID(new WorldPoint(3270, 3166, 0)),
     ARCEUUS(new WorldPoint(1624, 3745, 0)),
     ARDOUGNE_NORTH(new WorldPoint(2616, 3332, 0)),
@@ -32,13 +30,12 @@ public enum BankLocation {
     COOKS_GUILD(new WorldPoint(3147,3450,0)),
     CORSAIR_COVE(new WorldPoint(2570, 2864, 0)),
     CRAFTING_GUILD(new WorldPoint(2936, 3281, 0)),
+    DARKMEYER(new WorldPoint(3604, 3366, 0)),
     DIHN_BANK(new WorldPoint(1640, 3944, 0)),
-    DRAYNOR(new WorldPoint(3092, 3243, 0)),
+    DORGESH_KAAN_BANK(new WorldPoint(2702, 5350, 0)),
     DRAYNOR_VILLAGE(new WorldPoint(3093, 3245, 0)),
     DUEL_ARENA(new WorldPoint(3381, 3268, 0)),
     DWARF_MINE_BANK(new WorldPoint(2837, 10207, 0)),
-    EAST_ARDOUGNE_NORTH(new WorldPoint(2618, 3332, 0)),
-    EAST_ARDOUGNE_SOUTH(new WorldPoint(2652, 3283, 0)),
     EDGEVILLE(new WorldPoint(3094, 3492, 0)),
     FALADOR_EAST(new WorldPoint(3014, 3355, 0)),
     FALADOR_WEST(new WorldPoint(2945, 3369, 0)),
@@ -70,6 +67,7 @@ public enum BankLocation {
     MOR_UL_REK(new WorldPoint(2541, 5140, 0)),
     MOTHERLOAD(new WorldPoint(3760, 5666, 0)),
     MOUNT_KARUULM(new WorldPoint(1324, 3824, 0)),
+    MYTHS_GUILD(new WorldPoint(2463, 2847, 1)),
     NARDAH(new WorldPoint(3428, 2892, 0)),
     NEITIZNOT(new WorldPoint(2337, 3807, 0)),
     PEST_CONTROL(new WorldPoint(2667, 2653, 0)),
@@ -92,7 +90,6 @@ public enum BankLocation {
     VARLAMORE_WEST(new WorldPoint(1647, 3118, 0)),
     VARROCK_EAST(new WorldPoint(3253, 3422, 0)),
     VARROCK_WEST(new WorldPoint(3183, 3441, 0)),
-    VINERY(new WorldPoint(1808, 3570, 0)),
     VINERY_BANK(new WorldPoint(1809, 3566, 0)),
     VOLCANO_BANK(new WorldPoint(3819, 3809, 0)),
     WINTERTODT(new WorldPoint(1640, 3944, 0)),
@@ -174,10 +171,105 @@ public enum BankLocation {
                 return Microbot.getVarbitValue(933) > 1;
             case LLETYA:
                 // Requires Mournings End Part 1 in progress or completed
-                return Rs2Player.getQuestState(Quest.MOURNINGS_END_PART_I) == QuestState.IN_PROGRESS || Rs2Player.getQuestState(Quest.MOURNINGS_END_PART_I) == QuestState.FINISHED;
+                return Rs2Player.getQuestState(Quest.MOURNINGS_END_PART_I) != QuestState.NOT_STARTED;
             case PRIFDDINAS:
                 // Requires Song of the elves to be completed
                 return Rs2Player.getQuestState(Quest.SONG_OF_THE_ELVES) == QuestState.FINISHED;
+            case SHILO_VILLAGE:
+                // Requires Shilo Village to enter the village & use the bank
+                return Rs2Player.getQuestState(Quest.SHILO_VILLAGE) == QuestState.FINISHED;
+            case LUNAR_ISLE:
+                // Requires Lunar Diplomacy & Seal of passage OR Dream Mentor
+                if (Rs2Player.getQuestState(Quest.DREAM_MENTOR) != QuestState.FINISHED) {
+                    return Rs2Player.getQuestState(Quest.LUNAR_DIPLOMACY) == QuestState.FINISHED && Rs2Equipment.hasEquipped(ItemID.SEAL_OF_PASSAGE);
+                } else {
+                    return Rs2Player.getQuestState(Quest.DREAM_MENTOR) == QuestState.FINISHED;
+                }
+            case JATIZSO:
+            case NEITIZNOT:
+                // Requires The Fremennik Trials & The Fremennik Isles
+                return Rs2Player.getQuestState(Quest.THE_FREMENNIK_TRIALS) == QuestState.FINISHED && Rs2Player.getQuestState(Quest.THE_FREMENNIK_ISLES) == QuestState.FINISHED;
+            case BURGH_DE_ROTT:
+                // Requires Priest in Peril & In Aid of the Myreque
+                return Rs2Player.getQuestState(Quest.PRIEST_IN_PERIL) == QuestState.FINISHED && Rs2Player.getQuestState(Quest.IN_AID_OF_THE_MYREQUE) != QuestState.NOT_STARTED;
+            case CANIFIS:
+                // Requires Priest in Peril
+                return Rs2Player.getQuestState(Quest.PRIEST_IN_PERIL) == QuestState.FINISHED;
+            case CAM_TORUM:
+                // Requires Perilous Moons to be started
+                return Rs2Player.getQuestState(Quest.PERILOUS_MOONS) != QuestState.NOT_STARTED;
+            case ZANARIS:
+                // Requires Lost City, Fairytale part 1 & starting Fairytale part 2
+                return Rs2Player.getQuestState(Quest.LOST_CITY) == QuestState.FINISHED && 
+                        Rs2Player.getQuestState(Quest.FAIRYTALE_I__GROWING_PAINS) == QuestState.FINISHED && 
+                        Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN) != QuestState.NOT_STARTED;
+            case FOSSIL_ISLAND:
+                // TODO: How to check if the chest has been built? maybe there is a varbit?
+            case VOLCANO_BANK:
+            case FOSSIL_ISLAND_WRECK:
+                // Requires Bone Voyage
+                return Rs2Player.getQuestState(Quest.BONE_VOYAGE) == QuestState.FINISHED;
+            case ALDARIN:
+            case VARLAMORE_EAST:
+            case VARLAMORE_WEST:
+                // Requires Children of the Sun
+                return Rs2Player.getQuestState(Quest.CHILDREN_OF_THE_SUN) == QuestState.FINISHED;
+            case LOVAKENGJ:
+            case HOSIDIUS:
+            case PISCARILIUS:
+            case ARCEUUS:
+            case DIHN_BANK:
+            case WINTERTODT:
+            case SULPHUR_MINE:
+            case ZEAH_SAND_BANK:
+            case BLAST_MINE:
+            case SHAYZIEN_BANK:
+            case SHAYZIEN_CHEST:
+            case GREAT_KOUREND_CASTLE:
+            case MOUNT_KARUULM:
+                // Requires Client of Kourend
+                return Rs2Player.getQuestState(Quest.CLIENT_OF_KOUREND) == QuestState.FINISHED;
+            case DWARF_MINE_BANK:
+            case BLAST_FURNACE_BANK:
+                // Requires The Giant Dwarf
+                return Rs2Player.getQuestState(Quest.THE_GIANT_DWARF) == QuestState.FINISHED;
+            case CAMODZAAL:
+                // Requires Below Ice Mountain
+                return Rs2Player.getQuestState(Quest.BELOW_ICE_MOUNTAIN) == QuestState.FINISHED;
+            case DORGESH_KAAN_BANK:
+                // Requires Death to the Dorgeshuun
+                return Rs2Player.getQuestState(Quest.DEATH_TO_THE_DORGESHUUN) == QuestState.FINISHED;
+            case DARKMEYER:
+                // Requires Sins of the Father
+                return Rs2Player.getQuestState(Quest.SINS_OF_THE_FATHER) == QuestState.FINISHED;
+            case MYTHS_GUILD:
+                // Requires Dragon Slayer 2
+                return Rs2Player.getQuestState(Quest.DRAGON_SLAYER_II) == QuestState.FINISHED;
+            case ROGUES_DEN_CHEST:
+            case CAMELOT:
+            case HALLOWED_SEPULCHRE:
+            case RUINS_OF_UNKAH:
+            case ISLE_OF_SOULS:
+            case PORT_KHAZARD:
+            case MOR_UL_REK:
+            case CATHERBY:
+            case NARDAH:
+            case LANDS_END:
+            case TZHAAR:
+            case YANILLE:
+            case GNOME_BANK:
+            case MOTHERLOAD:
+            case VINERY_BANK:
+            case PEST_CONTROL:
+            case ARDOUGNE_NORTH:
+            case ARDOUGNE_SOUTH:
+            case HOSIDIUS_KITCHEN:
+            case GNOME_TREE_BANK_WEST:
+            case BARBARIAN_OUTPOST:
+            case GNOME_TREE_BANK_SOUTH:
+            case ROGUES_DEN_EMERALD_BENEDICT:
+            case TREE_GNOME_STRONGHOLD_NIEVE:
+                return isMember();
             default:
                 return true;
         }

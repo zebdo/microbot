@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.util.walker;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
@@ -26,10 +27,8 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
-import net.runelite.client.plugins.microbot.util.math.Random;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
-import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2Pvp;
@@ -42,7 +41,6 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapPoint;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
 import java.util.stream.Collectors;
@@ -55,6 +53,7 @@ import static net.runelite.client.plugins.microbot.util.walker.Rs2MiniMap.worldT
  * TODO:
  * 1. fix teleports starting from inside the POH
  */
+@Slf4j
 public class Rs2Walker {
     @Setter
     public static ShortestPathConfig config;
@@ -524,6 +523,40 @@ public class Rs2Walker {
         Microbot.getMouse().click(point);
 
         return worldPoint;
+    }
+
+    /**
+     * Gets the total amount of tiles to travel to destination
+     * @param source source
+     * @param destination destination
+     * @return total amount of tiles
+     */
+    public static int getTotalTiles(WorldPoint start, WorldPoint destination) {
+        if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
+            ShortestPathPlugin.getPathfinderConfig().refresh();
+        }
+        Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, destination);
+
+        pathfinder.run();
+        List<WorldPoint> path = pathfinder.getPath();
+
+        if (path.isEmpty() || path.get(path.size() - 1).getPlane() != destination.getPlane()) return Integer.MAX_VALUE;
+        WorldArea pathArea = new WorldArea(path.get(path.size() - 1), 2, 2);
+        WorldArea objectArea = new WorldArea(destination, 2, 2);
+        if (!pathArea.intersectsWith2D(objectArea)) {
+            return Integer.MAX_VALUE;
+        }
+
+        return path.size();
+    }
+
+    /**
+     * Gets the total amount of tiles to travel to destination
+     * @param destination destination
+     * @return total amount of tiles
+     */
+    public static int getTotalTiles(WorldPoint destination) {
+        return getTotalTiles(Rs2Player.getWorldLocation(), destination);
     }
 
     // takes an avg 200-300 ms
