@@ -13,6 +13,7 @@ import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.settings.Rs2Settings;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -158,6 +159,8 @@ public abstract class Script implements IScript {
     public boolean run() {
         if (startTime == null) {
             startTime = LocalTime.now();
+            //init - things that have to be checked once can be added here
+            Rs2Settings.disableLevelUpInterface();
         }
 
         hasLeveledUp = false;
@@ -167,6 +170,7 @@ public abstract class Script implements IScript {
             return false;
 
         if (Microbot.isLoggedIn()) {
+
             boolean hasRunEnergy = Microbot.getClient().getEnergy() > Microbot.runEnergyThreshold;
 
             if (Microbot.enableAutoRunOn && hasRunEnergy)
