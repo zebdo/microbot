@@ -1922,7 +1922,7 @@ public class WildyKillerScript extends Script {
             if (Rs2Walker.getDistanceBetween(playerLocation, VARROCK_WEST_BANK) > 6
                     || Rs2Player.isTeleBlocked()
                     || getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 20) {
-                Rs2Bank.walkToBank(BankLocation.VARROCK_WEST, true);
+                Rs2Bank.walkToBank(BankLocation.VARROCK_WEST, false);
             }
 
             if (Rs2Walker.getDistanceBetween(playerLocation, VARROCK_WEST_BANK) < 6) {
