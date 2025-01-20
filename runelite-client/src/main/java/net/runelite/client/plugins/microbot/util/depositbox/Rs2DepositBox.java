@@ -3,14 +3,21 @@ package net.runelite.client.plugins.microbot.util.depositbox;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameObject;
 import net.runelite.api.SpriteID;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
@@ -225,5 +232,165 @@ public class Rs2DepositBox {
         if (widget == null) return;
 
         Microbot.getMouse().click(widget.getBounds());
+    }
+
+    /**
+     * Get the nearest despoi tbox
+     *
+     * @return DepositBoxLocation
+     */
+    public static DepositBoxLocation getNearestDepositBox() {
+        return getNearestDepositBox(Microbot.getClient().getLocalPlayer().getWorldLocation());
+    }
+    
+    /**
+     * Get the nearest deposit box to world point
+     *
+     * @param worldPoint 
+     * @return DepositBoxLocation
+     */
+    public static DepositBoxLocation getNearestDepositBox(WorldPoint worldPoint) {
+        Microbot.log("Calculating nearest bank path...");
+
+        DepositBoxLocation despoitBoxLocation = Arrays.stream(DepositBoxLocation.values())
+                .parallel()
+                .filter(DepositBoxLocation::hasRequirements)
+                .min(Comparator.comparingDouble(db ->
+                        Rs2Walker.getTotalTiles(worldPoint, db.getWorldPoint())))
+                .orElse(null);
+
+        if (despoitBoxLocation != null) {
+            Microbot.log("Found nearest deposit box: " + despoitBoxLocation.name());
+            return despoitBoxLocation;
+        } else {
+            Microbot.log("Unable to find nearest deposit box");
+            return null;
+        }
+    }
+
+    /**
+     * Walk to deposit box location
+     *
+     * @param depositBoxLocation
+     * @return true if player location is less than 4 tiles away from the bank location
+     */
+    public static boolean walkToDepositBox(DepositBoxLocation depositBoxLocation) {
+        if (Rs2Bank.isOpen()) return true;
+        Rs2Player.toggleRunEnergy(true);
+        Microbot.status = "Walking to nearest deposit box " + depositBoxLocation.name();
+        Rs2Walker.walkTo(depositBoxLocation.getWorldPoint(), 4);
+        return depositBoxLocation.getWorldPoint().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 4;
+    }
+    
+    /**
+     * Walk to the nearest deposit box location
+     *
+     * @return true if player location is less than 4 tiles away from the bank location
+     */
+    public static boolean walkToDepositBox() {
+        return walkToDepositBox(getNearestDepositBox());
+    }
+
+    /**
+     * Walk to the nearest deposit box location
+     *
+     * @return true if bank interface is open
+     */
+    public static boolean walkToAndUseDepositBox() {
+        return walkToAndUseDepositBox(getNearestDepositBox());
+    }
+
+    /**
+     * Walk to deposit box location & use bank
+     *
+     * @param depositBoxLocation
+     * @return true if bank interface is open
+     */
+    public static boolean walkToAndUseDepositBox(DepositBoxLocation depositBoxLocation) {
+        if (Rs2Bank.isOpen()) return true;
+        Rs2Player.toggleRunEnergy(true);
+        Microbot.status = "Walking to nearest deposit box " + depositBoxLocation.name();
+        boolean result = depositBoxLocation.getWorldPoint().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 8;
+        if (result) {
+            return openDepositBox();
+        } else {
+            Rs2Walker.walkTo(depositBoxLocation.getWorldPoint());
+        }
+        return false;
+    }
+
+    /**
+     * Banks items if your inventory does not have enough empty slots (0 empty slots being full).
+     * Will walk back to the initial player location passed as a parameter.
+     *
+     * @param itemNames           List of item names to deposit.
+     * @param initialPlayerLocation The initial location of the player to return to after banking.
+     * @param emptySlotCount      The minimum number of empty slots required in the inventory.
+     * @return true if items were successfully banked and the player returned to the initial location, false otherwise.
+     */
+    public static boolean bankItemsAndWalkBackToOriginalPosition(List<String> itemNames, WorldPoint initialPlayerLocation, int emptySlotCount) {
+        return bankItemsAndWalkBackToOriginalPosition(itemNames, false, initialPlayerLocation, emptySlotCount, 4);
+    }
+
+    /**
+     * Banks items if the inventory is full and returns to the initial player location.
+     *
+     * @param itemNames           List of item names to deposit.
+     * @param initialPlayerLocation The initial location of the player to return to after banking.
+     * @return true if items were successfully banked and the player returned to the initial location, false otherwise.
+     */
+    public static boolean bankItemsAndWalkBackToOriginalPosition(List<String> itemNames, WorldPoint initialPlayerLocation) {
+        return bankItemsAndWalkBackToOriginalPosition(itemNames, false, initialPlayerLocation, 0, 4);
+    }
+
+    /**
+     * Banks items at a deposit box if the inventory does not have enough empty slots (0 empty slots being full).
+     * Will walk back to the initial player location passed as a parameter.
+     *
+     * @param itemNames           List of item names to deposit.
+     * @param exactItemNames      Whether to match item names exactly or partially.
+     * @param initialPlayerLocation The initial location of the player to return to after banking.
+     * @param emptySlotCount      The minimum number of empty slots required in the inventory.
+     * @param distance            Maximum distance to allow from the initial location when returning.
+     * @return true if items were successfully banked and the player returned to the initial location, false otherwise.
+     */
+    public static boolean bankItemsAndWalkBackToOriginalPosition(List<String> itemNames, boolean exactItemNames, WorldPoint initialPlayerLocation, int emptySlotCount, int distance) {
+        if (Rs2Inventory.getEmptySlots() <= emptySlotCount) {
+            boolean isDepositBoxOpen = Rs2DepositBox.walkToAndUseDepositBox();
+            if (isDepositBoxOpen) {
+                for (String itemName : itemNames) {
+                    if (exactItemNames) {
+                        Rs2DepositBox.depositItem(itemName, true);
+                    } else {
+                        Rs2DepositBox.depositAll(x -> x.name.toLowerCase().contains(itemName.toLowerCase()));
+                    }
+                }
+            }
+            return false;
+        }
+
+        if (distance > 10) distance = 10;
+
+        if (initialPlayerLocation.distanceTo(Rs2Player.getWorldLocation()) > distance || !Rs2Tile.isTileReachable(initialPlayerLocation)) {
+            Rs2Walker.walkTo(initialPlayerLocation, distance);
+        } else {
+            Rs2Walker.walkFastCanvas(initialPlayerLocation);
+        }
+
+        return !(Rs2Inventory.getEmptySlots() <= emptySlotCount) && initialPlayerLocation.distanceTo(Rs2Player.getWorldLocation()) <= distance;
+    }
+
+    /**
+     * Banks items if the inventory does not have enough empty slots (0 empty slots being full).
+     * Will walk back to the initial player location passed as a parameter.
+     *
+     * @param itemNames           List of item names to deposit.
+     * @param initialPlayerLocation The initial location of the player to return to after banking.
+     * @param emptySlotCount      The minimum number of empty slots required in the inventory.
+     * @param distance            Maximum distance to allow from the initial location when returning.
+     * @return true if items were successfully banked and the player returned to the initial location, false otherwise.
+     */
+    public static boolean bankItemsAndWalkBackToOriginalPosition(List<String> itemNames, WorldPoint initialPlayerLocation, int emptySlotCount, int distance) {
+        return bankItemsAndWalkBackToOriginalPosition(itemNames, false, initialPlayerLocation, emptySlotCount, distance);
     }
 }

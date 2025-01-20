@@ -286,6 +286,7 @@ public class Microbot {
         {
             try {
                 getPluginManager().setPluginEnabled(plugin, true);
+                getPluginManager().startPlugin(plugin);
                 getPluginManager().startPlugins();
             } catch (Exception e) {
                 e.printStackTrace();
