@@ -268,9 +268,7 @@ public class BanksBankStanderScript extends Script {
         }
         return true;
     }
-    //TODO sonofabech I forgot to look this over to see how it works
-    // If this gets added to Rs2Inventory, it's going to need String menu at the very least, and TryParseInt would also be nice.
-    // calculateInteractOrder() returns a list, we need to calculate this list when we close the bank. and then iterate through it each time this method gets called.
+
     public void interactOrder(String item) {
         Integer itemID = TryParseInt(item);
         Rs2Item nextItem;
