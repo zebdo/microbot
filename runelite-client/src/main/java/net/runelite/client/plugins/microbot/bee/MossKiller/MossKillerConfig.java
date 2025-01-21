@@ -90,9 +90,7 @@ public interface MossKillerConfig extends Config {
             section = basicGuideSection // Belongs to Basic Guide
     )
     default String GUIDE() {
-        return "NORMAL: Have runes for teleport to Varrock, swordfish, and bronze axe in the bank. Start in Varrock East Bank. Turn off Teleportation spells in Web Walker configuration.\n"
-                + "TIP: Set Key Threshold to 1 with mossy key in your inventory to rapidly activate BossMode.\n"
-                + "ADVANCED: See the Advanced guide";
+        return "NORMAL: Have runes for teleport to Varrock, swordfish, and bronze axe in the bank. Start in Varrock East Bank. Turn off Teleportation spells in Web Walker configuration."
     }
 
     @ConfigItem(
