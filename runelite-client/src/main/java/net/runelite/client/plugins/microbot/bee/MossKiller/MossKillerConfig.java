@@ -90,7 +90,7 @@ public interface MossKillerConfig extends Config {
             section = basicGuideSection // Belongs to Basic Guide
     )
     default String GUIDE() {
-        return "NORMAL: Have runes for teleport to Varrock, swordfish, and bronze axe in the bank. Start in Varrock East Bank. Turn off Teleportation spells in Web Walker configuration."
+        return "NORMAL: Have runes for teleport to Varrock, swordfish, and bronze axe in the bank. Start in Varrock East Bank. Turn off Teleportation spells in Web Walker configuration.";
     }
 
     @ConfigItem(
