@@ -99,8 +99,7 @@ public class OuraniaScript extends Script {
                             return;
                         }
                         
-                        int staffID = Rs2Equipment.get(EquipmentInventorySlot.WEAPON).getId();
-                        if (Rs2Inventory.hasDegradedPouch() && Rs2Magic.getRequiredRunes(Rs2Spells.NPC_CONTACT, Rs2Magic.getRs2Staff(staffID), 1, true).isEmpty()) {
+                        if (Rs2Inventory.hasDegradedPouch() && Rs2Magic.hasRequiredRunes(Rs2Spells.NPC_CONTACT, true)) {
                             Rs2Magic.repairPouchesWithLunar();
                             return;
                         }
