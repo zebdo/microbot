@@ -121,7 +121,7 @@ public class Rs2Widget {
 
     public static boolean clickWidget(int id) {
         Widget widget = Microbot.getClientThread().runOnClientThread(() -> Microbot.getClient().getWidget(id));
-        if (widget == null) return false;
+        if (widget == null || isHidden(id)) return false;
         Microbot.getMouse().click(widget.getBounds());
         return true;
     }

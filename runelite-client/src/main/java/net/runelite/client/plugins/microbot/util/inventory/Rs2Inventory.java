@@ -1652,6 +1652,7 @@ public class Rs2Inventory {
      * @return True if the slot contains items that match the IDs, false otherwise.
      */
     public static boolean slotContains(int slot, int[] ids) {
+        if (items().isEmpty()) return false;
         Rs2Item item = items().get(slot);
         if (item == null) return false;
         return Arrays.stream(ids).anyMatch(x -> x == item.id);
@@ -1666,6 +1667,7 @@ public class Rs2Inventory {
      * @return True if the slot contains items that match the IDs, false otherwise.
      */
     public static boolean slotContains(int slot, Integer... ids) {
+        if (items().isEmpty()) return false;
         Rs2Item item = items().get(slot);
         if (item == null) return false;
         return Arrays.stream(ids).anyMatch(x -> x == item.id);
@@ -1680,6 +1682,7 @@ public class Rs2Inventory {
      * @return True if the slot contains items that match the names, false otherwise.
      */
     public static boolean slotContains(int slot, String... names) {
+        if (items().isEmpty()) return false;
         Rs2Item item = items().get(slot);
         if (item == null) return false;
         return Arrays.stream(names).anyMatch(x -> x.equalsIgnoreCase(item.name));
@@ -1706,6 +1709,7 @@ public class Rs2Inventory {
      * @return True if the interaction is successful, false otherwise.
      */
     public static boolean slotInteract(int slot, String action) {
+        if (items().isEmpty()) return false;
         Rs2Item item = items().get(slot);
 
         if (item == null) return false;
@@ -1724,6 +1728,7 @@ public class Rs2Inventory {
      * @return True if the slot contains items with names containing the substring, false otherwise.
      */
     public static boolean slotNameContains(int slot, String sub) {
+        if (items().isEmpty()) return false;
         Rs2Item item = items().get(slot);
         if (item == null) return false;
         return item.name.contains(sub);
