@@ -13,6 +13,7 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import java.util.Arrays;
 import java.util.List;
@@ -28,7 +29,7 @@ enum State {
 
 public class AutoFishingScript extends Script {
 
-    public static String version = "1.4.1";
+    public static String version = "1.5.0";
     State state;
 
     public boolean run(AutoFishConfig config) {
@@ -74,8 +75,15 @@ public class AutoFishingScript extends Script {
                         break;
                     case RESETTING:
                         if (config.useBank()) {
-                            if (!Rs2Bank.bankItemsAndWalkBackToOriginalPosition(itemNames, initialPlayerLocation))
-                                return;
+                            if (Rs2Bank.walkToBankAndUseBank()){
+                                for (String itemName : itemNames) {
+                                    Rs2Bank.depositAll(itemName,false);
+                                    //Rs2Bank.depositAll(x -> x.name.toLowerCase().contains(itemName));
+                                }
+                                Rs2Bank.emptyFishBarrel();
+
+                                Rs2Walker.walkTo(initialPlayerLocation);
+                            }
                         } else {
                             Rs2Inventory.dropAllExcept(false, config.getDropOrder(), "rod", "net", "pot", "harpoon", "feather", "bait", "vessel", "candle", "lantern");
                         }

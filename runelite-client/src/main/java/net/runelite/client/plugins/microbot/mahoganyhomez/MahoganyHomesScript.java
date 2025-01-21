@@ -6,8 +6,10 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -29,7 +31,7 @@ import java.util.stream.Collectors;
 @Slf4j
 public class MahoganyHomesScript extends Script {
 
-    public static String version = "0.0.5";
+    public static String version = "0.0.6";
     @Inject
     MahoganyHomesPlugin plugin;
 
@@ -347,56 +349,60 @@ public class MahoganyHomesScript extends Script {
         if (currentHome != null
                 && plugin.distanceBetween(currentHome.getArea(), Rs2Player.getWorldLocation()) > 0
                 && isMissingItems()) {
-
-            if (Rs2Bank.walkToBankAndUseBank(Rs2Bank.getNearestBank(currentHome.getLocation()))) {
-                sleep(600, 1200);
-                if(plugin.getConfig().usePlankSack()){
-                    if(Rs2Inventory.isFull() && !Rs2Inventory.contains(ItemID.STEEL_BAR)) {
-                        Rs2Bank.depositAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
-                        sleep(600, 1200);
-                    }
-                    Rs2Bank.withdrawX(ItemID.STEEL_BAR, 4-steelBarsInInventory());
+            ShortestPathPlugin.getPathfinderConfig().setIgnoreTeleportAndItems(true);
+            BankLocation bankLocation = Rs2Bank.getNearestBank(currentHome.getLocation());
+            ShortestPathPlugin.getPathfinderConfig().setIgnoreTeleportAndItems(false);
+            if (Rs2Bank.walkToBank(bankLocation)) {
+                if(Rs2Bank.openBank()) {
                     sleep(600, 1200);
-
-                    Global.sleepUntil(() -> planksInPlankSack() == 28,() -> {
-                        Rs2Bank.withdrawAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
-                        sleep(Rs2Random.randomGaussian(800, 200));
-                        Rs2Item plankSack = Rs2Inventory.get(ItemID.PLANK_SACK);
-                        if (plankSack != null) {
-                            // Custom menuEntry as Rs2Inventory.interact seem to set the wrong menuAction type
-                            NewMenuEntry plankSackEntry = new NewMenuEntry();
-                            plankSackEntry.setOption("Use");
-                            plankSackEntry.setTarget("<col=ff9040>Plank sack</col>");
-                            plankSackEntry.setIdentifier(9);
-                            plankSackEntry.setType(MenuAction.CC_OP);
-                            plankSackEntry.setParam0(plankSack.getSlot());
-                            plankSackEntry.setParam1(983043);
-                            plankSackEntry.setItemId(plankSack.getId());
-                            plankSackEntry.setWorldViewId(-1);
-                            plankSackEntry.setForceLeftClick(false);
-                            plankSackEntry.setDeprioritized(false);
-
-                            Microbot.doInvoke(plankSackEntry,Rs2Inventory.itemBounds(plankSack));
-                            //Rs2Inventory.interact(plankSack, "Use");
-                            sleep(Rs2Random.randomGaussian(800, 200));
+                    if (plugin.getConfig().usePlankSack()) {
+                        if (Rs2Inventory.isFull() && !Rs2Inventory.contains(ItemID.STEEL_BAR)) {
+                            Rs2Bank.depositAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
+                            Rs2Inventory.waitForInventoryChanges(5000);
                         }
-                        }, 20000,1000);
-                    if (Rs2Inventory.getEmptySlots() > 0)
-                        Rs2Bank.withdrawAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
+                        if (steelBarsInInventory() < 4) {
+                            Rs2Bank.withdrawX(ItemID.STEEL_BAR, 4 - steelBarsInInventory());
+                            Rs2Inventory.waitForInventoryChanges(5000);
+                        }
+
+                        Global.sleepUntil(() -> planksInPlankSack() == 28, () -> {
+                            Rs2Bank.withdrawAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
+                            sleep(Rs2Random.randomGaussian(800, 200));
+                            Rs2Item plankSack = Rs2Inventory.get(ItemID.PLANK_SACK);
+                            if (plankSack != null) {
+                                // Custom menuEntry as Rs2Inventory.interact seem to set the wrong menuAction type
+                                NewMenuEntry plankSackEntry = new NewMenuEntry();
+                                plankSackEntry.setOption("Use");
+                                plankSackEntry.setTarget("<col=ff9040>Plank sack</col>");
+                                plankSackEntry.setIdentifier(9);
+                                plankSackEntry.setType(MenuAction.CC_OP);
+                                plankSackEntry.setParam0(plankSack.getSlot());
+                                plankSackEntry.setParam1(983043);
+                                plankSackEntry.setItemId(plankSack.getId());
+                                plankSackEntry.setWorldViewId(-1);
+                                plankSackEntry.setForceLeftClick(false);
+                                plankSackEntry.setDeprioritized(false);
+
+                                Microbot.doInvoke(plankSackEntry, Rs2Inventory.itemBounds(plankSack));
+                                //Rs2Inventory.interact(plankSack, "Use");
+                                sleep(Rs2Random.randomGaussian(800, 200));
+                            }
+                        }, 20000, 1000);
+                        if (Rs2Inventory.getEmptySlots() > 0)
+                            Rs2Bank.withdrawAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
 
 
-                }
-
-                else  {
-                    if (Rs2Inventory.getEmptySlots() - steelBarsNeeded() > 0)
-                        Rs2Bank.withdrawX(plugin.getConfig().currentTier().getPlankSelection().getPlankId(), Rs2Inventory.getEmptySlots() - steelBarsNeeded());
-                    sleep(600, 1200);
-                    if (steelBarsNeeded() > steelBarsInInventory()) {
-                        Rs2Bank.withdrawX(ItemID.STEEL_BAR, steelBarsNeeded());
+                    } else {
+                        if (Rs2Inventory.getEmptySlots() - steelBarsNeeded() > 0)
+                            Rs2Bank.withdrawX(plugin.getConfig().currentTier().getPlankSelection().getPlankId(), Rs2Inventory.getEmptySlots() - steelBarsNeeded());
                         sleep(600, 1200);
+                        if (steelBarsNeeded() > steelBarsInInventory()) {
+                            Rs2Bank.withdrawX(ItemID.STEEL_BAR, steelBarsNeeded());
+                            sleep(600, 1200);
+                        }
                     }
+                    Rs2Bank.closeBank();
                 }
-                Rs2Bank.closeBank();
 
             }
         }

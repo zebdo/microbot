@@ -10,7 +10,6 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
-import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -18,6 +17,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
+import net.runelite.client.plugins.microbot.util.woodcutting.Rs2Woodcutting;
 import net.runelite.client.plugins.microbot.woodcutting.enums.WoodcuttingTree;
 import net.runelite.client.plugins.microbot.woodcutting.enums.WoodcuttingWalkBack;
 
@@ -90,7 +90,7 @@ public class AutoWoodcuttingScript extends Script {
                                 return;
                         }
 
-                        if (Rs2Equipment.isWearing("Dragon axe") || Rs2Equipment.isWearing("Dragon felling axe"))
+                        if (Rs2Woodcutting.isWearingAxeWithSpecialAttack())
                             Rs2Combat.setSpecState(true, 1000);
 
                         if (Rs2Inventory.isFull()) {

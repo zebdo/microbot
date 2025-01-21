@@ -84,7 +84,7 @@ public class Rs2Item {
     public boolean isHaProfitable() {
         int natureRunePrice = Microbot.getClientThread().runOnClientThread(() ->
                 Microbot.getItemManager().getItemPrice(ItemID.NATURE_RUNE));
-        return (getHaPrice() - natureRunePrice) > getPrice() && isTradeable;
+        return (getHaPrice() - natureRunePrice) > (getPrice()/quantity) && isTradeable;
 
     }
 

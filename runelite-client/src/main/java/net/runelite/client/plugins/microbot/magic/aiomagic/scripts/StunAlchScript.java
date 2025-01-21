@@ -11,19 +11,20 @@ import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
 
-public class TeleAlchScript extends Script {
+public class StunAlchScript extends Script {
 
     private MagicState state = MagicState.CASTING;
     private final AIOMagicPlugin plugin;
 
     @Inject
-    public TeleAlchScript(AIOMagicPlugin plugin) {
+    public StunAlchScript(AIOMagicPlugin plugin) {
         this.plugin = plugin;
     }
 
@@ -73,11 +74,20 @@ public class TeleAlchScript extends Script {
                             return;
                         }
 
-                        Rs2Magic.alch(alchItem, 100, 150);
+                        net.runelite.api.NPC npc = (net.runelite.api.NPC) Microbot.getClient().getLocalPlayer().getInteracting();
 
-                        Rs2Magic.cast(plugin.getTeleportSpell().getRs2Spell().getAction());
+                        if (npc != null) {
+                            Rs2Magic.castOn(plugin.getStunSpell().getSpell(), npc);
+                        } else {
+                            Rs2Magic.castOn(plugin.getStunSpell().getSpell(), Rs2Npc.getNpc(plugin.getStunNpcName()));
+                        }
 
-                        sleep(900, 950);
+                        if (Rs2AntibanSettings.naturalMouse) {
+                            Rs2Magic.alch(alchItem, 10, 50);
+                        } else {
+                            Rs2Magic.alch(alchItem);
+                            sleep(200, 300);
+                        }
 
                         break;
                 }

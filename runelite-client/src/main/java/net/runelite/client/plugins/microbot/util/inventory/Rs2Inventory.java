@@ -815,6 +815,17 @@ public class Rs2Inventory {
     }
 
     /**
+     * Gets list of item in the inventory that matches the specified filter criteria.
+     *
+     * @param predicate The filter to apply.
+     *
+     * @return list of item that matches the filter criteria
+     */
+    public static List<Rs2Item> getList(Predicate<Rs2Item> predicate) {
+        return items().stream().filter(predicate).collect(Collectors.toList());
+    }
+
+    /**
      * Checks if the player has a certain quantity of an item.
      *
      * @param id     The id of the item to check.
@@ -1279,6 +1290,22 @@ public class Rs2Inventory {
     public static boolean interact(String name, String action) {
         interact(name, action, false);
         return true;
+    }
+
+    /**
+     * Interacts with an item with the specified name in the inventory using the specified action.
+     *
+     * @param ids  The ids of the item to interact with.
+     * @param action The action to perform on the item.
+     *
+     * @return True if the interaction was successful, false otherwise.
+     */
+    public static boolean interact(int[] ids, String action) {
+        for (Integer id : ids) {
+            if (interact(id, action))
+                return true;
+        }
+        return false;
     }
 
     /**
@@ -2222,7 +2249,11 @@ public class Rs2Inventory {
         if (item.slot == slot) return false;
 
         Widget inventory = getInventory();
-        if (inventory == null) return false;
+        if (inventory == null) {
+            Rs2Tab.switchToInventoryTab();
+            sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.INVENTORY);
+            inventory = getInventory();
+        }
         Rectangle itemBounds = itemBounds(item);
         Rectangle slotBounds = inventory.getDynamicChildren()[slot].getBounds();
 
