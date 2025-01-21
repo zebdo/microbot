@@ -179,7 +179,7 @@ public class OuraniaScript extends Script {
                                 Rs2Bank.withdrawOne(plugin.getRs2Food().getId());
                                 Rs2Inventory.waitForInventoryChanges(1800);
                                 Rs2Player.useFood();
-                                Rs2Inventory.waitForInventoryChanges(1800);
+                                sleepUntil(() -> !Rs2Inventory.hasItem(plugin.getRs2Food().getId()));
                             }
 
                             if (Rs2Inventory.hasItem(ItemID.JUG)) {
