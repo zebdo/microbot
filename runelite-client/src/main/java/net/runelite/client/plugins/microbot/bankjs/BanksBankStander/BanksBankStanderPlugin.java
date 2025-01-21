@@ -131,12 +131,6 @@ public class BanksBankStanderPlugin extends Plugin {
             }
         }
     }
-    @Subscribe
-    public void onGameStateChanged(GameStateChanged gameStateChanged) {
-        if (gameStateChanged.getGameState() == GameState.HOPPING || gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.CONNECTION_LOST) {
-            //BanksBankStanderScript.setConfirmedPIN(false);
-        }
-    }
     //*/ Added by Storm
     protected void shutDown() {
         banksBankStanderScript.shutdown();
