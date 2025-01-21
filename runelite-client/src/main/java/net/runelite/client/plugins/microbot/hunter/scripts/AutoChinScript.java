@@ -67,17 +67,12 @@ public class AutoChinScript extends Script {
             }
 
             // If there are shaking boxes, interact with them
+            if (Rs2GameObject.interact(ObjectID.SHAKING_BOX_9384, "reset", 4)) {
+                currentState = State.CATCHING;
+                return;
+            }
+            // If there are shaking boxes, interact with them
             if (Rs2GameObject.interact(ObjectID.SHAKING_BOX_9383, "reset", 4)) {
-                currentState = State.CATCHING;
-                return;
-            }
-            // If there are shaking boxes, interact with them
-            if (Rs2GameObject.interact(ObjectID.SHAKING_BOX_9384, "reset", 4)) {
-                currentState = State.CATCHING;
-                return;
-            }
-            // If there are shaking boxes, interact with them
-            if (Rs2GameObject.interact(ObjectID.SHAKING_BOX_9384, "reset", 4)) {
                 currentState = State.CATCHING;
                 return;
             }
