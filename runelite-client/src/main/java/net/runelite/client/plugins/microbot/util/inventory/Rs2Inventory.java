@@ -747,7 +747,7 @@ public class Rs2Inventory {
      * @return The item with the specified name, or null if not found.
      */
     public static Rs2Item get(String name) {
-        return get(name, false);
+        return get(name, false, false);
     }
 
     /**
@@ -763,6 +763,28 @@ public class Rs2Inventory {
             return items().stream().filter(x -> x.name.equalsIgnoreCase(name)).findFirst().orElse(null);
         else
             return items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
+    }
+
+    /**
+     * Gets the item in the inventory with the specified name.
+     * this method ignores casing
+     *
+     * @param name The name to match.
+     *
+     * @return The item with the specified name, or null if not found.
+     */
+    public static Rs2Item get(String name, boolean stackable, boolean exact) {
+        if (!stackable) {
+            if (exact)
+                return items().stream().filter(x -> x.name.equalsIgnoreCase(name)).findFirst().orElse(null);
+            else
+                return items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
+        }
+
+        if (exact)
+            return items().stream().filter(x -> x.name.equalsIgnoreCase(name) && x.isStackable).findFirst().orElse(null);
+        else
+            return items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase()) && x.isStackable).findFirst().orElse(null);
     }
 
     /**
@@ -935,15 +957,7 @@ public class Rs2Inventory {
      * @return True if the player has the specified quantity of the item, false otherwise.
      */
     public static boolean hasItemAmount(String name, int amount, boolean stackable, boolean exact) {
-        if (!stackable) {
-            if (exact) {
-                return items().stream().filter(x -> x.name.equalsIgnoreCase(name)).count() >= amount;
-            } else {
-                return items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase())).count() >= amount;
-            }
-        }
-
-        Rs2Item item = get(name, exact);
+        Rs2Item item = get(name, stackable, exact);
         if (item == null) return false;
         return item.quantity >= amount;
     }
@@ -981,7 +995,7 @@ public class Rs2Inventory {
      * @return boolean
      */
     public static boolean hasItem(String name, boolean exact) {
-        return get(name, true) != null;
+        return get(name, false, exact) != null;
     }
 
     /**
