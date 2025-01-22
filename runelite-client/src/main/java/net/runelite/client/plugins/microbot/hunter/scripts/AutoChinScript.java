@@ -114,7 +114,7 @@ public class AutoChinScript extends Script {
     }
 
     private void handleDroppingState(AutoHunterConfig config) {
-        sleep(config.minSleepAfterCatch(), config.maxSleepAfterCatch());
+        sleep(config.minSleepAfterLay(), config.maxSleepAfterLay());
         currentState = State.IDLE;
     }
 
