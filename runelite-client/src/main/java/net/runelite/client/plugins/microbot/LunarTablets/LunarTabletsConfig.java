@@ -2,9 +2,11 @@ package net.runelite.client.plugins.microbot.LunarTablets;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigInformation;
 import net.runelite.client.config.ConfigItem;
 
 @ConfigGroup("lunartablets")
+@ConfigInformation("Start on Lunar-Isle with Lunar spells.<br/> Make sure you have your staff<br/> of X equipped and enough<br/> laws, astrals, and soft clay.")
 public interface LunarTabletsConfig extends Config {
 
     @ConfigItem(

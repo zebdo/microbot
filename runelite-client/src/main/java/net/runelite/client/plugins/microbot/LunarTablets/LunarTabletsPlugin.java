@@ -14,8 +14,8 @@ import java.awt.*;
 
 @PluginDescriptor(
         name = PluginDescriptor.Default + "Lunar Tablets",
-        description = "Start on Lunar-Isle with Lunar spells. Make sure you have your staff of X equipped and enough laws, astrals, and soft clay.",
-        tags = {"Lunar Tablets", "microbot"},
+        description = "Creates Lunar teleport tablets",
+        tags = {"Lunar Tablets mm Money making", "microbot"},
         enabledByDefault = false
 )
 @Slf4j
