@@ -6,7 +6,7 @@ import net.runelite.client.config.ConfigInformation;
 import net.runelite.client.config.ConfigItem;
 
 @ConfigGroup("lunartablets")
-@ConfigInformation("Start on Lunar-Isle with Lunar spells.<br/> Make sure you have your staff<br/> of X equipped and enough<br/> laws, astrals, and soft clay.")
+@ConfigInformation("Start on Lunar-Isle with Lunar spells. Make sure you have your staff of X equipped and enough laws, astrals, and soft clay.")
 public interface LunarTabletsConfig extends Config {
 
     @ConfigItem(
