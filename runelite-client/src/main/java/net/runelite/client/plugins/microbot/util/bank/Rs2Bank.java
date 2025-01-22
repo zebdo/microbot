@@ -1128,7 +1128,7 @@ public class Rs2Bank {
             }
 
             if (action) {
-                sleepUntil(() -> isOpen() || isBankPinWidgetVisible(), 5000);
+                sleepUntil(Rs2Bank::isOpen, 5000);
             }
             return action;
         } catch (Exception ex) {
