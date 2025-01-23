@@ -220,7 +220,8 @@ public class MossKillerScript extends Script {
 
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
 
-        if (!Rs2Inventory.contains(FOOD)) {
+        if (!Rs2Inventory.contains(FOOD) || BreakHandlerScript.breakIn <= 15){
+            Microbot.log("Inventory does not contains FOOD or break in less than 15");
             state = MossKillerState.TELEPORT;
             return;
         }
@@ -285,12 +286,17 @@ public class MossKillerScript extends Script {
         toggleRunEnergy();
         boolean growthlingAttacked = false;
 
-        if(!Rs2Inventory.contains(BRONZE_AXE) || !Rs2Inventory.contains(FOOD)){
+        if(!Rs2Inventory.contains(FOOD)){
             state = MossKillerState.TELEPORT;
             return;
         }
 
-        int randomValue = (int) Rs2Random.truncatedGauss(35, 55, 4.0);
+        if(!Rs2Inventory.contains(BRONZE_AXE)){
+            getBronzeAxeFromInstance();
+            return;
+        }
+
+        int randomValue = (int) Rs2Random.truncatedGauss(50, 75, 4.0);
         if (eatAt(randomValue)) {
            sleep(750, 1250);
         }
@@ -558,6 +564,19 @@ public class MossKillerScript extends Script {
             sleep(300, 700);
         }
     }
+
+    private void getBronzeAxeFromInstance() {
+        if(Rs2Inventory.isFull()) {Rs2Inventory.interact(FOOD, "Eat");}
+        sleep(1200,1800);
+        Rs2GameObject.interact( 32536, "Take-axe");
+        sleepUntil(() -> Rs2Inventory.contains(BRONZE_AXE), 10000);
+        eatAt(70);
+        if (!Rs2Inventory.contains(BRONZE_AXE)) {
+            Rs2GameObject.interact( 32536, "Take-axe");
+            sleepUntil(() -> Rs2Inventory.contains(BRONZE_AXE));
+        }
+    }
+
 
 
     public void walkToVarrockWestBank(){
