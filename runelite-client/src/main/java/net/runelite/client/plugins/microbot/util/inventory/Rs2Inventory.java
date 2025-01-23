@@ -848,52 +848,6 @@ public class Rs2Inventory {
     }
 
     /**
-     * Checks if the player has a certain quantity of an item.
-     *
-     * @param id     The id of the item to check.
-     * @param amount The desired quantity of the item.
-     *
-     * @return True if the player has the specified quantity of the item, false otherwise.
-     */
-    public static boolean hasItemAmount(int id, int amount) {
-        Rs2Item rs2Item = get(id);
-        if (rs2Item == null) return false;
-        if (rs2Item.isStackable) {
-            return rs2Item.quantity >= amount;
-        } else {
-            return items().stream().filter(x -> x.id == id).count() >= amount;
-        }
-    }
-
-    /**
-     * Checks if the player has a certain quantity of an item.
-     *
-     * @param id        The id of the item to check.
-     * @param amount    The desired quantity of the item.
-     * @param stackable A boolean indicating if the item is stackable.
-     *
-     * @return True if the player has the specified quantity of the item, false otherwise.
-     */
-    public static boolean hasItemAmount(int id, int amount, boolean stackable) {
-        Rs2Item item = get(id);
-        return stackable ? item.quantity >= amount : items().stream().filter(x -> x.id == id).count() >= amount;
-    }
-
-    /**
-     * Checks if the player has a certain quantity of an item.
-     *
-     * @param name   The name of the item to check.
-     * @param amount The desired quantity of the item.
-     *
-     * @return True if the player has the specified quantity of the item, false otherwise.
-     */
-    public static boolean hasItemAmount(String name, int amount) {
-        Rs2Item item = get(name);
-        if (item == null) return false;
-        return hasItemAmount(name, amount, item.isStackable(), false);
-    }
-
-    /**
      * Retrieves the quantity of an item based on its ID.
      *
      * @param id The ID of the item.
@@ -936,6 +890,38 @@ public class Rs2Inventory {
     /**
      * Checks if the player has a certain quantity of an item.
      *
+     * @param id     The id of the item to check.
+     * @param amount The desired quantity of the item.
+     *
+     * @return True if the player has the specified quantity of the item, false otherwise.
+     */
+    public static boolean hasItemAmount(int id, int amount) {
+        Rs2Item rs2Item = get(id);
+        if (rs2Item == null) return false;
+        if (rs2Item.isStackable) {
+            return rs2Item.quantity >= amount;
+        } else {
+            return items().stream().filter(x -> x.id == id).count() >= amount;
+        }
+    }
+
+    /**
+     * Checks if the player has a certain quantity of an item.
+     *
+     * @param name   The name of the item to check.
+     * @param amount The desired quantity of the item.
+     *
+     * @return True if the player has the specified quantity of the item, false otherwise.
+     */
+    public static boolean hasItemAmount(String name, int amount) {
+        Rs2Item item = get(name);
+        if (item == null) return false;
+        return hasItemAmount(name, amount, false, false);
+    }
+
+    /**
+     * Checks if the player has a certain quantity of an item.
+     *
      * @param name      The name of the item to check.
      * @param amount    The desired quantity of the item.
      * @param stackable A boolean indicating if the item is stackable.
@@ -957,8 +943,17 @@ public class Rs2Inventory {
      * @return True if the player has the specified quantity of the item, false otherwise.
      */
     public static boolean hasItemAmount(String name, int amount, boolean stackable, boolean exact) {
-        Rs2Item item = get(name, stackable, exact);
+        if (!stackable) {
+            if (exact) {
+                return items().stream().filter(x -> x.name.equalsIgnoreCase(name)).count() >= amount;
+            } else {
+                return items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase())).count() >= amount;
+            }
+        }
+
+        Rs2Item item = get(name, true, exact);
         if (item == null) return false;
+
         return item.quantity >= amount;
     }
 
