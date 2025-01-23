@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.hunter.scripts;
 
+import net.runelite.api.Item;
 import net.runelite.api.ItemID;
 import net.runelite.api.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -7,12 +8,14 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.hunter.AutoHunterConfig;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 
 import java.util.concurrent.TimeUnit;
 
 enum State {
     IDLE,
     CATCHING,
+    DROPPING,
     LAYING
 }
 
@@ -33,6 +36,9 @@ public class AutoChinScript extends Script {
                 switch(currentState) {
                     case IDLE:
                         handleIdleState();
+                        break;
+                    case DROPPING:
+                        handleDroppingState(config);
                         break;
                     case CATCHING:
                         handleCatchingState(config);
@@ -66,6 +72,25 @@ public class AutoChinScript extends Script {
                 return;
             }
 
+            // If our inventory is full of ferrets
+            if(Rs2Inventory.getEmptySlots() <= 1 && Rs2Inventory.contains(ItemID.FERRET)){
+                // ferrets have the option release and not drop
+                while(Rs2Inventory.contains(ItemID.FERRET)){
+                    Rs2Inventory.interact(ItemID.FERRET, "Release");
+                    sleep(0,750);
+                    if(!Rs2Inventory.contains(ItemID.FERRET)){
+                        break;
+                    }
+                }
+                currentState = State.DROPPING;
+                return;
+            }
+
+            // If there are shaking boxes, interact with them
+            if (Rs2GameObject.interact(ObjectID.SHAKING_BOX_9384, "reset", 4)) {
+                currentState = State.CATCHING;
+                return;
+            }
             // If there are shaking boxes, interact with them
             if (Rs2GameObject.interact(ObjectID.SHAKING_BOX_9383, "reset", 4)) {
                 currentState = State.CATCHING;
@@ -86,6 +111,11 @@ public class AutoChinScript extends Script {
             ex.printStackTrace();
             currentState = State.CATCHING;
         }
+    }
+
+    private void handleDroppingState(AutoHunterConfig config) {
+        sleep(config.minSleepAfterLay(), config.maxSleepAfterLay());
+        currentState = State.IDLE;
     }
 
     private void handleCatchingState(AutoHunterConfig config) {
