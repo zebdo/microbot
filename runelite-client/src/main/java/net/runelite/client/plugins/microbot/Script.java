@@ -160,7 +160,6 @@ public abstract class Script implements IScript {
         if (startTime == null) {
             startTime = LocalTime.now();
             //init - things that have to be checked once can be added here
-            Rs2Settings.disableLevelUpInterface();
         }
 
         hasLeveledUp = false;
@@ -190,6 +189,10 @@ public abstract class Script implements IScript {
                         sleepUntil(() -> Microbot.getClientThread().runOnClientThread(clickHereToPlayButton::isHidden), 10000);
                     }
                 }
+            }
+
+            if (Rs2Settings.isLevelUpNotificationsEnabled()) {
+                Rs2Settings.disableLevelUpInterface();
             }
 
 
