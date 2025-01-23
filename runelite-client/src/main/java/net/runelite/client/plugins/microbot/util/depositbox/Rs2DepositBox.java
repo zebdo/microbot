@@ -3,12 +3,9 @@ package net.runelite.client.plugins.microbot.util.depositbox;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameObject;
 import net.runelite.api.MenuAction;
-import net.runelite.api.SpriteID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
-import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
@@ -27,8 +24,6 @@ import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
-import static net.runelite.api.widgets.ComponentID.BANK_ITEM_CONTAINER;
-import static net.runelite.api.widgets.ComponentID.DEPOSIT_BOX_INVENTORY_ITEM_CONTAINER;
 import static net.runelite.client.plugins.microbot.util.Global.*;
 
 @Slf4j
