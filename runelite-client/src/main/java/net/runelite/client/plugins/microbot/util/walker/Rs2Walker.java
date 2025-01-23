@@ -153,7 +153,7 @@ public class Rs2Walker {
                 }
             }
             if (!ShortestPathPlugin.getPathfinder().isDone()) {
-                boolean isDone = sleepUntilTrue(() -> ShortestPathPlugin.getPathfinder().isDone(), 100, 5000);
+                boolean isDone = sleepUntilTrue(() -> ShortestPathPlugin.getPathfinder().isDone(), 100, 10000);
                 if (!isDone) {
                     System.out.println("Pathfinder took to long to calculate path, exiting: 149");
                     setTarget(null);
@@ -219,7 +219,7 @@ public class Rs2Walker {
 
             lastPosition = Rs2Player.getWorldLocation();
 
-            if (Rs2Player.getWorldLocation().distanceTo(target) == 0) {
+            if (Rs2Player.getWorldLocation().distanceTo(target) == 0 || path.size() <= 1) {
                 setTarget(null);
                 return WalkerState.ARRIVED;
             }
@@ -1059,6 +1059,15 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                             break;
                         }
                         handleObject(transport, tileObject);
+                        sleepUntil(() -> !Rs2Player.isAnimating());
+                        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
+                    }
+
+                    List<WallObject> wallObjects = Rs2GameObject.getWallObjects(transport.getObjectId(), transport.getOrigin());
+                    TileObject wallObject = wallObjects.stream().findFirst().orElse(null);
+
+                    if (wallObject != null && wallObject.getId() == transport.getObjectId()) {
+                        handleObject(transport, wallObject);
                         sleepUntil(() -> !Rs2Player.isAnimating());
                         return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
                     }
