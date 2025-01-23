@@ -1212,7 +1212,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         List<String> locationKeyWords = Arrays.asList("farm", "monastery", "lletya", "prifddinas", "rellekka", "waterbirth island", "neitiznot", "jatiszo",
                 "ver sinhaza", "darkmeyer", "slepe", "troll stronghold", "weiss", "ecto", "burgh", "duradel", "gem mine", "nardah", "kalphite cave",
                 "kourend woodland", "mount karuulm", "outside", "fishing guild", "otto's grotto", "stronghold slayer cave", "slayer tower", "fremennik", "tarn's lair", "dark beasts");
-        List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "rub", "break", "teleport", "reminisce", "signal", "play");
+        List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "teleport", "rub", "break", "reminisce", "signal", "play");
 
         boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
         String destination = hasMultipleDestination
@@ -1236,7 +1236,13 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 
             itemAction = Arrays.stream(rs2Item.getInventoryActions())
                     .filter(action -> action != null && genericKeyWords.stream().anyMatch(keyword -> action.toLowerCase().contains(keyword.toLowerCase())))
-                    .findFirst()
+                    .min(Comparator.comparingInt(action ->
+                            genericKeyWords.stream()
+                                    .filter(keyword -> action.toLowerCase().contains(keyword.toLowerCase()))
+                                    .mapToInt(genericKeyWords::indexOf)
+                                    .findFirst()
+                                    .orElse(Integer.MAX_VALUE)
+                    ))
                     .orElse(null);
         }
 
@@ -1254,9 +1260,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 Rs2Dialogue.clickOption("Okay, teleport to level");
             }
             
-            if (itemAction.equalsIgnoreCase("rub") && transport.getDisplayInfo().toLowerCase().contains("slayer ring")) {
-                Rs2Dialogue.sleepUntilSelectAnOption();
-                Rs2Dialogue.clickOption("teleport");
+            if (itemAction.equalsIgnoreCase("teleport") && transport.getDisplayInfo().toLowerCase().contains("slayer ring")) {
                 Rs2Dialogue.sleepUntilSelectAnOption();
                 Rs2Dialogue.clickOption(destination);
             }
