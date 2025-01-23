@@ -252,7 +252,7 @@ public class Rs2InventorySetup {
                 withdrawQuantity = groupedByItems.get(key).size();
             }
             if (!Rs2Inventory.hasItemAmount(inventorySetupsItem.getName(), withdrawQuantity, isStackable)) {
-                Microbot.log("failed to find " + inventorySetupsItem.getName() + " with amount " + withdrawQuantity);
+                Microbot.log("Looking for " + inventorySetupsItem.getName() + " with amount " + withdrawQuantity);
                 found = false;
             }
         }
