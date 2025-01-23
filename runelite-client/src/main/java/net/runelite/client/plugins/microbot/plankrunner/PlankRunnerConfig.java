@@ -5,6 +5,10 @@ import net.runelite.client.plugins.microbot.plankrunner.enums.Plank;
 import net.runelite.client.plugins.microbot.plankrunner.enums.SawmillLocation;
 
 @ConfigGroup(PlankRunnerConfig.configGroup)
+@ConfigInformation(
+        "• This plugin will craft planks at the sawmill" +
+        "• Ensure you have logs in the bank & enough GP for sawmill costs <br />"
+)
 public interface PlankRunnerConfig extends Config {
     
     String configGroup = "micro-plankrunner";
