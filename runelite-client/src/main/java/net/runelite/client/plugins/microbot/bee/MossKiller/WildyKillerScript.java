@@ -1461,7 +1461,6 @@ public class WildyKillerScript extends Script {
         Microbot.log("You're in the wilderness and I don't get the problem");
         if (Rs2Equipment.isNaked()) {state = MossKillerState.WALK_TO_BANK;}}
         if (playerLocation.getY() < 3520) {
-        Microbot.log("You're not in the wilderness and low or Absent on Minds");
         state = MossKillerState.WALK_TO_BANK;
         }
         }
@@ -1998,12 +1997,12 @@ public class WildyKillerScript extends Script {
                 || BreakHandlerScript.breakIn <= 120
                 || !Rs2Inventory.contains(FOOD)
                 || !Rs2Inventory.hasItemAmount(MIND_RUNE, 15)) {
-                // while my dude is under attack
-                // while (whateverCondition (under attack) from plugin && this.isRunning())
                 if (scheduledFuture.isDone() && !Rs2Inventory.hasItemAmount(FOOD, 17)) { // Only initiate if not already walking to Twenty Wild
                     handleAsynchWalk("Twenty Wild");
                 }
-
+                if (Rs2Inventory.hasItemAmount(FOOD, 17)) {
+                    state = MossKillerState.WALK_TO_MOSS_GIANTS;
+                }
                 Microbot.log("Hitting Return");
                 return;
             } else if (Rs2Walker.getDistanceBetween(playerLocation, TWENTY_WILD) < 5) {
@@ -2011,7 +2010,7 @@ public class WildyKillerScript extends Script {
             }
 
             // Check if the player has teleported (Y-coordinate condition)
-            if (playerLocation.getY() < 3500) {
+                if (playerLocation.getY() < 3500) {
                 Microbot.log("Teleport successful.");
                 state = MossKillerState.WALK_TO_BANK;
             }
