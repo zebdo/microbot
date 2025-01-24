@@ -6,7 +6,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.InterfaceID;
-import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.util.Global;
@@ -44,10 +43,6 @@ public abstract class Script implements IScript {
     protected static WorldPoint initialPlayerLocation;
 
     public LocalTime startTime;
-
-    public Script() {
-
-    }
 
     /**
      * Get the total runtime of the script
@@ -178,32 +173,20 @@ public abstract class Script implements IScript {
             return false;
 
         if (Microbot.isLoggedIn()) {
-
-            boolean hasRunEnergy = Microbot.getClient().getEnergy() > Microbot.runEnergyThreshold;
-
-            if (Microbot.enableAutoRunOn && hasRunEnergy)
-                Rs2Player.toggleRunEnergy(true);
-
-            if (Rs2Widget.getWidget(15269889) != null) { //levelup congratulations interface
-                Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
-            }
-            Widget clickHereToPlayButton = Rs2Widget.getWidget(24772680); // on login screen
-
-            if (clickHereToPlayButton != null && !Microbot.getClientThread().runOnClientThread(clickHereToPlayButton::isHidden)) {
-                // Runs a synchronized block to prevent multiple plugins from clicking the play button
-                synchronized (Rs2Widget.class) {
-                    if (!Microbot.getClientThread().runOnClientThread(clickHereToPlayButton::isHidden)) {
-                        Rs2Widget.clickWidget(clickHereToPlayButton.getId());
-
-                        sleepUntil(() -> Microbot.getClientThread().runOnClientThread(clickHereToPlayButton::isHidden), 10000);
+            synchronized (BlockingEventManager.class) {
+                if (!Microbot.getBlockingEventManager().getBlockingEvents().isEmpty()) {
+                    for (BlockingEvent blockingEvent : Microbot.getBlockingEventManager().getBlockingEvents()) {
+                        if (blockingEvent.validate()) {
+                            blockingEvent.execute();
+                        }
                     }
                 }
             }
-
-            if (Rs2Settings.isLevelUpNotificationsEnabled()) {
-                Rs2Settings.disableLevelUpInterface();
-            }
-
+            
+            boolean hasRunEnergy = Microbot.getClient().getEnergy() > Microbot.runEnergyThreshold;
+            if (Microbot.enableAutoRunOn && hasRunEnergy)
+                Rs2Player.toggleRunEnergy(true);
+            
 
             if (!hasRunEnergy && Microbot.useStaminaPotsIfNeeded && Rs2Player.isMoving()) {
                 Rs2Inventory.useRestoreEnergyItem();
@@ -212,7 +195,8 @@ public abstract class Script implements IScript {
 
         return true;
     }
-
+    
+    @Deprecated(since = "1.6.9 - Use Rs2Keyboard.keyPress", forRemoval = true)
     public void keyPress(char c) {
         Rs2Keyboard.keyPress(c);
     }
