@@ -29,6 +29,7 @@ public class AutoChinScript extends Script {
 
     public static boolean test = false;
     public static String version = "1.1.0";
+    private boolean oneRun = false;
     private List<WorldPoint> boxtiles = new ArrayList<>();
     private List<Integer> trapIds = Arrays.asList(
             ItemID.BOX_TRAP,
@@ -190,10 +191,11 @@ public class AutoChinScript extends Script {
                     }
                 }
             }
+            oneRun=true;
         }
 
         //We're back from our break
-        if (secondsUntilBreak > 60) {
+        if (secondsUntilBreak > 60&&oneRun) {
             if(!boxtiles.isEmpty()) {
                 //Setting traps down
                 for (WorldPoint LayTrapTile : boxtiles) {
@@ -211,22 +213,14 @@ public class AutoChinScript extends Script {
                         }
                         //we need to put a trap.
                         Microbot.log("Placing trap");
-                        if(!Rs2GroundItem.exists("Box trap", 0)) {
-                            if (Rs2Inventory.contains("Box trap")) {
+                        if (Rs2Inventory.contains("Box trap")) {
                                 Rs2Inventory.interact("Box trap", "Lay");
                                 sleep(3000, 5000);
-                            }
                         }
-                        //Stops the bot from putting too many traps down and spam click but also making it
-                        //susceptible to griefers
-                        if (Rs2GroundItem.exists("Box trap", 6)) {
-                            Rs2GroundItem.take("Box trap", 6);
-                            sleep(1000, 3000);
-                        }
-
                     }
                 }
             }
+            oneRun=false;
         }
     }
 }
