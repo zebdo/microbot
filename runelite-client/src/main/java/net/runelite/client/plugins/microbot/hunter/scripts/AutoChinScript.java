@@ -1,15 +1,20 @@
 package net.runelite.client.plugins.microbot.hunter.scripts;
 
-import net.runelite.api.Item;
-import net.runelite.api.ItemID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.hunter.AutoHunterConfig;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 enum State {
@@ -24,6 +29,17 @@ public class AutoChinScript extends Script {
 
     public static boolean test = false;
     public static String version = "1.1.0";
+    private List<WorldPoint> boxtiles = new ArrayList<>();
+    private List<Integer> trapIds = Arrays.asList(
+            ItemID.BOX_TRAP,
+            ObjectID.BOX_TRAP,
+            ObjectID.BOX_TRAP_9385,
+            ObjectID.BOX_TRAP_9380,
+            ObjectID.SHAKING_BOX_9384,
+            ObjectID.SHAKING_BOX_9383,
+            ObjectID.SHAKING_BOX_9382,
+            ObjectID.SHAKING_BOX
+    );
     State currentState = State.IDLE;
     public boolean run(AutoHunterConfig config) {
         Microbot.enableAutoRunOn = false;
@@ -35,15 +51,19 @@ public class AutoChinScript extends Script {
 
                 switch(currentState) {
                     case IDLE:
+                        handleBreaks();
                         handleIdleState();
                         break;
                     case DROPPING:
+                        handleBreaks();
                         handleDroppingState(config);
                         break;
                     case CATCHING:
+                        handleBreaks();
                         handleCatchingState(config);
                         break;
                     case LAYING:
+                        handleBreaks();
                         handleLayingState(config);
                         break;
                 }
@@ -86,7 +106,7 @@ public class AutoChinScript extends Script {
                 return;
             }
 
-            // If there are shaking boxes, interact with them
+            // If there are shaking boxes, interact with them. ferrets
             if (Rs2GameObject.interact(ObjectID.SHAKING_BOX_9384, "reset", 4)) {
                 currentState = State.CATCHING;
                 return;
@@ -126,5 +146,87 @@ public class AutoChinScript extends Script {
     private void handleLayingState(AutoHunterConfig config) {
         sleep(config.minSleepAfterLay(), config.maxSleepAfterLay());
         currentState = State.IDLE;
+    }
+
+    public void handleBreaks() {
+        int secondsUntilBreak = BreakHandlerScript.breakIn; // Time until the break
+        if (secondsUntilBreak > 0 && secondsUntilBreak <= 60) {
+            // We're going on break in 1 minute or less.
+            // Save Trap locations
+
+            for (int trapId : trapIds) {
+                List<GameObject> gameObjects = Rs2GameObject.getGameObjects(trapId);
+
+                if (gameObjects != null) {
+                    for (GameObject gameObject : gameObjects) {
+                        if (gameObject != null) {
+                            if(Rs2Player.distanceTo(gameObject.getWorldLocation())<6) {
+                                WorldPoint location = gameObject.getWorldLocation();
+                                if (!boxtiles.contains(location)) {
+                                    boxtiles.add(location);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // At this point, boxtiles should be populated with the world points of the old traps.
+
+            // Dismantling traps for our break.
+            if (Rs2GameObject.get("Box trap") != null||Rs2GroundItem.exists("Box trap", 6)||Rs2GameObject.get("Shaking box") != null) {
+                for (WorldPoint oldTile : boxtiles) {
+                    if (Rs2GameObject.getGameObject(oldTile) != null) {
+                        //Dismantle or Reset
+                        while (Rs2GameObject.getGameObject(oldTile) != null) {
+                            if (Rs2GameObject.interact(oldTile, "Dismantle")) {
+                                sleep(1000, 3000);
+                                break;
+                            }
+                            if (Rs2GameObject.interact(oldTile, "Reset")) {
+                                sleep(1000, 3000);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        //We're back from our break
+        if (secondsUntilBreak > 60) {
+            if(!boxtiles.isEmpty()) {
+                //Setting traps down
+                for (WorldPoint LayTrapTile : boxtiles) {
+                    if(Rs2GameObject.getGameObject(LayTrapTile)!=null){
+                        //There's already an object there do nothing
+
+                    } else {
+                        //we need to get to the tile
+                        if(!Rs2Player.getWorldLocation().equals(LayTrapTile)) {
+                            while(!Rs2Player.getWorldLocation().equals(LayTrapTile)){
+                                Microbot.log("Walking to trap tile");
+                                Rs2Walker.walkTo(LayTrapTile, 0);
+                                sleep(1000,3000);
+                            }
+                        }
+                        //we need to put a trap.
+                        Microbot.log("Placing trap");
+                        if(!Rs2GroundItem.exists("Box trap", 0)) {
+                            if (Rs2Inventory.contains("Box trap")) {
+                                Rs2Inventory.interact("Box trap", "Lay");
+                                sleep(3000, 5000);
+                            }
+                        }
+                        //Stops the bot from putting too many traps down and spam click but also making it
+                        //susceptible to griefers
+                        if (Rs2GroundItem.exists("Box trap", 6)) {
+                            Rs2GroundItem.take("Box trap", 6);
+                            sleep(1000, 3000);
+                        }
+
+                    }
+                }
+            }
+        }
     }
 }
