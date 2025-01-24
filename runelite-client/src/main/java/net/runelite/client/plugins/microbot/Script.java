@@ -175,7 +175,7 @@ public abstract class Script implements IScript {
                 if (!Microbot.getBlockingEventManager().getBlockingEvents().isEmpty()) {
                     for (BlockingEvent blockingEvent : Microbot.getBlockingEventManager().getBlockingEvents()) {
                         if (blockingEvent.validate()) {
-                            return blockingEvent.execute();
+                            return !blockingEvent.execute();
                         }
                     }
                 }
