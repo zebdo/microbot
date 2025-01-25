@@ -152,39 +152,40 @@ public class AutoChinScript extends Script {
     }
 
     public void handleBreaks() {
-        int secondsUntilBreak = BreakHandlerScript.breakIn; // Time until the break
+         int secondsUntilBreak = BreakHandlerScript.breakIn; // Time until the break
         if (secondsUntilBreak > 0 && secondsUntilBreak <= 60) {
             // We're going on break in 1 minute or less.
             // Save Trap locations
-
             for (int trapId : trapIds) {
                 List<GameObject> gameObjects = Rs2GameObject.getGameObjects(trapId);
-
-                if (gameObjects != null) {
-                    for (GameObject gameObject : gameObjects) {
-                        if (gameObject != null) {
-                            WorldPoint location = gameObject.getWorldLocation();
-                            if (Rs2Player.distanceTo(gameObject.getWorldLocation()) > 6) {
-                                continue; // Skip traps beyond the range
-                            }
-                            if (!boxtiles.contains(location)) {
-                                boxtiles.add(location);
+                if(boxtiles.isEmpty()) {
+                    if (gameObjects != null) {
+                        for (GameObject gameObject : gameObjects) {
+                            if (gameObject != null) {
+                                WorldPoint location = gameObject.getWorldLocation();
+                                if (Rs2Player.getWorldLocation().distanceTo(location) > 5) {
+                                    continue; // Skip traps beyond the range
+                                }
+                                if (!boxtiles.contains(location)) {
+                                    boxtiles.add(location);
+                                }
                             }
                         }
                     }
                 }
             }
+
             // At this point, boxtiles should be populated with the world points of the old traps.
 
             // Dismantling traps for our break.
                 for (WorldPoint oldTile : boxtiles) {
                     if (Rs2GameObject.getGameObject(oldTile) != null) {
                         //Dismantle or Reset
-                        if (Rs2Player.distanceTo(oldTile) > 6) {
+                        if (Rs2Player.getWorldLocation().distanceTo(oldTile) > 5) {
                             continue; // Skip traps beyond the range
                         }
                         while (Rs2GameObject.getGameObject(oldTile) != null) {
-                            if (Rs2Player.distanceTo(oldTile) > 6) {
+                            if (Rs2Player.getWorldLocation().distanceTo(oldTile) > 5) {
                                 break; // Skip traps beyond the range
                             }
                             if (Rs2GameObject.interact(oldTile, "Dismantle")) {
