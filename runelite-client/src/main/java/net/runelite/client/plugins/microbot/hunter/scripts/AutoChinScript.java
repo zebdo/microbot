@@ -153,6 +153,14 @@ public class AutoChinScript extends Script {
 
     public void handleBreaks() {
          int secondsUntilBreak = BreakHandlerScript.breakIn; // Time until the break
+
+        //Clear list incase user changed trap layout This should run about 2-4 minutes before break
+        if(secondsUntilBreak > 61 && secondsUntilBreak <200){
+            if(!boxtiles.isEmpty()){
+                boxtiles.clear();
+            }
+        }
+
         if (secondsUntilBreak > 0 && secondsUntilBreak <= 60) {
             // We're going on break in 1 minute or less.
             // Save Trap locations
