@@ -9,6 +9,8 @@ import net.runelite.client.plugins.microbot.hunter.AutoHunterConfig;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcManager;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
@@ -161,7 +163,7 @@ public class AutoChinScript extends Script {
                 if (gameObjects != null) {
                     for (GameObject gameObject : gameObjects) {
                         if (gameObject != null) {
-                            if(Rs2Player.distanceTo(gameObject.getWorldLocation())<6) {
+                            if(Rs2Player.distanceTo(gameObject.getWorldLocation())<=6) {
                                 WorldPoint location = gameObject.getWorldLocation();
                                 if (!boxtiles.contains(location)) {
                                     boxtiles.add(location);
@@ -177,15 +179,17 @@ public class AutoChinScript extends Script {
             if (Rs2GameObject.get("Box trap") != null||Rs2GroundItem.exists("Box trap", 6)||Rs2GameObject.get("Shaking box") != null) {
                 for (WorldPoint oldTile : boxtiles) {
                     if (Rs2GameObject.getGameObject(oldTile) != null) {
-                        //Dismantle or Reset
-                        while (Rs2GameObject.getGameObject(oldTile) != null) {
-                            if (Rs2GameObject.interact(oldTile, "Dismantle")) {
-                                sleep(1000, 3000);
-                                break;
-                            }
-                            if (Rs2GameObject.interact(oldTile, "Reset")) {
-                                sleep(1000, 3000);
-                                break;
+                        if(Rs2Player.distanceTo(oldTile) <=6) {
+                            //Dismantle or Reset
+                            while (Rs2GameObject.getGameObject(oldTile) != null) {
+                                if (Rs2GameObject.interact(oldTile, "Dismantle")) {
+                                    sleep(1000, 3000);
+                                    break;
+                                }
+                                if (Rs2GameObject.interact(oldTile, "Reset")) {
+                                    sleep(1000, 3000);
+                                    break;
+                                }
                             }
                         }
                     }
@@ -213,9 +217,22 @@ public class AutoChinScript extends Script {
                         }
                         //we need to put a trap.
                         Microbot.log("Placing trap");
-                        if (Rs2Inventory.contains("Box trap")) {
-                                Rs2Inventory.interact("Box trap", "Lay");
-                                sleep(3000, 5000);
+                        int maxTries = 0;
+                        while(Rs2GameObject.getGameObject(LayTrapTile) == null) {
+                            if(!Rs2GroundItem.exists("Box trap", 0)) {
+                                if (Rs2Inventory.contains("Box trap")) {
+                                    Rs2Inventory.interact("Box trap", "Lay");
+                                    sleep(4000, 6000);
+                                }
+                            } else {
+                                //Box trap item is on the ground letting main script handle setting it up.
+                                break;
+                            }
+                            if(maxTries>=3){
+                                Microbot.log("Failed, placing the trap");
+                                break;
+                            }
+                            maxTries++;
                         }
                     }
                 }
