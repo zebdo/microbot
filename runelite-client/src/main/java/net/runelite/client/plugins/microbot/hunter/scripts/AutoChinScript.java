@@ -163,11 +163,12 @@ public class AutoChinScript extends Script {
                 if (gameObjects != null) {
                     for (GameObject gameObject : gameObjects) {
                         if (gameObject != null) {
-                            if(Rs2Player.distanceTo(gameObject.getWorldLocation())<=6) {
-                                WorldPoint location = gameObject.getWorldLocation();
-                                if (!boxtiles.contains(location)) {
-                                    boxtiles.add(location);
-                                }
+                            WorldPoint location = gameObject.getWorldLocation();
+                            if (Rs2Player.distanceTo(gameObject.getWorldLocation()) > 6) {
+                                continue; // Skip traps beyond the range
+                            }
+                            if (!boxtiles.contains(location)) {
+                                boxtiles.add(location);
                             }
                         }
                     }
@@ -176,25 +177,27 @@ public class AutoChinScript extends Script {
             // At this point, boxtiles should be populated with the world points of the old traps.
 
             // Dismantling traps for our break.
-            if (Rs2GameObject.get("Box trap") != null||Rs2GroundItem.exists("Box trap", 6)||Rs2GameObject.get("Shaking box") != null) {
                 for (WorldPoint oldTile : boxtiles) {
                     if (Rs2GameObject.getGameObject(oldTile) != null) {
-                        if(Rs2Player.distanceTo(oldTile) <=6) {
-                            //Dismantle or Reset
-                            while (Rs2GameObject.getGameObject(oldTile) != null) {
-                                if (Rs2GameObject.interact(oldTile, "Dismantle")) {
-                                    sleep(1000, 3000);
-                                    break;
-                                }
-                                if (Rs2GameObject.interact(oldTile, "Reset")) {
-                                    sleep(1000, 3000);
-                                    break;
-                                }
+                        //Dismantle or Reset
+                        if (Rs2Player.distanceTo(oldTile) > 6) {
+                            continue; // Skip traps beyond the range
+                        }
+                        while (Rs2GameObject.getGameObject(oldTile) != null) {
+                            if (Rs2Player.distanceTo(oldTile) > 6) {
+                                break; // Skip traps beyond the range
+                            }
+                            if (Rs2GameObject.interact(oldTile, "Dismantle")) {
+                                sleep(1000, 3000);
+                                break;
+                            }
+                            if (Rs2GameObject.interact(oldTile, "Reset")) {
+                                sleep(1000, 3000);
+                                break;
                             }
                         }
                     }
                 }
-            }
             oneRun=true;
         }
 
