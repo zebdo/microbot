@@ -158,7 +158,6 @@ public class AutoChinScript extends Script {
             // Save Trap locations
             for (int trapId : trapIds) {
                 List<GameObject> gameObjects = Rs2GameObject.getGameObjects(trapId);
-                if(boxtiles.isEmpty()) {
                     if (gameObjects != null) {
                         for (GameObject gameObject : gameObjects) {
                             if (gameObject != null) {
@@ -172,7 +171,6 @@ public class AutoChinScript extends Script {
                             }
                         }
                     }
-                }
             }
 
             // At this point, boxtiles should be populated with the world points of the old traps.
