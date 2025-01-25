@@ -223,14 +223,14 @@ public class AutoChinScript extends Script {
                         Microbot.log("Placing trap");
                         int maxTries = 0;
                         while(Rs2GameObject.getGameObject(LayTrapTile) == null) {
-                            if(!Rs2GroundItem.exists("Box trap", 0)) {
+                            if(!Rs2GroundItem.exists("Box trap", 6)) {
                                 if (Rs2Inventory.contains("Box trap")) {
                                     Rs2Inventory.interact("Box trap", "Lay");
                                     sleep(4000, 6000);
                                 }
                             } else {
-                                //Box trap item is on the ground letting main script handle setting it up.
-                                break;
+                                Rs2GroundItem.take("Box trap", 6);
+                                sleep(4000, 6000);
                             }
                             if(maxTries>=3){
                                 Microbot.log("Failed, placing the trap");
