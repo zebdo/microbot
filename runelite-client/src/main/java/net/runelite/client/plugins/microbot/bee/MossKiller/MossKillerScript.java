@@ -67,7 +67,7 @@ public class MossKillerScript extends Script {
 
     // TODO: convert axe and food to be a list of all available stuff
     public int BRONZE_AXE = 1351;
-    public int FOOD = 373;
+    public int FOOD = SWORDFISH;
 
     public int MOSSY_KEY = 22374;
 
@@ -222,6 +222,8 @@ public class MossKillerScript extends Script {
 
         if (!Rs2Inventory.contains(FOOD) || BreakHandlerScript.breakIn <= 15){
             Microbot.log("Inventory does not contains FOOD or break in less than 15");
+            if (Rs2Inventory.contains(FOOD)) {Microbot.log("We have food");}
+                if (BreakHandlerScript.breakIn <= 15) {Microbot.log("Break in less than 15");}
             state = MossKillerState.TELEPORT;
             return;
         }
