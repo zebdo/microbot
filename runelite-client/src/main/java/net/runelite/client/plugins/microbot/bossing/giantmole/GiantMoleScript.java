@@ -93,7 +93,7 @@ public class GiantMoleScript extends Script
 
                 updateState(config);
                 handlePotions();
-                handleFood();
+                handleFood(config);
                 handleDamageItems(config);
 
                 switch (state)
