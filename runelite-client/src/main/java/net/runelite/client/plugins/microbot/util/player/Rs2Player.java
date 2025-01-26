@@ -526,22 +526,20 @@ public class Rs2Player {
 
     public static boolean useFood() {
         List<Rs2Item> foods = Rs2Inventory.getInventoryFood();
-        if (!foods.isEmpty()) {
-            if (Microbot.getVarbitValue(Varbits.IN_WILDERNESS) == 1) {
-                List<Rs2Item> blightedFoods = Rs2Inventory.getInventoryFood().stream()
-                        .filter(rs2Item -> rs2Item.getName().toLowerCase().contains("blighted"))
-                        .collect(Collectors.toList());
-                
-                if (!blightedFoods.isEmpty()) {
-                    return Rs2Inventory.interact(blightedFoods.get(0), "eat");
-                }
-            } else if (foods.get(0).getName().toLowerCase().contains("jug of wine")) {
-                return Rs2Inventory.interact(foods.get(0), "drink");
-            } else {
-                return Rs2Inventory.interact(foods.get(0), "eat");
-            }
+        if (foods.isEmpty()) return false;
+
+        boolean inWilderness = Microbot.getVarbitValue(Varbits.IN_WILDERNESS) == 1;
+
+        Rs2Item foodToUse = foods.stream()
+                .filter(rs2Item -> inWilderness && rs2Item.getName().toLowerCase().contains("blighted"))
+                .findFirst()
+                .orElse(foods.get(0));
+
+        if (foodToUse.getName().toLowerCase().contains("jug of wine")) {
+            return Rs2Inventory.interact(foodToUse, "drink");
         }
-        return false;
+
+        return Rs2Inventory.interact(foodToUse, "eat");
     }
 
     /**
