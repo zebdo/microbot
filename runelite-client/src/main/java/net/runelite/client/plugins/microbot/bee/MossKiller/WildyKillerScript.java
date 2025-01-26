@@ -1273,7 +1273,7 @@ public class WildyKillerScript extends Script {
         }
 
         int randomValue = (int) Rs2Random.truncatedGauss(60, 70, 4.0);
-        Rs2Player.eatAt(randomValue);
+        eatAt(randomValue);
 
         // Check if loot is nearby and pick it up if it's in LOOT_LIST
         for (int lootItem : LOOT_LIST) {
@@ -1441,7 +1441,7 @@ public class WildyKillerScript extends Script {
         state = MossKillerState.FIGHT_MOSS_GIANTS;
         }
 
-        if (!Rs2Inventory.hasItemAmount("Mind rune", 750) && mossKillerPlugin.currentTarget == null) {
+        if (!Rs2Inventory.hasItemAmount(MIND_RUNE, 750) && mossKillerPlugin.currentTarget == null) {
         Microbot.log("Inventory Empty or Not Recently Banked");
             int lobsterCount = Rs2Inventory.count(ItemID.SWORDFISH);
             if (lobsterCount < 17) {
@@ -1461,12 +1461,11 @@ public class WildyKillerScript extends Script {
         Microbot.log("You're in the wilderness and I don't get the problem");
         if (Rs2Equipment.isNaked()) {state = MossKillerState.WALK_TO_BANK;}}
         if (playerLocation.getY() < 3520) {
-        Microbot.log("You're not in the wilderness and low or Absent on Minds");
         state = MossKillerState.WALK_TO_BANK;
         }
         }
 
-        if (Rs2Inventory.hasItemAmount("Mind rune", 750) && mossKillerPlugin.currentTarget == null) {
+        if (Rs2Inventory.hasItemAmount(MIND_RUNE, 750) && mossKillerPlugin.currentTarget == null) {
             if (MOSS_GIANT_AREA.contains(playerLocation) || CORRIDOR.contains(playerLocation) || TOTAL_FEROX_ENCLAVE.contains((playerLocation))){
                 Microbot.log("Looks like you're in the wilderness with 750 mind runes");
         if (Rs2Inventory.hasItem(FOOD) && Rs2Inventory.hasItem(LAW_RUNE) && Rs2Inventory.hasItem(AIR_RUNE) && !Rs2Inventory.hasItem(MOSSY_KEY)) {
@@ -1483,7 +1482,7 @@ public class WildyKillerScript extends Script {
         }
             }
         }
-        if (Rs2Inventory.hasItemAmount("Mind rune", 1500)) {
+        if (Rs2Inventory.hasItemAmount(MIND_RUNE, 1500)) {
             state = MossKillerState.BANK;
         }
             if (playerLocation.getY() < 3520) {
@@ -1539,7 +1538,7 @@ public class WildyKillerScript extends Script {
 
         sleep(1200);
 
-        if (Rs2Inventory.hasItemAmount("Mind rune", 1500) &&
+        if (Rs2Inventory.hasItemAmount(MIND_RUNE, 1500) &&
         Rs2Walker.getDistanceBetween(playerLocation, VARROCK_WEST_BANK) > 6)
         {state = MossKillerState.WALK_TO_BANK;}
 
@@ -1833,13 +1832,19 @@ public class WildyKillerScript extends Script {
             if (Rs2Inventory.hasItemAmount(ENERGY_POTION4, 1) && Rs2Player.getRunEnergy() <= 60) {
                 Rs2Inventory.interact(ENERGY_POTION4, "Drink");
                 sleepUntil(() -> Rs2Inventory.contains(ENERGY_POTION3));
+                sleep(900,1800);
                 Rs2Inventory.interact(ENERGY_POTION3, "Drink");
                 sleepUntil(() -> Rs2Inventory.contains(ENERGY_POTION2));
+                sleep(900,1800);
                 Rs2Inventory.interact(ENERGY_POTION2, "Drink");
                 sleepUntil(() -> Rs2Inventory.contains(ENERGY_POTION1));
+                sleep(900,1800);
                 Rs2Inventory.interact(ENERGY_POTION1, "Drink");
                 sleepUntil(() -> Rs2Inventory.contains(VIAL));
+                sleep(900,1800);
                 Rs2Bank.depositOne(VIAL);
+                sleep(900,1800);
+                Rs2Bank.withdrawOne(ENERGY_POTION4);
             }
 
             if (!Rs2Equipment.isWearing(STAFF_OF_FIRE))
@@ -1998,12 +2003,12 @@ public class WildyKillerScript extends Script {
                 || BreakHandlerScript.breakIn <= 120
                 || !Rs2Inventory.contains(FOOD)
                 || !Rs2Inventory.hasItemAmount(MIND_RUNE, 15)) {
-                // while my dude is under attack
-                // while (whateverCondition (under attack) from plugin && this.isRunning())
                 if (scheduledFuture.isDone() && !Rs2Inventory.hasItemAmount(FOOD, 17)) { // Only initiate if not already walking to Twenty Wild
                     handleAsynchWalk("Twenty Wild");
                 }
-
+                if (Rs2Inventory.hasItemAmount(FOOD, 17)) {
+                    state = MossKillerState.WALK_TO_MOSS_GIANTS;
+                }
                 Microbot.log("Hitting Return");
                 return;
             } else if (Rs2Walker.getDistanceBetween(playerLocation, TWENTY_WILD) < 5) {
@@ -2011,7 +2016,7 @@ public class WildyKillerScript extends Script {
             }
 
             // Check if the player has teleported (Y-coordinate condition)
-            if (playerLocation.getY() < 3500) {
+                if (playerLocation.getY() < 3500) {
                 Microbot.log("Teleport successful.");
                 state = MossKillerState.WALK_TO_BANK;
             }

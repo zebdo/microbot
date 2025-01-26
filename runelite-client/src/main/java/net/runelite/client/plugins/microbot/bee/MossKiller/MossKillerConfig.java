@@ -28,7 +28,7 @@ public interface MossKillerConfig extends Config {
     @ConfigItem(
             keyName = "equipmentGuide",
             name = "Equipment Details",
-            description = "Recommended equipment for advanced users.",
+            description = "List of required equipment.",
             position = 1,
             section = advancedGuideSection // Links this to the Advanced Guide section
     )
@@ -67,7 +67,7 @@ public interface MossKillerConfig extends Config {
     default String instructionsGuide() {
         return  "Select Wildy Mode.\n"
                 + "Start the plugin near a bank in f2p with no armor or weapons and every listed piece of equipment in the bank.\n"
-                + "Turn on Teleportation spells in Web Walker configuration. Turn on PK skull prevention in OSRS settings.\n"
+                + "Turn on Teleportation spells in Web Walker configuration. Turn on Breakhandler. Turn on PK skull prevention in OSRS settings.\n"
                 + "Minimum required skill levels:\n"
                 + "- 40 Range\n"
                 + "- 41 Mage\n"
@@ -76,6 +76,7 @@ public interface MossKillerConfig extends Config {
                 + "- 30 Strength\n"
                 + "Ideal skill levels:\n"
                 + "- 70 Strength\n"
+                + "- 55 Magic\n"
                 + "- 43 Prayer\n"
                 + "---------------------------------\n"
                 + "This plugin will train your defense to 50 automatically";
@@ -90,14 +91,17 @@ public interface MossKillerConfig extends Config {
             section = basicGuideSection // Belongs to Basic Guide
     )
     default String GUIDE() {
-        return "NORMAL: Have runes for teleport to Varrock, swordfish, and bronze axe in the bank. Start in Varrock East Bank. Turn off Teleportation spells in Web Walker configuration.";
+        return "NORMAL: Have runes for teleport to Varrock, swordfish, and bronze axe in the bank. Start in Varrock East Bank. Turn off Teleportation spells in Web Walker configuration. Turn on Breakhandler.\n"
+        + "ADVANCED: See Advanced Guide.\n"
+        + "TIPS: For tips with the plugin visit the Discord -> Community Plugins -> Moss Killer Plugin";
     }
 
     @ConfigItem(
             keyName = "wildySelector",
             name = "Wildy Mode",
             description = "Enable this for killing Moss Giants in the Wilderness.",
-            position = 2
+            position = 2,
+            section = advancedGuideSection
     )
     default boolean wildy() {
         return false;
@@ -107,7 +111,8 @@ public interface MossKillerConfig extends Config {
             keyName = "combatMode",
             name = "Combat Mode",
             description = "Select the combat mode: Flee, Fight, or Lure",
-            position = 3
+            position = 3,
+            section = advancedGuideSection
     )
     default CombatMode combatMode() {
         return CombatMode.FIGHT; // Default option
@@ -129,7 +134,8 @@ public interface MossKillerConfig extends Config {
             keyName = "buryBones",
             name = "Bury Bones",
             description = "Select this if you want to loot and bury bones",
-            position = 6
+            position = 4,
+            section = advancedGuideSection
     )
     default boolean buryBones() {
         return false;
@@ -139,7 +145,8 @@ public interface MossKillerConfig extends Config {
             keyName = "forceDefensive",
             name = "Force Defensive",
             description = "Select this if you want to autocast defensive after 60 Defence.",
-            position = 7
+            position = 5,
+            section = advancedGuideSection
     )
     default boolean forceDefensive() {
         return false;

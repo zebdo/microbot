@@ -13,7 +13,7 @@ import javax.inject.Inject;
 import java.awt.*;
 
 @PluginDescriptor(
-        name = PluginDescriptor.Default + "Lunar Tablets",
+        name = PluginDescriptor.Gage + "Lunar Tablets",
         description = "Creates Lunar teleport tablets",
         tags = {"Lunar Tablets mm Money making", "microbot"},
         enabledByDefault = false
