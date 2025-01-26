@@ -2,8 +2,6 @@ package net.runelite.client.plugins.microbot.bankjs.BanksBankStander;
 
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.GameState;
-import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.client.config.ConfigManager;
@@ -55,52 +53,9 @@ public class BanksBankStanderPlugin extends Plugin {
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged inventory){
         if(inventory.getContainerId()==93){
-            if(BanksBankStanderScript.currentStatus == CurrentStatus.COMBINE_ITEMS) {
-                if (BanksBankStanderScript.firstItemId != null) {
-                    if (Rs2Inventory.items().stream().filter(item -> item.id == BanksBankStanderScript.firstItemId).mapToInt(item -> item.quantity).sum() < config.firstItemQuantity()) {
-                        if (BanksBankStanderScript.firstItemSum > 0) { BanksBankStanderScript.firstItemSum--; }
-                        BanksBankStanderScript.itemsProcessed++;
-                    }
-                } else {
-                    if (Rs2Inventory.count(config.firstItemIdentifier()) < config.firstItemQuantity()) {
-                        if (BanksBankStanderScript.firstItemSum > 0) { BanksBankStanderScript.firstItemSum--; }
-                        BanksBankStanderScript.itemsProcessed++;
-                    }
-                }
-                if(config.secondItemQuantity() > 0) {
-                    if (BanksBankStanderScript.secondItemId != null) {
-                        if (Rs2Inventory.items().stream().filter(item -> item.id == BanksBankStanderScript.secondItemId).mapToInt(item -> item.quantity).sum() < config.secondItemQuantity()) {
-                            if (BanksBankStanderScript.secondItemSum > 0) { BanksBankStanderScript.secondItemSum--; }
-                        }
-                    } else {
-                        if (Rs2Inventory.count(config.secondItemIdentifier()) < config.secondItemQuantity()) {
-                            if (BanksBankStanderScript.secondItemSum > 0) { BanksBankStanderScript.secondItemSum--; }
-                        }
-                    }
-                }
-                if(config.thirdItemQuantity() > 0) {
-                    if (BanksBankStanderScript.thirdItemId != null) {
-                        if (Rs2Inventory.items().stream().filter(item -> item.id == BanksBankStanderScript.thirdItemId).mapToInt(item -> item.quantity).sum() < config.thirdItemQuantity()) {
-                            if (BanksBankStanderScript.thirdItemSum > 0) { BanksBankStanderScript.thirdItemSum--; }
-                        }
-                    } else {
-                        if (Rs2Inventory.count(config.thirdItemIdentifier()) < config.thirdItemQuantity()) {
-                            if (BanksBankStanderScript.thirdItemSum > 0) { BanksBankStanderScript.thirdItemSum--; }
-                        }
-                    }
-                }
-                if(config.fourthItemQuantity() > 0) {
-                    if (BanksBankStanderScript.fourthItemId != null) {
-                        if (Rs2Inventory.items().stream().filter(item -> item.id == BanksBankStanderScript.fourthItemId).mapToInt(item -> item.quantity).sum() < config.fourthItemQuantity()) {
-                            if (BanksBankStanderScript.fourthItemSum > 0) { BanksBankStanderScript.fourthItemSum--; }
-                        }
-                    } else {
-                        if (Rs2Inventory.count(config.fourthItemIdentifier()) < config.fourthItemQuantity()) {
-                            if (BanksBankStanderScript.fourthItemSum > 0) { BanksBankStanderScript.fourthItemSum--; }
-                        }
-                    }
-                }
-            } else { System.out.println("currentStatus : " + BanksBankStanderScript.currentStatus); }
+            if (!Rs2Bank.isOpen()) {
+                BanksBankStanderScript.itemsProcessed++;
+            }
             if (BanksBankStanderScript.secondItemId != null) { // Use secondItemId if it's available
                 if (Arrays.stream(inventory.getItemContainer().getItems())
                         .anyMatch(x -> x.getId() == BanksBankStanderScript.secondItemId)) {
@@ -120,7 +75,6 @@ public class BanksBankStanderPlugin extends Plugin {
                     BanksBankStanderScript.previousItemChange = (System.currentTimeMillis() - 2500);
                 }
             }
-
         }
     }
     @Subscribe

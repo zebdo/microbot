@@ -723,7 +723,8 @@ public class Rs2Inventory {
      *
      * @return The first item that matches the ID, or null if not found.
      */
-    public static Rs2Item get(int id) {
+    public static Rs2Item get(Integer id) {
+        if (id == null) return null;
         return items().stream().filter(x -> x.id == id).findFirst().orElse(null);
     }
 
@@ -896,14 +897,31 @@ public class Rs2Inventory {
      * @return True if the player has the specified quantity of the item, false otherwise.
      */
     public static boolean hasItemAmount(int id, int amount) {
+       return hasItemAmount(id, amount, false);
+    }
+
+    /**
+     * Checks if the player has a certain quantity of an item.
+     *
+     * @param id     The id of the item to check.
+     * @param amount The desired quantity of the item.
+     *
+     * @return True if the player has the specified quantity of the item, false otherwise.
+     */
+    public static boolean hasItemAmount(Integer id, int amount, boolean exact) {
+        if (id == null) return false;
         Rs2Item rs2Item = get(id);
         if (rs2Item == null) return false;
         if (rs2Item.isStackable) {
             return rs2Item.quantity >= amount;
+        } else if (exact){
+            return items().stream().filter(x -> x.id == id).count() == amount;
         } else {
             return items().stream().filter(x -> x.id == id).count() >= amount;
+
         }
     }
+
 
     /**
      * Checks if the player has a certain quantity of an item.
@@ -962,7 +980,8 @@ public class Rs2Inventory {
      *
      * @return boolean
      */
-    public static boolean hasItem(int id) {
+    public static boolean hasItem(Integer id) {
+        if (id == null) return false;
         return get(id) != null;
     }
 
