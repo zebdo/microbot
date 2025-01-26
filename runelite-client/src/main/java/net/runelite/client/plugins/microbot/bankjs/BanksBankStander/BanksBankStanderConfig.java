@@ -4,13 +4,8 @@ import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.util.inventory.InteractOrder;
 
 @ConfigGroup("BankStander")
-@ConfigInformation("• New features added to Bank's BankStander<br />" +
-        "• Code overhauled by eXioStorm, added features : <br />" +
-        "• Withdraw more items from the bank(Super combat potions). <br />" +
-        "• Select random items(for things like 1-tick). <br />" +
-        "• Withdraw All, & first item not banked. <br />" +
-        "• Use menu. <br />" +
-        "• Wait for process")
+@ConfigInformation("• Code update by eXioStorm. commit #84316ee <br />" +
+        "• Last commit prior to update : #1bcb195 <br />" )
 public interface BanksBankStanderConfig extends Config {
     @ConfigItem(
             keyName = "Instructions",
@@ -57,10 +52,20 @@ public interface BanksBankStanderConfig extends Config {
     String sleepSection = "sleepSection";
     // Items
     @ConfigItem(
+            keyName = "interactOrder",
+            name = "Interact Order",
+            description = "The order in which to interact with items",
+            position = 0,
+            section = itemSection
+    )
+    default InteractOrder interactOrder() {
+        return InteractOrder.STANDARD;
+    }
+    @ConfigItem(
             keyName = "First Item",
             name = "First Item",
             description = "Sets First Item, use either Item ID or Item Name",
-            position = 0,
+            position = 1,
             section = itemSection
     )
 
@@ -72,7 +77,7 @@ public interface BanksBankStanderConfig extends Config {
             keyName = "First Item Quantity",
             name = "First Item Quantity",
             description = "Sets First Item's Quantity.",
-            position = 1,
+            position = 2,
             section = itemSection
     )
     @Range(
@@ -88,7 +93,7 @@ public interface BanksBankStanderConfig extends Config {
             keyName = "Second Item",
             name = "Second Item",
             description = "Sets Second Item, use either Item ID or Item Name",
-            position = 2,
+            position = 3,
             section = itemSection
     )
 
@@ -100,7 +105,7 @@ public interface BanksBankStanderConfig extends Config {
             keyName = "Second Item Quantity",
             name = "Second Item Quantity",
             description = "Sets Second Item's Quantity.",
-            position = 3,
+            position = 4,
             section = itemSection
     )
     @Range(
@@ -115,7 +120,7 @@ public interface BanksBankStanderConfig extends Config {
             keyName = "Third Item",
             name = "Third Item",
             description = "Sets Third Item, use either Item ID or Item Name",
-            position = 4,
+            position = 5,
             section = itemSection
     )
 
@@ -127,7 +132,7 @@ public interface BanksBankStanderConfig extends Config {
             keyName = "Third Item Quantity",
             name = "Third Item Quantity",
             description = "Sets Third Item's Quantity.",
-            position = 5,
+            position = 6,
             section = itemSection
     )
     @Range(
@@ -143,7 +148,7 @@ public interface BanksBankStanderConfig extends Config {
             keyName = "Fourth Item",
             name = "Fourth Item",
             description = "Sets Fourth Item, use either Item ID or Item Name",
-            position = 6,
+            position = 7,
             section = itemSection
     )
 
@@ -155,7 +160,7 @@ public interface BanksBankStanderConfig extends Config {
             keyName = "Fourth Item Quantity",
             name = "Fourth Item Quantity",
             description = "Sets Fourth Item's Quantity.",
-            position = 7,
+            position = 8,
             section = itemSection
     )
     @Range(
@@ -179,8 +184,8 @@ public interface BanksBankStanderConfig extends Config {
     }
 
     @ConfigItem(
-            keyName = "usePrompt",
-            name = "Use Prompt?",
+            keyName = "Prompt",
+            name = "Prompt?",
             description = "Does this combination need to respond to a prompt?",
             position = 2,
             section = toggles
@@ -206,7 +211,7 @@ public interface BanksBankStanderConfig extends Config {
             section = toggles
     )
     default boolean depositAll() {
-        return true;
+        return false;
     }
     @ConfigItem(
             keyName = "withdrawAll",
@@ -216,16 +221,6 @@ public interface BanksBankStanderConfig extends Config {
             section = toggles
     )
     default boolean withdrawAll() {
-        return true;
-    }
-    @ConfigItem(
-            keyName = "randomSelection",
-            name = "randomSelection",
-            description = "select random item in inventory?",
-            position = 8,
-            section = toggles
-    )
-    default boolean randomSelection() {
         return false;
     }
     @ConfigItem(
@@ -235,19 +230,8 @@ public interface BanksBankStanderConfig extends Config {
             position = 0,
             section = interaction
     )
-
     default String menu() {
         return "use";
-    }
-    @ConfigItem(
-            keyName = "interactOrder",
-            name = "Interact Order",
-            description = "The order in which to interact with items",
-            position = 1,
-            section = interaction
-    )
-    default InteractOrder interactOrder() {
-        return InteractOrder.STANDARD;
     }
     @ConfigItem(
             keyName = "Sleep Min",

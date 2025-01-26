@@ -91,9 +91,9 @@ public interface MossKillerConfig extends Config {
             section = basicGuideSection // Belongs to Basic Guide
     )
     default String GUIDE() {
-        return "NORMAL: Have runes for teleport to Varrock, swordfish, and bronze axe in the bank. Start in Varrock East Bank. Turn off Teleportation spells in Web Walker configuration.\n"
+        return "NORMAL: Have runes for teleport to Varrock, swordfish, and bronze axe in the bank. Start in Varrock East Bank. Turn off Teleportation spells in Web Walker configuration. Turn on Breakhandler.\n"
         + "ADVANCED: See Advanced Guide.\n"
-        + "TIPS: For tips with the plugin visit Microbot Discord -> Community Plugins -> Moss Killer Plugin";
+        + "TIPS: For tips with the plugin visit the Discord -> Community Plugins -> Moss Killer Plugin";
     }
 
     @ConfigItem(
