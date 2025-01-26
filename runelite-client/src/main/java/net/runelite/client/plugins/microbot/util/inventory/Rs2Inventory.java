@@ -916,7 +916,7 @@ public class Rs2Inventory {
     public static boolean hasItemAmount(String name, int amount) {
         Rs2Item item = get(name);
         if (item == null) return false;
-        return hasItemAmount(name, amount, false, false);
+        return hasItemAmount(name, amount, item.isStackable, false);
     }
 
     /**
