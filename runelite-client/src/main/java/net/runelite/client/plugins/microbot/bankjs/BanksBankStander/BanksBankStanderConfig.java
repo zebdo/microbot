@@ -4,24 +4,14 @@ import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.util.inventory.InteractOrder;
 
 @ConfigGroup("BankStander")
-@ConfigInformation("• Code update by eXioStorm. commit #84316ee <br />" +
-        "• Last commit prior to update : #1bcb195 <br />" )
+@ConfigInformation("This Script will perform bank standing activities. <br /> "
+        + "<ul>" +
+        "<li>Crafting</li>" +
+        "<li>Herblore</li>" +
+        "<li>Fletching</li>" +
+        "<li>Cooking<li>" +
+        "</ul>")
 public interface BanksBankStanderConfig extends Config {
-    @ConfigItem(
-            keyName = "Instructions",
-            name = "Instructions",
-            description = "Instructions",
-            position = 0
-    )
-    default String basicInstructions() {
-        return "This Script will combine items for you" +
-                "\n If using a Knife etc. make sure qty is set to 1. and use Item Slot 1." +
-                "\nChisel Item ID = 1755" +
-                "\nKnife Item ID = 946" +
-                "\nGlassblowing Pipe Item ID = 1785" +
-                "\nFor Bug reports & Future updates, my discord is Bank.js" +
-                "\nor find me in the Microbot discord.";
-    }
     @ConfigSection(
             name = "Item Settings",
             description = "Set Items to Combine",
@@ -211,16 +201,6 @@ public interface BanksBankStanderConfig extends Config {
             section = toggles
     )
     default boolean depositAll() {
-        return false;
-    }
-    @ConfigItem(
-            keyName = "withdrawAll",
-            name = "withdraw all",
-            description = "for using things like a chisel or knife where the item is not consumed in the process.",
-            position = 7,
-            section = toggles
-    )
-    default boolean withdrawAll() {
         return false;
     }
     @ConfigItem(
