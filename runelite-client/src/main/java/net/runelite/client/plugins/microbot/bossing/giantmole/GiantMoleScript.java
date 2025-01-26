@@ -388,10 +388,10 @@ public class GiantMoleScript extends Script
     }
 
     // Handles food consumption
-    public void handleFood()
+    public void handleFood(GiantMoleConfig config)
     {
         boolean usingQoLFood = Microbot.getConfigManager().getConfiguration("QoL", "autoEatFood", Boolean.class);
-        if (!(Microbot.isPluginEnabled(QoLPlugin.class) && usingQoLFood) && !localConfig.useRockCake())
+        if (!(Microbot.isPluginEnabled(QoLPlugin.class) && usingQoLFood) && !config.useRockCake())
         {
                 Rs2Player.eatAt(Rs2Random.randomGaussian(50, 10));
         }
