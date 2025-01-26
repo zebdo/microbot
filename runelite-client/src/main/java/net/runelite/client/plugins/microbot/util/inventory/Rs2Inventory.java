@@ -916,7 +916,7 @@ public class Rs2Inventory {
     public static boolean hasItemAmount(String name, int amount) {
         Rs2Item item = get(name);
         if (item == null) return false;
-        return hasItemAmount(name, amount, false, false);
+        return hasItemAmount(name, amount, item.isStackable, false);
     }
 
     /**
@@ -1037,7 +1037,7 @@ public class Rs2Inventory {
 
     public static List<Rs2Item> getInventoryFood() {
         List<Rs2Item> items = items().stream()
-                .filter(x -> Arrays.stream(x.getInventoryActions()).anyMatch(a -> a != null && a.equalsIgnoreCase("eat")) || x.getName().toLowerCase().contains("jug of wine"))
+                .filter(x -> Arrays.stream(x.getInventoryActions()).anyMatch(a -> a != null && a.equalsIgnoreCase("eat")) || x.getName().toLowerCase().contains("jug of wine") && !x.getName().toLowerCase().contains("rock cake"))
                 .collect(Collectors.toList());
         return items;
     }
