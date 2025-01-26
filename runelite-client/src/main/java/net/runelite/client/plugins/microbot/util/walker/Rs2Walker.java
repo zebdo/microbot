@@ -1038,9 +1038,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     GameObject gameObject = Rs2GameObject.getGameObjects(transport.getObjectId(), transport.getOrigin()).stream().findFirst().orElse(null);
                     //check game objects
                     if (gameObject != null && gameObject.getId() == transport.getObjectId()) {
-                        System.out.println("Game Object");
                         if (!Rs2Tile.isTileReachable(transport.getOrigin())) {
-                            System.out.println("Not reachable");
                             break;
                         }
                         handleObject(transport, gameObject);
