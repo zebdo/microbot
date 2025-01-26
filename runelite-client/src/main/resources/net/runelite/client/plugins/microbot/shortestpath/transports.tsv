@@ -1523,6 +1523,9 @@
 2775 3234 1	2776 3235 0	Climb-down;Ship's ladder;9745						
 2808 3162 0	2808 3162 1	Climb-up;Ladder;16683					3	
 2808 3162 1	2808 3162 0	Climb-down;Ladder;16679					3	
+2744 3153 0	2713 9564 0	Pay;Dungeon entrance;20877		875 coins				
+2713 9564 0	2744 3153 0	Leave;Exit;20878						
+
 # Karamja Volcano								
 2855 3169 0	2855 9569 0	Climb-down;Rocks;11441						
 2855 9569 0	2856 3167 0	Climb;Climbing rope;18969						
