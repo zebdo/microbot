@@ -28,6 +28,6 @@ public class WelcomeScreenEvent implements BlockingEvent {
 
     @Override
     public BlockingEventPriority priority() {
-        return BlockingEventPriority.HIGH;
+        return BlockingEventPriority.HIGHEST;
     }
 }

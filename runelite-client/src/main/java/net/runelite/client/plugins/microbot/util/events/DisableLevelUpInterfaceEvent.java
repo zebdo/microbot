@@ -17,6 +17,6 @@ public class DisableLevelUpInterfaceEvent implements BlockingEvent {
 
     @Override
     public BlockingEventPriority priority() {
-        return BlockingEventPriority.NORMAL;
+        return BlockingEventPriority.HIGH;
     }
 }
