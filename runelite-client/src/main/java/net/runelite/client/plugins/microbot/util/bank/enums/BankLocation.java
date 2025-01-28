@@ -269,6 +269,7 @@ public enum BankLocation {
             case GNOME_TREE_BANK_SOUTH:
             case ROGUES_DEN_EMERALD_BENEDICT:
             case TREE_GNOME_STRONGHOLD_NIEVE:
+            case SHANTY_PASS:
                 return isMember();
             default:
                 return true;
