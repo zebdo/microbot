@@ -153,6 +153,8 @@ public class Microbot {
     @Getter
     public static HashMap<String, Integer> scriptRuntimes = new HashMap<>();
 
+    public static boolean loggedIn = false;
+
     /**
      * Checking the Report button will ensure that we are logged in, as there seems to be a small moment in time
      * when at the welcome screen that Rs2Settings.isLevelUpNotificationsEnabled() will return true then turn back to false
@@ -196,9 +198,11 @@ public class Microbot {
     }
 
     public static boolean isLoggedIn() {
+        if (loggedIn) return true;
         if (client == null) return false;
         GameState idx = client.getGameState();
-        return idx == GameState.LOGGED_IN && Rs2Widget.isWidgetVisible(REPORT_BUTTON_COMPONENT_ID);
+        loggedIn = idx == GameState.LOGGED_IN && Rs2Widget.isWidgetVisible(REPORT_BUTTON_COMPONENT_ID);
+        return loggedIn;
     }
 
     public static boolean isHopping() {
