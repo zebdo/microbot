@@ -28,7 +28,7 @@ public class LootScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             if (!super.run()) return;
             if (!Microbot.isLoggedIn()) return;
-            if (PlayerAssistPlugin.getState() == State.BANKING.name()) return;
+            if (PlayerAssistPlugin.getState() == State.BANKING.name() || PlayerAssistPlugin.getState() == State.WALKING.name()) return;
             if (Rs2Inventory.isFull() || Rs2Inventory.getEmptySlots() <= config.minFreeSlots() || (Rs2Combat.inCombat() && !config.toggleForceLoot()))
                 return;
 
