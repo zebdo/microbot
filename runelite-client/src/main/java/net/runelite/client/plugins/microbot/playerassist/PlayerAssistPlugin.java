@@ -186,6 +186,13 @@ public class PlayerAssistPlugin extends Plugin {
         );
     }
 
+    public static String getState() {
+        return Microbot.getConfigManager().getConfiguration(
+                "PlayerAssistant",
+                "state"
+        );
+    }
+
     public static void setState(State state) {
         Microbot.getConfigManager().setConfiguration(
                 "PlayerAssistant",
