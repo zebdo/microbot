@@ -57,6 +57,10 @@ public class Rs2Player {
     @Getter
     public static int lastAnimationID = AnimationID.IDLE;
 
+    public static boolean hasPrayerRegenerationActive() {
+        return Microbot.getVarbitValue(Varbits.BUFF_PRAYER_REGENERATION) > 0;
+    }
+
     public static boolean hasAntiFireActive() {
         return antiFireTime > 0 || hasSuperAntiFireActive();
     }
@@ -991,9 +995,10 @@ public class Rs2Player {
     private static boolean usePotion(String... itemNames) {
         if (Rs2Inventory.contains(x -> Arrays.stream(itemNames).anyMatch(name -> x.name.contains(name) && !x.isNoted()))) {
             Rs2Item potion = Rs2Inventory.get(Arrays.stream(itemNames).collect(Collectors.toList()),false);
-            if (potion != null) {
-                return Rs2Inventory.interact(potion, "drink");
-            }
+            if (potion == null) return false;
+            if (potion.getName().toLowerCase().contains("prayer regeneration potion") && hasPrayerRegenerationActive()) return false;
+
+            return Rs2Inventory.interact(potion, "drink");
         }
         return false;
     }
