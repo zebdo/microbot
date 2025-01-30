@@ -39,6 +39,7 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapOverlay;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.WorldUtil;
 import net.runelite.http.api.worlds.World;
+import net.runelite.api.annotations.Component;
 
 import javax.inject.Inject;
 import javax.swing.*;
@@ -152,6 +153,14 @@ public class Microbot {
     @Getter
     public static HashMap<String, Integer> scriptRuntimes = new HashMap<>();
 
+    /**
+     * Checking the Report button will ensure that we are logged in, as there seems to be a small moment in time
+     * when at the welcome screen that Rs2Settings.isLevelUpNotificationsEnabled() will return true then turn back to false
+     * even if {@code Varbits.DISABLE_LEVEL_UP_INTERFACE} is 1 after clicking play button
+     */
+    @Component
+    private static final int REPORT_BUTTON_COMPONENT_ID = 10616833;
+
     public static boolean isDebug() {
         return java.lang.management.ManagementFactory.getRuntimeMXBean().
                 getInputArguments().toString().contains("-agentlib:jdwp");
@@ -189,7 +198,7 @@ public class Microbot {
     public static boolean isLoggedIn() {
         if (client == null) return false;
         GameState idx = client.getGameState();
-        return idx == GameState.LOGGED_IN;
+        return idx == GameState.LOGGED_IN && Rs2Widget.isWidgetVisible(REPORT_BUTTON_COMPONENT_ID);
     }
 
     public static boolean isHopping() {
