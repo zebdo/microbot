@@ -832,7 +832,7 @@ public class Rs2Player {
 
     /**
      * Drink prayer potion at prayer point level
-     *
+     * PrayerRenegrationPotion gets priority over prayer/restore potions
      * @param prayerPoints
      * @return
      */
@@ -840,6 +840,15 @@ public class Rs2Player {
         // Check if current prayer level is below or equal to the threshold
         if (Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER) > prayerPoints) {
             return false;
+        }
+
+        Rs2Item prayerRegenerationPotion = Rs2Inventory.items().stream()
+                .filter(x -> x.getName().toLowerCase().contains(Rs2Potion.getPrayerRegenerationPotion().toLowerCase()) && !x.isNoted())
+                .findFirst()
+                .orElse(null);
+
+        if (prayerRegenerationPotion != null && !Rs2Player.hasPrayerRegenerationActive()) {
+            return Rs2Inventory.interact(prayerRegenerationPotion, "drink");
         }
 
         // Attempt to drink a prayer potion
@@ -996,7 +1005,6 @@ public class Rs2Player {
         if (Rs2Inventory.contains(x -> Arrays.stream(itemNames).anyMatch(name -> x.name.contains(name) && !x.isNoted()))) {
             Rs2Item potion = Rs2Inventory.get(Arrays.stream(itemNames).collect(Collectors.toList()),false);
             if (potion == null) return false;
-            if (potion.getName().toLowerCase().contains("prayer regeneration potion") && hasPrayerRegenerationActive()) return false;
 
             return Rs2Inventory.interact(potion, "drink");
         }
