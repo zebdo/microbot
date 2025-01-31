@@ -6,6 +6,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.playerassist.PlayerAssistConfig;
 import net.runelite.client.plugins.microbot.playerassist.PlayerAssistPlugin;
+import net.runelite.client.plugins.microbot.playerassist.enums.State;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -25,6 +26,7 @@ public boolean run(PlayerAssistConfig config) {
     AtomicReference<List<String>> npcsToAttack = new AtomicReference<>(Arrays.stream(Arrays.stream(config.attackableNpcs().split(",")).map(String::trim).toArray(String[]::new)).collect(Collectors.toList()));
     mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
         try {
+            if (PlayerAssistPlugin.getState() == State.BANKING.name() || PlayerAssistPlugin.getState() == State.WALKING.name()) return;
             if (!Microbot.isLoggedIn() || !super.run() || !config.toggleSafeSpot() || Rs2Player.isMoving()) return;
 
             currentSafeSpot = config.safeSpot();

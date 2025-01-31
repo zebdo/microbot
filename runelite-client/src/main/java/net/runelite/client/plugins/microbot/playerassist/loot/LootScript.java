@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.playerassist.PlayerAssistConfig;
+import net.runelite.client.plugins.microbot.playerassist.PlayerAssistPlugin;
 import net.runelite.client.plugins.microbot.playerassist.enums.DefaultLooterStyle;
 import net.runelite.client.plugins.microbot.playerassist.enums.State;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -27,6 +28,7 @@ public class LootScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             if (!super.run()) return;
             if (!Microbot.isLoggedIn()) return;
+            if (PlayerAssistPlugin.getState() == State.BANKING.name() || PlayerAssistPlugin.getState() == State.WALKING.name()) return;
             if (Rs2Inventory.isFull() || Rs2Inventory.getEmptySlots() <= config.minFreeSlots() || (Rs2Combat.inCombat() && !config.toggleForceLoot()))
                 return;
 
