@@ -18,7 +18,6 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
-import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.plugins.microbot.playerassist.bank.BankerScript;
 import net.runelite.client.plugins.microbot.playerassist.cannon.CannonScript;
 import net.runelite.client.plugins.microbot.playerassist.combat.*;
@@ -40,7 +39,6 @@ import java.awt.*;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 @PluginDescriptor(
@@ -249,13 +247,6 @@ public class PlayerAssistPlugin extends Plugin {
                 setCenter(Rs2Player.getWorldLocation());
             }
 
-        }
-        if (event.getKey().equals("InventorySetupName")) {
-            InventorySetup inventorySetup = MInventorySetupsPlugin.getInventorySetups().stream().filter(Objects::nonNull).filter(x -> x.getName().equalsIgnoreCase(config.inventorySetup())).findFirst().orElse(null);
-
-            if (inventorySetup != null) {
-                setInventorySetup(inventorySetup);
-            }
         }
     }
 

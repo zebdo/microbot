@@ -87,7 +87,7 @@ public class BankerScript extends Script {
 
     public boolean withdrawUpkeepItems(PlayerAssistConfig config) {
         if (config.useInventorySetup()) {
-            Rs2InventorySetup inventorySetup = new Rs2InventorySetup(config.inventorySetup(), mainScheduledFuture);
+            Rs2InventorySetup inventorySetup = new Rs2InventorySetup(config.inventorySetup().getName(), mainScheduledFuture);
             if (!inventorySetup.doesEquipmentMatch()) {
                 inventorySetup.loadEquipment();
             }

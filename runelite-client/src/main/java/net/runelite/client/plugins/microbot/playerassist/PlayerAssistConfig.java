@@ -647,8 +647,8 @@ public interface PlayerAssistConfig extends Config {
             position = 99,
             section = gearSection
     )
-    default String inventorySetup() {
-        return "";
+    default InventorySetup inventorySetup() {
+        return null;
     }
 
     @ConfigItem(
