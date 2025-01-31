@@ -7,9 +7,6 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.microbot.brimAgility.BrimConfig;
-import net.runelite.client.plugins.microbot.brimAgility.BrimOverlay;
-import net.runelite.client.plugins.microbot.brimAgility.BrimScript;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;

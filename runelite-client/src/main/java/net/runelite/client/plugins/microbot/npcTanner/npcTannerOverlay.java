@@ -1,8 +1,6 @@
 package net.runelite.client.plugins.microbot.npcTanner;
 
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.brimAgility.BrimPlugin;
-import net.runelite.client.plugins.microbot.npcTanner.npcTannerScript;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
