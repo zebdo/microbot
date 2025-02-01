@@ -41,8 +41,8 @@
 1504 3399 0	1824 3695 1	Port Piscarilius;Captain Magoro;7471				Y	6	Port Piscarilius
 								
 # Port Sarim, Entrana								
-3048 3234 0	2834 3331 1	Travel-boat;Monk of Entrana;1165				Y	15	
-2834 3335 0	3048 3231 1	Travel-boat;Monk of Entrana;1168				Y	15	
+3048 3234 0	2834 3331 1	Take-boat;Monk of Entrana;1165				Y	15	
+2834 3335 0	3048 3231 1	Take-boat;Monk of Entrana;1168				Y	15	
 								
 # Port Sarim, Void Knights' Outpost								
 3041 3202 0	2662 2677 1	Travel;Squire;1770				Y	11	
