@@ -67,7 +67,7 @@ public interface MossKillerConfig extends Config {
     default String instructionsGuide() {
         return  "Select Wildy Mode.\n"
                 + "Start the plugin near a bank in f2p with no armor or weapons and every listed piece of equipment in the bank.\n"
-                + "Turn on Teleportation spells in Web Walker configuration. Turn on Breakhandler. Turn on PK skull prevention in OSRS settings.\n"
+                + "Turn on Teleportation spells in Web Walker configuration. Turn on Breakhandler. Turn on PK skull prevention in OSRS settings and have fixed mode enabled.\n"
                 + "Minimum required skill levels:\n"
                 + "- 40 Range\n"
                 + "- 41 Mage\n"
@@ -91,9 +91,9 @@ public interface MossKillerConfig extends Config {
             section = basicGuideSection // Belongs to Basic Guide
     )
     default String GUIDE() {
-        return "NORMAL: Have runes for teleport to Varrock, swordfish, and bronze axe in the bank. Start in Varrock East Bank. Turn off Teleportation spells in Web Walker configuration.\n"
+        return "NORMAL: Have runes for teleport to Varrock, swordfish, and bronze axe in the bank. Start in Varrock East Bank. Turn off Teleportation spells in Web Walker configuration. Turn on Breakhandler.\n"
         + "ADVANCED: See Advanced Guide.\n"
-        + "TIPS: For tips with the plugin visit Microbot Discord -> Community Plugins -> Moss Killer Plugin";
+        + "TIPS: For tips with the plugin visit the Discord -> Community Plugins -> Moss Killer Plugin";
     }
 
     @ConfigItem(

@@ -67,7 +67,7 @@ public class MossKillerScript extends Script {
 
     // TODO: convert axe and food to be a list of all available stuff
     public int BRONZE_AXE = 1351;
-    public int FOOD = 373;
+    public int FOOD = SWORDFISH;
 
     public int MOSSY_KEY = 22374;
 
@@ -222,6 +222,8 @@ public class MossKillerScript extends Script {
 
         if (!Rs2Inventory.contains(FOOD) || BreakHandlerScript.breakIn <= 15){
             Microbot.log("Inventory does not contains FOOD or break in less than 15");
+            if (Rs2Inventory.contains(FOOD)) {Microbot.log("We have food");}
+                if (BreakHandlerScript.breakIn <= 15) {Microbot.log("Break in less than 15");}
             state = MossKillerState.TELEPORT;
             return;
         }
@@ -408,14 +410,14 @@ public class MossKillerScript extends Script {
             }
         }
 
-        sleep(600);
-        eatAt(70);
-
         if (Rs2Walker.getDistanceBetween(playerLocation, MOSS_GIANT_SPOT) > 10) {
                         if (bossMode) {
                             BreakHandlerScript.setLockState(true);
                             if (Rs2Inventory.contains(MOSSY_KEY)) {
-                                eatAt(90);
+                                if (eatAt(70)) {
+                                    sleep(1900,2200);
+                                    eatAt(80);
+                                }
                                 Microbot.log("Walking to outside boss gaet spot");
                                 if (Rs2Walker.getDistanceBetween(playerLocation, OUTSIDE_BOSS_GATE_SPOT) > 10) {
                                     Rs2Walker.walkTo(OUTSIDE_BOSS_GATE_SPOT, 10);

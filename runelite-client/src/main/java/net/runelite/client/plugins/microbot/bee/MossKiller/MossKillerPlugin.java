@@ -104,6 +104,7 @@ public class MossKillerPlugin extends Plugin {
             overlayManager.add(mossKillerOverlay);
         }
         Microbot.useStaminaPotsIfNeeded = false;
+        Microbot.enableAutoRunOn = false;
         hideOverlay = config.isHideOverlay();
         toggleOverlay(hideOverlay);
         if(!config.wildy()) {
@@ -459,6 +460,8 @@ public class MossKillerPlugin extends Plugin {
     @Subscribe
     public void onHitsplatApplied(HitsplatApplied event) {
 
+        if(config.wildy()) {
+
         if (currentTarget != null) {
             wildyKillerScript.hitsplatApplied = event.getHitsplat().isMine();
         }
@@ -497,6 +500,7 @@ public class MossKillerPlugin extends Plugin {
 
             }
         }
+    }
     }
     /**
      * Determines which player caused the hitsplat based on interaction and proximity.

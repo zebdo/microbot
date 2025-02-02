@@ -57,6 +57,10 @@ public class Rs2Player {
     @Getter
     public static int lastAnimationID = AnimationID.IDLE;
 
+    public static boolean hasPrayerRegenerationActive() {
+        return Microbot.getVarbitValue(Varbits.BUFF_PRAYER_REGENERATION) > 0;
+    }
+
     public static boolean hasAntiFireActive() {
         return antiFireTime > 0 || hasSuperAntiFireActive();
     }
@@ -526,22 +530,20 @@ public class Rs2Player {
 
     public static boolean useFood() {
         List<Rs2Item> foods = Rs2Inventory.getInventoryFood();
-        if (!foods.isEmpty()) {
-            if (Microbot.getVarbitValue(Varbits.IN_WILDERNESS) == 1) {
-                List<Rs2Item> blightedFoods = Rs2Inventory.getInventoryFood().stream()
-                        .filter(rs2Item -> rs2Item.getName().toLowerCase().contains("blighted"))
-                        .collect(Collectors.toList());
-                
-                if (!blightedFoods.isEmpty()) {
-                    return Rs2Inventory.interact(blightedFoods.get(0), "eat");
-                }
-            } else if (foods.get(0).getName().toLowerCase().contains("jug of wine")) {
-                return Rs2Inventory.interact(foods.get(0), "drink");
-            } else {
-                return Rs2Inventory.interact(foods.get(0), "eat");
-            }
+        if (foods.isEmpty()) return false;
+
+        boolean inWilderness = Microbot.getVarbitValue(Varbits.IN_WILDERNESS) == 1;
+
+        Rs2Item foodToUse = foods.stream()
+                .filter(rs2Item -> inWilderness && rs2Item.getName().toLowerCase().contains("blighted"))
+                .findFirst()
+                .orElse(foods.get(0));
+
+        if (foodToUse.getName().toLowerCase().contains("jug of wine")) {
+            return Rs2Inventory.interact(foodToUse, "drink");
         }
-        return false;
+
+        return Rs2Inventory.interact(foodToUse, "eat");
     }
 
     /**
@@ -830,7 +832,7 @@ public class Rs2Player {
 
     /**
      * Drink prayer potion at prayer point level
-     *
+     * PrayerRenegrationPotion gets priority over prayer/restore potions
      * @param prayerPoints
      * @return
      */
@@ -838,6 +840,15 @@ public class Rs2Player {
         // Check if current prayer level is below or equal to the threshold
         if (Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER) > prayerPoints) {
             return false;
+        }
+
+        Rs2Item prayerRegenerationPotion = Rs2Inventory.items().stream()
+                .filter(x -> x.getName().toLowerCase().contains(Rs2Potion.getPrayerRegenerationPotion().toLowerCase()) && !x.isNoted())
+                .findFirst()
+                .orElse(null);
+
+        if (prayerRegenerationPotion != null && !Rs2Player.hasPrayerRegenerationActive()) {
+            return Rs2Inventory.interact(prayerRegenerationPotion, "drink");
         }
 
         // Attempt to drink a prayer potion
@@ -993,9 +1004,9 @@ public class Rs2Player {
     private static boolean usePotion(String... itemNames) {
         if (Rs2Inventory.contains(x -> Arrays.stream(itemNames).anyMatch(name -> x.name.contains(name) && !x.isNoted()))) {
             Rs2Item potion = Rs2Inventory.get(Arrays.stream(itemNames).collect(Collectors.toList()),false);
-            if (potion != null) {
-                return Rs2Inventory.interact(potion, "drink");
-            }
+            if (potion == null) return false;
+
+            return Rs2Inventory.interact(potion, "drink");
         }
         return false;
     }
