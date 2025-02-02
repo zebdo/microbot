@@ -118,7 +118,7 @@ public class Rs2Bank {
     public static boolean isOpen() {
         if (isBankPinWidgetVisible()) {
             try {
-                if ((Login.activeProfile.getBankPin() == null || Login.activeProfile.getBankPin().isEmpty())) {
+                if ((Login.activeProfile.getBankPin() == null || Login.activeProfile.getBankPin().isEmpty()) || Login.activeProfile.getBankPin().equalsIgnoreCase("**bankpin**")) {
                     return false;
                 }
                 handleBankPin(Encryption.decrypt(Login.activeProfile.getBankPin()));
