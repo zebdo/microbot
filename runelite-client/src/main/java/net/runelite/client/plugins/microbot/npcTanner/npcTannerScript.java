@@ -77,7 +77,8 @@ public class npcTannerScript extends Script {
             Rs2Walker.walkTo(Tanman);
             sleep(1000,3000);
         } else {
-            if(Rs2Widget.getWidget(21233756)!=null){
+            if(Rs2Widget.getWidget(21233756)!=null || Rs2Widget.getWidget(21233753)!=null){
+                Microbot.log("Tanning All");
                 if(whattotan.equals("Cowhide")){
                     Widget tagetWidget = Rs2Widget.getWidget(21233756);
                     Rs2Widget.clickWidget(tagetWidget);
