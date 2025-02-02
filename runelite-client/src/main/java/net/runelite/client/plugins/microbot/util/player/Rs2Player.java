@@ -535,6 +535,7 @@ public class Rs2Player {
         boolean inWilderness = Microbot.getVarbitValue(Varbits.IN_WILDERNESS) == 1;
 
         Rs2Item foodToUse = foods.stream()
+                .filter(rs2Item -> !rs2Item.isNoted())
                 .filter(rs2Item -> inWilderness && rs2Item.getName().toLowerCase().contains("blighted"))
                 .findFirst()
                 .orElse(foods.get(0));
@@ -834,32 +835,22 @@ public class Rs2Player {
      * Drink prayer potion at prayer point level
      * PrayerRenegrationPotion gets priority over prayer/restore potions
      * @param prayerPoints
-     * @return
+     * @return true if prayer potion, prayer regen potion or blighted super restore was used, otherwise false.
      */
     public static boolean drinkPrayerPotionAt(int prayerPoints) {
         // Check if current prayer level is below or equal to the threshold
-        if (Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER) > prayerPoints) {
-            return false;
-        }
+        if (Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER) > prayerPoints) return false;
 
-        Rs2Item prayerRegenerationPotion = Rs2Inventory.items().stream()
-                .filter(x -> x.getName().toLowerCase().contains(Rs2Potion.getPrayerRegenerationPotion().toLowerCase()) && !x.isNoted())
-                .findFirst()
-                .orElse(null);
+        boolean inWilderness = Microbot.getVarbitValue(Varbits.IN_WILDERNESS) == 1;
 
-        if (prayerRegenerationPotion != null && !Rs2Player.hasPrayerRegenerationActive()) {
-            return Rs2Inventory.interact(prayerRegenerationPotion, "drink");
-        }
+        // Prioritize Prayer Regeneration Potion if effect is not active
+        if (!Rs2Player.hasPrayerRegenerationActive() && usePotion(Rs2Potion.getPrayerRegenerationPotion())) return true;
 
-        // Attempt to drink a prayer potion
-        if (usePotion(Rs2Potion.getPrayerPotionsVariants().toArray(new String[0]))){
-            return true;
-        }
+        // If in Wilderness, prioritize Blighted Super Restore
+        if (inWilderness) return usePotion("blighted super restore");
 
-        // If in wilderness, attempt to drink a blighted super restore potion
-        if (Microbot.getVarbitValue(Varbits.IN_WILDERNESS) == 1) {
-            return usePotion(ItemID.BLIGHTED_SUPER_RESTORE1, ItemID.BLIGHTED_SUPER_RESTORE2, ItemID.BLIGHTED_SUPER_RESTORE3, ItemID.BLIGHTED_SUPER_RESTORE4);
-        }
+        // Use a standard prayer potion from the available variants
+        if (usePotion(Rs2Potion.getPrayerPotionsVariants().toArray(new String[0]))) return true;
 
         return false;
     }
@@ -1002,13 +993,13 @@ public class Rs2Player {
      * @return true if an item was found and interacted with; false otherwise.
      */
     private static boolean usePotion(String... itemNames) {
-        if (Rs2Inventory.contains(x -> Arrays.stream(itemNames).anyMatch(name -> x.name.contains(name) && !x.isNoted()))) {
-            Rs2Item potion = Rs2Inventory.get(Arrays.stream(itemNames).collect(Collectors.toList()),false);
-            if (potion == null) return false;
+        Rs2Item potion = Rs2Inventory.get(item ->
+                !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase()))
+        );
 
-            return Rs2Inventory.interact(potion, "drink");
-        }
-        return false;
+        if (potion == null) return false;
+
+        return Rs2Inventory.interact(potion, "drink");
     }
 
 
