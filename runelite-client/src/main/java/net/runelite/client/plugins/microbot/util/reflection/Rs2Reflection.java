@@ -202,7 +202,9 @@ public class Rs2Reflection {
         }
         return null;
     }
-
+    
+    /*
+        Missing Class Account.java
     public static void setLoginWithJagexAccount(boolean login, Account account) {
         Microbot.getClientThread().invokeLater(() -> {
             if (Microbot.getClient().getGameState() != GameState.LOGIN_SCREEN) {
@@ -244,5 +246,6 @@ public class Rs2Reflection {
             }
         });
     }
+     */
 }
 
