@@ -3456,6 +3456,7 @@
 3474 3221 0	3473 3221 0	Jump-over;Low fence;12776			In Aid of the Myreque		5	
 3473 3221 0	3475 3221 0	Jump-over;Low fence;12776			In Aid of the Myreque		5	
 3491 3230 0	3491 3231 0	Climb-over;Broken wall;12737					3	
+3491 3231 0	3491 3230 0	Climb-over;Broken wall;12737					3	
 3490 3232 0	3490 9631 0	Climb-down;Trapdoor;12743					2	
 3490 9631 0	3490 3232 0	Climb-up;Ladder;12779					2	
 								
