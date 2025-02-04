@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot;
 
 import lombok.Getter;
+import net.runelite.client.plugins.microbot.util.events.BankTutorialEvent;
 import net.runelite.client.plugins.microbot.util.events.DisableLevelUpInterfaceEvent;
 import net.runelite.client.plugins.microbot.util.events.WelcomeScreenEvent;
 
@@ -15,6 +16,7 @@ public class BlockingEventManager {
     public BlockingEventManager() {
         blockingEvents.add(new WelcomeScreenEvent());
         blockingEvents.add(new DisableLevelUpInterfaceEvent());
+        blockingEvents.add(new BankTutorialEvent());
         sortBlockingEvents();
     }
     
