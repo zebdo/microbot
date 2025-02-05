@@ -2,25 +2,28 @@
 
 package net.runelite.client.plugins.microbot.blastoisefurnace;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import net.runelite.api.*;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 
-import net.runelite.api.ItemID;
-import net.runelite.api.ObjectID;
-import net.runelite.api.Varbits;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.blastoisefurnace.enums.Bars;
 import net.runelite.client.plugins.microbot.blastoisefurnace.enums.State;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
+import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
+import net.runelite.client.plugins.microbot.util.mouse.VirtualMouse;
+import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -106,6 +109,10 @@ public class BlastoiseFurnaceScript extends Script {
                             Rs2Bank.withdrawItem(ItemID.COAL_BAG_12019);
                         }
 
+                        if (Rs2Inventory.onlyContains(COAL)) {
+                            Rs2Bank.depositAll(COAL);
+                        }
+
                         if (config.getBars().isRequiresGoldsmithGloves()) {
                             hasGauntlets = Rs2Inventory.contains(ItemID.GOLDSMITH_GAUNTLETS) || Rs2Equipment.isWearing(ItemID.GOLDSMITH_GAUNTLETS);
                             if (!hasGauntlets) {
@@ -147,25 +154,38 @@ public class BlastoiseFurnaceScript extends Script {
 
                             while (true) {
                                 if (hasGauntlets && super.run()) {
-                                    Rs2Keyboard.keyPress(32);
+                                    while(!Rs2Inventory.contains(config.getBars().getBarID()) &&
+                                            super.run() &&
+                                                !Rs2Inventory.isFull()) {
+                                        Rs2Keyboard.keyPress(32);
 
-                                    if (config.getBars().isRequiresGoldsmithGloves()) {
-                                        Rs2Inventory.interact(ItemID.GOLDSMITH_GAUNTLETS, "Wear");
+                                        if (config.getBars().isRequiresGoldsmithGloves()) {
+                                            Rs2Inventory.interact(ItemID.GOLDSMITH_GAUNTLETS, "Wear");
+                                        }
+
+                                        sleepUntil(() -> Rs2Inventory.contains(config.getBars().getBarID()), 2000);
+                                        if(Rs2Inventory.contains(config.getBars().getBarID())){
+                                            break;
+                                        }
+                                        if(!super.run()){
+                                            break;
+                                        }
+                                        if(Rs2Inventory.isFull()){
+                                            break;
+                                        }
                                     }
-
-                                    sleepUntil(() -> Rs2Inventory.contains(config.getBars().getBarID()), 2000);
                                     break;
                                 }
 
                                 // Check if the inventory is full before interacting with the dispenser
                                 if (!Rs2Inventory.isFull()) {
-                                    Rs2GameObject.interact(BAR_DISPENSER, "Take");
+                                        Rs2GameObject.interact(BAR_DISPENSER, "Take");
 
-                                    hasGauntlets = sleepUntil(
-                                            () -> Rs2Widget.hasWidget("How many would you like"),
-                                            () -> Rs2Player.isMoving(),
-                                            600
-                                    );
+                                        hasGauntlets = sleepUntil(
+                                                () -> Rs2Widget.hasWidget("How many would you like"),
+                                                () -> Rs2Player.isMoving(),
+                                                600
+                                        );
                                 } else {
                                     System.out.println("Inventory is full, stopping interaction.");
                                     break; // Stop taking if the inventory is full
@@ -472,17 +492,221 @@ public class BlastoiseFurnaceScript extends Script {
         }
     }
 
+    private void payForeman(){
+        if(!Rs2Inventory.contains("Coins")){
+            while(!Rs2Inventory.contains("Coins")){
+                if(!Rs2Bank.isOpen()){
+                    Rs2Bank.walkToBankAndUseBank(BankLocation.BLAST_FURNACE_BANK);
+                }
+                if(Rs2Bank.isOpen()){
+                    if(Rs2Inventory.isFull()){
+                        if(Rs2Inventory.contains(config.getBars().getPrimaryOre())){
+                            Rs2Bank.depositOne(config.getBars().getPrimaryOre());
+                            sleep(1000,3000);
+                        }
+                        if(Rs2Inventory.contains(COAL)){
+                            Rs2Bank.depositOne(COAL);
+                            sleep(1000,3000);
+                        }
+                        if(Rs2Inventory.contains(config.getBars().getBarID())){
+                            Rs2Bank.depositOne(config.getBars().getBarID());
+                            sleep(1000,3000);
+                        }
+                    }
+                    if(!Rs2Inventory.isFull()&&!Rs2Inventory.contains("Coins")){
+                        Rs2Bank.withdrawX("Coins", 15000);
+                        sleep(1000,3000);
+                    }
+                    if(Rs2Inventory.contains("Coins")){
+                        break;
+                    }
+                }
+            }
+            while(Rs2Inventory.contains("Coins")){
+                if(Rs2Inventory.get("Coins").getQuantity() >= 14500){
+                    // we need to give the foreman 2,500.
+                    while(Rs2Inventory.get("Coins").getQuantity() >= 14500){
+                        NPC foreman = Rs2Npc.getNpc("Blast Furnace Foreman");
+                        if(Rs2Dialogue.isInDialogue()){
+                            if(Rs2Dialogue.hasContinue()){
+                                Rs2Dialogue.clickContinue();
+                                sleep(600,3000);
+                            }
+                            if(Rs2Dialogue.getDialogueOption("Yes") !=null){
+                                Rs2Dialogue.clickOption("Yes");
+                                sleep(600,3000);
+                            }
+                        } else {
+                            Rs2Npc.interact(foreman, "Pay");
+                            sleep(600,3000);
+                        }
+                    }
+                }
+                if(Rs2Inventory.get("Coins").getQuantity() < 14500){
+                    Microbot.log("Putting what we have left in the coffer.");
+                    WorldPoint cofferwp  =(new WorldPoint(1946, 4957, 0));
+                    Microbot.log("Found coffer at."+cofferwp);
+                    if(!Rs2Dialogue.isInDialogue()){
+                        if(Rs2Bank.isOpen()){
+                            Microbot.log("Accidentally clicked the bank, closing it.");
+                        }
+                        Microbot.log("Interacting with the coffer.");
+                        Rs2Walker.walkCanvas(cofferwp);
+                        VirtualMouse vm = new VirtualMouse();
+                        sleep(600,3000);
+                        if(!Rs2Dialogue.isInDialogue()) {
+                            vm.click();
+                            sleep(600,3000);
+                        }
+                    } else {
+                        Microbot.log("Entering the amount of coins left.");
+                        if(Rs2Dialogue.isInDialogue()) {
+                            if (Rs2Dialogue.hasContinue()) {
+                                Rs2Dialogue.clickContinue();
+                                sleep(600, 3000);
+                            }
+                            if (Rs2Dialogue.hasSelectAnOption()) {
+                                String amount = Integer.toString(Rs2Inventory.get("Coins").getQuantity());
+                                Rs2Dialogue.clickOption("Deposit coins.");
+                                sleep(2000, 3000);
+                                Rs2Keyboard.typeString(amount);
+                                sleep(600, 3000);
+                                Rs2Keyboard.enter();
+                                sleep(2000, 3000);
+                                while (Rs2Dialogue.hasContinue()) {
+                                    Rs2Dialogue.clickContinue();
+                                    sleep(600, 3000);
+                                    if(!super.run() || !Rs2Dialogue.isInDialogue()){
+                                        break;
+                                    }
+                                }
+                            }
+                            if(!Rs2Inventory.contains("Coins") || !super.run()){
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private void refillCoffer(){
+        if(!Rs2Inventory.contains("Coins")){
+            while(!Rs2Inventory.contains("Coins")){
+                if(!Rs2Bank.isOpen()){
+                    Rs2Bank.walkToBankAndUseBank(BankLocation.BLAST_FURNACE_BANK);
+                }
+                if(Rs2Bank.isOpen()){
+                    if(Rs2Inventory.isFull()){
+                        if(Rs2Inventory.contains(config.getBars().getPrimaryOre())){
+                            Rs2Bank.depositOne(config.getBars().getPrimaryOre());
+                            sleep(1000,3000);
+                        }
+                        if(Rs2Inventory.contains(COAL)){
+                            Rs2Bank.depositOne(COAL);
+                            sleep(1000,3000);
+                        }
+                        if(Rs2Inventory.contains(config.getBars().getBarID())){
+                            Rs2Bank.depositOne(config.getBars().getBarID());
+                            sleep(1000,3000);
+                        }
+                    }
+                    if(!Rs2Inventory.isFull()&&!Rs2Inventory.contains("Coins")){
+                        Rs2Bank.withdrawX("Coins", 50000);
+                        sleep(1000,3000);
+                    }
+                    if(Rs2Inventory.contains("Coins")){
+                        if(Rs2Bank.isOpen()){
+                            Rs2Bank.closeBank();
+                            Microbot.log("Closing the bank.");
+                            sleep(1000,3000);
+                        }
+                        break;
+                    }
+                }
+            }
+            while(Rs2Inventory.contains("Coins")){
+                if(Rs2Inventory.get("Coins").getQuantity() > 30000){
+                    Microbot.log("Putting what we have left in the coffer.");
+                    WorldPoint cofferwp  =(new WorldPoint(1946, 4957, 0));
+                    Microbot.log("Found coffer at."+cofferwp);
+                    if(!Rs2Dialogue.isInDialogue()){
+                        if(Rs2Bank.isOpen()){
+                            Microbot.log("Accidentally clicked the bank, closing it.");
+                            Rs2Bank.closeBank();
+                            sleep(1000,3000);
+                        }
+                        Microbot.log("Interacting with the coffer.");
+                        Rs2Walker.walkCanvas(cofferwp);
+                        VirtualMouse vm = new VirtualMouse();
+                        sleep(600,3000);
+                        if(!Rs2Dialogue.isInDialogue()) {
+                            vm.click();
+                            sleep(600,3000);
+                        }
+                    } else {
+                        Microbot.log("Entering the amount of coins left.");
+                        if(Rs2Dialogue.isInDialogue()) {
+                            if (Rs2Dialogue.hasContinue()) {
+                                Rs2Dialogue.clickContinue();
+                                sleep(600, 3000);
+                            }
+                            if (Rs2Dialogue.hasSelectAnOption()) {
+                                String amount = Integer.toString(Rs2Inventory.get("Coins").getQuantity());
+                                Rs2Dialogue.clickOption("Deposit coins.");
+                                sleep(2000, 3000);
+                                Rs2Keyboard.typeString(amount);
+                                sleep(600, 3000);
+                                Rs2Keyboard.enter();
+                                sleep(2000, 3000);
+                                while (Rs2Dialogue.hasContinue()) {
+                                    Rs2Dialogue.clickContinue();
+                                    sleep(600, 3000);
+                                    if(!super.run() || !Rs2Dialogue.isInDialogue()){
+                                        break;
+                                    }
+                                }
+                            }
+                            if(!Rs2Inventory.contains("Coins") || !super.run()){
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     private void depositOre() {
 
         Rs2GameObject.interact(ObjectID.CONVEYOR_BELT, "Put-ore-on");
-        sleepUntil(() -> !Rs2Inventory.isFull(), 7000); // Wait until the player stops moving
+        sleepUntil(() -> Rs2Player.isMoving(), 1500); // Wait until the player is moving
+        sleepUntil(() -> (!Rs2Inventory.isFull() && !Rs2Player.isMoving()) || (Rs2Dialogue.hasContinue() && !Rs2Player.isMoving()), 14000); // Wait until the player stops moving
+
+        if(Rs2Dialogue.hasContinue() && Rs2Player.getRealSkillLevel(Skill.SMITHING) <60){
+            Microbot.log("We need to pay the foreman & refill the coffer");
+            payForeman();
+            // rerun depositOre() to resume the where we left off
+            depositOre();
+            return;
+        }
+
+        if(Rs2Dialogue.hasContinue() && Rs2Player.getRealSkillLevel(Skill.SMITHING) >=60){
+            Microbot.log("We need to refill the coffer");
+            refillCoffer();
+            // rerun depositOre() to resume the where we left off
+            depositOre();
+            return;
+        }
 
         if (this.config.getBars().isRequiresCoalBag()) {
             Rs2Inventory.interact(ItemID.COAL_BAG_12019, "Empty");
-            sleepUntil(() -> Rs2Inventory.isFull(), 1000); // Wait for animation to finish
+            sleepUntil(() -> Rs2Inventory.isFull(), 2000); // Wait for animation to finish
 
             Rs2GameObject.interact(ObjectID.CONVEYOR_BELT, "Put-ore-on");
-            sleepUntil(() -> !Rs2Inventory.isFull(), 2000); // Wait until the player stops moving
+            sleepUntil(() -> Rs2Player.isMoving(), 1500); // Wait until the player is moving
+            sleepUntil(() -> (!Rs2Inventory.isFull() && !Rs2Player.isMoving()) || (Rs2Dialogue.hasContinue() && !Rs2Player.isMoving()), 14000); // Wait until the player stops moving
         }
     }
 
