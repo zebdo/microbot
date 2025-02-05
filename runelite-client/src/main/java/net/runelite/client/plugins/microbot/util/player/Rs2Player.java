@@ -1214,6 +1214,7 @@ public class Rs2Player {
         return Microbot.getClient().getEnergy() / 100;
     }
 
+
     /**
      * Returns true if a player has stamina effect active
      *
@@ -1287,6 +1288,25 @@ public class Rs2Player {
 
     public static boolean cast(Player player) { return invokeMenu(player, "cast"); }
 
+    /**
+     *
+     * @param player
+     * SELECTS 'USE' OPTION ON PLAYER FOR ITEM THAT'S ALREADY SELECTED via Rs2Inventory.use(item).
+     */
+    public static boolean use(Player player) {
+        return invokeMenu(player, "use");
+    }
+
+    /**
+     *
+     * @param player
+     * SELECTS 'CHALLENGE' OPTION ON PLAYER FOR SOULWARS.
+     */
+
+    public static boolean challenge(Player player) {
+        return invokeMenu(player, "challenge");
+    }
+
     public static boolean follow(Player player) {
         return invokeMenu(player, "follow");
     }
@@ -1308,16 +1328,19 @@ public class Rs2Player {
         // Determine the appropriate menu action based on the action string
         MenuAction menuAction = MenuAction.CC_OP;
 
-        if (action.equalsIgnoreCase("attack")) {
+        if(action.equalsIgnoreCase("attack")) {
             menuAction = MenuAction.PLAYER_SECOND_OPTION;
         } else if (action.equalsIgnoreCase("walk here")) {
             menuAction = MenuAction.WALK;
         } else if (action.equalsIgnoreCase("follow")) {
             menuAction = MenuAction.PLAYER_THIRD_OPTION;
+        } else if (action.equalsIgnoreCase("challenge")) {
+            menuAction = MenuAction.PLAYER_FIRST_OPTION;
         } else if (action.equalsIgnoreCase("trade with")) {
             menuAction = MenuAction.PLAYER_FOURTH_OPTION;
-        }
-        else if (action.equalsIgnoreCase("cast")) {
+        } else if (action.equalsIgnoreCase("cast")) {
+            menuAction = MenuAction.WIDGET_TARGET_ON_PLAYER;
+        }else if (action.equalsIgnoreCase("use")) {
             menuAction = MenuAction.WIDGET_TARGET_ON_PLAYER;
         }
 
