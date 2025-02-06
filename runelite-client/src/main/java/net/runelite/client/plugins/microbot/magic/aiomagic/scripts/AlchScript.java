@@ -78,7 +78,7 @@ public class AlchScript extends Script {
                             Microbot.log("Missing alch items...");
                             return;
                         }
-                        int inventorySlot = Rs2Player.getRealSkillLevel(Skill.MAGIC) >= 55 ? 11 : 4;
+                        int inventorySlot = Rs2Player.getRealSkillLevel(Skill.MAGIC) >= 55 ? 4 : 4;
                         if (alchItem.getSlot() != inventorySlot) {
                             Rs2Inventory.moveItemToSlot(alchItem, inventorySlot);
                             return;
