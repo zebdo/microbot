@@ -89,15 +89,15 @@ public class Rs2UiHelper {
     }
     
     public static Rectangle getTileClickbox(Tile tile) {
-        if (tile == null) return null;
+        if (tile == null) return new Rectangle(1, 1);
 
         LocalPoint localPoint = tile.getLocalLocation();
-        if (localPoint == null) return null;
+        if (localPoint == null) return new Rectangle(1, 1);
 
         // Get the screen point of the tile center
         Point screenPoint = Perspective.localToCanvas(Microbot.getClient(), localPoint, Microbot.getClient().getPlane());
 
-        if (screenPoint == null) return null; 
+        if (screenPoint == null) return new Rectangle(1, 1); 
         
         int tileSize = Perspective.LOCAL_TILE_SIZE;
         int halfSize = tileSize / 4;

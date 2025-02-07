@@ -104,11 +104,12 @@ public class OuraniaScript extends Script {
                             return;
                         }
                         
-                        NPC eniola = Rs2Npc.getNpc(NpcID.ENIOLA);
-                        if (eniola == null) return;
-                        boolean isBankOpen = Rs2Npc.interact(eniola, "bank");
-                        
-                        if (!isBankOpen || !Rs2Bank.isOpen()) return;
+                        if (!Rs2Bank.isOpen()) {
+                            NPC eniola = Rs2Npc.getNpc(NpcID.ENIOLA);
+                            if (eniola == null) return;
+                            Rs2Npc.interact(eniola, "bank");
+                            return;
+                        }
                         
                         plugin.calcuateProfit();
                         
