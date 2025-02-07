@@ -74,8 +74,9 @@ public class npcTannerScript extends Script {
     public void WalkToandTan(){
         WorldPoint Tanman =(new WorldPoint(3273, 3192, 0));
         if(Rs2Player.distanceTo(Tanman)>=6){
-            Rs2Walker.walkTo(Tanman);
-            sleep(1000,3000);
+            if(Rs2Walker.walkTo(Tanman)){
+                sleep(1000,3000);
+            }
         } else {
             if(Rs2Widget.getWidget(21233756)!=null || Rs2Widget.getWidget(21233753)!=null){
                 Microbot.log("Tanning All");
@@ -101,8 +102,9 @@ public class npcTannerScript extends Script {
                 }
             } else {
                 Microbot.status="Tanning: "+npcTannerScript.whattotan;
-                Rs2Npc.interact(Rs2Npc.getNpc("Ellis"), "Trade");
-                sleep(1000, 3000);
+                if(Rs2Npc.interact(Rs2Npc.getNpc("Ellis"), "Trade")){
+                    sleep(1000, 3000);
+                }
             }
 
         }
@@ -196,8 +198,9 @@ public class npcTannerScript extends Script {
                         if (Rs2Player.distanceTo(nearBank.getWorldPoint()) <= 10) {
                             break;
                         }
-                        Rs2Walker.walkTo(nearBank.getWorldPoint());
-                        sleep(1000, 5000);
+                        if(Rs2Walker.walkTo(nearBank.getWorldPoint())){
+                            sleep(1000, 5000);
+                        }
                     }
                 } else {
                     // We're at the bank
