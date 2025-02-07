@@ -8,9 +8,11 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.devtools.MovementFlag;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.CollisionMap;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldArea;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import org.apache.commons.lang3.tuple.MutablePair;
@@ -995,5 +997,27 @@ public abstract class Rs2Tile implements Tile{
             checkpointTileNumber++;
         }
         return checkpointTiles;
+    }
+
+    /**
+     * Hovers over the given tile using the natural mouse.
+     *
+     * @param tile The tile to hover over.
+     * @return True if successfully hovered, otherwise false.
+     */
+    public static boolean hoverOverTile(Tile tile) {
+        if (!Rs2AntibanSettings.naturalMouse) {
+            if (Rs2AntibanSettings.devDebug)
+                Microbot.log("Natural mouse is not enabled, can't hover");
+            return false;
+        }
+
+        Point point = Rs2UiHelper.getClickingPoint(Rs2UiHelper.getTileClickbox(tile), true);
+
+        // If the point is 1,1 then the tile is not on screen and we should return false
+        if (point.getX() == 1 && point.getY() == 1) return false;
+
+        Microbot.getNaturalMouse().moveTo(point.getX(), point.getY());
+        return true;
     }
 }
