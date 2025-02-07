@@ -203,6 +203,12 @@ public class Rs2Reflection {
         return null;
     }
 
+
+    /**
+     * Login with another jagex account without restarting client
+     * @param login
+     * @param account
+     */
     public static void setLoginWithJagexAccount(boolean login, Account account) {
         Microbot.getClientThread().invokeLater(() -> {
             if (Microbot.getClient().getGameState() != GameState.LOGIN_SCREEN) {
@@ -244,5 +250,6 @@ public class Rs2Reflection {
             }
         });
     }
+
 }
 
