@@ -514,21 +514,29 @@ public class Rs2Magic {
         // Get the required runes for the spell
         Map<Runes, Integer> requiredRunes = new HashMap<>(spell.getRequiredRunes());
         // Check if we have a staff equipped that provides the runes
-        Rs2Staff equippedStaff = getRs2Staff(Rs2Equipment.get(EquipmentInventorySlot.WEAPON).getId());
-        // If we have a staff equipped that provides the runes, remove them from the required runes
-        if (equippedStaff != Rs2Staff.NONE) {
-            for (Runes rune : equippedStaff.getRunes()) {
-                requiredRunes.remove(rune);
+        Rs2Item equippedWeaponItem = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
+        if (equippedWeaponItem != null) {
+            Rs2Staff equippedStaff = getRs2Staff(equippedWeaponItem.getId());
+            // If we have a staff equipped that provides the runes, remove them from the required runes
+            if (equippedStaff != Rs2Staff.NONE) {
+                for (Runes rune : equippedStaff.getRunes()) {
+                    requiredRunes.remove(rune);
+                }
             }
         }
+       
         // Check if we have a tome equipped that provides the runes
-        Rs2Tome equippedTome = getRs2Tome(Rs2Equipment.get(EquipmentInventorySlot.SHIELD).getId());
-        // If we have a tome equipped that provides the runes, remove them from the required runes
-        if (equippedTome != Rs2Tome.NONE) {
-            for (Runes rune : equippedTome.getRunes()) {
-                requiredRunes.remove(rune);
+        Rs2Item equippedShieldItem = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
+        if (equippedShieldItem != null) {
+            Rs2Tome equippedTome = getRs2Tome(equippedShieldItem.getId());
+            // If we have a tome equipped that provides the runes, remove them from the required runes
+            if (equippedTome != Rs2Tome.NONE) {
+                for (Runes rune : equippedTome.getRunes()) {
+                    requiredRunes.remove(rune);
+                }
             }
         }
+        
 
         // Setup a map to store the available runes in our inventory
         Map<Runes, Integer> availableRunes = new HashMap<>();
@@ -636,17 +644,33 @@ public class Rs2Magic {
      * Checks if the player has the required runes to cast a specified spell.
      *
      * @param spell          The spell to cast, represented as an {@link Rs2Spells} enum.
-     * @param checkRunePouch A boolean indicating whether to include runes from the rune pouch in the check.
      * @return true if all required runes (including staff-provided runes) are available; false otherwise.
      */
-    public static boolean hasRequiredRunes(Rs2Spells spell, boolean checkRunePouch) {
+    public static boolean hasRequiredRunes(Rs2Spells spell) {
         // Get the required runes for the spell
         Map<Runes, Integer> requiredRunes = new HashMap<>(spell.getRequiredRunes());
-        
-        Rs2Staff equippedStaff = getRs2Staff(Rs2Equipment.get(EquipmentInventorySlot.WEAPON).getId());
-        if (equippedStaff != null) {
-            for (Runes providedRune : equippedStaff.getRunes()) {
-                requiredRunes.remove(providedRune);
+
+        // Check if we have a staff equipped that provides the runes
+        Rs2Item equippedWeaponItem = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
+        if (equippedWeaponItem != null) {
+            Rs2Staff equippedStaff = getRs2Staff(equippedWeaponItem.getId());
+            // If we have a staff equipped that provides the runes, remove them from the required runes
+            if (equippedStaff != Rs2Staff.NONE) {
+                for (Runes rune : equippedStaff.getRunes()) {
+                    requiredRunes.remove(rune);
+                }
+            }
+        }
+
+        // Check if we have a tome equipped that provides the runes
+        Rs2Item equippedShieldItem = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
+        if (equippedShieldItem != null) {
+            Rs2Tome equippedTome = getRs2Tome(equippedShieldItem.getId());
+            // If we have a tome equipped that provides the runes, remove them from the required runes
+            if (equippedTome != Rs2Tome.NONE) {
+                for (Runes rune : equippedTome.getRunes()) {
+                    requiredRunes.remove(rune);
+                }
             }
         }
 
@@ -659,8 +683,8 @@ public class Rs2Magic {
                     .ifPresent(rune -> availableRunes.merge(rune, item.getQuantity(), Integer::sum));
         }
 
-        // Optionally include runes from the rune pouch
-        if (checkRunePouch) {
+        // Collect runes from the rune pouch if we have it in inventory
+        if (Rs2Inventory.hasRunePouch()) {
             RunePouch.getRunes().forEach((runeId, quantity) -> {
                 Arrays.stream(Runes.values())
                         .filter(rune -> rune.getItemId() == runeId)

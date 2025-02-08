@@ -99,7 +99,7 @@ public class OuraniaScript extends Script {
                             return;
                         }
                         
-                        if (Rs2Inventory.hasDegradedPouch() && Rs2Magic.hasRequiredRunes(Rs2Spells.NPC_CONTACT, true)) {
+                        if (Rs2Inventory.hasDegradedPouch() && Rs2Magic.hasRequiredRunes(Rs2Spells.NPC_CONTACT)) {
                             Rs2Magic.repairPouchesWithLunar();
                             return;
                         }
