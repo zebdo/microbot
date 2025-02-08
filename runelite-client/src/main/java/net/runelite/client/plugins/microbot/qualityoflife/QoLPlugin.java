@@ -432,7 +432,9 @@ public class QoLPlugin extends Plugin {
         }
 
         if (config.useQuickTeleportToHouse() && menuEntry.getOption().contains("Open") && menuEntry.getTarget().toLowerCase().contains("rune pouch")) {
-            addMenuEntry(event, "<col=FFA500>Teleport to House</col>", target, this::quickTeleportToHouse);
+            if (Rs2Magic.isModern()) {
+                addMenuEntry(event, "<col=FFA500>Teleport to House</col>", target, this::quickTeleportToHouse);
+            }
         }
 
         if (config.smartWorkbench() && menuEntry.getOption().contains("Work-at") && menuEntry.getIdentifier() == ObjectID.WORKBENCH_43754) {
