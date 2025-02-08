@@ -29,7 +29,7 @@
 	<parent>
 		<groupId>net.runelite</groupId>
 		<artifactId>runelite-parent</artifactId>
-		<version>1.10.49-SNAPSHOT</version>
+		<version>1.10.50-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>client</artifactId>
@@ -368,6 +368,13 @@
 					<exclude>logback.xml</exclude>
 				</excludes>
 				<filtering>true</filtering>
+			</resource>
+			<resource>
+				<directory>src/main/resources</directory>
+				<includes>
+					<include>logback.xml</include>
+				</includes>
+				<filtering>false</filtering>
 			</resource>
 		</resources>
 		<plugins>
