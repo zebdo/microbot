@@ -832,9 +832,8 @@ public class AnagramClue extends ClueScroll implements NpcClueScroll, ObjectClue
 	{
 		return locationProvider == null ? null : locationProvider.apply(plugin);
 	}
-
-	@VisibleForTesting
-	String getAnswer(ClueScrollPlugin plugin)
+	
+	public String getAnswer(ClueScrollPlugin plugin)
 	{
 		return answerProvider == null ? null : answerProvider.apply(plugin);
 	}
