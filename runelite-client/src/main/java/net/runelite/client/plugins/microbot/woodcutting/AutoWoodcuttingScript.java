@@ -32,7 +32,7 @@ enum State {
 
 public class AutoWoodcuttingScript extends Script {
 
-    public static String version = "1.6.3";
+    public static String version = "1.6.4";
     public boolean cannotLightFire = false;
 
     State state = State.WOODCUTTING;
