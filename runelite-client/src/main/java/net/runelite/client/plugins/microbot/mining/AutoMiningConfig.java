@@ -24,6 +24,20 @@ public interface AutoMiningConfig extends Config {
     )
     String generalSection = "general";
 
+    @ConfigSection(
+            name = "Dropping",
+            description = "Dropping settings",
+            position = 1
+    )
+    String droppingSection = "droppingSection";
+
+    @ConfigSection(
+            name = "Banking",
+            description = "Banking settings",
+            position = 2
+    )
+    String bankingSection = "bankingSection";
+
     @ConfigItem(
             keyName = "Ore",
             name = "Ore",
@@ -52,8 +66,8 @@ public interface AutoMiningConfig extends Config {
             keyName = "UseBank",
             name = "UseBank",
             description = "Use bank and walk back to original location",
-            position = 3,
-            section = generalSection
+            position = 0,
+            section = bankingSection
     )
     default boolean useBank()
     {
@@ -64,10 +78,21 @@ public interface AutoMiningConfig extends Config {
             keyName = "ItemsToBank",
             name = "Items to bank (Comma seperated)",
             description = "Items to bank",
-            position = 4
+            position = 1,
+            section = bankingSection
     )
     default String itemsToBank() {
         return "ore";
     }
 
+    @ConfigItem(
+            keyName = "itemsToKeep",
+            name = "Items to keep (Comma seperated)",
+            description = "Items to keep when dropping ore",
+            position = 0,
+            section = droppingSection
+    )
+    default String itemsToKeep() {
+        return "pickaxe";
+    }
 }
