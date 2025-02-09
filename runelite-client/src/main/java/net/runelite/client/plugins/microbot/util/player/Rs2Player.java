@@ -17,7 +17,7 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
@@ -529,12 +529,12 @@ public class Rs2Player {
     }
 
     public static boolean useFood() {
-        List<Rs2Item> foods = Rs2Inventory.getInventoryFood();
+        List<Rs2ItemModel> foods = Rs2Inventory.getInventoryFood();
         if (foods.isEmpty()) return false;
 
         boolean inWilderness = Microbot.getVarbitValue(Varbits.IN_WILDERNESS) == 1;
 
-        Rs2Item foodToUse = foods.stream()
+        Rs2ItemModel foodToUse = foods.stream()
                 .filter(rs2Item -> !rs2Item.isNoted())
                 .filter(rs2Item -> inWilderness && rs2Item.getName().toLowerCase().contains("blighted"))
                 .findFirst()
@@ -776,8 +776,8 @@ public class Rs2Player {
      * @return worldpoint
      */
     public static WorldPoint getWorldLocation() {
-        if (Microbot.getClient().isInInstancedRegion()) {
-            LocalPoint l = LocalPoint.fromWorld(Microbot.getClient(), Microbot.getClient().getLocalPlayer().getWorldLocation());
+        if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
+            LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation());
             WorldPoint playerInstancedWorldLocation = WorldPoint.fromLocalInstance(Microbot.getClient(), l);
             return playerInstancedWorldLocation;
         } else {
@@ -982,7 +982,7 @@ public class Rs2Player {
      * @return true if an item was found and interacted with; false otherwise.
      */
     private static boolean usePotion(Integer ...itemIds) {
-        Rs2Item potion = Rs2Inventory.get(item ->
+        Rs2ItemModel potion = Rs2Inventory.get(item ->
                 !item.isNoted() && Arrays.stream(itemIds).anyMatch(id -> id == item.getId())
         );
         
@@ -998,7 +998,7 @@ public class Rs2Player {
      * @return true if an item matching the IDs exists; false otherwise.
      */
     private static boolean hasPotion(Integer... itemIds) {
-        Rs2Item potion = Rs2Inventory.get(item ->
+        Rs2ItemModel potion = Rs2Inventory.get(item ->
                 !item.isNoted() && Arrays.stream(itemIds).anyMatch(id -> id == item.getId())
         );
         
@@ -1012,7 +1012,7 @@ public class Rs2Player {
      * @return true if an item was found and interacted with; false otherwise.
      */
     private static boolean usePotion(String... itemNames) {
-        Rs2Item potion = Rs2Inventory.get(item ->
+        Rs2ItemModel potion = Rs2Inventory.get(item ->
                 !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase()))
         );
 
@@ -1028,7 +1028,7 @@ public class Rs2Player {
      * @return true if an item matching the names exists; false otherwise.
      */
     private static boolean hasPotion(String... itemNames) {
-        Rs2Item potion = Rs2Inventory.get(item ->
+        Rs2ItemModel potion = Rs2Inventory.get(item ->
                 !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase()))
         );
         
@@ -1214,6 +1214,7 @@ public class Rs2Player {
         return Microbot.getClient().getEnergy() / 100;
     }
 
+
     /**
      * Returns true if a player has stamina effect active
      *
@@ -1287,6 +1288,25 @@ public class Rs2Player {
 
     public static boolean cast(Player player) { return invokeMenu(player, "cast"); }
 
+    /**
+     *
+     * @param player
+     * SELECTS 'USE' OPTION ON PLAYER FOR ITEM THAT'S ALREADY SELECTED via Rs2Inventory.use(item).
+     */
+    public static boolean use(Player player) {
+        return invokeMenu(player, "use");
+    }
+
+    /**
+     *
+     * @param player
+     * SELECTS 'CHALLENGE' OPTION ON PLAYER FOR SOULWARS.
+     */
+
+    public static boolean challenge(Player player) {
+        return invokeMenu(player, "challenge");
+    }
+
     public static boolean follow(Player player) {
         return invokeMenu(player, "follow");
     }
@@ -1308,16 +1328,19 @@ public class Rs2Player {
         // Determine the appropriate menu action based on the action string
         MenuAction menuAction = MenuAction.CC_OP;
 
-        if (action.equalsIgnoreCase("attack")) {
+        if(action.equalsIgnoreCase("attack")) {
             menuAction = MenuAction.PLAYER_SECOND_OPTION;
         } else if (action.equalsIgnoreCase("walk here")) {
             menuAction = MenuAction.WALK;
         } else if (action.equalsIgnoreCase("follow")) {
             menuAction = MenuAction.PLAYER_THIRD_OPTION;
+        } else if (action.equalsIgnoreCase("challenge")) {
+            menuAction = MenuAction.PLAYER_FIRST_OPTION;
         } else if (action.equalsIgnoreCase("trade with")) {
             menuAction = MenuAction.PLAYER_FOURTH_OPTION;
-        }
-        else if (action.equalsIgnoreCase("cast")) {
+        } else if (action.equalsIgnoreCase("cast")) {
+            menuAction = MenuAction.WIDGET_TARGET_ON_PLAYER;
+        }else if (action.equalsIgnoreCase("use")) {
             menuAction = MenuAction.WIDGET_TARGET_ON_PLAYER;
         }
 

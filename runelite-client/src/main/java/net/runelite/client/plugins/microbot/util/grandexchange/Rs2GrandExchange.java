@@ -11,9 +11,10 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -82,7 +83,7 @@ public class Rs2GrandExchange {
             if (Rs2Inventory.isItemSelected())
                 Microbot.getMouse().click();
             if (isOpen()) return true;
-            NPC npc = Rs2Npc.getNpc("Grand Exchange Clerk");
+            Rs2NpcModel npc = Rs2Npc.getNpc("Grand Exchange Clerk");
             if (npc == null) return false;
             Rs2Npc.interact(npc, "exchange");
             sleepUntil(Rs2GrandExchange::isOpen, 5000);
@@ -394,7 +395,7 @@ public class Rs2GrandExchange {
      * @return
      */
     public static boolean sellInventory() {
-        for (Rs2Item item : Rs2Inventory.items()) {
+        for (Rs2ItemModel item : Rs2Inventory.items()) {
 
             if (!item.isTradeable()) continue;
 

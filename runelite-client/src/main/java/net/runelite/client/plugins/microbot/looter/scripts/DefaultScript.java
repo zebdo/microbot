@@ -14,7 +14,7 @@ import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -152,7 +152,7 @@ public class DefaultScript extends Script {
                     if (config.looterStyle() == DefaultLooterStyle.ITEM_LIST) {
                         Rs2Bank.bankItemsAndWalkBackToOriginalPosition(Arrays.stream(config.listOfItemsToLoot().trim().split(",")).collect(Collectors.toList()), initialPlayerLocation, config.minFreeSlots());
                     } else {
-                        Rs2Bank.bankItemsAndWalkBackToOriginalPosition(Rs2Inventory.all().stream().map(Rs2Item::getName).collect(Collectors.toList()), initialPlayerLocation, config.minFreeSlots());
+                        Rs2Bank.bankItemsAndWalkBackToOriginalPosition(Rs2Inventory.all().stream().map(Rs2ItemModel::getName).collect(Collectors.toList()), initialPlayerLocation, config.minFreeSlots());
                     }
                     return;
                 }

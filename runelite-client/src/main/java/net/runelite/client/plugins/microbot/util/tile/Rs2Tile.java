@@ -24,7 +24,7 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public abstract class Rs2Tile implements Tile{
+public abstract class Rs2Tile implements Tile {
 
     @Getter
     public static List<MutablePair<WorldPoint, Integer>> dangerousGraphicsObjectTiles = new ArrayList<>();
@@ -305,7 +305,7 @@ public abstract class Rs2Tile implements Tile{
         int startX = 0;
         int startY = 0;
         int startPoint = 0;
-        if (Microbot.getClient().isInInstancedRegion()) {
+        if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
             LocalPoint localPoint = Rs2Player.getLocalLocation();
             startX = localPoint.getSceneX();
             startY = localPoint.getSceneY();
@@ -441,7 +441,7 @@ public abstract class Rs2Tile implements Tile{
         int baseY = 0;
         int x = 0;
         int y = 0;
-        if (Microbot.getClient().isInInstancedRegion()) {
+        if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
             LocalPoint localPoint = Rs2Player.getLocalLocation();
             x = localPoint.getSceneX();
             y = localPoint.getSceneY();
@@ -691,18 +691,18 @@ public abstract class Rs2Tile implements Tile{
      * @return The Tile at the specified coordinates, or null if the tile is invalid or not in the scene.
      */
     public static Tile getTile(int x, int y) {
-        WorldPoint worldPoint = new WorldPoint(x, y, Microbot.getClient().getPlane());
+        WorldPoint worldPoint = new WorldPoint(x, y, Microbot.getClient().getTopLevelWorldView().getPlane());
         LocalPoint localPoint;
 
-        if (Microbot.getClient().isInInstancedRegion()) {
+        if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
             localPoint = Rs2LocalPoint.fromWorldInstance(worldPoint);
         } else {
-            localPoint = LocalPoint.fromWorld(Microbot.getClient(), worldPoint);
+            localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), worldPoint);
         }
 
         if (localPoint == null) return null;
 
-        return Microbot.getClient().getScene().getTiles()[worldPoint.getPlane()][localPoint.getSceneX()][localPoint.getSceneY()];
+        return Microbot.getClient().getTopLevelWorldView().getScene().getTiles()[worldPoint.getPlane()][localPoint.getSceneX()][localPoint.getSceneY()];
     }
 
     /**
