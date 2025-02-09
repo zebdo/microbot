@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.mining;
 
 import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.mining.enums.Rocks;
+import net.runelite.client.plugins.microbot.util.inventory.InteractOrder;
 
 @ConfigGroup("Mining")
 @ConfigInformation("<h2>Auto Mining</h2>" +
@@ -86,10 +87,21 @@ public interface AutoMiningConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "dropOrder",
+            name = "Drop Order",
+            description = "Order for dropping items",
+            position = 0,
+            section = droppingSection
+    )
+    default InteractOrder interactOrder() {
+        return InteractOrder.STANDARD;
+    }
+
+    @ConfigItem(
             keyName = "itemsToKeep",
             name = "Items to keep (Comma seperated)",
             description = "Items to keep when dropping ore",
-            position = 0,
+            position = 1,
             section = droppingSection
     )
     default String itemsToKeep() {
