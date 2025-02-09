@@ -83,12 +83,17 @@ public class Rs2Npc {
      * @return
      */
     public static Stream<NPC> getNpcs(boolean isDead) {
-        Stream<NPC> npcs = Microbot.getClientThread().runOnClientThread(() -> Microbot.getClient().getNpcs().stream()
-                .filter(x -> x != null && x.getName() != null && isDead == x.isDead())
-                .sorted(Comparator.comparingInt(value -> value.getLocalLocation()
-                        .distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation()))));
+        List<NPC> npcList = Microbot.getClientThread().runOnClientThread(() ->
+                Microbot.getClient().getTopLevelWorldView().npcs().stream()
+                        .filter(Objects::nonNull)
+                        .filter(x -> x.getName() != null && isDead == x.isDead())
+                        .sorted(Comparator.comparingInt(value ->
+                                value.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation())
+                        ))
+                        .collect(Collectors.toList())
+        );
 
-        return npcs;
+        return npcList.stream();
     }
 
     /**
