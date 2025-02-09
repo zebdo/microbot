@@ -776,8 +776,8 @@ public class Rs2Player {
      * @return worldpoint
      */
     public static WorldPoint getWorldLocation() {
-        if (Microbot.getClient().isInInstancedRegion()) {
-            LocalPoint l = LocalPoint.fromWorld(Microbot.getClient(), Microbot.getClient().getLocalPlayer().getWorldLocation());
+        if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
+            LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation());
             WorldPoint playerInstancedWorldLocation = WorldPoint.fromLocalInstance(Microbot.getClient(), l);
             return playerInstancedWorldLocation;
         } else {
