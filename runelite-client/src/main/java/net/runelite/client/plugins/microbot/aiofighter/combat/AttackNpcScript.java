@@ -16,6 +16,7 @@ import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcManager;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
@@ -30,7 +31,7 @@ import java.util.stream.Collectors;
 public class AttackNpcScript extends Script {
 
     public static Actor currentNpc = null;
-    public static List<NPC> attackableNpcs = new ArrayList<>();
+    public static List<Rs2NpcModel> attackableNpcs = new ArrayList<>();
     private boolean messageShown = false;
 
     public static void skipNpc() {
@@ -85,7 +86,7 @@ public class AttackNpcScript extends Script {
                 }
 
                 if (!attackableNpcs.isEmpty()) {
-                    NPC npc = attackableNpcs.stream().findFirst().orElse(null);
+                    Rs2NpcModel npc = attackableNpcs.stream().findFirst().orElse(null);
 
                     if (!Rs2Camera.isTileOnScreen(npc.getLocalLocation()))
                         Rs2Camera.turnTo(npc);

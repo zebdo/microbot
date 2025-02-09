@@ -9,17 +9,14 @@ import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.Pouch;
 import net.runelite.client.plugins.microbot.runecrafting.ourania.enums.OuraniaState;
 import net.runelite.client.plugins.microbot.runecrafting.ourania.enums.Path;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
-import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
-import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Staff;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -136,7 +133,7 @@ public class OuraniaScript extends Script {
                             boolean hasEnergyRestorePotion = Rs2Bank.hasItem(Rs2Potion.getRestoreEnergyPotionsVariants());
 
                             if ((Rs2Player.hasStaminaBuffActive() && hasEnergyRestorePotion) || (!hasStaminaPotion && hasEnergyRestorePotion)) {
-                                Rs2Item energyRestoreItem = Rs2Bank.bankItems().stream()
+                                Rs2ItemModel energyRestoreItem = Rs2Bank.bankItems().stream()
                                         .filter(rs2Item -> Rs2Potion.getRestoreEnergyPotionsVariants().stream()
                                                 .anyMatch(variant -> rs2Item.getName().toLowerCase().contains(variant.toLowerCase())))
                                         .findFirst()
@@ -150,7 +147,7 @@ public class OuraniaScript extends Script {
 
                                 withdrawAndDrink(energyRestoreItem.getName());
                             } else if (hasStaminaPotion) {
-                                Rs2Item staminaPotionItem = Rs2Bank.bankItems().stream()
+                                Rs2ItemModel staminaPotionItem = Rs2Bank.bankItems().stream()
                                         .filter(rs2Item -> rs2Item.getName().toLowerCase().contains(Rs2Potion.getStaminaPotion().toLowerCase()))
                                         .findFirst()
                                         .orElse(null);

@@ -17,7 +17,7 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
@@ -529,12 +529,12 @@ public class Rs2Player {
     }
 
     public static boolean useFood() {
-        List<Rs2Item> foods = Rs2Inventory.getInventoryFood();
+        List<Rs2ItemModel> foods = Rs2Inventory.getInventoryFood();
         if (foods.isEmpty()) return false;
 
         boolean inWilderness = Microbot.getVarbitValue(Varbits.IN_WILDERNESS) == 1;
 
-        Rs2Item foodToUse = foods.stream()
+        Rs2ItemModel foodToUse = foods.stream()
                 .filter(rs2Item -> !rs2Item.isNoted())
                 .filter(rs2Item -> inWilderness && rs2Item.getName().toLowerCase().contains("blighted"))
                 .findFirst()
@@ -982,7 +982,7 @@ public class Rs2Player {
      * @return true if an item was found and interacted with; false otherwise.
      */
     private static boolean usePotion(Integer ...itemIds) {
-        Rs2Item potion = Rs2Inventory.get(item ->
+        Rs2ItemModel potion = Rs2Inventory.get(item ->
                 !item.isNoted() && Arrays.stream(itemIds).anyMatch(id -> id == item.getId())
         );
         
@@ -998,7 +998,7 @@ public class Rs2Player {
      * @return true if an item matching the IDs exists; false otherwise.
      */
     private static boolean hasPotion(Integer... itemIds) {
-        Rs2Item potion = Rs2Inventory.get(item ->
+        Rs2ItemModel potion = Rs2Inventory.get(item ->
                 !item.isNoted() && Arrays.stream(itemIds).anyMatch(id -> id == item.getId())
         );
         
@@ -1012,7 +1012,7 @@ public class Rs2Player {
      * @return true if an item was found and interacted with; false otherwise.
      */
     private static boolean usePotion(String... itemNames) {
-        Rs2Item potion = Rs2Inventory.get(item ->
+        Rs2ItemModel potion = Rs2Inventory.get(item ->
                 !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase()))
         );
 
@@ -1028,7 +1028,7 @@ public class Rs2Player {
      * @return true if an item matching the names exists; false otherwise.
      */
     private static boolean hasPotion(String... itemNames) {
-        Rs2Item potion = Rs2Inventory.get(item ->
+        Rs2ItemModel potion = Rs2Inventory.get(item ->
                 !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase()))
         );
         
