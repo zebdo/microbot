@@ -691,7 +691,7 @@ public abstract class Rs2Tile implements Tile {
      * @return The Tile at the specified coordinates, or null if the tile is invalid or not in the scene.
      */
     public static Tile getTile(int x, int y) {
-        WorldPoint worldPoint = new WorldPoint(x, y, Microbot.getClient().getLocalPlayer().getWorldLocation().getPlane());
+        WorldPoint worldPoint = new WorldPoint(x, y, Microbot.getClient().getTopLevelWorldView().getPlane());
         LocalPoint localPoint;
 
         if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {

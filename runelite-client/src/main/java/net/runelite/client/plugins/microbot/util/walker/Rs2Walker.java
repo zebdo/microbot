@@ -485,7 +485,7 @@ public class Rs2Walker {
 
         Rs2Player.toggleRunEnergy(toggleRun);
         Point canv;
-        LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient(), worldPoint);
+        LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), worldPoint);
 
         if (Microbot.getClient().getTopLevelWorldView().isInstance() && localPoint == null) {
             localPoint = Rs2LocalPoint.fromWorldInstance(worldPoint);
