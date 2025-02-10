@@ -59,8 +59,13 @@ public class ThievingScript extends Script {
                 if (config.shadowVeil()) {
                     handleShadowVeil();
                 }
-
-                openCoinPouches(config.coinPouchTreshHold());
+                
+                // Randomize coinpouch threshold +-3 between 1 & 28
+                int threshold = config.coinPouchTreshHold();
+                threshold += (int) (Math.random() * 7 - 3);
+                threshold = Math.max(1, Math.min(28, threshold));
+                  
+                openCoinPouches(threshold);
                 wearDodgyNecklace();
                 pickpocket();
             } catch (Exception ex) {
@@ -179,27 +184,29 @@ public class ThievingScript extends Script {
 
     private void bank() {
         Microbot.status = "Getting food from bank...";
-        if (Rs2Bank.walkToBank()) {
-            boolean isBankOpen = Rs2Bank.useBank();
-            if (!isBankOpen) return;
-            Rs2Bank.depositAll();
-            boolean successfullyWithdrawFood = Rs2Bank.withdrawX(true, config.food().getName(), config.foodAmount(), true);
-            if (!successfullyWithdrawFood) {
-                Microbot.showMessage(config.food().getName() + " not found in bank");
-                sleep(5000);
-                return;
-            }
-            Rs2Bank.withdrawX(true, "dodgy necklace", config.dodgyNecklaceAmount());
-            if (config.shadowVeil()) {
-                Rs2Bank.withdrawAll(true,"Fire rune", true);
-                sleep(75,200);
-                Rs2Bank.withdrawAll(true,"Earth rune", true);
-                sleep(75,200);
-                Rs2Bank.withdrawAll(true,"Cosmic rune", true);
-                sleep(75,200);
-            }
-            Rs2Bank.closeBank();
+
+        boolean isBankOpen = Rs2Bank.isNearBank(15) ? Rs2Bank.openBank() : Rs2Bank.walkToBankAndUseBank();
+        if (!isBankOpen) return;
+        Rs2Bank.depositAll();
+
+        boolean successfullyWithdrawFood = Rs2Bank.withdrawX(true, config.food().getName(), config.foodAmount(), true);
+        if (!successfullyWithdrawFood) {
+            Microbot.showMessage(config.food().getName() + " not found in bank");
+            sleep(5000);
+            return;
         }
+
+        Rs2Bank.withdrawX(true, "dodgy necklace", config.dodgyNecklaceAmount());
+        if (config.shadowVeil()) {
+            Rs2Bank.withdrawAll(true, "Fire rune", true);
+            Rs2Inventory.waitForInventoryChanges(5000);
+            Rs2Bank.withdrawAll(true, "Earth rune", true);
+            Rs2Inventory.waitForInventoryChanges(5000);
+            Rs2Bank.withdrawAll(true, "Cosmic rune", true);
+            Rs2Inventory.waitForInventoryChanges(5000);
+        }
+        Rs2Bank.closeBank();
+        sleepUntil(() -> !Rs2Bank.isOpen());
     }
 
     private void dropItems(List<Rs2ItemModel> food) {

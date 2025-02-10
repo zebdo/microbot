@@ -142,7 +142,7 @@ public class Rs2DepositBox {
      * @return {@code true} if at least one item was deposited, {@code false} otherwise
      */
     public static boolean depositAllExcept(String... names) {
-        return depositAll(x -> Arrays.stream(names).noneMatch(name -> name.equalsIgnoreCase(x.name)));
+        return depositAll(x -> Arrays.stream(names).noneMatch(name -> x.getName().equalsIgnoreCase(name)));
     }
 
     /**
@@ -164,8 +164,8 @@ public class Rs2DepositBox {
      */
     public static boolean depositAllExcept(List<String> names, boolean exact) {
         return depositAll(x -> exact ? 
-                names.stream().noneMatch(name -> name.equalsIgnoreCase(x.name)) : 
-                names.stream().noneMatch(name -> name.toLowerCase().contains(x.name.toLowerCase())));
+                names.stream().noneMatch(name -> x.getName().equalsIgnoreCase(name)) : 
+                names.stream().noneMatch(name -> x.getName().toLowerCase().contains(name.toLowerCase())));
     }
 
     /**
@@ -187,8 +187,8 @@ public class Rs2DepositBox {
      */
     public static boolean depositAll(List<String> names, boolean exact) {
         return depositAll(x -> exact ? 
-                names.stream().anyMatch(name -> name.equalsIgnoreCase(x.name)) : 
-                names.stream().anyMatch(name -> name.toLowerCase().contains(x.name.toLowerCase())));
+                names.stream().anyMatch(name -> x.getName().equalsIgnoreCase(name)) : 
+                names.stream().anyMatch(name -> x.getName().toLowerCase().contains(name.toLowerCase())));
     }
 
     /**
@@ -209,7 +209,7 @@ public class Rs2DepositBox {
      * @return {@code true} if any items were deposited, {@code false} otherwise
      */
     public static boolean depositAll(String... names) {
-        return depositAll(x -> Arrays.stream(names).anyMatch(name -> name.equalsIgnoreCase(x.name)));
+        return depositAll(x -> Arrays.stream(names).anyMatch(name -> x.getName().equalsIgnoreCase(name)));
     }
 
     /**

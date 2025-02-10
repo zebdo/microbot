@@ -229,12 +229,12 @@ public interface QoLConfig extends Config {
     @ConfigItem(
             keyName = "useBankPin",
             name = "Use bankpin",
-            description = "Automatically uses bankpin",
+            description = "Automatically uses bankpin stored in runelite profile",
             position = 1,
             section = bankSection
     )
-    default String bankPin() {
-        return "";
+    default boolean useBankPin() {
+        return false;
     }
 
     // boolean to automate quest dialogue options
