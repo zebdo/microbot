@@ -430,6 +430,7 @@ public class Rs2GrandExchange {
                 if (child == null) continue;
                 if (child.getText().equalsIgnoreCase(name)) {
                     Microbot.doInvoke(new NewMenuEntry("Abort offer", 2, parent.getId(), MenuAction.CC_OP.getId(), 2, -1, ""), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
+                    sleep(1000);
                     collect(collectToBank);
                     return true;
                 }
@@ -457,10 +458,12 @@ public class Rs2GrandExchange {
                 if (child == null) continue;
                 Microbot.doInvoke(new NewMenuEntry("Abort offer", 2, parent.getId(), MenuAction.CC_OP.getId(), 2, -1, ""), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
             }
+            sleep(1000);
             collect(collectToBank);
             return isAllSlotsEmpty();
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
+            return false;
         }
     }
 
