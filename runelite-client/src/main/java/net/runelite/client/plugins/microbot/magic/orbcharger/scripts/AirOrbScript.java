@@ -303,7 +303,7 @@ public class AirOrbScript extends Script {
     }
 
     private boolean shouldContinueWalking() {
-        return !shouldBank() && !shouldCharge() && !shouldDrinkFromPool() && hasRequiredItems();
+        return (plugin.getTeleport() != Teleport.RING_OF_DUELING) ? !shouldBank() && !shouldCharge() && hasRequiredItems() : !shouldBank() && !shouldCharge() && !shouldDrinkFromPool() && hasRequiredItems();
     }
 
     private boolean shouldHandleBankingOrFleeing() {
@@ -406,7 +406,15 @@ public class AirOrbScript extends Script {
     }
 
     private boolean shouldDrinkFromPool() {
-        return plugin.getTeleport() == Teleport.RING_OF_DUELING && Rs2Player.getRunEnergy() < 80 && hasRequiredItems() && Rs2GameObject.exists(ObjectID.POOL_OF_REFRESHMENT);
+        if (plugin.getTeleport() != Teleport.RING_OF_DUELING) return false;
+        if (Rs2Player.getRunEnergy() > 80) return false;
+        if (!hasRequiredItems()) return false;
+        if (!Rs2GameObject.exists(ObjectID.POOL_OF_REFRESHMENT)) return false;
+        
+        TileObject refreshmentPool = Rs2GameObject.findObjectById(ObjectID.POOL_OF_REFRESHMENT);
+        if (refreshmentPool == null) return false;
+        
+        return Rs2Player.getWorldLocation().distanceTo(refreshmentPool.getWorldLocation()) < 8;
     }
 
     private void handleReplaceTeleportItem() {
