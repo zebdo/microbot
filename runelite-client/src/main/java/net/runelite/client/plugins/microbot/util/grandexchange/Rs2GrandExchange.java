@@ -434,8 +434,8 @@ public class Rs2GrandExchange {
                     return true;
                 }
             }
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
         }
         return false;
     }
@@ -459,8 +459,8 @@ public class Rs2GrandExchange {
             }
             collect(collectToBank);
             return isAllSlotsEmpty();
-        } catch (Exception e) {
-            throw new RuntimeException(e);
+        } catch (Exception ex) {
+            System.out.println(ex.getMessage());
         }
     }
 
