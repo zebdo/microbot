@@ -159,7 +159,7 @@ public class ThievingScript extends Script {
     }
 
     private void handleWealthyCitizen() {
-        List<NPC> wealthyCitizenInteracting = Rs2Npc.getNpcs("Wealthy citizen")
+        List<NPC> wealthyCitizenInteracting = Rs2Npc.getNpcs("Wealthy citizen", true)
                 .filter(x -> x.isInteracting()
                         && x.getInteracting() != null
                         && x.getInteracting().getCombatLevel() == 0)

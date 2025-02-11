@@ -188,8 +188,7 @@ public class Rs2Walker {
                 setTarget(null);
             }
 
-            if (Rs2Npc.getNpcsAttackingPlayer(Microbot.getClient().getLocalPlayer()) != null
-                    && Rs2Npc.getNpcsAttackingPlayer(Microbot.getClient().getLocalPlayer()).stream().anyMatch(x -> x.getId() == 4417)) { //dead tree in draynor
+            if (Rs2Npc.getNpcsForPlayer(npc -> npc.getId() == 4417).findAny().isPresent()) { //dead tree in draynor
                 var moveableTiles = Rs2Tile.getReachableTilesFromTile(Rs2Player.getWorldLocation(), 5).keySet().toArray(new WorldPoint[0]);
                 walkMiniMap(moveableTiles[Rs2Random.between(0, moveableTiles.length)]);
                 sleepGaussian(1000, 300);
@@ -444,18 +443,16 @@ public class Rs2Walker {
                 && Rs2Tile.isWalkable(point.dy(-1));
     }
 
-    public static boolean walkMiniMap(WorldPoint worldPoint, int zoomDistance) {
+    public static boolean walkMiniMap(WorldPoint worldPoint, double zoomDistance) {
         if (Microbot.getClient().getMinimapZoom() != zoomDistance)
             Microbot.getClient().setMinimapZoom(zoomDistance);
 
-        Point point = worldToMinimap(worldPoint);
+        Point point = Rs2MiniMap.worldToMinimap(worldPoint);
 
-        if (point == null) {
-            return false;
-        }
+        if (point == null) return false;
+        //if (!Rs2MiniMap.isPointInsideMinimap(point)) return false;
 
         Microbot.getMouse().click(point);
-
         return true;
     }
 
