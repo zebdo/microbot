@@ -117,9 +117,9 @@ public class CipherClueTask extends ClueTask {
     }
 
     private boolean interactWithNpc() {
-        var npc = Rs2Npc.getNpc(clue.getNpcId());
+        var npc = Rs2Npc.getNpc(clue.getNpc());
         if (npc == null) {
-            log.warn("NPC with ID {} not found at the location.", clue.getNpcId());
+            log.warn("NPC with ID {} not found at the location.", clue.getNpc());
             return false;
         }
 
@@ -129,7 +129,7 @@ public class CipherClueTask extends ClueTask {
             return handleDialogue();
         }
 
-        log.warn("Failed to initiate interaction with NPC ID: {}", clue.getNpcId());
+        log.warn("Failed to initiate interaction with NPC ID: {}", clue.getNpc());
         return false;
     }
 
