@@ -96,7 +96,7 @@ public class PestControlScript extends Script {
                     }
 
                     var brawler = Rs2Npc.getNpc("brawler");
-                    if (brawler != null && Rs2Npc.getWorldLocation(brawler).distanceTo(Rs2Player.getWorldLocation()) < 3) {
+                    if (brawler != null && brawler.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) < 3) {
                         Rs2Npc.attack(brawler);
                         sleepUntil(() -> !Rs2Combat.inCombat());
                         return;

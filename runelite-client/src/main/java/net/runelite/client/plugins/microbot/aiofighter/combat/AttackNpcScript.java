@@ -2,7 +2,6 @@ package net.runelite.client.plugins.microbot.aiofighter.combat;
 
 import net.runelite.api.Actor;
 import net.runelite.api.ItemID;
-import net.runelite.api.NPC;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -11,6 +10,7 @@ import net.runelite.client.plugins.microbot.aiofighter.AIOFighterPlugin;
 import net.runelite.client.plugins.microbot.aiofighter.enums.AttackStyle;
 import net.runelite.client.plugins.microbot.aiofighter.enums.AttackStyleMapper;
 import net.runelite.client.plugins.microbot.aiofighter.enums.State;
+import net.runelite.client.plugins.microbot.util.ActorModel;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -73,10 +73,9 @@ public class AttackNpcScript extends Script {
                 messageShown = false;
 
                 attackableNpcs = Rs2Npc.getAttackableNpcs(config.attackReachableNpcs())
-                        .filter(npc -> npc.getWorldLocation().distanceTo(config.centerLocation()) <= config.attackRadius()
-                                && npcsToAttack.contains(npc.getName().toLowerCase()))
-                        .sorted(Comparator
-                                .comparing((NPC npc) -> npc.getInteracting() == Microbot.getClient().getLocalPlayer() ? 0 : 1).thenComparingInt(npc -> Rs2Player.getRs2WorldPoint().distanceToPath(npc.getWorldLocation())))
+                        .filter(npc -> npc.getWorldLocation().distanceTo(config.centerLocation()) <= config.attackRadius() && npcsToAttack.contains(npc.getName().toLowerCase()))
+                        .sorted(Comparator.comparingInt((Rs2NpcModel npc) -> npc.getInteracting() == Microbot.getClient().getLocalPlayer() ? 0 : 1)
+                                .thenComparingInt(npc -> Rs2Player.getRs2WorldPoint().distanceToPath(npc.getWorldLocation())))
                         .collect(Collectors.toList());
 
                 if (AIOFighterPlugin.getCooldown() > 0 || Rs2Combat.inCombat()) {
@@ -121,6 +120,8 @@ public class AttackNpcScript extends Script {
                     }
 
 
+                } else {
+                    System.out.println("No attackable NPC found");
                 }
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
@@ -133,7 +134,7 @@ public class AttackNpcScript extends Script {
      * item on npcs that need to kill like rockslug
      */
     private void handleItemOnNpcToKill() {
-        NPC npc = Rs2Npc.getNpcsAttackingPlayer(Microbot.getClient().getLocalPlayer()).stream().findFirst().orElse(null);
+        Rs2NpcModel npc = Rs2Npc.getNpcsForPlayer(ActorModel::isDead).findFirst().orElse(null);
         if (npc == null) return;
         if (npc.getName().equalsIgnoreCase("desert lizard") && npc.getHealthRatio() < 5) {
             Rs2Inventory.useItemOnNpc(ItemID.ICE_COOLER, npc);
