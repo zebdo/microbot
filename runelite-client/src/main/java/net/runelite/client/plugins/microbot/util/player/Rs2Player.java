@@ -34,6 +34,8 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1230,9 +1232,19 @@ public class Rs2Player {
      * @return true if an item was found and interacted with; false otherwise.
      */
     private static boolean usePotion(String... itemNames) {
-        Rs2ItemModel potion = Rs2Inventory.get(item ->
-                !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().equalsIgnoreCase(name))
-        );
+        Pattern usesRegexPattern = Pattern.compile("^(.*?)(?:\\(\\d+\\))?$");
+
+        Rs2ItemModel potion = Rs2Inventory.get(item -> {
+            if (item.isNoted()) return false;
+
+            Matcher matcher = usesRegexPattern.matcher(item.getName());
+            if (matcher.find()) {
+                String trimmedName = matcher.group(1).trim();
+                return Arrays.stream(itemNames).anyMatch(name -> name.equalsIgnoreCase(trimmedName));
+            }
+
+            return false;
+        });
 
         if (potion == null) return false;
 
@@ -1246,9 +1258,19 @@ public class Rs2Player {
      * @return true if an item matching the names exists; false otherwise.
      */
     private static boolean hasPotion(String... itemNames) {
-        Rs2ItemModel potion = Rs2Inventory.get(item ->
-                !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().equalsIgnoreCase(name))
-        );
+        Pattern usesRegexPattern = Pattern.compile("^(.*?)(?:\\(\\d+\\))?$");
+
+        Rs2ItemModel potion = Rs2Inventory.get(item -> {
+            if (item.isNoted()) return false;
+
+            Matcher matcher = usesRegexPattern.matcher(item.getName());
+            if (matcher.find()) {
+                String trimmedName = matcher.group(1).trim();
+                return Arrays.stream(itemNames).anyMatch(name -> name.equalsIgnoreCase(trimmedName));
+            }
+
+            return false;
+        });
         
         return potion != null;
     }
