@@ -1231,7 +1231,7 @@ public class Rs2Player {
      */
     private static boolean usePotion(String... itemNames) {
         Rs2ItemModel potion = Rs2Inventory.get(item ->
-                !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase()))
+                !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().equalsIgnoreCase(name))
         );
 
         if (potion == null) return false;
@@ -1247,7 +1247,7 @@ public class Rs2Player {
      */
     private static boolean hasPotion(String... itemNames) {
         Rs2ItemModel potion = Rs2Inventory.get(item ->
-                !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase()))
+                !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().equalsIgnoreCase(name))
         );
         
         return potion != null;
