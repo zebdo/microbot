@@ -23,6 +23,7 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Predicates;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Encryption;
 import net.runelite.client.plugins.microbot.util.security.Login;
@@ -626,9 +627,9 @@ public class Rs2Bank {
 
         Widget widget = Rs2Widget.findWidget(SpriteID.BANK_DEPOSIT_INVENTORY, null);
         if (widget == null) return;
-
-        Microbot.getMouse().click(widget.getBounds());
-        sleepUntil(Rs2Inventory::isEmpty);
+        
+        Rs2Widget.clickWidget(widget);
+        Rs2Inventory.waitForInventoryChanges(10000);
     }
 
     /**
@@ -1122,7 +1123,7 @@ public class Rs2Bank {
             } else if (chest != null) {
                 action = Rs2GameObject.interact(chest, "use");
             } else {
-                NPC npc = Rs2Npc.getBankerNPC();
+                Rs2NpcModel npc = Rs2Npc.getBankerNPC();
                 if (npc == null) return false;
                 action = Rs2Npc.interact(npc, "bank");
             }
@@ -1137,7 +1138,7 @@ public class Rs2Bank {
         return false;
     }
 
-    public static boolean openBank(NPC npc) {
+    public static boolean openBank(Rs2NpcModel npc) {
         Microbot.status = "Opening bank";
         try {
             if (isOpen()) return true;
@@ -1158,6 +1159,10 @@ public class Rs2Bank {
             System.out.println(ex.getMessage());
         }
         return false;
+    }
+    
+    public static boolean openBank(NPC npc) {
+        return openBank(new Rs2NpcModel(npc));
     }
 
     /**
@@ -1316,7 +1321,6 @@ public class Rs2Bank {
 
         if (nearest != null) {
             Microbot.log("Found nearest bank: " + nearest.name());
-
         } else {
             Microbot.log("Unable to find nearest bank");
             return null;
@@ -2121,7 +2125,7 @@ public class Rs2Bank {
                 return hoverOverObject(chest);
             }
 
-            NPC npc = Rs2Npc.getBankerNPC();
+            Rs2NpcModel npc = Rs2Npc.getBankerNPC();
             if (npc != null) {
                 return hoverOverActor(npc);
             }
