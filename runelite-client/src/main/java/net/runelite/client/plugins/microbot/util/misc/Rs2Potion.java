@@ -29,6 +29,7 @@ public class Rs2Potion
         return Arrays.asList(
                 "Prayer potion",
                 "Super restore",
+                "Moonlight potion",
                 "Moonlight moth mix",
                 "Egniol potion"
         );
