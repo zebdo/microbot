@@ -18,6 +18,7 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
@@ -98,10 +99,7 @@ public class FarmTreeRunScript extends Script {
                 long startTime = System.currentTimeMillis();
                 if (Rs2AntibanSettings.actionCooldownActive) return;
 
-//                Microbot.log(String.valueOf(Rs2GameObject.findGameObjectByLocation(new WorldPoint(2860, 3433, 0)).getId()));
-
                 dropEmptyPlantPots();
-
                 Patch patch = null;
 
                 switch (botStatus) {
@@ -362,6 +360,20 @@ public class FarmTreeRunScript extends Script {
             if (config.taverleyTreePatch())
                 items.add(new FarmingItem(ItemID.TAVERLEY_TELEPORT, 1));
 
+            if (config.lletyaFruitTreePatch()) {
+                if (Rs2Bank.hasItem(ItemID.TELEPORT_CRYSTAL_1)) {
+                    items.add(new FarmingItem(ItemID.TELEPORT_CRYSTAL_1, 1));
+                } else if (Rs2Bank.hasItem(ItemID.TELEPORT_CRYSTAL_2)) {
+                    items.add(new FarmingItem(ItemID.TELEPORT_CRYSTAL_2, 1));
+                } else if (Rs2Bank.hasItem(ItemID.TELEPORT_CRYSTAL_3)) {
+                    items.add(new FarmingItem(ItemID.TELEPORT_CRYSTAL_3, 1));
+                } else if (Rs2Bank.hasItem(ItemID.TELEPORT_CRYSTAL_4)) {
+                    items.add(new FarmingItem(ItemID.TELEPORT_CRYSTAL_4, 1));
+                } else {
+                    items.add(new FarmingItem(ItemID.TELEPORT_CRYSTAL_5, 1));
+                }
+            }
+
             items.add(new FarmingItem(ItemID.LAW_RUNE, 10));
             items.add(new FarmingItem(ItemID.FIRE_RUNE, 30));
             items.add(new FarmingItem(ItemID.AIR_RUNE, 30));
@@ -408,18 +420,15 @@ public class FarmTreeRunScript extends Script {
     }
 
     private boolean handlePatch(FarmTreeRunConfig config, Patch patch) {
-        String[] possibleActions = {"Check-health", "Chop-down", "Chop-down", "Pick-fruit", "Rake", "Clear", "Inspect"};
+        String[] possibleActions = {"Check-health", "Chop-down", "Chop down", "Pick-fruit", "Rake", "Clear", "Inspect"};
         GameObject treePatch = null;
         String foundAction = null;
 
-        if (Rs2GameObject.findObjectByImposter(patch.getId(), "Chop down") != null)
-            handlePayment(config, patch, PaymentKind.CLEAR);
         // Loop through the possible actions and try to find the tree patch with any valid action
         for (String action : possibleActions) {
             treePatch = Rs2GameObject.findObjectByImposter(patch.getId(), action);  // Find object by patchId and action
             if (treePatch != null) {
                 foundAction = action;
-                Microbot.log("Action found: " + foundAction);
                 break;  // Exit the loop once we find the patch with a valid action
             }
         }
@@ -440,6 +449,8 @@ public class FarmTreeRunScript extends Script {
                 handleCheckHealth(treePatch);
                 break;
             case "Chop-down":
+            case "Chop down":
+                handlePayment(config, patch, PaymentKind.CLEAR);
                 break;
             case "Pick-fruit":
                 handlePickingFruit(treePatch, config, patch);
@@ -498,19 +509,19 @@ public class FarmTreeRunScript extends Script {
     }
 
     /**
-     * Handles both 'Chop-down' payment and 'Guard' payments
+     * Handles both 'Chop-down' and 'Guard' payment
      *
      * @param config Configurations for this plugin. It should not be {@code null}.
      * @return {@code true} if payment was successful, else {@code false}
      */
     private boolean handlePayment(FarmTreeRunConfig config, Patch patch, PaymentKind action) {
-        if (!isPatchEmpty(patch) && patch.kind == TreeKind.TREE && action == PaymentKind.PROTECT && !config.protectTrees())
+        if (!isPatchEmpty(patch) && !shouldProtectTree(config, patch))
             return true;
 
-        if (!isPatchEmpty(patch) && patch.kind == TreeKind.FRUIT_TREE && action == PaymentKind.PROTECT && !config.protectFruitTrees())
+        if (!isPatchEmpty(patch) && !shouldProtectFruitTree(config, patch))
             return true;
 
-        NPC treeGardener = null;
+        Rs2NpcModel treeGardener = null;
         treeGardener = Rs2Npc.getNearestNpcWithAction("Pay");
         Rs2Npc.interact(treeGardener, "Pay");
 
@@ -557,19 +568,19 @@ public class FarmTreeRunScript extends Script {
 
         // Select which sapling to use
         int saplingToUse = patch.kind == TreeKind.TREE ? config.selectedTree().getSaplingId() : config.selectedFruitTree().getSaplingId();
-        // Check if protect tree is on, else use compost
 
+        // Check if protect tree is on, else use compost
         if (shouldUseCompost(config, patch)) {
             Rs2Inventory.useItemOnObject(ItemID.BOTTOMLESS_COMPOST_BUCKET_22997, treePatch.getId());
             Rs2Player.waitForXpDrop(Skill.FARMING, 2000);
             sleep(750, 3200);
         }
 
-        sleep(750, 2400);
+        sleep(250, 1000);
         if (!Rs2GameObject.hasAction(Rs2GameObject.findObjectComposition(patch.id), "Rake")) {
             Rs2Inventory.useItemOnObject(saplingToUse, treePatch.getId());
             Rs2Inventory.waitForInventoryChanges(3000);
-            sleep(750, 3200);
+            sleep(750, 2400);
             return !isPatchEmpty(patch);
         }
         Rs2Inventory.deselect();
@@ -579,12 +590,11 @@ public class FarmTreeRunScript extends Script {
     private void handlePickingFruit(GameObject fruitTreePatch, FarmTreeRunConfig config, Patch patch) {
         System.out.println("Checking health...");
         handleNotingFruit(patch);
-        // Rake the patch
         Rs2GameObject.interact(fruitTreePatch, "Pick-fruit");
         // Wait for the picking to complete (player stops animating and patch no longer has the "Pick" action)
         sleepUntil(() -> !Rs2GameObject.hasAction(Rs2GameObject.findObjectComposition(fruitTreePatch.getId()), "Pick-fruit"), 12000);
-        sleep(1000, 2500);
-        handlePayment(config, patch, PaymentKind.CLEAR);
+        sleep(400, 1500);
+        handleNotingFruit(patch);
     }
 
     private void handleCheckHealth(GameObject treePatch) {
@@ -608,7 +618,7 @@ public class FarmTreeRunScript extends Script {
         // Drop the weeds (assuming weeds are added to the inventory)
         if (!Rs2Player.isMoving() &&
                 !Rs2Player.isAnimating() &&
-                !Rs2Player.isInteracting() && !Rs2Player.isWalking()) {
+                !Rs2Player.isInteracting() && !Rs2Player.isMoving()) {
             System.out.println("Dropping weeds...");
             Rs2Inventory.dropAll(ItemID.WEEDS);
             Rs2Player.waitForAnimation();
@@ -631,7 +641,7 @@ public class FarmTreeRunScript extends Script {
 
         // Wait for the clearing animation to finish
         Rs2Player.waitForAnimation();
-        sleepUntil(() -> !Rs2Player.isAnimating() && Rs2Player.isInteracting() && Rs2Player.isWalking());
+        sleepUntil(() -> !Rs2Player.isAnimating() && Rs2Player.isInteracting() && Rs2Player.isMoving());
     }
 
     private void equipGraceful() {

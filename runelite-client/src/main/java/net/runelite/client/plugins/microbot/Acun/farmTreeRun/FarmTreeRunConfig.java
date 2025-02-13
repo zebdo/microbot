@@ -8,7 +8,7 @@ import net.runelite.client.plugins.microbot.Acun.farmTreeRun.enums.TreeEnums;
  * Made by Acun
  */
 @ConfigGroup("example")
-@ConfigInformation("Acun <br> 0.1.0-alpha.1 <br><br> Start anywhere you want. <br><br> You need the following items in your bank:\n" +
+@ConfigInformation("Acun <br> 0.1.1-alpha.1 <br><br> Start anywhere you want. <br><br> You need the following items in your bank:\n" +
         "<ol>\n" +
         "    <li>3.000 coins</li>\n" +
         "    <li>Selected (fruit) tree saplings</li>\n" +
