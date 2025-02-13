@@ -477,24 +477,21 @@ public class Rs2Npc {
      *
      * <p>The method filters NPCs based on the following conditions:</p>
      * <ul>
-     *   <li>The NPC has a valid composition or transformed composition.</li>
-     *   <li>The NPC has an action list containing "Bank".</li>
+     *   <li>The NPC has a valid base composition or transformed composition.</li>
+     *   <li>Either the base composition or transformed composition has an action list containing "Bank".</li>
      * </ul>
      *
      * @return The first {@link Rs2NpcModel} that functions as a banker, or {@code null} if no banker NPCs are found.
      */
     public static Rs2NpcModel getBankerNPC() {
         return getNpcs(npc -> {
-            NPCComposition npcComposition = npc.getComposition();
-            if (npcComposition == null) {
-                npcComposition = npc.getTransformedComposition();
-            }
-            if (npcComposition == null) return false;
+            NPCComposition baseComposition = npc.getComposition();
+            NPCComposition transformedComposition = npc.getTransformedComposition();
 
-            List<String> npcActions = Arrays.asList(npcComposition.getActions());
-            if (npcActions.isEmpty()) return false;
+            List<String> baseActions = baseComposition != null ? Arrays.asList(baseComposition.getActions()) : Collections.emptyList();
+            List<String> transformedActions = transformedComposition != null ? Arrays.asList(transformedComposition.getActions()) : Collections.emptyList();
 
-            return npcActions.contains("Bank");
+            return baseActions.contains("Bank") || transformedActions.contains("Bank");
         }).findFirst().orElse(null);
     }
 
