@@ -1888,6 +1888,9 @@
 1579 3586 1	1579 3590 0	Climb;Stairs;27202						
 1580 3590 0	1580 3586 1	Climb;Stairs;27201						
 1580 3586 1	1580 3590 0	Climb;Stairs;27202						
+1420 3589 0	1432 9913 0	Enter;Cave;42248						
+1420 3588 0	1432 9913 0	Enter;Cave;42248						
+1432 9913 0	1420 3588 0	Exit;Cave;42247						
 								
 # Meyerditch								
 3649 3220 0	3631 3219 0	Enter;Door;32660			Darkness of Hallowvale			
