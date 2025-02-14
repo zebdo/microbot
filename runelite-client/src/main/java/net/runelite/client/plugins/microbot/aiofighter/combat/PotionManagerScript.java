@@ -4,7 +4,6 @@ import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterConfig;
-import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import java.util.concurrent.TimeUnit;
@@ -27,7 +26,7 @@ public class PotionManagerScript extends Script {
                 }
 
                 // Always attempt to drink prayer potion
-                Rs2Player.drinkPrayerPotionAt(Rs2Random.randomGaussian(getPrayerPotionThreshold(), 3));
+                Rs2Player.drinkPrayerPotion();
 
                 // Always attempt to drink ranging potion
                 if (Rs2Player.drinkCombatPotionAt(Skill.RANGED, false)) {
@@ -62,8 +61,4 @@ public class PotionManagerScript extends Script {
         return true;
     }
 
-    public int getPrayerPotionThreshold() {
-        int maxRestore = 7 + (Rs2Player.getRealSkillLevel(Skill.PRAYER) / 4);
-        return Rs2Player.getRealSkillLevel(Skill.PRAYER) - maxRestore;
-    }
 }
