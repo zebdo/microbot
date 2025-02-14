@@ -11,13 +11,10 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.microbot.magic.orbcharger.OrbChargerConfig;
-import net.runelite.client.plugins.microbot.mining.shootingstar.ShootingStarOverlay;
 import net.runelite.client.plugins.microbot.runecrafting.ourania.enums.Essence;
 import net.runelite.client.plugins.microbot.runecrafting.ourania.enums.Path;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Item;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.ui.overlay.OverlayManager;
 
@@ -46,7 +43,7 @@ public class OuraniaPlugin extends Plugin {
     @Inject
     private OuraniaScript ouraniaScript;
 
-    public static String version = "1.0.0";
+    public static String version = "1.1.0";
 
     @Getter
     public Instant startTime;
@@ -69,6 +66,8 @@ public class OuraniaPlugin extends Plugin {
     private boolean toggleOverlay;
     @Getter
     private int profit;
+    @Getter
+    private boolean useDepositAll;
     
     @Override
     protected void startUp() throws AWTException {
@@ -79,6 +78,7 @@ public class OuraniaPlugin extends Plugin {
         drinkAtPercent = config.drinkAtPercent();
         path = config.path();
         toggleOverlay = config.toggleOverlay();
+        useDepositAll = config.useDepositAll();
         startTime = Instant.now();
         
         if(overlayManager != null) {
@@ -130,6 +130,10 @@ public class OuraniaPlugin extends Plugin {
 
         if (event.getKey().equals(OuraniaConfig.path)){
             path = config.path();
+        }
+
+        if (event.getKey().equals(OuraniaConfig.useDepositAll)){
+            useDepositAll = config.useDepositAll();
         }
 
         if (event.getKey().equals(OuraniaConfig.toggleOverlay)){

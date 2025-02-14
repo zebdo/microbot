@@ -10,6 +10,7 @@ import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 @ConfigInformation(
         "• This plugin will craft runes at Ourania Altar (ZMI Altar) <br />" +
         "• Ensure you have auto-pay configured with Eniola. <br />" +
+        "• If using deposit all feature, ensure you lock the slots you wish to keep in inventory <br />" +
         "• Requires Lunar Spellbook and to speak with Baby Yaga to learn Ourania Teleport. <br />" +
         "• Ensure you have a runepouch with your runes for teleport to Ourania & payment runes. <br />"
 )
@@ -18,6 +19,7 @@ public interface OuraniaConfig extends Config {
     
     String essence = "essence";
     String path = "path";
+    String useDepositAll = "useDepositAll";
     String useEnergyRestorePotions = "useEnergyRestorePotions";
     String food = "food";
     String eatAtPercent = "eatAtPercent";
@@ -45,18 +47,6 @@ public interface OuraniaConfig extends Config {
     )
     String overlaySection = "overlay";
 
-
-    @ConfigItem(
-            keyName = path,
-            name = "Path to Walk",
-            description = "Select what path you would like to take",
-            position = 0,
-            section = generalSection
-    )
-    default Path path() {
-        return Path.SHORT;
-    }
-
     @ConfigItem(
             keyName = essence,
             name = "Essence",
@@ -66,6 +56,28 @@ public interface OuraniaConfig extends Config {
     )
     default Essence essence() {
         return Essence.PURE_ESSENCE;
+    }
+
+    @ConfigItem(
+            keyName = path,
+            name = "Path to Walk",
+            description = "Select what path you would like to take",
+            position = 1,
+            section = generalSection
+    )
+    default Path path() {
+        return Path.SHORT;
+    }
+
+    @ConfigItem(
+            keyName = useDepositAll,
+            name = "Deposit All",
+            description = "Should enable if you would like to use deposit all (ensure you lock the bank slots for runepouch & essence pouches)",
+            position = 2,
+            section = generalSection
+    )
+    default boolean useDepositAll() {
+        return false;
     }
 
     @ConfigItem(
