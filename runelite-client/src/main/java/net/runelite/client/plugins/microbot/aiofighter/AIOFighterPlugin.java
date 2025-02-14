@@ -17,7 +17,6 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.aiofighter.bank.BankerScript;
 import net.runelite.client.plugins.microbot.aiofighter.cannon.CannonScript;
 import net.runelite.client.plugins.microbot.aiofighter.combat.*;
@@ -26,6 +25,7 @@ import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.aiofighter.loot.LootScript;
 import net.runelite.client.plugins.microbot.aiofighter.safety.SafetyScript;
 import net.runelite.client.plugins.microbot.aiofighter.skill.AttackStyleScript;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
@@ -63,14 +63,12 @@ public class AIOFighterPlugin extends Plugin {
     public static int cooldown = 0;
     private final CannonScript cannonScript = new CannonScript();
     private final AttackNpcScript attackNpc = new AttackNpcScript();
-    private final CombatPotionScript combatPotion = new CombatPotionScript();
+
     private final FoodScript foodScript = new FoodScript();
-    private final PrayerPotionScript prayerPotionScript = new PrayerPotionScript();
     private final LootScript lootScript = new LootScript();
     private final SafeSpot safeSpotScript = new SafeSpot();
     private final FlickerScript flickerScript = new FlickerScript();
     private final UseSpecialAttackScript useSpecialAttackScript = new UseSpecialAttackScript();
-    private final AntiPoisonScript antiPoisonScript = new AntiPoisonScript();
     private final BuryScatterScript buryScatterScript = new BuryScatterScript();
     private final AttackStyleScript attackStyleScript = new AttackStyleScript();
     private final BankerScript bankerScript = new BankerScript();
@@ -78,6 +76,7 @@ public class AIOFighterPlugin extends Plugin {
     private final HighAlchScript highAlchScript = new HighAlchScript();
     private final PotionManagerScript potionManagerScript = new PotionManagerScript();
     private final SafetyScript safetyScript = new SafetyScript();
+    //private final SlayerScript slayerScript = new SlayerScript();
     @Inject
     private AIOFighterConfig config;
     @Inject
@@ -124,6 +123,7 @@ public class AIOFighterPlugin extends Plugin {
         highAlchScript.run(config);
         potionManagerScript.run(config);
         safetyScript.run(config);
+        //slayerScript.run(config);
         Microbot.getSpecialAttackConfigs()
                 .setSpecialAttack(true);
     }
@@ -146,28 +146,29 @@ public class AIOFighterPlugin extends Plugin {
         highAlchScript.shutdown();
         potionManagerScript.shutdown();
         safetyScript.shutdown();
+        //slayerScript.shutdown();
         resetLocation();
         overlayManager.remove(playerAssistOverlay);
         overlayManager.remove(playerAssistInfoOverlay);
     }
 
-    private void resetLocation() {
+    public static void resetLocation() {
         setCenter(new WorldPoint(0, 0, 0));
         setSafeSpot(new WorldPoint(0, 0, 0));
     }
 
-    private void setCenter(WorldPoint worldPoint)
+    public static void setCenter(WorldPoint worldPoint)
     {
-        configManager.setConfiguration(
+        Microbot.getConfigManager().setConfiguration(
                 "PlayerAssistant",
                 "centerLocation",
                 worldPoint
         );
     }
     // set safe spot
-    private void setSafeSpot(WorldPoint worldPoint)
+    public static void setSafeSpot(WorldPoint worldPoint)
     {
-        configManager.setConfiguration(
+        Microbot.getConfigManager().setConfiguration(
                 "PlayerAssistant",
                 "safeSpotLocation",
                 worldPoint
@@ -184,10 +185,11 @@ public class AIOFighterPlugin extends Plugin {
         );
     }
 
-    public static String getState() {
+    public static State getState() {
         return Microbot.getConfigManager().getConfiguration(
                 "PlayerAssistant",
-                "state"
+                "state",
+                State.class
         );
     }
 
@@ -214,6 +216,15 @@ public class AIOFighterPlugin extends Plugin {
                 Arrays.stream(config.attackableNpcs().split(","))
                         .filter(n -> !n.equalsIgnoreCase(npcName))
                         .collect(Collectors.joining(","))
+        );
+    }
+
+    // set attackable npcs
+    public static void setAttackableNpcs(String npcNames) {
+        Microbot.getConfigManager().setConfiguration(
+                "PlayerAssistant",
+                "monster",
+                npcNames
         );
     }
 
@@ -272,7 +283,6 @@ public class AIOFighterPlugin extends Plugin {
         final Hitsplat hitsplat = event.getHitsplat();
 
         if ((hitsplat.isMine()) && event.getActor().getInteracting() instanceof NPC && config.togglePrayer() && (config.prayerStyle() == PrayerStyle.LAZY_FLICK) || (config.prayerStyle() == PrayerStyle.PERFECT_LAZY_FLICK)) {
-
             flickerScript.resetLastAttack(true);
             Rs2Prayer.disableAllPrayers();
             if (config.toggleQuickPray())

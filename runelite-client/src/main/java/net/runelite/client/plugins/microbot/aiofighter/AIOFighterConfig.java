@@ -2,12 +2,13 @@ package net.runelite.client.plugins.microbot.aiofighter;
 
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.config.*;
-import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.aiofighter.enums.DefaultLooterStyle;
 import net.runelite.client.plugins.microbot.aiofighter.enums.PlayStyle;
 import net.runelite.client.plugins.microbot.aiofighter.enums.PrayerStyle;
 import net.runelite.client.plugins.microbot.aiofighter.enums.State;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
+import net.runelite.client.plugins.microbot.util.slayer.enums.SlayerMaster;
 
 @ConfigGroup(AIOFighterConfig.GROUP)
 @ConfigInformation("1. Make sure to place the cannon first before starting the plugin. <br />" +
@@ -25,10 +26,17 @@ public interface AIOFighterConfig extends Config {
     @ConfigSection(
             name = "Combat",
             description = "Combat",
-            position = 1,
+            position = 10,
             closedByDefault = false
     )
     String combatSection = "Combat";
+    @ConfigSection(
+            name = "Slayer",
+            description = "Slayer",
+            position = 11,
+            closedByDefault = true
+    )
+    String slayerSection = "Slayer";
     @ConfigSection(
             name = "Banking",
             description = "Banking settings",
@@ -56,14 +64,14 @@ public interface AIOFighterConfig extends Config {
     @ConfigSection(
             name = "Food & Potions",
             description = "Food & Potions",
-            position = 2,
+            position = 20,
             closedByDefault = false
     )
     String foodAndPotionsSection = "Food & Potions";
     @ConfigSection(
             name = "Loot",
             description = "Loot",
-            position = 3,
+            position = 30,
             closedByDefault = false
     )
     String lootSection = "Loot";
@@ -71,7 +79,7 @@ public interface AIOFighterConfig extends Config {
     @ConfigSection(
             name = "Prayer",
             description = "Prayer",
-            position = 4,
+            position = 40,
             closedByDefault = false
     )
     String prayerSection = "Prayer";
@@ -79,7 +87,7 @@ public interface AIOFighterConfig extends Config {
     @ConfigSection(
             name = "Skilling",
             description = "Skilling",
-            position = 5,
+            position = 50,
             closedByDefault = false
     )
     String skillingSection = "Combat Skilling";
@@ -185,83 +193,85 @@ public interface AIOFighterConfig extends Config {
         return false;
     }
 
-    @ConfigItem(
-            keyName = "Auto Prayer Potion",
-            name = "Auto prayer potion",
-            description = "Automatically drinks prayer potions",
-            position = 1,
-            section = foodAndPotionsSection
-    )
-    default boolean togglePrayerPotions() {
-        return false;
-    }
+    // Testing if full auto potion manager is preferred over individual potion toggles
 
-    @ConfigItem(
-            keyName = "Combat potion",
-            name = "Auto combat potion",
-            description = "Automatically drinks combat potions",
-            position = 2,
-            section = foodAndPotionsSection
-    )
-    default boolean toggleCombatPotion() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "Ranging/Bastion potion",
-            name = "Auto Ranging/Bastion potion",
-            description = "Automatically drinks Ranging/Bastion potions",
-            position = 3,
-            section = foodAndPotionsSection
-    )
-    default boolean toggleRangingPotion() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "Magic/Battlemage potion",
-            name = "Auto Magic/Battlemage potion",
-            description = "Automatically drinks Magic/Battlemage potions",
-            position = 4,
-            section = foodAndPotionsSection
-    )
-    default boolean toggleMagicPotion() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "Use AntiPoison",
-            name = "Auto AntiPoison",
-            description = "Use AntiPoison",
-            position = 8,
-            section = foodAndPotionsSection
-    )
-    default boolean useAntiPoison() {
-        return false;
-    }
-
-    // use antifire potion
-    @ConfigItem(
-            keyName = "useAntifirePotion",
-            name = "Auto Antifire Potion",
-            description = "Use Antifire Potion",
-            position = 9,
-            section = foodAndPotionsSection
-    )
-    default boolean useAntifirePotion() {
-        return false;
-    }
-    // Use goading potion
-    @ConfigItem(
-            keyName = "useGoadingPotion",
-            name = "Auto Goading Potion",
-            description = "Use Goading Potion",
-            position = 10,
-            section = foodAndPotionsSection
-    )
-    default boolean useGoadingPotion() {
-        return false;
-    }
+//    @ConfigItem(
+//            keyName = "Auto Prayer Potion",
+//            name = "Auto prayer potion",
+//            description = "Automatically drinks prayer potions",
+//            position = 1,
+//            section = foodAndPotionsSection
+//    )
+//    default boolean togglePrayerPotions() {
+//        return false;
+//    }
+//
+//    @ConfigItem(
+//            keyName = "Combat potion",
+//            name = "Auto combat potion",
+//            description = "Automatically drinks combat potions",
+//            position = 2,
+//            section = foodAndPotionsSection
+//    )
+//    default boolean toggleCombatPotion() {
+//        return false;
+//    }
+//
+//    @ConfigItem(
+//            keyName = "Ranging/Bastion potion",
+//            name = "Auto Ranging/Bastion potion",
+//            description = "Automatically drinks Ranging/Bastion potions",
+//            position = 3,
+//            section = foodAndPotionsSection
+//    )
+//    default boolean toggleRangingPotion() {
+//        return false;
+//    }
+//
+//    @ConfigItem(
+//            keyName = "Magic/Battlemage potion",
+//            name = "Auto Magic/Battlemage potion",
+//            description = "Automatically drinks Magic/Battlemage potions",
+//            position = 4,
+//            section = foodAndPotionsSection
+//    )
+//    default boolean toggleMagicPotion() {
+//        return false;
+//    }
+//
+//    @ConfigItem(
+//            keyName = "Use AntiPoison",
+//            name = "Auto AntiPoison",
+//            description = "Use AntiPoison",
+//            position = 8,
+//            section = foodAndPotionsSection
+//    )
+//    default boolean useAntiPoison() {
+//        return false;
+//    }
+//
+//    // use antifire potion
+//    @ConfigItem(
+//            keyName = "useAntifirePotion",
+//            name = "Auto Antifire Potion",
+//            description = "Use Antifire Potion",
+//            position = 9,
+//            section = foodAndPotionsSection
+//    )
+//    default boolean useAntifirePotion() {
+//        return false;
+//    }
+//    // Use goading potion
+//    @ConfigItem(
+//            keyName = "useGoadingPotion",
+//            name = "Auto Goading Potion",
+//            description = "Use Goading Potion",
+//            position = 10,
+//            section = foodAndPotionsSection
+//    )
+//    default boolean useGoadingPotion() {
+//        return false;
+//    }
 
     @ConfigItem(
             keyName = "Loot items",
@@ -916,6 +926,32 @@ public interface AIOFighterConfig extends Config {
     )
     default int healthSafetyValue() {
         return 25;
+    }
+
+    // Slayer mode
+    @ConfigItem(
+            keyName = "slayerMode",
+            name = "Slayer Mode",
+            description = "Slayer Mode",
+            position = 0,
+            section = slayerSection,
+            hidden = true
+    )
+    default boolean slayerMode() {
+        return false;
+    }
+
+    // Slayer master
+    @ConfigItem(
+            keyName = "slayerMaster",
+            name = "Slayer Master",
+            description = "Slayer Master",
+            position = 1,
+            section = slayerSection,
+            hidden = true
+    )
+    default SlayerMaster slayerMaster() {
+        return SlayerMaster.VANNAKA;
     }
 
 
