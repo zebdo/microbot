@@ -43,7 +43,7 @@ public class OuraniaPlugin extends Plugin {
     @Inject
     private OuraniaScript ouraniaScript;
 
-    public static String version = "1.0.0";
+    public static String version = "1.1.0";
 
     @Getter
     public Instant startTime;
@@ -66,6 +66,8 @@ public class OuraniaPlugin extends Plugin {
     private boolean toggleOverlay;
     @Getter
     private int profit;
+    @Getter
+    private boolean useDepositAll;
     
     @Override
     protected void startUp() throws AWTException {
@@ -76,6 +78,7 @@ public class OuraniaPlugin extends Plugin {
         drinkAtPercent = config.drinkAtPercent();
         path = config.path();
         toggleOverlay = config.toggleOverlay();
+        useDepositAll = config.useDepositAll();
         startTime = Instant.now();
         
         if(overlayManager != null) {
@@ -127,6 +130,10 @@ public class OuraniaPlugin extends Plugin {
 
         if (event.getKey().equals(OuraniaConfig.path)){
             path = config.path();
+        }
+
+        if (event.getKey().equals(OuraniaConfig.useDepositAll)){
+            useDepositAll = config.useDepositAll();
         }
 
         if (event.getKey().equals(OuraniaConfig.toggleOverlay)){
