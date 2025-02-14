@@ -196,7 +196,7 @@ public class ShootingStarScript extends Script {
                         }
                         
                         if (Rs2Gembag.hasGemBag()) {
-                            Rs2Gembag.emptyGemBag();
+                            Rs2Bank.emptyGemBag();
                         }
 
                         boolean bankClosed = Rs2Bank.closeBank();

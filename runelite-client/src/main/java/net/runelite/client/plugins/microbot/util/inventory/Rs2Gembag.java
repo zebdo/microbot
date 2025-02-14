@@ -284,17 +284,6 @@ public class Rs2Gembag {
         return gemBagItemIds.stream().anyMatch(Rs2Inventory::hasItem);
     }
 
-    /**
-     * Empties the gem bag if present in the inventory.
-     *
-     * @return True if the gem bag was successfully emptied, false otherwise.
-     */
-    public static boolean emptyGemBag() {
-        Rs2ItemModel gemBag = Rs2Inventory.get(gemBagItemIds.toArray(Integer[]::new));
-        if (gemBag == null) return false;
-        return Rs2Inventory.interact(gemBag, "Empty");
-    }
-
     public static boolean isGemBagOpen() {
         return Rs2Inventory.hasItem(ItemID.OPEN_GEM_BAG);
     }
