@@ -42,7 +42,7 @@ public class Rs2Gembag {
 
         if (gemMatcher.find()) {
             if (!isGemBagOpen()) return;
-            Rs2ItemModel gemItem = getGemItemModel(gemMatcher.group(1));
+            Rs2ItemModel gemItem = getGemItemModel("uncut " + gemMatcher.group(1));
             if (gemItem != null) updateGem(gemItem, 1);
         }
 
