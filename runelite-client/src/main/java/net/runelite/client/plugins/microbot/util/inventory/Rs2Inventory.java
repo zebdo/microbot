@@ -70,6 +70,10 @@ public class Rs2Inventory {
         return inventoryItems;
     }
 
+    public static Stream<Rs2ItemModel> items(Predicate<Rs2ItemModel> predicate) {
+        return inventoryItems.stream().filter(predicate);
+    }
+
     /**
      * Gets all the items in the inventory.
      *

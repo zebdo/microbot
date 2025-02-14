@@ -23,9 +23,11 @@ import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchOve
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchScript;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.mouse.VirtualMouse;
 import net.runelite.client.plugins.microbot.util.mouse.naturalmouse.NaturalMouse;
+import net.runelite.client.plugins.microbot.util.overlay.GembagOverlay;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
@@ -33,6 +35,7 @@ import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
+import net.runelite.client.ui.overlay.tooltip.TooltipManager;
 import net.runelite.client.ui.overlay.worldmap.WorldMapOverlay;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 
@@ -67,6 +70,8 @@ public class MicrobotPlugin extends Plugin {
     @Inject
     PluginManager pluginManager;
     @Inject
+    TooltipManager toolTipManager;
+    @Inject
     private Client client;
     @Inject
     private ClientThread clientThread;
@@ -74,6 +79,8 @@ public class MicrobotPlugin extends Plugin {
     private ClientToolbar clientToolbar;
     @Inject
     private MicrobotOverlay microbotOverlay;
+    @Inject
+    private GembagOverlay gembagOverlay;
     @Inject
     private OverlayManager overlayManager;
     @Inject
@@ -110,8 +117,10 @@ public class MicrobotPlugin extends Plugin {
         Microbot.setWorldMapPointManager(worldMapPointManager);
         Microbot.setChatMessageManager(chatMessageManager);
         Microbot.setConfigManager(configManager);
+        Microbot.setTooltipManager(toolTipManager);
         if (overlayManager != null) {
             overlayManager.add(microbotOverlay);
+            overlayManager.add(gembagOverlay);
         }
 
         Microbot.setPouchScript(pouchScript);
@@ -198,6 +207,7 @@ public class MicrobotPlugin extends Plugin {
     @Subscribe
     private void onMenuOptionClicked(MenuOptionClicked event) {
         Microbot.getPouchScript().onMenuOptionClicked(event);
+        Rs2Gembag.onMenuOptionClicked(event);
         Microbot.targetMenu = null;
         System.out.println(event.getMenuEntry());
     }
@@ -211,6 +221,7 @@ public class MicrobotPlugin extends Plugin {
             Microbot.cantHopWorld = true;
         }
         Microbot.getPouchScript().onChatMessage(event);
+        Rs2Gembag.onChatMessage(event);
     }
 
     @SneakyThrows
