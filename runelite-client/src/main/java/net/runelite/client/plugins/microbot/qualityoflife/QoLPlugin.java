@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.events.*;
+import net.runelite.api.widgets.ComponentID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
@@ -14,11 +15,12 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.config.ConfigPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.qualityoflife.enums.WintertodtActions;
+import net.runelite.client.plugins.microbot.qualityoflife.managers.CraftingManager;
 import net.runelite.client.plugins.microbot.qualityoflife.managers.FiremakingManager;
 import net.runelite.client.plugins.microbot.qualityoflife.managers.FletchingManager;
+import net.runelite.client.plugins.microbot.qualityoflife.managers.GemCuttingManager;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.*;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.bank.BankpinScript;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pvp.PvpScript;
@@ -30,12 +32,12 @@ import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.RunePouch;
-import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
-import net.runelite.client.plugins.microbot.util.magic.Runes;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
@@ -123,6 +125,10 @@ public class QoLPlugin extends Plugin {
     @Inject
     FiremakingManager firemakingManager;
     @Inject
+    GemCuttingManager gemCuttingManager;
+    @Inject
+    CraftingManager craftingManager;
+    @Inject
     EventBus eventBus;
 
     @Inject
@@ -181,6 +187,8 @@ public class QoLPlugin extends Plugin {
         autoItemDropperScript.run(config);
         eventBus.register(fletchingManager);
         eventBus.register(firemakingManager);
+        eventBus.register(gemCuttingManager);
+        eventBus.register(craftingManager);
         bankpinScript.run(config);
         // pvpScript.run(config);
         awaitExecutionUntil(() ->Microbot.getClientThread().invokeLater(this::updateUiElements), () -> !SplashScreen.isOpen(), 600);
@@ -197,6 +205,8 @@ public class QoLPlugin extends Plugin {
         overlayManager.remove(wintertodtOverlay);
         eventBus.unregister(fletchingManager);
         eventBus.unregister(firemakingManager);
+        eventBus.unregister(gemCuttingManager);
+        eventBus.unregister(craftingManager);
     }
 
     @Subscribe(
@@ -286,6 +296,13 @@ public class QoLPlugin extends Plugin {
 
         if ("Track".equals(event.getMenuOption())) {
             event.consume();
+        }
+        if(event.getMenuOption().contains("HA Profit")) {
+            event.consume();
+            Microbot.getClientThread().runOnSeperateThread(() -> {
+                customHaProfitOnClicked(menuEntry);
+                return null;
+            });
         }
 
         if ((config.resumeFletchingKindling() || config.resumeFeedingBrazier()) && isInWintertodtRegion()) {
@@ -402,6 +419,17 @@ public class QoLPlugin extends Plugin {
         MenuEntry menuEntry = event.getMenuEntry();
         boolean bankChestCheck = "Bank".equals(option) || ("Use".equals(option) && target.toLowerCase().contains("bank chest"));
 
+        if(config.quickHighAlch() && menuEntry.getItemId() != -1 && !menuEntry.getTarget().isEmpty() && menuEntry.getParam1() == ComponentID.INVENTORY_CONTAINER && menuEntry.getType() != MenuAction.WIDGET_TARGET_ON_WIDGET) {
+            Rs2ItemModel item = Rs2Inventory.getItemInSlot(menuEntry.getParam0());
+            if(item != null){
+                if(item.isHaProfitable()){
+                    event.getMenuEntry().setOption("<col=FFA500>HA Profit</col>");
+                }
+            }
+
+
+        }
+
         if (config.rightClickCameraTracking() && menuEntry.getNpc() != null && menuEntry.getNpc().getId() > 0) {
             addMenuEntry(event, "Track", target, this::customTrackOnClicked);
         }
@@ -450,6 +478,19 @@ public class QoLPlugin extends Plugin {
         if (config.displayInventorySetups() && bankChestCheck && event.getItemId() == -1) {
             addLoadoutMenuEntries(event, target);
         }
+    }
+
+    private void customHaProfitOnClicked(MenuEntry entry) {
+        NewMenuEntry highAlch = new NewMenuEntry("Cast","High Alch",0,MenuAction.WIDGET_TARGET,-1,14286892,false);
+        NewMenuEntry highAlchItem = new NewMenuEntry("Cast","High Alch",0,MenuAction.WIDGET_TARGET_ON_WIDGET,entry.getParam0(),ComponentID.INVENTORY_CONTAINER,false);
+        highAlchItem.setItemId(entry.getItemId());
+        Rs2Tab.switchToMagicTab();
+        Microbot.getMouse().click(Microbot.getClient().getMouseCanvasPosition(), highAlch);
+        Global.sleep(Rs2Random.randomGaussian(150,50));
+        Microbot.getMouse().click(Microbot.getClient().getMouseCanvasPosition(), highAlchItem);
+        Rs2Player.waitForXpDrop(Skill.MAGIC,1000);
+        Rs2Tab.switchToInventoryTab();
+
     }
 
     private void addLoadoutMenuEntries(MenuEntryAdded event, String target) {
@@ -572,15 +613,15 @@ public class QoLPlugin extends Plugin {
         }
         Microbot.log("<col=245C2D>Recording actions for: </col>" + option);
     }
-    
+
     private void quickTeleportToHouse(MenuEntry entry) {
         if (!Rs2Inventory.hasRunePouch()) return;
-        
+
         if (!Rs2Magic.hasRequiredRunes(Rs2Spells.TELEPORT_TO_HOUSE)) {
             Microbot.log("<col=5F1515>Missing Required Runes</col>");
             return;
         }
-        
+
         Microbot.log("<col=245C2D>Casting: </col>Teleport to House");
         Microbot.getClientThread().runOnSeperateThread(() -> {
             Rs2Magic.cast(MagicAction.TELEPORT_TO_HOUSE);
