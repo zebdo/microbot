@@ -6,6 +6,7 @@ import net.runelite.api.NpcID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -54,7 +55,7 @@ public class RoguesDenScript extends Script {
                 new Obstacles.Obstacle(2962, 5050, "Stand"),
                 new Obstacles.Obstacle(2963, 5056, "Run"),
                 new Obstacles.Obstacle(2968, 5061, "Stand", 7246, 0), // Above 80 thieving
-                new Obstacles.Obstacle(2974, 5059, "Stand",7251, 0),  // Above 80 thieving
+                new Obstacles.Obstacle(2974, 5059, "Stand", 7251, 0),  // Above 80 thieving
                 new Obstacles.Obstacle(2989, 5058, "Stand"),  // Above 80 thieving
                 new Obstacles.Obstacle(2990, 5058, "Open", 7255, 0),  // Above 80 thieving
                 new Obstacles.Obstacle(2957, 5072, "Open", 7219, 0),
@@ -138,6 +139,13 @@ public class RoguesDenScript extends Script {
                 long startTime = System.currentTimeMillis();
 
                 if (!init) {
+                    if (!Rs2Player.getSkillRequirement(Skill.THIEVING, 50)
+                            && !Rs2Player.getSkillRequirement(Skill.AGILITY, 50)) {
+                        Microbot.showMessage("Rogues Den requires at least 50 thieving and agility. Shutting down.");
+                        shutdown();
+                        return;
+                    }
+
                     Rs2Camera.setPitch(Random.random(300, 383));
                     initObstacles();
                     Microbot.enableAutoRunOn = false;
