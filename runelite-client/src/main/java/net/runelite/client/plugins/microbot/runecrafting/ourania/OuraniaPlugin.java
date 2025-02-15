@@ -68,6 +68,10 @@ public class OuraniaPlugin extends Plugin {
     private int profit;
     @Getter
     private boolean useDepositAll;
+    @Getter
+    private boolean useMassWorld;
+    @Getter
+    private boolean toggleProfitCalculator;
     
     @Override
     protected void startUp() throws AWTException {
@@ -79,6 +83,8 @@ public class OuraniaPlugin extends Plugin {
         path = config.path();
         toggleOverlay = config.toggleOverlay();
         useDepositAll = config.useDepositAll();
+        useMassWorld = config.useMassWorld();
+        toggleProfitCalculator = config.toggleProfitCalculator();
         startTime = Instant.now();
         
         if(overlayManager != null) {
@@ -135,10 +141,17 @@ public class OuraniaPlugin extends Plugin {
         if (event.getKey().equals(OuraniaConfig.useDepositAll)){
             useDepositAll = config.useDepositAll();
         }
+        if (event.getKey().equals(OuraniaConfig.useMassWorld)){
+            useMassWorld = config.useMassWorld();
+        }
 
         if (event.getKey().equals(OuraniaConfig.toggleOverlay)){
             toggleOverlay = config.toggleOverlay();
             toggleOverlay(toggleOverlay);
+        }
+
+        if (event.getKey().equals(OuraniaConfig.toggleProfitCalculator)){
+            toggleProfitCalculator = config.toggleProfitCalculator();
         }
     }
     
