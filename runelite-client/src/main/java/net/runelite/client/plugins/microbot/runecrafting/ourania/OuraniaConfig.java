@@ -10,7 +10,7 @@ import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 @ConfigInformation(
         "• This plugin will craft runes at Ourania Altar (ZMI Altar) <br />" +
         "• Ensure you have auto-pay configured with Eniola. <br />" +
-        "• If using deposit all feature, ensure you lock the slots you wish to keep in inventory <br />" +
+        "• If using deposit all feature, <b>ensure you lock the slots you wish to keep in inventory</b> <br />" +
         "• Requires Lunar Spellbook and to speak with Baby Yaga to learn Ourania Teleport. <br />" +
         "• Ensure you have a runepouch with your runes for teleport to Ourania & payment runes. <br />"
 )
@@ -20,11 +20,13 @@ public interface OuraniaConfig extends Config {
     String essence = "essence";
     String path = "path";
     String useDepositAll = "useDepositAll";
+    String useMassWorld = "useMassWorld";
     String useEnergyRestorePotions = "useEnergyRestorePotions";
     String food = "food";
     String eatAtPercent = "eatAtPercent";
     String drinkAtPercent = "drinkAtPercent";
     String toggleOverlay = "toggleOverlay";
+    String toggleProfitCalculator = "toggleProfitCalculator";
     
     @ConfigSection(
             name = "General",
@@ -81,6 +83,17 @@ public interface OuraniaConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = useMassWorld,
+            name = "Hop to Mass World",
+            description = "Should enable if you want to ensure you are playing on a mass world",
+            position = 3,
+            section = generalSection
+    )
+    default boolean useMassWorld() {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = food,
             name = "Food",
             description = "Select food that should be used when low HP (eats when at bank)",
@@ -124,8 +137,8 @@ public interface OuraniaConfig extends Config {
     )
     @ConfigItem(
             keyName = drinkAtPercent,
-            name = "Drink Stamina At",
-            description = "Run energy should drink stamina at",
+            name = "Drink Energy At",
+            description = "Run energy should drink stamina OR energy potions at",
             position = 3,
             section = suppliesSection
     )
@@ -141,6 +154,17 @@ public interface OuraniaConfig extends Config {
             section = overlaySection
     )
     default boolean toggleOverlay() {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = toggleProfitCalculator,
+            name = "Toggle Profit Calculator",
+            description = "Should hide the profit calculator",
+            position = 0,
+            section = overlaySection
+    )
+    default boolean toggleProfitCalculator() {
         return false;
     }
 }
