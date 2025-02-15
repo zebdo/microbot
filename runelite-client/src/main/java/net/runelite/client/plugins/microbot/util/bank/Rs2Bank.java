@@ -60,6 +60,8 @@ public class Rs2Bank {
     private static final int HANDLE_ALL = 7;
     private static final int WITHDRAW_AS_NOTE_VARBIT = 3958;
     public static List<Rs2ItemModel> bankItems = new ArrayList<Rs2ItemModel>();
+    // Used to synchronize calls
+    private static final Object lock = new Object();
     /**
      * Container describes from what interface the action happens
      * eg: withdraw means the contailer will be the bank container
@@ -1461,28 +1463,26 @@ public class Rs2Bank {
         };
 
         if (isBankPinWidgetVisible()) {
-            for (int i = 0; i < pin.length(); i++){
-                char c = pin.charAt(i);
-                String expectedInstruction = digitInstructions[i];
-                
-                boolean instructionVisible = sleepUntil(() -> Rs2Widget.hasWidgetText(expectedInstruction, 213, 10, false), 2000);
+            synchronized (lock) {
+                for (int i = 0; i < pin.length(); i++) {
+                    char c = pin.charAt(i);
+                    String expectedInstruction = digitInstructions[i];
 
-                if (!instructionVisible) {
-                    Microbot.log("Failed to detect instruction within timeout period: " + expectedInstruction);
-                    return false;
-                }
-                
-                if (isBankPluginEnabled() && hasKeyboardBankPinEnabled()) {
-                    synchronized (Rs2Keyboard.class) {
-                        Rs2Keyboard.typeString(String.valueOf(c));
+                    boolean instructionVisible = sleepUntil(() -> Rs2Widget.hasWidgetText(expectedInstruction, 213, 10, false), 2000);
+
+                    if (!instructionVisible) {
+                        Microbot.log("Failed to detect instruction within timeout period: " + expectedInstruction);
+                        return false;
                     }
-                } else {
-                    synchronized (Rs2Widget.class) {
+
+                    if (isBankPluginEnabled() && hasKeyboardBankPinEnabled()) {
+                        Rs2Keyboard.typeString(String.valueOf(c));
+                    } else {
                         Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
                     }
                 }
+                return true;
             }
-            return true;
         }
         return false;
     }
