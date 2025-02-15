@@ -21,6 +21,8 @@ public class AutoBuyerScript extends Script {
 
     public boolean run(AutoBuyerConfig config) {
         Microbot.enableAutoRunOn = false;
+        // Replace any spaces around commas with just a comma since G.E. has whitespace sensitivity
+        String listOfItemsToBuy = config.listOfItemsToBuy().replaceAll("\\s*,\\s*", ",");
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -29,11 +31,11 @@ public class AutoBuyerScript extends Script {
                 long startTime = System.currentTimeMillis();
 
                 if (!initialized) {
-                    if (config.listOfItemsToBuy().length() <= 0) {
+                    if (listOfItemsToBuy.length() <= 0) {
                         Microbot.log("No items found.");
                         shutdown();
                     }
-                    itemsList = mapItems(splitItemsByCommas(config.listOfItemsToBuy()));
+                    itemsList = mapItems(splitItemsByCommas(listOfItemsToBuy));
                     initialCount = itemsList.size();
                     initialized = true;
                     if (!isRunning())
@@ -112,8 +114,8 @@ public class AutoBuyerScript extends Script {
                 if (item.contains("[")) {
                     // Split the item into name and quantity parts
                     String[] parts = item.split("\\[");
-                    String name = parts[0];
-                    String quantityStr = parts[1].replace("]", "");
+                    String name = parts[0].trim();
+                    String quantityStr = parts[1].replace("]", "").trim();
 
                     // Convert the quantity to an integer
                     int quantity = Integer.parseInt(quantityStr);
@@ -122,7 +124,7 @@ public class AutoBuyerScript extends Script {
                     itemMap.put(name, quantity);
                 } else {
                     // If quantity is missing, default it to 1
-                    itemMap.put(item, 1);
+                    itemMap.put(item.trim(), 1);
                 }
             } catch (NumberFormatException e) {
                 Microbot.log(item + " has an invalid quantity. Quantity must be a number.");
