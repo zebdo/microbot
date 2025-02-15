@@ -15,6 +15,7 @@ import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
@@ -1472,9 +1473,13 @@ public class Rs2Bank {
                 }
                 
                 if (isBankPluginEnabled() && hasKeyboardBankPinEnabled()) {
-                    Rs2Keyboard.typeString(String.valueOf(c));
+                    synchronized (Rs2Keyboard.class) {
+                        Rs2Keyboard.typeString(String.valueOf(c));
+                    }
                 } else {
-                    Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
+                    synchronized (Rs2Widget.class) {
+                        Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
+                    }
                 }
             }
             return true;
