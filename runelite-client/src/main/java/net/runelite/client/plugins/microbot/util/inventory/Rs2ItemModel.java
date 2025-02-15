@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.util.inventory;
 
 import lombok.Getter;
+import lombok.Setter;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemID;
@@ -10,11 +11,13 @@ import net.runelite.client.plugins.microbot.Microbot;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 public class Rs2ItemModel {
     @Getter
     public int id;
     @Getter
+    @Setter
     public int quantity;
     @Getter
     public int slot = -1;
@@ -60,6 +63,12 @@ public class Rs2ItemModel {
 
     public boolean isFood() {
         return Arrays.stream(inventoryActions).anyMatch(x -> x != null && x.equalsIgnoreCase("eat"));
+    }
+    
+    public boolean canEquip() {
+        return Arrays.stream(inventoryActions)
+                .filter(Objects::nonNull)
+                .anyMatch(x -> x.toLowerCase().contains("wear") || x.toLowerCase().contains("wield"));
     }
 
     private void addEquipmentActions(ItemComposition itemComposition) {
