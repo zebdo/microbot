@@ -192,7 +192,7 @@ public class Rs2GrandExchange {
 
     /**
      * TODO: test this method
-     * Buys item from the grand exchange 5% above the average priec
+     * Buys item from the grand exchange 5% above the average price
      *
      * @param itemName
      * @param quantity
