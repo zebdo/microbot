@@ -104,7 +104,7 @@ public class Rs2Inventory {
     }
 
     /**
-     * Combines two items in the inventory by their IDs.
+     * Combines two items in the inventory by their IDs, ensuring distinct items are used.
      *
      * @param primaryItemId   The ID of the primary item.
      * @param secondaryItemId The ID of the secondary item.
@@ -112,14 +112,14 @@ public class Rs2Inventory {
      * @return True if the combine operation was successful, false otherwise.
      */
     public static boolean combine(int primaryItemId, int secondaryItemId) {
-        boolean primaryItemInteracted = use(primaryItemId);
-        sleep(100);
-        boolean secondaryItemInteracted = use(secondaryItemId);
-        return primaryItemInteracted && secondaryItemInteracted;
+        Rs2ItemModel primary = get(primaryItemId);
+        Rs2ItemModel secondary = get(secondaryItemId);
+
+        return combine(primary, secondary);
     }
 
     /**
-     * Combines two items in the inventory by their names.
+     * Combines two items in the inventory by their names, ensuring distinct items are used.
      *
      * @param primaryItemName   The name of the primary item.
      * @param secondaryItemName The name of the secondary item.
@@ -127,14 +127,14 @@ public class Rs2Inventory {
      * @return True if the combine operation was successful, false otherwise.
      */
     public static boolean combine(String primaryItemName, String secondaryItemName) {
-        boolean primaryItemInteracted = use(primaryItemName);
-        sleep(100);
-        boolean secondaryItemInteracted = use(secondaryItemName);
-        return primaryItemInteracted && secondaryItemInteracted;
+        Rs2ItemModel primary = get(primaryItemName, false);
+        Rs2ItemModel secondary = get(secondaryItemName, false);
+
+        return combine(primary, secondary);
     }
 
     /**
-     * Combines two items in the inventory.
+     * Combines two items in the inventory using Rs2ItemModel objects, ensuring distinct items are used.
      *
      * @param primary   The primary item.
      * @param secondary The secondary item.
@@ -142,9 +142,29 @@ public class Rs2Inventory {
      * @return True if the combine operation was successful, false otherwise.
      */
     public static boolean combine(Rs2ItemModel primary, Rs2ItemModel secondary) {
-        boolean primaryItemInteracted = use(primary);
+        // Get the primary item
+        Rs2ItemModel primaryItem = get(item -> item.getId() == primary.getId());
+        if (primaryItem == null) {
+            Microbot.log("Primary item not found in the inventory.");
+            return false;
+        }
+
+        // Select the primary item
+        boolean primaryItemInteracted = use(primaryItem);
+        if (!primaryItemInteracted) {
+            return false;
+        }
         sleep(100, 175);
-        boolean secondaryItemInteracted = use(secondary);
+
+        // Get a secondary item that isn't the same as the primary
+        Rs2ItemModel secondaryItem = get(item -> item.getId() == secondary.getId() && item.getSlot() != primaryItem.getSlot());
+        if (secondaryItem == null) {
+            Microbot.log("No valid secondary item found to combine with.");
+            return false;
+        }
+
+        // Interact with the secondary item
+        boolean secondaryItemInteracted = use(secondaryItem);
         return primaryItemInteracted && secondaryItemInteracted;
     }
 
