@@ -292,8 +292,8 @@ public class FarmTreeRunScript extends Script {
     private boolean walkToLocation(WorldPoint location) {
         if (!Rs2Player.isAnimating()) {
             Rs2Walker.walkTo(location);
-            sleepUntil(() -> Rs2Player.distanceTo(location) < 10);
-            return Rs2Player.distanceTo(location) < 10;
+            sleepUntil(() -> Rs2Player.distanceTo(location) < 16);
+            return Rs2Player.distanceTo(location) < 16;
         }
         return false;
     }
@@ -474,11 +474,6 @@ public class FarmTreeRunScript extends Script {
                 break;
         }
 
-        if (patch.kind == TreeKind.FRUIT_TREE) {
-            boolean notedFruit = handleNotingFruit(patch);
-            return notedFruit && done;
-        }
-
         return done;
     }
 
@@ -515,11 +510,12 @@ public class FarmTreeRunScript extends Script {
      * @return {@code true} if payment was successful, else {@code false}
      */
     private boolean handlePayment(FarmTreeRunConfig config, Patch patch, PaymentKind action) {
-        if (!isPatchEmpty(patch) && !shouldProtectTree(config, patch))
+        if (isTreePatch(patch) && !isPatchEmpty(patch) && !shouldProtectTree(config) && action != PaymentKind.CLEAR)
             return true;
 
-        if (!isPatchEmpty(patch) && !shouldProtectFruitTree(config, patch))
+        if (isFruitTreePatch(patch) && !isPatchEmpty(patch) && !shouldProtectFruitTree(config) && action != PaymentKind.CLEAR)
             return true;
+
 
         Rs2NpcModel treeGardener = null;
         treeGardener = Rs2Npc.getNearestNpcWithAction("Pay");
@@ -532,6 +528,7 @@ public class FarmTreeRunScript extends Script {
         }
 
         sleepUntil(Rs2Dialogue::isInDialogue, 5000);
+        sleep(500, 1500);
         if (!Rs2Dialogue.hasSelectAnOption()) {
             return Rs2Dialogue.hasDialogueText("Leave it with me") || Rs2Dialogue.hasDialogueText("already looking after that patch");
         }
@@ -667,12 +664,20 @@ public class FarmTreeRunScript extends Script {
                 && Rs2Equipment.isWearing("GRACEFUL CAPE");
     }
 
-    private boolean shouldProtectTree(FarmTreeRunConfig config, Patch patch) {
-        return patch.kind == TreeKind.TREE && config.protectTrees();
+    private boolean shouldProtectTree(FarmTreeRunConfig config) {
+        return config.protectTrees();
     }
 
-    private boolean shouldProtectFruitTree(FarmTreeRunConfig config, Patch patch) {
-        return patch.kind == TreeKind.FRUIT_TREE && config.protectFruitTrees();
+    private boolean shouldProtectFruitTree(FarmTreeRunConfig config) {
+        return config.protectFruitTrees();
+    }
+
+    private boolean isTreePatch(Patch patch) {
+        return patch.kind == TreeKind.TREE;
+    }
+
+    private boolean isFruitTreePatch(Patch patch) {
+        return patch.kind == TreeKind.FRUIT_TREE;
     }
 
     private boolean shouldUseCompost(FarmTreeRunConfig config, Patch patch) {
