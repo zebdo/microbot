@@ -586,8 +586,7 @@ public class Rs2Npc {
 
             // Execute the interaction
             if (menuAction != null) {
-                Microbot.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc.getActor()),
-                        Rs2UiHelper.getActorClickbox(npc.getNpc()));
+                Microbot.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc), Rs2UiHelper.getActorClickbox(npc));
             }
 
         } catch (Exception ex) {
