@@ -239,7 +239,6 @@ public class PathfinderConfig {
 
                 if (point == null && useTransport(transport)) {
                     usableTeleports.add(transport);
-                    System.out.println("break");
                 } else if (useTransport(transport)) {
                     usableTransports.add(transport);
                 }
