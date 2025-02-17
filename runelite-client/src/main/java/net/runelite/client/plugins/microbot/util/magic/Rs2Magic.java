@@ -774,9 +774,6 @@ public class Rs2Magic {
                 int deficit = requiredAmount - availableAmount;
                 int combinationRuneAmount = getCombinationRuneCount(requiredRune, availableRunes);
                 if (combinationRuneAmount < deficit) {
-                    if (spell.getName().toLowerCase().contains("ardougne teleport")) {
-                        System.out.println("break");
-                    }
                     return false;
                 }
             }
