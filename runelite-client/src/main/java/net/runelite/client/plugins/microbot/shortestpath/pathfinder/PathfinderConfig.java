@@ -542,7 +542,7 @@ public class PathfinderConfig {
 
     /** Checks if the player has all the required equipment and inventory items for the transport */
     /** Checks if the player has all the required equipment and inventory items for the transport */
-    private boolean hasRequiredItems(Transport transport, boolean useBankItems) {
+    private boolean hasRequiredItems(Transport transport) {
         // Global flag to disable teleports
         if ((transport.getType() == TELEPORTATION_ITEM || transport.getType() == TELEPORTATION_SPELL) && Rs2Walker.disableTeleports) {
             return false;
