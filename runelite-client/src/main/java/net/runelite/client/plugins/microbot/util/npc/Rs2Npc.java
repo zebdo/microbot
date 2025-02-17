@@ -210,13 +210,13 @@ public class Rs2Npc {
      * @return A sorted {@link Stream} of {@link Rs2NpcModel} objects that match the given predicate.
      */
     public static Stream<Rs2NpcModel> getNpcs(Predicate<Rs2NpcModel> predicate) {
-        List<Rs2NpcModel> npcList = Microbot.getClient().getTopLevelWorldView().npcs().stream()
+        List<Rs2NpcModel> npcList = Microbot.getClientThread().runOnClientThread(() -> Microbot.getClient().getTopLevelWorldView().npcs().stream()
                 .filter(Objects::nonNull)
                 .map(Rs2NpcModel::new)
                 .filter(predicate)
                 .filter(x -> x.getName() != null)
                 .sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation())))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
 
         return npcList.stream();
     }

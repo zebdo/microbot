@@ -56,16 +56,6 @@ public class MicrobotRSConfig
 		return classLoaderProperties.get("initial_class").replace(".class", "");
 	}
 
-	boolean isFallback()
-	{
-		return getRuneLiteGamepack() != null;
-	}
-
-	String getRuneLiteGamepack()
-	{
-		return classLoaderProperties.get("runelite.gamepack");
-	}
-
 	String getRuneLiteWorldParam()
 	{
 		return classLoaderProperties.get("runelite.worldparam");

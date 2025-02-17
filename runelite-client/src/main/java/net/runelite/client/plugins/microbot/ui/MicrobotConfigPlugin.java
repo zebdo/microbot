@@ -45,7 +45,6 @@ import java.awt.image.BufferedImage;
 
 @PluginDescriptor(
         name = "MicrobotConfiguration",
-        loadWhenOutdated = true,
         hidden = true // prevent users from disabling
 )
 public class MicrobotConfigPlugin extends Plugin {
