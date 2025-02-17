@@ -16,12 +16,15 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
+import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
@@ -30,7 +33,17 @@ public class BirdHunterScript extends Script {
     public static String version = "1.0.1";
     @Getter
     private WorldArea dynamicHuntingArea;
-    private WorldPoint huntingCenter;
+    @Getter
+    private static WorldPoint initialStartTile;
+    @Getter
+    private static int huntingRadius;
+    @Getter
+    private static int randomHandleInventoryTriggerThreshold;
+    @Getter
+    private static int randomBoneThreshold;
+
+    private final Pair<Integer, Integer> boneThresholdRange = Pair.of(3, 10);
+    private final Pair<Integer, Integer> HandleInventoryThresholdRange = Pair.of(18, 25);
 
     public boolean run(BirdHunterConfig config) {
         Microbot.log("Bird Hunter script started.");
@@ -39,7 +52,12 @@ public class BirdHunterScript extends Script {
             Microbot.log("Not enough bird snares in inventory. Stopping the script.");
             return false;
         }
-        huntingCenter = Rs2Player.getWorldLocation();
+        initialStartTile = Rs2Player.getWorldLocation();
+
+        randomBoneThreshold = ThreadLocalRandom.current().nextInt(boneThresholdRange.getLeft(), boneThresholdRange.getRight());
+        randomHandleInventoryTriggerThreshold = ThreadLocalRandom.current().nextInt(
+                HandleInventoryThresholdRange.getLeft(), HandleInventoryThresholdRange.getRight()
+        );
         updateHuntingArea(config);
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
@@ -78,12 +96,12 @@ public class BirdHunterScript extends Script {
     }
 
     public void updateHuntingArea(BirdHunterConfig config) {
-        int radius = 2;
+        huntingRadius = config.huntingRadiusValue();
         dynamicHuntingArea = new WorldArea(
-                huntingCenter.getX() - radius,
-                huntingCenter.getY() - radius,
-                radius * 2, radius * 2,
-                huntingCenter.getPlane()
+                initialStartTile.getX() - huntingRadius,
+                initialStartTile.getY() - huntingRadius,
+                (huntingRadius * huntingRadius) + 1, (huntingRadius * huntingRadius) + 1,
+                initialStartTile.getPlane()
         );
     }
 
@@ -93,13 +111,11 @@ public class BirdHunterScript extends Script {
     }
 
     private void walkBackToArea() {
-        WorldPoint centerTile = dynamicHuntingArea.toWorldPoint();
-        WorldPoint walkableTile = getSafeWalkableTile(centerTile, dynamicHuntingArea);
+        WorldPoint walkableTile = getSafeWalkableTile(dynamicHuntingArea);
 
         if (walkableTile != null) {
             Rs2Walker.walkFastCanvas(walkableTile);
             Rs2Player.waitForWalking();
-            Microbot.log("Walking back to the center of the hunting area: " + walkableTile);
         } else {
             Microbot.log("No safe walkable tile found inside the hunting area.");
         }
@@ -163,7 +179,8 @@ public class BirdHunterScript extends Script {
         if (!Rs2Inventory.contains(ItemID.BIRD_SNARE)) return;
 
         if (Rs2Player.isStandingOnGameObject()) {
-            movePlayerOffObject();
+            if (!movePlayerOffObject())
+                return;
         }
 
         layBirdSnare();
@@ -174,7 +191,6 @@ public class BirdHunterScript extends Script {
         if (Rs2Inventory.interact(birdSnare, "Lay")) {
             if (sleepUntil(Rs2Player::isAnimating, 2000)) {
                 sleepUntil(() -> !Rs2Player.isAnimating(), 3000);
-                Microbot.log("Bird snare was successfully laid.");
                 sleep(1000, 1500);
             }
         } else {
@@ -187,61 +203,56 @@ public class BirdHunterScript extends Script {
     }
 
 
-    private WorldPoint getSafeWalkableTile(WorldPoint targetPoint, WorldArea huntingArea) {
-        int searchRadius = 1;
+    private WorldPoint getSafeWalkableTile(WorldArea huntingArea) {
+        List<WorldPoint> candidates = new ArrayList<>();
 
-        for (int x = targetPoint.getX() - searchRadius; x <= targetPoint.getX() + searchRadius; x++) {
-            for (int y = targetPoint.getY() - searchRadius; y <= targetPoint.getY() + searchRadius; y++) {
-                WorldPoint candidateTile = new WorldPoint(x, y, targetPoint.getPlane());
+        // Collect all valid candidate tiles
+        for (int x = initialStartTile.getX() - huntingRadius; x <= initialStartTile.getX() + huntingRadius; x++) {
+            for (int y = initialStartTile.getY() - huntingRadius; y <= initialStartTile.getY() + huntingRadius; y++) {
+                WorldPoint candidateTile = new WorldPoint(x, y, huntingArea.getPlane());
                 LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), candidateTile);
 
                 if (localPoint != null && huntingArea.contains(candidateTile)) {
                     if (Rs2Tile.isWalkable(localPoint) && !isGameObjectAt(candidateTile)) {
-                        return candidateTile;
+                        candidates.add(candidateTile);
                     }
                 }
             }
         }
+
+        System.out.println("Valid candidates:");
+        for (WorldPoint candidate : candidates) {
+            System.out.println("Candidate tile: " + candidate);
+        }
+
+        // If there are valid candidates, return a random one
+        if (!candidates.isEmpty()) {
+            Random random = new Random();
+            return candidates.get(random.nextInt(candidates.size()));
+        }
+
+        // If no valid candidates are found, return null
         return null;
     }
 
-    private void movePlayerOffObject() {
-        WorldPoint nearestWalkable = getSafeWalkableTile(Rs2Player.getWorldLocation(), dynamicHuntingArea);
+    private boolean movePlayerOffObject() {
+        WorldPoint nearestWalkable = getSafeWalkableTile(dynamicHuntingArea);
         if (nearestWalkable != null) {
             Rs2Walker.walkFastCanvas(nearestWalkable);
             Rs2Player.waitForWalking();
+            return true;
         } else {
             Microbot.log("No safe walkable tile found inside the hunting area.");
         }
+        return false;
     }
 
 
-
     private boolean interactWithTrap(GameObject birdSnare) {
-        Microbot.log("Attempting to interact with bird snare at: " + birdSnare.getWorldLocation());
-
-        if (Rs2GameObject.interact(birdSnare)) {
-            Microbot.log("Interaction initiated successfully.");
-
-            if (!sleepUntil(Rs2Player::isAnimating, 2000)) {
-                Microbot.log("Failed to start animating during interaction with bird snare.");
-                return false;
-            }
-
-            if (!sleepUntil(() -> !Rs2Player.isAnimating(), 3000)) {
-                Microbot.log("Failed to finish interacting with the bird snare.");
-                return false;
-            }
-
-            if (Rs2Player.waitForXpDrop(Skill.HUNTER, true)) {
-                Microbot.log("Bird snare interaction was successful.");
-                return true;
-            } else {
-                Microbot.log("No Hunter XP drop detected after interacting with bird snare.");
-            }
-        } else {
-            Microbot.log("Failed to initiate interaction with bird snare.");
-        }
+        sleep(Rs2Random.randomGaussian(2000, 1250));
+        Rs2GameObject.interact(birdSnare);
+        sleepUntil(() -> Rs2Inventory.waitForInventoryChanges(7000));
+        sleep(Rs2Random.randomGaussian(2000, 1250));
 
         return false;
     }
@@ -254,21 +265,25 @@ public class BirdHunterScript extends Script {
     }
 
     private void checkForBonesAndHandleInventory(BirdHunterConfig config) {
-        int randomBoneThreshold = ThreadLocalRandom.current().nextInt(8, 13);
-
-        if (Rs2Inventory.count("Bones") > randomBoneThreshold) {
-            handleInventory(config);
+        if (Rs2Inventory.count("Bones") >= randomBoneThreshold) {
+            buryBones(config);
+            randomBoneThreshold = ThreadLocalRandom.current().nextInt(boneThresholdRange.getLeft(), boneThresholdRange.getRight());
         }
-
-        if (Rs2Inventory.isFull()) {
+        if (Rs2Inventory.count() >= randomHandleInventoryTriggerThreshold) {
             handleInventory(config);
+            randomHandleInventoryTriggerThreshold = ThreadLocalRandom.current().nextInt(
+                    HandleInventoryThresholdRange.getLeft(), HandleInventoryThresholdRange.getRight()
+            );
+            randomBoneThreshold = ThreadLocalRandom.current().nextInt(boneThresholdRange.getLeft(), boneThresholdRange.getRight());
         }
     }
 
     private void handleInventory(BirdHunterConfig config) {
-        if (config.buryBones()) {
+        if (config.buryBones() && Rs2Inventory.count("Bones") > randomBoneThreshold) {
             buryBones(config);
+
         }
+        buryBones(config);
         dropItems(config);
     }
 
@@ -278,13 +293,9 @@ public class BirdHunterScript extends Script {
         List<Rs2ItemModel> bones = Rs2Inventory.getBones();
         for (Rs2ItemModel bone : bones) {
             if (Rs2Inventory.interact(bone, "Bury")) {
-                if (Rs2Player.waitForXpDrop(Skill.PRAYER, true)) {
-                    Microbot.log("Bone was successfully buried.");
-                } else {
-                    Microbot.log("Failed to bury bone.");
-                }
+                Rs2Player.waitForXpDrop(Skill.PRAYER, true);
             }
-            sleep(300, 600);
+            sleep(Rs2Random.randomGaussian(500,200));
         }
     }
 
