@@ -11,8 +11,8 @@ import net.runelite.client.config.ConfigItem;
 public interface AutoGauntletConfig extends Config {
     @ConfigItem(
             keyName = "mysticMight?",
-            name = "Use mystic might instead of Augury? This will also force Eagle Eye and Ultimate Strength to be used",
-            description = "Use lesser prayers?",
+            name = "Use lesser prayers?",
+            description = "Will use Mystic Might/Eagle Eye/Ultimate Strength",
             position = 1
     )
     default boolean MysticMight() {
