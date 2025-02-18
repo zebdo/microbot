@@ -15,6 +15,7 @@ import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
@@ -59,6 +60,8 @@ public class Rs2Bank {
     private static final int HANDLE_ALL = 7;
     private static final int WITHDRAW_AS_NOTE_VARBIT = 3958;
     public static List<Rs2ItemModel> bankItems = new ArrayList<Rs2ItemModel>();
+    // Used to synchronize calls
+    private static final Object lock = new Object();
     /**
      * Container describes from what interface the action happens
      * eg: withdraw means the contailer will be the bank container
@@ -1460,24 +1463,26 @@ public class Rs2Bank {
         };
 
         if (isBankPinWidgetVisible()) {
-            for (int i = 0; i < pin.length(); i++){
-                char c = pin.charAt(i);
-                String expectedInstruction = digitInstructions[i];
-                
-                boolean instructionVisible = sleepUntil(() -> Rs2Widget.hasWidgetText(expectedInstruction, 213, 10, false), 2000);
+            synchronized (lock) {
+                for (int i = 0; i < pin.length(); i++) {
+                    char c = pin.charAt(i);
+                    String expectedInstruction = digitInstructions[i];
 
-                if (!instructionVisible) {
-                    Microbot.log("Failed to detect instruction within timeout period: " + expectedInstruction);
-                    return false;
+                    boolean instructionVisible = sleepUntil(() -> Rs2Widget.hasWidgetText(expectedInstruction, 213, 10, false), 2000);
+
+                    if (!instructionVisible) {
+                        Microbot.log("Failed to detect instruction within timeout period: " + expectedInstruction);
+                        return false;
+                    }
+
+                    if (isBankPluginEnabled() && hasKeyboardBankPinEnabled()) {
+                        Rs2Keyboard.typeString(String.valueOf(c));
+                    } else {
+                        Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
+                    }
                 }
-                
-                if (isBankPluginEnabled() && hasKeyboardBankPinEnabled()) {
-                    Rs2Keyboard.typeString(String.valueOf(c));
-                } else {
-                    Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
-                }
+                return true;
             }
-            return true;
         }
         return false;
     }

@@ -210,13 +210,13 @@ public class Rs2Npc {
      * @return A sorted {@link Stream} of {@link Rs2NpcModel} objects that match the given predicate.
      */
     public static Stream<Rs2NpcModel> getNpcs(Predicate<Rs2NpcModel> predicate) {
-        List<Rs2NpcModel> npcList = Microbot.getClient().getTopLevelWorldView().npcs().stream()
+        List<Rs2NpcModel> npcList = Microbot.getClientThread().runOnClientThread(() -> Microbot.getClient().getTopLevelWorldView().npcs().stream()
                 .filter(Objects::nonNull)
                 .map(Rs2NpcModel::new)
                 .filter(predicate)
                 .filter(x -> x.getName() != null)
                 .sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation())))
-                .collect(Collectors.toList());
+                .collect(Collectors.toList()));
 
         return npcList.stream();
     }
@@ -586,8 +586,7 @@ public class Rs2Npc {
 
             // Execute the interaction
             if (menuAction != null) {
-                Microbot.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc),
-                        Rs2UiHelper.getActorClickbox(npc));
+                Microbot.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc), Rs2UiHelper.getActorClickbox(npc));
             }
 
         } catch (Exception ex) {
@@ -1077,11 +1076,12 @@ public class Rs2Npc {
      */
     public static Rs2NpcModel getNearestNpcWithAction(String action) {
         Rs2WorldPoint playerLocation = new Rs2WorldPoint(Microbot.getClient().getLocalPlayer().getWorldLocation());
+        boolean isInstance = Microbot.getClient().getTopLevelWorldView().getScene().isInstance();
         return getNpcs()
                 .filter(value -> value.getComposition() != null
                         && value.getComposition().getActions() != null
                         && Arrays.asList(value.getComposition().getActions()).contains(action))
-                .min(Comparator.comparingInt(value -> playerLocation.distanceToPath(value.getWorldLocation())))
+                .min(Comparator.comparingInt(value -> new Rs2WorldPoint(Rs2WorldPoint.toLocalInstance(value.getWorldLocation())).distanceToPath(playerLocation.getWorldPoint())))
                 .orElse(null);
     }
 
@@ -1143,5 +1143,23 @@ public class Rs2Npc {
         }
         Microbot.getNaturalMouse().moveTo(point.getX(), point.getY());
         return true;
+    }
+
+    // Walks to the nearest NPC location with the given name
+    public static boolean walkToNearestMonster(String name, int minClustering, boolean avoidWilderness) {
+        WorldPoint nearestNpcLocation = Rs2NpcManager.getClosestLocation(name,minClustering,avoidWilderness).getClosestToCenter();
+        if (nearestNpcLocation == null) {
+            return false;
+        }
+        return Rs2Walker.walkTo(nearestNpcLocation);
+    }
+
+    public static boolean walkToNearestMonster(String name, int minClustering) {
+        return walkToNearestMonster(name, minClustering, false);
+    }
+
+    // Walks to the nearest NPC location with the given name
+    public static boolean walkToNearestMonster(String name) {
+        return walkToNearestMonster(name, 1, false);
     }
 }

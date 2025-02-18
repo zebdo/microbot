@@ -32,10 +32,38 @@ import com.google.common.graph.Graphs;
 import com.google.common.graph.MutableGraph;
 import com.google.common.reflect.ClassPath;
 import com.google.common.reflect.ClassPath.ClassInfo;
+import com.google.inject.Binder;
+import com.google.inject.CreationException;
+import com.google.inject.Injector;
+import com.google.inject.Key;
 import com.google.inject.Module;
-import com.google.inject.*;
+import java.io.File;
+import java.io.IOException;
+import java.lang.invoke.CallSite;
+import java.lang.invoke.LambdaMetafactory;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.BiConsumer;
+import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.SwingUtilities;
+
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
 import net.runelite.client.config.Config;
@@ -52,21 +80,6 @@ import net.runelite.client.task.Scheduler;
 import net.runelite.client.ui.SplashScreen;
 import net.runelite.client.util.GameEventManager;
 import net.runelite.client.util.ReflectUtil;
-
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.*;
-import java.io.File;
-import java.io.IOException;
-import java.lang.invoke.*;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.util.*;
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
 @Singleton
 @Slf4j
@@ -88,13 +101,10 @@ public class PluginManager
 	@Getter
 	private final List<Plugin> activePlugins = new CopyOnWriteArrayList<>();
 
-	@Setter
-	boolean isOutdated;
-
-	public void addPlugin(Plugin plugin) {
-		plugins.add(plugin);
-	}
-
+    public void addPlugin(Plugin plugin) {
+        plugins.add(plugin);
+    }
+    
 	@Inject
 	@VisibleForTesting
 	PluginManager(
@@ -334,7 +344,7 @@ public class PluginManager
 				continue;
 			}
 
-			if (!pluginDescriptor.loadWhenOutdated() && isOutdated)
+			if (pluginDescriptor.developerPlugin() && !developerMode)
 			{
 				continue;
 			}
@@ -428,7 +438,7 @@ public class PluginManager
 			plugin.startUp();
 
 			log.debug("Plugin {} is now running", plugin.getClass().getSimpleName());
-			if (!isOutdated && sceneTileManager != null)
+			if (sceneTileManager != null)
 			{
 				final GameEventManager gameEventManager = this.sceneTileManager.get();
 				if (gameEventManager != null)

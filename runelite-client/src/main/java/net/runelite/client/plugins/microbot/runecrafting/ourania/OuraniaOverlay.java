@@ -45,12 +45,13 @@ public class OuraniaOverlay extends OverlayPanel {
                     .left("Run time:")
                     .right(TimeUtils.getFormattedDurationBetween(plugin.getStartTime(), Instant.now()))
                     .build());
-
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Profit:")
-                    .right(Integer.toString(plugin.getProfit()))
-                    .build());
-
+        
+            if (!plugin.isToggleProfitCalculator()) {
+                panelComponent.getChildren().add(LineComponent.builder()
+                        .left("Profit:")
+                        .right(Integer.toString(plugin.getProfit()))
+                        .build());
+            }
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
