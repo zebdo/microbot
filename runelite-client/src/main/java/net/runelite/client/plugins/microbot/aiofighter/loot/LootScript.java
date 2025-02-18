@@ -3,8 +3,8 @@ package net.runelite.client.plugins.microbot.aiofighter.loot;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
-import net.runelite.client.plugins.microbot.aiofighter.AIOFighterPlugin;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterConfig;
+import net.runelite.client.plugins.microbot.aiofighter.AIOFighterPlugin;
 import net.runelite.client.plugins.microbot.aiofighter.enums.DefaultLooterStyle;
 import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -16,7 +16,7 @@ import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class LootScript extends Script {
-
+    int minFreeSlots = 0;
 
     public LootScript() {
 
@@ -27,13 +27,12 @@ public class LootScript extends Script {
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
+                minFreeSlots = config.bank() ? config.minFreeSlots() : 0;
                 if (!super.run()) return;
                 if (!Microbot.isLoggedIn()) return;
-                if (AIOFighterPlugin.getState() == State.BANKING.name() || AIOFighterPlugin.getState() == State.WALKING.name()) return;
-                if (Rs2Inventory.isFull() || Rs2Inventory.getEmptySlots() <= config.minFreeSlots() || (Rs2Combat.inCombat() && !config.toggleForceLoot()))
+                if (AIOFighterPlugin.getState().equals(State.BANKING) || AIOFighterPlugin.getState().equals(State.WALKING)) return;
+                if (Rs2Inventory.isFull() || Rs2Inventory.getEmptySlots() <= minFreeSlots || (Rs2Combat.inCombat() && !config.toggleForceLoot()))
                     return;
-
-                if (config.state().equals(State.BANKING)) return;
 
 
 
@@ -67,7 +66,7 @@ public class LootScript extends Script {
                     config.attackRadius(),
                     1,
                     10,
-                    config.minFreeSlots(),
+                    minFreeSlots,
                     config.toggleDelayedLooting(),
                     config.toggleOnlyLootMyItems(),
                     "arrow"
@@ -84,7 +83,7 @@ public class LootScript extends Script {
                     config.attackRadius(),
                     1,
                     1,
-                    config.minFreeSlots(),
+                    minFreeSlots,
                     config.toggleDelayedLooting(),
                     config.toggleOnlyLootMyItems(),
                     "bones"
@@ -101,7 +100,7 @@ public class LootScript extends Script {
                     config.attackRadius(),
                     1,
                     1,
-                    config.minFreeSlots(),
+                    minFreeSlots,
                     config.toggleDelayedLooting(),
                     config.toggleOnlyLootMyItems(),
                     " ashes"
@@ -119,7 +118,7 @@ public class LootScript extends Script {
                     config.attackRadius(),
                     1,
                     1,
-                    config.minFreeSlots(),
+                    minFreeSlots,
                     config.toggleDelayedLooting(),
                     config.toggleOnlyLootMyItems(),
                     " rune"
@@ -137,7 +136,7 @@ public class LootScript extends Script {
                     config.attackRadius(),
                     1,
                     1,
-                    config.minFreeSlots(),
+                    minFreeSlots,
                     config.toggleDelayedLooting(),
                     config.toggleOnlyLootMyItems(),
                     "coins"
@@ -155,7 +154,7 @@ public class LootScript extends Script {
                     config.attackRadius(),
                     1,
                     1,
-                    config.minFreeSlots(),
+                    minFreeSlots,
                     config.toggleDelayedLooting(),
                     config.toggleOnlyLootMyItems(),
                     "untradeable"
@@ -172,7 +171,7 @@ public class LootScript extends Script {
                 config.maxPriceOfItemsToLoot(),
                 config.attackRadius(),
                 1,
-                config.minFreeSlots(),
+                minFreeSlots,
                 config.toggleDelayedLooting(),
                 config.toggleOnlyLootMyItems()
         );
@@ -186,7 +185,7 @@ public class LootScript extends Script {
                 config.attackRadius(),
                 1,
                 1,
-                config.minFreeSlots(),
+                minFreeSlots,
                 config.toggleDelayedLooting(),
                 config.toggleOnlyLootMyItems(),
                 config.listOfItemsToLoot().trim().split(",")

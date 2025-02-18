@@ -30,6 +30,70 @@ import com.formdev.flatlaf.util.SystemInfo;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
+import java.awt.AWTException;
+import java.awt.Canvas;
+import java.awt.Component;
+import java.awt.Container;
+import java.awt.Cursor;
+import java.awt.Desktop;
+import java.awt.Dimension;
+import java.awt.Frame;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GraphicsConfiguration;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.Image;
+import java.awt.Insets;
+import java.awt.KeyboardFocusManager;
+import java.awt.LayoutManager2;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.SystemTray;
+import java.awt.Taskbar;
+import java.awt.Toolkit;
+import java.awt.TrayIcon;
+import java.awt.desktop.QuitStrategy;
+import java.awt.event.ComponentAdapter;
+import java.awt.event.ComponentEvent;
+import java.awt.event.KeyEvent;
+import java.awt.event.MouseEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowFocusListener;
+import java.awt.image.BufferedImage;
+import java.time.Duration;
+import java.util.ArrayDeque;
+import java.util.Arrays;
+import java.util.Deque;
+import java.util.List;
+import java.util.TreeSet;
+import java.util.function.Function;
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.inject.Named;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.Box;
+import javax.swing.Icon;
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JDialog;
+import javax.swing.JEditorPane;
+import javax.swing.JFrame;
+import javax.swing.JMenuBar;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JRootPane;
+import javax.swing.JTabbedPane;
+import javax.swing.SwingUtilities;
+import javax.swing.Timer;
+import javax.swing.ToolTipManager;
+import javax.swing.border.EmptyBorder;
+import javax.swing.border.MatteBorder;
+import javax.swing.event.HyperlinkEvent;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -57,27 +121,13 @@ import net.runelite.client.input.MouseManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.ui.laf.RuneLiteLAF;
 import net.runelite.client.ui.laf.RuneLiteRootPaneUI;
-import net.runelite.client.util.*;
-
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.inject.Named;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.swing.Timer;
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import javax.swing.border.MatteBorder;
-import javax.swing.event.HyperlinkEvent;
-import java.applet.Applet;
-import java.awt.*;
-import java.awt.desktop.QuitStrategy;
-import java.awt.event.*;
-import java.awt.image.BufferedImage;
-import java.time.Duration;
-import java.util.List;
-import java.util.*;
-import java.util.function.Function;
+import net.runelite.client.util.HotkeyListener;
+import net.runelite.client.util.ImageUtil;
+import net.runelite.client.util.LinkBrowser;
+import net.runelite.client.util.OSType;
+import net.runelite.client.util.OSXUtil;
+import net.runelite.client.util.SwingUtil;
+import net.runelite.client.util.WinUtil;
 
 import static javax.swing.JOptionPane.INFORMATION_MESSAGE;
 
@@ -98,7 +148,7 @@ public class ClientUI
 	private final RuneLiteConfig config;
 	private final MouseManager mouseManager;
 	@Getter
-	private static Applet client;
+    private static Component client;
 	private final ConfigManager configManager;
 	private final Provider<ClientThread> clientThreadProvider;
 	private final EventBus eventBus;
@@ -151,7 +201,7 @@ public class ClientUI
 	private ClientUI(
 		RuneLiteConfig config,
 		MouseManager mouseManager,
-		@Nullable Applet client,
+		Client client,
 		ConfigManager configManager,
 		Provider<ClientThread> clientThreadProvider,
 		EventBus eventBus,
@@ -162,7 +212,7 @@ public class ClientUI
 	{
 		this.config = config;
 		this.mouseManager = mouseManager;
-		this.client = client;
+		this.client = (Component) client;
 		this.configManager = configManager;
 		this.clientThreadProvider = clientThreadProvider;
 		this.eventBus = eventBus;
@@ -239,7 +289,7 @@ public class ClientUI
 	@Subscribe
 	private void onGameStateChanged(final GameStateChanged event)
 	{
-		if (event.getGameState() != GameState.LOGGED_IN || !(client instanceof Client) || !config.usernameInTitle())
+		if (event.getGameState() != GameState.LOGGED_IN || !config.usernameInTitle())
 		{
 			return;
 		}
@@ -752,7 +802,7 @@ public class ClientUI
 			return true;
 		}
 
-		if (config.warningOnExit() == WarningOnExit.LOGGED_IN && client instanceof Client)
+		if (config.warningOnExit() == WarningOnExit.LOGGED_IN)
 		{
 			return ((Client) client).getGameState() != GameState.LOGIN_SCREEN;
 		}
@@ -769,31 +819,16 @@ public class ClientUI
 		{
 			csev.waitForAllConsumers(Duration.ofSeconds(10));
 
-			if (client != null)
-			{
-				// The client can call System.exit when it's done shutting down
-				// if it doesn't though, we want to exit anyway, so race it
-				int clientShutdownWaitMS;
-				if (client instanceof Client)
-				{
-					((Client) client).stopNow();
-					clientShutdownWaitMS = 1000;
-				}
-				else
-				{
-					// it will continue rendering for about 4 seconds before attempting shutdown if its vanilla
-					client.stop();
-					frame.setVisible(false);
-					clientShutdownWaitMS = 6000;
-				}
+			// The client can call System.exit when it's done shutting down
+			// if it doesn't though, we want to exit anyway, so race it
+			((Client) client).stopNow();
 
-				try
-				{
-					Thread.sleep(clientShutdownWaitMS);
-				}
-				catch (InterruptedException ignored)
-				{
-				}
+			try
+			{
+				Thread.sleep(1000);
+			}
+			catch (InterruptedException ignored)
+			{
 			}
 			System.exit(0);
 		}, "RuneLite Shutdown").start();
@@ -965,13 +1000,10 @@ public class ClientUI
 	 */
 	public Point getCanvasOffset()
 	{
-		if (client instanceof Client)
+		final Canvas canvas = ((Client) client).getCanvas();
+		if (canvas != null)
 		{
-			final Canvas canvas = ((Client) client).getCanvas();
-			if (canvas != null)
-			{
-				return SwingUtilities.convertPoint(canvas, 0, 0, frame);
-			}
+			return SwingUtilities.convertPoint(canvas, 0, 0, frame);
 		}
 
 		return new Point(0, 0);
@@ -988,7 +1020,7 @@ public class ClientUI
 	 */
 	public void paintOverlays(final Graphics2D graphics)
 	{
-		if (!(client instanceof Client) || withTitleBar)
+		if (withTitleBar)
 		{
 			return;
 		}
@@ -1140,15 +1172,12 @@ public class ClientUI
 
 	private void giveClientFocus()
 	{
-		if (client instanceof Client)
+		final Canvas c = ((Client) client).getCanvas();
+		if (c != null)
 		{
-			final Canvas c = ((Client) client).getCanvas();
-			if (c != null)
-			{
-				c.requestFocusInWindow();
-			}
+			c.requestFocusInWindow();
 		}
-		else if (client != null)
+		else
 		{
 			client.requestFocusInWindow();
 		}
@@ -1167,7 +1196,7 @@ public class ClientUI
 			frame.setOpacity(config.windowOpacity() / 100.0f);
 		}
 
-		if (config.usernameInTitle() && (client instanceof Client))
+		if (config.usernameInTitle())
 		{
 			final Player player = ((Client) client).getLocalPlayer();
 

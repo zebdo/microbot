@@ -18,6 +18,7 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
@@ -34,6 +35,8 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -1056,6 +1059,31 @@ public class Rs2Player {
                 == VarbitValues.INSIDE_MULTICOMBAT_ZONE.getValue();
     }
 
+    public static boolean drinkPrayerPotion() {
+        int maxPrayer = getRealSkillLevel(Skill.PRAYER);
+        int maxHerblore = getRealSkillLevel(Skill.HERBLORE);
+        int restoreAmount;
+
+        if (hasPotion("moonlight moth mix")) {
+            restoreAmount = 22;
+        } else if (hasPotion("moonlight potion")) {
+            int prayerRestore = (maxPrayer / 4) + 7;
+            int herbloreRestore = (int) Math.floor((maxHerblore * 3.0 / 10.0)) + 7;
+            restoreAmount = Math.max(prayerRestore, herbloreRestore);
+        } else if (hasPotion("super restore") || hasPotion("blighted super restore") ) {
+            restoreAmount = (maxPrayer / 4) + 8;
+        } else {
+            restoreAmount = (maxPrayer / 4) + 7;
+        }
+
+        int threshold = maxPrayer - restoreAmount;
+        int randomizedThreshold = Rs2Random.randomGaussian(threshold - 5, 3);
+        randomizedThreshold = Math.min(randomizedThreshold, threshold);
+        System.out.println("Threshold: " + randomizedThreshold);
+
+        return drinkPrayerPotionAt(randomizedThreshold);
+    }
+
     /**
      * Drinks a prayer potion when the player's prayer points fall below the specified threshold.
      *
@@ -1230,9 +1258,19 @@ public class Rs2Player {
      * @return true if an item was found and interacted with; false otherwise.
      */
     private static boolean usePotion(String... itemNames) {
-        Rs2ItemModel potion = Rs2Inventory.get(item ->
-                !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase()))
-        );
+        Pattern usesRegexPattern = Pattern.compile("^(.*?)(?:\\(\\d+\\))?$");
+
+        Rs2ItemModel potion = Rs2Inventory.get(item -> {
+            if (item.isNoted()) return false;
+
+            Matcher matcher = usesRegexPattern.matcher(item.getName());
+            if (matcher.find()) {
+                String trimmedName = matcher.group(1).trim();
+                return Arrays.stream(itemNames).anyMatch(name -> name.equalsIgnoreCase(trimmedName));
+            }
+
+            return false;
+        });
 
         if (potion == null) return false;
 
@@ -1246,9 +1284,19 @@ public class Rs2Player {
      * @return true if an item matching the names exists; false otherwise.
      */
     private static boolean hasPotion(String... itemNames) {
-        Rs2ItemModel potion = Rs2Inventory.get(item ->
-                !item.isNoted() && Arrays.stream(itemNames).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase()))
-        );
+        Pattern usesRegexPattern = Pattern.compile("^(.*?)(?:\\(\\d+\\))?$");
+
+        Rs2ItemModel potion = Rs2Inventory.get(item -> {
+            if (item.isNoted()) return false;
+
+            Matcher matcher = usesRegexPattern.matcher(item.getName());
+            if (matcher.find()) {
+                String trimmedName = matcher.group(1).trim();
+                return Arrays.stream(itemNames).anyMatch(name -> name.equalsIgnoreCase(trimmedName));
+            }
+
+            return false;
+        });
         
         return potion != null;
     }

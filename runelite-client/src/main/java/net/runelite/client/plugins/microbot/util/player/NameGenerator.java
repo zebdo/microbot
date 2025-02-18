@@ -1,80 +1,55 @@
 package net.runelite.client.plugins.microbot.util.player;
 
-import java.util.Calendar;
 import java.util.Random;
 
-/**
- * Just did it for fun. :|
- *
- * @author amit
- *
- */
 public class NameGenerator {
-    private static final int diffBetweenAtoZ = 25;
-    private static final int charValueOfa = 97;
-    private String lastGeneratedName = "";
-    int length;
+    private static final int DEFAULT_LENGTH = 7;
+    private static final int ASCII_LOWERCASE_A = 'a';
+    private static final int LETTER_RANGE = 26;
 
-    char[] vowels = {
-            'a', 'e', 'i', 'o', 'u'
-    };
+    private final Random random;
+    private final int length;
 
     public NameGenerator(int lengthOfName) {
         if (lengthOfName < 5 || lengthOfName > 10) {
-            System.out.println("Setting default length to 7");
-            lengthOfName = 7;
+            System.out.println("Setting default length to " + DEFAULT_LENGTH);
+            lengthOfName = DEFAULT_LENGTH;
         }
-
         this.length = lengthOfName;
+        this.random = new Random();
     }
 
     public String getName() {
-        for (;;) {
-            Random randomNumberGenerator = new Random(Calendar.getInstance()
-                    .getTimeInMillis());
+        return generateRandomName();
+    }
 
-            char[] nameInCharArray = new char[length];
+    private String generateRandomName() {
+        StringBuilder name = new StringBuilder(length);
 
-            for (int i = 0; i < length; i++) {
-                if (positionIsOdd(i)) {
-                    nameInCharArray[i] = getVowel(randomNumberGenerator);
-                } else {
-                    nameInCharArray[i] = getConsonant(randomNumberGenerator);
-                }
-            }
-            nameInCharArray[0] = Character
-                    .toUpperCase(nameInCharArray[0]);
-
-            String currentGeneratedName = new String(nameInCharArray);
-
-            if (!currentGeneratedName.equals(lastGeneratedName)) {
-                lastGeneratedName = currentGeneratedName;
-                return currentGeneratedName;
-            }
-
+        for (int i = 0; i < length; i++) {
+            char nextChar = (i % 2 == 0) ? getRandomConsonant() : getRandomVowel();
+            name.append(nextChar);
         }
 
+        // Capitalize the first letter
+        name.setCharAt(0, Character.toUpperCase(name.charAt(0)));
+        return name.toString();
     }
 
-    private boolean positionIsOdd(int i) {
-        return i % 2 == 0;
+    private char getRandomConsonant() {
+        char c;
+        do {
+            c = (char) (random.nextInt(LETTER_RANGE) + ASCII_LOWERCASE_A);
+        } while (isVowel(c));
+        return c;
     }
 
-    private char getConsonant(Random randomNumberGenerator) {
-        for (;;) {
-            char currentCharacter = (char) (randomNumberGenerator
-                    .nextInt(diffBetweenAtoZ) + charValueOfa);
-            if (currentCharacter == 'a' || currentCharacter == 'e'
-                    || currentCharacter == 'i' || currentCharacter == 'o'
-                    || currentCharacter == 'u')
-                continue;
-            else
-                return currentCharacter;
-        }
-
+    private char getRandomVowel() {
+        char[] vowels = {'a', 'e', 'i', 'o', 'u'};
+        return vowels[random.nextInt(vowels.length)];
     }
 
-    private char getVowel(Random randomNumberGenerator) {
-        return vowels[randomNumberGenerator.nextInt(vowels.length)];
+    private boolean isVowel(char c) {
+        return c == 'a' || c == 'e' || c == 'i' || c == 'o' || c == 'u';
     }
 }
