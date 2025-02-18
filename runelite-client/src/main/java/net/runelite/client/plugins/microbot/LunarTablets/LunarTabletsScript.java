@@ -40,12 +40,15 @@ public class LunarTabletsScript extends Script {
                 if(!Rs2Inventory.contains("Astral rune")||!Rs2Inventory.contains("Law rune")||!Rs2Inventory.contains("Soft clay")) {
                     handleBanking();
                 }
+
                 if(Rs2Inventory.contains("Astral rune")&&Rs2Inventory.contains("Law rune")&&Rs2Inventory.contains("Soft clay")) {
                     walkToLecturn();
                 }
+
                 if(Rs2Inventory.contains("Astral rune")&&Rs2Inventory.contains("Law rune")&&Rs2Inventory.contains("Soft clay")) {
                     makeTablets();
                 }
+
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
                 System.out.println("Total time for loop " + totalTime);
@@ -71,44 +74,52 @@ public class LunarTabletsScript extends Script {
             if(Rs2Widget.getWidget(26411026)!=null){
                 String selectedTabletName = config.selectedTablet().getName();
                 if(selectedTabletName.equals("Moonclan Teleport")){
-                    Rs2Widget.clickWidget(26411027);
-                    sleep(generateRandomNumber(0,1000));
-                    Rs2Widget.clickWidget(26411022);
+                    if(Rs2Widget.clickWidget(26411027)){
+                        sleep(generateRandomNumber(0,1000));
+                        Rs2Widget.clickWidget(26411022);
+                    }
                 }
                 if(selectedTabletName.equals("Ourania Teleport")){
-                    Rs2Widget.clickWidget(26411028);
-                    sleep(generateRandomNumber(0,1000));
-                    Rs2Widget.clickWidget(26411022);
+                    if(Rs2Widget.clickWidget(26411028)) {
+                        sleep(generateRandomNumber(0, 1000));
+                        Rs2Widget.clickWidget(26411022);
+                    }
                 }
                 if(selectedTabletName.equals("Waterbirth Teleport")){
-                    Rs2Widget.clickWidget(26411029);
-                    sleep(generateRandomNumber(0,1000));
-                    Rs2Widget.clickWidget(26411022);
+                    if(Rs2Widget.clickWidget(26411029)) {
+                        sleep(generateRandomNumber(0, 1000));
+                        Rs2Widget.clickWidget(26411022);
+                    }
                 }
                 if(selectedTabletName.equals("Barbarian Teleport")){
-                    Rs2Widget.clickWidget(26411030);
-                    sleep(generateRandomNumber(0,1000));
-                    Rs2Widget.clickWidget(26411022);
+                    if(Rs2Widget.clickWidget(26411030)) {
+                        sleep(generateRandomNumber(0, 1000));
+                        Rs2Widget.clickWidget(26411022);
+                    }
                 }
                 if(selectedTabletName.equals("Khazard Teleport")){
-                    Rs2Widget.clickWidget(26411031);
-                    sleep(generateRandomNumber(0,1000));
-                    Rs2Widget.clickWidget(26411022);
+                    if(Rs2Widget.clickWidget(26411031)) {
+                        sleep(generateRandomNumber(0, 1000));
+                        Rs2Widget.clickWidget(26411022);
+                    }
                 }
                 if(selectedTabletName.equals("Fishing Guild Teleport")){
-                    Rs2Widget.clickWidget(26411032);
-                    sleep(generateRandomNumber(0,1000));
-                    Rs2Widget.clickWidget(26411022);
+                    if(Rs2Widget.clickWidget(26411032)) {
+                        sleep(generateRandomNumber(0, 1000));
+                        Rs2Widget.clickWidget(26411022);
+                    }
                 }
                 if(selectedTabletName.equals("Catherby Teleport")){
-                    Rs2Widget.clickWidget(26411033);
-                    sleep(generateRandomNumber(0,1000));
-                    Rs2Widget.clickWidget(26411022);
+                    if(Rs2Widget.clickWidget(26411033)) {
+                        sleep(generateRandomNumber(0, 1000));
+                        Rs2Widget.clickWidget(26411022);
+                    }
                 }
                 if(selectedTabletName.equals("Ice Plateau Teleport")){
-                    Rs2Widget.clickWidget(26411034);
-                    sleep(generateRandomNumber(0,1000));
-                    Rs2Widget.clickWidget(26411022);
+                    if(Rs2Widget.clickWidget(26411034)) {
+                        sleep(generateRandomNumber(0, 1000));
+                        Rs2Widget.clickWidget(26411022);
+                    }
                 }
                 boolean stillmaking = true;
                 while(stillmaking){
@@ -128,8 +139,9 @@ public class LunarTabletsScript extends Script {
                 }
             } else {
                 // interact with lecturn
-                Rs2GameObject.interact("Lectern", "Study");
-                sleep(generateRandomNumber(0,1000));
+                if(Rs2GameObject.interact("Lectern", "Study")){
+                    sleep(generateRandomNumber(0,1000));
+                }
             }
         }
     }

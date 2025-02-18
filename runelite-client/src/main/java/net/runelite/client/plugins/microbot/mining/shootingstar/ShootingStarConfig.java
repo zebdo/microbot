@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.mining.shootingstar;
 
 import net.runelite.client.config.*;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 
 @ConfigGroup(ShootingStarConfig.configGroup)
 @ConfigInformation(
@@ -13,6 +14,8 @@ public interface ShootingStarConfig extends Config {
     String configGroup = "shooting-star";
     String displayAsMinutes = "displayAsMinutes";
     String hideWildernessLocations = "hideWildernessLocations";
+    String useInventorySetups = "useInventorySetups";
+    String InventorySetup = "inventorySetup";
     String useNearestHighTierStar = "useNearestHighTierStar";
     String useBreakAtBank = "useBreakAtBank";
     String hideOverlay = "hideOverlay";
@@ -24,23 +27,34 @@ public interface ShootingStarConfig extends Config {
             position = 0
     )
     String generalSection = "general";
-
+    
     @ConfigItem(
-            keyName = "inventorySetupName",
-            name = "MInventorySetup Name",
-            description = "Name of mInventory Setup for mining",
+            keyName = useInventorySetups,
+            name = "Use Inventory Setups",
+            description = "Should use Inventory Setups",
             position = 0,
             section = generalSection
     )
-    default String inventorySetupName() {
-        return "Shooting Star";
+    default boolean useInventorySetup() {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "inventorySetupName",
+            name = "Setup Name",
+            description = "Name of mInventory Setup for mining",
+            position = 1,
+            section = generalSection
+    )
+    default InventorySetup inventorySetup() {
+        return null;
     }
 
     @ConfigItem(
             keyName = useNearestHighTierStar,
             name = "Use Nearest High Tier Star",
             description = "Toggles automatic mode - when enabled script will automatically check all stars within an acceptable tier range & find the closest star that has the highest tier",
-            position = 1,
+            position = 2,
             section = generalSection
     )
     default boolean useNearestHighTierStar() {
@@ -51,7 +65,7 @@ public interface ShootingStarConfig extends Config {
             keyName = useBreakAtBank,
             name = "Use Break at Bank",
             description = "Toggles breaks at the bank - when enabled script will force the player to a bank before triggering the Break Handler",
-            position = 2,
+            position = 3,
             section = generalSection
     )
     default boolean useBreakAtBank() {

@@ -17,13 +17,19 @@ import net.runelite.client.plugins.microbot.qualityoflife.enums.WintertodtAction
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import javax.inject.Inject;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
 
 public class WintertodtScript extends Script {
     public static QoLConfig config;
@@ -59,6 +65,8 @@ public class WintertodtScript extends Script {
                 }
                 brokenBrazier = Rs2GameObject.getGameObjects(ObjectID.BRAZIER_29313).stream().filter(gameObject -> gameObject.getWorldLocation().distanceTo2D(Rs2Player.getWorldLocation()) < 5).findFirst().orElse(null);
                 unlitBrazier = Rs2GameObject.getGameObjects(ObjectID.BRAZIER_29312).stream().filter(gameObject -> gameObject.getWorldLocation().distanceTo2D(Rs2Player.getWorldLocation()) < 5).findFirst().orElse(null);
+
+                shouldEat();
 
                 if (!config.interrupted())
                     return;
@@ -221,5 +229,29 @@ public class WintertodtScript extends Script {
             qolPlugin.updateWintertodtInterupted(false);
             qolPlugin.updateLastWinthertodtAction(WintertodtActions.NONE);
         }
+    }
+
+    public int getWarmthLevel() {
+        String warmthWidgetText = Rs2Widget.getChildWidgetText(396, 20);
+
+        Pattern pattern = Pattern.compile("\\d+");
+        Matcher matcher = pattern.matcher(warmthWidgetText);
+
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group());
+        }
+        return 100;
+    }
+
+    private boolean shouldEat() {
+        if (getWarmthLevel() <= config.eatFoodPercentage()) {
+                List<Rs2ItemModel> rejuvenationPotions = Rs2Inventory.getPotions();
+                Rs2Inventory.interact(rejuvenationPotions.get(0), "Drink");
+                sleepGaussian(600, 150);
+                qolPlugin.updateWintertodtInterupted(true);
+                return true;
+
+        }
+        return false;
     }
 }

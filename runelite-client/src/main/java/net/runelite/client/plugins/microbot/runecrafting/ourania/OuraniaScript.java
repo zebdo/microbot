@@ -17,22 +17,27 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import javax.inject.Inject;
 import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
 public class OuraniaScript extends Script {
     
     private final WorldArea ouraniaAltarArea = new WorldArea(new WorldPoint(3054, 5574, 0), 12, 12);
+    private final List<Integer> massWorlds = List.of(327, 480);
     private final OuraniaPlugin plugin;
     public static OuraniaState state;
+    private int selectedWorld = 0;
     
     @Inject
     public OuraniaScript(OuraniaPlugin plugin) {
@@ -60,6 +65,18 @@ public class OuraniaScript extends Script {
                     Rs2Inventory.checkPouches();
                     return;
                 }
+                
+                if (plugin.isUseMassWorld() && !isOnMassWorld()) {
+                    if (selectedWorld == 0) 
+                        selectedWorld = massWorlds.get(Rs2Random.between(0, massWorlds.size() - 1));
+                    Microbot.hopToWorld(selectedWorld);
+                    sleepUntil(() -> Microbot.getClient().getGameState() == GameState.LOGGED_IN);
+                    return;
+                }
+                
+                if (selectedWorld != 0) {
+                    selectedWorld = 0;
+                }
 
                 if (hasStateChanged()) {
                     state = updateState();
@@ -70,8 +87,6 @@ public class OuraniaScript extends Script {
                     shutdown();
                     return;
                 }
-
-                System.out.println("State: " + state.name());
 
                 switch (state) {
                     case CRAFTING:
@@ -87,6 +102,10 @@ public class OuraniaScript extends Script {
                             Rs2Magic.cast(MagicAction.OURANIA_TELEPORT);
                         }
                         sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(new WorldPoint(2468, 3246, 0)) < 24);
+                        if (Rs2Inventory.hasDegradedPouch() && Rs2Magic.hasRequiredRunes(Rs2Spells.NPC_CONTACT)) {
+                            Rs2Magic.repairPouchesWithLunar();
+                            return;
+                        }
                         Rs2Walker.walkTo(new WorldPoint(3014, 5625, 0));
                         break;
                     case BANKING:
@@ -96,37 +115,41 @@ public class OuraniaScript extends Script {
                             return;
                         }
                         
-                        if (Rs2Inventory.hasDegradedPouch() && Rs2Magic.hasRequiredRunes(Rs2Spells.NPC_CONTACT)) {
-                            Rs2Magic.repairPouchesWithLunar();
-                            return;
-                        }
-                        
                         if (!Rs2Bank.isOpen()) {
-                            NPC eniola = Rs2Npc.getNpc(NpcID.ENIOLA);
+                            Rs2NpcModel eniola = Rs2Npc.getNpc(NpcID.ENIOLA);
                             if (eniola == null) return;
                             Rs2Npc.interact(eniola, "bank");
                             return;
                         }
                         
-                        plugin.calcuateProfit();
+                        if (!plugin.isToggleProfitCalculator()) {
+                            plugin.calcuateProfit();
+                        }
                         
-                        // Get all RunePouchType IDs
-                        Integer[] runePouchIds = Arrays.stream(RunePouchType.values())
-                                .map(RunePouchType::getItemId)
-                                .toArray(Integer[]::new);
-
-                        // Get all eligible pouch IDs based on Runecrafting level
-                        Integer[] eligiblePouchIds = Arrays.stream(Pouch.values())
-                                .filter(Pouch::hasRequiredRunecraftingLevel)
-                                .flatMap(pouch -> Arrays.stream(pouch.getItemIds()).boxed())
-                                .toArray(Integer[]::new);
-
-                        // Combine RunePouchType IDs and eligible pouch IDs into a single array
-                        Integer[] excludedIds = Stream.concat(Arrays.stream(runePouchIds), Arrays.stream(eligiblePouchIds))
-                                .toArray(Integer[]::new);
+                        boolean hasRunes = Rs2Inventory.items().stream().anyMatch(item -> item.getName().toLowerCase().contains("rune") && !item.getName().toLowerCase().contains("rune pouch"));
                         
-                        Rs2Bank.depositAllExcept(excludedIds);
-                        Rs2Inventory.waitForInventoryChanges(1800);
+                        if (plugin.isUseDepositAll() && hasRunes) {
+                            Rs2Bank.depositAll();
+                        } else {
+                            // Get all RunePouchType IDs
+                            Integer[] runePouchIds = Arrays.stream(RunePouchType.values())
+                                    .map(RunePouchType::getItemId)
+                                    .toArray(Integer[]::new);
+
+                            // Get all eligible pouch IDs based on Runecrafting level
+                            Integer[] eligiblePouchIds = Arrays.stream(Pouch.values())
+                                    .filter(Pouch::hasRequiredRunecraftingLevel)
+                                    .flatMap(pouch -> Arrays.stream(pouch.getItemIds()).boxed())
+                                    .toArray(Integer[]::new);
+
+                            // Combine RunePouchType IDs and eligible pouch IDs into a single array
+                            Integer[] excludedIds = Stream.concat(Arrays.stream(runePouchIds), Arrays.stream(eligiblePouchIds))
+                                    .toArray(Integer[]::new);
+
+                            Rs2Bank.depositAllExcept(excludedIds);
+                            Rs2Inventory.waitForInventoryChanges(1800);
+                        }
+
 
                         if (plugin.isUseEnergyRestorePotions() && Rs2Player.getRunEnergy() <= plugin.getDrinkAtPercent()) {
                             boolean hasStaminaPotion = Rs2Bank.hasItem(Rs2Potion.getStaminaPotion());
@@ -236,6 +259,8 @@ public class OuraniaScript extends Script {
     }
     
     private boolean hasStateChanged() {
+        if (Microbot.isDebug())
+            Microbot.log("State: " + state);
         if (state == null) return true;
         if (hasRequiredItems() && !isNearAltar()) return true;
         if (hasRequiredItems() && isNearAltar()) return true;
@@ -282,5 +307,9 @@ public class OuraniaScript extends Script {
             Rs2Bank.depositOne(simplifiedPotionName);
             Rs2Inventory.waitForInventoryChanges(1800);
         }
+    }
+    
+    private boolean isOnMassWorld() {
+        return massWorlds.contains(Rs2Player.getWorld());
     }
 }

@@ -2,10 +2,11 @@ package net.runelite.client.plugins.microbot.aiofighter.bank;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
-import net.runelite.client.plugins.microbot.aiofighter.AIOFighterPlugin;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterConfig;
+import net.runelite.client.plugins.microbot.aiofighter.AIOFighterPlugin;
 import net.runelite.client.plugins.microbot.aiofighter.constants.Constants;
 import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
@@ -71,9 +72,11 @@ public class BankerScript extends Script {
                     if(handleBanking()){
                         AIOFighterPlugin.setState(State.IDLE);
                     }
-                } else if (!needsBanking() && config.centerLocation().distanceTo(Rs2Player.getWorldLocation()) > config.attackRadius()) {
+                } else if (!needsBanking() && config.centerLocation().distanceTo(Rs2Player.getWorldLocation()) > config.attackRadius() && !Objects.equals(config.centerLocation(), new WorldPoint(0, 0, 0))) {
                     AIOFighterPlugin.setState(State.WALKING);
-                    Rs2Walker.walkTo(config.centerLocation());
+                    if (Rs2Walker.walkTo(config.centerLocation())) {
+                        AIOFighterPlugin.setState(State.IDLE);
+                    }
                 }
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
@@ -152,6 +155,7 @@ public class BankerScript extends Script {
         if (Rs2Bank.walkToBankAndUseBank()) {
             depositAllExcept(config);
             withdrawUpkeepItems(config);
+            Rs2Bank.closeBank();
         }
         return !needsBanking();
     }
