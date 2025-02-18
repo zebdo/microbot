@@ -27,9 +27,6 @@
 package net.runelite.client.plugins.microbot;
 
 import com.google.common.base.Strings;
-import com.google.common.hash.Hashing;
-import com.google.common.io.ByteStreams;
-import com.google.common.io.Files;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.client.RuneLiteProperties;
@@ -38,33 +35,16 @@ import net.runelite.client.RuntimeConfigLoader;
 import net.runelite.client.rs.ClientLoader;
 import net.runelite.client.ui.FatalErrorDialog;
 import net.runelite.client.ui.SplashScreen;
-import net.runelite.client.util.CountingInputStream;
-import net.runelite.client.util.VerificationException;
 import net.runelite.http.api.worlds.World;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
-import okhttp3.Request;
-import okhttp3.Response;
 
 import javax.annotation.Nonnull;
 import javax.swing.*;
 import java.applet.Applet;
 import java.io.*;
-import java.nio.channels.Channels;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
-import java.nio.file.StandardOpenOption;
-import java.security.cert.Certificate;
-import java.security.cert.CertificateException;
-import java.security.cert.CertificateFactory;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Enumeration;
 import java.util.Map;
 import java.util.function.Supplier;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
-import java.util.jar.JarInputStream;
 
 @Slf4j
 @SuppressWarnings({"deprecation", "removal"})
