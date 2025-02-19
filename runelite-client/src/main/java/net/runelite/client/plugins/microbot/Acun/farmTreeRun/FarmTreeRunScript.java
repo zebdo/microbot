@@ -25,7 +25,8 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
+import java.util.function.BooleanSupplier;
+import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.Acun.farmTreeRun.enums.FarmTreeRunState.*;
 
@@ -38,10 +39,7 @@ import static net.runelite.client.plugins.microbot.Acun.farmTreeRun.enums.FarmTr
 public class FarmTreeRunScript extends Script {
     public static FarmTreeRunState botStatus;
     public static boolean test = false;
-    int treeSaplingsCount = 0;
-    int fruitTreeSaplingsCount = 0;
-    List<Supplier<Boolean>> selectedTreePatches;
-    List<Supplier<Boolean>> selectedFruitPatches;
+    public static Integer compostItemId = null;
 
     private enum TreeKind {
         FRUIT_TREE,
@@ -95,9 +93,12 @@ public class FarmTreeRunScript extends Script {
             try {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
-                calculatePatches(config);
+
                 long startTime = System.currentTimeMillis();
                 if (Rs2AntibanSettings.actionCooldownActive) return;
+
+                calculatePatches(config);
+                checkSaplingLevelRequirement(config);
 
                 dropEmptyPlantPots();
                 Patch patch = null;
@@ -238,44 +239,17 @@ public class FarmTreeRunScript extends Script {
     }
 
     private void calculatePatches(FarmTreeRunConfig config) {
-        selectedTreePatches = List.of(
-                config::faladorTreePatch,
-                config::gnomeStrongholdTreePatch,
-                config::lumbridgeTreePatch,
-                config::taverleyTreePatch,
-                config::varrockTreePatch,
-                config::farmingGuildTreePatch
-        );
-
-        selectedFruitPatches = List.of(
-                config::brimhavenFruitTreePatch,
-                config::catherbyFruitTreePatch,
-                config::farmingGuildFruitTreePatch,
-                config::lletyaFruitTreePatch,
-                config::gnomeStrongholdFruitTreePatch,
-                config::treeGnomeVillageFruitTreePatch
-        );
-
-        treeSaplingsCount = (int) selectedTreePatches.stream()
-                .filter(Supplier::get) // Call the method and check if it returns true
-                .count();
-
-        fruitTreeSaplingsCount = (int) selectedFruitPatches.stream()
-                .filter(Supplier::get) // Call the method and check if it returns true
-                .count();
-
-        int total = treeSaplingsCount + fruitTreeSaplingsCount;
-
-        if (total <= 0) {
-            Microbot.log("You must select at least one patch. Shut down.");
+        if (getSelectedTreePatches(config).isEmpty() && getSelectedFruitTreePatches(config).isEmpty()) {
             Microbot.showMessage("You must select at least one patch. Shut down.");
             shutdown();
         }
+    }
 
-        if (treeSaplingsCount > 0)
+    private void checkSaplingLevelRequirement(FarmTreeRunConfig config) {
+        if (!getSelectedTreePatches(config).isEmpty())
             config.selectedTree().hasRequiredLevel();
 
-        if (fruitTreeSaplingsCount > 0)
+        if (!getSelectedFruitTreePatches(config).isEmpty())
             config.selectedFruitTree().hasRequiredLevel();
     }
 
@@ -307,26 +281,33 @@ public class FarmTreeRunScript extends Script {
 
             if (!Rs2Inventory.isEmpty()) {
                 Rs2Bank.depositAll();
-                Rs2Inventory.waitForInventoryChanges(5000);
+                Rs2Inventory.waitForInventoryChanges(3000);
             }
 
-            if (!Rs2Equipment.isNaked() && !alreadyWearingGraceful()) {
+            if (config.useGraceful() && !alreadyWearingGraceful() && !Rs2Equipment.isNaked()) {
                 Rs2Bank.depositEquipment();
                 sleepUntil(Rs2Equipment::isNaked);
                 sleep(500, 2200);
             }
 
-            // TODO: I don't have graceful boots yet, alternative is boots of lightness
-            equipGraceful();
+            if (config.useGraceful())
+                equipGraceful();
 
             List<FarmingItem> items = new ArrayList<>();
 
-            // Add initial items
+            // Add must have items
             items.add(new FarmingItem(ItemID.COINS_995, 3000));
             items.add(new FarmingItem(ItemID.SPADE, 1));
             items.add(new FarmingItem(ItemID.RAKE, 1));
             items.add(new FarmingItem(ItemID.SEED_DIBBER, 1));
-            items.add(new FarmingItem(ItemID.BOTTOMLESS_COMPOST_BUCKET_22997, 1));
+
+            if (isCompostEnabled(config)) {
+                if (Rs2Bank.hasItem(ItemID.BOTTOMLESS_COMPOST_BUCKET_22997)) {
+                    compostItemId = ItemID.BOTTOMLESS_COMPOST_BUCKET_22997;
+                } else {
+                    Microbot.log("Only bottomless compost is supported. Skipping composting.");
+                }
+            }
 
             if (config.farmingGuildTreePatch() || config.farmingGuildFruitTreePatch()) {
                 if (Rs2Bank.hasItem(ItemID.SKILLS_NECKLACE2)) {
@@ -345,6 +326,9 @@ public class FarmTreeRunScript extends Script {
             TreeEnums selectedTree = config.selectedTree();
             FruitTreeEnum selectedFruitTree = config.selectedFruitTree();
 
+            int treeSaplingsCount = getSelectedTreePatches(config).size();
+            int fruitTreeSaplingsCount = getSelectedFruitTreePatches(config).size();
+
             if (treeSaplingsCount > 0)
                 items.add(new FarmingItem(selectedTree.getSaplingId(), treeSaplingsCount));
 
@@ -358,7 +342,7 @@ public class FarmTreeRunScript extends Script {
                 items.add(new FarmingItem(selectedFruitTree.getPaymentId(), selectedFruitTree.getPaymentAmount() * fruitTreeSaplingsCount, true));
 
             if (config.taverleyTreePatch())
-                items.add(new FarmingItem(ItemID.TAVERLEY_TELEPORT, 1));
+                items.add(new FarmingItem(ItemID.TAVERLEY_TELEPORT, 1, false, true));
 
             if (config.lletyaFruitTreePatch()) {
                 if (Rs2Bank.hasItem(ItemID.TELEPORT_CRYSTAL_1)) {
@@ -385,17 +369,10 @@ public class FarmTreeRunScript extends Script {
 
             // Loop through the items and perform withdrawals
             for (FarmingItem item : items) {
-                if (!super.run() || !Microbot.isLoggedIn() || Microbot.pauseAllScripts)
-                    shutdown();
                 int itemId = item.getItemId();
                 int quantity = item.getQuantity();
                 boolean noted = item.isNoted();
 
-                if (!Rs2Bank.hasItem(itemId)) {
-                    Microbot.log("Item not found: " + Microbot.getClient().getItemDefinition(itemId).getName() + ". Plugin shut down.");
-                    Microbot.showMessage("Item not found: " + Microbot.getClient().getItemDefinition(itemId).getName() + ". Plugin shut down.");
-                    shutdown();
-                }
 
 //              Handle items which require to be noted
                 if (noted && !Rs2Bank.hasWithdrawAsNote()) {
@@ -406,8 +383,10 @@ public class FarmTreeRunScript extends Script {
                 }
 
                 if (quantity == 1) {
+                    checkIfPlayerHasItem(item);
                     Rs2Bank.withdrawOne(itemId);
                 } else {
+                    checkIfPlayerHasItem(item);
                     Rs2Bank.withdrawX(itemId, quantity);
                 }
 
@@ -416,6 +395,14 @@ public class FarmTreeRunScript extends Script {
 
             Rs2Bank.closeBank();
             botStatus = HANDLE_GNOME_STRONGHOLD_FRUIT_PATCH;
+        }
+    }
+
+    private void checkIfPlayerHasItem(FarmingItem item) {
+        if (!Rs2Bank.hasItem(new int[]{item.getItemId()}, item.getQuantity()) && !item.isOptional()) {
+            Microbot.showMessage("Not enough items: " + Microbot.getClientThread().runOnClientThread(() -> Microbot.getClient().getItemDefinition(item.getItemId()).getName()) + ". " +
+                    "Need " + item.getQuantity() + ". Shut down.");
+            shutdown();
         }
     }
 
@@ -477,7 +464,7 @@ public class FarmTreeRunScript extends Script {
         return done;
     }
 
-    private boolean handleNotingFruit(Patch patch) {
+    private void handleNotingFruit(Patch patch) {
         // Array of fruit item IDs
         int[] fruitIds = {
                 ItemID.COOKING_APPLE,
@@ -490,23 +477,22 @@ public class FarmTreeRunScript extends Script {
                 ItemID.DRAGONFRUIT
         };
 
-        if (!Rs2Inventory.hasItem(fruitIds)) return true;
+        if (!Rs2Inventory.hasItem(fruitIds)) return;
 
         // Iterate through the fruit IDs
         for (int fruitId : fruitIds) {
             if (Rs2Inventory.hasItem(fruitId)) {
                 // Interact with the specific fruit found
                 Rs2Inventory.useItemOnNpc(fruitId, patch.getLeprechaunId());
-                return false; // Return false if any fruit is found and interacted with
+                return; // Return false if any fruit is found and interacted with
             }
         }
-        return true;
     }
 
     /**
-     * Handles both 'Chop-down' and 'Guard' payment
+     * Handles tree clearing and protecting payments
      *
-     * @param config Configurations for this plugin. It should not be {@code null}.
+     * @param config
      * @return {@code true} if payment was successful, else {@code false}
      */
     private boolean handlePayment(FarmTreeRunConfig config, Patch patch, PaymentKind action) {
@@ -552,23 +538,15 @@ public class FarmTreeRunScript extends Script {
     }
 
     private boolean handlePlantingTree(GameObject treePatch, Patch patch, FarmTreeRunConfig config) {
-
-        System.out.println("Planting tree");
-
-//      Not fully grown
-        if (Rs2GameObject.findObjectByImposter(patch.getId(), "Chop down") != null)
-            return false;
-
+        Microbot.log("Result of !isPatchEmpty(patch): " + !isPatchEmpty(patch));
         // Skip if patch is not empty
         if (!isPatchEmpty(patch))
             return true;
 
-        // Select which sapling to use
-        int saplingToUse = patch.kind == TreeKind.TREE ? config.selectedTree().getSaplingId() : config.selectedFruitTree().getSaplingId();
+        int saplingToUse = getSaplingToUse(patch, config);
 
-        // Check if protect tree is on, else use compost
-        if (shouldUseCompost(config, patch)) {
-            Rs2Inventory.useItemOnObject(ItemID.BOTTOMLESS_COMPOST_BUCKET_22997, treePatch.getId());
+        if (useCompostOnPatch(config, patch)) {
+            Rs2Inventory.useItemOnObject(compostItemId, treePatch.getId());
             Rs2Player.waitForXpDrop(Skill.FARMING, 2000);
             sleep(750, 3200);
         }
@@ -645,7 +623,7 @@ public class FarmTreeRunScript extends Script {
         checkBeforeWithdrawAndEquip("GRACEFUL GLOVES");
         checkBeforeWithdrawAndEquip("GRACEFUL LEGS");
         checkBeforeWithdrawAndEquip("GRACEFUL CAPE");
-        checkBeforeWithdrawAndEquip("Boots of lightness");
+        checkBeforeWithdrawAndEquip("GRACEFUL BOOTS");
         checkBeforeWithdrawAndEquip("GRACEFUL HOOD");
         checkBeforeWithdrawAndEquip("GRACEFUL TOP");
     }
@@ -653,7 +631,7 @@ public class FarmTreeRunScript extends Script {
     private void checkBeforeWithdrawAndEquip(String itemName) {
         if (!Rs2Equipment.isWearing(itemName)) {
             Rs2Bank.withdrawAndEquip(itemName);
-            sleep(500, 1400);
+            sleep(500, 1000);
         }
     }
 
@@ -661,6 +639,8 @@ public class FarmTreeRunScript extends Script {
         return Rs2Equipment.isWearing("GRACEFUL LEGS")
                 && Rs2Equipment.isWearing("GRACEFUL TOP")
                 && Rs2Equipment.isWearing("GRACEFUL HOOD")
+                && Rs2Equipment.isWearing("GRACEFUL BOOTS")
+                && Rs2Equipment.isWearing("GRACEFUL GLOVES")
                 && Rs2Equipment.isWearing("GRACEFUL CAPE");
     }
 
@@ -680,16 +660,75 @@ public class FarmTreeRunScript extends Script {
         return patch.kind == TreeKind.FRUIT_TREE;
     }
 
-    private boolean shouldUseCompost(FarmTreeRunConfig config, Patch patch) {
+    private boolean useCompostOnPatch(FarmTreeRunConfig config, Patch patch) {
+        if (!config.useCompost() || compostItemId == null)
+            return false;
+
         if (!config.protectTrees() && patch.kind == TreeKind.TREE)
             return true;
 
         return !config.protectFruitTrees() && patch.kind == TreeKind.FRUIT_TREE;
     }
 
+    private List<BooleanSupplier> getSelectedTreePatches(FarmTreeRunConfig config) {
+        // Create a list of all possible tree patches
+        List<BooleanSupplier> allTreePatches = List.of(
+                config::faladorTreePatch,
+                config::gnomeStrongholdTreePatch,
+                config::lumbridgeTreePatch,
+                config::taverleyTreePatch,
+                config::varrockTreePatch,
+                config::farmingGuildTreePatch
+        );
+
+        // Filter the patches to include only those that return true
+        return allTreePatches.stream()
+                .filter(BooleanSupplier::getAsBoolean) // Filter patches that return true
+                .collect(Collectors.toList()); // Collect into a new list
+    }
+
+    private List<BooleanSupplier> getSelectedFruitTreePatches(FarmTreeRunConfig config) {
+        // Create a list of all possible fruit tree patches
+        List<BooleanSupplier> allFruitTreePatches = List.of(
+                config::brimhavenFruitTreePatch,
+                config::catherbyFruitTreePatch,
+                config::farmingGuildFruitTreePatch,
+                config::lletyaFruitTreePatch,
+                config::gnomeStrongholdFruitTreePatch,
+                config::treeGnomeVillageFruitTreePatch
+        );
+
+        // Filter the patches to include only those that return true
+        return allFruitTreePatches.stream()
+                .filter(BooleanSupplier::getAsBoolean)
+                .collect(Collectors.toList());
+    }
+
+    /**
+     * Method to check whether player wants to use compost
+     *
+     * @param config
+     * @return true if configured by player, else false
+     */
+    private boolean isCompostEnabled(FarmTreeRunConfig config) {
+        if (!config.useCompost())
+            return false;
+
+        if (!getSelectedTreePatches(config).isEmpty() && !config.protectTrees())
+            return true;
+
+        return !getSelectedFruitTreePatches(config).isEmpty() && !config.protectFruitTrees();
+    }
+
     private boolean isPatchEmpty(Patch patch) {
         String name = Rs2GameObject.getObjectComposition(patch.getId()).getName().toLowerCase();
         return name.endsWith("patch");
+    }
+
+    private static int getSaplingToUse(Patch patch, FarmTreeRunConfig config) {
+        return patch.kind == TreeKind.TREE ?
+                config.selectedTree().getSaplingId() :
+                config.selectedFruitTree().getSaplingId();
     }
 
     @Override

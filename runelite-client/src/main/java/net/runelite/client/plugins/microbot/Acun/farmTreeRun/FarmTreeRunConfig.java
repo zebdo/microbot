@@ -124,6 +124,28 @@ public interface FarmTreeRunConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "useCompost",
+            name = "Use compost",
+            description = "Only bottomless compost bucket is supported",
+            position = 5,
+            section = generalSection
+    )
+    default boolean useCompost() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "useGraceful",
+            name = "Use graceful",
+            description = "Enable if you want to wear graceful outfit",
+            position = 5,
+            section = generalSection
+    )
+    default boolean useGraceful() {
+        return true;
+    }
+
+    @ConfigItem(
             keyName = "falador",
             name = "Falador",
             description = "Falador tree patch",
