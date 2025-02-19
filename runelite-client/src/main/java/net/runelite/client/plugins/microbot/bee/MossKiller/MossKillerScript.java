@@ -339,7 +339,7 @@ public class MossKillerScript extends Script {
 
             for (var item : Rs2GroundItem.getAll(10)) { // Iterate through the item list
                 if (item != null && !Rs2Inventory.isFull() && Rs2GroundItem.interact(item.getItem().getId(), "Take", 10)) {
-                    sleep(1000, 3000);
+                    Rs2Inventory.waitForInventoryChanges(5000);
                 }
             }
 
