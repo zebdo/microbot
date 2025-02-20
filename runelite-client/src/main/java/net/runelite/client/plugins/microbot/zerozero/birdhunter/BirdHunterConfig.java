@@ -27,6 +27,16 @@ public interface BirdHunterConfig extends Config {
         return "Bird snare";
     }
 
+    @ConfigItem(
+            keyName = "huntingRadiusValue",
+            name = "Hunting radius",
+            description = "The radius in which the player will set traps and hunt birds. Indicated by yellow borders. " +
+                    "The center of the area is where the plugin is started",
+            position = 4
+    )
+    default int huntingRadiusValue() {
+        return 2;
+    }
 
     @ConfigItem(
             keyName = "startScript",
