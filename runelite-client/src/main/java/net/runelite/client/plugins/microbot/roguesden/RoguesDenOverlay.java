@@ -6,14 +6,15 @@ import net.runelite.api.GameObject;
 import net.runelite.api.Perspective;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
-import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
+import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
+import net.runelite.client.ui.overlay.components.LineComponent;
 
 import javax.inject.Inject;
 import java.awt.*;
 
-public class RoguesDenOverlay extends Overlay {
+public class RoguesDenOverlay extends OverlayPanel {
     private static final Color OBJECT_BORDER_COLOR;
     private static final Color OBJECT_COLOR;
     private static final Color OBJECT_BORDER_HOVER_COLOR;
@@ -22,16 +23,21 @@ public class RoguesDenOverlay extends Overlay {
 
     @Inject
     public RoguesDenOverlay(Client client, RoguesDenPlugin plugin) {
+        super(plugin);
         this.setPosition(OverlayPosition.DYNAMIC);
         this.setLayer(OverlayLayer.ABOVE_SCENE);
         this.client = client;
         this.plugin = plugin;
     }
 
+    @Override
     public Dimension render(Graphics2D graphics) {
-        if (!this.plugin.isHasGem()) {
-            return null;
-        } else {
+        panelComponent.setPreferredSize(new Dimension(200, 300));
+        panelComponent.getChildren().add(LineComponent.builder()
+                .left("Maze runs: ")
+                .right(String.valueOf(RoguesDenScript.mazeRunsCompleted))
+                .build());
+        if (this.plugin.isHasGem()) {
             this.plugin.getObstaclesHull().forEach((obstaclex, tile) -> {
                 if (tile.getPlane() == this.client.getPlane()) {
                     Shape clickBox = obstaclex.getClickbox();
@@ -83,9 +89,8 @@ public class RoguesDenOverlay extends Overlay {
                     }
                 }
             }
-
-            return null;
         }
+        return super.render(graphics);
     }
 
     static {
