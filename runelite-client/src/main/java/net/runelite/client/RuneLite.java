@@ -181,6 +181,8 @@ public class RuneLite
         parser.accepts("disable-walker-update", "Disable updates for the static walker");
 		parser.accepts("profile", "Configuration profile to use").withRequiredArg();
 		parser.accepts("noupdate", "Skips the launcher update");
+		parser.accepts("clean-randomdat", "Clean random dat file");
+
 
         final ArgumentAcceptingOptionSpec<String> proxyInfo = parser.accepts("proxy", "Use a proxy server for your runelite session")
                 .withRequiredArg().ofType(String.class);
@@ -221,6 +223,33 @@ public class RuneLite
         if (options.has("microbot-debug")) {
             Microbot.debug = true;
         }
+
+		if (options.has("clean-randomdat")) {
+			File randomDat = new File(System.getProperty("user.home"), "random.dat");
+
+			// If random.dat exists, remove it
+			if (randomDat.exists()) {
+				if (!randomDat.delete()) {
+					System.err.println("Failed to delete random.dat");
+				}
+			}
+
+			// Create a new random.dat file
+			try {
+				if (randomDat.createNewFile()) {
+					// Attempt to mark the file read‐only
+					boolean readOnlySuccess = randomDat.setReadOnly();
+					if (!readOnlySuccess) {
+						System.err.println("Failed to set random.dat to read‐only");
+					}
+				} else {
+					System.err.println("Failed to create new random.dat file");
+				}
+			} catch (IOException e) {
+				System.err.println("Error creating random.dat: " + e.getMessage());
+				e.printStackTrace();
+			}
+		}
 
         //More information about java proxies can be found here
         //https://docs.oracle.com/javase/8/docs/technotes/guides/net/proxies.html
