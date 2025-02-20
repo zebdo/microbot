@@ -306,6 +306,7 @@ public class FarmTreeRunScript extends Script {
             if (isCompostEnabled(config)) {
                 if (Rs2Bank.hasItem(ItemID.BOTTOMLESS_COMPOST_BUCKET_22997)) {
                     compostItemId = ItemID.BOTTOMLESS_COMPOST_BUCKET_22997;
+                    items.add(new FarmingItem(compostItemId, 1));
                 } else {
                     Microbot.log("Only bottomless compost is supported. Skipping composting.");
                 }
