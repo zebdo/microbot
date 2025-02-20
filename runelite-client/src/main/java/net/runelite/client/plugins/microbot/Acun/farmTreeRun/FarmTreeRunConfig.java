@@ -8,26 +8,30 @@ import net.runelite.client.plugins.microbot.Acun.farmTreeRun.enums.TreeEnums;
  * Made by Acun
  */
 @ConfigGroup("example")
-@ConfigInformation("Acun <br> 0.1.1-alpha.1 <br><br> Start anywhere you want. <br><br> You need the following items in your bank:\n" +
+@ConfigInformation("Acun <br> 0.2.0-alpha.1 <br><br> Start anywhere you want. <br><br> You need the following items in your bank:\n" +
         "<ol>\n" +
         "    <li>3.000 coins</li>\n" +
         "    <li>Selected (fruit) tree saplings</li>\n" +
-        "    <li>Selected (fruit) tree protection items (if enabled)</li>\n" +
+        "    <li>Selected (fruit) tree</li>\n" +
         "    <li>Spade</li>\n" +
         "    <li>Rake</li>\n" +
         "    <li>Seed dibber</li>\n" +
-        "    <li>Bottomless compost bucket (filled)</li>\n" +
         "    <li>Law rune (10)</li>\n" +
         "    <li>Fire rune (30)</li>\n" +
         "    <li>Air rune (30)</li>\n" +
         "    <li>Earth rune (30)</li>\n" +
         "    <li>Water rune (30)</li>\n" +
         "</ol>" +
-        "<br> Optionally required for specific patches:\n" +
+        "<br> Recommended:\n" +
         "<ol>\n" +
-                "    <li>Taverley: Taverley teleport</li>\n" +
-                "    <li>Farming guild: Skills necklace (2 to 6)</li>\n" +
-                "</ol>" +
+        "    <li>Taverley teleport tab</li>\n" +
+        "    <li>Skills necklace (2 to 6)</li>\n" +
+        "</ol>" +
+        "<br> Optional:\n" +
+        "<ol>\n" +
+        "    <li>Items for protection payment</li>\n" +
+        "    <li>Filled Bottomless compost bucket</li>\n" +
+        "</ol>" +
         "<br><br> Extra information:\n" +
         "<br><br> If you want to stop the script during your farm run (maybe it gets stuck or whatever reason), make sure to disable 'Banking' and disable patches you previously ran. <br> Happy botting\n"
 )

@@ -191,6 +191,7 @@ public class FarmTreeRunScript extends Script {
                                 return;
                         }
                         botStatus = HANDLE_BRIMHAVEN_FRUIT_TREE_PATCH;
+                        break;
                     case HANDLE_BRIMHAVEN_FRUIT_TREE_PATCH:
                         patch = Patch.BRIMHAVEN_FRUIT_TREE_PATCH;
                         if (config.brimhavenFruitTreePatch() && walkToLocation(patch.getLocation())) {
@@ -225,6 +226,7 @@ public class FarmTreeRunScript extends Script {
 
                         Microbot.log("Finished tree run.");
                         shutdown();
+                        break;
                 }
 
                 long endTime = System.currentTimeMillis();
@@ -378,7 +380,7 @@ public class FarmTreeRunScript extends Script {
                 if (noted && !Rs2Bank.hasWithdrawAsNote()) {
                     Rs2Bank.setWithdrawAsNote();
                     sleep(600, 2000);
-                } else if (Rs2Bank.hasWithdrawAsNote()) { // Disables 'Note' toggle
+                } else if (!noted && Rs2Bank.hasWithdrawAsNote()) { // Disables 'Note' toggle
                     Rs2Bank.setWithdrawAsItem();
                 }
 
