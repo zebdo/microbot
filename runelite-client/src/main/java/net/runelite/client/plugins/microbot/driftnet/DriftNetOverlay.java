@@ -3,6 +3,8 @@ package net.runelite.client.plugins.microbot.driftnet;
 import net.runelite.api.GameObject;
 import net.runelite.api.NPC;
 import net.runelite.api.Point;
+import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.ui.overlay.*;
 
 import javax.inject.Inject;
@@ -50,11 +52,13 @@ class DriftNetOverlay extends Overlay
 
     private void renderFish(Graphics2D graphics)
     {
-        for (NPC fish : DriftNetPlugin.getFish())
+        for (Integer fishIndex : DriftNetPlugin.getFish())
         {
-            if (!DriftNetPlugin.getTaggedFish().containsKey(fish))
-            {
-                OverlayUtil.renderActorOverlay(graphics, fish, "", config.untaggedFishColor());
+            if (!DriftNetPlugin.getTaggedFish().containsKey(fishIndex)) {
+                Rs2NpcModel fish = Rs2Npc.getNpcByIndex(fishIndex);
+                if (fish != null) {
+                    OverlayUtil.renderActorOverlay(graphics, fish, "", config.untaggedFishColor());
+                }
             }
         }
     }

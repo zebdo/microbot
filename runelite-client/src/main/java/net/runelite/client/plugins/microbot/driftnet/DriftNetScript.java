@@ -169,23 +169,31 @@ public class DriftNetScript extends Script {
      * Iterates over nearby fish (sorted by distance to player) and chases the first
      * fish that hasn’t been tagged yet.
      */
-
-    private void chaseNearbyFish(Set<Rs2NpcModel> fishSet) {
-        List<Rs2NpcModel> sortedFish = fishSet.stream()
-                .sorted(Comparator.comparingInt(
-                        fish -> fish.getLocalLocation()
-                                .distanceTo(
-                                        Microbot.getClient().getLocalPlayer().getLocalLocation()
-                                )
+    private void chaseNearbyFish(Set<Integer> fishSet)
+    {
+        // Sort the NPC indexes by distance to the player
+        List<Integer> sortedFish = fishSet.stream()
+                .sorted(Comparator.comparingInt(fishIndex -> {
+                            Rs2NpcModel npc = Rs2Npc.getNpcByIndex(fishIndex);
+                            if (npc == null) {
+                                return Integer.MAX_VALUE;
+                            }
+                            // Return distance from local player
+                            return npc.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation());
+                        }
                 ))
                 .collect(Collectors.toList());
+        
+        for (int fishIndex : sortedFish) {
+            if (DriftNetPlugin.getTaggedFish().containsKey(fishIndex)) continue;
 
-        for (Rs2NpcModel fish : sortedFish) {
-            if (!DriftNetPlugin.getTaggedFish().containsKey(fish) && Rs2Npc.getNpcByIndex(fish.getIndex()) != null) {
-                Rs2Npc.interact(fish, "Chase");
-                sleepGaussian(1500, 300);
-                break;
-            }
+            Rs2NpcModel npc = Rs2Npc.getNpcByIndex(fishIndex);
+            if (npc == null) continue;
+
+            // Interact with the fish to "Chase" it
+            Rs2Npc.interact(npc, "Chase");
+            sleepGaussian(1500, 300);
+            break;
         }
     }
 }
