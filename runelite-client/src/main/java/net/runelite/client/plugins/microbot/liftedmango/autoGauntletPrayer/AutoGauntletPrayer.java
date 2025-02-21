@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.autoGauntletPrayer;
+package net.runelite.client.plugins.microbot.liftedmango.autoGauntletPrayer;
 
 import javax.inject.Inject;
 
@@ -83,6 +83,7 @@ public class AutoGauntletPrayer extends Plugin {
         }
 
         HeadIcon headIcon = Rs2Reflection.getHeadIcon(hunllef);
+        System.out.println("Headicon: " + headIcon);
         if (headIcon == HeadIcon.RANGED && !Rs2Inventory.contains("Halberd")) {
             Rs2Inventory.equip("Crystal staff");
             Rs2Inventory.equip("Corrupted staff");
@@ -91,21 +92,26 @@ public class AutoGauntletPrayer extends Plugin {
             Rs2Inventory.equip(ItemID.CRYSTAL_BOW_ATTUNED);
             Rs2Inventory.equip(ItemID.CRYSTAL_BOW_PERFECTED);
             Rs2Inventory.equip(ItemID.CORRUPTED_BOW_PERFECTED);
+            Rs2Inventory.equip("Corrupted bow");
+            Rs2Inventory.equip("Crystal bow");
         } else if (headIcon == HeadIcon.MELEE && !Rs2Inventory.contains("bow")) {
             Rs2Inventory.equip("Crystal staff");
             Rs2Inventory.equip("Corrupted staff");
         } else if (headIcon == HeadIcon.MAGIC && !Rs2Inventory.contains("bow")
                 ) {
+            System.out.println("Headicon: " + headIcon);
             Rs2Inventory.equip(23896); //CRYSTAL_HALBERD_ATTUNED
             Rs2Inventory.equip(23897); //CRYSTAL_HALBERD_PERFECTED
             Rs2Inventory.equip(23850); //CORRUPTED_HALBERD_ATTUNED
             Rs2Inventory.equip(23851); //CORRUPTED_HALBERD_PERFECTED
         } else if (headIcon == HeadIcon.RANGED && !Rs2Inventory.contains("staff")) {
+            System.out.println("Headicon: " + headIcon);
             Rs2Inventory.equip(23896); //CRYSTAL_HALBERD_ATTUNED
             Rs2Inventory.equip(23897); //CRYSTAL_HALBERD_PERFECTED
             Rs2Inventory.equip(23850); //CORRUPTED_HALBERD_ATTUNED
             Rs2Inventory.equip(23851); //CORRUPTED_HALBERD_PERFECTED
         } else if (headIcon == HeadIcon.MELEE && !Rs2Inventory.contains("staff")) {
+            System.out.println("Headicon: " + headIcon);
             Rs2Inventory.equip(23856); //CORRUPTED_BOW_ATTUNED
             Rs2Inventory.equip(23856); //CRYSTAL_BOW_ATTUNED
             Rs2Inventory.equip(23903); //CRYSTAL_BOW_PERFECTED
