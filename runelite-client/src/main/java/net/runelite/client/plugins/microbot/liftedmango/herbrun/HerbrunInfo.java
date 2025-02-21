@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.herbrun;
+package net.runelite.client.plugins.microbot.liftedmango.herbrun;
 
 import lombok.Getter;
 import net.runelite.api.ItemID;

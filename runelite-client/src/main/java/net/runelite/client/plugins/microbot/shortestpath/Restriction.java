@@ -14,6 +14,13 @@ import java.util.*;
 @Getter
 public class Restriction {
     /**
+     * The ids of items required to lift this restriction.
+     * If the player has **any** of the matching list of items,
+     * this restriction is lifted
+     */
+    @Getter
+    private Set<Set<Integer>> itemIdRequirements = new HashSet<>();
+    /**
      * The skill levels required for restriction to be lifted.
      */
     @Getter
@@ -88,6 +95,19 @@ public class Restriction {
                         break;
                     }
                 }
+            }
+        }
+
+        if ((value = fieldMap.get("Item IDs")) != null && !value.trim().isEmpty()) {
+            String[] itemIdsList = value.split(DELIM_MULTI);
+            for (String listIds : itemIdsList) {
+                Set<Integer> multiitemList = new HashSet<>();
+                String[] itemIds = listIds.split(DELIM);
+                for (String item : itemIds) {
+                    int itemId = Integer.parseInt(item);
+                    multiitemList.add(itemId);
+                }
+                itemIdRequirements.add(multiitemList);
             }
         }
 

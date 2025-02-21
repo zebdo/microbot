@@ -94,7 +94,15 @@ public class Rs2InventorySetup {
             int withdrawQuantity = calculateWithdrawQuantity(entry.getValue(), inventorySetupsItem, key);
             if (withdrawQuantity == 0) continue;
 
-            if (!Rs2Bank.hasBankItem(inventorySetupsItem.getName(), withdrawQuantity)) {
+            String lowerCaseName = inventorySetupsItem.getName().toLowerCase();
+
+            boolean isBarrowsItem = isBarrowsItem(lowerCaseName);
+
+            if (isBarrowsItem) {
+                inventorySetupsItem.setName(lowerCaseName.replaceAll("\\s+[1-9]\\d*$", ""));
+            }
+
+            if (!Rs2Bank.hasBankItem(lowerCaseName, withdrawQuantity)) {
                 Microbot.pauseAllScripts = true;
                 Microbot.showMessage("Bank is missing the following item " + inventorySetupsItem.getName());
                 break;
@@ -106,6 +114,15 @@ public class Rs2InventorySetup {
         sleep(1000);
 
         return doesInventoryMatch();
+    }
+
+    private static boolean isBarrowsItem(String lowerCaseName) {
+        boolean isBarrowsItem = !lowerCaseName.endsWith(" 0") &&  (lowerCaseName.contains("dharok's")
+                || lowerCaseName.contains("ahrim's")
+                || lowerCaseName.contains("guthan's")
+                || lowerCaseName.contains("torag's")
+                || lowerCaseName.contains("verac's"));
+        return isBarrowsItem;
     }
 
     /**
@@ -181,6 +198,14 @@ public class Rs2InventorySetup {
         for (InventorySetupsItem inventorySetupsItem : inventorySetup.getEquipment()) {
             if (isMainSchedulerCancelled()) break;
             if (InventorySetupsItem.itemIsDummy(inventorySetupsItem)) continue;
+
+            String lowerCaseName = inventorySetupsItem.getName().toLowerCase();
+
+            boolean isBarrowsItem = isBarrowsItem(lowerCaseName);
+
+            if (isBarrowsItem) {
+                inventorySetupsItem.setName(lowerCaseName.replaceAll("\\s+[1-9]\\d*$", ""));
+            }
 
             if (inventorySetupsItem.isFuzzy()) {
 

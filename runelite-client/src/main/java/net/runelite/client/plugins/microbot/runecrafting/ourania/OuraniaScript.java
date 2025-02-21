@@ -5,6 +5,7 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.Pouch;
 import net.runelite.client.plugins.microbot.runecrafting.ourania.enums.OuraniaState;
 import net.runelite.client.plugins.microbot.runecrafting.ourania.enums.Path;
@@ -102,6 +103,11 @@ public class OuraniaScript extends Script {
                             Rs2Magic.cast(MagicAction.OURANIA_TELEPORT);
                         }
                         sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(new WorldPoint(2468, 3246, 0)) < 24);
+                        
+                        if (plugin.isBreakHandlerEnabled()) {
+                            BreakHandlerScript.setLockState(false);
+                        }
+                        
                         if (Rs2Inventory.hasDegradedPouch() && Rs2Magic.hasRequiredRunes(Rs2Spells.NPC_CONTACT)) {
                             Rs2Magic.repairPouchesWithLunar();
                             return;
@@ -232,6 +238,10 @@ public class OuraniaScript extends Script {
                         sleepUntil(() -> !Rs2Bank.isOpen());
                         break;
                     case RUNNING_TO_ALTAR:
+                        if (plugin.isBreakHandlerEnabled()) {
+                            BreakHandlerScript.setLockState(true);
+                        }
+                        
                         Rs2Walker.walkTo(plugin.getPath().getWorldPoint());
                         if (plugin.getPath().equals(Path.LONG)) {
                             Rs2GameObject.interact(ObjectID.CRACK_29626, "squeeze-through");

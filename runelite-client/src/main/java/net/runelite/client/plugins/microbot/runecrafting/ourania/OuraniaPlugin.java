@@ -11,6 +11,8 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerPlugin;
 import net.runelite.client.plugins.microbot.runecrafting.ourania.enums.Essence;
 import net.runelite.client.plugins.microbot.runecrafting.ourania.enums.Path;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
@@ -153,6 +155,10 @@ public class OuraniaPlugin extends Plugin {
         if (event.getKey().equals(OuraniaConfig.toggleProfitCalculator)){
             toggleProfitCalculator = config.toggleProfitCalculator();
         }
+    }
+
+    public boolean isBreakHandlerEnabled() {
+        return Microbot.isPluginEnabled(BreakHandlerPlugin.class);
     }
     
     public void calcuateProfit() {

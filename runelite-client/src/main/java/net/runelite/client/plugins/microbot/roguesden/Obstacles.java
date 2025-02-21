@@ -43,7 +43,7 @@ public class Obstacles {
 
     static class Obstacle {
         @Getter
-        private final WorldPoint tile;
+        public final WorldPoint tile;
         @Getter
         private final String hint;
         @Getter

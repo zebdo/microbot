@@ -558,7 +558,7 @@ public class Rs2Player {
     /**
      * Finds and consumes the best available food item from the player's inventory.
      *
-     * <p>If in the Wilderness, prioritizes blighted food items.</p>
+     * <p>If in the Wilderness, prioritizes blighted food items but falls back to regular food if none are available.</p>
      * <p>If the selected food is a "Jug of Wine," the player will drink it instead of eating.</p>
      *
      * @return {@code true} if food was consumed, {@code false} if no food was available.
@@ -569,17 +569,24 @@ public class Rs2Player {
 
         boolean inWilderness = Microbot.getVarbitValue(Varbits.IN_WILDERNESS) == 1;
 
-        Rs2ItemModel foodToUse = foods.stream()
-                .filter(rs2Item -> !rs2Item.isNoted()) // Exclude noted food items
-                .filter(rs2Item -> inWilderness && rs2Item.getName().toLowerCase().contains("blighted")) // Prioritize blighted food in Wilderness
-                .findFirst()
-                .orElse(foods.get(0)); // Default to the first available food item
+        // Separate blighted and non-blighted food
+        List<Rs2ItemModel> blightedFoods = foods.stream()
+                .filter(rs2Item -> !rs2Item.isNoted() && rs2Item.getName().toLowerCase().contains("blighted"))
+                .collect(Collectors.toList());
 
-        if (foodToUse.getName().toLowerCase().contains("jug of wine")) {
-            return Rs2Inventory.interact(foodToUse, "drink");
-        }
+        List<Rs2ItemModel> regularFoods = foods.stream()
+                .filter(rs2Item -> !rs2Item.isNoted() && !rs2Item.getName().toLowerCase().contains("blighted"))
+                .collect(Collectors.toList());
 
-        return Rs2Inventory.interact(foodToUse, "eat");
+        // Select food to use: prefer blighted in Wilderness, otherwise use any available food
+        Rs2ItemModel foodToUse = (inWilderness && !blightedFoods.isEmpty()) ? blightedFoods.get(0)
+                : !regularFoods.isEmpty() ? regularFoods.get(0) : null;
+
+        if (foodToUse == null) return false;
+
+        return foodToUse.getName().toLowerCase().contains("jug of wine")
+                ? Rs2Inventory.interact(foodToUse, "drink")
+                : Rs2Inventory.interact(foodToUse, "eat");
     }
 
     /**
@@ -1001,7 +1008,13 @@ public class Rs2Player {
      * @return The {@link WorldPoint} representing the player's current location.
      */
     public static WorldPoint getWorldLocation() {
-        return getLocalPlayer().getWorldLocation();
+        if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
+            LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), getLocalPlayer().getWorldLocation());
+            WorldPoint playerInstancedWorldLocation = WorldPoint.fromLocalInstance(Microbot.getClient(), l);
+            return playerInstancedWorldLocation;
+        } else {
+            return getLocalPlayer().getWorldLocation();
+        }
     }
 
     /**
