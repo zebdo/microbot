@@ -69,7 +69,6 @@ public class ThievingScript extends Script {
                   
                 openCoinPouches(threshold);
                 wearDodgyNecklace();
-                System.out.println("break");
                 pickpocket();
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
