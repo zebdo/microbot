@@ -28,8 +28,11 @@ import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import javax.inject.Inject;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 public class OuraniaScript extends Script {
@@ -69,7 +72,7 @@ public class OuraniaScript extends Script {
                 
                 if (plugin.isUseMassWorld() && !isOnMassWorld()) {
                     if (selectedWorld == 0) 
-                        selectedWorld = massWorlds.get(Rs2Random.between(0, massWorlds.size() - 1));
+                        selectedWorld = massWorlds.get(Rs2Random.between(0, massWorlds.size()));
                     Microbot.hopToWorld(selectedWorld);
                     sleepUntil(() -> Microbot.getClient().getGameState() == GameState.LOGGED_IN);
                     return;
@@ -165,7 +168,7 @@ public class OuraniaScript extends Script {
                                 Rs2ItemModel energyRestoreItem = Rs2Bank.bankItems().stream()
                                         .filter(rs2Item -> Rs2Potion.getRestoreEnergyPotionsVariants().stream()
                                                 .anyMatch(variant -> rs2Item.getName().toLowerCase().contains(variant.toLowerCase())))
-                                        .findFirst()
+                                        .min(Comparator.comparingInt(rs2Item -> getDoseFromName(rs2Item.getName())))
                                         .orElse(null);
 
                                 if (energyRestoreItem == null) {
@@ -178,7 +181,7 @@ public class OuraniaScript extends Script {
                             } else if (hasStaminaPotion) {
                                 Rs2ItemModel staminaPotionItem = Rs2Bank.bankItems().stream()
                                         .filter(rs2Item -> rs2Item.getName().toLowerCase().contains(Rs2Potion.getStaminaPotion().toLowerCase()))
-                                        .findFirst()
+                                        .min(Comparator.comparingInt(rs2Item -> getDoseFromName(rs2Item.getName())))
                                         .orElse(null);
 
                                 if (staminaPotionItem == null) {
@@ -302,24 +305,37 @@ public class OuraniaScript extends Script {
     }
     
     private boolean isNearEniola() {
-        NPC eniola = Rs2Npc.getNpc(NpcID.ENIOLA);
+        Rs2NpcModel eniola = Rs2Npc.getNpc(NpcID.ENIOLA);
         if (eniola == null) return false;
         return Rs2Player.getWorldLocation().distanceTo2D(eniola.getWorldLocation()) < 12;
     }
 
     private void withdrawAndDrink(String potionItemName) {
         String simplifiedPotionName = potionItemName.replaceAll("\\s*\\(\\d+\\)", "").trim();
-        Rs2Bank.withdrawOne(simplifiedPotionName);
+        Rs2Bank.withdrawOne(potionItemName);
         Rs2Inventory.waitForInventoryChanges(1800);
-        Rs2Inventory.interact(simplifiedPotionName, "drink");
+        Rs2Inventory.interact(potionItemName, "drink");
         Rs2Inventory.waitForInventoryChanges(1800);
         if (Rs2Inventory.hasItem(simplifiedPotionName)) {
             Rs2Bank.depositOne(simplifiedPotionName);
+            Rs2Inventory.waitForInventoryChanges(1800);
+        }
+        if (Rs2Inventory.hasItem(ItemID.VIAL)) {
+            Rs2Bank.depositOne(ItemID.VIAL);
             Rs2Inventory.waitForInventoryChanges(1800);
         }
     }
     
     private boolean isOnMassWorld() {
         return massWorlds.contains(Rs2Player.getWorld());
+    }
+
+    private int getDoseFromName(String potionItemName) {
+        Pattern pattern = Pattern.compile("\\((\\d+)\\)$");
+        Matcher matcher = pattern.matcher(potionItemName);
+        if (matcher.find()) {
+            return Integer.parseInt(matcher.group(1));
+        }
+        return 0;
     }
 }

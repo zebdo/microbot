@@ -45,7 +45,7 @@ public class OuraniaPlugin extends Plugin {
     @Inject
     private OuraniaScript ouraniaScript;
 
-    public static String version = "1.1.0";
+    public static String version = "1.2.0";
 
     @Getter
     public Instant startTime;
