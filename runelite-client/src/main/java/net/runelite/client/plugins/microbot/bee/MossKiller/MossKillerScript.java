@@ -336,6 +336,8 @@ public class MossKillerScript extends Script {
 
         if (Rs2Npc.getNpc("Bryophyta") == null) {
             Microbot.log("Boss is dead, let's loot.");
+            Microbot.log("Sleeping for 5-10 seconds for loot to appear");
+            sleep(5000,10000);
 
             for (var item : Rs2GroundItem.getAll(10)) { // Iterate through the item list
                 if (item != null && !Rs2Inventory.isFull() && Rs2GroundItem.interact(item.getItem().getId(), "Take", 10)) {
