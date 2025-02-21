@@ -40,6 +40,7 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPoint;
 
+import javax.inject.Named;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
@@ -67,6 +68,9 @@ public class Rs2Walker {
 
     // Set this to true, if you want to calculate the path but do not want to walk to it
     static boolean debug = false;
+    
+    @Named("disableWalkerUpdate")
+    static boolean disableWalkerUpdate;
 
     public static boolean disableTeleports = false;
 
@@ -450,7 +454,7 @@ public class Rs2Walker {
         Point point = Rs2MiniMap.worldToMinimap(worldPoint);
 
         if (point == null) return false;
-        if (!Rs2MiniMap.isPointInsideMinimap(point)) return false;
+        if (!disableWalkerUpdate && !Rs2MiniMap.isPointInsideMinimap(point)) return false;
 
         Microbot.getMouse().click(point);
         return true;
