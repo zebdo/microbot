@@ -41,7 +41,7 @@ public interface IndexedObjectSet<T> extends Iterable<T>
 	@Override
 	default Spliterator<T> spliterator()
 	{
-		return Spliterators.spliterator(this.iterator(), 0,
-				Spliterator.DISTINCT | Spliterator.ORDERED);
+		return Spliterators.spliteratorUnknownSize(this.iterator(),
+			Spliterator.DISTINCT | Spliterator.ORDERED);
 	}
 }
