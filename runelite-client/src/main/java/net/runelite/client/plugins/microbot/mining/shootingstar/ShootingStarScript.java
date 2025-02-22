@@ -14,6 +14,7 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -158,8 +159,9 @@ public class ShootingStarScript extends Script {
 
                         break;
                     case BANKING:
-                        boolean isNearBank = Rs2Bank.walkToBank();
-                        if (!isNearBank || !Rs2Bank.isNearBank(6)) return;
+                        BankLocation nearestBank = Rs2Bank.getNearestBank();
+                        boolean isNearBank = Rs2Bank.walkToBank(nearestBank);
+                        if (!isNearBank || !Rs2Bank.isNearBank(nearestBank, 6)) return;
 
                         toggleLockState(false);
 
@@ -195,7 +197,7 @@ public class ShootingStarScript extends Script {
                             }
                         }
                         
-                        if (Rs2Gembag.hasGemBag()) {
+                        if (Rs2Gembag.isAnyGemSlotFull()) {
                             Rs2Bank.emptyGemBag();
                         }
 

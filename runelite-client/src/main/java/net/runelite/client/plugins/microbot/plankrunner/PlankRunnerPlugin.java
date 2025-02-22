@@ -42,7 +42,7 @@ public class PlankRunnerPlugin extends Plugin {
     @Inject
     private PlankRunnerScript plankRunnerScript;
 
-    public static String version = "1.0.0";
+    public static String version = "1.1.0";
 
     @Getter
     private Plank plank;

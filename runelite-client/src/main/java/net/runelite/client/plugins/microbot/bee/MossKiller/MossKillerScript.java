@@ -20,7 +20,6 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
-import net.runelite.client.plugins.microbot.util.models.RS2Item;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -335,22 +334,19 @@ public class MossKillerScript extends Script {
             }
         }
 
-        if(Rs2Npc.getNpc("Bryophyta") == null){
-            Microbot.log("Boss is dead, lets loot.");
-            RS2Item[] groundItems = Rs2GroundItem.getAll(10);
-            if(groundItems.length > 0){
-                for (RS2Item item : groundItems){
-                    if (item != null){
-                        if(Rs2GroundItem.interact(item)){
-                            sleepUntil(() -> Rs2Inventory.contains(item.getItem().getId()), 10000);
-                            sleep(250, 750);
-                        }
-                    }
+        if (Rs2Npc.getNpc("Bryophyta") == null) {
+            Microbot.log("Boss is dead, let's loot.");
+            Microbot.log("Sleeping for 5-10 seconds for loot to appear");
+            sleep(5000,10000);
+
+            for (var item : Rs2GroundItem.getAll(10)) { // Iterate through the item list
+                if (item != null && !Rs2Inventory.isFull() && Rs2GroundItem.interact(item.getItem().getId(), "Take", 10)) {
+                    Rs2Inventory.waitForInventoryChanges(5000);
                 }
-                sleep(1000, 3000);
-                state = MossKillerState.TELEPORT;
-                return;
             }
+
+            sleep(1000, 3000);
+            state = MossKillerState.TELEPORT;
         } else if(!growthlingAttacked){
             Rs2Npc.attack(Rs2Npc.getNpc("Bryophyta"));
         }

@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.grapefarmer;
+package net.runelite.client.plugins.microbot.liftedmango.grapefarmer;
 
 import net.runelite.client.config.*;
 

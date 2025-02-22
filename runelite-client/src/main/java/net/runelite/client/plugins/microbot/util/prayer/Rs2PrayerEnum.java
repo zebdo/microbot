@@ -1,8 +1,13 @@
 package net.runelite.client.plugins.microbot.util.prayer;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import net.runelite.api.Varbits;
+import net.runelite.api.annotations.Component;
 import net.runelite.api.annotations.Varbit;
 
+@Getter
+@RequiredArgsConstructor
 public enum Rs2PrayerEnum {
     THICK_SKIN("Thick Skin", 35454985, 1, Varbits.PRAYER_THICK_SKIN, 0),
     BURST_STRENGTH("Burst of Strength", 35454986, 4, Varbits.PRAYER_BURST_OF_STRENGTH, 1),
@@ -35,35 +40,10 @@ public enum Rs2PrayerEnum {
     AUGURY("Augury", 35455012, 77, Varbits.PRAYER_AUGURY, 27);
 
     private final String name;
+    @Component
     private final int index;
     private final int level;
-
-    private final int pVar;
-
+    @Varbit
+    private final int varbit;
     private final int quickPrayerIndex;
-
-    Rs2PrayerEnum(String name, int index, int level, int pVar, int quickPrayerIndex){
-        this.name = name;
-        this.index = index;
-        this.level = level;
-        this.pVar = pVar;
-        this.quickPrayerIndex = quickPrayerIndex;
-    }
-
-
-    public String getName(){
-        return name;
-    }
-    public int getIndex(){
-        return index;
-    }
-    public int getLevel(){
-        return level;
-    }
-
-    public int getQuickPrayerIndex(){ return quickPrayerIndex; }
-    public @Varbit int getVarbit(){
-        return pVar;
-    }
-
 }
