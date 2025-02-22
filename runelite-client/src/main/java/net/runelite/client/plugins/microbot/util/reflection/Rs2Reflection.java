@@ -24,19 +24,19 @@ public class Rs2Reflection {
      * sequence maps to an actor animation
      * actor can be an npc/player
      */
-      static int animationMultiplier = 527657827;
-      static String npcDefinition = "ab";
-      static String headIconSpriteIndex = "bn";
+    static int animationMultiplier = 527657827; // found in Varcs.java
+    static String npcDefinition = "ab"; // Varcs.java
+    static String headIconSpriteIndex = "bn"; // login.java
 
-    static final int INDEX_GARBAGE = 470309621;
-    static final String INDEX_FIELD = "it"; 
-    static final String INDEX_CLASS = "aw";
-    public static final String SESSION_FIELD = "gb";
-    public static final String SESSION_CLASS = "fk";
-    public static final String CHAR_FIELD = "gt"; 
-    public static final String CHAR_CLASS = "gu"; 
-    public static final String DISPLAY_FIELD = "cg";
-    public static final String DISPLAY_CLASS = "cr";
+    static final int INDEX_GARBAGE = 470309621; // found in Varcs.java
+    static final String INDEX_FIELD = "it"; // Varcs.java
+    static final String INDEX_CLASS = "aw"; // login.java
+    public static final String SESSION_FIELD = "gb"; //AsyncHttpResponse.java
+    public static final String SESSION_CLASS = "fk"; // AsyncHttpResponse.java
+    public static final String CHAR_FIELD = "gt"; //DevicePcmPlayerProvider.java
+    public static final String CHAR_CLASS = "gu"; //DevicePcmPlayerProvider.java
+    public static final String DISPLAY_FIELD = "cg"; //Login.java
+    public static final String DISPLAY_CLASS = "cr"; //Login.java
 
     /**
      * Credits to EthanApi
