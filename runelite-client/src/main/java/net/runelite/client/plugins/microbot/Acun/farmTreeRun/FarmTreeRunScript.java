@@ -23,6 +23,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
@@ -40,6 +41,7 @@ public class FarmTreeRunScript extends Script {
     public static FarmTreeRunState botStatus;
     public static boolean test = false;
     public static Integer compostItemId = null;
+    private List<FarmingItem> items = new ArrayList<>();
 
     private enum TreeKind {
         FRUIT_TREE,
@@ -87,7 +89,7 @@ public class FarmTreeRunScript extends Script {
         Rs2AntibanSettings.naturalMouse = true;
         Rs2Antiban.setActivityIntensity(ActivityIntensity.LOW);
 
-        botStatus = FarmTreeRunState.BANKING;
+        botStatus = BANKING;
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -102,120 +104,172 @@ public class FarmTreeRunScript extends Script {
 
                 dropEmptyPlantPots();
                 Patch patch = null;
+                Boolean handledPatch = false;
 
+                Microbot.log("Bot status: " + botStatus);
                 switch (botStatus) {
                     case BANKING:
                         if (config.banking()) {
                             bank(config);
                         } else {
+                            if (isCompostEnabled(config)) {
+                                compostItemId = ItemID.BOTTOMLESS_COMPOST_BUCKET_22997;
+                            }
                             botStatus = HANDLE_GNOME_STRONGHOLD_FRUIT_PATCH;
                         }
                         break;
                     case HANDLE_GNOME_STRONGHOLD_FRUIT_PATCH:
                         patch = Patch.GNOME_STRONGHOLD_FRUIT_TREE_PATCH;
-                        if (config.gnomeStrongholdFruitTreePatch() && walkToLocation(patch.getLocation())) {
-                            boolean handledPatch = handlePatch(config, patch);
+                        if (config.gnomeStrongholdFruitTreePatch()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                handledPatch = handlePatch(config, patch);
+                            }
                             if (!handledPatch)
                                 return;
+                        } else {
+                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_GNOME_STRONGHOLD_TREE_PATCH;
                         break;
                     case HANDLE_GNOME_STRONGHOLD_TREE_PATCH:
                         patch = Patch.GNOME_STRONGHOLD_TREE_PATCH;
-                        if (config.gnomeStrongholdTreePatch() && walkToLocation(patch.getLocation())) {
-                            boolean handledPatch = handlePatch(config, patch);
+                        if (config.gnomeStrongholdTreePatch()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                handledPatch = handlePatch(config, patch);
+                            }
                             if (!handledPatch)
-                                return;
+                                    return;
+                        } else {
+                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_TREE_GNOME_VILLAGE_FRUIT_TREE_PATCH;
                         break;
                     case HANDLE_TREE_GNOME_VILLAGE_FRUIT_TREE_PATCH:
                         patch = Patch.TREE_GNOME_VILLAGE_FRUIT_TREE_PATCH;
-                        if (config.treeGnomeVillageFruitTreePatch() && walkToLocation(patch.getLocation())) {
-                            boolean handledPatch = handlePatch(config, patch);
+                        if (config.treeGnomeVillageFruitTreePatch()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                handledPatch = handlePatch(config, patch);
+                            }
                             if (!handledPatch)
-                                return;
+                                    return;
+                        } else {
+                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_FARMING_GUILD_TREE_PATCH;
                         break;
                     case HANDLE_FARMING_GUILD_TREE_PATCH:
                         patch = Patch.FARMING_GUILD_TREE_PATCH;
-                        if (config.farmingGuildTreePatch() && walkToLocation(patch.getLocation()) && patch.hasRequiredLevel()) {
-                            boolean handledPatch = handlePatch(config, patch);
+                        if (config.farmingGuildTreePatch() && patch.hasRequiredLevel()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                handledPatch = handlePatch(config, patch);
+                            }
                             if (!handledPatch)
-                                return;
+                                    return;
+                        } else {
+                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_FARMING_GUILD_FRUIT_PATCH;
                         break;
                     case HANDLE_FARMING_GUILD_FRUIT_PATCH:
                         patch = Patch.FARMING_GUILD_FRUIT_TREE_PATCH;
-                        if (config.farmingGuildFruitTreePatch() && walkToLocation(patch.getLocation()) && patch.hasRequiredLevel()) {
-                            boolean handledPatch = handlePatch(config, patch);
+                        if (config.farmingGuildFruitTreePatch() && patch.hasRequiredLevel()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                handledPatch = handlePatch(config, patch);
+                            }
                             if (!handledPatch)
-                                return;
+                                    return;
+                        } else {
+                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_TAVERLEY_TREE_PATCH;
                         break;
                     case HANDLE_TAVERLEY_TREE_PATCH:
                         patch = Patch.TAVERLEY_TREE_PATCH;
-                        if (config.taverleyTreePatch() && walkToLocation(patch.getLocation())) {
-                            boolean handledPatch = handlePatch(config, patch);
-                            if (!handledPatch)
-                                return;
+                        if (config.taverleyTreePatch()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                handledPatch = handlePatch(config, patch);
+                            }
+                            if (!handledPatch) return;
+                        } else {
+                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_FALADOR_TREE_PATCH;
                         break;
                     case HANDLE_FALADOR_TREE_PATCH:
                         patch = Patch.FALADOR_TREE_PATCH;
-                        if (config.faladorTreePatch() && walkToLocation(patch.getLocation())) {
-                            boolean handledPatch = handlePatch(config, patch);
-                            if (!handledPatch)
-                                return;
+                        if (config.faladorTreePatch()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                Microbot.log("282");
+                                handledPatch = handlePatch(config, patch);
+                            }
+                            if (!handledPatch) return;
+                        } else {
+                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_LUMBRIDGE_TREE_PATCH;
                         break;
                     case HANDLE_LUMBRIDGE_TREE_PATCH:
                         patch = Patch.LUMBRIDGE_TREE_PATCH;
-                        if (config.lumbridgeTreePatch() && walkToLocation(patch.getLocation())) {
-                            boolean handledPatch = handlePatch(config, patch);
+                        if (config.lumbridgeTreePatch()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                handledPatch = handlePatch(config, patch);
+                            }
                             if (!handledPatch)
-                                return;
+                                    return;
+                        } else {
+                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_VARROCK_TREE_PATCH;
                         break;
                     case HANDLE_VARROCK_TREE_PATCH:
                         patch = Patch.VARROCK_TREE_PATCH;
-                        if (config.varrockTreePatch() && walkToLocation(patch.getLocation())) {
-                            boolean handledPatch = handlePatch(config, patch);
+                        if (config.varrockTreePatch()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                handledPatch = handlePatch(config, patch);
+                            }
                             if (!handledPatch)
-                                return;
+                                    return;
+                        } else {
+                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_BRIMHAVEN_FRUIT_TREE_PATCH;
                         break;
                     case HANDLE_BRIMHAVEN_FRUIT_TREE_PATCH:
                         patch = Patch.BRIMHAVEN_FRUIT_TREE_PATCH;
-                        if (config.brimhavenFruitTreePatch() && walkToLocation(patch.getLocation())) {
-                            boolean handledPatch = handlePatch(config, patch);
+                        if (config.brimhavenFruitTreePatch()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                handledPatch = handlePatch(config, patch);
+                            }
                             if (!handledPatch)
-                                return;
+                                    return;
+                        } else {
+                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_CATHERBY_FRUIT_TREE_PATCH;
                         break;
                     case HANDLE_CATHERBY_FRUIT_TREE_PATCH:
                         patch = Patch.CATHERBY_FRUIT_TREE_PATCH;
-                        if (config.catherbyFruitTreePatch() && walkToLocation(patch.getLocation())) {
-                            boolean handledPatch = handlePatch(config, patch);
+                        if (config.catherbyFruitTreePatch()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                Microbot.log("HandledPath: " + handledPatch);
+                                handledPatch = handlePatch(config, patch);
+                                Microbot.log("@@@@@@@@@@: " + handledPatch);
+                            }
                             if (!handledPatch)
-                                return;
+                                    return;
+                        } else {
+                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_LLETYA_FRUIT_TREE_PATCH;
                         break;
                     case HANDLE_LLETYA_FRUIT_TREE_PATCH:
                         patch = Patch.LLETYA_FRUIT_TREE_PATCH;
-                        if (config.lletyaFruitTreePatch() && walkToLocation(patch.getLocation())) {
-                            boolean handledPatch = handlePatch(config, patch);
+                        if (config.lletyaFruitTreePatch()) {
+                            if (walkToLocation(patch.getLocation())) {
+                                handledPatch = handlePatch(config, patch);
+                            }
                             if (!handledPatch)
-                                return;
+                                    return;
                         }
                         botStatus = FINISHED;
                         break;
@@ -236,7 +290,7 @@ public class FarmTreeRunScript extends Script {
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
             }
-        }, 0, 1000, TimeUnit.MILLISECONDS);
+        }, 0, 600, TimeUnit.MILLISECONDS);
         return true;
     }
 
@@ -266,11 +320,14 @@ public class FarmTreeRunScript extends Script {
     }
 
     private boolean walkToLocation(WorldPoint location) {
+        Microbot.log("323");
         if (!Rs2Player.isAnimating()) {
+            Microbot.log("329");
             Rs2Walker.walkTo(location);
             sleepUntil(() -> Rs2Player.distanceTo(location) < 16);
             return Rs2Player.distanceTo(location) < 16;
         }
+        Microbot.log("334");
         return false;
     }
 
@@ -295,7 +352,6 @@ public class FarmTreeRunScript extends Script {
             if (config.useGraceful())
                 equipGraceful();
 
-            List<FarmingItem> items = new ArrayList<>();
 
             // Add must have items
             items.add(new FarmingItem(ItemID.COINS_995, 3000));
@@ -410,18 +466,38 @@ public class FarmTreeRunScript extends Script {
     }
 
     private boolean handlePatch(FarmTreeRunConfig config, Patch patch) {
-        String[] possibleActions = {"Check-health", "Chop-down", "Chop down", "Pick-fruit", "Rake", "Clear", "Inspect"};
+        String[] possibleActions = {"Check", "Chop", "Pick", "Rake", "Clear", "Inspect"};
         GameObject treePatch = null;
         String foundAction = null;
+        String exactAction = null;
 
         // Loop through the possible actions and try to find the tree patch with any valid action
         for (String action : possibleActions) {
-            treePatch = Rs2GameObject.findObjectByImposter(patch.getId(), action);  // Find object by patchId and action
+//            System.out.println("======== " + action);
+            treePatch = Rs2GameObject.findObjectByImposter(patch.getId(), action, false);  // Find object by patchId and action
+//            Microbot.log(action + " " + treePatch.get());
+//            Microbot.log(String.valueOf(Arrays.stream(Rs2GameObject.findObjectComposition(treePatch.getId()).getImpostor().getActions()).collect(Collectors.toList())));
             if (treePatch != null) {
                 foundAction = action;
-                break;  // Exit the loop once we find the patch with a valid action
+                if (!foundAction.contains("Inspect")){
+                    break;
+                }
             }
         }
+
+        // Gagex named actions differently, sometimes it's Pick-fruit and sometimes Pick-banana.
+        // Also seen "Chop down" and "Chop-down".
+        List<String> exactTreeActions = Arrays.stream(Rs2GameObject.findObjectComposition(treePatch.getId()).getImpostor().getActions()).collect(Collectors.toList());
+        for (String action : exactTreeActions) {
+            if (action == null)
+                continue;
+            if (action.startsWith(foundAction) || action.equals(foundAction)){
+                exactAction = action;
+                break;
+            }
+        }
+
+        Microbot.log("Result: " + foundAction);
 
         // If no tree patch is, print an error and return
         if (treePatch == null) {
@@ -435,15 +511,14 @@ public class FarmTreeRunScript extends Script {
 
         // Handle the patch based on the action found
         switch (foundAction) {
-            case "Check-health":
+            case "Check":
                 handleCheckHealth(treePatch);
                 break;
-            case "Chop-down":
-            case "Chop down":
+            case "Chop":
                 handlePayment(config, patch, PaymentKind.CLEAR);
                 break;
-            case "Pick-fruit":
-                handlePickingFruit(treePatch, config, patch);
+            case "Pick":
+                handlePickingFruit(treePatch, patch, exactAction);
                 break;
             case "Rake":
                 handleRakeAction(treePatch);
@@ -463,7 +538,7 @@ public class FarmTreeRunScript extends Script {
                 System.out.println("Unexpected action found on tree patch: " + foundAction);
                 break;
         }
-
+        Microbot.log("496 result of done: " + done);
         return done;
     }
 
@@ -480,13 +555,14 @@ public class FarmTreeRunScript extends Script {
                 ItemID.DRAGONFRUIT
         };
 
-        if (!Rs2Inventory.hasItem(fruitIds)) return;
+        if (!Rs2Inventory.hasItem(fruitIds) || Rs2Player.isAnimating()) return;
 
         // Iterate through the fruit IDs
         for (int fruitId : fruitIds) {
             if (Rs2Inventory.hasItem(fruitId)) {
                 // Interact with the specific fruit found
                 Rs2Inventory.useItemOnNpc(fruitId, patch.getLeprechaunId());
+                sleepUntil(() -> Rs2Inventory.waitForInventoryChanges(5000));
                 return; // Return false if any fruit is found and interacted with
             }
         }
@@ -552,6 +628,8 @@ public class FarmTreeRunScript extends Script {
             Rs2Inventory.useItemOnObject(compostItemId, treePatch.getId());
             Rs2Player.waitForXpDrop(Skill.FARMING, 2000);
             sleep(750, 3200);
+        } else {
+            Microbot.log("Use compost on patch returned false.");
         }
 
         sleep(250, 1000);
@@ -565,12 +643,12 @@ public class FarmTreeRunScript extends Script {
         return false;
     }
 
-    private void handlePickingFruit(GameObject fruitTreePatch, FarmTreeRunConfig config, Patch patch) {
+    private void handlePickingFruit(GameObject fruitTreePatch, Patch patch, String exactAction) {
         System.out.println("Checking health...");
-        handleNotingFruit(patch);
-        Rs2GameObject.interact(fruitTreePatch, "Pick-fruit");
+        Rs2GameObject.interact(fruitTreePatch,  exactAction);
+        Microbot.log("@@@@@@@@@@@@@@@@@@: " + exactAction);
         // Wait for the picking to complete (player stops animating and patch no longer has the "Pick" action)
-        sleepUntil(() -> !Rs2GameObject.hasAction(Rs2GameObject.findObjectComposition(fruitTreePatch.getId()), "Pick-fruit"), 12000);
+        sleepUntil(() -> !Rs2GameObject.hasAction(Rs2GameObject.findObjectComposition(fruitTreePatch.getId()), exactAction), 12000);
         sleep(400, 1500);
         handleNotingFruit(patch);
     }
@@ -736,6 +814,7 @@ public class FarmTreeRunScript extends Script {
 
     @Override
     public void shutdown() {
+        items.clear();
         super.shutdown();
     }
 }
