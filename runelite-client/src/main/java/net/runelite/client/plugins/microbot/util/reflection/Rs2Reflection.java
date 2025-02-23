@@ -24,19 +24,21 @@ public class Rs2Reflection {
      * sequence maps to an actor animation
      * actor can be an npc/player
      */
-    static int animationMultiplier = 527657827; // found in Varcs.java
-    static String npcDefinition = "ab"; // Varcs.java
-    static String headIconSpriteIndex = "bn"; // login.java
+    static int animationMultiplier = 527657827; //can be found in actor.java (int sequence)
+    static String npcDefinition = "ab"; // NPCComposition definition in NPC.class
+    static String headIconSpriteIndex = "bn"; // headIconSpriteIndex in NPCComposition.class
 
-    static final int INDEX_GARBAGE = 470309621; // found in Varcs.java
-    static final String INDEX_FIELD = "it"; // Varcs.java
-    static final String INDEX_CLASS = "aw"; // login.java
-    public static final String SESSION_FIELD = "gb"; //AsyncHttpResponse.java
-    public static final String SESSION_CLASS = "fk"; // AsyncHttpResponse.java
-    public static final String CHAR_FIELD = "gt"; //DevicePcmPlayerProvider.java
-    public static final String CHAR_CLASS = "gu"; //DevicePcmPlayerProvider.java
-    public static final String DISPLAY_FIELD = "cg"; //Login.java
-    public static final String DISPLAY_CLASS = "cr"; //Login.java
+ 
+    static final byte INDEX_GARBAGE = -28; // found in Varcs.java
+    static final String INDEX_FIELD = "ab"; // Varcs.java
+    static final String INDEX_CLASS = "es"; // login.java
+    public static final String SESSION_FIELD = "gv"; //AsyncHttpResponse.java
+    public static final String SESSION_CLASS = "ag"; // AsyncHttpResponse.java
+    public static final String CHAR_FIELD = "gl"; //DevicePcmPlayerProvider.java
+    public static final String CHAR_CLASS = "am"; //DevicePcmPlayerProvider.java
+    public static final String DISPLAY_FIELD = "cw"; //Login.java
+    public static final String DISPLAY_CLASS = "dh"; //Login.java
+
 
     /**
      * Credits to EthanApi
@@ -145,38 +147,82 @@ public class Rs2Reflection {
      * @param npc
      * @return
      */
-    @SneakyThrows
-    public static HeadIcon getHeadIcon(NPC npc) {
-        Field ab = npc.getClass().getDeclaredField(npcDefinition);
-        ab.setAccessible(true);
-        Object aqObj = ab.get(npc);
-        if (aqObj == null) {
-            ab.setAccessible(false);
-            return getOldHeadIcon(npc);
+    public static HeadIcon headIconThruLengthEightArrays(NPC npc) throws IllegalAccessException {
+        Class<?>[] trying = new Class<?>[]{npc.getClass(),npc.getComposition().getClass()};
+        for (Class<?> aClass : trying) {
+            for (Field declaredField : aClass.getDeclaredFields()) {
+                Field[] decFields = declaredField.getType().getDeclaredFields();
+                if(decFields.length==2){
+                    if(decFields[0].getType().isArray()&&decFields[1].getType().isArray()){
+                        for (Field decField : decFields) {
+                            decField.setAccessible(true);
+                        }
+                        Object[] array1 = (Object[]) decFields[0].get(npc);
+                        Object[] array2 = (Object[]) decFields[1].get(npc);
+                        for (Field decField : decFields) {
+                            decField.setAccessible(false);
+                        }
+                        if(array1.length==8&array2.length==8){
+                            if(decFields[0].getType()==short[].class){
+                                if((short)array1[0]==-1){
+                                    return null;
+                                }
+                                return HeadIcon.values()[(short)array1[0]];
+                            }
+                            if((short)array2[0]==-1){
+                                return null;
+                            }
+                            return HeadIcon.values()[(short)array2[0]];
+                        }
+                    }
+                }
+            }
         }
-        Field bdField = aqObj.getClass().getDeclaredField(headIconSpriteIndex);
-        bdField.setAccessible(true);
-        short[] bd = (short[]) bdField.get(aqObj);
-        bdField.setAccessible(false);
-        ab.setAccessible(false);
-        if (bd == null) {
-            return getOldHeadIcon(npc);
-        }
-        if (bd.length == 0) {
-            return getOldHeadIcon(npc);
-        }
-        short headIcon = bd[0];
-        if (headIcon == -1) {
-            return getOldHeadIcon(npc);
-        }
-        return HeadIcon.values()[headIcon];
+        return null;
     }
 
-    /**
-     * Credits to EthanApi
-     * @param npc
-     * @return
-     */
+    @SneakyThrows
+    public static HeadIcon getHeadIcon(NPC npc) {
+        if(npc==null) return null;
+        HeadIcon icon = getOldHeadIcon(npc);
+        if(icon!=null){
+            //System.out.println("Icon returned using oldHeadIcon");
+            return icon;
+        }
+        icon = getOlderHeadicon(npc);
+        if(icon!=null){
+            //System.out.println("Icon returned using OlderHeadicon");
+            return icon;
+        }
+        //System.out.println("Icon returned using headIconThruLengthEightArrays");
+        icon = headIconThruLengthEightArrays(npc);
+        return icon;
+    }
+
+    @SneakyThrows
+    public static HeadIcon getOlderHeadicon(NPC npc){
+        Method getHeadIconMethod = null;
+        for (Method declaredMethod : npc.getComposition().getClass().getDeclaredMethods()) {
+            if (declaredMethod.getName().length() == 2 && declaredMethod.getReturnType() == short.class && declaredMethod.getParameterCount() == 1) {
+                getHeadIconMethod = declaredMethod;
+                getHeadIconMethod.setAccessible(true);
+                short headIcon = -1;
+                try {
+                    headIcon = (short) getHeadIconMethod.invoke(npc.getComposition(), 0);
+                }catch (Exception e){
+                    //nothing
+                }
+                getHeadIconMethod.setAccessible(false);
+
+                if (headIcon == -1) {
+                    continue;
+                }
+                return HeadIcon.values()[headIcon];
+            }
+        }
+        return null;
+    }
+
     @SneakyThrows
     public static HeadIcon getOldHeadIcon(NPC npc) {
         Method getHeadIconMethod;
@@ -195,13 +241,12 @@ public class Rs2Reflection {
                 if (headIcon == null) {
                     continue;
                 }
-                System.out.println("old := " + getHeadIconMethod.getName());
-
                 return HeadIcon.values()[headIcon[0]];
             }
         }
         return null;
     }
+
 
 
     /**

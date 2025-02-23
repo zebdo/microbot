@@ -13,6 +13,7 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.ui.overlay.OverlayManager;
 
@@ -52,9 +53,9 @@ public class DriftNetPlugin extends Plugin {
     private DriftNetOverlay overlay;
 
     @Getter
-    private static final Set<Rs2NpcModel> fish = new HashSet<>();
+    private static final Set<Integer> fish = new HashSet<>();
     @Getter
-    private static final Map<Rs2NpcModel, Integer> taggedFish = new HashMap<>();
+    private static final Map<Integer, Integer> taggedFish = new HashMap<>();
     @Getter
     private static final List<DriftNet> NETS = ImmutableList.of(
             new DriftNet(NullObjectID.NULL_31433, Varbits.NORTH_NET_STATUS, Varbits.NORTH_NET_CATCH_COUNT, ImmutableSet.of(
@@ -179,9 +180,9 @@ public class DriftNetPlugin extends Plugin {
         }
     }
 
-    private boolean isFishNextToNet(NPC fish, Collection<DriftNet> nets)
-    {
-        final WorldPoint fishTile = WorldPoint.fromLocalInstance(client, fish.getLocalLocation());
+    private boolean isFishNextToNet(Integer fishIndex, Collection<DriftNet> nets) {
+        Rs2NpcModel fishNpc = Rs2Npc.getNpcByIndex(fishIndex);
+        final WorldPoint fishTile = WorldPoint.fromLocalInstance(client, fishNpc.getLocalLocation());
         return nets.stream().anyMatch(net -> net.getAdjacentTiles().contains(fishTile));
     }
 
@@ -239,8 +240,8 @@ public class DriftNetPlugin extends Plugin {
 
     private void tagFish(Actor fish)
     {
-        Rs2NpcModel fishTarget = (Rs2NpcModel) fish;
-        taggedFish.put(fishTarget, client.getTickCount());
+        NPC fishTarget = (NPC) fish;
+        taggedFish.put(fishTarget.getIndex(), client.getTickCount());
     }
 
     @Subscribe
@@ -249,16 +250,16 @@ public class DriftNetPlugin extends Plugin {
         final Rs2NpcModel npc = new Rs2NpcModel(event.getNpc());
         if (npc.getId() == NpcID.FISH_SHOAL)
         {
-            fish.add(npc);
+            fish.add(npc.getIndex());
         }
     }
 
     @Subscribe
     public void onNpcDespawned(NpcDespawned event)
     {
-        final Rs2NpcModel npc = new Rs2NpcModel(event.getNpc());
-        fish.remove(npc);
-        taggedFish.remove(npc);
+        final NPC npc = event.getNpc();
+        fish.remove(npc.getIndex());
+        taggedFish.remove(npc.getIndex());
     }
 
     @Subscribe
@@ -309,10 +310,9 @@ public class DriftNetPlugin extends Plugin {
         driftNetsInInventory = itemContainer.contains(ItemID.DRIFT_NET);
     }
 
-    private boolean checkArea()
-    {
+    private boolean checkArea() {
         final Player localPlayer = client.getLocalPlayer();
-        if (localPlayer == null || !client.isInInstancedRegion())
+        if (localPlayer == null || !client.getTopLevelWorldView().getScene().isInstance())
         {
             return false;
         }

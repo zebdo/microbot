@@ -5,6 +5,6 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigInformation;
 
 @ConfigGroup("RoguesDen")
-@ConfigInformation("This plugin requires atleast 80 thieving. Start at the rogues den.")
+@ConfigInformation("Start at the rogues den. Stamina supported and recommended!")
 public interface RoguesDenConfig extends Config {
 }

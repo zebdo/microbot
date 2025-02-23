@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.herbrun;
+package net.runelite.client.plugins.microbot.liftedmango.herbrun;
 
 import java.awt.*;
 
@@ -12,7 +12,6 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -23,7 +22,7 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import java.util.concurrent.TimeUnit;
 
 import static net.runelite.client.plugins.microbot.Microbot.log;
-import static net.runelite.client.plugins.microbot.herbrun.HerbrunInfo.*;
+import static net.runelite.client.plugins.microbot.liftedmango.herbrun.HerbrunInfo.*;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntilTrue;
 
 
