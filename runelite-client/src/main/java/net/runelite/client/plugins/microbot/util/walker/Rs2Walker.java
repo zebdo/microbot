@@ -20,6 +20,7 @@ import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.coords.Rs2LocalPoint;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldArea;
+import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -39,6 +40,7 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPoint;
 
+import javax.inject.Named;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
@@ -48,7 +50,6 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 import static net.runelite.client.plugins.microbot.util.Global.*;
-import static net.runelite.client.plugins.microbot.util.walker.Rs2MiniMap.worldToMinimap;
 
 /**
  * TODO:
@@ -67,6 +68,9 @@ public class Rs2Walker {
 
     // Set this to true, if you want to calculate the path but do not want to walk to it
     static boolean debug = false;
+    
+    @Named("disableWalkerUpdate")
+    static boolean disableWalkerUpdate;
 
     public static boolean disableTeleports = false;
 
@@ -450,7 +454,7 @@ public class Rs2Walker {
         Point point = Rs2MiniMap.worldToMinimap(worldPoint);
 
         if (point == null) return false;
-        //if (!Rs2MiniMap.isPointInsideMinimap(point)) return false;
+        if (!disableWalkerUpdate && !Rs2MiniMap.isPointInsideMinimap(point)) return false;
 
         Microbot.getMouse().click(point);
         return true;
@@ -525,7 +529,7 @@ public class Rs2Walker {
 
     /**
      * Gets the total amount of tiles to travel to destination
-     * @param source source
+     * @param start source
      * @param destination destination
      * @return total amount of tiles
      */
@@ -645,6 +649,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         if (index == path.size() - 1) return false;
 
         var doorActions = Arrays.asList("pay-toll", "pick-lock", "walk-through", "go-through", "open");
+        
+        boolean isInstance = Microbot.getClient().getTopLevelWorldView().getScene().isInstance();
 
         // Check this and the next tile for door objects
         for (int doorIndex = index; doorIndex < index + 2; doorIndex++) {
@@ -653,7 +659,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             // Handle wall and game objects
             TileObject object = null;
             var tile = Rs2GameObject.getTiles(3).stream()
-                    .filter(x -> x.getWorldLocation().equals(point))
+                    .filter(x -> isInstance ? x.getWorldLocation().equals(Rs2WorldPoint.convertInstancedWorldPoint(point)) : x.getWorldLocation().equals(point))
                     .findFirst().orElse(null);
             if (tile != null)
                 object = tile.getWallObject();

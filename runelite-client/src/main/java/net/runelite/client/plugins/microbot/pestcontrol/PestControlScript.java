@@ -1,7 +1,10 @@
 package net.runelite.client.plugins.microbot.pestcontrol;
 
 import com.google.common.collect.ImmutableSet;
-import net.runelite.api.*;
+import net.runelite.api.NPCComposition;
+import net.runelite.api.NpcID;
+import net.runelite.api.ObjectID;
+import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
@@ -22,14 +25,13 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
 
 import static net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer.isQuickPrayerEnabled;
 import static net.runelite.client.plugins.microbot.util.walker.Rs2Walker.distanceToRegion;
 import static net.runelite.client.plugins.pestcontrol.Portal.*;
 
 public class PestControlScript extends Script {
-    public static double version = 2.1;
+    public static double version = 2.2;
 
     boolean walkToCenter = false;
     PestControlConfig config;
@@ -211,7 +213,9 @@ public class PestControlScript extends Script {
             }
         }
 
-        Pair<Portal, Integer> closestPortal = distancesToPortal.stream().min(Map.Entry.comparingByValue()).get();
+        Pair<Portal, Integer> closestPortal = distancesToPortal.stream().min(Map.Entry.comparingByValue()).orElse(null);
+
+        if (closestPortal == null) return null;
 
         return closestPortal.getKey();
     }
@@ -233,6 +237,7 @@ public class PestControlScript extends Script {
 
     private boolean attackPortals() {
         Portal closestAttackablePortal = getClosestAttackablePortal();
+        if (closestAttackablePortal == null) return false;
         for (Portal portal : portals) {
             if (!portal.isHasShield() && !portal.getHitPoints().getText().trim().equals("0") && closestAttackablePortal == portal) {
                 if (!Rs2Walker.isCloseToRegion(distanceToPortal, portal.getRegionX(), portal.getRegionY())) {

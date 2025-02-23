@@ -116,9 +116,6 @@ public class Microbot {
     private static WorldService worldService;
     @Getter
     @Setter
-    private static boolean disableWalkerUpdate;
-    @Getter
-    @Setter
     private static List<PluginRequestModel> botPlugins = new ArrayList<>();
     @Getter
     @Setter
