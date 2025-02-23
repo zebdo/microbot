@@ -110,7 +110,6 @@ public class PluginManager
 	PluginManager(
 		@Named("developerMode") final boolean developerMode,
 		@Named("safeMode") final boolean safeMode,
-		@Named("disableWalkerUpdate") final boolean disableWalkerUpdate,
 		final EventBus eventBus,
 		final Scheduler scheduler,
 		final ConfigManager configManager,
