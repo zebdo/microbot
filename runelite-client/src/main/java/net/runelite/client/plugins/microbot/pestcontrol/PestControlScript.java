@@ -133,7 +133,7 @@ public class PestControlScript extends Script {
                     } else {
                         if (!Microbot.getClient().getLocalPlayer().isInteracting()) {
                             Optional<Rs2NpcModel> attackableNpc = Rs2Npc.getAttackableNpcs().findFirst();
-                            attackableNpc.ifPresent(rs2NpcModel -> Rs2Npc.interact(rs2NpcModel.getId()));
+                            attackableNpc.ifPresent(rs2NpcModel -> Rs2Npc.interact(rs2NpcModel.getId(),"attack"));
                         }
                     }
 
