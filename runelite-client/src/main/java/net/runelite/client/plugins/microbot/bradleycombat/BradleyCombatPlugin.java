@@ -1,7 +1,12 @@
 package net.runelite.client.plugins.microbot.bradleycombat;
 
 import com.google.inject.Provides;
+import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Actor;
+import net.runelite.api.NPC;
+import net.runelite.api.Player;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.config.Keybind;
@@ -50,7 +55,12 @@ public class BradleyCombatPlugin extends Plugin implements KeyListener {
     private ClientThread clientThread;
     @Inject
     private RelayHandler relayHandler;
+
     private boolean hotkeyConsumed = false;
+
+    @Setter
+    @Getter
+    private static Actor target;
 
     @Provides
     BradleyCombatConfig provideConfig(ConfigManager m) {
@@ -138,12 +148,28 @@ public class BradleyCombatPlugin extends Plugin implements KeyListener {
             e.consume();
             hotkeyConsumed = true;
             Microbot.getClientThread().runOnSeperateThread(() -> {
-                if (isLoggedIn())
-                    action.run();
+                if (isLoggedIn()) action.run();
                 return null;
             });
             return true;
         }
         return false;
     }
+
+    public static boolean validTarget() {
+        return target != null && target.getLocalLocation() != null && target.getLocalLocation().isInScene();
+    }
+
+    public static boolean isNPC() {
+        return target instanceof NPC;
+    }
+
+    public static boolean isPlayer() {
+        return target instanceof Player;
+    }
+
+    public static void clearTarget() {
+        target = null;
+    }
+
 }

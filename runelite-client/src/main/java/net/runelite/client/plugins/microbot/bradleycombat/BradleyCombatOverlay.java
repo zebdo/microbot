@@ -10,7 +10,6 @@ import net.runelite.api.events.ActorDeath;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.target.Rs2Target;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -35,8 +34,8 @@ public class BradleyCombatOverlay extends Overlay {
     @Override
     public Dimension render(Graphics2D graphics) {
         try {
-            if (Rs2Target.getTarget() != null && !Rs2Target.getTarget().isDead()) {
-                WorldPoint targetLoc = Rs2Target.getTarget().getWorldLocation();
+            if (BradleyCombatPlugin.getTarget() != null && !BradleyCombatPlugin.getTarget().isDead()) {
+                WorldPoint targetLoc = BradleyCombatPlugin.getTarget().getWorldLocation();
                 if (targetLoc != null) {
                     Color highlightColor = config.targetTileColor();
                     drawTile(graphics, targetLoc, highlightColor, "", new BasicStroke(2));
@@ -75,8 +74,8 @@ public class BradleyCombatOverlay extends Overlay {
     @Subscribe
     public void onActorDeath(ActorDeath event) {
         Actor deadActor = event.getActor();
-        if (deadActor != null && deadActor == Rs2Target.getTarget()) {
-            Rs2Target.setTarget(null);
+        if (deadActor != null && deadActor == BradleyCombatPlugin.getTarget()) {
+            BradleyCombatPlugin.setTarget(null);
         }
     }
 }

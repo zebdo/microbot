@@ -7,7 +7,7 @@ import net.runelite.api.events.MenuOpened;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.util.target.Rs2Target;
+import net.runelite.client.plugins.microbot.bradleycombat.BradleyCombatPlugin;
 
 public class MenuHandler {
     private Actor lastActor = null;
@@ -28,15 +28,15 @@ public class MenuHandler {
         String opt = ev.getMenuOption();
         if ("Set Target".equals(opt)) {
             if (lastActor != null) {
-                if (Rs2Target.getTarget() != null && Rs2Target.getTarget().equals(lastActor))
-                    Rs2Target.setTarget(null);
+                if (BradleyCombatPlugin.getTarget() != null && BradleyCombatPlugin.getTarget().equals(lastActor))
+                    BradleyCombatPlugin.setTarget(null);
                 else
-                    Rs2Target.setTarget(lastActor);
+                    BradleyCombatPlugin.setTarget(lastActor);
             }
         } else if ("Follow".equals(opt) || "Attack".equals(opt)) {
             Actor a = ev.getMenuEntry().getActor();
             if (a != null)
-                Rs2Target.setTarget(a);
+                BradleyCombatPlugin.setTarget(a);
         }
     }
 }

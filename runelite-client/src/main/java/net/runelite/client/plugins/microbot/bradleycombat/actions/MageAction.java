@@ -1,11 +1,11 @@
 package net.runelite.client.plugins.microbot.bradleycombat.actions;
 
 import net.runelite.client.plugins.microbot.bradleycombat.BradleyCombatConfig;
+import net.runelite.client.plugins.microbot.bradleycombat.BradleyCombatPlugin;
 import net.runelite.client.plugins.microbot.bradleycombat.enums.PrayerStyle;
 import net.runelite.client.plugins.microbot.bradleycombat.interfaces.CombatAction;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
-import net.runelite.client.plugins.microbot.util.target.Rs2Target;
 
 public class MageAction implements CombatAction {
     private final BradleyCombatConfig config;
@@ -39,8 +39,8 @@ public class MageAction implements CombatAction {
         }
         new PrayOffensiveAction(config, PrayerStyle.MAGE).execute();
         new EquipAction(gearIDs).execute();
-        if (Rs2Target.validTarget()) {
-            Rs2Magic.castOn(spell.getMagicAction(), Rs2Target.getTarget());
+        if (BradleyCombatPlugin.validTarget()) {
+            Rs2Magic.castOn(spell.getMagicAction(), BradleyCombatPlugin.getTarget());
         }
     }
 }
