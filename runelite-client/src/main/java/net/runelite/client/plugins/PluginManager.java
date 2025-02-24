@@ -343,11 +343,6 @@ public class PluginManager
 				continue;
 			}
 
-			if (pluginDescriptor.developerPlugin() && !developerMode)
-			{
-				continue;
-			}
-
 			if (safeMode && !pluginDescriptor.loadInSafeMode())
 			{
 				log.debug("Disabling {} due to safe mode", clazz);
