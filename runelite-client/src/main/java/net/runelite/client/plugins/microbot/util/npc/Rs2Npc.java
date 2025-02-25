@@ -296,7 +296,7 @@ public class Rs2Npc {
      */
     public static Stream<Rs2NpcModel> getAttackableNpcs() {
         return getNpcs(npc -> npc.getCombatLevel() > 0 && !npc.isDead())
-                .filter(npc -> !Rs2Player.isInMulti() && !npc.isInteracting())
+                .filter(npc -> Rs2Player.isInMulti() || !npc.isInteracting())
                 .sorted(Comparator.comparingInt(value ->
                         value.getLocalLocation().distanceTo(
                                 Microbot.getClient().getLocalPlayer().getLocalLocation())));
