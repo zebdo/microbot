@@ -25,6 +25,10 @@ public class Rs2Reflection {
      * actor can be an npc/player
      */
     static int animationMultiplier = 527657827; //can be found in actor.java (int sequence)
+    static String npcDefinition = "ab"; // NPCComposition definition in NPC.class
+    static String headIconSpriteIndex = "bn"; // headIconSpriteIndex in NPCComposition.class
+
+ 
     static final byte INDEX_GARBAGE = -28; // found in Varcs.java
     static final String INDEX_FIELD = "ab"; // Varcs.java
     static final String INDEX_CLASS = "es"; // login.java
@@ -34,6 +38,7 @@ public class Rs2Reflection {
     public static final String CHAR_CLASS = "am"; //DevicePcmPlayerProvider.java
     public static final String DISPLAY_FIELD = "cw"; //Login.java
     public static final String DISPLAY_CLASS = "dh"; //Login.java
+
 
     /**
      * Credits to EthanApi

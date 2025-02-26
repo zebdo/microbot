@@ -74,14 +74,19 @@ public class Rs2Widget {
     }
 
     public static boolean isWidgetVisible(@Component int id) {
-        return !Microbot.getClientThread().runOnClientThread(() -> {
+        return Microbot.getClientThread().runOnClientThread(() -> {
             Widget widget = getWidget(id);
-            return widget == null || widget.isHidden();
+            if (widget == null) return false;
+            return !widget.isHidden();
         });
     }
 
     public static boolean isWidgetVisible(int widgetId, int childId) {
-        return !Microbot.getClientThread().runOnClientThread(() -> getWidget(widgetId, childId) == null || getWidget(widgetId, childId).isHidden());
+        return Microbot.getClientThread().runOnClientThread(() -> {
+            Widget widget = getWidget(widgetId, childId);
+            if (widget == null) return false;
+            return !widget.isHidden();
+        });
     }
 
     public static Widget getWidget(@Component int id) {

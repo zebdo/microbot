@@ -436,6 +436,9 @@ public class MageTrainingArenaScript extends Script {
                     && !room.getGuardian().getLocalLocation().equals(room.getDestination())){
                 Rs2Magic.cast(MagicAction.TELEKINETIC_GRAB);
                 sleepGaussian(600, 150);
+                if (!Rs2Camera.isTileOnScreen(room.getGuardian().getLocalLocation())) {
+                    Rs2Camera.turnTo(room.getGuardian());
+                }
                 Rs2Npc.interact(room.getGuardian());
             }
         }

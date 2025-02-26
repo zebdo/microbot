@@ -823,38 +823,6 @@ public class Rs2Magic {
         return hasRequiredRunes(spell, Rs2Inventory.hasRunePouch(), false);
     }
 
-    /**
-     * Helper method to check if any combination rune can fulfill the requirement.
-     */
-    private static int getCombinationRuneCount(Runes rune, Map<Runes, Integer> availableRunes) {
-        int count = 0;
-        switch (rune) {
-            case AIR:
-                count += availableRunes.getOrDefault(Runes.MIST, 0);
-                count += availableRunes.getOrDefault(Runes.SMOKE, 0);
-                count += availableRunes.getOrDefault(Runes.DUST, 0);
-                break;
-            case WATER:
-                count += availableRunes.getOrDefault(Runes.MIST, 0);
-                count += availableRunes.getOrDefault(Runes.MUD, 0);
-                count += availableRunes.getOrDefault(Runes.STEAM, 0);
-                break;
-            case EARTH:
-                count += availableRunes.getOrDefault(Runes.MUD, 0);
-                count += availableRunes.getOrDefault(Runes.DUST, 0);
-                count += availableRunes.getOrDefault(Runes.LAVA, 0);
-                break;
-            case FIRE:
-                count += availableRunes.getOrDefault(Runes.LAVA, 0);
-                count += availableRunes.getOrDefault(Runes.SMOKE, 0);
-                count += availableRunes.getOrDefault(Runes.STEAM, 0);
-                break;
-            default:
-                break;
-        }
-        return count;
-    }
-
     //DATA
 
     @Getter
