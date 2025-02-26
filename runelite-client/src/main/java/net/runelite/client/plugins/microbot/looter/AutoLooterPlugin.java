@@ -18,7 +18,7 @@ import javax.inject.Inject;
 import java.awt.*;
 
 @PluginDescriptor(
-        name = PluginDescriptor.GMason + "Auto Looter",
+        name = PluginDescriptor.Default + "Auto Looter",
         description = "Microbot looter plugin",
         tags = {"looter", "microbot"},
         enabledByDefault = false
