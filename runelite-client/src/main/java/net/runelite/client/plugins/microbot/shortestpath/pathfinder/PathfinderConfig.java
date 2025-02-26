@@ -291,7 +291,7 @@ public class PathfinderConfig {
         }
 
         for (Integer varplayerId : varplayersToFetch) {
-            varplayerValues.put(varplayerId, Microbot.getVarbitValue(varplayerId));
+            varplayerValues.put(varplayerId, Microbot.getVarbitPlayerValue(varplayerId));
         }
 
         for (Restriction entry : allRestrictions) {
