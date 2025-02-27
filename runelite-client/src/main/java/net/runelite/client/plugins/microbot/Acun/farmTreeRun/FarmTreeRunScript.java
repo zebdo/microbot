@@ -138,7 +138,7 @@ public class FarmTreeRunScript extends Script {
                                 handledPatch = handlePatch(config, patch);
                             }
                             if (!handledPatch)
-                                    return;
+                                return;
                         } else {
                             Microbot.log("You should be never here...");
                         }
@@ -151,7 +151,7 @@ public class FarmTreeRunScript extends Script {
                                 handledPatch = handlePatch(config, patch);
                             }
                             if (!handledPatch)
-                                    return;
+                                return;
                         } else {
                             Microbot.log("You should be never here...");
                         }
@@ -164,7 +164,7 @@ public class FarmTreeRunScript extends Script {
                                 handledPatch = handlePatch(config, patch);
                             }
                             if (!handledPatch)
-                                    return;
+                                return;
                         } else {
                             Microbot.log("You should be never here...");
                         }
@@ -177,7 +177,7 @@ public class FarmTreeRunScript extends Script {
                                 handledPatch = handlePatch(config, patch);
                             }
                             if (!handledPatch)
-                                    return;
+                                return;
                         } else {
                             Microbot.log("You should be never here...");
                         }
@@ -215,7 +215,7 @@ public class FarmTreeRunScript extends Script {
                                 handledPatch = handlePatch(config, patch);
                             }
                             if (!handledPatch)
-                                    return;
+                                return;
                         } else {
                             Microbot.log("You should be never here...");
                         }
@@ -228,7 +228,7 @@ public class FarmTreeRunScript extends Script {
                                 handledPatch = handlePatch(config, patch);
                             }
                             if (!handledPatch)
-                                    return;
+                                return;
                         } else {
                             Microbot.log("You should be never here...");
                         }
@@ -241,7 +241,7 @@ public class FarmTreeRunScript extends Script {
                                 handledPatch = handlePatch(config, patch);
                             }
                             if (!handledPatch)
-                                    return;
+                                return;
                         } else {
                             Microbot.log("You should be never here...");
                         }
@@ -256,7 +256,7 @@ public class FarmTreeRunScript extends Script {
                                 Microbot.log("@@@@@@@@@@: " + handledPatch);
                             }
                             if (!handledPatch)
-                                    return;
+                                return;
                         } else {
                             Microbot.log("You should be never here...");
                         }
@@ -269,7 +269,7 @@ public class FarmTreeRunScript extends Script {
                                 handledPatch = handlePatch(config, patch);
                             }
                             if (!handledPatch)
-                                    return;
+                                return;
                         }
                         botStatus = FINISHED;
                         break;
