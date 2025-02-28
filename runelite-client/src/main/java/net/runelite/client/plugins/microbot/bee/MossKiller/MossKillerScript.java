@@ -75,7 +75,7 @@ public class MossKillerScript extends Script {
     public int CHAOS_RUNE = 562;
     // TODO: add stuff for boss too
     public int[] LOOT_LIST = new int[]{MOSSY_KEY, LAW_RUNE, AIR_RUNE, FIRE_RUNE, DEATH_RUNE, CHAOS_RUNE, NATURE_RUNE};
-
+    public int[] LOOT_LIST1 = new int[]{BIG_BONES, RUNE_PLATELEGS, RUNE_LONGSWORD, RUNE_MED_HELM, RUNE_CHAINBODY, RUNE_PLATESKIRT, RUNE_SQ_SHIELD, RUNE_SWORD, ADAMANT_PLATEBODY, ADAMANT_KITESHIELD, NATURE_RUNE, COSMIC_RUNE, LAW_RUNE, DEATH_RUNE, CHAOS_RUNE, ADAMANT_ARROW, RUNITE_BAR, UNCUT_RUBY, UNCUT_DIAMOND, STEEL_BAR, COINS, STRENGTH_POTION4, BRYOPHYTAS_ESSENCE, MOSSY_KEY};
 
     public MossKillerState state = MossKillerState.BANK;
 
@@ -339,9 +339,10 @@ public class MossKillerScript extends Script {
             Microbot.log("Sleeping for 5-10 seconds for loot to appear");
             sleep(5000,10000);
 
-            for (var item : Rs2GroundItem.getAll(10)) { // Iterate through the item list
-                if (item != null && !Rs2Inventory.isFull() && Rs2GroundItem.interact(item.getItem().getId(), "Take", 10)) {
-                    Rs2Inventory.waitForInventoryChanges(5000);
+            // Check if loot is nearby and pick it up if it's in LOOT_LIST
+            for (int lootItem : LOOT_LIST1) {
+                if(!Rs2Inventory.isFull() && Rs2GroundItem.interact(lootItem, "Take", 10)){
+                    sleep(3000, 5000);
                 }
             }
 
