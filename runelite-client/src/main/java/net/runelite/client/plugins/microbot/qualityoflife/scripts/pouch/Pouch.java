@@ -9,27 +9,24 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 public enum Pouch {
-    SMALL(new int[]{ItemID.SMALL_POUCH}, new int[]{3}, 3, 1),
-    MEDIUM(new int[]{ItemID.MEDIUM_POUCH, ItemID.MEDIUM_POUCH_5511}, new int[]{6}, 3, 25),
-    LARGE(new int[]{ItemID.LARGE_POUCH, ItemID.LARGE_POUCH_5513}, new int[]{9}, 7, 50),
-    GIANT(new int[]{ItemID.GIANT_POUCH, ItemID.GIANT_POUCH_5515}, new int[]{12}, 9, 75),
+    SMALL(new int[]{ItemID.SMALL_POUCH}, new int[]{3}, new int[]{3}, 1),
+    MEDIUM(new int[]{ItemID.MEDIUM_POUCH, ItemID.MEDIUM_POUCH_5511}, new int[]{6}, new int[]{3}, 25),
+    LARGE(new int[]{ItemID.LARGE_POUCH, ItemID.LARGE_POUCH_5513}, new int[]{9}, new int[]{7}, 50),
+    GIANT(new int[]{ItemID.GIANT_POUCH, ItemID.GIANT_POUCH_5515}, new int[]{12}, new int[]{9}, 75),
     // degradedBaseHoldAmount for colossal pouch is dynamic, it starts at 35 and lowers
     // each time you use the degraded pouch. We'll see it to 25 to be safe
     // holdAmount -1 for colossal pouch because it is calculated based on the rc level
-    COLOSSAL(new int[]{ItemID.COLOSSAL_POUCH, ItemID.COLOSSAL_POUCH_26786}, new int[]{8, 16, 27, 40}, 8, 25);
+    COLOSSAL(new int[]{ItemID.COLOSSAL_POUCH, ItemID.COLOSSAL_POUCH_26786}, new int[]{8, 16, 27, 40}, new int[]{6, 13, 23, 35}, 25);
 
 
     private final int[] baseHoldAmount;
 
     private int getBaseHoldAmount() {
-        if (this == COLOSSAL) {
-            return degraded ? degradedBaseHoldAmount : baseHoldAmount[getColossalHoldAmountIndex()];
-        } else {
-            return degraded ? degradedBaseHoldAmount : baseHoldAmount[0];
-        }
+        int index = (this == COLOSSAL) ? getColossalHoldAmountIndex() : 0;
+        return degraded ? degradedBaseHoldAmount[index] : baseHoldAmount[index];
     }
 
-    private final int degradedBaseHoldAmount;
+    private final int[] degradedBaseHoldAmount;
 
     @Getter(AccessLevel.PUBLIC)
     @Setter(AccessLevel.PACKAGE)
@@ -47,7 +44,7 @@ public enum Pouch {
     private int levelRequired;
 
 
-    Pouch(int[] itemIds, int[] holdAmount, int degradedHoldAmount, int levelRequired) {
+    Pouch(int[] itemIds, int[] holdAmount, int[] degradedHoldAmount, int levelRequired) {
         this.itemIds = itemIds;
         this.baseHoldAmount = holdAmount;
         this.degradedBaseHoldAmount = degradedHoldAmount;
@@ -55,18 +52,23 @@ public enum Pouch {
     }
 
     public int getHoldAmount() {
-        return degraded ? degradedBaseHoldAmount : getBaseHoldAmount();
+        return degraded ? getDegradedBaseHoldAmount() : getBaseHoldAmount();
     }
 
     public int getRemaining() {
-        final int holdAmount = degraded ? degradedBaseHoldAmount : getBaseHoldAmount();
+        final int holdAmount = degraded ? getDegradedBaseHoldAmount() : getBaseHoldAmount();
         return holdAmount - holding;
+    }
+    
+    private int getDegradedBaseHoldAmount() {
+        int index = (this == COLOSSAL) ? getColossalHoldAmountIndex() : 0;
+        return degradedBaseHoldAmount[index];
     }
 
     void addHolding(int delta) {
         holding += delta;
 
-        final int holdAmount = degraded ? degradedBaseHoldAmount : getBaseHoldAmount();
+        final int holdAmount = degraded ? getDegradedBaseHoldAmount() : getBaseHoldAmount();
         if (holding < 0) {
             holding = 0;
         }
@@ -79,7 +81,7 @@ public enum Pouch {
     void degrade(boolean state) {
         if (state != degraded) {
             degraded = state;
-            final int holdAmount = degraded ? degradedBaseHoldAmount : getBaseHoldAmount();
+            final int holdAmount = degraded ? getDegradedBaseHoldAmount() : getBaseHoldAmount();
             holding = Math.min(holding, holdAmount);
         }
     }
