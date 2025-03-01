@@ -8,6 +8,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.thieving.enums.ThievingNpc;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
@@ -146,11 +147,12 @@ public class ThievingScript extends Script {
         } else {
             Map<NPC, HighlightedNpc> highlightedNpcs =  net.runelite.client.plugins.npchighlight.NpcIndicatorsPlugin.getHighlightedNpcs();
             if (highlightedNpcs.isEmpty()) {
-                if (Rs2Npc.pickpocket(config.THIEVING_NPC().getName())) {
+                if (Rs2Npc.getNpc(config.THIEVING_NPC().getName()) == null) {
+                    Rs2Walker.walkTo(initialPlayerLocation);
+                }
+                else if (Rs2Npc.pickpocket(config.THIEVING_NPC().getName())) {
                     Rs2Walker.setTarget(null);
                     sleep(50, 250);
-                } else if (Rs2Npc.getNpc(config.THIEVING_NPC().getName()) == null){
-                    Rs2Walker.walkTo(initialPlayerLocation);
                 }
             } else {
                 if (Rs2Npc.pickpocket(highlightedNpcs)) {
@@ -187,8 +189,9 @@ public class ThievingScript extends Script {
     private void bank() {
         Microbot.status = "Getting food from bank...";
 
-        boolean isBankOpen = Rs2Bank.isNearBank(15) ? Rs2Bank.openBank() : Rs2Bank.walkToBankAndUseBank();
-        if (!isBankOpen) return;
+        BankLocation nearestBank = Rs2Bank.getNearestBank();
+        boolean isBankOpen = Rs2Bank.isNearBank(nearestBank, 8) ? Rs2Bank.openBank() : Rs2Bank.walkToBankAndUseBank(nearestBank);
+        if (!isBankOpen || !Rs2Bank.isOpen()) return;
         Rs2Bank.depositAll();
 
         boolean successfullyWithdrawFood = Rs2Bank.withdrawX(true, config.food().getName(), config.foodAmount(), true);
@@ -198,7 +201,7 @@ public class ThievingScript extends Script {
             return;
         }
 
-        Rs2Bank.withdrawX(true, "dodgy necklace", config.dodgyNecklaceAmount());
+        Rs2Bank.withdrawDeficit("dodgy necklace", config.dodgyNecklaceAmount());
         if (config.shadowVeil()) {
             Rs2Bank.withdrawAll(true, "Fire rune", true);
             Rs2Inventory.waitForInventoryChanges(5000);

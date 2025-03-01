@@ -668,6 +668,17 @@ public interface QoLConfig extends Config {
         return true;
     }
 
+    @ConfigItem(
+            keyName = "showProgressOverlay",
+            name = "Shows Progress Overlay",
+            description = "Shows Progress Overlay",
+            position = 6,
+            section = wintertodtSection
+    )
+    default boolean showWintertodtProgressOverlay() {
+        return true;
+    }
+
     // boolean to quick cut gems
     @ConfigItem(
             keyName = "quickCutGems",

@@ -35,7 +35,7 @@ public class WintertodtOverlay extends OverlayPanel {
     public Dimension render(Graphics2D graphics) {
         try {
             //graphics.setFont(new Font("Arial", Font.PLAIN, 14));
-            if (WintertodtScript.isInWintertodtRegion()) {
+            if (WintertodtScript.isInWintertodtRegion() && config.showWintertodtProgressOverlay()) {
 
                 final ProgressBarComponent wintertodtHealthBar = getWintertodtHealthBar();
 
