@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import net.runelite.api.ItemID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.Skill;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -25,6 +26,7 @@ import org.apache.commons.lang3.tuple.Pair;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.concurrent.ThreadLocalRandom;
@@ -42,7 +44,7 @@ public class ScurriusScript extends Script {
     private static final int PRAYER_COOLDOWN_MS = 2000;
 
     final WorldPoint bossLocation = new WorldPoint(3279, 9869, 0);
-    final List<Integer> scurriusNpcIds = List.of(7221, 7222);
+    final WorldArea fightRoom = new WorldArea(new WorldPoint(3290, 9860, 0), 17, 17);
     public static State state = State.BANKING;
     Rs2NpcModel scurrius = null;
     private State previousState = null;
@@ -71,10 +73,7 @@ public class ScurriusScript extends Script {
                     previousState = state;
                 }
 
-                for (int scurriusNpcId : scurriusNpcIds) {
-                    scurrius = Rs2Npc.getNpc(scurriusNpcId);
-                    if (scurrius != null) break;
-                }
+                scurrius = Rs2Npc.getNpc("Scurrius", true);
 
                 boolean hasFood = !Rs2Inventory.getInventoryFood().isEmpty();
                 boolean hasPrayerPotions = Rs2Inventory.hasItem("prayer potion") || Rs2Inventory.hasItem("super restore");
@@ -202,9 +201,13 @@ public class ScurriusScript extends Script {
                             }
                         }
 
-                        boolean didWeAttackAGiantRat = scurrius != null && config.prioritizeRats() && Rs2Npc.attack("giant rat");
-                        if (didWeAttackAGiantRat) return;
-
+                        Optional<Rs2NpcModel> giantRat = Rs2Npc.getNpcs("giant rat").filter(npc -> !npc.isDead()).findFirst();
+                        if (giantRat.isPresent()) {
+                            Rs2NpcModel giantRatModel = giantRat.get();
+                            boolean didWeAttackAGiantRat = scurrius != null && config.prioritizeRats() && Rs2Npc.attack(giantRatModel);
+                            if (didWeAttackAGiantRat) return;
+                        }
+                        
                         if (!Microbot.getClient().getLocalPlayer().isInteracting()) {
                             Rs2Npc.attack(scurrius);
                         }
@@ -229,6 +232,7 @@ public class ScurriusScript extends Script {
                         Rs2Walker.walkTo(bossLocation);
                         String interactionType = config.bossRoomEntryType().getInteractionText();
                         Rs2GameObject.interact(ObjectID.BROKEN_BARS, interactionType);
+                        sleepUntil(this::isInFightRoom);
                         break;
 
                     case WAITING_FOR_BOSS:
@@ -274,8 +278,7 @@ public class ScurriusScript extends Script {
     }
 
     private boolean isInFightRoom() {
-        net.runelite.api.TileObject object = Rs2GameObject.findObjectById(14206);
-        return object != null;
+        return fightRoom.contains(Rs2Player.getWorldLocation());
     }
 
     private WorldPoint findSafeTile(WorldPoint playerLocation, List<WorldPoint> dangerousWorldPoints) {

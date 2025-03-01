@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.herbrun;
+package net.runelite.client.plugins.microbot.liftedmango.herbrun;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;

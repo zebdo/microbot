@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.grapefarmer;
+package net.runelite.client.plugins.microbot.liftedmango.grapefarmer;
 
 import net.runelite.api.*;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -6,6 +6,7 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -163,7 +164,9 @@ public class GrapeFarmerScript extends Script {
     }
 
     private void plantSeed(int gameObjectId) {
-        if (Rs2Inventory.use(ItemID.GRAPE_SEED)) {
+        Rs2ItemModel grapeSeed = Rs2Inventory.get(ItemID.GRAPE_SEED);
+        System.out.println("Planting seed...");
+        if (Rs2Inventory.use(grapeSeed)) {
             Rs2GameObject.interact(gameObjectId);
             Rs2Player.waitForXpDrop(Skill.FARMING);
         }

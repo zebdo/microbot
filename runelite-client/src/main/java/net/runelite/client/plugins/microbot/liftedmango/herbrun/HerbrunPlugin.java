@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.herbrun;
+package net.runelite.client.plugins.microbot.liftedmango.herbrun;
 
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;

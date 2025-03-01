@@ -20,7 +20,6 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
-import net.runelite.client.plugins.microbot.util.models.RS2Item;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -76,7 +75,7 @@ public class MossKillerScript extends Script {
     public int CHAOS_RUNE = 562;
     // TODO: add stuff for boss too
     public int[] LOOT_LIST = new int[]{MOSSY_KEY, LAW_RUNE, AIR_RUNE, FIRE_RUNE, DEATH_RUNE, CHAOS_RUNE, NATURE_RUNE};
-
+    public int[] LOOT_LIST1 = new int[]{BIG_BONES, RUNE_PLATELEGS, RUNE_LONGSWORD, RUNE_MED_HELM, RUNE_CHAINBODY, RUNE_PLATESKIRT, RUNE_SQ_SHIELD, RUNE_SWORD, ADAMANT_PLATEBODY, ADAMANT_KITESHIELD, NATURE_RUNE, COSMIC_RUNE, LAW_RUNE, DEATH_RUNE, CHAOS_RUNE, ADAMANT_ARROW, RUNITE_BAR, UNCUT_RUBY, UNCUT_DIAMOND, STEEL_BAR, COINS, STRENGTH_POTION4, BRYOPHYTAS_ESSENCE, MOSSY_KEY};
 
     public MossKillerState state = MossKillerState.BANK;
 
@@ -335,22 +334,20 @@ public class MossKillerScript extends Script {
             }
         }
 
-        if(Rs2Npc.getNpc("Bryophyta") == null){
-            Microbot.log("Boss is dead, lets loot.");
-            RS2Item[] groundItems = Rs2GroundItem.getAll(10);
-            if(groundItems.length > 0){
-                for (RS2Item item : groundItems){
-                    if (item != null){
-                        if(Rs2GroundItem.interact(item)){
-                            sleepUntil(() -> Rs2Inventory.contains(item.getItem().getId()), 10000);
-                            sleep(250, 750);
-                        }
-                    }
+        if (Rs2Npc.getNpc("Bryophyta") == null) {
+            Microbot.log("Boss is dead, let's loot.");
+            Microbot.log("Sleeping for 5-10 seconds for loot to appear");
+            sleep(5000,10000);
+
+            // Check if loot is nearby and pick it up if it's in LOOT_LIST
+            for (int lootItem : LOOT_LIST1) {
+                if(!Rs2Inventory.isFull() && Rs2GroundItem.interact(lootItem, "Take", 10)){
+                    sleep(3000, 5000);
                 }
-                sleep(1000, 3000);
-                state = MossKillerState.TELEPORT;
-                return;
             }
+
+            sleep(1000, 3000);
+            state = MossKillerState.TELEPORT;
         } else if(!growthlingAttacked){
             Rs2Npc.attack(Rs2Npc.getNpc("Bryophyta"));
         }

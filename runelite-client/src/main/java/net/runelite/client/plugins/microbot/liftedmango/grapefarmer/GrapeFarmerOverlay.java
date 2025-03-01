@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.herbrun;
+package net.runelite.client.plugins.microbot.liftedmango.grapefarmer;
 
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.ui.overlay.OverlayPanel;
@@ -9,10 +9,10 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 import javax.inject.Inject;
 import java.awt.*;
 
-public class HerbrunOverlay extends OverlayPanel {
+public class GrapeFarmerOverlay extends OverlayPanel {
 
     @Inject
-    HerbrunOverlay(HerbrunPlugin plugin)
+    GrapeFarmerOverlay(GrapeFarmerPlugin plugin)
     {
         super(plugin);
         setPosition(OverlayPosition.TOP_LEFT);
@@ -23,7 +23,7 @@ public class HerbrunOverlay extends OverlayPanel {
         try {
             panelComponent.setPreferredSize(new Dimension(200, 300));
             panelComponent.getChildren().add(TitleComponent.builder()
-                    .text("LiftedMango's Herb runner V0.1")
+                    .text("LiftedMango's Grape Farmer v1.0")
                     .color(Color.GREEN)
                     .build());
 

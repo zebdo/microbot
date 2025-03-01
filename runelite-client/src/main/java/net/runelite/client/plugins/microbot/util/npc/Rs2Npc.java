@@ -296,7 +296,7 @@ public class Rs2Npc {
      */
     public static Stream<Rs2NpcModel> getAttackableNpcs() {
         return getNpcs(npc -> npc.getCombatLevel() > 0 && !npc.isDead())
-                .filter(npc -> !Rs2Player.isInMulti() && !npc.isInteracting())
+                .filter(npc -> Rs2Player.isInMulti() || !npc.isInteracting())
                 .sorted(Comparator.comparingInt(value ->
                         value.getLocalLocation().distanceTo(
                                 Microbot.getClient().getLocalPlayer().getLocalLocation())));
@@ -877,8 +877,7 @@ public class Rs2Npc {
         if (npc == null) return false;
         if (npc.getWorldLocation().equals(Rs2Player.getWorldLocation())) return true;
 
-        return new WorldArea(npc.getWorldLocation(), npc.getComposition().getSize(), npc.getComposition().getSize())
-                .hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation().toWorldArea());
+        return npc.getWorldLocation().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Rs2Player.getWorldLocation().toWorldArea());
     }
 
     /**

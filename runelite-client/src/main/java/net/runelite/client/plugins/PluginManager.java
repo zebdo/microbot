@@ -110,7 +110,6 @@ public class PluginManager
 	PluginManager(
 		@Named("developerMode") final boolean developerMode,
 		@Named("safeMode") final boolean safeMode,
-		@Named("disableWalkerUpdate") final boolean disableWalkerUpdate,
 		final EventBus eventBus,
 		final Scheduler scheduler,
 		final ConfigManager configManager,
@@ -341,11 +340,6 @@ public class PluginManager
 			if (clazz.getSuperclass() != Plugin.class)
 			{
 				log.error("Class {} has plugin descriptor, but is not a plugin", clazz);
-				continue;
-			}
-
-			if (pluginDescriptor.developerPlugin() && !developerMode)
-			{
 				continue;
 			}
 

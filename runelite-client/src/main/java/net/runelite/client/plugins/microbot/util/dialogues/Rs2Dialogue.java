@@ -25,7 +25,7 @@ public class Rs2Dialogue {
      * @return true if any dialogue-related widget is visible and the scroll bar is not visible, false otherwise.
      */
     public static boolean isInDialogue() {
-        return !Rs2Widget.isWidgetVisible(162, 557) && (hasContinue() || hasSelectAnOption());
+        return !Rs2Widget.isWidgetVisible(162, 558) && (hasContinue() || hasSelectAnOption());
     }
 
     /**

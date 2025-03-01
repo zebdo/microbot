@@ -291,14 +291,14 @@ public class PathfinderConfig {
         }
 
         for (Integer varplayerId : varplayersToFetch) {
-            varplayerValues.put(varplayerId, Microbot.getVarbitValue(varplayerId));
+            varplayerValues.put(varplayerId, Microbot.getVarbitPlayerValue(varplayerId));
         }
 
         for (Restriction entry : allRestrictions) {
             boolean restrictionApplies = false;
 
             // Check if there are no quests, varbits, varplayers, doesn't require a members world or skills, used for explicit restrictions
-            if (entry.getQuests().isEmpty() && entry.getVarbits().isEmpty() && entry.getVarplayers().isEmpty() && !entry.isMembers() && Arrays.stream(entry.getSkillLevels()).allMatch(level -> level == 0)) {
+            if (entry.getQuests().isEmpty() && entry.getVarbits().isEmpty() && entry.getVarplayers().isEmpty() && !entry.isMembers() && Arrays.stream(entry.getSkillLevels()).allMatch(level -> level == 0) && entry.getItemIdRequirements().isEmpty()) {
                 restrictionApplies = true;
             }
             
@@ -346,6 +346,12 @@ public class PathfinderConfig {
             // Skill level check
             if (!restrictionApplies && !hasRequiredLevels(entry)) {
                 restrictionApplies = true;
+            }
+            
+            if (!restrictionApplies && !entry.getItemIdRequirements().isEmpty()) {
+                if (!hasRequiredItems(entry)) {
+                    restrictionApplies = true;
+                }
             }
 
             if (restrictionApplies) {
@@ -539,8 +545,7 @@ public class PathfinderConfig {
         return hasRequiredItems(transport);
     }
 
-    /** Checks if the player has all the required equipment and inventory items for the transport */
-    /** Checks if the player has all the required equipment and inventory items for the transport */
+    /** Checks if the player has any of the required equipment and inventory items for the transport */
     private boolean hasRequiredItems(Transport transport) {
         // Global flag to disable teleports
         if ((transport.getType() == TELEPORTATION_ITEM || transport.getType() == TELEPORTATION_SPELL) && Rs2Walker.disableTeleports) {
@@ -553,6 +558,14 @@ public class PathfinderConfig {
                 .stream()
                 .flatMap(Collection::stream)
                 .anyMatch(itemId -> Rs2Equipment.isWearing(itemId) || Rs2Inventory.hasItem(itemId) || (useBankItems && Rs2Bank.hasItem(itemId)));
+    }
+
+    /** Checks if the player has any of the required equipment and inventory items for the restriction */
+    private boolean hasRequiredItems(Restriction restriction) {
+        return restriction.getItemIdRequirements()
+                .stream()
+                .flatMap(Collection::stream)
+                .anyMatch(itemId -> Rs2Equipment.isWearing(itemId) || Rs2Inventory.hasItem(itemId));
     }
 
     

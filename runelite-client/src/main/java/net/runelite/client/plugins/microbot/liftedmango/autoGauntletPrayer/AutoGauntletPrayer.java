@@ -1,10 +1,13 @@
-package net.runelite.client.plugins.microbot.autoGauntletPrayer;
+package net.runelite.client.plugins.microbot.liftedmango.autoGauntletPrayer;
 
+import javax.inject.Inject;
+
+import com.google.inject.Provides;
 import net.runelite.api.*;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.GameTick;
-import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.events.ProjectileMoved;
+import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -25,7 +28,15 @@ import static net.runelite.client.plugins.microbot.Microbot.log;
         tags = {"Gauntlet", "pvm", "prayer", "money making", "auto", "boss"},
         enabledByDefault = false
 )
+
 public class AutoGauntletPrayer extends Plugin {
+    @Inject
+    private AutoGauntletConfig config;
+    @Provides
+    AutoGauntletConfig provideConfig(ConfigManager configManager) {
+        return configManager.getConfig(AutoGauntletConfig.class);
+    }
+
     private final int RANGE_PROJECTILE_MINIBOSS = 1705;
     private final int MAGE_PROJECTILE_MINIBOSS = 1701;
     private final int RANGE_PROJECTILE = 1711;
@@ -51,10 +62,7 @@ public class AutoGauntletPrayer extends Plugin {
     @Override
     protected void shutDown() throws Exception {
         log("Gauntlet plugin stopped!");
-        // Deactivate all protective prayers on shutdown
-        Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MELEE, false);
-        Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MAGIC, false);
-        Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_RANGE, false);
+        Rs2Prayer.disableAllPrayers();
     }
 
     @Subscribe
@@ -62,7 +70,6 @@ public class AutoGauntletPrayer extends Plugin {
         System.out.println("Next prayer: " + nextPrayer);
         if (nextPrayer != null && !Rs2Prayer.isPrayerActive(nextPrayer)) {
             Rs2Prayer.toggle(nextPrayer, true);
-//            nextPrayer = null;
         }
 
         NPC hunllef = Microbot.getClient().getNpcs().stream()
@@ -76,6 +83,7 @@ public class AutoGauntletPrayer extends Plugin {
         }
 
         HeadIcon headIcon = Rs2Reflection.getHeadIcon(hunllef);
+        System.out.println("Headicon: " + headIcon);
         if (headIcon == HeadIcon.RANGED && !Rs2Inventory.contains("Halberd")) {
             Rs2Inventory.equip("Crystal staff");
             Rs2Inventory.equip("Corrupted staff");
@@ -84,27 +92,26 @@ public class AutoGauntletPrayer extends Plugin {
             Rs2Inventory.equip(ItemID.CRYSTAL_BOW_ATTUNED);
             Rs2Inventory.equip(ItemID.CRYSTAL_BOW_PERFECTED);
             Rs2Inventory.equip(ItemID.CORRUPTED_BOW_PERFECTED);
+            Rs2Inventory.equip("Corrupted bow");
+            Rs2Inventory.equip("Crystal bow");
         } else if (headIcon == HeadIcon.MELEE && !Rs2Inventory.contains("bow")) {
             Rs2Inventory.equip("Crystal staff");
             Rs2Inventory.equip("Corrupted staff");
         } else if (headIcon == HeadIcon.MAGIC && !Rs2Inventory.contains("bow")
-//        !Rs2Inventory.contains(ItemID.CORRUPTED_BOW_PERFECTED)
-//                && !Rs2Inventory.contains(ItemID.CRYSTAL_BOW_PERFECTED)
-//                && !Rs2Inventory.contains(ItemID.CORRUPTED_BOW_ATTUNED)
-//                && !Rs2Inventory.contains(ItemID.CRYSTAL_BOW_ATTUNED)
                 ) {
-//            Rs2Inventory.equip("Corrupted halberd");
-//            Rs2Inventory.equip("Crystal halberd");
+            System.out.println("Headicon: " + headIcon);
             Rs2Inventory.equip(23896); //CRYSTAL_HALBERD_ATTUNED
             Rs2Inventory.equip(23897); //CRYSTAL_HALBERD_PERFECTED
             Rs2Inventory.equip(23850); //CORRUPTED_HALBERD_ATTUNED
             Rs2Inventory.equip(23851); //CORRUPTED_HALBERD_PERFECTED
         } else if (headIcon == HeadIcon.RANGED && !Rs2Inventory.contains("staff")) {
+            System.out.println("Headicon: " + headIcon);
             Rs2Inventory.equip(23896); //CRYSTAL_HALBERD_ATTUNED
             Rs2Inventory.equip(23897); //CRYSTAL_HALBERD_PERFECTED
             Rs2Inventory.equip(23850); //CORRUPTED_HALBERD_ATTUNED
             Rs2Inventory.equip(23851); //CORRUPTED_HALBERD_PERFECTED
         } else if (headIcon == HeadIcon.MELEE && !Rs2Inventory.contains("staff")) {
+            System.out.println("Headicon: " + headIcon);
             Rs2Inventory.equip(23856); //CORRUPTED_BOW_ATTUNED
             Rs2Inventory.equip(23856); //CRYSTAL_BOW_ATTUNED
             Rs2Inventory.equip(23903); //CRYSTAL_BOW_PERFECTED
@@ -132,21 +139,43 @@ public class AutoGauntletPrayer extends Plugin {
                 || Rs2Equipment.hasEquipped(ItemID.CRYSTAL_BOW_ATTUNED) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.RIGOUR)
                 || Rs2Equipment.hasEquipped(ItemID.CORRUPTED_BOW_PERFECTED) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.RIGOUR)
                 || Rs2Equipment.hasEquipped(ItemID.CORRUPTED_BOW_ATTUNED) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.RIGOUR)) {
-            Rs2Prayer.toggle(Rs2PrayerEnum.RIGOUR, true);
+            if (!config.MysticMight()) {
+                Rs2Prayer.toggle(Rs2PrayerEnum.RIGOUR, true);
+            } else {
+                if (!Rs2Prayer.isPrayerActive(Rs2PrayerEnum.STEEL_SKIN)) {
+                    Rs2Prayer.toggle(Rs2PrayerEnum.STEEL_SKIN, true);
+                }
+                Rs2Prayer.toggle(Rs2PrayerEnum.EAGLE_EYE, true);
+            }
         }
         if (Rs2Equipment.hasEquipped(ItemID.CRYSTAL_STAFF_PERFECTED) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.AUGURY)
                 || Rs2Equipment.hasEquipped(ItemID.CRYSTAL_STAFF_BASIC) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.AUGURY)
                 || Rs2Equipment.hasEquipped(ItemID.CRYSTAL_STAFF_ATTUNED) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.AUGURY)
                 || Rs2Equipment.hasEquipped(ItemID.CORRUPTED_STAFF_PERFECTED) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.AUGURY)
                 || Rs2Equipment.hasEquipped(ItemID.CORRUPTED_STAFF_ATTUNED) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.AUGURY)) {
-            Rs2Prayer.toggle(Rs2PrayerEnum.AUGURY, true);
+            if (!config.MysticMight()) {
+                Rs2Prayer.toggle(Rs2PrayerEnum.AUGURY, true);
+            } else {
+                if (!Rs2Prayer.isPrayerActive(Rs2PrayerEnum.STEEL_SKIN)) {
+                    Rs2Prayer.toggle(Rs2PrayerEnum.STEEL_SKIN, true);
+                }
+                Rs2Prayer.toggle(Rs2PrayerEnum.MYSTIC_MIGHT, true);
+            }
         }
         if (Rs2Equipment.hasEquipped(ItemID.CRYSTAL_HALBERD_PERFECTED) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PIETY)
                 || Rs2Equipment.hasEquipped(ItemID.CRYSTAL_HALBERD_BASIC) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PIETY)
                 || Rs2Equipment.hasEquipped(ItemID.CRYSTAL_HALBERD_ATTUNED) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PIETY)
                 || Rs2Equipment.hasEquipped(ItemID.CORRUPTED_HALBERD_PERFECTED) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PIETY)
                 || Rs2Equipment.hasEquipped(ItemID.CORRUPTED_HALBERD_ATTUNED) && !Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PIETY)) {
-            Rs2Prayer.toggle(Rs2PrayerEnum.PIETY, true);
+            if (!config.MysticMight()) {
+                Rs2Prayer.toggle(Rs2PrayerEnum.PIETY, true);
+            } else {
+                if (!Rs2Prayer.isPrayerActive(Rs2PrayerEnum.STEEL_SKIN)) {
+                    Rs2Prayer.toggle(Rs2PrayerEnum.STEEL_SKIN, true);
+                }
+                Rs2Prayer.toggle(Rs2PrayerEnum.ULTIMATE_STRENGTH, true);
+                Rs2Prayer.toggle(Rs2PrayerEnum.INCREDIBLE_REFLEXES, true);
+            }
         }
     }
 
