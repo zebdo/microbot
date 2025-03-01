@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.Acun.farmTreeRun.enums;
+package net.runelite.client.plugins.microbot.farmTreeRun.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

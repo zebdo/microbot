@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.Acun.farmTreeRun.enums;
+package net.runelite.client.plugins.microbot.farmTreeRun.enums;
 
 // This script does handle tree patches in the order below:
 // 1.  Gnome stronghold -> Fruit tree

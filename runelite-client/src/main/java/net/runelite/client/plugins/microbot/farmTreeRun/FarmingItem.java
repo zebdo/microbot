@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.Acun.farmTreeRun;
+package net.runelite.client.plugins.microbot.farmTreeRun;
 
 import lombok.Getter;
 

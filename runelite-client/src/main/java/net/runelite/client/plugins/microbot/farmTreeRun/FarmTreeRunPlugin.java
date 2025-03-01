@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.Acun.farmTreeRun;
+package net.runelite.client.plugins.microbot.farmTreeRun;
 
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;

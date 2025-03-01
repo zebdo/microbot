@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.Acun.farmTreeRun;
+package net.runelite.client.plugins.microbot.farmTreeRun;
 
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.ui.overlay.OverlayPanel;
@@ -23,7 +23,7 @@ public class FarmTreeRunOverlay extends OverlayPanel {
         try {
             panelComponent.setPreferredSize(new Dimension(200, 300));
             panelComponent.getChildren().add(TitleComponent.builder()
-                    .text("Acun's farm tree runner")
+                    .text("Acun's farm tree runner (v1.3.0)")
                     .color(Color.GREEN)
                     .build());
 
