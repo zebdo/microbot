@@ -8,11 +8,10 @@ import net.runelite.client.plugins.microbot.farmTreeRun.enums.TreeEnums;
  * Made by Acun
  */
 @ConfigGroup("example")
-@ConfigInformation("Start anywhere you want. <br><br> You need the following items in your bank:\n" +
+@ConfigInformation("Start anywhere you want. <br><br> Required items in bank:\n" +
         "<ol>\n" +
-        "    <li>3.000 coins</li>\n" +
-        "    <li>Selected (fruit) tree saplings</li>\n" +
-        "    <li>Selected (fruit) tree</li>\n" +
+        "    <li>3.000 gp</li>\n" +
+        "    <li>Selected saplings</li>\n" +
         "    <li>Spade</li>\n" +
         "    <li>Rake</li>\n" +
         "    <li>Seed dibber</li>\n" +
@@ -32,8 +31,8 @@ import net.runelite.client.plugins.microbot.farmTreeRun.enums.TreeEnums;
         "    <li>Items for protection payment</li>\n" +
         "    <li>Filled Bottomless compost bucket</li>\n" +
         "</ol>" +
-        "<br><br> Extra information:\n" +
-        "<br><br> If you want to stop the script during your farm run (maybe it gets stuck or whatever reason), make sure to disable 'Banking' and disable patches you previously ran. <br> Happy botting\n"
+        "<br> Extra information:\n" +
+        "<br> If you want to stop the script during your farm run (maybe it gets stuck or whatever reason), make sure to disable 'Banking' and disable patches you previously ran. <br> Happy botting\n"
 )
 public interface FarmTreeRunConfig extends Config {
     @ConfigSection(
