@@ -33,7 +33,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static net.runelite.api.ItemID.*;
+import static net.runelite.api.Skill.MAGIC;
 import static net.runelite.client.plugins.microbot.util.player.Rs2Player.eatAt;
+import static net.runelite.client.plugins.skillcalculator.skills.MagicAction.HIGH_LEVEL_ALCHEMY;
 
 
 public class MossKillerScript extends Script {
@@ -76,6 +78,7 @@ public class MossKillerScript extends Script {
     // TODO: add stuff for boss too
     public int[] LOOT_LIST = new int[]{MOSSY_KEY, LAW_RUNE, AIR_RUNE, FIRE_RUNE, DEATH_RUNE, CHAOS_RUNE, NATURE_RUNE};
     public int[] LOOT_LIST1 = new int[]{BIG_BONES, RUNE_PLATELEGS, RUNE_LONGSWORD, RUNE_MED_HELM, RUNE_CHAINBODY, RUNE_PLATESKIRT, RUNE_SQ_SHIELD, RUNE_SWORD, ADAMANT_PLATEBODY, ADAMANT_KITESHIELD, NATURE_RUNE, COSMIC_RUNE, LAW_RUNE, DEATH_RUNE, CHAOS_RUNE, ADAMANT_ARROW, RUNITE_BAR, UNCUT_RUBY, UNCUT_DIAMOND, STEEL_BAR, COINS, STRENGTH_POTION4, BRYOPHYTAS_ESSENCE, MOSSY_KEY};
+    public int[] ALCHABLES = new int[]{STEEL_KITESHIELD, MITHRIL_SWORD, BLACK_SQ_SHIELD};
 
     public MossKillerState state = MossKillerState.BANK;
 
@@ -240,6 +243,62 @@ public class MossKillerScript extends Script {
         for (int lootItem : LOOT_LIST) {
             if(!Rs2Inventory.isFull() && Rs2GroundItem.interact(lootItem, "Take", 10)){
                 sleep(1000, 3000);
+            }
+        }
+
+        // Check if loot is nearby and pick it up if it's in LOOT_LIST
+        if (config.alchLoot()) {
+            for (int lootItem : LOOT_LIST) {
+                if (Rs2GroundItem.exists(lootItem, 7) && Rs2Inventory.getEmptySlots() == 0) {
+                    eatAt(100);
+                    sleepUntil(() -> !Rs2Inventory.isFull());
+                    Rs2GroundItem.interact(lootItem, "Take", 7);
+                    sleep(2000, 3500);
+
+                } else if (Rs2GroundItem.exists(lootItem, 7)
+                        && Rs2Inventory.getEmptySlots() > 0) {
+                    Rs2GroundItem.interact(lootItem, "Take", 7);
+                    sleep(2000, 3500);
+                }
+            }
+
+            if (Rs2GroundItem.loot("Coins", 119, 7)) {
+                sleep(2000, 3500);
+            }
+
+            if (Rs2Inventory.contains(NATURE_RUNE) &&
+                    !Rs2Inventory.hasItemAmount(FIRE_RUNE, 5) &&
+                    Rs2Inventory.contains(ALCHABLES)) {
+
+                if (Microbot.getClient().getRealSkillLevel(MAGIC) > 54 && Rs2Magic.canCast(HIGH_LEVEL_ALCHEMY)) {
+
+                    if (Rs2Inventory.contains(STEEL_KITESHIELD)) {
+                        Rs2Magic.alch("Steel kiteshield");
+                    } else if (Rs2Inventory.contains(BLACK_SQ_SHIELD)) {
+                        Rs2Magic.alch("Black sq shield");
+                    } else if (Rs2Inventory.contains(MITHRIL_SWORD)) {
+                        Rs2Magic.alch("Mithril sword");
+                    }
+
+                    Rs2Player.waitForXpDrop(Skill.MAGIC, 10000, false);
+                }
+            }
+        }
+
+
+        if (config.buryBones()) {
+            if (Rs2Inventory.contains(BIG_BONES)) {
+                sleep(600, 1750);
+                Rs2Inventory.interact(BIG_BONES, "Bury");
+                sleep(1000, 1750);
+            }
+            if (!Rs2Inventory.isFull() && Rs2GroundItem.interact(BIG_BONES, "Take", 2)) {
+                sleepUntil(() -> Rs2Inventory.contains(BIG_BONES));
+                if (Rs2Inventory.contains(BIG_BONES)) {
+                    sleep(600, 1750);
+                    Rs2Inventory.interact(BIG_BONES, "Bury");
+                    sleep(1000, 1750);
+                }
             }
         }
 

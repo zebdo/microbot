@@ -92,7 +92,7 @@ public interface MossKillerConfig extends Config {
     )
     default String GUIDE() {
         return "NORMAL: Have runes for teleport to Varrock, swordfish, and bronze axe in the bank. Start in Varrock East Bank. Turn off Teleportation spells in Web Walker configuration. Turn on Breakhandler.\n"
-        + "ADVANCED: See Advanced Guide.\n"
+        + "ADVANCED: See Advanced Guide. (under renovation, don't attempt to use).\n"
         + "TIPS: For tips with the plugin visit the Discord -> Community Plugins -> Moss Killer Plugin";
     }
 
@@ -133,11 +133,22 @@ public interface MossKillerConfig extends Config {
     @ConfigItem(
             keyName = "buryBones",
             name = "Bury Bones",
-            description = "Select this if you want to loot and bury bones",
-            position = 4,
-            section = advancedGuideSection
+            description = "Select this if you want to bury bones",
+            position = 9,
+            section = basicGuideSection
     )
     default boolean buryBones() {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "alchLoot",
+            name = "Alch's loot",
+            description = "Select this if you want to loot alchables and alch them and loot coins",
+            position = 8,
+            section = basicGuideSection
+    )
+    default boolean alchLoot() {
         return false;
     }
 
@@ -159,7 +170,7 @@ public interface MossKillerConfig extends Config {
             keyName = "keyThreshold",
             name = "Key Threshold",
             description = "How many Mossy Keys should be collected before killing the boss.",
-            position = 7,
+            position = 10,
             section = basicGuideSection
     )
     default int keyThreshold() {
@@ -217,7 +228,7 @@ public interface MossKillerConfig extends Config {
             keyName = "isSlashWeaponEquipped",
             name = "Slash Weapon Equipped?",
             description = "Do you have a slash weapon equipped for spider's web? If False, have a knife in the bank.",
-            position = 6,
+            position = 7,
             section = basicGuideSection // Belongs to Basic Guide
     )
     default boolean isSlashWeaponEquipped() {
