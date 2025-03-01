@@ -104,9 +104,8 @@ public class FarmTreeRunScript extends Script {
 
                 dropEmptyPlantPots();
                 Patch patch = null;
-                Boolean handledPatch = false;
+                boolean handledPatch = false;
 
-                Microbot.log("Bot status: " + botStatus);
                 switch (botStatus) {
                     case BANKING:
                         if (config.banking()) {
@@ -126,8 +125,6 @@ public class FarmTreeRunScript extends Script {
                             }
                             if (!handledPatch)
                                 return;
-                        } else {
-                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_GNOME_STRONGHOLD_TREE_PATCH;
                         break;
@@ -139,8 +136,6 @@ public class FarmTreeRunScript extends Script {
                             }
                             if (!handledPatch)
                                 return;
-                        } else {
-                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_TREE_GNOME_VILLAGE_FRUIT_TREE_PATCH;
                         break;
@@ -152,8 +147,6 @@ public class FarmTreeRunScript extends Script {
                             }
                             if (!handledPatch)
                                 return;
-                        } else {
-                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_FARMING_GUILD_TREE_PATCH;
                         break;
@@ -165,8 +158,6 @@ public class FarmTreeRunScript extends Script {
                             }
                             if (!handledPatch)
                                 return;
-                        } else {
-                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_FARMING_GUILD_FRUIT_PATCH;
                         break;
@@ -178,8 +169,6 @@ public class FarmTreeRunScript extends Script {
                             }
                             if (!handledPatch)
                                 return;
-                        } else {
-                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_TAVERLEY_TREE_PATCH;
                         break;
@@ -190,8 +179,6 @@ public class FarmTreeRunScript extends Script {
                                 handledPatch = handlePatch(config, patch);
                             }
                             if (!handledPatch) return;
-                        } else {
-                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_FALADOR_TREE_PATCH;
                         break;
@@ -199,12 +186,9 @@ public class FarmTreeRunScript extends Script {
                         patch = Patch.FALADOR_TREE_PATCH;
                         if (config.faladorTreePatch()) {
                             if (walkToLocation(patch.getLocation())) {
-                                Microbot.log("282");
                                 handledPatch = handlePatch(config, patch);
                             }
                             if (!handledPatch) return;
-                        } else {
-                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_LUMBRIDGE_TREE_PATCH;
                         break;
@@ -216,8 +200,6 @@ public class FarmTreeRunScript extends Script {
                             }
                             if (!handledPatch)
                                 return;
-                        } else {
-                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_VARROCK_TREE_PATCH;
                         break;
@@ -229,8 +211,6 @@ public class FarmTreeRunScript extends Script {
                             }
                             if (!handledPatch)
                                 return;
-                        } else {
-                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_BRIMHAVEN_FRUIT_TREE_PATCH;
                         break;
@@ -242,8 +222,6 @@ public class FarmTreeRunScript extends Script {
                             }
                             if (!handledPatch)
                                 return;
-                        } else {
-                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_CATHERBY_FRUIT_TREE_PATCH;
                         break;
@@ -251,14 +229,10 @@ public class FarmTreeRunScript extends Script {
                         patch = Patch.CATHERBY_FRUIT_TREE_PATCH;
                         if (config.catherbyFruitTreePatch()) {
                             if (walkToLocation(patch.getLocation())) {
-                                Microbot.log("HandledPath: " + handledPatch);
                                 handledPatch = handlePatch(config, patch);
-                                Microbot.log("@@@@@@@@@@: " + handledPatch);
                             }
                             if (!handledPatch)
                                 return;
-                        } else {
-                            Microbot.log("You should be never here...");
                         }
                         botStatus = HANDLE_LLETYA_FRUIT_TREE_PATCH;
                         break;
@@ -278,7 +252,7 @@ public class FarmTreeRunScript extends Script {
                                 Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "Made with love by Acun.", "Acun", false)
                         );
 
-                        Microbot.log("Finished tree run.");
+                        Microbot.log("Finished farm run.");
                         shutdown();
                         break;
                 }
@@ -320,14 +294,11 @@ public class FarmTreeRunScript extends Script {
     }
 
     private boolean walkToLocation(WorldPoint location) {
-        Microbot.log("323");
         if (!Rs2Player.isAnimating()) {
-            Microbot.log("329");
             Rs2Walker.walkTo(location);
             sleepUntil(() -> Rs2Player.distanceTo(location) < 16);
             return Rs2Player.distanceTo(location) < 16;
         }
-        Microbot.log("334");
         return false;
     }
 
@@ -473,10 +444,7 @@ public class FarmTreeRunScript extends Script {
 
         // Loop through the possible actions and try to find the tree patch with any valid action
         for (String action : possibleActions) {
-//            System.out.println("======== " + action);
             treePatch = Rs2GameObject.findObjectByImposter(patch.getId(), action, false);  // Find object by patchId and action
-//            Microbot.log(action + " " + treePatch.get());
-//            Microbot.log(String.valueOf(Arrays.stream(Rs2GameObject.findObjectComposition(treePatch.getId()).getImpostor().getActions()).collect(Collectors.toList())));
             if (treePatch != null) {
                 foundAction = action;
                 if (!foundAction.contains("Inspect")){
@@ -497,11 +465,9 @@ public class FarmTreeRunScript extends Script {
             }
         }
 
-        Microbot.log("Result: " + foundAction);
-
         // If no tree patch is, print an error and return
         if (treePatch == null) {
-            System.out.println("Tree patch not found with any of the possible actions!");
+            System.out.println("Tree patch not found with any of the possible actions. Report this in Discord: " + patch.getId());
             return false;
         }
 
@@ -538,7 +504,6 @@ public class FarmTreeRunScript extends Script {
                 System.out.println("Unexpected action found on tree patch: " + foundAction);
                 break;
         }
-        Microbot.log("496 result of done: " + done);
         return done;
     }
 
@@ -617,7 +582,6 @@ public class FarmTreeRunScript extends Script {
     }
 
     private boolean handlePlantingTree(GameObject treePatch, Patch patch, FarmTreeRunConfig config) {
-        Microbot.log("Result of !isPatchEmpty(patch): " + !isPatchEmpty(patch));
         // Skip if patch is not empty
         if (!isPatchEmpty(patch))
             return true;
@@ -628,8 +592,6 @@ public class FarmTreeRunScript extends Script {
             Rs2Inventory.useItemOnObject(compostItemId, treePatch.getId());
             Rs2Player.waitForXpDrop(Skill.FARMING, 2000);
             sleep(750, 3200);
-        } else {
-            Microbot.log("Use compost on patch returned false.");
         }
 
         sleep(250, 1000);
@@ -644,9 +606,8 @@ public class FarmTreeRunScript extends Script {
     }
 
     private void handlePickingFruit(GameObject fruitTreePatch, Patch patch, String exactAction) {
-        System.out.println("Checking health...");
+        System.out.println("Picking fruit...");
         Rs2GameObject.interact(fruitTreePatch,  exactAction);
-        Microbot.log("@@@@@@@@@@@@@@@@@@: " + exactAction);
         // Wait for the picking to complete (player stops animating and patch no longer has the "Pick" action)
         sleepUntil(() -> !Rs2GameObject.hasAction(Rs2GameObject.findObjectComposition(fruitTreePatch.getId()), exactAction), 12000);
         sleep(400, 1500);
@@ -683,7 +644,7 @@ public class FarmTreeRunScript extends Script {
     }
 
     private void handleClearAction(GameObject treePatch) {
-        System.out.println("Clearing the tree patch...");
+        System.out.println("Clearing dead tree...");
 
         // Try to interact with the patch using the "clear" action
         boolean interactionSuccess = Rs2GameObject.interact(treePatch, "clear");
