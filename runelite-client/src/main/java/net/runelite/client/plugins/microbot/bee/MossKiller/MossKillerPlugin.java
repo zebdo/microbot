@@ -14,15 +14,14 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.bee.MossKiller.Enums.CombatMode;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
 import java.awt.*;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 
 import static net.runelite.api.EquipmentInventorySlot.WEAPON;
 import static net.runelite.api.GraphicID.SNARE;
@@ -65,7 +64,7 @@ public class MossKillerPlugin extends Plugin {
     private boolean lobsterEaten = false;
     private int tickCount = 0;
 
-    private final Map<Player, Integer> attackerTickMap = new HashMap<>();
+    private final Map<Rs2PlayerModel, Integer> attackerTickMap = new HashMap<>();
     private static final int MIN_TICKS_TO_TRACK = 2;
     private static final String MOSS_GIANT_NAME = "Moss Giant";
 
@@ -78,7 +77,8 @@ public class MossKillerPlugin extends Plugin {
 
     private boolean runeScimitar = false;
 
-    public Player currentTarget = null;
+    private final Object targetLock = new Object();
+    public Rs2PlayerModel currentTarget = null;
 
     private boolean hideOverlay;
 
@@ -112,6 +112,19 @@ public class MossKillerPlugin extends Plugin {
         } else {wildyKillerScript.run(config);
         wildyKillerScript.handleAsynchWalk("Start-up");
     }
+    }
+
+    public Rs2PlayerModel getCurrentTarget() {
+        synchronized(targetLock) {
+            return currentTarget;
+        }
+    }
+
+    public void setCurrentTarget(Rs2PlayerModel target) {
+        synchronized(targetLock) {
+            currentTarget = target;
+            System.out.println("Target set to: " + (target != null ? target.getName() : "null"));
+        }
     }
 
     @Subscribe
@@ -238,7 +251,7 @@ public class MossKillerPlugin extends Plugin {
         checkNearbyPlayers();
 
         if (hitsplatIsTheirs && hitsplatSetTick != -1) {
-            // Check if 4 ticks have passed since the flag was set
+            System.out.println("hitsplat counter is more than -1");
             if (client.getTickCount() - hitsplatSetTick >= 4) {
                 hitsplatIsTheirs = false; // Reset the flag
                 hitsplatSetTick = -1;     // Reset the tracker
@@ -324,7 +337,7 @@ public class MossKillerPlugin extends Plugin {
     }
 
     private void trackAttackers() {
-        Player localPlayer = client.getLocalPlayer();
+        Player localPlayer =Microbot.getClient().getLocalPlayer();
 
         // Check if a Moss Giant is interacting with the player
         Actor interactingActor = localPlayer.getInteracting();
@@ -334,75 +347,141 @@ public class MossKillerPlugin extends Plugin {
             return;
         }
 
-        List<Player> potentialTargets = Rs2Player.getPlayersInCombatLevelRange(true);
+        // First, check if current target is still valid, to avoid reassigning
+        if (currentTarget != null) {
+            boolean targetInList = false;
+            for (Rs2PlayerModel player : Rs2Player.getPlayersInCombatLevelRange()) {
+                if (Objects.equals(player.getName(), currentTarget.getName())) {
+                    targetInList = true;
+                    currentTarget = player; // Update target reference to current instance
+                    break;
+                }
+            }
 
-        // Update attackers map based on interactions
-        for (Player player : potentialTargets) {
-            if (player != null && player.getInteracting() == localPlayer
-                    && !isNonCombatAnimation(player)
-                    && hitsplatIsTheirs()) {
-                if (Microbot.getVarbitPlayerValue(1075) == -1
-                        && WildyKillerScript.CORRIDOR.contains(Rs2Player.getWorldLocation())
-                        || Microbot.getVarbitPlayerValue(1075) != -1
-                        && !WildyKillerScript.CORRIDOR.contains(Rs2Player.getWorldLocation()))
-                    attackerTickMap.put(player, attackerTickMap.getOrDefault(player, 0) + 1);
+            // If target is above threshold combat level, only reset if dead or not in list
+            if (isAboveCombatThreshold(currentTarget)) {
+                if (currentTarget.isDead() || !targetInList) {
+                    System.out.println("High-level target is dead or not found, resetting target");
+                    resetTarget();
+                } else {
+                    System.out.println("Maintaining high-level target: " + currentTarget.getName());
+                    return; // Skip the rest of the tracking logic - maintain current target
+                }
+            } else if (currentTarget.isDead() || !targetInList) {
+                System.out.println("Target is dead or not found, resetting target");
+                resetTarget();
             }
         }
 
-        // Remove players no longer interacting with local player
-        //attackerTickMap.entrySet().removeIf(entry -> entry.getKey().getInteracting() != localPlayer);
+        List<Rs2PlayerModel> potentialTargets = Rs2Player.getPlayersInCombatLevelRange();
 
-        // On each tick
-        for (Map.Entry<Player, Integer> entry : attackerTickMap.entrySet()) {
-            Player player = entry.getKey();
+        // Update attackers map based on interactions
+        for (Rs2PlayerModel player : potentialTargets) {
+            System.out.println("Checking player: " + player.getName() + ", interacting with local: " + (player.getInteracting() == localPlayer));
+
+            if (player.getInteracting() == localPlayer && !isNonCombatAnimation(player) && hitsplatIsTheirs()) {
+                if ((Microbot.getVarbitPlayerValue(1075) == -1
+                        && WildyKillerScript.CORRIDOR.contains(Rs2Player.getWorldLocation()))
+                        || (Microbot.getVarbitPlayerValue(1075) != -1
+                        && !WildyKillerScript.CORRIDOR.contains(Rs2Player.getWorldLocation()))) {
+
+                    int currentCount = attackerTickMap.getOrDefault(player, 0);
+                    attackerTickMap.put(player, currentCount + 1);
+                    System.out.println("Player " + player.getName() + " tick count increased to: " + (currentCount + 1));
+                }
+            }
+        }
+
+        // Create a copy of the entry set to avoid concurrent modification
+        List<Map.Entry<Rs2PlayerModel, Integer>> entries = new ArrayList<>(attackerTickMap.entrySet());
+
+        // Process each entry - similar to your original logic
+        for (Map.Entry<Rs2PlayerModel, Integer> entry : entries) {
+            Rs2PlayerModel player = entry.getKey();
             int tickCount = entry.getValue();
 
-            // Increment tick count if the player is interacting and performing combat animation or hitsplat
+            System.out.println("Processing " + player.getName() + " with count " + tickCount);
+
+            // Follow your original logic closely
+            // Increment tick count if the player is interacting and performing combat animation
             if (player.getInteracting() == localPlayer && !isNonCombatAnimation(player)) {
-                attackerTickMap.put(player, tickCount + 1); // Keep incrementing if combat animation
+                tickCount += 1;
+                attackerTickMap.put(player, tickCount);
+                System.out.println(player.getName() + " in combat with us, ticks now: " + tickCount);
             }
 
             // Increment tick count if the player is interacting and their hitsplat is applied to you
-            if (player.getInteracting() == localPlayer && hitsplatIsTheirs) {
-                attackerTickMap.put(player, tickCount + 1); // Increment if hitsplat applies to you
+            if (player.getInteracting() == localPlayer && hitsplatIsTheirs()) {
+                tickCount += 1;
+                attackerTickMap.put(player, tickCount);
+                System.out.println(player.getName() + " hitsplat applied, ticks now: " + tickCount);
             }
 
-            // If the player is no longer interacting, decrease their tick count
+            // If the player is no longer interacting, decrease their tick count - keeping your original formula
             if (player.getInteracting() != localPlayer && player.getAnimation() != 829) {
-                attackerTickMap.put(player, Math.max(0, tickCount - 2)); // Decrease by 2 tick per interval
+                tickCount = Math.max(0, tickCount - 2);
+                attackerTickMap.put(player, tickCount);
+                System.out.println(player.getName() + " no longer interacting, ticks now: " + tickCount);
             }
 
-            // If the player is no longer interacting and no longer doing combat animations decrease their tick count
+            // If player no longer interacting and doing non-combat anim
             if (player.getInteracting() != localPlayer && isNonCombatAnimation(player) && player.getAnimation() != 829) {
-                attackerTickMap.put(player, Math.max(0, tickCount - 2)); // Decrease by 2 tick per interval
+                tickCount = Math.max(0, tickCount - 2);
+                attackerTickMap.put(player, tickCount);
+                System.out.println(player.getName() + " non-combat animation, ticks now: " + tickCount);
             }
 
-            System.out.println(tickCount);
+            System.out.println("Final tick count for " + player.getName() + ": " + tickCount);
 
             // If tick count is >= MIN_TICKS_TO_TRACK, they become your target
             if (tickCount >= MIN_TICKS_TO_TRACK) {
                 currentTarget = player;
-                break;  // Set the first valid target
+                System.out.println("Setting target to: " + player.getName() + " with ticks: " + tickCount);
+                break;
             }
 
             // If tick count is 0, remove player from the map
             if (tickCount == 0) {
-                resetAttackers();
-                resetTarget();
+                attackerTickMap.remove(player);
+                System.out.println("Removing " + player.getName() + " from map due to 0 ticks");
+                if (currentTarget == player) {
+                    resetTarget();
+                    System.out.println("Resetting target since it was " + player.getName());
+                }
             }
         }
 
-
+        // Check if current target is valid
         if (currentTarget != null) {
-            if (currentTarget.isDead() || !Rs2Player.getPlayers().contains(currentTarget)) {
+            boolean targetInList = false;
+            for (Rs2PlayerModel player : Rs2Player.getPlayersInCombatLevelRange()) {
+                if (Objects.equals(player.getName(), currentTarget.getName())) {
+                    targetInList = true;
+                    break;
+                }
+            }
+
+            if (currentTarget.isDead() || !targetInList) {
+                System.out.println("Target is dead or not found, resetting target");
                 resetTarget();
+            } else {
+                System.out.println("Current target remains: " + currentTarget.getName());
             }
         }
     }
 
+    // Add this method to check if a player is above the combat threshold
+    private boolean isAboveCombatThreshold(Rs2PlayerModel player) {
+        if (player == null) return false;
+
+        // Define your combat threshold - adjust this value as needed
+        final int COMBAT_THRESHOLD = 87; // Example threshold
+
+        return player.getCombatLevel() > COMBAT_THRESHOLD;
+    }
     /**
      * Determines if a player is performing a non-combat animation (walking/running).
-     * Add specific walking/running animation IDs as needed.
+
      */
     private boolean isNonCombatAnimation(Player player) {
         int animationId = player.getAnimation();
@@ -416,7 +495,7 @@ public class MossKillerPlugin extends Plugin {
     }
 
     private void checkNearbyPlayers() {
-        Player localPlayer = client.getLocalPlayer();
+        Player localPlayer = Microbot.getClient().getLocalPlayer();
         if (localPlayer == null) {
             isPlayerNearby = false;
             return;
@@ -469,7 +548,7 @@ public class MossKillerPlugin extends Plugin {
         Actor target = event.getActor();
         Hitsplat hitsplat = event.getHitsplat();
 
-        if (target == client.getLocalPlayer()) {
+        if (target == Microbot.getClient().getLocalPlayer()) {
             if (hitsplat.getHitsplatType() == HitsplatID.BLOCK_ME || hitsplat.getHitsplatType() == HitsplatID.DAMAGE_ME) {
                 //System.out.println("registered a hit");
                 WorldView worldView = client.getWorldView(-1); // or getTopLevelWorldView()
@@ -488,7 +567,7 @@ public class MossKillerPlugin extends Plugin {
                             System.out.println("there is a player nearby");
                             System.out.println("is doing combat animation " + (!isNonCombatAnimation(player)));
                             System.out.println("Interacting with me he is " + (player.getInteracting() == client.getLocalPlayer()));
-                            if (player.getInteracting() == client.getLocalPlayer() && !isNonCombatAnimation(player)) {
+                            if (player.getInteracting() == client.getLocalPlayer() && !isNonCombatAnimation (player)) {
                                 Microbot.log("Someone is interacting with me while doing a combat animation");
                                 recentHitsplats.put(player, client.getTickCount());
                                 hitsplatIsTheirs = true;
@@ -505,8 +584,8 @@ public class MossKillerPlugin extends Plugin {
     /**
      * Determines which player caused the hitsplat based on interaction and proximity.
      */
-    private Player getAttackerForHitsplat(Player localPlayer) {
-        for (Player player : Rs2Player.getPlayersInCombatLevelRange(true)) {
+    private Player getAttackerForHitsplat(Rs2PlayerModel localPlayer) {
+        for (Rs2PlayerModel player : Rs2Player.getPlayersInCombatLevelRange()) {
             if (player.getInteracting() == localPlayer && !isNonCombatAnimation(player)) {
                 ;
                 return player;
@@ -533,7 +612,7 @@ public class MossKillerPlugin extends Plugin {
 
     @Subscribe
     public void onGraphicChanged(GraphicChanged event) {
-        Player localPlayer = client.getLocalPlayer();
+        Player localPlayer = Microbot.getClient().getLocalPlayer();
         if (localPlayer != null && localPlayer.hasSpotAnim(SNARE)) {
             handleSnare();  // Method to handle being snared
         }
