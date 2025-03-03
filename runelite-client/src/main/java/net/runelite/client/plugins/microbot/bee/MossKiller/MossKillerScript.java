@@ -1,6 +1,5 @@
 package net.runelite.client.plugins.microbot.bee.MossKiller;
 
-import net.runelite.api.Player;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.PluginInstantiationException;
@@ -23,6 +22,7 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
@@ -288,16 +288,16 @@ public class MossKillerScript extends Script {
 
         if (config.buryBones()) {
             if (Rs2Inventory.contains(BIG_BONES)) {
-                sleep(600, 1750);
+                sleep(100, 1750);
                 Rs2Inventory.interact(BIG_BONES, "Bury");
-                sleep(1000, 1750);
+                Rs2Player.waitForAnimation();
             }
             if (!Rs2Inventory.isFull() && Rs2GroundItem.interact(BIG_BONES, "Take", 2)) {
                 sleepUntil(() -> Rs2Inventory.contains(BIG_BONES));
                 if (Rs2Inventory.contains(BIG_BONES)) {
-                    sleep(600, 1750);
+                    sleep(100, 1750);
                     Rs2Inventory.interact(BIG_BONES, "Bury");
-                    sleep(1000, 1750);
+                    Rs2Player.waitForAnimation();
                 }
             }
         }
@@ -333,12 +333,12 @@ public class MossKillerScript extends Script {
         sleep(800, 2000);
     }
 
-    public List<Player> getNearbyPlayers(int distance) {
+    public List<Rs2PlayerModel> getNearbyPlayers(int distance) {
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
-        List<Player> players = Rs2Player.getPlayers();
 
-        return players.stream()
-                .filter(p -> p != null && p.getWorldLocation().distanceTo(playerLocation) <= distance)
+        // Use the predicate-based getPlayers method directly
+        return Rs2Player.getPlayers(p -> p != null &&
+                        p.getWorldLocation().distanceTo(playerLocation) <= distance)
                 .collect(Collectors.toList());
     }
 
