@@ -23,7 +23,7 @@ public class AutoBuyerOverlay extends OverlayPanel {
         try {
             panelComponent.setPreferredSize(new Dimension(200, 300));
             panelComponent.getChildren().add(TitleComponent.builder()
-                    .text("GE buyer 0.1.0-alpha.1")
+                    .text("GE buyer v1.1")
                     .color(Color.GREEN)
                     .build());
 
