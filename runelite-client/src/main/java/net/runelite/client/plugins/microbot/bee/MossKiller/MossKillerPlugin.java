@@ -4,6 +4,8 @@ import com.google.inject.Provides;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.LocalPoint;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -70,6 +72,9 @@ public class MossKillerPlugin extends Plugin {
 
     private static boolean isSnared = false;
     private int snareTickCounter = 0;
+
+
+    public static WorldPoint bryoTile = null; // Stores the southwest tile when Bryophyta dies
 
     private boolean useWindBlast = false;
     private boolean useMelee = false;
@@ -143,9 +148,10 @@ public class MossKillerPlugin extends Plugin {
 
     @Subscribe
     public void onVarbitChanged(VarbitChanged event) {
-        if (event.getVarbitId() == Varbits.TELEBLOCK) {
+        if (config.wildy()) {if (event.getVarbitId() == Varbits.TELEBLOCK) {
             int teleblockValue = event.getValue(); // Get the current value of the teleblock varbit
             isTeleblocked = teleblockValue > 100;
+        }
         }
     }
 
@@ -247,93 +253,122 @@ public class MossKillerPlugin extends Plugin {
 
     @Subscribe
     public void onGameTick(GameTick event) {
+        if (config.wildy()) {
 
-        checkNearbyPlayers();
+            checkNearbyPlayers();
 
-        if (hitsplatIsTheirs && hitsplatSetTick != -1) {
-            System.out.println("hitsplat counter is more than -1");
-            if (client.getTickCount() - hitsplatSetTick >= 4) {
-                hitsplatIsTheirs = false; // Reset the flag
-                hitsplatSetTick = -1;     // Reset the tracker
+            if (hitsplatIsTheirs && hitsplatSetTick != -1) {
+                System.out.println("hitsplat counter is more than -1");
+                if (client.getTickCount() - hitsplatSetTick >= 4) {
+                    hitsplatIsTheirs = false; // Reset the flag
+                    hitsplatSetTick = -1;     // Reset the tracker
+                }
+            }
+
+            if (client.getLocalPlayer() != null) {
+                int currentHp = client.getLocalPlayer().getHealthRatio();
+
+                // Player has 0 HP, and this death has not been processed yet
+                if (currentHp == 0 && !isDeathProcessed) {
+                    worldHopFlag = true; // Notify the script to hop worlds
+                    deathCounter++; // Increment the death counter
+                    isDeathProcessed = true; // Mark this death as processed
+                }
+
+                // Reset the death processed flag when the player's HP is greater than 0
+                if (currentHp > 0) {
+                    isDeathProcessed = false;
+                }
+            }
+
+            targetPrayers();
+
+            runeScimitar = Rs2Equipment.isEquipped(RUNE_SCIMITAR, WEAPON);
+
+            if (isSnared) {
+                snareTickCounter++;
+                if (snareTickCounter >= 16) {  // Reset after 16 ticks
+                    isSnared = false;
+                    snareTickCounter = 0;
+                    System.out.println("Snare effect ended.");
+                }
+            }
+
+            int health = Microbot.getClient().getBoostedSkillLevel(Skill.HITPOINTS); // Assuming Rs2Player has a method to get health
+
+            if (health == 0) {
+                stopWalking();
+            }
+
+            if (lobsterEaten) {
+                tickCount++;
+
+                if (tickCount >= 3) {
+                    lobsterEaten = false; // Reset the boolean after 3 ticks
+                    tickCount = 0; // Reset the counter
+                    System.out.println("3 ticks elapsed. eating attack delay over.");
+                    // Set your script's boolean or trigger action here
+                }
+            }
+
+            if (config.combatMode() == CombatMode.FIGHT) {
+                trackAttackers();
+            }
+
+            int attackStyle = client.getVarpValue(VarPlayer.ATTACK_STYLE);
+            defensive = attackStyle == 3;
+
+            if (currentTarget == null) {
+                tickCount++;
+
+                if (tickCount >= 9) {
+                    superNullTarget = true;
+                    //System.out.println("9 ticks elapsed. target probably properly gone.");
+                }
+
+            } else {
+                superNullTarget = false;
+            }
+
+            if (!Rs2Player.isMoving()) {
+                tickCount++;
+
+                if (tickCount >= 50) {
+                    isJammed = true;
+                }
+
+            } else {
+                tickCount = 0;
+                isJammed = false;
             }
         }
 
-        if (client.getLocalPlayer() != null) {
-            int currentHp = client.getLocalPlayer().getHealthRatio();
+        if (!config.wildy()){NPC bryophyta = findBryophyta();
 
-            // Player has 0 HP, and this death has not been processed yet
-            if (currentHp == 0 && !isDeathProcessed) {
-                worldHopFlag = true; // Notify the script to hop worlds
-                deathCounter++; // Increment the death counter
-                isDeathProcessed = true; // Mark this death as processed
-            }
+        // Check if Bryophyta's HP is 0
+        if (bryophyta != null && bryophyta.getHealthRatio() == 0) {
+            bryoTile = getBryophytaWorldLocation(bryophyta);
+        }}
+    }
 
-            // Reset the death processed flag when the player's HP is greater than 0
-            if (currentHp > 0) {
-                isDeathProcessed = false;
-            }
+    public NPC findBryophyta() {
+        return client.getNpcs().stream()
+                .filter(npc -> npc.getName() != null && npc.getName().equalsIgnoreCase("Bryophyta"))
+                .findFirst()
+                .orElse(null);
+    }
+
+    private WorldPoint getBryophytaWorldLocation(NPC bryophyta) {
+        if (bryophyta == null) {
+            return null;
         }
 
-        targetPrayers();
-
-        runeScimitar = Rs2Equipment.isEquipped(RUNE_SCIMITAR, WEAPON);
-
-
-        if (isSnared) {
-            snareTickCounter++;
-            if (snareTickCounter >= 16) {  // Reset after 16 ticks
-                isSnared = false;
-                snareTickCounter = 0;
-                System.out.println("Snare effect ended.");
-            }
-        }
-
-        int health = Microbot.getClient().getBoostedSkillLevel(Skill.HITPOINTS); // Assuming Rs2Player has a method to get health
-
-        if (health == 0) {
-            stopWalking();
-        }
-
-        if (lobsterEaten) {
-            tickCount++;
-
-            if (tickCount >= 3) {
-                lobsterEaten = false; // Reset the boolean after 3 ticks
-                tickCount = 0; // Reset the counter
-                System.out.println("3 ticks elapsed. eating attack delay over.");
-                // Set your script's boolean or trigger action here
-            }
-        }
-
-        if (config.combatMode() == CombatMode.FIGHT) {
-            trackAttackers();
-        }
-
-        int attackStyle = client.getVarpValue(VarPlayer.ATTACK_STYLE);
-        defensive = attackStyle == 3;
-
-        if (currentTarget == null) {
-            tickCount ++;
-
-            if (tickCount >= 9)
-            {superNullTarget = true;
-                //System.out.println("9 ticks elapsed. target probably properly gone.");
-            }
-
+        if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
+            LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), bryophyta.getWorldLocation());
+            return WorldPoint.fromLocalInstance(Microbot.getClient(), l);
         } else {
-            superNullTarget = false;}
-
-        if (!Rs2Player.isMoving()) {
-            tickCount ++;
-
-            if (tickCount >= 50)
-            {isJammed = true;
-            }
-
-        } else {
-            tickCount = 0;
-            isJammed = false;}
-
+            return bryophyta.getWorldLocation();
+        }
     }
 
     private void trackAttackers() {
@@ -518,15 +553,18 @@ public class MossKillerPlugin extends Plugin {
 
     @Subscribe
     public void onChatMessage(ChatMessage event) {
-        if (event.getMessage().equals("You eat the swordfish.")) {
-            lobsterEaten = true;
-            tickCount = 0; // Reset the tick counter
-        }
 
-        if (currentTarget != null) {
-            wildyKillerScript.isTargetOutOfReach = event.getMessage().equals("I can't reach that.");
-        } else {
-            wildyKillerScript.isTargetOutOfReach = false; // Explicitly set to false when no target
+        if (config.wildy()) {
+            if (event.getMessage().equals("You eat the swordfish.")) {
+                lobsterEaten = true;
+                tickCount = 0; // Reset the tick counter
+            }
+
+            if (currentTarget != null) {
+                wildyKillerScript.isTargetOutOfReach = event.getMessage().equals("I can't reach that.");
+            } else {
+                wildyKillerScript.isTargetOutOfReach = false; // Explicitly set to false when no target
+            }
         }
 
     }
