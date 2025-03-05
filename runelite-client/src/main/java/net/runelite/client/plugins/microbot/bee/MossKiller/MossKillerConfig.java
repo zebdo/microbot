@@ -99,8 +99,7 @@ public interface MossKillerConfig extends Config {
             keyName = "wildySelector",
             name = "Wildy Mode",
             description = "Enable this for killing Moss Giants in the Wilderness.",
-            position = 2,
-            section = advancedGuideSection
+            position = 10
     )
     default boolean wildy() {
         return false;
@@ -122,7 +121,7 @@ public interface MossKillerConfig extends Config {
             keyName = "hideOverlay",
             name = "Overlay Hider",
             description = "Select this if you want to hide the overlay",
-            position = 9
+            position = 7
     )
     default boolean isHideOverlay() {
         return false;
@@ -133,7 +132,7 @@ public interface MossKillerConfig extends Config {
             keyName = "buryBones",
             name = "Bury Bones",
             description = "Select this if you want to bury bones",
-            position = 8
+            position = 9
     )
     default boolean buryBones() {
         return false;
@@ -141,10 +140,9 @@ public interface MossKillerConfig extends Config {
 
     @ConfigItem(
             keyName = "alchLoot",
-            name = "Alch's loot",
+            name = "Alch loot",
             description = "Select this if you want to loot alchables and alch them and loot coins",
-            position = 8,
-            section = basicGuideSection
+            position = 8
     )
     default boolean alchLoot() {
         return false;
@@ -168,7 +166,7 @@ public interface MossKillerConfig extends Config {
             keyName = "keyThreshold",
             name = "Key Threshold",
             description = "How many Mossy Keys should be collected before killing the boss.",
-            position = 10,
+            position = 8,
             section = basicGuideSection
     )
     default int keyThreshold() {
