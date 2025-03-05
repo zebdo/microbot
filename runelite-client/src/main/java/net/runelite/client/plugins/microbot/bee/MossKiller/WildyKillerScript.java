@@ -1454,7 +1454,8 @@ public class WildyKillerScript extends Script {
         if (Rs2Inventory.contains(NATURE_RUNE) &&
                 !Rs2Inventory.contains(STAFF_OF_FIRE) &&
                 mossKillerPlugin.currentTarget == null &&
-                Rs2Inventory.contains(ALCHABLES)) {
+                Rs2Inventory.contains(ALCHABLES) &&
+                config.alchLoot()){
 
             if (Microbot.getClient().getRealSkillLevel(MAGIC) > 54 && Rs2Magic.canCast(HIGH_LEVEL_ALCHEMY)) {
 
