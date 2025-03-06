@@ -6,6 +6,8 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.grandexchange.GrandExchangeSlots;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
 import org.apache.commons.lang3.tuple.Pair;
+import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
+import java.util.stream.Collectors;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -24,8 +26,20 @@ public class AutoBuyerScript extends Script {
     public boolean run(AutoBuyerConfig config) {
 
         Microbot.enableAutoRunOn = false;
+        String listOfItemsToBuy;
+        if (getQuestHelperPlugin().getSelectedQuest() != null && config.buyQuest()) {
+            listOfItemsToBuy = getQuestHelperPlugin().getSelectedQuest().getItemRequirements()
+                    .stream()
+                    .filter(item -> !item.getName().equalsIgnoreCase("coins")) // Ignore items with name "coins"
+                    .map(item -> item.getName() + "[" + item.getQuantity() + "]") // Format: "Name (Quantity)"
+                    .collect(Collectors.joining(",")); // Joins names with ", "
+        } else {
+            Microbot.log("Using manual item list");
+            listOfItemsToBuy = config.listOfItemsToBuy().replaceAll("\\s*,\\s*", ",");
+
+        }
+
         // Replace any spaces around commas with just a comma since G.E. has whitespace sensitivity
-        String listOfItemsToBuy = config.listOfItemsToBuy().replaceAll("\\s*,\\s*", ",");
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -114,6 +128,7 @@ public class AutoBuyerScript extends Script {
         return Integer.parseInt(String.valueOf(availableSlots.getRight())) > 0;
     }
 
+
     private Map<String, Integer> mapItems(String[] items) {
         Map<String, Integer> itemMap = new HashMap<>();
 
@@ -154,5 +169,9 @@ public class AutoBuyerScript extends Script {
         timesToClickIncrease = null;
         percent = null;
         super.shutdown();
+    }
+
+    protected QuestHelperPlugin getQuestHelperPlugin() {
+        return (QuestHelperPlugin) Microbot.getPluginManager().getPlugins().stream().filter(x -> x instanceof QuestHelperPlugin).findFirst().orElse(null);
     }
 }
