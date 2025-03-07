@@ -5,13 +5,11 @@ import net.runelite.api.*;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.security.Login;
 
 import java.awt.event.KeyEvent;
-import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
+import java.lang.reflect.*;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,10 +23,6 @@ public class Rs2Reflection {
      * actor can be an npc/player
      */
     static int animationMultiplier = 527657827; //can be found in actor.java (int sequence)
-    static String npcDefinition = "ab"; // NPCComposition definition in NPC.class
-    static String headIconSpriteIndex = "bn"; // headIconSpriteIndex in NPCComposition.class
-
- 
     static final byte INDEX_GARBAGE = -28; // found in Varcs.java
     static final String INDEX_FIELD = "ab"; // Varcs.java
     static final String INDEX_CLASS = "es"; // login.java
@@ -182,20 +176,20 @@ public class Rs2Reflection {
     }
 
     @SneakyThrows
-    public static HeadIcon getHeadIcon(NPC npc) {
+    public static HeadIcon getHeadIcon(Rs2NpcModel npc) {
         if(npc==null) return null;
-        HeadIcon icon = getOldHeadIcon(npc);
+        HeadIcon icon = getOldHeadIcon(npc.getRuneliteNpc());
         if(icon!=null){
             //System.out.println("Icon returned using oldHeadIcon");
             return icon;
         }
-        icon = getOlderHeadicon(npc);
+        icon = getOlderHeadicon(npc.getRuneliteNpc());
         if(icon!=null){
             //System.out.println("Icon returned using OlderHeadicon");
             return icon;
         }
         //System.out.println("Icon returned using headIconThruLengthEightArrays");
-        icon = headIconThruLengthEightArrays(npc);
+        icon = headIconThruLengthEightArrays(npc.getRuneliteNpc());
         return icon;
     }
 
