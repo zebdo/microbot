@@ -9,7 +9,10 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.security.Login;
 
 import java.awt.event.KeyEvent;
-import java.lang.reflect.*;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -40,13 +43,13 @@ public class Rs2Reflection {
      * @return
      */
     @SneakyThrows
-    public static int getAnimation(NPC npc) {
+    public static int getAnimation(Rs2NpcModel npc) {
         if (npc == null) {
             return -1;
         }
         try {
             if (animationField == null) {
-                for (Field declaredField : npc.getClass().getSuperclass().getDeclaredFields()) {
+                for (Field declaredField : npc.getRuneliteNpc().getClass().getSuperclass().getDeclaredFields()) {
                     if (declaredField == null) {
                         continue;
                     }
@@ -60,24 +63,24 @@ public class Rs2Reflection {
                     if (Modifier.isStatic(declaredField.getModifiers())) {
                         continue;
                     }
-                    int value = declaredField.getInt(npc);
-                    declaredField.setInt(npc, 4795789);
-                    if (npc.getAnimation() == animationMultiplier * 4795789) {
+                    int value = declaredField.getInt(npc.getRuneliteNpc());
+                    declaredField.setInt(npc.getRuneliteNpc(), 4795789);
+                    if (npc.getRuneliteNpc().getAnimation() == animationMultiplier * 4795789) {
                         animationField = declaredField.getName();
-                        declaredField.setInt(npc, value);
+                        declaredField.setInt(npc.getRuneliteNpc(), value);
                         declaredField.setAccessible(false);
                         break;
                     }
-                    declaredField.setInt(npc, value);
+                    declaredField.setInt(npc.getRuneliteNpc(), value);
                     declaredField.setAccessible(false);
                 }
             }
             if (animationField == null) {
                 return -1;
             }
-            Field animation = npc.getClass().getSuperclass().getDeclaredField(animationField);
+            Field animation = npc.getRuneliteNpc().getClass().getSuperclass().getDeclaredField(animationField);
             animation.setAccessible(true);
-            int anim = animation.getInt(npc) * animationMultiplier;
+            int anim = animation.getInt(npc.getRuneliteNpc()) * animationMultiplier;
             animation.setAccessible(false);
             return anim;
         } catch(Exception ex) {
