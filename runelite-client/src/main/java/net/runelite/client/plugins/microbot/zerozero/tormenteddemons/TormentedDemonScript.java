@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TormentedDemonScript extends Script {
 
-    public static final double VERSION = 1.0;
+    public static final double VERSION = 1.1;
     private boolean isRunning = false;
     public static int killCount = 0;
     private Rs2PrayerEnum currentDefensivePrayer = null;
