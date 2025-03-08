@@ -72,10 +72,16 @@ public class AutoBuyerScript extends Script {
                         }
                     }
 
+                    boolean result;
                     if (timesToClickIncrease != null ) {
-                        Rs2GrandExchange.buyItemAbove5Percent(itemName, quantity, timesToClickIncrease);
+                        result = Rs2GrandExchange.buyItemAbove5Percent(itemName, quantity, timesToClickIncrease);
                     } else {
-                        Rs2GrandExchange.buyItemAboveXPercent(itemName, quantity, percent);
+                        result = Rs2GrandExchange.buyItemAboveXPercent(itemName, quantity, percent);
+                    }
+
+                    if (!result) {
+                        Microbot.log("Could not buy '" + itemName + "'. Skipping it.");
+                        Rs2GrandExchange.backToOverview();
                     }
                     itemsList.remove(itemName); // Remove from list so we don't buy the same item again
                     totalBought++;
