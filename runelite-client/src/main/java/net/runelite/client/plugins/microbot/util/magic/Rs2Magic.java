@@ -63,6 +63,7 @@ public class Rs2Magic {
      */
     public static boolean canCast(MagicAction magicSpell) {
         if (!oneTimeSpellBookCheck()) {
+            Rs2Dialogue.clickContinue();
             Microbot.log("Your spellbook filtering seems off...Microbot is trying to fix this");
             return false;
         }
