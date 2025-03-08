@@ -36,7 +36,7 @@ import static net.runelite.client.plugins.microbot.Microbot.log;
 public class TemporossScript extends Script {
 
     // Version string
-    public static final String VERSION = "1.2.0";
+    public static final String VERSION = "1.2.1";
     public static final Pattern DIGIT_PATTERN = Pattern.compile("(\\d+)");
     public static final int TEMPOROSS_REGION = 12078;
 
@@ -383,7 +383,7 @@ public class TemporossScript extends Script {
             isFightingFire = true;
             for (Rs2NpcModel fire : sortedFires) {
                 if (Rs2Player.isInteracting()) {
-                    if (Microbot.getClient().getLocalPlayer().getInteracting().equals(fire.getActor())) {
+                    if (Rs2Player.getInteracting().equals(fire.getActor())) {
                         return;
                     }
                 }
@@ -503,7 +503,7 @@ public class TemporossScript extends Script {
 
                 if (fishSpot != null) {
                     if (Rs2Player.isInteracting()) {
-                        if (Microbot.getClient().getLocalPlayer().getInteracting().equals(fishSpot.getActor())) {
+                        if (Rs2Player.getInteracting().equals(fishSpot.getActor())) {
                             return;
                         }
                     }
@@ -539,7 +539,7 @@ public class TemporossScript extends Script {
                 TileObject range = workArea.getRange();
                 if (range != null && rawFishCount > 0) {
                     if(Rs2Player.isInteracting()) {
-                        if (Microbot.getClient().getLocalPlayer().getInteracting().equals(range))
+                        if (Rs2Player.getInteracting().equals(range))
                             return;
                     }
                     if (Rs2Player.isMoving() || Rs2Player.getAnimation() == AnimationID.COOKING_RANGE) {
@@ -592,7 +592,7 @@ public class TemporossScript extends Script {
 
                 if (ammoCrate != null) {
                     if (Rs2Player.isInteracting()) {
-                        if (Objects.equals(Microbot.getClient().getLocalPlayer().getInteracting().getName(), ammoCrate.getActor().getName())) {
+                        if (Objects.equals(Rs2Player.getInteracting().getName(), ammoCrate.getActor().getName())) {
                             return;
                         }
                     }

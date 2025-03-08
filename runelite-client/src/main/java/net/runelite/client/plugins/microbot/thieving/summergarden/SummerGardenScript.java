@@ -68,7 +68,7 @@ public class SummerGardenScript extends Script {
                 }
 
                 if (config.autoHandInAndReset()) {
-                    var interactingActor = Microbot.getClient().getLocalPlayer().getInteracting();
+                    var interactingActor = Rs2Player.getInteracting();
                     if (interactingActor != null) {
                         lastInteractedActor = interactingActor;
                     }
@@ -283,7 +283,7 @@ public class SummerGardenScript extends Script {
         // Interact with Osman.
         if (lastInteractedActor == null || !Objects.equals(lastInteractedActor.getName(), NPC_NAME_OSMAN)) {
             Rs2Npc.interact(NPC_NAME_OSMAN, "Talk-to");
-            sleepUntil(() -> Microbot.getClient().getLocalPlayer().getInteracting() != null, 2000);
+            sleepUntil(() -> Rs2Player.getInteracting() != null, 2000);
             return;
         }
 

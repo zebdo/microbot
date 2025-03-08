@@ -49,7 +49,7 @@ public class MinnowsScript extends Script {
                     return;
                 }
                 if (Rs2AntibanSettings.actionCooldownActive) {
-                    if (Microbot.getClient().getLocalPlayer().getInteracting().hasSpotAnim(FLYING_FISH_GRAPHIC_ID)) {
+                    if (Rs2Player.getInteracting().hasSpotAnim(FLYING_FISH_GRAPHIC_ID)) {
                         if (TARGET_SPOT_ID == FISHING_SPOT_1_ID) {
                             TARGET_SPOT_ID = FISHING_SPOT_2_ID;
                         } else if (TARGET_SPOT_ID == FISHING_SPOT_2_ID) {

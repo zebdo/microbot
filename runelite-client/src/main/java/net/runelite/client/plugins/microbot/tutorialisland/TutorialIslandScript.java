@@ -576,7 +576,7 @@ public class TutorialIslandScript extends Script {
             Rs2GameObject.interact("Ladder", "Climb-up");
             sleepUntil(() -> Microbot.getVarbitPlayerValue(281) != 500);
         } else if (Microbot.getVarbitPlayerValue(281) == 480 || Microbot.getVarbitPlayerValue(281) == 490) {
-            Actor rat = Microbot.getClient().getLocalPlayer().getInteracting();
+            Actor rat = Rs2Player.getInteracting();
             if (rat != null && rat.getName().equalsIgnoreCase("giant rat")) return;
             Rs2Inventory.wield("Shortbow");
             Rs2Random.waitEx(600, 100);

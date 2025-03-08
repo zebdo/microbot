@@ -411,7 +411,7 @@ public class WildyKillerScript extends Script {
 
         if (mossKillerPlugin.currentTarget == null) {
             // Get the actor we're interacting with
-            Actor interactingActor = Microbot.getClient().getLocalPlayer().getInteracting();
+            Actor interactingActor = Rs2Player.getInteracting();
 
             // Check if it's a player (not an NPC)
             if (interactingActor != null && interactingActor instanceof Player) {
@@ -598,7 +598,7 @@ public class WildyKillerScript extends Script {
         }
 
         if (target != null && !mossKillerPlugin.lobsterEaten() && ShortestPathPlugin.getPathfinder() == null
-                && target.getCombatLevel() < 88 && Microbot.getClient().getLocalPlayer().getInteracting() != target) {
+                && target.getCombatLevel() < 88 && Rs2Player.getInteracting() != target) {
             basicAttackSetup();
             isTargetOnSameTile(target);
             Rs2Walker.setTarget(null);
@@ -611,7 +611,7 @@ public class WildyKillerScript extends Script {
         //if no attack delay from eating and not interacting with target, attack target
         if (target != null && target.getCombatLevel() < 88) {
             if (!mossKillerPlugin.lobsterEaten()
-                    && Microbot.getClient().getLocalPlayer().getInteracting() != target
+                    && Rs2Player.getInteracting() != target
                     && getPlayersInCombatLevelRange().stream()
                     .anyMatch(p -> p.getId() == target.getId())
                     && !TOTAL_FEROX_ENCLAVE.contains(playerLocation)) {
@@ -823,7 +823,7 @@ public class WildyKillerScript extends Script {
                 if (localPlayer.getInteracting() != target &&
                         getPlayersInCombatLevelRange().contains(target) &&
                         !mossKillerPlugin.lobsterEaten()) {
-                    if (ShortestPathPlugin.getPathfinder() == null && Microbot.getClient().getLocalPlayer().getInteracting() != target) {
+                    if (ShortestPathPlugin.getPathfinder() == null && Rs2Player.getInteracting() != target) {
                         Rs2Walker.setTarget(null);
                         scheduledFuture.cancel(true);
                         if(!Rs2Player.isInteracting()) {attack(target);}
@@ -877,7 +877,7 @@ public class WildyKillerScript extends Script {
                 if (localPlayer.getInteracting() != target &&
                         getPlayersInCombatLevelRange().contains(target) &&
                         !mossKillerPlugin.lobsterEaten()) {
-                    if (ShortestPathPlugin.getPathfinder() == null && Microbot.getClient().getLocalPlayer().getInteracting() != target)
+                    if (ShortestPathPlugin.getPathfinder() == null && Rs2Player.getInteracting() != target)
                         if (doWeFocusCamera(target)) {
                             sleep(300);
                         }
@@ -1166,7 +1166,7 @@ public class WildyKillerScript extends Script {
         if (target.getWorldLocation() == playerLocation) {
 
             if (scheduledFuture.isDone()
-                    && Microbot.getClient().getLocalPlayer().getInteracting() != target
+                    && Rs2Player.getInteracting() != target
                     && target.getCombatLevel() < 88) {
                 if (doWeFocusCamera(target)) {
                     sleep(300);
@@ -1343,7 +1343,7 @@ public class WildyKillerScript extends Script {
         if (!scheduledFuture.isDone() || mossKillerPlugin.currentTarget != null) {
             doWeFocusCamera(mossKillerPlugin.currentTarget);
             sleep(300);
-            if (Microbot.getClient().getLocalPlayer().getInteracting() != mossKillerPlugin.currentTarget
+            if (Rs2Player.getInteracting() != mossKillerPlugin.currentTarget
                     && mossKillerPlugin.currentTarget.getCombatLevel() < 88) {
                 basicAttackSetup();
                 attack(mossKillerPlugin.currentTarget);

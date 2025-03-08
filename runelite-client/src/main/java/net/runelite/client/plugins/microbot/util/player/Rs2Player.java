@@ -22,6 +22,7 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -1805,5 +1806,17 @@ public class Rs2Player {
         );
 
         return true;
+    }
+
+    public static Actor getInteracting() {
+        if (Microbot.getClient().getLocalPlayer() == null) return null;
+
+        var interactingActor = Microbot.getClient().getLocalPlayer().getInteracting();
+
+        if (interactingActor instanceof net.runelite.api.NPC) {
+            return new Rs2NpcModel((NPC) interactingActor);
+        }
+
+        return interactingActor;
     }
 }
