@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.autoBuyer;
 import net.runelite.api.ChatMessageType;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.grandexchange.GrandExchangeSlots;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
 import org.apache.commons.lang3.tuple.Pair;
@@ -31,7 +32,8 @@ public class AutoBuyerScript extends Script {
             listOfItemsToBuy = getQuestHelperPlugin().getSelectedQuest().getItemRequirements()
                     .stream()
                     .filter(item -> !item.getName().equalsIgnoreCase("coins")) // Ignore items with name "coins"
-                    .map(item -> item.getName() + "[" + item.getQuantity() + "]") // Format: "Name (Quantity)"
+                    .filter(item -> !Rs2Bank.hasBankItem(item.getName().replace(" (UNNOTED)", ""), item.getQuantity(), true)) //checks if item already exists in bank
+                    .map(item -> item.getName().replace(" (UNNOTED)", "") + "[" + item.getQuantity() + "]") // Format: "Name (Quantity)"
                     .collect(Collectors.joining(",")); // Joins names with ", "
         } else {
             Microbot.log("Using manual item list");

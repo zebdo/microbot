@@ -21,7 +21,7 @@ public interface AutoBuyerConfig extends Config {
             position = 2
     )
     default boolean buyQuest() {
-        return true;
+        return false;
     }
 
     @ConfigItem(
