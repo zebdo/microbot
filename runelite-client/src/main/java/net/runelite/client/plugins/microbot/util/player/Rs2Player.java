@@ -1826,4 +1826,15 @@ public class Rs2Player {
 
         return interactingActor;
     }
+    /**
+     * Checks if the player has finished Tutorial Island.
+     *
+     * <p>This method checks the player's progress on Tutorial Island by retrieving the value of Varbit 281.
+     * If the value is greater than or equal to 1000, it indicates that the player has completed Tutorial Island.</p>
+     *
+     * @return {@code true} if the player has finished Tutorial Island, {@code false} otherwise.
+     */
+    public static boolean hasFinishedTutorialIsland() {
+        return Microbot.getVarbitPlayerValue(281) >= 1000;
+    }
 }
