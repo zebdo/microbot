@@ -166,11 +166,12 @@ public abstract class Script implements IScript {
             //init - things that have to be checked once can be added here
         }
 
-        hasLeveledUp = false;
-        //Microbot.getSpecialAttackConfigs().useSpecWeapon();
-
         if (Microbot.pauseAllScripts)
             return false;
+
+        //Avoid executing any blocking events if the player hasn't finished Tutorial Island
+        if (!Rs2Player.hasFinishedTutorialIsland())
+            return true;
 
         // Synchronizing on BlockingEventManager.class to ensure thread safety
         // This prevents multiple threads from modifying the blocking event list simultaneously.
