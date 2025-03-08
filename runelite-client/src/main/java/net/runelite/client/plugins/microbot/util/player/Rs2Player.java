@@ -1808,6 +1808,13 @@ public class Rs2Player {
         return true;
     }
 
+    /**
+     * Retrieves the actor that the local player is currently interacting with.
+     *
+     * @return The interacting actor as an {@link Actor} object. If the interacting actor is an NPC,
+     *         it returns an {@link Rs2NpcModel} object. If the local player is not interacting with anyone,
+     *         or if the local player is null, it returns null.
+     */
     public static Actor getInteracting() {
         if (Microbot.getClient().getLocalPlayer() == null) return null;
 
