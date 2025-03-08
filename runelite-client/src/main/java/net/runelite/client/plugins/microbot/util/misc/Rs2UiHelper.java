@@ -1,9 +1,12 @@
 package net.runelite.client.plugins.microbot.util.misc;
 
+import net.runelite.api.Perspective;
 import net.runelite.api.Point;
-import net.runelite.api.*;
+import net.runelite.api.Tile;
+import net.runelite.api.TileObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.ActorModel;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -57,7 +60,7 @@ public class Rs2UiHelper {
         return rectangle.contains(mousePos);
     }
 
-    public static Rectangle getActorClickbox(Actor actor) {
+    public static Rectangle getActorClickbox(ActorModel actor) {
         LocalPoint lp = actor.getLocalLocation();
         if (lp == null) {
             Microbot.log("LocalPoint is null");

@@ -1009,13 +1009,7 @@ public class Rs2Player {
      * @return The {@link WorldPoint} representing the player's current location.
      */
     public static WorldPoint getWorldLocation() {
-        if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
-            LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), getLocalPlayer().getWorldLocation());
-            WorldPoint playerInstancedWorldLocation = WorldPoint.fromLocalInstance(Microbot.getClient(), l);
-            return playerInstancedWorldLocation;
-        } else {
-            return getLocalPlayer().getWorldLocation();
-        }
+        return getLocalPlayer().getWorldLocation();
     }
 
     /**

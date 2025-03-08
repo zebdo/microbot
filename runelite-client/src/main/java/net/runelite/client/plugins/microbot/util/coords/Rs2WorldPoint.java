@@ -125,6 +125,7 @@ public class Rs2WorldPoint {
         if (worldPoint == null) return null;
 
         LocalPoint l = Rs2LocalPoint.fromWorldInstance(worldPoint);
+        if (l == null) return worldPoint;
         WorldPoint globalWorldPoint = WorldPoint.fromLocal(Microbot.getClient(), l);
 
         return globalWorldPoint;
