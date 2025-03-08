@@ -7,7 +7,8 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public enum DefaultLooterStyle {
     ITEM_LIST("Item List"),
-    GE_PRICE_RANGE("GE Price Range");
+    GE_PRICE_RANGE("GE Price Range"),
+    MIXED("Mixed");
 
     private final String name;
 }
