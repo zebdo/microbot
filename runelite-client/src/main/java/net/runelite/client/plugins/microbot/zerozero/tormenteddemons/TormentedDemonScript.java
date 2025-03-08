@@ -250,7 +250,7 @@ public class TormentedDemonScript extends Script {
 
             var interactingTarget = (Rs2NpcModel) Rs2Player.getInteracting();
 
-            if (interactingTarget != currentTarget) {
+            if (interactingTarget.getIndex() != currentTarget.getIndex()) {
                 boolean attackSuccessful = Rs2Npc.interact(currentTarget, "attack");
 
                 if (attackSuccessful) {
