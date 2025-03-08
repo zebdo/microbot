@@ -876,7 +876,7 @@ public class Rs2Npc {
         if (npc == null) return false;
         if (npc.getWorldLocation().equals(Rs2Player.getWorldLocation())) return true;
 
-        return npc.getWorldLocation().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Rs2Player.getWorldLocation().toWorldArea());
+        return npc.getWorldLocation().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation().toWorldArea());
     }
 
     /**
