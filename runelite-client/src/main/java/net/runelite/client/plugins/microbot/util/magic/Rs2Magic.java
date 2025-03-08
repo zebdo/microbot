@@ -46,6 +46,8 @@ public class Rs2Magic {
      * Check if all the settings are correct before we start interacting with spellbook
      */
     public static boolean oneTimeSpellBookCheck() {
+        if (Rs2Player.isInTutorialIsland())
+            return true;
         // We add a one time check to avoid performanec issues. Checking varbits is expensive
         if (firstInteractionWithSpellBook && !Rs2SpellBookSettings.setAllFiltersOn()) {
             return false;
@@ -63,6 +65,7 @@ public class Rs2Magic {
      */
     public static boolean canCast(MagicAction magicSpell) {
         if (!oneTimeSpellBookCheck()) {
+            Rs2Random.waitEx(800, 150);
             Rs2Dialogue.clickContinue();
             Microbot.log("Your spellbook filtering seems off...Microbot is trying to fix this");
             return false;

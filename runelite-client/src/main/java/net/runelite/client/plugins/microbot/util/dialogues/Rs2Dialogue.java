@@ -44,7 +44,8 @@ public class Rs2Dialogue {
      */
     public static boolean hasContinue() {
         return hasNPCContinue() || hasPlayerContinue() || hasDeathContinue() ||
-                hasSpriteContinue() || hasTutContinue() || hasItemContinue();
+                hasSpriteContinue() || hasTutContinue() || hasItemContinue() ||
+                hasSpellFilterContinue();
     }
 
     /**
@@ -106,6 +107,18 @@ public class Rs2Dialogue {
      */
     private static boolean hasItemContinue() {
         return Rs2Widget.isWidgetVisible(InterfaceID.DIALOG_SPRITE, 0);
+    }
+
+    /**
+     * Checks if there is a "Continue" option in the spell filter dialogue.
+     *
+     * <p>This method verifies the visibility of the widget associated with the spell filter continue option.
+     * It checks the widget with interface ID 162 and child ID 43 to determine if the "Continue" option is present.</p>
+     *
+     * @return true if the spell filter continue option is visible, false otherwise.
+     */
+    private static boolean hasSpellFilterContinue() {
+        return Rs2Widget.isWidgetVisible(162, 43);
     }
 
     /**
