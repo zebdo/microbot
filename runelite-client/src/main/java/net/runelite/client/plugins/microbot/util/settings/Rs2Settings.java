@@ -11,12 +11,11 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import java.awt.event.KeyEvent;
 
 import static net.runelite.client.plugins.microbot.globval.VarbitIndices.TOGGLE_ROOFS;
-import static net.runelite.client.plugins.microbot.util.Global.sleep;
-import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
+import static net.runelite.client.plugins.microbot.util.Global.*;
 
 public class Rs2Settings {
 
-    static final int DROP_SHIFT_SETTING = 5542;
+    static final int DROP_SHIFT_SETTING = 11556;
     static final int SETTINGS_INTERFACE = 8781825;
     static final int SETTINGS_SEARCHBAR = 8781834;
     static final int ALL_SETTINGS_BUTTON = 7602208;
@@ -111,7 +110,7 @@ public class Rs2Settings {
         Rs2Widget.sleepUntilHasWidget("Disable level-up interface");
         Rs2Widget.clickWidget("Disable level-up interface");
         sleepUntil(() -> !isLevelUpNotificationsEnabled());
-        
+
         if (closeInterface) {
             Rs2Keyboard.keyPress(KeyEvent.VK_ESCAPE);
             Rs2Tab.switchToInventoryTab();
@@ -125,22 +124,42 @@ public class Rs2Settings {
 
     public static void turnOffMusic() {
         Rs2Tab.switchToSettingsTab();
-        sleep(600);
-        Rs2Widget.clickWidget(116, 68);
-        sleep(600);
-        boolean isMusicTurnedOff = !Rs2Widget.getWidget(116, 93).getChildren()[1].isSelfHidden();
-        boolean isSoundEffectOff = !Rs2Widget.getWidget(116, 107).getChildren()[1].isSelfHidden();
-        boolean isAreaSoundEffectOff = !Rs2Widget.getWidget(116, 122).getChildren()[1].isSelfHidden();
-        if (isMusicTurnedOff && isSoundEffectOff && isAreaSoundEffectOff)
+        sleepGaussian(800, 100);
+        Rs2Widget.clickWidget(116, 67);
+        sleepGaussian(800, 100);
+        var musicBtn = Rs2Widget.getWidget(ComponentID.SETTINGS_SIDE_MUSIC_SLIDER).getStaticChildren()[0];
+        var soundEffectBtn = Rs2Widget.getWidget(ComponentID.SETTINGS_SIDE_SOUND_EFFECT_SLIDER).getStaticChildren()[0];
+        var areaSoundBtn = Rs2Widget.getWidget(ComponentID.SETTINGS_SIDE_AREA_SOUND_SLIDER).getStaticChildren()[0];
+        if (musicBtn == null || soundEffectBtn == null|| areaSoundBtn == null)
+        {
+            Microbot.log("Music settings buttons not found");
             return;
-        Rs2Widget.clickWidget(7602244);
-        sleep(1000);
-        if (!isMusicTurnedOff)
-            Rs2Widget.clickWidget(7602269);
-        if (!isSoundEffectOff)
-            Rs2Widget.clickWidget(7602283);
-        if (!isAreaSoundEffectOff)
-            Rs2Widget.clickWidget(7602298);
+        }
+
+        if (musicBtn.getActions() == null || soundEffectBtn.getActions() == null || areaSoundBtn.getActions() == null)
+        {
+            Microbot.log("Music settings buttons actions not found");
+            return;
+        }
+
+        boolean isMusicOn = musicBtn.getActions()[0].toLowerCase().equalsIgnoreCase("mute");
+        boolean isSoundEffectOn = soundEffectBtn.getActions()[0].equalsIgnoreCase("mute");
+        boolean isAreaSoundEffectOn = areaSoundBtn.getActions()[0].equalsIgnoreCase("mute");
+        if (!isMusicOn && !isSoundEffectOn && !isAreaSoundEffectOn)
+            return;
+
+        if (isMusicOn) {
+            Rs2Widget.clickWidget(musicBtn);
+            sleepGaussian(600, 150);
+        }
+        if (isSoundEffectOn) {
+            Rs2Widget.clickWidget(soundEffectBtn);
+            sleepGaussian(600, 150);
+        }
+        if (isAreaSoundEffectOn) {
+            Rs2Widget.clickWidget(areaSoundBtn);
+            sleepGaussian(600, 150);
+        }
     }
 
     /**
