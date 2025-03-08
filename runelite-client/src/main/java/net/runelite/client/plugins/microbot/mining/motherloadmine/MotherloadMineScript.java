@@ -32,10 +32,13 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class MotherloadMineScript extends Script
 {
-    public static final String VERSION = "1.7.1";
+    public static final String VERSION = "1.7.2";
 
     private static final WorldArea WEST_UPPER_AREA = new WorldArea(3748, 5676, 7, 9, 0);
     private static final WorldArea EAST_UPPER_AREA = new WorldArea(3756, 5667, 8, 8, 0);
+    // Static areas for lower floor to avoid getting stuck behind rockfall
+    private static final WorldArea WEST_LOWER_AREA = new WorldArea(3729, 5653, 10, 22, 0);
+    private static final WorldArea SOUTH_LOWER_AREA = new WorldArea(3740, 5640, 20, 20, 0);
 
     private static final WorldPoint HOPPER_DEPOSIT_DOWN = new WorldPoint(3748, 5672, 0);
     private static final WorldPoint HOPPER_DEPOSIT_UP = new WorldPoint(3755, 5677, 0);
@@ -367,8 +370,13 @@ public class MotherloadMineScript extends Script
                     || (miningSpot == MLMMiningSpot.EAST_UPPER && EAST_UPPER_AREA.contains(wallObject.getWorldLocation()));
             return inUpperArea && hasWalkableTilesAround(wallObject);
         }
+        else
+        {
+            boolean inLowerArea = (miningSpot == MLMMiningSpot.WEST_LOWER && WEST_LOWER_AREA.contains(wallObject.getWorldLocation()))
+                    || (miningSpot == MLMMiningSpot.SOUTH && SOUTH_LOWER_AREA.contains(wallObject.getWorldLocation()));
+            return inLowerArea && hasWalkableTilesAround(wallObject);
+        }
 
-        return hasWalkableTilesAround(wallObject);
     }
 
     private boolean hasWalkableTilesAround(WallObject wallObject)
