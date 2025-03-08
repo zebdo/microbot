@@ -621,8 +621,6 @@ public class TemporossScript extends Script {
                 if (fishSpot != null) {
                     if (Rs2Player.isInteracting() && Rs2Player.getInteracting() != null) {
                         Actor interactingNpc = Microbot.getClient().getLocalPlayer().getInteracting();
-                        Microbot.log("Interacting with: " + interactingNpc);
-                        Microbot.log("Fish spot: " + fishSpot.getActor());
                         if (interactingNpc.equals(fishSpot.getActor())) {
                             return;
                         }
