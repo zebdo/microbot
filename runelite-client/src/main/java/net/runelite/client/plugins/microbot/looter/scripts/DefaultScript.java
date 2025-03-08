@@ -38,7 +38,7 @@ public class DefaultScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!super.run()) return;
-                if (!Microbot.isLoggedIn() || Rs2Player.isMoving() || Rs2Combat.inCombat()) return;
+                if (!Microbot.isLoggedIn() || Rs2Combat.inCombat()) return;
                 if (Microbot.pauseAllScripts) return;
                 if (Rs2AntibanSettings.actionCooldownActive) return;
                 long startTime = System.currentTimeMillis();
@@ -57,6 +57,11 @@ public class DefaultScript extends Script {
                             else if (config.looterStyle() == DefaultLooterStyle.GE_PRICE_RANGE) {
                                 lootExists = Rs2GroundItem.isItemBasedOnValueOnGround(config.minPriceOfItem(), config.distanceToStray());
                             }
+                            else if (config.looterStyle() == DefaultLooterStyle.MIXED) {
+                                lootExists = Arrays.stream(config.listOfItemsToLoot().trim().split(","))
+                                        .anyMatch(itemName -> Rs2GroundItem.exists(itemName, config.distanceToStray())) || Rs2GroundItem.isItemBasedOnValueOnGround(config.minPriceOfItem(), config.distanceToStray());
+                            }
+
                         } else {
                             lootExists = true;
                         }
@@ -64,7 +69,7 @@ public class DefaultScript extends Script {
                         if (lootExists) {
                             failedLootAttempts = 0;
 
-                            if (config.looterStyle() == DefaultLooterStyle.ITEM_LIST) {
+                            if (config.looterStyle() == DefaultLooterStyle.ITEM_LIST || config.looterStyle() == DefaultLooterStyle.MIXED) {
                                 LootingParameters itemLootParams = new LootingParameters(
                                         config.distanceToStray(),
                                         1,
@@ -76,7 +81,7 @@ public class DefaultScript extends Script {
                                 );
                                 Rs2GroundItem.lootItemsBasedOnNames(itemLootParams);
                             }
-                            else if (config.looterStyle() == DefaultLooterStyle.GE_PRICE_RANGE) {
+                            if (config.looterStyle() == DefaultLooterStyle.GE_PRICE_RANGE || config.looterStyle() == DefaultLooterStyle.MIXED) {
                                 LootingParameters valueParams = new LootingParameters(
                                         config.minPriceOfItem(),
                                         config.maxPriceOfItem(),

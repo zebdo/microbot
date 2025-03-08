@@ -14,6 +14,7 @@ import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.OverlayUtil;
+import net.runelite.client.util.Text;
 
 import java.awt.*;
 import java.util.List;
@@ -52,22 +53,27 @@ public class TemporossOverlay extends Overlay {
         // Render NPC overlays if the list is not null
         if (npcList != null) {
             for (Rs2NpcModel npc : npcList) {
-                Rs2WorldPoint npcLocation = new Rs2WorldPoint(Rs2WorldPoint.toLocalInstance(npc.getRuneliteNpc().getWorldLocation()));
+                Rs2WorldPoint npcLocation = new Rs2WorldPoint(npc.getRuneliteNpc().getWorldLocation());
                 Rs2WorldPoint playerLocation = new Rs2WorldPoint(Microbot.getClient().getLocalPlayer().getWorldLocation());
                 renderNpcOverlay(graphics, npc, Color.RED,    npcLocation.distanceToPath(playerLocation.getWorldPoint()) + " tiles");
             }
         }
         if (ammoList != null) {
             for (Rs2NpcModel npc : ammoList) {
-                Rs2WorldPoint npcLocation = new Rs2WorldPoint(Rs2WorldPoint.toLocalInstance(npc.getRuneliteNpc().getWorldLocation()));
+                Rs2WorldPoint npcLocation = new Rs2WorldPoint(npc.getRuneliteNpc().getWorldLocation());
                 Rs2WorldPoint playerLocation = new Rs2WorldPoint(Microbot.getClient().getLocalPlayer().getWorldLocation());
-                renderNpcOverlay(graphics, npc, Color.RED,    npcLocation.distanceToPath(playerLocation.getWorldPoint()) + " tiles");
+                renderNpcOverlay(graphics, npc, Color.RED,    npcLocation.distanceToPath(playerLocation.getWorldPoint()) + " " + Text.removeTags(npc.getName()));
             }
         }
         if (fishList != null) {
             for (Rs2NpcModel npc : fishList) {
                 Rs2WorldPoint npcLocation = new Rs2WorldPoint(npc.getWorldLocation());
-                renderNpcOverlay(graphics, npc, Color.RED,    cloudList.isEmpty() ? "Duck was here" :  "In Cloud " + TemporossScript.inCloud(npcLocation.getWorldPoint(),1));
+                renderNpcOverlay(graphics, npc, Color.RED,   "Duck was here");
+            }
+        }
+        if (cloudList != null) {
+            for (GameObject object : cloudList) {
+                renderGameObject(graphics, object, Color.RED, "Cloud");
             }
         }
 
@@ -94,8 +100,8 @@ public class TemporossOverlay extends Overlay {
         if (point == null) {
             return;
         }
-        WorldPoint pl = WorldPoint.toLocalInstance(Microbot.getClient().getTopLevelWorldView(), point).stream().findFirst().orElse(null);
-        LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), pl);
+        //WorldPoint pl = WorldPoint.toLocalInstance(Microbot.getClient().getTopLevelWorldView(), point).stream().findFirst().orElse(null);
+        LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), point);
         if (localPoint == null) {
             return;
         }
