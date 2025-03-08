@@ -17,14 +17,4 @@ public interface AnimatedArmourConfig extends Config {
                 " make sure you have armour (and optionally food) in inventory.\n" +
                 "turn on auto retaliate and ground items runelite plugin";
     }
-/*    @ConfigItem(
-            keyName = "Ore",
-            name = "Ore",
-            description = "Choose the ore",
-            position = 0
-    )
-    default List<String> ORE()
-    {
-        return Rocks.TIN;
-    }*/
 }
