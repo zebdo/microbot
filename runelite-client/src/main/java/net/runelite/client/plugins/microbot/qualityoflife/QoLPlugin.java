@@ -201,7 +201,6 @@ public class QoLPlugin extends Plugin {
         specialAttackScript.shutdown();
         cannonScript.shutdown();
         autoItemDropperScript.shutdown();
-        wintertodtScript.shutdown();
         overlayManager.remove(qoLOverlay);
         overlayManager.remove(wintertodtOverlay);
         eventBus.unregister(fletchingManager);

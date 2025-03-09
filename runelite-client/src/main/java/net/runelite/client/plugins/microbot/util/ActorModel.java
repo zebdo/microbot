@@ -56,13 +56,7 @@ public class ActorModel implements Actor {
 
     @Override
     public WorldPoint getWorldLocation() {
-        if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
-            LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), actor.getWorldLocation());
-            if (l == null) return actor.getWorldLocation();
-            return WorldPoint.fromLocalInstance(Microbot.getClient(), l);
-        } else {
-            return actor.getWorldLocation();
-        }
+        return actor.getWorldLocation();
     }
 
     @Override

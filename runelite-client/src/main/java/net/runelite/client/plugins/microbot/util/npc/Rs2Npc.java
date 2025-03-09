@@ -5,7 +5,6 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.game.npcoverlay.HighlightedNpc;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.util.ActorModel;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -1074,11 +1073,13 @@ public class Rs2Npc {
      * @return The nearest {@link Rs2NpcModel} that has the specified action, or {@code null} if none are found.
      */
     public static Rs2NpcModel getNearestNpcWithAction(String action) {
+        Rs2WorldPoint playerLocation = new Rs2WorldPoint(Microbot.getClient().getLocalPlayer().getWorldLocation());
+        boolean isInstance = Microbot.getClient().getTopLevelWorldView().getScene().isInstance();
         return getNpcs()
                 .filter(value -> value.getComposition() != null
                         && value.getComposition().getActions() != null
                         && Arrays.asList(value.getComposition().getActions()).contains(action))
-                .min(Comparator.comparingInt(value -> new Rs2WorldPoint(Rs2WorldPoint.convertInstancedWorldPoint(value.getWorldLocation())).distanceToPath(Rs2Player.getWorldLocation())))
+                .min(Comparator.comparingInt(value -> new Rs2WorldPoint(Rs2WorldPoint.toLocalInstance(value.getWorldLocation())).distanceToPath(playerLocation.getWorldPoint())))
                 .orElse(null);
     }
 
@@ -1134,7 +1135,7 @@ public class Rs2Npc {
                 Microbot.log("Natural mouse is not enabled, can't hover");
             return false;
         }
-        Point point = Rs2UiHelper.getClickingPoint(Rs2UiHelper.getActorClickbox(new ActorModel(actor)), true);
+        Point point = Rs2UiHelper.getClickingPoint(Rs2UiHelper.getActorClickbox(actor), true);
         if (point.getX() == 1 && point.getY() == 1) {
             return false;
         }

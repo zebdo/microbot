@@ -2,7 +2,6 @@ package net.runelite.client.plugins.microbot.util.menu;
 
 import net.runelite.api.*;
 import net.runelite.api.widgets.Widget;
-import net.runelite.client.plugins.microbot.util.ActorModel;
 import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
@@ -17,7 +16,7 @@ public class NewMenuEntry implements MenuEntry {
     private int param1;
     private boolean forceLeftClick;
     private int itemId;
-    private ActorModel actor;
+    private Actor actor;
     private TileObject gameObject;
     private Widget widget;
 
@@ -41,7 +40,7 @@ public class NewMenuEntry implements MenuEntry {
         this.param1 = param1;
         this.forceLeftClick = false;
         this.itemId = itemId;
-        this.actor = new ActorModel(actor);
+        this.actor = actor;
     }
 
     public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String option, String target, TileObject gameObject) {
@@ -216,7 +215,7 @@ public class NewMenuEntry implements MenuEntry {
     }
 
     @Nullable
-    public ActorModel getActor() {
+    public Actor getActor() {
         return actor;
     }
 
