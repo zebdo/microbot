@@ -1,17 +1,19 @@
 package net.runelite.client.plugins.microbot.autoBuyer;
 
 import net.runelite.api.ChatMessageType;
+import net.runelite.api.ItemComposition;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.grandexchange.GrandExchangeSlots;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
 import org.apache.commons.lang3.tuple.Pair;
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
+
+import java.util.*;
 import java.util.stream.Collectors;
 
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 public class AutoBuyerScript extends Script {
@@ -27,27 +29,37 @@ public class AutoBuyerScript extends Script {
     public boolean run(AutoBuyerConfig config) {
 
         Microbot.enableAutoRunOn = false;
-        String listOfItemsToBuy;
-        if (getQuestHelperPlugin().getSelectedQuest() != null && config.buyQuest()) {
-            listOfItemsToBuy = getQuestHelperPlugin().getSelectedQuest().getItemRequirements()
-                    .stream()
-                    .filter(item -> !item.getName().equalsIgnoreCase("coins")) // Ignore items with name "coins"
-                    .filter(item -> !Rs2Bank.hasBankItem(item.getName().replace(" (UNNOTED)", ""), item.getQuantity(), true)) //checks if item already exists in bank
-                    .map(item -> item.getName().replace(" (UNNOTED)", "") + "[" + item.getQuantity() + "]") // Format: "Name (Quantity)"
-                    .collect(Collectors.joining(",")); // Joins names with ", "
-        } else {
-            Microbot.log("Using manual item list");
-            listOfItemsToBuy = config.listOfItemsToBuy().replaceAll("\\s*,\\s*", ",");
-
-        }
-
-        // Replace any spaces around commas with just a comma since G.E. has whitespace sensitivity
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run() || !isRunning()) return;
                 long startTime = System.currentTimeMillis();
+
+                String listOfItemsToBuy;
+                if (getQuestHelperPlugin().getSelectedQuest() != null && config.buyQuest()) {
+                    final List<Integer> idsList = Microbot.getClientThread().runOnClientThread(getQuestHelperPlugin()::itemsToTag);
+
+                    final Set<Integer> ids = idsList.stream()
+                            .distinct()
+                            .filter(this::isTradeable)
+                            .limit(250)
+                            .collect(Collectors.toCollection(TreeSet::new));
+
+                    listOfItemsToBuy = getItemRequirements()
+                            .stream()
+                            .filter(item -> ids.contains(item.getId())) // Filter items based on the ids list
+                            .map(item -> getItemName(item.getId()) + "[" + item.getQuantity() + "]") // Format: "Name[Quantity]"
+                            .collect(Collectors.joining(",")); // Joins names with ", "
+
+                    if(!listOfItemsToBuy.isEmpty()) Microbot.log("Using quest helper item list: " + listOfItemsToBuy);
+                    else Microbot.log("Requirements already met check bank");
+
+
+                } else {
+                    Microbot.log("Using manual item list");
+                    listOfItemsToBuy = config.listOfItemsToBuy().replaceAll("\\s*,\\s*", ",");
+                }
 
                 if (!initialized) {
                     if (listOfItemsToBuy.length() <= 0) {
@@ -104,9 +116,15 @@ public class AutoBuyerScript extends Script {
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
                 System.out.println("Total time for loop " + totalTime);
-                Microbot.getClientThread().runOnClientThread(() ->
-                        Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "Made with love by Acun.", "Acun", false)
-                );
+                Microbot.getClientThread().runOnClientThread(() -> {
+                Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "Made with love by Acun.", "Acun", false);
+
+                if (config.buyQuest()) {
+                    Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "Auto-buying quest items enabled! Churr bro ! - Wassupzzz", "Wassupzzz", false);
+                }
+
+                return null;
+            });
                 Microbot.log("Finished buying.");
                 shutdown();
             } catch (Exception ex) {
@@ -171,6 +189,20 @@ public class AutoBuyerScript extends Script {
         timesToClickIncrease = null;
         percent = null;
         super.shutdown();
+    }
+
+    public String getItemName(int itemId) {
+        ItemComposition item = Microbot.getClientThread().runOnClientThread(() -> Microbot.getItemManager().getItemComposition(itemId));
+        return item.getName();
+    }
+
+    public List<ItemRequirement> getItemRequirements() {
+        return Microbot.getClientThread().runOnClientThread(() -> getQuestHelperPlugin().getSelectedQuest().getItemRequirements());
+    }
+
+    public boolean isTradeable(int itemId) {
+        ItemComposition item = Microbot.getClientThread().runOnClientThread(() -> Microbot.getItemManager().getItemComposition(itemId));
+        return item.isTradeable();
     }
 
     protected QuestHelperPlugin getQuestHelperPlugin() {
