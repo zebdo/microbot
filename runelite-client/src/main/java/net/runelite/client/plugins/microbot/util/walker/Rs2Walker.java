@@ -371,8 +371,7 @@ public class Rs2Walker {
         }
 
         WorldPoint walkableInteractPoint = interactablePoints.stream()
-                .filter(Rs2Tile::isWalkable)
-                .findFirst()
+                .filter(Rs2Tile::isWalkable).min(Comparator.comparingInt(Rs2Player.getWorldLocation()::distanceTo))
                 .orElse(null);
         // Priority to a walkable tile, otherwise walk to the first tile next to locatable
         if (walkableInteractPoint != null) {
@@ -380,7 +379,8 @@ public class Rs2Walker {
                 return;
             walkFastLocal(LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), walkableInteractPoint));
         } else {
-            walkFastLocal(LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), interactablePoints.get(0)));
+            walkFastLocal(LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), Objects.requireNonNull(interactablePoints.stream().min(Comparator.comparingInt(Rs2Player.getWorldLocation()::distanceTo))
+                    .orElse(null))));
         }
     }
 
@@ -619,10 +619,97 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
         ShortestPathPlugin.getPathfinderConfig().refresh();
     }
+    ShortestPathPlugin.getPathfinderConfig().refresh();
     Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), Rs2Player.getWorldLocation(), target);
     pathfinder.run();
     return pathfinder.getPath();
 }
+
+    /**
+     * Retrieves all TELEPORTATION_ITEM type transports found along the given path.
+     *
+     * @param path A list of WorldPoint objects representing the path.
+     * @return A list of Transport objects that are item transports.
+     */
+    public static List<Transport> getTransportsForPath(List<WorldPoint> path, int indexOfStartPoint) {
+        List<Transport> transportList = new ArrayList<>();
+        int currentIndex = indexOfStartPoint;
+
+        // Loop through the path until the end
+        while (currentIndex < path.size()) {
+            WorldPoint currentPoint = path.get(currentIndex);
+            // Get any transports that start at this point (or keyed by this point)
+            Set<Transport> transportsAtPoint = ShortestPathPlugin.getTransports()
+                    .getOrDefault(currentPoint, new HashSet<>());
+            boolean foundTransport = false;
+
+            // Iterate over each available transport
+            for (Transport transport : transportsAtPoint) {
+
+                // Special handling for teleportation transports
+                if (transport.getType() == TransportType.TELEPORTATION_ITEM ||
+                        transport.getType() == TransportType.TELEPORTATION_SPELL)
+                {
+                    // For teleportation, we assume origin is null and simply check if the destination exists in the path.
+                    if (path.contains(transport.getDestination())) {
+                        transportList.add(transport);
+                        int destIndex = path.indexOf(transport.getDestination());
+                        // Advance the current index to the destination tile (or at least one forward)
+                        currentIndex = destIndex > currentIndex ? destIndex : currentIndex + 1;
+                        foundTransport = true;
+                        break;
+                    }
+                }
+
+                // For non-teleportation transports (or if teleportation had a valid origin, though typically null):
+                Collection<WorldPoint> originPoints;
+                if (transport.getOrigin() == null) {
+                    originPoints = Collections.singleton(null);
+                } else {
+                    originPoints = WorldPoint.toLocalInstance(
+                            Microbot.getClient().getTopLevelWorldView(), transport.getOrigin());
+                }
+
+                for (WorldPoint origin : originPoints) {
+                    // If an origin is defined but the player's plane doesn't match, skip it.
+                    if (transport.getOrigin() != null &&
+                            Rs2Player.getWorldLocation().getPlane() != transport.getOrigin().getPlane()) {
+                        continue;
+                    }
+
+                    // For non-teleportation transports, ensure both origin and destination exist in the path
+                    // and that the destination comes after the origin.
+                    if (transport.getType() != TransportType.TELEPORTATION_ITEM &&
+                            transport.getType() != TransportType.TELEPORTATION_SPELL) {
+                        int indexOfOrigin = path.indexOf(transport.getOrigin());
+                        int indexOfDestination = path.indexOf(transport.getDestination());
+                        if (indexOfOrigin == -1 || indexOfDestination == -1 || indexOfDestination < indexOfOrigin) {
+                            continue;
+                        }
+                    }
+
+                    // If the current path point equals the transport's origin then add it.
+                    if (currentPoint.equals(origin)) {
+                        transportList.add(transport);
+                        int destIndex = path.indexOf(transport.getDestination());
+                        currentIndex = destIndex > currentIndex ? destIndex : currentIndex + 1;
+                        foundTransport = true;
+                        break;
+                    }
+                }
+                if (foundTransport) {
+                    break;
+                }
+            }
+
+            if (!foundTransport) {
+                currentIndex++;
+            }
+        }
+        return transportList;
+    }
+
+
 
     public static boolean isCloseToRegion(int distance, int regionX, int regionY) {
         WorldPoint worldPoint = WorldPoint.fromRegion(Microbot.getClient().getLocalPlayer().getWorldLocation().getRegionID(),
@@ -649,7 +736,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         if (index == path.size() - 1) return false;
 
         var doorActions = Arrays.asList("pay-toll", "pick-lock", "walk-through", "go-through", "open");
-        
+
         boolean isInstance = Microbot.getClient().getTopLevelWorldView().getScene().isInstance();
 
         // Check this and the next tile for door objects
