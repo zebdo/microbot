@@ -36,7 +36,7 @@ import static net.runelite.client.plugins.microbot.Microbot.log;
 public class TemporossScript extends Script {
 
     // Version string
-    public static final String VERSION = "1.3.0";
+    public static final String VERSION = "1.3.1";
     public static final Pattern DIGIT_PATTERN = Pattern.compile("(\\d+)");
     public static final int TEMPOROSS_REGION = 12078;
 
@@ -272,7 +272,7 @@ public class TemporossScript extends Script {
             TemporossPlugin.setHarpoonType(harpoonType);
 
             // Before interacting, check for fires in the path
-            if (!fightFiresInPath(workArea.getHarpoonCrate().getWorldLocation()))
+            if (!fightFiresInPath(workArea.harpoonPoint))
             {
                 log("Could not douse fires in path to harpoon crate, forfeiting");
                 forfeit();
@@ -295,18 +295,20 @@ public class TemporossScript extends Script {
             log("Buckets: " + bucketCount);
 
             // Check for fires
-            if (!fightFiresInPath(workArea.getBucketCrate().getWorldLocation()))
+            if (!fightFiresInPath(workArea.bucketPoint))
             {
                 log("Could not douse fires in path to bucket crate, forfeiting");
                 forfeit();
                 return;
             }
+            sleepUntil(() -> Rs2Inventory.count(item ->
+                    item.getId() == ItemID.BUCKET || item.getId() == ItemID.BUCKET_OF_WATER) >= temporossConfig.buckets(),() -> {
+                if (Rs2GameObject.interact(workArea.getBucketCrate(), "Take")) {
+                    log("Taking buckets");
+                    Rs2Inventory.waitForInventoryChanges(3000);
+            }},10000,300);
 
-            if (Rs2GameObject.interact(workArea.getBucketCrate(), "Take"))
-            {
-                log("Taking buckets");
-                sleepUntil(() -> Rs2Inventory.waitForInventoryChanges(10000));
-            }
+
             return;
         }
 
@@ -315,7 +317,7 @@ public class TemporossScript extends Script {
         if (fullBucketCount <= 0)
         {
             // Check for fires
-            if (!fightFiresInPath(workArea.getPump().getWorldLocation()))
+            if (!fightFiresInPath(workArea.pumpPoint))
             {
                 log("Could not douse fires in path to pump, forfeiting");
                 forfeit();
@@ -334,7 +336,7 @@ public class TemporossScript extends Script {
         if (temporossConfig.rope() && !temporossConfig.spiritAnglers() && !Rs2Inventory.contains(ItemID.ROPE))
         {
             // Check for fires
-            if (!fightFiresInPath(workArea.getRopeCrate().getWorldLocation()))
+            if (!fightFiresInPath(workArea.ropePoint))
             {
                 log("Could not douse fires in path to rope crate, forfeiting");
                 forfeit();
@@ -353,7 +355,7 @@ public class TemporossScript extends Script {
         if (temporossConfig.hammer() && !Rs2Inventory.contains(ItemID.HAMMER))
         {
             // Check for fires
-            if (!fightFiresInPath(workArea.getHammerCrate().getWorldLocation()))
+            if (!fightFiresInPath(workArea.hammerPoint))
             {
                 log("Could not douse fires in path to hammer crate, forfeiting");
                 forfeit();
@@ -395,7 +397,7 @@ public class TemporossScript extends Script {
         if (!isOnStartingBoat()) {
             if (Rs2GameObject.interact(startingLadder, ((emptyBucketCount > 0 && temporossConfig.solo()) || !temporossConfig.solo()) ? "Climb" : "Solo-start")) {
                 BreakHandlerScript.setLockState(true);
-                sleepUntil(this::isOnStartingBoat, 10000);
+                sleepUntil(() -> (isOnStartingBoat() || isInMinigame()), 15000);
                 return;
             }
         }
@@ -473,7 +475,7 @@ public class TemporossScript extends Script {
                 .getNpcs()
                 .filter(npc -> Arrays.asList(npc.getComposition().getActions()).contains("Fill"))
                 .filter(npc -> npc.getWorldLocation().distanceTo(workArea.mastPoint) <= 4)
-                .filter(npc -> !inCloud(npc.getWorldLocation(),1))
+                .filter(npc -> !inCloud(npc.getWorldLocation(),2))
                 .map(Rs2NpcModel::new)
                 .collect(Collectors.toList());
         TemporossOverlay.setAmmoList(ammoCrates);
@@ -687,6 +689,15 @@ public class TemporossScript extends Script {
                         .map(Rs2NpcModel::new)
                         .collect(Collectors.toList());
 
+                if (inCloud(Microbot.getClient().getLocalPlayer().getWorldLocation(),5) && !isFilling) {
+                    GameObject cloud = sortedClouds.stream()
+                            .findFirst()
+                            .orElse(null);
+                    Rs2Walker.walkNextToInstance(cloud);
+                    Rs2Player.waitForWalking();
+                    return;
+                }
+
                 if (ammoCrates.isEmpty()) {
                     log("Can't find ammo crate, walking to the safe point");
                     walkToSafePoint();
@@ -728,8 +739,8 @@ public class TemporossScript extends Script {
 
                 Rs2Npc.interact(ammoCrate, "Fill");
                 log("Interacting with ammo crate");
-                isFilling = true;
                 sleepUntil(Rs2Player::isAnimating, 5000);
+                isFilling = true;
                 break;
 
             case ATTACK_TEMPOROSS:
@@ -819,7 +830,7 @@ public class TemporossScript extends Script {
         int fullBucketCount = Rs2Inventory.count(ItemID.BUCKET_OF_WATER);
 
         WorldPoint trueLocation = getTrueWorldPoint(location);
-        List<WorldPoint> walkerPath = Rs2Walker.getWalkPath(trueLocation);
+        List<WorldPoint> walkerPath = Rs2Walker.getWalkPath(location);
         List<Rs2NpcModel> firesInPath = sortedFires.stream()
                 .filter(fire -> walkerPath.contains(fire.getWorldLocation()))
                 .collect(Collectors.toList());
