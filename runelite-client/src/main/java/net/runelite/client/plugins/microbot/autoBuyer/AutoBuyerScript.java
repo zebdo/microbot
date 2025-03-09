@@ -5,7 +5,6 @@ import net.runelite.api.ItemComposition;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
-import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.grandexchange.GrandExchangeSlots;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
 import org.apache.commons.lang3.tuple.Pair;
@@ -58,6 +57,7 @@ public class AutoBuyerScript extends Script {
 
                 } else {
                     Microbot.log("Using manual item list");
+                    if (getQuestHelperPlugin().getSelectedQuest() == null) Microbot.log("maybe because you forgot to select Quest in the Quest helper ?");
                     listOfItemsToBuy = config.listOfItemsToBuy().replaceAll("\\s*,\\s*", ",");
                 }
 
