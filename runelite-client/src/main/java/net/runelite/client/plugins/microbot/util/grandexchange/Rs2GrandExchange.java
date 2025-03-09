@@ -58,6 +58,16 @@ public class Rs2GrandExchange {
     }
 
     /**
+     * Back button. Goes back from buy/sell offer screen to all slots overview.
+     */
+    public static void backToOverview() {
+        Microbot.status = "Back to overview";
+        if (!isOpen() && !isOfferScreenOpen()) return;
+        Rs2Widget.clickWidget(30474244);
+        sleepUntilOnClientThread(() -> !isOfferScreenOpen());
+    }
+
+    /**
      * check if the grand exchange screen is open
      *
      * @return
@@ -191,6 +201,37 @@ public class Rs2GrandExchange {
         return buyItemAbove5Percent(itemName, quantity, 1);
     }
 
+    private static boolean searchItemAndSetQuantity(String itemName, int quantity) {
+        if (!isOpen()) {
+            openExchange();
+        }
+        Pair<GrandExchangeSlots, Integer> slot = getAvailableSlot();
+        Widget buyOffer = getOfferBuyButton(slot.getLeft());
+
+        if (buyOffer == null) return false;
+
+        Microbot.getMouse().click(buyOffer.getBounds());
+        sleepUntil(Rs2GrandExchange::isOfferTextVisible);
+        sleepUntil(() -> Rs2Widget.hasWidget("What would you like to buy?"));
+        if (Rs2Widget.hasWidget("What would you like to buy?"))
+            Rs2Keyboard.typeString(itemName);
+        sleepUntil(() -> Rs2Widget.hasWidget(itemName) || Rs2Widget.hasWidget("No matches found.")); //GE Search Results
+        sleep(1200, 1600);
+        if (Rs2Widget.hasWidget("No matches found.")) {
+            System.out.println("Unable to find item in GE.");
+            return false;
+        }
+        Pair<Widget, Integer> itemResult = getSearchResultWidget(itemName);
+        if (itemResult != null) {
+            Rs2Widget.clickWidgetFast(itemResult.getLeft(), itemResult.getRight(), 1);
+            sleepUntil(() -> !Rs2Widget.hasWidget("Choose an item..."));
+            sleep(600, 1600);
+        }
+        setQuantity(quantity);
+
+        return true;
+    }
+
     /**
      * Buys item from the grand exchange and increases the price by custom percent
      *
@@ -201,28 +242,8 @@ public class Rs2GrandExchange {
      */
     public static boolean buyItemAboveXPercent(String itemName, int quantity, int percent) {
         try {
-            if (!isOpen()) {
-                openExchange();
-            }
-            Pair<GrandExchangeSlots, Integer> slot = getAvailableSlot();
-            Widget buyOffer = getOfferBuyButton(slot.getLeft());
-
-            if (buyOffer == null) return false;
-
-            Microbot.getMouse().click(buyOffer.getBounds());
-            sleepUntil(Rs2GrandExchange::isOfferTextVisible);
-            sleepUntil(() -> Rs2Widget.hasWidget("What would you like to buy?"));
-            if (Rs2Widget.hasWidget("What would you like to buy?"))
-                Rs2Keyboard.typeString(itemName);
-            sleepUntil(() -> Rs2Widget.hasWidget(itemName)); //GE Search Results
-            sleep(1200, 1600);
-            Pair<Widget, Integer> itemResult = getSearchResultWidget(itemName);
-            if (itemResult != null) {
-                Rs2Widget.clickWidgetFast(itemResult.getLeft(), itemResult.getRight(), 1);
-                sleepUntil(() -> !Rs2Widget.hasWidget("Choose an item..."));
-                sleep(600, 1600);
-            }
-            setQuantity(quantity);
+            if (!searchItemAndSetQuantity(itemName, quantity))
+                return false;
 
             Widget pricePerItemButtonXPercent = getPricePerItemButton_PlusXPercent();
             if (pricePerItemButtonXPercent != null) {
@@ -268,32 +289,12 @@ public class Rs2GrandExchange {
      */
     public static boolean buyItemAbove5Percent(String itemName, int quantity, int timesToIncreasePrice) {
         try {
-            if (!isOpen()) {
-                openExchange();
-            }
-            Pair<GrandExchangeSlots, Integer> slot = getAvailableSlot();
-            Widget buyOffer = getOfferBuyButton(slot.getLeft());
+            if (!searchItemAndSetQuantity(itemName, quantity))
+                return false;
 
-            if (buyOffer == null) return false;
-
-            Microbot.getMouse().click(buyOffer.getBounds());
-            sleepUntil(Rs2GrandExchange::isOfferTextVisible);
-            sleepUntil(() -> Rs2Widget.hasWidget("What would you like to buy?"));
-            if (Rs2Widget.hasWidget("What would you like to buy?"))
-                Rs2Keyboard.typeString(itemName);
-            sleepUntil(() -> Rs2Widget.hasWidget(itemName)); //GE Search Results
-            sleep(1200, 1600);
-            Pair<Widget, Integer> itemResult = getSearchResultWidget(itemName);
-            if (itemResult != null) {
-                Rs2Widget.clickWidgetFast(itemResult.getLeft(), itemResult.getRight(), 1);
-                sleepUntil(() -> !Rs2Widget.hasWidget("Choose an item..."));
-                sleep(600, 1600);
-            }
-            setQuantity(quantity);
             if (buyItemAbove5Percent(timesToIncreasePrice)) {
                 return true;
             }
-
 
         } catch (Exception ex) {
             System.out.println(ex.getMessage());

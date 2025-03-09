@@ -14,6 +14,7 @@ import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.tempoross.enums.HarpoonType;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -170,11 +171,11 @@ public class TemporossPlugin extends Plugin {
 
     // Set harpoon type config
     public static void setHarpoonType(HarpoonType harpoonType) {
-        configManager.setConfiguration("microbot-tempoross", "harpoonType", harpoonType);
+        Microbot.getConfigManager().setConfiguration("microbot-tempoross", "harpoonType", harpoonType);
     }
 
     // Set rope config
     public static void setRope(boolean rope) {
-        configManager.setConfiguration("microbot-tempoross", "rope", rope);
+        Microbot.getConfigManager().setConfiguration("microbot-tempoross", "rope", rope);
     }
 }

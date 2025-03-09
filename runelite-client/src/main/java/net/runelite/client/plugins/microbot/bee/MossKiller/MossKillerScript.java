@@ -382,7 +382,7 @@ public class MossKillerScript extends Script {
                 }
 
                 // Get the player's current target (who they are interacting with)
-                NPC interactingNpc = (NPC) Microbot.getClient().getLocalPlayer().getInteracting();
+                Rs2NpcModel interactingNpc = (Rs2NpcModel) Rs2Player.getInteracting();
 
                 // If we're already interacting with a Growthling, skip attacking
                 if (interactingNpc != null && interactingNpc.getId() == 8194) {
@@ -415,7 +415,7 @@ public class MossKillerScript extends Script {
             state = MossKillerState.TELEPORT;
         } else if(!growthlingAttacked){
             Microbot.log("Bryophyta is still alive, attacking");
-            NPC interactingNpc = (NPC) Microbot.getClient().getLocalPlayer().getInteracting();
+            var interactingNpc = (Rs2NpcModel) Rs2Player.getInteracting();
             if (interactingNpc == null) Rs2Npc.attack("Bryophyta");
         }
     }
