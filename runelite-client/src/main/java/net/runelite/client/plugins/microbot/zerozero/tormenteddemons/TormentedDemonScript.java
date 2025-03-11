@@ -250,12 +250,14 @@ public class TormentedDemonScript extends Script {
 
             var interactingTarget = (Rs2NpcModel) Rs2Player.getInteracting();
 
-            if (interactingTarget.getIndex() != currentTarget.getIndex()) {
+            if (currentTarget == null) return;
+
+            if (interactingTarget == null || interactingTarget.getIndex() != currentTarget.getIndex()) {
                 boolean attackSuccessful = Rs2Npc.interact(currentTarget, "attack");
 
                 if (attackSuccessful) {
                     Rs2Player.waitForAnimation();
-                    sleepUntil(() -> interactingTarget == currentTarget, 3000);
+                    sleepUntil(() ->  Rs2Player.getInteracting() != null && ((Rs2NpcModel) Rs2Player.getInteracting()).getIndex() == currentTarget.getIndex(), 3000);
                 } else {
                     logOnceToChat("Attack failed for target: " + (currentTarget != null ? currentTarget.getName() : "null"));
                     currentTarget = null;
@@ -274,6 +276,8 @@ public class TormentedDemonScript extends Script {
             switchGear(config, currentOverheadIcon);
             sleep(100);
         }
+
+        if (currentTarget == null) return;
 
         int npcAnimation = currentTarget.getAnimation();
         if (config.enableDefensivePrayer()) {
