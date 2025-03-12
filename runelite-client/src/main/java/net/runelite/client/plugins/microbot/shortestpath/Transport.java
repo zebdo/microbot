@@ -329,6 +329,9 @@ public class Transport {
                 } else if (varplayerCheck.contains("<")) {
                     parts = varplayerCheck.split("<");
                     operator = TransportVarPlayer.Operator.LESS_THAN;
+                } else if (varplayerCheck.contains("=")) {
+                    parts = varplayerCheck.split("=");
+                    operator = TransportVarPlayer.Operator.EQUAL;
                 } else if (varplayerCheck.contains("&")) {
                     parts = varplayerCheck.split("&");
                     operator = TransportVarPlayer.Operator.BIT_SET;

@@ -665,7 +665,7 @@ public class Rs2Dialogue {
     }
 
     public static void waitForCutScene(int time, int timeout) {
-        boolean result = sleepUntilTrue(Rs2Dialogue::isInDialogue, time, timeout);
+        boolean result = sleepUntilTrue(Rs2Dialogue::isInCutScene, time, timeout);
         if (!result) return;
         sleepUntilTrue(() -> !Rs2Dialogue.isInCutScene(), time, timeout);
     }
