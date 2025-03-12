@@ -44,7 +44,7 @@ public boolean run(AIOFighterConfig config) {
                 //if there is an NPC interacting with us, and we are not Interacting with it, attack it again
                 if (!npcList.isEmpty() && !Rs2Player.isInMulti()) {
                     npcList.forEach(npc -> {
-                        if (Microbot.getClient().getLocalPlayer().getInteracting() == null) {
+                        if (Rs2Player.isInteracting()) {
                             if (npcsToAttack.get().contains(npc.getName())) {
                                 Rs2Npc.attack(npc);
                                 AIOFighterPlugin.setCooldown(config.playStyle().getRandomTickInterval());
@@ -69,7 +69,7 @@ public boolean run(AIOFighterConfig config) {
                 //if there is an NPC interacting with us, and we are not Interacting with it, attack it again
                 if (!npcList.isEmpty() && !Rs2Player.isInMulti()) {
                     npcList.forEach(npc -> {
-                        if (Microbot.getClient().getLocalPlayer().getInteracting() == null) {
+                        if (Rs2Player.getInteracting() == null) {
                             if (npcsToAttack.get().contains(npc.getName())) {
                                 Rs2Npc.attack(npc);
                                 AIOFighterPlugin.setCooldown(config.playStyle().getRandomTickInterval());

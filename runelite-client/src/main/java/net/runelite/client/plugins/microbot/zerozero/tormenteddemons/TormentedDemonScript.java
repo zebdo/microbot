@@ -32,7 +32,7 @@ import java.util.concurrent.TimeUnit;
 
 public class TormentedDemonScript extends Script {
 
-    public static final double VERSION = 1.1;
+    public static final double VERSION = 1.2;
     private boolean isRunning = false;
     public static int killCount = 0;
     private Rs2PrayerEnum currentDefensivePrayer = null;
@@ -248,12 +248,16 @@ public class TormentedDemonScript extends Script {
             Rs2Player.eatAt(config.minEatPercent());
             Rs2Player.drinkPrayerPotionAt(config.minPrayerPercent());
 
-            if (Microbot.getClient().getLocalPlayer().getInteracting() != currentTarget) {
+            var interactingTarget = (Rs2NpcModel) Rs2Player.getInteracting();
+
+            if (currentTarget == null) return;
+
+            if (interactingTarget == null || interactingTarget.getIndex() != currentTarget.getIndex()) {
                 boolean attackSuccessful = Rs2Npc.interact(currentTarget, "attack");
 
                 if (attackSuccessful) {
                     Rs2Player.waitForAnimation();
-                    sleepUntil(() -> Microbot.getClient().getLocalPlayer().getInteracting() == currentTarget, 3000);
+                    sleepUntil(() ->  Rs2Player.getInteracting() != null && ((Rs2NpcModel) Rs2Player.getInteracting()).getIndex() == currentTarget.getIndex(), 3000);
                 } else {
                     logOnceToChat("Attack failed for target: " + (currentTarget != null ? currentTarget.getName() : "null"));
                     currentTarget = null;
@@ -273,8 +277,11 @@ public class TormentedDemonScript extends Script {
             sleep(100);
         }
 
+        if (currentTarget == null) return;
+
         int npcAnimation = currentTarget.getAnimation();
         if (config.enableDefensivePrayer()) {
+            System.out.println(npcAnimation);
             Rs2PrayerEnum newDefensivePrayer = null;
             if (npcAnimation == MAGIC_ATTACK_ANIMATION) {
                 newDefensivePrayer = Rs2PrayerEnum.PROTECT_MAGIC;

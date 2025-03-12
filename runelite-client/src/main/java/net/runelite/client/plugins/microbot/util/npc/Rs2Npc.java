@@ -876,7 +876,7 @@ public class Rs2Npc {
         if (npc == null) return false;
         if (npc.getWorldLocation().equals(Rs2Player.getWorldLocation())) return true;
 
-        return npc.getWorldLocation().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Rs2Player.getWorldLocation().toWorldArea());
+        return npc.getWorldLocation().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation().toWorldArea());
     }
 
     /**
@@ -1079,7 +1079,7 @@ public class Rs2Npc {
                 .filter(value -> value.getComposition() != null
                         && value.getComposition().getActions() != null
                         && Arrays.asList(value.getComposition().getActions()).contains(action))
-                .min(Comparator.comparingInt(value -> new Rs2WorldPoint(Rs2WorldPoint.toLocalInstance(value.getWorldLocation())).distanceToPath(playerLocation.getWorldPoint())))
+                .min(Comparator.comparingInt(value -> playerLocation.distanceToPath(isInstance ? Rs2WorldPoint.toLocalInstance(value.getWorldLocation()) : value.getWorldLocation())))
                 .orElse(null);
     }
 
@@ -1099,7 +1099,7 @@ public class Rs2Npc {
      * @param action The action to search for (e.g., "Bank", "Talk-to", "Trade").
      * @return The first {@link NPC} that has the specified action, or {@code null} if none are found.
      */
-    public static NPC getNpcWithAction(String action) {
+    public static Rs2NpcModel getNpcWithAction(String action) {
         return getNpcs()
                 .filter(value -> (value.getComposition() != null
                         && value.getComposition().getActions() != null

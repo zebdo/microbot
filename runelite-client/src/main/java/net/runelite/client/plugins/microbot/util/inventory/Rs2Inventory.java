@@ -203,7 +203,11 @@ public class Rs2Inventory {
             }
         }
 
-        return combine(closestPrimaryItem, closestSecondaryItem);
+        boolean primaryItemInteracted = use(closestPrimaryItem);
+        sleep(100, 175);
+        boolean secondaryItemInteracted = use(closestSecondaryItem);
+        return primaryItemInteracted && secondaryItemInteracted;
+
     }
 
     /**
@@ -241,7 +245,10 @@ public class Rs2Inventory {
             }
         }
 
-        return combine(closestPrimaryItem, closestSecondaryItem);
+        boolean primaryItemInteracted = use(closestPrimaryItem);
+        sleep(100, 175);
+        boolean secondaryItemInteracted = use(closestSecondaryItem);
+        return primaryItemInteracted && secondaryItemInteracted;
     }
 
 

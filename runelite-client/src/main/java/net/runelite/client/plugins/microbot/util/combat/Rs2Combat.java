@@ -9,6 +9,7 @@ import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
@@ -162,8 +163,8 @@ public class Rs2Combat {
 
     public static boolean inCombat() {
         if (!Microbot.isLoggedIn()) return false;
-        if (Microbot.getClientThread().runOnClientThread(() -> Microbot.getClient().getLocalPlayer().getInteracting() == null
-                || Microbot.getClient().getLocalPlayer().getInteracting().getCombatLevel() < 1)) return false;
-        return Microbot.getClient().getLocalPlayer().isInteracting() || Microbot.getClient().getLocalPlayer().getAnimation() != -1;
+        if (Microbot.getClientThread().runOnClientThread(() -> !Rs2Player.isInteracting()
+                || Rs2Player.getInteracting().getCombatLevel() < 1)) return false;
+        return Rs2Player.isInteracting() || Rs2Player.getAnimation() != -1;
     }
 }

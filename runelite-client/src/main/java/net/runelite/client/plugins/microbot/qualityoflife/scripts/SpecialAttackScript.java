@@ -1,6 +1,5 @@
 package net.runelite.client.plugins.microbot.qualityoflife.scripts;
 
-import net.runelite.api.NPC;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.qualityoflife.QoLConfig;
@@ -15,7 +14,7 @@ import java.util.concurrent.atomic.AtomicReference;
 public class SpecialAttackScript extends Script {
 
     public boolean run(QoLConfig config) {
-        AtomicReference<NPC> npc = new AtomicReference<>();
+        AtomicReference<Rs2NpcModel> npc = new AtomicReference<>();
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
@@ -23,7 +22,7 @@ public class SpecialAttackScript extends Script {
                 if (!config.useSpecWeapon()) return;
                 if (Rs2Equipment.isWearingFullGuthan()) return;
                 if (Rs2Player.isInteracting()) {
-                    npc.set((NPC) Microbot.getClient().getLocalPlayer().getInteracting());
+                    npc.set((Rs2NpcModel) Rs2Player.getInteracting());
                     if (Microbot.getSpecialAttackConfigs().useSpecWeapon()) {
                         Rs2Npc.attack(npc.get());
                     }

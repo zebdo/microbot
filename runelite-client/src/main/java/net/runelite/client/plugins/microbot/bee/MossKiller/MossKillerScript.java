@@ -1,6 +1,5 @@
 package net.runelite.client.plugins.microbot.bee.MossKiller;
 
-import net.runelite.api.NPC;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.PluginInstantiationException;
@@ -78,7 +77,7 @@ public class MossKillerScript extends Script {
     public static int CHAOS_RUNE = 562;
     // TODO: add stuff for boss too
     public int[] LOOT_LIST = new int[]{MOSSY_KEY, LAW_RUNE, AIR_RUNE, FIRE_RUNE, DEATH_RUNE, CHAOS_RUNE, NATURE_RUNE};
-    public static final int[] LOOT_LIST1 = new int[]{BIG_BONES, RUNE_PLATELEGS, RUNE_LONGSWORD, RUNE_MED_HELM, RUNE_CHAINBODY, RUNE_PLATESKIRT, RUNE_SQ_SHIELD, RUNE_SWORD, ADAMANT_PLATEBODY, ADAMANT_KITESHIELD, NATURE_RUNE, COSMIC_RUNE, LAW_RUNE, DEATH_RUNE, CHAOS_RUNE, ADAMANT_ARROW, RUNITE_BAR, UNCUT_RUBY, UNCUT_DIAMOND, STEEL_BAR, COINS, STRENGTH_POTION4, BRYOPHYTAS_ESSENCE, MOSSY_KEY};
+    public static final int[] LOOT_LIST1 = new int[]{STEEL_BAR, BIG_BONES, RUNE_PLATELEGS, RUNE_LONGSWORD, RUNE_MED_HELM, RUNE_CHAINBODY, RUNE_PLATESKIRT, RUNE_SQ_SHIELD, RUNE_SWORD, ADAMANT_PLATEBODY, ADAMANT_KITESHIELD, NATURE_RUNE, COSMIC_RUNE, LAW_RUNE, DEATH_RUNE, CHAOS_RUNE, ADAMANT_ARROW, RUNITE_BAR, RUNITE_BAR, UNCUT_RUBY, UNCUT_DIAMOND, STEEL_BAR, COINS, STRENGTH_POTION4, BRYOPHYTAS_ESSENCE, MOSSY_KEY};
     public int[] ALCHABLES = new int[]{STEEL_KITESHIELD, MITHRIL_SWORD, BLACK_SQ_SHIELD};
 
     public MossKillerState state = MossKillerState.BANK;
@@ -382,7 +381,7 @@ public class MossKillerScript extends Script {
                 }
 
                 // Get the player's current target (who they are interacting with)
-                NPC interactingNpc = (NPC) Microbot.getClient().getLocalPlayer().getInteracting();
+                Rs2NpcModel interactingNpc = (Rs2NpcModel) Rs2Player.getInteracting();
 
                 // If we're already interacting with a Growthling, skip attacking
                 if (interactingNpc != null && interactingNpc.getId() == 8194) {
@@ -415,7 +414,7 @@ public class MossKillerScript extends Script {
             state = MossKillerState.TELEPORT;
         } else if(!growthlingAttacked){
             Microbot.log("Bryophyta is still alive, attacking");
-            NPC interactingNpc = (NPC) Microbot.getClient().getLocalPlayer().getInteracting();
+            var interactingNpc = (Rs2NpcModel) Rs2Player.getInteracting();
             if (interactingNpc == null) Rs2Npc.attack("Bryophyta");
         }
     }
@@ -501,6 +500,7 @@ public class MossKillerScript extends Script {
                                 }
 
                                 if (bossMode && Rs2Walker.getDistanceBetween(playerLocation, OUTSIDE_BOSS_GATE_SPOT) < 5) {
+                                    if (Rs2Player.isInCombat()) {sleepUntil(()-> !Rs2Player.isInCombat(), 25000);}
                                     if (Rs2GameObject.exists(32534) && Rs2GameObject.interact(32534, "Open")) {
                                         sleepUntil(Rs2Dialogue::isInDialogue);
                                         if (Rs2Dialogue.isInDialogue()) {

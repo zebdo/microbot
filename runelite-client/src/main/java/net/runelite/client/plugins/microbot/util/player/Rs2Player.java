@@ -22,6 +22,7 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -1805,5 +1806,35 @@ public class Rs2Player {
         );
 
         return true;
+    }
+
+    /**
+     * Retrieves the actor that the local player is currently interacting with.
+     *
+     * @return The interacting actor as an {@link Actor} object. If the interacting actor is an NPC,
+     *         it returns an {@link Rs2NpcModel} object. If the local player is not interacting with anyone,
+     *         or if the local player is null, it returns null.
+     */
+    public static Actor getInteracting() {
+        if (Microbot.getClient().getLocalPlayer() == null) return null;
+
+        var interactingActor = Microbot.getClient().getLocalPlayer().getInteracting();
+
+        if (interactingActor instanceof net.runelite.api.NPC) {
+            return new Rs2NpcModel((NPC) interactingActor);
+        }
+
+        return interactingActor;
+    }
+    /**
+     * Checks if the player has finished Tutorial Island.
+     *
+     * <p>This method checks the player's progress on Tutorial Island by retrieving the value of Varbit 281.
+     * If the value is greater than or equal to 1000, it indicates that the player has completed Tutorial Island.</p>
+     *
+     * @return {@code true} if the player has finished Tutorial Island, {@code false} otherwise.
+     */
+    public static boolean isInTutorialIsland() {
+        return Microbot.getVarbitPlayerValue(281) >= 1000;
     }
 }

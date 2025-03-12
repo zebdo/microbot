@@ -21,6 +21,7 @@ import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.settings.Rs2SpellBookSettings;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -45,6 +46,8 @@ public class Rs2Magic {
      * Check if all the settings are correct before we start interacting with spellbook
      */
     public static boolean oneTimeSpellBookCheck() {
+        if (Rs2Player.isInTutorialIsland())
+            return true;
         // We add a one time check to avoid performanec issues. Checking varbits is expensive
         if (firstInteractionWithSpellBook && !Rs2SpellBookSettings.setAllFiltersOn()) {
             return false;
@@ -62,6 +65,8 @@ public class Rs2Magic {
      */
     public static boolean canCast(MagicAction magicSpell) {
         if (!oneTimeSpellBookCheck()) {
+            Rs2Random.waitEx(800, 150);
+            Rs2Dialogue.clickContinue();
             Microbot.log("Your spellbook filtering seems off...Microbot is trying to fix this");
             return false;
         }
@@ -130,7 +135,7 @@ public class Rs2Magic {
             log("Unable to cast " + magicSpell.getName());
             return false;
         }
-        if (magicSpell.getName().toLowerCase().contains("teleport") || magicSpell.getName().toLowerCase().contains("Bones to") || Arrays.stream(magicSpell.getActions()).anyMatch(x -> x != null && x.equalsIgnoreCase("cast"))) {
+        if (magicSpell.getName().toLowerCase().contains("teleport") || magicSpell.getName().toLowerCase().contains("Bones to") || (magicSpell.getActions() != null && Arrays.stream(magicSpell.getActions()).anyMatch(x -> x != null && x.equalsIgnoreCase("cast")))) {
             menuAction = MenuAction.CC_OP;
         } else {
             menuAction = MenuAction.WIDGET_TARGET;
@@ -164,11 +169,11 @@ public class Rs2Magic {
             Rs2Camera.turnTo(actor.getLocalLocation());
             return;
         }
-        if (actor instanceof NPC) {
+        if (actor instanceof Rs2NpcModel) {
             Rs2Npc.interact(new Rs2NpcModel((NPC) (actor)));
         } else {
             if (actor instanceof Player) {
-                Rs2Player.cast((Player) actor);
+                Rs2Player.cast(new Rs2PlayerModel((Player) actor));
             }
         }
     }

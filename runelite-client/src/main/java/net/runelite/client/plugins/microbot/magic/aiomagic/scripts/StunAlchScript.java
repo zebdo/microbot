@@ -12,8 +12,8 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
@@ -75,7 +75,7 @@ public class StunAlchScript extends Script {
                             }
                         }
 
-                        net.runelite.api.NPC npc = (net.runelite.api.NPC) Microbot.getClient().getLocalPlayer().getInteracting();
+                        var npc = (Rs2NpcModel) Rs2Player.getInteracting();
 
                         if (npc != null) {
                             Rs2Magic.castOn(plugin.getStunSpell().getSpell(), npc);
