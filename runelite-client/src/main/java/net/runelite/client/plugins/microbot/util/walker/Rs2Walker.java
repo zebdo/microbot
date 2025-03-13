@@ -1117,8 +1117,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     
                     if (transport.getType() == TransportType.TELEPORTATION_MINIGAME) {
                         if (handleMinigameTeleport(transport)) {
-                            sleepUntil(() -> !Rs2Player.isAnimating());
-                            sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < (OFFSET * 2), 100, 20000);
+                            sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < (OFFSET * 2));
                             break;
                         }
                     }
@@ -1126,7 +1125,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     if (transport.getType() == TransportType.TELEPORTATION_ITEM) {
                         if (handleTeleportItem(transport)) {
                             sleepUntil(() -> !Rs2Player.isAnimating());
-                            sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
+                            sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
                             break;
                         }
                     }
@@ -1134,7 +1133,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     if (transport.getType() == TransportType.TELEPORTATION_SPELL) {
                         if (handleTeleportSpell(transport)) {
                             sleepUntil(() -> !Rs2Player.isAnimating());
-                            sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
+                            sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
                             Rs2Tab.switchToInventoryTab();
                             break;
                         }
@@ -1149,7 +1148,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                         }
                         handleObject(transport, gameObject);
                         sleepUntil(() -> !Rs2Player.isAnimating());
-                        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
+                        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
                     }
 
                     //check tile objects
@@ -1167,7 +1166,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                         }
                         handleObject(transport, tileObject);
                         sleepUntil(() -> !Rs2Player.isAnimating());
-                        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
+                        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
                     }
                     
                     // check wall objects
@@ -1176,7 +1175,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     if (wallObject != null && wallObject.getId() == transport.getObjectId()) {
                         handleObject(transport, wallObject);
                         sleepUntil(() -> !Rs2Player.isAnimating());
-                        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
+                        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
                     }
                 }
             }
@@ -1570,6 +1569,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 
     private static boolean handleMinigameTeleport(Transport transport) {
         final Object[] selectedOpListener = new Object[]{489, 0, 0};
+        final List<Integer> teleportGraphics = List.of(800,802,803,804);
+        
         @Component
         final int GROUPING_BUTTON_COMPONENT_ID = 46333957; // 707.5
         
@@ -1622,26 +1623,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             Widget destinationWidget = Rs2Widget.findWidget(destination, minigameWidgetList);
             if (destinationWidget == null) return false;
 
-            Rectangle minigameWidgetParentBounds = minigameWidgetParent.getBounds();
-            Rectangle destinationWidgetBounds = destinationWidget.getBounds();
-            if (!Rs2UiHelper.isRectangleWithinRectangle(minigameWidgetParentBounds, destinationWidgetBounds)) {
-                Microbot.log("Destination widget is not fully visible inside the minigame widget parent, scrolling...");
-                boolean isWidgetInView = sleepUntil(() -> Rs2UiHelper.isRectangleWithinRectangle(minigameWidgetParentBounds, Rs2Widget.findWidget(destination, minigameWidgetList).getBounds()), () -> {
-                    boolean isBelow = destinationWidgetBounds.y > minigameWidgetParentBounds.y;
-                    if (isBelow)
-                        Microbot.getMouse().scrollDown(Rs2UiHelper.getClickingPoint(minigameWidgetParent.getBounds(), false));
-                    else
-                        Microbot.getMouse().scrollUp(Rs2UiHelper.getClickingPoint(minigameWidgetParent.getBounds(), false));
-                }, 5000, 300);
-                
-                if (!isWidgetInView) {
-                    Microbot.log("Destination widget is not found within timeout period");
-                    return false;
-                }
-
-                destinationWidget = Rs2Widget.findWidget(destination, minigameWidgetList);
-            }
-            Rs2Widget.clickWidget(destinationWidget);
+            NewMenuEntry destinationMenuEntry = new NewMenuEntry("Select", "", 1, MenuAction.CC_OP, destinationWidget.getIndex(), minigameWidgetParent.getId(), false);
+            Microbot.doInvoke(destinationMenuEntry, new Rectangle(1,1));
             sleepUntil(() -> Rs2Widget.getWidget(SELECTED_MINIGAME).getText().equalsIgnoreCase(destination));
         }
 
@@ -1653,10 +1636,13 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             Rs2Dialogue.sleepUntilSelectAnOption();
             Rs2Dialogue.clickOption(transport.getDisplayInfo().split(":")[1].trim().toLowerCase());
         }
-
-        return sleepUntilTrue(Rs2Player::isAnimating);
+        
+        return sleepUntilTrue(() -> !Rs2Player.isAnimating() && teleportGraphics.stream().noneMatch(Rs2Player::hasSpotAnimation), 100, 20000);
     }
-
+    
+    /*
+        TODO: Fix delays in-order for this to function properly.
+     */
     private static boolean handleCanoe(Transport transport) {
         String displayInfo = transport.getDisplayInfo();
         if (displayInfo == null || displayInfo.isEmpty()) return false;
