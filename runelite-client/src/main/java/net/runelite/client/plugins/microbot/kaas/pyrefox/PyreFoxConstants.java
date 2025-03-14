@@ -25,11 +25,20 @@ public class PyreFoxConstants
 	public static void rerollGatherAmounts()
 	{
 		Microbot.log("Rerolling gathering amounts...");
-		GATHER_LOGS_AT_AMOUNT = Rs2Random.between(0, 3);
-		GATHER_LOGS_AMOUNT = Rs2Random.between(
-			Math.max(Rs2Inventory.getEmptySlots()-10, 0),
-			Math.min(Rs2Inventory.getEmptySlots(), 13)
-		);
-		Microbot.log("Rerolled");
+
+		// Get current empty slots
+		int emptySlots = Rs2Inventory.getEmptySlots();
+
+		// Calculate the maximum amount to gather based on available space
+		// Leave at least 5-10 slots open for other items
+		int maxGatherAmount = Math.max(emptySlots, 1);
+
+		// Set GATHER_LOGS_AMOUNT between 1 and the calculated max (capped at 13)
+		GATHER_LOGS_AMOUNT = Rs2Random.between(1, Math.min(maxGatherAmount, 13));
+
+		// Set GATHER_LOGS_AT_AMOUNT to be always strictly less than GATHER_LOGS_AMOUNT
+		GATHER_LOGS_AT_AMOUNT = Rs2Random.between(0, GATHER_LOGS_AMOUNT - 1);
+
+		Microbot.log("Will chop until " + GATHER_LOGS_AMOUNT + " logs, starting new chopping at " + GATHER_LOGS_AT_AMOUNT + " logs");
 	}
 }

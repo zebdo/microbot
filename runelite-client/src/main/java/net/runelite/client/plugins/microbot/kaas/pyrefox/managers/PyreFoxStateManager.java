@@ -112,7 +112,7 @@ public class PyreFoxStateManager extends Script
 			return WALK_TO_PYREFOX;
 
 		// Handles banking.
-		boolean shouldBank = (_config.ForceBank() || Rs2Inventory.isFull());
+		boolean shouldBank = (_config.ForceBank() || Rs2Inventory.getEmptySlots() <= 2);
 		if (shouldBank && !Rs2Bank.isOpen())
 			return WALK_TO_BANK;
 
