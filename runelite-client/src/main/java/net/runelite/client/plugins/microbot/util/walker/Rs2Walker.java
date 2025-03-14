@@ -1637,12 +1637,10 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             Rs2Dialogue.clickOption(transport.getDisplayInfo().split(":")[1].trim().toLowerCase());
         }
         
+        sleepUntil(Rs2Player::isAnimating);
         return sleepUntilTrue(() -> !Rs2Player.isAnimating() && teleportGraphics.stream().noneMatch(Rs2Player::hasSpotAnimation), 100, 20000);
     }
     
-    /*
-        TODO: Fix delays in-order for this to function properly.
-     */
     private static boolean handleCanoe(Transport transport) {
         String displayInfo = transport.getDisplayInfo();
         if (displayInfo == null || displayInfo.isEmpty()) return false;
@@ -1659,17 +1657,16 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             return false;
         }
 
-        System.out.println("Current Action: " + currentAction);
-
         switch (currentAction) {
             case "Chop-down":
                 Rs2GameObject.interact(transport.getObjectId(), "Chop-down");
+                sleepUntil(() -> Rs2Player.isAnimating(1200));
                 return sleepUntilTrue(() -> {
                     ObjectComposition composition = Rs2GameObject.findObjectComposition(transport.getObjectId());
 
                     if (composition == null) return false;
-                    return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals);
-                }, () -> Rs2Player.isMoving() || Rs2Player.isAnimating(1200), 300, 10000);
+                    return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
+                },300, 10000);
             case "Shape-Canoe":
                 @Component
                 final int CANOE_SELECTION_PARENT = 27262976; // 416.3
@@ -1700,22 +1697,24 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 
                 Widget canoeSelectionParentWidget = Rs2Widget.getWidget(CANOE_SELECTION_PARENT);
                 if (canoeSelectionParentWidget == null) return false;
-                Widget canoeSelectionWidget = Rs2Widget.findWidget("Make " + canoeOption, List.of(canoeSelectionParentWidget), false);
+                Widget canoeSelectionWidget = Rs2Widget.findWidget("Make " + canoeOption, List.of(canoeSelectionParentWidget));
                 Rs2Widget.clickWidget(canoeSelectionWidget);
+                sleepUntil(() -> Rs2Player.isAnimating(1200));
                 return sleepUntilTrue(() -> {
                     ObjectComposition composition = Rs2GameObject.findObjectComposition(transport.getObjectId());
                     
                     if (composition == null) return false;
-                    return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals);
-                }, () -> Rs2Player.isAnimating(1200), 300, 10000);
+                    return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
+                }, 300, 10000);
             case "Float Canoe":
                 Rs2GameObject.interact(transport.getObjectId(), "Float Canoe");
+                sleepUntil(() -> Rs2Player.isAnimating(1200));
                 return sleepUntilTrue(() -> {
                     ObjectComposition composition = Rs2GameObject.findObjectComposition(transport.getObjectId());
                     
                     if (composition == null) return false;
-                    return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals);
-                }, () -> Rs2Player.isAnimating(1200), 100, 10000);
+                    return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
+                }, 300, 10000);
             case "Paddle Canoe":
                 @Component
                 final int DESTINATION_MAP_PARENT = 42401792; // 647.3

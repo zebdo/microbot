@@ -659,14 +659,24 @@ public class Rs2Dialogue {
         }
         return false;
     }
-    
+
+    /**
+     * Waits for a cutscene to start and end using default polling and timeout values.
+     */
     public static void waitForCutScene() {
         waitForCutScene(100, 5000);
     }
 
+    /**
+     * Waits for a cutscene to start and end using the specified polling interval and timeout.
+     *
+     * @param time    the polling interval in milliseconds
+     * @param timeout the maximum time to wait in milliseconds
+     */
     public static void waitForCutScene(int time, int timeout) {
         boolean result = sleepUntilTrue(Rs2Dialogue::isInCutScene, time, timeout);
         if (!result) return;
         sleepUntilTrue(() -> !Rs2Dialogue.isInCutScene(), time, timeout);
     }
+
 }
