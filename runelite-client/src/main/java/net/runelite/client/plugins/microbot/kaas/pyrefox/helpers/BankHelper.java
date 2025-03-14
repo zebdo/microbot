@@ -25,7 +25,6 @@ public class BankHelper
 			Microbot.status = "Opening bank.";
 			Rs2Bank.useBank();
 			Rs2Player.waitForWalking();
-			//            Rs2Antiban.actionCooldown();
 			return false;
 		}
 		return true;
@@ -50,7 +49,6 @@ public class BankHelper
 			Microbot.status = "Opening bank.";
 			Rs2Bank.useBank();
 			Rs2Player.waitForWalking();
-			//            Rs2Antiban.actionCooldown();
 			return false;
 		}
 		return true;

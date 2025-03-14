@@ -33,7 +33,6 @@ public class PyreFoxPlugin extends Plugin {
     public static int catchCounter = 0;
     public static PyreFoxState currentState = PyreFoxState.INITIALIZE;
     public static boolean hasInitialized = false;
-    public static boolean hasSlayerTask = true;
     // Hot Reload : Run in debug mode. Reload classes with CTRL + SHIFT + F9.
     // Only context changes, new methods or signature changes don't reload.
 
@@ -67,10 +66,6 @@ public class PyreFoxPlugin extends Plugin {
         this.scriptStartTime = Instant.now();
 
         Rs2Antiban.antibanSetupTemplates.applyHunterSetup();
-//        Rs2AntibanSettings.microBreakDurationLow = 1;
-//        Rs2AntibanSettings.microBreakDurationHigh = 3;
-//        Rs2AntibanSettings.takeMicroBreaks = true;
-//        Rs2AntibanSettings.microBreakChance = 0.02;
 
         if (overlayManager != null) {
             overlayManager.add(overlay);
@@ -85,17 +80,6 @@ public class PyreFoxPlugin extends Plugin {
         stateManager.shutdown();
         Microbot.pauseAllScripts = true;
         overlayManager.remove(overlay);
-    }
-    int ticks = 10;
-    @Subscribe
-    public void onGameTick(GameTick tick)
-    {
-        if (ticks > 0) {
-            ticks--;
-        } else {
-            ticks = 10;
-        }
-
     }
 
     protected String getTimeRunning() {
