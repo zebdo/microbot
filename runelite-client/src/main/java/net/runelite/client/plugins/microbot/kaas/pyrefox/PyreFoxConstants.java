@@ -30,8 +30,7 @@ public class PyreFoxConstants
 		int emptySlots = Rs2Inventory.getEmptySlots();
 
 		// Calculate the maximum amount to gather based on available space
-		// Leave at least 5-10 slots open for other items
-		int maxGatherAmount = Math.max(emptySlots, 1);
+		int maxGatherAmount = Math.max(emptySlots, 1); // Minimum gather amount should always be 1
 
 		// Set GATHER_LOGS_AMOUNT between 1 and the calculated max (capped at 13)
 		GATHER_LOGS_AMOUNT = Rs2Random.between(1, Math.min(maxGatherAmount, 13));
