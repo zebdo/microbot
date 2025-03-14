@@ -1569,21 +1569,16 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 
     private static boolean handleMinigameTeleport(Transport transport) {
         final Object[] selectedOpListener = new Object[]{489, 0, 0};
-        final List<Integer> teleportGraphics = List.of(800,802,803,804);
-        
-        @Component
-        final int GROUPING_BUTTON_COMPONENT_ID = 46333957; // 707.5
-        
-        @Component
-        final int DROPDOWN_BUTTON_COMPONENT_ID = 4980760; // 76.24
+        final List<Integer> teleportGraphics = List.of(800, 802, 803, 804);
+
+        @Component final int GROUPING_BUTTON_COMPONENT_ID = 46333957; // 707.5
+
+        @Component final int DROPDOWN_BUTTON_COMPONENT_ID = 4980760; // 76.24
         final int DROPDOWN_SELECTED_SPRITE_ID = 773;
-        
-        @Component
-        final int MINIGAME_LIST = 4980758; // 76.22
-        @Component
-        final int SELECTED_MINIGAME = 4980747; // 76.11
-        @Component
-        final int TELEPORT_BUTTON = 4980768; // 76.32
+
+        @Component final int MINIGAME_LIST = 4980758; // 76.22
+        @Component final int SELECTED_MINIGAME = 4980747; // 76.11
+        @Component final int TELEPORT_BUTTON = 4980768; // 76.32
 
         if (Rs2Tab.getCurrentTab() != InterfaceTab.CHAT) {
             Rs2Tab.switchToGroupingTab();
@@ -1624,7 +1619,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             if (destinationWidget == null) return false;
 
             NewMenuEntry destinationMenuEntry = new NewMenuEntry("Select", "", 1, MenuAction.CC_OP, destinationWidget.getIndex(), minigameWidgetParent.getId(), false);
-            Microbot.doInvoke(destinationMenuEntry, new Rectangle(1,1));
+            Microbot.doInvoke(destinationMenuEntry, new Rectangle(1, 1));
             sleepUntil(() -> Rs2Widget.getWidget(SELECTED_MINIGAME).getText().equalsIgnoreCase(destination));
         }
 
@@ -1636,11 +1631,11 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             Rs2Dialogue.sleepUntilSelectAnOption();
             Rs2Dialogue.clickOption(transport.getDisplayInfo().split(":")[1].trim().toLowerCase());
         }
-        
+
         sleepUntil(Rs2Player::isAnimating);
         return sleepUntilTrue(() -> !Rs2Player.isAnimating() && teleportGraphics.stream().noneMatch(Rs2Player::hasSpotAnimation), 100, 20000);
     }
-    
+
     private static boolean handleCanoe(Transport transport) {
         String displayInfo = transport.getDisplayInfo();
         if (displayInfo == null || displayInfo.isEmpty()) return false;
@@ -1666,12 +1661,10 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 
                     if (composition == null) return false;
                     return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
-                },300, 10000);
+                }, 300, 10000);
             case "Shape-Canoe":
-                @Component
-                final int CANOE_SELECTION_PARENT = 27262976; // 416.3
-                @Component
-                final int CANOE_SHAPING_TEXT = 27262986; // 416.10
+                @Component final int CANOE_SELECTION_PARENT = 27262976; // 416.3
+                @Component final int CANOE_SHAPING_TEXT = 27262986; // 416.10
 
                 Rs2GameObject.interact(transport.getObjectId(), "Shape-Canoe");
                 boolean isCanoeShapeTextVisible = sleepUntilTrue(() -> Rs2Widget.isWidgetVisible(CANOE_SHAPING_TEXT), 100, 10000);
@@ -1694,7 +1687,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     // Not high enough level to make any canoe
                     return false;
                 }
-                
+
                 Widget canoeSelectionParentWidget = Rs2Widget.getWidget(CANOE_SELECTION_PARENT);
                 if (canoeSelectionParentWidget == null) return false;
                 Widget canoeSelectionWidget = Rs2Widget.findWidget("Make " + canoeOption, List.of(canoeSelectionParentWidget));
@@ -1702,7 +1695,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 sleepUntil(() -> Rs2Player.isAnimating(1200));
                 return sleepUntilTrue(() -> {
                     ObjectComposition composition = Rs2GameObject.findObjectComposition(transport.getObjectId());
-                    
+
                     if (composition == null) return false;
                     return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
                 }, 300, 10000);
@@ -1711,15 +1704,13 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 sleepUntil(() -> Rs2Player.isAnimating(1200));
                 return sleepUntilTrue(() -> {
                     ObjectComposition composition = Rs2GameObject.findObjectComposition(transport.getObjectId());
-                    
+
                     if (composition == null) return false;
                     return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
                 }, 300, 10000);
             case "Paddle Canoe":
-                @Component
-                final int DESTINATION_MAP_PARENT = 42401792; // 647.3
-                @Component
-                final int DESTINATION_LIST = 42401795; // 647.13
+                @Component final int DESTINATION_MAP_PARENT = 42401792; // 647.3
+                @Component final int DESTINATION_LIST = 42401795; // 647.13
 
                 Rs2GameObject.interact(transport.getObjectId(), "Paddle Canoe");
 
