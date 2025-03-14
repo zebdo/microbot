@@ -186,7 +186,10 @@ public class PyreFoxScript extends Script
 
         int trapId = _getTrapObjectAtTrapLocation().getId();
 
-        _log("Object ID: "+ trapId);
+        // 1. Check if a trap is active.
+        // 1a. Wait until fail / success
+        // i. collect/reset & re-lay
+        // 1b. Lay trap
         switch (trapId)
         {
             case PyreFoxConstants.GAMEOBJECT_ROCK_NO_TRAP:
@@ -200,16 +203,10 @@ public class PyreFoxScript extends Script
                 _log("We caught a fox!");
                 _handleFoxCaught(trap);
                 break;
-//            default:
-//                _log("Trap failed, resetting.");
-//                _handleFailedTrap(trap);
-//                break;
+            default:
+                _handleFailedTrap(trap);
+                break;
         }
-
-        // 1. Check if a trap is active.
-        // 1a. Wait until fail / success
-            // i. collect/reset & re-lay
-        // 1b. Lay trap
     }
 
     private void _handleSettingUpTrap(GameObject trap)
@@ -221,8 +218,13 @@ public class PyreFoxScript extends Script
 
     private void _handleFailedTrap(GameObject trap)
     {
-        Rs2GameObject.interact(trap, "Set-trap");
+        if (!Rs2GameObject.interact(trap, "reset"))
+        {
+            _log("Did not find reset interaction.");
+            return;
+        }
         Rs2Player.waitForWalking();
+        Rs2Player.waitForAnimation();
     }
 
     private void _handleFoxCaught(GameObject trap)
