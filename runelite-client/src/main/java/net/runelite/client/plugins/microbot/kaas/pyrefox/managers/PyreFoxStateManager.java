@@ -99,22 +99,25 @@ public class PyreFoxStateManager extends Script
 			return LOW_HITPOINTS;
 
 
-		if (Rs2Player.distanceTo(PyreFoxConstants.PYRE_FOX_CENTER_POINT) > 60)
-			return WALK_TO_PYREFOX;
-
+		// For cutting trees we want to make sure that we have reached the randomized GATHER_LOGS_AT_AMOUNT.
+		// We should also be within a radius of 60 of our anchor point, since being to far out means we won't have trees nearby,
+		// causing exceptions to be thrown. when we do enter the CHOPPING_TREES state, we enter a while loop
+		// which exits when reaching our log goal, or if our hitpoints drop below our configured min. HP.
 		var trapPoint = PyreFoxConstants.TRAP_OBJECT_POINT;
 		var trap = trapPoint != null ? Rs2GameObject.getGameObject(PyreFoxConstants.TRAP_OBJECT_POINT) : null;
 		boolean trapCaughtFox = (trap != null && trap.getId() == PyreFoxConstants.GAMEOBJECT_ROCK_FOX_CAUGHT);
-		if ((!trapCaughtFox || trap == null) && Rs2Inventory.count("logs") <= PyreFoxConstants.GATHER_LOGS_AT_AMOUNT)
+		boolean surpassedLogCutThreshold = Rs2Inventory.count("logs") <= PyreFoxConstants.GATHER_LOGS_AT_AMOUNT;
+		if ((!trapCaughtFox || trap == null) && surpassedLogCutThreshold && Rs2Player.distanceTo(PyreFoxConstants.PYRE_FOX_CENTER_POINT) < 60)
 			return CHOPPING_TREES;
 
-		if (Rs2Player.distanceTo(PyreFoxConstants.PYRE_FOX_CENTER_POINT) > 5)
-			return WALK_TO_PYREFOX;
 
 		// Handles banking.
 		boolean shouldBank = (_config.ForceBank() || Rs2Inventory.getEmptySlots() <= 2);
 		if (shouldBank && !Rs2Bank.isOpen())
 			return WALK_TO_BANK;
+
+		if (!shouldBank && Rs2Player.distanceTo(PyreFoxConstants.PYRE_FOX_CENTER_POINT) > 5)
+			return WALK_TO_PYREFOX;
 
 		if (shouldBank && Rs2Bank.isOpen())
 			return BANKING;
