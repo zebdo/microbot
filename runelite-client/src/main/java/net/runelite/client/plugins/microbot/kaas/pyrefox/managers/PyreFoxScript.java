@@ -108,6 +108,9 @@ public class PyreFoxScript extends Script
         // Deliberate while loop, I want the gamestate to not influence the chopping process.
         while (Rs2Inventory.count("Logs") < PyreFoxConstants.GATHER_LOGS_AMOUNT)
         {
+            if (!isRunning())
+                break;
+
             // Break the loop when we are below configured hitpoints.
             if (Rs2Player.getBoostedSkillLevel(Skill.HITPOINTS) <= _config.runToBankHP())
                 break;
@@ -306,6 +309,9 @@ public class PyreFoxScript extends Script
         {
             while (!Rs2Player.isFullHealth())
             {
+                if (!isRunning())
+                    break;
+
                 Rs2Bank.withdrawOne(_config.FoodToEatAtBank().getId());
                 sleep(200, 400);
                 Rs2Inventory.interact(_config.FoodToEatAtBank().getId(), "Eat");
