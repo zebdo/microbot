@@ -8,6 +8,7 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
+import net.runelite.client.plugins.microbot.util.depositbox.Rs2DepositBox;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -107,6 +108,18 @@ public class AutoFishingScript extends Script {
                                 }
                                 Rs2Bank.emptyFishBarrel();
 
+                                Rs2Walker.walkTo(initialPlayerLocation);
+                            }
+                        } else if (config.useDepositBox()) {
+                            if (Rs2DepositBox.walkToAndUseDepositBox()) {
+                                Rs2DepositBox.depositAll(i -> fishList.stream().anyMatch(fl -> i.getName().equalsIgnoreCase(fl)));
+                                if (config.shouldBankClueBottles()) {
+                                    Rs2DepositBox.depositAll("clue bottle");
+                                }
+                                if (config.shouldBankCaskets()) {
+                                    Rs2DepositBox.depositAll("casket");
+                                }
+                                
                                 Rs2Walker.walkTo(initialPlayerLocation);
                             }
                         } else {

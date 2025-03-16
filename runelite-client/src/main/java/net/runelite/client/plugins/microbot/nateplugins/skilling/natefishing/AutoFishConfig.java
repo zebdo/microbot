@@ -61,10 +61,22 @@ public interface AutoFishConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "useDepositBox",
+            name = "Use DepositBox",
+            description = "Use depositbox and walk back to original location",
+            position = 1,
+            section = bankingSection
+    )
+    default boolean useDepositBox()
+    {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "bankClueBottles",
             name = "Bank Clue Bottles",
             description = "Should bank clue bottles",
-            position = 1,
+            position = 2,
             section = bankingSection
     )
     default boolean shouldBankClueBottles() {
@@ -75,7 +87,7 @@ public interface AutoFishConfig extends Config {
             keyName = "bankCaskets",
             name = "Bank Caskets",
             description = "Should bank caskets",
-            position = 2,
+            position = 3,
             section = bankingSection
     )
     default boolean shouldBankCaskets() {
