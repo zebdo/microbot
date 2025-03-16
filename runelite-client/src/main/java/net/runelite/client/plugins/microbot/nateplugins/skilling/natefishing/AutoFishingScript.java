@@ -123,7 +123,7 @@ public class AutoFishingScript extends Script {
                                 Rs2Walker.walkTo(initialPlayerLocation);
                             }
                         } else {
-                            Rs2Inventory.dropAll(i -> fishList.stream().anyMatch(fl -> fl.equalsIgnoreCase(i.getName())));
+                            Rs2Inventory.dropAll(i -> fishList.stream().anyMatch(fl -> fl.equalsIgnoreCase(i.getName())), config.getDropOrder());
                         }
                         state = State.FISHING;
                         break;
