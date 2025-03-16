@@ -209,7 +209,7 @@ public class MicrobotPlugin extends Plugin {
         Microbot.getPouchScript().onMenuOptionClicked(event);
         Rs2Gembag.onMenuOptionClicked(event);
         Microbot.targetMenu = null;
-        System.out.println(event.getMenuEntry());
+        //System.out.println(event.getMenuEntry());
     }
 
     @Subscribe
@@ -263,7 +263,7 @@ public class MicrobotPlugin extends Plugin {
     @Subscribe
     public void onHitsplatApplied(HitsplatApplied event) {
         // Case 1: Hitsplat applied to the local player (indicates someone or something is attacking you)
-        if (event.getActor().equals(Rs2Player.getLocalPlayer())) {
+        if (event.getActor().equals(Microbot.getClient().getLocalPlayer())) {
             if (!event.getHitsplat().isOthers()) {
                 Rs2Player.updateCombatTime();
             }
