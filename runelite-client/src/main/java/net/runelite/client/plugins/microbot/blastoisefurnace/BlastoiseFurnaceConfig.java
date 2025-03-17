@@ -49,6 +49,6 @@ public interface BlastoiseFurnaceConfig extends Config {
             section = "Credits"
     )
     default String Credits() {
-        return "Creator by: Fishy \n\nUpdated by: Acun";
+        return "Created by: Fishy \n\nUpdated by: Acun";
     }
 }
