@@ -247,6 +247,7 @@ public class BlastoiseFurnaceScript extends Script {
         sleep(3400);
         sleepUntil(() -> barsInDispenser(config.getBars()) > 0, 10000);
         Rs2Inventory.interact(ItemID.ICE_GLOVES, "wear");
+        Rs2Inventory.waitForInventoryChanges(2000);
     }
 
     private void retrieveItemsForCurrentFurnaceInteraction() {
@@ -265,6 +266,7 @@ public class BlastoiseFurnaceScript extends Script {
                 break;
             case RUNITE_BAR:
                 handleRunite();
+                break;
         }
 
     }
