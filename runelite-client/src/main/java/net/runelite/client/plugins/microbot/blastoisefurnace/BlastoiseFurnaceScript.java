@@ -161,12 +161,11 @@ public class BlastoiseFurnaceScript extends Script {
             sleepUntil(() ->
                     Rs2Widget.hasWidget("What would you like to take?") ||
                     Rs2Widget.hasWidget("How many would you like") ||
-                    Rs2Widget.hasWidget("The bars are still molten!"), 10000);
+                    Rs2Widget.hasWidget("The bars are still molten!"), 5000);
 
+            boolean noIceGlovesEquipped = Rs2Widget.hasWidget("The bars are still molten!");
 
-            boolean noIceGlovesEquiped = Rs2Widget.hasWidget("The bars are still molten!");
-
-            if (noIceGlovesEquiped){
+            if (noIceGlovesEquipped){
                 if (!Rs2Inventory.interact(ItemID.ICE_GLOVES, "Wear") && !Rs2Inventory.interact(ItemID.SMITHS_GLOVES_I, "Wear")) {
                     Microbot.showMessage("Ice gloves or smith gloves required to loot the hot bars.");
                     Rs2Player.logout();
@@ -176,7 +175,7 @@ public class BlastoiseFurnaceScript extends Script {
                 Rs2GameObject.interact(BAR_DISPENSER, "Take");
             }
 
-            sleepUntil(() -> Rs2Widget.hasWidget("What would you like to take?") || Rs2Widget.hasWidget("How many would you like"), 10000);
+            sleepUntil(() -> Rs2Widget.hasWidget("What would you like to take?") || Rs2Widget.hasWidget("How many would you like"), 3000);
 
             // If somehow multiple type of bars are created we need to clean up the dispenser.
             boolean multipleBarTypes = Rs2Widget.hasWidget("What would you like to take?");
@@ -210,6 +209,7 @@ public class BlastoiseFurnaceScript extends Script {
         Rs2Walker.walkFastCanvas(new WorldPoint(1940, 4962, 0));
         sleep(3400);
         sleepUntil(() -> barsInDispenser(config.getBars()) > 0, 10000);
+        sleep(400, 700);
     }
 
     private void retrievePrimary() {
@@ -222,6 +222,7 @@ public class BlastoiseFurnaceScript extends Script {
         Rs2Walker.walkFastCanvas(new WorldPoint(1940, 4962, 0));
         sleep(3400);
         sleepUntil(() -> barsInDispenser(this.config.getBars()) > 0, 10000);
+        sleep(400, 700);
     }
 
     private void retrieveDoubleCoal() {
