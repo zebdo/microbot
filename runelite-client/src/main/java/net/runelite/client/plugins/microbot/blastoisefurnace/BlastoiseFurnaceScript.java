@@ -157,8 +157,11 @@ public class BlastoiseFurnaceScript extends Script {
         if (!Rs2Inventory.isFull()) {
             Rs2GameObject.interact(BAR_DISPENSER, "Take");
 
-            sleepUntil(Rs2Player::isMoving, 10000);
-            sleepUntil(()->!Rs2Player.isMoving(), 10000);
+            sleepUntil(() ->
+                    Rs2Widget.hasWidget("What would you like to take?") ||
+                    Rs2Widget.hasWidget("How many would you like") ||
+                    Rs2Widget.hasWidget("The bars are still molten!"), 10000);
+
 
             boolean noIceGlovesEquiped = Rs2Widget.hasWidget("The bars are still molten!");
 
