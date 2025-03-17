@@ -32,7 +32,7 @@ import static net.runelite.api.ItemID.GOLD_ORE;
 
 public class BlastoiseFurnaceScript extends Script {
     static final int BAR_DISPENSER = 9092;
-    int coalBag = ItemID.COAL_BAG_25627;
+    static final int coalBag = 12019;
     private static final int MAX_ORE_PER_INTERACTION = 27;
     public static double version = 1.0;
     public static State state;
