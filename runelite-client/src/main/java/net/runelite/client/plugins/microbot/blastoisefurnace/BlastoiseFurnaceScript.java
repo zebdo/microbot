@@ -59,7 +59,7 @@ public class BlastoiseFurnaceScript extends Script {
         staminaTimer = 0;
         this.config = config;
         Microbot.enableAutoRunOn = false;
-//        state = State.BANKING;
+        state = State.BANKING;
         primaryOreEmpty = !Rs2Inventory.hasItem(config.getBars().getPrimaryOre());
         secondaryOreEmpty = !Rs2Inventory.hasItem(config.getBars().getSecondaryOre());
         Rs2Antiban.resetAntibanSettings();
@@ -141,6 +141,7 @@ public class BlastoiseFurnaceScript extends Script {
                         }
 
                         state = State.BANKING;
+                        break;
                 }
             } catch (Exception ex) {
 
@@ -354,7 +355,6 @@ public class BlastoiseFurnaceScript extends Script {
                 break;
             case 7:
             case 6:
-
             case 5:
             case 4:
             case 3:
@@ -466,14 +466,13 @@ public class BlastoiseFurnaceScript extends Script {
     private void depositOre() {
         Rs2GameObject.interact(ObjectID.CONVEYOR_BELT, "Put-ore-on");
         Rs2Inventory.waitForInventoryChanges(10000);
-//        sleepUntil(() -> !Rs2Inventory.isFull(), 10000); // Wait until the player stops moving
 
         if (this.config.getBars().isRequiresCoalBag()) {
             Rs2Inventory.interact(coalBag, "Empty");
-            sleepUntil(() -> Rs2Inventory.isFull(), 3000); // Wait for animation to finish
+            Rs2Inventory.waitForInventoryChanges(3000);
 
             Rs2GameObject.interact(ObjectID.CONVEYOR_BELT, "Put-ore-on");
-            sleepUntil(() -> !Rs2Inventory.isFull(), 3000); // Wait until the player stops moving
+            Rs2Inventory.waitForInventoryChanges(3000);
         }
     }
 
