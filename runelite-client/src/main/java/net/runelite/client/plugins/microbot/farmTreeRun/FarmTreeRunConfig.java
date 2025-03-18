@@ -10,7 +10,7 @@ import net.runelite.client.plugins.microbot.farmTreeRun.enums.TreeEnums;
 @ConfigGroup("example")
 @ConfigInformation("Start anywhere you want. <br><br> Required items in bank:\n" +
         "<ol>\n" +
-        "    <li>3.000 gp</li>\n" +
+        "    <li>5.000 gp</li>\n" +
         "    <li>Selected saplings</li>\n" +
         "    <li>Spade</li>\n" +
         "    <li>Rake</li>\n" +
@@ -272,8 +272,8 @@ public interface FarmTreeRunConfig extends Config {
 
     @ConfigItem(
             keyName = "farmingGuildFruitTree",
-            name = "[Not implemented] Farming Guild",
-            description = "[Not tested] FarmingGuild fruit tree patch",
+            name = "Farming Guild",
+            description = "Farming guild fruit tree patch",
             position = 6,
             section = fruitTreePatchesSection
     )
