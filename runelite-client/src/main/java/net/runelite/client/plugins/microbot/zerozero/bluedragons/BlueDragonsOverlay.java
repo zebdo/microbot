@@ -159,29 +159,7 @@ public class BlueDragonsOverlay extends OverlayPanel {
         
         return super.render(graphics);
     }
-    
-    public void onDragonKilled() {
-        dragonKillCount++;
-    }
-    
-    public void onItemLooted(String itemName) {
-        if (itemName.equalsIgnoreCase("Dragon bones")) {
-            bonesCollected++;
-            Microbot.log("Bones looted: " + bonesCollected);
-            logBoneCount();
-        } else if (itemName.equalsIgnoreCase("Blue dragonhide")) {
-            hidesCollected++;
-        }
-    }
-    
 
-    private void logBoneCount() {
-        if (Microbot.getClient() != null && Microbot.getClient().getGameState().getState() >= 30) {
-            Microbot.getClientThread().invoke(() -> 
-                Microbot.log("[OVERLAY] Bones collected: " + bonesCollected)
-            );
-        }
-    }
     
     private String formatState() {
         if (BlueDragonsScript.currentState == null) {

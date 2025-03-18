@@ -8,10 +8,8 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
 
 import javax.inject.Inject;
-import java.util.concurrent.ScheduledExecutorService;
 
 @PluginDescriptor(
         name = PluginDescriptor.zerozero + "Blue Dragons",
@@ -33,25 +31,16 @@ public class BlueDragonsPlugin extends Plugin {
     
     @Inject
     private OverlayManager overlayManager;
-    
-    @Inject
-    private ModelOutlineRenderer modelOutlineRenderer;
-    
+
     @Inject
     private Client client;
 
-    @Inject
-    private ScheduledExecutorService scheduledExecutorService;
-
     @Override
     protected void startUp() {
-        // Set the script reference in the overlay
         overlay.setScript(script);
         
-        // Set the config reference in the overlay
         overlay.setConfig(config);
         
-        // Add overlay to the overlay manager
         overlayManager.add(overlay);
         
         if (config.startPlugin()) {
