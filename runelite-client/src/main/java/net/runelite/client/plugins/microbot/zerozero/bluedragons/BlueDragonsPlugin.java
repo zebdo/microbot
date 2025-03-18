@@ -1,13 +1,17 @@
 package net.runelite.client.plugins.microbot.zerozero.bluedragons;
 
 import com.google.inject.Provides;
+import net.runelite.api.Client;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.events.ConfigChanged;
-import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
 
 import javax.inject.Inject;
+import java.util.concurrent.ScheduledExecutorService;
 
 @PluginDescriptor(
         name = PluginDescriptor.zerozero + "Blue Dragons",
@@ -23,9 +27,33 @@ public class BlueDragonsPlugin extends Plugin {
 
     @Inject
     private BlueDragonsConfig config;
+    
+    @Inject
+    private BlueDragonsOverlay overlay;
+    
+    @Inject
+    private OverlayManager overlayManager;
+    
+    @Inject
+    private ModelOutlineRenderer modelOutlineRenderer;
+    
+    @Inject
+    private Client client;
+
+    @Inject
+    private ScheduledExecutorService scheduledExecutorService;
 
     @Override
     protected void startUp() {
+        // Set the script reference in the overlay
+        overlay.setScript(script);
+        
+        // Set the config reference in the overlay
+        overlay.setConfig(config);
+        
+        // Add overlay to the overlay manager
+        overlayManager.add(overlay);
+        
         if (config.startPlugin()) {
             script.run(config);
         }
@@ -34,7 +62,8 @@ public class BlueDragonsPlugin extends Plugin {
     @Override
     protected void shutDown() {
         script.logOnceToChat("Stopping Blue Dragons plugin...", false, config);
-        script.stop();
+        overlayManager.remove(overlay);
+        script.shutdown();
     }
 
     @Subscribe
@@ -48,7 +77,7 @@ public class BlueDragonsPlugin extends Plugin {
                         script.run(config);
                     } else {
                         script.logOnceToChat("Stopping Blue Dragon plugin!", false, config);
-                        script.stop();
+                        script.shutdown();
                     }
                     break;
 
@@ -57,6 +86,7 @@ public class BlueDragonsPlugin extends Plugin {
                 case "foodAmount":
                 case "eatAtHealthPercent":
                 case "lootEnsouledHead":
+                case "debugLogs":
                     script.logOnceToChat("Configuration changed. Updating script settings.", true, config);
                     if (config.startPlugin()) {
                         script.updateConfig(config);
