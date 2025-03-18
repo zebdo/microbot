@@ -285,7 +285,7 @@ public interface HerbrunConfig extends Config {
             keyName = "enableHarmony",
             name = "Enable Harmony Island Patch",
             description = "Enable Harmony Island patch in herb run",
-            position = 9,
+            position = 10,
             section = locationSection
     )
     default boolean enableHarmony() {
