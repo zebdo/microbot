@@ -57,34 +57,33 @@ public class BlueDragonsPlugin extends Plugin {
 
     @Subscribe
     public void onConfigChanged(ConfigChanged event) {
-        if (event.getGroup().equals("bluedragons")) {
+        if (!event.getGroup().equals("bluedragons")) return;
 
-            switch (event.getKey()) {
-                case "startPlugin":
-                    if (config.startPlugin()) {
-                        script.logOnceToChat("Starting Blue Dragon plugin...", false, config);
-                        script.run(config);
-                    } else {
-                        script.logOnceToChat("Stopping Blue Dragon plugin!", false, config);
-                        script.shutdown();
-                    }
-                    break;
+        switch (event.getKey()) {
+            case "startPlugin":
+                if (config.startPlugin()) {
+                    script.logOnceToChat("Starting Blue Dragon plugin...", false, config);
+                    script.run(config);
+                } else {
+                    script.logOnceToChat("Stopping Blue Dragon plugin!", false, config);
+                    script.shutdown();
+                }
+                break;
 
-                case "lootDragonhide":
-                case "foodType":
-                case "foodAmount":
-                case "eatAtHealthPercent":
-                case "lootEnsouledHead":
-                case "debugLogs":
-                    script.logOnceToChat("Configuration changed. Updating script settings.", true, config);
-                    if (config.startPlugin()) {
-                        script.updateConfig(config);
-                    }
-                    break;
+            case "lootDragonhide":
+            case "foodType":
+            case "foodAmount":
+            case "eatAtHealthPercent":
+            case "lootEnsouledHead":
+            case "debugLogs":
+                script.logOnceToChat("Configuration changed. Updating script settings.", true, config);
+                if (config.startPlugin()) {
+                    script.updateConfig(config);
+                }
+                break;
 
-                default:
-                    break;
-            }
+            default:
+                break;
         }
     }
 

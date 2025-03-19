@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 public class BlueDragonsScript extends Script {
 
     public static BlueDragonState currentState;
-    String lastChatMessage = "";
+    private String lastChatMessage = "";
     private BlueDragonsConfig config;
     public static final WorldPoint SAFE_SPOT = new WorldPoint(2918, 9781, 0);
     @Getter
@@ -37,9 +37,12 @@ public class BlueDragonsScript extends Script {
     @Inject
     private BlueDragonsOverlay overlay;
     
-    // Add a timestamp field to track when we last logged a loot message
     private long lastLootMessageTime = 0;
 
+    private static final int BLUE_DRAGON_ID_1 = 265;
+    private static final int BLUE_DRAGON_ID_2 = 266;
+    private static final int MIN_WORLD = 302;
+    private static final int MAX_WORLD = 580;
 
     private boolean isInventoryFull() {
         boolean simpleFull = Rs2Inventory.isFull();
@@ -54,14 +57,12 @@ public class BlueDragonsScript extends Script {
         this.config = config;
         currentState = BlueDragonState.STARTING;
         
-        // Reset overlay stats when starting
         if (overlay != null) {
             overlay.resetStats();
             overlay.setScript(this);
             overlay.setConfig(config);
         }
         
-        // Track consecutive errors for safety shutdown
         final int[] consecutiveErrors = {0};
         final int MAX_CONSECUTIVE_ERRORS = 5;
         
@@ -69,7 +70,6 @@ public class BlueDragonsScript extends Script {
             try {
                 if (!super.run() || !Microbot.isLoggedIn()) return;
 
-                // Global safety check - if inventory is full and we're not already banking, switch to banking state
                 if (isInventoryFull() && currentState != BlueDragonState.BANKING && currentState != BlueDragonState.STARTING) {
                     logOnceToChat("Global safety: Inventory is full. Switching to BANKING state.", false, config);
                     currentState = BlueDragonState.BANKING;
@@ -97,14 +97,12 @@ public class BlueDragonsScript extends Script {
                         break;
                 }
                 
-                // Reset consecutive errors counter on successful execution
                 consecutiveErrors[0] = 0;
                 
             } catch (Exception ex) {
                 consecutiveErrors[0]++;
                 logOnceToChat("Error in Blue Dragons script: " + ex.getMessage(), false, config);
                 
-                // Log stack trace to debug output
                 if (config.debugLogs()) {
                     StringBuilder stackTrace = new StringBuilder();
                     for (StackTraceElement element : ex.getStackTrace()) {
@@ -113,19 +111,16 @@ public class BlueDragonsScript extends Script {
                     logOnceToChat("Stack trace: " + stackTrace.toString(), true, config);
                 }
                 
-                // Safety measure - if too many consecutive errors, stop the script
                 if (consecutiveErrors[0] >= MAX_CONSECUTIVE_ERRORS) {
                     logOnceToChat("Too many consecutive errors. Stopping script for safety.", false, config);
                     shutdown();
                 }
                 
-                // Recovery logic based on current state
                 if (Rs2Player.isInCombat()) {
                     logOnceToChat("In combat during error - attempting to eat food", true, config);
                     Rs2Player.eatAt(config.eatAtHealthPercent());
                 }
                 
-                // Wait longer between retries if errors are occurring
                 sleep(1000 * Math.min(consecutiveErrors[0], 5));
             }
         }, 0, 100, TimeUnit.MILLISECONDS);
@@ -159,7 +154,6 @@ public class BlueDragonsScript extends Script {
         }
         else {
             logOnceToChat("Failed to reach the bank.", true, config);
-
         }
     }
 
@@ -175,7 +169,6 @@ public class BlueDragonsScript extends Script {
             logOnceToChat("Requires Agility level 70 or a Dusty Key.", false, config);
         }
 
-        // Check if all requirements are met
         if (hasTeleport && hasAgilityOrKey) {
             currentState = BlueDragonState.BANKING;
         } else {
@@ -224,14 +217,12 @@ public class BlueDragonsScript extends Script {
         logOnceToChat("Traveling to dragons.", false, config);
         logOnceToChat("Player location before travel: " + Microbot.getClient().getLocalPlayer().getWorldLocation(), true, config);
 
-        // Check if we're already at the safe spot
         if (isPlayerAtSafeSpot()) {
             logOnceToChat("Already at safe spot. Transitioning to FIGHTING state.", true, config);
             currentState = BlueDragonState.FIGHTING;
             return;
         }
 
-        // Try to walk to the safe spot
         boolean walkAttemptSuccessful = Rs2Walker.walkTo(SAFE_SPOT);
         
         if (!walkAttemptSuccessful) {
@@ -239,17 +230,14 @@ public class BlueDragonsScript extends Script {
             return;
         }
         
-        // Wait for the player to get close to the safe spot
-        boolean reachedNearSafeSpot = sleepUntil(() -> Rs2Player.distanceTo(SAFE_SPOT) <= 5, 60000); // 1 minute timeout
+        boolean reachedNearSafeSpot = sleepUntil(() -> Rs2Player.distanceTo(SAFE_SPOT) <= 5, 60000);
         
-        // If we're close but not exactly at the safe spot, use moveToSafeSpot for final approach
         if (reachedNearSafeSpot || Rs2Player.distanceTo(SAFE_SPOT) <= 20) {
             logOnceToChat("Close to safe spot. Using precise movement for final approach.", true, config);
             moveToSafeSpot();
         } else {
             logOnceToChat("Failed to get close to safe spot within timeout.", true, config);
             
-            // Only continue if we're somewhere reasonably close
             int distance = Rs2Player.distanceTo(SAFE_SPOT);
             logOnceToChat("Current distance to safe spot: " + distance, true, config);
             
@@ -267,7 +255,6 @@ public class BlueDragonsScript extends Script {
             return;
         }
         
-        // Double-check we actually reached the safe spot
         if (isPlayerAtSafeSpot()) {
             logOnceToChat("Reached safe spot. Transitioning to FIGHTING state.", true, config);
             currentState = BlueDragonState.FIGHTING;
@@ -283,16 +270,13 @@ public class BlueDragonsScript extends Script {
             return;
         }
         
-        // Check if inventory is full first - switch to banking if needed
         if (isInventoryFull()) {
             logOnceToChat("Inventory is full. Switching to BANKING state.", false, config);
             currentState = BlueDragonState.BANKING;
             return;
         }
         
-        // Check if there are items to loot first - looting takes priority
         if (checkForLoot()) {
-            // Only log the loot message at most once every 10 seconds
             long currentTime = System.currentTimeMillis();
             if (currentTime - lastLootMessageTime > 10000) {
                 logOnceToChat("Found loot on the ground. Switching to LOOTING state.", false, config);
@@ -302,7 +286,6 @@ public class BlueDragonsScript extends Script {
             return;
         }
         
-        // Make sure player is at the safe spot before attacking
         if (!isPlayerAtSafeSpot()) {
             logOnceToChat("Not at safe spot. Moving back before continuing to fight.", true, config);
             moveToSafeSpot();
@@ -311,9 +294,7 @@ public class BlueDragonsScript extends Script {
 
         Rs2Player.eatAt(config.eatAtHealthPercent());
 
-        // Try to attack a dragon if not in combat
         if (!underAttack()) {
-            // If we're not in combat, look for a new dragon to attack
             NPC dragon = getAvailableDragon();
             if (dragon != null) {
                 logOnceToChat("Found available dragon. Attacking.", true, config);
@@ -324,7 +305,6 @@ public class BlueDragonsScript extends Script {
                 logOnceToChat("No dragons available to attack.", true, config);
             }
         } else {
-            // We're in combat, just make sure we're at the safe spot
             if (!isPlayerAtSafeSpot()) {
                 moveToSafeSpot();
             }
@@ -332,16 +312,13 @@ public class BlueDragonsScript extends Script {
     }
     
     private boolean checkForLoot() {
-        // Check for any valuable loot items nearby that belong to the player
         String[] lootItems = {
             "Dragon bones", "Blue dragonhide", "Ensouled dragon head",
             "Dragon spear", "Shield left half", "Scaly blue dragonhide"
         };
         
-        // Create parameters that will check only for player-owned items
         LootingParameters params = new LootingParameters(15, 1, 1, 0, false, true, lootItems);
         
-        // Check if there are any items matching our criteria
         return Rs2GroundItem.lootItemsBasedOnNames(params);
     }
     
@@ -350,18 +327,14 @@ public class BlueDragonsScript extends Script {
             return;
         }
         
-        // Check if inventory is full before attempting to loot
         if (isInventoryFull()) {
             logOnceToChat("Inventory is full, switching to BANKING state.", false, config);
             currentState = BlueDragonState.BANKING;
             return;
         }
         
-        // Try to loot all valuable items
         boolean lootedAnything = false;
         
-        // Check if we're full again before attempting each loot
-        // This covers cases where we became full during the looting process
         if (!isInventoryFull()) {
             lootedAnything |= lootItem("Dragon bones");
         } 
@@ -383,37 +356,28 @@ public class BlueDragonsScript extends Script {
             lootedAnything |= lootItem("Ensouled dragon head");
         }
         
-        // Wait a bit to ensure we've completely finished looting
         sleep(300, 500);
         
-        // Final inventory check - if we're full after looting, go to banking
         if (isInventoryFull()) {
             logOnceToChat("Inventory is full after looting, switching to BANKING state.", false, config);
             currentState = BlueDragonState.BANKING;
             return;
         }
         
-        // Check if there's still loot to pick up
         if (!checkForLoot() || !lootedAnything) {
-            // Return to fighting regardless of combat state
-            // We've already established we're in the right area
             logOnceToChat("Finished looting. Returning to combat.", true, config);
             currentState = BlueDragonState.FIGHTING;
-            
-            // Reset currentTargetId as we're no longer targeting any dragon
             currentTargetId = null;
         }
     }
     
     private boolean lootItem(String itemName) {
         if (!isInventoryFull()) {
-            // Use antiLureProtection=true to only loot items that belong to the player
             LootingParameters params = new LootingParameters(15, 1, 1, 0, false, true, itemName);
             boolean looted = Rs2GroundItem.lootItemsBasedOnNames(params);
             if (looted) {
                 logOnceToChat("Looted: " + itemName, true, config);
                 
-                // Update static counters directly
                 if (itemName.equalsIgnoreCase("Dragon bones")) {
                     BlueDragonsOverlay.bonesCollected++;
                     Microbot.log("Bones looted: " + BlueDragonsOverlay.bonesCollected);
@@ -489,13 +453,12 @@ public class BlueDragonsScript extends Script {
         logOnceToChat("Found dragon: " + (dragon != null ? "Yes (ID: " + dragon.getId() + ")" : "No"), true, config);
         
         if (dragon != null) {
-            boolean correctId = (dragon.getId() == 265 || dragon.getId() == 266);
+            boolean correctId = (dragon.getId() == BLUE_DRAGON_ID_1 || dragon.getId() == BLUE_DRAGON_ID_2);
             logOnceToChat("Dragon has correct ID (265 or 266): " + correctId, true, config);
             
             boolean hasLineOfSight = Rs2Npc.hasLineOfSight(new Rs2NpcModel(dragon));
             logOnceToChat("Has line of sight to dragon: " + hasLineOfSight, true, config);
             
-            // Don't check if dragon is interacting - we want to attack regardless
             if (correctId && hasLineOfSight) {
                 return dragon;
             }
@@ -506,22 +469,18 @@ public class BlueDragonsScript extends Script {
     private boolean attackDragon(NPC dragon) {
         final int dragonId = dragon.getId();
         
-        // Only check for actual combat, not targeting
         if (Rs2Combat.inCombat() && dragon.getInteracting() != Microbot.getClient().getLocalPlayer()) {
             logOnceToChat("Cannot attack dragon - player is in combat with different target.", true, config);
             return false;
         }
         
         if (Rs2Npc.attack(dragon)) {
-            // Wait for dragon to die
             boolean dragonKilled = sleepUntil(() -> Rs2Npc.getNpc(dragonId) == null, 60000);
             
             if (dragonKilled) {
                 logOnceToChat("Dragon killed. Transitioning to looting state.", true, config);
-                // Update kill count directly
                 BlueDragonsOverlay.dragonKillCount++;
                 
-                // Give a slight delay for loot to appear
                 sleep(600, 900);
                 currentState = BlueDragonState.LOOTING;
             }
@@ -538,21 +497,17 @@ public class BlueDragonsScript extends Script {
     private void moveToSafeSpot() {
         Microbot.pauseAllScripts = true;
         
-        // Check if player is close enough to use walkFastCanvas
         int distance = Rs2Player.distanceTo(SAFE_SPOT);
         
         logOnceToChat("Moving to safe spot. Distance: " + distance, true, config);
         
-        // Always try walkTo first for longer distances
         if (distance > 15) {
             logOnceToChat("Using walkTo to approach safe spot", true, config);
             Rs2Walker.walkTo(SAFE_SPOT);
             
-            // Wait for the player to get closer to the safe spot
             sleepUntil(() -> Rs2Player.distanceTo(SAFE_SPOT) <= 5, 30000);
         }
         
-        // For final approach or if already close, use walkFastCanvas
         if (!isPlayerAtSafeSpot()) {
             logOnceToChat("Using walkFastCanvas for final approach to safe spot", true, config);
             Rs2Walker.walkFastCanvas(SAFE_SPOT);
@@ -563,7 +518,6 @@ public class BlueDragonsScript extends Script {
             return;
         }
 
-        // Double check if we're at the safe spot
         if (!isPlayerAtSafeSpot()) {
             logOnceToChat("Failed to reach exact safe spot. Will continue with current position.", true, config);
         } else {
@@ -574,7 +528,6 @@ public class BlueDragonsScript extends Script {
     }
 
     private boolean hopIfPlayerAtSafeSpot() {
-        // Check if any other players are near our safe spot
         boolean otherPlayersAtSafeSpot = false;
         List<Player> players = Rs2Player.getPlayers();
         
@@ -587,14 +540,12 @@ public class BlueDragonsScript extends Script {
             }
         }
                 
-        // If there are other players directly on our safe spot
         if (otherPlayersAtSafeSpot) {
             logOnceToChat("Player detected at safe spot. Pausing script and hopping worlds.", false, config);
             Microbot.pauseAllScripts = true;
             
-            // Try to hop to a new world
             boolean hopSuccess = Microbot.hopToWorld(findRandomWorld());
-            sleep(5000); // Give time to process the hop
+            sleep(5000);
             
             Microbot.pauseAllScripts = false;
             return hopSuccess;
@@ -605,15 +556,10 @@ public class BlueDragonsScript extends Script {
     
     private int findRandomWorld() {
         int currentWorld = Microbot.getClient().getWorld();
-        // Standard member worlds range
-        int minWorld = 302;
-        int maxWorld = 580;
-        
         int targetWorld;
         do {
-            targetWorld = minWorld + new java.util.Random().nextInt(maxWorld - minWorld);
+            targetWorld = MIN_WORLD + new java.util.Random().nextInt(MAX_WORLD - MIN_WORLD);
         } while (targetWorld == currentWorld);
-        
         return targetWorld;
     }
 
@@ -634,7 +580,6 @@ public class BlueDragonsScript extends Script {
         logOnceToChat("Applying new configuration to Blue Dragons script.", true, config);
         this.config = config;
         
-        // Update overlay config
         if (overlay != null) {
             overlay.setConfig(config);
         }
@@ -653,8 +598,6 @@ public class BlueDragonsScript extends Script {
     }
 
     private boolean underAttack() {
-        // Only consider ourselves under attack if we're actually in combat
-        // Ignore dragons targeting us but not in combat yet
         return Rs2Combat.inCombat();
     }
 }
