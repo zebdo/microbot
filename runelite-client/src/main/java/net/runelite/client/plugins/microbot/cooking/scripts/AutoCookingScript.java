@@ -96,7 +96,7 @@ public class AutoCookingScript extends Script {
                                 return;
                             }
                             Rs2Inventory.useItemOnObject(cookingItem.getRawItemID(), cookingObject.getId());
-                            sleepUntil(() -> !Rs2Player.isMoving() && Rs2Widget.findWidget("How many would you like to cook?", null, false) != null);
+                            sleepUntil(() -> !Rs2Player.isMoving() && Rs2Widget.findWidget("like to cook?", null, false) != null);
 
                             Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
                             Microbot.status = "Cooking " + cookingItem.getRawItemName();
@@ -106,7 +106,7 @@ public class AutoCookingScript extends Script {
 
                             sleepUntil(() -> (Rs2Player.getAnimation() != AnimationID.IDLE));
                             sleepUntilTrue(() -> (!hasRawItem(cookingItem) && !Rs2Player.isAnimating(3500))
-                                    || Rs2Dialogue.isInDialogue() || Rs2Player.isWalking(), 500, 150000);
+                                    || Rs2Dialogue.isInDialogue() || Rs2Player.isMoving(), 500, 150000);
                             if (hasRawItem(cookingItem)) {
                                 break;
                             }

@@ -57,8 +57,10 @@ public class AutoCookingPlugin extends Plugin {
         switch (config.cookingActivity()) {
             case COOKING:
                 autoCookingScript.run(config);
+                break;
             case BURN_BAKING:
                 burnBakingScript.run(config);
+                break;
             default:
                 Microbot.log("Invalid Cooking Activity");
         }
@@ -66,6 +68,7 @@ public class AutoCookingPlugin extends Plugin {
 
     protected void shutDown() {
         autoCookingScript.shutdown();
+        burnBakingScript.shutdown();
         overlayManager.remove(overlay);
     }
 }
