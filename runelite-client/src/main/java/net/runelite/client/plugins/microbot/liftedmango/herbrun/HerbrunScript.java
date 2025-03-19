@@ -87,14 +87,12 @@ public class HerbrunScript extends Script {
                                 Rs2Bank.useBank();
                                 Rs2Bank.depositAll();
                                 Rs2Inventory.waitForInventoryChanges(2000);
-                                if (config.GRACEFUL()) {
+                                if (config.GRACEFUL() || config.FARMERS_OUTFIT()) {
                                     log.info("State: GEARING - Depositing equipment for graceful mode");
                                     Rs2Bank.depositEquipment();
                                     sleepUntil(Rs2Equipment::isNaked);
                                     sleep(200);
                                     equipGraceful(config);
-                                }
-                                if (config.FARMERS_OUTFIT()) {
                                     equipFarmers(config);
                                 }
                             }
