@@ -32,10 +32,6 @@ public class AutoCookingPlugin extends Plugin {
     @Inject
     private AutoCookingConfig config;
     @Inject
-    private Client client;
-    @Inject
-    private ClientThread clientThread;
-    @Inject
     private OverlayManager overlayManager;
     @Inject
     private AutoCookingOverlay overlay;
@@ -47,10 +43,6 @@ public class AutoCookingPlugin extends Plugin {
 
     @Override
     protected void startUp() throws AWTException {
-        Microbot.pauseAllScripts = false;
-        Microbot.setClient(client);
-        Microbot.setClientThread(clientThread);
-        Microbot.setMouse(new VirtualMouse());
         if (overlayManager != null) {
             overlayManager.add(overlay);
         }
