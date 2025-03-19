@@ -127,6 +127,11 @@ public class ClientSessionManager
 
 	private void ping()
 	{
+		if (!isWorldHostValid())
+		{
+			return;
+		}
+
 		try
 		{
 			if (sessionId == null)
@@ -188,5 +193,11 @@ public class ClientSessionManager
 			sessionId = null;
 		}
 
+	}
+
+	private boolean isWorldHostValid()
+	{
+		String host = client.getWorldHost();
+		return host != null && host.endsWith(".runescape.com");
 	}
 }
