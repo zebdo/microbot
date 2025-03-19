@@ -24,14 +24,15 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
-import lombok.Setter;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 
-import javax.swing.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.SwingUtilities;
+import lombok.Setter;
 
 // Implementation of a cycle button which provides a way to cycle through multiple states in one button (JLabel)
 // When clicked, the cycle button will properly set the icons, tooltips, and execute the provided runnable for any necessary logic
@@ -47,8 +48,8 @@ public class InventorySetupsCycleButton<T> extends JLabel
 	private MouseAdapter runnableAdapter;
 
 	InventorySetupsCycleButton(final MInventorySetupsPlugin plugin, final List<T> states,
-                               final List<ImageIcon> icons, final List<ImageIcon> hoverIcons,
-                               final List<String> tooltips)
+							final List<ImageIcon> icons, final List<ImageIcon> hoverIcons,
+							final List<String> tooltips)
 	{
 		this(plugin, states, icons, hoverIcons, tooltips, () ->
 		{
@@ -57,8 +58,8 @@ public class InventorySetupsCycleButton<T> extends JLabel
 	}
 
 	InventorySetupsCycleButton(final MInventorySetupsPlugin plugin, final List<T> states,
-                               final List<ImageIcon> icons, final List<ImageIcon> hoverIcons,
-                               final List<String> tooltips, final Runnable runnable)
+								final List<ImageIcon> icons, final List<ImageIcon> hoverIcons,
+								final List<String> tooltips, final Runnable runnable)
 	{
 		super();
 		this.plugin = plugin;

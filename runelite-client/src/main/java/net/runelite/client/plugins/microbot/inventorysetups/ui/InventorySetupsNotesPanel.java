@@ -24,26 +24,28 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
-import lombok.Setter;
-import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
-import net.runelite.client.ui.ColorScheme;
-
-import javax.swing.*;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusListener;
+import java.util.List;
+import javax.swing.AbstractAction;
+import javax.swing.JPanel;
+import javax.swing.JTextArea;
+import javax.swing.KeyStroke;
 import javax.swing.border.EmptyBorder;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DefaultCaret;
 import javax.swing.text.Document;
 import javax.swing.undo.CannotUndoException;
 import javax.swing.undo.UndoManager;
-import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.FocusEvent;
-import java.awt.event.FocusListener;
-import java.util.List;
+import lombok.Setter;
+import net.runelite.client.game.ItemManager;
+import net.runelite.client.ui.ColorScheme;
 
 public class InventorySetupsNotesPanel extends InventorySetupsContainerPanel
 {

@@ -24,16 +24,25 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-import lombok.Getter;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsDisplayAttributes;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsValidName;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import javax.swing.BorderFactory;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
+
+import lombok.Getter;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.JagexColors;
 import net.runelite.client.ui.components.FlatTextField;
 
-import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.EmptyBorder;
@@ -44,9 +53,11 @@ import javax.swing.text.AbstractDocument;
 import javax.swing.text.AttributeSet;
 import javax.swing.text.BadLocationException;
 import javax.swing.text.DocumentFilter;
-import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+
+import static net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsStandardPanel.DISPLAY_COLOR_HOVER_ICON;
+import static net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsStandardPanel.DISPLAY_COLOR_ICON;
 
 public class InventorySetupsNameActions<T extends InventorySetupsDisplayAttributes> extends JPanel
 {
@@ -66,12 +77,12 @@ public class InventorySetupsNameActions<T extends InventorySetupsDisplayAttribut
 	private final InventorySetupsValidName validNameImplementer;
 
 	public InventorySetupsNameActions(final T datum,
-									  final MInventorySetupsPlugin plugin,
-									  final InventorySetupsPluginPanel panel,
-									  final InventorySetupsValidName validNameImplementer,
-									  final JPopupMenu movePopupMenu, int maxLength,
-									  final Color panelColor, boolean allowEditable,
-									  final MouseAdapter flatTextFieldMouseAdapter)
+										final MInventorySetupsPlugin plugin,
+										final InventorySetupsPluginPanel panel,
+										final InventorySetupsValidName validNameImplementer,
+										final JPopupMenu movePopupMenu, int maxLength,
+										final Color panelColor, boolean allowEditable,
+										final MouseAdapter flatTextFieldMouseAdapter)
 	{
 		setLayout(new BorderLayout());
 
@@ -147,7 +158,7 @@ public class InventorySetupsNameActions<T extends InventorySetupsDisplayAttribut
 				updateSaveButtonDuringEditing();
 			}
 		});
-
+		
 		nameInput.getTextField().addMouseListener(flatTextFieldMouseAdapter);
 
 		save.setVisible(false);
@@ -187,7 +198,7 @@ public class InventorySetupsNameActions<T extends InventorySetupsDisplayAttribut
 			@Override
 			public void mouseEntered(MouseEvent mouseEvent)
 			{
-				if (validNameImplementer.isNameValid(nameInput.getText()))
+				if (save.isEnabled())
 				{
 					save.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR.darker());
 				}
@@ -200,7 +211,7 @@ public class InventorySetupsNameActions<T extends InventorySetupsDisplayAttribut
 			@Override
 			public void mouseExited(MouseEvent mouseEvent)
 			{
-				if (validNameImplementer.isNameValid(nameInput.getText()))
+				if (save.isEnabled())
 				{
 					save.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
 				}
@@ -294,7 +305,7 @@ public class InventorySetupsNameActions<T extends InventorySetupsDisplayAttribut
 		nameInput.getTextField().setCaretPosition(0);
 
 		displayColorIndicator.setToolTipText("Edit the color of the name");
-		displayColorIndicator.setIcon(InventorySetupsStandardPanel.DISPLAY_COLOR_ICON);
+		displayColorIndicator.setIcon(DISPLAY_COLOR_ICON);
 		displayColorIndicator.setBackground(panelColor);
 		displayColorIndicator.setVisible(false);
 
@@ -317,7 +328,8 @@ public class InventorySetupsNameActions<T extends InventorySetupsDisplayAttribut
 					plugin.openColorPicker("Choose a Display color", currentDisplayColor == null ? JagexColors.MENU_TARGET : currentDisplayColor,
 							c ->
 							{
-								updateDisplayColorLabel(c);
+								Color newColor = new Color(c.getRed(), c.getGreen(), c.getBlue(), 255);
+								updateDisplayColorLabel(newColor);
 							}
 					);
 				}
@@ -326,13 +338,13 @@ public class InventorySetupsNameActions<T extends InventorySetupsDisplayAttribut
 			@Override
 			public void mouseEntered(MouseEvent mouseEvent)
 			{
-				displayColorIndicator.setIcon(InventorySetupsStandardPanel.DISPLAY_COLOR_HOVER_ICON);
+				displayColorIndicator.setIcon(DISPLAY_COLOR_HOVER_ICON);
 			}
 
 			@Override
 			public void mouseExited(MouseEvent mouseEvent)
 			{
-				displayColorIndicator.setIcon(InventorySetupsStandardPanel.DISPLAY_COLOR_ICON);
+				displayColorIndicator.setIcon(DISPLAY_COLOR_ICON);
 			}
 		});
 
@@ -383,17 +395,16 @@ public class InventorySetupsNameActions<T extends InventorySetupsDisplayAttribut
 			newDisplayColor = ((MatteBorder)((CompoundBorder) displayColorIndicator.getBorder()).getInsideBorder()).getMatteColor();
 		}
 
-		// If nothing has changed or name is invalid, disable the save button
-		if (datum.getDisplayColor() == newDisplayColor && !validNameImplementer.isNameValid(nameInput.getText()))
+		if (!validNameImplementer.isNameValid(nameInput.getText(), newDisplayColor))
 		{
 			save.setForeground(ColorScheme.LIGHT_GRAY_COLOR.darker());
 			save.setEnabled(false);
+			return;
 		}
-		else
-		{
-			save.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
-			save.setEnabled(true);
-		}
+
+		save.setForeground(ColorScheme.PROGRESS_COMPLETE_COLOR);
+		save.setEnabled(true);
+
 	}
 
 }

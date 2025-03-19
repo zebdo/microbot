@@ -1,9 +1,9 @@
 package net.runelite.client.plugins.microbot.inventorysetups.serialization;
 
-
-import lombok.Value;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsStackCompareID;
+
+import lombok.Value;
 
 import javax.annotation.Nullable;
 

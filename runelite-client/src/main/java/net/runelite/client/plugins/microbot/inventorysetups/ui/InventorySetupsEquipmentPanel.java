@@ -24,25 +24,28 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
-import net.runelite.api.EquipmentInventorySlot;
-import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSlotID;
-import net.runelite.client.ui.ColorScheme;
-
-import javax.swing.*;
-import java.awt.*;
+import java.awt.GridLayout;
 import java.util.HashMap;
-import java.util.Map;
 import java.util.List;
+import java.util.Map;
+import javax.swing.JPanel;
+
+import lombok.Getter;
+import net.runelite.api.EquipmentInventorySlot;
+import net.runelite.client.game.ItemManager;
+import net.runelite.client.ui.ColorScheme;
 
 // The panel that contains the equipment slots
 public class InventorySetupsEquipmentPanel extends InventorySetupsContainerPanel
 {
 	private Map<EquipmentInventorySlot, InventorySetupsSlot> equipmentSlots;
+
+	@Getter
+	private InventorySetupsQuiverPanel quiverPanel;
 
 	InventorySetupsEquipmentPanel(final ItemManager itemManager, final MInventorySetupsPlugin plugin)
 	{
@@ -56,21 +59,21 @@ public class InventorySetupsEquipmentPanel extends InventorySetupsContainerPanel
 		for (final EquipmentInventorySlot slot : EquipmentInventorySlot.values())
 		{
 			final InventorySetupsSlot setupSlot = new InventorySetupsSlot(ColorScheme.DARKER_GRAY_COLOR, InventorySetupsSlotID.EQUIPMENT, slot.getSlotIdx());
-			super.addFuzzyMouseListenerToSlot(setupSlot);
+			InventorySetupsSlot.addFuzzyMouseListenerToSlot(plugin, setupSlot);
 
 			// add stackable configurations for ammo and weapon slots
 			if (slot == EquipmentInventorySlot.AMMO || slot == EquipmentInventorySlot.WEAPON)
 			{
-				super.addStackMouseListenerToSlot(setupSlot);
+				InventorySetupsSlot.addStackMouseListenerToSlot(plugin, setupSlot);
 			}
 
-			super.addUpdateFromContainerMouseListenerToSlot(setupSlot);
-			super.addUpdateFromSearchMouseListenerToSlot(setupSlot, true);
-			super.addRemoveMouseListenerToSlot(setupSlot);
+			InventorySetupsSlot.addUpdateFromContainerMouseListenerToSlot(plugin, setupSlot);
+			InventorySetupsSlot.addUpdateFromSearchMouseListenerToSlot(plugin, setupSlot, true);
+			InventorySetupsSlot.addRemoveMouseListenerToSlot(plugin, setupSlot);
 
 			// Shift menu
-			super.addUpdateFromContainerToAllInstancesMouseListenerToSlot(setupSlot);
-			super.addUpdateFromSearchToAllInstancesMouseListenerToSlot(setupSlot, true);
+			InventorySetupsSlot.addUpdateFromContainerToAllInstancesMouseListenerToSlot(this, plugin, setupSlot);
+			InventorySetupsSlot.addUpdateFromSearchToAllInstancesMouseListenerToSlot(this, plugin, setupSlot, true);
 
 			equipmentSlots.put(slot, setupSlot);
 		}
@@ -78,10 +81,13 @@ public class InventorySetupsEquipmentPanel extends InventorySetupsContainerPanel
 		final GridLayout gridLayout = new GridLayout(5, 3, 1, 1);
 		containerSlotsPanel.setLayout(gridLayout);
 
+		this.quiverPanel = new InventorySetupsQuiverPanel(itemManager, plugin);
+
 		// add the grid layouts, including invisible ones
 		containerSlotsPanel.add(new InventorySetupsSlot(ColorScheme.DARK_GRAY_COLOR, InventorySetupsSlotID.EQUIPMENT, -1));
 		containerSlotsPanel.add(equipmentSlots.get(EquipmentInventorySlot.HEAD));
-		containerSlotsPanel.add(new InventorySetupsSlot(ColorScheme.DARK_GRAY_COLOR, InventorySetupsSlotID.EQUIPMENT, -1));
+		// This slot (to the right of the HEAD) is the quiver slot. It will only show up if a user has a quiver.
+		containerSlotsPanel.add(quiverPanel.getQuiverSlot());
 		containerSlotsPanel.add(equipmentSlots.get(EquipmentInventorySlot.CAPE));
 		containerSlotsPanel.add(equipmentSlots.get(EquipmentInventorySlot.AMULET));
 		containerSlotsPanel.add(equipmentSlots.get(EquipmentInventorySlot.AMMO));
@@ -103,7 +109,7 @@ public class InventorySetupsEquipmentPanel extends InventorySetupsContainerPanel
 		for (final EquipmentInventorySlot slot : EquipmentInventorySlot.values())
 		{
 			int i = slot.getSlotIdx();
-			super.setSlotImageAndText(equipmentSlots.get(slot), setup, setup.getEquipment().get(i));
+			InventorySetupsSlot.setSlotImageAndText(itemManager, equipmentSlots.get(slot), setup, setup.getEquipment().get(i));
 		}
 
 		validate();
@@ -122,7 +128,7 @@ public class InventorySetupsEquipmentPanel extends InventorySetupsContainerPanel
 		for (final EquipmentInventorySlot slot : EquipmentInventorySlot.values())
 		{
 			int slotIdx = slot.getSlotIdx();
-			super.highlightSlot(inventorySetup, savedEquipmentFromSetup.get(slotIdx), currentEquipment.get(slotIdx), equipmentSlots.get(slot));
+			InventorySetupsSlot.highlightSlot(inventorySetup, savedEquipmentFromSetup.get(slotIdx), currentEquipment.get(slotIdx), equipmentSlots.get(slot));
 		}
 	}
 
