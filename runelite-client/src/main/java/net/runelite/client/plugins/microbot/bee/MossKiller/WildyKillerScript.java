@@ -138,6 +138,7 @@ public class WildyKillerScript extends Script {
         System.out.println("getting to run");
         WildyKillerScript.config = config;
         Microbot.enableAutoRunOn = false;
+        Rs2Walker.disableTeleports = false;
         Rs2Antiban.resetAntibanSettings();
         Rs2AntibanSettings.usePlayStyle = true;
         Rs2AntibanSettings.simulateFatigue = true;
@@ -153,6 +154,7 @@ public class WildyKillerScript extends Script {
         Rs2AntibanSettings.moveMouseRandomlyChance = 0.04;
         Rs2AntibanSettings.actionCooldownChance = 0.06;
         Rs2Antiban.setActivityIntensity(LOW);
+        Rs2AntibanSettings.dynamicActivity = true;
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
