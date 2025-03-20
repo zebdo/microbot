@@ -4,5 +4,6 @@ public enum BlueDragonState {
     BANKING,
     TRAVEL_TO_DRAGONS,
     FIGHTING,
+    LOOTING,
     STARTING
 }
