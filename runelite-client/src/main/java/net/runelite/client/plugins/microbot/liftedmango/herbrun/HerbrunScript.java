@@ -59,6 +59,7 @@ public class HerbrunScript extends Script {
     //seed type
 //    public static ItemID seeds = ;
     public static boolean test = false;
+
     public HerbrunScript() throws AWTException {
     }
 
@@ -86,12 +87,13 @@ public class HerbrunScript extends Script {
                                 Rs2Bank.useBank();
                                 Rs2Bank.depositAll();
                                 Rs2Inventory.waitForInventoryChanges(2000);
-                                if (config.GRACEFUL()) {
+                                if (config.GRACEFUL() || config.FARMERS_OUTFIT()) {
                                     log.info("State: GEARING - Depositing equipment for graceful mode");
                                     Rs2Bank.depositEquipment();
                                     sleepUntil(Rs2Equipment::isNaked);
                                     sleep(200);
                                     equipGraceful(config);
+                                    equipFarmers(config);
                                 }
                             }
                             withdrawHerbSetup(config);
@@ -352,7 +354,6 @@ public class HerbrunScript extends Script {
                 }
 
 
-
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
             }
@@ -372,14 +373,23 @@ public class HerbrunScript extends Script {
     }
 
     private void equipGraceful(HerbrunConfig config) {
-        checkBeforeWithdrawAndEquip("GRACEFUL HOOD");
         if (!config.FARMING_CAPE()) {
             checkBeforeWithdrawAndEquip("GRACEFUL CAPE");
         }
-        checkBeforeWithdrawAndEquip("GRACEFUL BOOTS");
+        if (!config.FARMERS_OUTFIT()) {
+            checkBeforeWithdrawAndEquip("GRACEFUL HOOD");
+            checkBeforeWithdrawAndEquip("GRACEFUL BOOTS");
+            checkBeforeWithdrawAndEquip("GRACEFUL TOP");
+            checkBeforeWithdrawAndEquip("GRACEFUL LEGS");
+        }
         checkBeforeWithdrawAndEquip("GRACEFUL GLOVES");
-        checkBeforeWithdrawAndEquip("GRACEFUL TOP");
-        checkBeforeWithdrawAndEquip("GRACEFUL LEGS");
+    }
+
+    private void equipFarmers(HerbrunConfig config) {
+        checkBeforeWithdrawAndEquip("Farmer's strawhat");
+        checkBeforeWithdrawAndEquip("Farmer's shirt");
+        checkBeforeWithdrawAndEquip("Farmer's boro trousers");
+        checkBeforeWithdrawAndEquip("Farmer's boots");
     }
 
     private void withdrawHerbSetup(HerbrunConfig config) {
@@ -459,7 +469,14 @@ public class HerbrunScript extends Script {
             Rs2Bank.withdrawOne(ItemID.CAMELOT_TELEPORT);
         }
         if (config.enableTrollheim()) {
-            Rs2Bank.withdrawOne(ItemID.STONY_BASALT);
+            if (Rs2Bank.hasItem(ItemID.STONY_BASALT)) {
+                Rs2Bank.withdrawOne(ItemID.STONY_BASALT);
+            } else if (Rs2Bank.hasItem(ItemID.TROLLHEIM_TELEPORT)) {
+                Rs2Bank.withdrawOne(ItemID.TROLLHEIM_TELEPORT);
+            } else {
+                Rs2Bank.withdrawX(ItemID.LAW_RUNE, 2);
+                Rs2Bank.withdrawX(ItemID.FIRE_RUNE, 2);
+            }
         }
         if (config.enableHarmony()) {
             Rs2Bank.withdrawOne(ItemID.HARMONY_ISLAND_TELEPORT);
@@ -518,11 +535,15 @@ public class HerbrunScript extends Script {
     }
 
 
-
     private void handleWalkingToPatch(WorldPoint location, states nextState) {
         System.out.println("Walking to the herb patch...");
 
         // Start walking to the location
+        if (Rs2Inventory.contains("Stony basalt")) {
+            Rs2Inventory.interact("Stony basalt", "Troll stronghold");
+        } else if (Rs2Inventory.contains("Trollheim teleport")) {
+            Rs2Inventory.interact("Trollheim teleport", "break");
+        }
         Rs2Walker.walkTo(location);
         // Wait until the player reaches within 2 tiles of the location and has stopped moving
         sleepUntil(() -> Rs2Player.distanceTo(location) < 5);
@@ -570,10 +591,9 @@ public class HerbrunScript extends Script {
                     handleClearAction(herbPatch);
                     break;
                 case "Inspect":
-                    if(Rs2GameObject.convertGameObjectToObjectComposition(herbPatch.getId()).getName().equals("Herbs")) {
+                    if (Rs2GameObject.convertGameObjectToObjectComposition(herbPatch.getId()).getName().equals("Herbs")) {
                         botStatus = nextState;
-                    }
-                    else {
+                    } else {
                         log.info("Patch is empty, planting seeds...");
                         addCompostandSeeds(config, patchId, seedToPlant, nextState);
                     }
