@@ -56,14 +56,7 @@ public class BlastoiseFurnacePlugin extends Plugin {
             BlastoiseFurnaceScript.staminaTimer = event.getValue();
         }
     }
-    @Subscribe
-    public void onStatChanged(StatChanged event) {
-        if(event.getXp()> BlastoiseFurnaceScript.previousXP){
-            if(BlastoiseFurnaceScript.waitingXpDrop) {
-                //BlastoiseFurnaceScript.waitingXpDrop = false;
-            }
-        }
-    }
+
     @Subscribe
     public void onChatMessage(ChatMessage chatMessage) {
         if (chatMessage.getType() == ChatMessageType.GAMEMESSAGE) {
