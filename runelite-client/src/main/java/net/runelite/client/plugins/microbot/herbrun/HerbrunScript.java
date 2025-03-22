@@ -35,6 +35,7 @@ public class HerbrunScript extends Script {
     @Inject
     private FarmingWorld farmingWorld;
     private FarmingHandler farmingHandler;
+    private final HerbrunPlugin plugin;
     private final HerbrunConfig config;
     private HerbPatch currentPatch;
     @Inject
@@ -42,7 +43,8 @@ public class HerbrunScript extends Script {
     private boolean initialized = false;
 
     @Inject
-    public HerbrunScript(HerbrunConfig config) {
+    public HerbrunScript(HerbrunPlugin plugin, HerbrunConfig config) {
+        this.plugin = plugin;
         this.config = config;
     }
 
@@ -55,23 +57,21 @@ public class HerbrunScript extends Script {
                 initialized = true;
                 HerbrunPlugin.status = "Gearing up";
                 populateHerbPatches();
+                if (herbPatches.isEmpty()) {
+                    log("No herb patches ready to farm");
+                    Microbot.stopPlugin(plugin);
+                    return;
+                }
                 var inventorySetup = new Rs2InventorySetup(config.inventorySetup(), mainScheduledFuture);
-                var inventoryMatches = inventorySetup.doesInventoryMatch();
-                var equipmentMatches = inventorySetup.doesEquipmentMatch();
-                if (!inventoryMatches || !equipmentMatches) {
+                if (!inventorySetup.doesInventoryMatch() || !inventorySetup.doesEquipmentMatch()) {
                     boolean arrived = Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 20);
                     sleepUntil(() -> arrived, 100000);
                     if (!inventorySetup.loadEquipment() || !inventorySetup.loadInventory()) {
-                        log("Failed to load inventory setup");
-                        shutdown();
+                        Microbot.log("Failed to load inventory setup");
+                        Microbot.stopPlugin(plugin);
                         return;
                     }
                     Rs2Bank.closeBank();
-                }
-                if (herbPatches.isEmpty()) {
-                    log("No herb patches ready to farm");
-                    shutdown();
-                    return;
                 }
 
                 log("Will visit " + herbPatches.size() + " herb patches");
