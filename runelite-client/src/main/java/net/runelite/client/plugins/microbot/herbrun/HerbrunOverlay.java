@@ -1,6 +1,6 @@
-package net.runelite.client.plugins.microbot.liftedmango.herbrun;
+package net.runelite.client.plugins.microbot.herbrun;
 
-import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
@@ -23,14 +23,11 @@ public class HerbrunOverlay extends OverlayPanel {
         try {
             panelComponent.setPreferredSize(new Dimension(200, 300));
             panelComponent.getChildren().add(TitleComponent.builder()
-                    .text("LiftedMango's Herb runner V0.1")
+                    .text(getPlugin().getClass().getAnnotation(PluginDescriptor.class).description())
                     .color(Color.GREEN)
                     .build());
-
-            panelComponent.getChildren().add(LineComponent.builder().build());
-
             panelComponent.getChildren().add(LineComponent.builder()
-                    .left(Microbot.status)
+                    .left(HerbrunPlugin.status)
                     .build());
 
 
