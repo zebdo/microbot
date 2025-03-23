@@ -60,7 +60,7 @@ public class FarmTreeRunScript extends Script {
         GNOME_STRONGHOLD_TREE_PATCH(19147, new WorldPoint(2437, 3417, 0), TreeKind.TREE, 1, 0),
         TREE_GNOME_VILLAGE_FRUIT_TREE_PATCH(7963, new WorldPoint(2490, 3181, 0), TreeKind.FRUIT_TREE, 1, 0),
         FARMING_GUILD_TREE_PATCH(33732, new WorldPoint(1234, 3734, 0), TreeKind.TREE, 65, 0),
-        FARMING_GUILD_FRUIT_TREE_PATCH(0000000, new WorldPoint(1244, 3757, 0), TreeKind.FRUIT_TREE, 85, 0),
+        FARMING_GUILD_FRUIT_TREE_PATCH(34007, new WorldPoint(1244, 3757, 0), TreeKind.FRUIT_TREE, 85, 0),
         TAVERLEY_TREE_PATCH(8388, new WorldPoint(2936, 3440, 0), TreeKind.TREE, 1, 0),
         FALADOR_TREE_PATCH(8389, new WorldPoint(3001, 3374, 0), TreeKind.TREE, 1, 0),
         LUMBRIDGE_TREE_PATCH(8391, new WorldPoint(3195, 3228, 0), TreeKind.TREE, 1, 0),
@@ -248,11 +248,12 @@ public class FarmTreeRunScript extends Script {
                         botStatus = FINISHED;
                         break;
                     case FINISHED:
-                        Microbot.getClientThread().runOnClientThread(() ->
-                                Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "Made with love by Acun.", "Acun", false)
+                        Microbot.getClientThread().runOnClientThread(() -> {
+                                    Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "Tree run completed.", "Acun", false);
+                                    Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "Made with love by Acun.", "Acun", false);
+                                    return null;
+                                }
                         );
-
-                        Microbot.log("Finished farm run.");
                         shutdown();
                         break;
                 }
@@ -325,7 +326,7 @@ public class FarmTreeRunScript extends Script {
 
 
             // Add must have items
-            items.add(new FarmingItem(ItemID.COINS_995, 3000));
+            items.add(new FarmingItem(ItemID.COINS_995, 5000));
             items.add(new FarmingItem(ItemID.SPADE, 1));
             items.add(new FarmingItem(ItemID.RAKE, 1));
             items.add(new FarmingItem(ItemID.SEED_DIBBER, 1));
@@ -399,15 +400,19 @@ public class FarmTreeRunScript extends Script {
 
             // Loop through the items and perform withdrawals
             for (FarmingItem item : items) {
+                if (this.items.isEmpty())
+                    break;
                 int itemId = item.getItemId();
                 int quantity = item.getQuantity();
                 boolean noted = item.isNoted();
 
+                if (quantity <= 0)
+                    continue;
 
 //              Handle items which require to be noted
                 if (noted && !Rs2Bank.hasWithdrawAsNote()) {
                     Rs2Bank.setWithdrawAsNote();
-                    sleep(600, 2000);
+                    sleep(500, 1200);
                 } else if (!noted && Rs2Bank.hasWithdrawAsNote()) { // Disables 'Note' toggle
                     Rs2Bank.setWithdrawAsItem();
                 }
@@ -420,7 +425,7 @@ public class FarmTreeRunScript extends Script {
                     Rs2Bank.withdrawX(itemId, quantity);
                 }
 
-                sleep(250, 2400);
+                sleep(250, 1200);
             }
 
             Rs2Bank.closeBank();
@@ -447,7 +452,7 @@ public class FarmTreeRunScript extends Script {
             treePatch = Rs2GameObject.findObjectByImposter(patch.getId(), action, false);  // Find object by patchId and action
             if (treePatch != null) {
                 foundAction = action;
-                if (!foundAction.contains("Inspect")){
+                if (!foundAction.contains("Inspect")) {
                     break;
                 }
             }
@@ -459,7 +464,7 @@ public class FarmTreeRunScript extends Script {
         for (String action : exactTreeActions) {
             if (action == null)
                 continue;
-            if (action.startsWith(foundAction) || action.equals(foundAction)){
+            if (action.startsWith(foundAction) || action.equals(foundAction)) {
                 exactAction = action;
                 break;
             }
@@ -551,10 +556,8 @@ public class FarmTreeRunScript extends Script {
         treeGardener = Rs2Npc.getNearestNpcWithAction("Pay");
         Rs2Npc.interact(treeGardener, "Pay");
 
-//      Farming guild tree patch action is called
         if (treeGardener == null) {
-            treeGardener = Rs2Npc.getNpc("Rosie");
-            Rs2Npc.interact(treeGardener, "Pay (tree patch)");
+            handleExoticGardeners();
         }
 
         sleepUntil(Rs2Dialogue::isInDialogue, 5000);
@@ -591,7 +594,7 @@ public class FarmTreeRunScript extends Script {
         if (useCompostOnPatch(config, patch)) {
             Rs2Inventory.useItemOnObject(compostItemId, treePatch.getId());
             Rs2Player.waitForXpDrop(Skill.FARMING, 2000);
-            sleep(750, 3200);
+            sleep(550, 2200);
         }
 
         sleep(250, 1000);
@@ -607,7 +610,7 @@ public class FarmTreeRunScript extends Script {
 
     private void handlePickingFruit(GameObject fruitTreePatch, Patch patch, String exactAction) {
         System.out.println("Picking fruit...");
-        Rs2GameObject.interact(fruitTreePatch,  exactAction);
+        Rs2GameObject.interact(fruitTreePatch, exactAction);
         // Wait for the picking to complete (player stops animating and patch no longer has the "Pick" action)
         sleepUntil(() -> !Rs2GameObject.hasAction(Rs2GameObject.findObjectComposition(fruitTreePatch.getId()), exactAction), 12000);
         sleep(400, 1500);
@@ -620,7 +623,7 @@ public class FarmTreeRunScript extends Script {
         // Rake the patch
         Rs2GameObject.interact(treePatch, "Check-health");
         Rs2Player.waitForXpDrop(Skill.FARMING);
-        sleep(250, 3500);
+        sleep(250, 2500);
     }
 
     private void handleRakeAction(GameObject treePatch) {
@@ -771,6 +774,40 @@ public class FarmTreeRunScript extends Script {
         return patch.kind == TreeKind.TREE ?
                 config.selectedTree().getSaplingId() :
                 config.selectedFruitTree().getSaplingId();
+    }
+
+    /**
+     * Handles gardeners at new location because Gagex is not consistent,
+     * and they introduce new action for each new gardener.
+     * TODO: This method can be replaced/improved if we hardcode each gardener's id inside patch enum.
+     * Note that Gagex is also not consistent with action names
+     *
+     * @return true if gardener interaction successful, else false
+     */
+    private void handleExoticGardeners() {
+        // Nikkie: Farming guild fruit tree gardener
+        Rs2NpcModel nikkie = Rs2Npc.getNpc("Nikkie");
+
+        // Rosie: Farming guild tree patch gardener
+        Rs2NpcModel rosie = Rs2Npc.getNpc("Rosie");
+
+        Rs2NpcModel npcToInteract = null;
+        String paymentAction = "";
+
+        // Rosie and Nikkie are close together.
+        // We need to check their distance to make sure we got the correct gardener.
+        if (rosie == null && nikkie == null) {
+            Microbot.log("Gardeners in farming guild not found. Report this bug.");
+            shutdown();
+        } else if (nikkie != null && Rs2Player.distanceTo(nikkie.getWorldLocation()) <= 10) {
+            npcToInteract = nikkie;
+            paymentAction = "Pay (Fruit tree)";
+        } else if (rosie != null && Rs2Player.distanceTo(rosie.getWorldLocation()) <= 10) {
+            npcToInteract = rosie;
+            paymentAction = "Pay (tree patch)";
+        }
+
+        Rs2Npc.interact(npcToInteract, paymentAction);
     }
 
     @Override

@@ -27,11 +27,55 @@ package net.runelite.client.plugins.microbot.inventorysetups;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Provides;
+import net.runelite.client.plugins.microbot.inventorysetups.serialization.InventorySetupPortable;
+import net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsPluginPanel;
+import net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsSlot;
+import java.awt.Color;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
+import java.io.InputStream;
+import java.lang.reflect.Type;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.Set;
+import java.util.function.Consumer;
+import java.util.stream.Collectors;
+import javax.inject.Inject;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
-import net.runelite.api.events.*;
+import net.runelite.api.Client;
+import net.runelite.api.GameState;
+import net.runelite.api.InventoryID;
+import net.runelite.api.Item;
+import net.runelite.api.ItemContainer;
+import net.runelite.api.KeyCode;
+import net.runelite.api.Menu;
+import net.runelite.api.MenuAction;
+import net.runelite.api.MenuEntry;
+import net.runelite.api.ScriptID;
+import net.runelite.api.VarClientInt;
+import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
+import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.events.MenuEntryAdded;
+import net.runelite.api.events.PostMenuSort;
+import net.runelite.api.events.ScriptPreFired;
+import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.events.WidgetClosed;
+import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.Widget;
@@ -39,6 +83,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.PluginChanged;
 import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.SpriteManager;
@@ -47,11 +92,12 @@ import net.runelite.client.game.chatbox.ChatboxPanelManager;
 import net.runelite.client.game.chatbox.ChatboxTextInput;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.PluginDependency;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsPluginPanel;
-import net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsRunePouchPanel;
-import net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsSlot;
-import net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsBoltPouchPanel;
+import net.runelite.client.plugins.PluginManager;
+import net.runelite.client.plugins.bank.BankSearch;
+import net.runelite.client.plugins.banktags.TagManager;
+import net.runelite.client.plugins.banktags.tabs.LayoutManager;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.JagexColors;
 import net.runelite.client.ui.NavigationButton;
@@ -60,27 +106,21 @@ import net.runelite.client.ui.components.colorpicker.RuneliteColorPicker;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.HotkeyListener;
 import net.runelite.client.util.ImageUtil;
+import net.runelite.client.plugins.banktags.BankTagsPlugin;
+import net.runelite.client.plugins.banktags.BankTagsService;
+import net.runelite.client.plugins.banktags.tabs.Layout;
 
-import javax.inject.Inject;
-import javax.swing.*;
+import javax.swing.JFileChooser;
+import javax.swing.JLabel;
+import javax.swing.SwingConstants;
 import javax.swing.filechooser.FileFilter;
 import javax.swing.filechooser.FileNameExtensionFilter;
-import java.awt.*;
-import java.awt.datatransfer.StringSelection;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.FileOutputStream;
-import java.lang.reflect.Type;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.*;
-import java.util.function.Consumer;
-import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+
+import static net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsRunePouchPanel.RUNE_POUCH_AMOUNT_VARBITS;
+import static net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsRunePouchPanel.RUNE_POUCH_RUNE_VARBITS;
 
 
 @PluginDescriptor(
@@ -89,7 +129,7 @@ import java.util.stream.IntStream;
 		enabledByDefault = true,
 		alwaysOn = true
 )
-
+@PluginDependency(BankTagsPlugin.class)
 @Slf4j
 public class MInventorySetupsPlugin extends Plugin
 {
@@ -104,6 +144,15 @@ public class MInventorySetupsPlugin extends Plugin
 	public static final String CONFIG_KEY_UNASSIGNED_MAXIMIZED = "unassignedMaximized";
 	public static final String CONFIG_KEY_MANUAL_BANK_FILTER = "manualBankFilter";
 	public static final String CONFIG_KEY_PERSIST_HOTKEYS = "persistHotKeysOutsideBank";
+	public static final String CONFIG_KEY_USE_LAYOUTS = "useLayouts";
+	public static final String CONFIG_KEY_LAYOUT_DEFAULT = "defaultLayout";
+	public static final String CONFIG_KEY_LAYOUT_DUPLICATES = "addDuplicatesInLayouts";
+	public static final String CONFIG_KEY_ENABLE_LAYOUT_WARNING = "enableLayoutWarning";
+	public static final String CONFIG_GROUP_HUB_BTL = "banktaglayouts";
+	// Bank tags will standardize tag names so this must not be modified by that standardization.
+	// DO NOT CHANGE THIS. CHANGING THIS WOULD REQUIRE MIGRATION OF USER DATA.
+	// IF CHANGING, HUB BTL MUST BE UPDATED AS WELL.
+	public static final String LAYOUT_PREFIX_MARKER = "_invsetup_";
 	public static final String TUTORIAL_LINK = "https://github.com/dillydill123/inventory-setups#inventory-setups";
 	public static final String SUGGESTION_LINK = "https://github.com/dillydill123/inventory-setups/issues";
 	public static final int NUM_INVENTORY_ITEMS = 28;
@@ -112,17 +161,14 @@ public class MInventorySetupsPlugin extends Plugin
 	private static final String OPEN_SECTION_MENU_ENTRY = "Open Section";
 	private static final String OPEN_SETUP_MENU_ENTRY = "Open setup";
 	private static final String RETURN_TO_OVERVIEW_ENTRY = "Close current setup";
-	private static final String FILTER_ADD_ITEMS_ENTRY = "Filter additional items";
-	private static final String FILTER_EQUIPMENT_ENTRY = "Filter equipment";
-	private static final String FILTER_INVENTORY_ENTRY = "Filter inventory";
-	private static final String FILTER_ALL_ENTRY = "Filter all";
+	private static final String AUTO_LAYOUT_PRESET_ENTRY = "Auto layout: Preset";
+	private static final String AUTO_LAYOUT_ZIGZAG_ENTRY = "Auto layout: ZigZag";
 	private static final String ADD_TO_ADDITIONAL_ENTRY = "Add to Additional Filtered Items";
 	private static final String UNASSIGNED_SECTION_SETUP_MENU_ENTRY = "Unassigned";
+	private static final String ITEM_SEARCH_TAG = "item:";
+	private static final String NOTES_SEARCH_TAG = "notes:";
 	private static final int SPELLBOOK_VARBIT = 4070;
-	private static final int ITEMS_PER_ROW = 8;
-	private static final int ITEM_VERTICAL_SPACING = 36;
-	private static final int ITEM_HORIZONTAL_SPACING = 48;
-	private static final int ITEM_ROW_START = 51;
+	private static final int BANK_TAG_OPTIONS = BankTagsService.OPTION_ALLOW_MODIFICATIONS | BankTagsService.OPTION_HIDE_TAG_NAME;
 
 	@Inject
 	@Getter
@@ -154,6 +200,9 @@ public class MInventorySetupsPlugin extends Plugin
 	private Gson gson;
 
 	@Inject
+	private PluginManager pluginManager;
+
+	@Inject
 	@Getter
 	private ColorPickerManager colorPickerManager;
 
@@ -171,10 +220,30 @@ public class MInventorySetupsPlugin extends Plugin
 	private NavigationButton navButton;
 
 	@Inject
-	private InventorySetupsBankSearch bankSearch;
+	private BankTagsService bankTagsService;
+
+	@Inject
+	private BankTagsPlugin bankTagsPlugin;
+
+	@Inject
+	private BankSearch bankSearch;
+
+	@Inject
+	@Getter
+	private LayoutManager layoutManager;
+
+	@Inject
+	@Getter
+	private TagManager tagManager;
 
 	@Inject
 	private KeyManager keyManager;
+
+	@Getter
+	private InventorySetupLayoutUtilities layoutUtilities;
+
+	@Getter
+	private Boolean canUseLayouts;
 
 	@Inject
 	@Getter
@@ -184,9 +253,6 @@ public class MInventorySetupsPlugin extends Plugin
 	private ChatboxPanelManager chatboxPanelManager;
 
 	private ChatboxTextInput searchInput;
-
-	// global filtering is allowed for any setup
-	private boolean internalFilteringIsAllowed;
 
 	@Setter
 	@Getter
@@ -198,9 +264,11 @@ public class MInventorySetupsPlugin extends Plugin
 	@Getter
 	private InventorySetupsPersistentDataManager dataManager;
 
-	@Setter
 	@Getter
-	private InventorySetupsFilteringModeID bankFilteringMode;
+	private InventorySetupsAmmoHandler ammoHandler;
+
+	// Used to defer highlighting to GameTick
+	private boolean shouldTriggerInventoryHighlightOnGameTick;
 
 	private final HotkeyListener returnToSetupsHotkeyListener = new HotkeyListener(() -> config.returnToSetupsHotkey())
 	{
@@ -216,37 +284,6 @@ public class MInventorySetupsPlugin extends Plugin
 		@Override
 		public void hotkeyPressed()
 		{
-			bankFilteringMode = InventorySetupsFilteringModeID.ALL;
-			triggerBankSearchFromHotKey();
-		}
-	};
-
-	private final HotkeyListener filterInventoryHotkeyListener = new HotkeyListener(() -> config.filterInventoryHotkey())
-	{
-		@Override
-		public void hotkeyPressed()
-		{
-			bankFilteringMode = InventorySetupsFilteringModeID.INVENTORY;
-			triggerBankSearchFromHotKey();
-		}
-	};
-
-	private final HotkeyListener filterEquipmentHotkeyListener = new HotkeyListener(() -> config.filterEquipmentHotkey())
-	{
-		@Override
-		public void hotkeyPressed()
-		{
-			bankFilteringMode = InventorySetupsFilteringModeID.EQUIPMENT;
-			triggerBankSearchFromHotKey();
-		}
-	};
-
-	private final HotkeyListener filterAddItemsHotkeyListener = new HotkeyListener(() -> config.filterAddItemsHotkey())
-	{
-		@Override
-		public void hotkeyPressed()
-		{
-			bankFilteringMode = InventorySetupsFilteringModeID.ADDITIONAL_FILTERED_ITEMS;
 			triggerBankSearchFromHotKey();
 		}
 	};
@@ -260,13 +297,128 @@ public class MInventorySetupsPlugin extends Plugin
 		}
 	};
 
+	@Override
+	public void startUp()
+	{
+		// get current version of the plugin using properties file generated by build.gradle
+		try
+		{
+//			final Properties props = new Properties();
+//			InputStream is = MInventorySetupsPlugin.class.getResourceAsStream("/invsetups_version.txt");
+//			props.load(is);
+			this.currentVersion = "1.20.2";
+		}
+		catch (Exception e)
+		{
+			log.warn("Could not determine current plugin version", e);
+			this.currentVersion = "";
+		}
+
+		this.panel = new InventorySetupsPluginPanel(this, itemManager);
+		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "inventorysetups_icon.png");
+
+		this.navButtonIsSelected = false;
+		navButton = NavigationButton.builder()
+				.tooltip("Inventory Setups")
+				.icon(icon)
+				.priority(6)
+				.panel(panel)
+				.build();
+
+		clientToolbar.addNavigation(navButton);
+
+		this.shouldTriggerInventoryHighlightOnGameTick = false;
+		this.cache = new InventorySetupsCache();
+		inventorySetups = new ArrayList<>();
+		this.sections = new ArrayList<>();
+		this.dataManager = new InventorySetupsPersistentDataManager(this, configManager, cache, gson, inventorySetups, sections);
+		this.ammoHandler = new InventorySetupsAmmoHandler(this, client, itemManager, panel, config);
+		this.layoutUtilities = new InventorySetupLayoutUtilities(itemManager, tagManager, layoutManager, config, client);
+		this.canUseLayouts = canUseLayouts();
+
+		// load all the inventory setups from the config file
+		clientThread.invokeLater(() ->
+		{
+			switch (client.getGameState())
+			{
+				case STARTING:
+				case UNKNOWN:
+				case LOADING:
+					return false;
+			}
+
+			clientThread.invokeLater(() ->
+			{
+				dataManager.loadConfig();
+				SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(true));
+			});
+
+			return true;
+		});
+
+	}
+
+	@Override
+	public void shutDown()
+	{
+		resetBankSearch();
+		clientToolbar.removeNavigation(navButton);
+	}
+
+	public String getSavedVersionString()
+	{
+		final String versionStr = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY_VERSION_STR);
+		return versionStr == null ? "" : versionStr;
+	}
+
+	public void setSavedVersionString(final String newVersion)
+	{
+		configManager.setConfiguration(CONFIG_GROUP, CONFIG_KEY_VERSION_STR, newVersion);
+	}
+
+	public String getCurrentVersionString()
+	{
+		return currentVersion;
+	}
+
+	private boolean canUseLayouts()
+	{
+		// If Bank Tags is off, layouts will not work.
+		return pluginManager.isPluginEnabled(bankTagsPlugin);
+	}
+
+	public void enableLayouts()
+	{
+		// Turn on Bank Tags and configure hub plugin bank tag layouts setting to be off.
+		if (!pluginManager.isPluginEnabled(bankTagsPlugin))
+		{
+			log.info("Turning on Bank Tags plugin");
+			pluginManager.setPluginEnabled(bankTagsPlugin, true);
+			try
+			{
+				pluginManager.startPlugin(bankTagsPlugin);
+			}
+			catch (Exception e)
+			{
+				log.error("Failed to start Bank Tags plugin.");
+				log.error(e.toString());
+			}
+		}
+	}
+
+	@Subscribe
+	public void onPluginChanged(PluginChanged pluginChanged)
+	{
+		if (pluginChanged.getPlugin() == bankTagsPlugin)
+		{
+			this.canUseLayouts = canUseLayouts();
+		}
+	}
+
 	private void registerHotkeys()
 	{
 		keyManager.registerKeyListener(returnToSetupsHotkeyListener);
 		keyManager.registerKeyListener(filterBankHotkeyListener);
-		keyManager.registerKeyListener(filterInventoryHotkeyListener);
-		keyManager.registerKeyListener(filterEquipmentHotkeyListener);
-		keyManager.registerKeyListener(filterAddItemsHotkeyListener);
 		keyManager.registerKeyListener(sectionModeHotkeyListener);
 	}
 
@@ -274,30 +426,7 @@ public class MInventorySetupsPlugin extends Plugin
 	{
 		keyManager.unregisterKeyListener(returnToSetupsHotkeyListener);
 		keyManager.unregisterKeyListener(filterBankHotkeyListener);
-		keyManager.unregisterKeyListener(filterInventoryHotkeyListener);
-		keyManager.unregisterKeyListener(filterEquipmentHotkeyListener);
-		keyManager.unregisterKeyListener(filterAddItemsHotkeyListener);
 		keyManager.unregisterKeyListener(sectionModeHotkeyListener);
-	}
-
-	private void triggerBankSearchFromHotKey()
-	{
-		// you must wait at least one game tick otherwise
-		// the bank filter will work but then go back to the previous tab.
-		// For some reason this can still happen but it is very rare,
-		// and only when the user clicks a tab and the hot key extremely shortly after.
-		int gameTick = client.getTickCount();
-		clientThread.invokeLater(() ->
-		{
-			int gameTick2 = client.getTickCount();
-			if (gameTick2 <= gameTick)
-			{
-				return false;
-			}
-
-			doBankSearch();
-			return true;
-		});
 	}
 
 	@Provides
@@ -312,8 +441,8 @@ public class MInventorySetupsPlugin extends Plugin
 		if (event.getGroup().equals(CONFIG_GROUP))
 		{
 			if (event.getKey().equals(CONFIG_KEY_PANEL_VIEW) || event.getKey().equals(CONFIG_KEY_SECTION_MODE) ||
-					event.getKey().equals(CONFIG_KEY_SORTING_MODE) || event.getKey().equals(CONFIG_KEY_HIDE_BUTTON) ||
-					event.getKey().equals(CONFIG_KEY_UNASSIGNED_MAXIMIZED))
+				event.getKey().equals(CONFIG_KEY_SORTING_MODE) || event.getKey().equals(CONFIG_KEY_HIDE_BUTTON) ||
+				event.getKey().equals(CONFIG_KEY_UNASSIGNED_MAXIMIZED))
 			{
 				SwingUtilities.invokeLater(() ->
 				{
@@ -322,16 +451,33 @@ public class MInventorySetupsPlugin extends Plugin
 			}
 			else if (event.getKey().equals(CONFIG_KEY_PERSIST_HOTKEYS))
 			{
-				boolean bankOpen = client.getItemContainer(InventoryID.BANK) != null;
-				if (config.persistHotKeysOutsideBank())
+				clientThread.invokeLater(() ->
 				{
-					registerHotkeys();
-				}
-				else if (!bankOpen)
-				{
-					unregisterHotkeys();
-				}
+					boolean bankOpen = client.getItemContainer(InventoryID.BANK) != null;
+					if (config.persistHotKeysOutsideBank())
+					{
+						registerHotkeys();
+					}
+					else if (!bankOpen)
+					{
+						unregisterHotkeys();
+					}
+				});
 			}
+			else if (event.getKey().equals(CONFIG_KEY_USE_LAYOUTS))
+			{
+				doBankSearch();
+			}
+		}
+	}
+
+	@Subscribe
+	public void onGameTick(GameTick gameTick)
+	{
+		if (shouldTriggerInventoryHighlightOnGameTick)
+		{
+			shouldTriggerInventoryHighlightOnGameTick = false;
+			clientThread.invokeLater(panel::doHighlighting);
 		}
 	}
 
@@ -347,12 +493,12 @@ public class MInventorySetupsPlugin extends Plugin
 
 		if (panel.getCurrentSelectedSetup() != null && (config.groundItemMenuSwap() || config.groundItemMenuHighlight()))
 		{
-			MenuEntry[] clientEntries = client.getMenuEntries();
+			MenuEntry[] clientEntries = client.getMenu().getMenuEntries();
 
 			// We want to be sure to preserve menu entry order while only sorting the "Take" menu options
 			int firstTakeIndex = IntStream.range(0, clientEntries.length)
-					.filter(i -> clientEntries[i].getOption().equals("Take"))
-					.findFirst().orElse(-1);
+								.filter(i -> clientEntries[i].getOption().equals("Take"))
+								.findFirst().orElse(-1);
 
 			if (firstTakeIndex == -1)
 			{
@@ -361,9 +507,9 @@ public class MInventorySetupsPlugin extends Plugin
 			}
 
 			int lastTakeIndex = IntStream.range(firstTakeIndex, clientEntries.length)
-					.map(i -> firstTakeIndex + (clientEntries.length - 1 - i))
-					.filter(i -> clientEntries[i].getOption().equals("Take"))
-					.findFirst().orElse(-1);
+								.map(i -> firstTakeIndex + (clientEntries.length - 1 - i))
+								.filter(i -> clientEntries[i].getOption().equals("Take"))
+								.findFirst().orElse(-1);
 
 			List<MenuEntry> takeEntriesInSetup = new ArrayList<>();
 			List<MenuEntry> takeEntriesNotInSetup = new ArrayList<>();
@@ -375,7 +521,10 @@ public class MInventorySetupsPlugin extends Plugin
 			{
 				MenuEntry oldEntry = clientEntries[i];
 				int itemID = oldEntry.getIdentifier();
-				boolean setupContainsItem = setupContainsItem(panel.getCurrentSelectedSetup(), itemID);
+				// If the item is a graceful or weight reducing equipment, we must canonicalize.
+				// For items on the ground, it will be the inventory version of the item, so the inverse of worn items must be used.
+				boolean canonicalize = InventorySetupsVariationMapping.INVERTED_WORN_ITEMS.containsKey(itemID);
+				boolean setupContainsItem = setupContainsItem(panel.getCurrentSelectedSetup(), itemID, true, canonicalize);
 				if (setupContainsItem)
 				{
 					if (config.groundItemMenuHighlight())
@@ -395,9 +544,14 @@ public class MInventorySetupsPlugin extends Plugin
 			if (config.groundItemMenuSwap())
 			{
 				// Based on the swap priority config, figure out the starting indexes for the entries in and not in the setup
+				boolean putNonSetupEntriesOnTop = config.groundItemMenuSwapPriority() == InventorySetupsGroundItemMenuSwapPriority.OUT;
 				int entriesInSetupStartIndex = firstTakeIndex + takeEntriesNotInSetup.size();
 				int entriesNotInSetupStartIndex = firstTakeIndex;
-
+				if (putNonSetupEntriesOnTop)
+				{
+					entriesInSetupStartIndex = firstTakeIndex;
+					entriesNotInSetupStartIndex = firstTakeIndex + takeEntriesInSetup.size();
+				}
 
 				for (int i = 0; i < takeEntriesInSetup.size(); i++)
 				{
@@ -410,7 +564,7 @@ public class MInventorySetupsPlugin extends Plugin
 				}
 			}
 
-			client.setMenuEntries(clientEntries);
+			client.getMenu().setMenuEntries(clientEntries);
 
 		}
 	}
@@ -433,6 +587,7 @@ public class MInventorySetupsPlugin extends Plugin
 		// If shift is held and item is right clicked in the bank while a setup is active,
 		// add item to additional filtered items
 		else if (panel.getCurrentSelectedSetup() != null
+				&& bankTagsService.getActiveLayout() == null // If there is an active layout, then the real item behind the fake layout item may be added. So just disallow this menu.
 				&& event.getActionParam1() == ComponentID.BANK_ITEM_CONTAINER
 				&& client.isKeyPressed(KeyCode.KC_SHIFT)
 				&& event.getOption().equals("Examine"))
@@ -534,26 +689,13 @@ public class MInventorySetupsPlugin extends Plugin
 				}
 
 				Color sectionMenuTargetColor = section.getDisplayColor() == null ? JagexColors.MENU_TARGET : section.getDisplayColor();
-				MenuEntry menuEntry = client.createMenuEntry(1)
-						.setOption(OPEN_SECTION_MENU_ENTRY)
-						.setTarget(ColorUtil.prependColorTag(section.getName(), sectionMenuTargetColor))
-						.setType(MenuAction.RUNELITE_WIDGET);
-
-				for (final InventorySetup inventorySetup : sectionsToDisplay.get(section.getName()))
-				{
-					createSectionSubMenuOnWornItems(inventorySetup, menuEntry);
-				}
+				createSectionSubMenuOnWornItems(sectionsToDisplay.get(section.getName()), section.getName(), sectionMenuTargetColor);
 
 			});
 
 			if (!unassignedSetups.isEmpty())
 			{
-				MenuEntry unassignedSectionMenuEntry = client.createMenuEntry(1)
-						.setOption(OPEN_SECTION_MENU_ENTRY)
-						.setTarget(ColorUtil.prependColorTag(UNASSIGNED_SECTION_SETUP_MENU_ENTRY, JagexColors.MENU_TARGET))
-						.setType(MenuAction.RUNELITE_WIDGET);
-
-				unassignedSetups.forEach(setup -> createSectionSubMenuOnWornItems(setup, unassignedSectionMenuEntry));
+				createSectionSubMenuOnWornItems(unassignedSetups, UNASSIGNED_SECTION_SETUP_MENU_ENTRY, JagexColors.MENU_TARGET);
 			}
 
 		}
@@ -563,88 +705,166 @@ public class MInventorySetupsPlugin extends Plugin
 			{
 				final InventorySetup setupToShow = setupsToShowOnWornItemsList.get(setupsToShowOnWornItemsList.size() - 1 - i);
 				Color menuTargetColor = setupToShow.getDisplayColor() == null ? JagexColors.MENU_TARGET : setupToShow.getDisplayColor();
-				client.createMenuEntry(-1)
+				client.getMenu()
+						.createMenuEntry(-1)
 						.setOption(OPEN_SETUP_MENU_ENTRY)
 						.setTarget(ColorUtil.prependColorTag(setupToShow.getName(), menuTargetColor))
 						.setType(MenuAction.RUNELITE)
-						.onClick(e ->
-						{
-							resetBankSearch(true);
-							panel.setCurrentInventorySetup(setupToShow, true);
-						});
+						.onClick(e -> panel.setCurrentInventorySetup(setupToShow, true));
 			}
 		}
 
 		if (panel.getCurrentSelectedSetup() != null)
 		{
-			// add menu entry to filter add items
-			client.createMenuEntry(-1)
-					.setOption(FILTER_ADD_ITEMS_ENTRY)
-					.setType(MenuAction.RUNELITE)
-					.onClick(e -> doBankSearch(InventorySetupsFilteringModeID.ADDITIONAL_FILTERED_ITEMS));
+			if (panel.getCurrentSelectedSetup().isFilterBank())
+			{
+				if (this.canUseLayouts && config.useLayouts())
+				{
+					// Add Auto layouts
+					createAutoLayoutSubMenuOnWornItems();
+				}
 
-			// add menu entry to filter equipment
-			client.createMenuEntry(-1)
-					.setOption(FILTER_EQUIPMENT_ENTRY)
-					.setType(MenuAction.RUNELITE)
-					.onClick(e -> doBankSearch(InventorySetupsFilteringModeID.EQUIPMENT));
-
-			// add menu entry to filter inventory
-			client.createMenuEntry(-1)
-					.setOption(FILTER_INVENTORY_ENTRY)
-					.setType(MenuAction.RUNELITE)
-					.onClick(e -> doBankSearch(InventorySetupsFilteringModeID.INVENTORY));
-
-			// add menu entry to filter all
-			client.createMenuEntry(-1)
-					.setOption(FILTER_ALL_ENTRY)
-					.setType(MenuAction.RUNELITE)
-					.onClick(e -> doBankSearch(InventorySetupsFilteringModeID.ALL));
+				// add menu entry to re-filter/layout setup
+				client.getMenu()
+						.createMenuEntry(-1)
+						.setOption("Filter Bank")
+						.setType(MenuAction.RUNELITE)
+						.onClick(e -> doBankSearch());
+			}
 
 			// add menu entry to close setup
-			client.createMenuEntry(-1)
+			client.getMenu()
+					.createMenuEntry(-1)
 					.setOption(RETURN_TO_OVERVIEW_ENTRY)
 					.setType(MenuAction.RUNELITE)
 					.onClick(e -> panel.returnToOverviewPanel(false));
 		}
 	}
 
-	private void createSectionSubMenuOnWornItems(InventorySetup setup, MenuEntry menuEntry)
+	private void createAutoLayoutSubMenuOnWornItems()
+	{
+		Menu parentMenu = client.getMenu()
+				.createMenuEntry(-1)
+				.setOption("Auto Layout")
+				.setType(MenuAction.RUNELITE)
+				.createSubMenu();
+		parentMenu.createMenuEntry(0)
+				.setOption(AUTO_LAYOUT_PRESET_ENTRY)
+				.setType(MenuAction.RUNELITE)
+				.onClick(e -> previewNewLayout(panel.getCurrentSelectedSetup(), InventorySetupLayoutType.PRESET));
+		parentMenu.createMenuEntry(0)
+				.setOption(AUTO_LAYOUT_ZIGZAG_ENTRY)
+				.setType(MenuAction.RUNELITE)
+				.onClick(e -> previewNewLayout(panel.getCurrentSelectedSetup(), InventorySetupLayoutType.ZIGZAG));
+
+	}
+
+	private void previewNewLayout(final InventorySetup setup, final InventorySetupLayoutType type)
+	{
+		clientThread.invoke(() ->
+		{
+			final Layout old = layoutUtilities.getSetupLayout(setup);
+
+			// Don't add any items to the tag yet. We just want to display a layout
+			// We can add tags after if the user likes the layout.
+			// This stops the case that somebody removed a tag from the inventory setup
+			// And this layout won't accidentally bring it back if they decide not to use it.
+			final Layout new_ = layoutUtilities.createSetupLayout(setup, type, false);
+
+			// Temporarily save the new layout to open the tag.
+			layoutManager.saveLayout(new_);
+			bankTagsService.openBankTag(new_.getTag(), BankTagsService.OPTION_HIDE_TAG_NAME);
+			resetBankScrollBar();
+
+			// Save the old layout again in case the user hits escape on the menu.
+			// The bank will still show the temporary new layout.
+			layoutManager.saveLayout(old);
+
+			chatboxPanelManager.openTextMenuInput("Tab laid out using the '" + type.getName() + "' layout.")
+					.option("1. Keep", () ->
+					{
+						// Tag all the items in the setup now since the user likes it.
+						clientThread.invoke(() ->
+						{
+							// Need this to be in a client thread invoke in case the user types 1 instead.
+							layoutUtilities.createSetupLayout(setup, type, true);
+							layoutManager.saveLayout(new_);
+						});
+
+					})
+					.option("2. Undo", () ->
+					{
+						// The old layout is already saved, no need to do anything.
+					})
+					// If this is not done with invokeLater, I get crashing...
+					.onClose(() -> clientThread.invokeLater(() -> bankTagsService.openBankTag(old.getTag(), BANK_TAG_OPTIONS)))
+					.build();
+		});
+	}
+
+	private void createSectionSubMenuOnWornItems(Collection<InventorySetup> setups, String name, Color color)
+	{
+		Menu subMenu = client.getMenu()
+			.createMenuEntry(1)
+			.setOption(OPEN_SECTION_MENU_ENTRY)
+			.setTarget(ColorUtil.prependColorTag(name, color))
+			.setType(MenuAction.RUNELITE)
+			.createSubMenu();
+
+		for (final InventorySetup inventorySetup : setups)
+		{
+			try
+			{
+				createSectionSubMenuEntryOnWornItems(inventorySetup, subMenu);
+			}
+			catch (IllegalStateException ignored)
+			{
+				// This can be thrown if the menu exceeds the menu entry limit,
+				// at which point we can just move on to the next section.
+				// Each submenu has its own internal limit, so hitting this once
+				// does not mean we cannot insert more menu entries elsewhere.
+				break;
+			}
+		}
+	}
+
+	private void createSectionSubMenuEntryOnWornItems(InventorySetup setup, Menu parentMenu)
 	{
 		Color setupMenuTargetColor = setup.getDisplayColor() == null ? JagexColors.MENU_TARGET : setup.getDisplayColor();
 
-		menuEntry.createSubMenu().createMenuEntry(-1)
-			.setOption(OPEN_SETUP_MENU_ENTRY)
-			.setTarget(ColorUtil.prependColorTag(setup.getName(), setupMenuTargetColor))
-			.setType(MenuAction.RUNELITE)
-			.onClick(e ->
-			{
-				resetBankSearch(true);
-				panel.setCurrentInventorySetup(setup, true);
-			});
+		parentMenu.createMenuEntry(0)
+				.setOption(OPEN_SETUP_MENU_ENTRY)
+				.setTarget(ColorUtil.prependColorTag(setup.getName(), setupMenuTargetColor))
+				.setType(MenuAction.RUNELITE)
+				.onClick(e ->
+				{
+					resetBankSearch();
+					panel.setCurrentInventorySetup(setup, true);
+				});
 	}
 
 	private void createMenuEntryToAddAdditionalFilteredItem(int inventoryIndex)
 	{
-		client.createMenuEntry(-1)
-				.setOption(ADD_TO_ADDITIONAL_ENTRY)
-				.onClick(e ->
+		client.getMenu()
+			.createMenuEntry(-1)
+			.setOption(ADD_TO_ADDITIONAL_ENTRY)
+			.onClick(e ->
+			{
+				final Item newItem = retrieveItemFromBankMenuEntry(inventoryIndex);
+				if (newItem == null)
 				{
-					final Item newItem = retrieveItemFromBankMenuEntry(inventoryIndex);
-					if (newItem == null)
-					{
-						return;
-					}
+					return;
+				}
 
-					final Map<Integer, InventorySetupsItem> additionalFilteredItems =
-							panel.getCurrentSelectedSetup().getAdditionalFilteredItems();
+				final Map<Integer, InventorySetupsItem> additionalFilteredItems =
+						panel.getCurrentSelectedSetup().getAdditionalFilteredItems();
 
-					// Item already exists, don't add it again
-					if (!additionalFilteredItemsHasItem(newItem.getId(), additionalFilteredItems))
-					{
-						addAdditionalFilteredItem(newItem.getId(), additionalFilteredItems);
-					}
-				});
+				// Item already exists, don't add it again
+				if (!additionalFilteredItemsHasItem(newItem.getId(), additionalFilteredItems))
+				{
+					addAdditionalFilteredItem(newItem.getId(), panel.getCurrentSelectedSetup(), additionalFilteredItems);
+				}
+			});
 	}
 
 	// Retrieve an item from a selected menu entry in the bank
@@ -672,36 +892,30 @@ public class MInventorySetupsPlugin extends Plugin
 	@Subscribe
 	private void onWidgetClosed(WidgetClosed event)
 	{
-
-		if (event.getGroupId() == InterfaceID.BANK && !config.persistHotKeysOutsideBank())
+		if (event.getGroupId() == InterfaceID.BANK )
 		{
-			unregisterHotkeys();
+			if (!config.persistHotKeysOutsideBank())
+			{
+				unregisterHotkeys();
+			}
+
+			if (isInventorySetupTagOpen())
+			{
+				// Close the bank tag for those who use manual bank filter
+				clientThread.invokeLater(() -> bankTagsService.closeBankTag());
+			}
 		}
 	}
 
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
-		// when the bank is loaded up allowing filtering again
-		// this is to make it so the bank will refilter if a tab was clicked and then the player exited the bank
 		if (event.getGroupId() == InterfaceID.BANK)
 		{
-			// If manual bank filter is selected, don't allow filtering when the bank is opened
-			// filtering will only occur if the user selects a setup or uses a filtering hotkey
-			// while the bank is already open
-			internalFilteringIsAllowed = !config.manualBankFilter();
-
-			if (panel.getCurrentSelectedSetup() != null && panel.getCurrentSelectedSetup().isFilterBank() && isFilteringAllowed())
-			{
-				// start a bank search so the bank is filtered when it's opened
-				doBankSearch();
-			}
-
 			if (!config.persistHotKeysOutsideBank())
 			{
 				registerHotkeys();
 			}
-
 		}
 	}
 
@@ -734,85 +948,14 @@ public class MInventorySetupsPlugin extends Plugin
 		configManager.setConfiguration(CONFIG_GROUP, CONFIG_KEY_SORTING_MODE, mode);
 	}
 
-	public String getSavedVersionString()
-	{
-		final String versionStr = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY_VERSION_STR);
-		return versionStr == null ? "" : versionStr;
-	}
-
-	public void setSavedVersionString(final String newVersion)
-	{
-		configManager.setConfiguration(CONFIG_GROUP, CONFIG_KEY_VERSION_STR, newVersion);
-	}
-
-	public String getCurrentVersionString()
-	{
-		return currentVersion;
-	}
-
-	@Override
-	public void startUp()
-	{
-		// get current version of the plugin using properties file generated by build.gradle
-		try
-		{
-			this.currentVersion = "1.16";
-		}
-		catch (Exception e)
-		{
-			log.warn("Could not determine current plugin version", e);
-			this.currentVersion = "";
-		}
-
-		this.internalFilteringIsAllowed = true;
-		this.panel = new InventorySetupsPluginPanel(this, itemManager);
-		final BufferedImage icon = ImageUtil.loadImageResource(getClass(), "inventorysetups_icon.png");
-
-		this.navButtonIsSelected = false;
-		navButton = NavigationButton.builder()
-				.tooltip("Inventory Setups")
-				.icon(icon)
-				.priority(6)
-				.panel(panel)
-				.build();
-
-		clientToolbar.addNavigation(navButton);
-
-		bankFilteringMode = InventorySetupsFilteringModeID.ALL;
-
-		this.cache = new InventorySetupsCache();
-		this.inventorySetups = new ArrayList<>();
-		this.sections = new ArrayList<>();
-		this.dataManager = new InventorySetupsPersistentDataManager(this, panel, configManager, cache, gson, inventorySetups, sections);
-
-		// load all the inventory setups from the config file
-		clientThread.invokeLater(() ->
-		{
-			switch (client.getGameState())
-			{
-				case STARTING:
-				case UNKNOWN:
-					return false;
-			}
-
-			clientThread.invokeLater(() ->
-			{
-				dataManager.loadConfig();
-				SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(true));
-			});
-
-			return true;
-		});
-
-	}
 
 	public void addInventorySetup()
 	{
 		final String msg = "Enter the name of this setup (max " + MAX_SETUP_NAME_LENGTH + " chars).";
 		String name = JOptionPane.showInputDialog(panel,
-				msg,
-				"Add New Setup",
-				JOptionPane.PLAIN_MESSAGE);
+			msg,
+			"Add New Setup",
+			JOptionPane.PLAIN_MESSAGE);
 
 		// cancel button was clicked
 		if (name == null || name.isEmpty())
@@ -841,34 +984,31 @@ public class MInventorySetupsPlugin extends Plugin
 			List<InventorySetupsItem> inv = getNormalizedContainer(InventoryID.INVENTORY);
 			List<InventorySetupsItem> eqp = getNormalizedContainer(InventoryID.EQUIPMENT);
 
-			List<InventorySetupsItem> runePouchData = null;
-			final InventorySetupsRunePouchType inventoryRunePouchType = getRunePouchTypeFromContainer(inv);
-			List<InventorySetupsItem> boltPouchData = null;
-			final boolean inventoryHasBoltPouch = containerContainsBoltPouch(inv);
-
-			if (inventoryRunePouchType != InventorySetupsRunePouchType.NONE)
-			{
-				runePouchData = getRunePouchData(inventoryRunePouchType);
-			}
-
-			if (inventoryHasBoltPouch)
-			{
-				boltPouchData = getBoltPouchData();
-			}
+			List<InventorySetupsItem> runePouchData = ammoHandler.getRunePouchDataIfInContainer(inv);
+			List<InventorySetupsItem> boltPouchData = ammoHandler.getBoltPouchDataIfInContainer(inv);
+			List<InventorySetupsItem> quiverData = ammoHandler.getQuiverDataIfInSetup(inv, eqp);
 
 			int spellbook = getCurrentSpellbook();
 
-			final InventorySetup invSetup = new InventorySetup(inv, eqp, runePouchData, boltPouchData, new HashMap<>(), newName, "",
-					config.highlightColor(),
-					config.highlightDifference(),
-					config.enableDisplayColor() ? config.displayColor() : null,
-					config.bankFilter(),
-					config.highlightUnorderedDifference(),
-					spellbook, false, -1);
+			final InventorySetup invSetup = new InventorySetup(inv, eqp, runePouchData, boltPouchData, quiverData,
+				new HashMap<>(),
+				newName,
+				"",
+				config.highlightColor(),
+				config.highlightDifference(),
+				config.enableDisplayColor() ? config.displayColor() : null,
+				config.bankFilter(),
+				config.highlightUnorderedDifference(),
+				spellbook, false, -1);
 
 			cache.addSetup(invSetup);
 			inventorySetups.add(invSetup);
 			dataManager.updateConfig(true, false);
+
+			Layout setupLayout = layoutUtilities.createSetupLayout(invSetup);
+			layoutManager.saveLayout(setupLayout);
+			tagManager.setHidden(setupLayout.getTag(), true);
+
 			SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(false));
 
 		});
@@ -991,79 +1131,117 @@ public class MInventorySetupsPlugin extends Plugin
 
 	public List<InventorySetup> filterSetups(String textToFilter)
 	{
-		final String textToFilterLower = textToFilter.toLowerCase();
 		return inventorySetups.stream()
-				.filter(i -> i.getName().toLowerCase().contains(textToFilterLower))
-				.collect(Collectors.toList());
+			.filter(inventorySetup -> shouldDisplaySetup(inventorySetup, textToFilter.trim().toLowerCase()))
+			.collect(Collectors.toList());
 	}
 
-	public void doBankSearch(final InventorySetupsFilteringModeID filteringModeID)
+	private static boolean shouldDisplaySetup(InventorySetup inventorySetup, String trimmedTextToFilterLower)
 	{
-		bankFilteringMode = filteringModeID;
-		doBankSearch();
+		if (trimmedTextToFilterLower.startsWith(ITEM_SEARCH_TAG) && trimmedTextToFilterLower.length() > ITEM_SEARCH_TAG.length())
+		{
+			String itemName = trimmedTextToFilterLower.substring(ITEM_SEARCH_TAG.length()).trim();
+			// Find setups containing the given item name
+			return containerContainsItemByName(inventorySetup.getInventory(), itemName) || containerContainsItemByName(inventorySetup.getEquipment(), itemName)
+				|| containerContainsItemByName(inventorySetup.getRune_pouch(), itemName) || containerContainsItemByName(inventorySetup.getAdditionalFilteredItems().values(), itemName)
+				|| containerContainsItemByName(inventorySetup.getBoltPouch(), itemName);
+		}
+		else if (trimmedTextToFilterLower.startsWith(NOTES_SEARCH_TAG) && trimmedTextToFilterLower.length() > NOTES_SEARCH_TAG.length())
+		{
+			String noteText = trimmedTextToFilterLower.substring(NOTES_SEARCH_TAG.length()).trim();
+			return inventorySetup.getNotes().toLowerCase().contains(noteText);
+		}
+		// Find setups containing the given setup name (default behaviour)
+		return inventorySetup.getName().toLowerCase().contains(trimmedTextToFilterLower);
+	}
+
+	private static boolean containerContainsItemByName(Collection<InventorySetupsItem> itemsInContainer, String textToFilterLower)
+	{
+		if (itemsInContainer == null)
+		{
+			return false;
+		}
+		return itemsInContainer.stream()
+			.map(item -> item.getName().toLowerCase())
+			.anyMatch(itemName -> itemName.contains(textToFilterLower));
 	}
 
 	public void doBankSearch()
 	{
-		final InventorySetup currentSelectedSetup = panel.getCurrentSelectedSetup();
-		internalFilteringIsAllowed = true;
-
-		if (currentSelectedSetup != null && currentSelectedSetup.isFilterBank())
+		clientThread.invoke(() ->
 		{
+			final InventorySetup currentSelectedSetup = panel.getCurrentSelectedSetup();
 
-			clientThread.invoke(() ->
+			if (currentSelectedSetup == null || !currentSelectedSetup.isFilterBank() || !isFilteringAllowed())
 			{
-				client.setVarbit(Varbits.CURRENT_BANK_TAB, 0);
-				bankSearch.layoutBank();
-
-				// When tab is selected with search window open, the search window closes but the search button
-				// stays highlighted, this solves that issue
-				Widget bankContainer = client.getWidget(ComponentID.BANK_ITEM_CONTAINER);
-				if (bankContainer != null && !bankContainer.isHidden())
-				{
-					Widget searchBackground = client.getWidget(ComponentID.BANK_SEARCH_BUTTON_BACKGROUND);
-					searchBackground.setSpriteId(SpriteID.EQUIPMENT_SLOT_TILE);
-				}
-			});
-		}
-	}
-
-	@Subscribe
-	public void onMenuOptionClicked(MenuOptionClicked event)
-	{
-
-		if (event.getMenuAction() == MenuAction.RUNELITE)
-		{
-			return;
-		}
-
-		if (panel.getCurrentSelectedSetup() == null)
-		{
-			return;
-		}
-
-		if (event.getParam1() == ComponentID.BANK_ITEM_CONTAINER && event.getMenuOption().startsWith("View tab"))
-		{
-			if (config.disableBankTabBar())
-			{
-				event.consume();
+				return;
 			}
-		}
-		else if (panel.getCurrentSelectedSetup() != null
-				&& (event.getMenuOption().startsWith("View tab") || event.getMenuOption().equals("View all items")))
+
+			if (client.getWidget(ComponentID.BANK_CONTAINER) == null)
+			{
+				return;
+			}
+
+			final String tagName = InventorySetupLayoutUtilities.getTagNameForLayout(currentSelectedSetup.getName());
+			if (!config.useLayouts())
+			{
+				bankTagsService.openBankTag(tagName, BANK_TAG_OPTIONS | BankTagsService.OPTION_NO_LAYOUT);
+			}
+			else
+			{
+				bankTagsService.openBankTag(tagName, BANK_TAG_OPTIONS);
+				resetBankScrollBar();
+			}
+
+		});
+	}
+
+	public void resetBankScrollBar()
+	{
+		// Reset the scroll bar position to 0
+		Widget widget = client.getWidget(ComponentID.BANK_SCROLLBAR);
+		if (widget != null)
 		{
-			internalFilteringIsAllowed = false;
+			widget.setScrollY(0);
+			client.setVarcIntValue(VarClientInt.BANK_SCROLL, 0);
 		}
 	}
+
+	private void triggerBankSearchFromHotKey()
+	{
+		// you must wait at least one game tick otherwise
+		// the bank filter will work but then go back to the previous tab.
+		// For some reason this can still happen but it is very rare,
+		// and only when the user clicks a tab and the hot key extremely shortly after.
+		int gameTick = client.getTickCount();
+		clientThread.invokeLater(() ->
+		{
+			int gameTick2 = client.getTickCount();
+			if (gameTick2 <= gameTick)
+			{
+				return false;
+			}
+
+			doBankSearch();
+			return true;
+		});
+	}
+
 
 	private boolean additionalFilteredItemsHasItem(int itemId, final Map<Integer, InventorySetupsItem> additionalFilteredItems)
 	{
-		final int canonicalizedId = itemManager.canonicalize(itemId);
+		return additionalFilteredItemsHasItem(itemId, additionalFilteredItems, true, true);
+	}
+
+	private boolean additionalFilteredItemsHasItem(int itemId, final Map<Integer, InventorySetupsItem> additionalFilteredItems, boolean allowFuzzy, boolean canonicalize)
+	{
 		for (final Integer additionalItemKey : additionalFilteredItems.keySet())
 		{
 			boolean isFuzzy = additionalFilteredItems.get(additionalItemKey).isFuzzy();
-			int addItemId = getProcessedID(isFuzzy, additionalFilteredItems.get(additionalItemKey).getId());
-			int finalItemId = getProcessedID(isFuzzy, canonicalizedId);
+			int addItemId = additionalFilteredItems.get(additionalItemKey).getId();
+
+			addItemId = getProcessedID(isFuzzy, allowFuzzy, canonicalize, addItemId);
+			int finalItemId = getProcessedID(isFuzzy, allowFuzzy, canonicalize, itemId);
 			if (addItemId == finalItemId)
 			{
 				return true;
@@ -1072,7 +1250,7 @@ public class MInventorySetupsPlugin extends Plugin
 		return false;
 	}
 
-	private void addAdditionalFilteredItem(int itemId, final Map<Integer, InventorySetupsItem> additionalFilteredItems)
+	private void addAdditionalFilteredItem(int itemId, final InventorySetup setup, final Map<Integer, InventorySetupsItem> additionalFilteredItems)
 	{
 		// un-noted, un-placeholdered ID
 		final int processedItemId = itemManager.canonicalize(itemId);
@@ -1084,6 +1262,7 @@ public class MInventorySetupsPlugin extends Plugin
 			final InventorySetupsItem setupItem = new InventorySetupsItem(processedItemId, name, 1, config.fuzzy(), stackCompareType);
 
 			additionalFilteredItems.put(processedItemId, setupItem);
+			layoutUtilities.recalculateLayout(setup);
 			dataManager.updateConfig(true, false);
 			panel.refreshCurrentSetup();
 		});
@@ -1092,269 +1271,76 @@ public class MInventorySetupsPlugin extends Plugin
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged event)
 	{
-
-		if (event.getIndex() == 439 && client.getGameState() == GameState.LOGGED_IN)
+		// Spellbook changed
+		if (event.getVarpId() == 439 && client.getGameState() == GameState.LOGGED_IN)
 		{
 			// must be invoked later otherwise causes freezing.
-			clientThread.invokeLater(() ->
-			{
-				panel.highlightSpellbook();
-			});
+			clientThread.invokeLater(panel::doHighlighting);
+			return;
 		}
 
-	}
-
-	public void resetBankSearch(boolean closeChat)
-	{
-		// Only reset the bank automatically if filtering is allowed
-		// This makes it so that you click the search button again to cancel a filter
-		if (isFilteringAllowed())
+		Widget bankContainer = client.getWidget(ComponentID.BANK_ITEM_CONTAINER);
+		boolean bankIsOpen = bankContainer != null && !bankContainer.isHidden();
+		// Avoid extra highlighting calls by deferring the highlighting to GameTick after a bunch of varbit changes come
+		// If the bank is closed, then onItemContainerChanged will handle the highlighting
+		if (bankIsOpen &&
+			(RUNE_POUCH_RUNE_VARBITS.contains(event.getVarbitId()) || RUNE_POUCH_AMOUNT_VARBITS.contains(event.getVarbitId())))
 		{
-			bankSearch.reset(closeChat);
+			shouldTriggerInventoryHighlightOnGameTick = true;
+			return;
 		}
 	}
 
-	public List<InventorySetupsItem> getRunePouchData(final InventorySetupsRunePouchType runePouchType)
+	public void resetBankSearch()
 	{
-		List<InventorySetupsItem> runePouchData = new ArrayList<>();
-		EnumComposition runepouchEnum = client.getEnum(982);
-		for (int i = 0; i < runePouchType.getSize(); i++)
+		// We only reset the bank search if the active tag is an inventory setup
+		// This stops it from closing an open bank tag tab or other plugins opening bank tags.
+		if (isInventorySetupTagOpen())
 		{
-			final int varbitVal = client.getVarbitValue(InventorySetupsRunePouchPanel.RUNE_POUCH_RUNE_VARBITS.get(i));
-			if (varbitVal == 0)
-			{
-				runePouchData.add(InventorySetupsItem.getDummyItem());
-			}
-			else
-			{
-				final int runeId = runepouchEnum.getIntValue(varbitVal);
-				int runeAmount = client.getVarbitValue(InventorySetupsRunePouchPanel.RUNE_POUCH_AMOUNT_VARBITS.get(i));
-				String runeName = itemManager.getItemComposition(runeId).getName();
-				InventorySetupsStackCompareID stackCompareType = panel.isStackCompareForSlotAllowed(InventorySetupsSlotID.RUNE_POUCH, i) ? config.stackCompareType() : InventorySetupsStackCompareID.None;
-				runePouchData.add(new InventorySetupsItem(runeId, runeName, runeAmount, false, stackCompareType));
-			}
+			clientThread.invoke(() -> bankTagsService.closeBankTag());
 		}
-
-		return runePouchData;
 	}
 
-	public List<InventorySetupsItem> getBoltPouchData()
+	public boolean isInventorySetupTagOpen()
 	{
-		List<InventorySetupsItem> boltPouchData = new ArrayList<>();
-
-		for (int i = 0; i < InventorySetupsBoltPouchPanel.BOLT_POUCH_BOLT_VARBIT_IDS.size(); i++)
-		{
-			int boltVarbitId = client.getVarbitValue(InventorySetupsBoltPouchPanel.BOLT_POUCH_BOLT_VARBIT_IDS.get(i));
-			Bolts bolt = Bolts.getBolt(boltVarbitId);
-			boolean boltNotFound = bolt == null;
-			int boltAmount = boltNotFound ? 0 : client.getVarbitValue(InventorySetupsBoltPouchPanel.BOLT_POUCH_AMOUNT_VARBIT_IDS.get(i));
-			String boltName = boltNotFound ? "" : itemManager.getItemComposition(bolt.getItemId()).getName();
-			int boltItemId = boltNotFound ? -1 : bolt.getItemId();
-
-			if (boltItemId == -1)
-			{
-				boltPouchData.add(InventorySetupsItem.getDummyItem());
-			}
-			else
-			{
-				InventorySetupsStackCompareID stackCompareType =
-						panel.isStackCompareForSlotAllowed(InventorySetupsSlotID.BOLT_POUCH, i)
-								? config.stackCompareType() : InventorySetupsStackCompareID.None;
-				boltPouchData.add(new InventorySetupsItem(boltItemId, boltName, boltAmount, false, stackCompareType));
-			}
-		}
-
-		return boltPouchData;
+		return bankTagsService.getActiveTag() != null && bankTagsService.getActiveTag().startsWith(LAYOUT_PREFIX_MARKER);
 	}
 
-	@Subscribe
-	public void onScriptCallbackEvent(ScriptCallbackEvent event)
-	{
-		String eventName = event.getEventName();
-
-		int[] intStack = client.getIntStack();
-		int intStackSize = client.getIntStackSize();
-
-		switch (eventName)
-		{
-			case "bankSearchFilter":
-			{
-				final InventorySetup currentSetup = panel.getCurrentSelectedSetup();
-				// Shared storage uses the bankmain filter scripts too. Allow using tag searches in it but don't
-				// apply the tag search from the active tab.
-				final boolean bankOpen = client.getItemContainer(InventoryID.BANK) != null;
-				if (bankOpen && currentSetup != null && currentSetup.isFilterBank() && isFilteringAllowed())
-				{
-					int itemId = intStack[intStackSize - 1];
-					boolean containsItem = false;
-					switch (bankFilteringMode)
-					{
-						case ALL:
-							containsItem = setupContainsItem(currentSetup, itemId);
-							break;
-						case INVENTORY:
-							boolean runePouchContainsItem = false;
-							if (currentSetup.getRune_pouch() != null)
-							{
-								runePouchContainsItem = containerContainsItem(itemId, currentSetup.getRune_pouch());
-							}
-							boolean boltPouchContainsItem = false;
-							if (currentSetup.getBoltPouch() != null)
-							{
-								boltPouchContainsItem = containerContainsItem(itemId, currentSetup.getBoltPouch());
-							}
-							containsItem = runePouchContainsItem || boltPouchContainsItem ||
-									containerContainsItem(itemId, currentSetup.getInventory());
-							break;
-						case EQUIPMENT:
-							containsItem = containerContainsItem(itemId, currentSetup.getEquipment());
-							break;
-						case ADDITIONAL_FILTERED_ITEMS:
-							containsItem = additionalFilteredItemsHasItem(itemId, currentSetup.getAdditionalFilteredItems());
-							break;
-					}
-					if (containsItem)
-					{
-						// return true
-						intStack[intStackSize - 2] = 1;
-					}
-					else
-					{
-						intStack[intStackSize - 2] = 0;
-					}
-				}
-				break;
-			}
-			case "getSearchingTagTab":
-				// Clicking on a bank tab that isn't the first one (main tab),
-				// then filtering the bank (either by selecting a setup or hotkey),
-				// then clicking on "item" or "note" would cause the bank to show the tab
-				// and remove the filter. This stops this from happening.
-				final InventorySetup currentSetup = panel.getCurrentSelectedSetup();
-				if (currentSetup != null && currentSetup.isFilterBank() && isFilteringAllowed())
-				{
-					intStack[intStackSize - 1] = 1;
-				}
-				else
-				{
-					intStack[intStackSize - 1] = 0;
-				}
-				break;
-		}
-
-
-	}
-
-	@Subscribe
+	@Subscribe(priority = -1) // Make sure this runs AFTER bank tags plugin.
 	public void onScriptPreFired(ScriptPreFired event)
 	{
-		if (event.getScriptId() == ScriptID.BANKMAIN_FINISHBUILDING)
+		if (event.getScriptId() == ScriptID.BANKMAIN_INIT)
+		{
+			// Do a bank search when the bank is opened
+			// This will set the proper layout
+			if (!config.manualBankFilter())
+			{
+				// Only do the filter if manual bank filter is not set.
+				doBankSearch();
+			}
+		}
+		else if (event.getScriptId() == ScriptID.BANKMAIN_FINISHBUILDING)
 		{
 			// Bankmain_build will reset the bank title to "The Bank of Gielinor". So apply our own title.
-			if (panel.getCurrentSelectedSetup() != null && panel.getCurrentSelectedSetup().isFilterBank() && isFilteringAllowed())
+			// We should only do this if the active tag is an inventory setup tag
+			if (panel.getCurrentSelectedSetup() != null && isInventorySetupTagOpen())
 			{
-				String postTitle = " - ";
-				switch (bankFilteringMode)
-				{
-					case ALL:
-						postTitle += "All Items";
-						break;
-					case INVENTORY:
-						postTitle += "Inventory";
-						break;
-					case EQUIPMENT:
-						postTitle += "Equipment";
-						break;
-					case ADDITIONAL_FILTERED_ITEMS:
-						postTitle += "Additional Items";
-						break;
-				}
 				Widget bankTitle = client.getWidget(ComponentID.BANK_TITLE_BAR);
-				bankTitle.setText("Inventory Setup <col=ff0000>" + panel.getCurrentSelectedSetup().getName() + postTitle + "</col>");
+				bankTitle.setText("Inventory Setup <col=ff0000>" + panel.getCurrentSelectedSetup().getName() + "</col>");
 			}
 		}
 		else if (event.getScriptId() == ScriptID.BANKMAIN_SEARCH_TOGGLE)
 		{
 			// cancel the current filtering if the search button is clicked
-			resetBankSearch(true);
-
-			// don't allow the bank to retry a filter if the search button is clicked
-			internalFilteringIsAllowed = false;
+			resetBankSearch();
 		}
-	}
-
-	@Subscribe
-	public void onScriptPostFired(ScriptPostFired event)
-	{
-		if (event.getScriptId() == ScriptID.BANKMAIN_SEARCHING)
-		{
-			// The return value of bankmain_searching is on the stack. If we have a setup active
-			// make it return true to put the bank in a searching state.
-			boolean bankOpen = client.getItemContainer(InventoryID.BANK) != null;
-			if (bankOpen && panel.getCurrentSelectedSetup() != null && panel.getCurrentSelectedSetup().isFilterBank() && isFilteringAllowed())
-			{
-				client.getIntStack()[client.getIntStackSize() - 1] = 1; // true
-			}
-		}
-
-		if (event.getScriptId() != ScriptID.BANKMAIN_BUILD)
-		{
-			return;
-		}
-
-		int items = 0;
-
-		Widget itemContainer = client.getWidget(ComponentID.BANK_ITEM_CONTAINER);
-		if (itemContainer == null)
-		{
-			return;
-		}
-
-		if (panel.getCurrentSelectedSetup() != null && config.removeBankTabSeparator() && isFilteringAllowed())
-		{
-			Widget[] containerChildren = itemContainer.getDynamicChildren();
-
-			// sort the child array as the items are not in the displayed order
-			Arrays.sort(containerChildren, Comparator.comparing(Widget::getOriginalY).thenComparing(Widget::getOriginalX));
-
-			for (Widget child : containerChildren)
-			{
-				if (child.getItemId() != -1 && !child.isHidden())
-				{
-					// calculate correct item position as if this was a normal tab
-					int adjYOffset = (items / ITEMS_PER_ROW) * ITEM_VERTICAL_SPACING;
-					int adjXOffset = (items % ITEMS_PER_ROW) * ITEM_HORIZONTAL_SPACING + ITEM_ROW_START;
-
-					if (child.getOriginalY() != adjYOffset)
-					{
-						child.setOriginalY(adjYOffset);
-						child.revalidate();
-					}
-
-					if (child.getOriginalX() != adjXOffset)
-					{
-						child.setOriginalX(adjXOffset);
-						child.revalidate();
-					}
-
-					items++;
-				}
-
-				// separator line or tab text
-				if (child.getSpriteId() == SpriteID.RESIZEABLE_MODE_SIDE_PANEL_BACKGROUND || child.getText().contains("Tab"))
-				{
-					child.setHidden(true);
-				}
-			}
-		}
-
 	}
 
 	public void updateCurrentSetup(InventorySetup setup)
 	{
 		int confirm = JOptionPane.showConfirmDialog(panel,
-				"Are you sure you want update this inventory setup?",
-				"Warning", JOptionPane.OK_CANCEL_OPTION);
+			"Are you sure you want update this inventory setup?",
+			"Warning", JOptionPane.OK_CANCEL_OPTION);
 
 		// cancel button was clicked
 		if (confirm != JOptionPane.YES_OPTION)
@@ -1380,45 +1366,43 @@ public class MInventorySetupsPlugin extends Plugin
 				eqp.get(i).setStackCompare(setup.getEquipment().get(i).getStackCompare());
 			}
 
-			List<InventorySetupsItem> runePouchData = null;
-			final InventorySetupsRunePouchType inventoryRunePouchType = getRunePouchTypeFromContainer(inv);
-			if (inventoryRunePouchType != InventorySetupsRunePouchType.NONE)
-			{
-				runePouchData = getRunePouchData(inventoryRunePouchType);
-			}
+			ammoHandler.updateSpecialContainersInSetup(setup, inv, eqp);
 
-			List<InventorySetupsItem> boltPouchData = null;
-			if (containerContainsItem(ItemID.BOLT_POUCH, inv))
-			{
-				boltPouchData = getBoltPouchData();
-			}
-
-			setup.updateRunePouch(runePouchData);
-			setup.updateBoltPouch(boltPouchData);
 			setup.updateInventory(inv);
 			setup.updateEquipment(eqp);
 			setup.updateSpellbook(getCurrentSpellbook());
+
+			// Regenerate the layout and tag.
+			clientThread.invoke(() ->
+			{
+				String tagName = InventorySetupLayoutUtilities.getTagNameForLayout(setup.getName());
+				tagManager.removeTag(tagName);
+				layoutManager.removeLayout(tagName);
+
+				Layout newLayout = layoutUtilities.createSetupLayout(setup);
+				layoutManager.saveLayout(newLayout);
+			});
+
 			dataManager.updateConfig(true, false);
 			panel.refreshCurrentSetup();
 		});
 	}
 
-	private void updateAllInstancesInContainerSetupWithNewItem(final InventorySetup inventorySetup, List<InventorySetupsItem> containerToUpdate,
-															   final InventorySetupsItem oldItem, final InventorySetupsItem newItem, final InventorySetupsSlotID id)
+	private boolean updateAllInstancesInContainerSetupWithNewItem(final InventorySetup inventorySetup, List<InventorySetupsItem> containerToUpdate,
+																final InventorySetupsItem oldItem, final InventorySetupsItem newItem, final InventorySetupsSlotID id)
 	{
+		boolean updated = false;
 		for (int i = 0; i < containerToUpdate.size(); i++)
 		{
 			final InventorySetupsItem item = containerToUpdate.get(i);
 			if (item.getId() == oldItem.getId())
 			{
-				boolean runePouchValid = checkAndUpdateSlotIfRunePouchWasSelected(inventorySetup, id, containerToUpdate.get(i), newItem, false);
-				boolean boltPouchValid = checkAndUpdateSlotIfBoltPouchWasSelected(inventorySetup, id, containerToUpdate.get(i), newItem, false);
-				if (runePouchValid && boltPouchValid)
-				{
-					containerToUpdate.set(i, newItem);
-				}
+				ammoHandler.handleSpecialAmmo(inventorySetup, containerToUpdate.get(i), newItem);
+				containerToUpdate.set(i, newItem);
+				updated = true;
 			}
 		}
+		return updated;
 	}
 
 	private void updateAllInstancesInSetupWithNewItem(final InventorySetupsItem oldItem, final InventorySetupsItem newItem)
@@ -1436,8 +1420,12 @@ public class MInventorySetupsPlugin extends Plugin
 
 		for (final InventorySetup inventorySetup : inventorySetups)
 		{
-			updateAllInstancesInContainerSetupWithNewItem(inventorySetup, inventorySetup.getInventory(), oldItem, newItem, InventorySetupsSlotID.INVENTORY);
-			updateAllInstancesInContainerSetupWithNewItem(inventorySetup, inventorySetup.getEquipment(), oldItem, newItem, InventorySetupsSlotID.EQUIPMENT);
+			boolean invUpdated = updateAllInstancesInContainerSetupWithNewItem(inventorySetup, inventorySetup.getInventory(), oldItem, newItem, InventorySetupsSlotID.INVENTORY);
+			boolean eqpUpdated = updateAllInstancesInContainerSetupWithNewItem(inventorySetup, inventorySetup.getEquipment(), oldItem, newItem, InventorySetupsSlotID.EQUIPMENT);
+			if (invUpdated || eqpUpdated)
+			{
+				layoutUtilities.recalculateLayout(inventorySetup);
+			}
 		}
 	}
 
@@ -1446,9 +1434,9 @@ public class MInventorySetupsPlugin extends Plugin
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			JOptionPane.showMessageDialog(panel,
-					"You must be logged in to update from " + (slot.getSlotID().toString().toLowerCase() + "."),
-					"Cannot Update Item",
-					JOptionPane.ERROR_MESSAGE);
+				"You must be logged in to update from " + (slot.getSlotID().toString().toLowerCase() + "."),
+				"Cannot Update Item",
+				JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
@@ -1471,12 +1459,9 @@ public class MInventorySetupsPlugin extends Plugin
 			else
 			{
 				List<InventorySetupsItem> containerToUpdate =  getContainerFromID(slot.getParentSetup(), slot.getSlotID());
-				boolean runePouchValid = checkAndUpdateSlotIfRunePouchWasSelected(slot.getParentSetup(), slot.getSlotID(), oldItem, newItem, true);
-				boolean boltPouchValid = checkAndUpdateSlotIfBoltPouchWasSelected(slot.getParentSetup(), slot.getSlotID(), oldItem, newItem, true);
-				if (runePouchValid && boltPouchValid)
-				{
-					containerToUpdate.set(slot.getIndexInSlot(), newItem);
-				}
+				ammoHandler.handleSpecialAmmo(slot.getParentSetup(), oldItem, newItem);
+				containerToUpdate.set(slot.getIndexInSlot(), newItem);
+				layoutUtilities.recalculateLayout(slot.getParentSetup());
 			}
 
 			dataManager.updateConfig(true, false);
@@ -1491,65 +1476,65 @@ public class MInventorySetupsPlugin extends Plugin
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			JOptionPane.showMessageDialog(panel,
-					"You must be logged in to search.",
-					"Cannot Search for Item",
-					JOptionPane.ERROR_MESSAGE);
+				"You must be logged in to search.",
+				"Cannot Search for Item",
+				JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
 		itemSearch
-				.tooltipText("Set slot to")
-				.onItemSelected((itemId) ->
+			.tooltipText("Set slot to")
+			.onItemSelected((itemId) ->
+			{
+				clientThread.invokeLater(() ->
 				{
-					clientThread.invokeLater(() ->
+					int finalId = itemManager.canonicalize(itemId);
+
+					if (slot.getSlotID() == InventorySetupsSlotID.ADDITIONAL_ITEMS)
 					{
-						int finalId = itemManager.canonicalize(itemId);
-
-						if (slot.getSlotID() == InventorySetupsSlotID.ADDITIONAL_ITEMS)
+						final Map<Integer, InventorySetupsItem> additionalFilteredItems =
+								panel.getCurrentSelectedSetup().getAdditionalFilteredItems();
+						if (!additionalFilteredItemsHasItem(finalId, additionalFilteredItems))
 						{
-							final Map<Integer, InventorySetupsItem> additionalFilteredItems =
-									panel.getCurrentSelectedSetup().getAdditionalFilteredItems();
-							if (!additionalFilteredItemsHasItem(finalId, additionalFilteredItems))
+							removeAdditionalFilteredItem(slot, additionalFilteredItems);
+							addAdditionalFilteredItem(finalId, slot.getParentSetup(), additionalFilteredItems);
+						}
+						return;
+					}
+
+					final String itemName = itemManager.getItemComposition(finalId).getName();
+					final List<InventorySetupsItem> container = getContainerFromSlot(slot);
+					final InventorySetupsItem itemToBeReplaced = container.get(slot.getIndexInSlot());
+					final InventorySetupsItem newItem = new InventorySetupsItem(finalId, itemName, 1, itemToBeReplaced.isFuzzy(), itemToBeReplaced.getStackCompare());
+
+					// NOTE: the itemSearch shows items from skill guides which can be selected, which may be highlighted
+
+					// if the item is stackable, ask for a quantity
+					if (allowStackable && itemManager.getItemComposition(finalId).isStackable())
+					{
+						searchInput = chatboxPanelManager.openTextInput("Enter amount")
+							// only allow numbers and k, m, b (if 1 value is available)
+							// stop once k, m, or b is seen
+							.addCharValidator(this::validateCharFromItemSearch)
+							.onDone((input) ->
 							{
-								removeAdditionalFilteredItem(slot, additionalFilteredItems);
-								addAdditionalFilteredItem(finalId, additionalFilteredItems);
-							}
-							return;
-						}
-
-						final String itemName = itemManager.getItemComposition(finalId).getName();
-						final List<InventorySetupsItem> container = getContainerFromSlot(slot);
-						final InventorySetupsItem itemToBeReplaced = container.get(slot.getIndexInSlot());
-						final InventorySetupsItem newItem = new InventorySetupsItem(finalId, itemName, 1, itemToBeReplaced.isFuzzy(), itemToBeReplaced.getStackCompare());
-
-						// NOTE: the itemSearch shows items from skill guides which can be selected, which may be highlighted
-
-						// if the item is stackable, ask for a quantity
-						if (allowStackable && itemManager.getItemComposition(finalId).isStackable())
-						{
-							searchInput = chatboxPanelManager.openTextInput("Enter amount")
-									// only allow numbers and k, m, b (if 1 value is available)
-									// stop once k, m, or b is seen
-									.addCharValidator(this::validateCharFromItemSearch)
-									.onDone((input) ->
-									{
-										int quantity = InventorySetupUtilities.parseTextInputAmount(input);
-										newItem.setQuantity(quantity);
-										updateSlotFromSearchHelper(slot, itemToBeReplaced, newItem, container, updateAllInstances);
-									}).build();
-						}
-						else
-						{
-							updateSlotFromSearchHelper(slot, itemToBeReplaced, newItem, container, updateAllInstances);
-						}
-					});
-				})
-				.build();
+								int quantity = InventorySetupUtilities.parseTextInputAmount(input);
+								newItem.setQuantity(quantity);
+								updateSlotFromSearchHelper(slot, itemToBeReplaced, newItem, container, updateAllInstances);
+							}).build();
+					}
+					else
+					{
+						updateSlotFromSearchHelper(slot, itemToBeReplaced, newItem, container, updateAllInstances);
+					}
+				});
+			})
+			.build();
 	}
 
 	private void updateSlotFromSearchHelper(final InventorySetupsSlot slot, final InventorySetupsItem itemToBeReplaced,
-											final InventorySetupsItem newItem, final List<InventorySetupsItem> container,
-											boolean updateAllInstances)
+										final InventorySetupsItem newItem, final List<InventorySetupsItem> container,
+										boolean updateAllInstances)
 	{
 		clientThread.invokeLater(() ->
 		{
@@ -1559,17 +1544,9 @@ public class MInventorySetupsPlugin extends Plugin
 			}
 			else
 			{
-				// update the rune pouch data
-				if (!checkAndUpdateSlotIfRunePouchWasSelected(slot.getParentSetup(), slot.getSlotID(), container.get(slot.getIndexInSlot()), newItem))
-				{
-					return;
-				}
-				// update the bolt pouch data
-				if (!checkAndUpdateSlotIfBoltPouchWasSelected(slot.getParentSetup(), slot.getSlotID(), container.get(slot.getIndexInSlot()), newItem))
-				{
-					return;
-				}
+				ammoHandler.handleSpecialAmmo(slot.getParentSetup(), itemToBeReplaced, newItem);
 				container.set(slot.getIndexInSlot(), newItem);
+				layoutUtilities.recalculateLayout(slot.getParentSetup());
 			}
 
 			SwingUtilities.invokeLater(() ->
@@ -1584,15 +1561,15 @@ public class MInventorySetupsPlugin extends Plugin
 	{
 		// allow more numbers to be put in if a letter hasn't been detected
 		boolean stillInputtingNumbers = arg >= '0' && arg <= '9' &&
-				!searchInput.getValue().toLowerCase().contains("k") &&
-				!searchInput.getValue().toLowerCase().contains("m") &&
-				!searchInput.getValue().toLowerCase().contains("b");
+			!searchInput.getValue().toLowerCase().contains("k") &&
+			!searchInput.getValue().toLowerCase().contains("m") &&
+			!searchInput.getValue().toLowerCase().contains("b");
 
 		// if a letter is input, check if there isn't one already and the length is not 0
 		boolean letterIsInput = (arg == 'b' || arg == 'B' ||
 				arg == 'k' || arg == 'K' ||
 				arg == 'm' || arg == 'M') &&
-				searchInput.getValue().length() > 0 &&
+				!searchInput.getValue().isEmpty() &&
 				!searchInput.getValue().toLowerCase().contains("k") &&
 				!searchInput.getValue().toLowerCase().contains("m") &&
 				!searchInput.getValue().toLowerCase().contains("b");
@@ -1605,21 +1582,21 @@ public class MInventorySetupsPlugin extends Plugin
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			JOptionPane.showMessageDialog(panel,
-					"You must be logged in to search.",
-					"Cannot Search for Item",
-					JOptionPane.ERROR_MESSAGE);
+				"You must be logged in to search.",
+				"Cannot Search for Item",
+				JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
 		itemSearch
-				.tooltipText("Set slot to")
-				.onItemSelected((itemId) ->
-				{
-					int finalId = itemManager.canonicalize(itemId);
-					setup.setIconID(finalId);
-					dataManager.updateConfig(true, false);
-					SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(false));
-				}).build();
+			.tooltipText("Set slot to")
+			.onItemSelected((itemId) ->
+			{
+				int finalId = itemManager.canonicalize(itemId);
+				setup.setIconID(finalId);
+				dataManager.updateConfig(true, false);
+				SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(false));
+			}).build();
 	}
 
 	public void removeItemFromSlot(final InventorySetupsSlot slot)
@@ -1627,9 +1604,9 @@ public class MInventorySetupsPlugin extends Plugin
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			JOptionPane.showMessageDialog(panel,
-					"You must be logged in to remove item from the slot.",
-					"Cannot Remove Item",
-					JOptionPane.ERROR_MESSAGE);
+				"You must be logged in to remove item from the slot.",
+				"Cannot Remove Item",
+				JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
@@ -1640,6 +1617,7 @@ public class MInventorySetupsPlugin extends Plugin
 			if (slot.getSlotID() == InventorySetupsSlotID.ADDITIONAL_ITEMS)
 			{
 				removeAdditionalFilteredItem(slot, panel.getCurrentSelectedSetup().getAdditionalFilteredItems());
+				layoutUtilities.recalculateLayout(panel.getCurrentSelectedSetup());
 				dataManager.updateConfig(true, false);
 				panel.refreshCurrentSetup();
 				return;
@@ -1647,21 +1625,19 @@ public class MInventorySetupsPlugin extends Plugin
 
 			final List<InventorySetupsItem> container = getContainerFromSlot(slot);
 
-			// update the rune pouch data
+			// update special containers
 			final InventorySetupsItem itemToBeReplaced = container.get(slot.getIndexInSlot());
 			final InventorySetupsItem dummyItem = new InventorySetupsItem(-1, "", 0, itemToBeReplaced.isFuzzy(), itemToBeReplaced.getStackCompare());
-			if (!checkAndUpdateSlotIfRunePouchWasSelected(slot.getParentSetup(), slot.getSlotID(), container.get(slot.getIndexInSlot()), dummyItem))
-			{
-				return;
-			}
-
-			// update the bolt pouch data
-			if (!checkAndUpdateSlotIfBoltPouchWasSelected(slot.getParentSetup(), slot.getSlotID(), container.get(slot.getIndexInSlot()), dummyItem))
-			{
-				return;
-			}
+			ammoHandler.handleSpecialAmmo(slot.getParentSetup(), itemToBeReplaced, dummyItem);
 
 			container.set(slot.getIndexInSlot(), dummyItem);
+
+			// Update the layout
+			if (itemToBeReplaced.getId() != -1)
+			{
+				layoutUtilities.recalculateLayout(slot.getParentSetup());
+			}
+
 			dataManager.updateConfig(true, false);
 			panel.refreshCurrentSetup();
 		});
@@ -1673,6 +1649,8 @@ public class MInventorySetupsPlugin extends Plugin
 		{
 			return;
 		}
+
+		InventorySetupsItem item = null;
 
 		if (slot.getSlotID() == InventorySetupsSlotID.ADDITIONAL_ITEMS)
 		{
@@ -1695,13 +1673,23 @@ public class MInventorySetupsPlugin extends Plugin
 				}
 				j++;
 			}
-			additionalFilteredItems.get(keyToMakeFuzzy).toggleIsFuzzy();
+			item = additionalFilteredItems.get(keyToMakeFuzzy);
 		}
 		else
 		{
 			final List<InventorySetupsItem> container = getContainerFromSlot(slot);
-			container.get(slot.getIndexInSlot()).toggleIsFuzzy();
+			item = container.get(slot.getIndexInSlot());
 		}
+		item.toggleIsFuzzy();
+		final int itemId = item.getId();
+		clientThread.invoke(() ->
+		{
+			if (itemId == -1)
+			{
+				return;
+			}
+			layoutUtilities.recalculateLayout(slot.getParentSetup());
+		});
 
 		dataManager.updateConfig(true, false);
 		panel.refreshCurrentSetup();
@@ -1747,6 +1735,9 @@ public class MInventorySetupsPlugin extends Plugin
 		}
 
 		additionalFilteredItems.remove(keyToDelete);
+		// None of the data functions are called here because the callee does it.
+		// If an item is swapped (removed + added) this would result in a double data process
+		// Which isn't bad, just a minor optimization
 
 	}
 
@@ -1777,6 +1768,7 @@ public class MInventorySetupsPlugin extends Plugin
 	{
 		if (isDeletionConfirmed("Are you sure you want to permanently delete this inventory setup?", "Warning"))
 		{
+
 			// Remove the setup from any sections which have it
 			for (final InventorySetupsSection section : sections)
 			{
@@ -1787,6 +1779,15 @@ public class MInventorySetupsPlugin extends Plugin
 			}
 			cache.removeSetup(setup);
 			inventorySetups.remove(setup);
+
+			// Remove the layout and tag
+			clientThread.invoke(() ->
+			{
+				String tagName = InventorySetupLayoutUtilities.getTagNameForLayout(setup.getName());
+				tagManager.removeTag(tagName);
+				layoutManager.removeLayout(tagName);
+			});
+
 			panel.redrawOverviewPanel(false);
 			dataManager.updateConfig(true, true);
 		}
@@ -1833,6 +1834,8 @@ public class MInventorySetupsPlugin extends Plugin
 		clientThread.invokeLater(() ->
 		{
 			dataManager.loadConfig();
+			// We may need to display the warning for this profile so reset it.
+			panel.setHasDisplayedLayoutWarning(false);
 			SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(true));
 			return true;
 		});
@@ -1845,23 +1848,16 @@ public class MInventorySetupsPlugin extends Plugin
 		// check to see that the container is the equipment or inventory
 		ItemContainer container = event.getItemContainer();
 
-		if (container == client.getItemContainer(InventoryID.INVENTORY))
+		if (container == client.getItemContainer(InventoryID.INVENTORY) || container == client.getItemContainer(InventoryID.EQUIPMENT))
 		{
-			panel.highlightInventory();
+			panel.doHighlighting();
 		}
-		else if (container == client.getItemContainer(InventoryID.EQUIPMENT))
-		{
-			panel.highlightEquipment();
-		}
-
 	}
 
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged event)
 	{
-		panel.highlightInventory();
-		panel.highlightEquipment();
-		panel.highlightSpellbook();
+		panel.doHighlighting();
 	}
 
 	// Must be called on client thread!
@@ -1879,13 +1875,8 @@ public class MInventorySetupsPlugin extends Plugin
 				return getNormalizedContainer(InventoryID.INVENTORY);
 			case EQUIPMENT:
 				return getNormalizedContainer(InventoryID.EQUIPMENT);
-			case RUNE_POUCH:
-				return getRunePouchData(InventorySetupsRunePouchType.DIVINE);
-			case BOLT_POUCH:
-				return getBoltPouchData();
 			default:
-				assert false : "Wrong slot ID!";
-				return null;
+				return ammoHandler.getNormalizedSpecialContainer(id);
 		}
 	}
 
@@ -1909,7 +1900,7 @@ public class MInventorySetupsPlugin extends Plugin
 		{
 
 			final InventorySetupsStackCompareID stackCompareType = panel != null && panel.isStackCompareForSlotAllowed(InventorySetupsSlotID.fromInventoryID(id), i) ?
-					config.stackCompareType() : InventorySetupsStackCompareID.None;
+				config.stackCompareType() : InventorySetupsStackCompareID.None;
 			if (items == null || i >= items.length || items[i].getId() == -1)
 			{
 				// add a "dummy" item to fill the normalized container to the right size
@@ -1935,14 +1926,15 @@ public class MInventorySetupsPlugin extends Plugin
 
 	public void exportSetup(final InventorySetup setup)
 	{
-		final String json = gson.toJson(setup);
+		InventorySetupPortable portableSetup = InventorySetupPortable.convertFromInventorySetup(setup, layoutUtilities);
+		final String json = gson.toJson(portableSetup);
 		final StringSelection contents = new StringSelection(json);
 		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(contents, null);
 
 		JOptionPane.showMessageDialog(panel,
-				"Setup data was copied to clipboard.",
-				"Export Setup Succeeded",
-				JOptionPane.PLAIN_MESSAGE);
+			"Setup data was copied to clipboard.",
+			"Export Setup Succeeded",
+			JOptionPane.PLAIN_MESSAGE);
 	}
 
 	public void exportSection(final InventorySetupsSection section)
@@ -2004,9 +1996,9 @@ public class MInventorySetupsPlugin extends Plugin
 		try
 		{
 			final String setup = JOptionPane.showInputDialog(panel,
-					"Enter setup data",
-					"Import New Setup",
-					JOptionPane.PLAIN_MESSAGE);
+				"Enter setup data",
+				"Import New Setup",
+				JOptionPane.PLAIN_MESSAGE);
 
 			// cancel button was clicked
 			if (setup == null)
@@ -2014,34 +2006,48 @@ public class MInventorySetupsPlugin extends Plugin
 				return;
 			}
 
-			Type type = new TypeToken<InventorySetup>()
+			Type type = new TypeToken<InventorySetupPortable>()
 			{
 
 			}.getType();
 
+			final InventorySetupPortable newSetupPortable = gson.fromJson(setup, type);
 
-			final InventorySetup newSetup = gson.fromJson(setup, type);
+			if (isSetupPortableInvalid(newSetupPortable))
+			{
+				throw new RuntimeException("Setup has invalid data.");
+			}
+
+			final InventorySetup newSetup = newSetupPortable.getSerializedSetup();
 
 			if (isImportedSetupInvalid(newSetup))
 			{
 				throw new RuntimeException("Imported setup was missing required fields");
 			}
 
-			preProcessNewSetup(newSetup);
-			cache.addSetup(newSetup);
-			inventorySetups.add(newSetup);
+			clientThread.invoke(() ->
+			{
+				preProcessNewSetup(newSetup);
+				cache.addSetup(newSetup);
+				inventorySetups.add(newSetup);
+				// This will tag all the items in the setup for us, but don't use the layout.
+				// Use what's stored in the import.
+				Layout temp_layout_ = layoutUtilities.createSetupLayout(newSetup);
+				Layout newLayout = new Layout(temp_layout_.getTag(), newSetupPortable.getLayout());
+				layoutManager.saveLayout(newLayout);
+				tagManager.setHidden(newLayout.getTag(), true);
 
-			dataManager.updateConfig(true, false);
-			SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(false));
-
+				dataManager.updateConfig(true, false);
+				SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(false));
+			});
 		}
 		catch (Exception e)
 		{
 			log.error("Couldn't import setup", e);
 			JOptionPane.showMessageDialog(panel,
-					"Invalid setup data.",
-					"Import Setup Failed",
-					JOptionPane.ERROR_MESSAGE);
+				"Invalid setup data.",
+				"Import Setup Failed",
+				JOptionPane.ERROR_MESSAGE);
 		}
 	}
 
@@ -2056,33 +2062,52 @@ public class MInventorySetupsPlugin extends Plugin
 			}
 			final String json = new String(Files.readAllBytes(path));
 
-			Type typeSetups = new TypeToken<ArrayList<InventorySetup>>()
+			Type typeSetups = new TypeToken<ArrayList<InventorySetupPortable>>()
 			{
 
 			}.getType();
 
-			final ArrayList<InventorySetup> newSetups = gson.fromJson(json, typeSetups);
+			final ArrayList<InventorySetupPortable> newSetupPortables = gson.fromJson(json, typeSetups);
 
-			// It's possible that the gson call succeeds but returns setups that have basically nothing
-			// This can occur if trying to import a section file instead of a inventory setup file, since they share fields
-			// Therefore, do some additional checking for required fields
-			for (final InventorySetup setup : newSetups)
+			final ArrayList<InventorySetup> newUnprocessedSetups = new ArrayList<>();
+			final ArrayList<int[]> newUnprocessedLayouts = new ArrayList<>();
+			for (final InventorySetupPortable portable : newSetupPortables)
 			{
+				if (isSetupPortableInvalid(portable))
+				{
+					throw new RuntimeException("Setup has invalid data.");
+				}
+
+				final InventorySetup setup = portable.getSerializedSetup();
+				// Do some additional checking for required fields
 				if (isImportedSetupInvalid(setup))
 				{
 					throw new RuntimeException("Mass import section file was missing required fields");
 				}
+				newUnprocessedSetups.add(setup);
+				newUnprocessedLayouts.add(portable.getLayout());
 			}
 
-			for (final InventorySetup inventorySetup : newSetups)
+			clientThread.invoke(() ->
 			{
-				preProcessNewSetup(inventorySetup);
-				cache.addSetup(inventorySetup);
-				inventorySetups.add(inventorySetup);
-			}
+				for (int i = 0; i < newUnprocessedSetups.size(); i++)
+				{
+					final InventorySetup inventorySetup = newUnprocessedSetups.get(i);
+					preProcessNewSetup(inventorySetup);
+					cache.addSetup(inventorySetup);
+					inventorySetups.add(inventorySetup);
 
-			dataManager.updateConfig(true, false);
-			SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(false));
+					// This will tag all the items in the setup for us, but don't use the layout.
+					// Use what's stored in the import.
+					Layout temp_layout_ = layoutUtilities.createSetupLayout(inventorySetup);
+					Layout newLayout = new Layout(temp_layout_.getTag(), newUnprocessedLayouts.get(i));
+					layoutManager.saveLayout(newLayout);
+					tagManager.setHidden(newLayout.getTag(), true);
+				}
+
+				dataManager.updateConfig(true, false);
+				SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(false));
+			});
 
 		}
 		catch (Exception e)
@@ -2098,6 +2123,11 @@ public class MInventorySetupsPlugin extends Plugin
 	private boolean isImportedSetupInvalid(final InventorySetup setup)
 	{
 		return setup.getName() == null || setup.getInventory() == null || setup.getEquipment() == null || setup.getAdditionalFilteredItems() == null;
+	}
+
+	private boolean isSetupPortableInvalid(final InventorySetupPortable portable)
+	{
+		return portable.getSetup() == null || portable.getLayout() == null;
 	}
 
 	public void importSection()
@@ -2239,13 +2269,6 @@ public class MInventorySetupsPlugin extends Plugin
 		}
 	}
 
-	@Override
-	public void shutDown()
-	{
-		resetBankSearch(true);
-		clientToolbar.removeNavigation(navButton);
-	}
-
 	public boolean isHighlightingAllowed()
 	{
 		return client.getGameState() == GameState.LOGGED_IN;
@@ -2253,9 +2276,7 @@ public class MInventorySetupsPlugin extends Plugin
 
 	public boolean isFilteringAllowed()
 	{
-		boolean allowBasedOnActivePanel = navButtonIsSelected || !config.requireActivePanelFilter();
-
-		return internalFilteringIsAllowed && allowBasedOnActivePanel;
+		return navButtonIsSelected || !config.requireActivePanelFilter();
 	}
 
 	private List<InventorySetupsItem> getContainerFromSlot(final InventorySetupsSlot slot)
@@ -2272,64 +2293,46 @@ public class MInventorySetupsPlugin extends Plugin
 				return inventorySetup.getInventory();
 			case EQUIPMENT:
 				return inventorySetup.getEquipment();
-			case RUNE_POUCH:
-				return inventorySetup.getRune_pouch();
-			case BOLT_POUCH:
-				return inventorySetup.getBoltPouch();
 			default:
-				assert false : "Invalid ID given";
-				return null;
+				return ammoHandler.getSpecialContainerFromID(inventorySetup, ID);
 		}
 	}
 
-	public boolean setupContainsItem(final InventorySetup setup, int itemID)
+	public boolean setupContainsItem(final InventorySetup setup, int itemID, boolean allowFuzzy, boolean canonicalize)
 	{
-		// So place holders will show up in the bank.
-		itemID = itemManager.canonicalize(itemID);
-
-		// Check if this item (inc. placeholder) is in the additional filtered items
-		if (additionalFilteredItemsHasItem(itemID, setup.getAdditionalFilteredItems()))
+		if (additionalFilteredItemsHasItem(itemID, setup.getAdditionalFilteredItems(), allowFuzzy, canonicalize))
 		{
 			return true;
 		}
-
-		// check the rune pouch to see if it has the item (runes in this case)
-		if (setup.getRune_pouch() != null)
+		if (ammoHandler.specialContainersContainItem(setup, itemID, allowFuzzy, canonicalize))
 		{
-			if (containerContainsItem(itemID, setup.getRune_pouch()))
-			{
-				return true;
-			}
+			return true;
 		}
-
-		// check the bolt pouch to see if it has the item (bolts in this case)
-		if (setup.getBoltPouch() != null)
+		if (containerContainsItem(itemID, setup.getInventory(), allowFuzzy, canonicalize))
 		{
-			if (containerContainsItem(itemID, setup.getBoltPouch()))
-			{
-				return true;
-			}
+			return true;
 		}
-
-		return containerContainsItem(itemID, setup.getInventory()) ||
-				containerContainsItem(itemID, setup.getEquipment());
+		if (containerContainsItem(itemID, setup.getEquipment(), allowFuzzy, canonicalize))
+		{
+			return true;
+		}
+		return false;
 	}
 
-	private boolean containerContainsItem(int itemID, final List<InventorySetupsItem> setupContainer)
+	public boolean containerContainsItem(int itemID, final List<InventorySetupsItem> setupContainer, boolean allowFuzzy, boolean canonicalize)
 	{
-		return containerContainsItem(itemID, setupContainer, true);
-	}
-
-	private boolean containerContainsItem(int itemID, final List<InventorySetupsItem> setupContainer, boolean allowFuzzy)
-	{
-		// So place holders will show up in the bank.
-		itemID = itemManager.canonicalize(itemID);
+		if (setupContainer == null)
+		{
+			return false;
+		}
 
 		for (final InventorySetupsItem item : setupContainer)
 		{
-			// For equipped weight reducing items or noted items in the inventory
-			int setupItemId = itemManager.canonicalize(item.getId());
-			if (getProcessedID(item.isFuzzy() && allowFuzzy, itemID) == getProcessedID(item.isFuzzy() && allowFuzzy, setupItemId))
+
+			int processedSetupItemId = getProcessedID(item.isFuzzy(), allowFuzzy, canonicalize, item.getId());
+			int processedItemId = getProcessedID(item.isFuzzy(), allowFuzzy, canonicalize, itemID);
+
+			if (processedSetupItemId == processedItemId)
 			{
 				return true;
 			}
@@ -2338,179 +2341,42 @@ public class MInventorySetupsPlugin extends Plugin
 		return false;
 	}
 
-	private int getProcessedID(boolean isFuzzy, int itemId)
+	public boolean containerContainsItemFromSet(final Set<Integer> itemIDs, final List<InventorySetupsItem> setupContainer, boolean allowFuzzy, boolean canonicalize)
 	{
+		if (setupContainer == null)
+		{
+			return false;
+		}
+
+		for (final InventorySetupsItem item : setupContainer)
+		{
+
+			int processedSetupItemId = getProcessedID(item.isFuzzy(), allowFuzzy, canonicalize, item.getId());
+
+			if (itemIDs.contains(processedSetupItemId))
+			{
+				return true;
+			}
+		}
+
+		return false;
+	}
+
+	private int getProcessedID(boolean itemIsFuzzy, boolean allowFuzzy, boolean canonicalize, int itemId)
+	{
+		// For equipped weight reducing items or noted items in the inventory
+		if (canonicalize || itemIsFuzzy)
+		{
+			itemId = itemManager.canonicalize(itemId);
+		}
+
 		// use fuzzy mapping if needed
-		if (isFuzzy)
+		if (itemIsFuzzy && allowFuzzy)
 		{
 			return InventorySetupsVariationMapping.map(itemId);
 		}
 
 		return itemId;
-	}
-
-	private boolean checkAndUpdateSlotIfRunePouchWasSelected(final InventorySetup inventorySetup, final InventorySetupsSlotID ID,
-															 final InventorySetupsItem oldItem, final InventorySetupsItem newItem)
-	{
-		return checkAndUpdateSlotIfRunePouchWasSelected(inventorySetup, ID, oldItem, newItem, true);
-	}
-
-	private boolean checkAndUpdateSlotIfRunePouchWasSelected(final InventorySetup inventorySetup, final InventorySetupsSlotID ID,
-															 final InventorySetupsItem oldItem, final InventorySetupsItem newItem,
-															 boolean showMessageDialogue)
-	{
-
-		final InventorySetupsRunePouchType runePouchTypeNewItem = getRunePouchType(newItem.getId());
-		final InventorySetupsRunePouchType runePouchTypeOldItem = getRunePouchType(oldItem.getId());
-		if (runePouchTypeNewItem != InventorySetupsRunePouchType.NONE)
-		{
-
-			if (ID != InventorySetupsSlotID.INVENTORY)
-			{
-				if (showMessageDialogue)
-				{
-					SwingUtilities.invokeLater(() ->
-					{
-						JOptionPane.showMessageDialog(panel,
-								"You can't have a Rune Pouch there.",
-								"Invalid Item",
-								JOptionPane.ERROR_MESSAGE);
-					});
-				}
-
-				return false;
-			}
-
-			// only display this message if we aren't replacing a rune pouch with a new rune pouch
-			if (inventorySetup.getRune_pouch() != null && runePouchTypeOldItem == InventorySetupsRunePouchType.NONE)
-			{
-				if (showMessageDialogue)
-				{
-					SwingUtilities.invokeLater(() ->
-					{
-						JOptionPane.showMessageDialog(panel,
-								"You can't have two Rune Pouches.",
-								"Invalid Item",
-								JOptionPane.ERROR_MESSAGE);
-					});
-				}
-				return false;
-			}
-
-			inventorySetup.updateRunePouch(getRunePouchData(runePouchTypeNewItem));
-		}
-		else if (runePouchTypeOldItem != InventorySetupsRunePouchType.NONE)
-		{
-			// if the old item is a rune pouch, need to update it to null
-			inventorySetup.updateRunePouch(null);
-		}
-
-		return true;
-	}
-
-	private boolean checkAndUpdateSlotIfBoltPouchWasSelected(final InventorySetup inventorySetup, final InventorySetupsSlotID ID,
-															 final InventorySetupsItem oldItem, final InventorySetupsItem newItem)
-	{
-		return checkAndUpdateSlotIfBoltPouchWasSelected(inventorySetup, ID, oldItem, newItem, true);
-	}
-
-	private boolean checkAndUpdateSlotIfBoltPouchWasSelected(final InventorySetup inventorySetup, final InventorySetupsSlotID ID,
-															 final InventorySetupsItem oldItem, final InventorySetupsItem newItem,
-															 boolean showMessageDialogue)
-	{
-
-		if (isItemBoltPouch(newItem.getId()))
-		{
-
-			if (ID != InventorySetupsSlotID.INVENTORY)
-			{
-
-				if (showMessageDialogue)
-				{
-					SwingUtilities.invokeLater(() ->
-					{
-						JOptionPane.showMessageDialog(panel,
-								"You can't have a Bolt Pouch there.",
-								"Invalid Item",
-								JOptionPane.ERROR_MESSAGE);
-					});
-				}
-
-				return false;
-			}
-
-			// only display this message if we aren't replacing a bolt pouch with a new bolt pouch
-			if (inventorySetup.getBoltPouch() != null && !isItemBoltPouch(oldItem.getId()))
-			{
-				if (showMessageDialogue)
-				{
-					SwingUtilities.invokeLater(() ->
-					{
-						JOptionPane.showMessageDialog(panel,
-								"You can't have two Bolt Pouches.",
-								"Invalid Item",
-								JOptionPane.ERROR_MESSAGE);
-					});
-				}
-				return false;
-			}
-
-			inventorySetup.updateBoltPouch(getBoltPouchData());
-		}
-		else if (isItemBoltPouch(oldItem.getId()))
-		{
-			// if the old item is a bolt pouch, need to update it to null
-			inventorySetup.updateBoltPouch(null);
-		}
-
-		return true;
-	}
-
-	public InventorySetupsRunePouchType getRunePouchType(final int itemId)
-	{
-		if (InventorySetupsRunePouchPanel.RUNE_POUCH_IDS.contains(itemId))
-		{
-			return InventorySetupsRunePouchType.NORMAL;
-		}
-
-		if (InventorySetupsRunePouchPanel.RUNE_POUCH_DIVINE_IDS.contains(itemId))
-		{
-			return InventorySetupsRunePouchType.DIVINE;
-		}
-
-		return InventorySetupsRunePouchType.NONE;
-	}
-
-	public boolean isItemBoltPouch(final int itemId)
-	{
-		return itemId == ItemID.BOLT_POUCH;
-	}
-
-	public InventorySetupsRunePouchType getRunePouchTypeFromContainer(final List<InventorySetupsItem> container)
-	{
-		// Don't allow fuzzy when checking because it will incorrectly assume the type
-		for (Integer id : InventorySetupsRunePouchPanel.RUNE_POUCH_IDS)
-		{
-			if (containerContainsItem(id, container, false))
-			{
-				return InventorySetupsRunePouchType.NORMAL;
-			}
-		}
-
-		for (Integer id : InventorySetupsRunePouchPanel.RUNE_POUCH_DIVINE_IDS)
-		{
-			if (containerContainsItem(id, container, false))
-			{
-				return InventorySetupsRunePouchType.DIVINE;
-			}
-		}
-
-		return InventorySetupsRunePouchType.NONE;
-	}
-
-	public boolean containerContainsBoltPouch(final List<InventorySetupsItem> container)
-	{
-		return containerContainsItem(ItemID.BOLT_POUCH, container, false);
 	}
 
 	public void openColorPicker(String title, Color startingColor, Consumer<Color> onColorChange)
@@ -2550,8 +2416,27 @@ public class MInventorySetupsPlugin extends Plugin
 			}
 		}
 		// Make sure not to set the new name of the setup before allowing the cache to update
+		final String oldTag = InventorySetupLayoutUtilities.getTagNameForLayout(setup.getName());
 		cache.updateSetupName(setup, newName);
 		setup.setName(newName);
+
+		// Update the tag and layout info
+		clientThread.invoke(() ->
+		{
+			// Rename the tag
+			String newTag = InventorySetupLayoutUtilities.getTagNameForLayout(setup.getName());
+			tagManager.renameTag(oldTag, newTag);
+
+			// Construct the new Layout using the new tag but the old layout info.
+			Layout oldLayout = layoutManager.loadLayout(oldTag);
+			assert oldLayout != null : "Setup did not have a layout!";
+			Layout newLayout = new Layout(newTag, oldLayout.getLayout());
+
+			layoutManager.removeLayout(oldTag);
+			layoutManager.saveLayout(newLayout);
+			tagManager.setHidden(newLayout.getTag(), true);
+		});
+
 		// config will already be updated by caller so no need to update it here
 	}
 

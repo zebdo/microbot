@@ -24,19 +24,18 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
-import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSlotID;
-import net.runelite.client.ui.ColorScheme;
-
-import javax.swing.*;
-import java.awt.*;
+import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import javax.swing.JPanel;
+import javax.swing.SwingUtilities;
+import net.runelite.client.game.ItemManager;
+import net.runelite.client.ui.ColorScheme;
 
 // The additional filtered items panel that contains the additional filtered items list
 public class InventorySetupsAdditionalItemsPanel extends InventorySetupsContainerPanel
@@ -90,9 +89,9 @@ public class InventorySetupsAdditionalItemsPanel extends InventorySetupsContaine
 			for (int i = additionalFilteredSlots.size(); i < totalNumberOfSlotsLambda; i++)
 			{
 				final InventorySetupsSlot newSlot = new InventorySetupsSlot(ColorScheme.DARKER_GRAY_COLOR, InventorySetupsSlotID.ADDITIONAL_ITEMS, i);
-				super.addFuzzyMouseListenerToSlot(newSlot);
-				super.addUpdateFromSearchMouseListenerToSlot(newSlot, false);
-				super.addRemoveMouseListenerToSlot(newSlot);
+				InventorySetupsSlot.addFuzzyMouseListenerToSlot(plugin, newSlot);
+				InventorySetupsSlot.addUpdateFromSearchMouseListenerToSlot(plugin, newSlot, false);
+				InventorySetupsSlot.addRemoveMouseListenerToSlot(plugin, newSlot);
 				additionalFilteredSlots.add(newSlot);
 			}
 
@@ -105,7 +104,7 @@ public class InventorySetupsAdditionalItemsPanel extends InventorySetupsContaine
 			// remove the images and tool tips for the inventory slots that are not part of this setup
 			for (int i = totalNumberOfSlotsLambda - 1; i >= setupAdditionalItems.size(); i--)
 			{
-				this.setSlotImageAndText(additionalFilteredSlots.get(i), setup, InventorySetupsItem.getDummyItem());
+				InventorySetupsSlot.setSlotImageAndText(itemManager, additionalFilteredSlots.get(i), setup, InventorySetupsItem.getDummyItem());
 			}
 
 			// add slots back to the layout if we need to
@@ -118,7 +117,7 @@ public class InventorySetupsAdditionalItemsPanel extends InventorySetupsContaine
 			int j = 0;
 			for (final Integer itemId : setupAdditionalItems.keySet())
 			{
-				this.setSlotImageAndText(additionalFilteredSlots.get(j), setup, setupAdditionalItems.get(itemId));
+				InventorySetupsSlot.setSlotImageAndText(itemManager, additionalFilteredSlots.get(j), setup, setupAdditionalItems.get(itemId));
 				j++;
 			}
 

@@ -24,10 +24,33 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupUtilities;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsPanelViewID;
+import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
+import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.CONFIG_KEY_PANEL_VIEW;
+import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.CONFIG_KEY_SECTION_MODE;
+import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.CONFIG_KEY_UNASSIGNED_MAXIMIZED;
+import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.TUTORIAL_LINK;
+
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSection;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSlotID;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSortingID;
+
+import java.awt.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
+
+import net.runelite.client.plugins.microbot.inventorysetups.serialization.InventorySetupPortable;
 import lombok.Getter;
+import lombok.Setter;
 import net.runelite.api.InventoryID;
 import net.runelite.client.game.ItemManager;
-import net.runelite.client.plugins.microbot.inventorysetups.*;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
@@ -35,20 +58,22 @@ import net.runelite.client.ui.components.PluginErrorPanel;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.LinkBrowser;
 
-import javax.swing.*;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.JScrollPane;
+import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
-import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.util.List;
-import java.util.*;
 import java.util.stream.Collectors;
-
-import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.*;
-
 
 // The main panel of the plugin that contains all viewing components
 public class InventorySetupsPluginPanel extends PluginPanel
@@ -109,11 +134,17 @@ public class InventorySetupsPluginPanel extends PluginPanel
 
 	private final InventorySetupsInventoryPanel inventoryPanel;
 	private final InventorySetupsEquipmentPanel equipmentPanel;
+	@Getter
 	private final InventorySetupsRunePouchPanel runePouchPanel;
+	@Getter
 	private final InventorySetupsBoltPouchPanel boltPouchPanel;
+
 	private final InventorySetupsSpellbookPanel spellbookPanel;
+
 	private final InventorySetupsAdditionalItemsPanel additionalFilteredItemsPanel;
 	private final InventorySetupsNotesPanel notesPanel;
+
+	private final JPanel updateNewsPanelWrapper;
 
 	@Getter
 	private InventorySetup currentSelectedSetup;
@@ -121,6 +152,12 @@ public class InventorySetupsPluginPanel extends PluginPanel
 	private int overviewPanelScrollPosition;
 
 	private final MInventorySetupsPlugin plugin;
+
+	@Getter
+	@Setter
+	private boolean hasDisplayedLayoutWarning;
+
+	private final JPanel layoutWarningPanel;
 
 	@Getter
 	private List<InventorySetup> filteredInventorysetups;
@@ -192,11 +229,13 @@ public class InventorySetupsPluginPanel extends PluginPanel
 		this.notesPanel = new InventorySetupsNotesPanel(itemManager, plugin);
 		this.noSetupsPanel = new JPanel();
 		this.updateNewsPanel = new InventorySetupsUpdateNewsPanel(plugin, this);
+		this.layoutWarningPanel = new InventorySetupsLayoutWarningPanel(plugin, this);
 		this.setupDisplayPanel = new JPanel();
 		this.overviewPanel = new JPanel();
 		this.overviewTopPanel = new JPanel();
 		this.overviewPanelScrollPosition = 0;
 		this.filteredInventorysetups = new ArrayList<>();
+		this.hasDisplayedLayoutWarning = false;
 
 		// setup the title
 		this.mainTitle = new JLabel();
@@ -281,7 +320,8 @@ public class InventorySetupsPluginPanel extends PluginPanel
 		});
 		massExportSetupsMenu.addActionListener(e ->
 		{
-			plugin.massExport(plugin.getInventorySetups(), "Setups", "inventory_setups");
+			ArrayList<InventorySetupPortable> portables = InventorySetupPortable.convertFromListOfSetups(plugin.getInventorySetups(), plugin.getLayoutUtilities());
+			plugin.massExport(portables, "Setups", "inventory_setups");
 		});
 		massImportSectionsMenu.addActionListener(e ->
 		{
@@ -336,7 +376,7 @@ public class InventorySetupsPluginPanel extends PluginPanel
 			}
 		});
 
-
+		
 		// set up the add marker (+ sign)
 		this.addMarker = new JLabel(ADD_ICON);
 		addMarker.setToolTipText("Add new setup or section");
@@ -415,7 +455,7 @@ public class InventorySetupsPluginPanel extends PluginPanel
 			{
 				if (SwingUtilities.isLeftMouseButton(e))
 				{
-					returnToOverviewPanel(false);
+					redrawOverviewPanel(false);
 				}
 			}
 
@@ -567,20 +607,34 @@ public class InventorySetupsPluginPanel extends PluginPanel
 		contentPanel.setLayout(contentLayout);
 		contentPanel.add(setupDisplayPanel);
 		contentPanel.add(noSetupsPanel);
-		contentPanel.add(updateNewsPanel);
 		contentPanel.add(overviewPanel);
 
-		// wrapper for the main content panel to keep it from stretching
+		// wrapper for the main content panel to stop it from stretching
 		final JPanel contentWrapper = new JPanel(new BorderLayout());
-		contentWrapper.add(Box.createGlue(), BorderLayout.CENTER);
 		contentWrapper.add(contentPanel, BorderLayout.NORTH);
 		this.contentWrapperPane = new JScrollPane(contentWrapper);
 		this.contentWrapperPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
 
+		// Wrapper for the update news panel to stop it from stretching
+		this.updateNewsPanelWrapper = new JPanel(new BorderLayout());
+		updateNewsPanelWrapper.add(Box.createGlue(), BorderLayout.CENTER);
+		updateNewsPanelWrapper.add(updateNewsPanel, BorderLayout.NORTH);
+
 		setLayout(new BorderLayout());
 		setBorder(new EmptyBorder(10, 10, 10, 10));
+
 		add(northAnchoredPanel, BorderLayout.NORTH);
-		add(this.contentWrapperPane, BorderLayout.CENTER);
+
+		JPanel extraPanelsWrapper = new JPanel();
+		extraPanelsWrapper.setLayout(new BoxLayout(extraPanelsWrapper, BoxLayout.Y_AXIS));
+		extraPanelsWrapper.add(updateNewsPanelWrapper);
+		extraPanelsWrapper.add(layoutWarningPanel);
+
+		JPanel southPanel = new JPanel(new BorderLayout());
+		southPanel.add(extraPanelsWrapper, BorderLayout.NORTH);
+		southPanel.add(contentWrapperPane, BorderLayout.CENTER);
+
+		add(southPanel, BorderLayout.CENTER);
 
 		// make sure the invEq panel isn't visible upon startup
 		setupDisplayPanel.setVisible(false);
@@ -590,10 +644,29 @@ public class InventorySetupsPluginPanel extends PluginPanel
 		updateSortingMarker();
 	}
 
+	@Override
+	public void onActivate()
+	{
+		plugin.setNavButtonIsSelected(true);
+		if (!plugin.getConfig().manualBankFilter())
+		{
+			plugin.doBankSearch();
+		}
+	}
+
+	@Override
+	public void onDeactivate()
+	{
+		plugin.setNavButtonIsSelected(false);
+		if (plugin.getConfig().requireActivePanelFilter())
+		{
+			plugin.resetBankSearch();
+		}
+	}
+
 	// Redraw the entire overview panel, considering the text in the search bar
 	public void redrawOverviewPanel(boolean resetScrollBar)
 	{
-		returnToOverviewPanel(resetScrollBar);
 		InventorySetupUtilities.fastRemoveAll(overviewPanel);
 		updateSectionViewMarker();
 		updatePanelViewMarker();
@@ -616,9 +689,47 @@ public class InventorySetupsPluginPanel extends PluginPanel
 		}
 
 		layoutSetups(filteredInventorysetups);
+		returnToOverviewPanel(resetScrollBar);
+
+		showCorrectPanel();
 
 		revalidate();
 		repaint();
+	}
+
+	public InventorySetupsQuiverPanel getQuiverPanel()
+	{
+		return equipmentPanel.getQuiverPanel();
+	}
+
+	public void showCorrectPanel()
+	{
+
+		if (!plugin.getSavedVersionString().equals(plugin.getCurrentVersionString()))
+		{
+			layoutWarningPanel.setVisible(false);
+			updateNewsPanelWrapper.setVisible(true);
+			northAnchoredPanel.setVisible(false);
+			contentWrapperPane.setVisible(false);
+		}
+		else if (!hasDisplayedLayoutWarning && !plugin.getCanUseLayouts() && plugin.getConfig().enableLayoutWarning())
+		{
+			layoutWarningPanel.setVisible(true);
+			updateNewsPanelWrapper.setVisible(false);
+			northAnchoredPanel.setVisible(false);
+			contentWrapperPane.setVisible(false);
+		}
+		else
+		{
+			layoutWarningPanel.setVisible(false);
+			updateNewsPanelWrapper.setVisible(false);
+			northAnchoredPanel.setVisible(true);
+			contentWrapperPane.setVisible(true);
+
+			// We set this to true now because we only want this menu to show up on startup.
+			// If someone modifies settings after startup, just continue.
+			hasDisplayedLayoutWarning = true;
+		}
 	}
 
 	public void moveFavoriteSetupsToTopOfList(final List<InventorySetup> setupsToAdd)
@@ -666,9 +777,7 @@ public class InventorySetupsPluginPanel extends PluginPanel
 		runePouchPanel.setVisible(currentSelectedSetup.getRune_pouch() != null);
 		boltPouchPanel.setVisible(currentSelectedSetup.getBoltPouch() != null);
 
-		highlightInventory();
-		highlightEquipment();
-		highlightSpellbook();
+		plugin.getClientThread().invoke(this::doHighlighting);
 
 		if (resetScrollBar)
 		{
@@ -676,7 +785,6 @@ public class InventorySetupsPluginPanel extends PluginPanel
 			setScrollBarPosition(0);
 		}
 
-		plugin.setBankFilteringMode(InventorySetupsFilteringModeID.ALL);
 		plugin.doBankSearch();
 
 		validate();
@@ -684,63 +792,57 @@ public class InventorySetupsPluginPanel extends PluginPanel
 
 	}
 
-	public void highlightInventory()
+	public void doHighlighting()
 	{
-		// if the panel itself isn't visible, don't waste time doing any highlighting logic
-		if (!setupDisplayPanel.isVisible())
+		if (currentSelectedSetup == null)
 		{
 			return;
 		}
 
-		// if the panel is visible, check if highlighting is enabled on the setup and globally
-		// if any of the two, reset the slots so they aren't highlighted
-		if (!currentSelectedSetup.isHighlightDifference() || !plugin.isHighlightingAllowed())
+		if (!setupDisplayPanel.isVisible())
 		{
-			inventoryPanel.resetSlotColors();
 			return;
 		}
 
 		final List<InventorySetupsItem> inv = plugin.getNormalizedContainer(InventoryID.INVENTORY);
-		inventoryPanel.highlightSlots(inv, currentSelectedSetup);
+		final List<InventorySetupsItem> eqp = plugin.getNormalizedContainer(InventoryID.EQUIPMENT);
+
+		highlightContainerPanel(inv, inventoryPanel);
+		highlightContainerPanel(eqp, equipmentPanel);
+		// pass spellbook a dummy container because it only needs the current selected setup
+		highlightContainerPanel(null, spellbookPanel);
+		plugin.getAmmoHandler().handleSpecialHighlighting(currentSelectedSetup, inv, eqp);
+
 	}
 
-	public void highlightEquipment()
+	public void highlightContainerPanel(final List<InventorySetupsItem> container, final InventorySetupsContainerPanel containerPanel)
 	{
-		// if the panel itself isn't visible, don't waste time doing any highlighting logic
-		if (!setupDisplayPanel.isVisible())
-		{
-			return;
-		}
-
 		// if the panel is visible, check if highlighting is enabled on the setup and globally
 		// if any of the two, reset the slots so they aren't highlighted
 		if (!currentSelectedSetup.isHighlightDifference() || !plugin.isHighlightingAllowed())
 		{
-			equipmentPanel.resetSlotColors();
+			containerPanel.resetSlotColors();
 			return;
 		}
 
+		containerPanel.highlightSlots(container, currentSelectedSetup);
+	}
+
+	public void highlightInventory()
+	{
+		final List<InventorySetupsItem> inv = plugin.getNormalizedContainer(InventoryID.INVENTORY);
+		highlightContainerPanel(inv, inventoryPanel);
+	}
+
+	public void highlightEquipment()
+	{
 		final List<InventorySetupsItem> eqp = plugin.getNormalizedContainer(InventoryID.EQUIPMENT);
-		equipmentPanel.highlightSlots(eqp, currentSelectedSetup);
+		highlightContainerPanel(eqp, equipmentPanel);
 	}
 
 	public void highlightSpellbook()
 	{
-		// if the panel itself isn't visible, don't waste time doing any highlighting logic
-		if (!setupDisplayPanel.isVisible())
-		{
-			return;
-		}
-
-		if (!currentSelectedSetup.isHighlightDifference() || !plugin.isHighlightingAllowed())
-		{
-			spellbookPanel.resetSlotColors();
-			return;
-		}
-
-		// pass it a dummy container because it only needs the current selected setup
-		spellbookPanel.highlightSlots(new ArrayList<InventorySetupsItem>(), currentSelectedSetup);
-
+		highlightContainerPanel(null, spellbookPanel);
 	}
 
 	// returns to the overview panel
@@ -765,7 +867,9 @@ public class InventorySetupsPluginPanel extends PluginPanel
 		}
 
 		currentSelectedSetup = null;
-		plugin.resetBankSearch(true);
+
+		plugin.resetBankSearch();
+
 	}
 
 	public boolean isStackCompareForSlotAllowed(final InventorySetupsSlotID inventoryID, final int slotId)
@@ -776,16 +880,12 @@ public class InventorySetupsPluginPanel extends PluginPanel
 				return inventoryPanel.isStackCompareForSlotAllowed(slotId);
 			case EQUIPMENT:
 				return equipmentPanel.isStackCompareForSlotAllowed(slotId);
-			case RUNE_POUCH:
-				return runePouchPanel.isStackCompareForSlotAllowed(slotId);
-			case BOLT_POUCH:
-				return boltPouchPanel.isStackCompareForSlotAllowed(slotId);
 			case ADDITIONAL_ITEMS:
 				return additionalFilteredItemsPanel.isStackCompareForSlotAllowed(slotId);
 			case SPELL_BOOK:
 				return spellbookPanel.isStackCompareForSlotAllowed(slotId);
 			default:
-				return false;
+				return plugin.getAmmoHandler().isStackCompareForSpecialSlotAllowed(inventoryID, slotId);
 		}
 	}
 
@@ -869,21 +969,6 @@ public class InventorySetupsPluginPanel extends PluginPanel
 		}
 
 		setupDisplayPanel.setVisible(false);
-
-		if (!plugin.getSavedVersionString().equals(plugin.getCurrentVersionString()))
-		{
-			northAnchoredPanel.setVisible(false);
-			updateNewsPanel.setVisible(true);
-			overviewPanel.setVisible(false);
-			noSetupsPanel.setVisible(false);
-		}
-		else
-		{
-			northAnchoredPanel.setVisible(true);
-			updateNewsPanel.setVisible(false);
-			noSetupsPanel.setVisible(plugin.getInventorySetups().isEmpty() && !plugin.getConfig().sectionMode());
-			overviewPanel.setVisible(!plugin.getInventorySetups().isEmpty() || plugin.getConfig().sectionMode());
-		}
 	}
 
 	private void layoutSections(final List<InventorySetup> setups, final GridBagConstraints constraints)

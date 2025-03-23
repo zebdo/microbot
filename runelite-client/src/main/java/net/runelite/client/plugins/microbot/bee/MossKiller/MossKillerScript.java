@@ -8,6 +8,8 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.bee.MossKiller.Enums.MossKillerState;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerPlugin;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -34,6 +36,8 @@ import java.util.stream.Collectors;
 
 import static net.runelite.api.ItemID.*;
 import static net.runelite.api.Skill.MAGIC;
+import static net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity.HIGH;
+import static net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity.LOW;
 import static net.runelite.client.plugins.microbot.util.player.Rs2Player.eatAt;
 import static net.runelite.client.plugins.skillcalculator.skills.MagicAction.HIGH_LEVEL_ALCHEMY;
 
@@ -87,6 +91,22 @@ public class MossKillerScript extends Script {
         MossKillerScript.config = config;
         Microbot.enableAutoRunOn = false;
         Rs2Walker.disableTeleports = true;
+        Rs2Antiban.resetAntibanSettings();
+        Rs2AntibanSettings.usePlayStyle = true;
+        Rs2AntibanSettings.simulateFatigue = true;
+        Rs2AntibanSettings.simulateAttentionSpan = true;
+        Rs2AntibanSettings.behavioralVariability = true;
+        Rs2AntibanSettings.nonLinearIntervals = true;
+        Rs2AntibanSettings.dynamicActivity = true;
+        Rs2AntibanSettings.profileSwitching = true;
+        Rs2AntibanSettings.naturalMouse = true;
+        Rs2AntibanSettings.simulateMistakes = true;
+        Rs2AntibanSettings.moveMouseOffScreen = true;
+        Rs2AntibanSettings.moveMouseOffScreenChance = 0.07;
+        Rs2AntibanSettings.moveMouseRandomly = true;
+        Rs2AntibanSettings.moveMouseRandomlyChance = 0.04;
+        Rs2AntibanSettings.actionCooldownChance = 0.06;
+        Rs2Antiban.setActivityIntensity(LOW);
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
@@ -99,6 +119,12 @@ public class MossKillerScript extends Script {
 
                 Microbot.log(String.valueOf(state));
                 Microbot.log("BossMode: " + bossMode);
+                 if (bossMode) {
+                    Rs2AntibanSettings.actionCooldownChance = 0.00;
+                    Rs2AntibanSettings.actionCooldownActive = false;
+                } else {
+                    Rs2AntibanSettings.actionCooldownActive = true;
+                    Rs2AntibanSettings.actionCooldownChance = 0.06;}
 
                 if (Rs2Player.getRealSkillLevel(Skill.DEFENCE) >= config.defenseLevel()) {
                     moarShutDown();
@@ -344,6 +370,7 @@ public class MossKillerScript extends Script {
 
     public void handleBossFight(){
         toggleRunEnergy();
+        Rs2Antiban.setActivityIntensity(HIGH);
         boolean growthlingAttacked = false;
 
         if(!Rs2Inventory.contains(FOOD)){

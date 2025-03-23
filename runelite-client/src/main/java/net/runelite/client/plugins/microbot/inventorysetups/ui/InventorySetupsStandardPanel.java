@@ -24,21 +24,29 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
+
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSection;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsValidName;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ImageUtil;
 
-import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.MatteBorder;
-import java.awt.*;
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.FlowLayout;
 import java.awt.image.BufferedImage;
+import java.util.Objects;
 
 import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.MAX_SETUP_NAME_LENGTH;
 
@@ -168,8 +176,8 @@ public class InventorySetupsStandardPanel extends InventorySetupsPanel implement
 
 		// Always allow the name actions to work for the standard panel
 		JPanel nameActions = new InventorySetupsNameActions<>(invSetup, plugin, panel, this,
-				popupMenu, MAX_SETUP_NAME_LENGTH,
-				ColorScheme.DARKER_GRAY_COLOR, true, null);
+																popupMenu, MAX_SETUP_NAME_LENGTH,
+																ColorScheme.DARKER_GRAY_COLOR, true, null);
 
 		JPanel bottomContainer = new JPanel(new BorderLayout());
 		bottomContainer.setBorder(new EmptyBorder(8, 0, 8, 0));
@@ -307,12 +315,13 @@ public class InventorySetupsStandardPanel extends InventorySetupsPanel implement
 				if (SwingUtilities.isLeftMouseButton(mouseEvent))
 				{
 					plugin.openColorPicker("Choose a Highlight color", invSetup.getHighlightColor(),
-							c ->
-							{
-								inventorySetup.setHighlightColor(c);
-								updateHighlightColorLabel();
-								panel.redrawOverviewPanel(false);
-							}
+						c ->
+						{
+							// Don't consider the transparency component
+							Color newColor = new Color(c.getRed(), c.getGreen(), c.getBlue(), 255);
+							inventorySetup.setHighlightColor(newColor);
+							updateHighlightColorLabel();
+						}
 					);
 				}
 			}
@@ -365,8 +374,13 @@ public class InventorySetupsStandardPanel extends InventorySetupsPanel implement
 			}
 		});
 
+		JPopupMenu singleExportBankTagTabMenu = new JPopupMenu();
+		JMenuItem singleExportBankTagTabMenuItem = new JMenuItem("Export setup to Bank Tag Tab");
+		singleExportBankTagTabMenuItem.addActionListener(e -> plugin.getClientThread().invokeLater(() -> plugin.getLayoutUtilities().exportSetupToBankTagTab(inventorySetup, panel)));
+		singleExportBankTagTabMenu.add(singleExportBankTagTabMenuItem);
 		exportLabel.setToolTipText("Export setup");
 		exportLabel.setIcon(EXPORT_ICON);
+		exportLabel.setComponentPopupMenu(singleExportBankTagTabMenu);
 		exportLabel.addMouseListener(new MouseAdapter()
 		{
 			@Override
@@ -437,11 +451,25 @@ public class InventorySetupsStandardPanel extends InventorySetupsPanel implement
 	}
 
 	@Override
-	public boolean isNameValid(final String name)
+	public boolean isNameValid(final String name, final Color displayColor)
 	{
-		return !name.isEmpty() &&
-				!plugin.getCache().getInventorySetupNames().containsKey(name) &&
-				!inventorySetup.getName().equals(name);
+
+		boolean nameExistsAlready = plugin.getCache().getInventorySetupNames().containsKey(name);
+		boolean nameHasChanged = !inventorySetup.getName().equals(name);
+		boolean displayColorHasChanged = !Objects.equals(inventorySetup.getDisplayColor(), displayColor);
+		boolean nothingHasChanged = !nameHasChanged && !displayColorHasChanged;
+
+		if (nothingHasChanged || name.isEmpty())
+		{
+			return false;
+		}
+
+		if (nameHasChanged && nameExistsAlready)
+		{
+			return false;
+		}
+
+		return true;
 	}
 
 	@Override

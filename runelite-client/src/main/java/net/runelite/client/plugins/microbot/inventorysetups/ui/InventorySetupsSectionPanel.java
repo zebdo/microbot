@@ -24,22 +24,41 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
-import net.runelite.client.plugins.microbot.inventorysetups.*;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsPanelViewID;
+import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
+import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.CONFIG_KEY_UNASSIGNED_MAXIMIZED;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSection;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSlotID;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSortingID;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsValidName;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.GridBagConstraints;
+import java.awt.GridBagLayout;
+import java.awt.GridLayout;
+import java.util.Arrays;
+import java.util.Objects;
+import java.util.Set;
+import javax.swing.Box;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import javax.swing.SwingUtilities;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.util.ImageUtil;
 
-import javax.swing.*;
-import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
-import java.util.Arrays;
-import java.util.Set;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.CONFIG_KEY_UNASSIGNED_MAXIMIZED;
 import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.MAX_SETUP_NAME_LENGTH;
 
 public class InventorySetupsSectionPanel extends JPanel implements InventorySetupsValidName, InventorySetupsMoveHandler<InventorySetupsSection>
@@ -74,12 +93,12 @@ public class InventorySetupsSectionPanel extends JPanel implements InventorySetu
 	}
 
 	InventorySetupsSectionPanel(MInventorySetupsPlugin plugin,
-                                InventorySetupsPluginPanel panel,
-                                InventorySetupsSection section,
-                                boolean forceMaximization, boolean allowEdits,
-                                final Set<String> setupNamesToBeDisplayed,
-                                Set<String> setupsInSection,
-                                final java.util.List<InventorySetup> originalFilteredSetups)
+								InventorySetupsPluginPanel panel,
+								InventorySetupsSection section,
+								boolean forceMaximization, boolean allowEdits,
+								final Set<String> setupNamesToBeDisplayed,
+								Set<String> setupsInSection,
+								final List<InventorySetup> originalFilteredSetups)
 	{
 		this.plugin = plugin;
 		this.panel = panel;
@@ -143,7 +162,7 @@ public class InventorySetupsSectionPanel extends JPanel implements InventorySetu
 			InventorySetupsSelectionPanel selectionDialog = new InventorySetupsSelectionPanel(panel, title, message, setupNames);
 			selectionDialog.setOnOk(e1 ->
 			{
-				java.util.List<String> selectedSetups = selectionDialog.getSelectedItems();
+				List<String> selectedSetups = selectionDialog.getSelectedItems();
 				if (!selectedSetups.isEmpty())
 				{
 					plugin.addSetupsToSection(section, selectedSetups);
@@ -215,7 +234,7 @@ public class InventorySetupsSectionPanel extends JPanel implements InventorySetu
 		}
 	}
 
-	private void addSetups(final Set<String> setupNamesToBeDisplayed, Set<String> setupsInSection, final java.util.List<InventorySetup> originalFilteredSetups, boolean allowEditable)
+	private void addSetups(final Set<String> setupNamesToBeDisplayed, Set<String> setupsInSection, final List<InventorySetup> originalFilteredSetups, boolean allowEditable)
 	{
 		// Only add the setups if it's maximized. If we are searching, force maximization.
 		if (section.isMaximized() || forceMaximization)
@@ -233,7 +252,7 @@ public class InventorySetupsSectionPanel extends JPanel implements InventorySetu
 			{
 				if (plugin.getConfig().panelView() == InventorySetupsPanelViewID.ICON)
 				{
-					java.util.List<InventorySetup> setupObjectsInSection = section.getSetups().stream().map(setupName -> plugin.getCache().getInventorySetupNames().get(setupName)).collect(Collectors.toList());
+					List<InventorySetup> setupObjectsInSection = section.getSetups().stream().map(setupName -> plugin.getCache().getInventorySetupNames().get(setupName)).collect(Collectors.toList());
 					final JPanel iconGridPanel = createIconPanelGrid(plugin, panel, setupObjectsInSection, MAX_ICONS_PER_ROW, setupNamesToBeDisplayed, section, allowEditable);
 					panelWithSetups.add(iconGridPanel, constraints);
 					constraints.gridy++;
@@ -347,11 +366,24 @@ public class InventorySetupsSectionPanel extends JPanel implements InventorySetu
 	}
 
 	@Override
-	public boolean isNameValid(final String name)
+	public boolean isNameValid(final String name, final Color displayColor)
 	{
-		return !name.isEmpty() &&
-				!plugin.getCache().getSectionNames().containsKey(name) &&
-				!section.getName().equals(name);
+		boolean nameExistsAlready = plugin.getCache().getSectionNames().containsKey(name);
+		boolean nameHasChanged = !section.getName().equals(name);
+		boolean displayColorHasChanged = !Objects.equals(section.getDisplayColor(), displayColor);
+		boolean nothingHasChanged = !nameHasChanged && !displayColorHasChanged;
+
+		if (nothingHasChanged || name.isEmpty())
+		{
+			return false;
+		}
+
+		if (nameHasChanged && nameExistsAlready)
+		{
+			return false;
+		}
+
+		return true;
 	}
 
 	@Override
