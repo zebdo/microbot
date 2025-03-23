@@ -122,6 +122,10 @@ public class MQuestScript extends Script {
 
                 //custom code for specific scenario's not handled by the quest plugin by runelite
                 if (getQuestHelperPlugin().getSelectedQuest().getQuest().getId() == Quest.ROMEO__JULIET.getId()) {
+                    if (Rs2Dialogue.hasDialogueOptionTitle("Start the Romeo & Juliet quest?")) {
+                        Rs2Dialogue.keyPressForDialogueOption("Yes.");
+                        return;
+                    }
                     if (questStep.getText().contains("Bring the cadava berries to the Apothecary in south east Varrock.")) {
                         boolean hasCadavaBerries = fetchCadavaBerries();
                         if (!hasCadavaBerries) {
