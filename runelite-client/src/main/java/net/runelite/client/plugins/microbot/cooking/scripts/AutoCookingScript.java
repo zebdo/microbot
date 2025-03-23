@@ -96,7 +96,7 @@ public class AutoCookingScript extends Script {
                                 return;
                             }
                             Rs2Inventory.useItemOnObject(cookingItem.getRawItemID(), cookingObject.getId());
-                            sleepUntil(() -> !Rs2Player.isMoving() && Rs2Widget.findWidget("How many would you like to cook?", null, false) != null);
+                            sleepUntil(() -> !Rs2Player.isMoving() && Rs2Widget.findWidget("like to cook?", null, false) != null);
 
                             Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
                             Microbot.status = "Cooking " + cookingItem.getRawItemName();
@@ -106,11 +106,13 @@ public class AutoCookingScript extends Script {
 
                             sleepUntil(() -> (Rs2Player.getAnimation() != AnimationID.IDLE));
                             sleepUntilTrue(() -> (!hasRawItem(cookingItem) && !Rs2Player.isAnimating(3500))
-                                    || Rs2Dialogue.isInDialogue() || Rs2Player.isWalking(), 500, 150000);
+                                    || Rs2Dialogue.isInDialogue() || Rs2Player.isMoving(), 500, 150000);
+                            
                             if (hasRawItem(cookingItem)) {
                                 break;
                             }
-                            if (hasBurntItem(cookingItem) && !cookingItem.getBurntItemName().isEmpty()) {
+                            
+                            if (config.shouldDropBurntItems() && hasBurntItem(cookingItem) && !cookingItem.getBurntItemName().isEmpty()) {
                                 state = CookingState.DROPPING;
                                 return;
                             }
@@ -120,7 +122,7 @@ public class AutoCookingScript extends Script {
                         }
                     case DROPPING:
                         Microbot.status = "Dropping " + cookingItem.getBurntItemName();
-                        Rs2Inventory.dropAll(item -> item.name.equalsIgnoreCase(cookingItem.getBurntItemName()), config.getDropOrder());
+                        Rs2Inventory.dropAll(item -> item.getName().equalsIgnoreCase(cookingItem.getBurntItemName()), config.getDropOrder());
                         sleepUntilTrue(() -> !hasBurntItem(cookingItem), 500, 150000);
                         state = CookingState.BANKING;
                         break;
@@ -134,18 +136,18 @@ public class AutoCookingScript extends Script {
                             if (!isBankOpen || !Rs2Bank.isOpen()) return;
                         }
 
-                        if (hasCookedItem(cookingItem)) {
-                            Rs2Bank.depositAll(cookingItem.getCookedItemName(), true);
-                            Rs2Random.wait(800, 1600);
-                        }
+                        Rs2Bank.depositAll();
+                        Rs2Inventory.waitForInventoryChanges(1800);
                         
                         if (!hasRawItem(cookingItem)) {
                             Microbot.showMessage("No Raw Food Item found in Bank");
                             shutdown();
                             return;
                         }
+                        
                         Rs2Bank.withdrawAll(cookingItem.getRawItemName(), true);
-                        Rs2Random.wait(800, 1600);
+                        Rs2Inventory.waitForInventoryChanges(1800);
+                        
                         state = CookingState.WALKING;
                         Rs2Bank.closeBank();
                         break;

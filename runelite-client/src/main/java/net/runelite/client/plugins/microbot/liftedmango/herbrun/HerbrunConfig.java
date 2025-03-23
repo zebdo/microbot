@@ -29,84 +29,27 @@ import net.runelite.client.config.ConfigSection;
 
 public interface HerbrunConfig extends Config {
 
-
     @ConfigItem(
-            keyName = "fastHerb",
-            name = "Fast Herb Picking?",
-            description = "Enable quick herb picking",
-            position = 4,
+            keyName = "cloakType",
+            name = "Cloak to use",
+            description = "Which cloak to use for the herb run?",
+            position = 1,
             section = settingsSection
     )
-    default boolean FAST_HERB() {
-        return false;
+    default HerbrunInfo.cloak CLOAK() {
+        return HerbrunInfo.cloak.ARDOUGNE_CLOAK_3;
     }
 
     @ConfigItem(
-            keyName = "bottomless",
-            name = "Use bottomless bucket?",
-            description = "Should  bottomless bucket be withdrawn from the bank?",
-            position = 4,
+            keyName = "ringType",
+            name = "Explorers ring to use",
+            description = "Which explorers ring to use for the herb run?",
+            position = 2,
             section = settingsSection
     )
-    default boolean COMPOST() {
-        return true;
+    default HerbrunInfo.ring RING() {
+        return HerbrunInfo.ring.EXPLORERS_RING_3;
     }
-
-    @ConfigItem(
-            keyName = "enableGearing",
-            name = "Enable Gearing",
-            description = "Enable Gearing? Helps with debugging a specific location...",
-            position = 13,
-            section = settingsSection
-    )
-    default boolean enableGearing() {
-        return true;
-    }
-
-    @ConfigItem(
-            keyName = "farmingCape",
-            name = "Use Farming cape?",
-            description = "Use Farming cape instead of Skills necklace?",
-            position = 4,
-            section = settingsSection
-    )
-    default boolean FARMING_CAPE() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "ardougne_teleport",
-            name = "Use Ardougne cloak?",
-            description = "Does your ardougne cloak still have charges for today? If not the script will use Ardy tab",
-            position = 4,
-            section = settingsSection
-    )
-    default boolean ARDOUGNE_TELEPORT_OPTION() {
-        return true;
-    }
-
-    @ConfigItem(
-            keyName = "falador_teleport",
-            name = "Use Explorer's ring?",
-            description = "Does your ring still have charges for today? If not the script will use falador tab",
-            position = 4,
-            section = settingsSection
-    )
-    default boolean FALADOR_TELEPORT_OPTION() {
-        return true;
-    }
-
-    @ConfigItem(
-            keyName = "graceful",
-            name = "Equip graceful?",
-            description = "Should graceful be equipped from bank?",
-            position = 4,
-            section = settingsSection
-    )
-    default boolean GRACEFUL() {
-        return true;
-    }
-
 
     @ConfigItem(
             keyName = "seedTypes",
@@ -120,32 +63,65 @@ public interface HerbrunConfig extends Config {
     }
 
     @ConfigItem(
-            keyName = "cloakType",
-            name = "Cloak to use",
-            description = "Which cloak to use for the herb run?",
-            position = 3,
+            keyName = "trollHeim teleport Type",
+            name = "Trollheim teleport to use?",
+            description = "Which trollheim teleport to use??",
+            position = 4,
             section = settingsSection
     )
-    default HerbrunInfo.cloak CLOAK() {
-        return HerbrunInfo.cloak.ARDOUGNE_CLOAK_3;
+    default HerbrunInfo.trollheimTeleport TROLLHEIMTELEPORT() {
+        return HerbrunInfo.trollheimTeleport.STONY_BASALT;
     }
 
     @ConfigItem(
-            keyName = "ringType",
-            name = "Explorers ring to use",
-            description = "Which explorers ring to use for the herb run?",
-            position = 3,
+            keyName = "graceful",
+            name = "Equip graceful?",
+            description = "Should graceful be equipped from bank?",
+            position = 5,
             section = settingsSection
     )
-    default HerbrunInfo.ring RING() {
-        return HerbrunInfo.ring.EXPLORERS_RING_3;
+    default boolean GRACEFUL() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "farmersOutfit",
+            name = "Equip Farmers outfit?",
+            description = "Equip farmers outfit",
+            position = 6,
+            section = settingsSection
+    )
+    default boolean FARMERS_OUTFIT() {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "fastHerb",
+            name = "Fast Herb Picking?",
+            description = "Enable quick herb picking",
+            position = 7,
+            section = settingsSection
+    )
+    default boolean FAST_HERB() {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "ardougne_teleport",
+            name = "Use Ardougne cloak?",
+            description = "Does your ardougne cloak still have charges for today? If not the script will use Ardy tab",
+            position = 8,
+            section = settingsSection
+    )
+    default boolean ARDOUGNE_TELEPORT_OPTION() {
+        return true;
     }
 
     @ConfigItem(
             keyName = "morytanita_teleport",
             name = "Use Ectophial?",
             description = "Do you have an ectophial? If not Fenkenstrain tab will be used.",
-            position = 4,
+            position = 9,
             section = settingsSection
     )
     default boolean USE_ECTOPHIAL() {
@@ -153,10 +129,32 @@ public interface HerbrunConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "falador_teleport",
+            name = "Use Explorer's ring?",
+            description = "Does your ring still have charges for today? If not the script will use falador tab",
+            position = 10,
+            section = settingsSection
+    )
+    default boolean FALADOR_TELEPORT_OPTION() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "farmingCape",
+            name = "Use Farming cape?",
+            description = "Use Farming cape instead of Skills necklace?",
+            position = 11,
+            section = settingsSection
+    )
+    default boolean FARMING_CAPE() {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "varlamore_teleport",
             name = "Use Quetzal Whistle?",
             description = "Use Quetzal Whistle? If not Civitas tab will be used.",
-            position = 4,
+            position = 12,
             section = settingsSection
     )
     default boolean USE_QUETZAL_WHISTLE() {
@@ -164,14 +162,25 @@ public interface HerbrunConfig extends Config {
     }
 
     @ConfigItem(
-            keyName = "trollHeim teleport Type",
-            name = "Trollheim teleport to use?",
-            description = "Which trollheim teleport to use??",
-            position = 3,
+            keyName = "bottomless",
+            name = "Use bottomless bucket?",
+            description = "Should  bottomless bucket be withdrawn from the bank?",
+            position = 13,
             section = settingsSection
     )
-    default HerbrunInfo.trollheimTeleport TROLLHEIMTELEPORT() {
-        return HerbrunInfo.trollheimTeleport.STONY_BASALT;
+    default boolean COMPOST() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "enableGearing",
+            name = "Enable Gearing",
+            description = "Enable Gearing? Helps with debugging a specific location...",
+            position = 14,
+            section = settingsSection
+    )
+    default boolean enableGearing() {
+        return true;
     }
 
     // Location toggles for each patch location
@@ -276,7 +285,7 @@ public interface HerbrunConfig extends Config {
             keyName = "enableHarmony",
             name = "Enable Harmony Island Patch",
             description = "Enable Harmony Island patch in herb run",
-            position = 9,
+            position = 10,
             section = locationSection
     )
     default boolean enableHarmony() {

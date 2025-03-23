@@ -170,7 +170,7 @@ public abstract class Script implements IScript {
             return false;
 
         //Avoid executing any blocking events if the player hasn't finished Tutorial Island
-        if (!Rs2Player.isInTutorialIsland())
+        if (Microbot.isLoggedIn() && !Rs2Player.isInTutorialIsland())
             return true;
 
         // Synchronizing on BlockingEventManager.class to ensure thread safety

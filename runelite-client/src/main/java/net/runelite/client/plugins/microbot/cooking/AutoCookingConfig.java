@@ -130,9 +130,20 @@ public interface AutoCookingConfig extends Config {
     }
 
     @ConfigItem(
+            name = "Drop Burnt Items",
+            keyName = "shouldDropBurntItems",
+            position = 4,
+            description = "Should drop burnt items when resetting inventory",
+            section = cookingSection
+    )
+    default boolean shouldDropBurntItems() {
+        return true;
+    }
+
+    @ConfigItem(
             name = "DropOrder",
             keyName = "dropOrder",
-            position = 4,
+            position = 5,
             description = "The order in which to drop items",
             section = cookingSection
     )

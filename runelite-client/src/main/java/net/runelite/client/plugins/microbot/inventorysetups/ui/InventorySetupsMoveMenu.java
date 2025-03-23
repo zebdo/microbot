@@ -24,11 +24,12 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSortingID;
 
-import javax.swing.*;
+import javax.swing.JMenuItem;
+import javax.swing.JOptionPane;
+import javax.swing.JPopupMenu;
 
 public class InventorySetupsMoveMenu<T> extends JPopupMenu
 {

@@ -36,10 +36,6 @@ import static net.runelite.client.plugins.microbot.util.player.Rs2Player.toggleR
 
 
 public class BurnBakingScript extends Script {
-
-    @Inject
-    private Client client;
-
     private boolean cookingBread;
 
     public boolean run(AutoCookingConfig config) {

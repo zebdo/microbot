@@ -1,13 +1,11 @@
 package net.runelite.client.plugins.microbot.inventorysetups;
 
 import com.google.common.collect.ImmutableMap;
+import java.awt.image.BufferedImage;
+import java.util.Map;
 import lombok.Getter;
 import lombok.Setter;
 import net.runelite.api.ItemID;
-
-import java.awt.image.BufferedImage;
-import java.util.Map;
-
 import static net.runelite.api.ItemID.*;
 
 /**

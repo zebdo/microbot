@@ -119,6 +119,12 @@ public class MossKillerScript extends Script {
 
                 Microbot.log(String.valueOf(state));
                 Microbot.log("BossMode: " + bossMode);
+                 if (bossMode) {
+                    Rs2AntibanSettings.actionCooldownChance = 0.00;
+                    Rs2AntibanSettings.actionCooldownActive = false;
+                } else {
+                    Rs2AntibanSettings.actionCooldownActive = true;
+                    Rs2AntibanSettings.actionCooldownChance = 0.06;}
 
                 if (Rs2Player.getRealSkillLevel(Skill.DEFENCE) >= config.defenseLevel()) {
                     moarShutDown();

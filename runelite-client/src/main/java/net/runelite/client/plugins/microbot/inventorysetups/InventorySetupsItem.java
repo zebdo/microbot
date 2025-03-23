@@ -27,6 +27,8 @@ package net.runelite.client.plugins.microbot.inventorysetups;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
+import net.runelite.client.game.ItemStats;
+import net.runelite.client.plugins.microbot.Microbot;
 
 @AllArgsConstructor
 public class InventorySetupsItem

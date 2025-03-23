@@ -1,10 +1,11 @@
 package net.runelite.client.plugins.microbot.inventorysetups;
 
-import net.runelite.client.util.SwingUtil;
-
-import javax.swing.*;
-import java.awt.*;
+import java.awt.Component;
+import java.awt.Container;
 import java.util.Set;
+import javax.swing.SwingUtilities;
+import net.runelite.client.util.SwingUtil;
+import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.MAX_SETUP_NAME_LENGTH;
 
 
 public class InventorySetupUtilities
@@ -53,9 +54,9 @@ public class InventorySetupUtilities
 	static public String findNewName(String originalName, final Set<String> objects)
 	{
 		// Do not allow names of more than MAX_SETUP_NAME_LENGTH chars
-		if (originalName.length() > MInventorySetupsPlugin.MAX_SETUP_NAME_LENGTH)
+		if (originalName.length() > MAX_SETUP_NAME_LENGTH)
 		{
-			originalName = originalName.substring(0, MInventorySetupsPlugin.MAX_SETUP_NAME_LENGTH);
+			originalName = originalName.substring(0, MAX_SETUP_NAME_LENGTH);
 		}
 
 		// Fix duplicate name by adding an incrementing number to the duplicate
@@ -64,10 +65,10 @@ public class InventorySetupUtilities
 		while (objects.contains(newName) || newName.isEmpty())
 		{
 			String i_str = String.valueOf(i);
-			if (originalName.length() + i_str.length() > MInventorySetupsPlugin.MAX_SETUP_NAME_LENGTH)
+			if (originalName.length() + i_str.length() > MAX_SETUP_NAME_LENGTH)
 			{
-				int chars_to_cut_off = i_str.length() - (MInventorySetupsPlugin.MAX_SETUP_NAME_LENGTH - originalName.length());
-				newName = originalName.substring(0, MInventorySetupsPlugin.MAX_SETUP_NAME_LENGTH - chars_to_cut_off) + i++;
+				int chars_to_cut_off = i_str.length() - (MAX_SETUP_NAME_LENGTH - originalName.length());
+				newName = originalName.substring(0, MAX_SETUP_NAME_LENGTH - chars_to_cut_off) + i++;
 			}
 			else
 			{
