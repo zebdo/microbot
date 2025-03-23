@@ -1,20 +1,30 @@
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
+import javax.swing.Box;
+import javax.swing.BoxLayout;
+import javax.swing.JButton;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JSeparator;
+import javax.swing.JTextArea;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.LinkBrowser;
 
-import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Font;
 
 import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.SUGGESTION_LINK;
 import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.TUTORIAL_LINK;
 
 public class InventorySetupsUpdateNewsPanel extends JPanel
 {
+
+	private static final String DONATION_LINK = "https://www.buymeacoffee.com/dillydill123";
 
 	InventorySetupsUpdateNewsPanel(MInventorySetupsPlugin plugin, InventorySetupsPluginPanel panel)
 	{
@@ -68,7 +78,7 @@ public class InventorySetupsUpdateNewsPanel extends JPanel
 		returnToSetups.addActionListener(e ->
 		{
 			plugin.setSavedVersionString(plugin.getCurrentVersionString());
-			panel.redrawOverviewPanel(true);
+			panel.showCorrectPanel();
 		});
 		final JLabel clickButtonToLeave = new JLabel("Click here to hide this window");
 		final JLabel clickButtonToLeave2 = new JLabel("until the next update");
@@ -80,21 +90,41 @@ public class InventorySetupsUpdateNewsPanel extends JPanel
 		closePanel.add(clickButtonToLeave2, BorderLayout.CENTER);
 		closePanel.add(returnToSetups, BorderLayout.SOUTH);
 
+		final JLabel donations = new JLabel("Want to make a donation?");
+		final JLabel donations2 = new JLabel("Click here to buy me a coffee");
+		final JButton linkToDonations = new JButton("Donate");
+		linkToDonations.addActionListener(e ->
+		{
+			LinkBrowser.browse(DONATION_LINK);
+		});
+		donations.setFont(FontManager.getRunescapeSmallFont());
+		donations2.setFont(FontManager.getRunescapeSmallFont());
+		donations.setHorizontalAlignment(JLabel.CENTER);
+		donations2.setHorizontalAlignment(JLabel.CENTER);
+
+		final JPanel donationPanelInfo = new JPanel();
+		donationPanelInfo.setLayout(new BorderLayout());
+		donationPanelInfo.add(donations, BorderLayout.NORTH);
+		donationPanelInfo.add(donations2, BorderLayout.CENTER);
+		donationPanelInfo.add(linkToDonations, BorderLayout.SOUTH);
+
 		final JPanel contentPanel = new JPanel();
 		contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
 		contentPanel.add(welcomePanel);
-		contentPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+		contentPanel.add(Box.createRigidArea(new Dimension(0, 8)));
 		contentPanel.add(latestUpdatePanelInfo);
-		contentPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+		contentPanel.add(Box.createRigidArea(new Dimension(0, 8)));
 		contentPanel.add(closePanel);
-		contentPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+		contentPanel.add(Box.createRigidArea(new Dimension(0, 8)));
 		contentPanel.add(newUserPanelInfo);
-		contentPanel.add(Box.createRigidArea(new Dimension(0, 15)));
+		contentPanel.add(Box.createRigidArea(new Dimension(0, 8)));
 		contentPanel.add(suggestionPanelInfo);
+		contentPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+		contentPanel.add(donationPanelInfo);
 
 		setLayout(new BorderLayout());
-		setBorder(new EmptyBorder(10, 10, 10, 10));
-		add(contentPanel, BorderLayout.CENTER);
+		setBorder(new EmptyBorder(5, 10, 5, 10));
+		add(contentPanel, BorderLayout.NORTH);
 	}
 
 
@@ -107,10 +137,10 @@ public class InventorySetupsUpdateNewsPanel extends JPanel
 		final JPanel patchTitlePanel = new JPanel(new BorderLayout());
 		patchTitlePanel.add(patchNotesLabel, BorderLayout.NORTH);
 
-		String updateText =		"Sections and their respective setups will now correctly match the order of the side panel in the Show Worn Items right click menu.\n\n" +
-				"Added a hotkey for toggling section mode.\n\n" +
-				"Fixed granite cannonball -> cannonball variation mapping.\n\n" +
-				"Added an option to replace an item in all setups with a new item. Shift + Right click an inventory or equipment slot on the side panel to access this option. Keep in mind this will replace ALL occurrences of the old item in ALL setups with the new item.";
+		String updateText =	"Updated Inventory Setups for the latest RuneLite update.\n\n" +
+							"Fuzzy placeholders will now appear at the bottom of the layout when updating a setup or using a preset.\n\n" +
+							"The '_invsetup_' tags are now hidden from the user in the bank.\n\n" +
+							"Fixed manual bank filter config option.";
 
 		JTextArea textArea = new JTextArea(2, 20);
 		textArea.setText(updateText);
@@ -128,7 +158,7 @@ public class InventorySetupsUpdateNewsPanel extends JPanel
 
 		final JPanel contentPanel = new JPanel();
 		contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
-		contentPanel.add(patchTitlePanel, BorderLayout.NORTH);
+		contentPanel.add(patchTitlePanel);
 		contentPanel.add(Box.createRigidArea(new Dimension(0, 3)));
 		contentPanel.add(getJSeparator(ColorScheme.LIGHT_GRAY_COLOR));
 		contentPanel.add(Box.createRigidArea(new Dimension(0, 3)));
@@ -138,6 +168,9 @@ public class InventorySetupsUpdateNewsPanel extends JPanel
 
 		final JPanel updatePanel = new JPanel(new BorderLayout());
 		updatePanel.add(contentPanel, BorderLayout.CENTER);
+
+		// DO NOT TOUCH - For some reason this stops the panel from expanding
+		updatePanel.getPreferredSize();
 
 		return updatePanel;
 	}

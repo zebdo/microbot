@@ -24,20 +24,21 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
-import net.runelite.api.SpriteID;
-import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSlotID;
-import net.runelite.client.ui.ColorScheme;
-
-import javax.swing.*;
-import java.awt.*;
+import java.awt.GridLayout;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
+import javax.swing.JMenuItem;
+import javax.swing.JPanel;
+import javax.swing.JPopupMenu;
+import net.runelite.api.SpriteID;
+import net.runelite.client.game.ItemManager;
+import net.runelite.client.ui.ColorScheme;
+
 
 public class InventorySetupsSpellbookPanel extends InventorySetupsContainerPanel
 {

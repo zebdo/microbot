@@ -24,15 +24,21 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
-import net.runelite.client.game.ItemManager;
-import net.runelite.client.plugins.microbot.inventorysetups.*;
-import net.runelite.client.ui.ColorScheme;
-
-import javax.swing.*;
-import java.awt.*;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
+import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSlotID;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsVariationMapping;
+import java.awt.GridLayout;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.*;
+import java.util.Map;
+import javax.swing.JPanel;
+import net.runelite.client.game.ItemManager;
+import net.runelite.client.ui.ColorScheme;
 
 // The panel that contains the inventory slots
 public class InventorySetupsInventoryPanel extends InventorySetupsContainerPanel
@@ -46,8 +52,8 @@ public class InventorySetupsInventoryPanel extends InventorySetupsContainerPanel
 	private final InventorySetupsBoltPouchPanel boltPouchPanel;
 
 	InventorySetupsInventoryPanel(final ItemManager itemManager, final MInventorySetupsPlugin plugin,
-								  final InventorySetupsRunePouchPanel runePouchPanel,
-								  final InventorySetupsBoltPouchPanel boltPouchPanel)
+									final InventorySetupsRunePouchPanel runePouchPanel,
+									final InventorySetupsBoltPouchPanel boltPouchPanel)
 	{
 		super(itemManager, plugin, "Inventory");
 		this.runePouchPanel = runePouchPanel;
@@ -68,15 +74,15 @@ public class InventorySetupsInventoryPanel extends InventorySetupsContainerPanel
 		for (int i = 0; i < NUM_INVENTORY_ITEMS; i++)
 		{
 			containerSlotsPanel.add(inventorySlots.get(i));
-			super.addFuzzyMouseListenerToSlot(inventorySlots.get(i));
-			super.addStackMouseListenerToSlot(inventorySlots.get(i));
-			super.addUpdateFromContainerMouseListenerToSlot(inventorySlots.get(i));
-			super.addUpdateFromSearchMouseListenerToSlot(inventorySlots.get(i), true);
-			super.addRemoveMouseListenerToSlot(inventorySlots.get(i));
+			InventorySetupsSlot.addFuzzyMouseListenerToSlot(plugin, inventorySlots.get(i));
+			InventorySetupsSlot.addStackMouseListenerToSlot(plugin, inventorySlots.get(i));
+			InventorySetupsSlot.addUpdateFromContainerMouseListenerToSlot(plugin, inventorySlots.get(i));
+			InventorySetupsSlot.addUpdateFromSearchMouseListenerToSlot(plugin, inventorySlots.get(i), true);
+			InventorySetupsSlot.addRemoveMouseListenerToSlot(plugin, inventorySlots.get(i));
 
 			// Shift menu
-			super.addUpdateFromContainerToAllInstancesMouseListenerToSlot(inventorySlots.get(i));
-			super.addUpdateFromSearchToAllInstancesMouseListenerToSlot(inventorySlots.get(i), true);
+			InventorySetupsSlot.addUpdateFromContainerToAllInstancesMouseListenerToSlot(this, plugin, inventorySlots.get(i));
+			InventorySetupsSlot.addUpdateFromSearchToAllInstancesMouseListenerToSlot(this, plugin, inventorySlots.get(i), true);
 		}
 	}
 
@@ -85,7 +91,7 @@ public class InventorySetupsInventoryPanel extends InventorySetupsContainerPanel
 	{
 		for (int i = 0; i < NUM_INVENTORY_ITEMS; i++)
 		{
-			super.setSlotImageAndText(inventorySlots.get(i), setup, setup.getInventory().get(i));
+			InventorySetupsSlot.setSlotImageAndText(itemManager, inventorySlots.get(i), setup, setup.getInventory().get(i));
 		}
 
 		validate();
@@ -107,27 +113,10 @@ public class InventorySetupsInventoryPanel extends InventorySetupsContainerPanel
 			return;
 		}
 
-		InventorySetupsRunePouchType rpType = InventorySetupsRunePouchType.NONE;
-		boolean currInvHasBoltPouch = false;
 		for (int i = 0; i < NUM_INVENTORY_ITEMS; i++)
 		{
-			InventorySetupsItem currInvItem = currInventory.get(i);
-			if (rpType == InventorySetupsRunePouchType.NONE)
-			{
-				rpType = plugin.getRunePouchType(currInvItem.getId());
-			}
-			if (!currInvHasBoltPouch && plugin.isItemBoltPouch(currInvItem.getId()))
-			{
-				currInvHasBoltPouch = true;
-			}
-			super.highlightSlot(inventorySetup, inventoryToCheck.get(i), currInventory.get(i), inventorySlots.get(i));
+			InventorySetupsSlot.highlightSlot(inventorySetup, inventoryToCheck.get(i), currInventory.get(i), inventorySlots.get(i));
 		}
-
-		final InventorySetupsRunePouchType rpTypeFinal = rpType;
-		plugin.getClientThread().invokeLater(() -> handleRunePouchHighlighting(inventorySetup, rpTypeFinal));
-
-		final boolean currInvHasBoltPouchFinal = currInvHasBoltPouch;
-		plugin.getClientThread().invokeLater(() -> handleBoltPouchHighlighting(inventorySetup, currInvHasBoltPouchFinal));
 	}
 
 	@Override
@@ -160,19 +149,8 @@ public class InventorySetupsInventoryPanel extends InventorySetupsContainerPanel
 		Map<Integer, List<Integer>> currentInventoryMapping = new HashMap<>();
 
 		// collect items in current inventory in the form of a Map -> List of stack sizes
-		InventorySetupsRunePouchType runePouchType = InventorySetupsRunePouchType.NONE;
-		boolean currInvHasBoltPouch = false;
 		for (final InventorySetupsItem item : currInventory)
 		{
-			if (runePouchType == InventorySetupsRunePouchType.NONE)
-			{
-				runePouchType = plugin.getRunePouchType(item.getId());
-			}
-			if (!currInvHasBoltPouch && plugin.isItemBoltPouch(item.getId()))
-			{
-				currInvHasBoltPouch = true;
-			}
-
 			List<Integer> currentItemList = currentInventoryMapping.get(item.getId());
 			if (currentItemList == null)
 			{
@@ -228,24 +206,12 @@ public class InventorySetupsInventoryPanel extends InventorySetupsContainerPanel
 
 			updateCurrentUnorderedSlot(savedItemId, inventorySetup, inventorySlots.get(i), savedItemFromInventory, currentItemListForSpecificId, currentInventoryMapping);
 		}
-
-		final InventorySetupsRunePouchType rpTypeFinal = runePouchType;
-		plugin.getClientThread().invokeLater(() ->
-		{
-			handleRunePouchHighlighting(inventorySetup, rpTypeFinal);
-		});
-
-		final boolean currInvHasBoltPouchFinal = currInvHasBoltPouch;
-		plugin.getClientThread().invokeLater(() ->
-		{
-			handleBoltPouchHighlighting(inventorySetup, currInvHasBoltPouchFinal);
-		});
 	}
 
 	private void processExactItems(final InventorySetup inventorySetup,
-								   final Map<Integer, List<Integer>> currentInventoryMapping,
-								   final List<Boolean> processedInvItems,
-								   final boolean allowFuzzy)
+									final Map<Integer, List<Integer>> currentInventoryMapping,
+									final List<Boolean> processedInvItems,
+									final boolean allowFuzzy)
 	{
 		List<InventorySetupsItem> setupInventory = inventorySetup.getInventory();
 
@@ -299,56 +265,13 @@ public class InventorySetupsInventoryPanel extends InventorySetupsContainerPanel
 			currentInventoryMapping.remove(itemId);
 		}
 
-		if (this.shouldHighlightSlotBasedOnStack(savedItemFromInventory.getStackCompare(), savedItemFromInventory.getQuantity(), currentInventoryItemQty))
+		if (InventorySetupsSlot.shouldHighlightSlotBasedOnStack(savedItemFromInventory.getStackCompare(), savedItemFromInventory.getQuantity(), currentInventoryItemQty))
 		{
 			currentSlot.setBackground(inventorySetup.getHighlightColor());
 		}
 		else
 		{
 			currentSlot.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-		}
-	}
-
-	private void handleRunePouchHighlighting(final InventorySetup inventorySetup, final InventorySetupsRunePouchType runePouchType)
-	{
-		if (inventorySetup.getRune_pouch() != null)
-		{
-			// attempt to highlight if rune pouch is available
-			if (runePouchType != InventorySetupsRunePouchType.NONE)
-			{
-				List<InventorySetupsItem> runePouchToCheck = plugin.getRunePouchData(runePouchType);
-				runePouchPanel.highlightSlots(runePouchToCheck, inventorySetup);
-			}
-			else // if the current inventory doesn't have a rune pouch but the setup does, highlight the RP pouch
-			{
-				runePouchPanel.highlightAllSlots(inventorySetup);
-			}
-		}
-		else
-		{
-			runePouchPanel.resetSlotColors();
-		}
-	}
-
-	private void handleBoltPouchHighlighting(final InventorySetup inventorySetup, boolean doesCurrentInventoryHaveBoltPouch)
-	{
-		if (inventorySetup.getBoltPouch() != null)
-		{
-
-			// attempt to highlight if bolt pouch is available
-			if (doesCurrentInventoryHaveBoltPouch)
-			{
-				List<InventorySetupsItem> boltPouchToCheck = plugin.getBoltPouchData();
-				boltPouchPanel.highlightSlots(boltPouchToCheck, inventorySetup);
-			}
-			else // if the current inventory doesn't have a bolt pouch but the setup does, highlight the pouch
-			{
-				boltPouchPanel.highlightAllSlots(inventorySetup);
-			}
-		}
-		else
-		{
-			boltPouchPanel.resetSlotColors();
 		}
 	}
 }

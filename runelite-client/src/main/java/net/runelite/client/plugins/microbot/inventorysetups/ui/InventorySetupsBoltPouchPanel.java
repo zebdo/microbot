@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.inventorysetups.ui;/*
+/*
  * Copyright (c) 2019, dillydill123 <https://github.com/dillydill123>
  * All rights reserved.
  *
@@ -22,9 +22,8 @@ package net.runelite.client.plugins.microbot.inventorysetups.ui;/*
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
-import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
@@ -32,6 +31,7 @@ import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSlotI
 
 import java.util.Arrays;
 import java.util.List;
+import net.runelite.client.game.ItemManager;
 
 public class InventorySetupsBoltPouchPanel extends InventorySetupsAmmunitionPanel
 {
@@ -69,5 +69,32 @@ public class InventorySetupsBoltPouchPanel extends InventorySetupsAmmunitionPane
 	protected List<InventorySetupsItem> getContainer(InventorySetup inventorySetup)
 	{
 		return inventorySetup.getBoltPouch();
+	}
+
+	public void handleBoltPouchHighlighting(final InventorySetup inventorySetup, boolean doesCurrentInventoryHaveBoltPouch)
+	{
+		if (!inventorySetup.isHighlightDifference() || !plugin.isHighlightingAllowed())
+		{
+			super.resetSlotColors();
+			return;
+		}
+
+		if (inventorySetup.getBoltPouch() != null)
+		{
+			// attempt to highlight if bolt pouch is available
+			if (doesCurrentInventoryHaveBoltPouch)
+			{
+				List<InventorySetupsItem> boltPouchToCheck = plugin.getAmmoHandler().getBoltPouchData();
+				super.highlightSlots(boltPouchToCheck, inventorySetup);
+			}
+			else // if the current inventory doesn't have a bolt pouch but the setup does, highlight the pouch
+			{
+				super.highlightAllSlots(inventorySetup);
+			}
+		}
+		else
+		{
+			super.resetSlotColors();
+		}
 	}
 }

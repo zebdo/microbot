@@ -659,6 +659,9 @@ public class AttackTimerMetronomePlugin extends Plugin
                 if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.CHIVALRY.getLevel()) {
                     return Rs2PrayerEnum.CHIVALRY;
                 }
+                if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.ULTIMATE_STRENGTH.getLevel()) {
+                    return Rs2PrayerEnum.ULTIMATE_STRENGTH;
+                }
                 if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.SUPERHUMAN_STRENGTH.getLevel()) {
                     return Rs2PrayerEnum.SUPERHUMAN_STRENGTH;
                 }

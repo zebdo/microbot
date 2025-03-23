@@ -8,7 +8,7 @@ import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.blastoisefurnace.enums.Bars;
 
 @ConfigGroup("blastoisefurnace")
-@ConfigInformation("must have Ice Gloves or smiths gloves (i) equiped<br />+<br />coalbag, stamina potions and energy potions in bank<br /><br />| if doing gold bars; must have Goldsmiths Gauntlet and bank your coalbag |<br /><br />(makes 1.5m an hour minimum with steel and should cover expenses)<br /><br />current version does not support foremen or coffer refill<br /><br />im working on that aswell as full native use of antiban<br />Enjoy! :)")
+@ConfigInformation("Must have Ice Gloves or smiths gloves (i) equiped<br /><br />If not doing gold bars coal bag is required. <br /><br /> Must have stamina and energy potions in bank<br /><br /> If doing gold bars you must have Goldsmiths Gauntlet and bank your coal bag<br /><br />Current version does not support foremen or coffer refill<br /><br />")
 public interface BlastoiseFurnaceConfig extends Config {
     @ConfigSection(
             name = "Blast Furnace Settings",
@@ -49,6 +49,6 @@ public interface BlastoiseFurnaceConfig extends Config {
             section = "Credits"
     )
     default String Credits() {
-        return "Special thanks to:\n\nExioStorm, MrPecan, george\n\nfor building the backbone of this plugin!\nand teaching me how to java while doing so\ni will forever be gratefull.\nFishy ^_^";
+        return "Created by: Fishy \n\nUpdated by: Acun";
     }
 }

@@ -1,19 +1,21 @@
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-
-import net.runelite.api.EquipmentInventorySlot;
-import net.runelite.api.ItemID;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSection;
-import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.util.AsyncBufferedImage;
-
-import javax.swing.*;
-import javax.swing.border.EmptyBorder;
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Dimension;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import javax.swing.ImageIcon;
+import javax.swing.JLabel;
+import javax.swing.JMenuItem;
+import javax.swing.SwingUtilities;
+import javax.swing.border.EmptyBorder;
+import net.runelite.api.EquipmentInventorySlot;
+import net.runelite.api.ItemID;
+import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.util.AsyncBufferedImage;
 
 public class InventorySetupsIconPanel extends InventorySetupsPanel
 {

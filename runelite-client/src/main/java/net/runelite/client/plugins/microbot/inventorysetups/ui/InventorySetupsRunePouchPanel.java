@@ -24,23 +24,31 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-import net.runelite.api.ItemID;
-import net.runelite.api.Varbits;
-import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsRunePouchType;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSlotID;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import net.runelite.api.ItemID;
+import net.runelite.api.Varbits;
+import net.runelite.client.game.ItemManager;
 
 public class InventorySetupsRunePouchPanel extends InventorySetupsAmmunitionPanel
 {
 	// 23650 is what shows up when selecting a RunePouch from ChatBoxItemSearch, 27086 is likely lms
 	public static final List<Integer> RUNE_POUCH_IDS = Arrays.asList(ItemID.RUNE_POUCH, ItemID.RUNE_POUCH_L, ItemID.RUNE_POUCH_23650, ItemID.RUNE_POUCH_27086);
-	
+
+	public static final Set<Integer> RUNE_POUCH_IDS_SET = new HashSet<>(RUNE_POUCH_IDS);
+
 	public static final List<Integer> RUNE_POUCH_DIVINE_IDS = Arrays.asList(ItemID.DIVINE_RUNE_POUCH, ItemID.DIVINE_RUNE_POUCH_L);
+
+	public static final Set<Integer> RUNE_POUCH_DIVINE_IDS_SET = new HashSet<>(RUNE_POUCH_DIVINE_IDS);
 
 	public static final List<Integer> RUNE_POUCH_AMOUNT_VARBITS = Arrays.asList(Varbits.RUNE_POUCH_AMOUNT1, Varbits.RUNE_POUCH_AMOUNT2, Varbits.RUNE_POUCH_AMOUNT3, Varbits.RUNE_POUCH_AMOUNT4);
 
@@ -67,5 +75,33 @@ public class InventorySetupsRunePouchPanel extends InventorySetupsAmmunitionPane
 	protected List<InventorySetupsItem> getContainer(InventorySetup inventorySetup)
 	{
 		return inventorySetup.getRune_pouch();
+	}
+
+	public void handleRunePouchHighlighting(final InventorySetup inventorySetup, final InventorySetupsRunePouchType runePouchType)
+	{
+		if (!inventorySetup.isHighlightDifference() || !plugin.isHighlightingAllowed())
+		{
+			super.resetSlotColors();
+			return;
+		}
+
+		// This must be run on the client thread!
+		if (inventorySetup.getRune_pouch() != null)
+		{
+			// attempt to highlight if rune pouch is available
+			if (runePouchType != InventorySetupsRunePouchType.NONE)
+			{
+				List<InventorySetupsItem> runePouchToCheck = plugin.getAmmoHandler().getRunePouchData(runePouchType);
+				super.highlightSlots(runePouchToCheck, inventorySetup);
+			}
+			else // if the current inventory doesn't have a rune pouch but the setup does, highlight the RP pouch
+			{
+				super.highlightAllSlots(inventorySetup);
+			}
+		}
+		else
+		{
+			super.resetSlotColors();
+		}
 	}
 }
