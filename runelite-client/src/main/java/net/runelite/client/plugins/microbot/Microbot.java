@@ -45,6 +45,7 @@ import net.runelite.api.annotations.Component;
 
 import javax.inject.Inject;
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -261,13 +262,26 @@ public class Microbot {
 
     public static void showMessage(String message) {
         try {
-            SwingUtilities.invokeAndWait(() ->
-            {
-                JOptionPane.showConfirmDialog(null, message, "Message",
-                        JOptionPane.DEFAULT_OPTION);
+            SwingUtilities.invokeAndWait(() -> {
+                final JOptionPane optionPane = new JOptionPane(
+                        message,
+                        JOptionPane.INFORMATION_MESSAGE,
+                        JOptionPane.DEFAULT_OPTION
+                );
+
+                final JDialog dialog = optionPane.createDialog("Message");
+
+                // Set up timer to close the dialog after 10 seconds
+                Timer timer = new Timer(10000, e -> {
+                    dialog.dispose();
+                });
+                timer.setRepeats(false);
+                timer.start();
+                dialog.setVisible(true);
+                timer.stop();
             });
-        } catch(Exception ex) {
-            ex.getStackTrace();
+        } catch (Exception ex) {
+            ex.printStackTrace(); // This is better than ex.getStackTrace() which just returns the array
             Microbot.log(ex.getMessage());
         }
     }
