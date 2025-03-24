@@ -10,6 +10,7 @@ import lombok.NoArgsConstructor;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.ScheduledStopEvent;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
@@ -85,9 +86,9 @@ public class Scheduled {
         }
     }
 
-    public boolean stop() {
+    public void stop() {
         if (getPlugin() == null) {
-            return false;
+            return;
         }
 
         try {
@@ -95,9 +96,8 @@ public class Scheduled {
                 Microbot.getEventBus().post(new ScheduledStopEvent(plugin));
                 return false;
             });
-            return true;
-        } catch (Exception e) {
-            return false;
+
+        } catch (Exception ignored) {
         }
     }
 
@@ -168,6 +168,9 @@ public class Scheduled {
             default:
                 nextRunTime = lastRunTime + TimeUnit.HOURS.toMillis(1); // Default fallback
         }
+
+        // Add a random delay
+        nextRunTime = nextRunTime + TimeUnit.MINUTES.toMillis(Rs2Random.between(0, 5));
     }
 
     /**

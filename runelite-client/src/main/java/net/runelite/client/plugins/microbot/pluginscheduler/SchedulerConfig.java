@@ -23,4 +23,20 @@ public interface SchedulerConfig extends Config {
             hidden = true
     )
     void setScheduledPlugins(String json);
+
+    @ConfigItem(
+            keyName = "logOut",
+            name = "Log out",
+            description = "Log out with no active plugins",
+            hidden = true
+    )
+    default boolean logOut() { return false; }
+
+    @ConfigItem(
+            keyName = "randomDelay",
+            name = "Random Delay",
+            description = "Randomize delay for next run time plugins, between 0-5 minutes",
+            hidden = true
+    )
+    default boolean randomDelay() { return false; }
 }

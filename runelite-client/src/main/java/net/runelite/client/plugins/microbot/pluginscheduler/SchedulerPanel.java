@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.pluginscheduler;
 
+import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.microbot.pluginscheduler.type.Scheduled;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
@@ -25,7 +26,8 @@ public class SchedulerPanel extends PluginPanel {
     private final JLabel nextPluginTimeLabel;
     private final JLabel nextPluginScheduleLabel;
 
-    public SchedulerPanel(SchedulerPlugin plugin, SchedulerConfig config) {
+
+    public SchedulerPanel(SchedulerPlugin plugin, SchedulerConfig config, ConfigManager configManager) {
         super(false);
         this.plugin = plugin;
 
@@ -84,7 +86,7 @@ public class SchedulerPanel extends PluginPanel {
         nextPluginPanel.add(nextPluginScheduleLabel, createGbc(1, 2));
 
         // Button panel
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 1, 0, 0));
+        JPanel buttonPanel = new JPanel(new GridLayout(3, 1, 0, 5));
         buttonPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
         buttonPanel.setBorder(new EmptyBorder(10, 0, 0, 0));
 
@@ -92,6 +94,33 @@ public class SchedulerPanel extends PluginPanel {
         JButton openConfigButton = createButton();
         openConfigButton.addActionListener(this::onOpenConfigButtonClicked);
         buttonPanel.add(openConfigButton);
+
+        JToggleButton logoutToggleButton = new JToggleButton("Automatic logout: " + (!config.logOut() ? "Disabled" : "Enabled"));
+        logoutToggleButton.setSelected(config.logOut());
+        logoutToggleButton.setFont(FontManager.getRunescapeSmallFont());
+        logoutToggleButton.setFocusPainted(false);
+        logoutToggleButton.setForeground(Color.WHITE);
+
+        logoutToggleButton.addActionListener(e -> {
+            boolean newState = logoutToggleButton.isSelected();
+            configManager.setConfiguration("PluginScheduler", "logOut", newState);
+            logoutToggleButton.setText("Automatic logout: " + (!newState ? "Disabled" : "Enabled"));
+        });
+        buttonPanel.add(logoutToggleButton);
+
+        JToggleButton randomTimeToggleButton = new JToggleButton("Random delay (0-5 minutes): " + (config.randomDelay() ? "Enabled" : "Disabled"));
+        randomTimeToggleButton.setSelected(config.randomDelay());
+        randomTimeToggleButton.setFont(FontManager.getRunescapeSmallFont());
+        randomTimeToggleButton.setFocusPainted(false);
+        randomTimeToggleButton.setForeground(Color.WHITE);
+
+        randomTimeToggleButton.addActionListener(e -> {
+            boolean newState = randomTimeToggleButton.isSelected();
+            configManager.setConfiguration("PluginScheduler", "randomDelay", newState);
+            randomTimeToggleButton.setText("Random delay (0-5 minutes): " + (newState ? "Enabled" : "Disabled"));
+        });
+
+        buttonPanel.add(randomTimeToggleButton);
 
         // Add components to main panel
         mainPanel.add(infoPanel);
@@ -101,6 +130,7 @@ public class SchedulerPanel extends PluginPanel {
         mainPanel.add(buttonPanel);
 
         add(mainPanel, BorderLayout.NORTH);
+        plugin.updatePanels();
     }
 
     private GridBagConstraints createGbc(int x, int y) {
@@ -145,7 +175,7 @@ public class SchedulerPanel extends PluginPanel {
     }
 
     private JButton createButton() {
-        JButton button = new JButton("Open Scheduler Config");
+        JButton button = new JButton("Open Scheduler");
         button.setFont(FontManager.getRunescapeSmallFont());
         button.setFocusPainted(false);
         button.setForeground(Color.WHITE);
