@@ -3,9 +3,12 @@ package net.runelite.client.plugins.microbot.birdhouseruns;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginManager;
+import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.pluginscheduler.event.ScheduledStopEvent;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
@@ -16,7 +19,8 @@ import java.awt.*;
         name = PluginDescriptor.Forn + "Birdhouse Runner",
         description = "Does a birdhouse run",
         tags = {"FornBirdhouseRuns", "forn"},
-        enabledByDefault = false
+        enabledByDefault = false,
+        canBeScheduled = true
 )
 @Slf4j
 public class FornBirdhouseRunsPlugin extends Plugin {
@@ -44,5 +48,12 @@ public class FornBirdhouseRunsPlugin extends Plugin {
     protected void shutDown() {
         fornBirdhouseRunsScript.shutdown();
         overlayManager.remove(fornBirdhouseRunsOverlay);
+    }
+
+    @Subscribe
+    public void onScheduledStopEvent(ScheduledStopEvent event) {
+        if (event.getPlugin() == this) {
+            Microbot.stopPlugin(this);
+        }
     }
 }
