@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.birdhouseruns;
 
 import net.runelite.client.config.*;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 
 @ConfigInformation("This plugin will run the birdhouse runs.\n" +
         "Setup an appropriate inventory setup with logs, \n" +
@@ -9,12 +10,12 @@ import net.runelite.client.config.*;
 public interface FornBirdhouseRunsConfig extends Config {
     @ConfigItem(
             keyName = "inventorySetup",
-            name = "InventorySetup Name",
-            description = "Name of inventory setup to use",
+            name = "Inventory Setup",
+            description = "Inventory setup to use",
             position = 0
     )
-    default String inventorySetup() {
-        return "";
+    default InventorySetup inventorySetup() {
+        return null;
     }
 
     @ConfigItem(

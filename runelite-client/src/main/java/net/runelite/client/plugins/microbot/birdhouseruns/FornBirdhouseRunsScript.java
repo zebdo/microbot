@@ -52,8 +52,7 @@ public class FornBirdhouseRunsScript extends Script {
                     initialized = true;
                     var inventorySetup = new Rs2InventorySetup(config.inventorySetup(), mainScheduledFuture);
                     if (!inventorySetup.doesInventoryMatch() || !inventorySetup.doesEquipmentMatch()) {
-                        boolean arrived = Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 20);
-                        sleepUntil(() -> arrived, 100000);
+                        Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 20);
                         if (!inventorySetup.loadEquipment() || !inventorySetup.loadInventory()) {
                             Microbot.log("Failed to load inventory setup");
                             Microbot.stopPlugin(plugin);
@@ -67,8 +66,7 @@ public class FornBirdhouseRunsScript extends Script {
 
                 switch (botStatus) {
                     case TELEPORTING:
-                        boolean arrivedThere = Rs2Walker.walkTo(new WorldPoint(3764, 3869, 1));
-                        sleepUntil(() -> arrivedThere);
+                        Rs2Walker.walkTo(new WorldPoint(3764, 3869, 1), 5);
                         botStatus = states.VERDANT_TELEPORT;
                         break;
                     case VERDANT_TELEPORT:
@@ -112,8 +110,7 @@ public class FornBirdhouseRunsScript extends Script {
                         seedHouse(birdhouseLocation3, states.DISMANTLE_HOUSE_4);
                         break;
                     case DISMANTLE_HOUSE_4:
-                        boolean _arrived = Rs2Walker.walkTo(new WorldPoint(3680, 3813, 0));
-                        sleepUntil(() -> _arrived);
+                        Rs2Walker.walkTo(new WorldPoint(3680, 3813, 0));
                         dismantleBirdhouse(30566, states.BUILD_HOUSE_4);
                         break;
                     case BUILD_HOUSE_4:
@@ -124,8 +121,7 @@ public class FornBirdhouseRunsScript extends Script {
                         break;
                     case FINISHING:
                         if (config.goToBank()) {
-                            boolean arrived = Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint());
-                            sleepUntil(() -> arrived, 100000);
+                            Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint());
                             emptyNests();
                         }
 
