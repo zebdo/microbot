@@ -16,6 +16,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.config.ProfileManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.NPCManager;
 import net.runelite.client.game.SpriteManager;
@@ -90,6 +91,9 @@ public class Microbot {
     @Getter
     @Setter
     private static ClientThread clientThread;
+    @Getter
+    @Setter
+    private static EventBus eventBus;
     @Getter
     @Setter
     private static WorldMapPointManager worldMapPointManager;

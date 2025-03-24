@@ -9,6 +9,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.pluginscheduler.event.ScheduledStopEvent;
 
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
@@ -85,6 +86,22 @@ public class Scheduled {
     }
 
     public boolean stop() {
+        if (getPlugin() == null) {
+            return false;
+        }
+
+        try {
+            Microbot.getClientThread().runOnSeperateThread(() -> {
+                Microbot.getEventBus().post(new ScheduledStopEvent(plugin));
+                return false;
+            });
+            return true;
+        } catch (Exception e) {
+            return false;
+        }
+    }
+
+    public boolean forceStop() {
         if (getPlugin() == null) {
             return false;
         }
