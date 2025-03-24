@@ -193,6 +193,38 @@ public class Rs2GroundItem {
         return temp.toArray(new RS2Item[temp.size()]);
     }
 
+    public static RS2Item[] getAllFromWorldPoint(int range, WorldPoint worldPoint) {
+        List<RS2Item> temp = new ArrayList<>();
+        int safespotX = worldPoint.getX();
+        int safespotY = worldPoint.getY();
+
+        int minX = safespotX - range, minY = safespotY - range;
+        int maxX = safespotX + range, maxY = safespotY + range;
+
+        for (int x = minX; x < maxX; x++) {
+            for (int y = minY; y < maxY; y++) {
+                RS2Item[] items = getAllAt(x, y);
+                if (items != null) {
+                    for (RS2Item item : items) {
+                        if (item == null) {
+                            continue;
+                        }
+                        temp.add(item);
+                    }
+                }
+            }
+        }
+
+        // Sort items based on distance from the safespot
+        temp = temp.stream()
+                .sorted(Comparator.comparingInt(value ->
+                        value.getTile().getLocalLocation().distanceTo(new LocalPoint(safespotX, safespotY))))
+                .collect(Collectors.toList());
+
+        return temp.toArray(new RS2Item[temp.size()]);
+    }
+
+
     public static boolean loot(String lootItem, int range) {
         return loot(lootItem, 1, range);
     }

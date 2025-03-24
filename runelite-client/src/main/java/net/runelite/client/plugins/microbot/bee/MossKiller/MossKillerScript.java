@@ -105,7 +105,6 @@ public class MossKillerScript extends Script {
         Rs2AntibanSettings.moveMouseOffScreenChance = 0.07;
         Rs2AntibanSettings.moveMouseRandomly = true;
         Rs2AntibanSettings.moveMouseRandomlyChance = 0.04;
-        Rs2AntibanSettings.actionCooldownChance = 0.06;
         Rs2Antiban.setActivityIntensity(LOW);
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -119,10 +118,10 @@ public class MossKillerScript extends Script {
 
                 Microbot.log(String.valueOf(state));
                 Microbot.log("BossMode: " + bossMode);
-                 if (bossMode) {
+                if (bossMode && Rs2AntibanSettings.actionCooldownActive) {
                     Rs2AntibanSettings.actionCooldownChance = 0.00;
                     Rs2AntibanSettings.actionCooldownActive = false;
-                } else {
+                } else if (!bossMode && !Rs2AntibanSettings.actionCooldownActive){
                     Rs2AntibanSettings.actionCooldownActive = true;
                     Rs2AntibanSettings.actionCooldownChance = 0.06;}
 
