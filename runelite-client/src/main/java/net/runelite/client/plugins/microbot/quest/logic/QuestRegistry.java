@@ -22,9 +22,6 @@ public class QuestRegistry {
      */
     public static IQuest getQuest(int questId) {
         IQuest quest = QUEST_MAP.getOrDefault(questId, null);
-        if (quest == null) {
-            throw new IllegalArgumentException("No implementation for " + questId);
-        }
         return quest;
     }
 }

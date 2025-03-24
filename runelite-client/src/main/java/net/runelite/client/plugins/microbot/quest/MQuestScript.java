@@ -124,7 +124,10 @@ public class MQuestScript extends Script {
                 /**
                  * Execute custom logic for the quest
                  */
-                QuestRegistry.getQuest(getQuestHelperPlugin().getSelectedQuest().getQuest().getId()).executeCustomLogic();
+                var questLogic = QuestRegistry.getQuest(getQuestHelperPlugin().getSelectedQuest().getQuest().getId());
+                if (questLogic != null) {
+                    questLogic.executeCustomLogic();
+                }
 
                 if (getQuestHelperPlugin().getSelectedQuest() != null && !Microbot.getClientThread().runOnClientThread(() -> getQuestHelperPlugin().getSelectedQuest().isCompleted())) {
                     if (Rs2Widget.isWidgetVisible(ComponentID.DIALOG_OPTION_OPTIONS) && getQuestHelperPlugin().getSelectedQuest().getQuest().getId() != Quest.COOKS_ASSISTANT.getId() && !Rs2Bank.isOpen()) {
