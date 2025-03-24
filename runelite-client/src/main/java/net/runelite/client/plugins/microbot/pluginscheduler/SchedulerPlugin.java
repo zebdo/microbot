@@ -87,7 +87,7 @@ public class SchedulerPlugin extends Plugin {
                 checkSchedule();
                 updatePanels();
             });
-        }, 0, 1, TimeUnit.SECONDS);
+        }, 10, 1, TimeUnit.SECONDS);
     }
 
     public void openSchedulerWindow() {
