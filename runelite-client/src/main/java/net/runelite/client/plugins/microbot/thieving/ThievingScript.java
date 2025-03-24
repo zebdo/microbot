@@ -216,7 +216,7 @@ public class ThievingScript extends Script {
                                 .collect(Collectors.toList());
                     }
                 } catch (Exception ex) {
-                    System.out.println("Error retrieving Wealthy citizens: " + ex.getMessage());
+                    Microbot.log("Error retrieving Wealthy citizens: " + ex.getMessage());
                     return;
                 }
 
@@ -229,7 +229,7 @@ public class ThievingScript extends Script {
                     }
                 }
             } catch (Exception ex) {
-                System.out.println("Error in handleWealthyCitizen: " + ex.getMessage());
+               Microbot.log("Error in handleWealthyCitizen: " + ex.getMessage());
             }
         }
 
