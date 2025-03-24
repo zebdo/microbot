@@ -186,13 +186,6 @@ public class SchedulerPlugin extends Plugin {
     }
 
     @Subscribe
-    public void onGameStateChanged(GameStateChanged event) {
-        if (event.getGameState() == GameState.LOGIN_SCREEN) {
-            stopCurrentPlugin();
-        }
-    }
-
-    @Subscribe
     public void onPluginChanged(PluginChanged event) {
         if (currentPlugin != null && event.getPlugin() == currentPlugin.getPlugin() && !currentPlugin.isRunning()) {
             currentPlugin = null;
