@@ -20,8 +20,6 @@ import java.awt.*;
 )
 @Slf4j
 public class FornBirdhouseRunsPlugin extends Plugin {
-    @Inject
-    private FornBirdhouseRunsConfig config;
     @Provides
     FornBirdhouseRunsConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(FornBirdhouseRunsConfig.class);
@@ -30,10 +28,7 @@ public class FornBirdhouseRunsPlugin extends Plugin {
     @Inject
     private OverlayManager overlayManager;
     @Inject
-    private PluginManager pluginManager;
-    @Inject
     private FornBirdhouseRunsOverlay fornBirdhouseRunsOverlay;
-
     @Inject
     FornBirdhouseRunsScript fornBirdhouseRunsScript;
 
@@ -43,13 +38,7 @@ public class FornBirdhouseRunsPlugin extends Plugin {
         if (overlayManager != null) {
             overlayManager.add(fornBirdhouseRunsOverlay);
         }
-        fornBirdhouseRunsScript.run(config);
-//        botStatus = config.STEP(); for debugging
-        FornBirdhouseRunsInfo.botStatus = FornBirdhouseRunsInfo.states.GEARING;
-        FornBirdhouseRunsInfo.selectedSeed = config.SEED().getItemId();
-        FornBirdhouseRunsInfo.seedAmount = config.SEED().getAmountPerHouse();
-        FornBirdhouseRunsInfo.selectedLogs = config.LOG().getItemId();
-        FornBirdhouseRunsInfo.birdhouseType = config.LOG().getBirdhouseType();
+        fornBirdhouseRunsScript.run();
     }
 
     protected void shutDown() {
