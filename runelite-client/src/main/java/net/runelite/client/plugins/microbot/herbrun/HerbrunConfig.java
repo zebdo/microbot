@@ -5,6 +5,7 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigInformation;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 
 @ConfigInformation("This plugin will run the herb run.\n" +
         "Setup an appropriate inventory setup with seeds, \n" +
@@ -24,13 +25,13 @@ public interface HerbrunConfig extends Config {
 
     @ConfigItem(
             keyName = "inventorySetup",
-            name = "InventorySetup Name",
-            description = "Name of inventory setup to use",
+            name = "Inventory Setup",
+            description = "Inventory setup to use",
             position = 1,
             section = settingsSection
     )
-    default String inventorySetup() {
-        return "";
+    default InventorySetup inventorySetup() {
+        return null;
     }
 
     @ConfigItem(

@@ -64,8 +64,7 @@ public class HerbrunScript extends Script {
                 }
                 var inventorySetup = new Rs2InventorySetup(config.inventorySetup(), mainScheduledFuture);
                 if (!inventorySetup.doesInventoryMatch() || !inventorySetup.doesEquipmentMatch()) {
-                    boolean arrived = Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 20);
-                    sleepUntil(() -> arrived, 100000);
+                    Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 20);
                     if (!inventorySetup.loadEquipment() || !inventorySetup.loadInventory()) {
                         Microbot.log("Failed to load inventory setup");
                         Microbot.stopPlugin(plugin);
@@ -86,8 +85,7 @@ public class HerbrunScript extends Script {
                 HerbrunPlugin.status = "Finishing up";
                 if (config.goToBank()) {
                     BankLocation bankLocation = Rs2Bank.getNearestBank();
-                    boolean arrived = Rs2Walker.walkTo(bankLocation.getWorldPoint());
-                    sleepUntil(() -> arrived, 20000);
+                    Rs2Walker.walkTo(bankLocation.getWorldPoint());
                 }
                 HerbrunPlugin.status = "Finished";
                 shutdown();
@@ -95,8 +93,7 @@ public class HerbrunScript extends Script {
 
             if (!currentPatch.isInRange(10)) {
                 HerbrunPlugin.status = "Walking to " + currentPatch.getRegionName();
-                boolean arrived = Rs2Walker.walkTo(currentPatch.getLocation(), 20);
-                sleepUntil(() -> arrived);
+                Rs2Walker.walkTo(currentPatch.getLocation(), 20);
 
             }
 
@@ -176,7 +173,6 @@ public class HerbrunScript extends Script {
                 return false;
             case "Harvestable":
                 Rs2GameObject.interact(obj, "Pick");
-                Rs2Player.waitForWalking();
                 sleepUntil(() -> getHerbPatchState(obj).equals("Empty") || Rs2Inventory.isFull(), 20000);
                 return false;
             case "Weeds":
