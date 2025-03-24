@@ -88,7 +88,7 @@ public class HerbrunScript extends Script {
                     Rs2Walker.walkTo(bankLocation.getWorldPoint());
                 }
                 HerbrunPlugin.status = "Finished";
-                shutdown();
+                Microbot.stopPlugin(plugin);
             }
 
             if (!currentPatch.isInRange(10)) {
