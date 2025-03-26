@@ -4,7 +4,9 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
-@ConfigGroup("PluginScheduler")
+import static net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin.configGroup;
+
+@ConfigGroup(configGroup)
 public interface SchedulerConfig extends Config {
     @ConfigItem(
             keyName = "scheduledPlugins",
@@ -26,17 +28,9 @@ public interface SchedulerConfig extends Config {
 
     @ConfigItem(
             keyName = "logOut",
-            name = "Log out",
-            description = "Log out with no active plugins",
+            name = "logOut",
+            description = "logOut",
             hidden = true
     )
-    default boolean logOut() { return false; }
-
-    @ConfigItem(
-            keyName = "randomDelay",
-            name = "Random Delay",
-            description = "Randomize delay for next run time plugins, between 0-5 minutes",
-            hidden = true
-    )
-    default boolean randomDelay() { return false; }
+    default Boolean logOut() { return false; };
 }

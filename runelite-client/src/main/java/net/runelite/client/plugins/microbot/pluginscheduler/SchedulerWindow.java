@@ -20,7 +20,7 @@ public class SchedulerWindow extends JFrame {
         super("Plugin Scheduler");
         this.plugin = plugin;
 
-        setSize(650, 500);
+        setSize(800, 500);
         setLocationRelativeTo(null); // Center on screen
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
@@ -84,6 +84,8 @@ public class SchedulerWindow extends JFrame {
             tablePanel.refreshTable();
             formPanel.clearForm();
         }
+
+        plugin.saveScheduledPlugins();
     }
 
     private void onUpdatePlugin() {
@@ -96,6 +98,8 @@ public class SchedulerWindow extends JFrame {
             formPanel.clearForm();
             formPanel.setEditMode(false);
         }
+
+        plugin.saveScheduledPlugins();
     }
 
     private void onRemovePlugin() {
@@ -106,5 +110,7 @@ public class SchedulerWindow extends JFrame {
             formPanel.clearForm();
             formPanel.setEditMode(false);
         }
+
+        plugin.saveScheduledPlugins();
     }
 }

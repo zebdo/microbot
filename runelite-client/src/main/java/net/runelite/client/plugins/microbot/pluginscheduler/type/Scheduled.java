@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.ScheduledStopEvent;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -15,10 +16,7 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 @Data
@@ -41,6 +39,11 @@ public class Scheduled {
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm");
     private static final SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
 
+    // Time restriction fields
+    private boolean timeRestrictionEnabled;
+    private int startHour; // 0-23
+    private int endHour; // 0-23
+
     public Scheduled(String pluginName, ScheduleType scheduleType, int intervalValue,
                      String duration, boolean enabled) {
         this.name = pluginName;
@@ -51,14 +54,16 @@ public class Scheduled {
         this.cleanName = pluginName.replaceAll("<html>|</html>", "")
                 .replaceAll("<[^>]*>([^<]*)</[^>]*>", "$1")
                 .replaceAll("<[^>]*>", "");
-
-        // Set nextRunTime to now by default (run immediately)
-        this.nextRunTime = roundToMinutes(System.currentTimeMillis());
+        this.timeRestrictionEnabled = false;
+        this.startHour = 0;
+        this.endHour = 23;
+        setNextRunTime(roundToMinutes(System.currentTimeMillis()));
     }
 
     public Plugin getPlugin() {
-        if (plugin == null) {
-            plugin = Microbot.getPluginManager().getPlugins().stream()
+        PluginManager pluginManager = Microbot.getPluginManager();
+        if (pluginManager != null && plugin == null) {
+            plugin = pluginManager.getPlugins().stream()
                     .filter(p -> Objects.equals(p.getName(), name))
                     .findFirst()
                     .orElse(null);
@@ -122,21 +127,52 @@ public class Scheduled {
     }
 
     /**
-     * Round time to nearest minute (remove seconds and milliseconds)
+     * Round time to nearest minute (rounding up at 30+ seconds)
      */
     private long roundToMinutes(long timeMillis) {
-        return (timeMillis / 60000) * 60000;
+        return ((timeMillis + 30000) / 60000) * 60000;
     }
 
     /**
      * Set when this plugin should next run
      */
     public void setNextRunTime(long timeMillis) {
-        this.nextRunTime = roundToMinutes(timeMillis);
+        // First round the time to minutes
+        long roundedTime = roundToMinutes(timeMillis);
+
+        // If time restriction is enabled, check if we need to adjust the time
+        if (timeRestrictionEnabled) {
+            // Get current hour (0-23)
+            Calendar cal = Calendar.getInstance();
+            cal.setTimeInMillis(roundedTime);
+            int currentHour = cal.get(Calendar.HOUR_OF_DAY);
+
+            // If outside allowed hours, adjust to next start hour
+            if (!isHourWithinAllowedHours(currentHour)) {
+                // Reset minutes and seconds
+                cal.set(Calendar.MINUTE, Rs2Random.between(0, 5));
+                cal.set(Calendar.SECOND, 0);
+
+                // Set to the next available start hour
+                if (startHour > currentHour) {
+                    // Start hour is later today
+                    cal.set(Calendar.HOUR_OF_DAY, startHour);
+                } else {
+                    // Start hour is tomorrow
+                    cal.add(Calendar.DAY_OF_MONTH, 1);
+                    cal.set(Calendar.HOUR_OF_DAY, startHour);
+                }
+
+                roundedTime = cal.getTimeInMillis();
+            }
+        }
+
+        // Set the next run time
+        this.nextRunTime = roundedTime;
     }
 
     /**
-     * Check if the plugin is due to run
+     * Check if the plugin is due to run, considering time restrictions
      */
     public boolean isDueToRun(long currentTimeMillis) {
         currentTimeMillis = roundToMinutes(currentTimeMillis);
@@ -145,32 +181,70 @@ public class Scheduled {
             return false;
         }
 
+        // Check if current time is within allowed hours
+        if (timeRestrictionEnabled && !isWithinAllowedHours()) {
+            setNextRunTime(currentTimeMillis);
+            return false;
+        }
+
         return currentTimeMillis >= nextRunTime;
+    }
+
+    /**
+     * Check if the current hour is within the allowed time range for this plugin
+     */
+    private boolean isWithinAllowedHours() {
+        Calendar calendar = Calendar.getInstance();
+        int currentHour = calendar.get(Calendar.HOUR_OF_DAY);
+
+        return isHourWithinAllowedHours(currentHour);
+    }
+
+    private boolean isHourWithinAllowedHours(int hour) {
+        if (startHour <= endHour) {
+            // Simple case: start time is before end time (e.g., 8am-8pm)
+            return hour >= startHour && hour < endHour;
+        } else {
+            // Complex case: start time is after end time (e.g., 8pm-8am)
+            // This means the allowed time spans midnight
+            return hour >= startHour || hour < endHour;
+        }
+    }
+
+    /**
+     * Get a formatted display of the time restriction
+     */
+    public String getTimeRestrictionDisplay() {
+        if (!timeRestrictionEnabled) {
+            return "No time restriction";
+        }
+
+        return String.format("%02d:00-%02d:00", startHour, endHour);
     }
 
     /**
      * Update the lastRunTime to now and calculate the next run time
      */
-    public void updateAfterRun() {
+    private void updateAfterRun() {
         lastRunTime = roundToMinutes(System.currentTimeMillis());
+        long _nextRunTime;
 
         // Calculate next run time based on schedule type and interval
         switch (scheduleType) {
             case MINUTES:
-                nextRunTime = lastRunTime + TimeUnit.MINUTES.toMillis(intervalValue);
+                _nextRunTime = lastRunTime + TimeUnit.MINUTES.toMillis(intervalValue);
                 break;
             case HOURS:
-                nextRunTime = lastRunTime + TimeUnit.HOURS.toMillis(intervalValue);
+                _nextRunTime = lastRunTime + TimeUnit.HOURS.toMillis(intervalValue);
                 break;
             case DAYS:
-                nextRunTime = lastRunTime + TimeUnit.DAYS.toMillis(intervalValue);
+                _nextRunTime = lastRunTime + TimeUnit.DAYS.toMillis(intervalValue);
                 break;
             default:
-                nextRunTime = lastRunTime + TimeUnit.HOURS.toMillis(1); // Default fallback
+                _nextRunTime = lastRunTime + TimeUnit.HOURS.toMillis(1); // Default fallback
         }
 
-        // Add a random delay
-        nextRunTime = nextRunTime + TimeUnit.MINUTES.toMillis(Rs2Random.between(0, 5));
+        setNextRunTime(_nextRunTime + TimeUnit.MINUTES.toMillis(Rs2Random.between(0, 5)));
     }
 
     /**
@@ -183,19 +257,19 @@ public class Scheduled {
     /**
      * Get a formatted display of when this plugin will run next
      */
-    public String getNextRunDisplay(long currentTimeMillis) {
-        currentTimeMillis = roundToMinutes(currentTimeMillis);
-
-        if (!enabled) {
-            return "Disabled";
-        }
+    public String getNextRunDisplay() {
+        long currentTimeMillis = roundToMinutes(System.currentTimeMillis());
 
         if (isRunning()) {
             return "Running";
         }
 
+        if (!enabled) {
+            return "Disabled";
+        }
+
         if (currentTimeMillis >= nextRunTime) {
-            return "Ready to run";
+            return "After current plugin";
         }
 
         long timeUntilMillis = nextRunTime - currentTimeMillis;
@@ -207,34 +281,6 @@ public class Scheduled {
         } else {
             return String.format("In %dm", minutes);
         }
-    }
-
-    /**
-     * Get a formatted time string for the next run
-     */
-    public String getNextRunTimeString() {
-        return TIME_FORMAT.format(new Date(nextRunTime));
-    }
-
-    /**
-     * Get the duration in minutes
-     */
-    public long getDurationMinutes() {
-        if (duration == null || duration.isEmpty()) {
-            return 0;
-        }
-
-        try {
-            String[] parts = duration.split(":");
-            if (parts.length == 2) {
-                int hours = Integer.parseInt(parts[0]);
-                int minutes = Integer.parseInt(parts[1]);
-                return hours * 60L + minutes;
-            }
-        } catch (Exception e) {
-            // Fall through to return 0
-        }
-        return 0;
     }
 
     /**

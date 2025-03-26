@@ -14,6 +14,8 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.util.concurrent.TimeUnit;
 
+import static net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin.configGroup;
+
 public class SchedulerPanel extends PluginPanel {
     private final SchedulerPlugin plugin;
 
@@ -27,7 +29,7 @@ public class SchedulerPanel extends PluginPanel {
     private final JLabel nextPluginScheduleLabel;
 
 
-    public SchedulerPanel(SchedulerPlugin plugin, SchedulerConfig config, ConfigManager configManager) {
+    public SchedulerPanel(SchedulerPlugin plugin, ConfigManager configManager) {
         super(false);
         this.plugin = plugin;
 
@@ -95,32 +97,34 @@ public class SchedulerPanel extends PluginPanel {
         openConfigButton.addActionListener(this::onOpenConfigButtonClicked);
         buttonPanel.add(openConfigButton);
 
-        JToggleButton logoutToggleButton = new JToggleButton("Automatic logout: " + (!config.logOut() ? "Disabled" : "Enabled"));
-        logoutToggleButton.setSelected(config.logOut());
+        boolean logout = Boolean.parseBoolean(configManager.getConfiguration(configGroup, "logOut"));
+        JToggleButton logoutToggleButton = new JToggleButton("Automatic logout: " + (logout ? "Enabled" : "Disabled"));
+        logoutToggleButton.setSelected(logout);
         logoutToggleButton.setFont(FontManager.getRunescapeSmallFont());
         logoutToggleButton.setFocusPainted(false);
         logoutToggleButton.setForeground(Color.WHITE);
 
         logoutToggleButton.addActionListener(e -> {
             boolean newState = logoutToggleButton.isSelected();
-            configManager.setConfiguration("PluginScheduler", "logOut", newState);
+            configManager.setConfiguration(configGroup, "logOut", newState);
             logoutToggleButton.setText("Automatic logout: " + (!newState ? "Disabled" : "Enabled"));
         });
         buttonPanel.add(logoutToggleButton);
 
-        JToggleButton randomTimeToggleButton = new JToggleButton("Random delay (0-5 minutes): " + (config.randomDelay() ? "Enabled" : "Disabled"));
-        randomTimeToggleButton.setSelected(config.randomDelay());
-        randomTimeToggleButton.setFont(FontManager.getRunescapeSmallFont());
-        randomTimeToggleButton.setFocusPainted(false);
-        randomTimeToggleButton.setForeground(Color.WHITE);
-
-        randomTimeToggleButton.addActionListener(e -> {
-            boolean newState = randomTimeToggleButton.isSelected();
-            configManager.setConfiguration("PluginScheduler", "randomDelay", newState);
-            randomTimeToggleButton.setText("Random delay (0-5 minutes): " + (newState ? "Enabled" : "Disabled"));
-        });
-
-        buttonPanel.add(randomTimeToggleButton);
+//        boolean randomDelay = Boolean.parseBoolean(configManager.getConfiguration(configGroup, "randomDelay"));
+//        JToggleButton randomTimeToggleButton = new JToggleButton("Random delay (0-5 minutes): " + (randomDelay ? "Enabled" : "Disabled"));
+//        randomTimeToggleButton.setSelected(randomDelay);
+//        randomTimeToggleButton.setFont(FontManager.getRunescapeSmallFont());
+//        randomTimeToggleButton.setFocusPainted(false);
+//        randomTimeToggleButton.setForeground(Color.WHITE);
+//
+//        randomTimeToggleButton.addActionListener(e -> {
+//            boolean newState = randomTimeToggleButton.isSelected();
+//            configManager.setConfiguration(configGroup, "randomDelay", newState);
+//            randomTimeToggleButton.setText("Random delay (0-5 minutes): " + (newState ? "Enabled" : "Disabled"));
+//        });
+//
+//        buttonPanel.add(randomTimeToggleButton);
 
         // Add components to main panel
         mainPanel.add(infoPanel);
@@ -130,7 +134,7 @@ public class SchedulerPanel extends PluginPanel {
         mainPanel.add(buttonPanel);
 
         add(mainPanel, BorderLayout.NORTH);
-        plugin.updatePanels();
+        refresh();
     }
 
     private GridBagConstraints createGbc(int x, int y) {
@@ -230,7 +234,7 @@ public class SchedulerPanel extends PluginPanel {
 
         if (nextPlugin != null) {
             nextPluginNameLabel.setText(nextPlugin.getName());
-            nextPluginTimeLabel.setText(nextPlugin.getNextRunTimeString());
+            nextPluginTimeLabel.setText(nextPlugin.getNextRunDisplay());
 
             // Format the schedule depluginion
             String scheduleDesc = nextPlugin.getIntervalDisplay();

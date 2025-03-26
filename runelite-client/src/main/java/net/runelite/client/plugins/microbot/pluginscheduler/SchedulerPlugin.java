@@ -37,6 +37,8 @@ public class SchedulerPlugin extends Plugin {
     @Inject
     private SchedulerConfig config;
 
+    final static String configGroup = "pluginscheduler";
+
     @Provides
     SchedulerConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(SchedulerConfig.class);
@@ -62,14 +64,14 @@ public class SchedulerPlugin extends Plugin {
     private List<Scheduled> scheduledPlugins = new ArrayList<>();
 
     public boolean isRunning() {
-        return currentPlugin != null && currentPlugin.isRunning();
+        return currentPlugin != null;
     }
     private ScheduledFuture<?> pluginStopTask;
     private long logOutTimer = 0;
 
     @Override
     protected void startUp() {
-        panel = new SchedulerPanel(this, config, configManager);
+        panel = new SchedulerPanel(this, configManager);
 
         final BufferedImage icon = ImageUtil.loadImageResource(SchedulerPlugin.class, "icon.png");
         navButton = NavigationButton.builder()
@@ -82,7 +84,13 @@ public class SchedulerPlugin extends Plugin {
         clientToolbar.addNavigation(navButton);
 
         // Load saved schedules from config
-        loadScheduledPlugin();
+        loadScheduledPlugins();
+
+        for (Scheduled plugin : scheduledPlugins) {
+            if (plugin.isRunning()) {
+                plugin.forceStop();
+            }
+        }
 
         // Run the main loop
         updateTask = executorService.scheduleAtFixedRate(() -> {
@@ -136,11 +144,10 @@ public class SchedulerPlugin extends Plugin {
             if (plugin.isDueToRun(currentTime) && !isRunning()) {
                 // Run the plugin
                 startPlugin(plugin);
-                saveScheduledPlugins();
 
                 // Schedule plugin to stop if it has a duration
                 if (plugin.getDuration() != null && !plugin.getDuration().isEmpty()) {
-                    schedulePluginStop(plugin);
+                    schedulePluginStop();
                 }
 
                 // Only run one plugin at a time
@@ -158,21 +165,13 @@ public class SchedulerPlugin extends Plugin {
         }
     }
 
-    private void schedulePluginStop(Scheduled plugin) {
-        // Cancel any existing stop task
+    private void schedulePluginStop() {
         if (pluginStopTask != null && !pluginStopTask.isDone()) {
             pluginStopTask.cancel(false);
             pluginStopTask = null;
         }
 
-        long durationMinutes = plugin.getDurationMinutes();
-        if (durationMinutes > 0) {
-            pluginStopTask = executorService.schedule(
-                    this::stopCurrentPlugin,
-                    durationMinutes,
-                    TimeUnit.MINUTES
-            );
-        }
+        pluginStopTask = executorService.schedule(this::stopCurrentPlugin, 0, TimeUnit.SECONDS);
     }
 
     public void startPlugin(Scheduled plugin) {
@@ -224,19 +223,16 @@ public class SchedulerPlugin extends Plugin {
     public void addScheduledPlugin(Scheduled plugin) {
         plugin.setLastRunTime(System.currentTimeMillis());
         scheduledPlugins.add(plugin);
-        saveScheduledPlugins();
     }
 
     public void removeScheduledPlugin(Scheduled plugin) {
         scheduledPlugins.remove(plugin);
-        saveScheduledPlugins();
     }
 
     public void updateScheduledPlugin(Scheduled oldPlugin, Scheduled newPlugin) {
         int index = scheduledPlugins.indexOf(oldPlugin);
         if (index >= 0) {
             scheduledPlugins.set(index, newPlugin);
-            saveScheduledPlugins();
         }
     }
 
@@ -250,7 +246,7 @@ public class SchedulerPlugin extends Plugin {
         config.setScheduledPlugins(json);
     }
 
-    private void loadScheduledPlugin() {
+    private void loadScheduledPlugins() {
         // Load from config and parse JSON
         String json = config.scheduledPlugins();
         if (json != null && !json.isEmpty()) {

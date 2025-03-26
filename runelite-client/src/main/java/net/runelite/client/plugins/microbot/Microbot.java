@@ -262,6 +262,18 @@ public class Microbot {
 
     public static void showMessage(String message) {
         try {
+            SwingUtilities.invokeAndWait(() ->
+            {
+                JOptionPane.showConfirmDialog(null, message, "Message",
+                        JOptionPane.DEFAULT_OPTION);
+            });
+            } catch(Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
+    public static void showMessage(String message, int disposeTime) {
+        try {
             SwingUtilities.invokeAndWait(() -> {
                 final JOptionPane optionPane = new JOptionPane(
                         message,
@@ -272,7 +284,7 @@ public class Microbot {
                 final JDialog dialog = optionPane.createDialog("Message");
 
                 // Set up timer to close the dialog after 10 seconds
-                Timer timer = new Timer(10000, e -> {
+                Timer timer = new Timer(disposeTime, e -> {
                     dialog.dispose();
                 });
                 timer.setRepeats(false);
@@ -281,8 +293,7 @@ public class Microbot {
                 timer.stop();
             });
         } catch (Exception ex) {
-            ex.printStackTrace(); // This is better than ex.getStackTrace() which just returns the array
-            Microbot.log(ex.getMessage());
+            ex.printStackTrace();
         }
     }
 
