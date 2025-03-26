@@ -4,7 +4,9 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 
-@ConfigGroup("PluginScheduler")
+import static net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin.configGroup;
+
+@ConfigGroup(configGroup)
 public interface SchedulerConfig extends Config {
     @ConfigItem(
             keyName = "scheduledPlugins",
@@ -23,4 +25,12 @@ public interface SchedulerConfig extends Config {
             hidden = true
     )
     void setScheduledPlugins(String json);
+
+    @ConfigItem(
+            keyName = "logOut",
+            name = "logOut",
+            description = "logOut",
+            hidden = true
+    )
+    default Boolean logOut() { return false; };
 }
