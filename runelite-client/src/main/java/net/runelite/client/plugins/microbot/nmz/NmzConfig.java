@@ -5,9 +5,16 @@ import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 
 @ConfigGroup("nmz")
-@ConfigInformation("Make sure you have already setup inventory setup! <br />" +
-        "                \"Make sure you have already set up your hard dream once!  <br />" +
-        "                \"Make sure to turn on AUTO RETALIATE!  <br />")
+@ConfigInformation(
+        "Before starting: <br>" +
+                "<ul>" +
+                "<li>Set up your inventory setup with required items</li>" +
+                "<li>Ensure you have GP in the coffer</li>" +
+                "<li>Have a previous dream setup already</li>" +
+                "<li>Turn ON Auto Retaliate in combat settings</li>" +
+                "</ul>" +
+                "<p>These steps are essential for the plugin to function correctly.</p>"
+)
 public interface NmzConfig extends Config {
     String GROUP = "Nmz";
 
