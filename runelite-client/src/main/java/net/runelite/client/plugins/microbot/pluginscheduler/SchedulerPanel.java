@@ -111,21 +111,6 @@ public class SchedulerPanel extends PluginPanel {
         });
         buttonPanel.add(logoutToggleButton);
 
-//        boolean randomDelay = Boolean.parseBoolean(configManager.getConfiguration(configGroup, "randomDelay"));
-//        JToggleButton randomTimeToggleButton = new JToggleButton("Random delay (0-5 minutes): " + (randomDelay ? "Enabled" : "Disabled"));
-//        randomTimeToggleButton.setSelected(randomDelay);
-//        randomTimeToggleButton.setFont(FontManager.getRunescapeSmallFont());
-//        randomTimeToggleButton.setFocusPainted(false);
-//        randomTimeToggleButton.setForeground(Color.WHITE);
-//
-//        randomTimeToggleButton.addActionListener(e -> {
-//            boolean newState = randomTimeToggleButton.isSelected();
-//            configManager.setConfiguration(configGroup, "randomDelay", newState);
-//            randomTimeToggleButton.setText("Random delay (0-5 minutes): " + (newState ? "Enabled" : "Disabled"));
-//        });
-//
-//        buttonPanel.add(randomTimeToggleButton);
-
         // Add components to main panel
         mainPanel.add(infoPanel);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
