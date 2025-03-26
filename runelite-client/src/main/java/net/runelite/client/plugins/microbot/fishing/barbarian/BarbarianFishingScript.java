@@ -10,6 +10,7 @@ import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.inventory.InteractOrder;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import java.util.concurrent.TimeUnit;
@@ -42,7 +43,7 @@ public class BarbarianFishingScript extends Script {
                 return;
             }
 
-            var fishingspot = findFishingSpot();
+            Rs2NpcModel fishingspot = findFishingSpot();
             if (fishingspot == null) {
                 return;
             }
@@ -64,11 +65,11 @@ public class BarbarianFishingScript extends Script {
 
     }
 
-    private NPC findFishingSpot() {
+    private Rs2NpcModel findFishingSpot() {
         for (int fishingSpotId : FishingSpot.BARB_FISH.getIds()) {
-            NPC fishingspot = Rs2Npc.getNpc(fishingSpotId);
-            if (fishingspot != null) {
-                return fishingspot;
+            Rs2NpcModel fishingSpot = Rs2Npc.getNpc(fishingSpotId);
+            if (fishingSpot != null) {
+                return fishingSpot;
             }
         }
         return null;

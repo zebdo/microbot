@@ -16,6 +16,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.config.ProfileManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.NPCManager;
 import net.runelite.client.game.SpriteManager;
@@ -44,6 +45,7 @@ import net.runelite.api.annotations.Component;
 
 import javax.inject.Inject;
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -90,6 +92,9 @@ public class Microbot {
     @Getter
     @Setter
     private static ClientThread clientThread;
+    @Getter
+    @Setter
+    private static EventBus eventBus;
     @Getter
     @Setter
     private static WorldMapPointManager worldMapPointManager;
@@ -262,9 +267,33 @@ public class Microbot {
                 JOptionPane.showConfirmDialog(null, message, "Message",
                         JOptionPane.DEFAULT_OPTION);
             });
-        } catch(Exception ex) {
-            ex.getStackTrace();
-            Microbot.log(ex.getMessage());
+            } catch(Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
+    public static void showMessage(String message, int disposeTime) {
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                final JOptionPane optionPane = new JOptionPane(
+                        message,
+                        JOptionPane.INFORMATION_MESSAGE,
+                        JOptionPane.DEFAULT_OPTION
+                );
+
+                final JDialog dialog = optionPane.createDialog("Message");
+
+                // Set up timer to close the dialog after 10 seconds
+                Timer timer = new Timer(disposeTime, e -> {
+                    dialog.dispose();
+                });
+                timer.setRepeats(false);
+                timer.start();
+                dialog.setVisible(true);
+                timer.stop();
+            });
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 

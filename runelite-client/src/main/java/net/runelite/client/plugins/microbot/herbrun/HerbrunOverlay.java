@@ -1,16 +1,18 @@
-package net.runelite.client.plugins.microbot.birdhouseruns;
+package net.runelite.client.plugins.microbot.herbrun;
 
+import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
+import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
 
 import javax.inject.Inject;
 import java.awt.*;
 
-public class FornBirdhouseRunsOverlay extends OverlayPanel {
+public class HerbrunOverlay extends OverlayPanel {
 
     @Inject
-    FornBirdhouseRunsOverlay(FornBirdhouseRunsPlugin plugin)
+    HerbrunOverlay(HerbrunPlugin plugin)
     {
         super(plugin);
         setPosition(OverlayPosition.TOP_LEFT);
@@ -21,8 +23,11 @@ public class FornBirdhouseRunsOverlay extends OverlayPanel {
         try {
             panelComponent.setPreferredSize(new Dimension(200, 300));
             panelComponent.getChildren().add(TitleComponent.builder()
-                    .text("Status: " + FornBirdhouseRunsInfo.botStatus)
+                    .text(getPlugin().getClass().getAnnotation(PluginDescriptor.class).description())
                     .color(Color.GREEN)
+                    .build());
+            panelComponent.getChildren().add(LineComponent.builder()
+                    .left(HerbrunPlugin.status)
                     .build());
 
 
