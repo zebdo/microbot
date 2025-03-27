@@ -45,7 +45,7 @@ public class Rs2Dialogue {
     public static boolean hasContinue() {
         return hasNPCContinue() || hasPlayerContinue() || hasDeathContinue() ||
                 hasSpriteContinue() || hasTutContinue() || hasItemContinue() ||
-                hasSpellFilterContinue() || hasGenericContinue();
+                hasSpellFilterContinue();
     }
 
     /**
@@ -120,8 +120,6 @@ public class Rs2Dialogue {
     private static boolean hasSpellFilterContinue() {
         return Rs2Widget.isWidgetVisible(162, 43);
     }
-
-    private static boolean hasGenericContinue() { return Rs2Widget.findWidget("Click here to continue") != null; }
 
     /**
      * Checks if the current dialogue contains selectable options.
