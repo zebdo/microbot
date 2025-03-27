@@ -34,7 +34,7 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static net.runelite.api.Varbits.SHADOW_VEIL;
+import static net.runelite.api.Varbits.*;
 import static net.runelite.client.plugins.microbot.Microbot.log;
 import static net.runelite.client.plugins.microbot.util.Global.*;
 
