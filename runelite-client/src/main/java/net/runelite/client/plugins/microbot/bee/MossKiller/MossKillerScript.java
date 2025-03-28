@@ -167,7 +167,6 @@ public class MossKillerScript extends Script {
     }
 
     public void moarShutDown() {
-        System.out.println("super shutdown triggered for reaching set level");
         varrockTeleport();
         //static sleep to wait till out of combat
         sleep(10000);
@@ -248,10 +247,10 @@ public class MossKillerScript extends Script {
 
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
 
-        if (!Rs2Inventory.contains(FOOD) || BreakHandlerScript.breakIn <= 30){
-            Microbot.log("Inventory does not contains FOOD or break in less than 30");
+        if (!Rs2Inventory.contains(FOOD) || BreakHandlerScript.breakIn <= 15){
+            Microbot.log("Inventory does not contains FOOD or break in less than 15");
             if (Rs2Inventory.contains(FOOD)) {Microbot.log("We have food");}
-                if (BreakHandlerScript.breakIn <= 30) {Microbot.log("Break in less than 15");}
+                if (BreakHandlerScript.breakIn <= 15) {Microbot.log("Break in less than 15");}
             state = MossKillerState.TELEPORT;
             return;
         }
@@ -708,9 +707,6 @@ public class MossKillerScript extends Script {
         }
         if(Rs2Inventory.containsAll(AIR_RUNE, FIRE_RUNE, LAW_RUNE)){
             Rs2Magic.cast(MagicAction.VARROCK_TELEPORT);
-            if (BreakHandlerScript.breakIn <= 30) {
-                sleep(10000,15000);
-            }
         } else {
             state = MossKillerState.WALK_TO_BANK;
         }
