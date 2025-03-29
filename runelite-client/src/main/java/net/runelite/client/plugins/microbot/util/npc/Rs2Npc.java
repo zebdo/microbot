@@ -20,6 +20,7 @@ import org.jetbrains.annotations.Nullable;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 public class Rs2Npc {
@@ -579,12 +580,25 @@ public class Rs2Npc {
 
             int index = -1;
             String[] actions = npcComposition.getActions();
-            if (actions != null) {
-                for (int i = 0; i < actions.length; i++) {
-                    if (actions[i] != null && actions[i].equalsIgnoreCase(action)) {
-                        index = i;
-                        break;
-                    }
+
+            if (action == null || action.isEmpty()) {
+                OptionalInt optionalIndex = IntStream.range(0, actions.length)
+                        .filter(i -> actions[i] != null && !actions[i].isEmpty())
+                        .findFirst();
+
+                if (optionalIndex.isPresent()) {
+                    index = optionalIndex.getAsInt();
+                    action = actions[index];
+                }
+            }
+            else {
+                String finalAction = action;
+                OptionalInt optionalIndex = IntStream.range(0, actions.length)
+                        .filter(i -> actions[i] != null && actions[i].equalsIgnoreCase(finalAction))
+                        .findFirst();
+
+                if (optionalIndex.isPresent()) {
+                    index = optionalIndex.getAsInt();
                 }
             }
 
