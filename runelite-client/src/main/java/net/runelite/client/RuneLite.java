@@ -171,7 +171,6 @@ public class RuneLite
         parser.accepts("clean-jagex-launcher", "Enable jagex launcher"); // will remove the credentials.properties file in .runelite folder
 		parser.accepts("developer-mode", "Enable developer tools");
 		parser.accepts("debug", "Show extra debugging output");
-        parser.accepts("microbot-debug", "Enables debug features for microbot");
 		parser.accepts("safe-mode", "Disables external plugins and the GPU plugin");
 		parser.accepts("insecure-skip-tls-verification", "Disables TLS verification");
 		parser.accepts("jav_config", "jav_config url")
@@ -218,10 +217,6 @@ public class RuneLite
 
         if (options.has("debug")) {
             logger.setLevel(Level.DEBUG);
-        }
-
-        if (options.has("microbot-debug")) {
-            Microbot.debug = true;
         }
 
 		if (options.has("clean-randomdat")) {

@@ -207,10 +207,6 @@ public class RuneLiteDebug {
             logger.setLevel(Level.DEBUG);
         }
 
-        if (options.has("microbot-debug")) {
-            Microbot.debug = true;
-        }
-
         //More information about java proxies can be found here
         //https://docs.oracle.com/javase/8/docs/technotes/guides/net/proxies.html
         //usage: -proxy=IP:PORT:USER:PASS -proxytype=SOCKS
