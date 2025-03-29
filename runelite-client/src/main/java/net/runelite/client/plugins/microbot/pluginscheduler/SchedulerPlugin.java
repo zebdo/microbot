@@ -3,8 +3,6 @@ package net.runelite.client.plugins.microbot.pluginscheduler;
 import com.google.inject.Provides;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.GameState;
-import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.PluginChanged;
@@ -12,6 +10,7 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.pluginscheduler.type.Scheduled;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
@@ -38,6 +37,8 @@ public class SchedulerPlugin extends Plugin {
     @Inject
     private SchedulerConfig config;
 
+    final static String configGroup = "pluginscheduler";
+
     @Provides
     SchedulerConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(SchedulerConfig.class);
@@ -45,6 +46,9 @@ public class SchedulerPlugin extends Plugin {
 
     @Inject
     private ClientToolbar clientToolbar;
+
+    @Inject
+    private ConfigManager configManager;
 
     @Inject
     private ScheduledExecutorService executorService;
@@ -60,13 +64,14 @@ public class SchedulerPlugin extends Plugin {
     private List<Scheduled> scheduledPlugins = new ArrayList<>();
 
     public boolean isRunning() {
-        return currentPlugin != null && currentPlugin.isRunning();
+        return currentPlugin != null;
     }
     private ScheduledFuture<?> pluginStopTask;
+    private long logOutTimer = 0;
 
     @Override
     protected void startUp() {
-        panel = new SchedulerPanel(this, config);
+        panel = new SchedulerPanel(this, configManager);
 
         final BufferedImage icon = ImageUtil.loadImageResource(SchedulerPlugin.class, "icon.png");
         navButton = NavigationButton.builder()
@@ -79,15 +84,28 @@ public class SchedulerPlugin extends Plugin {
         clientToolbar.addNavigation(navButton);
 
         // Load saved schedules from config
-        loadScheduledPlugin();
+        loadScheduledPlugins();
+
+        for (Scheduled plugin : scheduledPlugins) {
+            if (plugin.isRunning()) {
+                plugin.forceStop();
+            }
+        }
 
         // Run the main loop
         updateTask = executorService.scheduleAtFixedRate(() -> {
             SwingUtilities.invokeLater(() -> {
+                updateCurrentPlugin();
                 checkSchedule();
                 updatePanels();
             });
-        }, 10, 1, TimeUnit.SECONDS);
+        }, 1, 1, TimeUnit.SECONDS);
+    }
+
+    public void updateCurrentPlugin() {
+        if (currentPlugin != null && !currentPlugin.isRunning()) {
+            currentPlugin = null;
+        }
     }
 
     public void openSchedulerWindow() {
@@ -126,34 +144,34 @@ public class SchedulerPlugin extends Plugin {
             if (plugin.isDueToRun(currentTime) && !isRunning()) {
                 // Run the plugin
                 startPlugin(plugin);
-                saveScheduledPlugins();
 
                 // Schedule plugin to stop if it has a duration
                 if (plugin.getDuration() != null && !plugin.getDuration().isEmpty()) {
-                    schedulePluginStop(plugin);
+                    schedulePluginStop();
                 }
 
                 // Only run one plugin at a time
                 break;
             }
         }
+
+        if (logOutTimer == 0 || System.currentTimeMillis() > logOutTimer) {
+            logOutTimer = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+
+            // Check if we should log out
+            if (config.logOut() && !isRunning() && Microbot.isLoggedIn() && getNextScheduledPlugin() != null) {
+                Rs2Player.logout();
+            }
+        }
     }
 
-    private void schedulePluginStop(Scheduled plugin) {
-        // Cancel any existing stop task
+    private void schedulePluginStop() {
         if (pluginStopTask != null && !pluginStopTask.isDone()) {
             pluginStopTask.cancel(false);
             pluginStopTask = null;
         }
 
-        long durationMinutes = plugin.getDurationMinutes();
-        if (durationMinutes > 0) {
-            pluginStopTask = executorService.schedule(
-                    this::stopCurrentPlugin,
-                    durationMinutes,
-                    TimeUnit.MINUTES
-            );
-        }
+        pluginStopTask = executorService.schedule(this::stopCurrentPlugin, 0, TimeUnit.SECONDS);
     }
 
     public void startPlugin(Scheduled plugin) {
@@ -176,11 +194,7 @@ public class SchedulerPlugin extends Plugin {
     public void stopCurrentPlugin() {
         if (currentPlugin != null) {
             log.info("Stopping current plugin: " + currentPlugin.getCleanName());
-            if (currentPlugin.stop()) {
-                currentPlugin = null;
-            } else {
-                log.error("Failed to stop plugin: " + currentPlugin.getCleanName());
-            }
+            currentPlugin.stop();
         }
         updatePanels();
     }
@@ -196,7 +210,7 @@ public class SchedulerPlugin extends Plugin {
     /**
      * Update all UI panels with the current state
      */
-    private void updatePanels() {
+    void updatePanels() {
         if (panel != null) {
             panel.refresh();
         }
@@ -209,19 +223,16 @@ public class SchedulerPlugin extends Plugin {
     public void addScheduledPlugin(Scheduled plugin) {
         plugin.setLastRunTime(System.currentTimeMillis());
         scheduledPlugins.add(plugin);
-        saveScheduledPlugins();
     }
 
     public void removeScheduledPlugin(Scheduled plugin) {
         scheduledPlugins.remove(plugin);
-        saveScheduledPlugins();
     }
 
     public void updateScheduledPlugin(Scheduled oldPlugin, Scheduled newPlugin) {
         int index = scheduledPlugins.indexOf(oldPlugin);
         if (index >= 0) {
             scheduledPlugins.set(index, newPlugin);
-            saveScheduledPlugins();
         }
     }
 
@@ -235,7 +246,7 @@ public class SchedulerPlugin extends Plugin {
         config.setScheduledPlugins(json);
     }
 
-    private void loadScheduledPlugin() {
+    private void loadScheduledPlugins() {
         // Load from config and parse JSON
         String json = config.scheduledPlugins();
         if (json != null && !json.isEmpty()) {

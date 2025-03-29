@@ -41,24 +41,24 @@ public class ScheduleTablePanel extends JPanel {
 
         // Create table model
         tableModel = new DefaultTableModel(
-                new Object[]{"Plugin", "Schedule", "Duration", "Next Run", "Enabled"}, 0) {
+                new Object[]{"Plugin", "Schedule", "Duration", "Time Restriction", "Next Run", "Enabled"}, 0) {
             @Override
             public Class<?> getColumnClass(int column) {
-                if (column == 4) return Boolean.class;
+                if (column == 5) return Boolean.class;
                 return String.class;
             }
 
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4; // Only enabled column is editable
+                return column == 5;
             }
         };
 
         // Add listener for enabled column changes
         tableModel.addTableModelListener(e -> {
-            if (e.getColumn() == 4) { // Enabled column
+            if (e.getColumn() == 5) { // Enabled column
                 int row = e.getFirstRow();
-                Boolean enabled = (Boolean) tableModel.getValueAt(row, 4);
+                Boolean enabled = (Boolean) tableModel.getValueAt(row, 5);
                 Scheduled _plugin = plugin.getScheduledPlugins().get(row);
                 _plugin.setEnabled(enabled);
                 plugin.saveScheduledPlugins();
@@ -108,8 +108,9 @@ public class ScheduleTablePanel extends JPanel {
         scheduleTable.getColumnModel().getColumn(0).setPreferredWidth(150); // Plugin
         scheduleTable.getColumnModel().getColumn(1).setPreferredWidth(120); // Schedule
         scheduleTable.getColumnModel().getColumn(2).setPreferredWidth(80);  // Duration
-        scheduleTable.getColumnModel().getColumn(3).setPreferredWidth(100); // Next Run
-        scheduleTable.getColumnModel().getColumn(4).setPreferredWidth(60);  // Enabled
+        scheduleTable.getColumnModel().getColumn(3).setPreferredWidth(100); // Time Restriction
+        scheduleTable.getColumnModel().getColumn(4).setPreferredWidth(100); // Next Run
+        scheduleTable.getColumnModel().getColumn(5).setPreferredWidth(60);  // Enabled
 
         // Custom cell renderer for alternating row colors
         DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
@@ -158,41 +159,38 @@ public class ScheduleTablePanel extends JPanel {
     }
 
     public void refreshTable() {
-        // Get current plugins
         List<Scheduled> plugins = plugin.getScheduledPlugins();
-        long currentTime = System.currentTimeMillis();
 
-        // Update existing rows and add new ones
         for (int i = 0; i < plugins.size(); i++) {
             Scheduled plugin = plugins.get(i);
 
             if (i < tableModel.getRowCount()) {
-                // Update existing row
                 tableModel.setValueAt(plugin.getName(), i, 0);
                 tableModel.setValueAt(plugin.getIntervalDisplay(), i, 1);
                 tableModel.setValueAt(plugin.getDuration() != null && !plugin.getDuration().isEmpty() ?
                         plugin.getDuration() : "Until stopped", i, 2);
-                tableModel.setValueAt(plugin.getNextRunDisplay(currentTime), i, 3);
-                tableModel.setValueAt(plugin.isEnabled(), i, 4);
+                tableModel.setValueAt(plugin.isTimeRestrictionEnabled() ?
+                        plugin.getTimeRestrictionDisplay() : "None", i, 3);
+                tableModel.setValueAt(plugin.getNextRunDisplay(), i, 4);
+                tableModel.setValueAt(plugin.isEnabled(), i, 5);
             } else {
-                // Add new row
                 tableModel.addRow(new Object[]{
                         plugin.getName(),
                         plugin.getIntervalDisplay(),
                         plugin.getDuration() != null && !plugin.getDuration().isEmpty() ?
                                 plugin.getDuration() : "Until stopped",
-                        plugin.getNextRunDisplay(currentTime),
+                        plugin.isTimeRestrictionEnabled() ?
+                                plugin.getTimeRestrictionDisplay() : "None",
+                        plugin.getNextRunDisplay(),
                         plugin.isEnabled()
                 });
             }
         }
 
-        // Remove excess rows if there are more rows than plugins
         while (tableModel.getRowCount() > plugins.size()) {
             tableModel.removeRow(tableModel.getRowCount() - 1);
         }
     }
-
     public void addSelectionListener(Consumer<Scheduled> listener) {
         this.selectionListener = listener;
         scheduleTable.getSelectionModel().addListSelectionListener(e -> {

@@ -47,6 +47,7 @@ import org.slf4j.event.Level;
 
 import javax.inject.Inject;
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -268,9 +269,33 @@ public class Microbot {
                 JOptionPane.showConfirmDialog(null, message, "Message",
                         JOptionPane.DEFAULT_OPTION);
             });
-        } catch(Exception ex) {
-            ex.getStackTrace();
-            Microbot.log(ex.getMessage());
+            } catch(Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
+    public static void showMessage(String message, int disposeTime) {
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                final JOptionPane optionPane = new JOptionPane(
+                        message,
+                        JOptionPane.INFORMATION_MESSAGE,
+                        JOptionPane.DEFAULT_OPTION
+                );
+
+                final JDialog dialog = optionPane.createDialog("Message");
+
+                // Set up timer to close the dialog after 10 seconds
+                Timer timer = new Timer(disposeTime, e -> {
+                    dialog.dispose();
+                });
+                timer.setRepeats(false);
+                timer.start();
+                dialog.setVisible(true);
+                timer.stop();
+            });
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 
