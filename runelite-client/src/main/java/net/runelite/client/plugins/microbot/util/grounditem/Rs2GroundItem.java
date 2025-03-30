@@ -193,6 +193,14 @@ public class Rs2GroundItem {
         return temp.toArray(new RS2Item[temp.size()]);
     }
 
+    /**
+     * Retrieves all RS2Item objects within a specified range of a WorldPoint, sorted by distance.
+     * 
+     * @param range The radius in tiles to search around the given world point
+     * @param worldPoint The center WorldPoint to search around
+     * @return An array of RS2Item objects found within the specified range, sorted by proximity
+     *         to the center point (closest first). Returns an empty array if no items are found.
+     */
     public static RS2Item[] getAllFromWorldPoint(int range, WorldPoint worldPoint) {
         List<RS2Item> temp = new ArrayList<>();
 
