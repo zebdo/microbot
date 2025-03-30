@@ -1,5 +1,8 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition;
 
+import java.time.ZonedDateTime;
+import java.util.Optional;
+
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GroundObjectDespawned;
@@ -30,8 +33,18 @@ public interface Condition {
      * @return description string
      */
     String getDescription();
-    
     /**
+     * Gets the next time this condition will be satisfied.
+     * For time-based conditions, this returns the actual next trigger time.
+     * For non-time conditions, this returns Optional.empty().
+     * 
+     * @return Optional containing the next trigger time, or empty if not applicable
+     */
+    default Optional<ZonedDateTime> getNextTriggerTime() {
+        // Default implementation for non-time conditions
+        return Optional.empty();
+    }
+        /**
      * Returns the type of this condition
      * @return ConditionType enum value
      */

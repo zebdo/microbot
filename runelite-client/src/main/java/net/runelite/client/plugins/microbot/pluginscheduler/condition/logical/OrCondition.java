@@ -6,6 +6,10 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
  * Logical OR combination of conditions - any can be met.
  */
 public class OrCondition extends LogicalCondition {
+    public OrCondition(Condition... conditions) {
+        super(conditions);
+
+    }
     @Override
     public boolean isSatisfied() {
         if (conditions.isEmpty()) return true;

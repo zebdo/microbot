@@ -15,6 +15,10 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.Calendar;
+import java.util.Date;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -23,6 +27,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JSpinner;
 import javax.swing.JTextField;
+import javax.swing.SpinnerDateModel;
 import javax.swing.SpinnerNumberModel;
 import javax.swing.ButtonGroup;
 import javax.swing.JRadioButton;
@@ -39,6 +44,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.Skil
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.DayOfWeekCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.NotCondition;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
@@ -1309,5 +1315,56 @@ public class ConditionConfigPanelUtil {
                 }
             }
         }
+    }
+
+    /**
+     * Creates a panel for configuring SingleTriggerTimeCondition
+     */
+    public static void createSingleTriggerConfigPanel(JPanel panel, GridBagConstraints gbc, JPanel configPanel) {
+        // Date/time picker
+        JLabel dateTimeLabel = new JLabel("Trigger at (date & time):");
+        dateTimeLabel.setForeground(Color.WHITE);
+        panel.add(dateTimeLabel, gbc);
+        
+        gbc.gridy++;
+        JPanel dateTimePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        dateTimePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
+        SpinnerDateModel dateModel = new SpinnerDateModel();
+        JSpinner dateTimeSpinner = new JSpinner(dateModel);
+        dateTimeSpinner.setEditor(new JSpinner.DateEditor(dateTimeSpinner, "yyyy-MM-dd HH:mm"));
+        
+        // Set default to current time + 1 hour
+        Calendar calendar = Calendar.getInstance();
+        calendar.add(Calendar.HOUR_OF_DAY, 1);
+        dateTimeSpinner.setValue(calendar.getTime());
+        
+        dateTimePanel.add(dateTimeSpinner);
+        panel.add(dateTimePanel, gbc);
+        
+        // Description
+        gbc.gridy++;
+        JLabel descriptionLabel = new JLabel("Plugin will trigger once at the specified time");
+        descriptionLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+        descriptionLabel.setFont(FontManager.getRunescapeSmallFont());
+        panel.add(descriptionLabel, gbc);
+        
+        // Store components for later access
+        configPanel.putClientProperty("dateTimeSpinner", dateTimeSpinner);
+    }
+
+    /**
+     * Creates a SingleTriggerTimeCondition from the config panel
+     */
+    public static SingleTriggerTimeCondition createSingleTriggerCondition(JPanel configPanel) {
+        JSpinner dateTimeSpinner = (JSpinner) configPanel.getClientProperty("dateTimeSpinner");
+        Date selectedDate = (Date) dateTimeSpinner.getValue();
+        
+        // Convert to ZonedDateTime
+        ZonedDateTime triggerTime = ZonedDateTime.ofInstant(
+                selectedDate.toInstant(),
+                ZoneId.systemDefault());
+        
+        return new SingleTriggerTimeCondition(triggerTime);
     }
 }

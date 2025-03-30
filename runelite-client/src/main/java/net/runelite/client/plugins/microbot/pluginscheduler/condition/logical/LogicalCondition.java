@@ -13,6 +13,12 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionT
  * Base class for logical combinations of conditions.
  */
 public abstract class LogicalCondition implements Condition {
+
+    public LogicalCondition(Condition... conditions) {
+        for (Condition condition : conditions) {
+            addCondition(condition);
+        }
+    }
     @Getter
     protected List<Condition> conditions = new ArrayList<>();
     

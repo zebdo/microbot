@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.pluginscheduler;
 
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.type.ScheduledPlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.ConditionConfigPanel;
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.ScheduleFormPanel;
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.ScheduleTablePanel;
@@ -46,7 +46,7 @@ public class SchedulerWindow extends JFrame {
 
         // Set up condition panel callback
         stopConditionPanel.setUserConditionUpdateCallback(userCondition -> {
-            ScheduledPlugin selected = tablePanel.getSelectedPlugin();
+            PluginScheduleEntry selected = tablePanel.getSelectedPlugin();
             if (selected != null) {             
                 plugin.saveScheduledPlugins();
                 tablePanel.refreshTable(); // Refresh to show updated conditions
@@ -107,7 +107,7 @@ public class SchedulerWindow extends JFrame {
         tabbedPane.addChangeListener(e -> {
             // When switching to Conditions tab, ensure the condition panel shows the currently selected plugin
             if (tabbedPane.getSelectedIndex() == 1) { // Conditions tab
-                ScheduledPlugin selected = tablePanel.getSelectedPlugin();                                
+                PluginScheduleEntry selected = tablePanel.getSelectedPlugin();                                
                 stopConditionPanel.setSelectScheduledPlugin(selected);                                                
             }
         });
@@ -155,11 +155,11 @@ public class SchedulerWindow extends JFrame {
             stopConditionPanel.refreshConditions();            
         }
         
-        ScheduledPlugin selectedInTable = tablePanel.getSelectedPlugin();        
+        PluginScheduleEntry selectedInTable = tablePanel.getSelectedPlugin();        
     }
 
-    private void onPluginSelected(ScheduledPlugin plugin) {
-        ScheduledPlugin selected = tablePanel.getSelectedPlugin();                
+    private void onPluginSelected(PluginScheduleEntry plugin) {
+        PluginScheduleEntry selected = tablePanel.getSelectedPlugin();                
         if (selected != plugin && selected != null) {            
             formPanel.loadPlugin(plugin);
             formPanel.setEditMode(true);    
@@ -174,7 +174,7 @@ public class SchedulerWindow extends JFrame {
     }
 
     private void onAddPlugin() {
-        ScheduledPlugin scheduledPlugin = formPanel.getPluginFromForm();
+        PluginScheduleEntry scheduledPlugin = formPanel.getPluginFromForm();
         if (scheduledPlugin == null) return;
         
         LogicalCondition pluginCond= scheduledPlugin.getStopConditionManager().getPluginCondition();
@@ -222,10 +222,10 @@ public class SchedulerWindow extends JFrame {
     }
 
     private void onUpdatePlugin() {
-        ScheduledPlugin selectedPlugin = tablePanel.getSelectedPlugin();
+        PluginScheduleEntry selectedPlugin = tablePanel.getSelectedPlugin();
         if (selectedPlugin == null) return;
         
-        ScheduledPlugin updatedPlugin = formPanel.getPluginFromForm();
+        PluginScheduleEntry updatedPlugin = formPanel.getPluginFromForm();
         if (updatedPlugin == null) return;
         
         // Check if the plugin h/*  */as stop conditions
@@ -269,7 +269,7 @@ public class SchedulerWindow extends JFrame {
     }
 
     private void onRemovePlugin() {
-        ScheduledPlugin _plugin = tablePanel.getSelectedPlugin();
+        PluginScheduleEntry _plugin = tablePanel.getSelectedPlugin();
         if (_plugin != null) {
             plugin.removeScheduledPlugin(_plugin);
             tablePanel.refreshTable();

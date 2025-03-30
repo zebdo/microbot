@@ -76,7 +76,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.Skil
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.DayOfWeekCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.type.ScheduledPlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -103,7 +103,7 @@ public class ConditionConfigPanel extends JPanel {
     private Consumer<Boolean> requireAllCallback;
     
     private final SchedulerPlugin schedulerPlugin;
-    private ScheduledPlugin selectScheduledPlugin;
+    private PluginScheduleEntry selectScheduledPlugin;
     // UI Controls
     private JButton saveButton;
     private JButton loadButton;
@@ -581,7 +581,7 @@ public class ConditionConfigPanel extends JPanel {
      * 
      * @param selectedPlugin The newly selected plugin, or null if selection cleared
      */
-    public void setSelectScheduledPlugin(ScheduledPlugin selectedPlugin) {
+    public void setSelectScheduledPlugin(PluginScheduleEntry selectedPlugin) {
         if (selectedPlugin == this.selectScheduledPlugin) {            
             return;
         }else{

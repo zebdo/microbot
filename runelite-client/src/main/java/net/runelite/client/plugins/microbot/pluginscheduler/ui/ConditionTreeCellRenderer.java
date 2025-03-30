@@ -18,7 +18,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.Skil
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.DayOfWeekCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.type.ScheduledPlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 import net.runelite.client.ui.ColorScheme;
 import java.awt.Component;
 import java.awt.Color;
@@ -34,7 +34,7 @@ public class ConditionTreeCellRenderer extends DefaultTreeCellRenderer {
     private static final Color USER_CONDITION_COLOR = Color.WHITE; // White for user conditions
     
     private final SchedulerPlugin schedulerPlugin;
-    private ScheduledPlugin scheduledPlugin;
+    private PluginScheduleEntry scheduledPlugin;
         // Icons for tree nodes
     private ImageIcon andIcon;
     private ImageIcon orIcon;
@@ -71,7 +71,7 @@ public class ConditionTreeCellRenderer extends DefaultTreeCellRenderer {
     /**
      * Sets the scheduled plugin for this renderer
      */
-    public void setScheduledPlugin(ScheduledPlugin scheduledPlugin) {
+    public void setScheduledPlugin(PluginScheduleEntry scheduledPlugin) {
         this.scheduledPlugin = scheduledPlugin;
     }
     /**

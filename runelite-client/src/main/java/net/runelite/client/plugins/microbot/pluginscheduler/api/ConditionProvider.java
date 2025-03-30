@@ -1,10 +1,12 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.api;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
 
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.ScheduledStopEvent;
 
@@ -15,18 +17,12 @@ import net.runelite.client.eventbus.Subscribe;
  * Implement this interface in your plugin to define when the scheduler should stop it.
  */
 
-public interface StoppingConditionProvider {
+public interface ConditionProvider {
     
-    /**
-     * Returns a list of conditions that, when met, should cause the plugin to stop.
-     * <p>
-     * This is the primary method for defining simple stopping conditions. For more
-     * complex logical relationships between conditions, use {@link #getLogicalConditionStructure()}.
-     * 
-     * @return List of stopping conditions that will be evaluated by the scheduler
-     */
-    List<Condition> getStoppingConditions();
-    
+       
+    default LogicalCondition getStartingCondition() {
+        return new AndCondition();
+    }
     /**
      * Returns a logical condition structure that defines when the plugin should stop.
      * <p>
@@ -53,9 +49,9 @@ public interface StoppingConditionProvider {
      * 
      * @return A logical condition structure, or null to use simple AND logic
      */
-    default LogicalCondition getLogicalConditionStructure() {
-        return null;
-    }
+    LogicalCondition getStoppingCondition();
+    
+    
      /**
      * Called periodically when conditions are being evaluated by the scheduler.
      * <p>
@@ -96,7 +92,7 @@ public interface StoppingConditionProvider {
      * 
      * @return true if this plugin supports being forcibly terminated, false otherwise
      */
-    default public boolean allowsHardStop(){
+    default public boolean isHardStoppable(){
         return false;
     }
 

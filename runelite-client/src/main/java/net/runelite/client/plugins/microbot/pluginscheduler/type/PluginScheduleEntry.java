@@ -8,14 +8,16 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.pluginscheduler.api.StoppingConditionProvider;
+import net.runelite.client.plugins.microbot.pluginscheduler.api.ConditionProvider;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionManager;
 
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
-
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.ScheduledStopEvent;
 
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.ScheduledSerializer;
@@ -36,34 +38,32 @@ import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 @Data
-@NoArgsConstructor
 @AllArgsConstructor
 @Getter
 @Slf4j
-public class ScheduledPlugin {
+public class PluginScheduleEntry {
     private transient Plugin plugin;
-    private String name;
-    private ScheduleType scheduleType;
-    private int scheduleIntervalValue; // The numeric value for the interval
-    private String duration; // Optional duration to run the plugin
+    private String name;    
     private boolean enabled;
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
         if (!enabled) {
             stopConditionManager.unregisterEvents();
+            startConditionManager.unregisterEvents();
             runCount = 0;
         } else {
             stopConditionManager.registerEvents();
-            registerPluginStoppingConditions();
+            startConditionManager.registerEvents();
+            registerPluginConditions();
             updateAfterRun();
             
         }
     }
-    private ZonedDateTime lastRunTime; // When the plugin last ran
-    private ZonedDateTime nextRunTime; // When the plugin should next run
+    private ZonedDateTime lastRunTime; // When the plugin last ran    
 
     private String cleanName;
-    private ConditionManager stopConditionManager;
+    final private ConditionManager stopConditionManager;
+    final private ConditionManager startConditionManager;
     private boolean stopInitiated = false;
 
     private boolean allowRandomScheduling = true; // Whether this plugin can be randomly scheduled
@@ -72,8 +72,8 @@ public class ScheduledPlugin {
     
     private ZonedDateTime stopInitiatedTime; // When the first stop was attempted
     private ZonedDateTime lastStopAttemptTime; // When the last stop attempt was made
-    private Duration softStopRetryInterval = Duration.ofSeconds(10); // Default 10 seconds between retries
-    private Duration hardStopTimeout = Duration.ofSeconds(30); // Default 30 seconds before hard stop
+    private Duration softStopRetryInterval = Duration.ofSeconds(30); // Default 30 seconds between retries
+    private Duration hardStopTimeout = Duration.ofMinutes(2); // Default 2 Minutes before hard stop
 
     
     private transient Thread stopMonitorThread;
@@ -84,13 +84,33 @@ public class ScheduledPlugin {
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm");
     private static final SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
-
-    public ScheduledPlugin(String pluginName, ScheduleType scheduleType, int scheduleIntervalValue,
-            String duration, boolean enabled, boolean allowRandomScheduling) {
-        this.name = pluginName;
-        this.scheduleType = scheduleType != null ? scheduleType : ScheduleType.HOURS;
-        this.scheduleIntervalValue = Math.max(0, scheduleIntervalValue); // 0 mean only run once
-        this.duration = duration;
+    public PluginScheduleEntry(String pluginName, String duration, boolean enabled, boolean allowRandomScheduling) {
+        this(pluginName, parseDuration(duration), enabled, allowRandomScheduling);
+    }
+    
+    private static Duration parseDuration(String duration) {
+        // If duration is specified, parse it
+        if (duration != null && !duration.isEmpty()) {
+            try {
+                String[] parts = duration.split(":");
+                if (parts.length == 2) {
+                    int hours = Integer.parseInt(parts[0]);
+                    int minutes = Integer.parseInt(parts[1]);
+                    return Duration.ofHours(hours).plusMinutes(minutes);                    
+                }
+            } catch (Exception e) {
+                // Invalid duration format, no condition added
+                throw new IllegalArgumentException("Invalid duration format: " + duration);
+            }
+        }
+        return null;
+    }
+   
+    public PluginScheduleEntry(String pluginName, Duration interval, boolean enabled, boolean allowRandomScheduling) { //allowRandomScheduling .>allows soft start
+        this(pluginName, new IntervalCondition(interval), enabled, allowRandomScheduling);                
+    }
+    public PluginScheduleEntry(String pluginName, TimeCondition startingCondition, boolean enabled, boolean allowRandomScheduling) {
+        this.name = pluginName;        
         this.enabled = enabled;
         this.allowRandomScheduling = allowRandomScheduling;
         this.cleanName = pluginName.replaceAll("<html>|</html>", "")
@@ -98,36 +118,37 @@ public class ScheduledPlugin {
                 .replaceAll("<[^>]*>", "");
 
         this.stopConditionManager = new ConditionManager();
-        log.info("Scheduled plugin '{}' with interval {} {}", name,
-                scheduleIntervalValue, scheduleType.toString().toLowerCase());
-        // Set nextRunTime to now by default (run immediately)
-        this.nextRunTime = roundToMinutes(ZonedDateTime.now(ZoneId.systemDefault()));
+        this.startConditionManager = new ConditionManager();
+        if (startingCondition != null) {                        
+            startConditionManager.setUserLogicalCondition(new OrCondition(startingCondition));
+        }else{
+
+        }        
         
-        // If duration is specified, add a TimeCondition automatically
-        if (duration != null && !duration.isEmpty()) {
-            try {
-                String[] parts = duration.split(":");
-                if (parts.length == 2) {
-                    int hours = Integer.parseInt(parts[0]);
-                    int minutes = Integer.parseInt(parts[1]);
-                    Duration durationObj = Duration.ofHours(hours).plusMinutes(minutes);
-                    // Add time condition
-                    addCondition(new IntervalCondition(durationObj));
-                }
-            } catch (Exception e) {
-                // Invalid duration format, no condition added
-            }
-        }
-        registerPluginStoppingConditions();
+        
+        
+        
+        registerPluginConditions();
     }
 
-    // For backwards compatibility, add this constructor that defaults to true for
-    // allowRandomScheduling
-    public ScheduledPlugin(String pluginName, ScheduleType scheduleType, int scheduleIntervalValue,
-            String duration, boolean enabled) {
-        this(pluginName, scheduleType, scheduleIntervalValue, duration, enabled, true);
+    /**
+     * Creates a scheduled event with a one-time trigger at a specific time
+     * 
+     * @param pluginName The plugin name
+     * @param triggerTime The time when the plugin should trigger once
+     * @param enabled Whether the schedule is enabled
+     * @return A new PluginScheduleEntry configured to trigger once at the specified time
+     */
+    public static PluginScheduleEntry createOneTimeSchedule(String pluginName, ZonedDateTime triggerTime, boolean enabled) {
+        SingleTriggerTimeCondition condition = new SingleTriggerTimeCondition(triggerTime);
+        PluginScheduleEntry entry = new PluginScheduleEntry(
+            pluginName, 
+            condition, 
+            enabled, 
+            false); // One-time events are typically not randomized
+        
+        return entry;
     }
-
     public Plugin getPlugin() {
         if (this.plugin == null) {
             this.plugin = Microbot.getPluginManager().getPlugins().stream()
@@ -146,7 +167,8 @@ public class ScheduledPlugin {
         try {
             registerPluginStoppingConditions();
             // Log defined conditions when starting
-            logDefinedConditions();
+            logStopConditions();
+            logStartCondtions();
             Microbot.getClientThread().runOnSeperateThread(() -> {
                 Microbot.startPlugin(plugin);
                 return false;
@@ -155,6 +177,8 @@ public class ScheduledPlugin {
             // Update the last run time and calculate next run
             stopConditionManager.reset();
             stopConditionManager.registerEvents();
+            startConditionManager.unregisterEvents();
+
             updateAfterRun();
 
             return true;
@@ -163,17 +187,19 @@ public class ScheduledPlugin {
         }
     }
 
-    public boolean softStop() {
+    public void softStop() {
         if (getPlugin() == null) {
-            return false;
+            return;
         }
 
         try {
+            startConditionManager.reset();
+            startConditionManager.registerEvents();
             stopConditionManager.unregisterEvents();
             Microbot.getClientThread().runOnSeperateThread(() -> {
                 ZonedDateTime current_time = ZonedDateTime.now(ZoneId.systemDefault());
                 Microbot.getEventBus().post(new ScheduledStopEvent(plugin, current_time));
-                return false;
+                return false;                
             });
             stopInitiated = true;
             stopInitiatedTime = ZonedDateTime.now();
@@ -182,18 +208,18 @@ public class ScheduledPlugin {
             // Start monitoring for successful stop
             startStopMonitoringThread();
             
-            if (getPlugin() instanceof StoppingConditionProvider) {
+            if (getPlugin() instanceof ConditionProvider) {
                 log.info("Unregistering stopping conditions for plugin '{}'", name);
             }
-            return !isRunning();
+            return;
         } catch (Exception e) {
-            return false;
+            return;
         }
     }
 
-    public boolean hardStop() {
+    public void hardStop() {
         if (getPlugin() == null) {
-            return false;
+            return;
         }
 
         try {
@@ -207,9 +233,9 @@ public class ScheduledPlugin {
             // Start monitoring for successful stop
             startStopMonitoringThread();
             
-            return !isRunning();
+            return;
         } catch (Exception e) {
-            return false;
+            return;
         }
     }
 
@@ -227,6 +253,7 @@ public class ScheduledPlugin {
     /**
      * Set when this plugin should next run
      */
+    @Deprecated
     public void setNextRunTime(ZonedDateTime time) {
         this.nextRunTime = roundToMinutes(time);
 
@@ -330,7 +357,7 @@ public class ScheduledPlugin {
     /**
      * Convert a list of ScheduledPlugin objects to JSON
      */
-    public static String toJson(List<ScheduledPlugin> plugins) {
+    public static String toJson(List<PluginScheduleEntry> plugins) {
         return ScheduledSerializer.toJson(plugins);
     }
 
@@ -338,17 +365,19 @@ public class ScheduledPlugin {
         /**
      * Parse JSON into a list of ScheduledPlugin objects
      */
-    public static List<ScheduledPlugin> fromJson(String json) {
+    public static List<PluginScheduleEntry> fromJson(String json) {
         return ScheduledSerializer.fromJson(json);
     }
-
+ /**#file:PluginScheduleEntry.java ,check how we now can determin with to objects are equal, and how to construct the hash code ? consider #sym:ConditionManager 
+What do we have to change  ?a */
     @Override
     public boolean equals(Object o) {
         if (this == o)
             return true;
         if (o == null || getClass() != o.getClass())
             return false;
-        ScheduledPlugin that = (ScheduledPlugin) o;
+        PluginScheduleEntry that = (PluginScheduleEntry) o;
+
         return Objects.equals(name, that.name) &&
                 Objects.equals(scheduleType, that.scheduleType) &&
                 scheduleIntervalValue == that.scheduleIntervalValue;
@@ -359,12 +388,11 @@ public class ScheduledPlugin {
         return Objects.hash(name, scheduleType, scheduleIntervalValue);
     }
 
-    // Add methods for condition management
-    public void addCondition(Condition condition) {
+    public void addStopCondition(Condition condition) {
         stopConditionManager.addCondition(condition);
     }
 
-    public List<Condition> getConditions() {
+    public List<Condition> getStopConditions() {
         return stopConditionManager.getConditions();
     }
 
@@ -388,7 +416,7 @@ public class ScheduledPlugin {
     }
 
     // Modify the stop logic to check conditions
-    public boolean checkConditionsAndStop() {
+    public void checkConditionsAndStop() {
         ZonedDateTime now = ZonedDateTime.now();
         
         if (shouldStop()) {
@@ -396,7 +424,7 @@ public class ScheduledPlugin {
             if (!stopInitiated) {
                 logDefinedConditionWithStates();
                 log.info("Stopping plugin {} due to conditions being met - initiating soft stop", name);
-                return softStop(); // This will start the monitoring thread
+                this.softStop(); // This will start the monitoring thread
             }
             // Plugin didn't stop after previous attempts
             else if (isRunning()) {
@@ -404,20 +432,43 @@ public class ScheduledPlugin {
                 Duration timeSinceLastAttempt = Duration.between(lastStopAttemptTime, now);
                 
                 // Force hard stop if we've waited too long
-                if (timeSinceFirstAttempt.compareTo(hardStopTimeout) > 0) {
+                if (timeSinceFirstAttempt.compareTo(hardStopTimeout) > 0 
+                    && (getPlugin() instanceof ConditionProvider)
+                    && ((ConditionProvider) getPlugin()).isHardStoppable()) {
                     log.warn("Plugin {} failed to respond to soft stop after {} seconds - forcing hard stop", 
                              name, timeSinceFirstAttempt.toSeconds());
                     
                     // Stop current monitoring and start new one for hard stop
                     stopMonitoringThread();
-                    return hardStop();
+                    this.hardStop();
                 }
                 // Retry soft stop at configured intervals
                 else if (timeSinceLastAttempt.compareTo(softStopRetryInterval) > 0) {
                     log.info("Plugin {} still running after soft stop - retrying (attempt time: {} seconds)", 
                              name, timeSinceFirstAttempt.toSeconds());
                     lastStopAttemptTime = now;
-                    return softStop();
+                    this.softStop();
+                }else if (timeSinceLastAttempt.compareTo(hardStopTimeout) > 0) {                    
+                    log.error("Forcibly shutting down the client due to unresponsive plugin: {}", name);
+    
+                    // Schedule client shutdown on the client thread to ensure it happens safely
+                    Microbot.getClientThread().invoke(() -> {
+                        try {
+                            // Log that we're shutting down
+                            log.warn("Initiating emergency client shutdown due to plugin: {} cant be stopped", name);
+                            
+                            // Give a short delay for logging to complete
+                            Thread.sleep(1000);
+                            
+                            // Forcibly exit the JVM with a non-zero status code to indicate abnormal termination
+                            System.exit(1);
+                        } catch (Exception e) {
+                            log.error("Failed to shut down client", e);
+                            // Ultimate fallback
+                            Runtime.getRuntime().halt(1);
+                        }
+                        return true;
+                    });  
                 }
             }
             // Monitor thread will handle the successful stop case
@@ -431,33 +482,46 @@ public class ScheduledPlugin {
             stopMonitoringThread();
         }
         
-        return isRunning();
+        
     }
 
     /**
      * Logs all defined conditions when plugin starts
      */
-    private void logDefinedConditions() {
-        logConditionInfo("START", true);
+    private void logStopConditions() {
+        List<Condition> conditionList = stopConditionManager.getConditions();
+        logConditionInfo(conditionList,"Defined Stop Conditions", true);
     }
 
     /**
      * Logs which conditions are met and which aren't when plugin stops
      */
-    private void logDefinedConditionWithStates() {
-        logConditionInfo("STOP", true);
+    private void logStopConditionsWithDetails() {
+        List<Condition> conditionList = stopConditionManager.getConditions();
+        logConditionInfo(conditionList,"Defined Stop Conditions", true);
     }
+    private void logStartCondtions() {
+        List<Condition> conditionList = startConditionManager.getConditions();
+        logConditionInfo(conditionList,"Defined Start Conditions", true);
+    }
+    private void logStartConditionsWithDetails() {
+        List<Condition> conditionList = startConditionManager.getConditions();
+        logConditionInfo(conditionList,"Defined Start Conditions", true);
+    }
+    
+    
+    
 
     /**
      * Creates a consolidated log of all condition-related information
-     * @param logType The type of log (START, STOP, UPDATE)
+     * @param logINFOHeader The header to use for the log message
      * @param includeDetails Whether to include full details of conditions
      */
-    public void logConditionInfo(String logType, boolean includeDetails) {
-        List<Condition> conditionList = stopConditionManager.getConditions();
+    public void logConditionInfo(List<Condition> conditionList, String logINFOHeader, boolean includeDetails) {
+        
         StringBuilder sb = new StringBuilder();
         
-        sb.append("Plugin '").append(cleanName).append("' [").append(logType).append("]: ");
+        sb.append("Plugin '").append(cleanName).append("' [").append(logINFOHeader).append("]: ");
 
         if (conditionList.isEmpty()) {
             sb.append("No stop conditions defined");
@@ -475,7 +539,7 @@ public class ScheduledPlugin {
         }
         
         // Detailed condition listing with status
-        boolean logConditionStatus = "STOP".equals(logType) || "UPDATE".equals(logType);
+        
         int metCount = 0;
         
         for (int i = 0; i < conditionList.size(); i++) {
@@ -485,12 +549,12 @@ public class ScheduledPlugin {
             
             // Use the new getStatusInfo method for detailed status
             sb.append("  ").append(i + 1).append(". ")
-              .append(condition.getStatusInfo(0, logConditionStatus).replace("\n", "\n    "));
+              .append(condition.getStatusInfo(0, includeDetails).replace("\n", "\n    "));
             
             sb.append("\n");
         }
         
-        if (logConditionStatus) {
+        if (includeDetails) {
             sb.append("Summary: ").append(metCount).append("/").append(conditionList.size())
               .append(" conditions met");
         }
@@ -505,7 +569,7 @@ public class ScheduledPlugin {
      * @param condition The condition to add or update
      * @return This ScheduledPlugin instance for method chaining
      */
-    public ScheduledPlugin updateCondition(Condition condition) {
+    public PluginScheduleEntry updateStopCondition(Condition condition) {
         // Check if we already have a condition of the same type
         boolean found = false;
         for (int i = 0; i < stopConditionManager.getConditions().size(); i++) {
@@ -539,42 +603,91 @@ public class ScheduledPlugin {
             this.plugin = getPlugin();
         }
         log.info("Registering stopping conditions for plugin '{}'", name);
-        if (this.plugin instanceof StoppingConditionProvider) {
-            StoppingConditionProvider provider = (StoppingConditionProvider) plugin;
+        if (this.plugin instanceof ConditionProvider) {
+            ConditionProvider provider = (ConditionProvider) plugin;
 
             // Get conditions from the provider
-            List<Condition> pluginConditions = provider.getStoppingConditions();
+            List<Condition> pluginConditions = provider.getStoppingCondition().getConditions();
             if (pluginConditions != null && !pluginConditions.isEmpty()) {
                 // Create a new AND condition as the root
 
-                AndCondition rootAndCondition = new AndCondition();
+                
 
                 // Get or create plugin's logical structure
-                LogicalCondition pluginLogic = provider.getLogicalConditionStructure();
+                LogicalCondition pluginLogic = provider.getStoppingCondition();
 
                 if (pluginLogic != null) {
-                    rootAndCondition.addCondition(pluginLogic);
-                } else {
-                    // Create a simple AND for plugin conditions
-                    AndCondition pluginAndCondition = new AndCondition();
                     for (Condition condition : pluginConditions) {
-                        pluginAndCondition.addCondition(condition);
+                        if(pluginLogic.contains(condition)){
+                            continue;
+                        }
                     }
-                    rootAndCondition.addCondition(pluginAndCondition);
+                    
+                }else{
+                    throw new RuntimeException("Plugin '"+name+"' implements StoppingConditionProvider but provided no conditions");
                 }
+                
 
-                rootAndCondition.reset();
+                pluginLogic.reset();
                 // Set the new root condition
-                getStopConditionManager().setPluginCondition(rootAndCondition);
+                getStopConditionManager().setPluginCondition(pluginLogic);
                 
                 // Log with the consolidated method
-                logConditionInfo("PLUGIN_CONDITIONS", true);
+                logStopConditionInfo("Register Stop Conditions", true);
             } else {
                 log.info("Plugin '{}' implements StoppingConditionProvider but provided no conditions",
                         plugin.getName());
             }
         }
     }
+    private void registerPluginStartingConditions(){
+        if (this.plugin == null) {
+            this.plugin = getPlugin();
+        }
+        log.info("Registering start conditions for plugin '{}'", name);
+        if (this.plugin instanceof ConditionProvider) {
+            ConditionProvider provider = (ConditionProvider) plugin;
+
+            // Get conditions from the provider
+            List<Condition> pluginConditions = provider.getStartingCondition().getConditions();
+            if (pluginConditions != null && !pluginConditions.isEmpty()) {
+                // Create a new AND condition as the root
+
+                
+
+                // Get or create plugin's logical structure
+                LogicalCondition pluginLogic = provider.getStartingCondition();
+
+                if (pluginLogic != null) {
+                    for (Condition condition : pluginConditions) {
+                        if(pluginLogic.contains(condition)){
+                            continue;
+                        }
+                    }
+                    
+                }else{
+                    throw new RuntimeException("Plugin '"+name+"' implements ConditionProvider but provided no conditions");
+                }
+                
+
+                pluginLogic.reset();
+                // Set the new root condition
+                getStartConditionManager().setPluginCondition(pluginLogic);
+                
+                // Log with the consolidated method
+                logStartConditionInfo("Register Start Conditions", true);
+            } else {
+                log.info("Plugin '{}' implements CnditionProvider but provided no conditions",
+                        plugin.getName());
+            }
+        }
+
+    }
+    public void registerPluginConditions(){
+        registerPluginStoppingConditions();
+        registerPluginStartingConditions();
+    }
+
 
     /**
      * Get a formatted display of when this plugin will run next, including
@@ -588,16 +701,16 @@ public class ScheduledPlugin {
             return "Disabled";
         }
 
-       
+        List<TimeCondition> timeConditions = startConditionManager.getTimeConditions();
 
-        // One-time plugin that has already run
+        // One-time starting plugin that has already run
         if (scheduleIntervalValue == 0 && runCount > 0) {
             return "Completed";
         }
 
         // Check for condition-based execution
         if (isRunning() && !stopConditionManager.getConditions().isEmpty()) {
-            double progressPct = getConditionProgress();
+            double progressPct = getStopConditionProgress();
             if (progressPct > 0) {
                 return String.format("Running Progress %.1f%% complete", progressPct);
             }
@@ -643,7 +756,7 @@ public class ScheduledPlugin {
      * This respects the logical structure of conditions.
      * Returns 0 if progress cannot be determined.
      */
-    public double getConditionProgress() {
+    public double getStopConditionProgress() {
         // If there are no conditions, no progress to report
         if (stopConditionManager == null || stopConditionManager.getConditions().isEmpty()) {
             return 0;
@@ -677,7 +790,7 @@ public class ScheduledPlugin {
     /**
      * Gets the total number of conditions being tracked.
      */
-    public int getTotalConditionCount() {
+    public int getTotalStopConditionCount() {
         if (stopConditionManager == null) {
             return 0;
         }
@@ -695,7 +808,7 @@ public class ScheduledPlugin {
     /**
      * Gets the number of conditions that are currently met.
      */
-    public int getMetConditionCount() {
+    public int getSatisfiedStopConditionCount() {
         if (stopConditionManager == null) {
             return 0;
         }
@@ -741,8 +854,18 @@ public class ScheduledPlugin {
     }
 
     /**
-     * Starts a background thread to monitor for successful plugin stops
-     * and update the next run time when appropriate.
+     * Starts a monitoring thread that tracks the stopping process of a plugin.
+     * <p>
+     * This method creates a daemon thread that periodically checks if a plugin
+     * that is in the process of stopping has completed its shutdown. When the plugin
+     * successfully stops, this method updates the next scheduled run time and clears
+     * all stopping-related state flags.
+     * <p>
+     * The monitoring thread will only be started if one is not already running
+     * (controlled by the isMonitoringStop flag). It checks the plugin's running state
+     * every 500ms until the plugin stops or monitoring is canceled.
+     * <p>
+     * The thread is created as a daemon thread to prevent it from blocking JVM shutdown.
      */
     private void startStopMonitoringThread() {
         // Don't start a new thread if one is already running

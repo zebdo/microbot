@@ -3,6 +3,8 @@ package net.runelite.client.plugins.microbot.pluginscheduler;
 import com.google.inject.Provides;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.GameState;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -10,9 +12,12 @@ import net.runelite.client.events.PluginChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.pluginscheduler.api.StoppingConditionProvider;
+import net.runelite.client.plugins.microbot.accountselector.AutoLoginPlugin;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerPlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.api.ConditionProvider;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
-import net.runelite.client.plugins.microbot.pluginscheduler.type.ScheduledPlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
+import net.runelite.client.plugins.microbot.util.antiban.AntibanPlugin;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
@@ -44,20 +49,14 @@ import java.util.stream.Collectors;
 public class SchedulerPlugin extends Plugin {
     @Inject
     private SchedulerConfig config;
-
     final static String configGroup = "pluginscheduler";
-
     @Provides
     SchedulerConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(SchedulerConfig.class);
     }
 
     @Inject
-    private ClientToolbar clientToolbar;
-
-    @Inject
-    private ConfigManager configManager;
-
+    private ClientToolbar clientToolbar;    
     @Inject
     private ScheduledExecutorService executorService;
 
@@ -65,33 +64,26 @@ public class SchedulerPlugin extends Plugin {
     private SchedulerPanel panel;
     private ScheduledFuture<?> updateTask;
     private SchedulerWindow schedulerWindow;
-
     @Getter
-    private ScheduledPlugin currentPlugin;
+    private PluginScheduleEntry currentPlugin;
+    private List<PluginScheduleEntry> scheduledPlugins = new ArrayList<>();
 
-    private List<ScheduledPlugin> scheduledPlugins = new ArrayList<>();
 
-    public boolean isRunning() {
-        return currentPlugin != null;
-    }
     
-
-    @Getter
-    
-    private boolean inLoginScreen = false;
-    
+        
     
     private int initCheckCount = 0;
     private static final int MAX_INIT_CHECKS = 10;
 
     @Getter
     private SchedulerState currentState = SchedulerState.UNINITIALIZED;
-    private boolean manualStop = false;
+    private GameState lastGameState = GameState.UNKNOWN;
+    
 
     @Override
     protected void startUp() {
         
-        panel = new SchedulerPanel(this, config);
+        panel = new SchedulerPanel(this);
 
         final BufferedImage icon = ImageUtil.loadImageResource(SchedulerPlugin.class, "icon.png");
         navButton = NavigationButton.builder()
@@ -123,7 +115,19 @@ public class SchedulerPlugin extends Plugin {
             });
         }, 0, 1, TimeUnit.SECONDS);              
     }
-   
+    public boolean isScheduledPluginRunning() {
+        return currentPlugin != null && currentPlugin.isRunning();
+    }
+    private boolean isAutoLoginEnabled() {    
+        return Microbot.isPluginEnabled(AutoLoginPlugin.class);
+    }
+    private boolean isBreakHandlerEnabled() {
+        return Microbot.isPluginEnabled(BreakHandlerPlugin.class);
+    }
+    private boolean isAntibanEnabled() {
+        return Microbot.isPluginEnabled(AntibanPlugin.class);
+    }
+    
     /**
      * Sets the current scheduler state and updates UI
      */
@@ -140,8 +144,7 @@ public class SchedulerPlugin extends Plugin {
      * This runs until initialization is complete or max check count is reached.
      */
     private void checkInitialization() {
-        if (currentState != SchedulerState.INITIALIZING &&
-            currentState != SchedulerState.UNINITIALIZED) {
+        if (!isInitializing()) {
             return;
         }
         
@@ -150,8 +153,7 @@ public class SchedulerPlugin extends Plugin {
         // Schedule repeated checks until initialized or max checks reached
         
         SwingUtilities.invokeLater(() -> {
-            // Check if client is at login screen
-            boolean isAtLoginScreen = inLoginScreen;
+            // Check if client is at login screen            
             List<Plugin> conditionProviders = new ArrayList<>();
             if  (Microbot.getPluginManager() == null|| Microbot.getClient() == null) {
                 
@@ -159,7 +161,7 @@ public class SchedulerPlugin extends Plugin {
             }else{
                 // Find all plugins implementing StoppingConditionProvider
                 conditionProviders = Microbot.getPluginManager().getPlugins().stream()
-                    .filter(plugin -> plugin instanceof StoppingConditionProvider
+                    .filter(plugin -> plugin instanceof ConditionProvider
                             )
                     .collect(Collectors.toList());
                 List<Plugin> enabledList = conditionProviders.stream()
@@ -167,7 +169,7 @@ public class SchedulerPlugin extends Plugin {
                     .collect(Collectors.toList());
             }
             
-            isAtLoginScreen = isAtLoginScreen || Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN;
+            boolean isAtLoginScreen = Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN;
             // If all conditions met, mark as initialized
             if (isAtLoginScreen) {
                 log.info("Scheduler initialization complete - {} stopping condition providers loaded", 
@@ -191,10 +193,10 @@ public class SchedulerPlugin extends Plugin {
             } 
             // If max checks reached, mark as initialized but log warning
             else if (++initCheckCount >= MAX_INIT_CHECKS) {
-                log.warn("Scheduler initialization timed out - proceeding anyway");
+                log.warn("Scheduler initialization timed out");
                 loadScheduledPlugin();
             
-                setState(SchedulerState.READY);
+                setState(SchedulerState.ERROR);
             } 
             // Otherwise, schedule another check
             else {
@@ -273,6 +275,9 @@ public class SchedulerPlugin extends Plugin {
                 currentState != SchedulerState.HOLD &&
                 currentState != SchedulerState.READY;
     }
+    public boolean isInitializing() {
+        return currentState == SchedulerState.INITIALIZING || currentState == SchedulerState.UNINITIALIZED;
+    }
     /**
      * Stops the scheduler
      */
@@ -295,12 +300,12 @@ public class SchedulerPlugin extends Plugin {
         cleanupCompletedOneTimePlugins();
                             
         // Check if we need to stop the current plugin
-        if (currentPlugin != null && currentPlugin.isRunning()) {
+        if (isScheduledPluginRunning()) {
             checkCurrentPlugin();
         }
         
         // If no plugin is running, check for scheduled plugins due to run
-        if (!isRunning()) {
+        if (!isScheduledPluginRunning()) {
             scheduleNextPlugin();
         }
     }
@@ -315,8 +320,8 @@ public class SchedulerPlugin extends Plugin {
         
         // Call the update hook if the plugin is a condition provider
         Plugin runningPlugin = currentPlugin.getPlugin();
-        if (runningPlugin instanceof StoppingConditionProvider) {
-            ((StoppingConditionProvider) runningPlugin).onConditionCheck();
+        if (runningPlugin instanceof ConditionProvider) {
+            ((ConditionProvider) runningPlugin).onConditionCheck();
         }
         
         // Log condition progress if debug mode is enabled
@@ -325,7 +330,7 @@ public class SchedulerPlugin extends Plugin {
             currentPlugin.logConditionInfo("DEBUG_CHECK Running Plugin", true);
             
             // If there are progress-tracking conditions, log their progress percentage
-            double overallProgress = currentPlugin.getConditionProgress();
+            double overallProgress = currentPlugin.getStopConditionProgress();
             if (overallProgress > 0) {
                 log.info("Overall condition progress for '{}': {}%", 
                     currentPlugin.getCleanName(), 
@@ -334,7 +339,8 @@ public class SchedulerPlugin extends Plugin {
         }
         
         // Check if conditions are met
-        if (currentPlugin.checkConditionsAndStop()) {                       
+        currentPlugin.checkConditionsAndStop();
+        if (currentPlugin.isRunning()) {                       
             if (!currentPlugin.isRunning()){
                 log.info("Plugin '{}' stopped because conditions were met", 
                 currentPlugin.getCleanName());
@@ -349,7 +355,7 @@ public class SchedulerPlugin extends Plugin {
      */
     private void scheduleNextPlugin() {
         // First, prioritize non-randomizable plugins
-        List<ScheduledPlugin> dueNonRandomPlugins = scheduledPlugins.stream()
+        List<PluginScheduleEntry> dueNonRandomPlugins = scheduledPlugins.stream()
                 .filter(plugin -> plugin.isDueToRun() && plugin.isEnabled() && !plugin.isAllowRandomScheduling())
                 .collect(Collectors.toList());
         
@@ -361,13 +367,13 @@ public class SchedulerPlugin extends Plugin {
         }
         
         // If no non-random plugins are due, get all randomizable plugins that are due
-        List<ScheduledPlugin> dueRandomPlugins = scheduledPlugins.stream()
+        List<PluginScheduleEntry> dueRandomPlugins = scheduledPlugins.stream()
                 .filter(plugin -> plugin.isDueToRun() && plugin.isEnabled() && plugin.isAllowRandomScheduling())
                 .collect(Collectors.toList());
         
         if (!dueRandomPlugins.isEmpty()) {
             // Use weighted random selection based on run count
-            ScheduledPlugin selected = selectPluginWeighted(dueRandomPlugins);
+            PluginScheduleEntry selected = selectPluginWeighted(dueRandomPlugins);
             startPlugin(selected);            
             saveScheduledPlugins();
         }
@@ -376,7 +382,7 @@ public class SchedulerPlugin extends Plugin {
      * Selects a plugin using weighted random selection.
      * Plugins with lower run counts have higher probability of being selected.
      */
-    private ScheduledPlugin selectPluginWeighted(List<ScheduledPlugin> plugins) {
+    private PluginScheduleEntry selectPluginWeighted(List<PluginScheduleEntry> plugins) {
         // Return the only plugin if there's just one
         if (plugins.size() == 1) {
             return plugins.get(0);
@@ -385,7 +391,7 @@ public class SchedulerPlugin extends Plugin {
         // Calculate weights - plugins with lower run counts get higher weights
         // Find the maximum run count
         int maxRuns = plugins.stream()
-                .mapToInt(ScheduledPlugin::getRunCount)
+                .mapToInt(PluginScheduleEntry::getRunCount)
                 .max()
                 .orElse(0);
         
@@ -425,7 +431,7 @@ public class SchedulerPlugin extends Plugin {
         return plugins.get(plugins.size() - 1);
     }
 
-    public void startPlugin(ScheduledPlugin scheduledPlugin) {
+    public void startPlugin(PluginScheduleEntry scheduledPlugin) {
         if (scheduledPlugin == null) return;
         log.info("Starting scheduled plugin: " + scheduledPlugin.getCleanName());
      
@@ -456,15 +462,15 @@ public class SchedulerPlugin extends Plugin {
     public void forceStopCurrentPlugin() {
         if (currentPlugin != null) {
             log.info("Force Stopping current plugin: " + currentPlugin.getCleanName());
-            setState(SchedulerState.STOPPING_PLUGIN);
+            
             
             if (currentPlugin.hardStop()) {
-                currentPlugin = null;
-                // Set to READY if we're not manually stopped
-                setState(manualStop ? SchedulerState.HOLD : SchedulerState.READY);
+                currentPlugin = null;                    
+                setState(SchedulerState.SCHEDULING);
+                
             } else {
-                log.error("Failed to stop plugin: " + currentPlugin.getCleanName());
-                setState(SchedulerState.ERROR);
+                log.error("Failed to hard stop plugin: " + currentPlugin.getCleanName());
+                setState(SchedulerState.HARD_STOPPING_PLUGIN);
             }
         }
         updatePanels();
@@ -475,7 +481,8 @@ public class SchedulerPlugin extends Plugin {
         if (currentPlugin != null && event.getPlugin() == currentPlugin.getPlugin() && !currentPlugin.isRunning()) {
             currentPlugin = null;
             if (    currentState == SchedulerState.RUNNING_PLUGIN 
-                || currentState == SchedulerState.STOPPING_PLUGIN 
+                || currentState == SchedulerState.SOFT_STOPPING_PLUGIN
+                || currentState == SchedulerState.HARD_STOPPING_PLUGIN 
                 || currentState == SchedulerState.WAITING_FOR_LOGIN
                 || currentState == SchedulerState.STARTING_PLUGIN) {                
                 setState(SchedulerState.SCHEDULING);
@@ -497,16 +504,16 @@ public class SchedulerPlugin extends Plugin {
         }
     }
 
-    public void addScheduledPlugin(ScheduledPlugin plugin) {
+    public void addScheduledPlugin(PluginScheduleEntry plugin) {
         plugin.setLastRunTime(ZonedDateTime.now(ZoneId.systemDefault()));
         scheduledPlugins.add(plugin);
     }
 
-    public void removeScheduledPlugin(ScheduledPlugin plugin) {
+    public void removeScheduledPlugin(PluginScheduleEntry plugin) {
         scheduledPlugins.remove(plugin);
     }
 
-    public void updateScheduledPlugin(ScheduledPlugin oldPlugin, ScheduledPlugin newPlugin) {
+    public void updateScheduledPlugin(PluginScheduleEntry oldPlugin, PluginScheduleEntry newPlugin) {
         int index = scheduledPlugins.indexOf(oldPlugin);
         if (index >= 0) {
             scheduledPlugins.set(index, newPlugin);
@@ -515,7 +522,7 @@ public class SchedulerPlugin extends Plugin {
      /**
      * Adds conditions to a scheduled plugin
      */
-    private void saveConditionsToScheduledPlugin(ScheduledPlugin plugin, List<Condition> conditions, 
+    private void saveConditionsToScheduledPlugin(PluginScheduleEntry plugin, List<Condition> conditions, 
                                       boolean requireAll, boolean stopOnConditionsMet) {
         if (plugin == null) return;
         
@@ -542,18 +549,18 @@ public class SchedulerPlugin extends Plugin {
    /**
      * Gets the list of plugins that have stop conditions set
      */
-    public List<ScheduledPlugin> getScheduledPluginsWithStopConditions() {
+    public List<PluginScheduleEntry> getScheduledPluginsWithStopConditions() {
         return scheduledPlugins.stream()
                 .filter(p -> !p.getStopConditionManager().getConditions().isEmpty())
                 .collect(Collectors.toList());
     }
-    public List<ScheduledPlugin> getScheduledPlugins() {
+    public List<PluginScheduleEntry> getScheduledPlugins() {
         return new ArrayList<>(scheduledPlugins);
     }
 
     public void saveScheduledPlugins() {
         // Convert to JSON and save to config
-        String json = ScheduledPlugin.toJson(scheduledPlugins);
+        String json = PluginScheduleEntry.toJson(scheduledPlugins);
 
         log.info("Saving scheduled plugins to config: {}", json);
         //config.setScheduledPlugins(json);
@@ -574,10 +581,10 @@ public class SchedulerPlugin extends Plugin {
             log.info("Loading scheduled plugins from config: {}", json);
             
             if (json != null && !json.isEmpty()) {
-                scheduledPlugins = ScheduledPlugin.fromJson(json);
+                scheduledPlugins = PluginScheduleEntry.fromJson(json);
                 
                 // Apply stop settings from config to all loaded plugins
-                for (ScheduledPlugin plugin : scheduledPlugins) {
+                for (PluginScheduleEntry plugin : scheduledPlugins) {
                     // Set timeout values from config
                     plugin.setSoftStopRetryInterval(Duration.ofSeconds(config.softStopRetrySeconds()));
                     plugin.setHardStopTimeout(Duration.ofSeconds(config.hardStopTimeoutSeconds()));
@@ -613,7 +620,7 @@ public class SchedulerPlugin extends Plugin {
      * Resolves plugin references for a ScheduledPlugin instance.
      * This must be done after deserialization since Plugin objects can't be serialized directly.
      */
-    private void resolvePluginReferences(ScheduledPlugin scheduled) {
+    private void resolvePluginReferences(PluginScheduleEntry scheduled) {
         if (scheduled.getName() == null) {
             return;
         }
@@ -629,7 +636,7 @@ public class SchedulerPlugin extends Plugin {
             
             // If plugin implements StoppingConditionProvider, make sure any plugin-defined
             // conditions are properly registered
-            if (plugin instanceof StoppingConditionProvider) {
+            if (plugin instanceof ConditionProvider) {
                 log.debug("Found StoppingConditionProvider plugin: {}", plugin.getName());
                 // This will preserve user-defined conditions while adding plugin-defined ones
                 scheduled.registerPluginStoppingConditions();
@@ -650,15 +657,15 @@ public class SchedulerPlugin extends Plugin {
                 .collect(Collectors.toList());
     }
 
-    public ScheduledPlugin getNextScheduledPlugin() {
+    public PluginScheduleEntry getNextScheduledPlugin() {
         if (scheduledPlugins.isEmpty()) {
             return null;
         }
 
-        ScheduledPlugin nextPlugin = null;
+        PluginScheduleEntry nextPlugin = null;
         ZonedDateTime earliestNextRun = null;
 
-        for (ScheduledPlugin plugin : scheduledPlugins) {
+        for (PluginScheduleEntry plugin : scheduledPlugins) {
             if (!plugin.isEnabled()) {
                 continue;
             }
@@ -689,7 +696,7 @@ public class SchedulerPlugin extends Plugin {
      * @param plugin The plugin to look up
      * @return The ScheduledPlugin instance or null if not found
      */
-    public ScheduledPlugin getScheduleForPlugin(Plugin plugin) {
+    public PluginScheduleEntry getScheduleForPlugin(Plugin plugin) {
         return scheduledPlugins.stream()
                 .filter(scheduled -> scheduled.getPlugin() == plugin)
                 .findFirst()
@@ -703,7 +710,7 @@ public class SchedulerPlugin extends Plugin {
      * @return A map of condition descriptions to their status, or empty if plugin not scheduled
      */
     public Map<String, Boolean> getConditionStatus(Plugin plugin) {
-        ScheduledPlugin scheduled = getScheduleForPlugin(plugin);
+        PluginScheduleEntry scheduled = getScheduleForPlugin(plugin);
         if (scheduled == null) {
             return Collections.emptyMap();
         }
@@ -722,18 +729,18 @@ public class SchedulerPlugin extends Plugin {
      * @param scheduled The scheduled plugin
      * @return Progress percentage (0-100)
      */
-    public double getConditionProgress(ScheduledPlugin scheduled) {
+    public double getStopConditionProgress(PluginScheduleEntry scheduled) {
         if (scheduled == null || scheduled.getStopConditionManager().getConditions().isEmpty()) {
             return 0;
         }
         
-        return scheduled.getConditionProgress();
+        return scheduled.getStopConditionProgress();
     }
     
     /**
      * Gets the list of plugins that have conditions set
      */
-    public List<ScheduledPlugin> getPluginsWithConditions() {
+    public List<PluginScheduleEntry> getPluginsWithConditions() {
         return scheduledPlugins.stream()
                 .filter(p -> !p.getStopConditionManager().getConditions().isEmpty())
                 .collect(Collectors.toList());
@@ -742,7 +749,7 @@ public class SchedulerPlugin extends Plugin {
     /**
      * Adds conditions to a scheduled plugin
      */
-    public void saveConditionsToPlugin(ScheduledPlugin plugin, List<Condition> conditions, 
+    public void saveConditionsToPlugin(PluginScheduleEntry plugin, List<Condition> conditions, 
                                       boolean requireAll, boolean stopOnConditionsMet) {
         if (plugin == null) return;
         
@@ -771,7 +778,7 @@ public class SchedulerPlugin extends Plugin {
      * Returns the currently running scheduled plugin
      * @return The currently running plugin or null if none is running
      */
-    public ScheduledPlugin getCurrentPlugin() {
+    public PluginScheduleEntry getCurrentPlugin() {
         return currentPlugin;
     }
 
@@ -780,7 +787,7 @@ public class SchedulerPlugin extends Plugin {
      * @param scheduled The scheduled plugin to check
      * @return True if the plugin should be removed
      */
-    private boolean shouldRemoveCompletedOneTimePlugin(ScheduledPlugin scheduled) {
+    private boolean shouldRemoveCompletedOneTimePlugin(PluginScheduleEntry scheduled) {
         return scheduled.getScheduleIntervalValue() == 0 && 
                scheduled.getRunCount() > 0 &&
                !scheduled.isRunning();
@@ -790,7 +797,7 @@ public class SchedulerPlugin extends Plugin {
      * Cleans up the scheduled plugins list by removing completed one-time plugins
      */
     private void cleanupCompletedOneTimePlugins() {
-        List<ScheduledPlugin> toRemove = scheduledPlugins.stream()
+        List<PluginScheduleEntry> toRemove = scheduledPlugins.stream()
                 .filter(this::shouldRemoveCompletedOneTimePlugin)
                 .collect(Collectors.toList());
         
@@ -804,10 +811,10 @@ public class SchedulerPlugin extends Plugin {
     public void onGameStateChanged(GameStateChanged gameStateChanged) {
         log.info(getName() + " - Game state changed: " + gameStateChanged.getGameState());
         if (gameStateChanged.getGameState() == GameState.LOGGED_IN) {
-            // If the game state is LOGGED_IN, start the scheduler            
+            // If the game state is LOGGED_IN, start the scheduler  
+                      
         } else if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN) {
-            // If the game state is LOGIN_SCREEN, stop the current plugin
-            System.out.println("LOGIN_SCREEN");
+            // If the game state is LOGIN_SCREEN, stop the current plugin                        
             forceStopCurrentPlugin();
         } else if (gameStateChanged.getGameState() == GameState.HOPPING) {
             // If the game state is HOPPING, stop the current plugin
@@ -816,25 +823,16 @@ public class SchedulerPlugin extends Plugin {
             // If the game state is CONNECTION_LOST, stop the current plugin
             forceStopCurrentPlugin();
         }
-        if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN) {
-            // If the game state is LOGIN_SCREEN, stop the current plugin
-            inLoginScreen = true;
-
-        }
-        
-        if (gameStateChanged.getGameState() == GameState.HOPPING  ){
-
-        }
-        if (gameStateChanged.getGameState() == GameState.CONNECTION_LOST) {
-            
-        }
+       
+        this.lastGameState = gameStateChanged.getGameState();    
+    
     }
     @Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
 		if (event.getGroup().equals("PluginScheduler"))
 		{
-			for (ScheduledPlugin plugin : scheduledPlugins) {
+			for (PluginScheduleEntry plugin : scheduledPlugins) {
                 plugin.setSoftStopRetryInterval(Duration.ofSeconds(config.softStopRetrySeconds()));
                 plugin.setHardStopTimeout(Duration.ofSeconds(config.hardStopTimeoutSeconds()));
             }

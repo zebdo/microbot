@@ -2,10 +2,12 @@ package net.runelite.client.plugins.microbot.pluginscheduler.ui;
 
 import lombok.Getter;
 
-import net.runelite.client.plugins.microbot.pluginscheduler.type.ScheduledPlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
-
-import net.runelite.client.plugins.microbot.pluginscheduler.type.ScheduleType;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -16,37 +18,43 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.util.ArrayList;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.time.ZonedDateTime;
-import java.time.ZoneId;
 
 public class ScheduleFormPanel extends JPanel {
     private final SchedulerPlugin plugin;
 
     @Getter
     private JComboBox<String> pluginComboBox;
-    private JSpinner intervalSpinner;
-    private JComboBox<ScheduleType> scheduleTypeComboBox;
+    private JComboBox<String> timeConditionTypeComboBox;
     private JCheckBox randomSchedulingCheckbox;
-    
-    
 
-    // First run time components
-    private JRadioButton runNowRadio;
-    private JRadioButton runLaterRadio;
-    private JSpinner firstRunTimeSpinner;
+    // Condition config panels
+    private JPanel conditionConfigPanel;
+    private JPanel currentConditionPanel;
 
     private JButton addButton;
     private JButton updateButton;
     private JButton removeButton;
     private JButton controlButton;
 
-    private ScheduledPlugin selectedPlugin;
-    
-    
+    private PluginScheduleEntry selectedPlugin;
+
+    // Constants for time condition types
+    private static final String CONDITION_NOW = "Run Now";
+    private static final String CONDITION_SPECIFIC_TIME = "Run at Specific Time";
+    private static final String CONDITION_INTERVAL = "Run at Interval";
+    private static final String CONDITION_TIME_WINDOW = "Run in Time Window";
+    private static final String[] TIME_CONDITION_TYPES = {
+            CONDITION_NOW,
+            CONDITION_SPECIFIC_TIME,
+            CONDITION_INTERVAL,
+            CONDITION_TIME_WINDOW
+    };
 
     public ScheduleFormPanel(SchedulerPlugin plugin) {
         this.plugin = plugin;
@@ -86,93 +94,44 @@ public class ScheduleFormPanel extends JPanel {
         formPanel.add(pluginComboBox, gbc);
         updatePluginList(plugin.getAvailablePlugins());
 
-        // Schedule type
+        // Time condition type selection
         gbc.gridx = 0;
         gbc.gridy = 1;
         gbc.gridwidth = 1;
-        JLabel intervalLabel = new JLabel("Run every:");
-        intervalLabel.setForeground(Color.WHITE);
-        intervalLabel.setFont(FontManager.getRunescapeFont());
-        formPanel.add(intervalLabel, gbc);
+        JLabel conditionTypeLabel = new JLabel("Schedule Type:");
+        conditionTypeLabel.setForeground(Color.WHITE);
+        conditionTypeLabel.setFont(FontManager.getRunescapeFont());
+        formPanel.add(conditionTypeLabel, gbc);
 
         gbc.gridx = 1;
         gbc.gridy = 1;
-        gbc.gridwidth = 1;
-        SpinnerNumberModel intervalModel = new SpinnerNumberModel(1, 1, 999, 1);
-        intervalSpinner = new JSpinner(intervalModel);
-        formPanel.add(intervalSpinner, gbc);
+        gbc.gridwidth = 3;
+        timeConditionTypeComboBox = new JComboBox<>(TIME_CONDITION_TYPES);
+        timeConditionTypeComboBox.addActionListener(e -> updateConditionPanel());
+        formPanel.add(timeConditionTypeComboBox, gbc);
 
-        gbc.gridx = 2;
-        gbc.gridy = 1;
-        gbc.gridwidth = 2;
-        scheduleTypeComboBox = new JComboBox<>(ScheduleType.values());
-        formPanel.add(scheduleTypeComboBox, gbc);
-
-        // First run time
+        // Dynamic condition config panel
         gbc.gridx = 0;
         gbc.gridy = 2;
-        gbc.gridwidth = 1;
-        JLabel firstRunLabel = new JLabel("First run:");
-        firstRunLabel.setForeground(Color.WHITE);
-        firstRunLabel.setFont(FontManager.getRunescapeFont());
-        formPanel.add(firstRunLabel, gbc);
-
-        // Radio buttons for first run options
-        gbc.gridx = 1;
-        gbc.gridy = 2;
-        gbc.gridwidth = 1;
-        runNowRadio = new JRadioButton("Now");
-        runNowRadio.setForeground(Color.WHITE);
-        runNowRadio.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        runNowRadio.setFont(FontManager.getRunescapeFont());
-        runNowRadio.setSelected(true);
-        formPanel.add(runNowRadio, gbc);
-
-        gbc.gridx = 2;
-        gbc.gridy = 2;
-        gbc.gridwidth = 1;
-        runLaterRadio = new JRadioButton("At:");
-        runLaterRadio.setForeground(Color.WHITE);
-        runLaterRadio.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        runLaterRadio.setFont(FontManager.getRunescapeFont());
-        formPanel.add(runLaterRadio, gbc);
-
-        // Group the radio buttons
-        ButtonGroup firstRunGroup = new ButtonGroup();
-        firstRunGroup.add(runNowRadio);
-        firstRunGroup.add(runLaterRadio);
-
-        // Time spinner for first run
-        gbc.gridx = 3;
-        gbc.gridy = 2;
-        gbc.gridwidth = 1;
-        SpinnerDateModel firstRunModel = new SpinnerDateModel();
-        firstRunTimeSpinner = new JSpinner(firstRunModel);
-        firstRunTimeSpinner.setEditor(new JSpinner.DateEditor(firstRunTimeSpinner, "HH:mm"));
-        firstRunTimeSpinner.setEnabled(false);
-
-        // Set default first run time to current time + 1 hour
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.HOUR_OF_DAY, 1);
-        firstRunTimeSpinner.setValue(calendar.getTime());
-
-        formPanel.add(firstRunTimeSpinner, gbc);
-
-        // Enable/disable time spinner based on radio selection
-        runNowRadio.addActionListener(e -> firstRunTimeSpinner.setEnabled(false));
-        runLaterRadio.addActionListener(e -> firstRunTimeSpinner.setEnabled(true));
+        gbc.gridwidth = 4;
+        conditionConfigPanel = new JPanel(new BorderLayout());
+        conditionConfigPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        conditionConfigPanel.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 1, 1, 1, ColorScheme.DARK_GRAY_COLOR),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+        formPanel.add(conditionConfigPanel, gbc);
 
         // Random scheduling checkbox
+        gbc.gridx = 0;
+        gbc.gridy = 3;
+        gbc.gridwidth = 4;
         randomSchedulingCheckbox = new JCheckBox("Allow random scheduling");
         randomSchedulingCheckbox.setSelected(true);
         randomSchedulingCheckbox.setToolTipText(
             "<html>When enabled, this plugin can be randomly selected when multiple plugins are due to run.<br>" +
             "If disabled, this plugin will have higher priority than randomizable plugins.</html>");
         randomSchedulingCheckbox.setForeground(Color.WHITE);
-
-        gbc.gridx = 0;
-        gbc.gridy = 3;
-        gbc.gridwidth = 4;
+        randomSchedulingCheckbox.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         formPanel.add(randomSchedulingCheckbox, gbc);
 
         // Add the form panel to the center
@@ -198,6 +157,87 @@ public class ScheduleFormPanel extends JPanel {
 
         // Add button panel to the bottom
         add(buttonPanel, BorderLayout.SOUTH);
+        
+        // Initialize the condition panel
+        updateConditionPanel();
+    }
+
+    /**
+     * Updates the condition configuration panel based on the selected time condition type
+     */
+    private void updateConditionPanel() {
+        // Clear existing panel
+        if (currentConditionPanel != null) {
+            conditionConfigPanel.remove(currentConditionPanel);
+        }
+        
+        // Create a new panel based on selection
+        String selectedType = (String) timeConditionTypeComboBox.getSelectedItem();
+        currentConditionPanel = new JPanel();
+        currentConditionPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(5, 5, 5, 5);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.gridx = 0;
+        gbc.gridy = 0;
+        gbc.gridwidth = 4;
+        
+        // Create the appropriate condition panel
+        if (CONDITION_NOW.equals(selectedType)) {
+            // No configuration needed for immediate execution
+            JLabel nowLabel = new JLabel("Plugin will run immediately when scheduled");
+            nowLabel.setForeground(Color.WHITE);
+            currentConditionPanel.add(nowLabel);
+        } 
+        else if (CONDITION_SPECIFIC_TIME.equals(selectedType)) {
+            // Create a panel for SingleTriggerTimeCondition
+            currentConditionPanel.setLayout(new GridBagLayout());
+            JPanel timePanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+            timePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+            
+            JLabel timeLabel = new JLabel("Run at time: ");
+            timeLabel.setForeground(Color.WHITE);
+            timePanel.add(timeLabel);
+            
+            SpinnerDateModel dateModel = new SpinnerDateModel();
+            JSpinner timeSpinner = new JSpinner(dateModel);
+            timeSpinner.setEditor(new JSpinner.DateEditor(timeSpinner, "yyyy-MM-dd HH:mm"));
+            
+            // Set default to current time + 1 hour
+            Calendar calendar = Calendar.getInstance();
+            calendar.add(Calendar.HOUR_OF_DAY, 1);
+            timeSpinner.setValue(calendar.getTime());
+            
+            timePanel.add(timeSpinner);
+            
+            currentConditionPanel.add(timePanel, gbc);
+            
+            // Store the component for later access
+            currentConditionPanel.putClientProperty("timeSpinner", timeSpinner);
+            
+            // Add description
+            gbc.gridy++;
+            JLabel descLabel = new JLabel("Plugin will run once at the specified time");
+            descLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+            descLabel.setFont(FontManager.getRunescapeSmallFont());
+            currentConditionPanel.add(descLabel, gbc);
+        }
+        else if (CONDITION_INTERVAL.equals(selectedType)) {
+            // Use ConditionConfigPanelUtil to create an interval condition panel
+            currentConditionPanel.setLayout(new GridBagLayout());
+            ConditionConfigPanelUtil.createTimeConfigPanel(currentConditionPanel, gbc, currentConditionPanel);
+        }
+        else if (CONDITION_TIME_WINDOW.equals(selectedType)) {
+            // Use ConditionConfigPanelUtil to create a time window condition panel
+            currentConditionPanel.setLayout(new GridBagLayout());
+            ConditionConfigPanelUtil.createTimeWindowConfigPanel(currentConditionPanel, gbc, currentConditionPanel, true);
+        }
+        
+        // Add the panel
+        conditionConfigPanel.add(currentConditionPanel, BorderLayout.CENTER);
+        conditionConfigPanel.revalidate();
+        conditionConfigPanel.repaint();
     }
 
     private JButton createButton(String text, Color color) {
@@ -234,29 +274,56 @@ public class ScheduleFormPanel extends JPanel {
         }
     }
 
-    public void loadPlugin(ScheduledPlugin plugin) {
-        this.selectedPlugin = plugin;
-        pluginComboBox.setSelectedItem(plugin.getName());
-    
-        // Set interval and type
-        intervalSpinner.setValue(plugin.getScheduleIntervalValue());
-        scheduleTypeComboBox
-                .setSelectedItem(plugin.getScheduleType() != null ? plugin.getScheduleType() : ScheduleType.HOURS);
-    
+    public void loadPlugin(PluginScheduleEntry entry) {
+        this.selectedPlugin = entry;
+        pluginComboBox.setSelectedItem(entry.getName());
+        
         // Set random scheduling checkbox
-        randomSchedulingCheckbox.setSelected(plugin.isAllowRandomScheduling());
-    
-        // Set first run time - for existing plugins, we'll default to "Now"
-        runNowRadio.setSelected(true);
-        firstRunTimeSpinner.setEnabled(false);
-    
-        // Remove duration code
-        // Duration is now handled by stop conditions
-    
+        randomSchedulingCheckbox.setSelected(entry.isAllowRandomScheduling());
+        
+        // Determine the time condition type and set appropriate panel
+        TimeCondition startCondition = null;
+        if (entry.getStartConditionManager() != null) {
+            List<TimeCondition> timeConditions = entry.getStartConditionManager().getTimeConditions();
+            if (!timeConditions.isEmpty()) {
+                startCondition = timeConditions.get(0);
+            }
+        }
+        
+        if (startCondition instanceof SingleTriggerTimeCondition) {
+            timeConditionTypeComboBox.setSelectedItem(CONDITION_SPECIFIC_TIME);
+            updateConditionPanel();
+            
+            // Set the time spinner value
+            SingleTriggerTimeCondition singleTrigger = (SingleTriggerTimeCondition) startCondition;
+            JSpinner timeSpinner = (JSpinner) currentConditionPanel.getClientProperty("timeSpinner");
+            if (timeSpinner != null) {
+                Date date = Date.from(singleTrigger.getTargetTime().toInstant());
+                timeSpinner.setValue(date);
+            }
+        }
+        else if (startCondition instanceof IntervalCondition) {
+            timeConditionTypeComboBox.setSelectedItem(CONDITION_INTERVAL);
+            // Let the panel initialize with defaults
+            updateConditionPanel();
+            // IntervalCondition settings would need to be set here
+            // but it's complex with the current implementation
+        }
+        else if (startCondition instanceof TimeWindowCondition) {
+            timeConditionTypeComboBox.setSelectedItem(CONDITION_TIME_WINDOW);
+            // Let the panel initialize with defaults
+            updateConditionPanel();
+            // TimeWindow settings would need to be set here
+        }
+        else {
+            // Default to "Run Now"
+            timeConditionTypeComboBox.setSelectedItem(CONDITION_NOW);
+            updateConditionPanel();
+        }
+        
         // Update the control button to reflect the current plugin
         updateControlButton();
     }
-
 
     public void clearForm() {
         selectedPlugin = null;
@@ -265,26 +332,18 @@ public class ScheduleFormPanel extends JPanel {
             pluginComboBox.setSelectedIndex(0);
         }
 
-        intervalSpinner.setValue(1);
-        scheduleTypeComboBox.setSelectedItem(ScheduleType.HOURS);
-        runNowRadio.setSelected(true);
-        firstRunTimeSpinner.setEnabled(false);
-        Calendar calendar = Calendar.getInstance();
-        calendar.add(Calendar.HOUR_OF_DAY, 1);
-        firstRunTimeSpinner.setValue(calendar.getTime());
-
+        // Reset condition type to default
+        timeConditionTypeComboBox.setSelectedItem(CONDITION_NOW);
+        updateConditionPanel();
         
-        calendar = Calendar.getInstance();
-        calendar.set(Calendar.HOUR_OF_DAY, 1);
-        calendar.set(Calendar.MINUTE, 0);
-        calendar.set(Calendar.SECOND, 0);
-        
+        // Reset random scheduling
+        randomSchedulingCheckbox.setSelected(true);
         
         // Update the control button
         updateControlButton();
     }
 
-    public ScheduledPlugin getPluginFromForm() {
+    public PluginScheduleEntry getPluginFromForm() {
         String pluginName = (String) pluginComboBox.getSelectedItem();
         if (pluginName == null || pluginName.isEmpty()) {
             JOptionPane.showMessageDialog(this,
@@ -293,67 +352,57 @@ public class ScheduleFormPanel extends JPanel {
                     JOptionPane.ERROR_MESSAGE);
             return null;
         }
-    
-        // Get interval value and ensure it's at least 1
-        int intervalValue = (Integer) intervalSpinner.getValue();
-        if (intervalValue < 1) {
+        
+        // Create TimeCondition based on selected type
+        String selectedType = (String) timeConditionTypeComboBox.getSelectedItem();
+        TimeCondition timeCondition = null;
+        
+        if (CONDITION_NOW.equals(selectedType)) {
+            // For immediate execution, use IntervalCondition with very short interval
+            timeCondition = new IntervalCondition(java.time.Duration.ofSeconds(1));
+        } 
+        else if (CONDITION_SPECIFIC_TIME.equals(selectedType)) {
+            // Get the time from spinner
+            JSpinner timeSpinner = (JSpinner) currentConditionPanel.getClientProperty("timeSpinner");
+            if (timeSpinner != null) {
+                Date selectedDate = (Date) timeSpinner.getValue();
+                ZonedDateTime triggerTime = ZonedDateTime.ofInstant(
+                        selectedDate.toInstant(),
+                        ZoneId.systemDefault());
+                
+                // Create SingleTriggerTimeCondition
+                timeCondition = new SingleTriggerTimeCondition(triggerTime);
+            }
+        }
+        else if (CONDITION_INTERVAL.equals(selectedType)) {
+            // Create IntervalCondition using ConditionConfigPanelUtil
+            timeCondition = ConditionConfigPanelUtil.createTimeCondition(currentConditionPanel);
+        }
+        else if (CONDITION_TIME_WINDOW.equals(selectedType)) {
+            // Create TimeWindowCondition using ConditionConfigPanelUtil
+            timeCondition = (TimeCondition) ConditionConfigPanelUtil.createTimeWindowCondition(currentConditionPanel);
+        }
+        
+        if (timeCondition == null) {
             JOptionPane.showMessageDialog(this,
-                    "The schedule interval must be at least 1.",
-                    "Invalid Interval",
+                    "Failed to create time condition.",
+                    "Error",
                     JOptionPane.ERROR_MESSAGE);
             return null;
         }
-    
-        // Get schedule type
-        ScheduleType scheduleType = (ScheduleType) scheduleTypeComboBox.getSelectedItem();
-        if (scheduleType == null) {
-            scheduleType = ScheduleType.HOURS; // Default to HOURS if null
-        }
-    
-        // No longer using duration - it's handled by stop conditions
-        String durationStr = "";
-    
-        // Create the plugin with default settings
-        ScheduledPlugin plugin = new ScheduledPlugin(pluginName, scheduleType, intervalValue, durationStr, true, randomSchedulingCheckbox.isSelected());
-    
-        // Set start time based on user selection
-        if (runLaterRadio.isSelected()) {
-            // Set specific start time
-            Date selectedTime = (Date) firstRunTimeSpinner.getValue();
-            Calendar selectedCal = Calendar.getInstance();
-            selectedCal.setTime(selectedTime);
-    
-            // Get hours and minutes from the spinner
-            int hours = selectedCal.get(Calendar.HOUR_OF_DAY);
-            int minutes = selectedCal.get(Calendar.MINUTE);
-    
-            // Create a Date for today at the specified time
-            Calendar targetCal = Calendar.getInstance();
-            targetCal.set(Calendar.HOUR_OF_DAY, hours);
-            targetCal.set(Calendar.MINUTE, minutes);
-            targetCal.set(Calendar.SECOND, 0);
-            targetCal.set(Calendar.MILLISECOND, 0);
-    
-            // If the time is in the past, add a day to make it future
-            if (targetCal.getTimeInMillis() < System.currentTimeMillis()) {
-                targetCal.add(Calendar.DAY_OF_MONTH, 1);
-            }
-    
-            // Convert Calendar to ZonedDateTime
-            ZonedDateTime nextRunTime = ZonedDateTime.ofInstant(
-                    targetCal.toInstant(),
-                    ZoneId.systemDefault());
-            plugin.setNextRunTime(nextRunTime);
-        }
-    
-        return plugin;
+        
+        // Create the plugin schedule entry with the time condition
+        PluginScheduleEntry entry = new PluginScheduleEntry(
+                pluginName,
+                timeCondition,
+                true,  // enabled by default
+                randomSchedulingCheckbox.isSelected());
+        
+        return entry;
     }
 
-    
-
     public void updateControlButton() {
-
-        if (plugin.isRunning()) {
+        if (plugin.isScheduledPluginRunning()) {
             // If a plugin is running, show "Stop Plugin" button
             controlButton.setText("Stop Running Plugin");
             controlButton.setEnabled(true);
@@ -368,7 +417,7 @@ public class ScheduleFormPanel extends JPanel {
     }
 
     private void onControlButtonClicked(ActionEvent e) {
-        if (plugin.isRunning()) {
+        if (plugin.isScheduledPluginRunning()) {
             // Stop the current plugin
             plugin.forceStopCurrentPlugin();
         } else if (selectedPlugin != null) {

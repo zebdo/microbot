@@ -9,7 +9,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.pluginscheduler.api.StoppingConditionProvider;
+import net.runelite.client.plugins.microbot.pluginscheduler.api.ConditionProvider;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
@@ -33,7 +33,7 @@ import java.time.Duration;
         canBeScheduled = true
 )
 @Slf4j
-public class SchedulableExamplePlugin extends Plugin implements StoppingConditionProvider {
+public class SchedulableExamplePlugin extends Plugin implements ConditionProvider {
     
     @Inject
     private SchedulableExampleConfig config;
@@ -96,31 +96,9 @@ public class SchedulableExamplePlugin extends Plugin implements StoppingConditio
         }
     }
     
+
     @Override
-    public List<Condition> getStoppingConditions() {
-        List<Condition> conditions = new ArrayList<>();
-        
-        // Add time-based condition (random between min and max runtime)
-        int minMinutes = config.minRuntime();
-        int maxMinutes = config.maxRuntime();
-        conditions.add(IntervalCondition.createRandomized(
-            Duration.ofMinutes(minMinutes),
-            Duration.ofMinutes(maxMinutes)
-        ));
-        
-        // Add logs collection condition
-        WoodcuttingTree tree = config.tree();
-        conditions.add(LootItemCondition.createRandomized(
-            tree.getLog(),
-            config.minLogs(),
-            config.maxLogs()
-        ));
-            
-        return conditions;
-    }
-    
-    @Override
-    public LogicalCondition getLogicalConditionStructure() {
+    public LogicalCondition getStoppingCondition() {
         // Create an OR condition - stop when either time is up OR we have enough logs
         OrCondition orCondition = new OrCondition();
         

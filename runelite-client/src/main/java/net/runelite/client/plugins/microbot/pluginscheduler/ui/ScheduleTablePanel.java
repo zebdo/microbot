@@ -1,8 +1,8 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.ui;
 
-import net.runelite.client.plugins.microbot.pluginscheduler.type.ScheduledPlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
-import net.runelite.client.plugins.microbot.pluginscheduler.api.StoppingConditionProvider;
+import net.runelite.client.plugins.microbot.pluginscheduler.api.ConditionProvider;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.ui.ColorScheme;
@@ -25,7 +25,7 @@ public class ScheduleTablePanel extends JPanel {
     private final SchedulerPlugin plugin;
     private final JTable scheduleTable;
     private final DefaultTableModel tableModel;
-    private Consumer<ScheduledPlugin> selectionListener;
+    private Consumer<PluginScheduleEntry> selectionListener;
     
     // Colors for different row states
     private static final Color CURRENT_PLUGIN_COLOR = new Color(76, 175, 80, 100); // Green with transparency
@@ -72,7 +72,7 @@ public class ScheduleTablePanel extends JPanel {
                 // Update all rows in the affected range
                 for (int row = firstRow; row <= lastRow; row++) {
                     if (row >= 0 && row < plugin.getScheduledPlugins().size()) {
-                        ScheduledPlugin scheduled = plugin.getScheduledPlugins().get(row);
+                        PluginScheduleEntry scheduled = plugin.getScheduledPlugins().get(row);
                         
                         if (e.getColumn() == 4) { // Enabled column
                             Boolean enabled = (Boolean) tableModel.getValueAt(row, 4);
@@ -147,7 +147,7 @@ public class ScheduleTablePanel extends JPanel {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
                 if (row >= 0 && row < plugin.getScheduledPlugins().size()) {
-                    ScheduledPlugin rowPlugin = plugin.getScheduledPlugins().get(row);
+                    PluginScheduleEntry rowPlugin = plugin.getScheduledPlugins().get(row);
                     
                     if (isSelected) {
                         // Selected row styling takes precedence - use a distinct blue color
@@ -236,12 +236,12 @@ public class ScheduleTablePanel extends JPanel {
     /**
      * Determines if the provided plugin is the next one scheduled to run
      */
-    private boolean isNextToRun(ScheduledPlugin scheduledPlugin) {
+    private boolean isNextToRun(PluginScheduleEntry scheduledPlugin) {
         if (!scheduledPlugin.isEnabled()) {
             return false;
         }
         
-        ScheduledPlugin nextPlugin = plugin.getNextScheduledPlugin();
+        PluginScheduleEntry nextPlugin = plugin.getNextScheduledPlugin();
         return nextPlugin != null && nextPlugin.equals(scheduledPlugin);
     }
     
@@ -250,10 +250,10 @@ public class ScheduleTablePanel extends JPanel {
      */
     public void refreshTable() {
         // Save current selection
-        ScheduledPlugin selectedPlugin = getSelectedPlugin();
+        PluginScheduleEntry selectedPlugin = getSelectedPlugin();
         
         // Get current plugins and sort them by next run time
-        List<ScheduledPlugin> plugins = plugin.getScheduledPlugins();
+        List<PluginScheduleEntry> plugins = plugin.getScheduledPlugins();
         
         // Sort plugins by next run time (enabled plugins first, then by time)
         plugins.sort((p1, p2) -> {
@@ -277,7 +277,7 @@ public class ScheduleTablePanel extends JPanel {
         // Update table model
         tableModel.setRowCount(0);
         
-        for (ScheduledPlugin scheduled : plugins) {
+        for (PluginScheduleEntry scheduled : plugins) {
             // Get basic information
             String pluginName = scheduled.getCleanName();
             if (scheduled.isRunning() && plugin.getCurrentPlugin() != null && 
@@ -309,7 +309,7 @@ public class ScheduleTablePanel extends JPanel {
                 conditionInfo = metConditions + "/" + totalConditions;
                 
                 // If there's progress to show, add it
-                double progress = scheduled.getConditionProgress();
+                double progress = scheduled.getStopConditionProgress();
                 if (progress > 0) {
                     conditionInfo += String.format(" (%.0f%%)", progress);
                 }
@@ -347,7 +347,7 @@ public class ScheduleTablePanel extends JPanel {
         }
     }
 
-    public void addSelectionListener(Consumer<ScheduledPlugin> listener) {
+    public void addSelectionListener(Consumer<PluginScheduleEntry> listener) {
         this.selectionListener = listener;
         scheduleTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
@@ -361,7 +361,7 @@ public class ScheduleTablePanel extends JPanel {
         });
     }
 
-    public ScheduledPlugin getSelectedPlugin() {
+    public PluginScheduleEntry getSelectedPlugin() {
         int selectedRow = scheduleTable.getSelectedRow();
         if (selectedRow >= 0 && selectedRow < plugin.getScheduledPlugins().size()) {
             return plugin.getScheduledPlugins().get(selectedRow);
@@ -383,7 +383,7 @@ public class ScheduleTablePanel extends JPanel {
      * Selects the given plugin in the table
      * @param plugin The plugin to select
      */
-    public void selectPlugin(ScheduledPlugin plugin) {
+    public void selectPlugin(PluginScheduleEntry plugin) {
         if (plugin == null) return;
         
         for (int i = 0; i < tableModel.getRowCount(); i++) {

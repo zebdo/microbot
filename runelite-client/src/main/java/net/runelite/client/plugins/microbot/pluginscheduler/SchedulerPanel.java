@@ -1,7 +1,8 @@
 package net.runelite.client.plugins.microbot.pluginscheduler;
 
 
-import net.runelite.client.plugins.microbot.pluginscheduler.type.ScheduledPlugin;
+import net.runelite.client.config.ConfigManager;
+import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
@@ -37,7 +38,7 @@ public class SchedulerPanel extends PluginPanel {
     private final JButton stopButton;
 
 
-    public SchedulerPanel(SchedulerPlugin plugin, ConfigManager configManager) {
+    public SchedulerPanel(SchedulerPlugin plugin) {
         super(false);
         this.plugin = plugin;
 
@@ -266,7 +267,7 @@ public class SchedulerPanel extends PluginPanel {
     }
 
     void updatePluginInfo() {
-        ScheduledPlugin currentPlugin = plugin.getCurrentPlugin();
+        PluginScheduleEntry currentPlugin = plugin.getCurrentPlugin();
 
         if (currentPlugin != null) {
             ZonedDateTime startTimeZdt = currentPlugin.getLastRunTime();
@@ -289,7 +290,7 @@ public class SchedulerPanel extends PluginPanel {
     }
     
     void updateNextPluginInfo() {
-        ScheduledPlugin nextPlugin = plugin.getNextScheduledPlugin();
+        PluginScheduleEntry nextPlugin = plugin.getNextScheduledPlugin();
 
         if (nextPlugin != null) {
             nextPluginNameLabel.setText(nextPlugin.getName());
