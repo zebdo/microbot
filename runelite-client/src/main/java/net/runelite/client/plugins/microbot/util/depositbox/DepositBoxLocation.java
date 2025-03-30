@@ -71,7 +71,7 @@ public enum DepositBoxLocation {
     SALTPETRE_MINE(new WorldPoint(1702, 3527, 0)),
     SEERS_VILLAGE(new WorldPoint(2730, 3492, 0)),
     SHAYZIEN(new WorldPoint(1501, 3613, 0)),
-    SHILO_VILLAGE(new WorldPoint(2852, 2951, 0)),
+    SHILO_VILLAGE(new WorldPoint(2842, 9383, 0)),
     VER_SINHAZA(new WorldPoint(3655, 3209, 0)),
     VOID_KNIGHTS_OUTPOST(new WorldPoint(2669, 2655, 0)),
     OUTSIDE_THE_VOLCANIC_MINE(new WorldPoint(3820, 3808, 0)),
