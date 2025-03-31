@@ -1044,7 +1044,7 @@ public class WildyKillerScript extends Script {
     }
 
 
-    public String getCombatStyle(Player player) {
+    public String getCombatStyle(Rs2PlayerModel player) {
         int[] equipmentIds = player.getPlayerComposition().getEquipmentIds();
 
         if (equipmentIds == null) {
