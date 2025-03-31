@@ -32,7 +32,6 @@ import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
-import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -245,8 +244,22 @@ public class Rs2Walker {
 
             // entering desert warning
             if (Rs2Widget.clickWidget(565, 20)) {
-                sleep(600);
+                sleepUntil(() -> {
+                    Widget checkBoxWidget = Rs2Widget.getWidget(565, 20);
+                    if (checkBoxWidget == null) return false;
+                    return checkBoxWidget.getSpriteId() != 941;
+                });
                 Rs2Widget.clickWidget(565, 17);
+            }
+            
+            // entering down ladder strong hold of security
+            if (Rs2Widget.clickWidget(579, 20)) {
+                sleepUntil(() -> {
+                    Widget checkBoxWidget = Rs2Widget.getWidget(579, 20);
+                    if (checkBoxWidget == null) return false;
+                    return checkBoxWidget.getSpriteId() != 941;
+                });
+                Rs2Widget.clickWidget(579, 17);
             }
 
 
@@ -810,10 +823,68 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 
 
             if (found) {
-                Rs2GameObject.interact(object, action);
-                Rs2Player.waitForWalking();
+                if (!handleDoorException(object, action)) {
+                    Rs2GameObject.interact(object, action);
+                    Rs2Player.waitForWalking();
+                }
                 return true;
             }
+        }
+
+        return false;
+    }
+
+    private static boolean handleDoorException(TileObject object, String action) {
+        if (isInStrongholdOfSecurity()) {
+            return handleStrongholdOfSecurityAnswer(object, action);
+        }
+        return false;
+    }
+
+    private static boolean isInStrongholdOfSecurity() {
+        List<Integer> mapRegionIds = List.of(7505, 7504, 7760, 7503, 7759, 7758, 7757, 8013, 7756, 8012, 8017, 8530, 9297);
+        return mapRegionIds.contains(Rs2Player.getWorldLocation().getRegionID());
+    }
+
+    private static boolean handleStrongholdOfSecurityAnswer(TileObject object, String action) {
+        Rs2GameObject.interact(object, action);
+        boolean isInDialogue = Rs2Dialogue.sleepUntilInDialogue();
+
+        // Not all the doors ask questions, so only if dialogue is shown we will attempt to get the answer
+        if (!isInDialogue) return true;
+
+        // Skip over first door dialogue & don't forget to set up two-factor warning
+        if (Rs2Dialogue.getDialogueText() != null) {
+            if (Rs2Dialogue.getDialogueText().contains("two-factor authentication options") || Rs2Dialogue.getDialogueText().contains("Hopefully you will learn<br>much from us.")) {
+                Rs2Dialogue.sleepUntilHasContinue();
+                sleepUntil(() -> !Rs2Dialogue.hasContinue() || Rs2Dialogue.getDialogueText().contains("To pass you must answer me"), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+                if (!Rs2Dialogue.isInDialogue()) return true;
+            }
+        }
+
+        String dialogueAnswer = null;
+        int attempts = 0;
+        final int maxAttempts = 5;
+
+        // We attempt to find the answer multiple times in-case there is dialogue that appears before the question
+        while (dialogueAnswer == null && attempts < maxAttempts) {
+            if (currentTarget == null) break;
+            dialogueAnswer = StrongholdAnswer.findAnswer(Rs2Dialogue.getDialogueText());
+            if (dialogueAnswer == null) {
+                Rs2Dialogue.clickContinue();
+                Rs2Random.waitEx(800, 100);
+            }
+            attempts++;
+        }
+
+        if (dialogueAnswer != null) {
+            Rs2Dialogue.clickContinue();
+            Rs2Dialogue.sleepUntilSelectAnOption();
+            Rs2Dialogue.clickOption(dialogueAnswer);
+            Rs2Dialogue.sleepUntilHasContinue();
+            sleepUntil(() -> !Rs2Dialogue.hasContinue(), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+            Rs2Player.waitForAnimation(1200);
+            return true;
         }
 
         return false;
