@@ -356,7 +356,9 @@ public class SchedulerPlugin extends Plugin {
     private void scheduleNextPlugin() {
         // First, prioritize non-randomizable plugins
         List<PluginScheduleEntry> dueNonRandomPlugins = scheduledPlugins.stream()
-                .filter(plugin -> plugin.isDueToRun() && plugin.isEnabled() && !plugin.isAllowRandomScheduling())
+                .filter(plugin ->   plugin.isDueToRun() 
+                                    && plugin.isEnabled() 
+                                    && !plugin.isAllowRandomScheduling() && plugin.hasStopCondition())
                 .collect(Collectors.toList());
         
         if (!dueNonRandomPlugins.isEmpty()) {
@@ -463,11 +465,10 @@ public class SchedulerPlugin extends Plugin {
         if (currentPlugin != null) {
             log.info("Force Stopping current plugin: " + currentPlugin.getCleanName());
             
-            
-            if (currentPlugin.hardStop()) {
+            currentPlugin.hardStop();
+            if (!currentPlugin.isRunning()) {
                 currentPlugin = null;                    
-                setState(SchedulerState.SCHEDULING);
-                
+                setState(SchedulerState.SCHEDULING);                
             } else {
                 log.error("Failed to hard stop plugin: " + currentPlugin.getCleanName());
                 setState(SchedulerState.HARD_STOPPING_PLUGIN);
@@ -522,7 +523,8 @@ public class SchedulerPlugin extends Plugin {
      /**
      * Adds conditions to a scheduled plugin
      */
-    private void saveConditionsToScheduledPlugin(PluginScheduleEntry plugin, List<Condition> conditions, 
+    private void saveConditionsToScheduledPlugin(PluginScheduleEntry plugin, List<Condition> userStopConditions,
+                                        List<Condition> userStartConditions, 
                                       boolean requireAll, boolean stopOnConditionsMet) {
         if (plugin == null) return;
         
@@ -530,8 +532,8 @@ public class SchedulerPlugin extends Plugin {
         plugin.getStopConditionManager().getConditions().clear();
         
         // Add new conditions
-        for (Condition condition : conditions) {
-            plugin.addCondition(condition);
+        for (Condition condition : userStopConditions) {
+            plugin.addStopCondition(condition);
         }
         
         // Set condition manager properties

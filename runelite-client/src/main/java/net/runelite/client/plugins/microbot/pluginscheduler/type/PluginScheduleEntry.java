@@ -18,6 +18,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.Or
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.ScheduledStopEvent;
 
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.ScheduledSerializer;
@@ -27,6 +28,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.serialization.Schedu
 import java.text.SimpleDateFormat;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -35,6 +37,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 @Data
@@ -239,6 +242,167 @@ public class PluginScheduleEntry {
         }
     }
 
+    /**
+     * Checks if this plugin schedule has any defined stop conditions
+     * 
+     * @return true if at least one stop condition is defined
+     */
+    public boolean hasAnyStopConditions() {
+        return stopConditionManager != null && 
+               !stopConditionManager.getConditions().isEmpty();
+    }
+    
+    /**
+     * Checks if this plugin has any one-time stop conditions that can only trigger once
+     * 
+     * @return true if at least one single-trigger condition exists in the stop conditions
+     */
+    public boolean hasAnyOneTimeStopConditions() {
+        return stopConditionManager != null && 
+               stopConditionManager.hasAnyOneTimeConditions();
+    }
+    
+    /**
+     * Checks if any stop conditions have already triggered and cannot trigger again
+     * 
+     * @return true if at least one stop condition has triggered and cannot trigger again
+     */
+    public boolean hasTriggeredOneTimeStopConditions() {
+        return stopConditionManager != null && 
+               stopConditionManager.hasTriggeredOneTimeConditions();
+    }
+    
+    /**
+     * Determines if the stop conditions can trigger again in the future
+     * Considers the nested logical structure and one-time conditions
+     * 
+     * @return true if the stop condition structure can trigger again
+     */
+    public boolean canStopTriggerAgain() {
+        return stopConditionManager != null && 
+               stopConditionManager.canTriggerAgain();
+    }
+    
+    /**
+     * Gets the next time when any stop condition is expected to trigger
+     * 
+     * @return Optional containing the next stop trigger time, or empty if none exists
+     */
+    public Optional<ZonedDateTime> getNextStopTriggerTime() {
+        if (stopConditionManager == null) {
+            return Optional.empty();
+        }
+        return stopConditionManager.getNextTriggerTime();
+    }
+    
+    /**
+     * Gets a human-readable string representing when the next stop condition will trigger
+     * 
+     * @return String with the time until the next stop trigger, or a message if none exists
+     */
+    public String getNextStopTriggerTimeString() {
+        if (stopConditionManager == null) {
+            return "No stop conditions defined";
+        }
+        return stopConditionManager.getNextTriggerTimeString();
+    }
+    
+    /**
+     * Checks if the stop conditions are fulfillable based on their structure and state
+     * A condition is considered unfulfillable if it contains one-time conditions that
+     * have all already triggered in an OR structure, or if any have triggered in an AND structure
+     * 
+     * @return true if the stop conditions can still be fulfilled
+     */
+    public boolean hasFullfillableStopConditions() {
+        if (!hasAnyStopConditions()) {
+            return false;
+        }
+        
+        // If we have any one-time conditions that can't trigger again
+        // and the structure is such that it can't satisfy anymore, then it's not fulfillable
+        if (hasAnyOneTimeStopConditions() && !canStopTriggerAgain()) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Gets the remaining duration until the next stop condition trigger
+     * 
+     * @return Optional containing the duration until next stop trigger, or empty if none available
+     */
+    public Optional<Duration> getDurationUntilStopTrigger() {
+        if (stopConditionManager == null) {
+            return Optional.empty();
+        }
+        return stopConditionManager.getDurationUntilNextTrigger();
+    }
+    
+    /**
+     * Gets a detailed description of the stop conditions status
+     * 
+     * @return A string with detailed information about stop conditions
+     */
+    public String getDetailedStopConditionsStatus() {
+        if (!hasAnyStopConditions()) {
+            return "No stop conditions defined";
+        }
+        
+        StringBuilder sb = new StringBuilder("Stop conditions: ");
+        
+        // Add logic type
+        sb.append(stopConditionManager.requiresAll() ? "ALL must be met" : "ANY can be met");
+        
+        // Add fulfillability status
+        if (!hasFullfillableStopConditions()) {
+            sb.append(" (UNFULFILLABLE)");
+        }
+        
+        // Add condition count
+        int total = getTotalStopConditionCount();
+        int satisfied = getSatisfiedStopConditionCount();
+        sb.append(String.format(" - %d/%d conditions met", satisfied, total));
+        
+        // Add next trigger time if available
+        Optional<ZonedDateTime> nextTrigger = getNextStopTriggerTime();
+        if (nextTrigger.isPresent()) {
+            sb.append(" - Next trigger: ").append(getNextStopTriggerTimeString());
+        }
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Determines if the plugin should be stopped immediately based on its current
+     * progress and condition status
+     * 
+     * @return true if the plugin should be stopped immediately
+     */
+    public boolean shouldStopImmediately() {
+        // If no stop conditions, don't stop
+        if (!hasAnyStopConditions()) {
+            return false;
+        }
+        
+        // If conditions are met, stop
+        if (areConditionsMet()) {
+            return true;
+        }
+        
+        // If we have unfulfillable conditions, it's possible we should stop
+        // to prevent the plugin from running indefinitely
+        if (!hasFullfillableStopConditions()) {
+            // Additional logic could be added here to decide what to do
+            // with unfulfillable conditions
+            log.warn("Plugin {} has unfulfillable stop conditions", name);
+        }
+        
+        return false;
+    }
+    
+
     public boolean isRunning() {
         return getPlugin() != null && Microbot.getPluginManager().isPluginEnabled(plugin);
     }
@@ -249,71 +413,296 @@ public class PluginScheduleEntry {
     private ZonedDateTime roundToMinutes(ZonedDateTime time) {
         return time.withSecond(0).withNano(0);
     }
-
-    /**
-     * Set when this plugin should next run
-     */
-    @Deprecated
-    public void setNextRunTime(ZonedDateTime time) {
-        this.nextRunTime = roundToMinutes(time);
-
+    private void logStartCondtions() {
+        List<Condition> conditionList = startConditionManager.getConditions();
+        logConditionInfo(conditionList,"Defined Start Conditions", true);
+    }
+    private void logStartConditionsWithDetails() {
+        List<Condition> conditionList = startConditionManager.getConditions();
+        logConditionInfo(conditionList,"Defined Start Conditions", true);
     }
 
     /**
-     * Check if the plugin is due to run
+     * Checks if this plugin schedule has any defined start conditions
+     * 
+     * @return true if at least one start condition is defined
+     */
+    public boolean hasAnyStartConditions() {
+        return startConditionManager != null && 
+               !startConditionManager.getConditions().isEmpty();
+    }
+    
+    /**
+     * Checks if this plugin has any one-time start conditions that can only trigger once
+     * 
+     * @return true if at least one single-trigger condition exists in the start conditions
+     */
+    public boolean hasAnyOneTimeStartConditions() {
+        return startConditionManager != null && 
+               startConditionManager.hasAnyOneTimeConditions();
+    }
+    
+    /**
+     * Checks if any start conditions have already triggered and cannot trigger again
+     * 
+     * @return true if at least one start condition has triggered and cannot trigger again
+     */
+    public boolean hasTriggeredOneTimeStartConditions() {
+        return startConditionManager != null && 
+               startConditionManager.hasTriggeredOneTimeConditions();
+    }
+    
+    /**
+     * Determines if the start conditions can trigger again in the future
+     * Considers the nested logical structure and one-time conditions
+     * 
+     * @return true if the start condition structure can trigger again
+     */
+    public boolean canStartTriggerAgain() {
+        return startConditionManager != null && 
+               startConditionManager.canTriggerAgain();
+    }
+    
+    /**
+     * Gets the next time when any start condition is expected to trigger
+     * 
+     * @return Optional containing the next start trigger time, or empty if none exists
+     */
+    public Optional<ZonedDateTime> getNextStartTriggerTime() {
+        if (startConditionManager == null) {
+            return Optional.empty();
+        }
+        return startConditionManager.getNextTriggerTime();
+    }
+    
+    /**
+     * Gets a human-readable string representing when the next start condition will trigger
+     * 
+     * @return String with the time until the next start trigger, or a message if none exists
+     */
+    public String getNextStartTriggerTimeString() {
+        if (startConditionManager == null) {
+            return "No start conditions defined";
+        }
+        return startConditionManager.getNextTriggerTimeString();
+    }
+    
+    /**
+     * Checks if the start conditions are fulfillable based on their structure and state
+     * A condition is considered unfulfillable if it contains one-time conditions that
+     * have all already triggered in an OR structure, or if any have triggered in an AND structure
+     * 
+     * @return true if the start conditions can still be fulfilled
+     */
+    public boolean hasFullfillableStartConditions() {
+        if (!hasAnyStartConditions()) {
+            return false;
+        }
+        
+        // If we have any one-time conditions that can't trigger again
+        // and the structure is such that it can't satisfy anymore, then it's not fulfillable
+        if (hasAnyOneTimeStartConditions() && !canStartTriggerAgain()) {
+            return false;
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Gets the remaining duration until the next start condition trigger
+     * 
+     * @return Optional containing the duration until next start trigger, or empty if none available
+     */
+    public Optional<Duration> getDurationUntilStartTrigger() {
+        if (startConditionManager == null) {
+            return Optional.empty();
+        }
+        return startConditionManager.getDurationUntilNextTrigger();
+    }
+    
+    /**
+     * Gets a detailed description of the start conditions status
+     * 
+     * @return A string with detailed information about start conditions
+     */
+    public String getDetailedStartConditionsStatus() {
+        if (!hasAnyStartConditions()) {
+            return "No start conditions defined";
+        }
+        
+        StringBuilder sb = new StringBuilder("Start conditions: ");
+        
+        // Add logic type
+        sb.append(startConditionManager.requiresAll() ? "ALL must be met" : "ANY can be met");
+        
+        // Add fulfillability status
+        if (!hasFullfillableStartConditions()) {
+            sb.append(" (UNFULFILLABLE)");
+        }
+        
+        // Add condition count and satisfaction status
+        int totalStartConditions = startConditionManager.getConditions().size();
+        long satisfiedStartConditions = startConditionManager.getConditions().stream()
+                .filter(Condition::isSatisfied)
+                .count();
+        sb.append(String.format(" - %d/%d conditions met", satisfiedStartConditions, totalStartConditions));
+        
+        // Add next trigger time if available
+        Optional<ZonedDateTime> nextTrigger = getNextStartTriggerTime();
+        if (nextTrigger.isPresent()) {
+            sb.append(" - Next trigger: ").append(getNextStartTriggerTimeString());
+        }
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Determines if the plugin should be started immediately based on its current
+     * start condition status
+     * 
+     * @return true if the plugin should be started immediately
+     */
+    public boolean shouldStartImmediately() {
+        // If no start conditions, don't start automatically
+        if (!hasAnyStartConditions()) {
+            return false;
+        }
+        
+        // If start conditions are met, start the plugin
+        if (startConditionManager.areConditionsMet()) {
+            return true;
+        }
+        
+        return false;
+    }
+    
+    /**
+     * Logs the defined start conditions with their current states
+     */
+    private void logDefinedStartConditionWithStates() {
+        logStartConditionsWithDetails();
+        
+        // If the conditions are unfulfillable, log a warning
+        if (!hasFullfillableStartConditions()) {
+            log.warn("Plugin {} has unfulfillable start conditions - may not start properly", name);
+        }
+        
+        // Log progress percentage
+        double progress = startConditionManager.getProgressTowardNextTrigger();
+        log.info("Plugin {} start condition progress: {:.2f}%", name, progress);
+    }
+    
+    /**
+     * Check if the plugin is due to run based on its start conditions
      */
     public boolean isDueToRun() {
-        ZonedDateTime currentTime = roundToMinutes(ZonedDateTime.now(ZoneId.systemDefault()));
-
         if (!enabled) {
             return false;
         }
 
-        return !currentTime.isBefore(nextRunTime);
+        // If there are no start conditions, check the legacy nextRunTime
+        if (!hasAnyStartConditions()) {
+            if (nextRunTime == null) {
+                return false;
+            }
+            ZonedDateTime currentTime = roundToMinutes(ZonedDateTime.now(ZoneId.systemDefault()));
+            return !currentTime.isBefore(nextRunTime);
+        }
+        
+        // Check if start conditions are met
+        return shouldStartImmediately();
     }
-
     /**
-     * Update the lastRunTime to now and calculate the next run time
+     * Update the lastRunTime to now and update conditions
      */
     private void updateAfterRun() {
         lastRunTime = roundToMinutes(ZonedDateTime.now(ZoneId.systemDefault()));
+        incrementRunCount();
         
-        // For one-time scheduled plugins, don't set a next run time
-        if (scheduleIntervalValue == 0) {
-            log.debug("One-time plugin {} completed, not scheduling next run", name);
-            nextRunTime = null;
-            return;
+        // Handle time conditions
+        if (startConditionManager != null) {
+            startConditionManager.reset();
+            
+            // Reset one-time conditions to prevent repeated triggering
+            for (TimeCondition condition : startConditionManager.getTimeConditions()) {
+                if (condition instanceof SingleTriggerTimeCondition) {
+                    // Mark as triggered so it won't trigger again
+                    ((SingleTriggerTimeCondition) condition).setHasTriggered(true);
+                }
+                // For interval conditions, no need to reset as they'll naturally calculate
+                // their next trigger time
+            }
+            
+            // Update the nextRunTime for legacy compatibility if possible
+            Optional<ZonedDateTime> nextTriggerTime = getNextStartTriggerTime();
+            if (nextTriggerTime.isPresent()) {
+                ZonedDateTime nextRunTime = nextTriggerTime.get();
+                log.info("Updated next run time for '{}' to {}", 
+                        name, 
+                        nextRunTime.format(DATE_TIME_FORMATTER));
+            } else {
+                // No future trigger time found
+                ZonedDateTime nextRunTime = null;
+                if (hasTriggeredOneTimeStartConditions() && !canStartTriggerAgain()) {
+                    log.debug("One-time conditions for {} triggered, not scheduling next run", name);
+                    nextRunTime = null;
+                }
+            }
         }
-        
-        // Calculate next run time based on schedule type and interval
-        ZonedDateTime calculatedNextRunTime;
-        switch (scheduleType) {
-            case MINUTES:
-                calculatedNextRunTime = lastRunTime.plusMinutes(scheduleIntervalValue);
-                break;
-            case HOURS:
-                calculatedNextRunTime = lastRunTime.plusHours(scheduleIntervalValue);
-                break;
-            case DAYS:
-                calculatedNextRunTime = lastRunTime.plusDays(scheduleIntervalValue);
-                break;
-            default:
-                calculatedNextRunTime = lastRunTime.plusHours(1); // Default fallback
-        }
-        
-        log.info("Updated next run time for '{}' from {} to {}", 
-                name,
-                nextRunTime != null ? nextRunTime.format(DATE_TIME_FORMATTER) : "null",
-                calculatedNextRunTime.format(DATE_TIME_FORMATTER));
-        
-        nextRunTime = calculatedNextRunTime;
     }
 
+   
+    
     /**
-     * Get a formatted display of the interval
+     * Get a formatted display of the scheduling interval
      */
     public String getIntervalDisplay() {
-        return "Every " + scheduleIntervalValue + " " + scheduleType.toString().toLowerCase();
+        if (!hasAnyStartConditions()) {
+            return "No schedule defined";
+        }
+        
+        List<TimeCondition> timeConditions = startConditionManager.getTimeConditions();
+        if (timeConditions.isEmpty()) {
+            return "Non-time conditions only";
+        }
+        
+        // Check for common condition types
+        if (timeConditions.size() == 1) {
+            TimeCondition condition = timeConditions.get(0);
+            
+            if (condition instanceof SingleTriggerTimeCondition) {
+                ZonedDateTime triggerTime = ((SingleTriggerTimeCondition) condition).getTargetTime();
+                return "Once at " + triggerTime.format(DATE_TIME_FORMATTER);
+            } 
+            else if (condition instanceof IntervalCondition) {
+                Duration interval = ((IntervalCondition) condition).getInterval();
+                long hours = interval.toHours();
+                long minutes = interval.toMinutes() % 60;
+                
+                if (hours > 0) {
+                    return String.format("Every %d hour%s %s", 
+                            hours, 
+                            hours > 1 ? "s" : "",
+                            minutes > 0 ? minutes + " min" : "");
+                } else {
+                    return String.format("Every %d minute%s", 
+                            minutes, 
+                            minutes > 1 ? "s" : "");
+                }
+            }
+            else if (condition instanceof TimeWindowCondition) {
+                TimeWindowCondition windowCondition = (TimeWindowCondition) condition;
+                LocalTime startTime = windowCondition.getStartTime();
+                LocalTime endTime = windowCondition.getEndTime();
+                
+                return String.format("Between %s and %s daily", 
+                        startTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                        endTime.format(DateTimeFormatter.ofPattern("HH:mm")));
+            }
+        }
+        
+        // If we have multiple time conditions or other complex scenarios
+        return "Complex time schedule";
     }
 
     /**
@@ -323,71 +712,73 @@ public class PluginScheduleEntry {
         return getNextRunDisplay(System.currentTimeMillis());
     }
 
-   
-
     /**
-     * Get a formatted time string for the next run
+     * Get a formatted display of when this plugin will run next, including
+     * condition information.
+     * 
+     * @param currentTimeMillis Current system time in milliseconds
+     * @return Human-readable description of next run time or condition status
      */
-    public String getNextRunTimeString() {
-        return nextRunTime.format(TIME_FORMATTER);
-    }
-
-    /**
-     * Get the duration in minutes
-     */
-    public long getDurationMinutes() {
-        if (duration == null || duration.isEmpty()) {
-            return 0;
+    public String getNextRunDisplay(long currentTimeMillis) {
+        if (!enabled) {
+            return "Disabled";
         }
 
-        try {
-            String[] parts = duration.split(":");
-            if (parts.length == 2) {
-                int hours = Integer.parseInt(parts[0]);
-                int minutes = Integer.parseInt(parts[1]);
-                return hours * 60L + minutes;
+        // If plugin is running, show progress or status information
+        if (isRunning()) {
+            if (!stopConditionManager.getConditions().isEmpty()) {
+                double progressPct = getStopConditionProgress();
+                if (progressPct > 0 && progressPct < 100) {
+                    return String.format("Running (%.1f%% complete)", progressPct);
+                }
+                return "Running with conditions";
             }
-        } catch (Exception e) {
-            // Fall through to return 0
+            return "Running";
         }
-        return 0;
+        
+        // Check for start conditions
+        if (hasAnyStartConditions()) {
+            // Check if we can determine the next trigger time
+            Optional<ZonedDateTime> nextTrigger = getNextStartTriggerTime();
+            if (nextTrigger.isPresent()) {
+                ZonedDateTime triggerTime = nextTrigger.get();
+                ZonedDateTime currentTime = ZonedDateTime.ofInstant(
+                        Instant.ofEpochMilli(currentTimeMillis),
+                        ZoneId.systemDefault());
+                
+                // If it's due to run now
+                if (!currentTime.isBefore(triggerTime)) {
+                    return "Due to run";
+                }
+                
+                // Calculate time until next run
+                Duration timeUntil = Duration.between(currentTime, triggerTime);
+                long hours = timeUntil.toHours();
+                long minutes = timeUntil.toMinutes() % 60;
+                long seconds = timeUntil.getSeconds() % 60;
+                
+                if (hours > 0) {
+                    return String.format("In %dh %dm", hours, minutes);
+                } else if (minutes > 0) {
+                    return String.format("In %dm %ds", minutes, seconds);
+                } else {
+                    return String.format("In %ds", seconds);
+                }
+            } else if (shouldStartImmediately()) {
+                return "Due to run";
+            } else if (hasTriggeredOneTimeStartConditions() && !canStartTriggerAgain()) {
+                return "Completed";
+            }
+            
+            return "Waiting for conditions";
+        }
+        
+        
+        
+        return "Schedule not set";
     }
-
     
-    /**
-     * Convert a list of ScheduledPlugin objects to JSON
-     */
-    public static String toJson(List<PluginScheduleEntry> plugins) {
-        return ScheduledSerializer.toJson(plugins);
-    }
-
-
-        /**
-     * Parse JSON into a list of ScheduledPlugin objects
-     */
-    public static List<PluginScheduleEntry> fromJson(String json) {
-        return ScheduledSerializer.fromJson(json);
-    }
- /**#file:PluginScheduleEntry.java ,check how we now can determin with to objects are equal, and how to construct the hash code ? consider #sym:ConditionManager 
-What do we have to change  ?a */
-    @Override
-    public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != o.getClass())
-            return false;
-        PluginScheduleEntry that = (PluginScheduleEntry) o;
-
-        return Objects.equals(name, that.name) &&
-                Objects.equals(scheduleType, that.scheduleType) &&
-                scheduleIntervalValue == that.scheduleIntervalValue;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(name, scheduleType, scheduleIntervalValue);
-    }
-
+    
     public void addStopCondition(Condition condition) {
         stopConditionManager.addCondition(condition);
     }
@@ -422,7 +813,7 @@ What do we have to change  ?a */
         if (shouldStop()) {
             // Initial stop attempt
             if (!stopInitiated) {
-                logDefinedConditionWithStates();
+                logStopConditionsWithDetails();
                 log.info("Stopping plugin {} due to conditions being met - initiating soft stop", name);
                 this.softStop(); // This will start the monitoring thread
             }
@@ -500,15 +891,7 @@ What do we have to change  ?a */
         List<Condition> conditionList = stopConditionManager.getConditions();
         logConditionInfo(conditionList,"Defined Stop Conditions", true);
     }
-    private void logStartCondtions() {
-        List<Condition> conditionList = startConditionManager.getConditions();
-        logConditionInfo(conditionList,"Defined Start Conditions", true);
-    }
-    private void logStartConditionsWithDetails() {
-        List<Condition> conditionList = startConditionManager.getConditions();
-        logConditionInfo(conditionList,"Defined Start Conditions", true);
-    }
-    
+
     
     
 
@@ -561,6 +944,9 @@ What do we have to change  ?a */
         
         log.info(sb.toString());
     }
+
+
+
 
     /**
      * Updates or adds a condition at runtime.
@@ -689,67 +1075,7 @@ What do we have to change  ?a */
     }
 
 
-    /**
-     * Get a formatted display of when this plugin will run next, including
-     * condition information.
-     * 
-     * @param currentTimeMillis Current system time in milliseconds
-     * @return Human-readable description of next run time or condition status
-     */
-    public String getNextRunDisplay(long currentTimeMillis) {
-        if (!enabled) {
-            return "Disabled";
-        }
-
-        List<TimeCondition> timeConditions = startConditionManager.getTimeConditions();
-
-        // One-time starting plugin that has already run
-        if (scheduleIntervalValue == 0 && runCount > 0) {
-            return "Completed";
-        }
-
-        // Check for condition-based execution
-        if (isRunning() && !stopConditionManager.getConditions().isEmpty()) {
-            double progressPct = getStopConditionProgress();
-            if (progressPct > 0) {
-                return String.format("Running Progress %.1f%% complete", progressPct);
-            }
-        }else{
-            if (isRunning()) {
-                return "Running";
-            }
-        }
-
-        // If next run time is null, can't determine
-        if (nextRunTime == null) {
-            return "Not scheduled";
-        }
-
-        // Handle time-based scheduling
-        ZonedDateTime currentTime = ZonedDateTime.ofInstant(
-                Instant.ofEpochMilli(currentTimeMillis),
-                ZoneId.systemDefault());
-
-        // If it's due to run now
-        if (!currentTime.isBefore(nextRunTime)) {
-            return "Ready to run";
-        }
-
-        // Calculate time until next run
-        long timeUntilMillis = Duration.between(currentTime, nextRunTime).toMillis();
-        long hours = TimeUnit.MILLISECONDS.toHours(timeUntilMillis);
-        long minutes = TimeUnit.MILLISECONDS.toMinutes(timeUntilMillis) % 60;
-        long seconds = TimeUnit.MILLISECONDS.toSeconds(timeUntilMillis) % 60;
-        if (hours > 0) {
-            return String.format("In %dh %02dm", hours, minutes);
-        } else if (minutes > 0) {
-            return String.format("In %02dm %02ds", minutes, seconds);
-        } else if (seconds > 0) {
-            return String.format("In %ds", seconds);
-        } else {
-            return "Ready to run";
-        }
-    }
+  
 
     /**
      * Calculates overall progress percentage across all conditions.
@@ -918,6 +1244,59 @@ What do we have to change  ?a */
             stopMonitorThread.interrupt();
             stopMonitorThread = null;
         }
+    }
+
+    /**
+     * Convert a list of ScheduledPlugin objects to JSON
+     */
+    public static String toJson(List<PluginScheduleEntry> plugins) {
+        return ScheduledSerializer.toJson(plugins);
+    }
+
+
+        /**
+     * Parse JSON into a list of ScheduledPlugin objects
+     */
+    public static List<PluginScheduleEntry> fromJson(String json) {
+        return ScheduledSerializer.fromJson(json);
+    }
+    @Override
+    public boolean equals(Object o) {
+        if (this == o)
+            return true;
+        if (o == null || getClass() != o.getClass())
+            return false;
+        PluginScheduleEntry that = (PluginScheduleEntry) o;
+
+        // Compare name first
+        if (!Objects.equals(name, that.name)) {
+            return false;
+        }
+        
+        // Compare logical conditions by examining their structure
+        // This approach is more robust than comparing schedule types/intervals
+        if (!Objects.equals(
+                stopConditionManager != null ? stopConditionManager.getDescription() : null,
+                that.stopConditionManager != null ? that.stopConditionManager.getDescription() : null)) {
+            return false;
+        }
+        
+        if (!Objects.equals(
+                startConditionManager != null ? startConditionManager.getDescription() : null,
+                that.startConditionManager != null ? that.startConditionManager.getDescription() : null)) {
+            return false;
+        }
+        
+        return true;
+    }
+
+    @Override
+    public int hashCode() {
+        // Generate hash based on name and condition descriptions
+        // This is more accurate with the new condition system
+        String stopDesc = stopConditionManager != null ? stopConditionManager.getDescription() : "";
+        String startDesc = startConditionManager != null ? startConditionManager.getDescription() : "";
+        return Objects.hash(name, stopDesc, startDesc);
     }
 
 }
