@@ -18,6 +18,7 @@ public enum DepositBoxLocation {
     EMIRS_ARENA(new WorldPoint(3383, 3273, 0)),
     EDGEVILLE(new WorldPoint(3098, 3499, 0)),
     FALADOR(new WorldPoint(3018, 3358, 0)),
+    GEM_MINE(new WorldPoint(2842, 9383, 0)),
     GRAND_EXCHANGE(new WorldPoint(3174, 3493, 0)),
     LUMBRIDGE(new WorldPoint(3210, 3217, 2)),
     PORT_SARIM(new WorldPoint(3045, 3234, 0)),
@@ -71,7 +72,7 @@ public enum DepositBoxLocation {
     SALTPETRE_MINE(new WorldPoint(1702, 3527, 0)),
     SEERS_VILLAGE(new WorldPoint(2730, 3492, 0)),
     SHAYZIEN(new WorldPoint(1501, 3613, 0)),
-    SHILO_VILLAGE(new WorldPoint(2842, 9383, 0)),
+    SHILO_VILLAGE(new WorldPoint(2852, 2951, 0)),
     VER_SINHAZA(new WorldPoint(3655, 3209, 0)),
     VOID_KNIGHTS_OUTPOST(new WorldPoint(2669, 2655, 0)),
     OUTSIDE_THE_VOLCANIC_MINE(new WorldPoint(3820, 3808, 0)),
@@ -118,6 +119,10 @@ public enum DepositBoxLocation {
                 if (!isMember()) return false;
                 if (hasLineOfSight) return true;
                 return isMember() && Rs2Player.getSkillRequirement(Skill.FISHING, 68, true);
+            case GEM_MINE:
+                if (!isMember()) return false;
+                if (hasLineOfSight) return true;
+                return isMember() && Microbot.getVarbitValue(Varbits.DIARY_KARAMJA_MEDIUM) == 1;
             case LEGENDS_GUILD:
                 if (!isMember()) return false;
                 if (hasLineOfSight) return true;
