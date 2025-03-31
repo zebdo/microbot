@@ -756,6 +756,9 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 
         if (index == path.size() - 1) return false;
         
+        // If we are in instance, ignore checking RegionID
+        if(Microbot.getClient().getTopLevelWorldView().isInstance()) return false;
+        
         // If we are not inside of the Motherloade mine, ignore the following logic
         if (Rs2Player.getWorldLocation().getRegionID() != 14936) return false;
         
