@@ -1,6 +1,5 @@
 package net.runelite.client.plugins.microbot.fishing.barbarian;
 
-import net.runelite.api.NPC;
 import net.runelite.client.game.FishingSpot;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;

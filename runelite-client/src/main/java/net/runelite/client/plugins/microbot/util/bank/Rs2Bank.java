@@ -31,11 +31,13 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Encryption;
 import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.settings.Rs2Settings;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.util.List;
 import java.util.*;
 import java.util.function.Predicate;
@@ -149,10 +151,13 @@ public class Rs2Bank {
      */
     public static boolean closeBank() {
         if (!isOpen()) return false;
-        Rs2Widget.clickChildWidget(786434, 11);
-        sleepUntilOnClientThread(() -> !isOpen());
+        if (Rs2Settings.isEscCloseInterfaceSettingEnabled()) {
+            Rs2Keyboard.keyPress(KeyEvent.VK_ESCAPE);
+        } else {
+            Rs2Widget.clickChildWidget(786434, 11);
+        }
 
-        return true;
+        return sleepUntil(() -> !isOpen(), 5000);
     }
 
     /**
@@ -1344,7 +1349,7 @@ public class Rs2Bank {
         }
 
         // Calculate paths to all banks and find the shortest
-        BankLocation shortestPathBank = findNearestBankByDistance(worldPoint, accessibleBanks);
+        BankLocation shortestPathBank = findBankWithShortestPath(worldPoint, accessibleBanks);
         if (shortestPathBank != null) {
             Microbot.log("Found nearest bank: " + shortestPathBank.name() + " (shortest path)");
             return shortestPathBank;
@@ -1375,7 +1380,7 @@ public class Rs2Bank {
                 Transport transport = entry.getKey();
 
                 if (transport.getDestination() != null) {
-                    int distanceToBank = Rs2WorldPoint.quickDistance(transport.getDestination(), bank.getWorldPoint());
+                    int distanceToBank = transport.getDestination().distanceTo2D(bank.getWorldPoint());
 
                     if (distanceToBank < shortestDistance) {
                         shortestDistance = distanceToBank;
@@ -1416,14 +1421,14 @@ public class Rs2Bank {
      * @param banks List of banks to check
      * @return The bank with the shortest path, or null if none found
      */
-    private static BankLocation findNearestBankByDistance(WorldPoint worldPoint, List<BankLocation> banks) {
+    private static BankLocation findBankWithShortestPath(WorldPoint worldPoint, List<BankLocation> banks) {
         BankLocation bestBank = null;
         int shortestPath = Integer.MAX_VALUE;
 
         for (BankLocation bank : banks) {
-            int closestDistance = Rs2WorldPoint.quickDistance(bank.getWorldPoint(), worldPoint);
-            if (closestDistance < shortestPath) {
-                shortestPath = closestDistance;
+            int pathLength = Rs2Walker.getTotalTiles(worldPoint, bank.getWorldPoint());
+            if (pathLength < shortestPath) {
+                shortestPath = pathLength;
                 bestBank = bank;
             }
         }
