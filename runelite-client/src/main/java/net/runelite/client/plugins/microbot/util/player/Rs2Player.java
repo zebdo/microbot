@@ -331,10 +331,13 @@ public class Rs2Player {
      * @return {@code true} if the player is moving, {@code false} if they are idle.
      */
     public static boolean isMoving() {
-        return Microbot.getClientThread().runOnClientThread(() ->
-                Microbot.getClient().getLocalPlayer().getPoseAnimation()
-                        != Microbot.getClient().getLocalPlayer().getIdlePoseAnimation()
-        );
+        return Microbot.getClientThread().runOnClientThread(() -> {
+            Player localPlayer = Microbot.getClient().getLocalPlayer();
+            if (localPlayer == null) {
+                return false;
+            }
+            return localPlayer.getPoseAnimation() != localPlayer.getIdlePoseAnimation();
+        });
     }
 
     /**

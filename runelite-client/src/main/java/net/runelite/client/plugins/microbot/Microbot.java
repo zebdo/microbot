@@ -4,6 +4,7 @@ import com.google.inject.Injector;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.events.ItemContainerChanged;
@@ -16,6 +17,7 @@ import net.runelite.client.callback.ClientThread;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.config.ProfileManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.NPCManager;
 import net.runelite.client.game.SpriteManager;
@@ -41,9 +43,11 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.WorldUtil;
 import net.runelite.http.api.worlds.World;
 import net.runelite.api.annotations.Component;
+import org.slf4j.event.Level;
 
 import javax.inject.Inject;
 import javax.swing.*;
+import javax.swing.Timer;
 import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.File;
@@ -62,6 +66,7 @@ import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.util.Global.*;
 
+@Slf4j
 public class Microbot {
     //Version path used to load the client faster when developing by checking version number
     //If the version is the same as the current version we do not download the latest .jar
@@ -71,7 +76,6 @@ public class Microbot {
     @Getter
     private static final SpecialAttackConfigs specialAttackConfigs = new SpecialAttackConfigs();
     public static MenuEntry targetMenu;
-    public static boolean debug = false;
     public static boolean isGainingExp = false;
     public static boolean pauseAllScripts = false;
     public static String status = "IDLE";
@@ -90,6 +94,9 @@ public class Microbot {
     @Getter
     @Setter
     private static ClientThread clientThread;
+    @Getter
+    @Setter
+    private static EventBus eventBus;
     @Getter
     @Setter
     private static WorldMapPointManager worldMapPointManager;
@@ -262,9 +269,33 @@ public class Microbot {
                 JOptionPane.showConfirmDialog(null, message, "Message",
                         JOptionPane.DEFAULT_OPTION);
             });
-        } catch(Exception ex) {
-            ex.getStackTrace();
-            Microbot.log(ex.getMessage());
+            } catch(Exception ex) {
+                ex.printStackTrace();
+            }
+        }
+
+    public static void showMessage(String message, int disposeTime) {
+        try {
+            SwingUtilities.invokeAndWait(() -> {
+                final JOptionPane optionPane = new JOptionPane(
+                        message,
+                        JOptionPane.INFORMATION_MESSAGE,
+                        JOptionPane.DEFAULT_OPTION
+                );
+
+                final JDialog dialog = optionPane.createDialog("Message");
+
+                // Set up timer to close the dialog after 10 seconds
+                Timer timer = new Timer(disposeTime, e -> {
+                    dialog.dispose();
+                });
+                timer.setRepeats(false);
+                timer.start();
+                dialog.setVisible(true);
+                timer.stop();
+            });
+        } catch (Exception ex) {
+            ex.printStackTrace();
         }
     }
 
@@ -408,16 +439,39 @@ public class Microbot {
     }
 
     public static void log(String message) {
-        if (!Microbot.isLoggedIn()) {
-            System.out.println(message);
-            return;
+        log(message, Level.INFO);
+    }
+
+    public static void log(String message, Level level) {
+        // Early return invalid values
+        if (message == null || message.isEmpty()) return;
+        if (level == null) return;
+        // Log using SLF4J
+        switch (level) {
+            case WARN:
+                log.warn(message);
+                break;
+            case ERROR:
+                log.error(message);
+                break;
+            case DEBUG:
+                log.debug(message);
+                break;
+            default:
+                log.info(message);
+                break;
         }
-        LocalTime currentTime = LocalTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-        String formattedTime = currentTime.format(formatter);
-        Microbot.getClientThread().runOnClientThread(() ->
-                Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "[" + formattedTime + "]: " + message, "", false)
-        );
+        // Send Chat Message
+        if (Microbot.isLoggedIn()) {
+            if (level == Level.DEBUG && !isDebug()) return;
+            
+            LocalTime currentTime = LocalTime.now();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
+            String formattedTime = currentTime.format(formatter);
+            Microbot.getClientThread().runOnClientThread(() ->
+                    Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "[" + formattedTime + "]: " + message, "", false)
+            );
+        }
     }
 
     private static boolean isPluginEnabled(String name) {

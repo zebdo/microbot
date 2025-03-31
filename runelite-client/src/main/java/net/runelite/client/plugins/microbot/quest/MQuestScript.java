@@ -8,6 +8,7 @@ import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.quest.logic.QuestRegistry;
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
 import net.runelite.client.plugins.microbot.questhelper.questinfo.QuestHelperQuest;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
@@ -120,20 +121,13 @@ public class MQuestScript extends Script {
                     }
                 }
 
-                //custom code for specific scenario's not handled by the quest plugin by runelite
-                if (getQuestHelperPlugin().getSelectedQuest().getQuest().getId() == Quest.ROMEO__JULIET.getId()) {
-                    if (Rs2Dialogue.hasDialogueOptionTitle("Start the Romeo & Juliet quest?")) {
-                        Rs2Dialogue.keyPressForDialogueOption("Yes.");
-                        return;
-                    }
-                    if (questStep.getText().contains("Bring the cadava berries to the Apothecary in south east Varrock.")) {
-                        boolean hasCadavaBerries = fetchCadavaBerries();
-                        if (!hasCadavaBerries) {
-                            return;
-                        }
-                    }
+                /**
+                 * Execute custom logic for the quest
+                 */
+                var questLogic = QuestRegistry.getQuest(getQuestHelperPlugin().getSelectedQuest().getQuest().getId());
+                if (questLogic != null) {
+                    questLogic.executeCustomLogic();
                 }
-
 
                 if (getQuestHelperPlugin().getSelectedQuest() != null && !Microbot.getClientThread().runOnClientThread(() -> getQuestHelperPlugin().getSelectedQuest().isCompleted())) {
                     if (Rs2Widget.isWidgetVisible(ComponentID.DIALOG_OPTION_OPTIONS) && getQuestHelperPlugin().getSelectedQuest().getQuest().getId() != Quest.COOKS_ASSISTANT.getId() && !Rs2Bank.isOpen()) {
@@ -202,19 +196,6 @@ public class MQuestScript extends Script {
             }
         }, 0, Rs2Random.between(400, 1000), TimeUnit.MILLISECONDS);
         return true;
-    }
-
-    private boolean fetchCadavaBerries() {
-        if (Rs2Inventory.hasItem(ItemID.CADAVA_BERRIES)) {
-            return true;
-        }
-        if (Rs2Walker.walkTo(3266, 3374, 0, 10)) {
-            Rs2GameObject.interact(new int[] {ObjectID.CADAVA_BUSH, ObjectID.CADAVA_BUSH_23626, ObjectID.CADAVA_BUSH_23627}, "take");
-            Rs2Player.waitForWalking();
-            Rs2Inventory.waitForInventoryChanges(2000);
-        }
-
-        return Rs2Inventory.hasItem(ItemID.CADAVA_BERRIES);
     }
 
     private boolean handleRequirements(DetailedQuestStep questStep) {
