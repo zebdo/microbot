@@ -8,8 +8,6 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.aiofighter.combat.PrayerPotionScript;
-import net.runelite.client.plugins.microbot.herbrun.HerbrunConfig;
-import net.runelite.client.plugins.microbot.herbrun.HerbrunPlugin;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -32,11 +30,10 @@ import java.util.concurrent.TimeUnit;
 
 import static net.runelite.api.ObjectID.OVERLOAD_POTION;
 import static net.runelite.api.Varbits.NMZ_ABSORPTION;
-import static net.runelite.client.plugins.microbot.Microbot.log;
 
 public class NmzScript extends Script {
 
-    public static double version = 2.1;
+    public static double version = 2.2;
 
     private NmzConfig config;
     private NmzPlugin plugin;
@@ -76,15 +73,17 @@ public class NmzScript extends Script {
                 if (!Microbot.isLoggedIn()) return;
                 if (!initialized) {
                     initialized = true;
-                    var inventorySetup = new Rs2InventorySetup(config.inventorySetup(), mainScheduledFuture);
-                    if (!inventorySetup.doesInventoryMatch() || !inventorySetup.doesEquipmentMatch()) {
-                        Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 20);
-                        if (!inventorySetup.loadEquipment() || !inventorySetup.loadInventory()) {
-                            Microbot.log("Failed to load inventory setup");
-                            Microbot.stopPlugin(plugin);
-                            return;
+                    if (config.inventorySetup() != null) {
+                        var inventorySetup = new Rs2InventorySetup(config.inventorySetup(), mainScheduledFuture);
+                        if (!inventorySetup.doesInventoryMatch() || !inventorySetup.doesEquipmentMatch()) {
+                            Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 20);
+                            if (!inventorySetup.loadEquipment() || !inventorySetup.loadInventory()) {
+                                Microbot.log("Failed to load inventory setup");
+                                Microbot.stopPlugin(plugin);
+                                return;
+                            }
+                            Rs2Bank.closeBank();
                         }
-                        Rs2Bank.closeBank();
                     }
                     Rs2Walker.walkTo(new WorldPoint(2609, 3114, 0), 5);
                 }
