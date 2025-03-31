@@ -4825,6 +4825,17 @@
 # Port Phasmatys											
 3705 3503 1	3702 3503 0	Cross;Gangplank;17393									
 3702 3503 0	3705 3503 1	Cross;Gangplank;17392									
+3659 3509 0	3659 3507 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
+3659 3507 0	3659 3509 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
+3660 3509 0	3660 3507 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
+3660 3507 0	3660 3509 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
+3654 3485 0	3651 3485 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
+3651 3485 0	3654 3485 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
+3654 3486 0	3651 3486 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
+3651 3486 0	3654 3486 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
+3670 3454 0	3670 3452 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
+3670 3452 0	3670 3454 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
+3669 3454 0	3669 3452 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
 											
 # Port Khazard											
 2674 3141 1	2674 3144 0	Cross;Gangplank;17403									
