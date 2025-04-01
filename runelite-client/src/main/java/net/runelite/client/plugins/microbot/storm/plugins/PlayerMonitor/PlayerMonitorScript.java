@@ -122,17 +122,23 @@ public class PlayerMonitorScript extends Script {
                     if (newPlayer && !plugin.isOverlayOn() && (Rs2Player.getWorldLocation().distanceTo(otherPlayerLocation) > 32 || otherPlayerWorld != Rs2Player.getWorld())) {
                         newPlayer = false;
                     }
-                } else if (config.liteMode()) {
+                }
+
+                if (config.liteMode()) {
                     if (plugin.isPlayerDetected() && !logoutInitiated) {
                         log.info("Player detected - initiating logout");
                         Microbot.log("PlayerMonitorLite: Player detected - logging out");
                         logoutInitiated = true;
                         // Perform logout
-                        logoutPlayer();
+                        Microbot.getClientThread().runOnSeperateThread(() -> {
+                            logoutPlayer();
+                            return true;
+                        });
                     } else if (!plugin.isPlayerDetected() && logoutInitiated) {
                         logoutInitiated = false;
                     }
                 }
+
             } catch (Exception ex) {
                 Microbot.log(ex.getMessage());
             }
