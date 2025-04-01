@@ -160,16 +160,23 @@ public class Rs2Tab {
 
     public static boolean switchToLogout() {
         if (getCurrentTab() == InterfaceTab.LOGOUT) return true;
+        
+        // Logout is not configured by default, but we should prefer it if it is configured as it is faster than clicking the widget
+        boolean hasKeybindConfigured = Microbot.getVarbitValue(4689) != 0;
+        
+        if (!hasKeybindConfigured) {
+            int logout_widget_id = getLogoutWidgetId();
 
-        int logout_widget_id = getLogoutWidgetId();
+            if (logout_widget_id == 0) return false;
 
-        if (logout_widget_id == 0) return false;
+            Widget tab = Rs2Widget.getWidget(logout_widget_id);
+            if (tab == null) return false;
 
-        Widget tab = Microbot.getClient().getWidget(logout_widget_id);
-        if (tab == null) return false;
-
-        Microbot.getMouse().click(tab.getBounds());
-        sleep(200, 600);
+            Rs2Widget.clickWidget(tab);
+            sleep(200, 600);
+        } else {
+            Rs2Keyboard.keyPress(getKeyBind(Microbot.getVarbitValue(4689), InterfaceTab.LOGOUT));
+        }
 
         return getCurrentTab() == InterfaceTab.LOGOUT;
     }
