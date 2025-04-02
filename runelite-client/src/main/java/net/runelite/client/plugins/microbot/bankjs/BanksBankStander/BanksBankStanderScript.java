@@ -1,8 +1,10 @@
 package net.runelite.client.plugins.microbot.bankjs.BanksBankStander;
 
+import net.runelite.api.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
@@ -140,10 +142,15 @@ public class BanksBankStanderScript extends Script {
                 Rs2Bank.openBank();
                 sleepUntil(Rs2Bank::isOpen);
             }
+
             depositUnwantedItems(firstItemId, config.firstItemQuantity());
             depositUnwantedItems(secondItemId, config.secondItemQuantity());
             depositUnwantedItems(thirdItemId, config.thirdItemQuantity());
             depositUnwantedItems(fourthItemId, config.fourthItemQuantity());
+
+            if (config.amuletOfChemistry()){
+                checkForAmulet();
+            }
 
             // Checking that we have enough items in the bank
             String missingItem = checkItemSums();
@@ -183,7 +190,7 @@ public class BanksBankStanderScript extends Script {
         }
         // We loop through executing this method "combineItems()", so we want to force return to do nothing while we wait for processing.
         if (config.waitForAnimation()) {
-            if (Rs2Player.isAnimating() || (System.currentTimeMillis() - previousItemChange) < 2400) { return false; }
+            if (Rs2Player.isAnimating() || (System.currentTimeMillis() - previousItemChange) < 3000) { return false; }// temp change from 2400 to 3000 as chiseling diamond takes longer time
         }
 
         if (currentStatus != CurrentStatus.COMBINE_ITEMS) { currentStatus = CurrentStatus.COMBINE_ITEMS; }
@@ -215,10 +222,22 @@ public class BanksBankStanderScript extends Script {
             sleepUntil(() -> !isWaitingForPrompt, Rs2Random.between(800, 1200));
             Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
             previousItemChange = System.currentTimeMillis();
+            sleep(100); // Short delay to ensure prompt processing
+            isWaitingForPrompt = false; // Ensure prompt flag is reset
             if (secondItemId != null) {
-                 sleepUntil(() -> !Rs2Inventory.hasItem(secondItemId), 40000);
+                if(config.amuletOfChemistry()){
+                    sleepUntil(() -> !Rs2Inventory.hasItem(secondItemId) || !Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY), 40000);
+                    sleep(calculateSleepDuration(1));
+                    checkForAmulet();
+                    if(Rs2Bank.isOpen()) {
+                        Rs2Bank.closeBank();
+                        sleepUntil(() -> !Rs2Bank.isOpen());
+                    }
+                }else{
+                    sleepUntil(() -> !Rs2Inventory.hasItem(secondItemId), 40000);
+                }
             } else {
-                 sleepUntil(() -> !Rs2Inventory.hasItem(config.secondItemIdentifier()), 40000);
+                sleepUntil(() -> !Rs2Inventory.hasItem(config.secondItemIdentifier()), 40000);
             }
             sleep(calculateSleepDuration(1));
         }
@@ -398,6 +417,24 @@ public class BanksBankStanderScript extends Script {
         } catch (NumberFormatException ex) {
             System.out.println("Could not Parse Int from Item, lookup item and return id");
             return Microbot.getItemManager().search(text).stream().map(ItemPrice::getId).findFirst().orElse(null);
+        }
+    }
+    private void checkForAmulet(){
+        if (!Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY)){
+            if (!Rs2Bank.isOpen()) {
+                Rs2Bank.openBank();
+                sleepUntil(Rs2Bank::isOpen);
+            }
+            if (Rs2Bank.isOpen() && Rs2Bank.hasItem(ItemID.AMULET_OF_CHEMISTRY)) {
+                Rs2Bank.withdrawAndEquip(ItemID.AMULET_OF_CHEMISTRY);
+            }else{
+                Microbot.log("Missing Amulet of Chemistry. (disable button if not require to wear amulet)");
+                shutdown();
+            }
+//            if(Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY)){
+//                Rs2Bank.closeBank();
+//                sleepUntil(() -> !Rs2Bank.isOpen());
+//            }
         }
     }
 }

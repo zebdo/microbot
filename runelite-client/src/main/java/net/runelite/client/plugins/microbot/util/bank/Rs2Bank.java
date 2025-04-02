@@ -1349,7 +1349,7 @@ public class Rs2Bank {
         }
 
         // Calculate paths to all banks and find the shortest
-        BankLocation shortestPathBank = findBankWithShortestPath(worldPoint, accessibleBanks);
+        BankLocation shortestPathBank = findNearestBankByDistance(worldPoint, accessibleBanks);
         if (shortestPathBank != null) {
             Microbot.log("Found nearest bank: " + shortestPathBank.name() + " (shortest path)");
             return shortestPathBank;
@@ -1421,20 +1421,21 @@ public class Rs2Bank {
      * @param banks List of banks to check
      * @return The bank with the shortest path, or null if none found
      */
-    private static BankLocation findBankWithShortestPath(WorldPoint worldPoint, List<BankLocation> banks) {
+    private static BankLocation findNearestBankByDistance(WorldPoint worldPoint, List<BankLocation> banks) {
         BankLocation bestBank = null;
         int shortestPath = Integer.MAX_VALUE;
 
         for (BankLocation bank : banks) {
-            int pathLength = Rs2Walker.getTotalTiles(worldPoint, bank.getWorldPoint());
-            if (pathLength < shortestPath) {
-                shortestPath = pathLength;
+            int closestDistance = Rs2WorldPoint.quickDistance(bank.getWorldPoint(), worldPoint);
+            if (closestDistance < shortestPath) {
+                shortestPath = closestDistance;
                 bestBank = bank;
             }
         }
 
         return bestBank;
     }
+
     /**
      * Walks to the closest bank using the nearest bank location.
      * Toggles run energy if the player is not already running.
@@ -1800,7 +1801,9 @@ public class Rs2Bank {
                 if (itemsToNotSell.stream().anyMatch(x -> x.trim().equalsIgnoreCase(lootTrackerItem.getName())))
                     continue;
                 int itemId = lootTrackerItem.getId();
-                ItemComposition itemComposition = Microbot.getClientThread().runOnClientThread(() -> Microbot.getClient().getItemDefinition(lootTrackerItem.getId()));
+                ItemComposition itemComposition = Microbot.getClientThread().runOnClientThreadOptional(() ->
+                        Microbot.getClient().getItemDefinition(lootTrackerItem.getId())).orElse(null);
+                if (itemComposition == null) return false;
                 if (Arrays.stream(itemComposition.getInventoryActions()).anyMatch(x -> x != null && x.equalsIgnoreCase("eat")))
                     continue;
                 final boolean isNoted = itemComposition.getNote() == 799;
@@ -1808,7 +1811,11 @@ public class Rs2Bank {
 
                 if (isNoted) {
                     final int unnotedItemId = lootTrackerItem.getId() - 1; //get the unnoted id of the item
-                    itemComposition = Microbot.getClientThread().runOnClientThread(() -> Microbot.getClient().getItemDefinition(unnotedItemId));
+                    itemComposition = Microbot.getClientThread().runOnClientThreadOptional(() ->
+                            Microbot.getClient().getItemDefinition(unnotedItemId)).orElse(null);
+                    if (itemComposition == null) {
+                        return false;
+                    }
                     if (!itemComposition.isTradeable()) continue;
                     itemId = unnotedItemId;
                 }
@@ -1825,10 +1832,10 @@ public class Rs2Bank {
 
     private static Widget getBankSizeWidget() {
 
-        return Microbot.getClientThread().runOnClientThread(() -> {
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
             Widget bankContainerWidget = Microbot.getClient().getWidget(ComponentID.BANK_ITEM_COUNT_TOP);
             return bankContainerWidget;
-        });
+        }).orElse(null);
     }
 
     /**
@@ -1894,14 +1901,14 @@ public class Rs2Bank {
      * @return A list of bank tab widgets, or null if the bank tab container widget is not found.
      */
     public static List<Widget> getTabs() {
-        return Microbot.getClientThread().runOnClientThread(() -> {
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
             Widget bankContainerWidget = Microbot.getClient().getWidget(ComponentID.BANK_TAB_CONTAINER);
             if (bankContainerWidget != null) {
                 // get children and filter out the tabs that don't have the Action Collapse tab
                 return Arrays.asList(bankContainerWidget.getDynamicChildren());
             }
             return null;
-        });
+        }).orElse(new ArrayList<>());
     }
 
     /**
@@ -1914,14 +1921,14 @@ public class Rs2Bank {
      * @return A list of item widgets in the bank container, or null if the bank container widget is not found.
      */
     public static List<Widget> getItems() {
-        return Microbot.getClientThread().runOnClientThread(() -> {
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
             Widget bankContainerWidget = Microbot.getClient().getWidget(BANK_ITEM_CONTAINER);
             if (bankContainerWidget != null) {
                 // Get children and filter out the tabs that don't have the Action Collapse tab
                 return Arrays.asList(bankContainerWidget.getDynamicChildren());
             }
             return null;
-        });
+        }).orElse(new ArrayList<>());
     }
 
     /**

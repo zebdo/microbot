@@ -7,6 +7,7 @@ import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
 import net.runelite.api.*;
+import net.runelite.api.annotations.Component;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.Notifier;
@@ -42,20 +43,22 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapOverlay;
 import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.WorldUtil;
 import net.runelite.http.api.worlds.World;
-import net.runelite.api.annotations.Component;
 import org.slf4j.event.Level;
 
 import javax.inject.Inject;
-import javax.swing.*;
 import javax.swing.Timer;
+import javax.swing.*;
 import java.awt.*;
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -163,6 +166,23 @@ public class Microbot {
 
     public static boolean loggedIn = false;
 
+    @Setter
+    public static Instant loginTime;
+
+    /**
+     * Get the total runtime of the script
+     * @return
+     */
+    public static Duration getLoginTime()
+    {
+        if (loginTime == null)
+        {
+            return Duration.of(0, ChronoUnit.MILLIS);
+        }
+
+        return Duration.between(loginTime, Instant.now());
+    }
+
     /**
      * Checking the Report button will ensure that we are logged in, as there seems to be a small moment in time
      * when at the welcome screen that Rs2Settings.isLevelUpNotificationsEnabled() will return true then turn back to false
@@ -177,19 +197,19 @@ public class Microbot {
     }
 
     public static int getVarbitValue(int varbit) {
-        return getClientThread().runOnClientThread(() -> getClient().getVarbitValue(varbit));
+        return getClientThread().runOnClientThreadOptional(() -> getClient().getVarbitValue(varbit)).orElse(0);
     }
 
     public static int getVarbitPlayerValue(int varbit) {
-        return getClientThread().runOnClientThread(() -> getClient().getVarpValue(varbit));
+        return getClientThread().runOnClientThreadOptional(() -> getClient().getVarpValue(varbit)).orElse(0);
     }
 
     public static EnumComposition getEnum(int id) {
-        return getClientThread().runOnClientThread(() -> getClient().getEnum(id));
+        return getClientThread().runOnClientThreadOptional(() -> getClient().getEnum(id)).orElse(null);
     }
 
     public static StructComposition getStructComposition(int structId) {
-        return getClientThread().runOnClientThread(() -> getClient().getStructComposition(structId));
+        return getClientThread().runOnClientThreadOptional(() -> getClient().getStructComposition(structId)).orElse(null);
     }
 
     public static void setIsGainingExp(boolean value) {
@@ -223,7 +243,7 @@ public class Microbot {
         if (!Microbot.isLoggedIn()) return false;
         if (Microbot.isHopping()) return true;
         if (Microbot.cantHopWorld) return false;
-        boolean isHopping = Microbot.getClientThread().runOnClientThread(() -> {
+        boolean isHopping = Microbot.getClientThread().runOnClientThreadOptional(() -> {
             if (Microbot.getClient().getLocalPlayer() != null && Microbot.getClient().getLocalPlayer().isInteracting())
                 return false;
             if (quickHopTargetWorld != null || Microbot.getClient().getGameState() != GameState.LOGGED_IN) return false;
@@ -253,7 +273,7 @@ public class Microbot {
             sleep(600);
             sleepUntil(() -> Microbot.isHopping() || Rs2Widget.getWidget(193, 0) != null, 2000);
             return Microbot.isHopping();
-        });
+        }).orElse(false);
         if (!isHopping && Rs2Widget.getWidget(193, 0) != null) {
             List<Widget> areYouSureToSwitchWorldWidget = Arrays.stream(Rs2Widget.getWidget(193, 0).getDynamicChildren()).collect(Collectors.toList());
             Widget switchWorldWidget = sleepUntilNotNull(() -> Rs2Widget.findWidget("Switch world", areYouSureToSwitchWorldWidget, true), 2000);
@@ -468,7 +488,7 @@ public class Microbot {
             LocalTime currentTime = LocalTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
             String formattedTime = currentTime.format(formatter);
-            Microbot.getClientThread().runOnClientThread(() ->
+            Microbot.getClientThread().runOnClientThreadOptional(() ->
                     Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "[" + formattedTime + "]: " + message, "", false)
             );
         }
@@ -491,7 +511,7 @@ public class Microbot {
 
     @Deprecated(since = "1.6.2 - Use Rs2Player variant")
     public static QuestState getQuestState(Quest quest) {
-        return getClientThread().runOnClientThread(() -> quest.getState(client));
+        return getClientThread().runOnClientThreadOptional(() -> quest.getState(client)).orElse(null);
     }
 
     public static void writeVersionToFile(String version) throws IOException {
