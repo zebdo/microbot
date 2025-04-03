@@ -58,7 +58,7 @@ public interface DemonicGorillaConfig extends Config {
     @ConfigItem(
             keyName = "enableSpecialAttacks",
             name = "Enable Automatical special attacks",
-            description = "Toggle to enable or disable automatic special attacks during combat - Assumes 50% special energy for weapon",
+            description = "Toggle to enable or disable automatic special attacks during combat",
             section = demonicGorillaSection,
             position = 3
     )
@@ -96,7 +96,7 @@ public interface DemonicGorillaConfig extends Config {
             position = 0
     )
     default int minEatPercent() {
-        return 65;
+        return 50;
     }
 
     @ConfigItem(
@@ -118,7 +118,29 @@ public interface DemonicGorillaConfig extends Config {
             position = 2
     )
     default int healthThreshold() {
-        return 70;
+        return 30;
+    }
+
+    @ConfigItem(
+            keyName = "combatPotionType",
+            name = "Combat Potion Type",
+            description = "Select the type of combat potion to use",
+            section = bankingAndSuppliesSection,
+            position = 3
+    )
+    default CombatPotionType combatPotionType() {
+        return CombatPotionType.SUPER_COMBAT;
+    }
+
+    @ConfigItem(
+            keyName = "rangingPotionType",
+            name = "Ranging Potion Type",
+            description = "Select the type of ranging potion to use",
+            section = bankingAndSuppliesSection,
+            position = 4
+    )
+    default RangingPotionType rangingPotionType() {
+        return RangingPotionType.RANGING;
     }
 
     @ConfigItem(
@@ -133,7 +155,7 @@ public interface DemonicGorillaConfig extends Config {
             max = 100
     )
     default int boostedStatsThreshold() {
-        return 5;
+        return 10;
     }
 
     @ConfigItem(
@@ -155,7 +177,7 @@ public interface DemonicGorillaConfig extends Config {
             position = 1
     )
     default boolean useRangeStyle() {
-        return false;
+        return true;
     }
 
     @ConfigItem(
@@ -166,7 +188,7 @@ public interface DemonicGorillaConfig extends Config {
             position = 2
     )
     default String rangeGear() {
-        return "";
+        return "Toxic Blowpipe,Ava's Accumulator";
     }
 
     @ConfigItem(
@@ -188,7 +210,7 @@ public interface DemonicGorillaConfig extends Config {
             position = 4
     )
     default String magicGear() {
-        return "";
+        return " ";
     }
 
     @ConfigItem(
@@ -199,7 +221,7 @@ public interface DemonicGorillaConfig extends Config {
             position = 5
     )
     default boolean useMeleeStyle() {
-        return false;
+        return true;
     }
 
     @ConfigItem(
@@ -210,7 +232,20 @@ public interface DemonicGorillaConfig extends Config {
             position = 6
     )
     default String meleeGear() {
-        return "";
+        return "Osmumten's fang,Avernic defender,Fire cape";
+    }
+
+    @Getter
+    enum CombatPotionType {
+        SUPER_COMBAT,
+        DIVINE_SUPER_COMBAT
+    }
+
+    @Getter
+    enum RangingPotionType {
+        RANGING,
+        DIVINE_RANGING,
+        BASTION
     }
 }
 
