@@ -58,7 +58,7 @@ public class PluginScheduleEntry {
             stopConditionManager.registerEvents();
             startConditionManager.registerEvents();
             registerPluginConditions();
-            updateAfterRun();
+            updateConditions();
             
         }
     }
@@ -87,6 +87,8 @@ public class PluginScheduleEntry {
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
     private static final SimpleDateFormat TIME_FORMAT = new SimpleDateFormat("HH:mm");
     private static final SimpleDateFormat DATE_TIME_FORMAT = new SimpleDateFormat("yyyy-MM-dd HH:mm");
+    private int priority = 0; // Higher numbers = higher priority
+    private boolean isDefault = false; // Flag to indicate if this is a default plugin
     public PluginScheduleEntry(String pluginName, String duration, boolean enabled, boolean allowRandomScheduling) {
         this(pluginName, parseDuration(duration), enabled, allowRandomScheduling);
     }
@@ -122,14 +124,25 @@ public class PluginScheduleEntry {
 
         this.stopConditionManager = new ConditionManager();
         this.startConditionManager = new ConditionManager();
-        if (startingCondition != null) {                        
+        
+        // Check if this is a default/1-second interval plugin
+        boolean isDefaultByScheduleType = false;
+        if (startingCondition != null) {
+            if (startingCondition instanceof IntervalCondition) {
+                IntervalCondition interval = (IntervalCondition) startingCondition;
+                if (interval.getInterval().getSeconds() <= 1) {
+                    isDefaultByScheduleType = true;
+                }
+            }
+            
             startConditionManager.setUserLogicalCondition(new OrCondition(startingCondition));
-        }else{
-
-        }        
+        }
         
-        
-        
+        // If it's a default by schedule type, enforce the default settings
+        if (isDefaultByScheduleType) {
+            this.isDefault = true;
+            this.priority = 0;
+        }
         
         registerPluginConditions();
     }
@@ -172,17 +185,22 @@ public class PluginScheduleEntry {
             // Log defined conditions when starting
             logStopConditions();
             logStartCondtions();
+            
+            // Reset stop conditions before starting
+            updateStopConditions();
+            
             Microbot.getClientThread().runOnSeperateThread(() -> {
                 Microbot.startPlugin(plugin);
                 return false;
             });
             stopInitiated = false;
-            // Update the last run time and calculate next run
-            stopConditionManager.reset();
+            
+            // Register/unregister appropriate event handlers
             stopConditionManager.registerEvents();
             startConditionManager.unregisterEvents();
 
-            updateAfterRun();
+            // Update start conditions (sets lastRunTime)
+            updateStartConditions();
 
             return true;
         } catch (Exception e) {
@@ -196,14 +214,17 @@ public class PluginScheduleEntry {
         }
 
         try {
+            // Reset start conditions
             startConditionManager.reset();
             startConditionManager.registerEvents();
             stopConditionManager.unregisterEvents();
+            
             Microbot.getClientThread().runOnSeperateThread(() -> {
                 ZonedDateTime current_time = ZonedDateTime.now(ZoneId.systemDefault());
                 Microbot.getEventBus().post(new ScheduledStopEvent(plugin, current_time));
                 return false;                
             });
+            
             stopInitiated = true;
             stopInitiatedTime = ZonedDateTime.now();
             lastStopAttemptTime = ZonedDateTime.now();
@@ -596,28 +617,38 @@ public class PluginScheduleEntry {
      * Check if the plugin is due to run based on its start conditions
      */
     public boolean isDueToRun() {
-        if (!enabled) {
+        // Check if we're already running
+        if (isRunning()) {
             return false;
         }
-
-        // If there are no start conditions, check the legacy nextRunTime
-        if (!hasAnyStartConditions()) {
-            if (nextRunTime == null) {
-                return false;
-            }
-            ZonedDateTime currentTime = roundToMinutes(ZonedDateTime.now(ZoneId.systemDefault()));
-            return !currentTime.isBefore(nextRunTime);
+        
+        // For plugins with start conditions, check if those conditions are met
+        if (hasAnyStartConditions()) {
+            return startConditionManager.areConditionsMet();
         }
         
-        // Check if start conditions are met
-        return shouldStartImmediately();
+        // For legacy plugins without start conditions, use the lastRunTime
+        if (lastRunTime != null) {
+            // Check if this is a one-time plugin that already ran
+            if (!canStartTriggerAgain()) {
+                return false;
+            }
+            
+            // If we have a next trigger time from a time condition, use that
+            Optional<ZonedDateTime> nextTrigger = getNextStartTriggerTime();
+            if (nextTrigger.isPresent()) {
+                return ZonedDateTime.now(ZoneId.systemDefault()).isAfter(nextTrigger.get());
+            }
+        }
+        
+        // Default case - never run before or no timing restrictions
+        return true;
     }
     /**
      * Update the lastRunTime to now and update conditions
      */
-    private void updateAfterRun() {
+    private void updateConditions() {
         lastRunTime = roundToMinutes(ZonedDateTime.now(ZoneId.systemDefault()));
-        incrementRunCount();
         
         // Handle time conditions
         if (startConditionManager != null) {
@@ -627,7 +658,10 @@ public class PluginScheduleEntry {
             for (TimeCondition condition : startConditionManager.getTimeConditions()) {
                 if (condition instanceof SingleTriggerTimeCondition) {
                     // Mark as triggered so it won't trigger again
-                    ((SingleTriggerTimeCondition) condition).setHasTriggered(true);
+                    if (condition.isSatisfied()){
+                        ((SingleTriggerTimeCondition) condition).reset();
+                        assert condition.isSatisfied() == false;
+                    }
                 }
                 // For interval conditions, no need to reset as they'll naturally calculate
                 // their next trigger time
@@ -644,10 +678,62 @@ public class PluginScheduleEntry {
                 // No future trigger time found
                 ZonedDateTime nextRunTime = null;
                 if (hasTriggeredOneTimeStartConditions() && !canStartTriggerAgain()) {
-                    log.debug("One-time conditions for {} triggered, not scheduling next run", name);
+                    log.info("One-time conditions for {} triggered, not scheduling next run", name);
                     nextRunTime = null;
                 }
             }
+        }
+    }
+
+    /**
+     * Update the lastRunTime to now and reset start conditions
+     */
+    private void updateStartConditions() {
+        // Update last run time
+        lastRunTime = roundToMinutes(ZonedDateTime.now(ZoneId.systemDefault()));
+        
+        // Handle time conditions
+        if (startConditionManager != null) {
+            startConditionManager.reset();
+            
+            // Reset one-time conditions to prevent repeated triggering
+            for (TimeCondition condition : startConditionManager.getTimeConditions()) {
+                if (condition instanceof SingleTriggerTimeCondition) {
+                    // Mark as triggered so it won't trigger again
+                    if (condition.isSatisfied()){
+                        ((SingleTriggerTimeCondition) condition).reset();
+                        assert condition.isSatisfied() == false;
+                    }
+                }
+                // For interval conditions, no need to reset as they'll naturally calculate
+                // their next trigger time
+            }
+            
+            // Update the nextRunTime for legacy compatibility if possible
+            Optional<ZonedDateTime> nextTriggerTime = getNextStartTriggerTime();
+            if (nextTriggerTime.isPresent()) {
+                ZonedDateTime nextRunTime = nextTriggerTime.get();
+                log.info("Updated next run time for '{}' to {}", 
+                        name, 
+                        nextRunTime.format(DATE_TIME_FORMATTER));
+            } else {
+                // No future trigger time found
+                if (hasTriggeredOneTimeStartConditions() && !canStartTriggerAgain()) {
+                    log.info("One-time conditions for {} triggered, not scheduling next run", name);
+                }
+            }
+        }
+    }
+
+    /**
+     * Reset stop conditions
+     */
+    private void updateStopConditions() {
+        if (stopConditionManager != null) {
+            stopConditionManager.reset();
+            
+            // Log that stop conditions were reset
+            log.debug("Reset stop conditions for plugin '{}'", name);
         }
     }
 
@@ -785,6 +871,15 @@ public class PluginScheduleEntry {
 
     public List<Condition> getStopConditions() {
         return stopConditionManager.getConditions();
+    }
+    public boolean hasStopConditions() {
+        return stopConditionManager.hasConditions();
+    }
+    public boolean hasStartConditions() {
+        return startConditionManager.hasConditions();
+    }
+    public List<Condition> getStartConditions() {
+        return startConditionManager.getConditions();
     }
 
     // Determine if plugin should stop based on conditions and/or duration
@@ -993,14 +1088,14 @@ public class PluginScheduleEntry {
             ConditionProvider provider = (ConditionProvider) plugin;
 
             // Get conditions from the provider
-            List<Condition> pluginConditions = provider.getStoppingCondition().getConditions();
+            List<Condition> pluginConditions = provider.getStoppCondition().getConditions();
             if (pluginConditions != null && !pluginConditions.isEmpty()) {
                 // Create a new AND condition as the root
 
                 
 
                 // Get or create plugin's logical structure
-                LogicalCondition pluginLogic = provider.getStoppingCondition();
+                LogicalCondition pluginLogic = provider.getStoppCondition();
 
                 if (pluginLogic != null) {
                     for (Condition condition : pluginConditions) {
@@ -1019,7 +1114,7 @@ public class PluginScheduleEntry {
                 getStopConditionManager().setPluginCondition(pluginLogic);
                 
                 // Log with the consolidated method
-                logStopConditionInfo("Register Stop Conditions", true);
+                logStartConditionsWithDetails();
             } else {
                 log.info("Plugin '{}' implements StoppingConditionProvider but provided no conditions",
                         plugin.getName());
@@ -1035,14 +1130,14 @@ public class PluginScheduleEntry {
             ConditionProvider provider = (ConditionProvider) plugin;
 
             // Get conditions from the provider
-            List<Condition> pluginConditions = provider.getStartingCondition().getConditions();
+            List<Condition> pluginConditions = provider.getStartCondition().getConditions();
             if (pluginConditions != null && !pluginConditions.isEmpty()) {
                 // Create a new AND condition as the root
 
                 
 
                 // Get or create plugin's logical structure
-                LogicalCondition pluginLogic = provider.getStartingCondition();
+                LogicalCondition pluginLogic = provider.getStartCondition();
 
                 if (pluginLogic != null) {
                     for (Condition condition : pluginConditions) {
@@ -1061,7 +1156,7 @@ public class PluginScheduleEntry {
                 getStartConditionManager().setPluginCondition(pluginLogic);
                 
                 // Log with the consolidated method
-                logStartConditionInfo("Register Start Conditions", true);
+                logStartConditionsWithDetails();
             } else {
                 log.info("Plugin '{}' implements CnditionProvider but provided no conditions",
                         plugin.getName());
@@ -1166,7 +1261,7 @@ public class PluginScheduleEntry {
         return runCount;
     }
 
-    public void incrementRunCount() {
+    private void incrementRunCount() {
         this.runCount++;
     }
 
@@ -1209,9 +1304,15 @@ public class PluginScheduleEntry {
                 while (stopInitiated && isMonitoringStop) {
                     // Check if plugin has stopped running
                     if (!isRunning()) {
-                        // Plugin has successfully stopped - update next run time
-                        log.info("Plugin '{}' has successfully stopped - updating next run time", name);
-                        updateAfterRun();
+                        log.info("Plugin '{}' has successfully stopped - updating state", name);
+                        
+                        // Update lastRunTime and start conditions for next run
+                        updateStartConditions();
+                        
+                        // Increment the run count since we completed a full run
+                        incrementRunCount();
+                        
+                        // Reset stop state
                         stopInitiated = false;
                         stopInitiatedTime = null;
                         lastStopAttemptTime = null;
@@ -1264,7 +1365,7 @@ public class PluginScheduleEntry {
     public boolean equals(Object o) {
         if (this == o)
             return true;
-        if (o == null || getClass() != o.getClass())
+        if (o == null || getClass() != getClass())
             return false;
         PluginScheduleEntry that = (PluginScheduleEntry) o;
 
@@ -1299,4 +1400,20 @@ public class PluginScheduleEntry {
         return Objects.hash(name, stopDesc, startDesc);
     }
 
+    public int getPriority() {
+        return priority;
+    }
+    
+    public void setPriority(int priority) {
+        this.priority = priority;
+    }
+    
+    public boolean isDefault() {
+        return isDefault;
+    }
+    
+    public void setDefault(boolean isDefault) {
+        this.isDefault = isDefault;
+    }
+    
 }

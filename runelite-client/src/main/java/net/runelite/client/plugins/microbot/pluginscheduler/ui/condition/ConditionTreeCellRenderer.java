@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.pluginscheduler.ui;
+package net.runelite.client.plugins.microbot.pluginscheduler.ui.condition;
 
 import javax.swing.ImageIcon;
 import javax.swing.JTree;

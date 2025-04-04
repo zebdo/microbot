@@ -1,17 +1,17 @@
-package net.runelite.client.plugins.microbot.pluginscheduler.serialization;
+package net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter;
 import com.google.gson.*;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionType;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.location.*;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.*;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.npc.*;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.*;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.*;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.*;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.enums.RepeatCycle;
 
 import java.lang.reflect.Type;
 import java.time.DayOfWeek;
@@ -20,13 +20,9 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.LocalTime;
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.EnumSet;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.Arrays;
-import java.util.regex.Pattern;
 
 @Slf4j
 public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDeserializer<Condition> {
@@ -62,7 +58,7 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
                 data.addProperty("randomFactor", interval.getRandomFactor());
             }
             if (interval.getNextTriggerTime() != null) {
-                data.addProperty("nextTriggerTimeMillis", interval.getNextTriggerTime().toInstant().toEpochMilli());
+                data.addProperty("nextTriggerTimeMillis", interval.getNextTriggerTime().orElse(ZonedDateTime.now(ZoneId.systemDefault())).toInstant().toEpochMilli());
             }
         }
         else if (src instanceof DayOfWeekCondition) {
@@ -74,16 +70,25 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             data.add("activeDays", days);
         }
         else if (src instanceof TimeWindowCondition) {
+            // Defer to the specialized adapter for TimeWindowCondition
             TimeWindowCondition window = (TimeWindowCondition) src;
-            // Current values
-            data.addProperty("currentStartTime", window.getCurrentStartTime().toString());
-            data.addProperty("currentEndTime", window.getCurrentEndTime().toString());
             
-            // Min/Max bounds
-            data.addProperty("startTimeMin", window.getStartTimeMin().toString());
-            data.addProperty("startTimeMax", window.getStartTimeMax().toString());
-            data.addProperty("endTimeMin", window.getEndTimeMin().toString());
-            data.addProperty("endTimeMax", window.getEndTimeMax().toString());
+            // Store basic time window properties directly
+            data.addProperty("startTime", window.getStartTime().toString());
+            data.addProperty("endTime", window.getEndTime().toString());
+            data.addProperty("startDate", window.getStartDate().toString());
+            data.addProperty("endDate", window.getEndDate().toString());
+            
+            // Store repeat cycle information
+            data.addProperty("repeatCycle", window.getRepeatCycle().name());
+            data.addProperty("repeatInterval", window.getRepeatInterval());
+            
+            // Store randomization settings
+            data.addProperty("useRandomization", window.isUseRandomization());
+            data.addProperty("randomizeMinutes", window.getRandomizeMinutes());
+            
+            // Store timezone information
+            data.addProperty("zoneIdString", window.getZoneId().getId());
         }
         else if (src instanceof SkillLevelCondition) {
             SkillLevelCondition skillLevel = (SkillLevelCondition) src;
@@ -159,6 +164,13 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             data.addProperty("currentTargetCount", npc.getCurrentTargetCount());
             data.addProperty("currentKillCount", npc.getCurrentKillCount());
         }
+        else if (src instanceof SingleTriggerTimeCondition) {
+            SingleTriggerTimeCondition trigger = (SingleTriggerTimeCondition) src;
+            // Store the target time as epoch millis for cross-platform compatibility
+            data.addProperty("targetTimeMillis", trigger.getTargetTime().toInstant().toEpochMilli());
+            data.addProperty("hasTriggered", trigger.isHasTriggered());
+            data.addProperty("timeZoneId", trigger.getTargetTime().getZone().getId());
+        }
         
         result.add(DATA_FIELD, data);
         return result;
@@ -230,6 +242,9 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             else if (NpcKillCountCondition.class.isAssignableFrom(clazz)) {
                 return deserializeNpcKillCountCondition(data);
             }
+            else if (SingleTriggerTimeCondition.class.isAssignableFrom(clazz)) {
+                return deserializeSingleTriggerTimeCondition(data);
+            }
             
             throw new JsonParseException("Unknown condition type: " + typeStr);
         } catch (ClassNotFoundException e) {
@@ -287,38 +302,64 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
     }
     
     private TimeWindowCondition deserializeTimeWindowCondition(JsonObject data) {
-        // Check if we have the new min/max format or the old simple format
-        if (data.has("startTimeMin") && data.has("startTimeMax") && 
-            data.has("endTimeMin") && data.has("endTimeMax")) {
+        try {
+            // Check for older format with min/max values (backward compatibility)
+            if (data.has("startTimeMin") && data.has("endTimeMin")) {
+                // Handle legacy format - convert to new format
+                LocalTime startTime = LocalTime.parse(data.get("currentStartTime").getAsString());
+                LocalTime endTime = LocalTime.parse(data.get("currentEndTime").getAsString());
+                
+                // Create a basic TimeWindowCondition with daily repeat cycle
+                return new TimeWindowCondition(startTime, endTime);
+            }
             
-            // Parse min/max times
-            LocalTime startTimeMin = LocalTime.parse(data.get("startTimeMin").getAsString());
-            LocalTime startTimeMax = LocalTime.parse(data.get("startTimeMax").getAsString());
-            LocalTime endTimeMin = LocalTime.parse(data.get("endTimeMin").getAsString());
-            LocalTime endTimeMax = LocalTime.parse(data.get("endTimeMax").getAsString());
+            // Handle new format
+            LocalTime startTime = LocalTime.parse(data.get("startTime").getAsString());
+            LocalTime endTime = LocalTime.parse(data.get("endTime").getAsString());
             
-            // Create a constructor for deserializing with min/max values
-            // This will need to be adapted to match the actual constructor signature in TimeWindowCondition
-            int startHourMin = startTimeMin.getHour();
-            int startHourMax = startTimeMax.getHour();
-            int startMinuteMin = startTimeMin.getMinute();
-            int startMinuteMax = startTimeMax.getMinute();
-            int endHourMin = endTimeMin.getHour();
-            int endHourMax = endTimeMax.getHour();
-            int endMinuteMin = endTimeMin.getMinute();
-            int endMinuteMax = endTimeMax.getMinute();
+            // Parse dates if present, otherwise use defaults
+            LocalDate startDate = data.has("startDate") ? 
+                    LocalDate.parse(data.get("startDate").getAsString()) : 
+                    LocalDate.now();
             
-            return new TimeWindowCondition(
-                startHourMin, startHourMax, 
-                startMinuteMin, startMinuteMax,
-                endHourMin, endHourMax,
-                endMinuteMin, endMinuteMax
-            );
-        } else {
-            // Old format with simple start/end times
-            LocalTime start = LocalTime.parse(data.get("startTime").getAsString());
-            LocalTime end = LocalTime.parse(data.get("endTime").getAsString());
-            return new TimeWindowCondition(start, end);
+            LocalDate endDate = data.has("endDate") ? 
+                    LocalDate.parse(data.get("endDate").getAsString()) : 
+                    LocalDate.now().plusMonths(1);
+            
+            // Parse repeat cycle information
+            RepeatCycle repeatCycle = data.has("repeatCycle") ? 
+            RepeatCycle.valueOf(data.get("repeatCycle").getAsString()) : 
+                    RepeatCycle.DAYS;
+            
+            int repeatInterval = data.has("repeatInterval") ? 
+                    data.get("repeatInterval").getAsInt() : 1;
+            
+            // Create the condition
+            TimeWindowCondition condition = new TimeWindowCondition(
+                    startTime, endTime, startDate, endDate, repeatCycle, repeatInterval);
+            
+            // Set randomization if present
+            if (data.has("useRandomization") && data.has("randomizeMinutes")) {
+                boolean useRandomization = data.get("useRandomization").getAsBoolean();
+                int randomizeMinutes = data.get("randomizeMinutes").getAsInt();
+                condition.setRandomization(useRandomization, randomizeMinutes);
+            }
+            
+            // Set timezone if present
+            if (data.has("zoneIdString")) {
+                try {
+                    String zoneIdStr = data.get("zoneIdString").getAsString();
+                    ZoneId zoneId = ZoneId.of(zoneIdStr);
+                    condition.setZoneId(zoneId);
+                } catch (Exception e) {
+                    log.warn("Invalid timezone ID in TimeWindowCondition, using system default", e);
+                }
+            }
+            
+            return condition;
+        } catch (Exception e) {
+            log.error("Error deserializing TimeWindowCondition, returning default", e);
+            return new TimeWindowCondition();
         }
     }
     
@@ -414,5 +455,45 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
                 .targetCountMin(targetCountMin)
                 .targetCountMax(targetCountMax)
                 .build();
+    }
+
+    private SingleTriggerTimeCondition deserializeSingleTriggerTimeCondition(JsonObject data) {
+        try {
+            // Extract the target time epoch millis
+            long targetTimeMillis = data.get("targetTimeMillis").getAsLong();
+            
+            // Extract timezone ID if present, otherwise use system default
+            ZoneId zoneId = ZoneId.systemDefault();
+            if (data.has("timeZoneId")) {
+                try {
+                    zoneId = ZoneId.of(data.get("timeZoneId").getAsString());
+                } catch (Exception e) {
+                    log.warn("Invalid timezone ID in SingleTriggerTimeCondition, using system default", e);
+                }
+            }
+            
+            // Create the ZonedDateTime from the epoch millis and zone ID
+            ZonedDateTime targetTime = ZonedDateTime.ofInstant(
+                    Instant.ofEpochMilli(targetTimeMillis), zoneId);
+            
+            // Create the condition
+            SingleTriggerTimeCondition condition = new SingleTriggerTimeCondition(targetTime);
+            
+            // Set triggered status if present
+            if (data.has("hasTriggered")) {
+                boolean hasTriggered = data.get("hasTriggered").getAsBoolean();
+                if (hasTriggered) {
+                    // We can't directly set hasTriggered since it's private
+                    // But we can call reset which sets hasResetAfterTrigger
+                    condition.reset(false);
+                }
+            }
+            
+            return condition;
+        } catch (Exception e) {
+            log.error("Error deserializing SingleTriggerTimeCondition, returning default", e);
+            // Return a condition that triggers after 24 hours
+            return SingleTriggerTimeCondition.afterDelay(24 * 60 * 60);
+        }
     }
 }

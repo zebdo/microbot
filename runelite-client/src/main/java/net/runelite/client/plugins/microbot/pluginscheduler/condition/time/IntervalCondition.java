@@ -5,20 +5,26 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
 /**
  * Condition that is met at regular intervals.
  * Can be used for periodic tasks or for creating natural breaks.
  */
-@Getter
+
 @Slf4j
 public class IntervalCondition extends TimeCondition {
+    @Getter
     private final Duration interval;
     private ZonedDateTime nextTriggerTime;
+    @Getter
     private boolean randomize;
+    @Getter
     private double randomFactor;
-    
+    public Optional<ZonedDateTime> getNextTriggerTime() {
+        return Optional.ofNullable(nextTriggerTime);
+    }
     /**
      * Creates an interval condition that triggers at regular intervals
      * 

@@ -98,7 +98,7 @@ public class SchedulableExamplePlugin extends Plugin implements ConditionProvide
     
 
     @Override
-    public LogicalCondition getStoppingCondition() {
+    public LogicalCondition getStoppCondition() {
         // Create an OR condition - stop when either time is up OR we have enough logs
         OrCondition orCondition = new OrCondition();
         

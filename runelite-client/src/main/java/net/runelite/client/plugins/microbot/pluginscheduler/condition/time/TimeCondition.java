@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition.time;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GameTick;
@@ -19,6 +20,7 @@ import java.util.Optional;
  * Provides common functionality for time calculations and event handling.
  */
 @Slf4j
+@EqualsAndHashCode(callSuper = false)
 public abstract class TimeCondition implements Condition {
     
     @Getter
@@ -129,5 +131,12 @@ public abstract class TimeCondition implements Condition {
         return 0.0;
     }
 
+    /**
+     * Check if this condition uses randomization
+     * @return true if randomization is enabled, false otherwise
+     */
+    public boolean isUseRandomization() {
+        return false; // Default implementation, subclasses should override if needed
+    }
     
 }

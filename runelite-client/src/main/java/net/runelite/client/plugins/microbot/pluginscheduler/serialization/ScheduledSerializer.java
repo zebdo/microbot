@@ -5,11 +5,33 @@ import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionManager;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ConditionTypeAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.LocalDateAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.LocalTimeAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.TimeWindowConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ConditionManagerAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.SingleTriggerTimeConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ZonedDateTimeAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.DayOfWeekCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.IntervalConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.DayOfWeekConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.LogicalConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.AndConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.OrConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.DurationAdapter;
 
 import java.lang.reflect.Type;
+import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.ZonedDateTime;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -24,13 +46,35 @@ public class ScheduledSerializer {
      * Creates a properly configured Gson instance with all necessary type adapters
      */
     private static Gson createGson() {
-        return new GsonBuilder()
-                .registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter())
-                .registerTypeAdapter(Condition.class, new ConditionTypeAdapter())
-                .registerTypeAdapter(LogicalCondition.class, new ConditionTypeAdapter())
-                .registerTypeAdapter(ConditionManager.class, new ConditionManagerAdapter())
-                .addSerializationExclusionStrategy(new ExcludeTransientAndNonSerializableFieldsStrategy())
-                .create();
+        GsonBuilder builder = new GsonBuilder()
+                .setExclusionStrategies(new ExcludeTransientAndNonSerializableFieldsStrategy())
+                .setPrettyPrinting();
+        
+        // Register all the type adapters
+        builder.registerTypeAdapter(LocalDate.class, new LocalDateAdapter());
+        builder.registerTypeAdapter(LocalTime.class, new LocalTimeAdapter());
+        builder.registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter());
+        builder.registerTypeAdapter(Duration.class, new DurationAdapter());  // Add the Duration adapter
+        builder.registerTypeAdapter(Condition.class, new ConditionTypeAdapter());
+        
+        // Ensure all time condition classes have adapters registered
+        builder.registerTypeAdapter(IntervalCondition.class, new IntervalConditionAdapter());
+        builder.registerTypeAdapter(SingleTriggerTimeCondition.class, new SingleTriggerTimeConditionAdapter());
+        builder.registerTypeAdapter(TimeWindowCondition.class, new TimeWindowConditionAdapter());
+        builder.registerTypeAdapter(DayOfWeekCondition.class, new DayOfWeekConditionAdapter());
+        
+        // Logical condition adapters
+        builder.registerTypeAdapter(LogicalCondition.class, new LogicalConditionAdapter());
+        builder.registerTypeAdapter(AndCondition.class, new AndConditionAdapter());
+        builder.registerTypeAdapter(OrCondition.class, new OrConditionAdapter());
+        
+        // Add missing ConditionManager adapter registration
+        builder.registerTypeAdapter(ConditionManager.class, new ConditionManagerAdapter());
+
+        // Register additional condition adapters
+        
+        
+        return builder.create();
     }
     
     /**

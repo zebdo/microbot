@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition.time;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GameTick;
@@ -15,6 +16,7 @@ import java.time.format.DateTimeFormatter;
  * Perfect for one-time scheduled events or deadlines.
  */
 @Slf4j
+@EqualsAndHashCode(callSuper = false)
 public class SingleTriggerTimeCondition extends TimeCondition {
     
     @Getter
@@ -22,7 +24,7 @@ public class SingleTriggerTimeCondition extends TimeCondition {
     
     @Getter
     private boolean hasTriggered = false;
-    private boolean hasResetedAfterTrigger = false;
+    private boolean hasResetAfterTrigger = false;
     
     private static final DateTimeFormatter FORMATTER = 
             DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
@@ -52,7 +54,7 @@ public class SingleTriggerTimeCondition extends TimeCondition {
     public boolean isSatisfied() {
         // If already triggered, return true
         if (hasTriggered) {
-            if (!hasResetedAfterTrigger) {
+            if (!hasResetAfterTrigger) {
                 return true; // Only return true once after triggering                
             }
             return false; // Return false after reset  and we have triggered before
@@ -81,10 +83,11 @@ public class SingleTriggerTimeCondition extends TimeCondition {
         if (!hasTriggered) {
             return;
         }
-        hasResetedAfterTrigger = true;
+        hasResetAfterTrigger = true;
         log.debug("SingleTriggerTimeCondition reset, will trigger again at: {}", 
                 targetTime.format(FORMATTER));
     }
+
     
     @Override
     public double getProgressPercentage() {

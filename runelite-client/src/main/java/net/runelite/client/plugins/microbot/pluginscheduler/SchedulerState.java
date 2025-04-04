@@ -16,7 +16,9 @@ public enum SchedulerState {
     HARD_STOPPING_PLUGIN("Hard Stopping Plugin", "Stopping the current plugin", new Color(255, 120, 0)),
     SOFT_STOPPING_PLUGIN("Soft Stopping Plugin", "Stopping the current plugin", new Color(255, 120, 0)),
     HOLD("Stopped", "Scheduler was manually stopped", new Color(244, 67, 54)),
-    ERROR("Error", "Scheduler encountered an error", new Color(255, 0, 0));
+    ERROR("Error", "Scheduler encountered an error", new Color(255, 0, 0)),
+    SHORT_BREAK("Short Break", "Taking a short break until next plugin", new Color(100, 149, 237)),
+    WAITING_FOR_SCHEDULE("Waiting for Schedule", "Waiting for next scheduled plugin", new Color(147, 112, 219));
 
     private final String displayName;
     private final String description;

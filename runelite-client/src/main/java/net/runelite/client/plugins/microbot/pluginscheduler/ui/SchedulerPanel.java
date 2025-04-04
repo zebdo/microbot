@@ -1,7 +1,6 @@
-package net.runelite.client.plugins.microbot.pluginscheduler;
-
-
-import net.runelite.client.config.ConfigManager;
+package net.runelite.client.plugins.microbot.pluginscheduler.ui;
+import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerState;
 import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
@@ -222,7 +221,7 @@ public class SchedulerPanel extends PluginPanel {
         return button;
     }
 
-    void refresh() {
+    public void refresh() {
         updatePluginInfo();
         updateNextPluginInfo();
         updateButtonStates();
@@ -293,16 +292,40 @@ public class SchedulerPanel extends PluginPanel {
         PluginScheduleEntry nextPlugin = plugin.getNextScheduledPlugin();
 
         if (nextPlugin != null) {
-            nextPluginNameLabel.setText(nextPlugin.getName());
+            // Set the plugin name
+            nextPluginNameLabel.setText(nextPlugin.getCleanName());
+            
+            // Set the next run time display (already handles various condition types)
             nextPluginTimeLabel.setText(nextPlugin.getNextRunDisplay());
 
-            // Format the schedule description
-            String scheduleDesc = nextPlugin.getIntervalDisplay();
-            if (nextPlugin.getDuration() != null && !nextPlugin.getDuration().isEmpty()) {
-                scheduleDesc += " for " + nextPlugin.getDuration();
+            // Create an enhanced schedule description
+            StringBuilder scheduleDesc = new StringBuilder(nextPlugin.getIntervalDisplay());
+            
+            // Add information about one-time schedules
+            if (nextPlugin.hasAnyOneTimeStartConditions()) {
+                if (nextPlugin.hasTriggeredOneTimeStartConditions() && !nextPlugin.canStartTriggerAgain()) {
+                    scheduleDesc.append(" (Completed)");
+                } else {
+                    scheduleDesc.append(" (One-time)");
+                }
             }
-            nextPluginScheduleLabel.setText(scheduleDesc);
+            
+            // Add condition status information if available
+            if (nextPlugin.hasAnyStartConditions()) {
+                int total = nextPlugin.getStartConditionManager().getConditions().size();
+                long satisfied = nextPlugin.getStartConditionManager().getConditions().stream()
+                        .filter(condition -> condition.isSatisfied())
+                        .count();
+                
+                if (total > 1) {
+                    scheduleDesc.append(String.format(" [%d/%d conditions met]", satisfied, total));
+                }
+            }
+            
+            // Set the updated schedule description
+            nextPluginScheduleLabel.setText(scheduleDesc.toString());
         } else {
+            // No next plugin scheduled
             nextPluginNameLabel.setText("None");
             nextPluginTimeLabel.setText("--:--");
             nextPluginScheduleLabel.setText("None");

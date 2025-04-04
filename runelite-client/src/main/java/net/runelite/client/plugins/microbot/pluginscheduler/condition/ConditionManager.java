@@ -4,7 +4,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.hiscore.Skill;
+
 import net.runelite.api.events.StatChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.GameTick;
@@ -15,7 +15,7 @@ import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
-import net.runelite.api.Varbits;
+
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.InteractingChanged;
@@ -69,6 +69,9 @@ public class ConditionManager {
         }
         conditions.addAll(userLogicalCondition.getConditions());
         return conditions;
+    }
+    public boolean hasConditions() {
+        return !getConditions().isEmpty();
     }
     public List<TimeCondition> getTimeConditions() {
         List<TimeCondition> timeConditions = new ArrayList<>();

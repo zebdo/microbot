@@ -18,7 +18,8 @@ public class SkillLevelCondition implements Condition {
     private final int targetLevelMax;
     private int startLevel;
     
-    public SkillLevelCondition(Skill skill, int targetLevel) {
+    public SkillLevelCondition(Skill skill, 
+    int targetLevel) {
         this.skill = skill;
         this.currentTargetLevel = targetLevel;
         this.targetLevelMin = targetLevel;

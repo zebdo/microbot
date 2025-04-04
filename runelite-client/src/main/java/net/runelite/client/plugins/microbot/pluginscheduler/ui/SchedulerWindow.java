@@ -1,12 +1,13 @@
-package net.runelite.client.plugins.microbot.pluginscheduler;
+package net.runelite.client.plugins.microbot.pluginscheduler.ui;
 
+import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerState;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
-import net.runelite.client.plugins.microbot.pluginscheduler.ui.ConditionConfigPanel;
-import net.runelite.client.plugins.microbot.pluginscheduler.ui.ScheduleFormPanel;
-import net.runelite.client.plugins.microbot.pluginscheduler.ui.ScheduleTablePanel;
-
+import net.runelite.client.plugins.microbot.pluginscheduler.ui.condition.ConditionConfigPanel;
+import net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEntry.ScheduleFormPanel;
+import net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEntry.ScheduleTablePanel;
 import net.runelite.client.ui.ColorScheme;
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -14,6 +15,8 @@ import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 
 @Slf4j
 public class SchedulerWindow extends JFrame {
@@ -22,21 +25,27 @@ public class SchedulerWindow extends JFrame {
     private final ScheduleTablePanel tablePanel;
     private final ScheduleFormPanel formPanel;
     private final ConditionConfigPanel stopConditionPanel;
+    private final SchedulerInfoPanel infoPanel;
     private JButton runSchedulerButton;
     private JButton stopSchedulerButton;
+    
+    // Timer for refreshing the info panel
+    private Timer refreshTimer;
 
     public SchedulerWindow(SchedulerPlugin plugin) {
         super("Plugin Scheduler");
         this.plugin = plugin;
 
-        setSize(700, 550);
+        // Increase width to accommodate the info panel
+        setSize(950, 550);
         setLocationRelativeTo(null);
         setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 
         // Create main components
         tablePanel = new ScheduleTablePanel(plugin);
         formPanel = new ScheduleFormPanel(plugin);
-        stopConditionPanel = new ConditionConfigPanel(plugin,true);
+        stopConditionPanel = new ConditionConfigPanel(plugin, true);
+        infoPanel = new SchedulerInfoPanel(plugin);
 
         // Set up form panel actions
         formPanel.setAddButtonAction(e -> onAddPlugin());
@@ -49,7 +58,8 @@ public class SchedulerWindow extends JFrame {
             PluginScheduleEntry selected = tablePanel.getSelectedPlugin();
             if (selected != null) {             
                 plugin.saveScheduledPlugins();
-                tablePanel.refreshTable(); // Refresh to show updated conditions
+                tablePanel.refreshTable();
+                infoPanel.refresh(); // Refresh info panel after condition updates
             }
         });
 
@@ -96,12 +106,23 @@ public class SchedulerWindow extends JFrame {
         controlPanel.add(runSchedulerButton);
         controlPanel.add(stopSchedulerButton);
         
+        // Create main content panel that will contain tabs and info panel
+        JPanel mainContent = new JPanel(new BorderLayout());
+        mainContent.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
+        // Add tabs to main content
+        tabbedPane.addTab("Schedule", scheduleTab);
+        tabbedPane.addTab("Stop Conditions", conditionsTab);
+        mainContent.add(tabbedPane, BorderLayout.CENTER);
+        
+        // Add info panel to the right side of main content
+        mainContent.add(infoPanel, BorderLayout.EAST);
+        
         // Add control panel to the top of the window
         add(controlPanel, BorderLayout.NORTH);
         
-        // Add tabs
-        tabbedPane.addTab("Schedule", scheduleTab);
-        tabbedPane.addTab("Stop Conditions", conditionsTab);
+        // Add main content to the center of the window
+        add(mainContent, BorderLayout.CENTER);
         
         // Add tab change listener to sync selection
         tabbedPane.addChangeListener(e -> {
@@ -115,15 +136,27 @@ public class SchedulerWindow extends JFrame {
         // Add table selection listener
         tablePanel.addSelectionListener(this::onPluginSelected);
 
-        // Add tabbed pane to frame
-        add(tabbedPane, BorderLayout.CENTER);
+        // Create refresh timer to update info panel
+        refreshTimer = new Timer(1000, e -> infoPanel.refresh());
+        
+        // Start timer when window is opened, stop when closed
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowOpened(WindowEvent e) {
+                refreshTimer.start();
+            }
+            
+            @Override
+            public void windowClosing(WindowEvent e) {
+                refreshTimer.stop();
+            }
+        });
         
         // Initialize with data
-                refresh();
+        refresh();
         updateButtonState();
     }
 
-    // Update the updateButtonState method
     private void updateButtonState() {
         SchedulerState state = plugin.getCurrentState();
         boolean isActive = plugin.isSchedulerActive();
@@ -145,7 +178,7 @@ public class SchedulerWindow extends JFrame {
         this.setTitle("Plugin Scheduler - " + state.getDisplayName());
     }
 
-    void refresh() {
+    public void refresh() {
         tablePanel.refreshTable();
         if (formPanel != null) {
             formPanel.updateControlButton();
@@ -155,7 +188,10 @@ public class SchedulerWindow extends JFrame {
             stopConditionPanel.refreshConditions();            
         }
         
-        PluginScheduleEntry selectedInTable = tablePanel.getSelectedPlugin();        
+        // Refresh info panel
+        if (infoPanel != null) {
+            infoPanel.refresh();
+        }
     }
 
     private void onPluginSelected(PluginScheduleEntry plugin) {
@@ -184,7 +220,8 @@ public class SchedulerWindow extends JFrame {
             log.info("No plugin condition set.");
         }
 
-        scheduledPlugin.logConditionInfo("onAddPlugin: " + scheduledPlugin.getName(), true);
+        scheduledPlugin.logConditionInfo(scheduledPlugin.getStopConditions(),"onAddPlugin Stop Conditions: " + scheduledPlugin.getName(), true);
+
         // Check if the plugin has stop conditions
         if (scheduledPlugin.getStopConditionManager().getConditions().isEmpty()) {
             // No stop conditions set, show warning and switch to conditions tab
@@ -252,7 +289,7 @@ public class SchedulerWindow extends JFrame {
         // Keep the existing conditions when updating
         updatedPlugin.getStopConditionManager().getConditions().clear();
         for (Condition condition : selectedPlugin.getStopConditionManager().getConditions()) {
-            updatedPlugin.addCondition(condition);
+            updatedPlugin.addStopCondition(condition);
         }
         
         // Transfer other properties
@@ -280,5 +317,13 @@ public class SchedulerWindow extends JFrame {
         }
 
         plugin.saveScheduledPlugins();
+    }
+    
+    @Override
+    public void dispose() {
+        if (refreshTimer != null) {
+            refreshTimer.stop();
+        }
+        super.dispose();
     }
 }

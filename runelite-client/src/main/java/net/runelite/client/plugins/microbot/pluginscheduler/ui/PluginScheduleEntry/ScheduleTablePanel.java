@@ -1,10 +1,10 @@
-package net.runelite.client.plugins.microbot.pluginscheduler.ui;
+package net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEntry;
 
 import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
-import net.runelite.client.plugins.microbot.pluginscheduler.api.ConditionProvider;
+
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
+
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -17,9 +17,11 @@ import javax.swing.table.JTableHeader;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.util.ArrayList;
+
 import java.util.List;
+import java.util.Optional;
 import java.util.function.Consumer;
+import java.time.ZonedDateTime;
 
 public class ScheduleTablePanel extends JPanel {
     private final SchedulerPlugin plugin;
@@ -49,23 +51,46 @@ public class ScheduleTablePanel extends JPanel {
         ));
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
-        // Create table model
+        // Update the table model to restrict editing of Default column for default plugins
         tableModel = new DefaultTableModel(
-            new Object[]{"Plugin", "Schedule", "Next Run", "Conditions", "Enabled", "Random", "Runs"}, 0) {
+            new Object[]{"Plugin", "Schedule", "Next Run", "Conditions", "Priority", "Default", "Enabled", "Random", "Runs"}, 0) {
             @Override
             public Class<?> getColumnClass(int column) {
-                if (column == 4 || column == 5) return Boolean.class; // "Enabled" and "Random" columns are Boolean
+                if (column == 5 || column == 6 || column == 7) return Boolean.class; // Boolean columns
                 return String.class;
             }
             @Override
             public boolean isCellEditable(int row, int column) {
-                return column == 4 || column == 5; // Only "Enabled" and "Random" columns are editable
+                // Default column is 5
+                if (column == 5) {
+                    // Check if this is a default plugin
+                    if (row >= 0 && row < plugin.getScheduledPlugins().size()) {
+                        PluginScheduleEntry scheduled = plugin.getScheduledPlugins().get(row);
+                        
+                        // More robust detection - check the isDefault flag directly
+                        // Also check interval condition with very short duration (1 second)
+                        if (scheduled.isDefault()) {
+                            return false;
+                        }
+                        
+                        // Secondary check for legacy plugins created as "Run Default"
+                        String scheduleDisplay = scheduled.getIntervalDisplay();
+                        if ("No schedule defined".equals(scheduleDisplay) || 
+                            scheduled.getIntervalDisplay().contains("Every 1 second")) {
+                            // Also update the isDefault flag for consistency
+                            scheduled.setDefault(true);
+                            return false;
+                        }
+                    }
+                }
+                
+                return column == 5 || column == 6 || column == 7; // Only Default, Enabled, and Random columns are editable
             }
         };
 
-        // Add listener for enabled column changes
+        // Update the table model listener to handle Default column changes
         tableModel.addTableModelListener(e -> {
-            if (e.getColumn() == 4 || e.getColumn() == 5) { // Enabled or Random columns
+            if (e.getColumn() == 5 || e.getColumn() == 6 || e.getColumn() == 7) {
                 int firstRow = e.getFirstRow();
                 int lastRow = e.getLastRow();
                 
@@ -74,12 +99,32 @@ public class ScheduleTablePanel extends JPanel {
                     if (row >= 0 && row < plugin.getScheduledPlugins().size()) {
                         PluginScheduleEntry scheduled = plugin.getScheduledPlugins().get(row);
                         
-                        if (e.getColumn() == 4) { // Enabled column
-                            Boolean enabled = (Boolean) tableModel.getValueAt(row, 4);
+                        if (e.getColumn() == 5) { // Default column
+                            Boolean isDefault = (Boolean) tableModel.getValueAt(row, 5);
+                            
+                            // Check if this is a default plugin that shouldn't be modified
+                            if (scheduled.isDefault()||scheduled.getIntervalDisplay().contains("Every 1 second") || 
+                                "No schedule defined".equals(scheduled.getIntervalDisplay())) {
+                                // Reset the value and update the isDefault flag for consistency
+                                tableModel.setValueAt(true, row, 5);
+                                scheduled.setDefault(true);
+                            } else {
+                                // For non-default plugins, update the value
+                                scheduled.setDefault(isDefault);
+                                
+                                // If being set to default, also set priority to 0
+                                if (isDefault) {
+                                    scheduled.setPriority(0);
+                                    tableModel.setValueAt(0, row, 4); // Update priority column
+                                }
+                            }
+                        }
+                        else if (e.getColumn() == 6) { // Enabled column
+                            Boolean enabled = (Boolean) tableModel.getValueAt(row, 6);
                             scheduled.setEnabled(enabled);
                         }
-                        else if (e.getColumn() == 5) { // Random scheduling column
-                            Boolean allowRandom = (Boolean) tableModel.getValueAt(row, 5);
+                        else if (e.getColumn() == 7) { // Random scheduling column
+                            Boolean allowRandom = (Boolean) tableModel.getValueAt(row, 7);
                             scheduled.setAllowRandomScheduling(allowRandom);
                         }
                     }
@@ -136,9 +181,11 @@ public class ScheduleTablePanel extends JPanel {
         scheduleTable.getColumnModel().getColumn(1).setPreferredWidth(130); // Schedule
         scheduleTable.getColumnModel().getColumn(2).setPreferredWidth(130); // Next Run
         scheduleTable.getColumnModel().getColumn(3).setPreferredWidth(90);  // Conditions
-        scheduleTable.getColumnModel().getColumn(4).setPreferredWidth(60);  // Enabled
-        scheduleTable.getColumnModel().getColumn(5).setPreferredWidth(60);  // Random
-        scheduleTable.getColumnModel().getColumn(6).setPreferredWidth(50);  // Run Count
+        scheduleTable.getColumnModel().getColumn(4).setPreferredWidth(60);  // Priority
+        scheduleTable.getColumnModel().getColumn(5).setPreferredWidth(60);  // Default
+        scheduleTable.getColumnModel().getColumn(6).setPreferredWidth(60);  // Enabled
+        scheduleTable.getColumnModel().getColumn(7).setPreferredWidth(60);  // Random
+        scheduleTable.getColumnModel().getColumn(8).setPreferredWidth(50);  // Run Count
 
         // Custom cell renderer for alternating row colors and special highlights
         DefaultTableCellRenderer renderer = new DefaultTableCellRenderer() {
@@ -245,9 +292,7 @@ public class ScheduleTablePanel extends JPanel {
         return nextPlugin != null && nextPlugin.equals(scheduledPlugin);
     }
     
-    /**
-     * Updates the table with the current list of scheduled plugins
-     */
+    
     public void refreshTable() {
         // Save current selection
         PluginScheduleEntry selectedPlugin = getSelectedPlugin();
@@ -262,17 +307,26 @@ public class ScheduleTablePanel extends JPanel {
                 return p1.isEnabled() ? -1 : 1;
             }
             
+            // For running plugins, prioritize them at the top
+            if (p1.isRunning() != p2.isRunning()) {
+                return p1.isRunning() ? -1 : 1;
+            }
+            
             // If both are enabled or both disabled, sort by next run time
-            if (p1.getNextRunTime() != null && p2.getNextRunTime() != null) {
-                return p1.getNextRunTime().compareTo(p2.getNextRunTime());
-            } else if (p1.getNextRunTime() == null) {
+            Optional<ZonedDateTime> nextTime1 = p1.getNextStartTriggerTime();
+            Optional<ZonedDateTime> nextTime2 = p2.getNextStartTriggerTime();
+            
+            if (nextTime1.isPresent() && nextTime2.isPresent()) {
+                return nextTime1.get().compareTo(nextTime2.get());
+            } else if (nextTime1.isPresent()) {
+                return -1;
+            } else if (nextTime2.isPresent()) {
                 return 1;
             } else {
-                return -1;
+                // If no specific times, sort by name
+                return p1.getName().compareTo(p2.getName());
             }
         });
-        
-        long currentTime = System.currentTimeMillis();
         
         // Update table model
         tableModel.setRowCount(0);
@@ -285,39 +339,14 @@ public class ScheduleTablePanel extends JPanel {
                 pluginName = "▶ " + pluginName; // Add play icon to current plugin
             }
             
-            // Check if this is a one-time scheduled plugin
-            boolean isOneTime = scheduled.getScheduleIntervalValue() == 0;
-            boolean hasCompleted = isOneTime && scheduled.getRunCount() > 0;
+            // Prepare schedule display with enhanced information
+            String scheduleDisplay = getEnhancedScheduleDisplay(scheduled);
             
-            // Prepare schedule display with indicator if it's one-time only
-            String scheduleDisplay = isOneTime ? 
-                "One time only" : scheduled.getIntervalDisplay();
+            // Enhanced next run display
+            String nextRunDisplay = getEnhancedNextRunDisplay(scheduled);
             
-            // More compact next run display with today/tomorrow indication
-            String nextRunDisplay;           
-            nextRunDisplay = scheduled.getNextRunDisplay();
-            // More informative condition display
-            String conditionInfo;
-            int totalConditions = scheduled.getTotalConditionCount();
-            int metConditions = scheduled.getMetConditionCount();
-            
-            //scheduled.getLogicalStopCondition();
-            if (totalConditions == 0) {
-                conditionInfo = "None";
-            } else {
-                // Count active vs. total conditions
-                conditionInfo = metConditions + "/" + totalConditions;
-                
-                // If there's progress to show, add it
-                double progress = scheduled.getStopConditionProgress();
-                if (progress > 0) {
-                    conditionInfo += String.format(" (%.0f%%)", progress);
-                }
-                
-                // Add indicator for condition logic type
-                boolean requiresAll = scheduled.getStopConditionManager().requiresAll();
-                conditionInfo += requiresAll ? " Top level: AND" : " Top level: OR";
-            }
+            // Enhanced condition display with start and stop condition info
+            String conditionInfo = getEnhancedConditionInfo(scheduled);
             
             // Add row to table
             tableModel.addRow(new Object[]{
@@ -325,12 +354,14 @@ public class ScheduleTablePanel extends JPanel {
                 scheduleDisplay,
                 nextRunDisplay,
                 conditionInfo,
+                scheduled.getPriority(),
+                scheduled.isDefault(),
                 scheduled.isEnabled(),
                 scheduled.isAllowRandomScheduling(),
                 scheduled.getRunCount()
             });
         }
-    
+
         // Remove excess rows if there are more rows than plugins
         while (tableModel.getRowCount() > plugins.size()) {
             tableModel.removeRow(tableModel.getRowCount() - 1);
@@ -345,6 +376,100 @@ public class ScheduleTablePanel extends JPanel {
                 }
             }
         }
+    }
+
+    /**
+     * Creates an enhanced display of schedule information
+     */
+    private String getEnhancedScheduleDisplay(PluginScheduleEntry entry) {
+        // Check for one-time schedule first
+        boolean isOneTime = entry.hasAnyOneTimeStartConditions();
+        
+        // If it's a one-time schedule that's already triggered, show completion status
+        if (isOneTime && entry.hasTriggeredOneTimeStartConditions() && !entry.canStartTriggerAgain()) {
+            return "One-time (Completed)";
+        }
+        
+        // Get the base interval display
+        String baseDisplay = entry.getIntervalDisplay();
+        
+        // For one-time schedules, add an indicator
+        if (isOneTime) {
+            return "One-time: " + baseDisplay;
+        }
+        
+        return baseDisplay;
+    }
+
+    /**
+     * Creates an enhanced display of the next run time
+     */
+    private String getEnhancedNextRunDisplay(PluginScheduleEntry entry) {
+        // Use the plugin's optimized display method
+        String baseDisplay = entry.getNextRunDisplay();
+        
+        // Add extra information for one-time entries that can't run again
+        if (entry.hasAnyOneTimeStartConditions() && !entry.canStartTriggerAgain()) {
+            if (entry.getRunCount() > 0) {
+                return "Completed";
+            } else {
+                return "Cannot run";
+            }
+        }
+        
+        return baseDisplay;
+    }
+
+    /**
+     * Creates an enhanced display of condition information
+     */
+    private String getEnhancedConditionInfo(PluginScheduleEntry entry) {
+        StringBuilder info = new StringBuilder();
+        
+        // Add start condition info if available
+        int startTotal = entry.getStartConditionManager().getConditions().size();
+        if (startTotal > 0) {
+            int startMet = (int) entry.getStartConditionManager().getConditions().stream()
+                .filter(Condition::isSatisfied).count();
+            
+            info.append("Start: ").append(startMet).append("/").append(startTotal);
+            
+            // Add type indicator
+            boolean startRequiresAll = entry.getStartConditionManager().requiresAll();
+            info.append(startRequiresAll ? " (ALL)" : " (ANY)");
+        }
+        
+        // Add stop condition info if available
+        int stopTotal = entry.getStopConditionManager().getConditions().size();
+        if (stopTotal > 0) {
+            if (info.length() > 0) {
+                info.append(" | ");
+            }
+            
+            int stopMet = (int) entry.getStopConditionManager().getConditions().stream()
+                .filter(Condition::isSatisfied).count();
+            
+            info.append("Stop: ").append(stopMet).append("/").append(stopTotal);
+            
+            // Add type indicator
+            boolean stopRequiresAll = entry.getStopConditionManager().requiresAll();
+            info.append(stopRequiresAll ? " (ALL)" : " (ANY)");
+            
+            // Add progress for running plugins
+            if (entry.isRunning()) {
+                double progress = entry.getStopConditionProgress();
+                if (progress > 0) {
+                    info.append(String.format(" (%.0f%%)", progress));
+                }
+            }
+        }
+        
+        // If no conditions, show "None"
+        if (info.length() == 0) {
+            return "None";
+        }
+        
+        return info.toString();
     }
 
     public void addSelectionListener(Consumer<PluginScheduleEntry> listener) {

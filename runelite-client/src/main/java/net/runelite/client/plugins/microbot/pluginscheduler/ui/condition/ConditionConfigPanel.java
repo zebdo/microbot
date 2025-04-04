@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.pluginscheduler.ui;
+package net.runelite.client.plugins.microbot.pluginscheduler.ui.condition;
 
 import java.awt.BorderLayout;
 import java.awt.Color;
@@ -202,6 +202,7 @@ public class ConditionConfigPanel extends JPanel {
         } else {
             conditionTypes = new String[]{
                 "Time Window", 
+                "Outside Time Window",
                 "Day of Week", 
                 "Skill Level Required",
                 "Item Required"
@@ -321,8 +322,13 @@ public class ConditionConfigPanel extends JPanel {
      * @return List of conditions, or empty list if no plugin selected
      */
     private List<Condition> getCurrentConditions() {
-        return selectScheduledPlugin != null ? 
-            selectScheduledPlugin.getConditions() : new ArrayList<>();
+        if (stopConditionPanel){
+            return selectScheduledPlugin != null ? 
+                selectScheduledPlugin.getStopConditions() : new ArrayList<>();
+        }else{
+            return selectScheduledPlugin != null ? 
+                selectScheduledPlugin.getStartConditions() : new ArrayList<>();
+        }
     }
     
    
@@ -616,7 +622,13 @@ public class ConditionConfigPanel extends JPanel {
             logicComboBox.setSelectedIndex(requireAll ? 0 : 1);
             
             // Load the conditions from the plugin
-            loadConditions(selectedPlugin.getConditions(), requireAll);
+            if (selectedPlugin.getStopConditionManager() != null) {
+                // Load conditions from the plugin's condition manager
+                loadConditions(selectedPlugin.getStopConditions(), requireAll);
+            } else {
+                // Load conditions directly from the plugin
+                loadConditions(selectedPlugin.getStartConditions(), requireAll);
+            }            
         } else {
             // Clear conditions if no plugin selected
             loadConditions(new ArrayList<>(), true);
@@ -855,7 +867,9 @@ public class ConditionConfigPanel extends JPanel {
                     ConditionConfigPanelUtil.createItemConfigPanel(panel, gbc, configPanel, true);
                     break;
                 case "Not In Time Window":
-                    ConditionConfigPanelUtil.createTimeWindowConfigPanel(panel, gbc,configPanel,false);
+                    ConditionConfigPanelUtil.createEnhancedTimeWindowConfigPanel(panel, gbc, configPanel);
+                    // Store whether we want inside or outside the window
+                    configPanel.putClientProperty("withInWindow", false);
                     break;                
                 case "Inventory Item Count":
                     ConditionConfigPanelUtil.createInventoryItemCountPanel(panel, gbc, configPanel);
@@ -867,8 +881,13 @@ public class ConditionConfigPanel extends JPanel {
         } else {
             switch (selectedType) {
                 case "Time Window":
-                    ConditionConfigPanelUtil.createTimeWindowConfigPanel(panel, gbc,configPanel,true);
+                    ConditionConfigPanelUtil.createEnhancedTimeWindowConfigPanel(panel, gbc, configPanel);
                     break;
+                case "Outside Time Window":
+                    ConditionConfigPanelUtil.createEnhancedTimeWindowConfigPanel(panel, gbc, configPanel);
+                    // Store whether we want inside or outside the window
+                    configPanel.putClientProperty("withInWindow", false);
+                    break; 
                 case "Day of Week":
                     ConditionConfigPanelUtil.createDayOfWeekConfigPanel(panel, gbc, configPanel);
                     break;

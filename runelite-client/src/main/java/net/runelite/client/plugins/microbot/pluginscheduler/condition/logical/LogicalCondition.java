@@ -95,11 +95,11 @@ public abstract class LogicalCondition implements Condition {
             return isSatisfied() ? 100.0 : 0.0;
         }
         
-        // For AND conditions, use the minimum progress (weakest link)
+        // For AND conditions, use the average progress (average over links)
         if (this instanceof AndCondition) {
             return conditions.stream()
                 .mapToDouble(Condition::getProgressPercentage)
-                .min()
+                .average()
                 .orElse(0.0);
         }
         // For OR conditions, use the maximum progress (strongest link)

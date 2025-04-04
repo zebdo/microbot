@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.pluginscheduler.serialization;
+package net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter;
 
 import com.google.gson.TypeAdapter;
 import com.google.gson.stream.JsonReader;
