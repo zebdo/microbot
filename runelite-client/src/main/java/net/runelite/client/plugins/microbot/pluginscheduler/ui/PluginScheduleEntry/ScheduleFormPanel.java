@@ -291,12 +291,22 @@ public class ScheduleFormPanel extends JPanel {
         }
     }
 
-        public void loadPlugin(PluginScheduleEntry entry) {
+    public void loadPlugin(PluginScheduleEntry entry) {
         this.selectedPlugin = entry;
         pluginComboBox.setSelectedItem(entry.getName());
         
         // Set random scheduling checkbox
         randomSchedulingCheckbox.setSelected(entry.isAllowRandomScheduling());
+        
+        // Set priority spinner
+        prioritySpinner.setValue(entry.getPriority());
+        
+        // Set default checkbox
+        defaultPluginCheckbox.setSelected(entry.isDefault());
+        
+        // Determine if this is a default plugin with 1-second interval
+        boolean isDefaultPlugin = entry.isDefault() || 
+                                  entry.getIntervalDisplay().contains("Every 1 second");
         
         // Determine the time condition type and set appropriate panel
         TimeCondition startCondition = null;
@@ -307,7 +317,12 @@ public class ScheduleFormPanel extends JPanel {
             }
         }
         
-        if (startCondition instanceof SingleTriggerTimeCondition) {
+        // If it's a default plugin (by flag or by interval), show "Run Default"
+        if (isDefaultPlugin) {
+            timeConditionTypeComboBox.setSelectedItem(CONDITION_DEFAULT);
+            updateConditionPanel();
+        }
+        else if (startCondition instanceof SingleTriggerTimeCondition) {
             timeConditionTypeComboBox.setSelectedItem(CONDITION_SPECIFIC_TIME);
             updateConditionPanel();
             
@@ -356,7 +371,7 @@ public class ScheduleFormPanel extends JPanel {
         updateControlButton();
     }
 
-        public PluginScheduleEntry getPluginFromForm() {
+    public PluginScheduleEntry getPluginFromForm() {
         String pluginName = (String) pluginComboBox.getSelectedItem();
         if (pluginName == null || pluginName.isEmpty()) {
             JOptionPane.showMessageDialog(this,
