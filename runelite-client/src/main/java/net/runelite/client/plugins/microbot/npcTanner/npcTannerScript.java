@@ -1,8 +1,5 @@
 package net.runelite.client.plugins.microbot.npcTanner;
 
-import net.runelite.api.GameObject;
-import net.runelite.api.MenuAction;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -34,7 +31,7 @@ public class npcTannerScript extends Script {
                 if (!super.run()) return;
                 long startTime = System.currentTimeMillis();
 
-                WhatToTan();
+                WhatToTan(config);
 
                 if(!whattotan.equals("Unset")) {
                     Microbot.status="Tanning: "+npcTannerScript.whattotan;
@@ -42,7 +39,7 @@ public class npcTannerScript extends Script {
                         TakeWhatWeNeed();
                     }
                     if(Rs2Inventory.contains(whattotan)&&Rs2Inventory.contains("Coins")&&!Rs2Inventory.onlyContains(product)){
-                        WalkToandTan();
+                        WalkToandTan(config);
                     }
                 }
 
@@ -71,7 +68,7 @@ public class npcTannerScript extends Script {
         return new Point(randomX, randomY);
     }
 
-    public void WalkToandTan(){
+    public void WalkToandTan(npcTannerConfig config){
         WorldPoint Tanman =(new WorldPoint(3273, 3192, 0));
         if(Rs2Player.getWorldLocation().distanceTo(Tanman)>=6){
             if(Rs2Walker.walkTo(Tanman)){
@@ -81,7 +78,11 @@ public class npcTannerScript extends Script {
             if(Rs2Widget.getWidget(21233789)!=null || Rs2Widget.getWidget(21233753)!=null){
                 Microbot.log("Tanning All");
                 if(whattotan.equals("Cowhide")){
-                    Widget tagetWidget = Rs2Widget.getWidget(21233789);
+                    Widget tagetWidget;
+                    if (config.tanLeather())
+                        tagetWidget = Rs2Widget.getWidget(21233788);
+                    else
+                        tagetWidget = Rs2Widget.getWidget(21233789);
                     Rs2Widget.clickWidget(tagetWidget);
                 }
                 if(whattotan.equals("Green dragonhide")){
@@ -122,6 +123,8 @@ public class npcTannerScript extends Script {
                     int random = generateRandomNumber(0,100);
                     if(random<=75){
                         //depo just product
+                        Microbot.log("reach here");
+
                         Rs2Bank.depositAll(product);
                         sleep(500,1000);
                     } else {
@@ -136,9 +139,14 @@ public class npcTannerScript extends Script {
                 tries=0;
                 while(!Rs2Inventory.contains(whattotan)||!Rs2Inventory.contains("Coins")){
                     // We always do coin first
-                    if(Rs2Inventory.isFull()&&!Rs2Inventory.contains(whattotan)&&!Rs2Inventory.contains("Coins")){
-                        Rs2Bank.depositAll();
-                        sleep(500,1000);
+                    if(Rs2Inventory.contains(product)){
+                        if(generateRandomNumber(0,100)<75){
+                            Rs2Bank.depositAll(product);
+                            sleep(500,1000);
+                        } else {
+                            Rs2Bank.depositAll();
+                            sleep(500,1000);
+                        }
                     }
                     if(!Rs2Inventory.contains("Coins")||Rs2Inventory.count("Coins")<=1000){
                         Rs2Bank.withdrawAll("Coins");
@@ -163,11 +171,14 @@ public class npcTannerScript extends Script {
             }
         }
     }
-    public void WhatToTan(){
+    public void WhatToTan(npcTannerConfig config){
         if(whattotan.equals("Unset")){
             if(Rs2Inventory.contains("Cowhide")){
                 whattotan = "Cowhide";
-                product = "Hard leather";
+                if (config.tanLeather())
+                    product = "Leather";
+                else
+                    product = "Hard leather";
                 return;
             }
             if(Rs2Inventory.contains("Green dragonhide")){
@@ -207,8 +218,10 @@ public class npcTannerScript extends Script {
                     if(Rs2Bank.openBank()){
                         if(Rs2Bank.count("Cowhide") > 10){
                             whattotan = "Cowhide";
-                            product = "Hard leather";
-                        }
+                            if (config.tanLeather())
+                                product = "Leather";
+                            else
+                                product = "Hard leather";                        }
                         if(Rs2Bank.count("Green dragonhide") > 10){
                             whattotan = "Green dragonhide";
                             product = "Green dragon leather";
