@@ -23,11 +23,18 @@ public class ConditionManagerAdapter implements JsonSerializer<ConditionManager>
     public JsonElement serialize(ConditionManager src, Type typeOfSrc, JsonSerializationContext context) {
         JsonObject result = new JsonObject();
         
-        // Add system timezone information to the serialized object
-        result.addProperty("serializationZoneId", ZoneId.systemDefault().getId());
+        // Add type information to identify whether this is a start or stop condition manager
+        // This will be detected and used during deserialization
+        result.addProperty("requireAll", src.requiresAll());
         
-        // Only serialize user-defined logical condition
-        LogicalCondition userCondition = src.getUserCondition();
+        // Serialize plugin-defined logical condition (if present)
+        LogicalCondition pluginCondition = src.getPluginCondition();
+        if (pluginCondition != null && !pluginCondition.getConditions().isEmpty()) {
+            result.add("pluginLogicalCondition", context.serialize(pluginCondition));
+        }
+        
+        // Serialize user-defined logical condition
+        LogicalCondition userCondition = src.getUserLogicalCondition();
         if (userCondition != null) {
             result.add("userLogicalCondition", context.serialize(userCondition));
         }
@@ -46,14 +53,28 @@ public class ConditionManagerAdapter implements JsonSerializer<ConditionManager>
         
         JsonObject jsonObject = json.getAsJsonObject();
         
-        // Extract timezone information (if present)        
-        if (jsonObject.has("serializationZoneId")) {
-            try {
-                String zoneIdStr = jsonObject.get("serializationZoneId").getAsString();
-               
-                log.debug("Deserializing with original timezone: {}", zoneIdStr);
-            } catch (Exception e) {
-                log.warn("Could not parse serialization timezone, using system default", e);
+        // Set requireAll based on serialized value
+        if (jsonObject.has("requireAll")) {
+            boolean requireAll = jsonObject.get("requireAll").getAsBoolean();
+            if (requireAll) {
+                manager.setRequireAll();
+            } else {
+                manager.setRequireAny();
+            }
+        }
+        
+        // Handle pluginLogicalCondition if present
+        if (jsonObject.has("pluginLogicalCondition")) {
+            JsonObject pluginLogicalObj = jsonObject.getAsJsonObject("pluginLogicalCondition");
+            
+            // Only process if there are actual conditions
+            if (pluginLogicalObj.has("conditions") && 
+                pluginLogicalObj.getAsJsonArray("conditions").size() > 0) {
+                LogicalCondition logicalCondition = context.deserialize(
+                    pluginLogicalObj, LogicalCondition.class);
+                if (logicalCondition != null) {
+                    manager.setPluginCondition(logicalCondition);
+                }
             }
         }
         
@@ -66,7 +87,8 @@ public class ConditionManagerAdapter implements JsonSerializer<ConditionManager>
                 JsonArray conditionsArray = userLogicalObj.getAsJsonArray("conditions");
                 if (conditionsArray.size() > 0) {
                     // Only process if there are actual conditions
-                    LogicalCondition logicalCondition = context.deserialize(userLogicalObj, LogicalCondition.class);
+                    LogicalCondition logicalCondition = context.deserialize(
+                        userLogicalObj, LogicalCondition.class);
                     if (logicalCondition != null) {
                         manager.setUserLogicalCondition(logicalCondition);
                     }
@@ -74,7 +96,7 @@ public class ConditionManagerAdapter implements JsonSerializer<ConditionManager>
             }
         }
         
-        // Handle direct conditions array if present
+        // Handle direct conditions array if present (for backwards compatibility)
         if (jsonObject.has("conditions")) {
             JsonArray conditionsArray = jsonObject.getAsJsonArray("conditions");
             List<Condition> conditions = new ArrayList<>();
@@ -89,16 +111,6 @@ public class ConditionManagerAdapter implements JsonSerializer<ConditionManager>
             // Add all successfully deserialized conditions
             for (Condition condition : conditions) {
                 manager.addCondition(condition);
-            }
-        }
-        
-        // Handle requireAll property if present
-        if (jsonObject.has("requireAll")) {
-            boolean requireAll = jsonObject.get("requireAll").getAsBoolean();
-            if (requireAll) {
-                manager.setRequireAll();
-            } else {
-                manager.setRequireAny();
             }
         }
         

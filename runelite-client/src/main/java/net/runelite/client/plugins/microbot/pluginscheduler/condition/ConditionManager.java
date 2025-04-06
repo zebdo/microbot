@@ -89,15 +89,17 @@ public class ConditionManager {
         userLogicalCondition.getConditions().clear();
     }
     public boolean areConditionsMet() {
-        boolean userConditionsMet = false;
-    
-        if (userLogicalCondition == null){
-            requiresAll();            
-        }
-        userConditionsMet = userLogicalCondition.isSatisfied();                            
-        if (pluginCondition != null) {          
 
-            return userConditionsMet && pluginCondition.isSatisfied();
+        boolean userConditionsMet = false;
+        
+        userConditionsMet = userLogicalCondition.isSatisfied();                            
+        log.debug("User conditions met: {} (using {} logic)", 
+            userConditionsMet, 
+            (userLogicalCondition instanceof AndCondition) ? "AND" : "OR");
+        if (pluginCondition != null && !pluginCondition.getConditions().isEmpty()) {          
+            boolean pluginConditionsMet = pluginCondition.isSatisfied();
+            log.debug("Plugin conditions met: {}", pluginConditionsMet);
+            return userConditionsMet && pluginConditionsMet;            
         }
         return userConditionsMet;                                                
     }
@@ -433,6 +435,8 @@ public class ConditionManager {
         log.warn("Condition not found in any logical structure");
         return false;
     }
+
+    
 
     /**
      * Gets the root logical condition that should be used for the current UI operation

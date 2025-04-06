@@ -43,8 +43,7 @@ public class TimeWindowCondition extends TimeCondition {
     // Cached timezone for computation - not serialized
     private transient ZoneId zoneId;
 
-    // Add a field to store the zone ID string for serialization
-    private String zoneIdString;
+    
 
     /**
      * Default constructor for serialization
@@ -93,24 +92,7 @@ public class TimeWindowCondition extends TimeCondition {
     /**
      * Gets the current system timezone
      */
-    public ZoneId getZoneId() {
-        if (zoneId == null) {
-            // Try to initialize from stored string first
-            if (zoneIdString != null && !zoneIdString.isEmpty()) {
-                try {
-                    zoneId = ZoneId.of(zoneIdString);
-                } catch (Exception e) {
-                    // If stored string is invalid, fall back to system default
-                    zoneId = ZoneId.systemDefault();
-                }
-            } else {
-                // No stored string, use system default
-                zoneId = ZoneId.systemDefault();
-            }
-            
-            // Update the string field for future serialization
-            zoneIdString = zoneId.getId();
-        }
+    public ZoneId getZoneId() {        
         return zoneId;
     }
 
@@ -118,8 +100,7 @@ public class TimeWindowCondition extends TimeCondition {
      * Sets the zone ID to use for time calculations
      */
     public void setZoneId(ZoneId zoneId) {
-        this.zoneId = zoneId;
-        this.zoneIdString = zoneId.getId();
+        this.zoneId = zoneId;        
     }
 
     /**

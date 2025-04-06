@@ -350,25 +350,52 @@ public class SchedulerPlugin extends Plugin {
         // First, check if we need to stop the current plugin
         if (isScheduledPluginRunning()) {
             checkCurrentPlugin();
+            
         }
         
         // If no plugin is running, check for scheduled plugins
         if (!isScheduledPluginRunning()) {
             // Get the next scheduled plugin within the next 5 minutes
-            PluginScheduleEntry nextPlugin = getNextScheduledPluginWithinTime(Duration.ofMinutes(5));
-            
+            PluginScheduleEntry nextPluginWith = getNextScheduledPluginWithinTime(Duration.ofMinutes(5));
+            if (nextPluginWith != null) {
+                log.info("Next scheduled plugin: {} (scheduled in {})", 
+                        nextPluginWith.getCleanName(), 
+                        formatDuration(Duration.between(ZonedDateTime.now(ZoneId.systemDefault()), nextPluginWith.getNextStartTriggerTime().get())));
+            }
+            PluginScheduleEntry nextPlugin = getNextScheduledPlugin();
+            if (nextPlugin == null) {
+                log.info("No plugins scheduled in the next 5 minutes");
+            } else {
+                if (nextPlugin.getNextStartTriggerTime().isPresent()) {
+                    log.info("Next scheduled plugin: {} (scheduled in {})", 
+                            nextPlugin.getCleanName(), 
+                            formatDuration(Duration.between(ZonedDateTime.now(ZoneId.systemDefault()), nextPlugin.getNextStartTriggerTime().get())));
+                } else {
+
+                    log.info("Next scheduled plugin: {} (no next start time)", 
+                            nextPlugin.getCleanName());
+                }               
+            }
             // If a plugin is ready to run now, start it and interrupt any active break
             if (nextPlugin != null && nextPlugin.isDueToRun()) {
                 // If we're on a break, interrupt it
                 if (isOnBreak) {
+                    log.info("Interrupting active break to start scheduled plugin: {}", nextPlugin.getCleanName());
                     interruptBreak();
                 }
+                log.info("Starting scheduled plugin: {}", nextPlugin.getCleanName());
                 scheduleNextPlugin();
             }
             // If no plugin is ready to run now, but one is coming up soon (within 5 minutes)
             else if (nextPlugin != null) {
+                log.info("Next scheduled plugin: {} (scheduled in {})", 
+                        nextPlugin.getCleanName(), 
+                        formatDuration(Duration.between(ZonedDateTime.now(ZoneId.systemDefault()), nextPlugin.getNextStartTriggerTime().get())));
                 // If we're not on a break and there's nothing running, take a short break until next plugin
                 if (!isOnBreak && !isScheduledPluginRunning()) {
+                    log.info("Starting short break until next plugin: {} (scheduled in {})", 
+                            nextPlugin.getCleanName(), 
+                            formatDuration(Duration.between(ZonedDateTime.now(ZoneId.systemDefault()), nextPlugin.getNextStartTriggerTime().get())));
                     startShortBreakUntilNextPlugin(nextPlugin);
                 }
             }
@@ -637,8 +664,8 @@ public class SchedulerPlugin extends Plugin {
             }
             
             if (!currentPlugin.isRunning()) {
-                log.info("Plugin stopped successfully: " + currentPlugin.getCleanName());
-                currentPlugin = null;
+                log.info("Plugin stopped successfully: " + currentPlugin.getCleanName());                
+                forceStopCurrentPlugin();
                 setState(SchedulerState.SCHEDULING);
             } else {
                 log.error("Failed to hard stop plugin: " + currentPlugin.getCleanName());                
@@ -750,7 +777,7 @@ public class SchedulerPlugin extends Plugin {
                 return;
             }
             String json = Microbot.getConfigManager().getConfiguration(SchedulerConfig.CONFIG_GROUP, "scheduledPlugins");
-            log.info("Loading scheduled plugins from config: {}", json);
+            log.info("Loading scheduled plugins from config: {}\n\n", json);
             
             if (json != null && !json.isEmpty()) {
                 scheduledPlugins = PluginScheduleEntry.fromJson(json);
@@ -837,7 +864,7 @@ public class SchedulerPlugin extends Plugin {
 
         // First sort plugins by priority (highest first)
         List<PluginScheduleEntry> prioritizedPlugins = scheduledPlugins.stream()
-                .filter(plugin -> plugin.isEnabled())
+                .filter(plugin -> plugin.isEnabled() && plugin.getNextStartTriggerTime().isPresent())
                 .sorted(Comparator.comparing(PluginScheduleEntry::getPriority).reversed())
                 .collect(Collectors.toList());
         
@@ -846,7 +873,7 @@ public class SchedulerPlugin extends Plugin {
         }
         
         // Group plugins by priority
-        Map<Integer, List<PluginScheduleEntry>> pluginsByPriority = prioritizedPlugins.stream()
+        Map<Integer, List<PluginScheduleEntry>> pluginsByPriority = prioritizedPlugins.stream().filter(p -> p.isEnabled() )
                 .collect(Collectors.groupingBy(PluginScheduleEntry::getPriority));
         
         // Find the highest priority value
@@ -949,6 +976,13 @@ public class SchedulerPlugin extends Plugin {
      */
     private void checkCurrentPlugin() {
         if (currentPlugin == null || !currentPlugin.isRunning()) {
+            if (currentState == SchedulerState.RUNNING_PLUGIN || 
+                currentState == SchedulerState.SOFT_STOPPING_PLUGIN || 
+                currentState == SchedulerState.HARD_STOPPING_PLUGIN) {
+                log.info("Current plugin is not running, stopping scheduler");
+                setState(SchedulerState.SCHEDULING);
+                currentPlugin = null;
+            }
             return;
         }
         
@@ -974,14 +1008,12 @@ public class SchedulerPlugin extends Plugin {
         
         // Check if conditions are met
         currentPlugin.checkConditionsAndStop();
-        if (currentPlugin.isRunning()) {                       
-            if (!currentPlugin.isRunning()){
-                log.info("Plugin '{}' stopped because conditions were met", 
-                currentPlugin.getCleanName());
-                currentPlugin = null;
-                setState(SchedulerState.SCHEDULING);
-            }
-        }
+        if (!currentPlugin.isRunning() ){
+            log.info("Plugin '{}' stopped because conditions were met", 
+            currentPlugin.getCleanName());
+            currentPlugin = null;
+            setState(SchedulerState.SCHEDULING);
+        }                    
     }
 
       
@@ -1042,6 +1074,14 @@ public class SchedulerPlugin extends Plugin {
      */
     public PluginScheduleEntry getCurrentPlugin() {
         return currentPlugin;
+    }
+
+    /**
+     * Checks if a specific plugin schedule entry is currently running
+     * This explicitly compares by reference, not just by name
+     */
+    public boolean isRunningEntry(PluginScheduleEntry entry) {
+        return entry.isRunning();
     }
 
     /**
@@ -1323,8 +1363,13 @@ public class SchedulerPlugin extends Plugin {
                     MAX_LOGIN_ATTEMPTS, scheduledPlugin.getName());
                 SwingUtilities.invokeLater(() -> {
                     // Clean up and set proper state
-                    currentPlugin = null;
-                    setState(SchedulerState.SCHEDULING);
+                    if (currentPlugin != null) {
+                        currentPlugin.softStop();
+                        setState(SchedulerState.SOFT_STOPPING_PLUGIN);
+                    }else{
+                        setState(SchedulerState.SCHEDULING);
+                    }                                        
+                    
                 });
             } catch (InterruptedException e) {
                 log.debug("Login monitoring thread for '{}' was interrupted", scheduledPlugin.getName());

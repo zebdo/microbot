@@ -21,6 +21,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
@@ -375,7 +376,7 @@ public class ScheduleFormPanel extends JPanel {
         String pluginName = (String) pluginComboBox.getSelectedItem();
         if (pluginName == null || pluginName.isEmpty()) {
             JOptionPane.showMessageDialog(this,
-                    "Please select a plugin.",
+"Please select a plugin.",
                     "Invalid Input",
                     JOptionPane.ERROR_MESSAGE);
             return null;
@@ -389,8 +390,8 @@ public class ScheduleFormPanel extends JPanel {
         boolean isDefaultByScheduleType = false;
         
         if (CONDITION_DEFAULT.equals(selectedType)) {
-            // For immediate execution, use IntervalCondition with very short interval
-            timeCondition = new IntervalCondition(java.time.Duration.ofSeconds(1));
+            // For default plugin, create 1-second interval condition
+            timeCondition = new IntervalCondition(Duration.ofSeconds(1));
             isDefaultByScheduleType = true;
         }
         else if (CONDITION_SPECIFIC_TIME.equals(selectedType)) {
@@ -461,9 +462,9 @@ public class ScheduleFormPanel extends JPanel {
     }
 
     public void setEditMode(boolean editMode) {
-        updateButton.setEnabled(editMode);
-        removeButton.setEnabled(editMode);
-        addButton.setEnabled(!editMode);
+        updateButton.setEnabled(true);
+        removeButton.setEnabled(true);
+        addButton.setEnabled(true);
 
         // Update control button based on edit mode
         updateControlButton();

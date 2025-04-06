@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter;
+package net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.logical;
 
 import com.google.gson.*;
 import lombok.extern.slf4j.Slf4j;

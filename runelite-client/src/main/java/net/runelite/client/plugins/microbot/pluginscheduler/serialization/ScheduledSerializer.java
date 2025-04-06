@@ -6,26 +6,29 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionManager;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ConditionTypeAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.LocalDateAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.LocalTimeAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.TimeWindowConditionAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ConditionManagerAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.SingleTriggerTimeConditionAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ZonedDateTimeAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.logical.AndConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.logical.LogicalConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.logical.OrConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.DayOfWeekConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.DurationAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.IntervalConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.LocalDateAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.LocalTimeAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.TimeConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.TimeWindowConditionAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.DayOfWeekCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.IntervalConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.DayOfWeekConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.LogicalConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.AndConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.OrConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.DurationAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.PluginScheduleEntryAdapter;
 
 import java.lang.reflect.Type;
 import java.time.LocalDate;
@@ -54,10 +57,14 @@ public class ScheduledSerializer {
         builder.registerTypeAdapter(LocalDate.class, new LocalDateAdapter());
         builder.registerTypeAdapter(LocalTime.class, new LocalTimeAdapter());
         builder.registerTypeAdapter(ZonedDateTime.class, new ZonedDateTimeAdapter());
-        builder.registerTypeAdapter(Duration.class, new DurationAdapter());  // Add the Duration adapter
+        builder.registerTypeAdapter(Duration.class, new DurationAdapter());
         builder.registerTypeAdapter(Condition.class, new ConditionTypeAdapter());
         
-        // Ensure all time condition classes have adapters registered
+        // Register our custom PluginScheduleEntry adapter
+        builder.registerTypeAdapter(PluginScheduleEntry.class, new PluginScheduleEntryAdapter());
+        
+        // Other adapters still needed for individual conditions
+        builder.registerTypeAdapter(TimeCondition.class, new TimeConditionAdapter());
         builder.registerTypeAdapter(IntervalCondition.class, new IntervalConditionAdapter());
         builder.registerTypeAdapter(SingleTriggerTimeCondition.class, new SingleTriggerTimeConditionAdapter());
         builder.registerTypeAdapter(TimeWindowCondition.class, new TimeWindowConditionAdapter());
@@ -68,11 +75,8 @@ public class ScheduledSerializer {
         builder.registerTypeAdapter(AndCondition.class, new AndConditionAdapter());
         builder.registerTypeAdapter(OrCondition.class, new OrConditionAdapter());
         
-        // Add missing ConditionManager adapter registration
+        // ConditionManager adapter
         builder.registerTypeAdapter(ConditionManager.class, new ConditionManagerAdapter());
-
-        // Register additional condition adapters
-        
         
         return builder.create();
     }
@@ -100,17 +104,13 @@ public class ScheduledSerializer {
         try {
             // Check if the JSON contains the old class name
             if (json.contains("\"ScheduledPlugin\"")) {
-                // Replace the class name in the JSON if it's explicitly stored
                 json = json.replace("\"ScheduledPlugin\"", "\"PluginScheduleEntry\"");
             }
             
-            // Create the Gson instance with your existing configuration
             Gson gson = createGson();
-            
-            // Create a type token for the new class
             Type listType = new TypeToken<ArrayList<PluginScheduleEntry>>(){}.getType();
             
-            // Parse and return
+            // Let Gson and our adapter handle everything
             return gson.fromJson(json, listType);
         } catch (Exception e) {
             log.error("Error deserializing scheduled plugins", e);

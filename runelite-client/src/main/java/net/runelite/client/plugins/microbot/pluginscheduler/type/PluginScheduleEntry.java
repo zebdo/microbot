@@ -48,6 +48,7 @@ public class PluginScheduleEntry {
     private transient Plugin plugin;
     private String name;    
     private boolean enabled;
+    private boolean hasStarted = false; // Flag to indicate if the plugin has started
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
         if (!enabled) {
@@ -92,7 +93,7 @@ public class PluginScheduleEntry {
     public PluginScheduleEntry(String pluginName, String duration, boolean enabled, boolean allowRandomScheduling) {
         this(pluginName, parseDuration(duration), enabled, allowRandomScheduling);
     }
-    
+    private TimeCondition mainTimeStartCondition;
     private static Duration parseDuration(String duration) {
         // If duration is specified, parse it
         if (duration != null && !duration.isEmpty()) {
@@ -134,7 +135,7 @@ public class PluginScheduleEntry {
                     isDefaultByScheduleType = true;
                 }
             }
-            
+            this.mainTimeStartCondition  = startingCondition;
             startConditionManager.setUserLogicalCondition(new OrCondition(startingCondition));
         }
         
@@ -194,6 +195,7 @@ public class PluginScheduleEntry {
                 return false;
             });
             stopInitiated = false;
+            hasStarted = true;
             
             // Register/unregister appropriate event handlers
             stopConditionManager.registerEvents();
@@ -425,7 +427,7 @@ public class PluginScheduleEntry {
     
 
     public boolean isRunning() {
-        return getPlugin() != null && Microbot.getPluginManager().isPluginEnabled(plugin);
+        return getPlugin() != null && Microbot.getPluginManager().isPluginEnabled(plugin) && hasStarted;
     }
 
     /**
@@ -624,25 +626,38 @@ public class PluginScheduleEntry {
         
         // For plugins with start conditions, check if those conditions are met
         if (hasAnyStartConditions()) {
-            return startConditionManager.areConditionsMet();
-        }
-        
-        // For legacy plugins without start conditions, use the lastRunTime
-        if (lastRunTime != null) {
-            // Check if this is a one-time plugin that already ran
-            if (!canStartTriggerAgain()) {
-                return false;
+            log.info ("Checking start conditions for plugin '{}'", name);
+            if (startConditionManager.requiresAll()) {
+                log.info("All start conditions must be met");
+            } else {
+                log.info("Any start condition can be met");
             }
+            log.info("Start conditions: {}", startConditionManager.getDescription());
+            log.info("Start conditions progress: {}%", startConditionManager.getProgressTowardNextTrigger());
+            log.info("Start conditions next trigger: {}", startConditionManager.getNextTriggerTimeString());            
             
-            // If we have a next trigger time from a time condition, use that
-            Optional<ZonedDateTime> nextTrigger = getNextStartTriggerTime();
-            if (nextTrigger.isPresent()) {
-                return ZonedDateTime.now(ZoneId.systemDefault()).isAfter(nextTrigger.get());
-            }
+        }else {
+            log.info("No start conditions defined for plugin '{}'", name);
+            return false;
         }
         
-        // Default case - never run before or no timing restrictions
-        return true;
+         // Check if start conditions are met
+        boolean areStartConditionsMet = startConditionManager.areConditionsMet();
+        
+        // Add debugging to see current condition state
+        if (areStartConditionsMet) {
+            log.debug("{}: Start conditions met, plugin is due to run", cleanName);
+        } else {
+            // Log why it's not due - this would help diagnose the issue
+            log.debug("{}: Start conditions NOT met, plugin is NOT due to run", cleanName);
+            // Log specific condition states
+            for (Condition condition : getStartConditions()) {
+                log.debug("  - Condition '{}' satisfied: {}", 
+                        condition.getDescription(), condition.isSatisfied());
+            }
+        }        
+        
+        return areStartConditionsMet;
     }
     /**
      * Update the lastRunTime to now and update conditions
@@ -683,6 +698,86 @@ public class PluginScheduleEntry {
                 }
             }
         }
+    }
+
+    /**
+    * Updates the primary time condition for this plugin schedule entry.
+    * This method replaces the original time condition that was added when the entry was created,
+    * but preserves any additional conditions that might have been added later.
+    * 
+    * @param newTimeCondition The new time condition to use
+    * @return true if a time condition was found and replaced, false otherwise
+    */
+    public boolean updatePrimaryTimeCondition(TimeCondition newTimeCondition) {
+        if (startConditionManager == null || newTimeCondition == null) {
+            return false;
+        }
+        
+        // First, find the existing time condition. We'll assume the first time condition 
+        // we find is the primary one that was added at creation
+        TimeCondition existingTimeCondition = this.mainTimeStartCondition;
+        
+        
+        // If we found a time condition, replace it
+        if (existingTimeCondition != null) {
+            log.debug("Replacing time condition {} with {}", 
+                    existingTimeCondition.getDescription(), 
+                    newTimeCondition.getDescription());
+            
+            // Check if current condition is a one-second interval (default)
+            boolean isDefaultByScheduleType = false;
+            if (existingTimeCondition instanceof IntervalCondition) {
+                IntervalCondition intervalCondition = (IntervalCondition) existingTimeCondition;
+                if (intervalCondition.getInterval().getSeconds() <= 1) {
+                    isDefaultByScheduleType = true;
+                }
+            }
+            
+            // Check if new condition is a one-second interval (default)
+            boolean willBeDefaultByScheduleType = false;
+            if (newTimeCondition instanceof IntervalCondition) {
+                IntervalCondition intervalCondition = (IntervalCondition) newTimeCondition;
+                if (intervalCondition.getInterval().getSeconds() <= 1) {
+                    willBeDefaultByScheduleType = true;
+                }
+            }
+            
+            // Remove the existing condition and add the new one
+            if (startConditionManager.removeCondition(existingTimeCondition)) {
+                if (!startConditionManager.containsCondition(newTimeCondition)) {
+                    startConditionManager.addCondition(newTimeCondition);
+                }
+                
+                // Update default status if needed
+                if (willBeDefaultByScheduleType) {
+                    this.setDefault(true);
+                    this.setPriority(0);
+                } else if (isDefaultByScheduleType && !willBeDefaultByScheduleType) {
+                    // Only change from default if it was set automatically by condition type
+                    this.setDefault(false);
+                }                
+                
+                this.mainTimeStartCondition = newTimeCondition;                
+                return true;
+            }
+        } else {
+            // No existing time condition found, just add the new one
+            log.info("No existing time condition found, adding new condition: {}", 
+                    newTimeCondition.getDescription());
+            // Check if the condition already exists before adding it
+            if (startConditionManager.containsCondition(newTimeCondition)) {
+                log.info("Condition {} already exists in the manager, not adding a duplicate", 
+                newTimeCondition.getDescription());
+                // Still need to update start conditions in case the existing one needs resetting                                                
+            }else{
+                startConditionManager.addCondition(newTimeCondition);
+            }            
+            this.mainTimeStartCondition = newTimeCondition;            
+            return true;
+        }
+        // Recalculate any internal state based on the new condition
+        updateStartConditions();
+        return false;
     }
 
     /**
@@ -864,7 +959,9 @@ public class PluginScheduleEntry {
         return "Schedule not set";
     }
     
-    
+    public void addStartCondition(Condition condition) {
+        startConditionManager.addCondition(condition);
+    }
     public void addStopCondition(Condition condition) {
         stopConditionManager.addCondition(condition);
     }
@@ -1114,7 +1211,7 @@ public class PluginScheduleEntry {
                 getStopConditionManager().setPluginCondition(pluginLogic);
                 
                 // Log with the consolidated method
-                logStartConditionsWithDetails();
+                logStopConditionsWithDetails();
             } else {
                 log.info("Plugin '{}' implements StoppingConditionProvider but provided no conditions",
                         plugin.getName());
@@ -1314,6 +1411,7 @@ public class PluginScheduleEntry {
                         
                         // Reset stop state
                         stopInitiated = false;
+                        hasStarted = false;
                         stopInitiatedTime = null;
                         lastStopAttemptTime = null;
                         break;
@@ -1363,41 +1461,40 @@ public class PluginScheduleEntry {
     }
     @Override
     public boolean equals(Object o) {
-        if (this == o)
-            return true;
-        if (o == null || getClass() != getClass())
-            return false;
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        
         PluginScheduleEntry that = (PluginScheduleEntry) o;
-
-        // Compare name first
-        if (!Objects.equals(name, that.name)) {
+        
+        // Two entries are equal if:
+        // 1. They have the same name AND
+        // 2. They have the same start conditions and stop conditions
+        //    OR they are the same object reference
+        
+        if (!Objects.equals(name, that.name)) return false;
+        
+        // If they're the same name, we need to distinguish by conditions
+        if (startConditionManager != null && that.startConditionManager != null) {
+            if (!startConditionManager.getConditions().equals(that.startConditionManager.getConditions())) {
+                return false;
+            }
+        } else if (startConditionManager != null || that.startConditionManager != null) {
             return false;
         }
         
-        // Compare logical conditions by examining their structure
-        // This approach is more robust than comparing schedule types/intervals
-        if (!Objects.equals(
-                stopConditionManager != null ? stopConditionManager.getDescription() : null,
-                that.stopConditionManager != null ? that.stopConditionManager.getDescription() : null)) {
-            return false;
+        if (stopConditionManager != null && that.stopConditionManager != null) {
+            return stopConditionManager.getConditions().equals(that.stopConditionManager.getConditions());
+        } else {
+            return stopConditionManager == null && that.stopConditionManager == null;
         }
-        
-        if (!Objects.equals(
-                startConditionManager != null ? startConditionManager.getDescription() : null,
-                that.startConditionManager != null ? that.startConditionManager.getDescription() : null)) {
-            return false;
-        }
-        
-        return true;
     }
 
     @Override
     public int hashCode() {
-        // Generate hash based on name and condition descriptions
-        // This is more accurate with the new condition system
-        String stopDesc = stopConditionManager != null ? stopConditionManager.getDescription() : "";
-        String startDesc = startConditionManager != null ? startConditionManager.getDescription() : "";
-        return Objects.hash(name, stopDesc, startDesc);
+        int result = name != null ? name.hashCode() : 0;
+        result = 31 * result + (startConditionManager != null ? startConditionManager.getConditions().hashCode() : 0);
+        result = 31 * result + (stopConditionManager != null ? stopConditionManager.getConditions().hashCode() : 0);
+        return result;
     }
 
     public int getPriority() {

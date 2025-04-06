@@ -86,9 +86,7 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             // Store randomization settings
             data.addProperty("useRandomization", window.isUseRandomization());
             data.addProperty("randomizeMinutes", window.getRandomizeMinutes());
-            
-            // Store timezone information
-            data.addProperty("zoneIdString", window.getZoneId().getId());
+                        
         }
         else if (src instanceof SkillLevelCondition) {
             SkillLevelCondition skillLevel = (SkillLevelCondition) src;
@@ -344,17 +342,7 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
                 int randomizeMinutes = data.get("randomizeMinutes").getAsInt();
                 condition.setRandomization(useRandomization, randomizeMinutes);
             }
-            
-            // Set timezone if present
-            if (data.has("zoneIdString")) {
-                try {
-                    String zoneIdStr = data.get("zoneIdString").getAsString();
-                    ZoneId zoneId = ZoneId.of(zoneIdStr);
-                    condition.setZoneId(zoneId);
-                } catch (Exception e) {
-                    log.warn("Invalid timezone ID in TimeWindowCondition, using system default", e);
-                }
-            }
+                   
             
             return condition;
         } catch (Exception e) {
