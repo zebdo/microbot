@@ -517,7 +517,7 @@ public class MossKillerScript extends Script {
                                     sleep(1900,2200);
                                     eatAt(80);
                                 }
-                                Microbot.log("Walking to outside boss gaet spot");
+                                Microbot.log("Walking to outside boss gate spot");
                                 if (Rs2Walker.getDistanceBetween(playerLocation, OUTSIDE_BOSS_GATE_SPOT) > 10) {
                                     Rs2Walker.walkTo(OUTSIDE_BOSS_GATE_SPOT, 10);
                                     sleepUntil(() -> Rs2Walker.getDistanceBetween(playerLocation, OUTSIDE_BOSS_GATE_SPOT) <= 10 && !Rs2Player.isMoving(), 600);}
