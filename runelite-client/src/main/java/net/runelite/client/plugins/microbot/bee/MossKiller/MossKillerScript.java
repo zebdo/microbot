@@ -738,7 +738,7 @@ public class MossKillerScript extends Script {
         }
 
 
-        System.out.println("Must start near varrock square, bank, or moss giatn spot.");
+        System.out.println("Must start near varrock square, bank, or moss giant spot.");
         state = MossKillerState.EXIT_SCRIPT;
     }
 
