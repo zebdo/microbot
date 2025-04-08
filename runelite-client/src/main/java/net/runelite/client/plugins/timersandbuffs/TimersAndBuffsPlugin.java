@@ -325,15 +325,15 @@ public class TimersAndBuffsPlugin extends Plugin
 			}
 
 			updateVarTimer(ANTIPOISON, event.getValue(),
-					i -> i >= 0 || i < VENOM_VALUE_CUTOFF,
-					i -> nextPoisonTick - tickCount + Math.abs((i + 1) * POISON_TICK_LENGTH));
+				i -> i >= 0 || i < VENOM_VALUE_CUTOFF,
+				i -> nextPoisonTick - tickCount + Math.abs((i + 1) * POISON_TICK_LENGTH));
 			updateVarTimer(ANTIVENOM, event.getValue(),
-					i -> i >= VENOM_VALUE_CUTOFF,
-					i -> nextPoisonTick - tickCount + Math.abs((i + 1 - VENOM_VALUE_CUTOFF) * POISON_TICK_LENGTH));
+				i -> i >= VENOM_VALUE_CUTOFF,
+				i -> nextPoisonTick - tickCount + Math.abs((i + 1 - VENOM_VALUE_CUTOFF) * POISON_TICK_LENGTH));
 		}
 
 		if ((event.getVarbitId() == Varbits.NMZ_OVERLOAD_REFRESHES_REMAINING
-				|| event.getVarbitId() == Varbits.COX_OVERLOAD_REFRESHES_REMAINING) && config.showOverload())
+			|| event.getVarbitId() == Varbits.COX_OVERLOAD_REFRESHES_REMAINING) && config.showOverload())
 		{
 			final int overloadVarb = event.getValue();
 			final int tickCount = client.getTickCount();
@@ -382,8 +382,8 @@ public class TimersAndBuffsPlugin extends Plugin
 		}
 
 		if (event.getVarbitId() == Varbits.RUN_SLOWED_DEPLETION_ACTIVE
-				|| event.getVarbitId() == Varbits.STAMINA_EFFECT
-				|| event.getVarbitId() == Varbits.RING_OF_ENDURANCE_EFFECT)
+			|| event.getVarbitId() == Varbits.STAMINA_EFFECT
+			|| event.getVarbitId() == Varbits.RING_OF_ENDURANCE_EFFECT)
 		{
 			// staminaEffectActive is checked to match https://github.com/Joshua-F/cs2-scripts/blob/741271f0c3395048c1bad4af7881a13734516adf/scripts/%5Bproc%2Cbuff_bar_get_value%5D.cs2#L25
 			int staminaEffectActive = client.getVarbitValue(Varbits.RUN_SLOWED_DEPLETION_ACTIVE);
@@ -1108,7 +1108,7 @@ public class TimersAndBuffsPlugin extends Plugin
 		{
 			// assume movement means unfrozen
 			if (freezeTime != client.getTickCount()
-					&& !currentWorldPoint.equals(lastPoint))
+				&& !currentWorldPoint.equals(lastPoint))
 			{
 				removeGameTimer(freezeTimer.getTimer());
 				freezeTimer = null;
@@ -1237,6 +1237,26 @@ public class TimersAndBuffsPlugin extends Plugin
 		if (npcId == NpcID.ZOMBIFIED_SPAWN || npcId == NpcID.ZOMBIFIED_SPAWN_8063)
 		{
 			removeGameTimer(ICEBARRAGE);
+		}
+	}
+
+	@Subscribe
+	void onNpcSpawned(NpcSpawned event)
+	{
+		final NPC npc = event.getNpc();
+		if (npc.getId() == NpcID.ABYSSAL_SIRE_5889)
+		{
+			removeGameTimer(ABYSSAL_SIRE_STUN);
+		}
+	}
+
+	@Subscribe
+	void onNpcChanged(NpcChanged event)
+	{
+		final NPC npc = event.getNpc();
+		if (npc.getId() == NpcID.ABYSSAL_SIRE_5889)
+		{
+			removeGameTimer(ABYSSAL_SIRE_STUN);
 		}
 	}
 
