@@ -529,8 +529,6 @@ public class Rs2Bank {
             }, 5000);
             
             Rs2Random.waitEx(1200, 100);
-            
-            System.out.println("found enter amount");
             Rs2Keyboard.typeString(String.valueOf(amount));
             Rs2Keyboard.enter();
             sleepUntil(() -> Rs2Inventory.hasItem(rs2Item.id), 2500);
