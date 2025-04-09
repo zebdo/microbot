@@ -114,7 +114,7 @@ public class AutoSmeltingScript extends Script {
                 super.shutdown();
             }
             Rs2Bank.withdrawX(name, totalAmount, true);
-            sleepUntil(() -> Rs2Inventory.hasItemAmount(name, totalAmount), 3500);
+            sleepUntil(() -> Rs2Inventory.hasItemAmount(name, totalAmount, false, true), 3500);
 
             // Exit if we did not end up finding it.
             if (!Rs2Inventory.hasItemAmount(name, totalAmount, false, true)) {
