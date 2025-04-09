@@ -524,7 +524,6 @@ public class Rs2Bank {
             sleepUntil(() -> {
                 Widget widget = Rs2Widget.getWidget(162, 42);
                 if (widget == null) return false;
-                System.out.println(widget.getText());
                 return widget.getText().equalsIgnoreCase("Enter amount:");
             }, 5000);
             
@@ -585,7 +584,11 @@ public class Rs2Bank {
         if (!Rs2Inventory.hasItem(rs2Item.id)) return false;
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
-        invokeMenu(INVENTORY_HANDLE_ALL, rs2Item);
+        if (Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 4) {
+            invokeMenu(2, rs2Item);
+        } else {
+            invokeMenu(INVENTORY_HANDLE_ALL, rs2Item);
+        }
         return true;
     }
 
@@ -931,7 +934,7 @@ public class Rs2Bank {
      * @param amount amount to withdraw
      * @param exact  exact search based on equalsIgnoreCase
      */
-    private static boolean withdrawX(String name, int amount, boolean exact) {
+    public static boolean withdrawX(String name, int amount, boolean exact) {
         return withdrawXItem(findBankItem(name, exact), amount);
     }
 
@@ -958,7 +961,11 @@ public class Rs2Bank {
         if (Rs2Inventory.isFull()) return false;
         container = BANK_ITEM_CONTAINER;
 
-        invokeMenu(BANK_HANDLE_ALL, rs2Item);
+        if (Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 4) {
+            invokeMenu(1, rs2Item);
+        } else {
+            invokeMenu(BANK_HANDLE_ALL, rs2Item);
+        }
         return true;
     }
 
