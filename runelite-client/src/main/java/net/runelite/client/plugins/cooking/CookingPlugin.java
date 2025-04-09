@@ -31,13 +31,10 @@ import lombok.Getter;
 import lombok.Setter;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
-import net.runelite.api.GraphicID;
-import net.runelite.api.ItemID;
 import net.runelite.api.Player;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GraphicChanged;
-import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.SpotanimID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -53,6 +50,8 @@ import javax.inject.Inject;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
+
+import static net.runelite.api.gameval.ItemID.JUG_WINE;
 
 @PluginDescriptor(
 	name = "Cooking",
@@ -146,7 +145,7 @@ public class CookingPlugin extends Plugin
 			}
 			else
 			{
-				FermentTimer fermentTimer = new FermentTimer(itemManager.getImage(ItemID.JUG_WINE), this);
+				FermentTimer fermentTimer = new FermentTimer(itemManager.getImage(JUG_WINE), this);
 				infoBoxManager.addInfoBox(fermentTimer);
 			}
 		}

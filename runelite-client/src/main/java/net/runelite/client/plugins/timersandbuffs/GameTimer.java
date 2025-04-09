@@ -31,6 +31,12 @@ import lombok.Getter;
 import net.runelite.api.SpriteID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.SpotanimID;
+
+import javax.annotation.Nullable;
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalUnit;
+
 import static net.runelite.client.util.RSTimeUnit.GAME_TICKS;
 
 @Getter(AccessLevel.PUBLIC)

@@ -28,14 +28,7 @@ import com.google.common.collect.ImmutableSet;
 import com.google.inject.Provides;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.Constants;
-import net.runelite.api.EquipmentInventorySlot;
-import net.runelite.api.Item;
-import net.runelite.api.ItemContainer;
-import net.runelite.api.ScriptID;
-import net.runelite.api.Skill;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
@@ -44,7 +37,6 @@ import net.runelite.api.events.ScriptPostFired;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.chat.ChatColorType;
 import net.runelite.client.chat.ChatMessageBuilder;
@@ -65,8 +57,6 @@ import java.util.Arrays;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import static net.runelite.api.ItemID.*;
 
 @PluginDescriptor(
 	name = "Run Energy",
@@ -169,9 +159,9 @@ public class RunEnergyPlugin extends Plugin
 		configManager.setRSProfileConfiguration(RunEnergyConfig.GROUP_NAME, "ringOfEnduranceCharges", charges);
 	}
 
-	boolean isRingOfEnduranceEquipped()
+	static boolean isRingOfEnduranceEquipped()
 	{
-		final ItemContainer equipment = client.getItemContainer(InventoryID.WORN);
+		final ItemContainer equipment = Microbot.getClient().getItemContainer(InventoryID.WORN);
 		return equipment != null && equipment.count(ItemID.RING_OF_ENDURANCE) == 1;
 	}
 
@@ -299,12 +289,9 @@ public class RunEnergyPlugin extends Plugin
 		// New drain rate formula
 		double drainRate = (60 + (67 * weight / 64.0)) * (1 - (agilityLevel / 300.0));
 
-		if (client.getVarbitValue(VarbitID.STAMINA_ACTIVE) != 0)
-		{
-			energyUnitsLost *= 0.3; // Stamina effect reduces energy depletion to 30%
-		}
-		else if (isRingOfEnduranceEquipped()) // Ring of Endurance passive effect does not stack with stamina potion
-		{
+		if (client.getVarbitValue(Varbits.RUN_SLOWED_DEPLETION_ACTIVE) != 0) {
+			drainRate *= 0.3; // Stamina effect reduces drain rate to 30%
+		} else if (isRingOfEnduranceEquipped()) {
 			Integer charges = getRingOfEnduranceCharges();
 			if (charges != null && charges >= RING_OF_ENDURANCE_PASSIVE_EFFECT) {
 				drainRate *= 0.85; // Ring of Endurance passive effect reduces drain rate to 85%
@@ -317,9 +304,9 @@ public class RunEnergyPlugin extends Plugin
 		return formatTime(secondsLeft, inSeconds);
 	}
 
-	private static int getGracefulRecoveryBoost()
+	public static int getGracefulRecoveryBoost()
 	{
-		final ItemContainer equipment = client.getItemContainer(InventoryID.WORN);
+		final ItemContainer equipment = Microbot.getClient().getItemContainer(InventoryID.WORN);
 
 		if (equipment == null)
 		{

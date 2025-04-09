@@ -29,7 +29,7 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.ToString;
 import net.runelite.api.annotations.Component;
-import net.runelite.api.widgets.ComponentID;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 

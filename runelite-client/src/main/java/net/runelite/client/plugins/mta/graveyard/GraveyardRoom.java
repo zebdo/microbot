@@ -24,8 +24,7 @@
  */
 package net.runelite.client.plugins.mta.graveyard;
 
-import java.awt.image.BufferedImage;
-import javax.inject.Inject;
+import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
@@ -43,8 +42,6 @@ import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 
 import javax.inject.Inject;
 import java.awt.image.BufferedImage;
-
-import static net.runelite.api.ItemID.*;
 
 public class GraveyardRoom extends MTARoom
 {
