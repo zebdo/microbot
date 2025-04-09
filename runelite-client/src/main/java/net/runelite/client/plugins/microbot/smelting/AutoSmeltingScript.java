@@ -98,7 +98,7 @@ public class AutoSmeltingScript extends Script {
         for (Map.Entry<Ores, Integer> requiredMaterials : config.SELECTED_BAR_TYPE().getRequiredMaterials().entrySet()) {
             Integer amount = requiredMaterials.getValue();
             String name = requiredMaterials.getKey().toString();
-            if (!Rs2Inventory.hasItemAmount(name, amount)) {
+            if (!Rs2Inventory.hasItemAmount(name, amount, false, true)) {
                 return false;
             }
         }
