@@ -524,7 +524,6 @@ public class Rs2Bank {
             sleepUntil(() -> {
                 Widget widget = Rs2Widget.getWidget(162, 42);
                 if (widget == null) return false;
-                System.out.println(widget.getText());
                 return widget.getText().equalsIgnoreCase("Enter amount:");
             }, 5000);
             
