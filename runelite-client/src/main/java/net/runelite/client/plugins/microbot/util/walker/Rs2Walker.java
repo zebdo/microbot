@@ -1927,11 +1927,6 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     private static boolean interactWithAdventureLog(Transport transport) {
         if (transport.getDisplayInfo() == null || transport.getDisplayInfo().isEmpty()) return false;
 
-        // Wait for the player to stop moving before checking for interface
-        if (Rs2Player.isMoving()) {
-            Rs2Player.waitForWalking();
-        }
-
         // Wait for the widget to become visible
         boolean isAdventureLogVisible = sleepUntilTrue(() -> !Rs2Widget.isHidden(ComponentID.ADVENTURE_LOG_CONTAINER), Rs2Player::isMoving, 100, 10000);
 
