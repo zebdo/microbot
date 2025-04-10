@@ -377,8 +377,15 @@ public class BarrowsScript extends Script {
                         }
                         checkForBrother();
                         if(!Rs2Player.isInCombat()){
-                            if(Rs2GameObject.interact(chest, "Search")){
-                                sleep(500,1500);
+                            int io = 0;
+                            while(io < 3 && !Rs2Widget.hasWidget("Barrows chest")) {
+                                if (Rs2GameObject.interact(chest, "Search")) {
+                                    sleep(500, 1500);
+                                }
+                                if(!super.isRunning()){
+                                    break;
+                                }
+                                io++;
                             }
                         }
                         //widget check
