@@ -531,11 +531,13 @@ public class Rs2Bank {
         } else {
             invokeMenu(handleXUnset, rs2Item);
 
-            sleepUntil(() -> {
+             boolean foundEnterAmount = sleepUntil(() -> {
                 Widget widget = Rs2Widget.getWidget(162, 42);
                 if (widget == null) return false;
                 return widget.getText().equalsIgnoreCase("Enter amount:");
             }, 5000);
+            
+            if (!foundEnterAmount) return false;
             
             Rs2Random.waitEx(1200, 100);
             Rs2Keyboard.typeString(String.valueOf(amount));
