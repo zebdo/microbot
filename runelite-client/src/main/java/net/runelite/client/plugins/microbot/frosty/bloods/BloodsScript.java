@@ -13,19 +13,16 @@ import net.runelite.client.plugins.microbot.frosty.bloods.enums.Teleports;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
-import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
-import net.runelite.client.plugins.microbot.util.equipment.JewelleryLocationEnum;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+
 
 
 import javax.inject.Inject;
@@ -33,6 +30,7 @@ import java.awt.event.KeyEvent;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
@@ -57,6 +55,11 @@ public class BloodsScript extends Script {
         Rs2Antiban.resetAntibanSettings();
         Rs2Antiban.antibanSetupTemplates.applyRunecraftingSetup();
         Rs2Antiban.setActivity(Activity.CRAFTING_BLOODS_TRUE_ALTAR);
+
+        if (plugin.isBreakHandlerEnabled()) {
+            BreakHandlerScript.setLockState(false);
+        }
+
         Rs2Camera.setZoom(150);
         sleepGaussian(700, 200);
         state = State.BANKING;
@@ -344,7 +347,7 @@ public class BloodsScript extends Script {
 
     private void handleBankTeleport() {
         Rs2Tab.switchToEquipmentTab();
-        sleepGaussian(900, 200);
+        sleepGaussian(1300, 200);
 
         Teleports bankTeleport = Teleports.CRAFTING_CAPE;
         for (Integer itemId : bankTeleport.getItemIds()) {
@@ -399,14 +402,10 @@ public class BloodsScript extends Script {
         sleepUntil(() -> !Rs2Player.isAnimating() && !Rs2Player.isMoving()
                 && Rs2Player.getWorldLocation() != null
                 && Rs2Player.getWorldLocation().getRegionID() == 13721, 1200);
-
         state = State.WALKING_TO;
     }
 
     private void handleGoingHome() {
-        // Need to find ideal way of checking when we are in POH
-        // Look for portal or a room id
-
         if (plugin.isBreakHandlerEnabled()) {
             BreakHandlerScript.setLockState(true);
         }
@@ -422,15 +421,9 @@ public class BloodsScript extends Script {
                 Rs2Inventory.interact(itemId, homeTeleport.getInteraction());
                 sleepUntil(() -> Rs2Player.getWorldLocation() != null && Rs2Player.getWorldLocation().getRegionID() == 7769 || Rs2Player.getWorldLocation().getRegionID() == 53739
                         && !Rs2Player.isAnimating());
-                /*sleepUntil(() -> client.isInInstancedRegion() && Rs2Player.getWorldLocation() != null
-                        && !Rs2Player.isAnimating(), 1200);*/
                 sleepGaussian(2500, 200);
                 break;
             }
-        }
-
-        if (client.isInInstancedRegion()) {
-            Microbot.log("Player is in an instanced region");
         }
 
         if (Rs2Player.getRunEnergy() < 45) {
@@ -445,7 +438,7 @@ public class BloodsScript extends Script {
         }
 
         Microbot.log("Interacting with the fairies");
-        Rs2GameObject.interact(27097, "Ring-last-destination (DLS)");
+        Rs2GameObject.interact(config.pohFairyRingID(), "Ring-last-destination (DLS)");
         sleepGaussian(1300, 200);
         Microbot.log("Waiting for animation and region");
         Rs2Player.waitForAnimation(1200);
@@ -456,8 +449,3 @@ public class BloodsScript extends Script {
         state = State.WALKING_TO;
     }
 }
-
-
-
-
-

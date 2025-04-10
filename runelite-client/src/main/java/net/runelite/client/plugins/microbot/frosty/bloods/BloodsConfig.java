@@ -1,8 +1,8 @@
 package net.runelite.client.plugins.microbot.frosty.bloods;
 
 import net.runelite.client.config.*;
-import net.runelite.client.plugins.microbot.frosty.bloods.enums.HomeTeleports;
-import net.runelite.client.plugins.microbot.frosty.bloods.enums.Teleports;
+import net.runelite.client.plugins.microbot.frosty.bloods.enums.RuneType;
+
 
 @ConfigGroup("Frosty")
 @ConfigInformation(
@@ -28,10 +28,33 @@ public interface BloodsConfig extends Config {
             keyName = "Use POH",
             name = "Use POH",
             description = "Check if you have fairy ring and pool in POH",
-            position = 6,
+            position = 1,
             section = settingsSection
     )
     default boolean usePoh() {
         return false;
     }
+
+    @ConfigItem(
+            keyName = "pohFairyRingID",
+            name = "PoH Fairy ring ID",
+            description = "Enter the Id of your PoH Fairy ring using Dev tool Examine",
+            position = 2,
+            section = settingsSection
+    )
+    default int pohFairyRingID() {
+        return 27097;
+    }
+
+    @ConfigItem(
+            keyName = "runeType",
+            name = "Rune Type",
+            description = "Select the type of rune to craft",
+            position = 7,
+            section = settingsSection
+    )
+    default RuneType runeType() {
+        return RuneType.BLOOD_RUNE;
+    }
+
 }
