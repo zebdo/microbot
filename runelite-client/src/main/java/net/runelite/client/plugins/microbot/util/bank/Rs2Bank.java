@@ -511,6 +511,11 @@ public class Rs2Bank {
         int handleXSet = isInventory ? INVENTORY_HANDLE_X_SET : BANK_HANDLE_X_SET;
         int handleXUnset = isInventory ? INVENTORY_HANDLE_X_UNSET : BANK_HANDLE_X_UNSET;
         
+        if (!isInventory && Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 4) {
+            handleXSet++;
+            handleXUnset++;
+        }
+        
         if (Microbot.getVarbitValue(X_AMOUNT_VARBIT) == amount) {
             invokeMenu(handleXSet, rs2Item);
 
