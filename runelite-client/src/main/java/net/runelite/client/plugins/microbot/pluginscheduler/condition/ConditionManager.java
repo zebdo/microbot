@@ -46,7 +46,7 @@ public class ConditionManager {
     
     //private final List<Condition> userConditions = new ArrayList<>();    
     
-    private LogicalCondition pluginCondition = null;
+    private LogicalCondition pluginCondition = new OrCondition();
     @Getter
     private LogicalCondition userLogicalCondition;
     private final EventBus eventBus;
@@ -728,22 +728,104 @@ public class ConditionManager {
     /**
      * Gets the next time any condition in the structure will trigger.
      * This recursively examines the logical condition tree and finds the earliest trigger time.
+     * If conditions are already satisfied, returns a time in the immediate past.
      * 
      * @return Optional containing the earliest next trigger time, or empty if none available
      */
-    public Optional<ZonedDateTime> getNextTriggerTime() {
-        // Start at the root of the condition tree
-        return getNextTriggerTimeForLogical(getFullLogicalCondition());
+    public Optional<ZonedDateTime> getCurrentTriggerTime() {
+        // Check if conditions are already met
+        boolean conditionsMet = areConditionsMet();
+        if (conditionsMet) {
+            ZonedDateTime immediateTime = ZonedDateTime.now(ZoneId.systemDefault()).minusSeconds(1);
+            log.debug("Conditions already met, returning immediate trigger time: {}", immediateTime);
+            return Optional.of(immediateTime);
+        }
+        
+        // Otherwise proceed with normal logic for finding next trigger time
+        log.debug("Conditions not yet met, searching for next trigger time in logical structure");
+        Optional<ZonedDateTime> nextTime = getCurrentTriggerTimeForLogical(getFullLogicalCondition());
+        
+        if (nextTime.isPresent()) {
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
+            ZonedDateTime triggerTime = nextTime.get();
+            
+            if (triggerTime.isBefore(now)) {
+                log.debug("Found trigger time {} is in the past compared to now {}", 
+                    triggerTime, now);
+                
+                // If trigger time is in the past but conditions aren't met,
+                // this might indicate a condition that needs resetting
+                if (!conditionsMet) {
+                    log.debug("Trigger time in past but conditions not met - may need reset");
+                }
+            } else {
+                log.debug("Found future trigger time: {}", triggerTime);
+            }
+        } else {
+            log.debug("No trigger time found in condition structure");
+        }
+        
+        return nextTime;
     }
+
+    /**
+     * Recursively finds the earliest next trigger time within a logical condition.
+     * 
+     * @param logical The logical condition to examine
+     * @return Optional containing the earliest next trigger time, or empty if none available
+     */
+    private Optional<ZonedDateTime> getCurrentTriggerTimeForLogical(LogicalCondition logical) {
+        if (logical == null || logical.getConditions().isEmpty()) {
+            log.debug("Logical condition is null or empty, no trigger time available");
+            return Optional.empty();
+        }
+        
+        ZonedDateTime earliestTrigger = null;
+        
+        for (Condition condition : logical.getConditions()) {
+            log.debug("Checking next trigger time for condition: {}", condition.getDescription());
+            Optional<ZonedDateTime> nextTrigger;
+            
+            if (condition instanceof LogicalCondition) {
+                // Recursively check nested logical conditions
+                log.debug("Recursing into nested logical condition");
+                nextTrigger = getCurrentTriggerTimeForLogical((LogicalCondition) condition);
+            } else {
+                // Get trigger time from individual condition
+                nextTrigger = condition.getCurrentTriggerTime();
+                log.debug("Condition {} trigger time: {}", 
+                    condition.getDescription(), 
+                    nextTrigger.isPresent() ? nextTrigger.get() : "none");
+            }
+            
+            // Update earliest trigger if this one is earlier
+            if (nextTrigger.isPresent()) {
+                ZonedDateTime triggerTime = nextTrigger.get();
+                if (earliestTrigger == null || triggerTime.isBefore(earliestTrigger)) {
+                    log.debug("Found earlier trigger time: {}", triggerTime);
+                    earliestTrigger = triggerTime;
+                }
+            }
+        }
+        
+        if (earliestTrigger != null) {
+            log.debug("Earliest trigger time for logical condition: {}", earliestTrigger);
+            return Optional.of(earliestTrigger);
+        } else {
+            log.debug("No trigger times found in logical condition");
+            return Optional.empty();
+        }
+    }
+
     /**
      * Gets the next time any condition in the structure will trigger.
      * This recursively examines the logical condition tree and finds the earliest trigger time.
      * 
      * @return Optional containing the earliest next trigger time, or empty if none available
      */
-    public Optional<ZonedDateTime> getNextTriggerTimeBasedOnUserConditions() {
+    public Optional<ZonedDateTime> getCurrentTriggerTimeBasedOnUserConditions() {
         // Start at the root of the condition tree
-        return getNextTriggerTimeForLogical(getFullLogicalUserCondition());
+        return getCurrentTriggerTimeForLogical(getFullLogicalUserCondition());
     }
     /**
      * Determines the next time a plugin should be triggered based on the plugin's set conditions.
@@ -753,55 +835,24 @@ public class ConditionManager {
      * @return An Optional containing the ZonedDateTime of the next trigger time if one exists,
      *         or an empty Optional if no future trigger time can be determined
      */
-    public Optional<ZonedDateTime> getNextTriggerTimeBasedOnPluginConditions() {
+    public Optional<ZonedDateTime> getCurrentTriggerTimeBasedOnPluginConditions() {
         // Start at the root of the condition tree
-        return getNextTriggerTimeForLogical(getFullLogicalPluginCondition());
-    }
-
-
-    /**
-     * Recursively finds the earliest next trigger time within a logical condition.
-     * 
-     * @param logical The logical condition to examine
-     * @return Optional containing the earliest next trigger time, or empty if none available
-     */
-    private Optional<ZonedDateTime> getNextTriggerTimeForLogical(LogicalCondition logical) {
-        if (logical == null || logical.getConditions().isEmpty()) {
-            return Optional.empty();
-        }
-        
-        ZonedDateTime earliestTrigger = null;
-        
-        for (Condition condition : logical.getConditions()) {
-            Optional<ZonedDateTime> nextTrigger;
-            
-            if (condition instanceof LogicalCondition) {
-                // Recursively check nested logical conditions
-                nextTrigger = getNextTriggerTimeForLogical((LogicalCondition) condition);
-            } else {
-                // Get trigger time from individual condition
-                nextTrigger = condition.getNextTriggerTime();
-            }
-            
-            // Update earliest trigger if this one is earlier
-            if (nextTrigger.isPresent()) {
-                ZonedDateTime triggerTime = nextTrigger.get();
-                if (earliestTrigger == null || triggerTime.isBefore(earliestTrigger)) {
-                    earliestTrigger = triggerTime;
-                }
-            }
-        }
-        
-        return earliestTrigger != null ? Optional.of(earliestTrigger) : Optional.empty();
+        return getCurrentTriggerTimeForLogical(getFullLogicalPluginCondition());
     }
 
     /**
      * Gets the duration until the next condition trigger.
+     * For conditions already satisfied, returns Duration.ZERO.
      * 
      * @return Optional containing the duration until next trigger, or empty if none available
      */
     public Optional<Duration> getDurationUntilNextTrigger() {
-        Optional<ZonedDateTime> nextTrigger = getNextTriggerTime();
+        // If conditions are already met, return zero duration
+        if (areConditionsMet()) {
+            return Optional.of(Duration.ZERO);
+        }
+        
+        Optional<ZonedDateTime> nextTrigger = getCurrentTriggerTime();
         if (nextTrigger.isPresent()) {
             ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
             ZonedDateTime triggerTime = nextTrigger.get();
@@ -810,6 +861,11 @@ public class ConditionManager {
             if (triggerTime.isAfter(now)) {
                 return Optional.of(Duration.between(now, triggerTime));
             }
+            
+            // If trigger time is in the past but conditions aren't met,
+            // this indicates a condition that needs resetting
+            log.debug("Trigger time in past but conditions not met - returning zero duration");
+            return Optional.of(Duration.ZERO);
         }
         return Optional.empty();
     }
@@ -819,8 +875,8 @@ public class ConditionManager {
      * 
      * @return A string representing when the next condition will trigger, or "No upcoming triggers" if none
      */
-    public String getNextTriggerTimeString() {
-        Optional<ZonedDateTime> nextTrigger = getNextTriggerTime();
+    public String getCurrentTriggerTimeString() {
+        Optional<ZonedDateTime> nextTrigger = getCurrentTriggerTime();
         if (nextTrigger.isPresent()) {
             ZonedDateTime triggerTime = nextTrigger.get();
             ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());

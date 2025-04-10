@@ -14,6 +14,7 @@ import net.runelite.client.ui.FontManager;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import javax.swing.border.TitledBorder;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -31,7 +32,7 @@ public class SchedulerWindow extends JFrame {
     private final SchedulerInfoPanel infoPanel;
     private JButton runSchedulerButton;
     private JButton stopSchedulerButton;
-    
+    private JLabel stopInstructionLabel;
     // Timer for refreshing the info panel
     private Timer refreshTimer;
 
@@ -56,13 +57,41 @@ public class SchedulerWindow extends JFrame {
         formPanel.setRemoveButtonAction(e -> onRemovePlugin());
         formPanel.setEditMode(false);
 
+        // Set up form panel to clear table selection when ComboBox changes
+        formPanel.setSelectionChangeListener(() -> {
+            tablePanel.clearSelection();
+        });
+
+       
+
         // Set up condition panel callback
         stopConditionPanel.setUserConditionUpdateCallback(userCondition -> {
             PluginScheduleEntry selected = tablePanel.getSelectedPlugin();
             if (selected != null) {             
                 plugin.saveScheduledPlugins();
                 tablePanel.refreshTable();
-                infoPanel.refresh(); // Refresh info panel after condition updates
+                infoPanel.refresh();
+                
+                // Check if we're waiting to start a plugin
+                if (plugin.getCurrentState() == SchedulerState.STARTING_PLUGIN && 
+                    plugin.getCurrentPlugin() == selected &&
+                    !selected.getStopConditionManager().getConditions().isEmpty()) {
+                    
+                    // Conditions added for the plugin we're waiting to start - continue starting
+                    int result = JOptionPane.showConfirmDialog(
+                        this,
+                        "Stop conditions have been added. Would you like to start the plugin now?",
+                        "Start Plugin",
+                        JOptionPane.YES_NO_OPTION
+                    );
+                    
+                    if (result == JOptionPane.YES_OPTION) {
+                        plugin.continueStartingPlugin(selected);
+                    } else {
+                        // User decided not to start - reset state
+                        plugin.resetPendingStart();
+                    }
+                }
             }
         });
 
@@ -82,14 +111,26 @@ public class SchedulerWindow extends JFrame {
         tabbedPane.addChangeListener(e -> {
             // When switching to Conditions tab, ensure the condition panel shows the currently selected plugin
             if (tabbedPane.getSelectedIndex() == 1) { // Stop Conditions tab
-                PluginScheduleEntry selected = tablePanel.getSelectedPlugin();                                
+                PluginScheduleEntry selected = tablePanel.getSelectedPlugin();     
+                if (selected == null) {
+                 
+                    log.info("No plugin selected for editing. {} but plugin");
+                    return;
+                }                           
                 stopConditionPanel.setSelectScheduledPlugin(selected);                                                
             }
         });
         
         // Add table selection listener
-        tablePanel.addSelectionListener(this::onPluginSelected);
-
+        //tablePanel.addSelectionListener(this::onPluginSelected);
+        // Modify the existing table selection listener to update ComboBox
+        tablePanel.addSelectionListener(pluginEntry -> {
+            onPluginSelected(pluginEntry);
+            // Synchronize form panel ComboBox with table selection
+            if (plugin != null) {
+                formPanel.syncWithTableSelection(pluginEntry);
+            }
+        });
         // Create refresh timer to update info panel
         refreshTimer = new Timer(1000, e -> infoPanel.refresh());
         
@@ -106,9 +147,26 @@ public class SchedulerWindow extends JFrame {
             }
         });
         
+        // Style all comboboxes in the UI
+        styleAllComboBoxes(this);
+        
         // Initialize with data
         refresh();
         updateButtonState();
+    }
+
+    /**
+     * Recursively styles all JComboBoxes found in the container and its children
+     */
+    private void styleAllComboBoxes(Container container) {
+        for (Component component : container.getComponents()) {
+            if (component instanceof JComboBox) {
+                SchedulerUIUtils.styleComboBox((JComboBox<?>) component);
+            }
+            if (component instanceof Container) {
+                styleAllComboBoxes((Container) component);
+            }
+        }
     }
 
     /**
@@ -189,21 +247,32 @@ public class SchedulerWindow extends JFrame {
         JPanel scheduleTab = new JPanel(new BorderLayout());
         scheduleTab.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
-        // Create a split pane for the table and form
+        // Create a split pane for the table and form - use VERTICAL layout for better table visibility
         JSplitPane scheduleSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
         scheduleSplitPane.setTopComponent(tablePanel);
         scheduleSplitPane.setBottomComponent(formPanel);
-        scheduleSplitPane.setResizeWeight(0.7); // Give more space to the table
-        scheduleSplitPane.setDividerLocation(400);
+        scheduleSplitPane.setResizeWeight(0.7); // Give 50% space to the table on top
+        scheduleSplitPane.setDividerLocation(350); // Set initial divider position
         scheduleSplitPane.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         scheduleTab.add(scheduleSplitPane, BorderLayout.CENTER);
         
         // Stop Conditions tab
         JPanel stopConditionsTab = new JPanel(new BorderLayout());
         stopConditionsTab.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        JLabel stopInstructionLabel = new JLabel("<html>Configure stop conditions for the selected plugin</html>");
-        stopInstructionLabel.setBorder(new EmptyBorder(5, 5, 5, 5));
+        this.stopInstructionLabel = new JLabel("<html>Configure stop conditions for the selected plugin</html>");
+        stopInstructionLabel.setBorder(BorderFactory.createCompoundBorder(
+            BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(ColorScheme.MEDIUM_GRAY_COLOR),
+                "Stop Conditions",
+                TitledBorder.DEFAULT_JUSTIFICATION,
+                TitledBorder.DEFAULT_POSITION,
+                FontManager.getRunescapeBoldFont(),
+                Color.WHITE
+            ),
+            BorderFactory.createEmptyBorder(5, 5, 5, 5)
+        ));
         stopInstructionLabel.setForeground(Color.WHITE);
+        
         stopConditionsTab.add(stopInstructionLabel, BorderLayout.NORTH);
         stopConditionsTab.add(stopConditionPanel, BorderLayout.CENTER);
         
@@ -260,17 +329,32 @@ public class SchedulerWindow extends JFrame {
         }
     }
 
-    private void onPluginSelected(PluginScheduleEntry plugin) {
+    private void onPluginSelected(PluginScheduleEntry plugin) {        
+        if (tablePanel.getRowCount() == 0) {            
+            log.info("No plugins in table.");
+            return;
+        }
         PluginScheduleEntry selected = tablePanel.getSelectedPlugin();   
         if (selected == null) {            
             formPanel.setEditMode(false);
-            stopConditionPanel.setSelectScheduledPlugin(null);
+            if (tabbedPane.getSelectedIndex() != 1) { // Stop Conditions tab
+                stopConditionPanel.setSelectScheduledPlugin(null);
+            }
+            if (plugin == null) {
+                log.info("No plugin selected for editing. and plugin null");
+                return;
+            }
+            log.info("No plugin selected for editing. {} but plugin", plugin.getCleanName());
             return;
         }
         if (selected != plugin && selected != null) {            
             formPanel.loadPlugin(plugin);
             formPanel.setEditMode(true);    
+            log.info("selection found");
             stopConditionPanel.setSelectScheduledPlugin(selected);
+            stopInstructionLabel.setText("Configure stop conditions for: \""+selected.getName()+"\"");
+            
+            
 
         } else {                                        
          
@@ -288,7 +372,9 @@ public class SchedulerWindow extends JFrame {
             log.info("No plugin condition set.");
         }
 
-        scheduledPlugin.logConditionInfo(scheduledPlugin.getStopConditions(),"onAddPlugin Stop Conditions: " + scheduledPlugin.getName(), true);
+        scheduledPlugin.logConditionInfo(scheduledPlugin.getStopConditions(),
+                            "onAddPlugin Stop Conditions: " + scheduledPlugin.getName(), 
+                            true);
 
         // Check if the plugin has stop conditions
         if (scheduledPlugin.getStopConditionManager().getConditions().isEmpty()) {
@@ -305,7 +391,7 @@ public class SchedulerWindow extends JFrame {
                 plugin.addScheduledPlugin(scheduledPlugin);
                 plugin.saveScheduledPlugins();
                 refresh();
-                
+                log.info("Plugin added without conditions: row count" + tablePanel.getRowCount());
                 // Select the newly added plugin
                 tablePanel.selectPlugin(scheduledPlugin);
                 
@@ -313,6 +399,7 @@ public class SchedulerWindow extends JFrame {
                 tabbedPane.setSelectedIndex(1);                
                 return;
             } else if (result == JOptionPane.CANCEL_OPTION) {
+                scheduledPlugin.setEnabled(false); // Set to disabled by default
                 return; // Cancel the operation
             }
             // If NO, continue with adding plugin without conditions
@@ -383,5 +470,23 @@ public class SchedulerWindow extends JFrame {
             refreshTimer.stop();
         }
         super.dispose();
+    }
+
+    /**
+     * Selects a plugin in the table
+     */
+    public void selectPlugin(PluginScheduleEntry plugin) {
+        if (tablePanel != null) {
+            tablePanel.selectPlugin(plugin);
+        }
+    }
+
+    /**
+     * Switches to the stop conditions tab
+     */
+    public void switchToStopConditionsTab() {
+        if (tabbedPane != null) {
+            tabbedPane.setSelectedIndex(1); // Switch to stop conditions tab
+        }
     }
 }

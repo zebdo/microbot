@@ -88,7 +88,7 @@ public class ConditionConfigPanel extends JPanel {
     private final JPanel configPanel;
     
     private ConditionTreeCellRenderer conditionTreeCellRenderer;
-    private final JComboBox<String> logicComboBox;
+    
     // Tree visualization components
     private DefaultMutableTreeNode rootNode;
     private DefaultTreeModel treeModel;
@@ -164,16 +164,8 @@ public class ConditionConfigPanel extends JPanel {
         JLabel logicLabel = new JLabel("Logic:");
         logicLabel.setForeground(Color.WHITE);
         topPanel.add(logicLabel);
-        
-        logicComboBox = new JComboBox<>(new String[]{"All conditions must be met (AND)", "Any condition can be met (OR)"});
-        logicComboBox.addActionListener(e -> {
-            if (requireAllCallback != null) {
-                requireAllCallback.accept(logicComboBox.getSelectedIndex() == 0);
-            }
-            updateTreeFromConditions();
-        });
-        topPanel.add(logicComboBox);
-        
+      
+
         // Stop checkbox
         JLabel stopLabel = new JLabel("Auto-stop:");
         stopLabel.setForeground(Color.WHITE);
@@ -181,7 +173,7 @@ public class ConditionConfigPanel extends JPanel {
         
         // Add a panel for save/load buttons
         JPanel buttonControlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-        buttonControlPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+                buttonControlPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         buttonControlPanel.add(loadButton);
         buttonControlPanel.add(saveButton);
         buttonControlPanel.add(resetButton);
@@ -570,9 +562,12 @@ public class ConditionConfigPanel extends JPanel {
     private String descriptionForCondition(Condition condition) {
         // Check if this is a plugin-defined condition
         boolean isPluginDefined = false;
-        if (selectScheduledPlugin != null && selectScheduledPlugin.getStopConditionManager() != null) {
-            isPluginDefined = selectScheduledPlugin.getStopConditionManager().isPluginDefinedCondition(condition);
+    
+        if (selectScheduledPlugin != null && getConditionManger() != null) {
+
+            isPluginDefined = getConditionManger().isPluginDefinedCondition(condition);
         }
+        
         
         // Add with appropriate tag for plugin-defined conditions
         String description = condition.getDescription();
@@ -606,8 +601,7 @@ public class ConditionConfigPanel extends JPanel {
         resetButton.setEnabled(hasPlugin);
         editButton.setEnabled(hasPlugin);
         addButton.setEnabled(hasPlugin);
-        removeButton.setEnabled(hasPlugin);
-        logicComboBox.setEnabled(hasPlugin);
+        removeButton.setEnabled(hasPlugin);        
         conditionTypeComboBox.setEnabled(hasPlugin);
         conditionList.setEnabled(hasPlugin);
         conditionTree.setEnabled(hasPlugin);
@@ -619,7 +613,6 @@ public class ConditionConfigPanel extends JPanel {
         if (hasPlugin) {
             // Set the logic type combo box based on the plugin's condition manager
             boolean requireAll = selectedPlugin.getStopConditionManager().requiresAll();
-            logicComboBox.setSelectedIndex(requireAll ? 0 : 1);
             
             // Load the conditions from the plugin
             if (selectedPlugin.getStopConditionManager() != null) {
@@ -647,7 +640,7 @@ public class ConditionConfigPanel extends JPanel {
                 "Condition List",
                 TitledBorder.DEFAULT_JUSTIFICATION,
                 TitledBorder.DEFAULT_POSITION,
-                FontManager.getRunescapeSmallFont(),
+                FontManager.getRunescapeBoldFont(), // Changed to bold font
                 Color.WHITE
         ));
         
@@ -663,15 +656,15 @@ public class ConditionConfigPanel extends JPanel {
                 if (index >= 0 && index < currentConditions.size()) {
                     Condition condition = currentConditions.get(index);
                     
-                    if (selectScheduledPlugin != null && 
-                        selectScheduledPlugin.getStopConditionManager() != null &&
-                        selectScheduledPlugin.getStopConditionManager().isPluginDefinedCondition(condition)) {
-                        
-                        if (!isSelected) {
-                            setForeground(new Color(0, 128, 255)); // Blue for plugin conditions
-                        }
-                        setFont(getFont().deriveFont(Font.ITALIC)); // Italic for plugin conditions
-                    }
+                        if (selectScheduledPlugin != null && 
+                            getConditionManger() != null &&
+                            getConditionManger().isPluginDefinedCondition(condition)) {
+                            
+                            if (!isSelected) {
+                                setForeground(new Color(0, 128, 255)); // Blue for plugin conditions
+                            }
+                            setFont(getFont().deriveFont(Font.ITALIC)); // Italic for plugin conditions
+                        }                    
                 }
                 
                 return c;
@@ -693,6 +686,9 @@ public class ConditionConfigPanel extends JPanel {
         JScrollPane scrollPane = new JScrollPane(conditionList);
         scrollPane.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         scrollPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16); // For smoother scrolling
         
         panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
@@ -703,7 +699,14 @@ public class ConditionConfigPanel extends JPanel {
      */
     private JPanel createLogicalTreePanel() {
         JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder("Condition Structure"));
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(ColorScheme.MEDIUM_GRAY_COLOR),
+                "Condition Structure",
+                TitledBorder.DEFAULT_JUSTIFICATION,
+                TitledBorder.DEFAULT_POSITION,
+                FontManager.getRunescapeBoldFont(), // Use bold font
+                Color.WHITE
+        ));
         panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
         // Initialize tree
@@ -741,6 +744,12 @@ public class ConditionConfigPanel extends JPanel {
         });*/
         
         JScrollPane treeScrollPane = new JScrollPane(conditionTree);
+        treeScrollPane.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        treeScrollPane.setBorder(new EmptyBorder(5, 5, 5, 5));
+        treeScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        treeScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        treeScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+        
         panel.add(treeScrollPane, BorderLayout.CENTER);
         
         // Create the logical operations toolbar
@@ -842,26 +851,44 @@ public class ConditionConfigPanel extends JPanel {
     private void updateConfigPanel() {
         configPanel.removeAll();
         
+        // Create a main panel with GridBagLayout for flexibility
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.insets = new Insets(2, 2, 2, 2);
+        gbc.fill = GridBagConstraints.HORIZONTAL; // Make components fill horizontally
+        gbc.weightx = 1.0; // Allow components to expand
+        gbc.insets = new Insets(5, 5, 5, 5); // Add more padding
         
+        // Add condition type header
         String selectedType = (String) conditionTypeComboBox.getSelectedItem();
+        JLabel typeHeaderLabel = new JLabel("Configure " + selectedType + " Condition");
+        typeHeaderLabel.setForeground(Color.WHITE);
+        typeHeaderLabel.setFont(FontManager.getRunescapeBoldFont());
+        panel.add(typeHeaderLabel, gbc);
+        gbc.gridy++;
         
+        // Add a separator for visual clarity
+        JSeparator separator = new JSeparator();
+        separator.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+        panel.add(separator, gbc);
+        gbc.gridy++;
+        
+        // The remaining code to create the specific condition configuration is unchanged
+        // But we're setting it in a panel that will be scrollable if needed
         if (stopConditionPanel) {
             switch (selectedType) {
                 case "Time Duration":
-                    ConditionConfigPanelUtil.createTimeConfigPanel(panel, gbc,  configPanel);
+                    ConditionConfigPanelUtil.createTimeConfigPanel(panel, gbc, configPanel);
                     break;
                 case "Skill Level":
-                    ConditionConfigPanelUtil.createSkillLevelConfigPanel(panel, gbc,configPanel, true);
+                    ConditionConfigPanelUtil.createSkillLevelConfigPanel(panel, gbc, configPanel, true);
                     break;
                 case "Skill XP Goal":
-                    ConditionConfigPanelUtil.createSkillXpConfigPanel(panel, gbc,  configPanel);
+                    ConditionConfigPanelUtil.createSkillXpConfigPanel(panel, gbc, configPanel);
                     break;
                 case "Item Collection":
                     ConditionConfigPanelUtil.createItemConfigPanel(panel, gbc, configPanel, true);
@@ -895,7 +922,7 @@ public class ConditionConfigPanel extends JPanel {
                     ConditionConfigPanelUtil.createSkillLevelConfigPanel(panel, gbc, configPanel, false);
                     break;
                 case "Item Required":
-                    ConditionConfigPanelUtil.createItemConfigPanel(panel, gbc,configPanel,false);
+                    ConditionConfigPanelUtil.createItemConfigPanel(panel, gbc, configPanel, false);
                     break;
                 case "Inventory Item Count":
                     ConditionConfigPanelUtil.createInventoryItemCountPanel(panel, gbc, configPanel);
@@ -906,7 +933,14 @@ public class ConditionConfigPanel extends JPanel {
             }
         }
         
-        configPanel.add(panel);
+        // Add the panel to the config panel
+        configPanel.add(panel, BorderLayout.NORTH);
+        
+        // Add a filler panel to push everything to the top
+        JPanel fillerPanel = new JPanel();
+        fillerPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        configPanel.add(fillerPanel, BorderLayout.CENTER);
+        
         configPanel.revalidate();
         configPanel.repaint();
     }
@@ -966,9 +1000,11 @@ public class ConditionConfigPanel extends JPanel {
             for (Condition condition : conditionList) {
                 // Check if this is a plugin-defined condition
                 boolean isPluginDefined = false;
-                if (selectScheduledPlugin != null && selectScheduledPlugin.getStopConditionManager() != null) {
-                    isPluginDefined = selectScheduledPlugin.getStopConditionManager().isPluginDefinedCondition(condition);
+                           
+                if (selectScheduledPlugin != null && getConditionManger() != null) {
+                    isPluginDefined = getConditionManger().isPluginDefinedCondition(condition);
                 }
+                
                 
                 // Add with appropriate tag for plugin-defined conditions
                 String description = condition.getDescription();
@@ -979,8 +1015,7 @@ public class ConditionConfigPanel extends JPanel {
                 conditionListModel.addElement(description);
             }
         }
-                
-        logicComboBox.setSelectedIndex(requireAll ? 0 : 1);
+                        
         updateTreeFromConditions();
     }
     /**
@@ -1023,7 +1058,7 @@ public class ConditionConfigPanel extends JPanel {
         }
         
         // Build the tree from the condition manager
-        ConditionManager manager = selectScheduledPlugin.getStopConditionManager();
+        ConditionManager manager = getConditionManger();
         
         // If there is a plugin condition, show plugin and user sections separately
         if (manager.getPluginCondition() != null && !manager.getPluginCondition().getConditions().isEmpty()) {
@@ -1045,18 +1080,9 @@ public class ConditionConfigPanel extends JPanel {
         else if (manager.getUserLogicalCondition() != null) {
             LogicalCondition rootLogical = manager.getUserLogicalCondition();
             
-            // For the root logical, show its children directly if it matches the selected type
-            boolean isSelectedTypeAndRoot = 
-                (rootLogical instanceof AndCondition && logicComboBox.getSelectedIndex() == 0) ||
-                (rootLogical instanceof OrCondition && logicComboBox.getSelectedIndex() == 1);
+            // For the root logical, show its children directly if it matches the selected type                    
+            buildConditionTree(rootNode, rootLogical);
             
-            if (isSelectedTypeAndRoot) {
-                for (Condition child : rootLogical.getConditions()) {
-                    buildConditionTree(rootNode, child);
-                }
-            } else {
-                buildConditionTree(rootNode, rootLogical);
-            }
         }
         else {
             // This handles the case where we have flat conditions without logical structure
@@ -1238,13 +1264,15 @@ public class ConditionConfigPanel extends JPanel {
         
         // Check if this is a plugin-defined condition that shouldn't be removed
         if (selectScheduledPlugin != null && 
-            selectScheduledPlugin.getStopConditionManager().isPluginDefinedCondition(condition)) {
+            getConditionManger().isPluginDefinedCondition(condition)) {
             JOptionPane.showMessageDialog(this,
                     "This condition is defined by the plugin and cannot be removed.",
                     "Plugin Condition",
                     JOptionPane.WARNING_MESSAGE);
             return;
         }
+       
+
         
         // Get parent logical condition if any
         DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) selectedNode.getParent();
@@ -1265,7 +1293,7 @@ public class ConditionConfigPanel extends JPanel {
             }
         } else {
             // Direct removal from condition manager
-            selectScheduledPlugin.getStopConditionManager().removeCondition(condition);
+            getConditionManger().removeCondition(condition);
         }
         
         updateTreeFromConditions();
@@ -1335,10 +1363,6 @@ public class ConditionConfigPanel extends JPanel {
     }
     
   
-    
-    public boolean isRequireAll() {
-        return logicComboBox.getSelectedIndex() == 0;
-    }
     private void initializeSaveButton() {
         saveButton = createButton("Save Conditions", ColorScheme.PROGRESS_COMPLETE_COLOR);
         saveButton.addActionListener(e -> saveConditionsToScheduledPlugin());
@@ -1363,12 +1387,7 @@ public class ConditionConfigPanel extends JPanel {
     private void saveConditionsToScheduledPlugin() {
         if (selectScheduledPlugin == null) return;
         
-        // Set condition manager properties based on UI selection
-        if (isRequireAll()) {
-            selectScheduledPlugin.getStopConditionManager().setRequireAll();
-        } else {
-            selectScheduledPlugin.getStopConditionManager().setRequireAny();
-        }
+     
         
         // Save to config
         
@@ -1389,7 +1408,7 @@ public class ConditionConfigPanel extends JPanel {
         }
         // Call any registered callback (if implementing callback pattern)
         if (userConditionUpdateCallback != null) {
-            userConditionUpdateCallback.accept( selectScheduledPlugin.getStopConditionManager().getUserLogicalCondition());
+            userConditionUpdateCallback.accept( getConditionManger().getUserLogicalCondition());
         }
         
         // Save changes to the plugin configuration
@@ -1445,6 +1464,7 @@ public class ConditionConfigPanel extends JPanel {
                         condition = ConditionConfigPanelUtil.createBankItemCountCondition(this.configPanel);
                         break;
                 }
+               
             } else {
                 switch (conditionType) {
                     case "Time Window":
@@ -1467,20 +1487,34 @@ public class ConditionConfigPanel extends JPanel {
                         break;
                 }
             }
-            
+            log.info("addCurrentCondition: Created condition of type: {}", conditionType);            
             if (condition != null) {
+                log.info("addCurrentCondition: Adding condition: {}", condition.getDescription());
                 addConditionToPlugin(condition);
             }
+            
         } catch (Exception e) {
             JOptionPane.showMessageDialog(this, "Error creating condition: " + e.getMessage());
         }
     }
-    
+    private ConditionManager getConditionManger(){
+        if (selectScheduledPlugin == null) {
+            return null;
+        }
+        if (stopConditionPanel){
+            return selectScheduledPlugin.getStopConditionManager();
+        }else{
+            return selectScheduledPlugin.getStartConditionManager();
+        }
+    }
     /**
      * Finds the logical condition that should be the target for adding a new condition
      * based on the current tree selection
      */
     private LogicalCondition findTargetLogicalForAddition() {
+        if (stopConditionPanel){
+            ConditionManager manager = getConditionManger();
+        }
         if (selectScheduledPlugin == null) {
             return null;
         }
@@ -1488,7 +1522,7 @@ public class ConditionConfigPanel extends JPanel {
         DefaultMutableTreeNode selectedNode = (DefaultMutableTreeNode) conditionTree.getLastSelectedPathComponent();
         if (selectedNode == null) {
             // No selection, use root logical
-            return selectScheduledPlugin.getStopConditionManager().getUserLogicalCondition();
+            return getConditionManger().getUserLogicalCondition();
         }
         
         Object userObject = selectedNode.getUserObject();
@@ -1496,8 +1530,8 @@ public class ConditionConfigPanel extends JPanel {
         // If selected node is a logical condition, use it directly
         if (userObject instanceof LogicalCondition) {
             // Check if this is a plugin-defined condition
-            if (selectScheduledPlugin.getStopConditionManager().isPluginDefinedCondition((LogicalCondition)userObject)) {               
-                return selectScheduledPlugin.getStopConditionManager().getUserLogicalCondition();
+            if (getConditionManger().isPluginDefinedCondition((LogicalCondition)userObject)) {               
+                return getConditionManger().getUserLogicalCondition();
             }
             return (LogicalCondition) userObject;
         }
@@ -1511,15 +1545,15 @@ public class ConditionConfigPanel extends JPanel {
             if (parentNode.getUserObject() instanceof LogicalCondition) {
                 // Check if this is a plugin-defined condition
                 
-                if (selectScheduledPlugin.getStopConditionManager().isPluginDefinedCondition((LogicalCondition)parentNode.getUserObject())) {               
-                    return selectScheduledPlugin.getStopConditionManager().getUserLogicalCondition();
+                if (getConditionManger().isPluginDefinedCondition((LogicalCondition)parentNode.getUserObject())) {               
+                    return getConditionManger().getUserLogicalCondition();
                 }
                 return (LogicalCondition) parentNode.getUserObject();
             }
         }
         
         // Default to user logical condition
-        return selectScheduledPlugin.getStopConditionManager().getUserLogicalCondition();
+        return getConditionManger().getUserLogicalCondition();
     }
 
     /**
@@ -1530,7 +1564,7 @@ public class ConditionConfigPanel extends JPanel {
             return;
         }
         
-        ConditionManager manager = selectScheduledPlugin.getStopConditionManager();        
+        ConditionManager manager = getConditionManger();        
         // Find target logical condition based on selection
         LogicalCondition targetLogical = findTargetLogicalForAddition();        
         // Add the condition
@@ -1558,7 +1592,7 @@ public class ConditionConfigPanel extends JPanel {
         }
         
         Condition condition = (Condition) userObject;
-        ConditionManager manager = selectScheduledPlugin.getStopConditionManager();
+        ConditionManager manager = getConditionManger();
         
         // Check if this is a plugin-defined condition
         if (manager.isPluginDefinedCondition(condition)) {
@@ -1595,7 +1629,7 @@ public class ConditionConfigPanel extends JPanel {
         // Get the parent of the first node
         DefaultMutableTreeNode firstParent = (DefaultMutableTreeNode) nodes[0].getParent();
         if (firstParent == null || firstParent == rootNode) {
-            return selectScheduledPlugin.getStopConditionManager().getUserLogicalCondition();
+            return getConditionManger().getUserLogicalCondition();
         }
         
         if (!(firstParent.getUserObject() instanceof LogicalCondition)) {
@@ -1625,7 +1659,17 @@ public class ConditionConfigPanel extends JPanel {
         }
         
         Condition selectedCondition = (Condition) selectedNode.getUserObject();
-        ConditionManager manager = selectScheduledPlugin.getStopConditionManager();
+        // Check if this is a plugin-defined condition
+        if (selectScheduledPlugin != null && 
+            getConditionManger().isPluginDefinedCondition(selectedCondition)) {
+            
+            JOptionPane.showMessageDialog(this,
+                    "Cannot negate plugin-defined conditions. These conditions are protected.",
+                    "Protected Conditions",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        ConditionManager manager = getConditionManger();
         
         // Can't negate plugin conditions
         if (manager.isPluginDefinedCondition(selectedCondition)) {
@@ -1793,7 +1837,7 @@ public class ConditionConfigPanel extends JPanel {
             
             // But not for plugin-defined conditions
             Condition condition = (Condition) selectedNode.getUserObject();
-            boolean isPluginDefined = selectScheduledPlugin.getStopConditionManager()
+            boolean isPluginDefined = getConditionManger()
                                       .isPluginDefinedCondition(condition);
             
             negateButton.setEnabled(!isPluginDefined);
@@ -1879,7 +1923,7 @@ public class ConditionConfigPanel extends JPanel {
                 boolean isAnd = isLogical && selectedNode.getUserObject() instanceof AndCondition;
                 boolean isPluginDefined = selectedNode != null && 
                                          selectedNode.getUserObject() instanceof Condition &&
-                                         selectScheduledPlugin.getStopConditionManager()
+                                         getConditionManger()
                                             .isPluginDefinedCondition((Condition)selectedNode.getUserObject());
                 
                 // Enable/disable items based on context
@@ -1930,8 +1974,18 @@ public class ConditionConfigPanel extends JPanel {
         if (selectedNode == null || !(selectedNode.getUserObject() instanceof LogicalCondition)) {
             return;
         }
-        
         LogicalCondition oldLogical = (LogicalCondition) selectedNode.getUserObject();
+        // Check if this is a plugin-defined logical group
+        if (selectScheduledPlugin != null && 
+            getConditionManger().isPluginDefinedCondition(oldLogical)) {
+            
+            JOptionPane.showMessageDialog(this,
+                    "Cannot modify plugin-defined condition groups. These conditions are protected.",
+                    "Protected Conditions",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
+        
         
         // Skip if already the desired type
         if ((toAnd && oldLogical instanceof AndCondition) || 
@@ -1951,7 +2005,7 @@ public class ConditionConfigPanel extends JPanel {
         DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) selectedNode.getParent();
         if (parentNode == rootNode) {
             // This is the root logical - replace in condition manager
-            selectScheduledPlugin.getStopConditionManager().setUserLogicalCondition(newLogical);
+            getConditionManger().setUserLogicalCondition(newLogical);
         } else if (parentNode.getUserObject() instanceof LogicalCondition) {
             // Replace in parent
             LogicalCondition parentLogical = (LogicalCondition) parentNode.getUserObject();
@@ -1988,6 +2042,17 @@ public class ConditionConfigPanel extends JPanel {
         }
         
         LogicalCondition logicalToUngroup = (LogicalCondition) selectedNode.getUserObject();
+
+        // Check if this is a plugin-defined logical group
+        if (selectScheduledPlugin != null && 
+            selectScheduledPlugin.getStopConditionManager().isPluginDefinedCondition(logicalToUngroup)) {
+            
+            JOptionPane.showMessageDialog(this,
+                    "Cannot ungroup plugin-defined condition groups. These conditions are protected.",
+                    "Protected Conditions",
+                    JOptionPane.WARNING_MESSAGE);
+            return;
+        }
         DefaultMutableTreeNode parentNode = (DefaultMutableTreeNode) selectedNode.getParent();
         
         // Only proceed if parent is a logical condition
@@ -2042,14 +2107,29 @@ public class ConditionConfigPanel extends JPanel {
                 return;
             }
         }
-        
+        // Check for plugin-defined conditions
+        for (DefaultMutableTreeNode node : selectedNodes) {
+            if (node.getUserObject() instanceof Condition) {
+                Condition condition = (Condition) node.getUserObject();                
+                // Don't allow modifying plugin-defined conditions
+                if (selectScheduledPlugin != null && 
+                    getConditionManger().isPluginDefinedCondition(condition)) {
+                    
+                    JOptionPane.showMessageDialog(this,
+                            "Cannot group plugin-defined conditions. These conditions are protected.",
+                            "Protected Conditions",
+                            JOptionPane.WARNING_MESSAGE);
+                    return;
+                }
+            }
+        }
         // Create new logical condition
         LogicalCondition newLogical = isAnd ? new AndCondition() : new OrCondition();
         
         // Determine parent logical
         LogicalCondition parentLogical;
         if (firstParent == rootNode) {
-            parentLogical = selectScheduledPlugin.getStopConditionManager().getUserLogicalCondition();
+            parentLogical = getConditionManger().getUserLogicalCondition();
         } else if (firstParent.getUserObject() instanceof LogicalCondition) {
             parentLogical = (LogicalCondition) firstParent.getUserObject();
         } else {

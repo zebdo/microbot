@@ -20,20 +20,23 @@ import lombok.extern.slf4j.Slf4j;
 import java.awt.*;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Consumer;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 @Slf4j
 public class ScheduleTablePanel extends JPanel {
-    private final SchedulerPlugin plugin;
+    private final SchedulerPlugin schedulerPlugin;
     private final JTable scheduleTable;
     private final DefaultTableModel tableModel;
     private Consumer<PluginScheduleEntry> selectionListener;
-    
+    private boolean updatingTable = false;
     // Colors for different row states
     private static final Color CURRENT_PLUGIN_COLOR = new Color(76, 175, 80, 100); // Green with transparency
     private static final Color NEXT_PLUGIN_COLOR = new Color(255, 193, 7, 70); // Amber with transparency
@@ -41,10 +44,17 @@ public class ScheduleTablePanel extends JPanel {
     private static final Color CONDITION_MET_COLOR = new Color(76, 175, 80, 70); // Green with transparency
     private static final Color CONDITION_NOT_MET_COLOR = new Color(244, 67, 54, 70); // Red with transparency
     
-    
-    public ScheduleTablePanel(SchedulerPlugin plugin) {
-        this.plugin = plugin;
+    private List<PluginScheduleEntry> rowToPluginMap = new ArrayList<>();
+    public int getRowCount() {
+        if (tableModel == null) {
+            return 0;
+        }
+        return tableModel.getRowCount();
+    }
 
+    public ScheduleTablePanel(SchedulerPlugin schedulerPlugin) {
+        this.schedulerPlugin = schedulerPlugin;
+        
         setLayout(new BorderLayout());
         setBorder(BorderFactory.createTitledBorder(
                 BorderFactory.createCompoundBorder(
@@ -71,8 +81,8 @@ public class ScheduleTablePanel extends JPanel {
                 // Default column is 6
                 if (column == 6) {
                     // Check if this is a default plugin
-                    if (row >= 0 && row < plugin.getScheduledPlugins().size()) {
-                        PluginScheduleEntry scheduled = plugin.getScheduledPlugins().get(row);
+                    if (row >= 0 && row < schedulerPlugin.getScheduledPlugins().size()) {
+                        PluginScheduleEntry scheduled = schedulerPlugin.getScheduledPlugins().get(row);
                         
                         // More robust detection - check the isDefault flag directly
                         // Also check interval condition with very short duration (1 second)
@@ -94,53 +104,68 @@ public class ScheduleTablePanel extends JPanel {
                 return column == 6 || column == 7 || column == 8; // Only Default, Enabled, and Random columns are editable
             }
         };
-
+        
         // Update the table model listener to handle Default column changes
         tableModel.addTableModelListener(e -> {
-            if (e.getColumn() == 6 || e.getColumn() == 7 || e.getColumn() == 8) {
-                int firstRow = e.getFirstRow();
-                int lastRow = e.getLastRow();
-                
-                // Update all rows in the affected range
-                for (int row = firstRow; row <= lastRow; row++) {
-                    if (row >= 0 && row < plugin.getScheduledPlugins().size()) {
-                        PluginScheduleEntry scheduled = plugin.getScheduledPlugins().get(row);
-                        
-                        if (e.getColumn() == 6) { // Default column
-                            Boolean isDefault = (Boolean) tableModel.getValueAt(row, 6);
+            if (updatingTable) {                
+                return; // Skip processing if we're already updating or it's not our columns
+            }            
+            if (e.getColumn() == 6 || e.getColumn() == 7 || e.getColumn() == 8) {                
+                try {
+                    updatingTable = true;
+                    int firstRow = e.getFirstRow();
+                    int lastRow = e.getLastRow();
+                    
+                    // Update all rows in the affected range
+                    for (int row = firstRow; row <= lastRow; row++) {
+                        if (row >= 0 && row < schedulerPlugin.getScheduledPlugins().size()) {
+                            PluginScheduleEntry scheduled = schedulerPlugin.getScheduledPlugins().get(row);
                             
-                            // Check if this is a default plugin that shouldn't be modified
-                            if (scheduled.isDefault() || scheduled.getIntervalDisplay().contains("Every 1 second") || 
-                                "No schedule defined".equals(scheduled.getIntervalDisplay())) {
-                                // Reset the value and update the isDefault flag for consistency
-                                tableModel.setValueAt(true, row, 6);
-                                scheduled.setDefault(true);
-                            } else {
-                                // For non-default plugins, update the value
-                                scheduled.setDefault(isDefault);
+                            if (e.getColumn() == 6) { // Default column
+                                Boolean isDefault = (Boolean) tableModel.getValueAt(row, 6);
                                 
-                                // If being set to default, also set priority to 0
-                                if (isDefault) {
-                                    scheduled.setPriority(0);
-                                    tableModel.setValueAt(0, row, 5); // Update priority column
+                                // Check if this is a default plugin that shouldn't be modified
+                                if (scheduled.isDefault() || scheduled.getIntervalDisplay().contains("Every 1 second") || 
+                                    "No schedule defined".equals(scheduled.getIntervalDisplay())) {
+                                    // Reset the value and update the isDefault flag for consistency
+                                    
+                                    tableModel.setValueAt(true, row, 6);
+                                    
+                                    scheduled.setDefault(true);
+                                } else {
+                                    // For non-default plugins, update the value
+                                    scheduled.setDefault(isDefault);
+                                    
+                                    // If being set to default, also set priority to 0
+                                    if (isDefault) {
+                                        scheduled.setPriority(0);
+                                        tableModel.setValueAt(0, row, 5); // Update priority column
+                                    }
                                 }
                             }
-                        }
-                        else if (e.getColumn() == 7) { // Enabled column
-                            Boolean enabled = (Boolean) tableModel.getValueAt(row, 7);
-                            scheduled.setEnabled(enabled);
-                        }
-                        else if (e.getColumn() == 8) { // Random scheduling column
-                            Boolean allowRandom = (Boolean) tableModel.getValueAt(row, 8);
-                            scheduled.setAllowRandomScheduling(allowRandom);
+                            else if (e.getColumn() == 7) { // Enabled column
+                                Boolean enabled = (Boolean) tableModel.getValueAt(row, 7);
+                                tableModel.setValueAt(enabled, row, 7);
+                                
+                                scheduled.setEnabled(enabled);
+                            }
+                            else if (e.getColumn() == 8) { // Random scheduling column
+                                Boolean allowRandom = (Boolean) tableModel.getValueAt(row, 8);
+                                tableModel.setValueAt(allowRandom, row, 8);
+                                scheduled.setAllowRandomScheduling(allowRandom);
+                            }
                         }
                     }
+                    
+                    // Save after all updates are done
+                    //schedulerPlugin.saveScheduledPlugins();
+                    // Refresh the table to update visual indicators
+                    //SwingUtilities.invokeLater(this::refreshTable);                
+                    updatingTable = false;
+                    //log.info("table value changed ");
+                }finally {
+                    updatingTable = false;
                 }
-                
-                // Save after all updates are done
-                plugin.saveScheduledPlugins();
-                // Refresh the table to update visual indicators
-                SwingUtilities.invokeLater(this::refreshTable);
             }
         });
 
@@ -199,8 +224,8 @@ public class ScheduleTablePanel extends JPanel {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 
-                if (row >= 0 && row < plugin.getScheduledPlugins().size()) {
-                    PluginScheduleEntry entry = plugin.getScheduledPlugins().get(row);
+                if (row >= 0 && row < schedulerPlugin.getScheduledPlugins().size()) {
+                    PluginScheduleEntry entry = schedulerPlugin.getScheduledPlugins().get(row);
                     
                     // Set tooltips based on column
                     if (column == 1) { // Schedule
@@ -228,8 +253,8 @@ public class ScheduleTablePanel extends JPanel {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
                 
-                if (row >= 0 && row < plugin.getScheduledPlugins().size() && !isSelected) {
-                    PluginScheduleEntry entry = plugin.getScheduledPlugins().get(row);
+                if (row >= 0 && row < schedulerPlugin.getScheduledPlugins().size() && !isSelected) {
+                    PluginScheduleEntry entry = schedulerPlugin.getScheduledPlugins().get(row);
                     
                     // Apply background color based on condition status
                     if (column == 3) { // Start conditions
@@ -264,16 +289,16 @@ public class ScheduleTablePanel extends JPanel {
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);
 
-                if (row >= 0 && row < plugin.getScheduledPlugins().size()) {
-                    PluginScheduleEntry rowPlugin = plugin.getScheduledPlugins().get(row);
+                if (row >= 0 && row < schedulerPlugin.getScheduledPlugins().size()) {
+                    PluginScheduleEntry rowPlugin = schedulerPlugin.getScheduledPlugins().get(row);
                     
                     if (isSelected) {
                         // Selected row styling takes precedence - use a distinct blue color
                         c.setBackground(SELECTION_COLOR);
                         c.setForeground(Color.WHITE);
                     } 
-                    else if (rowPlugin.isRunning() && plugin.getCurrentPlugin() != null && 
-                             rowPlugin.getName().equals(plugin.getCurrentPlugin().getName())) {
+                    else if (rowPlugin.isRunning() && schedulerPlugin.getCurrentPlugin() != null && 
+                             rowPlugin.getName().equals(schedulerPlugin.getCurrentPlugin().getName())) {
                         // Currently running plugin
                         c.setBackground(CURRENT_PLUGIN_COLOR);
                         c.setForeground(Color.BLACK);
@@ -486,25 +511,11 @@ private String getStopConditionsTooltip(PluginScheduleEntry entry) {
             return false;
         }
         
-        PluginScheduleEntry nextPlugin = plugin.getNextScheduledPlugin();
+        PluginScheduleEntry nextPlugin = schedulerPlugin.getNextScheduledPlugin();
         return nextPlugin != null && nextPlugin.equals(scheduledPlugin);
     }
-    
-    
-    public void refreshTable() {
-        // Save current selection
-        PluginScheduleEntry selectedPlugin = getSelectedPlugin();
-        int selectedRow = scheduleTable.getSelectedRow();
-        // Get current plugins and sort them by next run time
-        List<PluginScheduleEntry> plugins = plugin.getScheduledPlugins();
-        
-        // Store the original order as a last resort for selection restoration
-        Map<PluginScheduleEntry, Integer> originalIndices = new HashMap<>();
-        for (int i = 0; i < plugins.size(); i++) {
-            originalIndices.put(plugins.get(i), i);
-        }
-        
-        // Sort plugins by next run time (enabled plugins first, then by time)
+    public List<PluginScheduleEntry> sortPluginScheduleEntries(){
+        List<PluginScheduleEntry> plugins = schedulerPlugin.getScheduledPlugins();
         plugins.sort((p1, p2) -> {
             // First sort by enabled status (enabled plugins first)
             if (p1.isEnabled() != p2.isEnabled()) {
@@ -513,8 +524,8 @@ private String getStopConditionsTooltip(PluginScheduleEntry entry) {
             
             // For running plugins, prioritize them at the top
             // IMPORTANT: Check if it's THE actual running plugin instance, not just same name
-            boolean p1IsCurrentRunning = plugin.getCurrentPlugin() == p1; // Reference equality, not name equality
-            boolean p2IsCurrentRunning = plugin.getCurrentPlugin() == p2;
+            boolean p1IsCurrentRunning = schedulerPlugin.getCurrentPlugin() == p1; // Reference equality, not name equality
+            boolean p2IsCurrentRunning = schedulerPlugin.getCurrentPlugin() == p2;
             
             if (p1IsCurrentRunning != p2IsCurrentRunning) {
                 return p1IsCurrentRunning ? -1 : 1;
@@ -536,17 +547,197 @@ private String getStopConditionsTooltip(PluginScheduleEntry entry) {
             // When times are equal or both absent, use name as a stable tiebreaker
             return p1.getName().compareTo(p2.getName());
         });
+        return plugins;
+    }
+    public void refreshTable() {       
+        
+        
+        // Save current selection
+        PluginScheduleEntry selectedPlugin = getSelectedPlugin();
+        int selectedRow = scheduleTable.getSelectedRow();
+        
+        // Get current plugins and sort them by next run time
+        List<PluginScheduleEntry> sortedPlugins = sortPluginScheduleEntries();
+        
+        // Save the current row map for comparison
+        List<PluginScheduleEntry> previousRowMap = new ArrayList<>(rowToPluginMap);
+        
+        // Clear our tracking list
+        rowToPluginMap.clear();
+        
+        // Create a set to track which rows we've handled
+        Set<Integer> handledRows = new HashSet<>();
+        rowToPluginMap = new ArrayList<>(sortedPlugins.size()); // Pre-allocate correct size
+        for (int i = 0; i < sortedPlugins.size(); i++) {
+            rowToPluginMap.add(null); // Initialize with nulls
+        }
+        // First pass: update existing rows (maintain object identity where possible)
+        for (int newIndex = 0; newIndex < sortedPlugins.size(); newIndex++) {
+            PluginScheduleEntry plugin = sortedPlugins.get(newIndex);
+            
+            // Try to find existing row with the same plugin object (reference equality)
+            boolean found = false;
+            for (int oldIndex = 0; oldIndex < previousRowMap.size(); oldIndex++) {
+                if (previousRowMap.get(oldIndex) == plugin) { // Reference equality
+                    if (oldIndex != newIndex && oldIndex < tableModel.getRowCount()) {
+                        // Plugin exists but in wrong position - move it
+                        if (newIndex < tableModel.getRowCount()) {
+                            // Move the row data
+                            Object[] rowData = new Object[tableModel.getColumnCount()];
+                            for (int col = 0; col < tableModel.getColumnCount(); col++) {
+                                rowData[col] = tableModel.getValueAt(oldIndex, col);
+                            }
+                            
+                            // Update the row with fresh data
+                            updateRowData(rowData, plugin);
+                            
+                            // Remove from old position and insert at new position
+                            tableModel.removeRow(oldIndex);
+                            tableModel.insertRow(newIndex, rowData);
+                            
+                            // Adjust indices for removed row
+                            if (oldIndex < newIndex) {
+                                newIndex--;
+                            }
+                        } else {
+                            // Update row data in place
+                            updateRowWithPlugin(oldIndex, plugin);
+                        }
+                    } else if (oldIndex < tableModel.getRowCount()) {
+                        // Position is correct, just update data
+                        updateRowWithPlugin(oldIndex, plugin);
+                    }
+                    
+                    // Mark as handled
+                    handledRows.add(oldIndex);
+                    found = true;
+                    break;
+                }
+            }
+            
+            // If not found by reference, add as new
+            if (!found) {
+                if (newIndex < tableModel.getRowCount()) {
+                    // Insert at this position
+                    tableModel.insertRow(newIndex, createRowData(plugin));
+                } else {
+                    // Add to the end
+                    tableModel.addRow(createRowData(plugin));
+                }
+            }
+            rowToPluginMap.set(newIndex, plugin); // Set at the exact position that matches table row
+            
+        }
+        
+        // Remove any rows that no longer correspond to plugins
+        for (int i = tableModel.getRowCount() - 1; i >= 0; i--) {
+            if (i >= rowToPluginMap.size()) {
+                tableModel.removeRow(i);
+            }
+        }
+        
+        // Restore selection if possible
+        if (selectedPlugin != null) {
+            selectPlugin(selectedPlugin);
+        }
+    }
+
+    /**
+     * Updates row data array with current plugin values
+     */
+    private void updateRowData(Object[] rowData, PluginScheduleEntry plugin) {
+        // Get basic information
+        String pluginName = plugin.getCleanName();
+        
+        if (schedulerPlugin.isRunningEntry(plugin)) {
+            pluginName = "▶ " + pluginName;
+        }
+        
+        // Update row data
+        rowData[0] = pluginName;
+        rowData[1] = getEnhancedScheduleDisplay(plugin);
+        rowData[2] = getEnhancedNextRunDisplay(plugin);
+        rowData[3] = getStartConditionInfo(plugin);
+        rowData[4] = getStopConditionInfo(plugin);
+        rowData[5] = plugin.getPriority();
+        rowData[6] = plugin.isDefault();
+        rowData[7] = plugin.isEnabled();
+        rowData[8] = plugin.isAllowRandomScheduling();
+        rowData[9] = plugin.getRunCount();
+    }
+
+    /**
+     * Updates existing row in the table with current plugin values
+     */
+    private void updateRowWithPlugin(int rowIndex, PluginScheduleEntry plugin) {
+        // Get basic information
+        String pluginName = plugin.getCleanName();
+        
+        if (schedulerPlugin.isRunningEntry(plugin)) {
+            pluginName = "▶ " + pluginName;
+        }        
+        // Update existing row
+        tableModel.setValueAt(pluginName, rowIndex, 0);
+        tableModel.setValueAt(getEnhancedScheduleDisplay(plugin), rowIndex, 1);
+        tableModel.setValueAt(getEnhancedNextRunDisplay(plugin), rowIndex, 2);
+        tableModel.setValueAt(getStartConditionInfo(plugin), rowIndex, 3);
+        tableModel.setValueAt(getStopConditionInfo(plugin), rowIndex, 4);
+        tableModel.setValueAt(plugin.getPriority(), rowIndex, 5);
+        tableModel.setValueAt(plugin.isDefault(), rowIndex, 6);
+        tableModel.setValueAt(plugin.isEnabled(), rowIndex, 7);
+        tableModel.setValueAt(plugin.isAllowRandomScheduling(), rowIndex, 8);
+        tableModel.setValueAt(plugin.getRunCount(), rowIndex, 9);
+    }
+
+    /**
+     * Creates a new row data array for a plugin
+     */
+    private Object[] createRowData(PluginScheduleEntry plugin) {
+        // Get basic information
+        String pluginName = plugin.getCleanName();
+        
+        if (schedulerPlugin.isRunningEntry(plugin)) {
+            pluginName = "▶ " + pluginName;
+        }
+        
+        return new Object[]{
+            pluginName,
+            getEnhancedScheduleDisplay(plugin),
+            getEnhancedNextRunDisplay(plugin),
+            getStartConditionInfo(plugin),
+            getStopConditionInfo(plugin),
+            plugin.getPriority(),
+            plugin.isDefault(),
+            plugin.isEnabled(),
+            plugin.isAllowRandomScheduling(),
+            plugin.getRunCount()
+        };
+    }
+    public void refreshTableOld() {
+        log.info("Refreshing schedule table");
+        
+        // Save current selection
+        PluginScheduleEntry selectedPlugin = getSelectedPlugin();
+        int selectedRow = scheduleTable.getSelectedRow();
+        // Get current plugins and sort them by next run time
+        
+        List<PluginScheduleEntry> plugins = sortPluginScheduleEntries();
+        
+        rowToPluginMap.clear();
+        
+        
                
         
          // Update table model
         tableModel.setRowCount(0);
         
         for (PluginScheduleEntry scheduled : plugins) {
+            rowToPluginMap.add(scheduled);
             // Get basic information
             String pluginName = scheduled.getCleanName();
             
             
-            if (plugin.isRunningEntry(scheduled)) {
+            if (schedulerPlugin.isRunningEntry(scheduled)) {
                 pluginName = "▶ " + pluginName;
             }
             
@@ -579,41 +770,25 @@ private String getStopConditionsTooltip(PluginScheduleEntry entry) {
         while (tableModel.getRowCount() > plugins.size()) {
             tableModel.removeRow(tableModel.getRowCount() - 1);
         }
-        if (selectedPlugin != null){
-            for (int i = 0; i < plugins.size(); i++) {
-                if (plugins.get(i) == selectedPlugin) { // Use reference equality
-                    log.info("Found selected plugin by reference equality: " + selectedPlugin.getName() + " at row " + i);                
-                    log.info("next Plugin: run" + selectedPlugin.getNextStartTriggerTimeString());
-                    log.info("select Plugin: run" + selectedPlugin.getNextStartTriggerTimeString());
-                    continue;
-                }
-                if (plugins.get(i).equals(selectedPlugin)) {
-                    log.info("Found selected plugin by equals(): " + selectedPlugin.getName() + " at row " + i);
-                    log.info("next Plugin: run" + selectedPlugin.getNextStartTriggerTimeString());
-                    log.info("select Plugin: run" + selectedPlugin.getNextStartTriggerTimeString());
-                    continue;
-                }
-                if (plugins.get(i).getName().equals(selectedPlugin.getName())) {
-                    log.info("Found selected plugin by name: " + selectedPlugin.getName() + " at row " + i);
-                    log.info("next Plugin: run" + selectedPlugin.getNextStartTriggerTimeString());
-                    log.info("select Plugin: run" + selectedPlugin.getNextStartTriggerTimeString());
-                    continue;
-                }
-            }
-        }
+       
         // Restore selection if possible - using reference equality, not just equals()
         if (selectedPlugin != null) {
+            log.info("Restoring selection for plugin: " + selectedPlugin.getName());
+            
             // First try to find the exact same object reference
             for (int i = 0; i < plugins.size(); i++) {
                 if (plugins.get(i) == selectedPlugin) { // Use reference equality
                     scheduleTable.setRowSelectionInterval(i, i);
-                    return; // Success - early return
+                    log.info("Found selected plugin by reference equality: " + selectedPlugin.getName() + " at row " + i);                
+                    return;                   
                 }
             }
+            
             
             // If reference equality fails, try equals() as fallback
             for (int i = 0; i < plugins.size(); i++) {
                 if (plugins.get(i).equals(selectedPlugin)) {
+                    log.info("Found selected plugin by equals(): " + selectedPlugin.getName() + " at row " + i);
                     scheduleTable.setRowSelectionInterval(i, i);
                     return;
                 }
@@ -622,12 +797,15 @@ private String getStopConditionsTooltip(PluginScheduleEntry entry) {
             // If all else fails, try by name as a last resort
             for (int i = 0; i < plugins.size(); i++) {
                 if (plugins.get(i).getName().equals(selectedPlugin.getName())) {
+                    log.info("Found selected plugin by name: " + selectedPlugin.getName() + " at row " + i);
                     scheduleTable.setRowSelectionInterval(i, i);
                     return;
                 }
             }
-        } 
-
+        }else {
+            log.info("No selected previous plugin found.");
+        }
+        log.info("No selected plugin found in the table.");
     }
     /**
      * Creates a display of start condition information
@@ -780,8 +958,8 @@ private String getStopConditionsTooltip(PluginScheduleEntry entry) {
         scheduleTable.getSelectionModel().addListSelectionListener(e -> {
             if (!e.getValueIsAdjusting()) {
                 int selectedRow = scheduleTable.getSelectedRow();
-                if (selectedRow >= 0 && selectedRow < plugin.getScheduledPlugins().size()) {
-                    listener.accept(plugin.getScheduledPlugins().get(selectedRow));
+                if (selectedRow >= 0 && selectedRow < schedulerPlugin.getScheduledPlugins().size()) {
+                    listener.accept(schedulerPlugin.getScheduledPlugins().get(selectedRow));
                 } else {
                     listener.accept(null);
                 }
@@ -791,8 +969,9 @@ private String getStopConditionsTooltip(PluginScheduleEntry entry) {
 
     public PluginScheduleEntry getSelectedPlugin() {
         int selectedRow = scheduleTable.getSelectedRow();
-        if (selectedRow >= 0 && selectedRow < plugin.getScheduledPlugins().size()) {
-            return plugin.getScheduledPlugins().get(selectedRow);
+        if (selectedRow >= 0 && selectedRow < schedulerPlugin.getScheduledPlugins().size()) {
+            return rowToPluginMap.get(selectedRow);
+            //return schedulerPlugin.getScheduledPlugins().get(selectedRow);
         }
         return null;
     }
@@ -806,21 +985,45 @@ private String getStopConditionsTooltip(PluginScheduleEntry entry) {
             selectionListener.accept(null);
         }
     }
-
+    public void addAndSelect(PluginScheduleEntry pluginEntry) {
+        if (pluginEntry == null) return;
+        
+        for (PluginScheduleEntry entry : schedulerPlugin.getScheduledPlugins()) {
+            if ( pluginEntry == entry) {
+                // Plugin already exists, no need to add -> no duplicate
+                return;
+            }
+        }
+        schedulerPlugin.addScheduledPlugin(pluginEntry);
+        rowToPluginMap.add(pluginEntry);
+        tableModel.addRow(new Object[]{
+            pluginEntry.getName(),
+            pluginEntry.getIntervalDisplay(),
+            pluginEntry.getNextRunDisplay(),
+            getStartConditionInfo(pluginEntry),
+            getStopConditionInfo(pluginEntry),
+            pluginEntry.getPriority(),
+            pluginEntry.isDefault(),
+            pluginEntry.isEnabled(),
+            pluginEntry.isAllowRandomScheduling(),
+            pluginEntry.getRunCount()
+        });
+        scheduleTable.setRowSelectionInterval(getRowCount(), getRowCount());        
+    }
     /**
      * Selects the given plugin in the table
      * @param plugin The plugin to select
      */
     public void selectPlugin(PluginScheduleEntry plugin) {
         if (plugin == null) return;
-        
+        List<PluginScheduleEntry> plugins = this.rowToPluginMap;
         for (int i = 0; i < tableModel.getRowCount(); i++) {
             String rowName = String.valueOf(tableModel.getValueAt(i, 0))
                 .replaceAll("▶ ", ""); // Remove play indicator if present
-            
-            if (rowName.equals(plugin.getName())) {
+             // First try to find the exact same object reference
+             
+            if (plugins.get(i) == plugin) { // Use reference equality
                 scheduleTable.setRowSelectionInterval(i, i);
-                
                 // Make sure the selected row is visible
                 Rectangle rect = scheduleTable.getCellRect(i, 0, true);
                 scheduleTable.scrollRectToVisible(rect);

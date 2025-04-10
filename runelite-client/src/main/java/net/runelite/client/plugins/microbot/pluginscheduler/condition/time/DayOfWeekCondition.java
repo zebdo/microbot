@@ -10,6 +10,7 @@ import java.time.DayOfWeek;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
 import java.util.EnumSet;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -165,6 +166,38 @@ public class DayOfWeekCondition extends TimeCondition {
         
         // Calculate percentage based on how close we are to the next active day
         return 100.0 * (1.0 - (daysUntilNext / 7.0));
+    }
+    
+    @Override
+    public Optional<ZonedDateTime> getCurrentTriggerTime() {
+        ZonedDateTime now = getNow();
+        DayOfWeek today = now.getDayOfWeek();
+        
+        // If today is an active day and it's already satisfied, return slightly in the past
+        if (activeDays.contains(today) && isSatisfied()) {
+            return Optional.of(now.minusSeconds(1)); // Slightly in the past to indicate "ready now"
+        }
+        
+        // If no active days defined, return empty
+        if (activeDays.isEmpty()) {
+            return Optional.empty();
+        }
+        
+        // Find the next active day
+        int daysToAdd = 1;
+        while (daysToAdd <= 7) {
+            DayOfWeek checkDay = today.plus(daysToAdd);
+            if (activeDays.contains(checkDay)) {
+                // Found the next active day, return the start of that day
+                ZonedDateTime nextDay = now.plusDays(daysToAdd)
+                    .truncatedTo(java.time.temporal.ChronoUnit.DAYS); // Start of the day
+                return Optional.of(nextDay);
+            }
+            daysToAdd++;
+        }
+        
+        // If we looked through all 7 days and found nothing (shouldn't happen with the isEmpty check above)
+        return Optional.empty();
     }
     
     @Subscribe

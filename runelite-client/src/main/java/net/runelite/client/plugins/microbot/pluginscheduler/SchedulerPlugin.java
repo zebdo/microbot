@@ -24,15 +24,13 @@ import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleE
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.SchedulerWindow;
 import net.runelite.client.plugins.microbot.util.antiban.AntibanPlugin;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
-import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
+
 import net.runelite.client.plugins.microbot.util.antiban.enums.CombatSkills;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEntry.*;
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.SchedulerPanel;
 import javax.inject.Inject;
 import javax.swing.*;
@@ -58,7 +56,7 @@ import net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity
 
 @Slf4j
 @PluginDescriptor(
-        name = PluginDescriptor.Mocrosoft + "Plugin Scheduler",
+        name = PluginDescriptor.Mocrosoft + PluginDescriptor.VOX +  "Plugin Scheduler",
         description = "Schedule plugins at your will",
         tags = {"microbot", "schedule", "automation"},
         enabledByDefault = false
@@ -364,7 +362,7 @@ public class SchedulerPlugin extends Plugin {
             }
             PluginScheduleEntry nextPlugin = getNextScheduledPlugin();
             if (nextPlugin == null) {
-                log.info("No plugins scheduled in the next 5 minutes");
+                log.info("No plugins scheduled");
             } else {
                 if (nextPlugin.getNextStartTriggerTime().isPresent()) {
                     log.info("Next scheduled plugin: {} (scheduled in {})", 
@@ -620,7 +618,6 @@ public class SchedulerPlugin extends Plugin {
         log.info("Starting scheduled plugin: " + scheduledPlugin.getCleanName());
      
         // Ensure break handler is unlocked before starting a plugin
-        // This allows the plugin to take breaks as needed
         unlockBreakHandler();
         
         // If we're on a break, interrupt it
@@ -631,6 +628,61 @@ public class SchedulerPlugin extends Plugin {
         setState(SchedulerState.STARTING_PLUGIN);
         currentPlugin = scheduledPlugin;
 
+        // Check for stop conditions if enforcement is enabled
+        if (config.enforceStopConditions() && scheduledPlugin.getStopConditionManager().getConditions().isEmpty()) {
+            // Show confirmation dialog on EDT to prevent blocking
+            SwingUtilities.invokeLater(() -> {
+                int result = JOptionPane.showConfirmDialog(
+                    null,
+                    "Plugin '" + scheduledPlugin.getCleanName() + "' has no stop conditions set.\n" +
+                    "It will run until manually stopped.\n\n" +
+                    "Would you like to configure stop conditions now?",
+                    "No Stop Conditions",
+                    JOptionPane.YES_NO_CANCEL_OPTION
+                );
+                
+                if (result == JOptionPane.YES_OPTION) {
+                    // User wants to add stop conditions
+                    openSchedulerWindow();
+                    if (schedulerWindow != null) {
+                        // Switch to stop conditions tab
+                        schedulerWindow.selectPlugin(scheduledPlugin);
+                        schedulerWindow.switchToStopConditionsTab();
+                        schedulerWindow.toFront();
+                        // Keep in STARTING_PLUGIN state - will be resumed when conditions are added
+                        // The currentPlugin is already set, so it will be in "pending start" status
+                    }
+                } 
+                else if (result == JOptionPane.NO_OPTION) {
+                    // User confirms to run without stop conditions
+                    continueStartingPlugin(scheduledPlugin);
+                } 
+                else {
+                    // User canceled - abort starting
+                    currentPlugin = null;
+                    setState(SchedulerState.SCHEDULING);
+                }
+            });
+        } else {
+            // Stop conditions exist or enforcement disabled - proceed normally
+            continueStartingPlugin(scheduledPlugin);
+        }
+    }
+
+    /**
+     * Resets any pending plugin start operation
+     */
+    public void resetPendingStart() {
+        if (currentState == SchedulerState.STARTING_PLUGIN) {
+            currentPlugin = null;
+            setState(SchedulerState.SCHEDULING);
+        }
+    }
+
+    /**
+     * Continues the plugin starting process after stop condition checks
+     */
+    public void continueStartingPlugin(PluginScheduleEntry scheduledPlugin) {
         if (!scheduledPlugin.start()) {
             log.error("Failed to start plugin: " + scheduledPlugin.getCleanName());
             currentPlugin = null;
@@ -761,7 +813,7 @@ public class SchedulerPlugin extends Plugin {
         // Convert to JSON and save to config
         String json = PluginScheduleEntry.toJson(scheduledPlugins);
 
-        log.info("Saving scheduled plugins to config: {}", json);
+        //log.info("Saving scheduled plugins to config: {}", json);
         //config.setScheduledPlugins(json);
         if (Microbot.getConfigManager() == null) {
             return;
@@ -801,7 +853,7 @@ public class SchedulerPlugin extends Plugin {
                             );
                     
                     // Log condition details at debug level
-                    if (config.debugMode()) {
+                    if (Microbot.isDebug()) {
                         plugin.logConditionInfo(plugin.getStopConditionManager().getConditions(),"LOADING - Stop Conditions", true);
                         plugin.logConditionInfo(plugin.getStartConditionManager().getConditions(),"LOADING - Start Conditions", true);
                     }
@@ -869,6 +921,7 @@ public class SchedulerPlugin extends Plugin {
                 .collect(Collectors.toList());
         
         if (prioritizedPlugins.isEmpty()) {
+            log.info("No scheduled plugins available");
             return null;
         }
         
@@ -993,7 +1046,7 @@ public class SchedulerPlugin extends Plugin {
         }
         
         // Log condition progress if debug mode is enabled
-        if (config.debugMode()) {
+        if (Microbot.isDebug()) {
             // Log current progress of all conditions
             currentPlugin.logConditionInfo(currentPlugin.getStopConditions(),"DEBUG_CHECK Running Plugin", true);
             
@@ -1187,7 +1240,7 @@ public class SchedulerPlugin extends Plugin {
         Activity activity = Activity.fromSkill(skill);
         if (activity != null) {
             currentActivity = activity;
-            if (config.debugMode()) {
+            if (Microbot.isDebug()) {
                 log.debug("Activity updated from skill: {} -> {}", skill.getName(), activity);
             }
         }
@@ -1379,5 +1432,37 @@ public class SchedulerPlugin extends Plugin {
         loginMonitor.setName("LoginMonitor-" + scheduledPlugin.getName());
         loginMonitor.setDaemon(true);
         loginMonitor.start();
+    }
+
+    /**
+     * Prints detailed diagnostic information about all scheduled plugins
+     */
+    public void debugAllScheduledPlugins() {
+        log.info("==== PLUGIN SCHEDULER DIAGNOSTICS ====");
+        log.info("Current state: {}", currentState);
+        log.info("Number of scheduled plugins: {}", scheduledPlugins.size());
+        
+        for (PluginScheduleEntry plugin : scheduledPlugins) {
+            log.info("\n----- Plugin: {} -----", plugin.getCleanName());
+            log.info("Enabled: {}", plugin.isEnabled());
+            log.info("Running: {}", plugin.isRunning());
+            log.info("Is default: {}", plugin.isDefault());
+            log.info("Due to run: {}", plugin.isDueToRun());
+            log.info("Has start conditions: {}", plugin.hasAnyStartConditions());
+            
+            if (plugin.hasAnyStartConditions()) {
+                log.info("Start conditions met: {}", plugin.getStartConditionManager().areConditionsMet());
+                
+                // Get next trigger time if any
+                Optional<ZonedDateTime> nextTrigger = plugin.getNextStartTriggerTime();
+                log.info("Next trigger time: {}", 
+                    nextTrigger.isPresent() ? nextTrigger.get() : "None found");
+                
+                // Print detailed diagnostics
+                log.info("\nDetailed start condition diagnosis:");
+                log.info(plugin.diagnoseStartConditions());
+            }
+        }
+        log.info("==== END DIAGNOSTICS ====");
     }
 }

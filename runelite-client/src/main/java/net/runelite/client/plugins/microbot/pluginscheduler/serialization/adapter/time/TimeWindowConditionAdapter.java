@@ -56,7 +56,7 @@ public class TimeWindowConditionAdapter implements JsonSerializer<TimeWindowCond
         
         // Repeat cycle information
         json.addProperty("repeatCycle", src.getRepeatCycle().name());
-        json.addProperty("repeatInterval", src.getRepeatInterval());
+        json.addProperty("repeatInterval", src.getRepeatIntervalUnit());
         
         // Randomization settings
         json.addProperty("useRandomization", src.isUseRandomization());

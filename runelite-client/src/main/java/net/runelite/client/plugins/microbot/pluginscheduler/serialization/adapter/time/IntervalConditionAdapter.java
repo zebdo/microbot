@@ -26,7 +26,7 @@ public class IntervalConditionAdapter implements JsonSerializer<IntervalConditio
         json.addProperty("randomFactor", src.getRandomFactor());
         
         // Store next trigger time if available
-        Optional<ZonedDateTime> nextTrigger = src.getNextTriggerTime();
+        Optional<ZonedDateTime> nextTrigger = src.getCurrentTriggerTime();
         if (nextTrigger.isPresent()) {
             json.addProperty("nextTriggerTimeMillis", nextTrigger.get().toInstant().toEpochMilli());
         }

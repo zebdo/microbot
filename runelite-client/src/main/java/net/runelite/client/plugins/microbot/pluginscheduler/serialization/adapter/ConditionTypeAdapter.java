@@ -57,8 +57,8 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             if (interval.isRandomize()) {
                 data.addProperty("randomFactor", interval.getRandomFactor());
             }
-            if (interval.getNextTriggerTime() != null) {
-                data.addProperty("nextTriggerTimeMillis", interval.getNextTriggerTime().orElse(ZonedDateTime.now(ZoneId.systemDefault())).toInstant().toEpochMilli());
+            if (interval.getCurrentTriggerTime() != null) {
+                data.addProperty("nextTriggerTimeMillis", interval.getCurrentTriggerTime().orElse(ZonedDateTime.now(ZoneId.systemDefault())).toInstant().toEpochMilli());
             }
         }
         else if (src instanceof DayOfWeekCondition) {
@@ -81,7 +81,7 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             
             // Store repeat cycle information
             data.addProperty("repeatCycle", window.getRepeatCycle().name());
-            data.addProperty("repeatInterval", window.getRepeatInterval());
+            data.addProperty("repeatInterval", window.getRepeatIntervalUnit());
             
             // Store randomization settings
             data.addProperty("useRandomization", window.isUseRandomization());

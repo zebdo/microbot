@@ -50,6 +50,9 @@ public class PluginScheduleEntry {
     private boolean enabled;
     private boolean hasStarted = false; // Flag to indicate if the plugin has started
     public void setEnabled(boolean enabled) {
+        if (this.enabled == enabled) {
+            return; // No change in enabled state
+        }
         this.enabled = enabled;
         if (!enabled) {
             stopConditionManager.unregisterEvents();
@@ -315,7 +318,7 @@ public class PluginScheduleEntry {
         if (stopConditionManager == null) {
             return Optional.empty();
         }
-        return stopConditionManager.getNextTriggerTime();
+        return stopConditionManager.getCurrentTriggerTime();
     }
     
     /**
@@ -327,7 +330,7 @@ public class PluginScheduleEntry {
         if (stopConditionManager == null) {
             return "No stop conditions defined";
         }
-        return stopConditionManager.getNextTriggerTimeString();
+        return stopConditionManager.getCurrentTriggerTimeString();
     }
     
     /**
@@ -495,7 +498,7 @@ public class PluginScheduleEntry {
         if (startConditionManager == null) {
             return Optional.empty();
         }
-        return startConditionManager.getNextTriggerTime();
+        return startConditionManager.getCurrentTriggerTime();
     }
     
     /**
@@ -507,7 +510,7 @@ public class PluginScheduleEntry {
         if (startConditionManager == null) {
             return "No start conditions defined";
         }
-        return startConditionManager.getNextTriggerTimeString();
+        return startConditionManager.getCurrentTriggerTimeString();
     }
     
     /**
@@ -634,7 +637,7 @@ public class PluginScheduleEntry {
             }
             log.info("Start conditions: {}", startConditionManager.getDescription());
             log.info("Start conditions progress: {}%", startConditionManager.getProgressTowardNextTrigger());
-            log.info("Start conditions next trigger: {}", startConditionManager.getNextTriggerTimeString());            
+            log.info("Start conditions next trigger: {}", startConditionManager.getCurrentTriggerTimeString());            
             
         }else {
             log.info("No start conditions defined for plugin '{}'", name);
@@ -1513,4 +1516,87 @@ public class PluginScheduleEntry {
         this.isDefault = isDefault;
     }
     
+    /**
+     * Performs a diagnostic check on start conditions and returns detailed information
+     * about why a plugin might not be due to run
+     * 
+     * @return A string containing diagnostic information
+     */
+    public String diagnoseStartConditions() {
+        StringBuilder diagnosis = new StringBuilder();
+        diagnosis.append("Start condition diagnosis for plugin: ").append(cleanName).append("\n");
+        
+        // Check if running
+        if (isRunning()) {
+            diagnosis.append("- Plugin is already running\n");
+            return diagnosis.toString();
+        }
+        
+        // Check for start conditions
+        if (!hasAnyStartConditions()) {
+            diagnosis.append("- No start conditions defined\n");
+            return diagnosis.toString();
+        }
+        
+        // Get details on start conditions
+        diagnosis.append("- Start conditions: ")
+                 .append(startConditionManager.getDescription()).append("\n");
+        
+        // Check if they can be fulfilled
+        if (!hasFullfillableStartConditions()) {
+            diagnosis.append("- Start conditions cannot be fulfilled (e.g., one-time conditions already triggered)\n");
+        }
+        
+        // Get next trigger time
+        Optional<ZonedDateTime> nextTrigger = getNextStartTriggerTime();
+        if (nextTrigger.isPresent()) {
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
+            ZonedDateTime triggerTime = nextTrigger.get();
+            diagnosis.append("- Next trigger time: ").append(triggerTime).append("\n");
+            diagnosis.append("- Current time: ").append(now).append("\n");
+            
+            if (triggerTime.isBefore(now)) {
+                diagnosis.append("- Trigger time is in the past but conditions not met - may need reset\n");
+            } else {
+                Duration timeUntil = Duration.between(now, triggerTime);
+                diagnosis.append("- Time until trigger: ").append(formatDuration(timeUntil)).append("\n");
+            }
+        } else {
+            diagnosis.append("- No future trigger time determined\n");
+        }
+        
+        // Check individual conditions
+        diagnosis.append("- Individual condition status:\n");
+        for (Condition condition : getStartConditions()) {
+            diagnosis.append("  * ").append(condition.getDescription())
+                    .append(": ").append(condition.isSatisfied() ? "SATISFIED" : "NOT SATISFIED");
+            
+            if (condition instanceof TimeCondition) {
+                Optional<ZonedDateTime> condTrigger = condition.getCurrentTriggerTime();
+                if (condTrigger.isPresent()) {
+                    diagnosis.append(" (next trigger: ").append(condTrigger.get()).append(")");
+                }
+            }
+            
+            diagnosis.append("\n");
+        }
+        
+        return diagnosis.toString();
+    }
+
+    /**
+     * Formats a duration in a human-readable way
+     */
+    private String formatDuration(Duration duration) {
+        long seconds = duration.getSeconds();
+        if (seconds < 60) {
+            return seconds + " seconds";
+        } else if (seconds < 3600) {
+            return String.format("%dm %ds", seconds / 60, seconds % 60);
+        } else if (seconds < 86400) {
+            return String.format("%dh %dm %ds", seconds / 3600, (seconds % 3600) / 60, seconds % 60);
+        } else {
+            return String.format("%dd %dh %dm", seconds / 86400, (seconds % 86400) / 3600, (seconds % 3600) / 60);
+        }
+    }
 }

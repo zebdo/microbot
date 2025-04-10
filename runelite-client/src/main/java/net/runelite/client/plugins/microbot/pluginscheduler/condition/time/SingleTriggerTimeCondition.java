@@ -9,6 +9,7 @@ import net.runelite.client.eventbus.Subscribe;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Optional;
 
 /**
  * A time condition that triggers exactly once when the target time is reached.
@@ -125,5 +126,21 @@ public class SingleTriggerTimeCondition extends TimeCondition {
     @Subscribe
     public void onGameTick(GameTick event) {
         // Used to stay registered with the event bus
+    }
+
+    @Override
+    public Optional<ZonedDateTime> getCurrentTriggerTime() {
+        // If already triggered and reset occurred, no future trigger
+        if (hasTriggered && hasResetAfterTrigger) {
+            return Optional.empty();
+        }
+        
+        // If already triggered but not reset, return the target time (in the past)
+        if (hasTriggered) {
+            return Optional.of(targetTime);
+        }
+        
+        // Not triggered yet, return future target time
+        return Optional.of(targetTime);
     }
 }

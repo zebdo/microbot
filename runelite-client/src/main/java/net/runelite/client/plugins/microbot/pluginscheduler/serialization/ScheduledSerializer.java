@@ -2,6 +2,10 @@ package net.runelite.client.plugins.microbot.pluginscheduler.serialization;
 
 import com.google.gson.*;
 import com.google.gson.reflect.TypeToken;
+import com.google.gson.stream.JsonReader;
+import com.google.gson.stream.JsonToken;
+import com.google.gson.stream.JsonWriter;
+
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionManager;
@@ -30,6 +34,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.An
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.PluginScheduleEntryAdapter;
 
+import java.io.IOException;
 import java.lang.reflect.Type;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -37,6 +42,7 @@ import java.time.ZonedDateTime;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Pattern;
 
 /**
  * Handles serialization and deserialization of ScheduledPlugin objects.
@@ -77,7 +83,26 @@ public class ScheduledSerializer {
         
         // ConditionManager adapter
         builder.registerTypeAdapter(ConditionManager.class, new ConditionManagerAdapter());
-        
+        builder.registerTypeAdapter(Pattern.class, new TypeAdapter<Pattern>() {
+            @Override
+            public void write(JsonWriter out, Pattern value) throws IOException {
+                if (value == null) {
+                    out.nullValue();
+                } else {
+                    out.value(value.pattern());
+                }
+            }
+
+            @Override
+            public Pattern read(JsonReader in) throws IOException {
+                if (in.peek() == JsonToken.NULL) {
+                    in.nextNull();
+                    return null;
+                }
+                String pattern = in.nextString();
+                return Pattern.compile(pattern);
+            }
+        });
         return builder.create();
     }
     

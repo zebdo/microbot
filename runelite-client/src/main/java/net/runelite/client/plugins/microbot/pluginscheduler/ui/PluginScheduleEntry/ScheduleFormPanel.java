@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEntry;
 
 import lombok.Getter;
-
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.condition.ConditionConfigPanelUtil;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
@@ -25,7 +25,7 @@ import java.time.Duration;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.List;
-
+@Slf4j
 public class ScheduleFormPanel extends JPanel {
     private final SchedulerPlugin plugin;
 
@@ -60,6 +60,13 @@ public class ScheduleFormPanel extends JPanel {
             CONDITION_TIME_WINDOW
     };
 
+    // Add fields and methods for the selection change listener
+    private Runnable selectionChangeListener;
+
+    public void setSelectionChangeListener(Runnable listener) {
+        this.selectionChangeListener = listener;
+    }
+
     public ScheduleFormPanel(SchedulerPlugin plugin) {
         this.plugin = plugin;
 
@@ -75,12 +82,18 @@ public class ScheduleFormPanel extends JPanel {
                 Color.WHITE));
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
+        // Set minimum size
+        setMinimumSize(new Dimension(350, 300));
+        setPreferredSize(new Dimension(400, 500));
+
         // Create the form panel with GridBagLayout for flexibility
         JPanel formPanel = new JPanel(new GridBagLayout());
         formPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.insets = new Insets(5, 5, 5, 5);
         gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0; // Make components expand horizontally
+        gbc.anchor = GridBagConstraints.WEST;
 
         // Plugin selection
         gbc.gridx = 0;
@@ -97,6 +110,14 @@ public class ScheduleFormPanel extends JPanel {
         pluginComboBox = new JComboBox<>();
         formPanel.add(pluginComboBox, gbc);
         updatePluginList(plugin.getAvailablePlugins());
+
+        // Add listener to clear table selection when ComboBox changes
+        pluginComboBox.addActionListener(e -> {
+            // Notify that ComboBox was manually changed so table selection can be cleared
+            if (selectionChangeListener != null) {
+                selectionChangeListener.run();
+            }
+        });
 
         // Time condition type selection
         gbc.gridx = 0;
@@ -165,8 +186,15 @@ public class ScheduleFormPanel extends JPanel {
         defaultPluginCheckbox.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         formPanel.add(defaultPluginCheckbox, gbc);
 
-        // Add the form panel to the center
-        add(formPanel, BorderLayout.CENTER);
+        // Wrap the formPanel in a scroll pane
+        JScrollPane scrollPane = new JScrollPane(formPanel);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        // Add the scroll pane to the center
+        add(scrollPane, BorderLayout.CENTER);
 
         // Create button panel
         JPanel buttonPanel = new JPanel(new GridLayout(2, 2, 5, 5));
@@ -549,7 +577,7 @@ public class ScheduleFormPanel extends JPanel {
         // Set repeat interval
         JSpinner repeatIntervalSpinner = (JSpinner) findComponentByName(currentConditionPanel, "repeatIntervalSpinner");
         if (repeatIntervalSpinner != null) {
-            repeatIntervalSpinner.setValue(condition.getRepeatInterval());
+            repeatIntervalSpinner.setValue(condition.getRepeatIntervalUnit());
         }
         
         // Set randomization options
@@ -578,7 +606,7 @@ public class ScheduleFormPanel extends JPanel {
                 if (dayCheckbox != null) {
                     // Set checkbox state based on the condition configuration
                     // This would depend on how day selection is implemented in TimeWindowCondition
-                    // You may need to add a method to TimeWindowCondition to check for specific days
+                    // We may need to add a method to TimeWindowCondition to check for specific days
                     
                     // For now, just a placeholder comment
                     // dayCheckbox.setSelected(...);
@@ -635,5 +663,30 @@ public class ScheduleFormPanel extends JPanel {
             }
         }
         return null;
+    }
+
+    // Add a new method to sync with table selection
+    public void syncWithTableSelection(PluginScheduleEntry selectedPlugin) {
+        // Only update if different than current selection to avoid feedback loops
+        if (selectedPlugin == null) {
+            return;
+        }
+        log.info("\nSyncing with table selection: " + selectedPlugin.getName()+"\ncomboBox: "+pluginComboBox.getSelectedItem());
+
+        if (selectedPlugin != null && !selectedPlugin.getName().equals(pluginComboBox.getSelectedItem())) {
+            // Block action listener temporarily to avoid side effects
+            ActionListener[] listeners = pluginComboBox.getActionListeners();
+            for (ActionListener listener : listeners) {
+                pluginComboBox.removeActionListener(listener);
+            }
+            
+            // Update selection
+            pluginComboBox.setSelectedItem(selectedPlugin.getName());
+            
+            // Re-add listeners
+            for (ActionListener listener : listeners) {
+                pluginComboBox.addActionListener(listener);
+            }
+        }
     }
 }

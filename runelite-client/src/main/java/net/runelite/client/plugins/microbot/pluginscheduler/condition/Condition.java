@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition;
 
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
@@ -36,12 +37,17 @@ public interface Condition {
     /**
      * Gets the next time this condition will be satisfied.
      * For time-based conditions, this returns the actual next trigger time.
-     * For non-time conditions, this returns Optional.empty().
+     * For satisfied conditions, this returns a time slightly in the past.
+     * For non-time conditions that aren't satisfied, this returns Optional.empty().
      * 
      * @return Optional containing the next trigger time, or empty if not applicable
      */
-    default Optional<ZonedDateTime> getNextTriggerTime() {
-        // Default implementation for non-time conditions
+    default Optional<ZonedDateTime> getCurrentTriggerTime() {
+        // If the condition is already satisfied, return a time 1 second in the past
+        if (isSatisfied()) {
+            return Optional.of(ZonedDateTime.now(ZoneId.systemDefault()).minusSeconds(1));
+        }
+        // Default implementation for non-time conditions that aren't satisfied
         return Optional.empty();
     }
         /**

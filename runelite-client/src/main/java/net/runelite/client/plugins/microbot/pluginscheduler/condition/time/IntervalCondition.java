@@ -22,8 +22,17 @@ public class IntervalCondition extends TimeCondition {
     private boolean randomize;
     @Getter
     private double randomFactor;
-    public Optional<ZonedDateTime> getNextTriggerTime() {
-        return Optional.ofNullable(nextTriggerTime);
+    @Override
+    public Optional<ZonedDateTime> getCurrentTriggerTime() {
+        ZonedDateTime now = getNow();
+        
+        // If already satisfied (past the trigger time)
+        if (now.isAfter(nextTriggerTime)) {
+            return Optional.of(nextTriggerTime); // Return the passed time until reset
+        }
+        
+        // Otherwise return the scheduled next trigger time
+        return Optional.of(nextTriggerTime);
     }
     /**
      * Creates an interval condition that triggers at regular intervals
@@ -121,6 +130,7 @@ public class IntervalCondition extends TimeCondition {
     @Override
     public void reset(boolean randomize) {
         this.nextTriggerTime = calculateNextTriggerTime(randomize, randomFactor);
+        log.debug("IntervalCondition reset, next trigger at: {}", nextTriggerTime);
     }
     
     @Override

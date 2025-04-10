@@ -61,9 +61,12 @@ public abstract class TimeCondition implements Condition {
      * @return Optional containing the next trigger time, or empty if not applicable
      */
     @Override
-    public Optional<ZonedDateTime> getNextTriggerTime() {
+    public Optional<ZonedDateTime> getCurrentTriggerTime() {
         // Base implementation for time conditions
         // Concrete subclasses should override this
+        if (isSatisfied()) {
+            return Optional.of(getNow());
+        }
         return Optional.empty();
     }
 
@@ -73,7 +76,7 @@ public abstract class TimeCondition implements Condition {
      * @return Optional containing the duration until next trigger, or empty if not applicable
      */
     public Optional<Duration> getDurationUntilNextTrigger() {
-        Optional<ZonedDateTime> nextTrigger = getNextTriggerTime();
+        Optional<ZonedDateTime> nextTrigger = getCurrentTriggerTime();
         if (nextTrigger.isPresent()) {
             ZonedDateTime now = getNow();
             ZonedDateTime triggerTime = nextTrigger.get();
@@ -81,6 +84,10 @@ public abstract class TimeCondition implements Condition {
             // If trigger time is in the future, return the duration
             if (triggerTime.isAfter(now)) {
                 return Optional.of(Duration.between(now, triggerTime));
+            }
+            else {
+                // If trigger time is in the past, return zero duration
+                return Optional.of(Duration.ZERO);
             }
         }
         return Optional.empty();
@@ -99,7 +106,7 @@ public abstract class TimeCondition implements Condition {
         }
         
         // Calculate progress based on time until next trigger
-        Optional<ZonedDateTime> nextTrigger = getNextTriggerTime();
+        Optional<ZonedDateTime> nextTrigger = getCurrentTriggerTime();
         if (nextTrigger.isPresent()) {
             ZonedDateTime now = getNow();
             ZonedDateTime triggerTime = nextTrigger.get();
