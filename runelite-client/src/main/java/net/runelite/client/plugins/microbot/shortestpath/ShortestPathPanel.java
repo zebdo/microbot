@@ -159,8 +159,16 @@ public class ShortestPathPanel extends PluginPanel {
         startButton.addActionListener(e -> startWalking(getSelectedBank().getWorldPoint()));
         stopButton.addActionListener(e -> stopWalking());
 
-        JPanel nearestBankPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        //JPanel nearestBankPanel = new JPanel(new FlowLayout(FlowLayout.CENTER)); Old layout without Ge Button
+        JPanel nearestBankPanel = new JPanel(new GridLayout(2, 1, 5, 5));
         JButton useNearestBankButton = new JButton("Go To Nearest Bank");
+
+        JButton goToGrandExchangeButton = new JButton("Go To Grand Exchange");
+        goToGrandExchangeButton.addActionListener(e -> {
+            // Grand Exchange WorldPoint
+            WorldPoint ge = new WorldPoint(3164, 3487, 0); // Varrock GE location
+            startWalking(ge);
+        });
 
         useNearestBankButton.addActionListener(e -> {
             CompletableFuture.supplyAsync(Rs2Bank::getNearestBank)
@@ -174,8 +182,9 @@ public class ShortestPathPanel extends PluginPanel {
                         return null;
                     });
         });
-        
+
         nearestBankPanel.add(useNearestBankButton);
+        nearestBankPanel.add(goToGrandExchangeButton); // Go to GE button
 
         buttonPanel.add(startButton);
         buttonPanel.add(stopButton);
@@ -344,14 +353,14 @@ public class ShortestPathPanel extends PluginPanel {
         huntingAreasComboBox.setAlignmentX(Component.CENTER_ALIGNMENT);
         huntingAreasComboBox.setMaximumSize(new Dimension(Integer.MAX_VALUE, huntingAreasComboBox.getPreferredSize().height));
         ((JLabel) huntingAreasComboBox.getRenderer()).setHorizontalAlignment(SwingConstants.CENTER);
-        
+
         birdsComboBox = new JComboBox<>(Birds.values());
         chinchompasComboBox = new JComboBox<>(Chinchompas.values());
         insectsComboBox = new JComboBox<>(Insects.values());
         kebbitsJComboBox = new JComboBox<>(Kebbits.values());
         salamandersComboBox = new JComboBox<>(Salamanders.values());
         specialHuntingAreasJComboBox = new JComboBox<>(SpecialHuntingAreas.values());
-        
+
         JComboBox<?>[] subComboBoxes = {birdsComboBox, chinchompasComboBox, insectsComboBox, kebbitsJComboBox, salamandersComboBox, specialHuntingAreasJComboBox};
 
         for (JComboBox<?> comboBox : subComboBoxes) {
@@ -361,7 +370,7 @@ public class ShortestPathPanel extends PluginPanel {
             ((JLabel)comboBox.getRenderer()).setHorizontalAlignment(SwingConstants.CENTER);
             comboBox.setVisible(false);
         }
-        
+
         huntingAreasComboBox.addActionListener(e -> {
             HuntingAreas selectedHuntingArea = (HuntingAreas) huntingAreasComboBox.getSelectedItem();
             birdsComboBox.setVisible(selectedHuntingArea == HuntingAreas.BIRDS);
@@ -473,7 +482,7 @@ public class ShortestPathPanel extends PluginPanel {
                 return null;
         }
     }
-    
+
     private void startWalking(WorldPoint point) {
         Microbot.log("Web walking starting. Traveling to Custom Location (" + point.getX() + ", " + point.getY() + ", " + point.getPlane() + ").");
         plugin.getShortestPathScript().setTriggerWalker(point);
