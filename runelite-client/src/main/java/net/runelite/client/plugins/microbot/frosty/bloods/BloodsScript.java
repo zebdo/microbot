@@ -451,18 +451,24 @@ public class BloodsScript extends Script {
                 })
                 .findFirst().orElse(null);
 
-            Microbot.log("Interacting with the fairies");
-            sleepGaussian(900, 200);
+            if (fairyRing == null) {
+                Microbot.log("Unable to find fairies");
+                return;
+            } else{
+                Microbot.log("Interacting with the fairies");
+                Rs2GameObject.interact(fairyRing, "Ring-last-destination (DLS)");
+                sleepGaussian(1300, 200);
+                Microbot.log("Waiting for animation and region");
+                Rs2Player.waitForAnimation(1200);
+                sleepUntil(() -> !Rs2Player.isAnimating() && !Rs2Player.isMoving()
+                        && Rs2Player.getWorldLocation() != null
+                        && Rs2Player.getWorldLocation().getRegionID() == 13721, 1200);
+                sleepUntil(() -> Rs2Player.getWorldLocation().equals(new WorldPoint(3447, 9824, 0)), 1200);
+            }
 
-            Rs2GameObject.interact(fairyRing, "Ring-last-destination (DLS)");
-            sleepGaussian(1300, 200);
-            Microbot.log("Waiting for animation and region");
-            Rs2Player.waitForAnimation(1200);
-            sleepUntil(() -> !Rs2Player.isAnimating() && !Rs2Player.isMoving()
-                    && Rs2Player.getWorldLocation() != null
-                    && Rs2Player.getWorldLocation().getRegionID() == 13721, 1200);
-            sleepUntil(() -> Rs2Player.getWorldLocation().equals(new WorldPoint(3447, 9824, 0)), 1200);
+            if (Rs2Player.getWorldLocation().equals(new WorldPoint(3447, 9824, 0))) {
+                state = State.WALKING_TO;
+            }
 
-            state = State.WALKING_TO;
         }
     }
