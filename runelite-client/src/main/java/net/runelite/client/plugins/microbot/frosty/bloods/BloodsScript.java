@@ -452,7 +452,8 @@ public class BloodsScript extends Script {
                 .findFirst().orElse(null);
 
             if (fairyRing == null) {
-                Microbot.log("Unable to find fairies");
+                Microbot.log("Unable to find fairies, resetting from bank to retry");
+                state = State.BANKING;
                 return;
             } else{
                 Microbot.log("Interacting with the fairies");
