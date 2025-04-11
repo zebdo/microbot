@@ -255,7 +255,13 @@ public class SchedulerInfoPanel extends JPanel {
      */
     private void updateSchedulerStatus() {
         SchedulerState state = plugin.getCurrentState();
-        
+         // Update state information if available
+        String stateInfo = state.getStateInformation();
+        if (stateInfo != null && !stateInfo.isEmpty()) {
+            statusLabel.setToolTipText(stateInfo);
+        } else {
+            statusLabel.setToolTipText(null);
+        }
         // Update state display
         statusLabel.setText(state.getDisplayName());
         statusLabel.setForeground(state.getColor());

@@ -111,13 +111,15 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             data.addProperty("targetAmountMax", item.getTargetAmountMax());
             data.addProperty("currentTargetAmount", item.getCurrentTargetAmount());
             data.addProperty("currentTrackedCount", item.getCurrentTrackedCount());
+            data.addProperty("includeNoneOwner", item.isIncludeNoneOwner());
+            data.addProperty("includeNoted", item.isIncludeNoted());
         }
         else if (src instanceof InventoryItemCountCondition) {
             InventoryItemCountCondition item = (InventoryItemCountCondition) src;
             data.addProperty("itemName", item.getItemName());
             data.addProperty("targetCountMin", item.getTargetCountMin());
             data.addProperty("targetCountMax", item.getTargetCountMax());
-            data.addProperty("includeNoted", item.isIncludeNoted());
+            data.addProperty("includeNoted", item.isIncludeNoted());            
             data.addProperty("currentTargetCount", item.getCurrentTargetCount());
             data.addProperty("currentItemCount", item.getCurrentItemCount());
         }
@@ -369,10 +371,21 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
         String itemName = data.get("itemName").getAsString();
         int targetAmountMin = data.get("targetAmountMin").getAsInt();
         int targetAmountMax = data.get("targetAmountMax").getAsInt();
+        boolean includeNoted = false;
+        if (data.has("includeNoted")){
+            includeNoted= data.get("includeNoted").getAsBoolean();
+        }
+        boolean includeNoneOwner = false;
+        if (data.has("includeNoneOwner")) {
+            includeNoneOwner = data.get("includeNoneOwner").getAsBoolean();    
+        }
+        
         return LootItemCondition.builder()
                 .itemName(itemName)
                 .targetAmountMin(targetAmountMin)
                 .targetAmountMax(targetAmountMax)
+                .includeNoneOwner(includeNoneOwner)
+                .includeNoted(includeNoted)
                 .build();
     }
     

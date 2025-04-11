@@ -2,6 +2,9 @@ package net.runelite.client.plugins.microbot.pluginscheduler;
 
 import java.awt.Color;
 
+import lombok.Getter;
+import lombok.Setter;
+
 /**
  * Represents the various states the scheduler can be in
  */
@@ -18,11 +21,14 @@ public enum SchedulerState {
     HOLD("Stopped", "Scheduler was manually stopped", new Color(244, 67, 54)),
     ERROR("Error", "Scheduler encountered an error", new Color(255, 0, 0)),
     SHORT_BREAK("Short Break", "Taking a short break until next plugin", new Color(100, 149, 237)),
-    WAITING_FOR_SCHEDULE("Waiting for Schedule", "Waiting for next scheduled plugin", new Color(147, 112, 219));
-
+    WAITING_FOR_SCHEDULE("Waiting for Schedule", "Waiting for next scheduled plugin", new Color(147, 112, 219)),
+    LOGIN("Login", "Try To Login", new Color(255, 215, 0));
     private final String displayName;
     private final String description;
     private final Color color;
+    @Setter
+    @Getter
+    private String stateInformation = "";
 
     SchedulerState(String displayName, String description, Color color) {
         this.displayName = displayName;

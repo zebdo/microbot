@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerPlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.api.ConditionProvider;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionManager;
@@ -194,6 +195,11 @@ public class PluginScheduleEntry {
             updateStopConditions();
             
             Microbot.getClientThread().runOnSeperateThread(() -> {
+                Plugin plugin = getPlugin();
+                if (plugin == null) {
+                    log.error("Plugin '{}' not found -> can't start plugin", name);
+                    return false;
+                }
                 Microbot.startPlugin(plugin);
                 return false;
             });
@@ -202,18 +208,14 @@ public class PluginScheduleEntry {
             
             // Register/unregister appropriate event handlers
             stopConditionManager.registerEvents();
-            startConditionManager.unregisterEvents();
-
-            // Update start conditions (sets lastRunTime)
-            updateStartConditions();
-
+            startConditionManager.unregisterEvents();            
             return true;
         } catch (Exception e) {
             return false;
         }
     }
 
-    public void softStop() {
+    public void softStop(boolean successfulRun) {
         if (getPlugin() == null) {
             return;
         }
@@ -235,7 +237,7 @@ public class PluginScheduleEntry {
             lastStopAttemptTime = ZonedDateTime.now();
             
             // Start monitoring for successful stop
-            startStopMonitoringThread();
+            startStopMonitoringThread(successfulRun);
             
             if (getPlugin() instanceof ConditionProvider) {
                 log.info("Unregistering stopping conditions for plugin '{}'", name);
@@ -246,25 +248,109 @@ public class PluginScheduleEntry {
         }
     }
 
-    public void hardStop() {
+    public void hardStop(boolean successfulRun) {
         if (getPlugin() == null) {
             return;
         }
 
         try {
+            
+            
             Microbot.getClientThread().runOnSeperateThread(() -> {
-                Microbot.stopPlugin(plugin);
+                log.info("Hard stopping plugin '{}'", name);
+                Plugin stopPlugin = Microbot.getPlugin(plugin.getClass().getName());
+                Microbot.stopPlugin(stopPlugin);
                 return false;
             });
             stopInitiated = true;
             stopInitiatedTime = ZonedDateTime.now();
-            
+            lastStopAttemptTime = ZonedDateTime.now();
             // Start monitoring for successful stop
-            startStopMonitoringThread();
+            startStopMonitoringThread(successfulRun);
             
             return;
         } catch (Exception e) {
             return;
+        }
+    }
+
+     /**
+     * Starts a monitoring thread that tracks the stopping process of a plugin.
+     * <p>
+     * This method creates a daemon thread that periodically checks if a plugin
+     * that is in the process of stopping has completed its shutdown. When the plugin
+     * successfully stops, this method updates the next scheduled run time and clears
+     * all stopping-related state flags.
+     * <p>
+     * The monitoring thread will only be started if one is not already running
+     * (controlled by the isMonitoringStop flag). It checks the plugin's running state
+     * every 500ms until the plugin stops or monitoring is canceled.
+     * <p>
+     * The thread is created as a daemon thread to prevent it from blocking JVM shutdown.
+     */
+    private void startStopMonitoringThread(boolean successfulRun) {
+        // Don't start a new thread if one is already running
+        if (isMonitoringStop) {
+            return;
+        }
+        
+        isMonitoringStop = true;
+        
+        stopMonitorThread = new Thread(() -> {
+            try {
+                log.info("Stop monitoring thread started for plugin '{}'", name);
+                
+                // Keep checking until the stop completes or is abandoned
+                while (stopInitiated && isMonitoringStop) {
+                    // Check if plugin has stopped running
+                    if (!isRunning()) {
+                        
+                        log.info("\nPlugin '{}' has successfully stopped - updating state - successfulRun {}", name, successfulRun);
+                        
+                        // Update lastRunTime and start conditions for next run
+                        if (successfulRun) {
+                            updateStartConditions();
+                            // Increment the run count since we completed a full run
+                            incrementRunCount();
+                        }
+                        
+                        
+                        
+                        
+                        // Reset stop state
+                        stopInitiated = false;
+                        hasStarted = false;
+                        stopInitiatedTime = null;
+                        lastStopAttemptTime = null;
+                        break;
+                    }
+                    
+                    // Check every 500ms to be responsive but not wasteful
+                    Thread.sleep(500);
+                }
+            } catch (InterruptedException e) {
+                // Thread was interrupted, just exit
+                log.debug("Stop monitoring thread for '{}' was interrupted", name);
+            } finally {
+                isMonitoringStop = false;
+                log.debug("Stop monitoring thread exited for plugin '{}'", name);
+            }
+        });
+        
+        stopMonitorThread.setName("StopMonitor-" + name);
+        stopMonitorThread.setDaemon(true); // Use daemon thread to not prevent JVM exit
+        stopMonitorThread.start();
+    }
+
+    /**
+     * Stops the monitoring thread if it's running
+     */
+    private void stopMonitoringThread() {
+        if (isMonitoringStop && stopMonitorThread != null) {
+            log.info("Stopping monitoring thread for plugin '{}'", name);
+            isMonitoringStop = false;
+            stopMonitorThread.interrupt();
+            stopMonitorThread = null;
         }
     }
 
@@ -366,39 +452,7 @@ public class PluginScheduleEntry {
         return stopConditionManager.getDurationUntilNextTrigger();
     }
     
-    /**
-     * Gets a detailed description of the stop conditions status
-     * 
-     * @return A string with detailed information about stop conditions
-     */
-    public String getDetailedStopConditionsStatus() {
-        if (!hasAnyStopConditions()) {
-            return "No stop conditions defined";
-        }
-        
-        StringBuilder sb = new StringBuilder("Stop conditions: ");
-        
-        // Add logic type
-        sb.append(stopConditionManager.requiresAll() ? "ALL must be met" : "ANY can be met");
-        
-        // Add fulfillability status
-        if (!hasFullfillableStopConditions()) {
-            sb.append(" (UNFULFILLABLE)");
-        }
-        
-        // Add condition count
-        int total = getTotalStopConditionCount();
-        int satisfied = getSatisfiedStopConditionCount();
-        sb.append(String.format(" - %d/%d conditions met", satisfied, total));
-        
-        // Add next trigger time if available
-        Optional<ZonedDateTime> nextTrigger = getNextStopTriggerTime();
-        if (nextTrigger.isPresent()) {
-            sb.append(" - Next trigger: ").append(getNextStopTriggerTimeString());
-        }
-        
-        return sb.toString();
-    }
+    
     
     /**
      * Determines if the plugin should be stopped immediately based on its current
@@ -494,7 +548,7 @@ public class PluginScheduleEntry {
      * 
      * @return Optional containing the next start trigger time, or empty if none exists
      */
-    public Optional<ZonedDateTime> getNextStartTriggerTime() {
+    public Optional<ZonedDateTime> getCurrentStartTriggerTime() {
         if (startConditionManager == null) {
             return Optional.empty();
         }
@@ -506,7 +560,7 @@ public class PluginScheduleEntry {
      * 
      * @return String with the time until the next start trigger, or a message if none exists
      */
-    public String getNextStartTriggerTimeString() {
+    public String getCurrentStartTriggerTimeString() {
         if (startConditionManager == null) {
             return "No start conditions defined";
         }
@@ -545,7 +599,39 @@ public class PluginScheduleEntry {
         }
         return startConditionManager.getDurationUntilNextTrigger();
     }
-    
+    /**
+     * Gets a detailed description of the stop conditions status
+     * 
+     * @return A string with detailed information about stop conditions
+     */
+    public String getDetailedStopConditionsStatus() {
+        if (!hasAnyStopConditions()) {
+            return "No stop conditions defined";
+        }
+        
+        StringBuilder sb = new StringBuilder("Stop conditions: ");
+        
+        // Add logic type
+        sb.append(stopConditionManager.requiresAll() ? "ALL must be met" : "ANY can be met");
+        
+        // Add fulfillability status
+        if (!hasFullfillableStopConditions()) {
+            sb.append(" (UNFULFILLABLE)");
+        }
+        
+        // Add condition count
+        int total = getTotalStopConditionCount();
+        int satisfied = getSatisfiedStopConditionCount();
+        sb.append(String.format(" - %d/%d conditions met", satisfied, total));
+        
+        // Add next trigger time if available
+        Optional<ZonedDateTime> nextTrigger = getNextStopTriggerTime();
+        if (nextTrigger.isPresent()) {
+            sb.append(" - Next trigger: ").append(getNextStopTriggerTimeString());
+        }
+        
+        return sb.toString();
+    }
     /**
      * Gets a detailed description of the start conditions status
      * 
@@ -574,9 +660,9 @@ public class PluginScheduleEntry {
         sb.append(String.format(" - %d/%d conditions met", satisfiedStartConditions, totalStartConditions));
         
         // Add next trigger time if available
-        Optional<ZonedDateTime> nextTrigger = getNextStartTriggerTime();
+        Optional<ZonedDateTime> nextTrigger = getCurrentStartTriggerTime();
         if (nextTrigger.isPresent()) {
-            sb.append(" - Next trigger: ").append(getNextStartTriggerTimeString());
+            sb.append(" - Next trigger: ").append(getCurrentStartTriggerTimeString());
         }
         
         return sb.toString();
@@ -619,8 +705,8 @@ public class PluginScheduleEntry {
     }
     
     /**
-     * Check if the plugin is due to run based on its start conditions
-     */
+    * Updates the isDueToRun method to use the diagnostic helper for logging
+    */
     public boolean isDueToRun() {
         // Check if we're already running
         if (isRunning()) {
@@ -628,39 +714,24 @@ public class PluginScheduleEntry {
         }
         
         // For plugins with start conditions, check if those conditions are met
-        if (hasAnyStartConditions()) {
-            log.info ("Checking start conditions for plugin '{}'", name);
-            if (startConditionManager.requiresAll()) {
-                log.info("All start conditions must be met");
-            } else {
-                log.info("Any start condition can be met");
-            }
-            log.info("Start conditions: {}", startConditionManager.getDescription());
-            log.info("Start conditions progress: {}%", startConditionManager.getProgressTowardNextTrigger());
-            log.info("Start conditions next trigger: {}", startConditionManager.getCurrentTriggerTimeString());            
-            
-        }else {
+        if (!hasAnyStartConditions()) {
             log.info("No start conditions defined for plugin '{}'", name);
             return false;
         }
         
-         // Check if start conditions are met
-        boolean areStartConditionsMet = startConditionManager.areConditionsMet();
         
-        // Add debugging to see current condition state
-        if (areStartConditionsMet) {
-            log.debug("{}: Start conditions met, plugin is due to run", cleanName);
-        } else {
-            // Log why it's not due - this would help diagnose the issue
-            log.debug("{}: Start conditions NOT met, plugin is NOT due to run", cleanName);
-            // Log specific condition states
-            for (Condition condition : getStartConditions()) {
-                log.debug("  - Condition '{}' satisfied: {}", 
-                        condition.getDescription(), condition.isSatisfied());
-            }
-        }        
         
-        return areStartConditionsMet;
+        // Log at appropriate levels
+        if (Microbot.isDebug()) {
+            // Build comprehensive log info using our diagnostic helper
+            String diagnosticInfo = diagnoseStartConditions();
+            // In debug mode, log the full detailed diagnostics
+            log.debug("\n[isDueToRun] - \n"+diagnosticInfo);
+        }
+          
+        
+        // Check if start conditions are met
+        return startConditionManager.areConditionsMet();
     }
     /**
      * Update the lastRunTime to now and update conditions
@@ -686,7 +757,7 @@ public class PluginScheduleEntry {
             }
             
             // Update the nextRunTime for legacy compatibility if possible
-            Optional<ZonedDateTime> nextTriggerTime = getNextStartTriggerTime();
+            Optional<ZonedDateTime> nextTriggerTime = getCurrentStartTriggerTime();
             if (nextTriggerTime.isPresent()) {
                 ZonedDateTime nextRunTime = nextTriggerTime.get();
                 log.info("Updated next run time for '{}' to {}", 
@@ -714,15 +785,15 @@ public class PluginScheduleEntry {
     public boolean updatePrimaryTimeCondition(TimeCondition newTimeCondition) {
         if (startConditionManager == null || newTimeCondition == null) {
             return false;
-        }
-        
+        }        
         // First, find the existing time condition. We'll assume the first time condition 
         // we find is the primary one that was added at creation
-        TimeCondition existingTimeCondition = this.mainTimeStartCondition;
-        
+        TimeCondition existingTimeCondition = this.mainTimeStartCondition;                
         
         // If we found a time condition, replace it
         if (existingTimeCondition != null) {
+            Optional<ZonedDateTime> currentTrigDateTime = existingTimeCondition.getCurrentTriggerTime();
+            Optional<ZonedDateTime> newTrigDateTime = newTimeCondition.getCurrentTriggerTime();
             log.debug("Replacing time condition {} with {}", 
                     existingTimeCondition.getDescription(), 
                     newTimeCondition.getDescription());
@@ -760,8 +831,22 @@ public class PluginScheduleEntry {
                     this.setDefault(false);
                 }                
                 
-                this.mainTimeStartCondition = newTimeCondition;                
-                return true;
+                this.mainTimeStartCondition = newTimeCondition;                                
+            }
+            if (currentTrigDateTime.isPresent() && newTrigDateTime.isPresent()) {
+                // Check if the new trigger time is different from the current one
+                if (!currentTrigDateTime.get().equals(newTrigDateTime.get())) {
+                    log.info("Updated start time for '{}' to {}", 
+                            name, 
+                            newTrigDateTime.get().format(DATE_TIME_FORMATTER));
+                    // Update the start conditions
+                    updateStartConditions();
+                } else {
+                    log.info("Start time for '{}' remains unchanged", name);
+                }
+            }else if (!newTrigDateTime.isPresent() && currentTrigDateTime.isPresent()){                
+                updateStartConditions();// we have new condition ->  new start time ?
+                
             }
         } else {
             // No existing time condition found, just add the new one
@@ -775,12 +860,14 @@ public class PluginScheduleEntry {
             }else{
                 startConditionManager.addCondition(newTimeCondition);
             }            
-            this.mainTimeStartCondition = newTimeCondition;            
-            return true;
+            this.mainTimeStartCondition = newTimeCondition;                 
+            updateStartConditions();// we have new condition ->  new start time ?
         }
         // Recalculate any internal state based on the new condition
-        updateStartConditions();
-        return false;
+        //if  (!isRunning()){
+            
+        //}
+        return true;
     }
 
     /**
@@ -792,6 +879,7 @@ public class PluginScheduleEntry {
         
         // Handle time conditions
         if (startConditionManager != null) {
+            log.info("\nUpdating start conditions for plugin '{}'", name);
             startConditionManager.reset();
             
             // Reset one-time conditions to prevent repeated triggering
@@ -808,7 +896,7 @@ public class PluginScheduleEntry {
             }
             
             // Update the nextRunTime for legacy compatibility if possible
-            Optional<ZonedDateTime> nextTriggerTime = getNextStartTriggerTime();
+            Optional<ZonedDateTime> nextTriggerTime = getCurrentStartTriggerTime();
             if (nextTriggerTime.isPresent()) {
                 ZonedDateTime nextRunTime = nextTriggerTime.get();
                 log.info("Updated next run time for '{}' to {}", 
@@ -923,7 +1011,7 @@ public class PluginScheduleEntry {
         // Check for start conditions
         if (hasAnyStartConditions()) {
             // Check if we can determine the next trigger time
-            Optional<ZonedDateTime> nextTrigger = getNextStartTriggerTime();
+            Optional<ZonedDateTime> nextTrigger = getCurrentStartTriggerTime();
             if (nextTrigger.isPresent()) {
                 ZonedDateTime triggerTime = nextTrigger.get();
                 ZonedDateTime currentTime = ZonedDateTime.ofInstant(
@@ -984,7 +1072,11 @@ public class PluginScheduleEntry {
 
     // Determine if plugin should stop based on conditions and/or duration
     public boolean shouldStop() {
-
+        if (isRunning()) {
+            if (!isEnabled()){
+                return true; //enabled was disabled -> stop the plugin gracefully -> soft stop should be trigged when possible
+            }
+        }
         // Check if conditions are met and we should stop when conditions are met
         if (areConditionsMet()) {
             return true;
@@ -1001,8 +1093,8 @@ public class PluginScheduleEntry {
         return stopConditionManager.getDescription();
     }
 
-    // Modify the stop logic to check conditions
-    public void checkConditionsAndStop() {
+    
+    public void checkConditionsAndStop(boolean successfulRun) {
         ZonedDateTime now = ZonedDateTime.now();
         
         if (shouldStop()) {
@@ -1010,7 +1102,7 @@ public class PluginScheduleEntry {
             if (!stopInitiated) {
                 logStopConditionsWithDetails();
                 log.info("Stopping plugin {} due to conditions being met - initiating soft stop", name);
-                this.softStop(); // This will start the monitoring thread
+                this.softStop(true); // This will start the monitoring thread
             }
             // Plugin didn't stop after previous attempts
             else if (isRunning()) {
@@ -1026,14 +1118,14 @@ public class PluginScheduleEntry {
                     
                     // Stop current monitoring and start new one for hard stop
                     stopMonitoringThread();
-                    this.hardStop();
+                    this.hardStop(true);
                 }
                 // Retry soft stop at configured intervals
                 else if (timeSinceLastAttempt.compareTo(softStopRetryInterval) > 0) {
                     log.info("Plugin {} still running after soft stop - retrying (attempt time: {} seconds)", 
                              name, timeSinceFirstAttempt.toSeconds());
                     lastStopAttemptTime = now;
-                    this.softStop();
+                    this.softStop(true);
                 }else if (timeSinceLastAttempt.compareTo(hardStopTimeout) > 0) {                    
                     log.error("Forcibly shutting down the client due to unresponsive plugin: {}", name);
     
@@ -1099,7 +1191,7 @@ public class PluginScheduleEntry {
         
         StringBuilder sb = new StringBuilder();
         
-        sb.append("Plugin '").append(cleanName).append("' [").append(logINFOHeader).append("]: ");
+        sb.append("\nPlugin '").append(cleanName).append("' [").append(logINFOHeader).append("]: ");
 
         if (conditionList.isEmpty()) {
             sb.append("No stop conditions defined");
@@ -1188,28 +1280,16 @@ public class PluginScheduleEntry {
             ConditionProvider provider = (ConditionProvider) plugin;
 
             // Get conditions from the provider
-            List<Condition> pluginConditions = provider.getStoppCondition().getConditions();
-            if (pluginConditions != null && !pluginConditions.isEmpty()) {
-                // Create a new AND condition as the root
-
-                
-
+            log.info("get conditions from provider");
+            List<Condition> pluginConditions = provider.getStopCondition().getConditions();
+            if (pluginConditions != null && !pluginConditions.isEmpty()) {                
                 // Get or create plugin's logical structure
-                LogicalCondition pluginLogic = provider.getStoppCondition();
+                log.info("get conditions from provider");
+                LogicalCondition pluginLogic = provider.getStopCondition();
 
-                if (pluginLogic != null) {
-                    for (Condition condition : pluginConditions) {
-                        if(pluginLogic.contains(condition)){
-                            continue;
-                        }
-                    }
-                    
-                }else{
-                    throw new RuntimeException("Plugin '"+name+"' implements StoppingConditionProvider but provided no conditions");
-                }
-                
-
+                log.info("--> Adding plugin conditions to stop condition manager");
                 pluginLogic.reset();
+                log.info("--> reset done");
                 // Set the new root condition
                 getStopConditionManager().setPluginCondition(pluginLogic);
                 
@@ -1217,7 +1297,7 @@ public class PluginScheduleEntry {
                 logStopConditionsWithDetails();
             } else {
                 log.info("Plugin '{}' implements StoppingConditionProvider but provided no conditions",
-                        plugin.getName());
+                                        plugin.getName());
             }
         }
     }
@@ -1258,13 +1338,15 @@ public class PluginScheduleEntry {
                 // Log with the consolidated method
                 logStartConditionsWithDetails();
             } else {
-                log.info("Plugin '{}' implements CnditionProvider but provided no conditions",
+                log.info("Plugin '{}' implements condition Provider but provided no explecitystart conditions defined",
                         plugin.getName());
             }
         }
 
     }
     public void registerPluginConditions(){
+
+        log.info("Registering plugin conditions for plugin '{}'", name);
         registerPluginStoppingConditions();
         registerPluginStartingConditions();
     }
@@ -1374,79 +1456,8 @@ public class PluginScheduleEntry {
         this.hardStopTimeout = timeout;
     }
 
-    /**
-     * Starts a monitoring thread that tracks the stopping process of a plugin.
-     * <p>
-     * This method creates a daemon thread that periodically checks if a plugin
-     * that is in the process of stopping has completed its shutdown. When the plugin
-     * successfully stops, this method updates the next scheduled run time and clears
-     * all stopping-related state flags.
-     * <p>
-     * The monitoring thread will only be started if one is not already running
-     * (controlled by the isMonitoringStop flag). It checks the plugin's running state
-     * every 500ms until the plugin stops or monitoring is canceled.
-     * <p>
-     * The thread is created as a daemon thread to prevent it from blocking JVM shutdown.
-     */
-    private void startStopMonitoringThread() {
-        // Don't start a new thread if one is already running
-        if (isMonitoringStop) {
-            return;
-        }
-        
-        isMonitoringStop = true;
-        
-        stopMonitorThread = new Thread(() -> {
-            try {
-                log.debug("Stop monitoring thread started for plugin '{}'", name);
-                
-                // Keep checking until the stop completes or is abandoned
-                while (stopInitiated && isMonitoringStop) {
-                    // Check if plugin has stopped running
-                    if (!isRunning()) {
-                        log.info("Plugin '{}' has successfully stopped - updating state", name);
-                        
-                        // Update lastRunTime and start conditions for next run
-                        updateStartConditions();
-                        
-                        // Increment the run count since we completed a full run
-                        incrementRunCount();
-                        
-                        // Reset stop state
-                        stopInitiated = false;
-                        hasStarted = false;
-                        stopInitiatedTime = null;
-                        lastStopAttemptTime = null;
-                        break;
-                    }
-                    
-                    // Check every 500ms to be responsive but not wasteful
-                    Thread.sleep(500);
-                }
-            } catch (InterruptedException e) {
-                // Thread was interrupted, just exit
-                log.debug("Stop monitoring thread for '{}' was interrupted", name);
-            } finally {
-                isMonitoringStop = false;
-                log.debug("Stop monitoring thread exited for plugin '{}'", name);
-            }
-        });
-        
-        stopMonitorThread.setName("StopMonitor-" + name);
-        stopMonitorThread.setDaemon(true); // Use daemon thread to not prevent JVM exit
-        stopMonitorThread.start();
-    }
+   
 
-    /**
-     * Stops the monitoring thread if it's running
-     */
-    private void stopMonitoringThread() {
-        if (isMonitoringStop && stopMonitorThread != null) {
-            isMonitoringStop = false;
-            stopMonitorThread.interrupt();
-            stopMonitorThread = null;
-        }
-    }
 
     /**
      * Convert a list of ScheduledPlugin objects to JSON
@@ -1515,7 +1526,123 @@ public class PluginScheduleEntry {
     public void setDefault(boolean isDefault) {
         this.isDefault = isDefault;
     }
-    
+    /**
+    * Generic helper method to build condition diagnostics for both start and stop conditions
+    * 
+    * @param isStartCondition Whether to diagnose start conditions (true) or stop conditions (false)
+    * @return A detailed diagnostic string
+    */
+    private String buildConditionDiagnostics(boolean isStartCondition) {
+        StringBuilder sb = new StringBuilder();
+        String conditionType = isStartCondition ? "Start" : "Stop";
+        ConditionManager conditionManager = isStartCondition ? startConditionManager : stopConditionManager;
+        List<Condition> conditions = isStartCondition ? getStartConditions() : getStopConditions();
+        
+        // Header with plugin name
+        sb.append("[").append(cleanName).append("] ").append(conditionType).append(" condition diagnostics:\n");
+        
+        // Check if running (only relevant for start conditions)
+        if (isStartCondition && isRunning()) {
+            sb.append("- Plugin is already running (will not start again until stopped)\n");
+            return sb.toString();
+        }
+        
+        // Check for conditions
+        if (conditions.isEmpty()) {
+            sb.append("- No ").append(conditionType.toLowerCase()).append(" conditions defined\n");
+            return sb.toString();
+        }
+        
+        // Condition logic type
+        sb.append("- Logic: ")
+        .append(conditionManager.requiresAll() ? "ALL conditions must be met" : "ANY condition can be met")
+        .append("\n");
+        
+        // Condition description
+        sb.append("- Conditions: ")
+        .append(conditionManager.getDescription())
+        .append("\n");
+        
+        // Check if they can be fulfilled
+        boolean canBeFulfilled = isStartCondition ? 
+                hasFullfillableStartConditions() : 
+                hasFullfillableStopConditions();
+        
+        if (!canBeFulfilled) {
+            sb.append("- Conditions cannot be fulfilled (e.g., one-time conditions already triggered)\n");
+        }
+        
+        // Progress
+        double progress = isStartCondition ? 
+                conditionManager.getProgressTowardNextTrigger() : 
+                getStopConditionProgress();
+        sb.append("- Progress: ")
+        .append(String.format("%.1f%%", progress))
+        .append("\n");
+        
+        // Next trigger time
+        Optional<ZonedDateTime> nextTrigger = isStartCondition ? 
+                getCurrentStartTriggerTime() : 
+                getNextStopTriggerTime();
+        
+        sb.append("- Next trigger: ");
+        if (nextTrigger.isPresent()) {
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
+            ZonedDateTime triggerTime = nextTrigger.get();
+            
+            sb.append(triggerTime).append("\n");
+            sb.append("- Current time: ").append(now).append("\n");
+            
+            if (triggerTime.isBefore(now)) {
+                sb.append("- Trigger time is in the past but conditions not met - may need reset\n");
+            } else {
+                Duration timeUntil = Duration.between(now, triggerTime);
+                sb.append("- Time until trigger: ").append(formatDuration(timeUntil)).append("\n");
+            }
+        } else {
+            sb.append("No future trigger time determined\n");
+        }
+        
+        // Overall condition status
+        boolean areConditionsMet = isStartCondition ? 
+                startConditionManager.areConditionsMet() : 
+                areConditionsMet();
+        
+        sb.append("- Status: ")
+        .append(areConditionsMet ? 
+                "CONDITIONS MET - Plugin is " + (isStartCondition ? "due to run" : "due to stop") : 
+                "CONDITIONS NOT MET - Plugin " + (isStartCondition ? "will not run" : "will continue running"))
+        .append("\n");
+        
+        // Individual condition status
+        sb.append("- Individual conditions:\n");
+        for (int i = 0; i < conditions.size(); i++) {
+            Condition condition = conditions.get(i);
+            sb.append("  ").append(i+1).append(". ")
+            .append(condition.getDescription())
+            .append(": ")
+            .append(condition.isSatisfied() ? "SATISFIED" : "NOT SATISFIED");
+            
+            // Add progress if available
+            double condProgress = condition.getProgressPercentage();
+            if (condProgress > 0 && condProgress < 100) {
+                sb.append(String.format(" (%.1f%%)", condProgress));
+            }
+            
+            // For time conditions, show next trigger time
+            if (condition instanceof TimeCondition) {
+                Optional<ZonedDateTime> condTrigger = condition.getCurrentTriggerTime();
+                if (condTrigger.isPresent()) {
+                    sb.append(" (next trigger: ").append(condTrigger.get()).append(")");
+                }
+            }
+            
+            sb.append("\n");
+        }
+        
+        return sb.toString();
+    }
+
     /**
      * Performs a diagnostic check on start conditions and returns detailed information
      * about why a plugin might not be due to run
@@ -1523,65 +1650,17 @@ public class PluginScheduleEntry {
      * @return A string containing diagnostic information
      */
     public String diagnoseStartConditions() {
-        StringBuilder diagnosis = new StringBuilder();
-        diagnosis.append("Start condition diagnosis for plugin: ").append(cleanName).append("\n");
-        
-        // Check if running
-        if (isRunning()) {
-            diagnosis.append("- Plugin is already running\n");
-            return diagnosis.toString();
-        }
-        
-        // Check for start conditions
-        if (!hasAnyStartConditions()) {
-            diagnosis.append("- No start conditions defined\n");
-            return diagnosis.toString();
-        }
-        
-        // Get details on start conditions
-        diagnosis.append("- Start conditions: ")
-                 .append(startConditionManager.getDescription()).append("\n");
-        
-        // Check if they can be fulfilled
-        if (!hasFullfillableStartConditions()) {
-            diagnosis.append("- Start conditions cannot be fulfilled (e.g., one-time conditions already triggered)\n");
-        }
-        
-        // Get next trigger time
-        Optional<ZonedDateTime> nextTrigger = getNextStartTriggerTime();
-        if (nextTrigger.isPresent()) {
-            ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
-            ZonedDateTime triggerTime = nextTrigger.get();
-            diagnosis.append("- Next trigger time: ").append(triggerTime).append("\n");
-            diagnosis.append("- Current time: ").append(now).append("\n");
-            
-            if (triggerTime.isBefore(now)) {
-                diagnosis.append("- Trigger time is in the past but conditions not met - may need reset\n");
-            } else {
-                Duration timeUntil = Duration.between(now, triggerTime);
-                diagnosis.append("- Time until trigger: ").append(formatDuration(timeUntil)).append("\n");
-            }
-        } else {
-            diagnosis.append("- No future trigger time determined\n");
-        }
-        
-        // Check individual conditions
-        diagnosis.append("- Individual condition status:\n");
-        for (Condition condition : getStartConditions()) {
-            diagnosis.append("  * ").append(condition.getDescription())
-                    .append(": ").append(condition.isSatisfied() ? "SATISFIED" : "NOT SATISFIED");
-            
-            if (condition instanceof TimeCondition) {
-                Optional<ZonedDateTime> condTrigger = condition.getCurrentTriggerTime();
-                if (condTrigger.isPresent()) {
-                    diagnosis.append(" (next trigger: ").append(condTrigger.get()).append(")");
-                }
-            }
-            
-            diagnosis.append("\n");
-        }
-        
-        return diagnosis.toString();
+        return buildConditionDiagnostics(true);
+    }
+
+    /**
+     * Performs a diagnostic check on stop conditions and returns detailed information
+     * about why a plugin might or might not be due to stop
+     * 
+     * @return A string containing diagnostic information
+     */
+    public String diagnoseStopConditions() {
+        return buildConditionDiagnostics(false);
     }
 
     /**

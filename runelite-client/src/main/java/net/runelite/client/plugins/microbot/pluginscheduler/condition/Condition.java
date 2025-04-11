@@ -11,6 +11,8 @@ import net.runelite.api.events.GroundObjectSpawned;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.InteractingChanged;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.events.ItemDespawned;
+import net.runelite.api.events.ItemSpawned;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
@@ -106,6 +108,19 @@ public interface Condition {
      */
     default void onGroundObjectDespawned(GroundObjectDespawned event) {
         // Optional implementation
+    }
+    /**
+     * Called when an item is spawned in the game world
+     */
+    default void onItemSpawned(ItemSpawned event) {
+        // Optional implementation
+    }
+    /**
+     * Called when an item is despawned from the game world
+     */
+    default void onItemDespawned(ItemDespawned event){
+        // This event handler is called whenever an item despawns
+        // Useful for item-based conditions
     }
     
     /**

@@ -484,7 +484,7 @@ private String getStopConditionsTooltip(PluginScheduleEntry entry) {
         StringBuilder tooltip = new StringBuilder("<html><b>Next Run Details:</b><br>");
         
         // Add next run time
-        Optional<ZonedDateTime> nextTime = entry.getNextStartTriggerTime();
+        Optional<ZonedDateTime> nextTime = entry.getCurrentStartTriggerTime();
         if (nextTime.isPresent()) {
             tooltip.append("Next scheduled time: ").append(nextTime.get().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")));
         } else {
@@ -532,8 +532,8 @@ private String getStopConditionsTooltip(PluginScheduleEntry entry) {
             }
             
             // If both are enabled or both disabled, sort by next run time
-            Optional<ZonedDateTime> nextTime1 = p1.getNextStartTriggerTime();
-            Optional<ZonedDateTime> nextTime2 = p2.getNextStartTriggerTime();
+            Optional<ZonedDateTime> nextTime1 = p1.getCurrentStartTriggerTime();
+            Optional<ZonedDateTime> nextTime2 = p2.getCurrentStartTriggerTime();
             
             if (nextTime1.isPresent() && nextTime2.isPresent()) {
                 int timeCompare = nextTime1.get().compareTo(nextTime2.get());

@@ -47,7 +47,7 @@ public class NpcKillCountCondition extends NpcCondition {
         this.targetCountMin = targetCount;
         this.targetCountMax = targetCount;
         this.currentTargetCount = targetCount;
-        registerEvents();
+        //registerEvents();
     }
     
     /**
@@ -60,7 +60,7 @@ public class NpcKillCountCondition extends NpcCondition {
         this.targetCountMin = Math.max(0, targetCountMin);
         this.targetCountMax = Math.max(this.targetCountMin, targetCountMax);
         this.currentTargetCount = Rs2Random.between(this.targetCountMin, this.targetCountMax);
-        registerEvents();
+        //registerEvents();
     }
     
     /**
@@ -216,6 +216,12 @@ public class NpcKillCountCondition extends NpcCondition {
         if (!registered) {
             Microbot.getEventBus().register(this);
             registered = true;
+        }
+    }
+    private void unregisterEvents() {
+        if (registered) {
+            Microbot.getEventBus().unregister(this);
+            registered = false;
         }
     }
     

@@ -3,7 +3,6 @@ package net.runelite.client.plugins.microbot.pluginscheduler.condition.skill;
 import lombok.Getter;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionType;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 
@@ -11,33 +10,28 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
  * Skill level-based condition for script execution.
  */
 @Getter 
-public class SkillLevelCondition implements Condition {
-    private final Skill skill;
+public class SkillLevelCondition extends SkillCondition {
     private int currentTargetLevel;
     private final int targetLevelMin;
     private final int targetLevelMax;
     private int startLevel;
     
-    public SkillLevelCondition(Skill skill, 
-    int targetLevel) {
-        this.skill = skill;
+    public SkillLevelCondition(Skill skill, int targetLevel) {
+        super(skill); // Call parent constructor with skill
         this.currentTargetLevel = targetLevel;
         this.targetLevelMin = targetLevel;
         this.targetLevelMax = targetLevel;
         this.startLevel = getCurrentLevel();
     }
+    
     public SkillLevelCondition(Skill skill, int targetMinLevel, int targetMaxLevel) {
-        this.skill = skill;
+        super(skill); // Call parent constructor with skill
         targetMinLevel = Math.max(1, targetMinLevel);
         targetMaxLevel = Math.min(99, targetMaxLevel);
         this.currentTargetLevel = Rs2Random.between(targetMinLevel, targetMaxLevel);
         this.targetLevelMin = targetMinLevel;
         this.targetLevelMax = targetMaxLevel;
         this.startLevel = getCurrentLevel();
-    }
-    @Override
-    public void reset() {
-        reset(false);
     }
 
     @Override
@@ -46,8 +40,8 @@ public class SkillLevelCondition implements Condition {
             currentTargetLevel = Rs2Random.between(targetLevelMin, targetLevelMax);
         }
         startLevel = getCurrentLevel();        
-
     }
+
     /**
      * Create a skill level condition with random target between min and max
      */
@@ -97,18 +91,21 @@ public class SkillLevelCondition implements Condition {
                     skill.getName(), currentTargetLevel, randomRangeInfo, currentLevel, levelsNeeded);
         }
     }
+    
     /**
      * Gets the current skill level
      */
     public int getCurrentLevel() {
-        return  Microbot.getClientThread().runOnClientThread(()->Microbot.getClient().getRealSkillLevel(skill));
+        return Microbot.getClientThread().runOnClientThreadOptional(()->Microbot.getClient().getRealSkillLevel(skill)).orElse(0);
     }
+    
     /**
      * Gets the starting skill level
      */
     public int getStartingLevel() {
         return startLevel;
     }
+    
     @Override
     public ConditionType getType() {
         return ConditionType.SKILL_LEVEL;
@@ -133,5 +130,4 @@ public class SkillLevelCondition implements Condition {
         
         return (100.0 * levelsGained) / levelsNeeded;
     }
-    
 }

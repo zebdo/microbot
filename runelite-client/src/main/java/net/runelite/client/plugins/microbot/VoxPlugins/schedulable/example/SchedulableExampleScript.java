@@ -8,11 +8,18 @@ import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.woodcutting.enums.WoodcuttingTree;
 
+import java.util.ArrayList;
+import java.util.List;
+
+
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
+
 
 public class SchedulableExampleScript extends Script {
     private SchedulableExampleConfig config;
@@ -21,11 +28,11 @@ public class SchedulableExampleScript extends Script {
     private boolean needsReset = false;
     
     enum State {
-        WOODCUTTING,
+        IDELE,
         RESETTING
     }
     
-    private State state = State.WOODCUTTING;
+    private State state = State.IDELE;
 
     
     
@@ -55,13 +62,13 @@ public class SchedulableExampleScript extends Script {
         }
         
         switch (state) {
-            case WOODCUTTING:
+            case IDELE:
                 if (Rs2Inventory.isFull()) {
                     state = State.RESETTING;
                     return true;
                 }
                 
-                return cutTree();
+
                 
             case RESETTING:
                 resetInventory();
@@ -91,20 +98,14 @@ public class SchedulableExampleScript extends Script {
         return Rs2Inventory.hasItem("axe") || Rs2Equipment.hasEquippedContains("axe");
     }
     
-    private void resetInventory() {
-        if (config.bankLogs()) {
-            bankLogs();
-        } else {
-            dropLogs();
-        }
-        
+    private void resetInventory() {                
         // Update count before moving to next state
-        updateLogsCount();
-        state = State.WOODCUTTING;
+        updateItemCount();
+        state = State.IDELE;
     }
     
-    private void bankLogs() {
-        Microbot.status = "Banking logs";
+    private void bankItems() {
+        Microbot.status = "Banking ";
         
         // Find and use nearest bank
         if (!Rs2Bank.isOpen()) {
@@ -120,42 +121,49 @@ public class SchedulableExampleScript extends Script {
         // Return to woodcutting spot
         walkToReturnPoint();
     }
-    
-    private void dropLogs() {
-        Microbot.status = "Dropping logs";
+    private List<Pattern> getLootItemPatterns(){
+        String lootItemsString = config.lootItems();
+        List<String> lootItemsList = new ArrayList<>();
+        List<Pattern> lootItemsListPattern = new ArrayList<>();
+        if (lootItemsString != null && !lootItemsString.isEmpty()) {
+            String[] lootItemsArray = lootItemsString.split(",");
+            int validPatternsCount = 0;
+            for (String item : lootItemsArray) {
+                String trimmedItem = item.trim();
+                try {
+                    // Validate regex pattern
+                    lootItemsListPattern.add(java.util.regex.Pattern.compile(trimmedItem));
+                    lootItemsList.add(trimmedItem);
+                    //log.info("Valid loot item pattern found: {}", trimmedItem);
+                    validPatternsCount++;
+                } catch (java.util.regex.PatternSyntaxException e) {
+                    //log.warn("Invalid regex pattern: '{}' - {}", trimmedItem, e.getMessage());
+                }
+            }
+            //log.info("Total valid loot item patterns: {}", validPatternsCount);
+        }
+        return lootItemsListPattern;
+    }
+    private void dropItems() {
+        Microbot.status = "Dropping Items";
         
         // Drop all logs
-        WoodcuttingTree tree = config.tree();
-        Rs2Inventory.dropAll(tree.getLog());
-    }
-    
-    private boolean cutTree() {
-        Microbot.status = "Looking for " + config.tree().getName();
-        
-        // Find a tree within range
-        GameObject tree = Rs2GameObject.findReachableObject(
-            config.tree().getName(), 
-            true, 
-            config.maxDistance(), 
-            returnPoint
-        );
-        
-        if (tree != null) {
-            Microbot.status = "Cutting " + config.tree().getName();
-            if (Rs2GameObject.interact(tree, config.tree().getAction())) {
-                // Update return point to current location
-                returnPoint = Rs2Player.getWorldLocation();
-                Rs2Player.waitForAnimation();
-                return true;
+        List<Pattern> lootItemsListPattern = getLootItemPatterns();
+        //List<Rs2ItemModel> foundItems =  
+        Rs2Inventory.all().forEach(item -> {
+            if (lootItemsListPattern.stream().anyMatch(pattern -> pattern.matcher(item.getName()).find())) {                
+                
+            }else{
+                // Drop all logs
+                Rs2Inventory.dropAll(item.getName());
             }
-        } else {
-            // Move around to find trees
-            Microbot.status = "Searching for trees...";
-            walkToReturnPoint();
-        }
+            
+        });
+        // Drop all logs
         
-        return false;
-    }
+        }
+    
+
     
     private void walkToReturnPoint() {
         if (Rs2Player.getWorldLocation().distanceTo(returnPoint) > 3) {
@@ -163,12 +171,13 @@ public class SchedulableExampleScript extends Script {
         }
     }
     
-    public void updateLogsCount() {
-        WoodcuttingTree tree = config.tree();
-        int currentLogs = Rs2Inventory.count(tree.getLog());
+    public void updateItemCount() {
+        List<Pattern> lootItemsListPattern = getLootItemPatterns();
+        int currentItems =Rs2Inventory.all().stream().filter(item -> lootItemsListPattern.stream().anyMatch(pattern -> pattern.matcher(item.getName()).find())).mapToInt(Rs2ItemModel::getQuantity).sum();
         
-        if (currentLogs > 0) {
-            logsCollected += currentLogs;
+        
+        if (currentItems > 0) {
+            logsCollected += currentItems;
             Microbot.log("Total logs collected: " + logsCollected);
         }
     }

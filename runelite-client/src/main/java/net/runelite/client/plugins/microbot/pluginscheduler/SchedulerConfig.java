@@ -17,14 +17,21 @@ public interface SchedulerConfig extends Config {
             position = 11,
             closedByDefault = true
     )
-    String controlSection = "Control";
+    String controlSection = "Control Settings";
     @ConfigSection(
             name = "Conditions",
             description = "Conditions settings for the plugin scheduler, enforce conditions, etc.",            
             position = 12,
             closedByDefault = true
     )
-    String conditionsSection = "Conditions";
+    String conditionsSection = "Conditions Settings";
+    @ConfigSection(
+            name = "Log-In",
+            description = "Log-In settings for the plugin scheduler, auto log in, etc.",            
+            position = 13,
+            closedByDefault = true
+    )
+    String loginSection = "Log-In Settings";
 
     // hidden settings for saving config automatically via runelite config menager
     @ConfigItem(
@@ -86,4 +93,57 @@ public interface SchedulerConfig extends Config {
         return true;
     }
     void setEnforceStopConditions(boolean enforce);
+
+    // Log-In  settings
+    @ConfigItem(
+        keyName = "autoLogIn",
+        name = "Auto Log In",
+        description = "Automatically log in to the game",        
+        position = 1,
+        section = loginSection
+    )
+    default boolean autoLogIn() {
+        return false;
+    }
+    void setAutoLogIn(boolean autoLogIn);
+    @ConfigItem(
+        keyName = "autoLogInWorld",
+        name = "Auto Log In World",
+        description = "World to log in to, 0 for random world",
+        position = 2,
+        section = loginSection
+    )
+    default int autoLogInWorld() {
+        return 0;
+    }
+    @ConfigItem(
+        keyName = "enableAutoLoginForSchedules",
+        name = "Use AutoLogin Plugin for schedules",
+        description = "Enable AutoLogin plugin automatically when login is required for scheduled plugins",
+        position = 3    
+    )
+    default boolean enableAutoLoginForSchedules() {
+        return true;
+    }
+    @ConfigItem(
+        keyName = "logoutDuringWait",
+        name = "Logout During Wait for next schedule",
+        description = "Automatically disable the AutoLogin plugin when stopping the scheduler",
+        position = 4
+    )
+    default boolean disableAutoLoginWhenDone() {
+        return true;
+    }
+    // Break settings
+    @ConfigItem(
+        keyName = "enableBreakHandlerAutomatically",
+        name = "Auto-enable BreakHandler",
+        description = "Automatically enable the BreakHandler plugin when starting the scheduler",
+        position = 12
+    )
+    default boolean enableBreakHandlerAutomatically() {
+        return true;
+    }
+
+   
 }

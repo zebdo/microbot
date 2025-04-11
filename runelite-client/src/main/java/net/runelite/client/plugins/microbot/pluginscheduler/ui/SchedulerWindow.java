@@ -11,6 +11,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEnt
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEntry.ScheduleTablePanel;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.plugins.microbot.Microbot;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -31,8 +32,7 @@ public class SchedulerWindow extends JFrame {
     private final ConditionConfigPanel stopConditionPanel;
     private final SchedulerInfoPanel infoPanel;
     private JButton runSchedulerButton;
-    private JButton stopSchedulerButton;
-    private JLabel stopInstructionLabel;
+    private JButton stopSchedulerButton;    
     // Timer for refreshing the info panel
     private Timer refreshTimer;
 
@@ -86,7 +86,7 @@ public class SchedulerWindow extends JFrame {
                     );
                     
                     if (result == JOptionPane.YES_OPTION) {
-                        plugin.continueStartingPlugin(selected);
+                        plugin.continueStartingPluginScheduleEntry(selected);
                     } else {
                         // User decided not to start - reset state
                         plugin.resetPendingStart();
@@ -216,7 +216,15 @@ public class SchedulerWindow extends JFrame {
         stopSchedulerButton.setForeground(Color.WHITE);
         stopSchedulerButton.setFocusPainted(false);
         stopSchedulerButton.addActionListener(e -> {
-            plugin.stopScheduler();
+            SwingUtilities.invokeLater(() -> {
+                plugin.stopScheduler();                
+            });
+            //Mcrobot.getClientThread().runOnClientThreadOptional(() -> {
+                // Update the state label after stopping
+                
+               // plugin.stopScheduler();      
+                //return true;
+            //}); 
             updateButtonState();
             stateValueLabel.setText(plugin.getCurrentState().getDisplayName());
             stateValueLabel.setForeground(plugin.getCurrentState().getColor());
@@ -259,21 +267,7 @@ public class SchedulerWindow extends JFrame {
         // Stop Conditions tab
         JPanel stopConditionsTab = new JPanel(new BorderLayout());
         stopConditionsTab.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        this.stopInstructionLabel = new JLabel("<html>Configure stop conditions for the selected plugin</html>");
-        stopInstructionLabel.setBorder(BorderFactory.createCompoundBorder(
-            BorderFactory.createTitledBorder(
-                BorderFactory.createLineBorder(ColorScheme.MEDIUM_GRAY_COLOR),
-                "Stop Conditions",
-                TitledBorder.DEFAULT_JUSTIFICATION,
-                TitledBorder.DEFAULT_POSITION,
-                FontManager.getRunescapeBoldFont(),
-                Color.WHITE
-            ),
-            BorderFactory.createEmptyBorder(5, 5, 5, 5)
-        ));
-        stopInstructionLabel.setForeground(Color.WHITE);
-        
-        stopConditionsTab.add(stopInstructionLabel, BorderLayout.NORTH);
+       
         stopConditionsTab.add(stopConditionPanel, BorderLayout.CENTER);
         
         // Add tabs to tabbed pane
@@ -351,11 +345,7 @@ public class SchedulerWindow extends JFrame {
             formPanel.loadPlugin(plugin);
             formPanel.setEditMode(true);    
             log.info("selection found");
-            stopConditionPanel.setSelectScheduledPlugin(selected);
-            stopInstructionLabel.setText("Configure stop conditions for: \""+selected.getName()+"\"");
-            
-            
-
+            stopConditionPanel.setSelectScheduledPlugin(selected);                                    
         } else {                                        
          
         }

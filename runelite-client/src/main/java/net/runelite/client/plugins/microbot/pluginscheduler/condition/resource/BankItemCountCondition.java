@@ -21,6 +21,8 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 /**
  * Condition that tracks the number of items in bank.
  * Is satisfied when we have a certain number of items in the bank, and stays satisfied until reset.
+ * TODO make proccesdItemCountCondition -> tracks the number of items processed in the inventory -> for now placeholder
+ * track first if we "get" it in the inventory, then count down the procces items (not counting item dropped or banked -> track if bank is open or the item was dropp be the player)
  */
 @Getter
 public class BankItemCountCondition extends ResourceCondition {

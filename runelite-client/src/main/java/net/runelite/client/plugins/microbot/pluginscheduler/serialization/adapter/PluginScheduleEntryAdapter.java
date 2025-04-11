@@ -97,7 +97,7 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
         }
         
         // Deserialize condition managers
-        if (jsonObject.has("stopConditionManager")) {
+        /*if (jsonObject.has("stopConditionManager")) {
             ConditionManager stopManager = context.deserialize(
                 jsonObject.get("stopConditionManager"), ConditionManager.class);
             if (!entry.getStopConditionManager().getConditions().isEmpty()) {                
@@ -107,9 +107,9 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
                 }
             }
             //entry.setStopConditionManager(stopManager);
-        }
+        }*/
         
-        if (jsonObject.has("startConditionManager")) {
+        /*if (jsonObject.has("startConditionManager")) {
             ConditionManager startManager = context.deserialize(
                 jsonObject.get("startConditionManager"), ConditionManager.class);
             if (!entry.getStartConditionManager().getConditions().isEmpty()) {
@@ -119,7 +119,7 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
                     entry.addStartCondition( condition);                
                 }
             }                
-        }
+        }*/
         
         // Handle mainTimeStartCondition
         TimeCondition mainTimeCondition = null;
@@ -187,6 +187,8 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
         if (jsonObject.has("isDefault")) {
             entry.setDefault(jsonObject.get("isDefault").getAsBoolean());
         }
+        
+        //entry.registerPluginConditions();
         
         return entry;
     }

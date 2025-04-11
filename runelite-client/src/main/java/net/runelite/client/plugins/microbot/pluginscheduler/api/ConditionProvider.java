@@ -27,7 +27,7 @@ public interface ConditionProvider {
      * Returns a logical condition structure that defines when the plugin should stop.
      * <p>
      * This allows for complex logical combinations (AND, OR, NOT) of conditions.
-     * If this method returns null, the conditions from {@link #getStoppConditions()}
+     * If this method returns null, the conditions from {@link #getStopConditions()}
      * will be combined with AND logic (all conditions must be met).
      * <p>
      * Example for creating a complex condition: "(A OR B) AND C":
@@ -49,7 +49,7 @@ public interface ConditionProvider {
      * 
      * @return A logical condition structure, or null to use simple AND logic
      */
-    LogicalCondition getStoppCondition();
+    LogicalCondition getStopCondition();
     
     
      /**

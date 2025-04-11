@@ -482,10 +482,11 @@ public class ScheduleFormPanel extends JPanel {
     private void onControlButtonClicked(ActionEvent e) {
         if (plugin.isScheduledPluginRunning()) {
             // Stop the current plugin
-            plugin.forceStopCurrentPlugin();
+            log.info("onControlButtonClicked onControlButtonClicked");
+            plugin.forceStopCurrentPluginScheduleEntry();
         } else if (selectedPlugin != null) {
             // Run the selected plugin now
-            plugin.startPlugin(selectedPlugin);
+            plugin.startPluginScheduleEntry(selectedPlugin);
         }
     }
 
@@ -670,8 +671,7 @@ public class ScheduleFormPanel extends JPanel {
         // Only update if different than current selection to avoid feedback loops
         if (selectedPlugin == null) {
             return;
-        }
-        log.info("\nSyncing with table selection: " + selectedPlugin.getName()+"\ncomboBox: "+pluginComboBox.getSelectedItem());
+        }        
 
         if (selectedPlugin != null && !selectedPlugin.getName().equals(pluginComboBox.getSelectedItem())) {
             // Block action listener temporarily to avoid side effects

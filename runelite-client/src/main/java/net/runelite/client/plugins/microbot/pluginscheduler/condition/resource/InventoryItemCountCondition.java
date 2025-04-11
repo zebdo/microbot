@@ -12,11 +12,12 @@ import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 
 /**
  * Condition that tracks the total number of items in inventory.
- * Can be set to track noted items as well.
+ * Can be set to track noted items as well. TODO Rename into GatheredItemCountCondition
  */
 @Getter
 public class InventoryItemCountCondition extends ResourceCondition {
@@ -285,6 +286,9 @@ public class InventoryItemCountCondition extends ResourceCondition {
     public void onItemContainerChanged(ItemContainerChanged event) {
               
         if (event.getContainerId() == InventoryID.INVENTORY.getId()) {
+            if (Rs2Bank.isOpen()) {
+                return;
+            }
             updateCurrentCount();
         }
     }

@@ -17,6 +17,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.L
 
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.ScheduledStopEvent;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.woodcutting.enums.WoodcuttingTree;
 
@@ -26,7 +27,7 @@ import java.util.List;
 import java.time.Duration;
 
 @PluginDescriptor(
-        name = "Schedulable Woodcutting",
+        name = "Schedulable Example",
         description = "Designed for use the scheduler and test its features",
         tags = {"microbot", "woodcutting", "combat","scheduler"},
         enabledByDefault = false,
@@ -71,56 +72,103 @@ public class SchedulableExamplePlugin extends Plugin implements ConditionProvide
     }
     
     private void loadLastLocation() {
-        String savedLocation = config.lastLocation();
-        if (!savedLocation.isEmpty()) {
-            String[] parts = savedLocation.split(",");
-            if (parts.length == 3) {
-                try {
-                    int x = Integer.parseInt(parts[0]);
-                    int y = Integer.parseInt(parts[1]);
-                    int plane = Integer.parseInt(parts[2]);
-                    lastLocation = new WorldPoint(x, y, plane);
-                } catch (NumberFormatException e) {
-                    log.warn("Failed to parse last location: {}", savedLocation);
-                    WorldPoint currentLocation = Rs2Player.getWorldLocation();
-                    lastLocation = currentLocation;
-                }
-            }
+        WorldPoint savedLocation = config.lastLocation();
+        if (savedLocation == null) {
+            log.warn("No saved location found in config.");
+            this.lastLocation = Rs2Player.getWorldLocation();
+            return;
         }
+        this.lastLocation =  savedLocation;
+       
     }
     
     private void saveCurrentLocation() {
         if (client.getLocalPlayer() != null) {
             WorldPoint currentLoc = client.getLocalPlayer().getWorldLocation();
-            config.setLastLocation(currentLoc.getX() + "," + currentLoc.getY() + "," + currentLoc.getPlane());
+            config.setLastLocation(currentLoc);
         }
     }
     
 
     @Override
-    public LogicalCondition getStoppCondition() {
+    public LogicalCondition getStopCondition() {
         // Create an OR condition - stop when either time is up OR we have enough logs
         OrCondition orCondition = new OrCondition();
         
         // Add time condition
         int minMinutes = config.minRuntime();
         int maxMinutes = config.maxRuntime(); 
+        
         orCondition.addCondition(IntervalCondition.createRandomized(
             Duration.ofMinutes(minMinutes),
             Duration.ofMinutes(maxMinutes)
         ));
         
-        // Add logs condition
-        WoodcuttingTree tree = config.tree();                
-        orCondition.addCondition(LootItemCondition.createRandomized(
-            tree.getLog(),
-            config.minLogs(),
-            config.maxLogs()
-        ));
+       
+        LogicalCondition lootItemCondition = makeLogicalLootItemCondition();
+        orCondition.addCondition(lootItemCondition);
             
         return orCondition;
     }
-    
+    private LogicalCondition makeLogicalLootItemCondition() {
+        // Add logs condition
+        String lootItemsString = config.lootItems();
+        List<String> lootItemsList = new ArrayList<>();
+        if (lootItemsString != null && !lootItemsString.isEmpty()) {
+            String[] lootItemsArray = lootItemsString.split(",");
+            int validPatternsCount = 0;
+            for (String item : lootItemsArray) {
+                String trimmedItem = item.trim();
+                try {
+                    // Validate regex pattern
+                    java.util.regex.Pattern.compile(trimmedItem);
+                    lootItemsList.add(trimmedItem);
+                    log.info("Valid loot item pattern found: {}", trimmedItem);
+                    validPatternsCount++;
+                } catch (java.util.regex.PatternSyntaxException e) {
+                    log.warn("Invalid regex pattern: '{}' - {}", trimmedItem, e.getMessage());
+                }
+            }
+            log.info("Total valid loot item patterns: {}", validPatternsCount);
+        }
+        boolean andLogical = config.itemsToLootLogical();
+        int minLootItems = config.minItems();
+        int maxLootItems = config.maxItems();
+        List<Integer> minLootItemPerPattern = new ArrayList<>();
+        List<Integer> maxLootItemPerPattern = new ArrayList<>();
+        for (String item : lootItemsList) {
+            int minLoot = Rs2Random.between(minLootItems, maxLootItems);
+               
+            int maxLoot = Rs2Random.between(minLoot, maxLootItems);
+            //Clip max to maxLootItems when smaller than minLoot 
+            if (maxLoot < minLoot) {
+                maxLoot = maxLootItems;
+            }
+            minLootItemPerPattern.add(minLoot);
+            maxLootItemPerPattern.add(maxLoot);
+        }
+        boolean includeNoted = config.includeNoted();
+        boolean allowNoneOwner = config.allowNoneOwner();
+        LogicalCondition lootItemCondition = null;
+        if(andLogical){
+            lootItemCondition = LootItemCondition.createAndCondition(
+                lootItemsList,
+                minLootItemPerPattern,
+                maxLootItemPerPattern,
+                includeNoted,
+                allowNoneOwner
+            );
+        }else{
+            lootItemCondition = LootItemCondition.createOrCondition(
+                lootItemsList,
+                minLootItemPerPattern,
+                maxLootItemPerPattern,
+                includeNoted,
+                allowNoneOwner
+            );
+        }
+        return lootItemCondition;
+    }
     @Override
     public void onConditionCheck() {
         // Update logs count when condition is checked
@@ -152,7 +200,8 @@ public class SchedulableExamplePlugin extends Plugin implements ConditionProvide
      */
     @Override
     @Subscribe
-    public void onScheduledStopEvent(ScheduledStopEvent event) {        
+    public void onScheduledStopEvent(ScheduledStopEvent event) {  
+        config.setLastLocation(Rs2Player.getWorldLocation());      
         if (event.getPlugin() == this) {
             System.out.println("Scheduling stop for plugin: " + event.getPlugin().getClass().getSimpleName());
             // Schedule the stop operation on the client thread instead of doing it directly

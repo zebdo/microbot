@@ -10,15 +10,11 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.GridLayout;
 import java.awt.Insets;
-import java.awt.event.FocusAdapter;
-import java.awt.event.FocusEvent;
+
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
-import java.time.DayOfWeek;
-import java.time.Duration;
-import java.time.LocalTime;
+
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,7 +30,7 @@ import javax.swing.BoxLayout;
 import javax.swing.DefaultListCellRenderer;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
-import javax.swing.JCheckBox;
+
 import javax.swing.JComboBox;
 import javax.swing.JLabel;
 import javax.swing.JList;
@@ -44,12 +40,12 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
-import javax.swing.JSpinner;
+
 import javax.swing.JSplitPane;
-import javax.swing.JTextField;
+
 import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
-import javax.swing.SpinnerNumberModel;
+
 import javax.swing.SwingConstants;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
@@ -62,7 +58,7 @@ import javax.swing.tree.TreePath;
 import javax.swing.tree.TreeSelectionModel;
 
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Skill;
+
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionManager;
@@ -70,13 +66,8 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.An
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.NotCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.LootItemCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.SkillLevelCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.SkillXpCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.DayOfWeekCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
+import net.runelite.client.plugins.microbot.pluginscheduler.ui.SchedulerUIUtils;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -85,7 +76,7 @@ import net.runelite.client.ui.FontManager;
 public class ConditionConfigPanel extends JPanel {
     public static final Color BRAND_BLUE = new Color(25, 130, 196);
     private final JComboBox<String> conditionTypeComboBox;
-    private final JPanel configPanel;
+    private JPanel configPanel;
     
     private ConditionTreeCellRenderer conditionTreeCellRenderer;
     
@@ -145,39 +136,33 @@ public class ConditionConfigPanel extends JPanel {
         titlePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         titlePanel.setName("titlePanel");
         
-        titleLabel = new JLabel(stopConditionPanel ? "Stop Conditions for: None" : "Start Conditions for: None");
+        titleLabel = new JLabel("No plugin selected");
         titleLabel.setForeground(Color.WHITE);
         titleLabel.setFont(FontManager.getRunescapeBoldFont());
         titlePanel.add(titleLabel);
         
-        add(titlePanel, BorderLayout.NORTH);
-        
-        // Initialize save and load buttons
+        // Initialize buttons but hide them for now
         initializeSaveButton();
         initializeLoadButton();
-        initializeResetButton(); 
+        initializeResetButton();
         
-        JPanel topPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+        // Disable buttons initially
+        saveButton.setEnabled(false);
+        loadButton.setEnabled(false);
+        resetButton.setEnabled(false);
+        
+        // Create a panel for the top buttons, aligned to the right
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
+        buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        buttonPanel.add(loadButton);
+        buttonPanel.add(saveButton);
+        buttonPanel.add(resetButton);
+        
+        // Add the title and buttons to the top panel
+        JPanel topPanel = new JPanel(new BorderLayout());
         topPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        
-        // Logic selection
-        JLabel logicLabel = new JLabel("Logic:");
-        logicLabel.setForeground(Color.WHITE);
-        topPanel.add(logicLabel);
-      
-
-        // Stop checkbox
-        JLabel stopLabel = new JLabel("Auto-stop:");
-        stopLabel.setForeground(Color.WHITE);
-        topPanel.add(stopLabel);
-        
-        // Add a panel for save/load buttons
-        JPanel buttonControlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT));
-                buttonControlPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        buttonControlPanel.add(loadButton);
-        buttonControlPanel.add(saveButton);
-        buttonControlPanel.add(resetButton);
-        topPanel.add(buttonControlPanel);
+        topPanel.add(titlePanel, BorderLayout.WEST);
+        topPanel.add(buttonPanel, BorderLayout.EAST);
         
         add(topPanel, BorderLayout.NORTH);
         
@@ -203,68 +188,45 @@ public class ConditionConfigPanel extends JPanel {
         
         conditionTypeComboBox = new JComboBox<>(conditionTypes);
         
-        // Rest of constructor implementation...
-        
-        // Create split pane for list and tree views
+        // Create split pane for main content
         splitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
-        splitPane.setResizeWeight(0.5); // Equal space for both components
+        splitPane.setResizeWeight(0.6); // Give more space to the top components
         splitPane.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
         // Initialize condition list
         JPanel listPanel = createConditionListPanel();
-        splitPane.setTopComponent(listPanel);
         
         // Initialize condition tree
-         // Initialize condition tree with multi-selection support
-         //initializeConditionTree();
         JPanel treePanel = createLogicalTreePanel();
-        splitPane.setBottomComponent(treePanel);
+        
+        // Create a panel for the list and tree components
+        JPanel conditionsPanel = new JPanel(new BorderLayout());
+        conditionsPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
+        // Create another split pane just for the list and tree
+        JSplitPane conditionsSplitPane = new JSplitPane(JSplitPane.VERTICAL_SPLIT);
+        conditionsSplitPane.setTopComponent(listPanel);
+        conditionsSplitPane.setBottomComponent(treePanel);
+        conditionsSplitPane.setResizeWeight(0.5);
+        conditionsSplitPane.setBorder(null);
+        conditionsSplitPane.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
+        conditionsPanel.add(conditionsSplitPane, BorderLayout.CENTER);
+        
+        // Create the condition config panel
+        JPanel addConditionPanel = createAddConditionPanel();
+        
+        // Add both panels to the main split pane
+        splitPane.setTopComponent(conditionsPanel);
+        splitPane.setBottomComponent(addConditionPanel);
         
         add(splitPane, BorderLayout.CENTER);
-        
-        // Config panel for condition type
-        configPanel = new JPanel();
-        configPanel.setLayout(new BoxLayout(configPanel, BoxLayout.Y_AXIS));
-        configPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        configPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
-        
-        // Add condition type selector
-        JPanel selectorPanel = new JPanel(new BorderLayout(5, 0));
-        selectorPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        
-        conditionTypeComboBox.addActionListener(e -> updateConfigPanel());
-        selectorPanel.add(conditionTypeComboBox, BorderLayout.CENTER);
-        
-        JPanel buttonPanel = new JPanel(new GridLayout(1, 3, 5, 0));
-        buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        
-        this.addButton = createButton("Add", ColorScheme.PROGRESS_COMPLETE_COLOR);
-        addButton.addActionListener(e -> addCurrentCondition());
-        buttonPanel.add(addButton);
-        
-        this.editButton = createButton("Edit", ColorScheme.BRAND_ORANGE);
-        editButton.addActionListener(e -> editSelectedCondition());
-        buttonPanel.add(editButton);
-        
-        this.removeButton = createButton("Remove", ColorScheme.PROGRESS_ERROR_COLOR);
-        removeButton.addActionListener(e -> removeSelectedCondition());
-        buttonPanel.add(removeButton);
-        // Initialize logical operations toolbar
-        //initializeLogicalOperationsToolbar(buttonPanel);
-
-        JPanel bottomPanel = new JPanel(new BorderLayout());
-        bottomPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        bottomPanel.add(selectorPanel, BorderLayout.NORTH);
-        bottomPanel.add(configPanel, BorderLayout.CENTER);
-        bottomPanel.add(buttonPanel, BorderLayout.SOUTH);
-        
-        add(bottomPanel, BorderLayout.SOUTH);
         
         // Initialize the config panel
         updateConfigPanel();
         
+        // Set up tree and list selection synchronization
         fixSelectionPersistence();
-       
     }
     /**
      * Fixes selection persistence in the tree and list view with improved event blocking
@@ -693,7 +655,79 @@ public class ConditionConfigPanel extends JPanel {
         panel.add(scrollPane, BorderLayout.CENTER);
         return panel;
     }
-    
+    /**
+    * Creates the add condition panel with condition type selector and controls
+    */
+    private JPanel createAddConditionPanel() {
+        // Create a panel with border to clearly separate this section
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        panel.setBorder(BorderFactory.createTitledBorder(
+                BorderFactory.createLineBorder(ColorScheme.MEDIUM_GRAY_COLOR),
+                "Add New Condition",
+                TitledBorder.DEFAULT_JUSTIFICATION,
+                TitledBorder.DEFAULT_POSITION,
+                FontManager.getRunescapeBoldFont(),
+                Color.WHITE
+        ));
+
+        // Create a main content panel that will be scrollable
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        // Add condition type selector with a more descriptive label
+        JPanel selectorPanel = new JPanel(new BorderLayout(5, 0));
+        selectorPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        selectorPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
+
+        JLabel conditionTypeLabel = new JLabel("Condition Type:");
+        conditionTypeLabel.setForeground(Color.WHITE);
+        conditionTypeLabel.setFont(FontManager.getRunescapeSmallFont());
+        selectorPanel.add(conditionTypeLabel, BorderLayout.WEST);
+
+        conditionTypeComboBox.addActionListener(e -> updateConfigPanel());
+        // Style the combobox
+        SchedulerUIUtils.styleComboBox(conditionTypeComboBox);
+        selectorPanel.add(conditionTypeComboBox, BorderLayout.CENTER);
+        
+        // Config panel with scroll pane for better visibility
+        configPanel = new JPanel(new BorderLayout());
+        configPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        configPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
+
+        JScrollPane configScrollPane = new JScrollPane(configPanel);
+        configScrollPane.setBorder(BorderFactory.createEmptyBorder());
+        configScrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        configScrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        configScrollPane.getVerticalScrollBar().setUnitIncrement(16);
+
+        // Button panel with improved spacing
+        JPanel buttonPanel = new JPanel(new GridLayout(1, 3, 5, 0));
+        buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        buttonPanel.setBorder(new EmptyBorder(5, 5, 5, 5));
+
+        this.addButton = createButton("Add", ColorScheme.PROGRESS_COMPLETE_COLOR);
+        addButton.addActionListener(e -> addCurrentCondition());
+        buttonPanel.add(addButton);
+
+        this.editButton = createButton("Edit", ColorScheme.BRAND_ORANGE);
+        editButton.addActionListener(e -> editSelectedCondition());
+        buttonPanel.add(editButton);
+
+        this.removeButton = createButton("Remove", ColorScheme.PROGRESS_ERROR_COLOR);
+        removeButton.addActionListener(e -> removeSelectedCondition());
+        buttonPanel.add(removeButton);
+
+        // Add components to content panel
+        contentPanel.add(selectorPanel, BorderLayout.NORTH);
+        contentPanel.add(configScrollPane, BorderLayout.CENTER);
+        contentPanel.add(buttonPanel, BorderLayout.SOUTH);
+
+        // Add content panel to main panel
+        panel.add(contentPanel, BorderLayout.CENTER);
+
+        return panel;
+    }
         /**
      * Creates the logical condition tree panel with controls
      */
@@ -859,9 +893,9 @@ public class ConditionConfigPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy = 0;
         gbc.anchor = GridBagConstraints.WEST;
-        gbc.fill = GridBagConstraints.HORIZONTAL; // Make components fill horizontally
-        gbc.weightx = 1.0; // Allow components to expand
-        gbc.insets = new Insets(5, 5, 5, 5); // Add more padding
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+        gbc.weightx = 1.0;
+        gbc.insets = new Insets(5, 5, 5, 5);
         
         // Add condition type header
         String selectedType = (String) conditionTypeComboBox.getSelectedItem();
@@ -882,53 +916,64 @@ public class ConditionConfigPanel extends JPanel {
         if (stopConditionPanel) {
             switch (selectedType) {
                 case "Time Duration":
-                    ConditionConfigPanelUtil.createTimeConfigPanel(panel, gbc, configPanel);
+                    ConditionConfigPanelUtil.createTimeConfigPanel(panel, gbc, panel);
                     break;
                 case "Skill Level":
-                    ConditionConfigPanelUtil.createSkillLevelConfigPanel(panel, gbc, configPanel, true);
+                    SkillConditionPanelUtil.createSkillLevelConfigPanel(panel, gbc, panel, true);
                     break;
                 case "Skill XP Goal":
-                    ConditionConfigPanelUtil.createSkillXpConfigPanel(panel, gbc, configPanel);
+                    SkillConditionPanelUtil.createSkillXpConfigPanel(panel, gbc, panel);
                     break;
                 case "Item Collection":
-                    ConditionConfigPanelUtil.createItemConfigPanel(panel, gbc, configPanel, true);
+                    ResourceConditionPanelUtil.createItemConfigPanel(panel, gbc, panel, true);
                     break;
                 case "Not In Time Window":
-                    ConditionConfigPanelUtil.createEnhancedTimeWindowConfigPanel(panel, gbc, configPanel);
+                    ConditionConfigPanelUtil.createEnhancedTimeWindowConfigPanel(panel, gbc, panel);
                     // Store whether we want inside or outside the window
                     configPanel.putClientProperty("withInWindow", false);
                     break;                
                 case "Inventory Item Count":
-                    ConditionConfigPanelUtil.createInventoryItemCountPanel(panel, gbc, configPanel);
+                    ResourceConditionPanelUtil.createInventoryItemCountPanel(panel, gbc, panel);
                     break;
                 case "Bank Item Count":
-                    ConditionConfigPanelUtil.createBankItemCountPanel(panel, gbc, configPanel);
+                    ResourceConditionPanelUtil.createBankItemCountPanel(panel, gbc, panel);
+                    break;
+                default:
+                    JLabel notImplementedLabel = new JLabel("This Stop condition type is not yet implemented");
+                    notImplementedLabel.setForeground(Color.RED);
+                    panel.add(notImplementedLabel, gbc);
                     break;
             }
         } else {
+            // This is for start conditions 
             switch (selectedType) {
                 case "Time Window":
-                    ConditionConfigPanelUtil.createEnhancedTimeWindowConfigPanel(panel, gbc, configPanel);
+                    ConditionConfigPanelUtil.createEnhancedTimeWindowConfigPanel(panel, gbc, panel);
                     break;
                 case "Outside Time Window":
-                    ConditionConfigPanelUtil.createEnhancedTimeWindowConfigPanel(panel, gbc, configPanel);
+                    ConditionConfigPanelUtil.createEnhancedTimeWindowConfigPanel(panel, gbc, panel);
                     // Store whether we want inside or outside the window
-                    configPanel.putClientProperty("withInWindow", false);
+                    panel.putClientProperty("withInWindow", false);
                     break; 
                 case "Day of Week":
-                    ConditionConfigPanelUtil.createDayOfWeekConfigPanel(panel, gbc, configPanel);
+                    ConditionConfigPanelUtil.createDayOfWeekConfigPanel(panel, gbc, panel);
                     break;
                 case "Skill Level Required":
-                    ConditionConfigPanelUtil.createSkillLevelConfigPanel(panel, gbc, configPanel, false);
+                    SkillConditionPanelUtil.createSkillLevelConfigPanel(panel, gbc, panel, false);
                     break;
                 case "Item Required":
-                    ConditionConfigPanelUtil.createItemConfigPanel(panel, gbc, configPanel, false);
+                    ResourceConditionPanelUtil.createItemConfigPanel(panel, gbc, panel, false);
                     break;
                 case "Inventory Item Count":
-                    ConditionConfigPanelUtil.createInventoryItemCountPanel(panel, gbc, configPanel);
+                    ResourceConditionPanelUtil.createInventoryItemCountPanel(panel, gbc, panel);
                     break;
                 case "Bank Item Count":
-                    ConditionConfigPanelUtil.createBankItemCountPanel(panel, gbc, configPanel);
+                    ResourceConditionPanelUtil.createBankItemCountPanel(panel, gbc, panel);
+                    break;
+                default:
+                    JLabel notImplementedLabel = new JLabel("This Start condition type is not yet implemented");
+                    notImplementedLabel.setForeground(Color.RED);
+                    panel.add(notImplementedLabel, gbc);
                     break;
             }
         }
@@ -943,6 +988,7 @@ public class ConditionConfigPanel extends JPanel {
         
         configPanel.revalidate();
         configPanel.repaint();
+        configPanel.putClientProperty("localConditionPanel", panel);
     }
     
    
@@ -963,15 +1009,6 @@ public class ConditionConfigPanel extends JPanel {
     }
         
         
-    
-    
-   
-    
-   
-    
-    
-    
-    
     
    
     private void editSelectedCondition() {
@@ -1394,9 +1431,35 @@ public class ConditionConfigPanel extends JPanel {
         schedulerPlugin.saveScheduledPlugins();
         setScheduledPluginNameLabel(); // Update label
     }
-    public void setScheduledPluginNameLabel() {
-        String pluginName = selectScheduledPlugin != null ? selectScheduledPlugin.getName() : "None";
-        titleLabel.setText("Stop Conditions for: " + pluginName);
+    /**
+     * Updates the title label with the selected plugin name using color for better visibility
+    */
+    private void setScheduledPluginNameLabel() {
+        if (selectScheduledPlugin != null) {
+            // Use HTML formatting for colored, bold text
+            String pluginName = selectScheduledPlugin.getCleanName();
+            
+            // Apply color based on plugin state
+            String colorHex;
+            if (selectScheduledPlugin.isEnabled()) {
+                if (schedulerPlugin.isRunningEntry(selectScheduledPlugin)) {
+                    // Running plugin - bright green
+                    colorHex = "#4CAF50";
+                } else {
+                    // Enabled but not running - blue
+                    colorHex = "#2196F3";
+                }
+            } else {
+                // Disabled plugin - orange/amber
+                colorHex = "#FFC107";
+            }
+            
+            // Format with HTML for color and bold styling
+            titleLabel.setText("<html><b><span style='color: " + colorHex + ";'>" + 
+                            pluginName + "</span></b></html>");
+        } else {
+            titleLabel.setText("<html><i>No plugin selected</i></html>");
+        }
     }
     /**
      * Notifies any external components of condition changes
@@ -1438,52 +1501,52 @@ public class ConditionConfigPanel extends JPanel {
         
         String conditionType = (String) conditionTypeComboBox.getSelectedItem();
         Condition condition = null;
-        
+        JPanel localConditionPanel = (JPanel) this.configPanel.getClientProperty("localConditionPanel");
         try {
             if (stopConditionPanel) {
                 switch (conditionType) {
                     case "Time Duration":
-                        condition = ConditionConfigPanelUtil.createTimeCondition(this.configPanel);
+                        condition = ConditionConfigPanelUtil.createTimeCondition(localConditionPanel);
                         break;
                     case "Skill Level":
-                        condition = ConditionConfigPanelUtil.createSkillLevelCondition(this.configPanel);
+                        condition = SkillConditionPanelUtil.createSkillLevelCondition(localConditionPanel);
                         break;
                     case "Skill XP Goal":
-                        condition = ConditionConfigPanelUtil.createSkillXpCondition(this.configPanel);
+                        condition = SkillConditionPanelUtil.createSkillXpCondition(localConditionPanel);
                         break;
                     case "Item Collection":
-                        condition = ConditionConfigPanelUtil.createItemCondition(this.configPanel);                                                                    
-                        return;
-                    case "Not In Time Window":
-                        condition = ConditionConfigPanelUtil.createTimeWindowCondition(this.configPanel);
-                        break;                    
-                    case "Inventory Item Count":
-                        condition = ConditionConfigPanelUtil.createInventoryItemCountCondition(this.configPanel);
+                        condition = ResourceConditionPanelUtil.createItemCondition(localConditionPanel);                                                                    
                         break;
-                    case "Bank Item Count":
-                        condition = ConditionConfigPanelUtil.createBankItemCountCondition(this.configPanel);
+                    case "Not In Time Window":
+                        condition = ConditionConfigPanelUtil.createTimeWindowCondition(localConditionPanel);
+                        break;                    
+                    case "Inventory Item Count"://TODO these are not working right now. have to update the logic-> change these here to gaathered items 
+                        condition = ResourceConditionPanelUtil.createInventoryItemCountCondition(localConditionPanel);
+                        break;
+                    case "Bank Item Count"://TODO these are not working right now. have to update the logic -> change these here to  track procced items
+                        condition = ResourceConditionPanelUtil.createBankItemCountCondition(localConditionPanel);
                         break;
                 }
                
             } else {
                 switch (conditionType) {
                     case "Time Window":
-                        condition = ConditionConfigPanelUtil.createTimeWindowCondition(this.configPanel);
+                        condition = ConditionConfigPanelUtil.createTimeWindowCondition(localConditionPanel);
                         break;
                     case "Day of Week":
-                        condition = ConditionConfigPanelUtil.createDayOfWeekCondition(this.configPanel);
+                        condition = ConditionConfigPanelUtil.createDayOfWeekCondition(localConditionPanel);
                         break;
                     case "Skill Level Required":
-                        condition = ConditionConfigPanelUtil.createSkillLevelCondition(this.configPanel);
+                        condition = SkillConditionPanelUtil.createSkillLevelCondition(localConditionPanel);
                         break;
                     case "Item Required":
                         // Similar handling as for stop conditions
                         break;
-                    case "Inventory Item Count":
-                        condition = ConditionConfigPanelUtil.createInventoryItemCountCondition(this.configPanel);
+                    case "Inventory Item Count"://TODO these are not working right now. have to update the logic
+                        condition = ResourceConditionPanelUtil.createInventoryItemCountCondition(localConditionPanel);
                         break;
-                    case "Bank Item Count":
-                        condition = ConditionConfigPanelUtil.createBankItemCountCondition(this.configPanel);
+                    case "Bank Item Count"://TODO these are not working right now. have to update the logic
+                        condition = ResourceConditionPanelUtil.createBankItemCountCondition(localConditionPanel);
                         break;
                 }
             }

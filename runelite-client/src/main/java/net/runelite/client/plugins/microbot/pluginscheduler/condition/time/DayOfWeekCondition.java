@@ -200,6 +200,37 @@ public class DayOfWeekCondition extends TimeCondition {
         return Optional.empty();
     }
     
+    /**
+     * Finds the next day that is NOT an active day
+     * 
+     * @return Optional containing the start time of the next non-active day
+     */
+    public Optional<ZonedDateTime> getNextNonActiveDay() {
+        ZonedDateTime now = getNow();
+        DayOfWeek today = now.getDayOfWeek();
+        
+        // If today is already non-active, return today
+        if (!activeDays.contains(today)) {
+            return Optional.of(now.truncatedTo(java.time.temporal.ChronoUnit.DAYS));
+        }
+        
+        // Otherwise, find the next non-active day
+        int daysToAdd = 1;
+        while (daysToAdd <= 7) {
+            DayOfWeek nextDay = today.plus(daysToAdd);
+            if (!activeDays.contains(nextDay)) {
+                // Found the next non-active day
+                ZonedDateTime nextNonActiveDay = now.plusDays(daysToAdd)
+                    .truncatedTo(java.time.temporal.ChronoUnit.DAYS); // Start of the day
+                return Optional.of(nextNonActiveDay);
+            }
+            daysToAdd++;
+        }
+        
+        // If all days are active, return empty
+        return Optional.empty();
+    }
+    
     @Subscribe
     public void onGameTick(GameTick tick) {
         // Just used to ensure we stay registered with the event bus

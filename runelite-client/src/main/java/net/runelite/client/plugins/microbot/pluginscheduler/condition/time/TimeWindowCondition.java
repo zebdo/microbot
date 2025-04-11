@@ -3,7 +3,7 @@ package net.runelite.client.plugins.microbot.pluginscheduler.condition.time;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
+
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionType;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.enums.RepeatCycle;
 
@@ -226,12 +226,20 @@ public class TimeWindowCondition extends TimeCondition {
         if (lastResetTime != null) {
             // If reset time is before today's window, use today's window
             if (lastResetTime.isBefore(todayStart)) {
+                log.info("\nReset time is before today's window, using today's window");
+                log.debug("Reset time: {}", lastResetTime);
+                log.debug("Today's window: {} to {}", todayStart, todayEnd);
+                log.debug("Using today's window");
                 this.currentStartDateTime = todayStart;
                 this.currentEndDateTime = todayEnd;
                 
             } 
             // Reset time is after today's window, update to next day
             else if (lastResetTime.isAfter(todayEnd)) {
+                log.info("\nReset time is after today's window, moving to next day");
+                log.debug("Reset time: {}", lastResetTime);
+                log.debug("Today's window: {} to {}", todayStart, todayEnd);
+                log.debug("Moving to next day");
                 LocalDate tomorrow = today.plusDays(1);
                 currentStartDateTime = LocalDateTime.of(tomorrow, startTime);
                 currentEndDateTime = LocalDateTime.of(tomorrow, endTime);
@@ -485,8 +493,11 @@ public class TimeWindowCondition extends TimeCondition {
         this.useRandomization = randomize;
         applyRandomization();
         // Store current time as the reset reference
+        log.debug("Last reset time: {}", lastResetTime);
         this.lastResetTime = LocalDateTime.now();
-        log.debug("Reset time window condition at: {}", lastResetTime);
+        log.info("Reset time window condition at: {}", lastResetTime);
+        
+        
         
         ZonedDateTime now = ZonedDateTime.now(getZoneId());
         LocalDateTime nowLocal = now.toLocalDateTime();
@@ -495,6 +506,11 @@ public class TimeWindowCondition extends TimeCondition {
         boolean needsAdvance = currentStartDateTime != null && nowLocal.isAfter(currentStartDateTime);
         LocalDateTime currentDayStartDateTime = LocalDateTime.of(nowLocal.toLocalDate(), startTime);
         LocalDateTime currentDayEndDateTime = LocalDateTime.of(nowLocal.toLocalDate(), endTime);
+        log.info("current time: {}", nowLocal);
+        log.info("current start time: {}", currentStartDateTime);
+        log.info("current end time: {}", currentEndDateTime);
+        log.info("current day start time: {}", currentDayStartDateTime);
+        log.info("current day end time: {}", currentDayEndDateTime);
         if (nowLocal.isAfter(currentDayStartDateTime) && nowLocal.isBefore(currentDayEndDateTime)) {
             transientNumberOfResetsWithinDailyInterval++;
         }
