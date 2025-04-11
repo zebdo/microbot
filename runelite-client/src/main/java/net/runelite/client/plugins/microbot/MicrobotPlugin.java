@@ -53,7 +53,8 @@ import java.time.Instant;
         description = "Microbot",
         tags = {"main", "microbot", "parent"},
         alwaysOn = true,
-        hidden = true
+        hidden = true,
+        priority = true
 )
 @Slf4j
 public class MicrobotPlugin extends Plugin {

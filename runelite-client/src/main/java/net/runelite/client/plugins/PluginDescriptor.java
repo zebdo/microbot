@@ -25,11 +25,7 @@
 package net.runelite.client.plugins;
 
 import java.awt.*;
-import java.lang.annotation.Documented;
-import java.lang.annotation.ElementType;
-import java.lang.annotation.Retention;
-import java.lang.annotation.RetentionPolicy;
-import java.lang.annotation.Target;
+import java.lang.annotation.*;
 
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
@@ -117,4 +113,6 @@ public @interface PluginDescriptor
 	boolean loadInSafeMode() default true;
 
 	boolean canBeScheduled() default false;
+
+	boolean priority() default false;
 }
