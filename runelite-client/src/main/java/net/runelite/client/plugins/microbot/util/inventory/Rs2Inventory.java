@@ -1328,6 +1328,20 @@ public class Rs2Inventory {
         invokeMenu(rs2Item, action);
         return true;
     }
+    /**
+     * Interacts with an item with the specified ID in the inventory using the specified action.
+     *
+     * @param id     The ID of the item to interact with.
+     * @param action The action to perform on the item.
+     *
+     * @return True if the interaction was successful, false otherwise.
+     */
+    public static boolean interact(int id, String action, int identifier) {
+        Rs2ItemModel rs2Item = items().stream().filter(x -> x.id == id).findFirst().orElse(null);
+        if (rs2Item == null) return false;
+        invokeMenu(rs2Item, action, identifier);
+        return true;
+    }
 
     /**
      * Interacts with an item with the specified name in the inventory using the first available action.
@@ -2115,12 +2129,14 @@ public class Rs2Inventory {
     }
 
     /**
-     * Method executes menu actions
+     * Executes menu actions with a provided identifier.
+     * If the provided identifier is -1, the old logic is used to determine the identifier.
      *
-     * @param rs2Item Current item to interact with
-     * @param action  Action used on the item
+     * @param rs2Item            The current item to interact with.
+     * @param action             The action to be used on the item.
+     * @param providedIdentifier The identifier to use; if -1, compute using the old logic.
      */
-    private static void invokeMenu(Rs2ItemModel rs2Item, String action) {
+    private static void invokeMenu(Rs2ItemModel rs2Item, String action, int providedIdentifier) {
         if (rs2Item == null) return;
 
         Rs2Tab.switchToInventoryTab();
@@ -2159,7 +2175,7 @@ public class Rs2Inventory {
                     itemWidget.getActions() :
                     rs2Item.getInventoryActions();
 
-            identifier = indexOfIgnoreCase(stripColTags(actions), action) + 1;
+            identifier = providedIdentifier == -1 ? indexOfIgnoreCase(stripColTags(actions), action) + 1 : providedIdentifier;
         }
 
 
@@ -2177,6 +2193,17 @@ public class Rs2Inventory {
             sleepUntil(() -> Rs2Widget.isWidgetVisible(584, 0));
             Rs2Widget.clickWidget(Rs2Widget.getWidget(584, 1).getId());
         }
+    }
+
+
+    /**
+     * Method executes menu actions
+     *
+     * @param rs2Item Current item to interact with
+     * @param action  Action used on the item
+     */
+    private static void invokeMenu(Rs2ItemModel rs2Item, String action) {
+        invokeMenu(rs2Item, action, -1);
     }
 
     private static Widget getInventory() {
