@@ -47,6 +47,11 @@ public class Rs2WorldPoint {
 
     public List<WorldPoint> pathTo(WorldPoint other)
     {
+        return pathTo(other, false);
+    }
+
+    public List<WorldPoint> pathTo(WorldPoint other, boolean fullPath)
+    {
         Client client = Microbot.getClient();
         if (getPlane() != other.getPlane())
         {
@@ -69,7 +74,7 @@ public class Rs2WorldPoint {
         Tile sourceTile = tiles[getPlane()][thisX][thisY];
 
         Tile targetTile = tiles[getPlane()][otherX][otherY];
-        List<Tile> checkpointTiles = Rs2Tile.pathTo(sourceTile,targetTile);
+        List<Tile> checkpointTiles = fullPath ? Rs2Tile.fullPathTo(sourceTile,targetTile) : Rs2Tile.pathTo(sourceTile, targetTile);
         if (checkpointTiles == null)
         {
             return null;
