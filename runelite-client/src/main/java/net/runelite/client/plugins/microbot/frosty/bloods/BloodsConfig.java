@@ -8,7 +8,7 @@ import net.runelite.client.plugins.microbot.frosty.bloods.enums.RuneType;
 @ConfigInformation(
         "• This plugin will craft runes at True Blood altar <br />" +
         "• IF using POH, ensure you have pool and fairy ring <br />" +
-        "• IF not using POH, have Ardougne cloak, house tabs and Ring of Duelings in bank <br />" +
+        "• IF not using POH, have Ardougne cloak, house tabs and Ring of Duelings(8) in bank <br />" +
         "• <b> Ensure your last destination is DLS on fairy ring </b> <br />" +
         "• Ensure you have a Colossal pouch <br />" +
         "• Ensure you have Tiara or a bound Hat of the Eye equipped <br />" +
@@ -36,21 +36,10 @@ public interface BloodsConfig extends Config {
     }
 
     @ConfigItem(
-            keyName = "pohFairyRingID",
-            name = "PoH Fairy ring ID",
-            description = "Enter the Id of your PoH Fairy ring using Dev tool Examine",
-            position = 2,
-            section = settingsSection
-    )
-    default int pohFairyRingID() {
-        return 27097;
-    }
-
-    @ConfigItem(
             keyName = "runeType",
             name = "Rune Type",
             description = "Select the type of rune to craft",
-            position = 7,
+            position = 2,
             section = settingsSection
     )
     default RuneType runeType() {
