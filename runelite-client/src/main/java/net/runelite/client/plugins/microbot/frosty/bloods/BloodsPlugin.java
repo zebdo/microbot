@@ -6,7 +6,9 @@ import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.ObjectComposition;
 import net.runelite.api.Skill;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameObjectSpawned;
+import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
@@ -45,36 +47,20 @@ public class BloodsPlugin extends Plugin {
     @Getter
     private GameObject pool;
     @Getter
-    private GameObject fairyRing;
-    @Getter
     private GameObject pohPortal;
-
-    public static String version = "1.0.8";
     @Getter
     public Instant startTime;
-    @Getter
-    private int lastBloodRuneCount = 0;
     @Getter
     private int totalXpGained = 0;
     @Getter
     private int startXp = 0;
-
-
+    @Getter
+    private WorldPoint myWorldPoint;
+    @Getter
+    public static String version = "v1.0.8";
 
     @Subscribe
     public void onGameObjectSpawned(GameObjectSpawned event) {
-        GameObject fairyRing = event.getGameObject();
-        ObjectComposition fairyRingComp = client.getObjectDefinition(fairyRing.getId());
-
-        if (fairyRingComp != null) {
-            if (fairyRingComp.getImpostorIds() != null) {
-                fairyRingComp = fairyRingComp.getImpostor();
-            }
-            String name = fairyRingComp.getName().toLowerCase();
-            if ((name.contains("fairy ring") || name.contains("spiritual fairy tree")) && Rs2GameObject.isReachable(fairyRing)) {
-                this.fairyRing = fairyRing;
-            }
-        }
 
         GameObject pohPortal = event.getGameObject();
         ObjectComposition portalComposition = client.getObjectDefinition(pohPortal.getId());
@@ -100,6 +86,13 @@ public class BloodsPlugin extends Plugin {
             if (name.contains("pool") && Rs2GameObject.isReachable(pool)) {
                 this.pool = pool;
             }
+        }
+    }
+
+    @Subscribe
+    public void onGameTick(GameTick gameTick) {
+        if (Microbot.isLoggedIn()) {
+            myWorldPoint = Microbot.getClient().getLocalPlayer().getWorldLocation();
         }
     }
 

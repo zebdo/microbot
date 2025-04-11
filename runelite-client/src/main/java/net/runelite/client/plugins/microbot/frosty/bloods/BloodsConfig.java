@@ -1,7 +1,6 @@
 package net.runelite.client.plugins.microbot.frosty.bloods;
 
 import net.runelite.client.config.*;
-import net.runelite.client.plugins.microbot.frosty.bloods.enums.RuneType;
 
 
 @ConfigGroup("Frosty")
@@ -34,16 +33,4 @@ public interface BloodsConfig extends Config {
     default boolean usePoh() {
         return false;
     }
-
-    @ConfigItem(
-            keyName = "runeType",
-            name = "Rune Type",
-            description = "Select the type of rune to craft",
-            position = 2,
-            section = settingsSection
-    )
-    default RuneType runeType() {
-        return RuneType.BLOOD_RUNE;
-    }
-
 }
