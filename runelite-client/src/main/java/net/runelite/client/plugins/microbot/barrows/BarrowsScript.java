@@ -391,7 +391,7 @@ public class BarrowsScript extends Script {
                         //widget check
                         if(Rs2Widget.hasWidget("Barrows chest")){
                             Microbot.log("We looted the chest.");
-                            if(Rs2Inventory.get("Barrows teleport") == null || Rs2Inventory.get("Barrows teleport").getQuantity() <= 1 || (Rs2Inventory.count("Prayer potion(3)") + Rs2Inventory.count("Prayer potion(4)"))<=2 || Rs2Inventory.getInventoryFood().isEmpty() || Rs2Inventory.getInventoryFood().get(0).getQuantity()<=3){
+                            if(Rs2Inventory.get("Barrows teleport") == null || Rs2Inventory.get("Barrows teleport").getQuantity() <= 1 || (Rs2Inventory.count("Prayer potion(3)") + Rs2Inventory.count("Prayer potion(4)"))<=3 || Rs2Inventory.getInventoryFood().isEmpty() || Rs2Inventory.getInventoryFood().get(0).getQuantity()<=3){
                                 Microbot.log("We should bank.");
                                 shouldBank = true;
                             } else {
@@ -456,7 +456,7 @@ public class BarrowsScript extends Script {
                             if(Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < Rs2Random.between(1,3)){
                                 if(Rs2Bank.getBankItem("Forgotten brew(4)")!=null){
                                     if(Rs2Bank.getBankItem("Forgotten brew(4)").getQuantity()>3){
-                                        int amt = ((Rs2Random.between(1,3)) - (Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)")));
+                                        int amt = ((Rs2Random.between(2,4)) - (Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)")));
                                         Microbot.log("Withdrawing "+amt);
                                         if(Rs2Bank.withdrawX("Forgotten brew(4)", amt)){
                                             sleepUntil(()-> Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") > Rs2Random.between(1,3), Rs2Random.between(2000,4000));
