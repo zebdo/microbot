@@ -109,7 +109,10 @@ public class BarrowsScript extends Script {
                     }
                     shouldBank = true;
                 } else {
-                    shouldBank = false;
+                    //if we're not all ready at the bank. This is needed because it could swap shouldBank to true while standing at the bank with 1 prayer potion
+                    if(Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) > 40){
+                        shouldBank = false;
+                    }
                 }
 
                 if(!inTunnels && shouldBank == false) {
