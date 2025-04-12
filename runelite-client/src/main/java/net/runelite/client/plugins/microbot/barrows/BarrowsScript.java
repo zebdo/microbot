@@ -47,6 +47,7 @@ public class BarrowsScript extends Script {
     private String neededRune = "unknown";
     private volatile boolean shouldWalk = false;
     private boolean shouldBank = false;
+    int scriptDelay = Rs2Random.between(300,600);
     public boolean run(BarrowsConfig config) {
         Microbot.enableAutoRunOn = false;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
@@ -109,7 +110,7 @@ public class BarrowsScript extends Script {
                     }
                     shouldBank = true;
                 } else {
-                    //if we're not all ready at the bank. This is needed because it could swap shouldBank to true while standing at the bank with 1 prayer potion
+                    //if we're not all ready at the bank. This is needed because it could swap shouldBank to false while standing at the bank with 1 prayer potion
                     if(Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) > 40){
                         shouldBank = false;
                     }
@@ -584,7 +585,7 @@ public class BarrowsScript extends Script {
                     }
                 }
 
-
+                scriptDelay = Rs2Random.between(300,600);
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
                 System.out.println("Total time for loop " + totalTime);
@@ -592,7 +593,7 @@ public class BarrowsScript extends Script {
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
             }
-        }, 0, 1000, TimeUnit.MILLISECONDS);
+        }, 0, scriptDelay, TimeUnit.MILLISECONDS);
         return true;
     }
     public void gettheRune(){
