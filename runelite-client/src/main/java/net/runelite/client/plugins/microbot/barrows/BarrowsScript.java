@@ -83,7 +83,7 @@ public class BarrowsScript extends Script {
                 if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null || !Rs2Inventory.contains("Spade") ||
                         Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<5 || (Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)
                         || Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1 ||
-                        Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 4 ||
+                        Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1 ||
                         Rs2Inventory.get(neededRune).getQuantity()<=180){
                     Microbot.log("We need to bank.");
                     if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null){
@@ -101,7 +101,7 @@ public class BarrowsScript extends Script {
                     if(Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1){
                         Microbot.log("We forgot our Forgotten brew.");
                     }
-                    if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 4){
+                    if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1){
                         Microbot.log("We don't have enough prayer potions.");
                     }
                     if(Rs2Inventory.get(neededRune).getQuantity()<=180){
@@ -398,6 +398,7 @@ public class BarrowsScript extends Script {
                                 Microbot.log("We should bank.");
                                 shouldBank = true;
                             } else {
+                                shouldBank = false;
                                 Rs2Inventory.interact("Barrows teleport", "Break");
                                 sleepUntil(()-> Rs2Player.isAnimating(), Rs2Random.between(1000,2000));
                                 sleepUntil(()-> !Rs2Player.isAnimating(), Rs2Random.between(3000,5000));
