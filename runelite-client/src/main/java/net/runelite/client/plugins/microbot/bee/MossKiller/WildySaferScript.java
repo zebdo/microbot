@@ -109,6 +109,11 @@ public class WildySaferScript extends Script {
                     return;
                 }
 
+                if (!isInMossGiantArea() && !isInventoryPreparedArcher() && !equipmentIsPrepared()) {
+                    doBankingLogic();
+                    return;
+                }
+
                 // If at safe area of moss giants and there is items to loot, loot them
                 if (isInMossGiantArea() && itemsToLoot()) {
                     lootItems();
