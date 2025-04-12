@@ -273,7 +273,7 @@ public class BarrowsScript extends Script {
                                             break;
                                         }
                                     }
-                                    break;
+                                    return;
                                 }
                             }
 
