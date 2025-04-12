@@ -243,6 +243,9 @@ public class BarrowsScript extends Script {
                                     if(!super.isRunning()){
                                         break;
                                     }
+                                    if(Microbot.getClient().getHintArrowNpc() == null){
+                                        break;
+                                    }
                                     if(currentBrother.isDead()){
                                         break;
                                     }
@@ -758,6 +761,12 @@ public class BarrowsScript extends Script {
                         outOfSupplies();
                         drinkPrayerPot();
                         if(!super.isRunning()){
+                            break;
+                        }
+                        if(!Rs2Player.isInCombat()){
+                            break;
+                        }
+                        if(Microbot.getClient().getHintArrowNpc() == null){
                             break;
                         }
                         if(currentBrother.isDead()){
