@@ -83,6 +83,7 @@ public class WildySaferScript extends Script {
                 if (isInMossGiantArea() && !isInventoryPreparedMage()) {
                     if (config.attackStyle() == MAGIC) {doBankingLogic();}
                     if (config.attackStyle() == RANGE) {if (!isInventoryPreparedArcher()) {doBankingLogic();}}
+                    if (config.attackStyle() == RANGE) {if (!equipmentIsPrepared()) {doBankingLogic();}}
                 }
 
                 //if you're not at moss giants and your inventory is not prepared, prepare inventory
