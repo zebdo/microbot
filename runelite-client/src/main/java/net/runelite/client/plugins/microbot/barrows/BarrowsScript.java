@@ -108,6 +108,8 @@ public class BarrowsScript extends Script {
                         Microbot.log("We have less than 180 "+neededRune);
                     }
                     shouldBank = true;
+                } else {
+                    shouldBank = false;
                 }
 
                 if(!inTunnels && shouldBank == false) {
