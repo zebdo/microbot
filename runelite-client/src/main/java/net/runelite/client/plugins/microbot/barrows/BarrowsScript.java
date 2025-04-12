@@ -499,6 +499,9 @@ public class BarrowsScript extends Script {
                                         Microbot.log("We're out of "+" Barrows teleports "+" need at least 3 stopping...");
                                         super.shutdown();
                                     }
+                                } else {
+                                    Microbot.log("We're out of "+" Barrows teleports "+" need at least 3 stopping...");
+                                    super.shutdown();
                                 }
                             }
                         }
