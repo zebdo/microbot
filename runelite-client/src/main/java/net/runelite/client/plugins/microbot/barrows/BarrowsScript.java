@@ -300,7 +300,7 @@ public class BarrowsScript extends Script {
                     }
                 }
 
-                if(!WhoisTun.equals("Unknown") && shouldBank == false){
+                if(!WhoisTun.equals("Unknown") && shouldBank == false && !inTunnels){
                     Microbot.log("Going to the tunnels.");
                     for (BarrowsBrothers brother : BarrowsBrothers.values()) {
                         if (brother.name.equals(WhoisTun)) {
