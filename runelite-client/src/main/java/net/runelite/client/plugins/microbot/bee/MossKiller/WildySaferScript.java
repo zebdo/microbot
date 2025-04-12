@@ -106,10 +106,14 @@ public class WildySaferScript extends Script {
                 // If at safe area of moss giants and there is items to loot, loot them
                 if (isInMossGiantArea() && itemsToLoot()) {
                     lootItems();
+                    if (config.attackStyle() == RANGE && Rs2Inventory.contains(MITHRIL_ARROW)) {
+                        System.out.println("getting here?");
+                        Rs2Inventory.interact(MITHRIL_ARROW, "wield");
+                    }
                 }
                 // If not at the safe spot but in the safe zone area, go to the safe spot
                 if (!isAtSafeSpot() && !iveMoved && isInMossGiantArea()) {
-                    System.out.println("not as safe spot but in moss giant area");
+                    System.out.println("not at safe spot but in moss giant area");
                     walkFastCanvas(SAFESPOT);
                     sleep(1200,2000);
                     return;
@@ -122,9 +126,6 @@ public class WildySaferScript extends Script {
                     wildyKillerScript.setAutocastFireStrike();
                 }
 
-                if (config.attackStyle() == RANGE && Rs2Inventory.contains(MITHRIL_ARROW)) {
-                    Rs2Inventory.interact(MITHRIL_ARROW, "wield");
-                }
                 //if using magic make sure staff is equipped
                 if (config.attackStyle() == MAGIC && !Rs2Equipment.isWearing(STAFF_OF_FIRE) && Rs2Inventory.contains(STAFF_OF_FIRE)) {
                     Rs2Inventory.equip(STAFF_OF_FIRE);
@@ -205,7 +206,7 @@ public class WildySaferScript extends Script {
             System.out.println("Distance to moss giant: " + distance);
         }
 
-        if (!mossGiant.isDead() && isInMossGiantArea()) {
+        if (!mossGiant.isDead() && isInMossGiantArea() && !Rs2Player.isAnimating()) {
             Rs2Camera.turnTo(mossGiant);
             Rs2Npc.interact(mossGiant, "attack");
             sleep(100,300);
@@ -214,7 +215,7 @@ public class WildySaferScript extends Script {
             if (Rs2Player.isInteracting()) {
                 if (!isAtSafeSpot() && !iveMoved && !move && !safeSpot1Attack)
                     sleep(600,900);
-                walkFastCanvas(SAFESPOT);
+                if (!isAtSafeSpot()) walkFastCanvas(SAFESPOT);
                 sleepUntil(this::isAtSafeSpot);
                 sleepUntil(() -> !Rs2Npc.isMoving(mossGiant));
                 if (!mossGiant.isDead()) {
