@@ -16,6 +16,7 @@ import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
+import net.runelite.client.plugins.microbot.util.equipment.JewelleryLocationEnum;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -234,6 +235,7 @@ public class BarrowsScript extends Script {
                                 while(!currentBrother.isDead()){
                                     sleep(500,1500);
                                     eatFood();
+                                    outOfSupplies();
                                     drinkforgottonbrew();
                                     drinkPrayerPot();
                                     if(!super.isRunning()){
@@ -359,6 +361,7 @@ public class BarrowsScript extends Script {
                     solvePuzzle();
                     //checkForBrother(); causes issues; commented out for now.
                     eatFood();
+                    outOfSupplies();
                     WorldPoint Chest = new WorldPoint(3552,9694,0);
 
                     //threaded walk because the brother could appear, the puzzle door could be there.
@@ -609,6 +612,19 @@ public class BarrowsScript extends Script {
             neededRune = "Wrath rune";
         }
     }
+    public void outOfSupplies(){
+        // Needed because the walker won't teleport to the enclave while in the tunnels or in a barrow
+        if(shouldBank && (inTunnels || Rs2Player.getWorldLocation().getPlane() == 3)){
+            if(Rs2Equipment.useRingAction(JewelleryLocationEnum.FEROX_ENCLAVE)){
+                Microbot.log("We're out of supplies. Teleporting.");
+                if(inTunnels){
+                    inTunnels=false;
+                }
+                sleepUntil(()-> Rs2Player.isAnimating(), Rs2Random.between(2000,4000));
+                sleepUntil(()-> !Rs2Player.isAnimating(), Rs2Random.between(4000,6000));
+            }
+        }
+    }
     public void disablePrayer(){
         if(Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_MELEE)){
             Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MELEE, false);
@@ -707,6 +723,7 @@ public class BarrowsScript extends Script {
                     while(!currentBrother.isDead()){
                         sleep(500,1500);
                         eatFood();
+                        outOfSupplies();
                         drinkPrayerPot();
                         if(!super.isRunning()){
                             break;
