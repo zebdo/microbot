@@ -454,16 +454,15 @@ public class WildySaferScript extends Script {
 
 
         if (config.attackStyle() == MAGIC && !Rs2Bank.openBank()) {
-            System.out.println("here in banking");
 
             Rs2Bank.walkToBankAndUseBank();
             sleep(1000);
             return;
         }
 
-        System.out.println("here in banking");
 
-        if (config.attackStyle() == RANGE) {
+        if (config.attackStyle() == RANGE && !Rs2Bank.openBank()) {
+            sleep(800,1900);
             if (Rs2Bank.count(APPLE_PIE) < 16 ||
                     Rs2Bank.count(MITHRIL_ARROW) < config.mithrilArrowAmount() ||
                     !Rs2Bank.hasItem(MAPLE_SHORTBOW)) {
