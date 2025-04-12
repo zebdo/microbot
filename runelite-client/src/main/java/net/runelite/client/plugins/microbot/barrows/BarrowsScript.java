@@ -117,7 +117,7 @@ public class BarrowsScript extends Script {
                         //Enter mound
                         if (Rs2Player.getWorldLocation().getPlane() != 3) {
                             Microbot.log("Entering the mound");
-                            while (mound.distanceTo(Rs2Player.getWorldLocation()) > 2) {
+                            while (mound.distanceTo(Rs2Player.getWorldLocation()) > 1) {
                                 //antipattern turn on prayer early
                                 if(!Rs2Prayer.isPrayerActive(brother.whatToPray)){
                                     if(Rs2Random.between(0,100) <= Rs2Random.between(1,5)) {
@@ -129,19 +129,20 @@ public class BarrowsScript extends Script {
                                 //antipattern
                                 // We're not in the mound yet.
                                 Rs2Walker.walkTo(mound);
-                                if (mound.distanceTo(Rs2Player.getWorldLocation()) <= 2) {
+                                if (mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
                                     if(!Rs2Player.isMoving()) {
                                         break;
                                     }
                                 } else {
                                     Microbot.log("At the mound, but we can't dig yet.");
                                     Rs2Walker.walkCanvas(mound);
+                                    sleep(0,750);
                                 }
                                 if (!super.isRunning()) {
                                     break;
                                 }
                             }
-                            while (mound.distanceTo(Rs2Player.getWorldLocation()) <= 2 && Rs2Player.getWorldLocation().getPlane() != 3) {
+                            while (mound.distanceTo(Rs2Player.getWorldLocation()) <= 1 && Rs2Player.getWorldLocation().getPlane() != 3) {
                                 //antipattern turn on prayer early
                                 if(!Rs2Prayer.isPrayerActive(brother.whatToPray)){
                                     if(Rs2Random.between(0,100) <= Rs2Random.between(1,10)) {
@@ -271,10 +272,10 @@ public class BarrowsScript extends Script {
                             System.out.println("Navigating to tunnel mound: " + brother.name);
 
                             // Walk to the mound
-                            while (tunnelMound.distanceTo(Rs2Player.getWorldLocation()) > 2) {
+                            while (tunnelMound.distanceTo(Rs2Player.getWorldLocation()) > 1) {
                                 Rs2Walker.walkTo(tunnelMound);
                                 sleep(300, 600);
-                                if(tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 2){
+                                if(tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1){
                                     if(!Rs2Player.isMoving()) {
                                         break;
                                     }
@@ -285,7 +286,7 @@ public class BarrowsScript extends Script {
                                 if (!super.isRunning()) break;
                             }
 
-                            while (tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 2 && Rs2Player.getWorldLocation().getPlane() != 3) {
+                            while (tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1 && Rs2Player.getWorldLocation().getPlane() != 3) {
                                 if (Rs2Inventory.contains("Spade")) {
                                     if (Rs2Inventory.interact("Spade", "Dig")) {
                                         sleepUntil(() -> Rs2Player.getWorldLocation().getPlane() == 3, Rs2Random.between(3000, 5000));
@@ -440,6 +441,9 @@ public class BarrowsScript extends Script {
                                 if(Rs2Bank.getBankItem("Prayer potion(4)")!=null){
                                     if(Rs2Bank.getBankItem("Prayer potion(4)").getQuantity()>4){
                                         int amt = ((Rs2Random.between(4,8)) - (Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)")));
+                                        if(amt <= 0){
+                                            amt = 1;
+                                        }
                                         Microbot.log("Withdrawing "+amt);
                                         if(Rs2Bank.withdrawX("Prayer potion(4)", amt)){
                                             sleepUntil(()-> Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") > Rs2Random.between(4,8), Rs2Random.between(2000,4000));
@@ -457,6 +461,9 @@ public class BarrowsScript extends Script {
                                 if(Rs2Bank.getBankItem("Forgotten brew(4)")!=null){
                                     if(Rs2Bank.getBankItem("Forgotten brew(4)").getQuantity()>3){
                                         int amt = ((Rs2Random.between(2,4)) - (Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)")));
+                                        if(amt <= 0){
+                                            amt = 1;
+                                        }
                                         Microbot.log("Withdrawing "+amt);
                                         if(Rs2Bank.withdrawX("Forgotten brew(4)", amt)){
                                             sleepUntil(()-> Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") > Rs2Random.between(1,3), Rs2Random.between(2000,4000));
@@ -495,6 +502,9 @@ public class BarrowsScript extends Script {
                                 if(Rs2Bank.getBankItem(neededFood)!=null){
                                     if(Rs2Bank.getBankItem(neededFood).getQuantity()>10){
                                         int amt = (Rs2Random.between(5,15) - (Rs2Inventory.count(neededFood)));
+                                        if(amt <= 0){
+                                            amt = 1;
+                                        }
                                         Microbot.log("Withdrawing "+amt);
                                         if(Rs2Bank.withdrawX(neededFood, amt)){
                                             String finalfood = neededFood;
