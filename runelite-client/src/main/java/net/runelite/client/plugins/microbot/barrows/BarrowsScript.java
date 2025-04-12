@@ -249,6 +249,33 @@ public class BarrowsScript extends Script {
                                 }
                             }
                             // at this point the brother should be dead and we should be free to leave.
+                            // We could be in ahrims mound while ahrim is tunnel. We need to stop the bot from leaving the mound and going back in.
+                            if(brother.name.equals(WhoisTun) && brother.name.contains("Ahrim")) {
+                                if (Rs2Dialogue.isInDialogue()) {
+                                    while (Rs2Dialogue.isInDialogue()) {
+                                        if (Rs2Dialogue.hasContinue()) {
+                                            Rs2Dialogue.clickContinue();
+                                            sleep(300, 600);
+                                        }
+                                        if (Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!")) {
+                                            if (Rs2Dialogue.clickOption("Yeah I'm fearless!")) {
+                                                sleep(300, 600);
+                                                inTunnels = true;
+                                            }
+                                        }
+                                        if (!Rs2Dialogue.isInDialogue()) {
+                                            break;
+                                        }
+                                        if (inTunnels) {
+                                            break;
+                                        }
+                                        if (!super.isRunning()) {
+                                            break;
+                                        }
+                                    }
+                                    break;
+                                }
+                            }
 
                             if(Rs2Player.getWorldLocation().getPlane() == 3){
                                 while(Rs2Player.getWorldLocation().getPlane() == 3) {
