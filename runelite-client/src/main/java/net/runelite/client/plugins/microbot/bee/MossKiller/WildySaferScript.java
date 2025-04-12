@@ -172,7 +172,7 @@ public class WildySaferScript extends Script {
 
                 if (Rs2Player.isInteracting() && isAtSafeSpot1() && isAnyMossGiantInteractingWithMe() && safeSpot1Attack) {
                     walkFastCanvas(SAFESPOT);
-                    iveMoved = true;
+                    iveMoved = false;
                 }
 
                 if (config.buryBones()) {
@@ -230,7 +230,7 @@ public class WildySaferScript extends Script {
                 if (!isAtSafeSpot()) walkFastCanvas(SAFESPOT);
                 sleepUntil(this::isAtSafeSpot);
                 sleepUntil(() -> !Rs2Npc.isMoving(mossGiant));
-                if (!mossGiant.isDead()) {
+                if (!mossGiant.isDead() && !Rs2Player.isInteracting()) {
                     Rs2Npc.attack(MOSS_GIANT_2093);
                 }
             }

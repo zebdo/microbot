@@ -613,8 +613,17 @@ public class MossKillerPlugin extends Plugin {
                         // Update the last hitsplat time
                         lastHitsplatTimeMain = currentTime;
                     }
+
+                if (target == client.getLocalPlayer()){
+                    if (wildySaferScript.iveMoved && wildySaferScript.isAtSafeSpot1()) {
+                            System.out.println("*** SETTING SAFESPOT1ATTACK TO TRUE ***");
+                            wildySaferScript.safeSpot1Attack = true;
+                        System.out.println("*** you've been hit while at safespot1 ***");
+                        }
+                    }
+
                 }
-            }
+                }
 
         if(config.wildy()) {
 
