@@ -418,7 +418,7 @@ public class BarrowsScript extends Script {
                             sleepUntil(()-> Microbot.getClient().getHintArrowNpc()!=null, Rs2Random.between(2000,4000));
                         }
                         checkForBrother();
-                        if(!Rs2Player.isInCombat()){
+                        if(Microbot.getClient().getHintArrowNpc() == null){
                             int io = 0;
                             while(io < 3) {
                                 if (Rs2GameObject.interact(chest, "Search")) {
