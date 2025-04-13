@@ -15,12 +15,11 @@ public class TimeConditionAdapter implements JsonDeserializer<TimeCondition> {
     @Override
     public TimeCondition deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) 
             throws JsonParseException {
-        JsonObject jsonObject = json.getAsJsonObject();
-        
+        JsonObject jsonObject = json.getAsJsonObject();        
         // Determine the concrete type
         if (jsonObject.has("intervalSeconds")) {
             return context.deserialize(jsonObject, IntervalCondition.class);
-        } else if (jsonObject.has("targetTimeMillis")) {
+        } else if (jsonObject.has("targetTime")) {
             return context.deserialize(jsonObject, SingleTriggerTimeCondition.class);
         } else if (jsonObject.has("startTime") && jsonObject.has("endTime")) {
             return context.deserialize(jsonObject, TimeWindowCondition.class);

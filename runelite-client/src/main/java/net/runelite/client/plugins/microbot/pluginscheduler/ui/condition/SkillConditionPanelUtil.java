@@ -18,12 +18,8 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.Skil
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
-
-
-
-
 public class SkillConditionPanelUtil {
-     public static void createSkillLevelConfigPanel(JPanel panel, GridBagConstraints gbc, JPanel configPanel, boolean stopConditionPanel) {
+    public static void createSkillLevelConfigPanel(JPanel panel, GridBagConstraints gbc, JPanel configPanel, boolean stopConditionPanel) {
         // --- Skill selection section ---
         JPanel skillSelectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         skillSelectionPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
@@ -37,6 +33,9 @@ public class SkillConditionPanelUtil {
         for (Skill skill : Skill.values()) {
             skillComboBox.addItem(skill.getName());
         }
+        // Add Total as an option
+        skillComboBox.addItem("Total");
+        
         skillComboBox.setPreferredSize(new Dimension(150, skillComboBox.getPreferredSize().height));
         skillSelectionPanel.add(skillComboBox);
         
@@ -150,7 +149,7 @@ public class SkillConditionPanelUtil {
         configPanel.putClientProperty("randomizeSkillLevel", randomizeCheckBox);
     }
 
-     // Update SkillLevelCondition to use randomization
+    // Update SkillLevelCondition to use randomization
     public static SkillLevelCondition createSkillLevelCondition(JPanel configPanel) {
         JComboBox<String> skillComboBox = (JComboBox<String>) configPanel.getClientProperty("skillComboBox");
         if (skillComboBox == null) {
@@ -167,8 +166,13 @@ public class SkillConditionPanelUtil {
             // Provide a default if somehow no skill is selected
             skillName = Skill.ATTACK.getName();
         }
+        Skill skill = null;
+        if (skillName.equals("Total")) {
+            skill =null;
+        }else{
+            skill= Skill.valueOf(skillName.toUpperCase());
+        }
         
-        Skill skill = Skill.valueOf(skillName.toUpperCase());
         
         if (randomizeCheckBox.isSelected()) {
             JSpinner minLevelSpinner = (JSpinner) configPanel.getClientProperty("minLevelSpinner");
@@ -194,27 +198,38 @@ public class SkillConditionPanelUtil {
     }
       
     public static void createSkillXpConfigPanel(JPanel panel, GridBagConstraints gbc, JPanel configPanel) {
+        // --- Skill selection section ---
+        JPanel skillSelectionPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
+        skillSelectionPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
         JLabel skillLabel = new JLabel("Skill:");
         skillLabel.setForeground(Color.WHITE);
-        panel.add(skillLabel, gbc);
+        skillLabel.setFont(FontManager.getRunescapeSmallFont().deriveFont(Font.BOLD));
+        skillSelectionPanel.add(skillLabel);
         
-        gbc.gridx++;
         JComboBox<String> skillComboBox = new JComboBox<>();
         for (Skill skill : Skill.values()) {
             skillComboBox.addItem(skill.getName());
         }
-        panel.add(skillComboBox, gbc);
+        // Add Total as an option
+        skillComboBox.addItem("Total");
         
-        // Target XP panel
+        skillComboBox.setPreferredSize(new Dimension(150, skillComboBox.getPreferredSize().height));
+        skillSelectionPanel.add(skillComboBox);
+        
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.gridwidth = 2;
+        panel.add(skillSelectionPanel, gbc);
         
-        JPanel xpPanel = new JPanel(new FlowLayout(FlowLayout.LEFT));
+        // --- Target XP section ---
+        gbc.gridy++;
+        JPanel xpPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         xpPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
         JLabel targetXpLabel = new JLabel("Target XP:");
         targetXpLabel.setForeground(Color.WHITE);
+        targetXpLabel.setFont(FontManager.getRunescapeSmallFont());
         xpPanel.add(targetXpLabel);
         
         SpinnerNumberModel xpModel = new SpinnerNumberModel(10000, 1, 200000000, 1000);
@@ -230,13 +245,14 @@ public class SkillConditionPanelUtil {
         
         panel.add(xpPanel, gbc);
         
-        // Min/Max panel (only visible when randomize is checked)
+        // --- Min/Max panel ---
         gbc.gridy++;
-        JPanel minMaxPanel = new JPanel(new GridLayout(1, 4, 5, 0));
+        JPanel minMaxPanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 5, 0));
         minMaxPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
         JLabel minLabel = new JLabel("Min XP:");
         minLabel.setForeground(Color.WHITE);
+        minLabel.setFont(FontManager.getRunescapeSmallFont());
         minMaxPanel.add(minLabel);
         
         SpinnerNumberModel minModel = new SpinnerNumberModel(5000, 1, 200000000, 1000);
@@ -246,6 +262,7 @@ public class SkillConditionPanelUtil {
         
         JLabel maxLabel = new JLabel("Max XP:");
         maxLabel.setForeground(Color.WHITE);
+        maxLabel.setFont(FontManager.getRunescapeSmallFont());
         minMaxPanel.add(maxLabel);
         
         SpinnerNumberModel maxModel = new SpinnerNumberModel(15000, 1, 200000000, 1000);
@@ -256,7 +273,7 @@ public class SkillConditionPanelUtil {
         minMaxPanel.setVisible(false);
         panel.add(minMaxPanel, gbc);
         
-        // Toggle min/max panel visibility based on randomize checkbox
+        // --- Randomize checkbox behavior ---
         randomizeCheckBox.addChangeListener(e -> {
             minMaxPanel.setVisible(randomizeCheckBox.isSelected());
             xpSpinner.setEnabled(!randomizeCheckBox.isSelected());
@@ -272,7 +289,7 @@ public class SkillConditionPanelUtil {
             panel.repaint();
         });
         
-        // Add value change listeners for min/max validation
+        // --- Min/Max validation ---
         minSpinner.addChangeListener(e -> {
             int min = (Integer) minSpinner.getValue();
             int max = (Integer) maxSpinner.getValue();
@@ -291,7 +308,7 @@ public class SkillConditionPanelUtil {
             }
         });
         
-        // Description
+        // --- Description ---
         gbc.gridy++;
         JLabel descriptionLabel = new JLabel("Plugin will stop when skill XP reaches target value");
         descriptionLabel.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
@@ -321,8 +338,13 @@ public class SkillConditionPanelUtil {
             // Provide a default if somehow no skill is selected
             skillName = Skill.ATTACK.getName();
         }
+        Skill skill = null;
+        if (skillName.equals("Total")) {
+            skill = null;
+        }else{
+            skill= Skill.valueOf(skillName.toUpperCase());
+        }
         
-        Skill skill = Skill.valueOf(skillName.toUpperCase());
         
         if (randomizeCheckBox.isSelected()) {
             JSpinner minXpSpinner = (JSpinner) configPanel.getClientProperty("minXpSpinner");
@@ -346,6 +368,4 @@ public class SkillConditionPanelUtil {
             return new SkillXpCondition(skill, xp);
         }
     }
-   
-    
 }

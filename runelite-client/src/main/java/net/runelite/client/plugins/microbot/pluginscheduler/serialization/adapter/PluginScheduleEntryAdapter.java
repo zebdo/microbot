@@ -2,8 +2,7 @@ package net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapt
 
 import com.google.gson.*;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionManager;
+
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 

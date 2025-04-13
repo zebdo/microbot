@@ -7,7 +7,9 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 
 import java.time.DayOfWeek;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.Optional;
@@ -26,14 +28,16 @@ public class DayOfWeekCondition extends TimeCondition {
     /**
      * Creates a day of week condition for the specified days
      */
-    public DayOfWeekCondition(Set<DayOfWeek> activeDays) {
+    public DayOfWeekCondition(long maximumNumberOfRepeats, Set<DayOfWeek> activeDays) {
+        super(maximumNumberOfRepeats);
         this.activeDays = EnumSet.copyOf(activeDays);
     }
     
     /**
      * Creates a day of week condition for the specified days
      */
-    public DayOfWeekCondition(DayOfWeek... days) {
+    public DayOfWeekCondition(long maximumNumberOfRepeats, DayOfWeek... days) {
+        super(maximumNumberOfRepeats);
         this.activeDays = EnumSet.noneOf(DayOfWeek.class);
         this.activeDays.addAll(Arrays.asList(days));
     }
@@ -42,7 +46,7 @@ public class DayOfWeekCondition extends TimeCondition {
      * Creates a condition for weekdays (Monday through Friday)
      */
     public static DayOfWeekCondition weekdays() {
-        return new DayOfWeekCondition(
+        return new DayOfWeekCondition(0,
                 DayOfWeek.MONDAY, 
                 DayOfWeek.TUESDAY, 
                 DayOfWeek.WEDNESDAY, 
@@ -54,7 +58,7 @@ public class DayOfWeekCondition extends TimeCondition {
      * Creates a condition for weekends (Saturday and Sunday)
      */
     public static DayOfWeekCondition weekends() {
-        return new DayOfWeekCondition(
+        return new DayOfWeekCondition(0,
                 DayOfWeek.SATURDAY, 
                 DayOfWeek.SUNDAY);
     }
@@ -67,7 +71,7 @@ public class DayOfWeekCondition extends TimeCondition {
      */
     public static DayOfWeekCondition fromZonedDateTime(ZonedDateTime dateTime) {
         DayOfWeek day = dateTime.getDayOfWeek();
-        return new DayOfWeekCondition(day);
+        return new DayOfWeekCondition(0,day);
     }
 
     /**
@@ -90,11 +94,14 @@ public class DayOfWeekCondition extends TimeCondition {
             selectedDays.add(DayOfWeek.of(dayIndex == 0 ? 7 : dayIndex)); // DayOfWeek is 1-based
         }
         
-        return new DayOfWeekCondition(selectedDays);
+        return new DayOfWeekCondition(0,selectedDays);
     }
 
     @Override
-    public boolean isSatisfied() {                
+    public boolean isSatisfied() { 
+        if(!canTriggerAgain()) {
+            return false;
+        }
         DayOfWeek today = getNow().getDayOfWeek();
         return activeDays.contains(today);
     }
@@ -128,10 +135,99 @@ public class DayOfWeekCondition extends TimeCondition {
             .map(day -> day.toString().charAt(0) + day.toString().substring(1).toLowerCase())
             .collect(Collectors.joining(", "));
     }
+    
+    /**
+     * Returns a detailed description of the condition with additional status information
+     */
+    public String getDetailedDescription() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getDescription());
+        
+        ZonedDateTime now = getNow();
+        DayOfWeek today = now.getDayOfWeek();
+        
+        sb.append("\nToday is ").append(today.toString().charAt(0) + today.toString().substring(1).toLowerCase());
+        sb.append(" (").append(activeDays.contains(today) ? "active" : "inactive").append(")");
+        
+        if (!activeDays.contains(today)) {
+            // Find the next active day
+            int daysUntilNext = 1;
+            while (daysUntilNext <= 7) {
+                DayOfWeek nextDay = today.plus(daysUntilNext);
+                if (activeDays.contains(nextDay)) {
+                    sb.append("\nNext active day: ")
+                      .append(nextDay.toString().charAt(0) + nextDay.toString().substring(1).toLowerCase())
+                      .append(" (in ").append(daysUntilNext).append(daysUntilNext == 1 ? " day)" : " days)");
+                    break;
+                }
+                daysUntilNext++;
+            }
+        }
+        
+        sb.append("\nProgress: ").append(String.format("%.1f%%", getProgressPercentage()));
+        sb.append("\n").append(super.getDescription());
+        
+        return sb.toString();
+    }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        
+        // Basic information
+        sb.append("DayOfWeekCondition:\n");
+        sb.append("  ┌─ Configuration ─────────────────────────────\n");
+        sb.append("  │ Active Days: ").append(getDescription()).append("\n");
+        
+        // Status information
+        sb.append("  ├─ Status ──────────────────────────────────\n");
+        sb.append("  │ Satisfied: ").append(isSatisfied()).append("\n");
+        
+        ZonedDateTime now = getNow();
+        DayOfWeek today = now.getDayOfWeek();
+        sb.append("  │ Current Day: ").append(today.toString().charAt(0) + today.toString().substring(1).toLowerCase())
+          .append(" (").append(activeDays.contains(today) ? "active" : "inactive").append(")\n");
+        
+        // If not active today, show next active day
+        if (!activeDays.contains(today) && !activeDays.isEmpty()) {
+            int daysUntilNext = 1;
+            while (daysUntilNext <= 7) {
+                DayOfWeek nextDay = today.plus(daysUntilNext);
+                if (activeDays.contains(nextDay)) {
+                    sb.append("  │ Next Active Day: ")
+                      .append(nextDay.toString().charAt(0) + nextDay.toString().substring(1).toLowerCase())
+                      .append(" (in ").append(daysUntilNext).append(daysUntilNext == 1 ? " day)\n" : " days)\n");
+                    break;
+                }
+                daysUntilNext++;
+            }
+        }
+        
+        sb.append("  │ Progress: ").append(String.format("%.1f%%", getProgressPercentage())).append("\n");
+        
+        // Tracking info
+        sb.append("  └─ Tracking ────────────────────────────────\n");
+        sb.append("    Reset Count: ").append(currentResetCount);
+        if (this.getMaximumNumberOfRepeats() > 0) {
+            sb.append("/").append(getMaximumNumberOfRepeats());
+        } else {
+            sb.append(" (unlimited)");
+        }
+        sb.append("\n");
+        if (lastResetTime != null) {
+            sb.append("    Last Reset: ").append(lastResetTime.format(dateTimeFormatter)).append("\n");
+        }
+        sb.append("    Can Trigger Again: ").append(canTriggerAgain()).append("\n");
+        
+        return sb.toString();
+    }
 
     @Override
     public void reset(boolean randomize) {
         // Nothing to reset for day of week condition
+        this.currentResetCount++;
+        this.lastResetTime = LocalDateTime.now();
     }
     
     @Override
@@ -170,6 +266,9 @@ public class DayOfWeekCondition extends TimeCondition {
     
     @Override
     public Optional<ZonedDateTime> getCurrentTriggerTime() {
+        if (!canTriggerAgain()) {
+            return Optional.empty();
+        }
         ZonedDateTime now = getNow();
         DayOfWeek today = now.getDayOfWeek();
         

@@ -4,19 +4,19 @@ import net.runelite.client.ui.ColorScheme;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
-import javax.swing.text.NumberFormatter;
 import java.awt.*;
-import java.text.DecimalFormat;
+
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.function.Consumer;
-
+import java.awt.event.FocusEvent;
+import java.awt.event.FocusAdapter;
 /**
  * A custom time picker component with hours and minutes selection
  */
 public class TimePickerPanel extends JPanel {
     private final DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
-    private final JFormattedTextField timeField;
+    private final JTextField timeField; // Changed from JFormattedTextField
     private LocalTime selectedTime;
     private Consumer<LocalTime> timeChangeListener;
     
@@ -30,10 +30,8 @@ public class TimePickerPanel extends JPanel {
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
         setBorder(new EmptyBorder(0, 0, 0, 0));
         
-        // Create a masked text field for time input
-        JFormattedTextField.AbstractFormatter formatter = createTimeFormatter();
-        timeField = new JFormattedTextField(formatter);
-        timeField.setValue(selectedTime.format(timeFormatter));
+        // Create a regular text field instead of formatted
+        timeField = new JTextField(selectedTime.format(timeFormatter));
         timeField.setForeground(Color.WHITE);
         timeField.setBackground(ColorScheme.DARKER_GRAY_COLOR.brighter());
         timeField.setBorder(BorderFactory.createCompoundBorder(
@@ -59,17 +57,24 @@ public class TimePickerPanel extends JPanel {
                 setSelectedTime(parsedTime);
             } catch (Exception ex) {
                 // Reset to current value if parsing fails
-                timeField.setValue(selectedTime.format(timeFormatter));
+                timeField.setText(selectedTime.format(timeFormatter));
             }
         });
-    }
-    
-    private JFormattedTextField.AbstractFormatter createTimeFormatter() {
-        NumberFormatter formatter = new NumberFormatter(new DecimalFormat("00"));
-        formatter.setValueClass(Integer.class);
-        formatter.setMinimum(0);
-        formatter.setMaximum(23);
-        return formatter;
+        
+        // Add a focus listener to validate when the field loses focus
+        timeField.addFocusListener(new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent e) {
+                try {
+                    String text = timeField.getText();
+                    LocalTime parsedTime = LocalTime.parse(text, timeFormatter);
+                    setSelectedTime(parsedTime);
+                } catch (Exception ex) {
+                    // Reset to current value if parsing fails
+                    timeField.setText(selectedTime.format(timeFormatter));
+                }
+            }
+        });
     }
     
     private void showTimePickerPopup() {
@@ -158,7 +163,7 @@ public class TimePickerPanel extends JPanel {
     
     public void setSelectedTime(LocalTime time) {
         this.selectedTime = time;
-        timeField.setValue(time.format(timeFormatter));
+        timeField.setText(time.format(timeFormatter));
         
         if (timeChangeListener != null) {
             timeChangeListener.accept(time);
@@ -173,7 +178,7 @@ public class TimePickerPanel extends JPanel {
         timeField.setEditable(editable);
     }
     
-    public JFormattedTextField getTextField() {
+    public JTextField getTextField() {
         return timeField;
     }
 }

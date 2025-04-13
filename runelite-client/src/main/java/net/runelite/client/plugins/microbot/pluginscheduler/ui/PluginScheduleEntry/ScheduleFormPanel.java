@@ -3,7 +3,11 @@ package net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEn
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
+import net.runelite.client.plugins.microbot.pluginscheduler.ui.components.DateRangePanel;
+import net.runelite.client.plugins.microbot.pluginscheduler.ui.components.SingleDateTimePickerPanel;
+import net.runelite.client.plugins.microbot.pluginscheduler.ui.components.TimeRangePanel;
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.condition.ConditionConfigPanelUtil;
+import net.runelite.client.plugins.microbot.pluginscheduler.ui.condition.TimeConditionPanelUtil;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
@@ -264,19 +268,19 @@ public class ScheduleFormPanel extends JPanel {
             
             // Continue with other panel types...
             if (CONDITION_SPECIFIC_TIME.equals(selectedType)) {
-                // Use the condition config utility to create a single trigger condition panel
+                // Use TimeConditionPanelUtil instead of ConditionConfigPanelUtil
                 currentConditionPanel.setLayout(new GridBagLayout());
-                ConditionConfigPanelUtil.createSingleTriggerConfigPanel(currentConditionPanel, gbc, currentConditionPanel);
+                TimeConditionPanelUtil.createSingleTriggerConfigPanel(currentConditionPanel, gbc, currentConditionPanel);
             }
             else if (CONDITION_INTERVAL.equals(selectedType)) {
-                // Use ConditionConfigPanelUtil to create an interval condition panel
+                // Use TimeConditionPanelUtil instead of ConditionConfigPanelUtil
                 currentConditionPanel.setLayout(new GridBagLayout());
-                ConditionConfigPanelUtil.createTimeConfigPanel(currentConditionPanel, gbc, currentConditionPanel);
+                TimeConditionPanelUtil.createTimeConfigPanel(currentConditionPanel, gbc, currentConditionPanel);
             }
             else if (CONDITION_TIME_WINDOW.equals(selectedType)) {
-                // Use ConditionConfigPanelUtil to create a time window condition panel
+                // Use TimeConditionPanelUtil instead of ConditionConfigPanelUtil
                 currentConditionPanel.setLayout(new GridBagLayout());
-                ConditionConfigPanelUtil.createEnhancedTimeWindowConfigPanel(currentConditionPanel, gbc, currentConditionPanel);
+                TimeConditionPanelUtil.createEnhancedTimeWindowConfigPanel(currentConditionPanel, gbc, currentConditionPanel);
             }
         }
         
@@ -355,25 +359,25 @@ public class ScheduleFormPanel extends JPanel {
             timeConditionTypeComboBox.setSelectedItem(CONDITION_SPECIFIC_TIME);
             updateConditionPanel();
             
-            // Configure the single trigger panel with existing values
-            setupSingleTriggerPanel((SingleTriggerTimeCondition) startCondition);
+            // Configure the panel with existing values
+          //  setupTimeConditionPanel(startCondition);
         }
         else if (startCondition instanceof IntervalCondition) {
             timeConditionTypeComboBox.setSelectedItem(CONDITION_INTERVAL);
             updateConditionPanel();
             
-            // Configure the interval panel with existing values
-            setupIntervalPanel((IntervalCondition) startCondition);
+            // Configure the panel with existing values
+        //    setupTimeConditionPanel(startCondition);
         }
         else if (startCondition instanceof TimeWindowCondition) {
             timeConditionTypeComboBox.setSelectedItem(CONDITION_TIME_WINDOW);
             updateConditionPanel();
             
-            // Configure the time window panel with existing values
-            setupTimeWindowPanel((TimeWindowCondition) startCondition);
+            // Configure the panel with existing values
+            //setupTimeConditionPanel(startCondition);
         }
         else {
-            // Default to "Run Now"
+            // Default to "Run Default"
             timeConditionTypeComboBox.setSelectedItem(CONDITION_DEFAULT);
             updateConditionPanel();
         }
@@ -424,15 +428,15 @@ public class ScheduleFormPanel extends JPanel {
         }
         else if (CONDITION_SPECIFIC_TIME.equals(selectedType)) {
             // Create SingleTriggerTimeCondition using the utility
-            timeCondition = ConditionConfigPanelUtil.createSingleTriggerCondition(currentConditionPanel);
+            timeCondition = TimeConditionPanelUtil.createSingleTriggerCondition(currentConditionPanel);
         }
         else if (CONDITION_INTERVAL.equals(selectedType)) {
-            // Create IntervalCondition using ConditionConfigPanelUtil
-            timeCondition = ConditionConfigPanelUtil.createTimeCondition(currentConditionPanel);
+            // Create IntervalCondition using TimeConditionPanelUtil
+            timeCondition = TimeConditionPanelUtil.createTimeCondition(currentConditionPanel);
         }
         else if (CONDITION_TIME_WINDOW.equals(selectedType)) {
-            // Create TimeWindowCondition using ConditionConfigPanelUtil
-            timeCondition = (TimeCondition) ConditionConfigPanelUtil.createEnhancedTimeWindowCondition(currentConditionPanel);
+            // Use TimeConditionPanelUtil instead of ConditionConfigPanelUtil
+            timeCondition = TimeConditionPanelUtil.createEnhancedTimeWindowCondition(currentConditionPanel);
         }
         
         if (timeCondition == null) {
@@ -510,162 +514,7 @@ public class ScheduleFormPanel extends JPanel {
     public void setRemoveButtonAction(ActionListener listener) {
         removeButton.addActionListener(listener);
     }
-
-    // Helper methods to configure panels with existing values
-    private void setupSingleTriggerPanel(SingleTriggerTimeCondition condition) {
-        // Find components in the panel by name or client property
-        JSpinner dateTimeSpinner = (JSpinner) findComponentByName(currentConditionPanel, "dateTimeSpinner");
-        if (dateTimeSpinner != null) {
-            // Set the date/time from the condition
-            dateTimeSpinner.setValue(Date.from(condition.getTargetTime().toInstant()));
-        }
-    }
-
-    private void setupIntervalPanel(IntervalCondition condition) {
-        // Get duration values
-        long totalMinutes = condition.getInterval().toMinutes();
-        long hours = totalMinutes / 60;
-        long minutes = totalMinutes % 60;
-        
-        // Format as HH:MM
-        String timeStr = String.format("%02d:%02d", hours, minutes);
-        
-        // Find the time field and set its value
-        JTextField minTimeField = (JTextField) findComponentByName(currentConditionPanel, "minTimeField");
-        if (minTimeField != null) {
-            minTimeField.setText(timeStr);
-        }
-        
-        // Set randomization if applicable
-        JCheckBox randomizeCheckbox = (JCheckBox) findComponentByName(currentConditionPanel, "randomizeCheckbox");
-        if (randomizeCheckbox != null) {
-            randomizeCheckbox.setSelected(condition.isRandomize());
-        }
-    }
-
-    private void setupTimeWindowPanel(TimeWindowCondition condition) {
-        // Find and set start time
-        JTextField startTimeField = (JTextField) findComponentByName(currentConditionPanel, "startTimeField");
-        if (startTimeField != null) {
-            startTimeField.setText(condition.getStartTime().format(DateTimeFormatter.ofPattern("HH:mm")));
-        }
-        
-        // Find and set end time
-        JTextField endTimeField = (JTextField) findComponentByName(currentConditionPanel, "endTimeField");
-        if (endTimeField != null) {
-            endTimeField.setText(condition.getEndTime().format(DateTimeFormatter.ofPattern("HH:mm")));
-        }
-        
-        // Set date range components if they exist
-        DatePicker startDatePicker = (DatePicker) findComponentByName(currentConditionPanel, "startDatePicker");
-        if (startDatePicker != null && condition.getStartDate() != null) {
-            startDatePicker.setDate(condition.getStartDate());
-        }
-        
-        DatePicker endDatePicker = (DatePicker) findComponentByName(currentConditionPanel, "endDatePicker");
-        if (endDatePicker != null && condition.getEndDate() != null) {
-            endDatePicker.setDate(condition.getEndDate());
-        }
-        
-        // Set repeat cycle configuration
-        @SuppressWarnings("unchecked")
-        JComboBox<RepeatCycle> repeatCycleComboBox = 
-            (JComboBox<RepeatCycle>) findComponentByName(currentConditionPanel, "repeatCycleComboBox");
-        if (repeatCycleComboBox != null) {
-            repeatCycleComboBox.setSelectedItem(condition.getRepeatCycle());
-        }
-        
-        // Set repeat interval
-        JSpinner repeatIntervalSpinner = (JSpinner) findComponentByName(currentConditionPanel, "repeatIntervalSpinner");
-        if (repeatIntervalSpinner != null) {
-            repeatIntervalSpinner.setValue(condition.getRepeatIntervalUnit());
-        }
-        
-        // Set randomization options
-        JCheckBox randomizeCheckbox = (JCheckBox) findComponentByName(currentConditionPanel, "randomizeCheckbox");
-        if (randomizeCheckbox != null) {
-            randomizeCheckbox.setSelected(condition.isUseRandomization());
-        }
-        
-        JSpinner randomizeMinutesSpinner = (JSpinner) findComponentByName(currentConditionPanel, "randomizeMinutesSpinner");
-        if (randomizeMinutesSpinner != null) {
-            randomizeMinutesSpinner.setValue(condition.getRandomizeMinutes());
-            
-            // Make sure the randomize minutes spinner is enabled only if randomization is enabled
-            randomizeMinutesSpinner.setEnabled(condition.isUseRandomization());
-        }
-        
-        // If there are day-of-week checkboxes, handle them for repeating schedules
-        // This assumes the checkboxes are named like "mondayCheckbox", "tuesdayCheckbox", etc.
-        if (condition.getRepeatCycle() == RepeatCycle.DAYS || condition.getRepeatCycle() == RepeatCycle.WEEKS) {
-            for (DayOfWeek day : DayOfWeek.values()) {
-                String dayName = day.toString().toLowerCase();
-                JCheckBox dayCheckbox = (JCheckBox) findComponentByName(
-                    currentConditionPanel, dayName + "Checkbox"
-                );
-                
-                if (dayCheckbox != null) {
-                    // Set checkbox state based on the condition configuration
-                    // This would depend on how day selection is implemented in TimeWindowCondition
-                    // We may need to add a method to TimeWindowCondition to check for specific days
-                    
-                    // For now, just a placeholder comment
-                    // dayCheckbox.setSelected(...);
-                }
-            }
-        }
-        
-        // Update UI visibility based on selected repeat cycle
-        updateTimeWindowUIVisibility(condition.getRepeatCycle());
-    }
-
-    /**
-     * Updates the visibility of UI components in the time window panel based on the selected repeat cycle
-     */
-    private void updateTimeWindowUIVisibility(RepeatCycle repeatCycle) {
-        // Find the containers for different sections
-        JPanel dateRangePanel = (JPanel) findComponentByName(currentConditionPanel, "dateRangePanel");
-        JPanel repeatPanel = (JPanel) findComponentByName(currentConditionPanel, "repeatPanel");
-        JPanel daysOfWeekPanel = (JPanel) findComponentByName(currentConditionPanel, "daysOfWeekPanel");
-        
-        // Show/hide panels based on repeat cycle
-        if (dateRangePanel != null) {
-            dateRangePanel.setVisible(repeatCycle == RepeatCycle.ONE_TIME);
-        }
-        
-        if (repeatPanel != null) {
-            repeatPanel.setVisible(repeatCycle != RepeatCycle.ONE_TIME);
-        }
-        
-        if (daysOfWeekPanel != null) {
-            daysOfWeekPanel.setVisible(
-                repeatCycle == RepeatCycle.DAYS || 
-                repeatCycle == RepeatCycle.WEEKS
-            );
-        }
-        
-        // Refresh the panel
-        currentConditionPanel.revalidate();
-        currentConditionPanel.repaint();
-    }
-
-    // Helper method to find a component by name
-    private Component findComponentByName(Container container, String name) {
-        for (Component component : container.getComponents()) {
-            if (name.equals(component.getName())) {
-                return component;
-            }
-            
-            if (component instanceof Container) {
-                Component found = findComponentByName((Container) component, name);
-                if (found != null) {
-                    return found;
-                }
-            }
-        }
-        return null;
-    }
-
+   
     // Add a new method to sync with table selection
     public void syncWithTableSelection(PluginScheduleEntry selectedPlugin) {
         // Only update if different than current selection to avoid feedback loops
@@ -686,6 +535,125 @@ public class ScheduleFormPanel extends JPanel {
             // Re-add listeners
             for (ActionListener listener : listeners) {
                 pluginComboBox.addActionListener(listener);
+            }
+        }
+    }
+
+    /**
+     * Sets up the time condition panel with values from an existing condition
+     */
+    private void setupTimeConditionPanel(TimeCondition condition) {
+        if (condition instanceof SingleTriggerTimeCondition) {
+            SingleTriggerTimeCondition singleCondition = (SingleTriggerTimeCondition) condition;
+            SingleDateTimePickerPanel dateTimePicker = (SingleDateTimePickerPanel) 
+                currentConditionPanel.getClientProperty("dateTimePicker");
+            
+            if (dateTimePicker != null) {
+                // Convert ZonedDateTime to LocalDateTime
+                dateTimePicker.setDateTime(singleCondition.getTargetTime().toLocalDateTime());
+            }
+        } 
+        else if (condition instanceof IntervalCondition) {
+            IntervalCondition intervalCondition = (IntervalCondition) condition;
+            
+            // Get duration values
+            long totalMinutes = intervalCondition.getInterval().toMinutes();
+            long hours = totalMinutes / 60;
+            long minutes = totalMinutes % 60;
+            
+            // Set hours and minutes on spinners
+            JSpinner hoursSpinner = (JSpinner) currentConditionPanel.getClientProperty("hoursSpinner");
+            JSpinner minutesSpinner = (JSpinner) currentConditionPanel.getClientProperty("minutesSpinner");
+            JCheckBox randomizeCheckBox = (JCheckBox) currentConditionPanel.getClientProperty("randomizeCheckBox");
+            JSpinner randomFactorSpinner = (JSpinner) currentConditionPanel.getClientProperty("randomFactorSpinner");
+            
+            if (hoursSpinner != null && minutesSpinner != null) {
+                hoursSpinner.setValue((int)hours);
+                minutesSpinner.setValue((int)minutes);
+            }
+            
+            // Set randomization settings
+            if (randomizeCheckBox != null) {
+                randomizeCheckBox.setSelected(intervalCondition.isRandomize());
+                
+                if (randomFactorSpinner != null && intervalCondition.isRandomize()) {
+                    randomFactorSpinner.setValue(intervalCondition.getRandomFactor());
+                }
+            }
+        } 
+        else if (condition instanceof TimeWindowCondition) {
+            TimeWindowCondition windowCondition = (TimeWindowCondition) condition;
+            
+            // Get custom components from client properties
+            DateRangePanel dateRangePanel = (DateRangePanel) 
+                currentConditionPanel.getClientProperty("dateRangePanel");
+            TimeRangePanel timeRangePanel = (TimeRangePanel) 
+                currentConditionPanel.getClientProperty("timeRangePanel");
+            JComboBox<String> repeatComboBox = (JComboBox<String>) 
+                currentConditionPanel.getClientProperty("repeatComboBox");
+            JSpinner intervalSpinner = (JSpinner) 
+                currentConditionPanel.getClientProperty("intervalSpinner");
+            JCheckBox randomizeCheckBox = (JCheckBox) 
+                currentConditionPanel.getClientProperty("randomizeCheckBox");
+            JSpinner randomizeSpinner = (JSpinner) 
+                currentConditionPanel.getClientProperty("randomizeSpinner");
+            
+            // Set date range
+            if (dateRangePanel != null) {
+                if (windowCondition.getStartDate() != null) {
+                    dateRangePanel.setStartDate(windowCondition.getStartDate());
+                }
+                if (windowCondition.getEndDate() != null) {
+                    dateRangePanel.setEndDate(windowCondition.getEndDate());
+                }
+            }
+            
+            // Set time range
+            if (timeRangePanel != null) {
+                timeRangePanel.setStartTime(windowCondition.getStartTime());
+                timeRangePanel.setEndTime(windowCondition.getEndTime());
+            }
+            
+            // Set repeat cycle
+            if (repeatComboBox != null) {
+                RepeatCycle cycle = windowCondition.getRepeatCycle();
+                int interval = windowCondition.getRepeatIntervalUnit();
+                
+                // Map RepeatCycle enum to combo box options
+                switch (cycle) {
+                    case DAYS:
+                        repeatComboBox.setSelectedItem(interval == 1 ? "Every Day" : "Every X Days");
+                        break;
+                    case HOURS:
+                        repeatComboBox.setSelectedItem("Every X Hours");
+                        break;
+                    case MINUTES:
+                        repeatComboBox.setSelectedItem("Every X Minutes");
+                        break;
+                    case WEEKS:
+                        repeatComboBox.setSelectedItem("Every X Weeks");
+                        break;
+                    case ONE_TIME:
+                        repeatComboBox.setSelectedItem("One Time Only");
+                        break;
+                    default:
+                        repeatComboBox.setSelectedItem("Every Day");
+                }
+            }
+            
+            // Set interval
+            if (intervalSpinner != null && windowCondition.getRepeatIntervalUnit() > 0) {
+                intervalSpinner.setValue(windowCondition.getRepeatIntervalUnit());
+            }
+            
+            // Set randomization options
+            if (randomizeCheckBox != null) {
+                randomizeCheckBox.setSelected(windowCondition.isUseRandomization());
+                
+                if (randomizeSpinner != null) {
+                    randomizeSpinner.setValue(windowCondition.getRandomizeMinutes());
+                    randomizeSpinner.setEnabled(windowCondition.isUseRandomization());
+                }
             }
         }
     }

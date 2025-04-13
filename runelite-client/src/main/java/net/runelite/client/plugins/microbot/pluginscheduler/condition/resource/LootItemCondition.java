@@ -316,7 +316,8 @@ public class LootItemCondition extends ResourceCondition {
         
         // Only track items that belong to the player 
         boolean isPlayerOwned = tileItem.getOwnership() == OWNERSHIP_SELF || tileItem.getOwnership() == OWNERSHIP_GROUP;
-        
+        log.info("\nDetected own item spawn: {} at {}", tileItem.getModel(), location);
+        log.info("\n"+itemName + "  - ownership: " + tileItem.getOwnership()); 
         if (isPlayerOwned) {
             // Get the item name and check if it matches our pattern
             String spawnedItemName = Microbot.getClientThread().runOnClientThreadOptional(() -> 

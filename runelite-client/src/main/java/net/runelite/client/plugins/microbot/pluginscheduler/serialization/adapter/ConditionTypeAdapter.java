@@ -165,11 +165,9 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             data.addProperty("currentKillCount", npc.getCurrentKillCount());
         }
         else if (src instanceof SingleTriggerTimeCondition) {
-            SingleTriggerTimeCondition trigger = (SingleTriggerTimeCondition) src;
-            // Store the target time as epoch millis for cross-platform compatibility
-            data.addProperty("targetTimeMillis", trigger.getTargetTime().toInstant().toEpochMilli());
-            data.addProperty("hasTriggered", trigger.isHasTriggered());
-            data.addProperty("timeZoneId", trigger.getTargetTime().getZone().getId());
+            assert(1==0); // This should never be serialized here, sperate adapter for this
+
+       
         }
         
         result.add(DATA_FIELD, data);
@@ -289,7 +287,9 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
                              data.get("randomFactor").getAsDouble() : 0.0;
         
         Duration interval = Duration.ofSeconds(intervalSeconds);
-        return new IntervalCondition(interval, randomize, randomFactor);
+        int maximumNumberOfRepeats = data.has("maximumNumberOfRepeats") ? 
+                data.get("maximumNumberOfRepeats").getAsInt() : 0;
+        return new IntervalCondition(interval, randomize, randomFactor,maximumNumberOfRepeats);
     }
     
     private DayOfWeekCondition deserializeDayOfWeekCondition(JsonObject data) {
@@ -298,7 +298,10 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
         for (JsonElement day : activeDays) {
             days.add(DayOfWeek.valueOf(day.getAsString()));
         }
-        return new DayOfWeekCondition(days);
+        // Handle maximum number of repeats if present
+        int maximumNumberOfRepeats = data.has("maximumNumberOfRepeats") ? 
+                data.get("maximumNumberOfRepeats").getAsInt() : 0;
+        return new DayOfWeekCondition(maximumNumberOfRepeats,days);
     }
     
     private TimeWindowCondition deserializeTimeWindowCondition(JsonObject data) {
@@ -334,9 +337,11 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             int repeatInterval = data.has("repeatInterval") ? 
                     data.get("repeatInterval").getAsInt() : 1;
             
+            int maximumNumberOfRepeats = data.has("maximumNumberOfRepeats") ? 
+                    data.get("maximumNumberOfRepeats").getAsInt() : 0;
             // Create the condition
             TimeWindowCondition condition = new TimeWindowCondition(
-                    startTime, endTime, startDate, endDate, repeatCycle, repeatInterval);
+                    startTime, endTime, startDate, endDate, repeatCycle, repeatInterval,maximumNumberOfRepeats);
             
             // Set randomization if present
             if (data.has("useRandomization") && data.has("randomizeMinutes")) {
@@ -349,7 +354,7 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             return condition;
         } catch (Exception e) {
             log.error("Error deserializing TimeWindowCondition, returning default", e);
-            return new TimeWindowCondition();
+            throw new JsonParseException("Error deserializing TimeWindowCondition", e);
         }
     }
     

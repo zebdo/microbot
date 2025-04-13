@@ -274,7 +274,7 @@ public class TimeConditionPanelUtil {
             
             Duration duration = Duration.ofHours(hours).plusMinutes(minutes);
             
-            return new IntervalCondition(duration, true, randomFactor);
+            return new IntervalCondition(duration, true, randomFactor,0);
         }
     }
     
@@ -424,7 +424,7 @@ public class TimeConditionPanelUtil {
         String repeatOption = (String) repeatComboBox.getSelectedItem();
         RepeatCycle repeatCycle;
         int interval = (Integer) intervalSpinner.getValue();
-        
+        long maximumNumberOfRepeats = 0; // Default to infinite repeats
         switch (repeatOption) {
             case "Every Day":
                 repeatCycle = RepeatCycle.DAYS;
@@ -445,6 +445,7 @@ public class TimeConditionPanelUtil {
             case "One Time Only":
                 repeatCycle = RepeatCycle.ONE_TIME;
                 interval = 1;
+                maximumNumberOfRepeats = 1;
                 break;
             default:
                 repeatCycle = RepeatCycle.DAYS;
@@ -458,7 +459,9 @@ public class TimeConditionPanelUtil {
             startDate,
             endDate,
             repeatCycle,
-            interval
+            interval,
+            maximumNumberOfRepeats
+            
         );
         
         // Apply randomization if enabled

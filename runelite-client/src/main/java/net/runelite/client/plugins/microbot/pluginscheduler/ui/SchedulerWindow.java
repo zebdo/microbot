@@ -31,8 +31,6 @@ public class SchedulerWindow extends JFrame {
     private final ScheduleFormPanel formPanel;
     private final ConditionConfigPanel stopConditionPanel;
     private final SchedulerInfoPanel infoPanel;
-    private JButton runSchedulerButton;
-    private JButton stopSchedulerButton;    
     // Timer for refreshing the info panel
     private Timer refreshTimer;
 
@@ -96,13 +94,13 @@ public class SchedulerWindow extends JFrame {
         });
 
         // Create the status panel for top of window
-        JPanel statusPanel = createStatusPanel();
+        //JPanel statusPanel = createStatusPanel();
 
         // Create main content area using a better layout
         JPanel mainContent = createMainContentPanel();
         
         // Add status panel to the top of the window
-        add(statusPanel, BorderLayout.NORTH);
+        //add(statusPanel, BorderLayout.NORTH);
         
         // Add main content to the center of the window
         add(mainContent, BorderLayout.CENTER);
@@ -152,7 +150,7 @@ public class SchedulerWindow extends JFrame {
         
         // Initialize with data
         refresh();
-        updateButtonState();
+        
     }
 
     /**
@@ -199,19 +197,19 @@ public class SchedulerWindow extends JFrame {
         controlPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
         // Create run scheduler button
-        runSchedulerButton = new JButton("Run Scheduler");
+        JButton runSchedulerButton = new JButton("Run Scheduler");
         runSchedulerButton.setBackground(new Color(76, 175, 80));
         runSchedulerButton.setForeground(Color.WHITE);
         runSchedulerButton.setFocusPainted(false);
         runSchedulerButton.addActionListener(e -> {
             plugin.startScheduler();
-            updateButtonState();
+            //updateButtonState();
             stateValueLabel.setText(plugin.getCurrentState().getDisplayName());
             stateValueLabel.setForeground(plugin.getCurrentState().getColor());
         });
         
         // Create stop scheduler button
-        stopSchedulerButton = new JButton("Stop Scheduler");
+        JButton stopSchedulerButton = new JButton("Stop Scheduler");
         stopSchedulerButton.setBackground(new Color(244, 67, 54));
         stopSchedulerButton.setForeground(Color.WHITE);
         stopSchedulerButton.setFocusPainted(false);
@@ -225,7 +223,7 @@ public class SchedulerWindow extends JFrame {
                // plugin.stopScheduler();      
                 //return true;
             //}); 
-            updateButtonState();
+            //updateButtonState();
             stateValueLabel.setText(plugin.getCurrentState().getDisplayName());
             stateValueLabel.setForeground(plugin.getCurrentState().getColor());
         });
@@ -286,33 +284,13 @@ public class SchedulerWindow extends JFrame {
         return mainContent;
     }
 
-    private void updateButtonState() {
-        SchedulerState state = plugin.getCurrentState();
-        boolean isActive = plugin.isSchedulerActive();
-        
-        // Only enable run button if we're in READY or HOLD state
-        runSchedulerButton.setEnabled(!isActive && (state == SchedulerState.READY || state == SchedulerState.HOLD));
-        
-        runSchedulerButton.setToolTipText(
-            !runSchedulerButton.isEnabled() ? 
-            "Scheduler cannot be started in " + state.getDisplayName() + " state" :
-            "Start running the scheduler");
-        
-        // Only enable stop button if scheduler is active
-        stopSchedulerButton.setEnabled(isActive);
-        stopSchedulerButton.setToolTipText(
-            isActive ? "Stop the scheduler" : "Scheduler is not running");
-        
-        // Add a status indication
-        this.setTitle("Plugin Scheduler - " + state.getDisplayName());
-    }
+    
 
     public void refresh() {
         tablePanel.refreshTable();
         if (formPanel != null) {
             formPanel.updateControlButton();
         }
-        updateButtonState();
         if (stopConditionPanel != null) {
             stopConditionPanel.refreshConditions();            
         }
@@ -431,12 +409,17 @@ public class SchedulerWindow extends JFrame {
             tablePanel.clearSelection();
             
         } catch (Exception e) {
+            log.error("Error updating plugin: " + e.getMessage(), e);
+            // This correctly logs the stack trace with SLF4J
+            log.error("Stack trace: ", e);
             JOptionPane.showMessageDialog(
                 this,
                 "Error updating plugin: " + e.getMessage(),
                 "Update Error",
                 JOptionPane.ERROR_MESSAGE
             );
+                        
+            
         }
     }
 

@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.ui.condition;
 
 import java.awt.Color;
+import java.awt.Container;
 import java.awt.Dimension;
 import java.awt.FlowLayout;
 import java.awt.Font;
@@ -36,7 +37,10 @@ import javax.swing.JRadioButton;
 import javax.swing.event.DocumentEvent;
 import javax.swing.event.DocumentListener;
 
+
+
 import net.runelite.api.Skill;
+import net.runelite.api.annotations.Component;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.BankItemCountCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.InventoryItemCountCondition;
@@ -246,7 +250,7 @@ public class ConditionConfigPanelUtil {
         
         // Check if min and max are the same
         if (minHours == maxHours && minMinutes == maxMinutes) {
-            return new IntervalCondition(minDuration, randomize, randomFactor);
+            return new IntervalCondition(minDuration, randomize, randomFactor,0);
         }
         
         // Create randomized interval condition
@@ -593,7 +597,7 @@ public class ConditionConfigPanelUtil {
         String repeatOption = (String) repeatComboBox.getSelectedItem();
         RepeatCycle repeatCycle;
         int interval = (Integer) intervalSpinner.getValue();
-        
+        long maximumNumberOfRepeats = 0; // Default to infinite repeats
         switch (repeatOption) {
             case "Every Day":
                 repeatCycle = RepeatCycle.DAYS;
@@ -614,6 +618,7 @@ public class ConditionConfigPanelUtil {
             case "One Time Only":
                 repeatCycle = RepeatCycle.ONE_TIME;
                 interval = 1;
+                maximumNumberOfRepeats = 1;
                 break;
             default:
                 repeatCycle = RepeatCycle.DAYS;
@@ -627,7 +632,8 @@ public class ConditionConfigPanelUtil {
             startDate,
             endDate,
             repeatCycle,
-            interval
+            interval,
+            maximumNumberOfRepeats
         );
         
         // Apply randomization if enabled
@@ -765,7 +771,7 @@ public class ConditionConfigPanelUtil {
         if (dayCheckboxes[5].isSelected()) activeDays.add(DayOfWeek.SATURDAY);
         if (dayCheckboxes[6].isSelected()) activeDays.add(DayOfWeek.SUNDAY);
         
-        return new DayOfWeekCondition(activeDays);
+        return new DayOfWeekCondition(0,activeDays);
     }
    
     /**
@@ -818,4 +824,23 @@ public class ConditionConfigPanelUtil {
         
         return new SingleTriggerTimeCondition(triggerTime);
     }
+
+    /**
+     * Helper method to find a component of a specific type in a container
+     
+    private <T> T findComponentOfType(Container container, Class<T> type) {
+        for (Component component : container.getComponents()) {
+            if (type.isInstance(component)) {
+                return type.cast(component);
+            }
+            
+            if (component instanceof Container) {
+                T found = findComponentOfType((Container) component, type);
+                if (found != null) {
+                    return found;
+                }
+            }
+        }
+        return null;
+    }*/
 }

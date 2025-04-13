@@ -238,9 +238,9 @@ public class SchedulerPanel extends PluginPanel {
      */
     private void updateButtonStates() {
         
-        boolean active = plugin.isSchedulerActive();
-        SchedulerState state = plugin.getCurrentState();
         
+        SchedulerState state = plugin.getCurrentState();
+        boolean active = plugin.getCurrentState().isSchedulerActive();
         configButton.setEnabled(state != SchedulerState.UNINITIALIZED || state != SchedulerState.ERROR || state != SchedulerState.INITIALIZING);
         
         // Only enable run button if we're in READY or HOLD state
@@ -280,7 +280,7 @@ public class SchedulerPanel extends PluginPanel {
                 long seconds = TimeUnit.MILLISECONDS.toSeconds(runtimeMillis) % 60;
                 runtimeLabel.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
             } else {
-                runtimeLabel.setText("00:00:00");
+                runtimeLabel.setText("Not started");
             }
         } else {
             currentPluginLabel.setText("None");

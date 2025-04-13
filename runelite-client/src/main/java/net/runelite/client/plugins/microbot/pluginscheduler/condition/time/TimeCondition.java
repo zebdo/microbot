@@ -10,6 +10,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionType;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -22,11 +23,25 @@ import java.util.Optional;
 @Slf4j
 @EqualsAndHashCode(callSuper = false)
 public abstract class TimeCondition implements Condition {
-    
     @Getter
-    protected boolean registered = false;
+    private final long maximumNumberOfRepeats;
+    protected transient long currentResetCount = 0;
+     // Last reset timestamp tracking
+    protected transient LocalDateTime lastResetTime;
     protected static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
-    
+    public TimeCondition() {
+        // Default constructor
+        this(0);                
+    }
+    /**
+     * Constructor for TimeCondition with a specified repeat count
+     * 
+     * @param maximumNumberOfRepeats Maximum number of times this condition can repeat, zero or negative means infinite repeats
+     */
+    public TimeCondition(final long maximumNumberOfRepeats) {
+        this.maximumNumberOfRepeats = maximumNumberOfRepeats;
+        lastResetTime = LocalDateTime.now();
+    }
     /**
      * Gets the current date and time in the system default time zone
      * 
@@ -40,7 +55,14 @@ public abstract class TimeCondition implements Condition {
     public ConditionType getType() {
         return ConditionType.TIME;
     }
-    
+    @Override
+    public String getDescription() {
+        boolean canTrigger = canTriggerAgain();
+        String triggerStatus = canTrigger ? "Can trigger" : "Cannot trigger";
+        String triggerCount = "Trigger Count: "+(maximumNumberOfRepeats > 0 ? " (" + currentResetCount + "/" + maximumNumberOfRepeats + ")" : currentResetCount);
+        String lastReset = lastResetTime != null ? "Last reset: " + lastResetTime.format(TIME_FORMATTER) : "";
+        return triggerStatus + "\n" + triggerCount+ "\n" + lastReset;
+    }
       
     
     /**
@@ -52,8 +74,10 @@ public abstract class TimeCondition implements Condition {
     
     @Override
     public void reset() {
-        reset(false);
+        this.lastResetTime = LocalDateTime.now();
+        this.reset(false);
     }
+    
     /**
      * Gets the next time this time condition will be satisfied.
      * Subclasses should override this to provide specific trigger time calculation.
@@ -62,6 +86,9 @@ public abstract class TimeCondition implements Condition {
      */
     @Override
     public Optional<ZonedDateTime> getCurrentTriggerTime() {
+        if(!canTriggerAgain()) {
+            return Optional.empty(); // No trigger time if already triggered too often
+        }
         // Base implementation for time conditions
         // Concrete subclasses should override this
         if (isSatisfied()) {
@@ -76,6 +103,9 @@ public abstract class TimeCondition implements Condition {
      * @return Optional containing the duration until next trigger, or empty if not applicable
      */
     public Optional<Duration> getDurationUntilNextTrigger() {
+        if(!canTriggerAgain()) {
+            return Optional.empty(); // No duration if already triggered too often
+        }
         Optional<ZonedDateTime> nextTrigger = getCurrentTriggerTime();
         if (nextTrigger.isPresent()) {
             ZonedDateTime now = getNow();
@@ -100,8 +130,11 @@ public abstract class TimeCondition implements Condition {
      */
     @Override
     public double getProgressPercentage() {
+        if (!canTriggerAgain()) {
+            return 0.0; // No progress if already triggered too often
+        }
         // If already satisfied, return 100%
-        if (isSatisfied()) {
+        if (isSatisfied() ) {
             return 100.0;
         }
         
@@ -145,5 +178,28 @@ public abstract class TimeCondition implements Condition {
     public boolean isUseRandomization() {
         return false; // Default implementation, subclasses should override if needed
     }
+     /**
+     * Checks if this condition can trigger again (hasn't triggered yet)
+     * 
+     * @return true if the condition hasn't triggered yet
+     */
+    public boolean canTriggerAgain(){
+        if (maximumNumberOfRepeats <= 0){
+            return true;
+        }
+        if (currentResetCount < maximumNumberOfRepeats) {
+            return true;
+        }
+        return false;
+    }
+    /**
+     * Checks if this condition has already triggered
+     * 
+     * @return true if the condition has triggered at least once
+     */
+    public boolean hasTriggered() {
+        return currentResetCount > 0;
+    }
+        
     
 }

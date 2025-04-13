@@ -24,6 +24,7 @@ public class DayOfWeekConditionAdapter implements JsonSerializer<DayOfWeekCondit
             daysArray.add(day.getValue()); // getValue() returns 1-7 for MON-SUN
         }
         json.add("activeDays", daysArray);
+        json.addProperty("maximumNumberOfRepeats", src.getMaximumNumberOfRepeats());
         
         return json;
     }
@@ -45,7 +46,7 @@ public class DayOfWeekConditionAdapter implements JsonSerializer<DayOfWeekCondit
                 }
             }
             
-            return new DayOfWeekCondition(activeDays);
+            return new DayOfWeekCondition(jsonObject.get("maximumNumberOfRepeats").getAsInt(),activeDays);
         } catch (Exception e) {
             log.error("Error deserializing DayOfWeekCondition", e);
             // Return a default condition (all days) on error

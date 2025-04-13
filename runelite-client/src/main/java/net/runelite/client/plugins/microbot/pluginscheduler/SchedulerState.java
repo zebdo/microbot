@@ -47,4 +47,39 @@ public enum SchedulerState {
     public Color getColor() {
         return color;
     }
+    public boolean isSchedulerActive() {
+        return this != SchedulerState.UNINITIALIZED &&
+        this != SchedulerState.INITIALIZING &&
+        this != SchedulerState.ERROR &&
+        this != SchedulerState.HOLD &&
+        this != SchedulerState.READY;
+    }
+
+    /**
+     * Determines if the scheduler is actively running a plugin or about to run one
+     */
+    public boolean isActivelyRunning() {
+        return isSchedulerActive() && 
+               (this == SchedulerState.RUNNING_PLUGIN ||
+               this == SchedulerState.STARTING_PLUGIN ||
+               this == SchedulerState.WAITING_FOR_LOGIN);
+    }
+
+    /**
+     * Determines if the scheduler is in a waiting state between scheduling a plugin
+     */
+    public boolean isWaiting() {
+        return isSchedulerActive() &&
+               (this == SchedulerState.SCHEDULING ||
+               this == SchedulerState.WAITING_FOR_SCHEDULE ||
+               this == SchedulerState.SHORT_BREAK);
+    }
+
+    public boolean isInitializing() {
+        return this == SchedulerState.INITIALIZING || this == SchedulerState.UNINITIALIZED;
+    }
+    public boolean isStopping() {
+        return this == SchedulerState.SOFT_STOPPING_PLUGIN ||
+        this == SchedulerState.HARD_STOPPING_PLUGIN;
+    }
 }

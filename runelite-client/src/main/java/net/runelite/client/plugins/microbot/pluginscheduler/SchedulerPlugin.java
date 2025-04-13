@@ -37,6 +37,8 @@ import net.runelite.client.plugins.microbot.pluginscheduler.ui.SchedulerPanel;
 import javax.inject.Inject;
 import javax.swing.*;
 
+import org.slf4j.event.Level;
+
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import java.awt.image.BufferedImage;
@@ -121,7 +123,7 @@ public class SchedulerPlugin extends Plugin {
         
         panel = new SchedulerPanel(this);
 
-        final BufferedImage icon = ImageUtil.loadImageResource(SchedulerPlugin.class, "icon.png");
+        final BufferedImage icon = ImageUtil.loadImageResource(SchedulerPlugin.class, "calendar-icon.png");
         navButton = NavigationButton.builder()
                 .tooltip("Plugin Scheduler")
                 .priority(10)
@@ -141,7 +143,7 @@ public class SchedulerPlugin extends Plugin {
         updateTask = executorService.scheduleAtFixedRate(() -> {
             SwingUtilities.invokeLater(() -> {
                 // Only run scheduling logic if fully initialized
-                if (    isSchedulerActive()) {
+                if (    currentState.isSchedulerActive()) {
                     checkSchedule();
                 } else if (currentState == SchedulerState.INITIALIZING || currentState == SchedulerState.UNINITIALIZED ) {
                     // Retry initialization check if not already checking
@@ -158,7 +160,7 @@ public class SchedulerPlugin extends Plugin {
      * This runs until initialization is complete or max check count is reached.
      */
     private void checkInitialization() {
-        if (!isInitializing()) {
+        if (!currentState.isInitializing()) {
             return;
         }
         
@@ -271,49 +273,15 @@ public class SchedulerPlugin extends Plugin {
     }
 
 
-    public boolean isSchedulerActive() {
-        return currentState != SchedulerState.UNINITIALIZED &&
-               currentState != SchedulerState.INITIALIZING &&
-               currentState != SchedulerState.ERROR &&
-               currentState != SchedulerState.HOLD &&
-               currentState != SchedulerState.READY;
-    }
-
-    /**
-     * Determines if the scheduler is actively running a plugin or about to run one
-     */
-    public boolean isActivelyRunning() {
-        return isSchedulerActive() && 
-               (currentState == SchedulerState.RUNNING_PLUGIN ||
-                currentState == SchedulerState.STARTING_PLUGIN ||
-                currentState == SchedulerState.WAITING_FOR_LOGIN);
-    }
-
-    /**
-     * Determines if the scheduler is in a waiting state between scheduling a plugin
-     */
-    public boolean isWaiting() {
-        return isSchedulerActive() &&
-               (currentState == SchedulerState.SCHEDULING ||
-                currentState == SchedulerState.WAITING_FOR_SCHEDULE ||
-                currentState == SchedulerState.SHORT_BREAK);
-    }
-
-    public boolean isInitializing() {
-        return currentState == SchedulerState.INITIALIZING || currentState == SchedulerState.UNINITIALIZED;
-    }
-    public boolean isStopping() {
-        return currentState == SchedulerState.SOFT_STOPPING_PLUGIN ||
-               currentState == SchedulerState.HARD_STOPPING_PLUGIN;
-    }
+   
     /**
      * Starts the scheduler
     */
     public void startScheduler() {
-        log.info("Starting scheduler reqeust...");
+        Microbot.log("Starting scheduler reqeust...",Level.INFO);
         Microbot.getClientThread().runOnClientThreadOptional(()-> {
             // If already active, nothing to do
-            if (isSchedulerActive()) {
+            if (currentState.isSchedulerActive()) {
                 log.info("Scheduler already active");
                 return true;
             }
@@ -352,7 +320,7 @@ public class SchedulerPlugin extends Plugin {
                     loginMonitor.interrupt();
 
                 }
-                if (!isSchedulerActive()) {
+                if (!currentState.isSchedulerActive()) {
                     return false; // Already stopped
                 }
                 setState(SchedulerState.HOLD);
@@ -423,7 +391,7 @@ public class SchedulerPlugin extends Plugin {
                     setState(SchedulerState.WAITING_FOR_SCHEDULE);                    
                 }
                 
-                if (!isActivelyRunning()){
+                if (!currentState.isActivelyRunning()){
                     scheduleNextPlugin();
                 }else{
                     log.info("Plugin is already running, waiting for it to finish");

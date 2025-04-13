@@ -74,4 +74,15 @@ public class DateTimePickerPanel extends JPanel {
     public TimePickerPanel getTimePicker() {
         return timePicker;
     }
+
+    public void setDate(LocalDate date) {
+        datePicker.setSelectedDate(date);
+        notifyDateTimeChanged();
+    }
+
+    public void setTime(Integer hour, Integer minute) {        
+        LocalTime time = LocalTime.of(hour, minute);
+        timePicker.setSelectedTime(time);
+        notifyDateTimeChanged();
+    }
 }

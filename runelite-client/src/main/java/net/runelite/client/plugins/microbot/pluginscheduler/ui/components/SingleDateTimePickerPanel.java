@@ -101,7 +101,33 @@ public class SingleDateTimePickerPanel extends JPanel {
     }
     
     public void setDateTime(LocalDateTime dateTime) {
-        dateTimePicker.setDateTime(dateTime);
+        if (dateTime == null) {
+            // Create a default time (1 hour from now)
+            LocalDateTime defaultDateTime = LocalDateTime.now().plusHours(1);
+            try {
+                // Try using individual setters if available
+                dateTimePicker.setDate(LocalDate.now());
+                dateTimePicker.setTime(
+                    Integer.valueOf(defaultDateTime.getHour()),
+                    Integer.valueOf(defaultDateTime.getMinute())
+                );
+            } catch (Exception e) {
+                // Fall back to the combined setter if individual ones aren't available
+                dateTimePicker.setDateTime(defaultDateTime);
+            }
+        } else {
+            try {
+                // Try using individual setters if available
+                dateTimePicker.setDate(dateTime.toLocalDate());
+                dateTimePicker.setTime(
+                    Integer.valueOf(dateTime.getHour()),
+                    Integer.valueOf(dateTime.getMinute())
+                );
+            } catch (Exception e) {
+                // Fall back to the combined setter
+                dateTimePicker.setDateTime(dateTime);
+            }
+        }
     }
     
     public void setDateTimeChangeListener(Consumer<LocalDateTime> listener) {

@@ -62,9 +62,7 @@ public class PluginScheduleEntry {
         } else {
             stopConditionManager.registerEvents();
             startConditionManager.registerEvents();
-            registerPluginConditions();
-            updateConditions();
-            
+            registerPluginConditions();                        
         }
     }
     private ZonedDateTime lastRunTime; // When the plugin last ran    
@@ -732,47 +730,7 @@ public class PluginScheduleEntry {
         
         // Check if start conditions are met
         return startConditionManager.areConditionsMet();
-    }
-    /**
-     * Update the lastRunTime to now and update conditions
-     */
-    private void updateConditions() {
-        lastRunTime = roundToMinutes(ZonedDateTime.now(ZoneId.systemDefault()));
-        
-        // Handle time conditions
-        if (startConditionManager != null) {
-            startConditionManager.reset();
-            
-            // Reset one-time conditions to prevent repeated triggering
-            for (TimeCondition condition : startConditionManager.getTimeConditions()) {
-                if (condition instanceof SingleTriggerTimeCondition) {
-                    // Mark as triggered so it won't trigger again
-                    if (condition.isSatisfied()){
-                        ((SingleTriggerTimeCondition) condition).reset();
-                        assert condition.isSatisfied() == false;
-                    }
-                }
-                // For interval conditions, no need to reset as they'll naturally calculate
-                // their next trigger time
-            }
-            
-            // Update the nextRunTime for legacy compatibility if possible
-            Optional<ZonedDateTime> nextTriggerTime = getCurrentStartTriggerTime();
-            if (nextTriggerTime.isPresent()) {
-                ZonedDateTime nextRunTime = nextTriggerTime.get();
-                log.info("Updated next run time for '{}' to {}", 
-                        name, 
-                        nextRunTime.format(DATE_TIME_FORMATTER));
-            } else {
-                // No future trigger time found
-                ZonedDateTime nextRunTime = null;
-                if (hasTriggeredOneTimeStartConditions() && !canStartTriggerAgain()) {
-                    log.info("One-time conditions for {} triggered, not scheduling next run", name);
-                    nextRunTime = null;
-                }
-            }
-        }
-    }
+    }    
 
     /**
     * Updates the primary time condition for this plugin schedule entry.
@@ -861,7 +819,7 @@ public class PluginScheduleEntry {
                 startConditionManager.addCondition(newTimeCondition);
             }            
             this.mainTimeStartCondition = newTimeCondition;                 
-            updateStartConditions();// we have new condition ->  new start time ?
+            //updateStartConditions();// we have new condition ->  new start time ?
         }
         // Recalculate any internal state based on the new condition
         //if  (!isRunning()){
@@ -1280,16 +1238,12 @@ public class PluginScheduleEntry {
             ConditionProvider provider = (ConditionProvider) plugin;
 
             // Get conditions from the provider
-            log.info("get conditions from provider");
+            
             List<Condition> pluginConditions = provider.getStopCondition().getConditions();
             if (pluginConditions != null && !pluginConditions.isEmpty()) {                
                 // Get or create plugin's logical structure
-                log.info("get conditions from provider");
-                LogicalCondition pluginLogic = provider.getStopCondition();
-
-                log.info("--> Adding plugin conditions to stop condition manager");
-                pluginLogic.reset();
-                log.info("--> reset done");
+                
+                LogicalCondition pluginLogic = provider.getStopCondition();                                
                 // Set the new root condition
                 getStopConditionManager().setPluginCondition(pluginLogic);
                 
@@ -1329,9 +1283,7 @@ public class PluginScheduleEntry {
                 }else{
                     throw new RuntimeException("Plugin '"+name+"' implements ConditionProvider but provided no conditions");
                 }
-                
-
-                pluginLogic.reset();
+                                
                 // Set the new root condition
                 getStartConditionManager().setPluginCondition(pluginLogic);
                 
@@ -1347,8 +1299,9 @@ public class PluginScheduleEntry {
     public void registerPluginConditions(){
 
         log.info("Registering plugin conditions for plugin '{}'", name);
-        registerPluginStoppingConditions();
         registerPluginStartingConditions();
+        registerPluginStoppingConditions();
+        
     }
 
 

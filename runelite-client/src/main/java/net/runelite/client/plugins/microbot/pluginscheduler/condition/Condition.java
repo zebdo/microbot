@@ -25,6 +25,7 @@ import net.runelite.api.events.VarbitChanged;
  * Provides common functionality for condition checking and configuration.
  */
 public interface Condition {
+    
     /**
      * Checks if the condition is currently met
      * @return true if condition is satisfied, false otherwise

@@ -41,7 +41,7 @@ public class SchedulerUIUtils {
                     setBackground(ColorScheme.BRAND_ORANGE);
                     setForeground(Color.WHITE);
                 } else {
-                    setBackground(ColorScheme.DARKER_GRAY_COLOR);
+                    setBackground(ColorScheme.DARKER_GRAY_COLOR.brighter());
                     setForeground(Color.WHITE);
                 }
                 

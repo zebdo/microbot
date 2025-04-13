@@ -33,7 +33,22 @@ public abstract class SkillCondition implements Condition {
         return skill;
     }
     
-      /**
+    /**
+     * Checks if this condition is for the total of all skills
+     */
+    public boolean isTotal() {
+        return skill == null || skill == Skill.OVERALL;
+    }
+    
+    /**
+     * Gets all skills to be considered for total calculations
+     * Excludes TOTAL itself and other non-tracked skills
+     */
+    protected Skill[] getAllTrackableSkills() {
+        return Skill.values();
+    }
+    
+    /**
      * Gets a properly scaled icon for the skill (24x24 pixels)
      */
     public Icon getSkillIcon() {
@@ -42,10 +57,17 @@ public abstract class SkillCondition implements Condition {
             SkillIconManager iconManager = Microbot.getClientThread().runOnClientThreadOptional(
                                             ()-> {return Microbot.getInjector().getInstance(SkillIconManager.class);}).orElse(null);
             
-            
             if (iconManager != null) {
                 // Get the skill image (small=true for smaller version)
-                BufferedImage skillImage = iconManager.getSkillImage(skill, true);
+                BufferedImage skillImage;
+                String skillName = isTotal() ? "overall" : skill.getName().toLowerCase();
+                if (isTotal()) {                    
+                    String skillIconPath = "/skill_icons/" + skillName + ".png";
+                    // Use XpPanel.class since we know it successfully loads this resource
+                    skillImage = ImageUtil.loadImageResource(getClass(), skillIconPath);                    
+                } else {
+                    skillImage = iconManager.getSkillImage(skill, true);
+                }
                 
                 // Scale the image if needed
                 if (skillImage.getWidth() != ICON_SIZE || skillImage.getHeight() != ICON_SIZE) {

@@ -115,7 +115,7 @@ public class ConditionManagerAdapter implements JsonSerializer<ConditionManager>
         }
         
         // Initialize all time-based conditions
-        initializeTimeConditions(manager);
+        //initializeTimeConditions(manager);//  the initialization should be done on generation of the condition -> not reseting it
         
         return manager;
     }

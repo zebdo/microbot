@@ -1,5 +1,7 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.ui;
 
+import net.runelite.client.plugins.microbot.BlockingEventManager;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerState;
 import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
@@ -7,6 +9,7 @@ import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
+import net.runelite.client.plugins.microbot.util.events.ScriptPauseEvent;
 
 import javax.swing.*;
 
@@ -27,6 +30,12 @@ public class SchedulerInfoPanel extends JPanel {
     private final JLabel statusLabel;
     private final JLabel runtimeLabel;
     private ZonedDateTime schedulerStartTime;
+    
+    // Control buttons
+    private final JButton runSchedulerButton;
+    private final JButton stopSchedulerButton;
+    private final JButton loginButton;
+    private final JButton pauseResumeButton;
     
     // Current plugin components
     private final JPanel currentPluginPanel;
@@ -50,14 +59,12 @@ public class SchedulerInfoPanel extends JPanel {
     private final JLabel loginTimeLabel;
     private final JLabel breakStatusLabel;
     private final JLabel nextBreakLabel;
-    private final JLabel breakDurationLabel;
+    private final JLabel breakDurationLabel;    
     
-
   
   
     public SchedulerInfoPanel(SchedulerPlugin plugin) {
-        this.plugin = plugin;
-        
+        this.plugin = plugin;    
         // Use a box layout instead of BorderLayout
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
         setBorder(new EmptyBorder(10, 10, 10, 10));
@@ -78,6 +85,93 @@ public class SchedulerInfoPanel extends JPanel {
         gbc.gridx++;
         runtimeLabel = createValueLabel("00:00:00");
         statusPanel.add(runtimeLabel, gbc);
+        
+        // Create control buttons panel
+        gbc.gridx = 0;
+        gbc.gridy++;
+        gbc.gridwidth = 2;
+        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
+        // Create run scheduler button
+        runSchedulerButton = new JButton("Run Scheduler");
+        runSchedulerButton.setBackground(new Color(76, 175, 80));
+        runSchedulerButton.setForeground(Color.WHITE);
+        runSchedulerButton.setFocusPainted(false);
+        runSchedulerButton.addActionListener(e -> {
+            plugin.startScheduler();
+            updateButtonStates();
+        });
+        buttonPanel.add(runSchedulerButton);
+        
+        // Create stop scheduler button
+        stopSchedulerButton = new JButton("Stop Scheduler");
+        stopSchedulerButton.setBackground(new Color(244, 67, 54));
+        stopSchedulerButton.setForeground(Color.WHITE);
+        stopSchedulerButton.setFocusPainted(false);
+        stopSchedulerButton.addActionListener(e -> {
+            SwingUtilities.invokeLater(() -> {
+                plugin.stopScheduler();
+                updateButtonStates();
+            });
+        });
+        buttonPanel.add(stopSchedulerButton);
+        
+        // Create login button
+        loginButton = new JButton("Login");
+        loginButton.setBackground(new Color(33, 150, 243)); // Blue
+        loginButton.setForeground(Color.WHITE);
+        loginButton.setFocusPainted(false);
+        loginButton.addActionListener(e -> {
+            // Store current state to restore after login
+            SchedulerState prevState = plugin.getCurrentState();
+            
+            // Attempt login
+            SwingUtilities.invokeLater(() -> {
+                //plugin.login();
+                
+                // If we were in an active state before, restore that state
+                if (prevState.isSchedulerActive()) {
+                    // Wait briefly to ensure login process completes
+                    Timer restoreTimer = new Timer(2000, evt -> {
+                        ((Timer)evt.getSource()).stop();
+                        updateButtonStates();
+                    });
+                    restoreTimer.setRepeats(false);
+                    restoreTimer.start();
+                } else {
+                    updateButtonStates();
+                }
+            });
+        });
+        buttonPanel.add(loginButton);
+        
+        // Create pause/resume button
+        pauseResumeButton = new JButton("Pause Plugin");
+        pauseResumeButton.setBackground(new Color(255, 152, 0)); // Orange color
+        pauseResumeButton.setForeground(Color.WHITE);
+        pauseResumeButton.setFocusPainted(false);
+        pauseResumeButton.setVisible(false); // Initially hidden
+        pauseResumeButton.addActionListener(e -> {
+            // Toggle the pause state
+            boolean newPauseState = !ScriptPauseEvent.isPaused();
+            ScriptPauseEvent.setPaused(newPauseState);
+            
+            // Update button text and color based on state
+            if (newPauseState) {
+                pauseResumeButton.setText("Resume Plugin");
+                pauseResumeButton.setBackground(new Color(76, 175, 80)); // Green color
+            } else {
+                pauseResumeButton.setText("Pause Plugin");
+                pauseResumeButton.setBackground(new Color(255, 152, 0)); // Orange color
+            }
+            
+            // Update UI immediately
+            updateCurrentPluginInfo();
+        });
+        buttonPanel.add(pauseResumeButton);
+        
+        statusPanel.add(buttonPanel, gbc);
         
         add(statusPanel);
         add(Box.createRigidArea(new Dimension(0, 10))); // Add spacing
@@ -197,7 +291,6 @@ public class SchedulerInfoPanel extends JPanel {
         
         add(nextPluginPanel);
        
-
         // Initial refresh
         refresh();
     }
@@ -248,6 +341,44 @@ public class SchedulerInfoPanel extends JPanel {
         updateCurrentPluginInfo();
         updateNextPluginInfo();
         updatePlayerStatusInfo();
+        updateButtonStates();
+    }
+    
+    /**
+     * Updates the button states based on scheduler state
+     */
+    private void updateButtonStates() {
+        SchedulerState state = plugin.getCurrentState();
+        boolean isActive = plugin.getCurrentState().isSchedulerActive();
+        
+        // Only enable run button if we're in READY or HOLD state
+        runSchedulerButton.setEnabled(!isActive && (state == SchedulerState.READY || state == SchedulerState.HOLD));
+        
+        runSchedulerButton.setToolTipText(
+            !runSchedulerButton.isEnabled() ? 
+            "Scheduler cannot be started in " + state.getDisplayName() + " state" :
+            "Start running the scheduler");
+        
+        // Only enable stop button if scheduler is active
+        stopSchedulerButton.setEnabled(isActive);
+        stopSchedulerButton.setToolTipText(
+            isActive ? "Stop the scheduler" : "Scheduler is not running");
+            
+        // Login button is only enabled when not actively running and not waiting for login
+        loginButton.setEnabled((!isActive || 
+            (state != SchedulerState.WAITING_FOR_LOGIN && 
+             state != SchedulerState.LOGIN)) && !Microbot.isLoggedIn());
+        loginButton.setToolTipText("Log in to the game");
+        
+        // Only show the pause button when a plugin is actively running
+        pauseResumeButton.setVisible(state == SchedulerState.RUNNING_PLUGIN);
+        
+        // If state changed and we're no longer running, ensure pause is reset
+        if (state != SchedulerState.RUNNING_PLUGIN && ScriptPauseEvent.isPaused()) {
+            ScriptPauseEvent.setPaused(false);
+            pauseResumeButton.setText("Pause Plugin");
+            pauseResumeButton.setBackground(new Color(255, 152, 0));
+        }
     }
     
     /**
@@ -267,7 +398,7 @@ public class SchedulerInfoPanel extends JPanel {
         statusLabel.setForeground(state.getColor());
         
         // Update runtime if active
-        if (plugin.isSchedulerActive()) {
+        if (plugin.getCurrentState().isSchedulerActive()) {
             if (schedulerStartTime == null) {
                 schedulerStartTime = ZonedDateTime.now();
             }
@@ -295,8 +426,14 @@ public class SchedulerInfoPanel extends JPanel {
             // Set visibility
             currentPluginPanel.setVisible(true);
             
-            // Update name
-            currentPluginNameLabel.setText(currentPlugin.getCleanName());
+            // Update name with pause indicator if needed
+            if (ScriptPauseEvent.isPaused()) {
+                currentPluginNameLabel.setText(currentPlugin.getCleanName() + " [PAUSED]");
+                currentPluginNameLabel.setForeground(new Color(255, 152, 0)); // Orange
+            } else {
+                currentPluginNameLabel.setText(currentPlugin.getCleanName());
+                currentPluginNameLabel.setForeground(Color.WHITE);
+            }
             
             // Update runtime
             if (currentPluginStartTime == null) {

@@ -54,12 +54,23 @@ public class DatePickerPanel extends JPanel {
                 BorderFactory.createLineBorder(ColorScheme.MEDIUM_GRAY_COLOR),
                 BorderFactory.createEmptyBorder(2, 5, 2, 5)));
         
-        // Calendar button
-        JButton calendarButton = new JButton("📅");
+        // Calendar button with ImageIcon
+        JButton calendarButton = new JButton();
         calendarButton.setFocusPainted(false);
         calendarButton.setForeground(Color.WHITE);
         calendarButton.setBackground(ColorScheme.DARKER_GRAY_COLOR.brighter());
         calendarButton.setPreferredSize(new Dimension(30, dateField.getPreferredSize().height));
+
+        
+        try {
+            ImageIcon icon = new ImageIcon(getClass().getResource("/net/runelite/client/plugins/microbot/pluginscheduler/"+"calendar-icon.png"));
+            // Scale the icon to fit the button
+            Image img = icon.getImage().getScaledInstance(16, 16, Image.SCALE_SMOOTH);
+            calendarButton.setIcon(new ImageIcon(img));
+        } catch (Exception e) {
+            // Fallback to simple text if icon can't be loaded
+            calendarButton.setText("▼");
+        }
         
         // Initialize calendar popup
         createCalendarPopup();

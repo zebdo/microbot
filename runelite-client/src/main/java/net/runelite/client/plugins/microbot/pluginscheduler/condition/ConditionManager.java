@@ -27,6 +27,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.An
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.NotCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.LootItemCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.ResourceCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
@@ -479,12 +480,12 @@ public class ConditionManager {
     private boolean isSingleTriggerCondition(Condition condition) {
         return condition instanceof SingleTriggerTimeCondition;
     }
-    public List<SingleTriggerTimeCondition> getTriggerdOnTimeConditions(){
+    public List<SingleTriggerTimeCondition> getTriggeredOneTimeConditions(){
         List<SingleTriggerTimeCondition> result = new ArrayList<>();
         for (Condition condition : userLogicalCondition.getConditions()) {
             if (isSingleTriggerCondition(condition)) {
                 SingleTriggerTimeCondition singleTrigger = (SingleTriggerTimeCondition) condition;
-                if (singleTrigger.isHasTriggered()) {
+                if (singleTrigger.canTriggerAgain()) {
                     result.add(singleTrigger);
                 }
             }
@@ -493,7 +494,7 @@ public class ConditionManager {
             for (Condition condition : pluginCondition.getConditions()) {
                 if (isSingleTriggerCondition(condition)) {
                     SingleTriggerTimeCondition singleTrigger = (SingleTriggerTimeCondition) condition;
-                    if (singleTrigger.isHasTriggered()) {
+                    if (singleTrigger.canTriggerAgain()) {
                         result.add(singleTrigger);
                     }
                 }
@@ -512,7 +513,7 @@ public class ConditionManager {
         for (Condition condition : getUserLogicalCondition().getConditions()) {
             if (isSingleTriggerCondition(condition)) {
                 SingleTriggerTimeCondition singleTrigger = (SingleTriggerTimeCondition) condition;
-                if (singleTrigger.isHasTriggered()) {
+                if (!singleTrigger.canTriggerAgain()) {
                     return true;
                 }
             }
@@ -523,7 +524,7 @@ public class ConditionManager {
             for (Condition condition : pluginCondition.getConditions()) {
                 if (isSingleTriggerCondition(condition)) {
                     SingleTriggerTimeCondition singleTrigger = (SingleTriggerTimeCondition) condition;
-                    if (singleTrigger.isHasTriggered()) {
+                    if (!singleTrigger.canTriggerAgain()) {
                         return true;
                     }
                 }
@@ -560,13 +561,13 @@ public class ConditionManager {
             // For AND logic, if any direct child one-time condition has triggered,
             // the entire AND branch cannot trigger again
             for (Condition condition : logical.getConditions()) {
-                if (condition instanceof SingleTriggerTimeCondition) {
-                    SingleTriggerTimeCondition singleTrigger = (SingleTriggerTimeCondition) condition;
-                    if (singleTrigger.isHasTriggered()) {
-                        // One triggered one-time condition in an AND means the branch can't trigger
+                if (condition instanceof TimeCondition) {
+                    TimeCondition timeCondition = (TimeCondition) condition;
+                    if (timeCondition.canTriggerAgain()) {                        
                         return false;
                     }
-                }else if (condition instanceof ResourceCondition) {
+                }             
+                else if (condition instanceof ResourceCondition) {
                     ResourceCondition resourceCondition = (ResourceCondition) condition;
                     
                 }
@@ -586,9 +587,9 @@ public class ConditionManager {
             boolean anyCanTrigger = false;
             
             for (Condition condition : logical.getConditions()) {
-                if (condition instanceof SingleTriggerTimeCondition) {
-                    SingleTriggerTimeCondition singleTrigger = (SingleTriggerTimeCondition) condition;
-                    if (!singleTrigger.isHasTriggered()) {
+                if (condition instanceof TimeCondition) {
+                    TimeCondition singleTrigger = (TimeCondition) condition;
+                    if (!singleTrigger.hasTriggered()) {
                         // Found an untriggered one-time condition, so this branch can trigger
                         return true;
                     }
@@ -717,7 +718,7 @@ public class ConditionManager {
         for (Condition condition : getConditions()) {
             if (condition instanceof SingleTriggerTimeCondition) {
                 SingleTriggerTimeCondition singleTrigger = (SingleTriggerTimeCondition) condition;
-                if (!singleTrigger.isHasTriggered()) {
+                if (!singleTrigger.hasTriggered()) {
                     double progress = singleTrigger.getProgressPercentage();
                     maxProgress = Math.max(maxProgress, progress);
                 }
@@ -1106,7 +1107,10 @@ public class ConditionManager {
         
         for (Condition condition : getConditions( )) {            
             try {
-              
+                if(condition instanceof LootItemCondition) {
+                    LootItemCondition itemCondition = (LootItemCondition) condition;
+                    log.info("LootItemCondition condition: " + itemCondition.getDescription());
+                }
                 condition.onItemSpawned(event);
             } catch (Exception e) {
                 log.error("Error in condition {} during ItemSpawned event: {}", 

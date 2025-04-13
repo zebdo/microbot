@@ -4,7 +4,9 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.Optional;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -22,25 +24,14 @@ public class IntervalCondition extends TimeCondition {
     private boolean randomize;
     @Getter
     private double randomFactor;
-    @Override
-    public Optional<ZonedDateTime> getCurrentTriggerTime() {
-        ZonedDateTime now = getNow();
-        
-        // If already satisfied (past the trigger time)
-        if (now.isAfter(nextTriggerTime)) {
-            return Optional.of(nextTriggerTime); // Return the passed time until reset
-        }
-        
-        // Otherwise return the scheduled next trigger time
-        return Optional.of(nextTriggerTime);
-    }
+ 
     /**
      * Creates an interval condition that triggers at regular intervals
      * 
      * @param interval The time interval between triggers
      */
     public IntervalCondition(Duration interval) {
-        this(interval, false, 0);
+        this(interval, false,0.0, 0);
     }
     
     /**
@@ -50,7 +41,8 @@ public class IntervalCondition extends TimeCondition {
      * @param randomize Whether to randomize intervals
      * @param randomFactor Randomization factor (0-1.0) - how much to vary the interval
      */
-    public IntervalCondition(Duration interval, boolean randomize, double randomFactor) {
+    public IntervalCondition(Duration interval, boolean randomize, double randomFactor, long maximumNumberOfRepeats) {
+        super(maximumNumberOfRepeats);
         this.interval = interval;
         this.randomize = randomize;
         this.randomFactor = Math.max(0, Math.min(1.0, randomFactor));
@@ -74,8 +66,8 @@ public class IntervalCondition extends TimeCondition {
     /**
      * Creates an interval condition with randomized timing
      */
-    public static IntervalCondition randomizedMinutes(int baseMinutes, double randomFactor) {
-        return new IntervalCondition(Duration.ofMinutes(baseMinutes), true, randomFactor);
+    public static IntervalCondition randomizedMinutes(int baseMinutes, double randomFactor ,long maximumNumberOfRepeats) {
+        return new IntervalCondition(Duration.ofMinutes(baseMinutes), true, randomFactor, maximumNumberOfRepeats);
     }
     
     /**
@@ -94,7 +86,9 @@ public class IntervalCondition extends TimeCondition {
 
     @Override
     public boolean isSatisfied() {
-        
+        if(!canTriggerAgain()) {
+            return false;
+        }
         
         ZonedDateTime now = getNow();
         if (now.isAfter(nextTriggerTime)) {            
@@ -127,12 +121,103 @@ public class IntervalCondition extends TimeCondition {
         }
     }
 
+    /**
+     * Returns a detailed description of the interval condition with additional status information
+     */
+    public String getDetailedDescription() {
+        StringBuilder sb = new StringBuilder();
+        sb.append(getDescription()).append("\n");
+        
+        ZonedDateTime now = getNow();
+        if (nextTriggerTime != null) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            sb.append("Next trigger at: ").append(nextTriggerTime.format(formatter)).append("\n");
+            
+            if (now.isAfter(nextTriggerTime)) {
+                sb.append("Status: Ready to trigger\n");
+            } else {
+                Duration remaining = Duration.between(now, nextTriggerTime);
+                long seconds = remaining.getSeconds();
+                sb.append("Time remaining: ")
+                  .append(String.format("%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60))
+                  .append("\n");
+            }
+        }
+        
+        sb.append("Progress: ").append(String.format("%.1f%%", getProgressPercentage())).append("\n");
+        
+        if (randomize) {
+            sb.append("Randomization: Enabled (±").append(String.format("%.0f", randomFactor * 100)).append("%)\n");
+        }
+        
+        sb.append(super.getDescription());
+        
+        return sb.toString();
+    }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        
+        // Basic information
+        sb.append("IntervalCondition:\n");
+        sb.append("  ┌─ Configuration ─────────────────────────────\n");
+        sb.append("  │ Interval: ").append(formatDuration(interval)).append("\n");
+        
+        // Randomization
+        sb.append("  ├─ Randomization ────────────────────────────\n");
+        sb.append("  │ Randomization: ").append(randomize ? "Enabled" : "Disabled").append("\n");
+        if (randomize) {
+            sb.append("  │ Random Factor: ±").append(String.format("%.0f%%", randomFactor * 100)).append("\n");
+        }
+        
+        // Status information
+        sb.append("  ├─ Status ──────────────────────────────────\n");
+        sb.append("  │ Satisfied: ").append(isSatisfied()).append("\n");
+        
+        ZonedDateTime now = getNow();
+        if (nextTriggerTime != null) {
+            sb.append("  │ Next Trigger: ").append(nextTriggerTime.format(dateTimeFormatter)).append("\n");
+            
+            if (!now.isAfter(nextTriggerTime)) {
+                Duration remaining = Duration.between(now, nextTriggerTime);
+                long seconds = remaining.getSeconds();
+                sb.append("  │ Time Remaining: ")
+                  .append(String.format("%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60))
+                  .append("\n");
+            } else {
+                sb.append("  │ Ready to trigger\n");
+            }
+        }
+        
+        sb.append("  │ Progress: ").append(String.format("%.1f%%", getProgressPercentage())).append("\n");
+        
+        // Tracking info
+        sb.append("  └─ Tracking ────────────────────────────────\n");
+        sb.append("    Reset Count: ").append(currentResetCount);
+        if (this.getMaximumNumberOfRepeats() > 0) {
+            sb.append("/").append(getMaximumNumberOfRepeats());
+        } else {
+            sb.append(" (unlimited)");
+        }
+        sb.append("\n");
+        if (lastResetTime != null) {
+            sb.append("    Last Reset: ").append(lastResetTime.format(dateTimeFormatter)).append("\n");
+        }
+        sb.append("    Can Trigger Again: ").append(canTriggerAgain()).append("\n");
+        
+        return sb.toString();
+    }
+
     @Override
     public void reset(boolean randomize) {
         this.nextTriggerTime = calculateNextTriggerTime(randomize, randomFactor);
+        this.currentResetCount++;
+        this.lastResetTime = LocalDateTime.now();
         log.debug("IntervalCondition reset, next trigger at: {}", nextTriggerTime);
     }
-    
+   
     @Override
     public double getProgressPercentage() {
         ZonedDateTime now = getNow();
@@ -144,6 +229,22 @@ public class IntervalCondition extends TimeCondition {
         Duration timeUntilNextTrigger = Duration.between(now, nextTriggerTime);
         double elapsedRatio = 1.0 - (timeUntilNextTrigger.toMillis() / (double) interval.toMillis());
         return Math.max(0, Math.min(100, elapsedRatio * 100));
+    }
+    @Override
+    public Optional<ZonedDateTime> getCurrentTriggerTime() {
+        if (!canTriggerAgain()) {
+            return Optional.empty(); // No trigger time if already triggered to often
+        }
+        ZonedDateTime now = getNow();
+
+        
+        // If already satisfied (past the trigger time)
+        if (now.isAfter(nextTriggerTime)) {
+            return Optional.of(nextTriggerTime); // Return the passed time until reset
+        }
+        
+        // Otherwise return the scheduled next trigger time
+        return Optional.of(nextTriggerTime);
     }
     
     private ZonedDateTime calculateNextTriggerTime(boolean randomize, double factor) {

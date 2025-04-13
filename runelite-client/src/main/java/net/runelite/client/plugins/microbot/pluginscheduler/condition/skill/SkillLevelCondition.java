@@ -15,13 +15,14 @@ public class SkillLevelCondition extends SkillCondition {
     private final int targetLevelMin;
     private final int targetLevelMax;
     private int startLevel;
+    private int[] startLevelsBySkill; // Used for total level tracking
     
     public SkillLevelCondition(Skill skill, int targetLevel) {
         super(skill); // Call parent constructor with skill
         this.currentTargetLevel = targetLevel;
         this.targetLevelMin = targetLevel;
         this.targetLevelMax = targetLevel;
-        this.startLevel = getCurrentLevel();
+        initializeLevelTracking();
     }
     
     public SkillLevelCondition(Skill skill, int targetMinLevel, int targetMaxLevel) {
@@ -31,7 +32,22 @@ public class SkillLevelCondition extends SkillCondition {
         this.currentTargetLevel = Rs2Random.between(targetMinLevel, targetMaxLevel);
         this.targetLevelMin = targetMinLevel;
         this.targetLevelMax = targetMaxLevel;
-        this.startLevel = getCurrentLevel();
+        initializeLevelTracking();
+    }
+
+    /**
+     * Initialize level tracking for individual skill or all skills if total
+     */
+    private void initializeLevelTracking() {
+        if (isTotal()) {
+            Skill[] skills = getAllTrackableSkills();
+            startLevelsBySkill = new int[skills.length];
+            int totalLevel = 0;
+            totalLevel =           
+            startLevel = totalLevel;
+        } else {
+            startLevel = getCurrentLevel();
+        }
     }
 
     @Override
@@ -39,7 +55,7 @@ public class SkillLevelCondition extends SkillCondition {
         if (randomize) {
             currentTargetLevel = Rs2Random.between(targetLevelMin, targetLevelMax);
         }
-        startLevel = getCurrentLevel();        
+        initializeLevelTracking();
     }
 
     /**
@@ -73,30 +89,30 @@ public class SkillLevelCondition extends SkillCondition {
         return Math.max(0, currentTargetLevel - currentLevel);
     }
     
-    @Override
-    public String getDescription() {
-        int currentLevel = getCurrentLevel();
-        int levelsNeeded = Math.max(0, currentTargetLevel - currentLevel);
-        String randomRangeInfo = "";
-        
-        if (targetLevelMin != targetLevelMax) {
-            randomRangeInfo = String.format(" (randomized from %d-%d)", targetLevelMin, targetLevelMax);
+    /**
+     * Gets the current skill level or total level if this is a total skill condition
+     */
+    public int getCurrentLevel() {
+        if (isTotal()) {
+            return getTotalLevel();
         }
-        
-        if (levelsNeeded <= 0) {
-            return String.format("%s level %d or higher%s (currently %d, goal reached)", 
-                    skill.getName(), currentTargetLevel, randomRangeInfo, currentLevel);
-        } else {
-            return String.format("%s level %d or higher%s (currently %d, need %d more)", 
-                    skill.getName(), currentTargetLevel, randomRangeInfo, currentLevel, levelsNeeded);
-        }
+        return Microbot.getClientThread().runOnClientThreadOptional(
+            () -> Microbot.getClient().getRealSkillLevel(skill)).orElse(0);
     }
     
     /**
-     * Gets the current skill level
+     * Gets the total level across all skills
      */
-    public int getCurrentLevel() {
-        return Microbot.getClientThread().runOnClientThreadOptional(()->Microbot.getClient().getRealSkillLevel(skill)).orElse(0);
+    private int getTotalLevel() {
+        int total = 0;
+        Skill[] skills = getAllTrackableSkills();
+        for (Skill s : skills) {
+            if (s == null || s == Skill.OVERALL) continue;
+            total += Microbot.getClientThread().runOnClientThreadOptional(
+                () -> Microbot.getClient().getRealSkillLevel(s)).orElse(0);
+        }
+        return  Microbot.getClientThread().runOnClientThreadOptional(
+            () -> Microbot.getClient().getTotalLevel()).orElse(0); 
     }
     
     /**
@@ -104,6 +120,26 @@ public class SkillLevelCondition extends SkillCondition {
      */
     public int getStartingLevel() {
         return startLevel;
+    }
+    
+    @Override
+    public String getDescription() {
+        int currentLevel = getCurrentLevel();
+        int levelsNeeded = Math.max(0, currentTargetLevel - currentLevel);
+        String randomRangeInfo = "";
+        String skillName = isTotal() ? "Total" : skill.getName();
+        
+        if (targetLevelMin != targetLevelMax) {
+            randomRangeInfo = String.format(" (randomized from %d-%d)", targetLevelMin, targetLevelMax);
+        }
+        
+        if (levelsNeeded <= 0) {
+            return String.format("%s level %d or higher%s (currently %d, goal reached)", 
+                    skillName, currentTargetLevel, randomRangeInfo, currentLevel);
+        } else {
+            return String.format("%s level %d or higher%s (currently %d, need %d more)", 
+                    skillName, currentTargetLevel, randomRangeInfo, currentLevel, levelsNeeded);
+        }
     }
     
     @Override

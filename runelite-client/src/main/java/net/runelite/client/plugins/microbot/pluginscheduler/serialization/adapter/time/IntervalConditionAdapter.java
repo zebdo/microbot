@@ -24,6 +24,7 @@ public class IntervalConditionAdapter implements JsonSerializer<IntervalConditio
         // Store randomization settings
         json.addProperty("randomize", src.isRandomize());
         json.addProperty("randomFactor", src.getRandomFactor());
+        json.addProperty("maximumNumberOfRepeats", src.getMaximumNumberOfRepeats());
         
         // Store next trigger time if available
         Optional<ZonedDateTime> nextTrigger = src.getCurrentTriggerTime();
@@ -48,9 +49,10 @@ public class IntervalConditionAdapter implements JsonSerializer<IntervalConditio
             boolean randomize = jsonObject.has("randomize") && jsonObject.get("randomize").getAsBoolean();
             double randomFactor = randomize && jsonObject.has("randomFactor") ? 
                                 jsonObject.get("randomFactor").getAsDouble() : 0.0;
-            
+            long maximumNumberOfRepeats = jsonObject.has("maximumNumberOfRepeats") ? 
+                                jsonObject.get("maximumNumberOfRepeats").getAsLong() : 0;
             // Create the condition and return it
-            return new IntervalCondition(interval, randomize, randomFactor);
+            return new IntervalCondition(interval, randomize, randomFactor,maximumNumberOfRepeats);
         } catch (Exception e) {
             log.error("Error deserializing IntervalCondition", e);
             // Return a default condition on error (5 minute interval)

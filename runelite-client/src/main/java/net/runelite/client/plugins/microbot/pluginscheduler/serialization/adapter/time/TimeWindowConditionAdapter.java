@@ -61,7 +61,7 @@ public class TimeWindowConditionAdapter implements JsonSerializer<TimeWindowCond
         // Randomization settings
         json.addProperty("useRandomization", src.isUseRandomization());
         json.addProperty("randomizeMinutes", src.getRandomizeMinutes());
-        
+        json.addProperty("maximumNumberOfRepeats", src.getMaximumNumberOfRepeats());
         return json;
     }
     
@@ -132,10 +132,10 @@ public class TimeWindowConditionAdapter implements JsonSerializer<TimeWindowCond
             RepeatCycle repeatCycle = RepeatCycle.valueOf(
                     jsonObject.get("repeatCycle").getAsString());
             int repeatInterval = jsonObject.get("repeatInterval").getAsInt();
-            
+            long maximumNumberOfRepeats = jsonObject.get("maximumNumberOfRepeats").getAsLong();
             // Create the condition with the parsed values
             TimeWindowCondition condition = new TimeWindowCondition(
-                    startTime, endTime, startDate, endDate, repeatCycle, repeatInterval);
+                    startTime, endTime, startDate, endDate, repeatCycle, repeatInterval, maximumNumberOfRepeats);
             
             // Set timezone
             condition.setZoneId(targetZone);
@@ -148,9 +148,8 @@ public class TimeWindowConditionAdapter implements JsonSerializer<TimeWindowCond
             }                        
             return condition;
         } catch (Exception e) {
-            log.error("Error deserializing TimeWindowCondition", e);
-            // Return a default value on error
-            return new TimeWindowCondition();
+            log.error("Error deserializing TimeWindowCondition", e);            
+            throw new JsonParseException("Failed to deserialize TimeWindowCondition", e);
         }
     }
 }
