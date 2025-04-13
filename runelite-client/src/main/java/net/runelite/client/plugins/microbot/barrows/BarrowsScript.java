@@ -432,8 +432,7 @@ public class BarrowsScript extends Script {
                                 }
                                 io++;
                             }
-                        }
-                        //we looted the chest time to reset
+                            //we looted the chest time to reset
                             if(Rs2Inventory.get("Barrows teleport") == null || Rs2Inventory.get("Barrows teleport").getQuantity() <= 1 || (Rs2Inventory.count("Prayer potion(3)") + Rs2Inventory.count("Prayer potion(4)"))<=3 || Rs2Inventory.getInventoryFood().isEmpty() || Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<=3){
                                 Microbot.log("We should bank.");
                                 shouldBank = true;
@@ -443,9 +442,8 @@ public class BarrowsScript extends Script {
                                 sleepUntil(()-> Rs2Player.isAnimating(), Rs2Random.between(1000,2000));
                                 sleepUntil(()-> !Rs2Player.isAnimating(), Rs2Random.between(3000,5000));
                             }
-
+                        }
                     }
-
                 }
 
                 if(shouldBank){
