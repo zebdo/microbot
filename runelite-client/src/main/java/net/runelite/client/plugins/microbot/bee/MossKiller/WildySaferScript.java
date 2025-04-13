@@ -453,7 +453,7 @@ public class WildySaferScript extends Script {
         }
 
 
-        if (config.attackStyle() == MAGIC && !Rs2Bank.openBank()) {
+        if (config.attackStyle() == MAGIC && !Rs2Bank.isOpen()) {
 
             Rs2Bank.walkToBankAndUseBank();
             sleep(1000);
@@ -461,7 +461,8 @@ public class WildySaferScript extends Script {
         }
 
 
-        if (config.attackStyle() == RANGE && !Rs2Bank.openBank()) {
+        if (config.attackStyle() == RANGE && !Rs2Bank.isOpen()) {
+            Rs2Bank.walkToBankAndUseBank();
             sleep(800,1900);
             if (Rs2Bank.count(APPLE_PIE) < 16 ||
                     Rs2Bank.count(MITHRIL_ARROW) < config.mithrilArrowAmount() ||
