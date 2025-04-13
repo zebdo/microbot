@@ -420,9 +420,12 @@ public class BarrowsScript extends Script {
                         checkForBrother();
                         if(!Rs2Player.isInCombat()){
                             int io = 0;
-                            while(io < 3 && !Rs2Widget.hasWidget("Barrows chest")) {
+                            while(io < 3) {
                                 if (Rs2GameObject.interact(chest, "Search")) {
                                     sleep(500, 1500);
+                                }
+                                if(Rs2Widget.getWidget(10158081)!=null && !Rs2Widget.getWidget(10158081).isHidden()){
+                                    break;
                                 }
                                 if(!super.isRunning()){
                                     break;
@@ -431,9 +434,9 @@ public class BarrowsScript extends Script {
                             }
                         }
                         //widget check
-                        if(Rs2Widget.hasWidget("Barrows chest")){
+                        if(Rs2Widget.getWidget(10158081)!=null && !Rs2Widget.getWidget(10158081).isHidden()){
                             Microbot.log("We looted the chest.");
-                            if(Rs2Inventory.get("Barrows teleport") == null || Rs2Inventory.get("Barrows teleport").getQuantity() <= 1 || (Rs2Inventory.count("Prayer potion(3)") + Rs2Inventory.count("Prayer potion(4)"))<=3 || Rs2Inventory.getInventoryFood().isEmpty() || Rs2Inventory.getInventoryFood().get(0).getQuantity()<=3){
+                            if(Rs2Inventory.get("Barrows teleport") == null || Rs2Inventory.get("Barrows teleport").getQuantity() <= 1 || (Rs2Inventory.count("Prayer potion(3)") + Rs2Inventory.count("Prayer potion(4)"))<=3 || Rs2Inventory.getInventoryFood().isEmpty() || Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<=3){
                                 Microbot.log("We should bank.");
                                 shouldBank = true;
                             } else {
