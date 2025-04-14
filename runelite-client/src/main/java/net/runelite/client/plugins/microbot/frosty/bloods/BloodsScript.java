@@ -25,9 +25,7 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import javax.inject.Inject;
 import java.awt.event.KeyEvent;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -514,8 +512,7 @@ public class BloodsScript extends Script {
         if (config.usePoh()) {
             List<Teleports> bankTeleport = Arrays.asList(
                     Teleports.CRAFTING_CAPE,
-                    Teleports.FARMING_CAPE,
-                    Teleports.FEROX_ENCLAVE
+                    Teleports.FARMING_CAPE
             );
             boolean teleportUsed = false;
 
@@ -532,8 +529,16 @@ public class BloodsScript extends Script {
                 }
                 if (teleportUsed) break;
             }
+        } else {
+            Teleports feroxTeleport = Teleports.FEROX_ENCLAVE;
+            Optional<Integer> rodId = Arrays.stream(feroxTeleport.getItemIds())
+                    .filter(Rs2Equipment::isWearing)
+                    .findFirst();
+            rodId.ifPresent(id -> Rs2Equipment.interact(id, feroxTeleport.getInteraction()));
+            sleepUntil(() -> plugin.getMyWorldPoint().getRegionID() == feroxTeleport.getBankingRegionIds()[0]);
         }
     }
 }
+
 
 
