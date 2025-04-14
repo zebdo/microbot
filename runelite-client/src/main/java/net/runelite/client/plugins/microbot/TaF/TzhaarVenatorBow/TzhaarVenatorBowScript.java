@@ -15,6 +15,7 @@ import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -61,23 +62,6 @@ public class TzhaarVenatorBowScript extends Script {
         Rs2AntibanSettings.moveMouseRandomlyChance = 0.04;
         Rs2Antiban.setActivityIntensity(VERY_LOW);
     }
-    private static String GetRangingPotionType(TzHaarVenatorBowConfig.RangingPotionType rangingPotionType) {
-        String potion = null;
-        switch (rangingPotionType) {
-            case RANGING:
-                potion = "ranging potion";
-                break;
-            case DIVINE_RANGING:
-                potion = "divine ranging potion";
-                break;
-            case BASTION:
-                potion = "bastion potion";
-                break;
-            default:
-                return null;
-        }
-        return potion;
-    }
 
     public boolean run(TzHaarVenatorBowConfig config) {
         isRunning = true;
@@ -111,7 +95,9 @@ public class TzhaarVenatorBowScript extends Script {
         }
         Rs2Player.eatAt(config.minEatPercent());
         Rs2Player.drinkPrayerPotionAt(config.minPrayerPercent());
-        consumeRangingPotion(config.rangingPotionType(), config.boostedStatsThreshold());
+        if (!isRangingPotionActive(config.boostedStatsThreshold())) {
+            consumePotion(Rs2Potion.getRangePotionsVariants());
+        }
 
         if (!Rs2Player.getWorldLocation().equals(COMBAT_LOCATION)) {
             var walkedFast = Rs2Walker.walkFastCanvas(COMBAT_LOCATION);
@@ -239,12 +225,18 @@ public class TzhaarVenatorBowScript extends Script {
                 Rs2Bank.withdrawX("Law rune", 100);
                 Rs2Bank.withdrawX("Air rune", 300);
             }
-            Rs2Bank.withdrawX("Shark", 2);
-            var potionType = GetRangingPotionType(config.rangingPotionType());
-            if (potionType != null) {
-                Rs2Bank.withdrawX(potionType + "(4)", 4);
+            Rs2Bank.withdrawX(config.foodToWithdraw().getId(), 2);
+            if (config.withdrawRangePotsCount() > 0) {
+                var potionType = Rs2Potion.getRangePotionsVariants();
+                for (var potion : potionType) {
+                    var extracted = Rs2Bank.withdrawX(potion + "(4)", config.withdrawRangePotsCount());
+                    if (extracted) {
+                        break;
+                    }
+                }
             }
-            Rs2Bank.withdrawX("Prayer potion(4)", Rs2Inventory.getEmptySlots() - 2);
+
+            Rs2Bank.withdrawX("Prayer potion(4)", config.withdrawPrayerPotsCount() == 0 ? Rs2Inventory.getEmptySlots() - 2 : config.withdrawPrayerPotsCount());
             Rs2Bank.closeBank();
             if (Rs2Inventory.count("Prayer potion(4)") == 0) {
                 Microbot.log("Out of prayer potions, stopping script.");
@@ -259,33 +251,15 @@ public class TzhaarVenatorBowScript extends Script {
         }
     }
 
-    private boolean isRangingPotionActive(TzHaarVenatorBowConfig.RangingPotionType rangingPotionType, int threshold) {
-        switch (rangingPotionType) {
-            case RANGING:
-                return Rs2Player.hasRangingPotionActive(threshold);
-            case DIVINE_RANGING:
-                return Rs2Player.hasDivineRangedActive();
-            case BASTION:
-                return Rs2Player.hasDivineBastionActive();
-            default:
-                return true;
-        }
-    }
-    private void consumeRangingPotion(TzHaarVenatorBowConfig.RangingPotionType rangingPotionType, int threshold) {
-        String potion = GetRangingPotionType(rangingPotionType);
-        if (potion == null) return;
-        if (!isRangingPotionActive(rangingPotionType, threshold)) {
-            consumePotion(potion);
-        }
+    private boolean isRangingPotionActive(int threshold) {
+        return Rs2Player.hasRangingPotionActive(threshold) || Rs2Player.hasDivineBastionActive() || Rs2Player.hasDivineRangedActive();
     }
 
-    private void consumePotion(String keyword) {
-        Rs2Inventory.getPotions().stream()
-                .filter(potion -> potion.getName().toLowerCase().contains(keyword))
-                .findFirst()
-                .ifPresent(potion -> {
-                    Rs2Inventory.interact(potion, "Drink");
-                });
+    private void consumePotion(List<String> keyword) {
+        var potion = Rs2Inventory.get(keyword);
+        if (potion != null) {
+            Rs2Inventory.interact(potion, "Drink");
+        }
     }
 
     public enum State {BANKING, TRAVELLING, FIGHTING}

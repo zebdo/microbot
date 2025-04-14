@@ -23,7 +23,6 @@ import java.util.concurrent.ScheduledExecutorService;
 public class TzhaarVenatorBowPlugin extends Plugin {
 
     private Instant scriptStartTime;
-    private ScheduledExecutorService scheduledExecutorService;
     @Inject
     private TzHaarVenatorBowConfig config;
     @Inject
@@ -40,7 +39,6 @@ public class TzhaarVenatorBowPlugin extends Plugin {
     @Override
     protected void startUp() throws AWTException {
         scriptStartTime = Instant.now();
-        scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         if (overlayManager != null) {
             overlayManager.add(tzhaarVenatorBowOverlay);
         }
@@ -51,9 +49,6 @@ public class TzhaarVenatorBowPlugin extends Plugin {
     protected void shutDown() {
         tzHaarVenator.shutdown();
         overlayManager.remove(tzhaarVenatorBowOverlay);
-        if (scheduledExecutorService != null && !scheduledExecutorService.isShutdown()) {
-            scheduledExecutorService.shutdown();
-        }
     }
 
     @Provides
