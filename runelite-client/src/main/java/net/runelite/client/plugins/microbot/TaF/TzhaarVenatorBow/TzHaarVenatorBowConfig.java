@@ -10,7 +10,7 @@ import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
                 + "<p>Have the following in your bank and inventory setup:</p>\n"
                 + "<ol>\n"
                 + "    <li>Prayer potions</li>\n"
-                + "    <li>Emergency Sharks</li>\n"
+                + "    <li>Emergency food</li>\n"
                 + "    <li>Ranged potions</li>\n"
                 + "    <li>Telegrab runes if option enabled</li>\n"
                 + "</ol>\n"
