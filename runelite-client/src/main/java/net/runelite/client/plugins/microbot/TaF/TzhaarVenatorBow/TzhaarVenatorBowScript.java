@@ -139,7 +139,7 @@ public class TzhaarVenatorBowScript extends Script {
                 Rs2GroundItem.interact(item);
                 sleepUntil(() -> Rs2Inventory.waitForInventoryChanges(3000));
                 var gePrice = Rs2GrandExchange.getPrice(item.getItem().getId());
-                TotalLootValue += gePrice == -1 ? item.getItem().getPrice() : gePrice;
+                TotalLootValue += gePrice == -1 ? item.getItem().getPrice() * item.getTileItem().getQuantity() : gePrice * item.getTileItem().getQuantity();
             }
         } else {
             for (var item : itemsToPickup) {
