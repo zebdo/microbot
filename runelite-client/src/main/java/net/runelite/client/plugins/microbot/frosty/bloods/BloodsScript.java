@@ -29,6 +29,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class BloodsScript extends Script {
     private final BloodsPlugin plugin;
@@ -42,17 +43,17 @@ public class BloodsScript extends Script {
     private final WorldPoint firstCaveExit = new WorldPoint(3460, 9813, 0);
     private final WorldPoint outsideBloodRuins = new WorldPoint(3555, 9783, 0);
 
+    public static final int feroxPool = 39651;
     public static final int monasteryRegion = 10290;
     public static final int bloodAltarRegion = 12875;
     public static final int pureEss = 7936;
-    public static final int feroxPool = 39651;
+
+    public static final int bloodRuins = ObjectID.BLOODTEMPLE_RUINED;
+    public static final int bloodAltar = ObjectID.BLOOD_ALTAR;
 
     public static final int activeBloodEssence = ItemID.BLOOD_ESSENCE_ACTIVE;
     public static final int inactiveBloodEssence = ItemID.BLOOD_ESSENCE_INACTIVE;
     public static final int bloodRune = ItemID.BLOODRUNE;
-    public static final int bloodRuins = ObjectID.BLOODTEMPLE_RUINED;
-    public static final int bloodAltar = ObjectID.BLOOD_ALTAR;
-
     public static final int colossalPouch = ItemID.RCU_POUCH_COLOSSAL;
     public static final int dramenStaff = ItemID.DRAMEN_STAFF;
     public static final int lunarStaff = ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF;
@@ -144,8 +145,10 @@ public class BloodsScript extends Script {
 
     private void handleBanking() {
         int currentRegion = plugin.getMyWorldPoint().getRegionID();
+
         if (!Teleports.CRAFTING_CAPE.matchesRegion(currentRegion)
-                && !Teleports.FEROX_ENCLAVE.matchesRegion(currentRegion)) {
+                && !Teleports.FEROX_ENCLAVE.matchesRegion(currentRegion)
+                && !Teleports.FARMING_CAPE.matchesRegion(currentRegion)) {
             Microbot.log("Not in banking region, teleporting");
             handleBankTeleport();
         }
@@ -174,9 +177,9 @@ public class BloodsScript extends Script {
         while (!Rs2Bank.isOpen() && isRunning() &&
                 (!Rs2Inventory.allPouchesFull()
                         || !Rs2Inventory.contains(colossalPouch)
-                        || !Rs2Inventory.contains("Pure essence"))) {
-            Rs2Bank.openBank();
+                        || !Rs2Inventory.contains(pureEss))) {
             Microbot.log("Opening bank");
+            Rs2Bank.openBank();
             sleepUntil(Rs2Bank::isOpen, 2500);
             sleepGaussian(1100, 200);
         }
@@ -197,40 +200,34 @@ public class BloodsScript extends Script {
         }
 
         if (config.usePoh()) {
-            if (Rs2Player.getRealSkillLevel(Skill.CRAFTING) == 99 && !Rs2Equipment.isWearing("Crafting cape")) {
-                if (Rs2Bank.hasItem("Crafting cape")) {
-                    Rs2Bank.withdrawAndEquip("Crafting cape");
-                    sleepUntil(() -> Rs2Equipment.isWearing("Crafting cape"), 2400);
+            List<Teleports> bankTeleports = Arrays.asList(Teleports.CRAFTING_CAPE,
+                    Teleports.FARMING_CAPE);
+            boolean hasBankTeleport = false;
+            for (Teleports bankTeleport : bankTeleports) {
+                for (Integer bankTeleportID : bankTeleport.getItemIds()) {
+                    if (Rs2Equipment.isWearing(bankTeleportID) || Rs2Inventory.contains(Teleports.HOUSE_TAB.getItemIds())) {
+                        hasBankTeleport = true;
+                        break;
+                    } else if (!Rs2Equipment.isWearing(bankTeleportID) && Rs2Bank.hasItem(bankTeleportID)) {
+                        Microbot.log("Withdrawing bank teleport " + bankTeleport.getName());
+                        Rs2Bank.withdrawAndEquip(bankTeleportID);
+                        sleepUntil(() -> Rs2Equipment.isWearing(bankTeleportID), 2400);
+                        if (!Rs2Bank.hasItem(bankTeleportID)) {
+                            Microbot.log("Withdrawing all house tabs");
+                            Rs2Bank.withdrawAll(Arrays.toString(Teleports.HOUSE_TAB.getItemIds()));
+                            sleepUntil(() -> Rs2Inventory.contains(Teleports.HOUSE_TAB.getItemIds()), 2400);
+                        }
+                    }
+                }
+                if (hasBankTeleport) {
+                    Microbot.log("We have a bank teleport: " + bankTeleport.getName());
+                    break;
                 }
             }
         }
 
-        if (config.usePoh()) {
-            boolean hasConstructionCape = Rs2Inventory.contains(Teleports.CONSTRUCTION_CAPE.getItemIds());
-            if (!hasConstructionCape) {
-                for (Integer itemId : Teleports.CONSTRUCTION_CAPE.getItemIds()) {
-                    if (Rs2Bank.hasItem(itemId)) {
-                        Rs2Bank.withdrawItem(itemId);
-                        Rs2Inventory.waitForInventoryChanges(1200);
-                        if (Rs2Inventory.contains(itemId)) {
-                            break;
-                        }
-                    }
-                }
-
-                if (!Rs2Inventory.contains(Teleports.CONSTRUCTION_CAPE.getItemIds())) {
-                    for (Integer tabId : Teleports.HOUSE_TAB.getItemIds()) {
-                        if (Rs2Bank.hasItem(tabId)) {
-                            Rs2Bank.withdrawAll(tabId);
-                            Rs2Inventory.waitForInventoryChanges(1200);
-                            Microbot.log("Withdrawing all House Tabs from the bank.");
-                        }
-                    }
-                }
-            }
-        }
-
-        if (!Rs2Equipment.isWearing("Ring of dueling")) {
+        if (!Rs2Equipment.isWearing("Ring of dueling") && Rs2Bank.hasItem("Ring of dueling")) {
+            Microbot.log("Withdrawing ring of dueling");
             Rs2Bank.withdrawAndEquip(2552);
             sleepUntil(() -> Rs2Equipment.isWearing("Ring of dueling"));
         }
@@ -362,6 +359,7 @@ public class BloodsScript extends Script {
         if (plugin.isBreakHandlerEnabled()) {
             BreakHandlerScript.setLockState(true);
         }
+
         Teleports homeTeleports = Teleports.CONSTRUCTION_CAPE;
         GameObject pohPortal = plugin.getPohPortal();
 
@@ -403,28 +401,42 @@ public class BloodsScript extends Script {
     }
 
     private void handlePohFairyRing() {
-        TileObject fairyRing = Rs2GameObject.getAll().stream()
+        List<TileObject> allGameObjects = Rs2GameObject.getAll().stream()
                 .filter(Objects::nonNull)
                 .filter(obj -> obj.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation()) < 5000)
+                .collect(Collectors.toList());
+
+        TileObject pohTreeRing = allGameObjects.stream()
                 .filter(obj -> {
                     ObjectComposition composition = Rs2GameObject.getObjectComposition(obj.getId());
-                    if (composition == null) return false;
-                    return composition.getName().toLowerCase().contains("fairy");
+                    return composition != null && composition.getName().toLowerCase().contains("spirit");
                 })
                 .findFirst().orElse(null);
 
-        if (fairyRing == null) {
-            Microbot.log("Unable to find fairies, resetting from bank to retry");
-            state = State.BANKING;
-            return;
-        } else {
-            Microbot.log("Interacting with the fairies");
-            Rs2GameObject.interact(fairyRing, "Ring-last-destination (DLS)");
-            sleepGaussian(1300, 200);
-            Microbot.log("Waiting for animation and region");
-            Rs2Player.waitForAnimation(1200);
-            sleepUntil(() -> plugin.getMyWorldPoint().equals(caveFairyRing));
+        TileObject pohFairyRing = allGameObjects.stream()
+                .filter(obj -> {
+                    ObjectComposition composition = Rs2GameObject.getObjectComposition(obj.getId());
+                    if (composition == null) return false;
+                    String name = composition.getName().toLowerCase();
+                    return name.contains("fairy") && !name.contains("spirit");
+                })
+                .findFirst().orElse(null);
 
+        if (pohTreeRing != null) {
+            Microbot.log("Found Spirit Tree Ring");
+            Rs2GameObject.interact(pohTreeRing, "Ring-last-destination (DLS)");
+            Rs2Player.waitForAnimation();
+            sleepUntil(() -> plugin.getMyWorldPoint().equals(caveFairyRing));
+        } else if (pohFairyRing != null) {
+            Microbot.log("Found pohFairyRing");
+            Rs2GameObject.interact(pohFairyRing, "Last-destination (DLS)");
+            Rs2Player.waitForAnimation();
+            sleepUntil(() -> plugin.getMyWorldPoint().equals(caveFairyRing));
+        }
+
+        if (pohTreeRing == null && pohFairyRing == null) {
+            Microbot.log("No fairy ring found, resetting to banking for a retry");
+            state = State.BANKING;
         }
 
         if (Rs2Player.getWorldLocation().equals(caveFairyRing)) {
@@ -456,7 +468,6 @@ public class BloodsScript extends Script {
             if (plugin.getMyWorldPoint().equals(outsideBloodRuins)) {
                 state = State.CRAFTING;
             }
-
         }
     }
 
@@ -500,34 +511,26 @@ public class BloodsScript extends Script {
         Rs2Tab.switchToEquipmentTab();
         sleepGaussian(1300, 200);
 
-        Teleports bankTeleport = Teleports.CRAFTING_CAPE;
-        for (Integer itemId : bankTeleport.getItemIds()) {
-            if (!Rs2Equipment.isWearing(itemId)) {
-                bankTeleport = Teleports.FEROX_ENCLAVE;
-                break;
-            }
+        if (config.usePoh()) {
+            List<Teleports> bankTeleport = Arrays.asList(
+                    Teleports.CRAFTING_CAPE,
+                    Teleports.FARMING_CAPE,
+                    Teleports.FEROX_ENCLAVE
+            );
+            boolean teleportUsed = false;
 
-            if (Rs2Equipment.hasEquipped(itemId)) {
-                Microbot.log("Using " + bankTeleport.getName());
-                Rs2Equipment.interact(itemId, bankTeleport.getInteraction());
-                Teleports craftingCapeTele = bankTeleport;
-                sleepUntil(() -> craftingCapeTele.matchesRegion(plugin.getMyWorldPoint().getRegionID()));
-                sleepGaussian(900, 200);
-                break;
-            }
-        }
-
-        if (bankTeleport == Teleports.FEROX_ENCLAVE) {
-            for (Integer itemId : bankTeleport.getItemIds()) {
-                if (Rs2Equipment.hasEquipped(itemId)) {
-                    Microbot.log("Using " + bankTeleport.getName());
-                    Rs2Equipment.interact(itemId, bankTeleport.getInteraction());
-                    Teleports feroxTele = bankTeleport;
-                    sleepUntil(() -> feroxTele.matchesRegion(plugin.getMyWorldPoint().getRegionID()));
-
-                    sleepGaussian(900, 200);
-                    break;
+            for (Teleports teleport : bankTeleport) {
+                for (Integer bankTeleportsId : teleport.getItemIds()) {
+                    if (Rs2Equipment.isWearing(bankTeleportsId)) {
+                        Microbot.log("Using: " + teleport.getName());
+                        Rs2Equipment.interact(bankTeleportsId, teleport.getInteraction());
+                        sleepUntil(() -> teleport.matchesRegion(plugin.getMyWorldPoint().getRegionID()));
+                        sleepGaussian(1100, 200);
+                        teleportUsed = true;
+                        break;
+                    }
                 }
+                if (teleportUsed) break;
             }
         }
     }

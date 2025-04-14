@@ -57,7 +57,7 @@ public class BloodsPlugin extends Plugin {
     @Getter
     private WorldPoint myWorldPoint;
     @Getter
-    public static String version = "v1.0.8";
+    public static String version = "v1.0.9";
 
     @Subscribe
     public void onGameObjectSpawned(GameObjectSpawned event) {

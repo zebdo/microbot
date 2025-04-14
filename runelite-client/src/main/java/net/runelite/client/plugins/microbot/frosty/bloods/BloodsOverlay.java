@@ -1,17 +1,14 @@
 package net.runelite.client.plugins.microbot.frosty.bloods;
 
-import net.runelite.api.gameval.ItemID;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.misc.TimeUtils;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
-import net.runelite.client.ui.overlay.components.ImageComponent;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
 
 import javax.inject.Inject;
-import java.awt.image.BufferedImage;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.awt.Color;
@@ -39,11 +36,11 @@ public class BloodsOverlay extends OverlayPanel {
 
             panelComponent.setPreferredSize(new Dimension(200, 275));
 
-            BufferedImage bloodRuneImage = itemManager.getImage(ItemID.BLOODRUNE);
-            panelComponent.getChildren().add(new ImageComponent(bloodRuneImage));
+            //BufferedImage bloodRuneImage = itemManager.getImage(ItemID.BLOODRUNE);
+            //panelComponent.getChildren().add(new ImageComponent(bloodRuneImage));
 
             panelComponent.getChildren().add(TitleComponent.builder()
-                    .text("❄️ True Blood 🩸    " + BloodsPlugin.getVersion()).color((Color.red)).build());
+                    .text("❄️ True Blood: " + BloodsPlugin.getVersion()).color((Color.red)).build());
 
             panelComponent.getChildren().add(LineComponent.builder().left("Xp gained:")
                     .right(String.valueOf(plugin.getTotalXpGained())).build());
