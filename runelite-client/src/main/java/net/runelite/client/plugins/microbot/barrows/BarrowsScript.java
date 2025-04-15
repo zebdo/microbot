@@ -61,9 +61,7 @@ public class BarrowsScript extends Script {
 
                 if(Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730) {
                     inTunnels = true;
-                    Microbot.log("We're in the tunnels");
                 } else {
-                    Microbot.log("We're not in the tunnels");
                     inTunnels = false;
                 }
 
@@ -623,7 +621,7 @@ public class BarrowsScript extends Script {
                     }
                 }
 
-                scriptDelay = Rs2Random.between(300,600);
+                scriptDelay = Rs2Random.between(250,400);
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
                 System.out.println("Total time for loop " + totalTime);
