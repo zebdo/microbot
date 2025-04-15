@@ -143,7 +143,7 @@ public class BarrowsScript extends Script {
                                 } else {
                                     Microbot.log("At the mound, but we can't dig yet.");
                                     Rs2Walker.walkCanvas(mound);
-                                    sleep(0,750);
+                                    sleep(50,750);
                                 }
                                 if (!super.isRunning()) {
                                     break;
@@ -421,11 +421,12 @@ public class BarrowsScript extends Script {
                         if(Microbot.getClient().getHintArrowNpc() == null){
                             int io = 0;
                             while(io < 3) {
-                                if (Rs2GameObject.interact(chest, "Search")) {
-                                    sleep(500, 1500);
-                                }
-                                if(Rs2Widget.getWidget(10158081)!=null && !Rs2Widget.getWidget(10158081).isHidden()){
+                                if(Rs2Widget.hasWidget("Barrows chest")){
                                     break;
+                                } else {
+                                    if (Rs2GameObject.interact(chest, "Search")) {
+                                        sleep(500, 1500);
+                                    }
                                 }
                                 if(!super.isRunning()){
                                     break;
