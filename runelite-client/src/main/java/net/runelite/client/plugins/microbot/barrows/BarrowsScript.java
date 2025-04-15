@@ -415,7 +415,7 @@ public class BarrowsScript extends Script {
                         //we need to get the chest ID: 20973
                         TileObject chest = Rs2GameObject.findObjectById(20973);
                         if(Rs2GameObject.interact(chest, "Open")){
-                            sleepUntil(()-> Microbot.getClient().getHintArrowNpc()!=null, Rs2Random.between(2000,4000));
+                            sleepUntil(()-> Microbot.getClient().getHintArrowNpc()!=null, Rs2Random.between(3000,5000));
                         }
                         checkForBrother();
                         if(Microbot.getClient().getHintArrowNpc() == null){
