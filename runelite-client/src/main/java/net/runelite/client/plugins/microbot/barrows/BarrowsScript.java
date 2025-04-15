@@ -141,7 +141,7 @@ public class BarrowsScript extends Script {
                                 } else {
                                     Microbot.log("At the mound, but we can't dig yet.");
                                     Rs2Walker.walkCanvas(mound);
-                                    sleep(50,750);
+                                    sleep(500,1500);
                                 }
                                 if (!super.isRunning()) {
                                     break;
