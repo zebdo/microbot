@@ -435,6 +435,9 @@ public class BarrowsScript extends Script {
 
                                 if (Rs2Widget.getWidget(10158081)!=null) {
                                     if(!Rs2Widget.getWidget(10158081).isHidden()) {
+                                        // close the loot window
+                                        Rs2Walker.walkCanvas(Chest);
+                                        sleep(750,1500);
                                         break;
                                     }
                                 }
@@ -445,6 +448,7 @@ public class BarrowsScript extends Script {
                                 io++;
                             }
                             //we looted the chest time to reset
+
                             if (Rs2Inventory.get("Barrows teleport") == null || Rs2Inventory.get("Barrows teleport").getQuantity() <= 1 || (Rs2Inventory.count("Prayer potion(3)") + Rs2Inventory.count("Prayer potion(4)")) <= 3 || Rs2Inventory.getInventoryFood().isEmpty() || Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName()) <= 3) {
                                 Microbot.log("We should bank.");
                                 shouldBank = true;
@@ -841,8 +845,10 @@ public class BarrowsScript extends Script {
             if(Rs2Widget.getWidget(1638413).getModelId() == 6725 || Rs2Widget.getWidget(1638413).getModelId() == 6731
             ||Rs2Widget.getWidget(1638413).getModelId() == 6713||Rs2Widget.getWidget(1638413).getModelId() == 6719){
                 Microbot.log("Solution found");
-                Rs2Widget.clickWidget(1638413);
-                sleep(500,1500);
+                if(Rs2Widget.getWidget(1638413)!=null) {
+                    Rs2Widget.clickWidget(1638413);
+                    sleep(500, 1500);
+                }
             }
         }
 
@@ -850,8 +856,10 @@ public class BarrowsScript extends Script {
             if(Rs2Widget.getWidget(1638415).getModelId() == 6725 || Rs2Widget.getWidget(1638415).getModelId() == 6731
                     ||Rs2Widget.getWidget(1638415).getModelId() == 6713||Rs2Widget.getWidget(1638415).getModelId() == 6719){
                 Microbot.log("Solution found");
-                Rs2Widget.clickWidget(1638415);
-                sleep(500,1500);
+                if(Rs2Widget.getWidget(1638415)!=null) {
+                    Rs2Widget.clickWidget(1638415);
+                    sleep(500, 1500);
+                }
             }
         }
 
@@ -859,8 +867,10 @@ public class BarrowsScript extends Script {
             if(Rs2Widget.getWidget(1638417).getModelId() == 6725 || Rs2Widget.getWidget(1638417).getModelId() == 6731
                     ||Rs2Widget.getWidget(1638417).getModelId() == 6713||Rs2Widget.getWidget(1638417).getModelId() == 6719){
                 Microbot.log("Solution found");
-                Rs2Widget.clickWidget(1638417);
-                sleep(500,1500);
+                if(Rs2Widget.getWidget(1638417)!=null) {
+                    Rs2Widget.clickWidget(1638417);
+                    sleep(500, 1500);
+                }
             }
         }
 
