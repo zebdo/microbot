@@ -354,6 +354,7 @@ public class BarrowsScript extends Script {
                                         }
                                         if(Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!")){
                                             if(Rs2Dialogue.clickOption("Yeah I'm fearless!")){
+                                                sleepUntil(()-> Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730, Rs2Random.between(2500,6000));
                                                 sleep(300,600);
                                                 inTunnels = true;
                                             }
@@ -408,6 +409,13 @@ public class BarrowsScript extends Script {
                     //threaded walk because the brother could appear, the puzzle door could be there.
 
                     solvePuzzle();
+
+                    if(Rs2Player.getWorldLocation().distanceTo(Chest)==5){
+                        //too close for the walker to engage but too far to want to click the chest.
+                        Microbot.log("Walking on screen to the chest");
+                        Rs2Walker.walkCanvas(Chest);
+                        sleepUntil(()-> !Rs2Player.isMoving() || Chest.distanceTo(Rs2Player.getWorldLocation())<=4, Rs2Random.between(2000,5000));
+                    }
 
                     if(Rs2Player.getWorldLocation().distanceTo(Chest)<=4){
                         //we need to get the chest ID: 20973
@@ -762,7 +770,15 @@ public class BarrowsScript extends Script {
                             break;
                         }
                         if(!Rs2Player.isInCombat()){
-                            break;
+                            if(Microbot.getClient().getHintArrowNpc() == null) {
+                                // if we're not in combat and the brother isn't there.
+                                break;
+                            } else {
+                                // if we're not in combat and the brother is there.
+                                Microbot.log("Attacking the brother");
+                                Rs2Npc.interact(currentBrother, "Attack");
+                                sleepUntil(()-> Rs2Player.isInCombat(), Rs2Random.between(3000,6000));
+                            }
                         }
                         if(Microbot.getClient().getHintArrowNpc() == null){
                             break;
