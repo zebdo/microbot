@@ -641,7 +641,6 @@ public class BarrowsScript extends Script {
         return true;
     }
     public void gettheRune(){
-        Microbot.log("Our autocast spell is: "+Rs2Magic.getCurrentAutoCastSpell().getName());
         Rs2CombatSpells ourspell = Rs2Magic.getCurrentAutoCastSpell();
         neededRune = "unknown";
         if(ourspell.getName().contains("Blast") || ourspell.getName().contains("blast") || ourspell.getName().contains("BLAST")){
