@@ -404,7 +404,7 @@ public class BarrowsScript extends Script {
                             }
                         }).start();
                     }
-                    sleepUntil(()-> Rs2Player.isMoving() || (Rs2Widget.getWidget(1638413)!=null&&!Rs2Widget.getWidget(1638413).isHidden()), Rs2Random.between(2000,4000));
+                    sleepUntil(()-> Rs2Player.isMoving() || (Rs2Widget.getWidget(1638413)!=null&&!Rs2Widget.getWidget(1638413).isHidden()), Rs2Random.between(1000,2000));
                     shouldWalk = false;
                     //threaded walk because the brother could appear, the puzzle door could be there.
 
@@ -759,9 +759,8 @@ public class BarrowsScript extends Script {
                     }
                 }
                 //fighting
-                if(Rs2Player.isInCombat()){
-                    Microbot.log("Fighting the brother.");
-                    while(!currentBrother.isDead()){
+                    while(Microbot.getClient().getHintArrowNpc() != null){
+                        Microbot.log("Fighting the brother.");
                         sleep(500,1500);
                         eatFood();
                         outOfSupplies();
@@ -785,7 +784,6 @@ public class BarrowsScript extends Script {
                             break;
                         }
                     }
-                }
             }
         }
     }
