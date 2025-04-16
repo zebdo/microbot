@@ -423,8 +423,9 @@ public class BarrowsScript extends Script {
                         if(Rs2GameObject.interact(chest, "Open")){
                             sleepUntil(()-> Microbot.getClient().getHintArrowNpc()!=null && Microbot.getClient().getHintArrowNpc().getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= 5, Rs2Random.between(3000,5000));
                         }
+
                         checkForBrother();
-                        if(Microbot.getClient().getHintArrowNpc() == null){
+
                             int io = 0;
                             while(io < 3) {
                                 if(Rs2Widget.hasWidget("Barrows chest")){
@@ -449,7 +450,7 @@ public class BarrowsScript extends Script {
                                 sleepUntil(()-> Rs2Player.isAnimating(), Rs2Random.between(1000,2000));
                                 sleepUntil(()-> !Rs2Player.isAnimating(), Rs2Random.between(3000,5000));
                             }
-                        }
+
                     }
                 }
 
@@ -771,6 +772,7 @@ public class BarrowsScript extends Script {
                         if(!Rs2Player.isInCombat()){
                             if(Microbot.getClient().getHintArrowNpc() == null) {
                                 // if we're not in combat and the brother isn't there.
+                                Microbot.log("Breaking out hint arrow is null.");
                                 break;
                             } else {
                                 // if we're not in combat and the brother is there.
@@ -780,6 +782,7 @@ public class BarrowsScript extends Script {
                             }
                         }
                         if(currentBrother.isDead()){
+                            Microbot.log("Breaking out the brother is dead.");
                             sleepUntil(()-> Microbot.getClient().getHintArrowNpc() == null, Rs2Random.between(3000,6000));
                             break;
                         }
