@@ -61,9 +61,7 @@ public class BarrowsScript extends Script {
 
                 if(Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730) {
                     inTunnels = true;
-                    Microbot.log("We're in the tunnels");
                 } else {
-                    Microbot.log("We're not in the tunnels");
                     inTunnels = false;
                 }
 
@@ -143,7 +141,7 @@ public class BarrowsScript extends Script {
                                 } else {
                                     Microbot.log("At the mound, but we can't dig yet.");
                                     Rs2Walker.walkCanvas(mound);
-                                    sleep(0,750);
+                                    sleep(500,1500);
                                 }
                                 if (!super.isRunning()) {
                                     break;
@@ -415,17 +413,18 @@ public class BarrowsScript extends Script {
                         //we need to get the chest ID: 20973
                         TileObject chest = Rs2GameObject.findObjectById(20973);
                         if(Rs2GameObject.interact(chest, "Open")){
-                            sleepUntil(()-> Microbot.getClient().getHintArrowNpc()!=null, Rs2Random.between(2000,4000));
+                            sleepUntil(()-> Microbot.getClient().getHintArrowNpc()!=null && Microbot.getClient().getHintArrowNpc().getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= 5, Rs2Random.between(3000,5000));
                         }
                         checkForBrother();
                         if(Microbot.getClient().getHintArrowNpc() == null){
                             int io = 0;
                             while(io < 3) {
-                                if (Rs2GameObject.interact(chest, "Search")) {
-                                    sleep(500, 1500);
-                                }
-                                if(Rs2Widget.getWidget(10158081)!=null && !Rs2Widget.getWidget(10158081).isHidden()){
+                                if(Rs2Widget.hasWidget("Barrows chest")){
                                     break;
+                                } else {
+                                    if (Rs2GameObject.interact(chest, "Search")) {
+                                        sleep(500, 1500);
+                                    }
                                 }
                                 if(!super.isRunning()){
                                     break;
@@ -622,7 +621,7 @@ public class BarrowsScript extends Script {
                     }
                 }
 
-                scriptDelay = Rs2Random.between(300,600);
+                scriptDelay = Rs2Random.between(250,400);
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
                 System.out.println("Total time for loop " + totalTime);
