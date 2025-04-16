@@ -39,7 +39,9 @@ public class BloodsScript extends Script {
     private final WorldPoint monasteryFairyRing = new WorldPoint(2656, 3230, 0);
     private final WorldPoint caveFairyRing = new WorldPoint(3447, 9824, 0);
     private final WorldPoint firstCaveExit = new WorldPoint(3460, 9813, 0);
-    private final WorldPoint outsideBloodRuins = new WorldPoint(3555, 9783, 0);
+    private final WorldPoint outsideBloodRuins74 = new WorldPoint(3555, 9783, 0);
+    private final WorldPoint outsideBloodRuins93 = new WorldPoint(3543, 9772, 0);
+    private final WorldPoint outsideBloodRuins73 = new WorldPoint(3558, 9779, 0);
 
     public static final int feroxPool = 39651;
     public static final int monasteryRegion = 10290;
@@ -402,50 +404,43 @@ public class BloodsScript extends Script {
     }
 
     private void handlePohFairyRing() {
-        List<TileObject> allGameObjects = Rs2GameObject.getAll().stream()
-                .filter(Objects::nonNull)
-                .filter(obj -> obj.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation()) < 5000)
-                .collect(Collectors.toList());
 
-        TileObject pohTreeRing = allGameObjects.stream()
-                .filter(obj -> {
-                    ObjectComposition composition = Rs2GameObject.getObjectComposition(obj.getId());
-                    return composition != null && composition.getName().toLowerCase().contains("spirit");
-                })
-                .findFirst().orElse(null);
+        if (Rs2GameObject.findObjectById(ObjectID.POH_FAIRY_RING) != null) {
+            Rs2GameObject.interact(ObjectID.POH_FAIRY_RING, "Last-destination (DLS)");
+            Microbot.log("Using fairy ring");
+            Rs2Player.waitForAnimation(1200);
+            sleepUntil(() -> plugin.getMyWorldPoint().equals(caveFairyRing), 1200);
+        } else {
+            List<TileObject> allGameObjects = Rs2GameObject.getAll().stream()
+                    .filter(Objects::nonNull)
+                    .filter(obj -> obj.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation()) < 5000)
+                    .collect(Collectors.toList());
 
-        TileObject pohFairyRing = allGameObjects.stream()
-                .filter(obj -> {
-                    ObjectComposition composition = Rs2GameObject.getObjectComposition(obj.getId());
-                    if (composition == null) return false;
-                    String name = composition.getName().toLowerCase();
-                    return name.contains("fairy") && !name.contains("spirit");
-                })
-                .findFirst().orElse(null);
-
-        if (pohTreeRing != null) {
-            Microbot.log("Found Spirit Tree Ring");
-            Rs2GameObject.interact(pohTreeRing, "Ring-last-destination (DLS)");
-            Rs2Player.waitForAnimation();
-            sleepUntil(() -> plugin.getMyWorldPoint().equals(caveFairyRing));
-        } else if (pohFairyRing != null) {
-            Microbot.log("Found pohFairyRing");
-            Rs2GameObject.interact(pohFairyRing, "Last-destination (DLS)");
-            Rs2Player.waitForAnimation();
-            sleepUntil(() -> plugin.getMyWorldPoint().equals(caveFairyRing));
-        }
-
-        if (pohTreeRing == null && pohFairyRing == null) {
-            Microbot.log("No fairy ring found, resetting to banking for a retry");
-            state = State.BANKING;
+            TileObject pohTreeRing = allGameObjects.stream()
+                    .filter(obj -> {
+                        ObjectComposition composition = Rs2GameObject.getObjectComposition(obj.getId());
+                        return composition != null && composition.getName().toLowerCase().contains("spirit");
+                    })
+                    .findFirst().orElse(null);
+            if (pohTreeRing != null) {
+                Rs2GameObject.interact(pohTreeRing, "Ring-last-destination (DLS)");
+                Microbot.log("Using fairy tree");
+                Rs2Player.waitForAnimation();
+                sleepUntil(() ->plugin.getMyWorldPoint().equals(caveFairyRing));
+            } else {
+                Microbot.log("Unable to find fairy ring, resetting to banking for a retry");
+                state = State.BANKING;
+            }
         }
 
         if (Rs2Player.getWorldLocation().equals(caveFairyRing)) {
             state = State.WALKING_TO;
         }
-    }
 
-    private void handleWalking() {
+        }
+
+
+        private void handleWalking() {
         if (plugin.isBreakHandlerEnabled()) {
             BreakHandlerScript.setLockState(true);
         }
@@ -458,17 +453,33 @@ public class BloodsScript extends Script {
             sleepGaussian(900, 200);
         }
 
-        if (plugin.getMyWorldPoint().equals(firstCaveExit)) {
-            Microbot.log("Walking to ruins: " + outsideBloodRuins);
-            Rs2Walker.walkTo(outsideBloodRuins);
-            sleepUntil(() -> plugin.getMyWorldPoint().equals(outsideBloodRuins), 1200);
+        if (plugin.getMyWorldPoint().equals(firstCaveExit) &&
+                Rs2Player.getRealSkillLevel(Skill.AGILITY) > 93) {
+            Microbot.log("Walking to blood ruins " +
+                     outsideBloodRuins93);
+            Rs2Walker.walkTo(outsideBloodRuins93);
+            sleepUntil(() -> Rs2Player.getWorldLocation().equals(outsideBloodRuins93), 1200);
         }
 
-        if (plugin.getMyWorldPoint().equals(outsideBloodRuins)) {
-            Microbot.log("Current location after walking: " + plugin.getMyWorldPoint());
-            if (plugin.getMyWorldPoint().equals(outsideBloodRuins)) {
-                state = State.CRAFTING;
-            }
+        if (plugin.getMyWorldPoint().equals(firstCaveExit) &&
+        Rs2Player.getRealSkillLevel(Skill.AGILITY) < 93 && Rs2Player.getRealSkillLevel(Skill.AGILITY) >74) {
+            Microbot.log("Walking to ruins: " + outsideBloodRuins74);
+            Rs2Walker.walkTo(outsideBloodRuins74);
+            sleepUntil(() -> plugin.getMyWorldPoint().equals(outsideBloodRuins74), 1200);
+        }
+
+        if (plugin.getMyWorldPoint().equals(firstCaveExit) && Rs2Player.getRealSkillLevel(Skill.AGILITY) <74) {
+            Microbot.log("Walking to ruins: " + outsideBloodRuins73);
+            Rs2Walker.walkTo(outsideBloodRuins73);
+            sleepUntil(() -> plugin.getMyWorldPoint().equals(outsideBloodRuins73), 1200);
+        }
+
+        TileObject ruins = Rs2GameObject.findObjectById(bloodRuins);
+
+        if (ruins != null && plugin.getMyWorldPoint().getRegionID() == 14232
+            && !Rs2Player.isMoving() && !Rs2Player.isAnimating() &&
+        Rs2Player.distanceTo(new WorldPoint(3560, 9780, 0 )) < 18) {
+            state = State.CRAFTING;
         }
     }
 
