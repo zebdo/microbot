@@ -404,7 +404,7 @@ public class BarrowsScript extends Script {
                             }
                         }).start();
                     }
-                    sleepUntil(()-> Rs2Player.isMoving() || (Rs2Widget.getWidget(1638413)!=null&&!Rs2Widget.getWidget(1638413).isHidden()), Rs2Random.between(1000,2000));
+                    sleep(100,200);
                     shouldWalk = false;
                     //threaded walk because the brother could appear, the puzzle door could be there.
 
@@ -434,10 +434,7 @@ public class BarrowsScript extends Script {
                                 }
 
                                 if (Rs2Widget.hasWidget("Barrows chest")) {
-                                        // close the loot window
-                                        Rs2Walker.walkCanvas(Chest);
-                                        sleep(750,1500);
-                                        break;
+                                    break;
                                 }
 
                                 if (!super.isRunning()) {
