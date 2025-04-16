@@ -642,6 +642,7 @@ public class BarrowsScript extends Script {
     }
     public void gettheRune(){
         Rs2CombatSpells ourspell = Rs2Magic.getCurrentAutoCastSpell();
+        Microbot.log("Our autocast spell is: "+ourspell.getName());
         neededRune = "unknown";
         if(ourspell.getName().contains("Blast") || ourspell.getName().contains("blast")){
             neededRune = "Death rune";
