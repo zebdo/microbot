@@ -641,16 +641,16 @@ public class BarrowsScript extends Script {
         return true;
     }
     public void gettheRune(){
+        Microbot.log("Our autocast spell is: "+Rs2Magic.getCurrentAutoCastSpell().getName());
         Rs2CombatSpells ourspell = Rs2Magic.getCurrentAutoCastSpell();
-        Microbot.log("Our autocast spell is: "+ourspell.getName());
         neededRune = "unknown";
-        if(ourspell.getName().contains("Blast") || ourspell.getName().contains("blast")){
+        if(ourspell.getName().contains("Blast") || ourspell.getName().contains("blast") || ourspell.getName().contains("BLAST")){
             neededRune = "Death rune";
         }
-        if(ourspell.getName().contains("Wave") || ourspell.getName().contains("wave")){
+        if(ourspell.getName().contains("Wave") || ourspell.getName().contains("wave") || ourspell.getName().contains("WAVE")){
             neededRune = "Blood rune";
         }
-        if(ourspell.getName().contains("Surge") || ourspell.getName().contains("surge")){
+        if(ourspell.getName().contains("Surge") || ourspell.getName().contains("surge") || ourspell.getName().contains("SURGE")){
             neededRune = "Wrath rune";
         }
     }
