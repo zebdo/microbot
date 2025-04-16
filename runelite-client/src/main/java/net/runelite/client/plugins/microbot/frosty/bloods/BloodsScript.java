@@ -262,7 +262,7 @@ public class BloodsScript extends Script {
 
         if (Rs2Bank.isOpen() && Rs2Inventory.allPouchesFull() && Rs2Inventory.isFull()) {
             Microbot.log("We are full, lets go");
-            Rs2Keyboard.keyPress(KeyEvent.VK_ESCAPE);
+            Rs2Bank.closeBank();
             sleepUntil(() -> !Rs2Bank.isOpen(), 1200);
             if (Rs2Inventory.contains(inactiveBloodEssence)) {
                 Rs2Inventory.interact(inactiveBloodEssence, "Activate");
@@ -468,10 +468,12 @@ public class BloodsScript extends Script {
             sleepUntil(() -> plugin.getMyWorldPoint().equals(outsideBloodRuins74), 1200);
         }
 
+        TileObject ruins = Rs2GameObject.findObjectById(bloodRuins);
+
         if (plugin.getMyWorldPoint().equals(firstCaveExit) && Rs2Player.getRealSkillLevel(Skill.AGILITY) <74) {
             Microbot.log("Walking to ruins: " + outsideBloodRuins73);
             Rs2Walker.walkTo(outsideBloodRuins73);
-            sleepUntil(() -> plugin.getMyWorldPoint().equals(outsideBloodRuins73), 1200);
+            sleepUntil(() -> Rs2Player.distanceTo(new WorldPoint(3560, 9780, 0 )) <5);
         }
 
         TileObject ruins = Rs2GameObject.findObjectById(bloodRuins);
