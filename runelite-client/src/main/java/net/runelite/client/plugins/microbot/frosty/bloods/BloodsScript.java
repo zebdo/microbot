@@ -476,8 +476,6 @@ public class BloodsScript extends Script {
             sleepUntil(() -> Rs2Player.distanceTo(new WorldPoint(3560, 9780, 0 )) <5);
         }
 
-        TileObject ruins = Rs2GameObject.findObjectById(bloodRuins);
-
         if (ruins != null && plugin.getMyWorldPoint().getRegionID() == 14232
             && !Rs2Player.isMoving() && !Rs2Player.isAnimating() &&
         Rs2Player.distanceTo(new WorldPoint(3560, 9780, 0 )) < 18) {
