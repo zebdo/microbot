@@ -425,32 +425,36 @@ public class BarrowsScript extends Script {
                         }
 
                         checkForBrother();
-
+                        if(Microbot.getClient().getHintArrowNpc()==null) {
                             int io = 0;
-                            while(io < 3) {
-                                if(Rs2Widget.hasWidget("Barrows chest")){
-                                    break;
-                                } else {
-                                    if (Rs2GameObject.interact(chest, "Search")) {
-                                        sleep(500, 1500);
+                            while (io < 3) {
+
+                                if (Rs2GameObject.interact(chest, "Search")) {
+                                    sleep(500, 1500);
+                                }
+
+                                if (Rs2Widget.getWidget(10158081)!=null) {
+                                    if(!Rs2Widget.getWidget(10158081).isHidden()) {
+                                        break;
                                     }
                                 }
-                                if(!super.isRunning()){
+
+                                if (!super.isRunning()) {
                                     break;
                                 }
                                 io++;
                             }
                             //we looted the chest time to reset
-                            if(Rs2Inventory.get("Barrows teleport") == null || Rs2Inventory.get("Barrows teleport").getQuantity() <= 1 || (Rs2Inventory.count("Prayer potion(3)") + Rs2Inventory.count("Prayer potion(4)"))<=3 || Rs2Inventory.getInventoryFood().isEmpty() || Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<=3){
+                            if (Rs2Inventory.get("Barrows teleport") == null || Rs2Inventory.get("Barrows teleport").getQuantity() <= 1 || (Rs2Inventory.count("Prayer potion(3)") + Rs2Inventory.count("Prayer potion(4)")) <= 3 || Rs2Inventory.getInventoryFood().isEmpty() || Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName()) <= 3) {
                                 Microbot.log("We should bank.");
                                 shouldBank = true;
                             } else {
                                 shouldBank = false;
                                 Rs2Inventory.interact("Barrows teleport", "Break");
-                                sleepUntil(()-> Rs2Player.isAnimating(), Rs2Random.between(1000,2000));
-                                sleepUntil(()-> !Rs2Player.isAnimating(), Rs2Random.between(3000,5000));
+                                sleepUntil(() -> Rs2Player.isAnimating(), Rs2Random.between(1000, 2000));
+                                sleepUntil(() -> !Rs2Player.isAnimating(), Rs2Random.between(3000, 5000));
                             }
-
+                        }
                     }
                 }
 
