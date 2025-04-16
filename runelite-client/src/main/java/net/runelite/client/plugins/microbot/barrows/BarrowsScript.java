@@ -427,19 +427,17 @@ public class BarrowsScript extends Script {
                         checkForBrother();
                         if(Microbot.getClient().getHintArrowNpc()==null) {
                             int io = 0;
-                            while (io < 3) {
+                            while (io < 2) {
 
                                 if (Rs2GameObject.interact(chest, "Search")) {
                                     sleep(500, 1500);
                                 }
 
-                                if (Rs2Widget.getWidget(10158081)!=null) {
-                                    if(!Rs2Widget.getWidget(10158081).isHidden()) {
+                                if (Rs2Widget.hasWidget("Barrows chest")) {
                                         // close the loot window
                                         Rs2Walker.walkCanvas(Chest);
                                         sleep(750,1500);
                                         break;
-                                    }
                                 }
 
                                 if (!super.isRunning()) {
