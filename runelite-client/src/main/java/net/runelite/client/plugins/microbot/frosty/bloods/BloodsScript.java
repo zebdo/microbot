@@ -93,6 +93,10 @@ public class BloodsScript extends Script {
                 }
 
                 if (Rs2Inventory.anyPouchUnknown()) {
+                    if (Rs2Bank.isOpen()){
+                        Rs2Keyboard.keyPress(KeyEvent.VK_ESCAPE);
+                        sleepUntil(() -> !Rs2Bank.isOpen(), 1200);
+                    }
                     checkPouches();
                     return;
                 }
@@ -153,6 +157,10 @@ public class BloodsScript extends Script {
 
         Rs2Tab.switchToInventoryTab();
 
+        if (Rs2Inventory.anyPouchUnknown()) {
+            checkPouches();
+        }
+
         if (Rs2Inventory.hasDegradedPouch()) {
             Rs2Magic.repairPouchesWithLunar();
             sleepGaussian(900, 200);
@@ -180,11 +188,6 @@ public class BloodsScript extends Script {
             Rs2Bank.openBank();
             sleepUntil(Rs2Bank::isOpen, 2500);
             sleepGaussian(1100, 200);
-        }
-
-        if (!Rs2Inventory.hasAnyPouch()) {
-            Rs2Bank.withdrawItem(colossalPouch);
-            sleepGaussian(700, 200);
         }
 
         if (!Rs2Inventory.hasRunePouch()) {
@@ -509,33 +512,25 @@ public class BloodsScript extends Script {
         Rs2Tab.switchToEquipmentTab();
         sleepGaussian(1300, 200);
 
-        if (config.usePoh()) {
-            List<Teleports> bankTeleport = Arrays.asList(
-                    Teleports.CRAFTING_CAPE,
-                    Teleports.FARMING_CAPE
-            );
-            boolean teleportUsed = false;
+        List<Teleports> bankTeleport = Arrays.asList(
+                Teleports.CRAFTING_CAPE,
+                Teleports.FARMING_CAPE,
+                Teleports.FEROX_ENCLAVE
+        );
+        boolean teleportUsed = false;
 
-            for (Teleports teleport : bankTeleport) {
-                for (Integer bankTeleportsId : teleport.getItemIds()) {
-                    if (Rs2Equipment.isWearing(bankTeleportsId)) {
-                        Microbot.log("Using: " + teleport.getName());
-                        Rs2Equipment.interact(bankTeleportsId, teleport.getInteraction());
-                        sleepUntil(() -> teleport.matchesRegion(plugin.getMyWorldPoint().getRegionID()));
-                        sleepGaussian(1100, 200);
-                        teleportUsed = true;
-                        break;
-                    }
+        for (Teleports teleport : bankTeleport) {
+            for (Integer bankTeleportsId : teleport.getItemIds()) {
+                if (Rs2Equipment.isWearing(bankTeleportsId)) {
+                    Microbot.log("Using: " + teleport.getName());
+                    Rs2Equipment.interact(bankTeleportsId, teleport.getInteraction());
+                    sleepUntil(() -> teleport.matchesRegion(plugin.getMyWorldPoint().getRegionID()));
+                    sleepGaussian(1100, 200);
+                    teleportUsed = true;
+                    break;
                 }
-                if (teleportUsed) break;
             }
-        } else {
-            Teleports feroxTeleport = Teleports.FEROX_ENCLAVE;
-            Optional<Integer> rodId = Arrays.stream(feroxTeleport.getItemIds())
-                    .filter(Rs2Equipment::isWearing)
-                    .findFirst();
-            rodId.ifPresent(id -> Rs2Equipment.interact(id, feroxTeleport.getInteraction()));
-            sleepUntil(() -> plugin.getMyWorldPoint().getRegionID() == feroxTeleport.getBankingRegionIds()[0]);
+            if (teleportUsed) break;
         }
     }
 }
