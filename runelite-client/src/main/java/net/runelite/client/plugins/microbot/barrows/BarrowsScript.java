@@ -781,10 +781,8 @@ public class BarrowsScript extends Script {
                                 sleepUntil(()-> Rs2Player.isInCombat(), Rs2Random.between(3000,6000));
                             }
                         }
-                        if(Microbot.getClient().getHintArrowNpc() == null){
-                            break;
-                        }
                         if(currentBrother.isDead()){
+                            sleepUntil(()-> Microbot.getClient().getHintArrowNpc() == null, Rs2Random.between(3000,6000));
                             break;
                         }
                     }
