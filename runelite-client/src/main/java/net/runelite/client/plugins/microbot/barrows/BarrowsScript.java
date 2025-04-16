@@ -57,8 +57,6 @@ public class BarrowsScript extends Script {
                 if (!super.run()) return;
                 long startTime = System.currentTimeMillis();
 
-                gettheRune();
-
                 if(Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730) {
                     inTunnels = true;
                 } else {
@@ -69,6 +67,8 @@ public class BarrowsScript extends Script {
                     Microbot.log("Please select your wind spell in auto-cast then restart the script. stopping...");
                     super.shutdown();
                 }
+
+                gettheRune();
 
                 if(Rs2Inventory.getInventoryFood().isEmpty()){
                     Microbot.log("No food in inventory. Please get some food then restart the script. stopping...");
