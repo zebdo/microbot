@@ -1400,6 +1400,11 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             Rs2Dialogue.clickOption("yes");
             return true;
         }
+        
+        // Handle Cave Entrance inside of Asgarnia Ice Caves
+        if (tileObject.getId() == ObjectID.TUNNEL_55988 || tileObject.getId() == ObjectID.TUNNEL_55989) {
+            Rs2Player.waitForAnimation();
+        }
         return false;
     }
     
