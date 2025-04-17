@@ -1,6 +1,5 @@
 package net.runelite.client.plugins.microbot.util.grounditem;
 
-import com.google.common.collect.HashBasedTable;
 import com.google.common.collect.ImmutableTable;
 import com.google.common.collect.Table;
 import lombok.extern.slf4j.Slf4j;
@@ -641,11 +640,6 @@ public class Rs2GroundItem {
      * @return
      */
     public static Table<WorldPoint, Integer, GroundItem> getGroundItems() {
-        // grab the live data
-        Table<WorldPoint, Integer, GroundItem> live = GroundItemsPlugin.getCollectedGroundItems();
-        // make a shallow, stable copy
-        Table<WorldPoint, Integer, GroundItem> snapshot = HashBasedTable.create(live);
-        // now freeze it
-        return ImmutableTable.copyOf(snapshot);
+        return ImmutableTable.copyOf(GroundItemsPlugin.getCollectedGroundItems());
     }
 }
