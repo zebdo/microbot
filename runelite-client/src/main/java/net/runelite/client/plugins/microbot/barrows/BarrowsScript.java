@@ -48,6 +48,7 @@ public class BarrowsScript extends Script {
     private String neededRune = "unknown";
     private volatile boolean shouldWalk = false;
     private boolean shouldBank = false;
+    private Rs2PrayerEnum NeededPrayer;
     int scriptDelay = Rs2Random.between(300,600);
     public boolean run(BarrowsConfig config) {
         Microbot.enableAutoRunOn = false;
@@ -118,23 +119,20 @@ public class BarrowsScript extends Script {
                 if(!inTunnels && shouldBank == false) {
                     for (BarrowsBrothers brother : BarrowsBrothers.values()) {
                         WorldPoint mound = brother.getHumpWP();
-                        Microbot.log("Checking mound for: " + brother.getName() + " at " + mound);
+                        NeededPrayer = brother.whatToPray;
+                        Microbot.log("Checking mound for: " + brother.getName() + " at " + mound +"Using prayer: "+NeededPrayer);
                         //Enter mound
                         if (Rs2Player.getWorldLocation().getPlane() != 3) {
                             Microbot.log("Entering the mound");
                             while (mound.distanceTo(Rs2Player.getWorldLocation()) > 1) {
-                                //antipattern turn on prayer early
                                 if (!super.isRunning()) {
                                     break;
                                 }
-                                if(!Rs2Prayer.isPrayerActive(brother.whatToPray)){
-                                    if(Rs2Random.between(0,100) <= Rs2Random.between(1,5)) {
-                                        drinkPrayerPot();
-                                        Rs2Prayer.toggle(brother.whatToPray);
-                                        sleep(0, 750);
-                                    }
-                                }
+
+                                //antipattern turn on prayer early
+                                antiPatternActivatePrayer();
                                 //antipattern
+
                                 // We're not in the mound yet.
                                 Rs2Walker.walkTo(mound);
                                 if (mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
@@ -148,18 +146,15 @@ public class BarrowsScript extends Script {
                                 }
                             }
                             while (mound.distanceTo(Rs2Player.getWorldLocation()) <= 1 && Rs2Player.getWorldLocation().getPlane() != 3) {
-                                //antipattern turn on prayer early
+
                                 if (!super.isRunning()) {
                                     break;
                                 }
-                                if(!Rs2Prayer.isPrayerActive(brother.whatToPray)){
-                                    if(Rs2Random.between(0,100) <= Rs2Random.between(1,10)) {
-                                        drinkPrayerPot();
-                                        Rs2Prayer.toggle(brother.whatToPray);
-                                        sleep(0, 750);
-                                    }
-                                }
+
+                                //antipattern turn on prayer early
+                                antiPatternActivatePrayer();
                                 //antipattern
+
                                 if (Rs2Inventory.contains("Spade")) {
                                     if (Rs2Inventory.interact("Spade", "Dig")) {
                                         sleepUntil(() -> Rs2Player.getWorldLocation().getPlane() == 3, Rs2Random.between(3000, 5000));
@@ -173,22 +168,9 @@ public class BarrowsScript extends Script {
                         }
                         if (Rs2Player.getWorldLocation().getPlane() == 3) {
                             Microbot.log("We're in the mound");
-                            if(!Rs2Prayer.isPrayerActive(brother.whatToPray)){
-                                Microbot.log("Turning on Prayer.");
-                                while(!Rs2Prayer.isPrayerActive(brother.whatToPray)){
-                                    if (!super.isRunning()) {
-                                        break;
-                                    }
-                                    drinkPrayerPot();
-                                    Rs2Prayer.toggle(brother.whatToPray);
-                                    sleep(0,750);
-                                    if (Rs2Prayer.isPrayerActive(brother.whatToPray)) {
-                                        //we made it in
-                                        Microbot.log("Praying");
-                                        break;
-                                    }
-                                }
-                            }
+
+                            activatePrayer();
+
                             // we're in the mound, prayer is active
                             GameObject sarc = Rs2GameObject.get("Sarcophagus");
                             Rs2NpcModel currentBrother = null;
@@ -242,6 +224,8 @@ public class BarrowsScript extends Script {
                                         break;
                                     }
 
+                                    activatePrayer();
+
                                     sleep(500,1500);
                                     eatFood();
                                     outOfSupplies();
@@ -251,6 +235,9 @@ public class BarrowsScript extends Script {
                                         break;
                                     }
                                     if(currentBrother.isDead()){
+                                        //anti pattern
+                                        disablePrayer();
+                                        //anti pattern
                                         break;
                                     }
                                 }
@@ -295,9 +282,7 @@ public class BarrowsScript extends Script {
                                     }
                                     if(Rs2Player.getWorldLocation().getPlane() != 3){
                                         //anti pattern turn off prayer
-                                        if(Rs2Random.between(0,100) <= Rs2Random.between(0,25)){
-                                            disablePrayer();
-                                        }
+                                        disablePrayer();
                                         //anti pattern turn off prayer
                                         break;
                                     }
@@ -668,6 +653,33 @@ public class BarrowsScript extends Script {
             neededRune = "Wrath rune";
         }
     }
+    public void activatePrayer(){
+        if(!Rs2Prayer.isPrayerActive(NeededPrayer)){
+            Microbot.log("Turning on Prayer.");
+            while(!Rs2Prayer.isPrayerActive(NeededPrayer)){
+                if (!super.isRunning()) {
+                    break;
+                }
+                drinkPrayerPot();
+                Rs2Prayer.toggle(NeededPrayer);
+                sleep(0,750);
+                if (Rs2Prayer.isPrayerActive(NeededPrayer)) {
+                    //we made it in
+                    Microbot.log("Praying");
+                    break;
+                }
+            }
+        }
+    }
+    public void antiPatternActivatePrayer(){
+        if(!Rs2Prayer.isPrayerActive(NeededPrayer)){
+            if(Rs2Random.between(0,100) <= Rs2Random.between(1,5)) {
+                drinkPrayerPot();
+                Rs2Prayer.toggle(NeededPrayer);
+                sleep(0, 750);
+            }
+        }
+    }
     public void outOfSupplies(){
         // Needed because the walker won't teleport to the enclave while in the tunnels or in a barrow
         if(shouldBank && (inTunnels || Rs2Player.getWorldLocation().getPlane() == 3)){
@@ -682,20 +694,22 @@ public class BarrowsScript extends Script {
         }
     }
     public void disablePrayer(){
-        if(Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_MELEE)){
-            Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MELEE, false);
-            sleep(0,750);
-            return;
-        }
-        if(Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_RANGE)){
-            Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_RANGE, false);
-            sleep(0,750);
-            return;
-        }
-        if(Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_MAGIC)){
-            Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MAGIC, false);
-            sleep(0,750);
-            return;
+        if(Rs2Random.between(0,100) <= Rs2Random.between(0,25)) {
+            if (Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_MELEE)) {
+                Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MELEE, false);
+                sleep(0, 750);
+                return;
+            }
+            if (Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_RANGE)) {
+                Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_RANGE, false);
+                sleep(0, 750);
+                return;
+            }
+            if (Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_MAGIC)) {
+                Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MAGIC, false);
+                sleep(0, 750);
+                return;
+            }
         }
     }
     public void reJfount(){
