@@ -702,6 +702,7 @@ public class BarrowsScript extends Script {
     public void disablePrayer(){
         if(Rs2Random.between(0,100) <= Rs2Random.between(0,25)) {
             Rs2Prayer.disableAllPrayers();
+            sleep(0,750);
         }
     }
     public void reJfount(){
