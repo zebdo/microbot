@@ -701,21 +701,7 @@ public class BarrowsScript extends Script {
     }
     public void disablePrayer(){
         if(Rs2Random.between(0,100) <= Rs2Random.between(0,25)) {
-            if (Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_MELEE)) {
-                Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MELEE, false);
-                sleep(0, 750);
-                return;
-            }
-            if (Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_RANGE)) {
-                Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_RANGE, false);
-                sleep(0, 750);
-                return;
-            }
-            if (Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_MAGIC)) {
-                Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MAGIC, false);
-                sleep(0, 750);
-                return;
-            }
+            Rs2Prayer.disableAllPrayers();
         }
     }
     public void reJfount(){
