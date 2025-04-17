@@ -41,7 +41,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
 @PluginDescriptor(
@@ -94,7 +96,7 @@ public class AIOFighterPlugin extends Plugin {
     private Point lastMenuOpenedPoint;
     private WorldPoint trueTile;
 
-    protected ScheduledExecutorService initializer = Executors.newSingleThreadScheduledExecutor();
+    protected ScheduledExecutorService initializerExecutor = Executors.newSingleThreadScheduledExecutor();
 
     @Provides
     AIOFighterConfig provideConfig(ConfigManager configManager) {
@@ -106,14 +108,21 @@ public class AIOFighterPlugin extends Plugin {
         Microbot.pauseAllScripts = false;
         cooldown = 0;
         //initialize any data on startup
-        initializer.scheduleWithFixedDelay(() -> {
-            if (Microbot.getConfigManager() == null)
+        ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
+        AtomicReference<ScheduledFuture<?>> futureRef = new AtomicReference<>();
+
+        ScheduledFuture<?> future = executor.scheduleWithFixedDelay(() -> {
+            if (Microbot.getConfigManager() == null) {
                 return;
-
+            }
             setState(State.IDLE);
-
-            initializer.shutdown();
-
+            // Get the future from the reference and cancel it
+            ScheduledFuture<?> scheduledFuture = futureRef.get();
+            if (scheduledFuture != null) {
+                scheduledFuture.cancel(false);
+            }
+            // now that no other tasks run, you can shut down:
+            executor.shutdown();
         }, 0, 1, TimeUnit.SECONDS);
 
         if (overlayManager != null) {
