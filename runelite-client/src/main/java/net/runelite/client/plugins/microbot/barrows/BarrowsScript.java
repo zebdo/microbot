@@ -142,7 +142,8 @@ public class BarrowsScript extends Script {
                                 } else {
                                     Microbot.log("At the mound, but we can't dig yet.");
                                     Rs2Walker.walkCanvas(mound);
-                                    sleep(500,1500);
+                                    sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(750,1500));
+                                    sleep(300,600);
                                 }
                             }
                             while (mound.distanceTo(Rs2Player.getWorldLocation()) <= 1 && Rs2Player.getWorldLocation().getPlane() != 3) {
