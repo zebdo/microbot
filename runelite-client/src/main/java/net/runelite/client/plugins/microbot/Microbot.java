@@ -51,10 +51,7 @@ import javax.inject.Inject;
 import javax.swing.Timer;
 import javax.swing.*;
 import java.awt.*;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Instant;
@@ -469,6 +466,15 @@ public class Microbot {
                 .orElse(null);
     }
 
+    /**
+     * Logs the stack trace of an exception to the console and chat.
+     * @param scriptName
+     * @param e
+     */
+    public static void logStackTrace(String scriptName, Exception e) {
+        log(scriptName, Level.ERROR, e);
+    }
+
     public static void log(String message) {
         log(message, Level.INFO);
     }
@@ -482,6 +488,10 @@ public class Microbot {
     }
 
     public static void log(String message, Level level) {
+        log(message, level, null);
+    }
+
+    public static void log(String message, Level level, Exception ex) {
         if (message == null || message.isEmpty()) return;
         if (level == null) return;
 
@@ -490,7 +500,11 @@ public class Microbot {
                 log.warn(message);
                 break;
             case ERROR:
-                log.error(message);
+                if (ex != null) {
+                    log.error(message, ex);
+                } else {
+                    log.error(message);
+                }
                 break;
             case DEBUG:
                 log.debug(message);
@@ -503,11 +517,13 @@ public class Microbot {
         if (Microbot.isLoggedIn()) {
             if (level == Level.DEBUG && !isDebug()) return;
 
+            final String _message = ex == null ? message : ex.getMessage();
+
             LocalTime currentTime = LocalTime.now();
             DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
             String formattedTime = currentTime.format(formatter);
             Microbot.getClientThread().runOnClientThreadOptional(() ->
-                    Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "[" + formattedTime + "]: " + message, "", false)
+                    Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "[" + formattedTime + "]: " +  _message, "", false)
             );
         }
     }
