@@ -430,10 +430,11 @@ public class BarrowsScript extends Script {
                         //we need to get the chest ID: 20973
                         TileObject chest = Rs2GameObject.findObjectById(20973);
                         if(Rs2GameObject.interact(chest, "Open")){
-                            sleepUntil(()-> Microbot.getClient().getHintArrowNpc()!=null && Microbot.getClient().getHintArrowNpc().getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= 5, Rs2Random.between(3000,5000));
+                            sleepUntil(()-> Microbot.getClient().getHintArrowNpc()!=null && Microbot.getClient().getHintArrowNpc().getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= 5, Rs2Random.between(4000,6000));
                         }
 
                         checkForBrother();
+
                         if(Microbot.getClient().getHintArrowNpc()==null) {
                             int io = 0;
                             while (io < 2) {
@@ -782,10 +783,10 @@ public class BarrowsScript extends Script {
                         if (!super.isRunning()) {
                             break;
                         }
-                        sleep(500,1500);
+                        sleep(750,1500);
+                        drinkPrayerPot();
                         eatFood();
                         outOfSupplies();
-                        drinkPrayerPot();
                         if(!Rs2Player.isInCombat()){
                             if(Microbot.getClient().getHintArrowNpc() == null) {
                                 // if we're not in combat and the brother isn't there.
