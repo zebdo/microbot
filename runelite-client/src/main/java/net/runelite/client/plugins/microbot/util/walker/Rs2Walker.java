@@ -356,9 +356,7 @@ public class Rs2Walker {
                 setTarget(null);
                 return WalkerState.EXIT;
             }
-            ex.printStackTrace(System.out);
-            Microbot.log("Microbot Walker Exception " + ex.getMessage());
-            System.out.println(ex.getMessage());
+            Microbot.logStackTrace("Rs2Walker", ex);
         }
         return WalkerState.EXIT;
     }

@@ -2236,7 +2236,7 @@ public class Rs2Inventory {
             invokeMenu(rs2Item, actionAndQuantity);
             return true;
         } catch (Exception ex) {
-            System.out.println(ex.getMessage());
+            Microbot.logStackTrace("Rs2Inventory", ex);
             return false;
         }
     }
