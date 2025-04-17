@@ -349,6 +349,7 @@ public class BarrowsScript extends Script {
                                         }
                                         if(Rs2Dialogue.hasContinue()){
                                             Rs2Dialogue.clickContinue();
+                                            sleepUntil(()-> Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!"), Rs2Random.between(2000,5000));
                                             sleep(300,600);
                                         }
                                         if(Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!")){
