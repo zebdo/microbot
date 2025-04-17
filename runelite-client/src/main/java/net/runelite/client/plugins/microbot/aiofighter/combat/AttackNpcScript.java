@@ -21,17 +21,14 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 public class AttackNpcScript extends Script {
 
     public static Actor currentNpc = null;
-    public static List<Rs2NpcModel> attackableNpcs = new ArrayList<>();
+    public static List<Rs2NpcModel> filteredAttackableNpcs = new ArrayList<>();
     private boolean messageShown = false;
 
     public static void skipNpc() {
@@ -72,11 +69,22 @@ public class AttackNpcScript extends Script {
                 }
                 messageShown = false;
 
-                attackableNpcs = Rs2Npc.getAttackableNpcs(config.attackReachableNpcs())
-                        .filter(npc -> npc.getWorldLocation().distanceTo(config.centerLocation()) <= config.attackRadius() && npcsToAttack.contains(npc.getName().toLowerCase()))
+                filteredAttackableNpcs = Rs2Npc.getAttackableNpcs(config.attackReachableNpcs())
+                        .filter(npc -> npc.getWorldLocation().distanceTo(config.centerLocation()) <= config.attackRadius())
                         .sorted(Comparator.comparingInt((Rs2NpcModel npc) -> npc.getInteracting() == Microbot.getClient().getLocalPlayer() ? 0 : 1)
                                 .thenComparingInt(npc -> Rs2Player.getRs2WorldPoint().distanceToPath(npc.getWorldLocation())))
                         .collect(Collectors.toList());
+
+                final List<Rs2NpcModel> attackableNpcs = new ArrayList<>();
+
+                for (var attackableNpc: filteredAttackableNpcs) {
+                    if (attackableNpc == null || attackableNpc.getName() == null) continue;
+                    for (var npcToAttack: npcsToAttack) {
+                        if (npcToAttack.equalsIgnoreCase(attackableNpc.getName())) {
+                            attackableNpcs.add(attackableNpc);
+                        }
+                    }
+                }
 
                 if (AIOFighterPlugin.getCooldown() > 0 || Rs2Combat.inCombat()) {
                     AIOFighterPlugin.setState(State.COMBAT);
@@ -119,10 +127,10 @@ public class AttackNpcScript extends Script {
 
 
                 } else {
-                    System.out.println("No attackable NPC found");
+                    Microbot.log("No attackable NPC found");
                 }
             } catch (Exception ex) {
-                System.out.println(ex.getMessage());
+                Microbot.logStackTrace(this.getClass().getSimpleName(), ex);
             }
         }, 0, 600, TimeUnit.MILLISECONDS);
     }
