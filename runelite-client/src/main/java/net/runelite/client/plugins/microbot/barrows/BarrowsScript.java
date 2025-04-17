@@ -718,7 +718,7 @@ public class BarrowsScript extends Script {
                     sleepUntil(()-> !Rs2Player.isAnimating(), Rs2Random.between(1000,4000));
                 }
             }
-            if(Rs2Player.getBoostedSkillLevel(Skill.PRAYER) >= rejat){
+            if(Rs2Player.getBoostedSkillLevel(Skill.PRAYER) >= rejat && Rs2Player.getRunEnergy() >= runener){
                 break;
             }
 
