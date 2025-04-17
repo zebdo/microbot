@@ -1,15 +1,14 @@
 package net.runelite.client.plugins.microbot.bee.chaosaltar;
 
-import net.runelite.api.ItemID;
-import net.runelite.api.Skill;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
-import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2Pvp;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
@@ -26,6 +25,7 @@ public class ChaosAltarScript extends Script {
 
     public static final WorldArea CHAOS_ALTAR_AREA = new WorldArea(2947, 3818, 11, 6, 0);
     public static final WorldPoint CHAOS_ALTAR_POINT = new WorldPoint(2949, 3821,0);
+    public static final WorldPoint CHAOS_ALTAR_POINT_SOUTH = new WorldPoint(2949, 3813,0);
 
     private ChaosAltarConfig config;
 
@@ -56,7 +56,10 @@ public class ChaosAltarScript extends Script {
                         offerBones();
                         break;
                     case WALK_TO_ALTAR:
+                        walkTo(CHAOS_ALTAR_POINT_SOUTH);
+                        sleep(100,600);
                         walkTo(CHAOS_ALTAR_POINT);
+                        sleep(300,600);
                         offerBones();
                         break;
                     case DIE_TO_NPC:
@@ -80,7 +83,15 @@ public class ChaosAltarScript extends Script {
     }
 
     public boolean isAtChaosAltar() {
-        return CHAOS_ALTAR_AREA.contains(Rs2Player.getWorldLocation());
+        for (TileObject obj : Rs2GameObject.getAll()) {
+            if (obj.getId() == 411) {
+                Tile altarTile = obj.getWorldView().getSelectedSceneTile();
+                if (Rs2GameObject.isReachable((GameObject) altarTile)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private void dieToNpc() {
