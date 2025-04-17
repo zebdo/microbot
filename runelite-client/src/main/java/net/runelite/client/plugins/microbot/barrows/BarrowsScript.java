@@ -341,31 +341,10 @@ public class BarrowsScript extends Script {
                                 if (Rs2GameObject.interact(sarc, "Search")) {
                                     sleepUntil(() -> Rs2Player.isMoving(), Rs2Random.between(1000, 3000));
                                     sleepUntil(() -> !Rs2Player.isMoving() || Rs2Player.isInCombat(), Rs2Random.between(3000, 6000));
+                                    sleepUntil(() -> Rs2Dialogue.isInDialogue(), Rs2Random.between(3000, 6000));
                                 }
+
                                 if(Rs2Dialogue.isInDialogue()){
-                                    while(Rs2Dialogue.isInDialogue()){
-                                        if (!super.isRunning()) {
-                                            break;
-                                        }
-                                        if(Rs2Dialogue.hasContinue()){
-                                            Rs2Dialogue.clickContinue();
-                                            sleepUntil(()-> Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!"), Rs2Random.between(2000,5000));
-                                            sleep(300,600);
-                                        }
-                                        if(Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!")){
-                                            if(Rs2Dialogue.clickOption("Yeah I'm fearless!")){
-                                                sleepUntil(()-> Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730, Rs2Random.between(2500,6000));
-                                                sleep(300,600);
-                                                inTunnels = true;
-                                            }
-                                        }
-                                        if(!Rs2Dialogue.isInDialogue()){
-                                            break;
-                                        }
-                                        if (inTunnels) {
-                                            break;
-                                        }
-                                    }
                                     break;
                                 }
 
@@ -374,6 +353,32 @@ public class BarrowsScript extends Script {
                                 }
 
                             }
+
+
+                            while(Rs2Dialogue.isInDialogue()) {
+                                if (!super.isRunning()) {
+                                    break;
+                                }
+                                if (Rs2Dialogue.hasContinue()) {
+                                    Rs2Dialogue.clickContinue();
+                                    sleepUntil(() -> Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!"), Rs2Random.between(2000, 5000));
+                                    sleep(300, 600);
+                                }
+                                if (Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!")) {
+                                    if (Rs2Dialogue.clickOption("Yeah I'm fearless!")) {
+                                        sleepUntil(() -> Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730, Rs2Random.between(2500, 6000));
+                                        sleep(300, 600);
+                                        inTunnels = true;
+                                    }
+                                }
+                                if (!Rs2Dialogue.isInDialogue()) {
+                                    break;
+                                }
+                                if (inTunnels) {
+                                    break;
+                                }
+                            }
+
 
                             break; // done
                         }
