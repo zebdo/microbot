@@ -48,6 +48,8 @@ public class BarrowsScript extends Script {
     private String neededRune = "unknown";
     private volatile boolean shouldWalk = false;
     private boolean shouldBank = false;
+    private int tunnelLoopCount = 0;
+    private WorldPoint FirstLoopTile;
     private Rs2PrayerEnum NeededPrayer;
     int scriptDelay = Rs2Random.between(300,600);
     public boolean run(BarrowsConfig config) {
@@ -61,6 +63,12 @@ public class BarrowsScript extends Script {
                 if(Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730) {
                     inTunnels = true;
                 } else {
+
+                    if(tunnelLoopCount != 0){
+                        //reset the tunnels loop counter
+                        tunnelLoopCount = 0;
+                    }
+
                     inTunnels = false;
                 }
 
@@ -232,6 +240,7 @@ public class BarrowsScript extends Script {
                                     sleep(500,1500);
                                     eatFood();
                                     outOfSupplies();
+                                    antiPatternDropVials();
                                     drinkforgottonbrew();
                                     drinkPrayerPot();
                                     if(Microbot.getClient().getHintArrowNpc() == null){
@@ -308,6 +317,9 @@ public class BarrowsScript extends Script {
                                 if (!super.isRunning()) {
                                     break;
                                 }
+                                //anti pattern
+                                antiPatternDropVials();
+                                //anti pattern
                                 Rs2Walker.walkTo(tunnelMound);
                                 sleep(300, 600);
                                 if(tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1){
@@ -392,6 +404,8 @@ public class BarrowsScript extends Script {
                 if(inTunnels && shouldBank == false) {
                     Microbot.log("In the tunnels");
                     WhoisTun = "Unknown";
+                    stuckInTunsCheck();
+                    tunnelLoopCount++;
                     solvePuzzle();
                     checkForBrother();
                     eatFood();
@@ -656,6 +670,24 @@ public class BarrowsScript extends Script {
         }, 0, scriptDelay, TimeUnit.MILLISECONDS);
         return true;
     }
+    public void stuckInTunsCheck(){
+        //needed for rare occasions where the walker messes up
+        if(tunnelLoopCount == 0){
+            FirstLoopTile = Rs2Player.getWorldLocation();
+        }
+        if(tunnelLoopCount >= 10){
+            WorldPoint currentTile = Rs2Player.getWorldLocation();
+            if(currentTile!=null&&FirstLoopTile!=null){
+                if(currentTile==FirstLoopTile){
+                    Microbot.log("We seem to be stuck. Resetting the walker");
+                    Rs2Walker.setTarget(null);
+                }
+            }
+        }
+        if(tunnelLoopCount >= 20){
+            tunnelLoopCount = 0;
+        }
+    }
     public void gettheRune(){
         Rs2CombatSpells ourspell = Rs2Magic.getCurrentAutoCastSpell();
         neededRune = "unknown";
@@ -697,7 +729,7 @@ public class BarrowsScript extends Script {
         }
     }
     public void antiPatternDropVials(){
-        if(Rs2Random.between(0,100) <= Rs2Random.between(1,10)) {
+        if(Rs2Random.between(0,100) <= Rs2Random.between(1,25)) {
             new Thread(() -> {
                 if (Rs2Inventory.contains("Vial")) {
                     Rs2Inventory.drop("Vial");
@@ -815,6 +847,7 @@ public class BarrowsScript extends Script {
                         drinkPrayerPot();
                         eatFood();
                         outOfSupplies();
+                        antiPatternDropVials();
 
                         if(!Rs2Player.isInCombat()){
                             if(Microbot.getClient().getHintArrowNpc() == null) {
