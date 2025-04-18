@@ -382,7 +382,8 @@ public class BarrowsScript extends Script {
                                 if (Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!")) {
                                     if (Rs2Dialogue.clickOption("Yeah I'm fearless!")) {
                                         sleepUntil(() -> Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730, Rs2Random.between(2500, 6000));
-                                        sleep(300, 600);
+                                        //all some time for the tunnel to load.
+                                        sleep(1000, 2000);
                                         inTunnels = true;
                                     }
                                 }
@@ -672,19 +673,19 @@ public class BarrowsScript extends Script {
     }
     public void stuckInTunsCheck(){
         //needed for rare occasions where the walker messes up
-        if(tunnelLoopCount == 0){
+        if(tunnelLoopCount < 1){
             FirstLoopTile = Rs2Player.getWorldLocation();
         }
-        if(tunnelLoopCount >= 10){
+        if(tunnelLoopCount >= 15){
             WorldPoint currentTile = Rs2Player.getWorldLocation();
             if(currentTile!=null&&FirstLoopTile!=null){
-                if(currentTile==FirstLoopTile){
+                if(currentTile.equals(FirstLoopTile)){
                     Microbot.log("We seem to be stuck. Resetting the walker");
                     Rs2Walker.setTarget(null);
                 }
             }
         }
-        if(tunnelLoopCount >= 20){
+        if(tunnelLoopCount >= 30){
             tunnelLoopCount = 0;
         }
     }
