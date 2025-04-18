@@ -18,6 +18,7 @@ import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
@@ -2013,13 +2014,24 @@ public class Rs2Inventory {
      * @param Npc
      *
      * @return
+     * @deprecated since 1.8.6, forRemoval = true {@link #useItemOnNpc(int, Rs2NpcModel)}
      */
+    @Deprecated(since = "1.8.6" , forRemoval = true)
     public static boolean useItemOnNpc(int itemId, NPC Npc) {
         if (Rs2Bank.isOpen()) return false;
         use(itemId);
         sleep(100);
         if (!isItemSelected()) return false;
         Rs2Npc.interact(Npc);
+        return true;
+    }
+
+    public static boolean useItemOnNpc(int item, Rs2NpcModel npc) {
+        if (Rs2Bank.isOpen()) return false;
+        use(item);
+        sleepUntil(Rs2Inventory::isItemSelected, 1000);
+        if (!isItemSelected()) return false;
+        Rs2Npc.interact(npc);
         return true;
     }
 
