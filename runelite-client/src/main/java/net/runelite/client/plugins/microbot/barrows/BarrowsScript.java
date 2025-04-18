@@ -850,6 +850,23 @@ public class BarrowsScript extends Script {
                         outOfSupplies();
                         antiPatternDropVials();
 
+                        if(!Rs2Prayer.isPrayerActive(neededprayer)){
+                            Microbot.log("Turning on Prayer.");
+                            while(!Rs2Prayer.isPrayerActive(neededprayer)){
+                                if (!super.isRunning()) {
+                                    break;
+                                }
+                                drinkPrayerPot();
+                                Rs2Prayer.toggle(neededprayer);
+                                sleep(0,750);
+                                if (Rs2Prayer.isPrayerActive(neededprayer)) {
+                                    //we made it in
+                                    Microbot.log("Praying");
+                                    break;
+                                }
+                            }
+                        }
+
                         if(!Rs2Player.isInCombat()){
                             if(Microbot.getClient().getHintArrowNpc() == null) {
                                 // if we're not in combat and the brother isn't there.
