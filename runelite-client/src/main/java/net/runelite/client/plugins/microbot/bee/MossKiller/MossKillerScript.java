@@ -400,7 +400,7 @@ public class MossKillerScript extends Script {
                 if (health <= 10.0) {
                     if (Rs2Inventory.use(BRONZE_AXE)) {
                         sleep(750, 1000);
-                        Rs2Npc.attack(npc);
+                        Rs2Npc.interact(npc, "Use");
                         sleep(450, 650);
                     }
                 }
