@@ -446,9 +446,12 @@ public class WildySaferScript extends Script {
                 Rs2Bank.depositAll();}
 
             if (!Rs2Bank.isOpen()) {
+                Rs2Bank.useBank();
+                if (!Rs2Bank.isOpen()) {
                 Rs2Equipment.unEquip(AMMO);
                 Rs2Bank.walkToBankAndUseBank();
                 sleep(2000,4000);
+            }
             }
         }
 
