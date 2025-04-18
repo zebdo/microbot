@@ -332,6 +332,15 @@ public class Rs2InventorySetup {
     }
 
     /**
+     * Retrieves the list of additional items from the setup, excluding any dummy items (ID == -1).
+     *
+     * @return A list of valid additional filtered items.
+     */
+    public List<InventorySetupsItem> getAdditionalItems() {
+        return inventorySetup.getAdditionalFilteredItems().values().stream().filter(x -> x.getId() != -1).collect(Collectors.toList());
+    }
+
+    /**
      * Creates a list of item names that should not be deposited into the bank.
      * Combines items from both the inventory setup and the equipment setup.
      *
