@@ -618,14 +618,14 @@ public class Rs2Npc {
                 }
             }
 
-            if (index == -1) {
-                Microbot.log("Error: Action '" + action + "' not found for NPC: " + npc.getName());
-                return false;
-            }
-
             MenuAction menuAction = getMenuAction(index);
+
             if (menuAction == null) {
-                Microbot.log("Error: Could not get menu action for action '" + action + "' on NPC: " + npc.getName());
+                if (index == -1 && !Microbot.getClient().isWidgetSelected()) {
+                    Microbot.log("Error: Action '" + action + "' not found for NPC: " + npc.getName());
+                } else {
+                    Microbot.log("Error: Could not get menu action for action '" + action + "' on NPC: " + npc.getName());
+                }
                 return false;
             }
 
