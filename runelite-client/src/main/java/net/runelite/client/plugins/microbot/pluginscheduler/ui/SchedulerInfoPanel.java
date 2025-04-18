@@ -1,10 +1,9 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.ui;
 
-import net.runelite.client.plugins.microbot.BlockingEventManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerState;
-import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
+import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity;
 import net.runelite.client.ui.ColorScheme;
@@ -15,6 +14,9 @@ import javax.swing.*;
 
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
+
+import lombok.extern.slf4j.Slf4j;
+
 import java.awt.*;
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -23,6 +25,7 @@ import java.time.ZonedDateTime;
 /**
  * Displays real-time information about the scheduler status and plugins
  */
+@Slf4j
 public class SchedulerInfoPanel extends JPanel {
     private final SchedulerPlugin plugin;
     
@@ -90,7 +93,7 @@ public class SchedulerInfoPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.gridwidth = 2;
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+        JPanel buttonPanel = new JPanel(new GridLayout(2, 2, 5, 5));
         buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
         // Create run scheduler button
@@ -424,7 +427,7 @@ public class SchedulerInfoPanel extends JPanel {
         
         if (currentPlugin != null && currentPlugin.isRunning()) {
             // Set visibility
-            currentPluginPanel.setVisible(true);
+            updatePanelVisibility(currentPluginPanel, true);
             
             // Update name with pause indicator if needed
             if (ScriptPauseEvent.isPaused()) {
@@ -485,6 +488,7 @@ public class SchedulerInfoPanel extends JPanel {
             stopConditionProgressBar.setValue(0);
             stopConditionProgressBar.setString("0%");
             currentPluginStartTime = null;
+            updatePanelVisibility(currentPluginPanel, false);
         }
     }
     
@@ -492,11 +496,12 @@ public class SchedulerInfoPanel extends JPanel {
      * Updates information about the next scheduled plugin
      */
     private void updateNextPluginInfo() {
+
         PluginScheduleEntry nextPlugin = plugin.getNextScheduledPlugin();
         
         if (nextPlugin != null) {
             // Set visibility
-            nextPluginPanel.setVisible(true);
+            updatePanelVisibility(nextPluginPanel, true);
             
             // Update name
             nextPluginNameLabel.setText(nextPlugin.getCleanName());
@@ -523,6 +528,8 @@ public class SchedulerInfoPanel extends JPanel {
             nextPluginTimeLabel.setText("--:--");
             nextPluginScheduleLabel.setText("None");
         }
+        updatePanelVisibility(nextPluginPanel, nextPlugin != null);
+    
     }
     
     /**
@@ -551,10 +558,23 @@ public class SchedulerInfoPanel extends JPanel {
         
         // Update idle time
         int idleTime = plugin.getIdleTime();
-        idleTimeLabel.setText(idleTime + " ticks");
+        if (idleTime >= 0) {
+            idleTimeLabel.setText(idleTime + " ticks");
+            // Change color based on idle time
+            if (idleTime > 100) {
+                idleTimeLabel.setForeground(new Color(255, 106, 0)); // Orange for long idle
+            } else if (idleTime > 50) {
+                idleTimeLabel.setForeground(new Color(255, 193, 7)); // Yellow for medium idle
+            } else {
+                idleTimeLabel.setForeground(Color.WHITE); // Normal color
+            }
+        } else {
+            idleTimeLabel.setText("0 ticks");
+            idleTimeLabel.setForeground(Color.WHITE);
+        }
         
         // Update login duration
-        Duration loginDuration = plugin.getLoginDuration();
+        Duration loginDuration = Microbot.getLoginTime();
         if (loginDuration.getSeconds() > 0) {
             long hours = loginDuration.toHours();
             long minutes = (loginDuration.toMinutes() % 60);
@@ -600,6 +620,30 @@ public class SchedulerInfoPanel extends JPanel {
         } else {
             breakDurationLabel.setText("00:00:00");
             breakDurationLabel.setForeground(Color.GRAY);
+        }
+    }
+
+    /**
+     * Updates panel visibility and ensures proper resizing
+     * @param panel The panel to update
+     * @param visible Whether the panel should be visible
+     */
+    private void updatePanelVisibility(JPanel panel, boolean visible) {
+        boolean wasVisible = panel.isVisible();
+        panel.setVisible(visible);
+        
+        // Only revalidate if visibility changed
+        if (wasVisible != visible) {
+            // Trigger complete layout recalculation
+            SwingUtilities.invokeLater(() -> {
+                Container parent = getParent();
+                while (parent != null) {
+                    parent.invalidate();
+                    parent = parent.getParent();
+                }
+                revalidate();
+                repaint();
+            });
         }
     }
 }

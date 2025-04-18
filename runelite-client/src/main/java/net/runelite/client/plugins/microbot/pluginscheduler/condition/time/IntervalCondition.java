@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition.time;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -16,14 +17,23 @@ import java.util.concurrent.ThreadLocalRandom;
  */
 
 @Slf4j
+@EqualsAndHashCode(callSuper = false , exclude = {"nextTriggerTime"})
 public class IntervalCondition extends TimeCondition {
     @Getter
     private final Duration interval;
-    private ZonedDateTime nextTriggerTime;
+    private transient ZonedDateTime nextTriggerTime;
     @Getter
-    private boolean randomize;
+    private final boolean randomize;
     @Getter
-    private double randomFactor;
+    private final double randomFactor;
+    
+    // Add min/max interval support
+    @Getter
+    private final Duration minInterval;
+    @Getter
+    private final Duration maxInterval;
+    @Getter
+    private final boolean isRandomized; // True if using min/max intervals
  
     /**
      * Creates an interval condition that triggers at regular intervals
@@ -31,7 +41,7 @@ public class IntervalCondition extends TimeCondition {
      * @param interval The time interval between triggers
      */
     public IntervalCondition(Duration interval) {
-        this(interval, false,0.0, 0);
+        this(interval, false, 0.0, 0);
     }
     
     /**
@@ -46,7 +56,36 @@ public class IntervalCondition extends TimeCondition {
         this.interval = interval;
         this.randomize = randomize;
         this.randomFactor = Math.max(0, Math.min(1.0, randomFactor));
-        this.nextTriggerTime = calculateNextTriggerTime(randomize, randomFactor);
+        
+        // Set min/max intervals based on randomization factor
+        if (randomize && randomFactor > 0) {
+            long baseMillis = interval.toMillis();
+            long variation = (long) (baseMillis * randomFactor);
+            this.minInterval = Duration.ofMillis(Math.max(0, baseMillis - variation));
+            this.maxInterval = Duration.ofMillis(baseMillis + variation);
+            this.isRandomized = true;
+        } else {
+            this.minInterval = interval;
+            this.maxInterval = interval;
+            this.isRandomized = false;
+        }
+        
+        this.nextTriggerTime = calculateNextTriggerTime();
+    }
+    
+    /**
+     * Private constructor with explicit min/max interval values
+     */
+    private IntervalCondition(Duration interval, Duration minInterval, Duration maxInterval, 
+                              boolean randomize, double randomFactor, long maximumNumberOfRepeats) {
+        super(maximumNumberOfRepeats);
+        this.interval = interval;
+        this.randomize = randomize;
+        this.randomFactor = randomFactor;
+        this.minInterval = minInterval;
+        this.maxInterval = maxInterval;
+        this.isRandomized = !minInterval.equals(maxInterval);
+        this.nextTriggerTime = calculateNextTriggerTime();
     }
     
     /**
@@ -78,10 +117,19 @@ public class IntervalCondition extends TimeCondition {
      * @return A randomized interval condition
      */
     public static IntervalCondition createRandomized(Duration minDuration, Duration maxDuration) {
-        long minSeconds = minDuration.getSeconds();
-        long maxSeconds = maxDuration.getSeconds();
-        long randomSeconds = ThreadLocalRandom.current().nextLong(minSeconds, maxSeconds + 1);
-        return new IntervalCondition(Duration.ofSeconds(randomSeconds));
+        // Create an average interval for display purposes
+        long minMillis = minDuration.toMillis();
+        long maxMillis = maxDuration.toMillis();
+        Duration avgInterval = Duration.ofMillis((minMillis + maxMillis) / 2);
+        
+        // Calculate a randomization factor for backward compatibility
+        double randomFactor = 0.0;
+        if (minMillis < maxMillis) {
+            long diff = maxMillis - minMillis;
+            randomFactor = diff / (double)(avgInterval.toMillis() * 2);
+        }
+        
+        return new IntervalCondition(avgInterval, minDuration, maxDuration, true, randomFactor, 0);
     }
 
     @Override
@@ -113,7 +161,12 @@ public class IntervalCondition extends TimeCondition {
             }
         }
         
-        if (randomize) {
+        if (isRandomized) {
+            return String.format("Every %s-%s%s", 
+                    formatDuration(minInterval), 
+                    formatDuration(maxInterval),
+                    timeLeft);
+        } else if (randomize) {
             return String.format("Every %s±%.0f%%%s", 
                     formatDuration(interval), randomFactor * 100, timeLeft);
         } else {
@@ -150,6 +203,19 @@ public class IntervalCondition extends TimeCondition {
             sb.append("Randomization: Enabled (±").append(String.format("%.0f", randomFactor * 100)).append("%)\n");
         }
         
+        // Add lastValidResetTime information
+        if (lastValidResetTime != null && currentValidResetCount > 0) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+            sb.append("Last reset: ").append(lastValidResetTime.format(formatter)).append("\n");
+            
+            // Calculate time since the last reset
+            Duration sinceLastReset = Duration.between(lastValidResetTime, LocalDateTime.now());
+            long seconds = sinceLastReset.getSeconds();
+            sb.append("Time since last reset: ")
+              .append(String.format("%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60))
+              .append("\n");
+        }
+        
         sb.append(super.getDescription());
         
         return sb.toString();
@@ -167,9 +233,14 @@ public class IntervalCondition extends TimeCondition {
         
         // Randomization
         sb.append("  ├─ Randomization ────────────────────────────\n");
-        sb.append("  │ Randomization: ").append(randomize ? "Enabled" : "Disabled").append("\n");
-        if (randomize) {
+        if (isRandomized) {
+            sb.append("  │ Min Interval: ").append(formatDuration(minInterval)).append("\n");
+            sb.append("  │ Max Interval: ").append(formatDuration(maxInterval)).append("\n");
+        } else if (randomize) {
+            sb.append("  │ Randomization: Enabled\n");
             sb.append("  │ Random Factor: ±").append(String.format("%.0f%%", randomFactor * 100)).append("\n");
+        } else {
+            sb.append("  │ Randomization: Disabled\n");
         }
         
         // Status information
@@ -195,15 +266,22 @@ public class IntervalCondition extends TimeCondition {
         
         // Tracking info
         sb.append("  └─ Tracking ────────────────────────────────\n");
-        sb.append("    Reset Count: ").append(currentResetCount);
+        sb.append("    Reset Count: ").append(currentValidResetCount);
         if (this.getMaximumNumberOfRepeats() > 0) {
             sb.append("/").append(getMaximumNumberOfRepeats());
         } else {
             sb.append(" (unlimited)");
         }
         sb.append("\n");
-        if (lastResetTime != null) {
-            sb.append("    Last Reset: ").append(lastResetTime.format(dateTimeFormatter)).append("\n");
+        if (lastValidResetTime != null) {
+            sb.append("    Last Reset: ").append(lastValidResetTime.format(dateTimeFormatter)).append("\n");
+            
+            // Add time since last reset
+            Duration sinceLastReset = Duration.between(lastValidResetTime, LocalDateTime.now());
+            long seconds = sinceLastReset.getSeconds();
+            sb.append("    Time Since Reset: ")
+              .append(String.format("%02d:%02d:%02d", seconds / 3600, (seconds % 3600) / 60, seconds % 60))
+              .append("\n");
         }
         sb.append("    Can Trigger Again: ").append(canTriggerAgain()).append("\n");
         
@@ -212,9 +290,8 @@ public class IntervalCondition extends TimeCondition {
 
     @Override
     public void reset(boolean randomize) {
-        this.nextTriggerTime = calculateNextTriggerTime(randomize, randomFactor);
-        this.currentResetCount++;
-        this.lastResetTime = LocalDateTime.now();
+        updateValidReset();
+        this.nextTriggerTime = calculateNextTriggerTime();        
         log.debug("IntervalCondition reset, next trigger at: {}", nextTriggerTime);
     }
    
@@ -247,20 +324,45 @@ public class IntervalCondition extends TimeCondition {
         return Optional.of(nextTriggerTime);
     }
     
-    private ZonedDateTime calculateNextTriggerTime(boolean randomize, double factor) {
+    private ZonedDateTime calculateNextTriggerTime() {
         ZonedDateTime now = getNow();
         
-        if (!randomize || factor <= 0) {
-            return now.plus(interval);
+        // If using min/max intervals
+        if (isRandomized) {
+            long minMillis = minInterval.toMillis();
+            long maxMillis = maxInterval.toMillis();
+            long randomMillis = ThreadLocalRandom.current().nextLong(minMillis, maxMillis + 1);
+            Duration randomizedInterval = Duration.ofMillis(randomMillis);
+            
+            if (canTriggerAgain() && this.currentValidResetCount > 0) {
+                // If the condition has already been triggered, we need to set the next trigger time
+                return now.plus(randomizedInterval);
+            } else {
+                // Initial creation
+                return now;
+            }
         }
-        
-        // Apply randomization to the interval
-        long intervalMillis = interval.toMillis();
-        long variance = (long) (intervalMillis * factor);
-        long randomAdditionalMillis = ThreadLocalRandom.current().nextLong(-variance, variance + 1);
-        
-        Duration randomizedInterval = Duration.ofMillis(intervalMillis + randomAdditionalMillis);
-        return now.plus(randomizedInterval);
+        // If using randomize factor approach
+        else if (randomize && randomFactor > 0) {
+            long intervalMillis = interval.toMillis();
+            long variance = (long) (intervalMillis * randomFactor);
+            long randomAdditionalMillis = ThreadLocalRandom.current().nextLong(-variance, variance + 1);
+            
+            Duration randomizedInterval = Duration.ofMillis(intervalMillis + randomAdditionalMillis);
+            if (canTriggerAgain() && this.currentValidResetCount > 0) {
+                return now.plus(randomizedInterval);
+            } else {
+                return now;
+            }
+        } 
+        // Fixed interval
+        else {
+            if (canTriggerAgain() && this.currentValidResetCount > 0) {
+                return now.plus(interval);
+            } else {
+                return now;
+            }
+        }
     }
     
     private String formatDuration(Duration duration) {

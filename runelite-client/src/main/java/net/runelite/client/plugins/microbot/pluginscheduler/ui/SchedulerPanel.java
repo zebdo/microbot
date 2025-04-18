@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.ui;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerState;
-import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
+import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
@@ -14,8 +14,7 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.time.ZonedDateTime;
 import java.util.concurrent.TimeUnit;
-
-
+import javax.swing.SwingUtilities;
 
 public class SchedulerPanel extends PluginPanel {
     private final SchedulerPlugin plugin;
@@ -35,6 +34,7 @@ public class SchedulerPanel extends PluginPanel {
     private final JButton configButton;
     private final JButton runButton;
     private final JButton stopButton;
+    private final JButton antibanButton; // Added button for Antiban settings
 
 
     public SchedulerPanel(SchedulerPlugin plugin) {
@@ -107,7 +107,7 @@ public class SchedulerPanel extends PluginPanel {
         statusPanel.add(schedulerStatusLabel, createGbc(1, 0));
 
         // Button panel - vertical layout (one button per row)
-        JPanel buttonPanel = new JPanel(new GridLayout(3, 1, 0, 5));
+        JPanel buttonPanel = new JPanel(new GridLayout(4, 1, 0, 5)); // Changed to 4 rows for the new button
         buttonPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
         
         // Add config button
@@ -132,10 +132,18 @@ public class SchedulerPanel extends PluginPanel {
         });
         this.stopButton = stopButton;
 
-        // Add buttons in order starting with Open Scheduler
+        // Add Antiban button - uses a distinct purple color
+        Color purpleColor = new Color(156, 39, 176);
+        JButton antibanButton = createButton("Antiban Settings", purpleColor);
+        antibanButton.addActionListener(this::onAntibanButtonClicked);
+        antibanButton.setToolTipText("Open Antiban settings in a separate window");
+        this.antibanButton = antibanButton;
+
+        // Add buttons in order
         buttonPanel.add(configButton);
         buttonPanel.add(runButton);
         buttonPanel.add(stopButton);
+        buttonPanel.add(antibanButton); // Add the new Antiban button
 
         // Add components to main panel
         mainPanel.add(infoPanel);
@@ -334,5 +342,9 @@ public class SchedulerPanel extends PluginPanel {
 
     private void onOpenConfigButtonClicked(ActionEvent e) {
         plugin.openSchedulerWindow();
+    }
+
+    private void onAntibanButtonClicked(ActionEvent e) {
+        plugin.openAntibanSettings();
     }
 }

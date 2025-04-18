@@ -21,7 +21,7 @@ public enum SchedulerState {
     HOLD("Stopped", "Scheduler was manually stopped", new Color(244, 67, 54)),
     ERROR("Error", "Scheduler encountered an error", new Color(255, 0, 0)),
     SHORT_BREAK("Short Break", "Taking a short break until next plugin", new Color(100, 149, 237)),
-    WAITING_FOR_SCHEDULE("Waiting for Schedule", "Waiting for next scheduled plugin", new Color(147, 112, 219)),
+    WAITING_FOR_SCHEDULE("Next Schedule Soon", "Waiting for upcoming scheduled plugin", new Color(147, 112, 219)),
     LOGIN("Login", "Try To Login", new Color(255, 215, 0));
     private final String displayName;
     private final String description;

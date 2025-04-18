@@ -3,12 +3,14 @@ package net.runelite.client.plugins.microbot.pluginscheduler.condition.logical;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
+import lombok.EqualsAndHashCode;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
 
 /**
  * Logical OR combination of conditions - any can be met.
  */
+@EqualsAndHashCode(callSuper = false)
 public class OrCondition extends LogicalCondition {
     public OrCondition(Condition... conditions) {
         super(conditions);
@@ -20,33 +22,7 @@ public class OrCondition extends LogicalCondition {
         return conditions.stream().anyMatch(Condition::isSatisfied);
     }
     
-    @Override
-    public String getDescription() {
-        if (conditions.isEmpty()) {
-            return "No conditions";
-        }
-        
-        StringBuilder sb = new StringBuilder("ANY of: (");
-        for (int i = 0; i < conditions.size(); i++) {
-            if (i > 0) sb.append(" OR ");
-            sb.append(conditions.get(i).getDescription());
-        }
-        sb.append(")");
-        return sb.toString();
-    }
-    @Override
-    public void reset() {
-        for (Condition condition : conditions) {
-            condition.reset();
-        }
-    }
-    @Override
-    public void reset(boolean randomize) {
-        for (Condition condition : conditions) {
-            condition.reset(randomize);
-        }
-        
-    }
+
     
     /**
      * Gets the next time this OR condition will be satisfied.
@@ -92,5 +68,90 @@ public class OrCondition extends LogicalCondition {
             return Optional.empty();
         }        
         
+    }
+    
+    /**
+     * Returns a detailed description of the OR condition with additional status information
+     */
+    public String getDetailedDescription() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Basic description
+        sb.append("OR Logical Condition: Any condition can be satisfied\n");
+        
+        // Status information
+        boolean satisfied = isSatisfied();
+        sb.append("Status: ").append(satisfied ? "Satisfied" : "Not satisfied").append("\n");
+        sb.append("Child Conditions: ").append(conditions.size()).append("\n");
+        
+        // Progress information
+        double progress = getProgressPercentage();
+        sb.append(String.format("Overall Progress: %.1f%%\n", progress));
+        
+        // Count satisfied conditions
+        int satisfiedCount = 0;
+        for (Condition condition : conditions) {
+            if (condition.isSatisfied()) {
+                satisfiedCount++;
+            }
+        }
+        sb.append("Satisfied Conditions: ").append(satisfiedCount).append("/").append(conditions.size()).append("\n\n");
+        
+        // List all child conditions
+        sb.append("Child Conditions:\n");
+        for (int i = 0; i < conditions.size(); i++) {
+            Condition condition = conditions.get(i);
+            sb.append(String.format("%d. %s [%s]\n", 
+                    i + 1, 
+                    condition.getDescription(),
+                    condition.isSatisfied() ? "SATISFIED" : "NOT SATISFIED"));
+        }
+        
+        return sb.toString();
+    }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Basic information
+        sb.append("OrCondition:\n");
+        sb.append("  ┌─ Configuration ─────────────────────────────\n");
+        sb.append("  │ Type: OR (Any condition can be satisfied)\n");
+        sb.append("  │ Child Conditions: ").append(conditions.size()).append("\n");
+        
+        // Status information
+        sb.append("  ├─ Status ──────────────────────────────────\n");
+        boolean anySatisfied = isSatisfied();
+        sb.append("  │ Satisfied: ").append(anySatisfied).append("\n");
+        
+        // Count satisfied conditions
+        int satisfiedCount = 0;
+        for (Condition condition : conditions) {
+            if (condition.isSatisfied()) {
+                satisfiedCount++;
+            }
+        }
+        sb.append("  │ Satisfied Conditions: ").append(satisfiedCount).append("/").append(conditions.size()).append("\n");
+        sb.append("  │ Progress: ").append(String.format("%.1f%%", getProgressPercentage())).append("\n");
+        
+        // Child conditions
+        if (!conditions.isEmpty()) {
+            sb.append("  ├─ Child Conditions ────────────────────────\n");
+            
+            for (int i = 0; i < conditions.size(); i++) {
+                Condition condition = conditions.get(i);
+                String prefix = (i == conditions.size() - 1) ? "  └─ " : "  ├─ ";
+                
+                sb.append(prefix).append(String.format("Condition %d: %s [%s]\n", 
+                        i + 1, 
+                        condition.getClass().getSimpleName(),
+                        condition.isSatisfied() ? "SATISFIED" : "NOT SATISFIED"));
+            }
+        } else {
+            sb.append("  └─ No Child Conditions ───────────────────────\n");
+        }
+        
+        return sb.toString();
     }
 }

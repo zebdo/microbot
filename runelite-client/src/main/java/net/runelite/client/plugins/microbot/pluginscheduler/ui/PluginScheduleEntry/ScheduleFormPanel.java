@@ -2,18 +2,22 @@ package net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEn
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
+import net.runelite.client.plugins.microbot.pluginscheduler.ui.SchedulerWindow;
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.components.DateRangePanel;
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.components.SingleDateTimePickerPanel;
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.components.TimeRangePanel;
-import net.runelite.client.plugins.microbot.pluginscheduler.ui.condition.ConditionConfigPanelUtil;
-import net.runelite.client.plugins.microbot.pluginscheduler.ui.condition.TimeConditionPanelUtil;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.ui.util.ConditionConfigPanelUtil;
+import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerConfig;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.DayOfWeekCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.enums.RepeatCycle;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.ui.TimeConditionPanelUtil;
+import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -24,10 +28,7 @@ import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.time.DayOfWeek;
 import java.time.Duration;
-import java.time.format.DateTimeFormatter;
-import java.util.Date;
 import java.util.List;
 @Slf4j
 public class ScheduleFormPanel extends JPanel {
@@ -57,11 +58,13 @@ public class ScheduleFormPanel extends JPanel {
     private static final String CONDITION_SPECIFIC_TIME = "Run at Specific Time";
     private static final String CONDITION_INTERVAL = "Run at Interval";
     private static final String CONDITION_TIME_WINDOW = "Run in Time Window";
+    private static final String CONDITION_DAY_OF_WEEK = "Run on Day of Week";
     private static final String[] TIME_CONDITION_TYPES = {
             CONDITION_DEFAULT,
             CONDITION_SPECIFIC_TIME,
             CONDITION_INTERVAL,
-            CONDITION_TIME_WINDOW
+            CONDITION_TIME_WINDOW,
+            CONDITION_DAY_OF_WEEK
     };
 
     // Add fields and methods for the selection change listener
@@ -275,13 +278,21 @@ public class ScheduleFormPanel extends JPanel {
             else if (CONDITION_INTERVAL.equals(selectedType)) {
                 // Use TimeConditionPanelUtil instead of ConditionConfigPanelUtil
                 currentConditionPanel.setLayout(new GridBagLayout());
-                TimeConditionPanelUtil.createTimeConfigPanel(currentConditionPanel, gbc, currentConditionPanel);
+                TimeConditionPanelUtil.createIntervalConfigPanel(currentConditionPanel, gbc, currentConditionPanel);
             }
             else if (CONDITION_TIME_WINDOW.equals(selectedType)) {
                 // Use TimeConditionPanelUtil instead of ConditionConfigPanelUtil
                 currentConditionPanel.setLayout(new GridBagLayout());
                 TimeConditionPanelUtil.createEnhancedTimeWindowConfigPanel(currentConditionPanel, gbc, currentConditionPanel);
+            }else if (CONDITION_DAY_OF_WEEK.equals(selectedType)) {
+                // Use TimeConditionPanelUtil instead of ConditionConfigPanelUtil
+                currentConditionPanel.setLayout(new GridBagLayout());
+                TimeConditionPanelUtil.createDayOfWeekConfigPanel(currentConditionPanel, gbc, currentConditionPanel);
+            } else {
+                // Default to empty panel
+                currentConditionPanel.add(new JLabel("No configuration available for this type."));
             }
+            
         }
         
         // Add the panel
@@ -326,7 +337,20 @@ public class ScheduleFormPanel extends JPanel {
 
     public void loadPlugin(PluginScheduleEntry entry) {
         this.selectedPlugin = entry;
+        
+        // Block combobox events temporarily to avoid feedback loops
+        ActionListener[] listeners = pluginComboBox.getActionListeners();
+        for (ActionListener listener : listeners) {
+            pluginComboBox.removeActionListener(listener);
+        }
+        
+        // Update plugin selection
         pluginComboBox.setSelectedItem(entry.getName());
+        
+        // Re-add listeners
+        for (ActionListener listener : listeners) {
+            pluginComboBox.addActionListener(listener);
+        }
         
         // Set random scheduling checkbox
         randomSchedulingCheckbox.setSelected(entry.isAllowRandomScheduling());
@@ -349,37 +373,54 @@ public class ScheduleFormPanel extends JPanel {
                 startCondition = timeConditions.get(0);
             }
         }
+        TimeCondition mainStartCondition = entry.getMainTimeStartCondition();
+        
+        // Block combobox events again for condition type changes
+        ActionListener[] conditionListeners = timeConditionTypeComboBox.getActionListeners();
+        for (ActionListener listener : conditionListeners) {
+            timeConditionTypeComboBox.removeActionListener(listener);
+        }
         
         // If it's a default plugin (by flag or by interval), show "Run Default"
-        if (isDefaultPlugin) {
-            timeConditionTypeComboBox.setSelectedItem(CONDITION_DEFAULT);
-            updateConditionPanel();
-        }
-        else if (startCondition instanceof SingleTriggerTimeCondition) {
+        
+        if (startCondition instanceof SingleTriggerTimeCondition) {
             timeConditionTypeComboBox.setSelectedItem(CONDITION_SPECIFIC_TIME);
-            updateConditionPanel();
-            
+            updateConditionPanel();            
             // Configure the panel with existing values
-          //  setupTimeConditionPanel(startCondition);
+            setupTimeConditionPanel(startCondition);
         }
         else if (startCondition instanceof IntervalCondition) {
             timeConditionTypeComboBox.setSelectedItem(CONDITION_INTERVAL);
             updateConditionPanel();
             
             // Configure the panel with existing values
-        //    setupTimeConditionPanel(startCondition);
+            setupTimeConditionPanel(startCondition);
         }
         else if (startCondition instanceof TimeWindowCondition) {
             timeConditionTypeComboBox.setSelectedItem(CONDITION_TIME_WINDOW);
-            updateConditionPanel();
-            
+            updateConditionPanel();            
             // Configure the panel with existing values
-            //setupTimeConditionPanel(startCondition);
+            setupTimeConditionPanel(startCondition);
+        }
+        else if (startCondition instanceof DayOfWeekCondition) {
+            // Handle day of week condition if needed
+            timeConditionTypeComboBox.setSelectedItem(CONDITION_DAY_OF_WEEK);
+            updateConditionPanel();
+            setupTimeConditionPanel(startCondition);
+        }
+        else if (isDefaultPlugin) {
+            timeConditionTypeComboBox.setSelectedItem(CONDITION_DEFAULT);
+            updateConditionPanel();
         }
         else {
             // Default to "Run Default"
             timeConditionTypeComboBox.setSelectedItem(CONDITION_DEFAULT);
             updateConditionPanel();
+        }
+        
+        // Re-add condition type listeners
+        for (ActionListener listener : conditionListeners) {
+            timeConditionTypeComboBox.addActionListener(listener);
         }
         
         // Update the control button to reflect the current plugin
@@ -432,7 +473,7 @@ public class ScheduleFormPanel extends JPanel {
         }
         else if (CONDITION_INTERVAL.equals(selectedType)) {
             // Create IntervalCondition using TimeConditionPanelUtil
-            timeCondition = TimeConditionPanelUtil.createTimeCondition(currentConditionPanel);
+            timeCondition = TimeConditionPanelUtil.createIntervalCondition(currentConditionPanel);
         }
         else if (CONDITION_TIME_WINDOW.equals(selectedType)) {
             // Use TimeConditionPanelUtil instead of ConditionConfigPanelUtil
@@ -469,28 +510,145 @@ public class ScheduleFormPanel extends JPanel {
     }
 
     public void updateControlButton() {
-        if (plugin.isScheduledPluginRunning()) {
-            // If a plugin is running, show "Stop Plugin" button
-            controlButton.setText("Stop Running Plugin");
+        PluginScheduleEntry runningPlugin = plugin.getCurrentPlugin();
+        boolean isPluginRunning = plugin.isScheduledPluginRunning();
+        
+        if (isPluginRunning && runningPlugin != null) {
+            // If a plugin is running, show the "Stop Plugin" button
+            controlButton.setText("Stop \"" + runningPlugin.getCleanName() + "\"");
             controlButton.setEnabled(true);
+            
+            // Change color to indicate stopping action
+            controlButton.setBorder(new CompoundBorder(
+                BorderFactory.createLineBorder(ColorScheme.PROGRESS_ERROR_COLOR.darker(), 1),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)));
         } else if (selectedPlugin != null) {
-            controlButton.setText("Run \"" + selectedPlugin.getCleanName() + "\" Now");
-            controlButton.setEnabled(true);
+            // Check if this plugin's next scheduled time is beyond the configurable threshold
+            boolean canBeManuallyStarted = true;
+            String disabledReason = "";
+            SchedulerConfig schedulerConfig = plugin.provideConfig(Microbot.getConfigManager());
+            int minThresholdMinutes = 0;
+            if (schedulerConfig != null) {
+                minThresholdMinutes = schedulerConfig.minManualStartThresholdMinutes();                
+            }
+            // Only perform this check if the plugin has a scheduled time
+            if (selectedPlugin.getCurrentStartTriggerTime().isPresent()) {
+                // Get the minimum time threshold from config (in minutes)
+               
+                
+                
+                // Get the time until this plugin's next scheduled run
+                java.time.Duration timeUntilScheduled = java.time.Duration.between(
+                    java.time.ZonedDateTime.now(java.time.ZoneId.systemDefault()),
+                    selectedPlugin.getCurrentStartTriggerTime().get()
+                );
+                
+                // If the plugin is scheduled to run within the threshold time, don't allow manual start
+                if (timeUntilScheduled.toMinutes() < minThresholdMinutes) {
+                    canBeManuallyStarted = false;
+                    disabledReason = String.format(" (scheduled in %d minutes)", timeUntilScheduled.toMinutes());
+                }
+            }
+            
+            // If no plugin is running but one is selected, conditionally enable "Run Now" for that plugin
+            if (canBeManuallyStarted) {
+                controlButton.setText("Run \"" + selectedPlugin.getCleanName() + "\" Now");
+                controlButton.setEnabled(true);
+                controlButton.setToolTipText(null); // Clear any previous tooltip
+                
+                // Change color to indicate starting action
+                controlButton.setBorder(new CompoundBorder(
+                    BorderFactory.createLineBorder(ColorScheme.PROGRESS_COMPLETE_COLOR.darker(), 1),
+                    BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+            } else {
+                controlButton.setText("Run \"" + selectedPlugin.getCleanName() + "\" Scheduled" + disabledReason);
+                controlButton.setEnabled(false);
+                controlButton.setToolTipText("This plugin is scheduled to run soon. Wait until after the minimum threshold time (" + 
+                                                minThresholdMinutes + 
+                                             " minutes) to manually start it.");
+                
+                // Use a disabled color
+                controlButton.setBorder(new CompoundBorder(
+                    BorderFactory.createLineBorder(ColorScheme.DARK_GRAY_COLOR.darker(), 1),
+                    BorderFactory.createEmptyBorder(5, 5, 5, 5)));
+            }
         } else {
             // If no plugin is selected, disable the button
             controlButton.setText("Select a Plugin");
             controlButton.setEnabled(false);
+            controlButton.setToolTipText(null); // Clear any previous tooltip
+            
+            // Reset button color
+            controlButton.setBorder(new CompoundBorder(
+                BorderFactory.createLineBorder(ColorScheme.DARKER_GRAY_COLOR.darker(), 1),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)));
         }
     }
 
     private void onControlButtonClicked(ActionEvent e) {
         if (plugin.isScheduledPluginRunning()) {
-            // Stop the current plugin
-            log.info("onControlButtonClicked onControlButtonClicked");
-            plugin.forceStopCurrentPluginScheduleEntry();
+            // Stop the currently running plugin
+            log.info("Stopping currently running plugin via control button");
+            
+            // Show confirmation dialog before stopping
+            PluginScheduleEntry currentPlugin = plugin.getCurrentPlugin();
+            String pluginName = currentPlugin != null ? currentPlugin.getCleanName() : "Unknown";
+            
+            int result = JOptionPane.showConfirmDialog(
+                this,
+                "Are you sure you want to stop the running plugin \"" + pluginName + "\"?",
+                "Confirm Stop Plugin",
+                JOptionPane.YES_NO_OPTION
+            );
+            
+            if (result == JOptionPane.YES_OPTION) {
+                // User confirmed - stop the plugin
+                plugin.forceStopCurrentPluginScheduleEntry();
+                
+                // Update UI after stopping
+                SwingUtilities.invokeLater(() -> {
+                    updateControlButton();
+                });
+            }
         } else if (selectedPlugin != null) {
-            // Run the selected plugin now
+            // Start the selected plugin
+            log.info("Starting plugin \"{}\" via control button", selectedPlugin.getCleanName());
+            
+            // Check if the plugin has any stop conditions if enforcement is enabled
+            if (plugin.provideConfig(null).enforceTimeBasedStopCondition() && 
+                selectedPlugin.getStopConditionManager().getConditions().isEmpty()) {
+                
+                int result = JOptionPane.showConfirmDialog(
+                    this,
+                    "Plugin \"" + selectedPlugin.getCleanName() + "\" has no stop conditions set.\n" +
+                    "It will run until manually stopped.\n\n" +
+                    "Would you like to configure stop conditions first?",
+                    "No Stop Conditions",
+                    JOptionPane.YES_NO_CANCEL_OPTION
+                );
+                
+                if (result == JOptionPane.YES_OPTION) {
+                    // Open the stop conditions tab in the scheduler window
+                    SwingUtilities.invokeLater(() -> {
+                        if (SwingUtilities.getWindowAncestor(this) instanceof SchedulerWindow) {
+                            SchedulerWindow window = (SchedulerWindow) SwingUtilities.getWindowAncestor(this);
+                            window.switchToStopConditionsTab();
+                        }
+                    });
+                    return;
+                } else if (result == JOptionPane.CANCEL_OPTION) {
+                    return; // Don't start the plugin
+                }
+                // If NO, continue to start the plugin without stop conditions
+            }
+            
+            // Start the plugin
             plugin.startPluginScheduleEntry(selectedPlugin);
+            
+            // Update UI after starting
+            SwingUtilities.invokeLater(() -> {
+                updateControlButton();
+            });
         }
     }
 
@@ -543,118 +701,11 @@ public class ScheduleFormPanel extends JPanel {
      * Sets up the time condition panel with values from an existing condition
      */
     private void setupTimeConditionPanel(TimeCondition condition) {
-        if (condition instanceof SingleTriggerTimeCondition) {
-            SingleTriggerTimeCondition singleCondition = (SingleTriggerTimeCondition) condition;
-            SingleDateTimePickerPanel dateTimePicker = (SingleDateTimePickerPanel) 
-                currentConditionPanel.getClientProperty("dateTimePicker");
-            
-            if (dateTimePicker != null) {
-                // Convert ZonedDateTime to LocalDateTime
-                dateTimePicker.setDateTime(singleCondition.getTargetTime().toLocalDateTime());
-            }
-        } 
-        else if (condition instanceof IntervalCondition) {
-            IntervalCondition intervalCondition = (IntervalCondition) condition;
-            
-            // Get duration values
-            long totalMinutes = intervalCondition.getInterval().toMinutes();
-            long hours = totalMinutes / 60;
-            long minutes = totalMinutes % 60;
-            
-            // Set hours and minutes on spinners
-            JSpinner hoursSpinner = (JSpinner) currentConditionPanel.getClientProperty("hoursSpinner");
-            JSpinner minutesSpinner = (JSpinner) currentConditionPanel.getClientProperty("minutesSpinner");
-            JCheckBox randomizeCheckBox = (JCheckBox) currentConditionPanel.getClientProperty("randomizeCheckBox");
-            JSpinner randomFactorSpinner = (JSpinner) currentConditionPanel.getClientProperty("randomFactorSpinner");
-            
-            if (hoursSpinner != null && minutesSpinner != null) {
-                hoursSpinner.setValue((int)hours);
-                minutesSpinner.setValue((int)minutes);
-            }
-            
-            // Set randomization settings
-            if (randomizeCheckBox != null) {
-                randomizeCheckBox.setSelected(intervalCondition.isRandomize());
-                
-                if (randomFactorSpinner != null && intervalCondition.isRandomize()) {
-                    randomFactorSpinner.setValue(intervalCondition.getRandomFactor());
-                }
-            }
-        } 
-        else if (condition instanceof TimeWindowCondition) {
-            TimeWindowCondition windowCondition = (TimeWindowCondition) condition;
-            
-            // Get custom components from client properties
-            DateRangePanel dateRangePanel = (DateRangePanel) 
-                currentConditionPanel.getClientProperty("dateRangePanel");
-            TimeRangePanel timeRangePanel = (TimeRangePanel) 
-                currentConditionPanel.getClientProperty("timeRangePanel");
-            JComboBox<String> repeatComboBox = (JComboBox<String>) 
-                currentConditionPanel.getClientProperty("repeatComboBox");
-            JSpinner intervalSpinner = (JSpinner) 
-                currentConditionPanel.getClientProperty("intervalSpinner");
-            JCheckBox randomizeCheckBox = (JCheckBox) 
-                currentConditionPanel.getClientProperty("randomizeCheckBox");
-            JSpinner randomizeSpinner = (JSpinner) 
-                currentConditionPanel.getClientProperty("randomizeSpinner");
-            
-            // Set date range
-            if (dateRangePanel != null) {
-                if (windowCondition.getStartDate() != null) {
-                    dateRangePanel.setStartDate(windowCondition.getStartDate());
-                }
-                if (windowCondition.getEndDate() != null) {
-                    dateRangePanel.setEndDate(windowCondition.getEndDate());
-                }
-            }
-            
-            // Set time range
-            if (timeRangePanel != null) {
-                timeRangePanel.setStartTime(windowCondition.getStartTime());
-                timeRangePanel.setEndTime(windowCondition.getEndTime());
-            }
-            
-            // Set repeat cycle
-            if (repeatComboBox != null) {
-                RepeatCycle cycle = windowCondition.getRepeatCycle();
-                int interval = windowCondition.getRepeatIntervalUnit();
-                
-                // Map RepeatCycle enum to combo box options
-                switch (cycle) {
-                    case DAYS:
-                        repeatComboBox.setSelectedItem(interval == 1 ? "Every Day" : "Every X Days");
-                        break;
-                    case HOURS:
-                        repeatComboBox.setSelectedItem("Every X Hours");
-                        break;
-                    case MINUTES:
-                        repeatComboBox.setSelectedItem("Every X Minutes");
-                        break;
-                    case WEEKS:
-                        repeatComboBox.setSelectedItem("Every X Weeks");
-                        break;
-                    case ONE_TIME:
-                        repeatComboBox.setSelectedItem("One Time Only");
-                        break;
-                    default:
-                        repeatComboBox.setSelectedItem("Every Day");
-                }
-            }
-            
-            // Set interval
-            if (intervalSpinner != null && windowCondition.getRepeatIntervalUnit() > 0) {
-                intervalSpinner.setValue(windowCondition.getRepeatIntervalUnit());
-            }
-            
-            // Set randomization options
-            if (randomizeCheckBox != null) {
-                randomizeCheckBox.setSelected(windowCondition.isUseRandomization());
-                
-                if (randomizeSpinner != null) {
-                    randomizeSpinner.setValue(windowCondition.getRandomizeMinutes());
-                    randomizeSpinner.setEnabled(windowCondition.isUseRandomization());
-                }
-            }
-        }
+        if (condition == null || currentConditionPanel == null) {
+            log.warn("Condition or current condition panel is null");
+            return;
+        }        
+        // Delegate to the utility class
+        TimeConditionPanelUtil.setupTimeCondition(currentConditionPanel, condition);
     }
 }

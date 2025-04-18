@@ -4,7 +4,9 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
+import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.GroundObjectDespawned;
 import net.runelite.api.events.GroundObjectSpawned;
@@ -37,6 +39,11 @@ public interface Condition {
      * @return description string
      */
     String getDescription();
+
+    /**
+     * Returns a detailed description of the level condition with additional status information
+     */
+    String getDetailedDescription();
     /**
      * Gets the next time this condition will be satisfied.
      * For time-based conditions, this returns the actual next trigger time.
@@ -70,9 +77,11 @@ public interface Condition {
     }
 
     void reset (boolean randomize);
-    
-    
 
+    default void onGameStateChanged(GameStateChanged gameStateChanged) {
+        // This event handler is called whenever the game state changes
+        // Useful for conditions that depend on the game state (e.g., logged in, logged out)
+    }
     default void onStatChanged(StatChanged event) {
         // This event handler is called whenever a skill stat changes
         // Useful for skill-based conditions
@@ -148,6 +157,9 @@ public interface Condition {
         // Optional implementation
     }
     default void onInteractingChanged(InteractingChanged event){
+        // Optional implementation
+    }      
+    default void onAnimationChanged(AnimationChanged event) {
         // Optional implementation
     }
     /**

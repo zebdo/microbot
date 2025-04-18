@@ -3,8 +3,6 @@ package net.runelite.client.plugins.microbot.pluginscheduler.condition.time;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.plugins.microbot.Microbot;
-
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionType;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.enums.RepeatCycle;
 
@@ -16,11 +14,12 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
-import java.util.concurrent.ThreadLocalRandom;
+
 import java.util.logging.Level;
 
 @Data
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = false, exclude = {   
+})
 @Slf4j
 public class TimeWindowCondition extends TimeCondition {
     // Time window bounds (daily start/end times)
@@ -41,21 +40,26 @@ public class TimeWindowCondition extends TimeCondition {
     private transient LocalDateTime currentEndDateTime;
    
     // Randomization
-    private boolean useRandomization = false;
-    private int randomizeMinutes = 0; // Minutes to randomize start/end by
+    private transient boolean useRandomization = false;
+    private transient int randomizeMinutes = 0; // Minutes to randomize start/end by
     
     // Cached timezone for computation - not serialized
     private transient ZoneId zoneId;
 
 
-    private int randomStartMinutes = 0; // Minutes to randomize start/end by
-    private int randomEndMinutes = 0; // Minutes to randomize start/end by
+    private transient int randomStartMinutes = 0; // Minutes to randomize start/end by
+    private transient int randomEndMinutes = 0; // Minutes to randomize start/end by
 
-    private int transientNumberOfResetsWithinDailyInterval = 0; // Number of resets since last calculation
+    private transient int transientNumberOfResetsWithinDailyInterval = 0; // Number of resets since last calculation
 
     
     /**
-     * Basic constructor with just time window
+     * Creates a time window condition with just daily start and end times.
+     * Uses default values for other parameters: current date for start date, 
+     * one month in the future for end date, daily repeat cycle, and unlimited repeats.
+     *
+     * @param startTime The daily start time of the window
+     * @param endTime The daily end time of the window
      */
     public TimeWindowCondition(LocalTime startTime, LocalTime endTime) {
         this(
@@ -70,7 +74,16 @@ public class TimeWindowCondition extends TimeCondition {
     }
 
     /**
-     * Full constructor
+     * Creates a time window condition with all parameters specified.
+     * This is the full constructor that allows complete configuration of the time window.
+     *
+     * @param startTime The daily start time of the window
+     * @param endTime The daily end time of the window
+     * @param startDate The earliest date the window can be active
+     * @param endDate The latest date the window can be active
+     * @param repeatCycle The cycle type for window repetition (DAYS, WEEKS, etc.)
+     * @param repeatIntervalUnit The interval between repetitions (e.g., 2 for every 2 days)
+     * @param maximumNumberOfRepeats Maximum number of times this condition can trigger (0 for unlimited)
      */
     public TimeWindowCondition(
             LocalTime startTime, 
@@ -89,14 +102,20 @@ public class TimeWindowCondition extends TimeCondition {
         this.repeatCycle = repeatCycle;
         this.repeatIntervalUnit = Math.max(1, repeatIntervalUnit); // Ensure positive interval
         this.zoneId = ZoneId.systemDefault(); // Initialize with system default
-        this.lastResetTime = LocalDateTime.now();
+        this.lastValidResetTime = LocalDateTime.now();
         transientNumberOfResetsWithinDailyInterval = 0;
         
         // Initialize next window times based on repeat cycle
         calculateNextWindow();
     }
     /**
-     * Factory method to create a simple daily window
+     * Factory method to create a simple daily time window that repeats every day.
+     * Creates a window that starts and ends at the specified times each day,
+     * valid for one year from the current date.
+     *
+     * @param startTime The daily start time of the window
+     * @param endTime The daily end time of the window
+     * @return A configured TimeWindowCondition for daily repetition
      */
     public static TimeWindowCondition createDaily(LocalTime startTime, LocalTime endTime) {
         return new TimeWindowCondition(
@@ -110,19 +129,30 @@ public class TimeWindowCondition extends TimeCondition {
         );
     }
 
+    /**
+     * {@inheritDoc}
+     * Returns the type of this condition, which is TIME.
+     *
+     * @return The condition type ConditionType.TIME
+     */
     @Override
     public ConditionType getType() {
         return ConditionType.TIME;
     }
     /**
-     * Gets the current system timezone
+     * Gets the timezone used for time calculations in this condition.
+     * 
+     * @return The ZoneId representing the timezone
      */
     public ZoneId getZoneId() {        
         return zoneId;
     }
 
     /**
-     * Sets the zone ID to use for time calculations
+     * Sets the timezone to use for time calculations in this condition.
+     * Changes to the timezone will affect when the time window activates.
+     * 
+     * @param zoneId The timezone to use for calculations
      */
     public void setZoneId(ZoneId zoneId) {
         this.zoneId = zoneId;        
@@ -134,7 +164,7 @@ public class TimeWindowCondition extends TimeCondition {
     private void calculateNextWindow() {
         ZonedDateTime now = ZonedDateTime.now(getZoneId());
         LocalDateTime nowLocal = now.toLocalDateTime();
-        LocalDateTime referenceTime = lastResetTime != null ? lastResetTime : nowLocal;
+        LocalDateTime referenceTime = lastValidResetTime != null ? lastValidResetTime : nowLocal;
         
         log.info("Calculating next window: \n" +  this,Level.INFO);
         
@@ -199,7 +229,7 @@ public class TimeWindowCondition extends TimeCondition {
             }
         }else{
             // If the reset time is after the end of the window, set to null
-            if (lastResetTime.isAfter(currentEndDateTime)) {
+            if (lastValidResetTime.isAfter(currentEndDateTime)) {
                 this.currentStartDateTime = null;
                 this.currentEndDateTime = null;
             } else {
@@ -250,7 +280,7 @@ public class TimeWindowCondition extends TimeCondition {
         LocalDate today = now.toLocalDate();
         LocalDateTime currentDayWindowStart = LocalDateTime.of(today, startTime);
         LocalDateTime currentDayWindowEnd = LocalDateTime.of(today, endTime);
-        if (this.currentResetCount > 0) {
+        if (this.currentValidResetCount > 0) {
             
         
             switch (repeatCycle) {
@@ -290,6 +320,15 @@ public class TimeWindowCondition extends TimeCondition {
     }
 
    
+    /**
+     * {@inheritDoc}
+     * Determines if the current time is within the configured time window.
+     * Checks if the current time is after the start time and before the end time
+     * of the current window, and if the condition can still trigger.
+     *
+     * @return true if the current time is within the active window and the condition can trigger,
+     *         false otherwise
+     */
     @Override
     public boolean isSatisfied() {
         if (!canTriggerAgain()) {
@@ -318,6 +357,13 @@ public class TimeWindowCondition extends TimeCondition {
                
     }
 
+    /**
+     * {@inheritDoc}
+     * Calculates progress through the current time window as a percentage.
+     * Returns 0% if outside the window or 0-100% based on how much of the window has elapsed.
+     *
+     * @return A percentage from 0-100 indicating progress through the current time window
+     */
     @Override
     public double getProgressPercentage() {
         if (!isSatisfied()) {
@@ -354,6 +400,13 @@ public class TimeWindowCondition extends TimeCondition {
         return percentage;
     }
 
+    /**
+     * {@inheritDoc}
+     * Provides a user-friendly description of this time window condition.
+     * Includes the time range, repeat information, and timezone.
+     *
+     * @return A human-readable string describing the time window parameters
+     */
     @Override
     public String getDescription() {
         StringBuilder description = new StringBuilder("Time Window: ");
@@ -385,11 +438,12 @@ public class TimeWindowCondition extends TimeCondition {
 
     
     /**
-     * Sets randomization parameters for window times
-     * Does not automatically recalculate the window - call reset() to apply changes
-     * 
-     * @param useRandomization Whether to use randomization
-     * @param randomizeMinutes Maximum minutes to randomize by (±)
+     * Configures time randomization for this window.
+     * When enabled, the start and end times will be adjusted by a random
+     * amount within the specified range each time the condition is reset.
+     *
+     * @param useRandomization Whether to enable time randomization
+     * @param randomizeMinutes Maximum number of minutes to randomize by (plus or minus)
      */
     public void setRandomization(boolean useRandomization, int randomizeMinutes) {
         this.useRandomization = useRandomization;
@@ -399,7 +453,10 @@ public class TimeWindowCondition extends TimeCondition {
    
     
     /**
-     * Called after deserialization to initialize transient fields
+     * Custom deserialization method to initialize transient fields.
+     * This ensures that the timezone is properly set after deserialization.
+     *
+     * @return The properly initialized deserialized object
      */
     public Object readResolve() {
         // Initialize timezone if needed
@@ -410,19 +467,21 @@ public class TimeWindowCondition extends TimeCondition {
     }
 
     /**
-     * Resets the time window condition, calculating the next time window
-     * based on current settings
+     * Resets the time window condition with default settings.
+     * Calculates the next time window based on current time and settings.
+     * This is a shorthand for reset(false).
      */
     public void reset() {
         reset(false);
     }
 
     /**
-     * Resets the time window condition with optional randomization
-     * 
-     * @param randomize Whether to apply randomization to the window times
-     * @param randomizeMinutes Maximum minutes to randomize by (±)
-     */    
+     * Resets the time window condition with specified randomization settings.
+     * Updates the randomization parameters and calculates the next time window.
+     *
+     * @param randomize Whether to apply randomization to window times
+     * @param randomizeMinutes Maximum minutes to randomize by (plus or minus)
+     */
     public void reset(boolean randomize, int randomizeMinutes) {
         this.useRandomization = randomize;
         this.randomizeMinutes = randomizeMinutes;
@@ -431,44 +490,26 @@ public class TimeWindowCondition extends TimeCondition {
   
 
     /**
-     * Helper method to apply randomization to window times
-     */
-    private void applyRandomization() {
-        if (useRandomization && randomizeMinutes > 0 && currentStartDateTime != null && currentEndDateTime != null) {
-            this.randomStartMinutes = ThreadLocalRandom.current().nextInt(-randomizeMinutes, randomizeMinutes + 1);
-            this.randomEndMinutes = ThreadLocalRandom.current().nextInt(-randomizeMinutes, randomizeMinutes + 1);                    
-        }
-    }
-    
-      /**
-     * Resets the time window condition, calculating the next time window
-     * based on current settings and reset time
+     * {@inheritDoc}
+     * Resets the time window condition and calculates the next active window.
+     * Updates the reset count, applies randomization if enabled, and advances
+     * the window if necessary based on current time.
+     *
+     * @param randomize Whether to apply randomization to window times
      */
     @Override
     public void reset(boolean randomize) {
-        this.useRandomization = randomize;
-        applyRandomization();
+        this.useRandomization = randomize;        
         // Store current time as the reset reference
-        log.debug("Last reset time: {}", lastResetTime);
-        this.lastResetTime = LocalDateTime.now();
-        log.info("Reset time window condition at: \n\t{}\n\t", lastResetTime);
-        
-        
-        
+        log.debug("Last reset time: {}", lastValidResetTime);
+        this.lastValidResetTime = LocalDateTime.now();                                
         ZonedDateTime now = ZonedDateTime.now(getZoneId());
-        LocalDateTime nowLocal = now.toLocalDateTime();
-        
+        LocalDateTime nowLocal = now.toLocalDateTime();        
         // If we are have a current window and we are within the window or after it, we need to force an advance
-        boolean needsAdvance = currentStartDateTime != null && nowLocal.isAfter(currentStartDateTime);
-        
-        log.info("current time: {}", nowLocal);
-        log.info("current start time: {}", currentStartDateTime);
-        log.info("current end time: {}", currentEndDateTime);
-        
-       
+        boolean needsAdvance = currentStartDateTime != null && nowLocal.isAfter(currentStartDateTime);                           
         // If this the next  start window that's passed or any window that needs advancing
         if (needsAdvance && canTriggerAgain() ) {     
-            this.currentResetCount++;       
+            this.currentValidResetCount++;       
             calculateNextWindow();            
         }          
         if (nowLocal.isAfter(this.currentStartDateTime) && nowLocal.isBefore(this.currentEndDateTime)) {
@@ -486,11 +527,26 @@ public class TimeWindowCondition extends TimeCondition {
         }
     }
     
+    /**
+     * {@inheritDoc}
+     * Indicates whether this condition uses randomization.
+     *
+     * @return true if randomization is enabled, false otherwise
+     */
     @Override
     public boolean isUseRandomization() {
         return useRandomization;
     }
 
+    /**
+     * {@inheritDoc}
+     * Calculates the next time this condition will be satisfied (the start of the next window).
+     * If already within a window, returns a time slightly in the past to indicate the condition
+     * is currently satisfied.
+     *
+     * @return An Optional containing the time when the next window starts,
+     *         or empty if no future windows are scheduled or the condition cannot trigger again
+     */
     @Override
     public Optional<ZonedDateTime> getCurrentTriggerTime() {
         if (currentStartDateTime == null || currentEndDateTime == null || !canTriggerAgain()) {
@@ -500,7 +556,8 @@ public class TimeWindowCondition extends TimeCondition {
         
         // If the condition is already satisfied (we're in the window), return the current time
         if (isSatisfied()) {
-            return Optional.of(now.minusSeconds(1)); // Slightly in the past to indicate "ready now"
+            assert(!currentStartDateTime.isAfter(now.toLocalDateTime()) && !currentEndDateTime.isBefore(now.toLocalDateTime()));
+            return Optional.of(currentStartDateTime.atZone(getZoneId())); // Slightly in the past to indicate "ready now"
         }
                                 
         // If our window calculation failed or hasn't been done, calculate it
@@ -511,6 +568,14 @@ public class TimeWindowCondition extends TimeCondition {
         }                        
     }
 
+    /**
+     * {@inheritDoc}
+     * Generates a detailed string representation of this time window condition.
+     * Includes configuration, status, window times, randomization settings,
+     * and trigger count information formatted with visual separators.
+     *
+     * @return A multi-line string representation with detailed state information
+     */
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
@@ -556,18 +621,104 @@ public class TimeWindowCondition extends TimeCondition {
         
         // Tracking info
         sb.append("  └─ Tracking ────────────────────────────────\n");
-        sb.append("    Reset Count: ").append(currentResetCount);
+        sb.append("    Reset Count: ").append(currentValidResetCount);
         if (this.getMaximumNumberOfRepeats() > 0) {
             sb.append("/").append(getMaximumNumberOfRepeats());
         } else {
             sb.append(" (unlimited)");
         }
         sb.append("\n");
-        if (lastResetTime != null) {
-            sb.append("    Last Reset: ").append(lastResetTime.format(dateTimeFormatter)).append("\n");
+        if (lastValidResetTime != null) {
+            sb.append("    Last Reset: ").append(lastValidResetTime.format(dateTimeFormatter)).append("\n");
         }
         sb.append("    Daily Reset Count: ").append(transientNumberOfResetsWithinDailyInterval).append("\n");
         sb.append("    Can Trigger Again: ").append(canTriggerAgain()).append("\n");
+        
+        return sb.toString();
+    }
+    
+    /**
+     * Provides a detailed description of the time window condition with status information.
+     * Includes the window times, repeat cycle, current status, progress, randomization,
+     * and tracking information in a human-readable format.
+     *
+     * @return A detailed multi-line string with current status and configuration details
+     */
+    public String getDetailedDescription() {
+        StringBuilder sb = new StringBuilder();
+        DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+        DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+        
+        // Basic description
+        sb.append("Time Window Condition: Active from ").append(startTime.format(timeFormatter))
+          .append(" to ").append(endTime.format(timeFormatter)).append("\n");
+        
+        // Repeat cycle
+        if (repeatCycle == RepeatCycle.ONE_TIME) {
+            sb.append("Schedule: One time only (").append(startDate.format(dateFormatter))
+              .append(" - ").append(endDate.format(dateFormatter)).append(")\n");
+        } else {
+            sb.append("Schedule: Repeats every ").append(repeatIntervalUnit).append(" ")
+              .append(repeatCycle.toString().toLowerCase()).append("\n");
+            sb.append("Valid period: ").append(startDate.format(dateFormatter))
+              .append(" - ").append(endDate.format(dateFormatter)).append("\n");
+        }
+        
+        // Status information
+        boolean satisfied = isSatisfied();
+        sb.append("Status: ").append(satisfied ? "Active (in time window)" : "Inactive (outside time window)").append("\n");
+        
+        // Current window information
+        ZonedDateTime now = ZonedDateTime.now(getZoneId());
+        LocalDateTime nowLocal = now.toLocalDateTime();
+        
+        if (currentStartDateTime != null && currentEndDateTime != null) {
+            sb.append("Current window: ").append(currentStartDateTime.format(dateTimeFormatter))
+              .append(" to ").append(currentEndDateTime.format(dateTimeFormatter)).append("\n");
+              
+            if (nowLocal.isAfter(currentStartDateTime) && nowLocal.isBefore(currentEndDateTime)) {
+                sb.append("Time remaining: ")
+                  .append(ChronoUnit.MINUTES.between(nowLocal, currentEndDateTime))
+                  .append(" minutes\n");
+                sb.append("Progress: ").append(String.format("%.1f%%", getProgressPercentage())).append("\n");
+            } else if (nowLocal.isBefore(currentStartDateTime)) {
+                sb.append("Window starts in: ")
+                  .append(ChronoUnit.MINUTES.between(nowLocal, currentStartDateTime))
+                  .append(" minutes\n");
+            } else {
+                sb.append("Window has passed\n");
+            }
+        } else {
+            sb.append("No active window available\n");
+        }
+        
+        // Randomization
+        if (useRandomization) {
+            sb.append("Randomization: Enabled (±").append(randomizeMinutes).append(" minutes)\n");
+            if (randomStartMinutes != 0 || randomEndMinutes != 0) {
+                sb.append("Current offsets: Start ").append(randomStartMinutes)
+                  .append(" min, End ").append(randomEndMinutes).append(" min\n");
+            }
+        } else {
+            sb.append("Randomization: Disabled\n");
+        }
+        
+        // Reset tracking
+        sb.append("Reset count: ").append(currentValidResetCount);
+        if (getMaximumNumberOfRepeats() > 0) {
+            sb.append("/").append(getMaximumNumberOfRepeats());
+        } else {
+            sb.append(" (unlimited)");
+        }
+        sb.append("\n");
+        
+        if (lastValidResetTime != null) {
+            sb.append("Last reset: ").append(lastValidResetTime.format(dateTimeFormatter)).append("\n");
+        }
+        
+        // Timezone information
+        sb.append("Timezone: ").append(getZoneId().getId()).append("\n");
         
         return sb.toString();
     }

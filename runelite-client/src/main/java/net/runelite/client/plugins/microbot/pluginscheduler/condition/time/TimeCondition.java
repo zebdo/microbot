@@ -4,8 +4,7 @@ import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GameTick;
-import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.plugins.microbot.Microbot;
+
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionType;
 
@@ -25,9 +24,9 @@ import java.util.Optional;
 public abstract class TimeCondition implements Condition {
     @Getter
     private final long maximumNumberOfRepeats;
-    protected transient long currentResetCount = 0;
+    protected transient long currentValidResetCount = 0;
      // Last reset timestamp tracking
-    protected transient LocalDateTime lastResetTime;
+    protected transient LocalDateTime lastValidResetTime;
     protected static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss");
     public TimeCondition() {
         // Default constructor
@@ -40,7 +39,7 @@ public abstract class TimeCondition implements Condition {
      */
     public TimeCondition(final long maximumNumberOfRepeats) {
         this.maximumNumberOfRepeats = maximumNumberOfRepeats;
-        lastResetTime = LocalDateTime.now();
+        lastValidResetTime = LocalDateTime.now();
     }
     /**
      * Gets the current date and time in the system default time zone
@@ -59,8 +58,8 @@ public abstract class TimeCondition implements Condition {
     public String getDescription() {
         boolean canTrigger = canTriggerAgain();
         String triggerStatus = canTrigger ? "Can trigger" : "Cannot trigger";
-        String triggerCount = "Trigger Count: "+(maximumNumberOfRepeats > 0 ? " (" + currentResetCount + "/" + maximumNumberOfRepeats + ")" : currentResetCount);
-        String lastReset = lastResetTime != null ? "Last reset: " + lastResetTime.format(TIME_FORMATTER) : "";
+        String triggerCount = "Trigger Count: "+(maximumNumberOfRepeats > 0 ? " (" + currentValidResetCount + "/" + maximumNumberOfRepeats + ")" : currentValidResetCount);
+        String lastReset = lastValidResetTime != null ? "Last reset: " + lastValidResetTime.format(TIME_FORMATTER) : "";
         return triggerStatus + "\n" + triggerCount+ "\n" + lastReset;
     }
       
@@ -73,11 +72,18 @@ public abstract class TimeCondition implements Condition {
     }
     
     @Override
-    public void reset() {
-        this.lastResetTime = LocalDateTime.now();
+    public void reset() {        
         this.reset(false);
     }
     
+    void updateValidReset() {        
+        if (isSatisfied()) {
+            this.currentValidResetCount++;
+            this.lastValidResetTime = LocalDateTime.now();                            
+        }
+        
+    }
+       
     /**
      * Gets the next time this time condition will be satisfied.
      * Subclasses should override this to provide specific trigger time calculation.
@@ -187,7 +193,7 @@ public abstract class TimeCondition implements Condition {
         if (maximumNumberOfRepeats <= 0){
             return true;
         }
-        if (currentResetCount < maximumNumberOfRepeats) {
+        if (currentValidResetCount < maximumNumberOfRepeats) {
             return true;
         }
         return false;
@@ -198,7 +204,7 @@ public abstract class TimeCondition implements Condition {
      * @return true if the condition has triggered at least once
      */
     public boolean hasTriggered() {
-        return currentResetCount > 0;
+        return currentValidResetCount > 0;
     }
         
     

@@ -19,7 +19,9 @@ import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.TileItem;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.InteractingChanged;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -40,15 +42,42 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+
 /**
- * Manages multiple conditions for script execution.
- * Supports AND/OR combinations of conditions and listens to relevant events
- * to update condition statuses.
+ * Manages logical conditions for plugin scheduling and user-defined triggers in a hierarchical structure.
+ * <p>
+ * The ConditionManager provides a framework for organizing, evaluating, and monitoring complex
+ * condition structures using logical operators (AND/OR) to determine when plugin execution
+ * should occur. It maintains separate logical trees for plugin-defined and user-defined conditions,
+ * which are combined at evaluation time with appropriate logical operators.
+ * <p>
+ * Key features:
+ * <ul>
+ *   <li>Separate management of plugin-defined and user-defined conditions</li>
+ *   <li>Support for complex nested logical structures (AND/OR)</li>
+ *   <li>Event propagation to registered conditions</li>
+ *   <li>Time-based trigger calculation and progress tracking</li>
+ *   <li>Condition tree manipulation (adding, removing, finding conditions)</li>
+ * </ul>
+ * <p>
+ * The class implements event handlers for various RuneLite events, passing them to all registered
+ * conditions so they can update their state accordingly. It also provides methods to calculate
+ * when conditions will be satisfied next and track progress toward these triggers.
+ * <p>
+ * Usage example:
+ * <pre>
+ * ConditionManager manager = new ConditionManager();
+ * manager.setRequireAll(); // Use AND logic for user conditions
+ * manager.addUserCondition(new InventoryItemCondition(ItemID.COINS, 1000));
+ * manager.addUserCondition(new SkillLevelCondition(Skill.ATTACK, 60));
+ * 
+ * // Check if conditions are met
+ * boolean ready = manager.areConditionsMet();
+ * </pre>
  */
 @Slf4j
 public class ConditionManager {
     
-    //private final List<Condition> userConditions = new ArrayList<>();    
     
     private LogicalCondition pluginCondition = new OrCondition();
     @Getter
@@ -58,7 +87,7 @@ public class ConditionManager {
     public ConditionManager() {
         this.eventBus = Microbot.getEventBus();
         userLogicalCondition = new AndCondition();
-        //registerEvents();
+
     }
     public void setPluginCondition(LogicalCondition condition) {
         pluginCondition = condition;
@@ -74,26 +103,84 @@ public class ConditionManager {
         conditions.addAll(userLogicalCondition.getConditions());
         return conditions;
     }
+    /**
+     * Checks if any conditions exist in the manager.
+     * 
+     * @return true if at least one condition exists in either plugin or user condition structures
+     */
     public boolean hasConditions() {
         return !getConditions().isEmpty();
     }
+    /**
+     * Retrieves all time-based conditions from both plugin and user condition structures.
+     * Uses the LogicalCondition.findTimeConditions method to recursively find all TimeCondition
+     * instances throughout the nested logical structure.
+     * 
+     * @return A list of all TimeCondition instances managed by this ConditionManager
+     */
     public List<TimeCondition> getTimeConditions() {
         List<TimeCondition> timeConditions = new ArrayList<>();
-        for (Condition condition : getConditions()) {
-            if (condition instanceof TimeCondition) {
-                timeConditions.add((TimeCondition) condition);
+        
+        //log.info("Searching for TimeConditions in logical structures");
+        
+        // Get time conditions from user logical structure
+        if (userLogicalCondition != null) {
+            List<Condition> userTimeConditions = userLogicalCondition.findTimeConditions();
+            //log.info("Found {} time conditions in user logical structure", userTimeConditions.size());
+            
+            for (Condition condition : userTimeConditions) {
+                if (condition instanceof TimeCondition) {
+                    TimeCondition timeCondition = (TimeCondition) condition;
+          //          log.info("Found TimeCondition in user structure: {} (implementation: {})", 
+                     //       timeCondition, timeCondition.getClass().getSimpleName());
+                    timeConditions.add(timeCondition);
+                }
             }
         }
+        
+        // Get time conditions from plugin logical structure
+        if (pluginCondition != null) {
+            List<Condition> pluginTimeConditions = pluginCondition.findTimeConditions();
+            //log.info("Found {} time conditions in plugin logical structure", pluginTimeConditions.size());
+            
+            for (Condition condition : pluginTimeConditions) {
+                if (condition instanceof TimeCondition) {
+                    TimeCondition timeCondition = (TimeCondition) condition;
+                    //log.info("Found TimeCondition in plugin structure: {} (implementation: {})", 
+                            //timeCondition, timeCondition.getClass().getSimpleName());
+                    timeConditions.add(timeCondition);
+                }
+            }
+        }
+        
+        //log.info("Total TimeConditions found in all logical structures: {}", timeConditions.size());
         return timeConditions;
     }
+    /**
+     * Returns the user logical condition structure.
+     * 
+     * @return The logical condition structure containing user-defined conditions
+     */
     public LogicalCondition getUserCondition() {
         return userLogicalCondition;
     }
-    public  void clearUserConditions() {
+    /**
+     * Removes all user-defined conditions while preserving the logical structure.
+     * This clears the user condition list without changing the logical operator (AND/OR).
+     */
+    public void clearUserConditions() {
         userLogicalCondition.getConditions().clear();
     }
+    /**
+     * Evaluates if all conditions are currently satisfied, respecting the logical structure.
+     * <p>
+     * This method first checks if user conditions are met according to their logical operator (AND/OR).
+     * If plugin conditions exist, they must also be satisfied (always using AND logic between
+     * user and plugin conditions).
+     * 
+     * @return true if all required conditions are satisfied based on the logical structure
+     */
     public boolean areConditionsMet() {
-
         boolean userConditionsMet = false;
         
         userConditionsMet = userLogicalCondition.isSatisfied();                            
@@ -108,21 +195,25 @@ public class ConditionManager {
         return userConditionsMet;                                                
     }
    /**
-     * Returns a list of conditions that were defined by the user (not plugin-defined)
+     * Returns a list of conditions that were defined by the user (not plugin-defined).
+     * This method only retrieves conditions from the user logical condition structure,
+     * not from the plugin condition structure.
+     * 
+     * @return List of user-defined conditions, or an empty list if no user logical condition exists
      */
     public List<Condition> getUserConditions() {
         if (userLogicalCondition == null) {
             return new ArrayList<>();
         }
-        
-        List<Condition> result = new ArrayList<>();
-        for (Condition condition : userLogicalCondition.getConditions()) {
-            if (!isPluginDefinedCondition(condition)) {
-                result.add(condition);
-            }
-        }
-        return result;
+                
+        return userLogicalCondition.getConditions();
     }
+    /**
+     * Registers this condition manager to receive RuneLite events.
+     * Event listeners are registered with the event bus to allow conditions
+     * to update their state based on game events. This method is idempotent
+     * and will not register the same listeners twice.
+     */
     public void registerEvents() {
         if (eventsRegistered) {
             return;
@@ -131,6 +222,11 @@ public class ConditionManager {
         eventsRegistered = true;
     }
     
+    /**
+     * Unregisters this condition manager from receiving RuneLite events.
+     * This removes all event listeners from the event bus that were previously registered.
+     * This method is idempotent and will do nothing if events are not currently registered.
+     */
     public void unregisterEvents() {
         if (!eventsRegistered) {
             return;
@@ -140,12 +236,20 @@ public class ConditionManager {
     }
     
    
+    /**
+     * Sets the user logical condition to require ALL conditions to be met (AND logic).
+     * This creates a new AndCondition to replace the existing user logical condition.
+     */
     public void setRequireAll() {
         userLogicalCondition = new AndCondition();
         setUserLogicalCondition(userLogicalCondition);
         
     }
     
+    /**
+     * Sets the user logical condition to require ANY condition to be met (OR logic).
+     * This creates a new OrCondition to replace the existing user logical condition.
+     */
     public void setRequireAny() {
         userLogicalCondition = new OrCondition();        
         setUserLogicalCondition(userLogicalCondition);
@@ -153,6 +257,13 @@ public class ConditionManager {
     
    
     
+    /**
+     * Generates a human-readable description of the current condition structure.
+     * The description includes the logical operator type (ANY/ALL) and descriptions
+     * of all user conditions. If plugin conditions exist, those are appended as well.
+     * 
+     * @return A string representation of the condition structure
+     */
     public String getDescription() {
         
                   
@@ -182,21 +293,44 @@ public class ConditionManager {
     }
     
    /**
-     * Checks if the manager requires all conditions to be met (AND logic)
+     * Checks if the user logical condition requires all conditions to be met (AND logic).
+     * 
+     * @return true if the user logical condition is an AndCondition, false otherwise
      */
     public boolean userConditionRequiresAll() {
 
         return userLogicalCondition instanceof AndCondition;
     }
+    /**
+     * Checks if the user logical condition requires any condition to be met (OR logic).
+     * 
+     * @return true if the user logical condition is an OrCondition, false otherwise
+     */
     public boolean userConditionRequiresAny() {
         return userLogicalCondition instanceof OrCondition;
     }
+    /**
+     * Checks if the full logical structure (combining user and plugin conditions)
+     * requires all conditions to be met (AND logic).
+     * 
+     * @return true if the full logical condition is an AndCondition, false otherwise
+     */
     public boolean requiresAll() {
         return this.getFullLogicalCondition() instanceof AndCondition;
     }
+    /**
+     * Checks if the full logical structure (combining user and plugin conditions)
+     * requires any condition to be met (OR logic).
+     * 
+     * @return true if the full logical condition is an OrCondition, false otherwise
+     */
     public boolean requiresAny() {
         return this.getFullLogicalCondition() instanceof OrCondition;
     }
+    /**
+     * Resets all conditions in both user and plugin logical structures to their initial state.
+     * This method calls the reset() method on all conditions.
+     */
     public void reset() {
         userLogicalCondition.reset();
         if (pluginCondition != null) {
@@ -204,6 +338,11 @@ public class ConditionManager {
         }
         
     }
+    /**
+     * Resets all conditions in both user and plugin logical structures with an option to randomize.
+     * 
+     * @param randomize If true, conditions will be reset with randomized initial values where applicable
+     */
     public void reset(boolean randomize) {
         userLogicalCondition.reset(randomize);
         if (pluginCondition != null) {
@@ -221,7 +360,7 @@ public class ConditionManager {
         }
         if (condition instanceof LogicalCondition) {
             // If the condition is a logical condition, check if it's part of the plugin condition
-            if (pluginCondition == condition) {
+            if (pluginCondition.equals(condition)) {
                 return true;
             }            
         }
@@ -280,10 +419,7 @@ public class ConditionManager {
                     LogicalCondition wrappedLogical = (LogicalCondition) notChild.getCondition();
                     if (removeFromNestedCondition(wrappedLogical, target)) {
                         // If removing the condition leaves the logical condition empty, remove the NOT condition too
-                        if (wrappedLogical.getConditions().isEmpty()) {
-                            parent.getConditions().remove(i);
-                        }
-                        return true;
+                        parent.getConditions().remove(i);
                     }
                 }
             }
@@ -374,32 +510,23 @@ public class ConditionManager {
         return pluginCondition != null && pluginCondition.contains(condition);
     }
 
-    /**
-     * Finds which logical condition contains the given condition
-     */
-    public LogicalCondition findContainingLogical(Condition condition) {
-        ensureUserLogicalExists();
-        
-        // Check user logical first
-        LogicalCondition result = userLogicalCondition.findContainingLogical(condition);
-        if (result != null) {
-            return result;
-        }
-        
-        // Check plugin logical if exists
-        if (pluginCondition != null) {
-            return pluginCondition.findContainingLogical(condition);
-        }
-        
-        return null;
-    }
+   
 
     /**
      * Adds a condition to the specified logical condition, or to the user root if none specified
      */
-    public void addCondition(Condition condition, LogicalCondition targetLogical) {
+    public void addConditionToLogical(Condition condition, LogicalCondition targetLogical) {
         ensureUserLogicalExists();
-        
+        // find if the user logical condition contains the target logical condition
+        if (  targetLogical != userLogicalCondition && (targetLogical != null && !userLogicalCondition.contains(targetLogical))) {
+            log.warn("Target logical condition not found in user logical structure");
+            return;
+        }
+        // check if condition already exists in logical structure
+        if (targetLogical != null && targetLogical.contains(condition)) {
+            log.warn("Condition already exists in logical structure");
+            return;
+        }
         // If no target specified, add to user root
         if (targetLogical == null) {
             userLogicalCondition.addCondition(condition);
@@ -413,8 +540,8 @@ public class ConditionManager {
     /**
      * Adds a condition to the user logical root
      */
-    public void addCondition(Condition condition) {
-        addCondition(condition, userLogicalCondition);
+    public void addUserCondition(Condition condition) {
+        addConditionToLogical(condition, userLogicalCondition);
     }
 
     /**
@@ -586,16 +713,16 @@ public class ConditionManager {
             // the OR branch can still trigger
             boolean anyCanTrigger = false;
             
-            for (Condition condition : logical.getConditions()) {
-                if (condition instanceof TimeCondition) {
-                    TimeCondition singleTrigger = (TimeCondition) condition;
+            for (Condition child : logical.getConditions()) {
+                if (child instanceof TimeCondition) {
+                    TimeCondition singleTrigger = (TimeCondition) child;
                     if (!singleTrigger.hasTriggered()) {
                         // Found an untriggered one-time condition, so this branch can trigger
                         return true;
                     }
-                } else if (condition instanceof LogicalCondition) {
+                } else if (child instanceof LogicalCondition) {
                     // Recursively check nested logic
-                    if (canLogicalStructureTriggerAgain((LogicalCondition) condition)) {
+                    if (canLogicalStructureTriggerAgain((LogicalCondition) child)) {
                         // If a nested branch can trigger, this OR branch can trigger
                         return true;
                     }
@@ -730,7 +857,7 @@ public class ConditionManager {
     /**
      * Gets the next time any condition in the structure will trigger.
      * This recursively examines the logical condition tree and finds the earliest trigger time.
-     * If conditions are already satisfied, returns a time in the immediate past.
+     * If conditions are already satisfied, returns the most recent time in the past.
      * 
      * @return Optional containing the earliest next trigger time, or empty if none available
      */
@@ -738,8 +865,40 @@ public class ConditionManager {
         // Check if conditions are already met
         boolean conditionsMet = areConditionsMet();
         if (conditionsMet) {
-            ZonedDateTime immediateTime = ZonedDateTime.now(ZoneId.systemDefault()).minusSeconds(1);
-            log.debug("Conditions already met, returning immediate trigger time: {}", immediateTime);
+            log.debug("Conditions already met, searching for most recent trigger time in the past");
+            
+            // Find the most recent trigger time in the past from all satisfied conditions
+            ZonedDateTime mostRecentTriggerTime = null;
+            ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
+            
+            // Recursively scan all conditions that are satisfied
+            for (Condition condition : getConditions()) {
+                if (condition.isSatisfied()) {
+                    Optional<ZonedDateTime> conditionTrigger = condition.getCurrentTriggerTime();
+                    if (conditionTrigger.isPresent()) {
+                        ZonedDateTime triggerTime = conditionTrigger.get();
+                        
+                        // Only consider times in the past
+                        if (triggerTime.isBefore(now) || triggerTime.isEqual(now)) {
+                            // Keep the most recent time in the past
+                            if (mostRecentTriggerTime == null || triggerTime.isAfter(mostRecentTriggerTime)) {
+                                mostRecentTriggerTime = triggerTime;
+                                log.debug("Found more recent past trigger time: {}", mostRecentTriggerTime);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // If we found a trigger time from satisfied conditions, return it
+            if (mostRecentTriggerTime != null) {
+                log.debug("Selected most recent past trigger time: {}", mostRecentTriggerTime);
+                return Optional.of(mostRecentTriggerTime);
+            }
+            
+            // If no trigger times found from satisfied conditions, default to immediate past
+            ZonedDateTime immediateTime = now.minusSeconds(1);
+            log.debug("No past trigger times found from satisfied conditions, returning immediate past time: {}", immediateTime);
             return Optional.of(immediateTime);
         }
         
@@ -771,10 +930,12 @@ public class ConditionManager {
     }
 
     /**
-     * Recursively finds the earliest next trigger time within a logical condition.
+     * Recursively finds the appropriate trigger time within a logical condition.
+     * - For conditions not yet met: finds the earliest future trigger time
+     * - For conditions already met: finds the most recent past trigger time
      * 
      * @param logical The logical condition to examine
-     * @return Optional containing the earliest next trigger time, or empty if none available
+     * @return Optional containing the appropriate trigger time, or empty if none available
      */
     private Optional<ZonedDateTime> getCurrentTriggerTimeForLogical(LogicalCondition logical) {
         if (logical == null || logical.getConditions().isEmpty()) {
@@ -782,6 +943,45 @@ public class ConditionManager {
             return Optional.empty();
         }
         
+        ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
+        
+        // If the logical condition is already satisfied, find most recent past trigger time
+        if (logical.isSatisfied()) {
+            ZonedDateTime mostRecentTriggerTime = null;
+            
+            for (Condition condition : logical.getConditions()) {
+                if (condition.isSatisfied()) {
+                    log.debug("Checking past trigger time for satisfied condition: {}", condition.getDescription());
+                    Optional<ZonedDateTime> triggerTime;
+                    
+                    if (condition instanceof LogicalCondition) {
+                        // Recursively check nested logical conditions
+                        triggerTime = getCurrentTriggerTimeForLogical((LogicalCondition) condition);
+                    } else {
+                        // Get trigger time from individual condition
+                        triggerTime = condition.getCurrentTriggerTime();
+                    }
+                    
+                    if (triggerTime.isPresent()) {
+                        ZonedDateTime time = triggerTime.get();
+                        // Only consider times in the past
+                        if (time.isBefore(now) || time.isEqual(now)) {
+                            // Keep the most recent time in the past
+                            if (mostRecentTriggerTime == null || time.isAfter(mostRecentTriggerTime)) {
+                                mostRecentTriggerTime = time;
+                                log.debug("Found more recent past trigger time: {}", mostRecentTriggerTime);
+                            }
+                        }
+                    }
+                }
+            }
+            
+            if (mostRecentTriggerTime != null) {
+                return Optional.of(mostRecentTriggerTime);
+            }
+        }
+        
+        // If not satisfied, find earliest future trigger time (original behavior)
         ZonedDateTime earliestTrigger = null;
         
         for (Condition condition : logical.getConditions()) {
@@ -930,7 +1130,18 @@ public class ConditionManager {
                     .orElse(0.0);
         }
     }
-    
+    @Subscribe(priority = -1)
+    public void onGameStateChanged(GameStateChanged gameStateChanged){
+        for (Condition condition : getConditions( )) {
+            try {
+                condition.onGameStateChanged(gameStateChanged);
+            } catch (Exception e) {
+                log.error("Error in condition {} during GameStateChanged event: {}", 
+                    condition.getDescription(), e.getMessage(), e);
+            }
+        }        
+    }
+
     @Subscribe(priority = -1)
     public void onStatChanged(StatChanged event) {
       
@@ -960,6 +1171,7 @@ public class ConditionManager {
     @Subscribe(priority = -1)
     public void onGameTick(GameTick gameTick) {
         // Propagate event to all conditions
+        
         for (Condition condition : getConditions( )) {
             try {
                 condition.onGameTick(gameTick);
@@ -1097,20 +1309,11 @@ public class ConditionManager {
         }       
     }
     @Subscribe(priority = -1)
-    void onItemSpawned(ItemSpawned event){                        
-        List<Condition> pluConditions = pluginCondition.getConditions();
-        //if (Microbot.isDebug()){
-            log.info("number of conditions: " + getConditions( ).size());
-            log.info("onItemSpawned event-" + event);
-            log.info("plugin conditions: " + pluConditions.size());
-        //}
-        
-        for (Condition condition : getConditions( )) {            
-            try {
-                if(condition instanceof LootItemCondition) {
-                    LootItemCondition itemCondition = (LootItemCondition) condition;
-                    log.info("LootItemCondition condition: " + itemCondition.getDescription());
-                }
+    void onItemSpawned(ItemSpawned event){        
+        List<Condition> allConditions = getConditions();            
+        // Proceed with normal processing
+        for (Condition condition : allConditions) {            
+            try {                
                 condition.onItemSpawned(event);
             } catch (Exception e) {
                 log.error("Error in condition {} during ItemSpawned event: {}", 
@@ -1129,5 +1332,61 @@ public class ConditionManager {
             }
         }       
     }
+    @Subscribe(priority = -1)
+    void onAnimationChanged(AnimationChanged event) {
+        for (Condition condition :getConditions( )) {
+            try {
+                condition.onAnimationChanged(event);
+            } catch (Exception e) {
+                log.error("Error in condition {} during AnimationChanged event: {}", 
+                    condition.getDescription(), e.getMessage(), e);
+            }
+        }       
+    }
 
+    /**
+     * Finds the logical condition that contains the given condition
+     * 
+     * @param targetCondition The condition to find
+     * @return The logical condition containing it, or null if not found
+     */
+    public LogicalCondition findContainingLogical(Condition targetCondition) {
+        // First check if it's in the plugin condition
+        if (pluginCondition != null && findInLogical(pluginCondition, targetCondition) != null) {
+            return findInLogical(pluginCondition, targetCondition);
+        }
+        
+        // Then check user logical condition
+        if (userLogicalCondition != null) {
+            LogicalCondition result = findInLogical(userLogicalCondition, targetCondition);
+            if (result != null) {
+                return result;
+            }
+        }
+        
+        // Try root logical condition as a last resort
+        return userLogicalCondition;
+    }
+    
+    /**
+     * Recursively searches for a condition within a logical condition
+     */
+    private LogicalCondition findInLogical(LogicalCondition logical, Condition targetCondition) {
+        // Check if the condition is directly in this logical
+        if (logical.getConditions().contains(targetCondition)) {
+            return logical;
+        }
+        
+        // Check nested logical conditions
+        for (Condition condition : logical.getConditions()) {
+            if (condition instanceof LogicalCondition) {
+                LogicalCondition result = findInLogical((LogicalCondition) condition, targetCondition);
+                if (result != null) {
+                    return result;
+                }
+            }
+        }
+        
+        return null;
+    }
 }

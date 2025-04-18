@@ -29,7 +29,7 @@ public class BankItemCountCondition extends ResourceCondition {
     private final String itemName;
     private final int targetCountMin;
     private final int targetCountMax;
-    private final Pattern itemPattern;
+    
     private int currentTargetCount;
     private int currentItemCount;
     private boolean satisfied = false;
@@ -38,8 +38,8 @@ public class BankItemCountCondition extends ResourceCondition {
      * Creates a condition with fixed target count
      */    
     public BankItemCountCondition(String itemName, int targetCount) {
-        this.itemName = itemName;
-        this.itemPattern = createItemPattern(itemName);
+        super(itemName);
+        this.itemName = itemName;        
         this.targetCountMin = targetCount;
         this.targetCountMax = targetCount;
         this.currentTargetCount = targetCount;
@@ -51,8 +51,8 @@ public class BankItemCountCondition extends ResourceCondition {
      */
     @Builder
     public BankItemCountCondition(String itemName, int targetCountMin, int targetCountMax) {
-        this.itemName = itemName;
-        this.itemPattern = createItemPattern(itemName);
+        super(itemName);
+        this.itemName = itemName;        
         this.targetCountMin = Math.max(0, targetCountMin);
         this.targetCountMax = Math.max(this.targetCountMin, targetCountMax);
         this.currentTargetCount = Rs2Random.between(this.targetCountMin, this.targetCountMax);
@@ -94,6 +94,18 @@ public class BankItemCountCondition extends ResourceCondition {
                 currentItemCount,
                 currentTargetCount);
     }
+    @Override
+    public String getDetailedDescription() {
+        return String.format("BankItemCountCondition: %s\n" +
+                "Target Count: %d - %d\n" +
+                "Current Count: %d\n" +
+                "Satisfied: %s",
+                itemName,
+                targetCountMin,
+                targetCountMax,
+                currentItemCount,
+                satisfied ? "YES" : "NO");
+    }
     
     @Override
     public void reset() {
@@ -101,7 +113,7 @@ public class BankItemCountCondition extends ResourceCondition {
     }
     
     @Override
-    public void reset(boolean randomize) {
+    public void reset(boolean randomize) {        
         if (randomize && targetCountMin != targetCountMax) {
             currentTargetCount = Rs2Random.between(targetCountMin, targetCountMax);
         }
@@ -125,10 +137,7 @@ public class BankItemCountCondition extends ResourceCondition {
     @Override
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
-        if (!registered) {
-            Microbot.getEventBus().register(this);
-            registered = true;
-        }
+        
         
         // Update count when bank container changes
         if (event.getContainerId() == InventoryID.BANK.getId()) {

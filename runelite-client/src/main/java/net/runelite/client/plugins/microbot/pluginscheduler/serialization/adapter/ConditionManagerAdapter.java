@@ -32,13 +32,11 @@ public class ConditionManagerAdapter implements JsonSerializer<ConditionManager>
         if (pluginCondition != null && !pluginCondition.getConditions().isEmpty()) {
             result.add("pluginLogicalCondition", context.serialize(pluginCondition));
         }
-        
         // Serialize user-defined logical condition
         LogicalCondition userCondition = src.getUserLogicalCondition();
         if (userCondition != null) {
             result.add("userLogicalCondition", context.serialize(userCondition));
-        }
-        
+        }        
         return result;
     }
     
@@ -84,6 +82,7 @@ public class ConditionManagerAdapter implements JsonSerializer<ConditionManager>
             
             // Handle case where userLogicalCondition might have an empty conditions array
             if (userLogicalObj.has("conditions")) {
+                
                 JsonArray conditionsArray = userLogicalObj.getAsJsonArray("conditions");
                 if (conditionsArray.size() > 0) {
                     // Only process if there are actual conditions
@@ -91,46 +90,16 @@ public class ConditionManagerAdapter implements JsonSerializer<ConditionManager>
                         userLogicalObj, LogicalCondition.class);
                     if (logicalCondition != null) {
                         manager.setUserLogicalCondition(logicalCondition);
+                    
                     }
                 }
             }
         }
         
-        // Handle direct conditions array if present (for backwards compatibility)
-        if (jsonObject.has("conditions")) {
-            JsonArray conditionsArray = jsonObject.getAsJsonArray("conditions");
-            List<Condition> conditions = new ArrayList<>();
-            
-            for (JsonElement element : conditionsArray) {
-                Condition condition = context.deserialize(element, Condition.class);
-                if (condition != null) {
-                    conditions.add(condition);
-                }
-            }
-            
-            // Add all successfully deserialized conditions
-            for (Condition condition : conditions) {
-                manager.addCondition(condition);
-            }
-        }
         
-        // Initialize all time-based conditions
-        //initializeTimeConditions(manager);//  the initialization should be done on generation of the condition -> not reseting it
         
         return manager;
     }
     
-    /**
-     * Initialize all time conditions in the manager to ensure transient fields are set properly
-     */
-    private void initializeTimeConditions(ConditionManager manager) {
-        // Reset all time conditions to initialize them properly
-        List<TimeCondition> timeConditions = manager.getTimeConditions();
-        if (!timeConditions.isEmpty()) {
-            log.debug("Initializing {} time conditions after deserialization", timeConditions.size());
-            for (TimeCondition condition : timeConditions) {
-                condition.reset(condition.isUseRandomization());
-            }
-        }
-    }
+  
 }

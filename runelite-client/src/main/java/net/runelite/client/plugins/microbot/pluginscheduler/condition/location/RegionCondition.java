@@ -2,15 +2,7 @@ package net.runelite.client.plugins.microbot.pluginscheduler.condition.location;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
-import net.runelite.api.events.GameTick;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionType;
-import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -20,18 +12,20 @@ import java.util.Set;
  * Condition that is met when the player enters a specific region
  */
 @Slf4j
-public class RegionCondition implements Condition {
+public class RegionCondition extends LocationCondition {
     @Getter
     private final Set<Integer> targetRegions;
-    private boolean isInRegion = false;
-    private boolean registered = false;
 
     /**
      * Create a condition that is met when the player enters any of the specified regions
      * 
      * @param regionIds The region IDs to check for
      */
-    public RegionCondition(int... regionIds) {
+    public RegionCondition(String name,int... regionIds) {
+        super(name);
+        if (regionIds == null || regionIds.length == 0) {
+            throw new IllegalArgumentException("Region IDs cannot be null or empty");
+        }
         this.targetRegions = new HashSet<>();
         for (int id : regionIds) {
             targetRegions.add(id);
@@ -39,33 +33,29 @@ public class RegionCondition implements Condition {
     }
 
     @Override
-    public boolean isSatisfied() {
-        if (!registered) {
-            Microbot.getEventBus().register(this);
-            registered = true;
-            // Check immediately on first call
-            checkRegion();
+    protected void updateLocationStatus() {
+        if (!canCheckLocation()) {
+            return;
         }
-        return isInRegion;
-    }
 
-    @Override
-    public void reset() {
-        isInRegion = false;
-    }
-    @Override
-    public void reset(boolean randomize) {
-        reset();
-    }
-
-    @Override
-    public ConditionType getType() {
-        return ConditionType.LOCATION;
+        try {
+            WorldPoint location = getCurrentLocation();
+            if (location != null) {
+                int currentRegion = location.getRegionID();
+                satisfied = targetRegions.contains(currentRegion);
+                
+                if (satisfied) {
+                    log.debug("Player entered target region: {}", currentRegion);
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error checking player region", e);
+        }
     }
 
     @Override
     public String getDescription() {
-        WorldPoint location = Rs2Player.getWorldLocation();
+        WorldPoint location = getCurrentLocation();
         String currentRegionInfo = "";
         
         if (location != null) {
@@ -78,31 +68,79 @@ public class RegionCondition implements Condition {
         return "Player in regions: " + Arrays.toString(targetRegions.toArray()) + currentRegionInfo;
     }
 
-    @Subscribe
-    public void onGameTick(GameTick event) {
-        checkRegion();
-    }
-
-    private void checkRegion() {
-        Client client = Microbot.getClient();
-        if (client == null || client.getGameState() != GameState.LOGGED_IN) {
-            return;
+    @Override
+    public String getDetailedDescription() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Basic description
+        int regionCount = targetRegions.size();
+        if (regionCount == 1) {
+            sb.append("Region Condition: Player must be in a specific region\n");
+        } else {
+            sb.append("Region Condition: Player must be in one of ").append(regionCount)
+              .append(" specified regions\n");
         }
-
-        try {
-            WorldPoint location = Rs2Player.getWorldLocation();
-            if (location != null) {
-                int currentRegion = location.getRegionID();
-                isInRegion = targetRegions.contains(currentRegion);
-                
-                if (isInRegion) {
-                    log.debug("Player entered target region: {}", currentRegion);
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error checking player region", e);
+        
+        // Status information
+        WorldPoint location = getCurrentLocation();
+        int currentRegion = -1;
+        boolean inTargetRegion = false;
+        
+        if (location != null) {
+            currentRegion = location.getRegionID();
+            inTargetRegion = targetRegions.contains(currentRegion);
         }
+        
+        sb.append("Status: ").append(inTargetRegion ? "Satisfied" : "Not satisfied").append("\n");
+        
+        // Target region details
+        sb.append("Target Regions: ").append(Arrays.toString(targetRegions.toArray())).append("\n");
+        
+        // Current player region
+        if (location != null) {
+            sb.append("Current Region: ").append(currentRegion);
+            sb.append(inTargetRegion ? " (matched)" : " (not matched)");
+        } else {
+            sb.append("Current Region: Unknown");
+        }
+        
+        return sb.toString();
     }
-
-  
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Basic information
+        sb.append("RegionCondition:\n");
+        sb.append("  ┌─ Configuration ─────────────────────────────\n");
+        
+        int regionCount = targetRegions.size();
+        if (regionCount == 1) {
+            sb.append("  │ Type: Region (Player must be in specific region)\n");
+        } else {
+            sb.append("  │ Type: Region (Player must be in one of ")
+              .append(regionCount).append(" regions)\n");
+        }
+        
+        sb.append("  │ Target Regions: ").append(Arrays.toString(targetRegions.toArray())).append("\n");
+        
+        // Status information
+        sb.append("  └─ Status ──────────────────────────────────\n");
+        WorldPoint location = getCurrentLocation();
+        
+        if (location != null) {
+            int currentRegion = location.getRegionID();
+            boolean inTargetRegion = targetRegions.contains(currentRegion);
+            
+            sb.append("    Current Region: ").append(currentRegion).append("\n");
+            sb.append("    Matched: ").append(inTargetRegion).append("\n");
+            sb.append("    Satisfied: ").append(inTargetRegion);
+        } else {
+            sb.append("    Current Region: Unknown\n");
+            sb.append("    Satisfied: false");
+        }
+        
+        return sb.toString();
+    }
 }

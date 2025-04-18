@@ -19,7 +19,7 @@ import java.util.Optional;
  * Perfect for one-time scheduled events or deadlines.
  */
 @Slf4j
-@EqualsAndHashCode(callSuper = false)
+@EqualsAndHashCode(callSuper = false, exclude = {})
 public class SingleTriggerTimeCondition extends TimeCondition {
     
     @Getter
@@ -142,15 +142,15 @@ public class SingleTriggerTimeCondition extends TimeCondition {
         
         // Tracking info
         sb.append("  └─ Tracking ────────────────────────────────\n");
-        sb.append("    Reset Count: ").append(currentResetCount);
+        sb.append("    Reset Count: ").append(currentValidResetCount);
         if (this.getMaximumNumberOfRepeats() > 0) {
             sb.append("/").append(getMaximumNumberOfRepeats());
         } else {
             sb.append(" (unlimited)");
         }
         sb.append("\n");
-        if (lastResetTime != null) {
-            sb.append("    Last Reset: ").append(lastResetTime.format(dateTimeFormatter)).append("\n");
+        if (lastValidResetTime != null) {
+            sb.append("    Last Reset: ").append(lastValidResetTime.format(dateTimeFormatter)).append("\n");
         }
         sb.append("    Can Trigger Again: ").append(canTriggerAgain()).append("\n");
         
@@ -162,8 +162,8 @@ public class SingleTriggerTimeCondition extends TimeCondition {
         if (!isSatisfied()) {
             return;
         }
-        currentResetCount++;   
-        lastResetTime = LocalDateTime.now();    
+        currentValidResetCount++;   
+        lastValidResetTime = LocalDateTime.now();    
         log.debug("SingleTriggerTimeCondition reset, will trigger again at: {}", 
                 targetTime.format(FORMATTER));
     }

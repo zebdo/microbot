@@ -3,12 +3,14 @@ package net.runelite.client.plugins.microbot.pluginscheduler.condition.logical;
 import java.time.ZonedDateTime;
 import java.util.Optional;
 
+import lombok.EqualsAndHashCode;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
 
 /**
  * Logical AND combination of conditions - all must be met.
  */
+@EqualsAndHashCode(callSuper = true)
 public class AndCondition extends LogicalCondition {
     @Override
     public boolean isSatisfied() {
@@ -16,33 +18,92 @@ public class AndCondition extends LogicalCondition {
         return conditions.stream().allMatch(Condition::isSatisfied);
     }
     
-    @Override
-    public String getDescription() {
-        if (conditions.isEmpty()) {
-            return "No conditions";
+    /**
+     * Returns a detailed description of the AND condition with additional status information
+     */
+    public String getDetailedDescription() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Basic description
+        sb.append("AND Logical Condition: All conditions must be satisfied\n");
+        
+        // Status information
+        boolean satisfied = isSatisfied();
+        sb.append("Status: ").append(satisfied ? "Satisfied" : "Not satisfied").append("\n");
+        sb.append("Child Conditions: ").append(conditions.size()).append("\n");
+        
+        // Progress information
+        double progress = getProgressPercentage();
+        sb.append(String.format("Overall Progress: %.1f%%\n", progress));
+        
+        // Count satisfied conditions
+        int satisfiedCount = 0;
+        for (Condition condition : conditions) {
+            if (condition.isSatisfied()) {
+                satisfiedCount++;
+            }
+        }
+        sb.append("Satisfied Conditions: ").append(satisfiedCount).append("/").append(conditions.size()).append("\n\n");
+        
+        // List all child conditions
+        sb.append("Child Conditions:\n");
+        for (int i = 0; i < conditions.size(); i++) {
+            Condition condition = conditions.get(i);
+            sb.append(String.format("%d. %s [%s]\n", 
+                    i + 1, 
+                    condition.getDescription(),
+                    condition.isSatisfied() ? "SATISFIED" : "NOT SATISFIED"));
         }
         
-        StringBuilder sb = new StringBuilder("ALL of: (");
-        for (int i = 0; i < conditions.size(); i++) {
-            if (i > 0) sb.append(" AND ");
-            sb.append(conditions.get(i).getDescription());
-        }
-        sb.append(")");
         return sb.toString();
     }
+    
     @Override
-    public void reset() {
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Basic information
+        sb.append("AndCondition:\n");
+        sb.append("  ┌─ Configuration ─────────────────────────────\n");
+        sb.append("  │ Type: AND (All conditions must be satisfied)\n");
+        sb.append("  │ Child Conditions: ").append(conditions.size()).append("\n");
+        
+        // Status information
+        sb.append("  ├─ Status ──────────────────────────────────\n");
+        boolean allSatisfied = isSatisfied();
+        sb.append("  │ Satisfied: ").append(allSatisfied).append("\n");
+        
+        // Count satisfied conditions
+        int satisfiedCount = 0;
         for (Condition condition : conditions) {
-            condition.reset();
+            if (condition.isSatisfied()) {
+                satisfiedCount++;
+            }
         }
-    }
-    @Override
-    public void reset(boolean randomize) {
-        for (Condition condition : conditions) {
-            condition.reset(randomize);
+        sb.append("  │ Satisfied Conditions: ").append(satisfiedCount).append("/").append(conditions.size()).append("\n");
+        sb.append("  │ Progress: ").append(String.format("%.1f%%", getProgressPercentage())).append("\n");
+        
+        // Child conditions
+        if (!conditions.isEmpty()) {
+            sb.append("  ├─ Child Conditions ────────────────────────\n");
+            
+            for (int i = 0; i < conditions.size(); i++) {
+                Condition condition = conditions.get(i);
+                String prefix = (i == conditions.size() - 1) ? "  └─ " : "  ├─ ";
+                
+                sb.append(prefix).append(String.format("Condition %d: %s [%s]\n", 
+                        i + 1, 
+                        condition.getClass().getSimpleName(),
+                        condition.isSatisfied() ? "SATISFIED" : "NOT SATISFIED"));
+            }
+        } else {
+            sb.append("  └─ No Child Conditions ───────────────────────\n");
         }
         
+        return sb.toString();
     }
+
+  
 
     /**
      * Gets the next time this AND condition will be satisfied.

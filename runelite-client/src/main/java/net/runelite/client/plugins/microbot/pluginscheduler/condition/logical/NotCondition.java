@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition.logical;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.StatChanged;
@@ -18,6 +19,7 @@ import java.util.Optional;
 /**
  * Logical NOT operator - inverts a condition.
  */
+@EqualsAndHashCode(callSuper = false)
 public class NotCondition implements Condition {
     @Getter
     private final Condition condition;
@@ -162,5 +164,89 @@ public class NotCondition implements Condition {
         
         // If the NOT is not satisfied, we can't determine when it will become satisfied
         return Optional.empty();
+    }
+
+    /**
+     * Returns a detailed description of the NOT condition with additional status information
+     */
+    public String getDetailedDescription() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Basic description
+        sb.append("NOT Logical Condition: Inverts the inner condition\n");
+        
+        // Status information
+        boolean satisfied = isSatisfied();
+        sb.append("Status: ").append(satisfied ? "Satisfied" : "Not satisfied").append("\n");
+        
+        // Progress information (inverted)
+        double progress = getProgressPercentage();
+        sb.append(String.format("Inverted Progress: %.1f%%\n", progress)).append("\n");
+        
+        // Inner condition information
+        sb.append("Inner Condition:\n");
+        sb.append("  Type: ").append(condition.getClass().getSimpleName()).append("\n");
+        sb.append("  Description: ").append(condition.getDescription()).append("\n");
+        sb.append("  Status: ").append(condition.isSatisfied() ? "SATISFIED" : "NOT SATISFIED").append("\n");
+        
+        // If the inner condition has a detailed description and it's not too complex
+        if (!(condition instanceof LogicalCondition)) {
+            sb.append("\nInner Condition Details:\n");
+            
+            // Use reflection to safely try to access getDetailedDescription if available
+            try {
+                java.lang.reflect.Method detailedDescMethod = 
+                    condition.getClass().getMethod("getDetailedDescription");
+                if (detailedDescMethod != null) {
+                    String innerDetails = (String) detailedDescMethod.invoke(condition);
+                    // Add indentation to inner details
+                    innerDetails = "  " + innerDetails.replace("\n", "\n  ");
+                    sb.append(innerDetails);
+                }
+            } catch (Exception e) {
+                // If detailed description isn't available, just use the regular description
+                sb.append("  ").append(condition.getDescription());
+            }
+        }
+        
+        return sb.toString();
+    }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Basic information
+        sb.append("NotCondition:\n");
+        sb.append("  ┌─ Configuration ─────────────────────────────\n");
+        sb.append("  │ Type: NOT (Inverts inner condition)\n");
+        sb.append("  │ Inner Condition: ").append(condition.getClass().getSimpleName()).append("\n");
+        
+        // Status information
+        sb.append("  ├─ Status ──────────────────────────────────\n");
+        boolean satisfied = isSatisfied();
+        sb.append("  │ Satisfied: ").append(satisfied).append("\n");
+        sb.append("  │ Inner Satisfied: ").append(condition.isSatisfied()).append("\n");
+        sb.append("  │ Progress: ").append(String.format("%.1f%%", getProgressPercentage())).append("\n");
+        
+        // Inner condition
+        sb.append("  └─ Inner Condition ─────────────────────────\n");
+        
+        // Format the inner condition's toString with proper indentation
+        String innerString = condition.toString();
+        String[] lines = innerString.split("\n");
+        
+        // For simple conditions that might not have fancy toString
+        if (lines.length <= 1) {
+            sb.append("    ").append(condition.getDescription());
+        } else {
+            // Skip the first line if it's just the class name
+            for (int i = (lines[0].contains("Condition:") ? 1 : 0); i < lines.length; i++) {
+                // Indent each line
+                sb.append("    ").append(lines[i]).append("\n");
+            }
+        }
+        
+        return sb.toString();
     }
 }

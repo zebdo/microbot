@@ -12,27 +12,37 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionM
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.serialization.DayOfWeekConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.serialization.DurationAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.serialization.IntervalConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.serialization.LocalDateAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.serialization.LocalTimeAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.serialization.SingleTriggerTimeConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.serialization.TimeConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.serialization.TimeWindowConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ConditionTypeAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ConditionManagerAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ZonedDateTimeAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.logical.AndConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.logical.LogicalConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.logical.OrConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.DayOfWeekConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.DurationAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.IntervalConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.LocalDateAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.LocalTimeAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.SingleTriggerTimeConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.TimeConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.time.TimeWindowConditionAdapter;
-import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.DayOfWeekCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.NotCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.serialization.LogicalConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.serialization.NotConditionAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.PluginScheduleEntryAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.BankItemCountCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.GatheredResourceCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.InventoryItemCountCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.LootItemCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.ProcessItemCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.ResourceCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.serialization.BankItemCountConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.serialization.GatheredResourceConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.serialization.InventoryItemCountConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.serialization.LootItemConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.serialization.ProcessItemConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.serialization.ResourceConditionAdapter;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -78,8 +88,15 @@ public class ScheduledSerializer {
         
         // Logical condition adapters
         builder.registerTypeAdapter(LogicalCondition.class, new LogicalConditionAdapter());
-        builder.registerTypeAdapter(AndCondition.class, new AndConditionAdapter());
-        builder.registerTypeAdapter(OrCondition.class, new OrConditionAdapter());
+        builder.registerTypeAdapter(NotCondition.class, new NotConditionAdapter());
+        
+        // Resource condition adapters
+        builder.registerTypeAdapter(ResourceCondition.class, new ResourceConditionAdapter());
+        builder.registerTypeAdapter(BankItemCountCondition.class, new BankItemCountConditionAdapter());
+        builder.registerTypeAdapter(InventoryItemCountCondition.class, new InventoryItemCountConditionAdapter());
+        builder.registerTypeAdapter(LootItemCondition.class, new LootItemConditionAdapter());
+        builder.registerTypeAdapter(GatheredResourceCondition.class, new GatheredResourceConditionAdapter());
+        builder.registerTypeAdapter(ProcessItemCondition.class, new ProcessItemConditionAdapter());
         
         // ConditionManager adapter
         builder.registerTypeAdapter(ConditionManager.class, new ConditionManagerAdapter());

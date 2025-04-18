@@ -2,9 +2,10 @@ package net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapt
 
 import com.google.gson.*;
 import lombok.extern.slf4j.Slf4j;
-
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionManager;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
+import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
 
 import java.lang.reflect.Type;
 import java.time.Duration;
@@ -71,10 +72,18 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
         // Get basic properties
         String name = jsonObject.get("name").getAsString();
         boolean enabled = jsonObject.has("enabled") ? jsonObject.get("enabled").getAsBoolean() : false;
-        
+        // Handle mainTimeStartCondition
+        TimeCondition mainTimeCondition = null;
+        if (jsonObject.has("mainTimeStartCondition")) {
+            try {
+                mainTimeCondition = context.deserialize(
+                    jsonObject.get("mainTimeStartCondition"), TimeCondition.class);                                               
+            } catch (Exception e) {
+                log.error("Failed to parse mainTimeStartCondition", e);
+            }
+        }
         // Create a basic plugin entry first
-        PluginScheduleEntry entry = new PluginScheduleEntry(name, (TimeCondition)null, enabled, false);
-        
+        PluginScheduleEntry entry = new PluginScheduleEntry(name, (TimeCondition)mainTimeCondition, enabled, false);        
         // Deserialize cleanName if available
         if (jsonObject.has("cleanName")) {
             entry.setCleanName(jsonObject.get("cleanName").getAsString());
@@ -87,7 +96,7 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
             
             try {
                 long timestamp = jsonObject.get("lastRunTime").getAsLong();
-                entry.setLastRunTime(ZonedDateTime.ofInstant(
+                ZonedDateTime prvLastRunTime  = (ZonedDateTime.ofInstant(
                     java.time.Instant.ofEpochMilli(timestamp), 
                     java.time.ZoneId.systemDefault()));
             } catch (Exception e) {
@@ -96,62 +105,30 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
         }
         
         // Deserialize condition managers
-        /*if (jsonObject.has("stopConditionManager")) {
+        if (jsonObject.has("stopConditionManager")) {
             ConditionManager stopManager = context.deserialize(
-                jsonObject.get("stopConditionManager"), ConditionManager.class);
-            if (!entry.getStopConditionManager().getConditions().isEmpty()) {                
+                jsonObject.get("stopConditionManager"), ConditionManager.class);           
+            if (!entry.getStopConditionManager().getUserConditions().isEmpty()) {
+                throw new Error("StopConditionManager should be empty");
             }else{
-                for (Condition condition : stopManager.getConditions()) {                
+                for (Condition condition : stopManager.getUserConditions()) {    
+                    if(entry.getStopConditionManager().containsCondition(condition)){
+                        throw new Error("Condition already exists in startConditionManager");
+                    }                               
                     entry.addStopCondition( condition);                
-                }
+                }                    
             }
-            //entry.setStopConditionManager(stopManager);
-        }*/
-        
-        /*if (jsonObject.has("startConditionManager")) {
+        }        
+        if (jsonObject.has("startConditionManager")) {
             ConditionManager startManager = context.deserialize(
-                jsonObject.get("startConditionManager"), ConditionManager.class);
-            if (!entry.getStartConditionManager().getConditions().isEmpty()) {
-                throw new Error("StartConditionManager should be empty");
-            }else{
-                for (Condition condition : startManager.getConditions()) {                
-                    entry.addStartCondition( condition);                
-                }
-            }                
-        }*/
-        
-        // Handle mainTimeStartCondition
-        TimeCondition mainTimeCondition = null;
-        if (jsonObject.has("mainTimeStartCondition")) {
-            try {
-                mainTimeCondition = context.deserialize(
-                    jsonObject.get("mainTimeStartCondition"), TimeCondition.class);
-                
-                // Important: Check if this condition is already in the start condition manager
-                boolean isDuplicate = false;
-                if (entry.getStartConditionManager() != null) {
-                    for (TimeCondition existing : entry.getStartConditionManager().getTimeConditions()) {
-                        if (existing.getDescription().equals(mainTimeCondition.getDescription())) {
-                            isDuplicate = true;
-                            mainTimeCondition = existing; // Use the existing reference
-                            break;
-                        }
-                    }
-                }
-                
-                // Only add if not duplicate
-                if (!isDuplicate && entry.getStartConditionManager() != null) {
-                    entry.getStartConditionManager().addCondition(mainTimeCondition);
-                }
-                
-                // Set mainTimeStartCondition field
-                entry.updatePrimaryTimeCondition(mainTimeCondition);
-                
-            } catch (Exception e) {
-                log.error("Failed to parse mainTimeStartCondition", e);
+                jsonObject.get("startConditionManager"), ConditionManager.class);                                                
+
+            for (Condition condition : startManager.getUserConditions()) {                
+                if(!entry.getStartConditionManager().containsCondition(condition)){
+                    entry.addStartCondition( condition);                                            
+                }                
             }
-        }
-        
+        }                        
         // Deserialize other properties
         if (jsonObject.has("stopInitiated")) {
             entry.setStopInitiated(jsonObject.get("stopInitiated").getAsBoolean());

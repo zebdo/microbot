@@ -37,56 +37,23 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
         
         JsonObject data = new JsonObject();
         
-        // Handle specific condition types
-        if (src instanceof LogicalCondition) {
-            LogicalCondition logical = (LogicalCondition) src;
-            JsonArray conditions = new JsonArray();
-            for (Condition condition : logical.getConditions()) {
-                conditions.add(context.serialize(condition));
-            }
-            data.add("conditions", conditions);
-        } 
-        else if (src instanceof NotCondition) {
-            NotCondition not = (NotCondition) src;
-            data.add("condition", context.serialize(not.getCondition()));
+        if (src instanceof LogicalCondition) {            
+            data = (JsonObject) context.serialize(src, LogicalCondition.class);
         }
-        else if (src instanceof IntervalCondition) {
-            IntervalCondition interval = (IntervalCondition) src;
-            data.addProperty("intervalSeconds", interval.getInterval().getSeconds());
-            data.addProperty("randomize", interval.isRandomize());
-            if (interval.isRandomize()) {
-                data.addProperty("randomFactor", interval.getRandomFactor());
-            }
-            if (interval.getCurrentTriggerTime() != null) {
-                data.addProperty("nextTriggerTimeMillis", interval.getCurrentTriggerTime().orElse(ZonedDateTime.now(ZoneId.systemDefault())).toInstant().toEpochMilli());
-            }
+        else if (src instanceof NotCondition) {            
+            data = (JsonObject) context.serialize(src, NotCondition.class);
+        }
+        else if (src instanceof IntervalCondition) {            
+            data = (JsonObject) context.serialize(src, IntervalCondition.class);     
         }
         else if (src instanceof DayOfWeekCondition) {
-            DayOfWeekCondition dayCondition = (DayOfWeekCondition) src;
-            JsonArray days = new JsonArray();
-            for (DayOfWeek day : dayCondition.getActiveDays()) {
-                days.add(day.name());
-            }
-            data.add("activeDays", days);
+            
+            data = (JsonObject) context.serialize(src, DayOfWeekCondition.class);     
         }
         else if (src instanceof TimeWindowCondition) {
             // Defer to the specialized adapter for TimeWindowCondition
-            TimeWindowCondition window = (TimeWindowCondition) src;
-            
-            // Store basic time window properties directly
-            data.addProperty("startTime", window.getStartTime().toString());
-            data.addProperty("endTime", window.getEndTime().toString());
-            data.addProperty("startDate", window.getStartDate().toString());
-            data.addProperty("endDate", window.getEndDate().toString());
-            
-            // Store repeat cycle information
-            data.addProperty("repeatCycle", window.getRepeatCycle().name());
-            data.addProperty("repeatInterval", window.getRepeatIntervalUnit());
-            
-            // Store randomization settings
-            data.addProperty("useRandomization", window.isUseRandomization());
-            data.addProperty("randomizeMinutes", window.getRandomizeMinutes());
-                        
+                                   
+            data = (JsonObject) context.serialize(src, TimeWindowCondition.class);     
         }
         else if (src instanceof SkillLevelCondition) {
             SkillLevelCondition skillLevel = (SkillLevelCondition) src;
@@ -134,6 +101,7 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
         else if (src instanceof PositionCondition) {
             PositionCondition pos = (PositionCondition) src;
             WorldPoint point = pos.getTargetPosition();
+            data.addProperty("name", pos.getName());
             data.addProperty("x", point.getX());
             data.addProperty("y", point.getY());
             data.addProperty("plane", point.getPlane());
@@ -142,6 +110,7 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
         else if (src instanceof AreaCondition) {
             AreaCondition areaCondition = (AreaCondition) src;
             WorldArea area = areaCondition.getArea();
+            data.addProperty("name", areaCondition.getName());
             data.addProperty("x", area.getX());
             data.addProperty("y", area.getY());
             data.addProperty("width", area.getWidth());
@@ -154,6 +123,7 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             for (Integer regionId : region.getTargetRegions()) {
                 regionIds.add(regionId);
             }
+            data.addProperty("name", region.getName());
             data.add("regionIds", regionIds);
         }
         else if (src instanceof NpcKillCountCondition) {
@@ -168,9 +138,15 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             assert(1==0); // This should never be serialized here, sperate adapter for this
 
        
+        }else if (src instanceof LockCondition) {
+            LockCondition lock = (LockCondition) src;
+            data.addProperty("reason", lock.getReason());
+        }
+        else {
+            log.warn("Unknown condition type: {}", src.getClass().getName());
         }
         
-        result.add(DATA_FIELD, data);
+        result.add(DATA_FIELD, data);        
         return result;
     }
 
@@ -186,32 +162,32 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
         // Check if the type field exists
         if (!jsonObject.has(TYPE_FIELD)) {
             return null;
-        }
-        
+        }        
         String typeStr = jsonObject.get(TYPE_FIELD).getAsString();
         JsonObject data = jsonObject.getAsJsonObject(DATA_FIELD);
         
         try {
             Class<?> clazz = Class.forName(typeStr);
-            
+           
             // Handle specific condition types based on their class
-            if (AndCondition.class.isAssignableFrom(clazz)) {
-                return deserializeAndCondition(data, context);
+            if (AndCondition.class.isAssignableFrom(clazz)) {                
+                return context.deserialize(data, LogicalCondition.class);
             } 
-            else if (OrCondition.class.isAssignableFrom(clazz)) {
-                return deserializeOrCondition(data, context);
+            else if (OrCondition.class.isAssignableFrom(clazz)) {                
+                return context.deserialize(data, LogicalCondition.class);
             }
             else if (NotCondition.class.isAssignableFrom(clazz)) {
-                return deserializeNotCondition(data, context);
+                
+                return context.deserialize(data, NotCondition.class);
             }
-            else if (IntervalCondition.class.isAssignableFrom(clazz)) {
-                return deserializeIntervalCondition(data);
+            else if (IntervalCondition.class.isAssignableFrom(clazz)) {                
+                return context.deserialize(data, IntervalCondition.class);
             }
-            else if (DayOfWeekCondition.class.isAssignableFrom(clazz)) {
-                return deserializeDayOfWeekCondition(data);
+            else if (DayOfWeekCondition.class.isAssignableFrom(clazz)) {                
+                return context.deserialize(data, DayOfWeekCondition.class);
             }
-            else if (TimeWindowCondition.class.isAssignableFrom(clazz)) {
-                return deserializeTimeWindowCondition(data);
+            else if (TimeWindowCondition.class.isAssignableFrom(clazz)) {                
+                return context.deserialize(data, TimeWindowCondition.class);
             }
             else if (SkillLevelCondition.class.isAssignableFrom(clazz)) {
                 return deserializeSkillLevelCondition(data);
@@ -242,6 +218,12 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             }
             else if (SingleTriggerTimeCondition.class.isAssignableFrom(clazz)) {
                 return deserializeSingleTriggerTimeCondition(data);
+            }
+            else if (LockCondition.class.isAssignableFrom(clazz)) {
+                if (data.has("data")){
+                    data = data.getAsJsonObject("data");
+                }
+                return new LockCondition(data.get("reason").getAsString());
             }
             
             throw new JsonParseException("Unknown condition type: " + typeStr);
@@ -281,6 +263,10 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
     }
     
     private IntervalCondition deserializeIntervalCondition(JsonObject data) {
+        if (data.has("data")) {
+            data = data.getAsJsonObject("data");
+        }
+        log.info("Deserializing IntervalCondition: {}", data.toString());
         long intervalSeconds = data.get("intervalSeconds").getAsLong();
         boolean randomize = data.has("randomize") && data.get("randomize").getAsBoolean();
         double randomFactor = randomize && data.has("randomFactor") ? 
@@ -293,6 +279,9 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
     }
     
     private DayOfWeekCondition deserializeDayOfWeekCondition(JsonObject data) {
+        if (data.has("data")){
+            data = data.getAsJsonObject("data");
+        }
         Set<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
         JsonArray activeDays = data.getAsJsonArray("activeDays");
         for (JsonElement day : activeDays) {
@@ -306,6 +295,9 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
     
     private TimeWindowCondition deserializeTimeWindowCondition(JsonObject data) {
         try {
+            if (data.has("data")){
+                data = data.getAsJsonObject("data");
+            }
             // Check for older format with min/max values (backward compatibility)
             if (data.has("startTimeMin") && data.has("endTimeMin")) {
                 // Handle legacy format - convert to new format
@@ -359,6 +351,9 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
     }
     
     private SkillLevelCondition deserializeSkillLevelCondition(JsonObject data) {
+        if (data.has("data")){
+            data = data.getAsJsonObject("data");
+        }
         Skill skill = Skill.valueOf(data.get("skill").getAsString());
         int targetLevelMin = data.get("targetLevelMin").getAsInt();
         int targetLevelMax = data.get("targetLevelMax").getAsInt();
@@ -366,6 +361,9 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
     }
     
     private SkillXpCondition deserializeSkillXpCondition(JsonObject data) {
+        if (data.has("data")){
+            data = data.getAsJsonObject("data");
+        }
         Skill skill = Skill.valueOf(data.get("skill").getAsString());
         int targetXpMin = data.get("targetXpMin").getAsInt();
         int targetXpMax = data.get("targetXpMax").getAsInt();
@@ -373,6 +371,9 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
     }
     
     private LootItemCondition deserializeLootItemCondition(JsonObject data) {
+        if (data.has("data")){
+            data = data.getAsJsonObject("data");
+        }
         String itemName = data.get("itemName").getAsString();
         int targetAmountMin = data.get("targetAmountMin").getAsInt();
         int targetAmountMax = data.get("targetAmountMax").getAsInt();
@@ -395,6 +396,9 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
     }
     
     private InventoryItemCountCondition deserializeInventoryItemCountCondition(JsonObject data) {
+        if (data.has("data")){
+            data = data.getAsJsonObject("data");
+        }
         String itemName = data.get("itemName").getAsString();
         int targetCountMin = data.get("targetCountMin").getAsInt();
         int targetCountMax = data.get("targetCountMax").getAsInt();
@@ -409,7 +413,11 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
     }
     
     private BankItemCountCondition deserializeBankItemCountCondition(JsonObject data) {
+        if (data.has("data")){
+            data = data.getAsJsonObject("data");
+        }
         String itemName = data.get("itemName").getAsString();
+        
         int targetCountMin = data.get("targetCountMin").getAsInt();
         int targetCountMax = data.get("targetCountMax").getAsInt();
         
@@ -421,15 +429,17 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
     }
     
     private PositionCondition deserializePositionCondition(JsonObject data) {
+        String name = data.get("name").getAsString();
         int x = data.get("x").getAsInt();
         int y = data.get("y").getAsInt();
         int plane = data.get("plane").getAsInt();
         int maxDistance = data.get("maxDistance").getAsInt();
         
-        return new PositionCondition(x, y, plane, maxDistance);
+        return new PositionCondition(name,x, y, plane, maxDistance);
     }
     
     private AreaCondition deserializeAreaCondition(JsonObject data) {
+        String name = data.get("name").getAsString();
         int x = data.get("x").getAsInt();
         int y = data.get("y").getAsInt();
         int width = data.get("width").getAsInt();
@@ -437,10 +447,11 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
         int plane = data.get("plane").getAsInt();
         
         WorldArea area = new WorldArea(x, y, width, height, plane);
-        return new AreaCondition(area);
+        return new AreaCondition(name,area);
     }
     
     private RegionCondition deserializeRegionCondition(JsonObject data) {
+        String name = data.get("name").getAsString();
         JsonArray regionIdsArray = data.getAsJsonArray("regionIds");
         int[] regionIds = new int[regionIdsArray.size()];
         
@@ -448,7 +459,7 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             regionIds[i] = regionIdsArray.get(i).getAsInt();
         }
         
-        return new RegionCondition(regionIds);
+        return new RegionCondition(name,regionIds);
     }
     
     private NpcKillCountCondition deserializeNpcKillCountCondition(JsonObject data) {

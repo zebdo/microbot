@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition.npc;
 
 import lombok.Builder;
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import net.runelite.api.Actor;
 import net.runelite.api.NPC;
@@ -24,6 +25,7 @@ import java.util.regex.Pattern;
  * Is satisfied when the player has killed a certain number of NPCs.
  */
 @Getter
+@EqualsAndHashCode(callSuper = false)
 public class NpcKillCountCondition extends NpcCondition {
     private final String npcName;
     private final Pattern npcNamePattern;
@@ -36,6 +38,9 @@ public class NpcKillCountCondition extends NpcCondition {
     
     // Set to track NPCs we're currently interacting with
     private final Set<Integer> interactingNpcIndices = new HashSet<>();
+        
+    private long startTimeMillis = System.currentTimeMillis();
+    private long lastKillTimeMillis = 0;
     
     /**
      * Creates a condition with a fixed target count
@@ -47,7 +52,7 @@ public class NpcKillCountCondition extends NpcCondition {
         this.targetCountMin = targetCount;
         this.targetCountMax = targetCount;
         this.currentTargetCount = targetCount;
-        //registerEvents();
+
     }
     
     /**
@@ -59,8 +64,7 @@ public class NpcKillCountCondition extends NpcCondition {
         this.npcNamePattern = createNpcNamePattern(npcName);
         this.targetCountMin = Math.max(0, targetCountMin);
         this.targetCountMax = Math.max(this.targetCountMin, targetCountMax);
-        this.currentTargetCount = Rs2Random.between(this.targetCountMin, this.targetCountMax);
-        //registerEvents();
+        this.currentTargetCount = Rs2Random.between(this.targetCountMin, this.targetCountMax);        
     }
     
     /**
@@ -212,18 +216,6 @@ public class NpcKillCountCondition extends NpcCondition {
         return orCondition;
     }
     
-    private void registerEvents() {
-        if (!registered) {
-            Microbot.getEventBus().register(this);
-            registered = true;
-        }
-    }
-    private void unregisterEvents() {
-        if (registered) {
-            Microbot.getEventBus().unregister(this);
-            registered = false;
-        }
-    }
     
     @Override
     public boolean isSatisfied() {
@@ -243,11 +235,105 @@ public class NpcKillCountCondition extends NpcCondition {
     
     @Override
     public String getDescription() {
-        return String.format("Kill %d %s (%d/%d)", 
-                currentTargetCount, 
-                npcName != null && !npcName.isEmpty() ? npcName : "NPCs",
+        StringBuilder sb = new StringBuilder();
+        String npcDisplayName = npcName != null && !npcName.isEmpty() ? npcName : "NPCs";
+        
+        sb.append(String.format("Kill %d %s", currentTargetCount, npcDisplayName));
+        
+        // Add randomization info if applicable
+        if (targetCountMin != targetCountMax) {
+            sb.append(String.format(" (randomized from %d-%d)", targetCountMin, targetCountMax));
+        }
+        
+        // Add progress tracking
+        sb.append(String.format(" (%d/%d, %.1f%%)", 
                 currentKillCount,
-                currentTargetCount);
+                currentTargetCount,
+                getProgressPercentage()));
+                
+        return sb.toString();
+    }
+    
+    /**
+     * Returns a detailed description of the kill condition with additional status information
+     */
+    public String getDetailedDescription() {
+        StringBuilder sb = new StringBuilder();
+        String npcDisplayName = npcName != null && !npcName.isEmpty() ? npcName : "NPCs";
+        
+        // Basic description
+        sb.append(String.format("Kill %d %s", currentTargetCount, npcDisplayName));
+        
+        // Add randomization info if applicable
+        if (targetCountMin != targetCountMax) {
+            sb.append(String.format(" (randomized from %d-%d)", targetCountMin, targetCountMax));
+        }
+        
+        sb.append("\n");
+        
+        // Status information
+        sb.append("Status: ").append(satisfied ? "Satisfied" : "Not satisfied").append("\n");
+        sb.append("Progress: ").append(String.format("%d/%d (%.1f%%)", 
+                currentKillCount, 
+                currentTargetCount,
+                getProgressPercentage())).append("\n");
+        
+        // NPC information
+        if (npcName != null && !npcName.isEmpty()) {
+            sb.append("NPC Name: ").append(npcName).append("\n");
+            
+            if (!npcNamePattern.pattern().equals(".*")) {
+                sb.append("Pattern: ").append(npcNamePattern.pattern()).append("\n");
+            }
+        } else {
+            sb.append("NPC: Any\n");
+        }
+        
+        // Tracking information
+        sb.append("Currently tracking ").append(interactingNpcIndices.size()).append(" NPCs");
+        
+        return sb.toString();
+    }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Basic information
+        sb.append("NpcKillCountCondition:\n");
+        sb.append("  ┌─ Configuration ─────────────────────────────\n");
+        sb.append("  │ NPC: ").append(npcName != null && !npcName.isEmpty() ? npcName : "Any").append("\n");
+        
+        if (npcNamePattern != null && !npcNamePattern.pattern().equals(".*")) {
+            sb.append("  │ Pattern: ").append(npcNamePattern.pattern()).append("\n");
+        }
+        
+        sb.append("  │ Target Count: ").append(currentTargetCount).append("\n");
+        
+        // Randomization
+        sb.append("  ├─ Randomization ────────────────────────────\n");
+        boolean hasRandomization = targetCountMin != targetCountMax;
+        sb.append("  │ Randomization: ").append(hasRandomization ? "Enabled" : "Disabled").append("\n");
+        if (hasRandomization) {
+            sb.append("  │ Target Range: ").append(targetCountMin).append("-").append(targetCountMax).append("\n");
+        }
+        
+        // Status information
+        sb.append("  ├─ Status ──────────────────────────────────\n");
+        sb.append("  │ Satisfied: ").append(satisfied).append("\n");
+        sb.append("  │ Current Kill Count: ").append(currentKillCount).append("\n");
+        sb.append("  │ Progress: ").append(String.format("%.1f%%", getProgressPercentage())).append("\n");
+        
+        // Tracking info
+        sb.append("  └─ Tracking ────────────────────────────────\n");
+        sb.append("    Active Interactions: ").append(interactingNpcIndices.size()).append("\n");
+        
+        // List tracked NPCs if there are any
+        if (!interactingNpcIndices.isEmpty()) {
+            sb.append("    Tracked NPCs: ").append(interactingNpcIndices.toString()).append("\n");
+        }
+        
+        return sb.toString();
     }
     
     @Override
@@ -311,6 +397,7 @@ public class NpcKillCountCondition extends NpcCondition {
                 // Only count NPCs that match our pattern if we have one
                 if (npcName == null || npcName.isEmpty() || npcNamePattern.matcher(npc.getName()).matches()) {
                     currentKillCount++;
+                    lastKillTimeMillis = System.currentTimeMillis();
                 }
             }
             
@@ -329,5 +416,51 @@ public class NpcKillCountCondition extends NpcCondition {
         return isSatisfied() ? 1 : 0;
     }
     
-
+    /**
+     * Manually increments the kill counter.
+     * Useful for testing or when external systems detect kills.
+     * 
+     * @param count Number of kills to add
+     */
+    public void incrementKillCount(int count) {
+        currentKillCount += count;
+        lastKillTimeMillis = System.currentTimeMillis();
+        
+        // Update satisfaction status
+        if (currentKillCount >= currentTargetCount && !satisfied) {
+            satisfied = true;
+        }
+    }
+    
+    /**
+     * Gets the estimated kills per hour based on current progress.
+     * 
+     * @return Kills per hour or 0 if not enough data
+     */
+    public double getKillsPerHour() {
+        long timeElapsedMs = System.currentTimeMillis() - startTimeMillis;
+        
+        // Require at least 30 seconds of data and at least one kill
+        if (timeElapsedMs < 30000 || currentKillCount == 0) {
+            return 0;
+        }
+        
+        double hoursElapsed = timeElapsedMs / (1000.0 * 60 * 60);
+        return currentKillCount / hoursElapsed;
+    }
+    
+    /**
+     * Gets the time since the last kill in milliseconds.
+     * 
+     * @return Time since last kill in ms, or -1 if no kills yet
+     */
+    public long getTimeSinceLastKill() {
+        if (lastKillTimeMillis == 0) {
+            return -1;
+        }
+        
+        return System.currentTimeMillis() - lastKillTimeMillis;
+    }
+    
+    
 }

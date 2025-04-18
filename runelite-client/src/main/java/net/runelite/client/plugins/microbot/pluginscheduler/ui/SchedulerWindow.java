@@ -5,8 +5,8 @@ import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerState;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.type.PluginScheduleEntry;
-import net.runelite.client.plugins.microbot.pluginscheduler.ui.condition.ConditionConfigPanel;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.ui.ConditionConfigPanel;
+import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEntry.ScheduleFormPanel;
 import net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEntry.ScheduleTablePanel;
 import net.runelite.client.ui.ColorScheme;
@@ -22,6 +22,32 @@ import lombok.extern.slf4j.Slf4j;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+
+/**
+ * A graphical user interface for the Plugin Scheduler system.
+ * <p>
+ * This window provides a comprehensive interface for managing scheduled plugins including:
+ * <ul>
+ *     <li>Viewing and managing the list of scheduled plugins</li>
+ *     <li>Adding new plugins to the schedule</li>
+ *     <li>Configuring plugin run parameters and stop conditions</li>
+ *     <li>Monitoring scheduler status and currently running plugins</li>
+ * </ul>
+ * <p>
+ * The UI is organized into tabbed sections:
+ * <ul>
+ *     <li>Schedule Tab - Contains a table of scheduled plugins and a form for adding/editing entries</li>
+ *     <li>Stop Conditions Tab - Allows configuration of complex stop conditions for plugins</li>
+ * </ul>
+ * <p>
+ * An information panel on the right side displays real-time information about the scheduler state.
+ *
+ * @see SchedulerPlugin
+ * @see ScheduleTablePanel
+ * @see ScheduleFormPanel
+ * @see ConditionConfigPanel
+ * @see SchedulerInfoPanel
+ */
 
 @Slf4j
 public class SchedulerWindow extends JFrame {
@@ -46,7 +72,7 @@ public class SchedulerWindow extends JFrame {
         // Create main components
         tablePanel = new ScheduleTablePanel(plugin);
         formPanel = new ScheduleFormPanel(plugin);
-        stopConditionPanel = new ConditionConfigPanel(plugin, true);
+        stopConditionPanel = new ConditionConfigPanel( true);
         infoPanel = new SchedulerInfoPanel(plugin);
 
         // Set up form panel actions
@@ -93,15 +119,8 @@ public class SchedulerWindow extends JFrame {
             }
         });
 
-        // Create the status panel for top of window
-        //JPanel statusPanel = createStatusPanel();
-
         // Create main content area using a better layout
-        JPanel mainContent = createMainContentPanel();
-        
-        // Add status panel to the top of the window
-        //add(statusPanel, BorderLayout.NORTH);
-        
+        JPanel mainContent = createMainContentPanel();                        
         // Add main content to the center of the window
         add(mainContent, BorderLayout.CENTER);
         
@@ -153,9 +172,22 @@ public class SchedulerWindow extends JFrame {
         
     }
 
+
+
+
+
+
+
+
+
+
+  
     /**
-     * Recursively styles all JComboBoxes found in the container and its children
+     * Recursively applies styling to all JComboBox components found in the container hierarchy.
+     *
+     * @param container The parent container to start searching from
      */
+
     private void styleAllComboBoxes(Container container) {
         for (Component component : container.getComponents()) {
             if (component instanceof JComboBox) {
@@ -167,78 +199,12 @@ public class SchedulerWindow extends JFrame {
         }
     }
 
+    
+   
     /**
-     * Creates the status panel with control buttons and current scheduler status
-     */
-    private JPanel createStatusPanel() {
-        // Create status panel with scheduler controls and current status
-        JPanel statusPanel = new JPanel(new BorderLayout());
-        statusPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        statusPanel.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createMatteBorder(0, 0, 1, 0, ColorScheme.DARK_GRAY_COLOR),
-                BorderFactory.createEmptyBorder(5, 10, 5, 10)));
-        
-        // Add scheduler state indicator
-        JPanel statePanel = new JPanel(new FlowLayout(FlowLayout.LEFT, 10, 0));
-        statePanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        
-        JLabel stateLabel = new JLabel("Scheduler Status:");
-        stateLabel.setForeground(Color.WHITE);
-        stateLabel.setFont(FontManager.getRunescapeBoldFont());
-        statePanel.add(stateLabel);
-        
-        JLabel stateValueLabel = new JLabel(plugin.getCurrentState().getDisplayName());
-        stateValueLabel.setForeground(plugin.getCurrentState().getColor());
-        stateValueLabel.setFont(FontManager.getRunescapeBoldFont());
-        statePanel.add(stateValueLabel);
-        
-        // Add control buttons on the right
-        JPanel controlPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 10, 0));
-        controlPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        
-        // Create run scheduler button
-        JButton runSchedulerButton = new JButton("Run Scheduler");
-        runSchedulerButton.setBackground(new Color(76, 175, 80));
-        runSchedulerButton.setForeground(Color.WHITE);
-        runSchedulerButton.setFocusPainted(false);
-        runSchedulerButton.addActionListener(e -> {
-            plugin.startScheduler();
-            //updateButtonState();
-            stateValueLabel.setText(plugin.getCurrentState().getDisplayName());
-            stateValueLabel.setForeground(plugin.getCurrentState().getColor());
-        });
-        
-        // Create stop scheduler button
-        JButton stopSchedulerButton = new JButton("Stop Scheduler");
-        stopSchedulerButton.setBackground(new Color(244, 67, 54));
-        stopSchedulerButton.setForeground(Color.WHITE);
-        stopSchedulerButton.setFocusPainted(false);
-        stopSchedulerButton.addActionListener(e -> {
-            SwingUtilities.invokeLater(() -> {
-                plugin.stopScheduler();                
-            });
-            //Mcrobot.getClientThread().runOnClientThreadOptional(() -> {
-                // Update the state label after stopping
-                
-               // plugin.stopScheduler();      
-                //return true;
-            //}); 
-            //updateButtonState();
-            stateValueLabel.setText(plugin.getCurrentState().getDisplayName());
-            stateValueLabel.setForeground(plugin.getCurrentState().getColor());
-        });
-        
-        controlPanel.add(runSchedulerButton);
-        controlPanel.add(stopSchedulerButton);
-        
-        statusPanel.add(statePanel, BorderLayout.WEST);
-        statusPanel.add(controlPanel, BorderLayout.EAST);
-        
-        return statusPanel;
-    }
-
-    /**
-     * Creates the main content panel with improved layout
+     * Creates the main content panel with tabbed interface and information sidebar.
+     *
+     * @return JPanel with the configured layout
      */
     private JPanel createMainContentPanel() {
         JPanel mainContent = new JPanel(new BorderLayout());
@@ -286,6 +252,10 @@ public class SchedulerWindow extends JFrame {
 
     
 
+    /**
+     * Refreshes all UI components with the latest data from the plugin.
+     * Updates the table, form state, condition panel, and information panel.
+     */
     public void refresh() {
         tablePanel.refreshTable();
         if (formPanel != null) {
@@ -300,7 +270,12 @@ public class SchedulerWindow extends JFrame {
             infoPanel.refresh();
         }
     }
-
+    /**
+     * Handles plugin selection events from the table.
+     * Updates the form panel and condition panel with the selected plugin's data.
+     *
+     * @param plugin The selected plugin or null if no selection
+     */
     private void onPluginSelected(PluginScheduleEntry plugin) {        
         if (tablePanel.getRowCount() == 0) {            
             log.info("No plugins in table.");
@@ -312,8 +287,7 @@ public class SchedulerWindow extends JFrame {
             if (tabbedPane.getSelectedIndex() != 1) { // Stop Conditions tab
                 stopConditionPanel.setSelectScheduledPlugin(null);
             }
-            if (plugin == null) {
-                log.info("No plugin selected for editing. and plugin null");
+            if (plugin == null) {                
                 return;
             }
             log.info("No plugin selected for editing. {} but plugin", plugin.getCleanName());
@@ -321,14 +295,18 @@ public class SchedulerWindow extends JFrame {
         }
         if (selected != plugin && selected != null) {            
             formPanel.loadPlugin(plugin);
-            formPanel.setEditMode(true);    
-            log.info("selection found");
-            stopConditionPanel.setSelectScheduledPlugin(selected);                                    
-        } else {                                        
-         
+            formPanel.setEditMode(true);                
+            stopConditionPanel.setSelectScheduledPlugin(selected);
         }
+        
+        // Always update control button when selection changes
+        formPanel.updateControlButton();
     }
 
+    /**
+     * Processes the addition of a new plugin from the form data.
+     * Checks for stop conditions and prompts user if none are configured.
+     */
     private void onAddPlugin() {
         PluginScheduleEntry scheduledPlugin = formPanel.getPluginFromForm();
         if (scheduledPlugin == null) return;
@@ -381,6 +359,10 @@ public class SchedulerWindow extends JFrame {
         formPanel.clearForm();
     }
 
+    /**
+     * Updates an existing plugin with data from the form.
+     * Preserves the plugin's identity while updating its configuration.
+     */
     private void onUpdatePlugin() {
         PluginScheduleEntry selectedPlugin = tablePanel.getSelectedPlugin();
         if (selectedPlugin == null) {
@@ -422,7 +404,9 @@ public class SchedulerWindow extends JFrame {
             
         }
     }
-
+    /**
+     * Removes the currently selected plugin from the schedule.
+     */
     private void onRemovePlugin() {
         PluginScheduleEntry _plugin = tablePanel.getSelectedPlugin();
         if (_plugin != null) {
@@ -435,27 +419,30 @@ public class SchedulerWindow extends JFrame {
         }
 
         plugin.saveScheduledPlugins();
-    }
-    
+    }    
+    /**
+     * Cleans up resources when window is closed.
+     * Stops the refresh timer before disposing the window.
+     */
     @Override
     public void dispose() {
         if (refreshTimer != null) {
             refreshTimer.stop();
         }
         super.dispose();
-    }
-
+    }        
     /**
-     * Selects a plugin in the table
+     * Programmatically selects a plugin in the table.
+     *
+     * @param plugin The plugin entry to select
      */
     public void selectPlugin(PluginScheduleEntry plugin) {
         if (tablePanel != null) {
             tablePanel.selectPlugin(plugin);
         }
     }
-
     /**
-     * Switches to the stop conditions tab
+     * Switches the UI to display the stop conditions tab.
      */
     public void switchToStopConditionsTab() {
         if (tabbedPane != null) {

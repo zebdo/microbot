@@ -1,27 +1,19 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition.location;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.GameState;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.GameTick;
-import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionType;
-import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-
 
 /**
  * Condition that is met when the player is inside a rectangular area
  */
 @Slf4j
-public class AreaCondition implements Condition {
+@EqualsAndHashCode(callSuper = false)
+public class AreaCondition extends LocationCondition {
     @Getter
     private final WorldArea area;
-    private boolean isInArea = false;    
 
     /**
      * Create a condition that is met when the player is inside the specified area
@@ -32,7 +24,8 @@ public class AreaCondition implements Condition {
      * @param y2 Northeast corner y
      * @param plane The plane the area is on
      */
-    public AreaCondition(int x1, int y1, int x2, int y2, int plane) {
+    public AreaCondition(String name, int x1, int y1, int x2, int y2, int plane) {
+        super(name);
         int width = Math.abs(x2 - x1) + 1;
         int height = Math.abs(y2 - y1) + 1;
         int startX = Math.min(x1, x2);
@@ -45,38 +38,37 @@ public class AreaCondition implements Condition {
      * 
      * @param area The area to check
      */
-    public AreaCondition(WorldArea area) {
+    public AreaCondition(String name, WorldArea area) {
+        super(name);
+        if (area == null) {
+            throw new IllegalArgumentException("Area cannot be null");
+        }
         this.area = area;
     }
 
     @Override
-    public boolean isSatisfied() {
-        
-            
+    protected void updateLocationStatus() {
+        if (!canCheckLocation()) {
+            return;
+        }
 
-            // Check immediately on first call
-            checkArea();
-        
-        return isInArea;
-    }
-
-    @Override
-    public void reset() {
-        isInArea = false;
-    }
-    @Override
-    public void reset(boolean randomize) {
-        reset();
-    }
-
-    @Override
-    public ConditionType getType() {
-        return ConditionType.LOCATION;
+        try {
+            WorldPoint location = getCurrentLocation();
+            if (location != null) {
+                satisfied = area.contains(location);
+                
+                if (satisfied) {
+                    log.debug("Player entered target area");
+                }
+            }
+        } catch (Exception e) {
+            log.error("Error checking if player is in area", e);
+        }
     }
 
     @Override
     public String getDescription() {
-        WorldPoint location = Rs2Player.getWorldLocation();
+        WorldPoint location = getCurrentLocation();
         String statusInfo = "";
         
         if (location != null) {
@@ -92,30 +84,66 @@ public class AreaCondition implements Condition {
                 statusInfo);
     }
 
-    @Subscribe
-    public void onGameTick(GameTick event) {
-        checkArea();
-    }
-
-    private void checkArea() {
-        Client client = Microbot.getClient();
-        if (client == null || client.getGameState() != GameState.LOGGED_IN) {
-            return;
+    @Override
+    public String getDetailedDescription() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Basic description
+        sb.append("Area Condition: Player must be within a specific area\n");
+        
+        // Status information
+        WorldPoint location = getCurrentLocation();
+        boolean inArea = location != null && area.contains(location);
+        sb.append("Status: ").append(inArea ? "Satisfied" : "Not satisfied").append("\n");
+        
+        // Area details
+        sb.append("Area Coordinates: (").append(area.getX()).append(", ").append(area.getY()).append(") to (")
+          .append(area.getX() + area.getWidth() - 1).append(", ")
+          .append(area.getY() + area.getHeight() - 1).append(")\n");
+        sb.append("Area Size: ").append(area.getWidth()).append(" x ").append(area.getHeight()).append(" tiles\n");
+        sb.append("Plane: ").append(area.getPlane()).append("\n");
+        
+        // Current player position
+        if (location != null) {
+            sb.append("Player Position: (").append(location.getX()).append(", ")
+              .append(location.getY()).append(", ").append(location.getPlane()).append(")\n");
+            sb.append("Player In Area: ").append(inArea ? "Yes" : "No");
+        } else {
+            sb.append("Player Position: Unknown");
         }
-
-        try {
-            WorldPoint location = Rs2Player.getWorldLocation();
-            if (location != null) {
-                isInArea = area.contains(location);
-                
-                if (isInArea) {
-                    log.debug("Player entered target area");
-                }
-            }
-        } catch (Exception e) {
-            log.error("Error checking if player is in area", e);
-        }
+        
+        return sb.toString();
     }
-
     
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        
+        // Basic information
+        sb.append("AreaCondition:\n");
+        sb.append("  ┌─ Configuration ─────────────────────────────\n");
+        sb.append("  │ Type: Area (Player must be within area)\n");
+        sb.append("  │ Coordinates: (").append(area.getX()).append(", ").append(area.getY()).append(") to (")
+          .append(area.getX() + area.getWidth() - 1).append(", ")
+          .append(area.getY() + area.getHeight() - 1).append(")\n");
+        sb.append("  │ Size: ").append(area.getWidth()).append(" x ").append(area.getHeight()).append(" tiles\n");
+        sb.append("  │ Plane: ").append(area.getPlane()).append("\n");
+        
+        // Status information
+        sb.append("  └─ Status ──────────────────────────────────\n");
+        WorldPoint location = getCurrentLocation();
+        boolean inArea = location != null && area.contains(location);
+        sb.append("    Satisfied: ").append(inArea).append("\n");
+        
+        // Player location
+        if (location != null) {
+            sb.append("    Player Position: (").append(location.getX()).append(", ")
+              .append(location.getY()).append(", ").append(location.getPlane()).append(")\n");
+            sb.append("    In Target Area: ").append(inArea ? "Yes" : "No");
+        } else {
+            sb.append("    Player Position: Unknown");
+        }
+        
+        return sb.toString();
+    }
 }

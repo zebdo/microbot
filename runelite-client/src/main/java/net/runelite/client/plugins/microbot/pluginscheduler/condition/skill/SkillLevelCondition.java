@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition.skill;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -10,18 +11,22 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
  * Skill level-based condition for script execution.
  */
 @Getter 
+@EqualsAndHashCode(callSuper = true)
 public class SkillLevelCondition extends SkillCondition {
-    private int currentTargetLevel;
+    private transient int currentTargetLevel;
+    @Getter
     private final int targetLevelMin;
+    @Getter
     private final int targetLevelMax;
-    private int startLevel;
-    private int[] startLevelsBySkill; // Used for total level tracking
-    
+    private transient int startLevel;
+    private transient int[] startLevelsBySkill; // Used for total level tracking
+    private final boolean randomized;
     public SkillLevelCondition(Skill skill, int targetLevel) {
         super(skill); // Call parent constructor with skill
         this.currentTargetLevel = targetLevel;
         this.targetLevelMin = targetLevel;
         this.targetLevelMax = targetLevel;
+        randomized =true;
         initializeLevelTracking();
     }
     
@@ -32,6 +37,7 @@ public class SkillLevelCondition extends SkillCondition {
         this.currentTargetLevel = Rs2Random.between(targetMinLevel, targetMaxLevel);
         this.targetLevelMin = targetMinLevel;
         this.targetLevelMax = targetMaxLevel;
+        randomized =false;
         initializeLevelTracking();
     }
 
@@ -140,6 +146,84 @@ public class SkillLevelCondition extends SkillCondition {
             return String.format("%s level %d or higher%s (currently %d, need %d more)", 
                     skillName, currentTargetLevel, randomRangeInfo, currentLevel, levelsNeeded);
         }
+    }
+    
+    /**
+     * Returns a detailed description of the level condition with additional status information
+     */
+    public String getDetailedDescription() {
+        StringBuilder sb = new StringBuilder();
+        String skillName = isTotal() ? "Total" : skill.getName();
+        
+        // Basic description
+        sb.append("Skill Level Condition: Reach ").append(currentTargetLevel)
+          .append(" ").append(skillName).append(" level\n");
+        
+        // Randomization info if applicable
+        if (targetLevelMin != targetLevelMax) {
+            sb.append("Target Range: ").append(targetLevelMin)
+              .append("-").append(targetLevelMax).append(" (randomized)\n");
+        }
+        
+        // Status information
+        int currentLevel = getCurrentLevel();
+        boolean satisfied = currentLevel >= currentTargetLevel;
+        sb.append("Status: ").append(satisfied ? "Satisfied" : "Not satisfied").append("\n");
+        
+        // Progress information
+        int levelsGained = getLevelsGained();
+        sb.append("Starting Level: ").append(startLevel).append("\n");
+        sb.append("Current Level: ").append(currentLevel).append("\n");
+        sb.append("Levels Gained: ").append(levelsGained).append("\n");
+        
+        if (!satisfied) {
+            sb.append("Levels Remaining: ").append(getLevelsRemaining()).append("\n");
+        }
+        
+        sb.append("Progress: ").append(String.format("%.1f%%", getProgressPercentage()));
+        
+        return sb.toString();
+    }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        String skillName = isTotal() ? "Total" : skill.getName();
+        
+        // Basic information
+        sb.append("SkillLevelCondition:\n");
+        sb.append("  ┌─ Configuration ─────────────────────────────\n");
+        sb.append("  │ Skill: ").append(skillName).append("\n");
+        sb.append("  │ Target Level: ").append(currentTargetLevel).append("\n");
+        
+        // Randomization
+        boolean hasRandomization = targetLevelMin != targetLevelMax;
+        if (hasRandomization) {
+            sb.append("  │ Randomization: Enabled\n");
+            sb.append("  │ Target Range: ").append(targetLevelMin).append("-").append(targetLevelMax).append("\n");
+        }
+        
+        // Status information
+        sb.append("  ├─ Status ──────────────────────────────────\n");
+        int currentLevel = getCurrentLevel();
+        boolean satisfied = currentLevel >= currentTargetLevel;
+        sb.append("  │ Satisfied: ").append(satisfied).append("\n");
+        
+        int levelsGained = getLevelsGained();
+        sb.append("  │ Levels Gained: ").append(levelsGained).append("\n");
+        
+        if (!satisfied) {
+            sb.append("  │ Levels Remaining: ").append(getLevelsRemaining()).append("\n");
+        }
+        
+        sb.append("  │ Progress: ").append(String.format("%.1f%%", getProgressPercentage())).append("\n");
+        
+        // Current state
+        sb.append("  └─ Current State ──────────────────────────\n");
+        sb.append("    Starting Level: ").append(startLevel).append("\n");
+        sb.append("    Current Level: ").append(currentLevel);
+        
+        return sb.toString();
     }
     
     @Override

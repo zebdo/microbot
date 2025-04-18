@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition.skill;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -10,18 +11,20 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
  * Skill XP-based condition for script execution.
  */
 @Getter 
+@EqualsAndHashCode(callSuper = true)
 public class SkillXpCondition extends SkillCondition {
-    private long currentTargetXp;
+    private transient long currentTargetXp;
     private final long targetXpMin;
     private final long targetXpMax;
-    private long startXp;
-    private long[] startXpBySkill; // Used for total XP tracking
-    
+    private transient long startXp;
+    private transient long[] startXpBySkill; // Used for total XP tracking
+    private final boolean randomized;
     public SkillXpCondition(Skill skill, long targetXp) {
         super(skill); // Call parent constructor with skill
         this.currentTargetXp = targetXp;
         this.targetXpMin = targetXp;
         this.targetXpMax = targetXp;
+        this.randomized = false;
         initializeXpTracking();
     }
     
@@ -33,6 +36,7 @@ public class SkillXpCondition extends SkillCondition {
         this.currentTargetXp = Rs2Random.between((int)targetXpMin, (int)targetXpMax);
         this.targetXpMin = targetXpMin;
         this.targetXpMax = targetXpMax;
+        this.randomized = true;
         initializeXpTracking();
     }
     
@@ -162,5 +166,79 @@ public class SkillXpCondition extends SkillCondition {
     @Override
     public ConditionType getType() {
         return ConditionType.SKILL_XP;
+    }
+
+    /**
+     * Returns a detailed description of the XP condition with additional status information
+     */
+    public String getDetailedDescription() {
+        StringBuilder sb = new StringBuilder();
+        String skillName = isTotal() ? "Total" : skill.getName();
+        
+        // Basic description
+        sb.append("Skill XP Condition: Gain ").append(currentTargetXp)
+          .append(" ").append(skillName).append(" XP\n");
+        
+        // Randomization info if applicable
+        if (targetXpMin != targetXpMax) {
+            sb.append("Target Range: ").append(targetXpMin)
+              .append("-").append(targetXpMax).append(" XP (randomized)\n");
+        }
+        
+        // Status information
+        boolean satisfied = isSatisfied();
+        sb.append("Status: ").append(satisfied ? "Satisfied" : "Not satisfied").append("\n");
+        
+        // Progress information
+        long xpGained = getXpGained();
+        sb.append("XP Gained: ").append(xpGained).append("\n");
+        sb.append("Starting XP: ").append(startXp).append("\n");
+        sb.append("Current XP: ").append(getCurrentXp()).append("\n");
+        
+        if (!satisfied) {
+            sb.append("XP Remaining: ").append(getXpRemaining()).append("\n");
+        }
+        
+        sb.append("Progress: ").append(String.format("%.1f%%", getProgressPercentage()));
+        
+        return sb.toString();
+    }
+    
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        String skillName = isTotal() ? "Total" : skill.getName();
+        
+        // Basic information
+        sb.append("SkillXpCondition:\n");
+        sb.append("  ┌─ Configuration ─────────────────────────────\n");
+        sb.append("  │ Skill: ").append(skillName).append("\n");
+        sb.append("  │ Target XP: ").append(currentTargetXp).append("\n");
+        
+        // Randomization
+        boolean hasRandomization = targetXpMin != targetXpMax;
+        if (hasRandomization) {
+            sb.append("  │ Randomization: Enabled\n");
+            sb.append("  │ Target Range: ").append(targetXpMin).append("-").append(targetXpMax).append(" XP\n");
+        }
+        
+        // Status information
+        sb.append("  ├─ Status ──────────────────────────────────\n");
+        boolean satisfied = isSatisfied();
+        sb.append("  │ Satisfied: ").append(satisfied).append("\n");
+        sb.append("  │ XP Gained: ").append(getXpGained()).append("\n");
+        
+        if (!satisfied) {
+            sb.append("  │ XP Remaining: ").append(getXpRemaining()).append("\n");
+        }
+        
+        sb.append("  │ Progress: ").append(String.format("%.1f%%", getProgressPercentage())).append("\n");
+        
+        // Current state
+        sb.append("  └─ Current State ──────────────────────────\n");
+        sb.append("    Starting XP: ").append(startXp).append("\n");
+        sb.append("    Current XP: ").append(getCurrentXp());
+        
+        return sb.toString();
     }
 }

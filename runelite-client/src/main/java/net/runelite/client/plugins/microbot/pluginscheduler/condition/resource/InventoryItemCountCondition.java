@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 import lombok.Builder;
 import lombok.Getter;
 import net.runelite.api.InventoryID;
+import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
@@ -22,18 +23,18 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 @Getter
 public class InventoryItemCountCondition extends ResourceCondition {
     private final boolean includeNoted;
-    private final String itemName;
+    
     private final int targetCountMin;
     private final int targetCountMax;
-    private final Pattern itemPattern;    
+    
     private int currentTargetCount;
     private int currentItemCount;
     private boolean satisfied = false;
-        
+    private boolean initialInventoryLoaded = false;
     public InventoryItemCountCondition(String itemName, int targetCount, boolean includeNoted) {
+        super(itemName);
         this.includeNoted = includeNoted;
-        this.itemName = itemName;
-        this.itemPattern = createItemPattern(itemName);
+        
         this.targetCountMin = targetCount;
         this.targetCountMax = targetCount;
         this.currentTargetCount = targetCount;
@@ -42,9 +43,8 @@ public class InventoryItemCountCondition extends ResourceCondition {
     
     @Builder
     public InventoryItemCountCondition(String itemName,int targetCountMin, int targetCountMax, boolean includeNoted) {
-        this.includeNoted = includeNoted;
-        this.itemName = itemName;
-        this.itemPattern = createItemPattern(itemName);
+        super(itemName);
+        this.includeNoted = includeNoted;        
         this.targetCountMin = Math.max(0, targetCountMin);
         
         // If not tracking noted items, limit max count to inventory size (28)
@@ -234,7 +234,7 @@ public class InventoryItemCountCondition extends ResourceCondition {
             randomRangeInfo = String.format(" (randomized from %d-%d)", targetCountMin, targetCountMax);
         }
         
-        if (itemName == null || itemName.isEmpty()) {
+        if (getItemName() == null || getItemName().isEmpty()) {
             return String.format("Have %d total items in inventory%s%s (%d/%d, %.1f%%)", 
                     currentTargetCount, 
                     itemTypeDesc,
@@ -245,7 +245,7 @@ public class InventoryItemCountCondition extends ResourceCondition {
         } else {
             return String.format("Have %d %s in inventory%s%s (%d/%d, %.1f%%)", 
                     currentTargetCount, 
-                    itemName,
+                    getItemName(),
                     itemTypeDesc,
                     randomRangeInfo,
                     currentItemCount,
@@ -253,7 +253,17 @@ public class InventoryItemCountCondition extends ResourceCondition {
                     getProgressPercentage());
         }
     }
-    
+    public String getDetailedDescription() {
+        return String.format("Inventory Item Count Condition: %s\n" +
+                "Target Count: %d (current: %d)\n" +
+                "Include Noted: %s\n" +
+                "Progress: %.1f%%",
+                getItemName(),
+                currentTargetCount,
+                currentItemCount,
+                includeNoted ? "Yes" : "No",
+                getProgressPercentage());
+    }
     @Override
     public void reset() {
         reset(false);
@@ -265,6 +275,7 @@ public class InventoryItemCountCondition extends ResourceCondition {
             currentTargetCount = Rs2Random.between(targetCountMin, targetCountMax);
         }
         satisfied = false;
+        initialInventoryLoaded = false;
         updateCurrentCount();
     }
     
@@ -282,7 +293,6 @@ public class InventoryItemCountCondition extends ResourceCondition {
     }
     
     @Override
-
     public void onItemContainerChanged(ItemContainerChanged event) {
               
         if (event.getContainerId() == InventoryID.INVENTORY.getId()) {
@@ -290,6 +300,14 @@ public class InventoryItemCountCondition extends ResourceCondition {
                 return;
             }
             updateCurrentCount();
+        }
+    }
+    @Override
+    public void onGameTick(GameTick event) {
+        // Load initial inventory if not yet loaded
+        if (!initialInventoryLoaded) {
+            updateCurrentCount();
+            initialInventoryLoaded = true;
         }
     }
     
@@ -302,13 +320,13 @@ public class InventoryItemCountCondition extends ResourceCondition {
                 return false;
             }   ;         
             return itemPattern.matcher(item.getName()).matches();             
-        }).collect(Collectors.toList()).size();
+        }).mapToInt(item -> item.getQuantity()).sum();
         int currentItemCountUnNoted = getUnNotedItems().stream().filter(item -> {
             if (item == null) {
                 return false;
             }            
             return itemPattern.matcher(item.getName()).matches();             
-        }).collect(Collectors.toList()).size();
+        }).mapToInt(item -> item.getQuantity()).sum();
         if (includeNoted) {
             currentItemCount = currentItemCountNoted + currentItemCountUnNoted;
         } else {

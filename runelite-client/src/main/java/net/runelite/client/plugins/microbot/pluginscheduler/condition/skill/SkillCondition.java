@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition.skill;
 
+import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import net.runelite.api.Skill;
 import net.runelite.client.game.SkillIconManager;
@@ -15,6 +16,7 @@ import javax.imageio.ImageIO;
  * Abstract base class for skill-based conditions.
  */
 @Getter 
+@EqualsAndHashCode(callSuper = false)
 public abstract class SkillCondition implements Condition {
     private static final int ICON_SIZE = 24; // Standard size for all skill icons
     protected final Skill skill;
