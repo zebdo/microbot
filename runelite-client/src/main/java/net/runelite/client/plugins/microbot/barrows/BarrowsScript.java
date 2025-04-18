@@ -52,6 +52,9 @@ public class BarrowsScript extends Script {
     private WorldPoint FirstLoopTile;
     private Rs2PrayerEnum NeededPrayer;
     int scriptDelay = Rs2Random.between(300,600);
+    public static int ChestsOpened = 0;
+    public static List<String> barrowsPieces;
+
     public boolean run(BarrowsConfig config) {
         Microbot.enableAutoRunOn = false;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
@@ -59,6 +62,10 @@ public class BarrowsScript extends Script {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
                 long startTime = System.currentTimeMillis();
+
+                if(barrowsPieces.isEmpty()){
+                    barrowsPieces.add("Nothing yet.");
+                }
 
                 if(Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730) {
                     inTunnels = true;
@@ -469,11 +476,13 @@ public class BarrowsScript extends Script {
                             if (Rs2Inventory.get("Barrows teleport") == null || Rs2Inventory.get("Barrows teleport").getQuantity() <= 1 || (Rs2Inventory.count("Prayer potion(3)") + Rs2Inventory.count("Prayer potion(4)")) <= 3 || Rs2Inventory.getInventoryFood().isEmpty() || Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName()) <= 3 || Rs2Player.getRunEnergy() <= 35) {
                                 Microbot.log("We should bank.");
                                 shouldBank = true;
+                                ChestsOpened++;
                             } else {
                                 shouldBank = false;
                                 Rs2Inventory.interact("Barrows teleport", "Break");
                                 sleepUntil(() -> Rs2Player.isAnimating(), Rs2Random.between(1000, 2000));
                                 sleepUntil(() -> !Rs2Player.isAnimating(), Rs2Random.between(3000, 5000));
+                                ChestsOpened++;
                             }
                         }
                     }
@@ -490,10 +499,21 @@ public class BarrowsScript extends Script {
                         Microbot.log("Our min forgotten brew amt is "+config.minForgottenBrew()+" Our max forgotten brew amt is "+config.targetForgottenBrew());
                         Microbot.log("Our min barrows teleport amt is "+config.minBarrowsTeleports()+" Our max barrows teleport amt is "+config.targetBarrowsTeleports());
 
-                        if(Rs2Inventory.isFull() || Rs2Inventory.contains(it->it!=null&&it.getName().contains("'s") ||
-                                it.getName().contains("Coins"))){
+                        if(Rs2Inventory.isFull() || Rs2Inventory.contains(it->it!=null&&it.getName().contains("'s") || it.getName().contains("Coins"))){
                             List<Rs2ItemModel> ourfood = Rs2Inventory.getInventoryFood();
                             String ourfoodsname = ourfood.get(0).getName();
+                            if(Rs2Inventory.contains(it->it!=null&&it.getName().contains("'s"))){
+                                Rs2ItemModel piece = Rs2Inventory.get(it->it!=null&&it.getName().contains("'s"));
+
+                                if(piece!=null){
+                                    barrowsPieces.add(piece.getName());
+                                    if(barrowsPieces.contains("Nothing yet.")){
+                                        barrowsPieces.remove("Nothing yet.");
+                                    }
+                                }
+
+                            }
+
                             Rs2Bank.depositAllExcept(neededRune, "Spade", "Prayer potion(4)", "Prayer potion(3)", "Forgotten brew(4)", "Forgotten brew(3)", "Barrows teleport",
                                     ourfoodsname);
                         }
@@ -671,6 +691,7 @@ public class BarrowsScript extends Script {
         }, 0, scriptDelay, TimeUnit.MILLISECONDS);
         return true;
     }
+
     public void stuckInTunsCheck(){
         //needed for rare occasions where the walker messes up
         if(tunnelLoopCount < 1){
@@ -689,6 +710,7 @@ public class BarrowsScript extends Script {
             tunnelLoopCount = 0;
         }
     }
+
     public void gettheRune(){
         Rs2CombatSpells ourspell = Rs2Magic.getCurrentAutoCastSpell();
         neededRune = "unknown";
@@ -702,6 +724,7 @@ public class BarrowsScript extends Script {
             neededRune = "Wrath rune";
         }
     }
+
     public void activatePrayer(){
         if(!Rs2Prayer.isPrayerActive(NeededPrayer)){
             Microbot.log("Turning on Prayer.");
