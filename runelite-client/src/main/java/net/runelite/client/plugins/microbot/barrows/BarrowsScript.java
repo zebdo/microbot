@@ -35,6 +35,7 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.woodcutting.Rs2Woodcutting;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -53,7 +54,7 @@ public class BarrowsScript extends Script {
     private Rs2PrayerEnum NeededPrayer;
     int scriptDelay = Rs2Random.between(300,600);
     public static int ChestsOpened = 0;
-    public static List<String> barrowsPieces;
+    public static List<String> barrowsPieces = new ArrayList<>();
 
     public boolean run(BarrowsConfig config) {
         Microbot.enableAutoRunOn = false;
