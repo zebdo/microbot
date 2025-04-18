@@ -147,14 +147,21 @@ public class Rs2Slayer {
      *         or null if the player does not have an active task
      */
     // get weakness item for slayer task
-    public static String getSlayerTaskWeakness() {
+    public static String getSlayerTaskWeaknessName() {
         String taskName = getSlayerTask();
         if (taskName == null) {
             return null;
         }
         int itemId = Objects.requireNonNull(Task.getTask(getSlayerTask())).getWeaknessItem();
-        String itemName = Microbot.getClientThread().runOnClientThread(() -> Microbot.getClient().getItemDefinition(itemId).getName());
-        return itemName;
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getItemDefinition(itemId).getName()).orElse("");
+    }
+
+    public static int getSlayerTaskWeakness() {
+        String taskName = getSlayerTask();
+        if (taskName == null) {
+            return -1;
+        }
+        return Objects.requireNonNull(Task.getTask(getSlayerTask())).getWeaknessItem();
     }
 
     /**

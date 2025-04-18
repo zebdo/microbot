@@ -308,8 +308,19 @@ public class Rs2NpcManager {
                 .min(Comparator.comparingDouble(loc -> Rs2Walker.getTotalTiles(loc.getClosestToCenter())))
                 .orElse(null);
 
-        Microbot.log("Closest location for " + npcName + ": " + closest == null ? "null" : Objects.requireNonNull(closest).getLocationName());
         ShortestPathPlugin.getPathfinderConfig().setUseBankItems(false);
+
+        boolean isEmpty = closest == null || closest.getCoords().isEmpty();
+        if (isEmpty)
+        {
+            Microbot.log("No valid locations found for " + npcName);
+            return null;
+        }
+        else
+        {
+            Microbot.log("Closest location for " + npcName + ": " + closest.getLocationName());
+        }
+
         return closest;
     }
 
