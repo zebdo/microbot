@@ -19,10 +19,13 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.blastoisefurnace.enums.Bars;
 import net.runelite.client.plugins.microbot.blastoisefurnace.enums.State;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
+import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -142,7 +145,7 @@ public class BlastoiseFurnaceScript extends Script {
 
                         state = State.BANKING;
                         break;
-                }
+                        }
             } catch (Exception ex) {
 
                 Microbot.logStackTrace(this.getClass().getSimpleName(), ex);
@@ -152,6 +155,32 @@ public class BlastoiseFurnaceScript extends Script {
         return true;
     }
 
+    private void handleTax() {
+        System.out.println("Paying noob smithing tax");
+        if (!Rs2Bank.isOpen()) {
+            System.out.println("Opening bank");
+            Rs2Bank.openBank();
+            sleepUntil(Rs2Bank::isOpen, 20000);
+        }
+        Rs2Bank.depositOne(config.getBars().getPrimaryOre());
+        sleep(500, 1200);
+        Rs2Bank.depositOne(ItemID.COAL);
+        sleep(500, 1200);
+        Rs2Bank.withdrawX(ItemID.COINS_995,2500);
+        sleep(500, 1200);
+        Rs2Bank.closeBank();
+        sleep(500, 1200);
+        Rs2NpcModel blastie = Rs2Npc.getNpc("Blast Furnace Foreman");
+        Rs2Npc.interact(blastie, "Pay");
+        sleepUntil(Rs2Dialogue::isInDialogue,10000);
+        if (Rs2Dialogue.hasSelectAnOption()) {
+            Rs2Dialogue.clickOption("Yes");
+            sleep(1000, 1850);
+            Rs2Dialogue.clickContinue();
+            sleep(500, 1300);
+
+        }
+    }
     private void handleDispenserLooting() {
 
         // Check if the inventory is full before interacting with the dispenser
@@ -199,18 +228,24 @@ public class BlastoiseFurnaceScript extends Script {
         int primaryOre = this.config.getBars().getPrimaryOre();
         if (!Rs2Inventory.hasItem(primaryOre)) {
             Rs2Bank.withdrawAll(primaryOre);
+            sleep(500, 1200);
+
             return;
         }
 
         boolean fullCoalBag = Rs2Inventory.interact(coalBag, "Fill");
         if (!fullCoalBag)
             return;
+        sleep(500, 1200);
+        Rs2Bank.closeBank();
+        sleep(500, 1200);
         depositOre();
         Rs2Walker.walkFastCanvas(new WorldPoint(1940, 4962, 0));
         sleep(3400);
         sleepUntil(() -> barsInDispenser(config.getBars()) > 0, 10000);
         sleep(400, 700);
     }
+
 
     private void retrievePrimary() {
         int primaryOre = config.getBars().getPrimaryOre();
@@ -467,8 +502,11 @@ public class BlastoiseFurnaceScript extends Script {
     private void depositOre() {
         Rs2GameObject.interact(ObjectID.CONVEYOR_BELT, "Put-ore-on");
         Rs2Inventory.waitForInventoryChanges(10000);
+        if(Rs2Dialogue.hasDialogueText("You must ask the foreman's")){
+            System.out.println("Need to pay the noob tax");
+            handleTax();
+        } else if (this.config.getBars().isRequiresCoalBag()) {
 
-        if (this.config.getBars().isRequiresCoalBag()) {
             Rs2Inventory.interact(coalBag, "Empty");
             Rs2Inventory.waitForInventoryChanges(3000);
 
