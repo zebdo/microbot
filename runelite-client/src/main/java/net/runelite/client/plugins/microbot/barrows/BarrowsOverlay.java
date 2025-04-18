@@ -42,7 +42,7 @@ public class BarrowsOverlay extends OverlayPanel {
                     .build());
 
             panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Barrows pieces found:")
+                    .left("Pieces found:")
                     .right(BarrowsScript.barrowsPieces.toString())
                     .build());
 
