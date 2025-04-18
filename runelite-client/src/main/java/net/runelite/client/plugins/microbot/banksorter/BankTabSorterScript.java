@@ -1,4 +1,3 @@
-// filepath: c:\Users\marcu\IdeaProjects\microbot\runelite-client\src\main\java\net\runelite\client\plugins\microbot\banksorter\BankTabSorterScript.java
 package net.runelite.client.plugins.microbot.banksorter;
 
 import lombok.extern.slf4j.Slf4j;
