@@ -85,7 +85,7 @@ public class BarrowsScript extends Script {
                         Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<5 || (Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)
                         || Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1 ||
                         Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1 ||
-                        Rs2Inventory.get(neededRune).getQuantity()<=180){
+                        Rs2Inventory.get(neededRune).getQuantity()<=config.minRuneAmount()){
                     Microbot.log("We need to bank.");
                     if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null){
                         Microbot.log("We don't have a ring of dueling equipped.");
@@ -105,7 +105,7 @@ public class BarrowsScript extends Script {
                     if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1){
                         Microbot.log("We don't have enough prayer potions.");
                     }
-                    if(Rs2Inventory.get(neededRune).getQuantity()<=180){
+                    if(Rs2Inventory.get(neededRune).getQuantity()<=config.minRuneAmount()){
                         Microbot.log("We have less than 180 "+neededRune);
                     }
                     shouldBank = true;
@@ -469,6 +469,11 @@ public class BarrowsScript extends Script {
                         Rs2Bank.walkToBankAndUseBank(BankLocation.FEROX_ENCLAVE);
                     } else {
 
+                        Microbot.log("Our rune is "+neededRune+" We'll need at least "+config.minRuneAmount());
+                        Microbot.log("Our min food is "+config.minFood()+" Our max food is "+config.targetFoodAmount());
+                        Microbot.log("Our min prayer pot amt is "+config.minPrayerPots()+" Our max prayer pot amt is "+config.targetPrayerPots());
+                        Microbot.log("Our min forgotten brew amt is "+config.minForgottenBrew()+" Our max forgotten brew amt is "+config.targetForgottenBrew());
+                        Microbot.log("Our min barrows teleport amt is "+config.minBarrowsTeleports()+" Our max barrows teleport amt is "+config.targetBarrowsTeleports());
 
                         if(Rs2Inventory.isFull() || Rs2Inventory.contains(it->it!=null&&it.getName().contains("'s") ||
                                 it.getName().contains("Coins"))){
@@ -480,12 +485,12 @@ public class BarrowsScript extends Script {
 
                         int howtoBank = Rs2Random.between(0,100);
                         if(howtoBank<= 40){
-                            if(Rs2Inventory.get(neededRune).getQuantity()<200){
+                            if(Rs2Inventory.get(neededRune).getQuantity() < config.minRuneAmount()){
                                 if(Rs2Bank.getBankItem(neededRune)!=null){
-                                    if(Rs2Bank.getBankItem(neededRune).getQuantity()>200){
-                                        if(Rs2Bank.withdrawX(neededRune, Rs2Random.between(200,1000))){
+                                    if(Rs2Bank.getBankItem(neededRune).getQuantity() > config.minRuneAmount()){
+                                        if(Rs2Bank.withdrawX(neededRune, Rs2Random.between(config.minRuneAmount(),1000))){
                                             String therune = neededRune;
-                                            sleepUntil(()-> Rs2Inventory.get(therune).getQuantity() > 200, Rs2Random.between(2000,4000));
+                                            sleepUntil(()-> Rs2Inventory.get(therune).getQuantity() > config.minRuneAmount(), Rs2Random.between(2000,4000));
                                         }
                                     } else {
                                         Microbot.log("We're out of "+neededRune+"s. stopping...");
@@ -496,10 +501,10 @@ public class BarrowsScript extends Script {
                         }
                         howtoBank = Rs2Random.between(0,100);
                         if(howtoBank<= 40){
-                            if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < Rs2Random.between(4,8)){
+                            if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < Rs2Random.between(config.minPrayerPots(),config.targetPrayerPots())){
                                 if(Rs2Bank.getBankItem("Prayer potion(4)")!=null){
-                                    if(Rs2Bank.getBankItem("Prayer potion(4)").getQuantity()>4){
-                                        int amt = ((Rs2Random.between(4,8)) - (Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)")));
+                                    if(Rs2Bank.getBankItem("Prayer potion(4)").getQuantity()>=config.targetPrayerPots()){
+                                        int amt = ((Rs2Random.between(config.minPrayerPots(),config.targetPrayerPots())) - (Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)")));
                                         if(amt <= 0){
                                             amt = 1;
                                         }
@@ -508,7 +513,7 @@ public class BarrowsScript extends Script {
                                             sleepUntil(()-> Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") > Rs2Random.between(4,8), Rs2Random.between(2000,4000));
                                         }
                                     } else {
-                                        Microbot.log("We're out of "+" Prayer potions "+" need at least 4 stopping...");
+                                        Microbot.log("We're out of "+" Prayer potions "+" need at least "+config.targetPrayerPots()+" stopping...");
                                         super.shutdown();
                                     }
                                 }
@@ -516,10 +521,10 @@ public class BarrowsScript extends Script {
                         }
                         howtoBank = Rs2Random.between(0,100);
                         if(howtoBank<= 40){
-                            if(Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < Rs2Random.between(1,3)){
+                            if(Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < Rs2Random.between(config.minForgottenBrew(),config.targetForgottenBrew())){
                                 if(Rs2Bank.getBankItem("Forgotten brew(4)")!=null){
-                                    if(Rs2Bank.getBankItem("Forgotten brew(4)").getQuantity()>3){
-                                        int amt = ((Rs2Random.between(2,4)) - (Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)")));
+                                    if(Rs2Bank.getBankItem("Forgotten brew(4)").getQuantity()>=config.targetForgottenBrew()){
+                                        int amt = ((Rs2Random.between(config.minForgottenBrew(),config.targetForgottenBrew())) - (Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)")));
                                         if(amt <= 0){
                                             amt = 1;
                                         }
@@ -528,7 +533,7 @@ public class BarrowsScript extends Script {
                                             sleepUntil(()-> Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") > Rs2Random.between(1,3), Rs2Random.between(2000,4000));
                                         }
                                     } else {
-                                        Microbot.log("We're out of "+" Forgotten brew "+" need at least 4 stopping...");
+                                        Microbot.log("We're out of "+" Forgotten brew "+" need at least "+config.targetPrayerPots()+" stopping...");
                                         super.shutdown();
                                     }
                                 }
@@ -536,18 +541,18 @@ public class BarrowsScript extends Script {
                         }
                         howtoBank = Rs2Random.between(0,100);
                         if(howtoBank<= 40){
-                            if(Rs2Inventory.get("Barrows teleport")==null || Rs2Inventory.get("Barrows teleport").getQuantity() < Rs2Random.between(1,3)){
+                            if(Rs2Inventory.get("Barrows teleport")==null || Rs2Inventory.get("Barrows teleport").getQuantity() < Rs2Random.between(config.minBarrowsTeleports(),config.targetBarrowsTeleports())){
                                 if(Rs2Bank.getBankItem("Barrows teleport")!=null){
-                                    if(Rs2Bank.getBankItem("Barrows teleport").getQuantity()>3){
-                                        if(Rs2Bank.withdrawX("Barrows teleport", Rs2Random.between(1,10))){
+                                    if(Rs2Bank.getBankItem("Barrows teleport").getQuantity()>=config.targetBarrowsTeleports()){
+                                        if(Rs2Bank.withdrawX("Barrows teleport", Rs2Random.between(config.minBarrowsTeleports(),config.targetBarrowsTeleports()))){
                                             sleep(Rs2Random.between(300,750));
                                         }
                                     } else {
-                                        Microbot.log("We're out of "+" Barrows teleports "+" need at least 3 stopping...");
+                                        Microbot.log("We're out of "+" Barrows teleports "+" need at least "+config.targetBarrowsTeleports()+" stopping...");
                                         super.shutdown();
                                     }
                                 } else {
-                                    Microbot.log("We're out of "+" Barrows teleports "+" need at least 3 stopping...");
+                                    Microbot.log("We're out of "+" Barrows teleports "+" need at least "+config.targetBarrowsTeleports()+" stopping...");
                                     super.shutdown();
                                 }
                             }
@@ -560,10 +565,10 @@ public class BarrowsScript extends Script {
                                     neededFood = Rs2Inventory.getInventoryFood().get(0).getName();
                                 }
                             }
-                            if(Rs2Inventory.count(neededFood) < 10){
+                            if(Rs2Inventory.count(neededFood) < config.targetFoodAmount()){
                                 if(Rs2Bank.getBankItem(neededFood)!=null){
-                                    if(Rs2Bank.getBankItem(neededFood).getQuantity()>10){
-                                        int amt = (Rs2Random.between(5,15) - (Rs2Inventory.count(neededFood)));
+                                    if(Rs2Bank.getBankItem(neededFood).getQuantity()>=config.targetFoodAmount()){
+                                        int amt = (Rs2Random.between(config.minFood(),config.targetFoodAmount()) - (Rs2Inventory.count(neededFood)));
                                         if(amt <= 0){
                                             amt = 1;
                                         }
@@ -573,7 +578,7 @@ public class BarrowsScript extends Script {
                                             sleepUntil(()-> Rs2Inventory.count(finalfood) >= 10, Rs2Random.between(2000,4000));
                                         }
                                     } else {
-                                        Microbot.log("We're out of "+neededFood+" need at least 10 stopping...");
+                                        Microbot.log("We're out of "+neededFood+" need at least "+config.targetFoodAmount()+" stopping...");
                                         super.shutdown();
                                     }
                                 }
@@ -620,10 +625,10 @@ public class BarrowsScript extends Script {
                         }
 
                         if(Rs2Equipment.get(EquipmentInventorySlot.RING)!=null && Rs2Inventory.contains("Spade") &&
-                                Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())>=10 && Rs2Inventory.get("Barrows teleport").getQuantity() >= 2
+                                Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())>=10 && Rs2Inventory.get("Barrows teleport").getQuantity() >= 1
                                 && Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") >= 1 &&
-                                Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") >= 4 &&
-                                Rs2Inventory.get(neededRune).getQuantity()>=180){
+                                Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") >= 2 &&
+                                Rs2Inventory.get(neededRune).getQuantity()>=config.minRuneAmount()){
                             Microbot.log("We have everything we need. Going back to barrows.");
                             reJfount();
                             if(Rs2Bank.isOpen()) {
