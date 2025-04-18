@@ -32,4 +32,13 @@ public interface ChaosAltarConfig extends Config {
         return false;
     }
 
+    @ConfigItem(
+            keyName = "Boneyard",
+            name = "Enable Boneyard Mode",
+            description = "Collects bones from boneyard and uses them on chaos altar(WIP - non-functional)"
+    )
+    default boolean boneYardMode() {
+        return false;
+    }
+
 }
