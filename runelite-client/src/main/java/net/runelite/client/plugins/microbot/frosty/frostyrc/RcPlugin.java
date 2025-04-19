@@ -23,9 +23,9 @@ import java.awt.*;
 import java.time.Instant;
 
 @PluginDescriptor(
-        name = PluginDescriptor.Frosty + "Bloods",
-        description = "A plugin to automate Blood Rune crafting",
-        tags = {"blood", "rc", "rune", "frosty"},
+        name = PluginDescriptor.Frosty + "Frosty Rc",
+        description = "A plugin to automate Rune crafting",
+        tags = {"blood", "rc", "rune", "frosty", "wrath"},
         enabledByDefault = false
 )
 
