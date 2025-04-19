@@ -232,7 +232,7 @@ public interface GroundItemsConfig extends Config
 	)
 	default int getHideUnderValue()
 	{
-		return 500;
+		return 0;
 	}
 
 	@Alpha
