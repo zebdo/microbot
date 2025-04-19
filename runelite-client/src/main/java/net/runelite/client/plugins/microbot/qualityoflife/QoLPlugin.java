@@ -33,6 +33,7 @@ import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
+import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -50,6 +51,7 @@ import org.apache.commons.lang3.reflect.FieldUtils;
 import javax.inject.Inject;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.KeyEvent;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -301,6 +303,7 @@ public class QoLPlugin extends Plugin {
             event.consume();
             Microbot.getClientThread().runOnSeperateThread(() -> {
                 customHaProfitOnClicked(menuEntry);
+
                 return null;
             });
         }
@@ -432,6 +435,9 @@ public class QoLPlugin extends Plugin {
 
         if (config.rightClickCameraTracking() && menuEntry.getNpc() != null && menuEntry.getNpc().getId() > 0) {
             addMenuEntry(event, "Track", target, this::customTrackOnClicked);
+        }
+        if(config.useDoLastCooking() && "Cook".equals(option) && (target.contains("Range") || target.contains("Fire"))) {
+            addMenuEntry(event, "<col=FFA500>Do-Last</col>", target, this::customCookingOnClicked);
         }
 
         if (config.useDoLastBank()) {
@@ -612,6 +618,19 @@ public class QoLPlugin extends Plugin {
             anvilMenuEntries.clear();
         }
         Microbot.log("<col=245C2D>Recording actions for: </col>" + option);
+    }
+
+    private void customCookingOnClicked(MenuEntry event) {
+        Microbot.getClientThread().runOnSeperateThread(() -> {
+            Global.sleepUntilTrue(Rs2Widget::isProductionWidgetOpen);
+            if (Rs2Widget.isProductionWidgetOpen()) {
+                Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
+            }
+        Microbot.log("<col=245C2D>Cooking</col>");
+
+            return null;
+        });
+
     }
 
     private void quickTeleportToHouse(MenuEntry entry) {
