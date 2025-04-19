@@ -170,6 +170,12 @@ public class BarrowsScript extends Script {
                                 continue;
                             }
                         }
+                        if(brother.name.contains("Ahrim")){
+                            if(Microbot.getVarbitValue(Varbits.BARROWS_KILLED_AHRIM) == 1){
+                                Microbot.log("We all ready killed Ahrim.");
+                                continue;
+                            }
+                        }
 
                         //Enter mound
                         if (Rs2Player.getWorldLocation().getPlane() != 3) {
