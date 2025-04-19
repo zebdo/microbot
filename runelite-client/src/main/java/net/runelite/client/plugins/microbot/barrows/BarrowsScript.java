@@ -100,7 +100,7 @@ public class BarrowsScript extends Script {
                 if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null || !Rs2Inventory.contains("Spade") ||
                         Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<2 || (Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)
                         || Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1 ||
-                        Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1 ||
+                        Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") <= 1 ||
                         Rs2Inventory.get(neededRune).getQuantity()<=config.minRuneAmount()){
                     Microbot.log("We need to bank.");
                     if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null){
@@ -118,7 +118,7 @@ public class BarrowsScript extends Script {
                     if(Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1){
                         Microbot.log("We forgot our Forgotten brew.");
                     }
-                    if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1){
+                    if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") <= 1){
                         Microbot.log("We don't have enough prayer potions.");
                     }
                     if(Rs2Inventory.get(neededRune).getQuantity()<=config.minRuneAmount()){
