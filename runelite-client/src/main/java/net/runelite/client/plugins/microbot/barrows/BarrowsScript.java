@@ -139,13 +139,16 @@ public class BarrowsScript extends Script {
                         Microbot.log("Checking mound for: " + brother.getName() + " at " + mound +"Using prayer: "+NeededPrayer);
 
                         //resume progress from varbits
-                        if(Microbot.getVarbitValue(Varbits.BARROWS_KILLED_DHAROK) != 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_GUTHAN) != 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_KARIL) != 1&&
-                                Microbot.getVarbitValue(Varbits.BARROWS_KILLED_TORAG) != 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_VERAC) != 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_AHRIM) != 1) {
 
                             if (brother.name.contains("Dharok")) {
-                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_DHAROK) == 1) {
-                                    Microbot.log("We all ready killed Dharok.");
-                                    continue;
+                                if(Microbot.getVarbitValue(Varbits.BARROWS_KILLED_DHAROK) == 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_GUTHAN) == 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_KARIL) == 1&&
+                                        Microbot.getVarbitValue(Varbits.BARROWS_KILLED_TORAG) == 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_VERAC) == 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_AHRIM) == 1) {
+                                    Microbot.log("We must manually check DH to reset the varbits.");
+                                } else {
+                                    if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_DHAROK) == 1) {
+                                        Microbot.log("We all ready killed Dharok.");
+                                        continue;
+                                    }
                                 }
                             }
                             if (brother.name.contains("Guthan")) {
@@ -178,7 +181,7 @@ public class BarrowsScript extends Script {
                                     continue;
                                 }
                             }
-                        }
+
 
                         //Enter mound
                         if (Rs2Player.getWorldLocation().getPlane() != 3) {
