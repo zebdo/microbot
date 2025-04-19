@@ -165,8 +165,8 @@ public class Rs2WorldPoint {
     public static int normalizeY(WorldPoint point) {
         int y = point.getY();
 
-        if (y > 6300) {
-            return y - 6300;
+        if (y > 6400) {
+            return y - 6400;
         }
         return y;
     }
