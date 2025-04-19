@@ -139,41 +139,44 @@ public class BarrowsScript extends Script {
                         Microbot.log("Checking mound for: " + brother.getName() + " at " + mound +"Using prayer: "+NeededPrayer);
 
                         //resume progress from varbits
+                        if(Microbot.getVarbitValue(Varbits.BARROWS_KILLED_DHAROK) != 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_GUTHAN) != 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_KARIL) != 1&&
+                                Microbot.getVarbitValue(Varbits.BARROWS_KILLED_TORAG) != 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_VERAC) != 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_AHRIM) != 1) {
 
-                        if(brother.name.contains("Dharok")){
-                            if(Microbot.getVarbitValue(Varbits.BARROWS_KILLED_DHAROK) == 1){
-                                Microbot.log("We all ready killed Dharok.");
-                                continue;
+                            if (brother.name.contains("Dharok")) {
+                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_DHAROK) == 1) {
+                                    Microbot.log("We all ready killed Dharok.");
+                                    continue;
+                                }
                             }
-                        }
-                        if(brother.name.contains("Guthan")){
-                            if(Microbot.getVarbitValue(Varbits.BARROWS_KILLED_GUTHAN) == 1){
-                                Microbot.log("We all ready killed Guthan.");
-                                continue;
+                            if (brother.name.contains("Guthan")) {
+                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_GUTHAN) == 1) {
+                                    Microbot.log("We all ready killed Guthan.");
+                                    continue;
+                                }
                             }
-                        }
-                        if(brother.name.contains("Karil")){
-                            if(Microbot.getVarbitValue(Varbits.BARROWS_KILLED_KARIL) == 1){
-                                Microbot.log("We all ready killed Karil.");
-                                continue;
+                            if (brother.name.contains("Karil")) {
+                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_KARIL) == 1) {
+                                    Microbot.log("We all ready killed Karil.");
+                                    continue;
+                                }
                             }
-                        }
-                        if(brother.name.contains("Torag")){
-                            if(Microbot.getVarbitValue(Varbits.BARROWS_KILLED_TORAG) == 1){
-                                Microbot.log("We all ready killed Torag.");
-                                continue;
+                            if (brother.name.contains("Torag")) {
+                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_TORAG) == 1) {
+                                    Microbot.log("We all ready killed Torag.");
+                                    continue;
+                                }
                             }
-                        }
-                        if(brother.name.contains("Verac")){
-                            if(Microbot.getVarbitValue(Varbits.BARROWS_KILLED_VERAC) == 1){
-                                Microbot.log("We all ready killed Verac.");
-                                continue;
+                            if (brother.name.contains("Verac")) {
+                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_VERAC) == 1) {
+                                    Microbot.log("We all ready killed Verac.");
+                                    continue;
+                                }
                             }
-                        }
-                        if(brother.name.contains("Ahrim")){
-                            if(Microbot.getVarbitValue(Varbits.BARROWS_KILLED_AHRIM) == 1){
-                                Microbot.log("We all ready killed Ahrim.");
-                                continue;
+                            if (brother.name.contains("Ahrim")) {
+                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_AHRIM) == 1) {
+                                    Microbot.log("We all ready killed Ahrim.");
+                                    continue;
+                                }
                             }
                         }
 
