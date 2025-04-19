@@ -171,7 +171,8 @@ public class BarrowsScript extends Script {
                                 // We're not in the mound yet.
                                 Rs2Walker.walkTo(mound);
                                 if (mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
-                                    if(!Rs2Player.isMoving()) {
+                                    sleep(500,1000);
+                                    if(!Rs2Player.isMoving() && mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
                                         break;
                                     }
                                 } else {
@@ -196,6 +197,7 @@ public class BarrowsScript extends Script {
                                         sleepUntil(() -> Rs2Player.getWorldLocation().getPlane() == 3, Rs2Random.between(3000, 5000));
                                     }
                                 }
+
                                 if (Rs2Player.getWorldLocation().getPlane() == 3) {
                                     //we made it in
                                     break;
@@ -349,7 +351,10 @@ public class BarrowsScript extends Script {
                                 sleep(300, 600);
                                 if(tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1){
                                     if(!Rs2Player.isMoving()) {
-                                        break;
+                                        sleep(500,1000);
+                                        if(!Rs2Player.isMoving() && tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
+                                            break;
+                                        }
                                     }
                                 } else {
                                     Microbot.log("At the mound, but we can't dig yet.");
@@ -454,15 +459,17 @@ public class BarrowsScript extends Script {
                     WorldPoint Chest = new WorldPoint(3552,9694,0);
 
                     //threaded walk because the brother could appear, the puzzle door could be there.
-                    if (Rs2Player.getWorldLocation().distanceTo(Chest) > 4) {
-                        shouldWalk = true;
-                        new Thread(() -> {
-                            if (shouldWalk) {
-                                Rs2Walker.walkTo(Chest);
-                            }
-                        }).start();
+                    if(!Rs2Player.isMoving()) {
+                        if (Rs2Player.getWorldLocation().distanceTo(Chest) > 4) {
+                            shouldWalk = true;
+                            new Thread(() -> {
+                                if (shouldWalk) {
+                                    Rs2Walker.walkTo(Chest);
+                                }
+                            }).start();
+                        }
+                        sleepUntil(() -> Rs2Player.isMoving(), Rs2Random.between(1200, 3000));
                     }
-                    sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1200,3000));
                     shouldWalk = false;
                     //threaded walk because the brother could appear, the puzzle door could be there.
                     //Moved Rs2Walker.setTarget(null); inside the puzzle solver and bother check.
@@ -822,12 +829,10 @@ public class BarrowsScript extends Script {
     }
     public void antiPatternDropVials(){
         if(Rs2Random.between(0,100) <= Rs2Random.between(1,25)) {
-            new Thread(() -> {
                 if (Rs2Inventory.contains("Vial")) {
                     Rs2Inventory.drop("Vial");
                     sleep(0, 750);
                 }
-            }).start();
         }
     }
     public void outOfSupplies(){
