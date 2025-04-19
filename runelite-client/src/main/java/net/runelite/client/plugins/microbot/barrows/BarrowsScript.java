@@ -98,7 +98,7 @@ public class BarrowsScript extends Script {
                 }
 
                 if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null || !Rs2Inventory.contains("Spade") ||
-                        Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<5 || (Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)
+                        Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<2 || (Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)
                         || Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1 ||
                         Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1 ||
                         Rs2Inventory.get(neededRune).getQuantity()<=config.minRuneAmount()){
@@ -109,7 +109,7 @@ public class BarrowsScript extends Script {
                     if(!Rs2Inventory.contains("Spade")){
                         Microbot.log("We don't have a spade.");
                     }
-                    if(Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<5){
+                    if(Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<2){
                         Microbot.log("We have less than 5 food.");
                     }
                     if((Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)){
@@ -337,6 +337,8 @@ public class BarrowsScript extends Script {
                                 } else {
                                     Microbot.log("At the mound, but we can't dig yet.");
                                     Rs2Walker.walkCanvas(tunnelMound);
+                                    sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(750,1500));
+                                    sleep(300,600);
                                 }
                             }
 
@@ -348,6 +350,10 @@ public class BarrowsScript extends Script {
                                     if (Rs2Inventory.interact("Spade", "Dig")) {
                                         sleepUntil(() -> Rs2Player.getWorldLocation().getPlane() == 3, Rs2Random.between(3000, 5000));
                                     }
+                                }
+                                if(tunnelMound.distanceTo(Rs2Player.getWorldLocation()) > 1){
+                                    //we can't dig here
+                                    break;
                                 }
                                 if (Rs2Player.getWorldLocation().getPlane() == 3) {
                                     //we made it in
@@ -375,6 +381,11 @@ public class BarrowsScript extends Script {
                                     break;
                                 }
 
+                                if (Rs2Player.getWorldLocation().getPlane() != 3) {
+                                    //we're not in the mound
+                                    break;
+                                }
+
                             }
 
 
@@ -399,6 +410,10 @@ public class BarrowsScript extends Script {
                                     break;
                                 }
                                 if (inTunnels) {
+                                    break;
+                                }
+                                if (Rs2Player.getWorldLocation().getPlane() != 3) {
+                                    //we're not in the mound
                                     break;
                                 }
                             }
@@ -536,7 +551,7 @@ public class BarrowsScript extends Script {
                             }
                         }
                         howtoBank = Rs2Random.between(0,100);
-                        if(howtoBank<= 40){
+                        if(howtoBank<= 60){
                             if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < Rs2Random.between(config.minPrayerPots(),config.targetPrayerPots())){
                                 if(Rs2Bank.getBankItem("Prayer potion(4)")!=null){
                                     if(Rs2Bank.getBankItem("Prayer potion(4)").getQuantity()>=config.targetPrayerPots()){
