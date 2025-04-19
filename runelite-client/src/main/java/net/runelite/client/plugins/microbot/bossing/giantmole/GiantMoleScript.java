@@ -382,7 +382,7 @@ public class GiantMoleScript extends Script
             return;
         }
 
-        boolean underAttack = !Rs2Npc.getNpcsForPlayer().isEmpty() || Rs2Combat.inCombat();
+        boolean underAttack = Rs2Npc.getNpcsForPlayer().findAny().isPresent() || Rs2Combat.inCombat();
         Rs2Prayer.toggleQuickPrayer(!isInFalador() && underAttack);
     }
 
