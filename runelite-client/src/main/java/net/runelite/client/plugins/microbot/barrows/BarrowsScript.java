@@ -54,6 +54,7 @@ public class BarrowsScript extends Script {
     private Rs2PrayerEnum NeededPrayer;
     int scriptDelay = Rs2Random.between(300,600);
     public static int ChestsOpened = 0;
+    private int minRuneAmt;
     public static List<String> barrowsPieces = new ArrayList<>();
 
     public boolean run(BarrowsConfig config) {
@@ -86,6 +87,7 @@ public class BarrowsScript extends Script {
                 }
 
                 gettheRune();
+                minRuneAmt = config.minRuneAmount();
 
                 if(Rs2Inventory.getInventoryFood().isEmpty()){
                     Microbot.log("No food in inventory. Please get some food then restart the script. stopping...");
@@ -97,46 +99,64 @@ public class BarrowsScript extends Script {
                     super.shutdown();
                 }
 
-                if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null || !Rs2Inventory.contains("Spade") ||
-                        Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<5 || (Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)
-                        || Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1 ||
-                        Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1 ||
-                        Rs2Inventory.get(neededRune).getQuantity()<=config.minRuneAmount()){
-                    Microbot.log("We need to bank.");
-                    if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null){
-                        Microbot.log("We don't have a ring of dueling equipped.");
-                    }
-                    if(!Rs2Inventory.contains("Spade")){
-                        Microbot.log("We don't have a spade.");
-                    }
-                    if(Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<5){
-                        Microbot.log("We have less than 5 food.");
-                    }
-                    if((Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)){
-                        Microbot.log("We don't have a barrows teleport.");
-                    }
-                    if(Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1){
-                        Microbot.log("We forgot our Forgotten brew.");
-                    }
-                    if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1){
-                        Microbot.log("We don't have enough prayer potions.");
-                    }
-                    if(Rs2Inventory.get(neededRune).getQuantity()<=config.minRuneAmount()){
-                        Microbot.log("We have less than 180 "+neededRune);
-                    }
-                    shouldBank = true;
-                } else {
-                    //if we're not all ready at the bank. This is needed because it could swap shouldBank to false while standing at the bank with 1 prayer potion
-                    if(Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) > 40){
-                        shouldBank = false;
-                    }
-                }
+                suppliesCheck();
 
                 if(!inTunnels && shouldBank == false) {
                     for (BarrowsBrothers brother : BarrowsBrothers.values()) {
                         WorldPoint mound = brother.getHumpWP();
                         NeededPrayer = brother.whatToPray;
+                        suppliesCheck();
+                        outOfSupplies();
+                        if(shouldBank){
+                            return;
+                        }
                         Microbot.log("Checking mound for: " + brother.getName() + " at " + mound +"Using prayer: "+NeededPrayer);
+
+                        //resume progress from varbits
+
+                            if (brother.name.contains("Dharok")) {
+                                if(Microbot.getVarbitValue(Varbits.BARROWS_KILLED_DHAROK) == 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_GUTHAN) == 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_KARIL) == 1&&
+                                        Microbot.getVarbitValue(Varbits.BARROWS_KILLED_TORAG) == 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_VERAC) == 1&&Microbot.getVarbitValue(Varbits.BARROWS_KILLED_AHRIM) == 1) {
+                                    Microbot.log("We must manually check DH to reset the varbits.");
+                                } else {
+                                    if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_DHAROK) == 1) {
+                                        Microbot.log("We all ready killed Dharok.");
+                                        continue;
+                                    }
+                                }
+                            }
+                            if (brother.name.contains("Guthan")) {
+                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_GUTHAN) == 1) {
+                                    Microbot.log("We all ready killed Guthan.");
+                                    continue;
+                                }
+                            }
+                            if (brother.name.contains("Karil")) {
+                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_KARIL) == 1) {
+                                    Microbot.log("We all ready killed Karil.");
+                                    continue;
+                                }
+                            }
+                            if (brother.name.contains("Torag")) {
+                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_TORAG) == 1) {
+                                    Microbot.log("We all ready killed Torag.");
+                                    continue;
+                                }
+                            }
+                            if (brother.name.contains("Verac")) {
+                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_VERAC) == 1) {
+                                    Microbot.log("We all ready killed Verac.");
+                                    continue;
+                                }
+                            }
+                            if (brother.name.contains("Ahrim")) {
+                                if (Microbot.getVarbitValue(Varbits.BARROWS_KILLED_AHRIM) == 1) {
+                                    Microbot.log("We all ready killed Ahrim.");
+                                    continue;
+                                }
+                            }
+
+
                         //Enter mound
                         if (Rs2Player.getWorldLocation().getPlane() != 3) {
                             Microbot.log("Entering the mound");
@@ -154,7 +174,8 @@ public class BarrowsScript extends Script {
                                 // We're not in the mound yet.
                                 Rs2Walker.walkTo(mound);
                                 if (mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
-                                    if(!Rs2Player.isMoving()) {
+                                    sleep(500,1000);
+                                    if(!Rs2Player.isMoving() && mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
                                         break;
                                     }
                                 } else {
@@ -179,6 +200,7 @@ public class BarrowsScript extends Script {
                                         sleepUntil(() -> Rs2Player.getWorldLocation().getPlane() == 3, Rs2Random.between(3000, 5000));
                                     }
                                 }
+
                                 if (Rs2Player.getWorldLocation().getPlane() == 3) {
                                     //we made it in
                                     break;
@@ -332,11 +354,16 @@ public class BarrowsScript extends Script {
                                 sleep(300, 600);
                                 if(tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1){
                                     if(!Rs2Player.isMoving()) {
-                                        break;
+                                        sleep(500,1000);
+                                        if(!Rs2Player.isMoving() && tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
+                                            break;
+                                        }
                                     }
                                 } else {
                                     Microbot.log("At the mound, but we can't dig yet.");
                                     Rs2Walker.walkCanvas(tunnelMound);
+                                    sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(750,1500));
+                                    sleep(300,600);
                                 }
                             }
 
@@ -348,6 +375,10 @@ public class BarrowsScript extends Script {
                                     if (Rs2Inventory.interact("Spade", "Dig")) {
                                         sleepUntil(() -> Rs2Player.getWorldLocation().getPlane() == 3, Rs2Random.between(3000, 5000));
                                     }
+                                }
+                                if(tunnelMound.distanceTo(Rs2Player.getWorldLocation()) > 1){
+                                    //we can't dig here
+                                    break;
                                 }
                                 if (Rs2Player.getWorldLocation().getPlane() == 3) {
                                     //we made it in
@@ -372,6 +403,11 @@ public class BarrowsScript extends Script {
                                 }
 
                                 if (inTunnels) {
+                                    break;
+                                }
+
+                                if (Rs2Player.getWorldLocation().getPlane() != 3) {
+                                    //we're not in the mound
                                     break;
                                 }
 
@@ -401,6 +437,10 @@ public class BarrowsScript extends Script {
                                 if (inTunnels) {
                                     break;
                                 }
+                                if (Rs2Player.getWorldLocation().getPlane() != 3) {
+                                    //we're not in the mound
+                                    break;
+                                }
                             }
 
 
@@ -422,15 +462,17 @@ public class BarrowsScript extends Script {
                     WorldPoint Chest = new WorldPoint(3552,9694,0);
 
                     //threaded walk because the brother could appear, the puzzle door could be there.
-                    if (Rs2Player.getWorldLocation().distanceTo(Chest) > 4) {
-                        shouldWalk = true;
-                        new Thread(() -> {
-                            if (shouldWalk) {
-                                Rs2Walker.walkTo(Chest);
-                            }
-                        }).start();
+                    if(!Rs2Player.isMoving()) {
+                        if (Rs2Player.getWorldLocation().distanceTo(Chest) > 4) {
+                            shouldWalk = true;
+                            new Thread(() -> {
+                                if (shouldWalk) {
+                                    Rs2Walker.walkTo(Chest);
+                                }
+                            }).start();
+                        }
+                        sleepUntil(() -> Rs2Player.isMoving(), Rs2Random.between(1200, 3000));
                     }
-                    sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1200,3000));
                     shouldWalk = false;
                     //threaded walk because the brother could appear, the puzzle door could be there.
                     //Moved Rs2Walker.setTarget(null); inside the puzzle solver and bother check.
@@ -474,7 +516,7 @@ public class BarrowsScript extends Script {
                             }
                             //we looted the chest time to reset
 
-                            if (Rs2Inventory.get("Barrows teleport") == null || Rs2Inventory.get("Barrows teleport").getQuantity() <= 1 || (Rs2Inventory.count("Prayer potion(3)") + Rs2Inventory.count("Prayer potion(4)")) <= 3 || Rs2Inventory.getInventoryFood().isEmpty() || Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName()) <= 3 || Rs2Player.getRunEnergy() <= 35) {
+                            if (Rs2Inventory.get("Barrows teleport") == null || Rs2Inventory.get("Barrows teleport").getQuantity() < 1 || (Rs2Inventory.count("Prayer potion(3)") + Rs2Inventory.count("Prayer potion(4)")) <= 2 || Rs2Inventory.getInventoryFood().isEmpty() || Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName()) <= 3 || Rs2Player.getRunEnergy() <= 35 || Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1) {
                                 Microbot.log("We should bank.");
                                 shouldBank = true;
                                 ChestsOpened++;
@@ -536,7 +578,7 @@ public class BarrowsScript extends Script {
                             }
                         }
                         howtoBank = Rs2Random.between(0,100);
-                        if(howtoBank<= 40){
+                        if(howtoBank<= 60){
                             if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < Rs2Random.between(config.minPrayerPots(),config.targetPrayerPots())){
                                 if(Rs2Bank.getBankItem("Prayer potion(4)")!=null){
                                     if(Rs2Bank.getBankItem("Prayer potion(4)").getQuantity()>=config.targetPrayerPots()){
@@ -692,7 +734,42 @@ public class BarrowsScript extends Script {
         }, 0, scriptDelay, TimeUnit.MILLISECONDS);
         return true;
     }
-
+    public void suppliesCheck(){
+        if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null || !Rs2Inventory.contains("Spade") ||
+                Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<2 || (Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)
+                || Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1 ||
+                Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1 ||
+                Rs2Inventory.get(neededRune).getQuantity()<=minRuneAmt){
+            Microbot.log("We need to bank.");
+            if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null){
+                Microbot.log("We don't have a ring of dueling equipped.");
+            }
+            if(!Rs2Inventory.contains("Spade")){
+                Microbot.log("We don't have a spade.");
+            }
+            if(Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<2){
+                Microbot.log("We have less than 5 food.");
+            }
+            if((Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)){
+                Microbot.log("We don't have a barrows teleport.");
+            }
+            if(Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1){
+                Microbot.log("We forgot our Forgotten brew.");
+            }
+            if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1){
+                Microbot.log("We don't have enough prayer potions.");
+            }
+            if(Rs2Inventory.get(neededRune).getQuantity()<=minRuneAmt){
+                Microbot.log("We have less than 180 "+neededRune);
+            }
+            shouldBank = true;
+        } else {
+            //if we're not all ready at the bank. This is needed because it could swap shouldBank to false while standing at the bank with 1 prayer potion
+            if(Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) > 40){
+                shouldBank = false;
+            }
+        }
+    }
     public void stuckInTunsCheck(){
         //needed for rare occasions where the walker messes up
         if(tunnelLoopCount < 1){
@@ -755,12 +832,10 @@ public class BarrowsScript extends Script {
     }
     public void antiPatternDropVials(){
         if(Rs2Random.between(0,100) <= Rs2Random.between(1,25)) {
-            new Thread(() -> {
                 if (Rs2Inventory.contains("Vial")) {
                     Rs2Inventory.drop("Vial");
                     sleep(0, 750);
                 }
-            }).start();
         }
     }
     public void outOfSupplies(){
