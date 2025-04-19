@@ -107,6 +107,9 @@ public class BarrowsScript extends Script {
                         NeededPrayer = brother.whatToPray;
                         suppliesCheck();
                         outOfSupplies();
+                        if(shouldBank){
+                            return;
+                        }
                         Microbot.log("Checking mound for: " + brother.getName() + " at " + mound +"Using prayer: "+NeededPrayer);
 
                         //resume progress from varbits
