@@ -181,6 +181,7 @@ public class MossKillerScript extends Script {
         sleep(1000);
         shutdown();
     }
+
     private void checkAndDrinkStrengthPotion() {
         int currentStrengthLevel = Microbot.getClient().getRealSkillLevel(Skill.STRENGTH); // Unboosted strength level
         int boostedStrengthLevel = Microbot.getClient().getBoostedSkillLevel(Skill.STRENGTH); // Current boosted strength level
@@ -258,7 +259,10 @@ public class MossKillerScript extends Script {
         }
 
         int randomValue = (int) Rs2Random.truncatedGauss(35, 60, 4.0);
-        eatAt(randomValue);
+        if (Rs2Player.getCombatLevel() < 69) {
+            int randomValue1 = (int) Rs2Random.truncatedGauss(50, 75, 4.0);
+            eatAt(randomValue1);
+        } else eatAt(randomValue);
 
 
         // Check if loot is nearby and pick it up if it's in LOOT_LIST
@@ -453,6 +457,13 @@ public class MossKillerScript extends Script {
 
 
     public void walkToMossGiants() {
+
+        if (BreakHandlerScript.breakIn <= 180) {
+            Microbot.log("you're gonna break soon, may as well idle at bank");
+            Rs2Bank.walkToBankAndUseBank();
+            sleep(150000,180000);
+        }
+
 
         int currentPitch = Rs2Camera.getPitch(); // Assume Rs2Camera.getPitch() retrieves the current pitch value.
         int currentZoom = Rs2Camera.getZoom(); // Assume Rs2Camera.getZoom() retrieves the current zoom level.
