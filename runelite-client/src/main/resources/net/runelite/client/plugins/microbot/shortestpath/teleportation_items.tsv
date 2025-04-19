@@ -88,9 +88,9 @@
 3405 3158 0		21146;21149;21151;21153;21155			Y	T	19	4	3. Necklace of passage: Eagle's Eyrie
 									
 # Burning Amulet									
-3234 3634 0		21166;21169;21171;21173;21175			Y	T	19	4	Burning amulet: Chaos Temple
-3038 3651 0		21166;21169;21171;21173;21175			Y	T	19	4	Burning amulet: Bandit Camp
-3028 3842 0		21166;21169;21171;21173;21175			Y	T	19	4	Burning amulet: Lava Maze
+3234 3634 0		21166;21169;21171;21173;21175			Y	T	19	4	1. Burning amulet: Chaos Temple
+3038 3651 0		21166;21169;21171;21173;21175			Y	T	19	4	2. Burning amulet: Bandit Camp
+3028 3842 0		21166;21169;21171;21173;21175			Y	T	19	4	3. Burning amulet: Lava Maze
 									
 # Teleport to House tablet - These depend on the current player's home location, determined by varbit 2187.									
 # 0 - None									
@@ -279,21 +279,21 @@
 2465 3495 0		19564			Y	F	29	4	Royal seed pod
 2465 3495 0		9469			Y	T	29	4	Grand seed pod
 # Enchanted lyre - 4493 is DIARY_FREMENNIK_HARD, 4494 is DIARY_FREMENNIK_ELITE									
-2662 3644 0		3691;6125;6126;6127;13079			Y	T	19	4	Enchanted lyre: Rellekka
-2551 3755 0		3691;6125;6126;6127;13079		4493=1	Y	T	19	4	Enchanted lyre: Waterbirth Island
-2409 3809 0		3691;6125;6126;6127;13079		4494=1	Y	T	19	4	Enchanted lyre: Jatizso
-2336 3802 0		3691;6125;6126;6127;13079		4494=1	Y	T	19	4	Enchanted lyre: Neitiznot
-2662 3644 0		23458			Y	F	19	4	Enchanted lyre(i): Rellekka
-2551 3755 0		23458		4493=1	Y	F	19	4	Enchanted lyre(i): Waterbirth Island
-2409 3809 0		23458		4494=1	Y	F	19	4	Enchanted lyre(i): Jatizso
-2336 3802 0		23458		4494=1	Y	F	19	4	Enchanted lyre(i): Neitiznot
-3105 9315 2		6707		1574>0	Y	F	19	4	Camulet: Enakhra's Temple
-3191 2924 0		6707		4485=1;1574>0	Y	F	19	4	Camulet: Bandit Camp Quarry
-1713 3612 0		21760;25818	The Depths of Despair	6028=1;6035>1	Y	T	19	4	Kharedst's memoirs: Lunch by the Lancalliums
-1802 3748 0		21760;25818	The Queen of Thieves	6038=1;6035>1	Y	T	19	4	Kharedst's memoirs: The Fisher's Flute
-1478 3576 0		21760;25818	Tale of the Righteous	6359=1;6035>1	Y	T	19	4	Kharedst's memoirs: History and Hearsay
-1544 3762 0		21760;25818	The Forsaken Tower	7801=1;6035>1	Y	T	19	4	Kharedst's memoirs: Jewellery of Jubilation
-1680 3746 0		21760;25818	The Ascent of Arceuus	7857=1;6035>1	Y	T	19	4	Kharedst's memoirs: A Dark Disposition
+2662 3644 0		3691;6125;6126;6127;13079			Y	T	19	4	1. Enchanted lyre: Rellekka
+2551 3755 0		3691;6125;6126;6127;13079		4493=1	Y	T	19	4	2. Enchanted lyre: Waterbirth Island
+2409 3809 0		3691;6125;6126;6127;13079		4494=1	Y	T	19	4	3. Enchanted lyre: Jatizso
+2336 3802 0		3691;6125;6126;6127;13079		4494=1	Y	T	19	4	4. Enchanted lyre: Neitiznot
+2662 3644 0		23458			Y	F	19	4	1. Enchanted lyre(i): Rellekka
+2551 3755 0		23458		4493=1	Y	F	19	4	2. Enchanted lyre(i): Waterbirth Island
+2409 3809 0		23458		4494=1	Y	F	19	4	3. Enchanted lyre(i): Jatizso
+2336 3802 0		23458		4494=1	Y	F	19	4	4. Enchanted lyre(i): Neitiznot
+3105 9315 2		6707		1574>0	Y	F	19	4	1. Camulet: Enakhra's Temple
+3191 2924 0		6707		4485=1;1574>0	Y	F	19	4	2. Camulet: Enakhra's Temple Entrance
+1713 3612 0		21760;25818	The Depths of Despair	6028=1;6035>1	Y	T	19	4	1. Kharedst's memoirs: Lunch by the Lancalliums
+1802 3748 0		21760;25818	The Queen of Thieves	6038=1;6035>1	Y	T	19	4	2. Kharedst's memoirs: The Fisher's Flute
+1478 3576 0		21760;25818	Tale of the Righteous	6359=1;6035>1	Y	T	19	4	3. Kharedst's memoirs: History and Hearsay
+1544 3762 0		21760;25818	The Forsaken Tower	7801=1;6035>1	Y	T	19	4	4. Kharedst's memoirs: Jewellery of Jubilation
+1680 3746 0		21760;25818	The Ascent of Arceuus	7857=1;6035>1	Y	T	19	4	5. Kharedst's memoirs: A Dark Disposition
 3649 3230 0		22400			Y	F	19	4	Drakan's medallion: Ver Sinhaza
 3592 3337 0		22400	Sins of the Father		Y	F	19	4	Drakan's medallion: Darkmeyer
 # todo: this only works if you've used a Slepey tablet on the medallion									

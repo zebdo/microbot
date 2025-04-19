@@ -1961,6 +1961,10 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         String destination = values[1].trim();
         int identifier = NewMenuEntry.findIdentifier(menuOption, getIdentifierOffset(transport.getDisplayInfo()));
         Rs2Inventory.interact(itemId, destination, identifier);
+        if (transport.getDisplayInfo().toLowerCase().contains("burning amulet")) {
+            Rs2Dialogue.sleepUntilHasDialogueOption("Okay, teleport to level");
+            Rs2Dialogue.clickOption("Okay, teleport to level");
+        }
         Microbot.log("Traveling to " + transport.getDisplayInfo());
         return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 5000);
     }
@@ -1973,12 +1977,18 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 lowerCaseItemName.contains("amulet of glory") ||
                 lowerCaseItemName.contains("ring of wealth") ||
                 lowerCaseItemName.contains("combat bracelet") ||
-                lowerCaseItemName.contains("digsite pendant")||
-                lowerCaseItemName.contains("necklace of passage")){
+                lowerCaseItemName.contains("digsite pendant") ||
+                lowerCaseItemName.contains("necklace of passage") ||
+                lowerCaseItemName.contains("camulet") ||
+                lowerCaseItemName.contains("burning amulet")) {
             return 6;
         } else if (lowerCaseItemName.contains("xeric's talisman") ||
                 lowerCaseItemName.contains("slayer ring")) {
             return 4;
+        } else if (lowerCaseItemName.contains("kharedst's memoirs")) {
+            return 3;
+        } else if (lowerCaseItemName.contains("enchanted lyre")) {
+            return 2;
         } else {
             return 4; // Default offset if no match is found
         }
