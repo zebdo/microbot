@@ -507,6 +507,7 @@ public class BlastoiseFurnaceScript extends Script {
             System.out.println("Need to pay the noob tax");
             handleTax();
             Rs2GameObject.interact(ObjectID.CONVEYOR_BELT, "Put-ore-on");
+            Rs2Inventory.waitForInventoryChanges(10000);
         }
         if (this.config.getBars().isRequiresCoalBag()) {
 
