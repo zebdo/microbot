@@ -134,7 +134,7 @@ public class MossKillerScript extends Script {
                 if (Rs2Player.getRealSkillLevel(Skill.STRENGTH) >= config.strengthLevel()) {
                     moarShutDown();
                 }
-                // CODE HERE
+
                 switch(state){
                     case BANK: handleBanking(); break;
                     case TELEPORT: varrockTeleport(); break;
@@ -142,10 +142,8 @@ public class MossKillerScript extends Script {
                     case WALK_TO_MOSS_GIANTS: walkToMossGiants(); break;
                     case FIGHT_BOSS: handleBossFight(); break;
                     case FIGHT_MOSS_GIANTS: handleMossGiants(); break;
-                    case EXIT_SCRIPT: sleep(10000, 15000); init(); break;
+                    case EXIT_SCRIPT: sleep(10000, 15000); init(); moarShutDown(); break;
                 }
-
-                // switch statement to call functions based on state
 
 
                 long endTime = System.currentTimeMillis();
@@ -165,7 +163,7 @@ public class MossKillerScript extends Script {
     }
 
     public void moarShutDown() {
-        System.out.println("super shutdown triggered for reaching set level");
+        System.out.println("super shutdown triggered");
         varrockTeleport();
         //static sleep to wait till out of combat
         sleep(10000);
@@ -741,12 +739,6 @@ public class MossKillerScript extends Script {
     }
 
     public void init(){
-        //todo: set up food
-        //todo:  set up membs
-        //todo: set up loot filter
-        // check state
-
-
 
         getInitiailState();
 
