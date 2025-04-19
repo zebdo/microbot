@@ -54,6 +54,7 @@ public class BarrowsScript extends Script {
     private Rs2PrayerEnum NeededPrayer;
     int scriptDelay = Rs2Random.between(300,600);
     public static int ChestsOpened = 0;
+    private int minRuneAmt;
     public static List<String> barrowsPieces = new ArrayList<>();
 
     public boolean run(BarrowsConfig config) {
@@ -86,6 +87,7 @@ public class BarrowsScript extends Script {
                 }
 
                 gettheRune();
+                minRuneAmt = config.minRuneAmount();
 
                 if(Rs2Inventory.getInventoryFood().isEmpty()){
                     Microbot.log("No food in inventory. Please get some food then restart the script. stopping...");
@@ -97,45 +99,14 @@ public class BarrowsScript extends Script {
                     super.shutdown();
                 }
 
-                if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null || !Rs2Inventory.contains("Spade") ||
-                        Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<2 || (Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)
-                        || Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1 ||
-                        Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1 ||
-                        Rs2Inventory.get(neededRune).getQuantity()<=config.minRuneAmount()){
-                    Microbot.log("We need to bank.");
-                    if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null){
-                        Microbot.log("We don't have a ring of dueling equipped.");
-                    }
-                    if(!Rs2Inventory.contains("Spade")){
-                        Microbot.log("We don't have a spade.");
-                    }
-                    if(Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<2){
-                        Microbot.log("We have less than 5 food.");
-                    }
-                    if((Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)){
-                        Microbot.log("We don't have a barrows teleport.");
-                    }
-                    if(Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1){
-                        Microbot.log("We forgot our Forgotten brew.");
-                    }
-                    if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1){
-                        Microbot.log("We don't have enough prayer potions.");
-                    }
-                    if(Rs2Inventory.get(neededRune).getQuantity()<=config.minRuneAmount()){
-                        Microbot.log("We have less than 180 "+neededRune);
-                    }
-                    shouldBank = true;
-                } else {
-                    //if we're not all ready at the bank. This is needed because it could swap shouldBank to false while standing at the bank with 1 prayer potion
-                    if(Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) > 40){
-                        shouldBank = false;
-                    }
-                }
+                suppliesCheck();
 
                 if(!inTunnels && shouldBank == false) {
                     for (BarrowsBrothers brother : BarrowsBrothers.values()) {
                         WorldPoint mound = brother.getHumpWP();
                         NeededPrayer = brother.whatToPray;
+                        suppliesCheck();
+                        outOfSupplies();
                         Microbot.log("Checking mound for: " + brother.getName() + " at " + mound +"Using prayer: "+NeededPrayer);
 
                         //resume progress from varbits
@@ -753,7 +724,42 @@ public class BarrowsScript extends Script {
         }, 0, scriptDelay, TimeUnit.MILLISECONDS);
         return true;
     }
-
+    public void suppliesCheck(){
+        if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null || !Rs2Inventory.contains("Spade") ||
+                Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<2 || (Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)
+                || Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1 ||
+                Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1 ||
+                Rs2Inventory.get(neededRune).getQuantity()<=minRuneAmt){
+            Microbot.log("We need to bank.");
+            if(Rs2Equipment.get(EquipmentInventorySlot.RING)==null){
+                Microbot.log("We don't have a ring of dueling equipped.");
+            }
+            if(!Rs2Inventory.contains("Spade")){
+                Microbot.log("We don't have a spade.");
+            }
+            if(Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<2){
+                Microbot.log("We have less than 5 food.");
+            }
+            if((Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)){
+                Microbot.log("We don't have a barrows teleport.");
+            }
+            if(Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") < 1){
+                Microbot.log("We forgot our Forgotten brew.");
+            }
+            if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1){
+                Microbot.log("We don't have enough prayer potions.");
+            }
+            if(Rs2Inventory.get(neededRune).getQuantity()<=minRuneAmt){
+                Microbot.log("We have less than 180 "+neededRune);
+            }
+            shouldBank = true;
+        } else {
+            //if we're not all ready at the bank. This is needed because it could swap shouldBank to false while standing at the bank with 1 prayer potion
+            if(Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) > 40){
+                shouldBank = false;
+            }
+        }
+    }
     public void stuckInTunsCheck(){
         //needed for rare occasions where the walker messes up
         if(tunnelLoopCount < 1){
