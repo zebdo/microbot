@@ -84,7 +84,7 @@ public class BlastoiseFurnaceScript extends Script {
                     case BANKING:
                         Microbot.status = "Banking";
                         if (!Rs2Bank.isOpen()) {
-                            System.out.println("Opening bank");
+                            Microbot.log("Opening bank");
                             Rs2Bank.openBank();
                             sleepUntil(Rs2Bank::isOpen, 20000);
                         }
@@ -117,9 +117,10 @@ public class BlastoiseFurnaceScript extends Script {
                         }
 
                         if (!this.hasRequiredOresForSmithing()) {
-                            System.err.println("Out of ores.");
-                            Rs2Player.logout();
+                            Microbot.log("Out of ores. Walking you out for coffer safety");
+                            Rs2Walker.walkTo(new WorldPoint(2930, 10196, 0));                            Rs2Player.logout();
                             this.shutdown();
+
                         }
 
                         if (!Rs2Player.hasStaminaBuffActive() && Microbot.getClient().getEnergy() < 8100) {
@@ -505,7 +506,9 @@ public class BlastoiseFurnaceScript extends Script {
         if(Rs2Dialogue.hasDialogueText("You must ask the foreman's")){
             System.out.println("Need to pay the noob tax");
             handleTax();
-        } else if (this.config.getBars().isRequiresCoalBag()) {
+            Rs2GameObject.interact(ObjectID.CONVEYOR_BELT, "Put-ore-on");
+        }
+        if (this.config.getBars().isRequiresCoalBag()) {
 
             Rs2Inventory.interact(coalBag, "Empty");
             Rs2Inventory.waitForInventoryChanges(3000);
@@ -568,6 +571,7 @@ public class BlastoiseFurnaceScript extends Script {
 
 
     public void shutdown() {
+
         if (mainScheduledFuture != null && !mainScheduledFuture.isDone()) {
             mainScheduledFuture.cancel(true);
             ShortestPathPlugin.exit();
