@@ -714,6 +714,24 @@ public class Rs2Bank {
     }
 
     /**
+     * Deposits all items in the player's inventory into the bank,
+     * except for the items in the given map.
+     * Each key is the item name, and the value indicates whether to fuzzy match it.
+     *
+     * @param itemsToExclude A map of item names to a boolean indicating fuzzy match.
+     * @return true if any items were deposited, false otherwise.
+     */
+    public static boolean depositAllExcept(Map<String, Boolean> itemsToExclude) {
+        return depositAll(item -> itemsToExclude.entrySet().stream().noneMatch(entry -> {
+            String excludedItemName = entry.getKey();
+            boolean isFuzzy = entry.getValue();
+            return isFuzzy
+                    ? item.getName().toLowerCase().contains(excludedItemName.toLowerCase())
+                    : item.getName().equalsIgnoreCase(excludedItemName);
+        }));
+    }
+
+    /**
      * Deposits all items in the player's inventory into the bank, except for the items with the specified names.
      * This method uses a lambda function to filter out the items with the specified names from the deposit operation.
      * It also allows for a delay between deposit operations.
