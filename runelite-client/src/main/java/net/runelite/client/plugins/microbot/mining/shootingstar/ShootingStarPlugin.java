@@ -259,8 +259,8 @@ public class ShootingStarPlugin extends Plugin {
     @Override
     protected void startUp() throws AWTException {
         displayAsMinutes = config.isDisplayAsMinutes();
-        hideMembersWorlds = !Login.activeProfile.isMember();
-        hideF2PWorlds = Login.activeProfile.isMember();
+        hideMembersWorlds = !Rs2Player.isInMemberWorld();
+        hideF2PWorlds = Rs2Player.isInMemberWorld();
         useInventorySetups = config.useInventorySetup();
         inventorySetup = config.inventorySetup();
         useNearestHighTierStar = config.useNearestHighTierStar();
