@@ -533,6 +533,11 @@ public class BarrowsScript extends Script {
 
                 if(shouldBank){
                     if(!Rs2Bank.isOpen()){
+                        //stop the walker
+                        Rs2Walker.setTarget(null);
+                        //tele out
+                        outOfSupplies();
+                        //walk to and open the bank
                         Rs2Bank.walkToBankAndUseBank(BankLocation.FEROX_ENCLAVE);
                     } else {
 
