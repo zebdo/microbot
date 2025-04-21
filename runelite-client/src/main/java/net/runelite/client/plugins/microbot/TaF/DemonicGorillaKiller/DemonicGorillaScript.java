@@ -231,7 +231,6 @@ public class DemonicGorillaScript extends Script {
                         inventorySetup.loadInventory();
                     }
                     Rs2Bank.closeBank();
-                    //inventorySetup.sortInventory();
                     bankingStep = BankingStep.BANK;
                     BOT_STATUS = State.TRAVEL_TO_GORILLAS;
                 } else {
