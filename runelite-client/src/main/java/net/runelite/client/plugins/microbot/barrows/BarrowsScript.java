@@ -452,7 +452,6 @@ public class BarrowsScript extends Script {
 
                 if(inTunnels && shouldBank == false) {
                     Microbot.log("In the tunnels");
-                    WhoisTun = "Unknown";
                     stuckInTunsCheck();
                     tunnelLoopCount++;
                     solvePuzzle();
@@ -520,12 +519,14 @@ public class BarrowsScript extends Script {
                                 Microbot.log("We should bank.");
                                 shouldBank = true;
                                 ChestsOpened++;
+                                WhoisTun = "Unknown";
                             } else {
                                 shouldBank = false;
                                 Rs2Inventory.interact("Barrows teleport", "Break");
                                 sleepUntil(() -> Rs2Player.isAnimating(), Rs2Random.between(1000, 2000));
                                 sleepUntil(() -> !Rs2Player.isAnimating(), Rs2Random.between(3000, 5000));
                                 ChestsOpened++;
+                                WhoisTun = "Unknown";
                             }
                         }
                     }
