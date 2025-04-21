@@ -114,7 +114,6 @@ public class ShootingStarPlugin extends Plugin {
     private ShootingStarPanel panel;
 
     public void fetchStars() {
-        if (!Microbot.isLoggedIn()) return;
         // Create HTTP request to pull in StarData from API
         HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -338,8 +337,6 @@ public class ShootingStarPlugin extends Plugin {
 
     @Subscribe
     public void onGameTick(GameTick event) {
-        if (!Microbot.isLoggedIn()) return;
-
         if (updateListTickCounter >= TICKS_PER_MINUTE) {
             checkDepletedStars();
             updateListTickCounter = 0;
