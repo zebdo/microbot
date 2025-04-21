@@ -459,9 +459,19 @@ public class MossKillerScript extends Script {
     public void walkToMossGiants() {
 
         if (BreakHandlerScript.breakIn <= 180) {
-            Microbot.log("you're gonna break soon, may as well idle at bank");
+            Microbot.log("you're gonna break soon, may as well idle at bank for a couple mins and restock food");
             Rs2Bank.walkToBankAndUseBank();
+            if(Rs2Bank.isOpen()) {Rs2Bank.withdrawAll(FOOD);}
             sleep(150000,180000);
+            return;
+        }
+
+        if (Rs2Walker.getDistanceBetween(Rs2Player.getWorldLocation(), VARROCK_SQUARE) < 10 && Rs2Player.getWorldLocation().getPlane() == 0) {
+            if (!Rs2Inventory.hasItemAmount(SWORDFISH, 15)) {
+                Microbot.log("you're at varrock square and could restock food, let's do that");
+                state = MossKillerState.BANK;
+                return;
+            }
         }
 
 
