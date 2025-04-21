@@ -91,6 +91,17 @@ public interface DemonicGorillaConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "lootMyLootOnly",
+            name = "Only loot my loot",
+            description = "Only loot your own loot",
+            section = lootingSection,
+            position = 3
+    )
+    default boolean lootMyLootOnly() {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "minEatPercent",
             name = "Minimum Health Percent",
             description = "Percentage of health below which the bot will eat food",

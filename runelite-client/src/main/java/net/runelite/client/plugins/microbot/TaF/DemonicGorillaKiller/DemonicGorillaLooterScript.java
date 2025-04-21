@@ -48,7 +48,7 @@ public class DemonicGorillaLooterScript extends Script {
                 1,
                 minFreeSlots,
                 false,
-                false,
+                config.lootMyLootOnly(),
                 "untradeable"
         );
         if (Rs2GroundItem.lootUntradables(untradeableItemsParams)) {
@@ -63,7 +63,7 @@ public class DemonicGorillaLooterScript extends Script {
                 1,
                 minFreeSlots,
                 false,
-                false,
+                config.lootMyLootOnly(),
                 " rune"
         );
         if (Rs2GroundItem.lootItemsBasedOnNames(runesParams)) {
@@ -77,7 +77,7 @@ public class DemonicGorillaLooterScript extends Script {
                 1,
                 minFreeSlots,
                 false,
-                false,
+                config.lootMyLootOnly(),
                 "coins"
         );
         if (Rs2GroundItem.lootCoins(coinsParams)) {
@@ -91,7 +91,7 @@ public class DemonicGorillaLooterScript extends Script {
                 1,
                 minFreeSlots,
                 false,
-                false,
+                config.lootMyLootOnly(),
                 itemsToLoot.trim().split(",")
         );
         if (Rs2GroundItem.lootItemsBasedOnNames(valueParams)) {

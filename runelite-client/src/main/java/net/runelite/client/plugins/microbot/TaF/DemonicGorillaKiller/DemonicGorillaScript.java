@@ -115,7 +115,6 @@ public class DemonicGorillaScript extends Script {
                 rangeGear = new Rs2InventorySetup(config.rangeGear(), mainScheduledFuture);
                 magicGear = new Rs2InventorySetup(config.magicGear(), mainScheduledFuture);
                 meleeGear = new Rs2InventorySetup(config.meleeGear(), mainScheduledFuture);
-                long startTime = System.currentTimeMillis();
                 switch (BOT_STATUS) {
                     case BANKING:
                         handleBanking(config);
@@ -127,9 +126,6 @@ public class DemonicGorillaScript extends Script {
                         handleFighting(config);
                         break;
                 }
-                long endTime = System.currentTimeMillis();
-                long totalTime = endTime - startTime;
-                Microbot.log("Total time for loop [" + ++count +"]: " + totalTime);
             } catch (Exception ex) {
                 logOnceToChat("Error in main loop: " + ex.getMessage());
                 System.out.println("Exception message: " + ex.getMessage());
@@ -200,7 +196,7 @@ public class DemonicGorillaScript extends Script {
         Rs2InventorySetup inventorySetup = new Rs2InventorySetup(config.gearSetup(), mainScheduledFuture);
         switch (bankingStep) {
             case BANK:
-                if (inventorySetup.doesEquipmentMatch() && inventorySetup.doesEquipmentMatch()) {
+                if (inventorySetup.doesInventoryMatch() && inventorySetup.doesEquipmentMatch()) {
                     bankingStep = BankingStep.BANK;
                     BOT_STATUS = State.TRAVEL_TO_GORILLAS;
                     return;
@@ -235,6 +231,7 @@ public class DemonicGorillaScript extends Script {
                         inventorySetup.loadInventory();
                     }
                     Rs2Bank.closeBank();
+                    //inventorySetup.sortInventory();
                     bankingStep = BankingStep.BANK;
                     BOT_STATUS = State.TRAVEL_TO_GORILLAS;
                 } else {
@@ -418,7 +415,7 @@ public class DemonicGorillaScript extends Script {
             }
 
             // Switch defensive prayer if needed
-            if (newDefensivePrayer != null && newDefensivePrayer != currentDefensivePrayer) {
+            if (newDefensivePrayer != null && newDefensivePrayer != currentDefensivePrayer && !Rs2Prayer.isPrayerActive(newDefensivePrayer)) {
                 switchDefensivePrayer(newDefensivePrayer);
             }
 
@@ -465,7 +462,6 @@ public class DemonicGorillaScript extends Script {
     }
 
     private void handleGearSwitching(DemonicGorillaConfig config) {
-        Microbot.log("handleGearSwitching");
         try {
             if (failedCount >= 3) {
                 currentTarget = getTarget(true);
@@ -650,7 +646,6 @@ public class DemonicGorillaScript extends Script {
 
         switch (combatNpcHeadIcon) {
             case RANGED:
-                Microbot.log("Range pray");
                 if (useMelee && useMagic) {
                     var randomizedChoice = Math.random() < 0.5;
                     currentGear = randomizedChoice ? ArmorEquiped.MELEE : ArmorEquiped.MAGIC;
@@ -662,7 +657,6 @@ public class DemonicGorillaScript extends Script {
                 break;
 
             case MAGIC:
-                Microbot.log("Magic pray");
                 if (useRange && useMelee) {
                     var randomizedChoice = Math.random() < 0.5;
                     currentGear = randomizedChoice ? ArmorEquiped.RANGED : ArmorEquiped.MELEE;
@@ -674,7 +668,6 @@ public class DemonicGorillaScript extends Script {
                 break;
 
             case MELEE:
-                Microbot.log("Melee pray");
                 if (useRange && useMagic) {
                     var randomizedChoice = Math.random() < 0.5;
                     currentGear = randomizedChoice ? ArmorEquiped.RANGED : ArmorEquiped.MAGIC;
@@ -685,21 +678,18 @@ public class DemonicGorillaScript extends Script {
                 }
                 break;
         }
-        if (currentGear == ArmorEquiped.MELEE && !meleeGear.doesEquipmentMatch()) {
+        if (currentGear == ArmorEquiped.MELEE) {
             equipGear(meleeGear);
-        } else if (currentGear == ArmorEquiped.MAGIC && !magicGear.doesEquipmentMatch()) {
+        } else if (currentGear == ArmorEquiped.MAGIC) {
             equipGear(magicGear);
-        } else if (currentGear == ArmorEquiped.RANGED && !rangeGear.doesEquipmentMatch()) {
+        } else if (currentGear == ArmorEquiped.RANGED) {
             equipGear(rangeGear);
         }
     }
 
-    private List<String> parseString(String gearString) {
-        return Arrays.asList(gearString.split(","));
-    }
     private void equipGear(Rs2InventorySetup gear) {
         var success = gear.wearEquipment();
-        if (!success) {
+        if (!success && Rs2Inventory.isFull()) {
             logOnceToChat("Failed to equip gear - Inventory full");
             Rs2Player.useFood();
             Rs2Inventory.waitForInventoryChanges(1200);
@@ -770,6 +760,9 @@ public class DemonicGorillaScript extends Script {
         currentDefensivePrayer = null;
         currentOffensivePrayer = null;
         currentOverheadIcon = null;
+        rangeGear = null;
+        magicGear = null;
+        meleeGear = null;
         disableAllPrayers();
         if (mainScheduledFuture != null && !mainScheduledFuture.isCancelled()) {
             mainScheduledFuture.cancel(true);
