@@ -175,7 +175,7 @@ public class BarrowsScript extends Script {
                                 Rs2Walker.walkTo(mound);
                                 if (mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
                                     if(!Rs2Player.isMoving()) {
-                                        sleep(500, 1000);
+                                        sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,200));
                                         if (!Rs2Player.isMoving() && mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
                                             // if we've stood still on the tile for .5 to 1 second break;
                                             break;
