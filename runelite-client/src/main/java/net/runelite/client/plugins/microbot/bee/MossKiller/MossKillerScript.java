@@ -267,6 +267,9 @@ public class MossKillerScript extends Script {
 
         // Check if loot is nearby and pick it up if it's in LOOT_LIST
         for (int lootItem : LOOT_LIST) {
+            if (Rs2GroundItem.exists(lootItem, 7)
+                    && Rs2Inventory.getEmptySlots() == 0) {
+                eatAt(100);}
             if(!Rs2Inventory.isFull() && Rs2GroundItem.interact(lootItem, "Take", 10)){
                 sleep(1000, 3000);
             }
@@ -275,6 +278,9 @@ public class MossKillerScript extends Script {
         // Check if loot is nearby and pick it up if it's in LOOT_LIST
         if (config.alchLoot()) {
             for (int lootItem : ALCHABLES) {
+                if (Rs2GroundItem.exists(lootItem, 7)
+                        && Rs2Inventory.getEmptySlots() == 0) {
+                    eatAt(100);}
                 if (Rs2GroundItem.exists(lootItem, 7) && Rs2Inventory.getEmptySlots() == 0) {
                     eatAt(100);
                     sleepUntil(() -> !Rs2Inventory.isFull());
@@ -662,6 +668,7 @@ public class MossKillerScript extends Script {
 
             // Randomize withdrawal order and add sleep between each to mimic human behavior
             withdrawItemWithRandomSleep(AIR_RUNE, FIRE_RUNE, LAW_RUNE, FOOD);
+            if(config.alchLoot()) {Rs2Bank.withdrawAll(NATURE_RUNE);}
             Rs2Bank.withdrawAll(FOOD);
             sleepUntil(() -> Rs2Inventory.contains(FOOD));
             sleep(500, 1000);
