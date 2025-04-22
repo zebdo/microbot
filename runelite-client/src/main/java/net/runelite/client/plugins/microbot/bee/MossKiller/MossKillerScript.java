@@ -274,7 +274,7 @@ public class MossKillerScript extends Script {
 
         // Check if loot is nearby and pick it up if it's in LOOT_LIST
         if (config.alchLoot()) {
-            for (int lootItem : LOOT_LIST) {
+            for (int lootItem : ALCHABLES) {
                 if (Rs2GroundItem.exists(lootItem, 7) && Rs2Inventory.getEmptySlots() == 0) {
                     eatAt(100);
                     sleepUntil(() -> !Rs2Inventory.isFull());
