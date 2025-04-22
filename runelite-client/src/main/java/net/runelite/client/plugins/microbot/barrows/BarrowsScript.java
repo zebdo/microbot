@@ -911,7 +911,7 @@ public class BarrowsScript extends Script {
             shouldWalk = false;
             Rs2Walker.setTarget(null);
             Rs2PrayerEnum neededprayer = Rs2PrayerEnum.PROTECT_MELEE;
-            if (currentBrother != null && Rs2Walker.canReach(currentBrother.getWorldLocation())) {
+            if (currentBrother != null && Rs2Npc.hasLineOfSight(currentBrother)) {
                 if(currentBrother.getName().contains("Ahrim")){
                     neededprayer = Rs2PrayerEnum.PROTECT_MAGIC;
                 }
