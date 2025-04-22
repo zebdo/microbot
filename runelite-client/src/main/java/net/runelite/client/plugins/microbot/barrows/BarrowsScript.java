@@ -173,6 +173,7 @@ public class BarrowsScript extends Script {
 
                                 // We're not in the mound yet.
                                 Rs2Walker.walkTo(mound);
+                                sleep(300, 600);
                                 if (mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
                                     if(!Rs2Player.isMoving()) {
                                         sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,2000));
@@ -355,17 +356,18 @@ public class BarrowsScript extends Script {
                                 //anti pattern
                                 Rs2Walker.walkTo(tunnelMound);
                                 sleep(300, 600);
-                                if(tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1){
+                                if (tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
                                     if(!Rs2Player.isMoving()) {
-                                        sleep(500,1000);
-                                        if(!Rs2Player.isMoving() && tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
+                                        sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,2000));
+                                        if (!Rs2Player.isMoving() && tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
+                                            // if we've stood still on the tile for 1 to 2 second break;
                                             break;
                                         }
                                     }
                                 } else {
                                     Microbot.log("At the mound, but we can't dig yet.");
                                     Rs2Walker.walkCanvas(tunnelMound);
-                                    sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(750,1500));
+                                    sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(2000,4000));
                                     sleep(300,600);
                                 }
                             }
