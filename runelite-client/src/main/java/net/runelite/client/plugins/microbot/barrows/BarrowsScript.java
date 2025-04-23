@@ -37,6 +37,7 @@ import net.runelite.client.plugins.microbot.util.woodcutting.Rs2Woodcutting;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -47,7 +48,6 @@ public class BarrowsScript extends Script {
     public static boolean inTunnels = false;
     public String WhoisTun = "Unknown";
     private String neededRune = "unknown";
-    private volatile boolean shouldWalk = false;
     private boolean shouldBank = false;
     private int tunnelLoopCount = 0;
     private WorldPoint FirstLoopTile;
@@ -56,6 +56,8 @@ public class BarrowsScript extends Script {
     public static int ChestsOpened = 0;
     private int minRuneAmt;
     public static List<String> barrowsPieces = new ArrayList<>();
+    private ScheduledFuture<?> WalkToTheChestFuture;
+    private WorldPoint Chest = new WorldPoint(3552,9694,0);
 
     public boolean run(BarrowsConfig config) {
         Microbot.enableAutoRunOn = false;
@@ -173,15 +175,19 @@ public class BarrowsScript extends Script {
 
                                 // We're not in the mound yet.
                                 Rs2Walker.walkTo(mound);
+                                sleep(300, 600);
                                 if (mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
-                                    sleep(500,1000);
-                                    if(!Rs2Player.isMoving() && mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
-                                        break;
+                                    if(!Rs2Player.isMoving()) {
+                                        sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,2000));
+                                        if (!Rs2Player.isMoving() && mound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
+                                            // if we've stood still on the tile for 1 to 2 second break;
+                                            break;
+                                        }
                                     }
                                 } else {
                                     Microbot.log("At the mound, but we can't dig yet.");
                                     Rs2Walker.walkCanvas(mound);
-                                    sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(750,1500));
+                                    sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(2000,4000));
                                     sleep(300,600);
                                 }
                             }
@@ -352,17 +358,18 @@ public class BarrowsScript extends Script {
                                 //anti pattern
                                 Rs2Walker.walkTo(tunnelMound);
                                 sleep(300, 600);
-                                if(tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1){
+                                if (tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
                                     if(!Rs2Player.isMoving()) {
-                                        sleep(500,1000);
-                                        if(!Rs2Player.isMoving() && tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
+                                        sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,2000));
+                                        if (!Rs2Player.isMoving() && tunnelMound.distanceTo(Rs2Player.getWorldLocation()) <= 1) {
+                                            // if we've stood still on the tile for 1 to 2 second break;
                                             break;
                                         }
                                     }
                                 } else {
                                     Microbot.log("At the mound, but we can't dig yet.");
                                     Rs2Walker.walkCanvas(tunnelMound);
-                                    sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(750,1500));
+                                    sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(2000,4000));
                                     sleep(300,600);
                                 }
                             }
@@ -458,21 +465,11 @@ public class BarrowsScript extends Script {
                     checkForBrother();
                     eatFood();
                     outOfSupplies();
-                    WorldPoint Chest = new WorldPoint(3552,9694,0);
 
                     //threaded walk because the brother could appear, the puzzle door could be there.
                     if(!Rs2Player.isMoving()) {
-                        if (Rs2Player.getWorldLocation().distanceTo(Chest) > 4) {
-                            shouldWalk = true;
-                            new Thread(() -> {
-                                if (shouldWalk) {
-                                    Rs2Walker.walkTo(Chest);
-                                }
-                            }).start();
-                        }
-                        sleepUntil(() -> Rs2Player.isMoving(), Rs2Random.between(1200, 3000));
+                        startWalkingToTheChest();
                     }
-                    shouldWalk = false;
                     //threaded walk because the brother could appear, the puzzle door could be there.
                     //Moved Rs2Walker.setTarget(null); inside the puzzle solver and bother check.
 
@@ -536,6 +533,7 @@ public class BarrowsScript extends Script {
                     if(!Rs2Bank.isOpen()){
                         //stop the walker
                         Rs2Walker.setTarget(null);
+                        WalkToTheChestFuture.cancel(true);
                         //tele out
                         outOfSupplies();
                         //walk to and open the bank
@@ -787,6 +785,7 @@ public class BarrowsScript extends Script {
                 if(currentTile.equals(FirstLoopTile)){
                     Microbot.log("We seem to be stuck. Resetting the walker");
                     Rs2Walker.setTarget(null);
+                    WalkToTheChestFuture.cancel(true);
                 }
             }
         }
@@ -905,10 +904,10 @@ public class BarrowsScript extends Script {
         Rs2NpcModel currentBrother = null;
         if (hintArrow != null) {
             currentBrother = new Rs2NpcModel(hintArrow);
-            shouldWalk = false;
             Rs2Walker.setTarget(null);
+            WalkToTheChestFuture.cancel(true);
             Rs2PrayerEnum neededprayer = Rs2PrayerEnum.PROTECT_MELEE;
-            if (currentBrother != null) {
+            if (currentBrother != null && Rs2Npc.hasLineOfSight(currentBrother)) {
                 if(currentBrother.getName().contains("Ahrim")){
                     neededprayer = Rs2PrayerEnum.PROTECT_MAGIC;
                 }
@@ -996,6 +995,21 @@ public class BarrowsScript extends Script {
         }
     }
 
+    private void walkToChest(){
+        Rs2Walker.walkTo(Chest);
+    }
+
+    private void startWalkingToTheChest() {
+        if(WalkToTheChestFuture == null || WalkToTheChestFuture.isCancelled() || WalkToTheChestFuture.isDone()) {
+            WalkToTheChestFuture = scheduledExecutorService.scheduleWithFixedDelay(
+                    this::walkToChest,
+                    0,
+                    100,
+                    TimeUnit.MILLISECONDS
+            );
+        }
+    }
+
     public void drinkforgottonbrew() {
             if(Rs2Inventory.contains(it->it!=null&&it.getName().contains("Forgotten brew"))) {
                 if(Rs2Player.getBoostedSkillLevel(Skill.MAGIC) <= (Rs2Player.getRealSkillLevel(Skill.MAGIC) + Rs2Random.between(1,4))) {
@@ -1040,6 +1054,7 @@ public class BarrowsScript extends Script {
         //widget ids are 1638413, 1638415,1638417
         if(Rs2Widget.getWidget(1638413)!=null){
             Rs2Walker.setTarget(null);
+            WalkToTheChestFuture.cancel(true);
             if(Rs2Widget.getWidget(1638413).getModelId() == 6725 || Rs2Widget.getWidget(1638413).getModelId() == 6731
             ||Rs2Widget.getWidget(1638413).getModelId() == 6713||Rs2Widget.getWidget(1638413).getModelId() == 6719){
                 Microbot.log("Solution found");
@@ -1052,6 +1067,7 @@ public class BarrowsScript extends Script {
 
         if(Rs2Widget.getWidget(1638415)!=null){
             Rs2Walker.setTarget(null);
+            WalkToTheChestFuture.cancel(true);
             if(Rs2Widget.getWidget(1638415).getModelId() == 6725 || Rs2Widget.getWidget(1638415).getModelId() == 6731
                     ||Rs2Widget.getWidget(1638415).getModelId() == 6713||Rs2Widget.getWidget(1638415).getModelId() == 6719){
                 Microbot.log("Solution found");
@@ -1064,6 +1080,7 @@ public class BarrowsScript extends Script {
 
         if(Rs2Widget.getWidget(1638417)!=null){
             Rs2Walker.setTarget(null);
+            WalkToTheChestFuture.cancel(true);
             if(Rs2Widget.getWidget(1638417).getModelId() == 6725 || Rs2Widget.getWidget(1638417).getModelId() == 6731
                     ||Rs2Widget.getWidget(1638417).getModelId() == 6713||Rs2Widget.getWidget(1638417).getModelId() == 6719){
                 Microbot.log("Solution found");
@@ -1081,7 +1098,7 @@ public class BarrowsScript extends Script {
         DHAROK ("Dharok the Wretched", new WorldPoint(3574, 3297, 0), Rs2PrayerEnum.PROTECT_MELEE),
         GUTHAN ("Guthan the Infested", new WorldPoint(3576, 3283, 0), Rs2PrayerEnum.PROTECT_MELEE),
         KARIL  ("Karil the Tainted", new WorldPoint(3565, 3276, 0), Rs2PrayerEnum.PROTECT_RANGE),
-        TORAG  ("Torag the Corrupted", new WorldPoint(3553, 3283, 0), Rs2PrayerEnum.PROTECT_MELEE),
+        TORAG  ("Torag the Corrupted", new WorldPoint(3554, 3283, 0), Rs2PrayerEnum.PROTECT_MELEE),
         VERAC  ("Verac the Defiled", new WorldPoint(3557, 3297, 0), Rs2PrayerEnum.PROTECT_MELEE),
         AHRIM  ("Ahrim the Blighted", new WorldPoint(3564, 3290, 0), Rs2PrayerEnum.PROTECT_MAGIC);
 

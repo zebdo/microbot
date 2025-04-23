@@ -114,7 +114,6 @@ public class ShootingStarPlugin extends Plugin {
     private ShootingStarPanel panel;
 
     public void fetchStars() {
-        if (!Microbot.isLoggedIn()) return;
         // Create HTTP request to pull in StarData from API
         HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
@@ -259,8 +258,8 @@ public class ShootingStarPlugin extends Plugin {
     @Override
     protected void startUp() throws AWTException {
         displayAsMinutes = config.isDisplayAsMinutes();
-        hideMembersWorlds = !Login.activeProfile.isMember();
-        hideF2PWorlds = Login.activeProfile.isMember();
+        hideMembersWorlds = !Rs2Player.isInMemberWorld();
+        hideF2PWorlds = Rs2Player.isInMemberWorld();
         useInventorySetups = config.useInventorySetup();
         inventorySetup = config.inventorySetup();
         useNearestHighTierStar = config.useNearestHighTierStar();
@@ -338,8 +337,6 @@ public class ShootingStarPlugin extends Plugin {
 
     @Subscribe
     public void onGameTick(GameTick event) {
-        if (!Microbot.isLoggedIn()) return;
-
         if (updateListTickCounter >= TICKS_PER_MINUTE) {
             checkDepletedStars();
             updateListTickCounter = 0;
