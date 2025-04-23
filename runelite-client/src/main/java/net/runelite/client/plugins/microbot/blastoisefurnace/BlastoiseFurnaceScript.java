@@ -157,9 +157,9 @@ public class BlastoiseFurnaceScript extends Script {
     }
 
     private void handleTax() {
-        System.out.println("Paying noob smithing tax");
+        Microbot.log("Paying noob smithing tax");
         if (!Rs2Bank.isOpen()) {
-            System.out.println("Opening bank");
+            Microbot.log("Opening bank");
             Rs2Bank.openBank();
             sleepUntil(Rs2Bank::isOpen, 20000);
         }
@@ -504,7 +504,7 @@ public class BlastoiseFurnaceScript extends Script {
         Rs2GameObject.interact(ObjectID.CONVEYOR_BELT, "Put-ore-on");
         Rs2Inventory.waitForInventoryChanges(10000);
         if(Rs2Dialogue.hasDialogueText("You must ask the foreman's")){
-            System.out.println("Need to pay the noob tax");
+            Microbot.log("Need to pay the noob tax");
             handleTax();
             Rs2GameObject.interact(ObjectID.CONVEYOR_BELT, "Put-ore-on");
             Rs2Inventory.waitForInventoryChanges(10000);
