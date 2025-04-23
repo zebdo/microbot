@@ -23,15 +23,18 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.game.NPCManager;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.game.WorldService;
+import net.runelite.client.input.MouseManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
+import net.runelite.client.plugins.loottracker.LootTrackerItem;
 import net.runelite.client.plugins.loottracker.LootTrackerPlugin;
 import net.runelite.client.plugins.loottracker.LootTrackerRecord;
 import net.runelite.client.plugins.microbot.configs.SpecialAttackConfigs;
 import net.runelite.client.plugins.microbot.dashboard.PluginRequestModel;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchScript;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
+import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.mouse.Mouse;
@@ -82,6 +85,10 @@ public class Microbot {
     public static boolean enableAutoRunOn = true;
     public static boolean useStaminaPotsIfNeeded = true;
     public static int runEnergyThreshold = 1000;
+    @Getter
+    @Setter
+    @Inject
+    public static MouseManager mouseManager;
     @Getter
     @Setter
     public static NaturalMouse naturalMouse;
@@ -160,6 +167,11 @@ public class Microbot {
 
     @Getter
     public static HashMap<String, Integer> scriptRuntimes = new HashMap<>();
+
+    @Getter
+    @Setter
+    public static Rs2ItemManager rs2ItemManager;
+
 
     public static boolean loggedIn = false;
 
@@ -453,6 +465,29 @@ public class Microbot {
                 .filter(x -> x.getTitle().equalsIgnoreCase(npcName))
                 .findFirst()
                 .orElse(null);
+    }
+
+    /**
+     * Calculates the total GE value of loot records for a specific NPC.
+     * This method uses reflection to access private methods and fields of the LootTrackerItem class.
+     * @param npcName name of the npc to get the loot records for
+     * @return total GE value of the loot records
+     */
+    public static long getAggregateLootRecordsTotalGevalue(String npcName) {
+        LootTrackerRecord record = getAggregateLootRecords(npcName);
+        if (record == null) return 0;
+
+        long totalGeValue = 0;
+        try {
+            LootTrackerItem[] items = record.getItems();
+            for (LootTrackerItem item : items) {;
+                totalGeValue += item.getTotalGePrice();
+            }
+        } catch (Exception e) {
+            log.error("Error calculating total GE value", e);
+        }
+
+        return totalGeValue;
     }
 
     /**
