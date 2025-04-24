@@ -4,9 +4,11 @@ import net.runelite.api.ItemID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigInformation;
 import net.runelite.client.config.ConfigItem;
 
 @ConfigGroup("Rev Killer")
+@ConfigInformation("1. Start fully equipped at the Enclave.<br /><br />Keep runtime low! Rev caves are HEAVILY monitored. <br /><br />Required items: Stamina potions, Ranging potions, Arrows, Sharks, Rings of Dueling, and Amulets of Glory.<br /><br />")
 public interface revKillerConfig extends Config {
 
     @ConfigItem(
