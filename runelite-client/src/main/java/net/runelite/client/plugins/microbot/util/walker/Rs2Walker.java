@@ -764,7 +764,9 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         if (!Rs2Inventory.hasItem("pickaxe")) {
             if (!Rs2Equipment.isWearing("pickaxe")) {
                 Microbot.log("Unable to find pickaxe to mine rockfall");
-                setTarget(null);
+                if (currentTarget.getRegionID() == 14936) {
+                    setTarget(null);
+                }
                 return false;
             }
         }
@@ -1985,7 +1987,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         } else if (lowerCaseItemName.contains("xeric's talisman") ||
                 lowerCaseItemName.contains("slayer ring")) {
             return 4;
-        } else if (lowerCaseItemName.contains("kharedst's memoirs")) {
+        } else if (lowerCaseItemName.contains("kharedst's memoirs") ||
+                   lowerCaseItemName.contains("giantsoul amulet")) {
             return 3;
         } else if (lowerCaseItemName.contains("enchanted lyre")) {
             return 2;

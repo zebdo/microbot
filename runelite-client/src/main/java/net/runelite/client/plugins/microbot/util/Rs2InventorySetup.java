@@ -66,7 +66,7 @@ public class Rs2InventorySetup {
      *
      * @return true if the scheduler is cancelled, false otherwise.
      */
-    private boolean isMainSchedulerCancelled() {
+    public boolean isMainSchedulerCancelled() {
         return _mainScheduler != null && _mainScheduler.isCancelled();
     }
 
@@ -346,7 +346,7 @@ public class Rs2InventorySetup {
      *
      * @return A list of item names that should not be deposited.
      */
-    public List<String> itemsToNotDeposit() {
+    public Map<String, Boolean> itemsToNotDeposit() {
         List<InventorySetupsItem> inventorySetupItems = getInventoryItems();
         List<InventorySetupsItem> equipmentSetupItems = getEquipmentItems();
 
@@ -355,7 +355,12 @@ public class Rs2InventorySetup {
         combined.addAll(inventorySetupItems);
         combined.addAll(equipmentSetupItems);
 
-        return combined.stream().map(InventorySetupsItem::getName).collect(Collectors.toList());
+        return combined.stream()
+                .collect(Collectors.toMap(
+                        InventorySetupsItem::getName,
+                        InventorySetupsItem::isFuzzy,
+                        (existing, replacement) -> existing)
+                );
     }
 
     /**

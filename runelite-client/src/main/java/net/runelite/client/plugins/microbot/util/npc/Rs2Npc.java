@@ -23,6 +23,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+import static net.runelite.api.Perspective.LOCAL_TILE_SIZE;
+
 public class Rs2Npc {
     /**
      * Retrieves an NPC by its index, returning an {@link Rs2NpcModel}.
@@ -100,16 +102,15 @@ public class Rs2Npc {
      * Retrieves a list of NPCs currently interacting with the local player.
      *
      * @return A sorted list of {@link NPC} objects interacting with the local player.
-     * @deprecated Since 1.7.2, use {@link #getNpcsForPlayer(Predicate)} for better integration with {@link Rs2NpcModel}.
      */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static List<NPC> getNpcsForPlayer() {
-        return Microbot.getClient().getNpcs().stream()
-                .filter(x -> x.getInteracting() == Microbot.getClient().getLocalPlayer())
+    public static Stream<Rs2NpcModel> getNpcsForPlayer() {
+        List<Rs2NpcModel> npcs = getNpcs(x -> x.getInteracting() == Microbot.getClient().getLocalPlayer())
                 .sorted(Comparator.comparingInt(value ->
                         value.getLocalLocation().distanceTo(
                                 Microbot.getClient().getLocalPlayer().getLocalLocation())))
                 .collect(Collectors.toList());
+
+        return npcs.stream();
     }
 
     /**
@@ -189,28 +190,6 @@ public class Rs2Npc {
         int scale = npc.getHealthScale();
 
         return (double) ratio / (double) scale * 100;
-    }
-
-    /**
-     * Retrieves a stream of NPCs filtered by their death status.
-     *
-     * <p>This method filters NPCs based on whether they are dead or alive.</p>
-     *
-     * @param isDead {@code true} to retrieve only dead NPCs, {@code false} to retrieve only alive NPCs.
-     * @return A sorted {@link Stream} of {@link NPC} objects that match the specified death status.
-     * @deprecated Since 1.7.2 - Use {@link #getNpcs(Predicate)} for more flexible filtering.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static Stream<NPC> getNpcs(boolean isDead) {
-        List<NPC> npcList = Microbot.getClientThread().runOnClientThreadOptional(() ->
-                Microbot.getClient().getTopLevelWorldView().npcs().stream()
-                        .filter(Objects::nonNull)
-                        .filter(x -> x.getName() != null && isDead == x.isDead())
-                        .sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation())))
-                        .collect(Collectors.toList())
-        ).orElse(new ArrayList());
-
-        return npcList.stream();
     }
 
     /**
@@ -833,6 +812,7 @@ public class Rs2Npc {
             if (Rs2Combat.inCombat()) continue;
             if (npc.isInteracting() && npc.getInteracting() != Microbot.getClient().getLocalPlayer() && !Rs2Player.isInMulti())
                 continue;
+            if (npc.getHealthScale() == 0) return false;
 
             return interact(npc, "attack");
         }
@@ -1227,5 +1207,46 @@ public class Rs2Npc {
     // Walks to the nearest NPC location with the given name
     public static boolean walkToNearestMonster(String name) {
         return walkToNearestMonster(name, 1, false);
+    }
+
+    /**
+     * Determines whether the specified NPC is within the player's current attack range.
+     * <p>
+     * This method will return {@code false} if the NPC or the player's local location
+     * cannot be determined. The effective attack range is calculated by
+     * {@link Rs2Combat#getAttackRange(boolean, boolean)}, taking into account
+     * manual-cast weapons and/or special attacks as specified.
+     *
+     * @param npc                  the target NPC model; may be {@code null}
+     * @param includeManualCast    if {@code true}, include any manual-cast attack range (e.g., magic spells)
+     * @param includeSpecialAttack if {@code true}, include any special-attack range
+     * @return {@code true} if both locations are known and the tile distance between player
+     *         and NPC (using LOCAL_TILE_SIZE) is less than or equal to the computed attack range;
+     *         {@code false} otherwise
+     */
+    public static boolean isInAttackRange(Rs2NpcModel npc, boolean includeManualCast, boolean includeSpecialAttack) {
+        if (npc == null) return false;
+
+        LocalPoint playerLocal = Microbot.getClient().getLocalPlayer().getLocalLocation();
+        LocalPoint npcLocal = npc.getLocalLocation();
+
+        if (npcLocal == null || playerLocal == null) return false;
+
+        int distanceInTiles = playerLocal.distanceTo(npcLocal) / LOCAL_TILE_SIZE;
+        int attackRange = Rs2Combat.getAttackRange(includeManualCast, includeSpecialAttack);
+
+        return distanceInTiles <= attackRange;
+    }
+
+    /**
+     * Determines whether the specified NPC is within the player's basic attack range,
+     * without considering manual-cast weapons or special attacks.
+     *
+     * @param npc the target NPC model; may be {@code null}
+     * @return {@code true} if the NPC is within the default attack range, {@code false} otherwise
+     * @see #isInAttackRange(Rs2NpcModel, boolean, boolean)
+     */
+    public static boolean isInAttackRange(Rs2NpcModel npc) {
+        return isInAttackRange(npc, false, false);
     }
 }
