@@ -197,6 +197,10 @@ public class AntibanPlugin extends Plugin {
         GameState state = event.getGameState();
 
         switch (state) {
+            case LOGIN_SCREEN:
+                if(Rs2AntibanSettings.actionCooldownActive) {
+                    Rs2AntibanSettings.actionCooldownActive = false;
+                }
             case LOGGING_IN:
             case HOPPING:
                 ready = true;
