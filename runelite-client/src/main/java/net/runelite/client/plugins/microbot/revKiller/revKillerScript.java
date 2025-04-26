@@ -95,24 +95,28 @@ public class revKillerScript extends Script {
 
                         if(isPkerAround()){
                             getAwayFromPker();
+                            return;
                         }
 
                         drinkPotion();
 
                         if(isPkerAround()){
                             getAwayFromPker();
+                            return;
                         }
 
                         loot();
 
                         if(isPkerAround()){
                             getAwayFromPker();
+                            return;
                         }
 
                         EatFood();
 
                         if(isPkerAround()){
                             getAwayFromPker();
+                            return;
                         }
 
                         specialAttack();
@@ -121,18 +125,21 @@ public class revKillerScript extends Script {
 
                         if(isPkerAround()){
                             getAwayFromPker();
+                            return;
                         }
 
                         EatFood();
 
                         if(isPkerAround()){
                             getAwayFromPker();
+                            return;
                         }
 
                         loot();
 
                         if(isPkerAround()){
                             getAwayFromPker();
+                            return;
                         }
 
                     }
@@ -209,6 +216,7 @@ public class revKillerScript extends Script {
             if(Rs2Player.getWorldLocation().distanceTo(cave) > 6){
                 if(isPkerAround()){
                     getAwayFromPker();
+                    return;
                 }
                 if(Rs2Walker.walkTo(cave, Rs2Player.getWorldLocation().distanceTo(cave) - (generateRandomNumber(2,5)))){
                     Microbot.log("Walking to cave. with new method.");
@@ -247,6 +255,7 @@ public class revKillerScript extends Script {
             if(WeAreInTheCaves()){
                 if(isPkerAround()){
                     getAwayFromPker();
+                    return;
                 }
                 if(Rs2Walker.walkTo(revimp, Rs2Player.getWorldLocation().distanceTo(revimp) - (generateRandomNumber(2,5)))){
                     Microbot.log("Walking to Revs. with new method.");
