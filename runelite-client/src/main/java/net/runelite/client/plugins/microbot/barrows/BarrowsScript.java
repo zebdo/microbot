@@ -2,8 +2,11 @@ package net.runelite.client.plugins.microbot.barrows;
 
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.plugins.itemcharges.ItemChargeConfig;
+import net.runelite.client.plugins.itemcharges.ItemChargePlugin;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.questhelper.collections.ItemWithCharge;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
@@ -69,6 +72,11 @@ public class BarrowsScript extends Script {
                     }
 
                     inTunnels = false;
+                }
+
+                if (Rs2Player.getQuestState(Quest.HIS_FAITHFUL_SERVANTS) != QuestState.FINISHED) {
+                    Microbot.showMessage("Complete the 'His Faithful Servants' quest for the webwalker to function correctly");
+                    super.shutdown();
                 }
 
                 if(Rs2Magic.getCurrentAutoCastSpell() == null){
@@ -425,7 +433,7 @@ public class BarrowsScript extends Script {
                                 if (Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!")) {
                                     if (Rs2Dialogue.clickOption("Yeah I'm fearless!")) {
                                         sleepUntil(() -> Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730, Rs2Random.between(2500, 6000));
-                                        //all some time for the tunnel to load.
+                                        //allow some time for the tunnel to load.
                                         sleep(1000, 2000);
                                         inTunnels = true;
                                     }
@@ -702,9 +710,10 @@ public class BarrowsScript extends Script {
                         }
 
                         if(Rs2Equipment.get(EquipmentInventorySlot.RING)!=null && Rs2Inventory.contains("Spade") &&
-                                Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())>=10 && Rs2Inventory.get("Barrows teleport").getQuantity() >= 1
-                                && Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") >= 1 &&
-                                Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") >= 2 &&
+                                Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())>=config.minFood() &&
+                                Rs2Inventory.get("Barrows teleport").getQuantity() >= config.minBarrowsTeleports() &&
+                                Rs2Inventory.count("Forgotten brew(4)") + Rs2Inventory.count("Forgotten brew(3)") >= config.minForgottenBrew() &&
+                                Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") >= config.minPrayerPots() &&
                                 Rs2Inventory.get(neededRune).getQuantity()>=config.minRuneAmount()){
                             Microbot.log("We have everything we need. Going back to barrows.");
                             reJfount();
@@ -754,7 +763,7 @@ public class BarrowsScript extends Script {
                 Microbot.log("We don't have a spade.");
             }
             if(Rs2Inventory.count(Rs2Inventory.getInventoryFood().get(0).getName())<2){
-                Microbot.log("We have less than 5 food.");
+                Microbot.log("We have less than 2 food.");
             }
             if((Rs2Inventory.get("Barrows teleport") !=null && Rs2Inventory.get("Barrows teleport").getQuantity() < 1)){
                 Microbot.log("We don't have a barrows teleport.");
@@ -1001,12 +1010,14 @@ public class BarrowsScript extends Script {
 
     private void startWalkingToTheChest() {
         if(WalkToTheChestFuture == null || WalkToTheChestFuture.isCancelled() || WalkToTheChestFuture.isDone()) {
-            WalkToTheChestFuture = scheduledExecutorService.scheduleWithFixedDelay(
-                    this::walkToChest,
-                    0,
-                    100,
-                    TimeUnit.MILLISECONDS
-            );
+            if(inTunnels) {
+                WalkToTheChestFuture = scheduledExecutorService.scheduleWithFixedDelay(
+                        this::walkToChest,
+                        0,
+                        100,
+                        TimeUnit.MILLISECONDS
+                );
+            }
         }
     }
 
@@ -1116,6 +1127,23 @@ public class BarrowsScript extends Script {
         public WorldPoint getHumpWP() { return humpWP; }
         public Rs2PrayerEnum getWhatToPray() { return whatToPray; }
 
+    }
+
+    public enum PoweredStaffs {
+        TRIDENT_OF_THE_SEAS_E ("Trident of the seas (e)", 10);
+
+        private String name;
+
+        private int ChargesLeft;
+
+        PoweredStaffs(String name, int chargesLeft){
+            this.name = name;
+            this.ChargesLeft = chargesLeft;
+        }
+
+        public String getName() { return name; }
+
+        public int getChargesLeft() { return ChargesLeft; }
     }
 
     @Override
