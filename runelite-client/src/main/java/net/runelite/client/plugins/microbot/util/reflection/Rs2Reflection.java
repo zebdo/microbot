@@ -15,29 +15,12 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 public class Rs2Reflection {
     static String animationField = null;
     static Method doAction = null;
-
-    /**
-     * sequence maps to an actor animation
-     * actor can be an npc/player
-     */
-    static final byte INDEX_GARBAGE = -28; // found in Varcs.java
-    static final String INDEX_FIELD = "ab"; // Varcs.java
-    static final String INDEX_CLASS = "es"; // login.java
-    public static final String SESSION_FIELD = "gv"; //AsyncHttpResponse.java
-    public static final String SESSION_CLASS = "ag"; // AsyncHttpResponse.java
-    public static final String CHAR_FIELD = "gl"; //DevicePcmPlayerProvider.java
-    public static final String CHAR_CLASS = "am"; //DevicePcmPlayerProvider.java
-    public static final String DISPLAY_FIELD = "cw"; //Login.java
-    public static final String DISPLAY_CLASS = "dh"; //Login.java
-
-
-    static long animationMult;
+    static long animationMultiplier;
 
     /**
      * Credits to EthanApi
@@ -45,52 +28,94 @@ public class Rs2Reflection {
      * @return
      */
     @SneakyThrows
-    public static int getAnimation(NPC npc) {
+    public static int getAnimation(Rs2NpcModel npc) {
         if (npc == null) {
             return -1;
         }
-        if(animationField ==null|| animationMult ==0){
-            Field[] fields = Arrays.stream(npc.getClass().getSuperclass().getDeclaredFields()).filter(x->x.getType()==int.class&&!Modifier.isFinal(x.getModifiers())&&!Modifier.isStatic(x.getModifiers())).toArray(Field[]::new);
-            boolean[] changed = new boolean[fields.length];
-            int[] values = new int[fields.length];
-            for (int i = 0; i < fields.length; i++) {
-                fields[i].setAccessible(true);
-                values[i] = fields[i].getInt(npc);
-                changed[i] = false;
-            }
-            Random rand = new Random();
-            for (int i = 0; i < 5; i++) {
-                npc.setAnimation(rand.nextInt(Integer.MAX_VALUE));
-                for (int i1 = 0; i1 < values.length; i1++) {
-                    if(values[i1]!=fields[i1].getInt(npc)){
-                        changed[i1] = true;
+        try {
+            // Discover animation field and multiplier if not yet known
+            if (animationField == null || animationMultiplier == 0) {
+                // Gather all candidate int fields
+                Field[] fields = Arrays.stream(
+                                npc.getRuneliteNpc().getClass()
+                                        .getSuperclass()
+                                        .getDeclaredFields()
+                        )
+                        .filter(f -> f.getType() == int.class)
+                        .filter(f -> !Modifier.isFinal(f.getModifiers()))
+                        .filter(f -> !Modifier.isStatic(f.getModifiers()))
+                        .toArray(Field[]::new);
+
+                boolean[] changed = new boolean[fields.length];
+                int[] originalValues = new int[fields.length];
+
+                // Record original values
+                for (int i = 0; i < fields.length; i++) {
+                    fields[i].setAccessible(true);
+                    originalValues[i] = fields[i].getInt(npc.getRuneliteNpc());
+                    changed[i] = false;
+                }
+
+
+                // Probe with random animations
+                for (int i = 0; i < 5; i++) {
+                    int testAnim = (int)Rs2Random.nzRandom();
+                    npc.getRuneliteNpc().setAnimation(testAnim);
+                    for (int j = 0; j < fields.length; j++) {
+                        int newVal = fields[j].getInt(npc.getRuneliteNpc());
+                        if (newVal != originalValues[j]) {
+                            changed[j] = true;
+                        }
                     }
                 }
-            }
-            int animationFieldIndex = -1;
-            for (int i = 0; i < changed.length; i++) {
-                if(changed[i]){
-                    if(animationFieldIndex!=-1){
-                        System.out.println("too many changed");
-                        return -1;
+
+                // Identify the single changed field
+                int fieldIndex = -1;
+                for (int i = 0; i < changed.length; i++) {
+                    if (changed[i]) {
+                        if (fieldIndex != -1) {
+                            Microbot.log("Too many fields changed when detecting animation field.");
+                            return -1;
+                        }
+                        fieldIndex = i;
                     }
-                    animationFieldIndex = i;
+                }
+                if (fieldIndex < 0) {
+                    Microbot.log("Failed to detect animation field.");
+                    return -1;
+                }
+
+                // Cache field name
+                Field animFieldCandidate = fields[fieldIndex];
+                animationField = animFieldCandidate.getName();
+
+                // Discover multiplier by setting field to 1
+                animFieldCandidate.setInt(npc.getRuneliteNpc(), 1);
+                long discoveredMult = npc.getRuneliteNpc().getAnimation();
+                animationMultiplier = discoveredMult;
+                Microbot.log("Discovered animation multiplier: " + discoveredMult);
+
+                // Cleanup accessibility
+                for (Field f : fields) {
+                    f.setAccessible(false);
                 }
             }
-            String fieldName = fields[animationFieldIndex].getName();
-            fields[animationFieldIndex].setInt(npc,1);
-            long multiplier = npc.getAnimation();
-            for (Field field : fields) {
-                field.setAccessible(false);
-            }
-            animationField = fieldName;
-            animationMult = multiplier;
+
+            // Read and compute actual animation
+            Field animation = npc.getRuneliteNpc()
+                    .getClass()
+                    .getSuperclass()
+                    .getDeclaredField(animationField);
+            animation.setAccessible(true);
+            int rawValue = animation.getInt(npc.getRuneliteNpc());
+            animation.setAccessible(false);
+
+            return (int) (rawValue * animationMultiplier);
+
+        } catch (Exception ex) {
+            Microbot.log("Failed to get animation: " + ex.getMessage());
         }
-        Field animation = npc.getClass().getSuperclass().getDeclaredField(animationField);
-        animation.setAccessible(true);
-        int anim = (int) (animation.getInt(npc) * animationMult);
-        animation.setAccessible(false);
-        return anim;
+        return -1000;
     }
 
     @SneakyThrows
@@ -247,55 +272,5 @@ public class Rs2Reflection {
         }
         return null;
     }
-
-
-
-    /**
-     * Login with another jagex account without restarting client
-     * @param login
-     * @param account
-     */
-    public static void setLoginWithJagexAccount(boolean login, Account account) {
-        Microbot.getClientThread().invokeLater(() -> {
-            if (Microbot.getClient().getGameState() != GameState.LOGIN_SCREEN) {
-                return;
-            }
-
-            try {
-                //set loginIndex to login screen
-                Class<?> paramComposition = Class.forName(INDEX_CLASS, true, Microbot.getClient().getClass().getClassLoader());
-                Method updateLoginIndex = paramComposition.getDeclaredMethod(INDEX_FIELD, int.class, byte.class);
-                updateLoginIndex.setAccessible(true);
-                updateLoginIndex.invoke(null,  10, INDEX_GARBAGE);
-
-                Class<?> AsyncHttpResponseClass = Class.forName(SESSION_CLASS, true, Microbot.getClient().getClass().getClassLoader());
-                Field sessionIdField = AsyncHttpResponseClass.getDeclaredField(SESSION_FIELD);
-                sessionIdField.setAccessible(true);
-                sessionIdField.set(null, account.getSessionId());
-
-                Class<?> DevicePcmPlayerProviderClass = Class.forName(CHAR_CLASS, true, Microbot.getClient().getClass().getClassLoader());
-                Field characterIdField = DevicePcmPlayerProviderClass.getDeclaredField(CHAR_FIELD);
-                characterIdField.setAccessible(true);
-                characterIdField.set(null, account.getAccountId());
-
-                Class<?> LoginClass = Class.forName(DISPLAY_CLASS, true, Microbot.getClient().getClass().getClassLoader());
-                Field displayNameField = LoginClass.getDeclaredField(DISPLAY_FIELD);
-                displayNameField.setAccessible(true);
-                displayNameField.set(null, account.getDisplayName());
-
-                System.setProperty("JX_CHARACTER_ID", account.getAccountId());
-                System.setProperty("JX_SESSION_ID", account.getSessionId());
-                System.setProperty("JX_DISPLAY_NAME", account.getDisplayName());
-
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-
-            if (login) {
-                new Login("", "");
-            }
-        });
-    }
-
 }
 
