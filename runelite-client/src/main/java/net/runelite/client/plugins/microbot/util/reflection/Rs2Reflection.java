@@ -15,6 +15,7 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 public class Rs2Reflection {
@@ -25,7 +26,6 @@ public class Rs2Reflection {
      * sequence maps to an actor animation
      * actor can be an npc/player
      */
-    static int animationMultiplier = 666159709; //can be found in actor.java (int sequence)
     static final byte INDEX_GARBAGE = -28; // found in Varcs.java
     static final String INDEX_FIELD = "ab"; // Varcs.java
     static final String INDEX_CLASS = "es"; // login.java
@@ -37,56 +37,60 @@ public class Rs2Reflection {
     public static final String DISPLAY_CLASS = "dh"; //Login.java
 
 
+    static long animationMult;
+
     /**
      * Credits to EthanApi
      * @param npc
      * @return
      */
     @SneakyThrows
-    public static int getAnimation(Rs2NpcModel npc) {
+    public static int getAnimation(NPC npc) {
         if (npc == null) {
             return -1;
         }
-        try {
-            if (animationField == null) {
-                for (Field declaredField : npc.getRuneliteNpc().getClass().getSuperclass().getDeclaredFields()) {
-                    if (declaredField == null) {
-                        continue;
+        if(animationField ==null|| animationMult ==0){
+            Field[] fields = Arrays.stream(npc.getClass().getSuperclass().getDeclaredFields()).filter(x->x.getType()==int.class&&!Modifier.isFinal(x.getModifiers())&&!Modifier.isStatic(x.getModifiers())).toArray(Field[]::new);
+            boolean[] changed = new boolean[fields.length];
+            int[] values = new int[fields.length];
+            for (int i = 0; i < fields.length; i++) {
+                fields[i].setAccessible(true);
+                values[i] = fields[i].getInt(npc);
+                changed[i] = false;
+            }
+            Random rand = new Random();
+            for (int i = 0; i < 5; i++) {
+                npc.setAnimation(rand.nextInt(Integer.MAX_VALUE));
+                for (int i1 = 0; i1 < values.length; i1++) {
+                    if(values[i1]!=fields[i1].getInt(npc)){
+                        changed[i1] = true;
                     }
-                    declaredField.setAccessible(true);
-                    if (declaredField.getType() != int.class) {
-                        continue;
-                    }
-                    if (Modifier.isFinal(declaredField.getModifiers())) {
-                        continue;
-                    }
-                    if (Modifier.isStatic(declaredField.getModifiers())) {
-                        continue;
-                    }
-                    int value = declaredField.getInt(npc.getRuneliteNpc());
-                    declaredField.setInt(npc.getRuneliteNpc(), 4795789);
-                    if (npc.getRuneliteNpc().getAnimation() == animationMultiplier * 4795789) {
-                        animationField = declaredField.getName();
-                        declaredField.setInt(npc.getRuneliteNpc(), value);
-                        declaredField.setAccessible(false);
-                        break;
-                    }
-                    declaredField.setInt(npc.getRuneliteNpc(), value);
-                    declaredField.setAccessible(false);
                 }
             }
-            if (animationField == null) {
-                return -1;
+            int animationFieldIndex = -1;
+            for (int i = 0; i < changed.length; i++) {
+                if(changed[i]){
+                    if(animationFieldIndex!=-1){
+                        System.out.println("too many changed");
+                        return -1;
+                    }
+                    animationFieldIndex = i;
+                }
             }
-            Field animation = npc.getRuneliteNpc().getClass().getSuperclass().getDeclaredField(animationField);
-            animation.setAccessible(true);
-            int anim = animation.getInt(npc.getRuneliteNpc()) * animationMultiplier;
-            animation.setAccessible(false);
-            return anim;
-        } catch(Exception ex) {
-            Microbot.log("Failed to get animation : " + ex.getMessage());
+            String fieldName = fields[animationFieldIndex].getName();
+            fields[animationFieldIndex].setInt(npc,1);
+            long multiplier = npc.getAnimation();
+            for (Field field : fields) {
+                field.setAccessible(false);
+            }
+            animationField = fieldName;
+            animationMult = multiplier;
         }
-        return -1000;
+        Field animation = npc.getClass().getSuperclass().getDeclaredField(animationField);
+        animation.setAccessible(true);
+        int anim = (int) (animation.getInt(npc) * animationMult);
+        animation.setAccessible(false);
+        return anim;
     }
 
     @SneakyThrows
