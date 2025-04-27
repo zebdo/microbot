@@ -277,11 +277,11 @@ public class revKillerScript extends Script {
             if(Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) >= 20 && Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 30) {
                 while (Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) >= 20 && Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 30) {
                     if (Rs2Equipment.useAmuletAction(JewelleryLocationEnum.EDGEVILLE)) {
-                        sleepUntil(()-> TeleTimerIsThere(),generateRandomNumber(250,500));
-                        sleepUntil(()-> !TeleTimerIsThere(),generateRandomNumber(1300,1500));
+                        sleepUntil(()-> TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(250,500));
+                        sleepUntil(()-> !TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(1300,1500));
                         if(Rs2Player.getAnimation() == 714){
                             //we successfully teleported out
-                            sleepUntil(()-> !Rs2Player.isAnimating(),generateRandomNumber(4000,6000));
+                            sleepUntil(()-> !Rs2Player.isAnimating() && Rs2Player.getWorldLocation().distanceTo(BankLocation.EDGEVILLE.getWorldPoint()) < 30,generateRandomNumber(4000,6000));
                         }
                         if (Rs2Player.getWorldLocation().distanceTo(BankLocation.EDGEVILLE.getWorldPoint()) < 30) {
                             if(Rs2Player.isInCombat()){
@@ -303,11 +303,11 @@ public class revKillerScript extends Script {
             if(Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 20) {
                 while (Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 20) {
                     if (Rs2Equipment.useRingAction(JewelleryLocationEnum.FEROX_ENCLAVE)) {
-                        sleepUntil(()-> TeleTimerIsThere(),generateRandomNumber(250,500));
-                        sleepUntil(()-> !TeleTimerIsThere(),generateRandomNumber(1300,1500));
+                        sleepUntil(()-> TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(250,500));
+                        sleepUntil(()-> !TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(1300,1500));
                         if(Rs2Player.getAnimation() == 714){
                             //we successfully teleported out
-                            sleepUntil(()-> !Rs2Player.isAnimating(),generateRandomNumber(4000,6000));
+                            sleepUntil(()-> !Rs2Player.isAnimating() && Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) < 30,generateRandomNumber(4000,6000));
                         }
                         if (Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) < 30) {
                             if(Rs2Player.isInCombat()){
