@@ -513,22 +513,57 @@ public class revKillerScript extends Script {
     }
 
     public void loot(){
-        if(Rs2GroundItem.isItemBasedOnValueOnGround(500,12)) {
-            Microbot.log("We got a drop!");
-            while(Rs2GroundItem.isItemBasedOnValueOnGround(500,12)){
-                if(!super.isRunning()){
-                    break;
+        if(Rs2GroundItem.isItemBasedOnValueOnGround(500,10)){
+            RS2Item whattoloot = null;
+            RS2Item[] groundItems = Rs2GroundItem.getAll(10);
+
+            for (RS2Item rs2Item : groundItems) {
+
+                if (rs2Item == null || rs2Item.getItem() == null || rs2Item.getTileItem() == null) {
+                    continue;
                 }
-                if(Rs2GroundItem.lootItemBasedOnValue(500, 12)){
-                    sleepUntil(()-> Rs2Player.isMoving() || isPkerAround(), Rs2Random.between(1000,2000));
-                    sleepUntil(()-> !Rs2Player.isMoving() || isPkerAround(), Rs2Random.between(3000,5000));
-                    sleep(250,600);
+
+                if (rs2Item.getItem().getId() == 0 || rs2Item.getItem().getPrice() == 0) {
+                    continue;
                 }
-                if(isPkerAround()){
-                    break;
+
+                int totalPrice = rs2Item.getTileItem().getQuantity() * rs2Item.getItem().getPrice();
+
+                if(rs2Item.getItem().getName().contains("arrow")){
+                    if(totalPrice >= generateRandomNumber(1000,2000)){
+                        whattoloot=rs2Item;
+                        break;// avoid picking up arrows X at a time
+                    }
                 }
-                if(!Rs2GroundItem.isItemBasedOnValueOnGround(500,12)){
-                    break;
+                if(!rs2Item.getItem().getName().contains("arrow")) {
+                    if (totalPrice >= 500) {
+                        whattoloot = rs2Item;
+                        break;// This is the item that matches the value criteria
+                    }
+                }
+            }
+
+            if(whattoloot!=null){
+                Microbot.log("Looting with new method");
+                int attempts = 0;
+                int tried = generateRandomNumber(2,10);
+                while(attempts<=tried && Rs2GroundItem.exists(whattoloot.getItem().getId(), 10)){
+                    if(Rs2GroundItem.loot(whattoloot.getItem().getId())){
+                        sleepUntil(() -> Rs2Player.isMoving() || isPkerAround(), generateRandomNumber(350, 1000));
+                        if(Rs2Player.isMoving()) {
+                            sleepUntil(() -> !Rs2Player.isMoving() || isPkerAround(), generateRandomNumber(2000, 3000));
+                        }
+                    }
+                    if(isPkerAround()){
+                        break;
+                    }
+                    if(!super.isRunning()){
+                        break;
+                    }
+                    if(!Rs2GroundItem.exists(whattoloot.getItem().getId(), 10)){
+                        break;
+                    }
+                    attempts++;
                 }
             }
         }
