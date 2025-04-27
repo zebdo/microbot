@@ -279,6 +279,10 @@ public class revKillerScript extends Script {
                     if (Rs2Equipment.useAmuletAction(JewelleryLocationEnum.EDGEVILLE)) {
                         sleepUntil(()-> TeleTimerIsThere(),generateRandomNumber(250,500));
                         sleepUntil(()-> !TeleTimerIsThere(),generateRandomNumber(1300,1500));
+                        if(Rs2Player.getAnimation() == 714){
+                            //we successfully teleported out
+                            sleepUntil(()-> !Rs2Player.isAnimating(),generateRandomNumber(4000,6000));
+                        }
                         if (Rs2Player.getWorldLocation().distanceTo(BankLocation.EDGEVILLE.getWorldPoint()) < 30) {
                             if(Rs2Player.isInCombat()){
                                 sleepUntil(()-> !Rs2Player.isInCombat(), generateRandomNumber(10000,15000));
@@ -301,6 +305,10 @@ public class revKillerScript extends Script {
                     if (Rs2Equipment.useRingAction(JewelleryLocationEnum.FEROX_ENCLAVE)) {
                         sleepUntil(()-> TeleTimerIsThere(),generateRandomNumber(250,500));
                         sleepUntil(()-> !TeleTimerIsThere(),generateRandomNumber(1300,1500));
+                        if(Rs2Player.getAnimation() == 714){
+                            //we successfully teleported out
+                            sleepUntil(()-> !Rs2Player.isAnimating(),generateRandomNumber(4000,6000));
+                        }
                         if (Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) < 30) {
                             if(Rs2Player.isInCombat()){
                                 sleepUntil(()-> !Rs2Player.isInCombat(), generateRandomNumber(10000,15000));
