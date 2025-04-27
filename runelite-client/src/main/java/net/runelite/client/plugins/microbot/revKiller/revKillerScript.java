@@ -254,6 +254,9 @@ public class revKillerScript extends Script {
             Microbot.log("At least we're not teleblocked.");
             if(Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) > 30) {
                 while (Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) > 30) {
+                    if (!super.isRunning()) {
+                        break;
+                    }
                     Microbot.log("Teleing to bank");
                     WorldPoint safe1 = (new WorldPoint(3199, 10071, 0));
                     WorldPoint safe2 = (new WorldPoint(3226, 10067, 0));
@@ -269,13 +272,13 @@ public class revKillerScript extends Script {
                     if (Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 30) {
                         break;
                     }
-                    if (!super.isRunning()) {
-                        break;
-                    }
                 }
             }
             if(Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) >= 20 && Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 30) {
                 while (Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) >= 20 && Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 30) {
+                    if (!super.isRunning()) {
+                        break;
+                    }
                     if (Rs2Equipment.useAmuletAction(JewelleryLocationEnum.EDGEVILLE)) {
                         sleepUntil(()-> TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(250,500));
                         sleepUntil(()-> !TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(1300,1500));
@@ -295,14 +298,14 @@ public class revKillerScript extends Script {
                     if (Rs2Player.isTeleBlocked()) {
                         break;
                     }
-                    if (!super.isRunning()) {
-                        break;
-                    }
                 }
                 return;
             }
             if(Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 20) {
                 while (Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 20) {
+                    if (!super.isRunning()) {
+                        break;
+                    }
                     if (Rs2Equipment.useRingAction(JewelleryLocationEnum.FEROX_ENCLAVE)) {
                         sleepUntil(()-> TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(250,500));
                         sleepUntil(()-> !TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(1300,1500));
@@ -319,9 +322,6 @@ public class revKillerScript extends Script {
                             break;
                         }
                     }
-                    if (!super.isRunning()) {
-                        break;
-                    }
                     if (Rs2Player.isTeleBlocked()) {
                         break;
                     }
@@ -330,14 +330,14 @@ public class revKillerScript extends Script {
         } else {
             Microbot.log("Running from the pker");
             while(Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) > 10){
+                if (!super.isRunning()) {
+                    Rs2Walker.disableTeleports = false;
+                    break;
+                }
                 EatFood();
                 Rs2Walker.disableTeleports = true;
                 Rs2Walker.walkTo(BankLocation.FEROX_ENCLAVE.getWorldPoint());
                 Rs2Walker.disableTeleports = false;
-                if(!super.isRunning()){
-                    Rs2Walker.disableTeleports = false;
-                    break;
-                }
                 if(Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) < 10){
                     Rs2Walker.disableTeleports = false;
                     break;
@@ -441,11 +441,11 @@ public class revKillerScript extends Script {
                 int attempts = 0;
                 int tries = generateRandomNumber(2,6);
                 while(Rs2Player.getWorld() != goodworldInt){
-                    if(Microbot.hopToWorld(goodworldInt)){
-                        sleepUntil(() -> !Microbot.isHopping() || isPkerAround() || Rs2Player.getWorld() == goodworldInt, generateRandomNumber(5000, 10000));
-                    }
                     if (!super.isRunning()) {
                         break;
+                    }
+                    if(Microbot.hopToWorld(goodworldInt)){
+                        sleepUntil(() -> !Microbot.isHopping() || isPkerAround() || Rs2Player.getWorld() == goodworldInt, generateRandomNumber(5000, 10000));
                     }
                     if(Rs2Player.getWorld() == goodworldInt){
                         break;
@@ -549,6 +549,9 @@ public class revKillerScript extends Script {
                             int attempts = 0;
                             int tried = generateRandomNumber(2,10);
                             while(attempts<=tried && Rs2GroundItem.exists(whattoloot.getItem().getId(), 10)){
+                                if (!super.isRunning()) {
+                                    break;
+                                }
                                 if(Rs2GroundItem.loot(whattoloot.getItem().getId())){
                                     sleepUntil(() -> Rs2Player.isMoving() || isPkerAround(), generateRandomNumber(350, 1000));
                                     if(Rs2Player.isMoving()) {
@@ -556,9 +559,6 @@ public class revKillerScript extends Script {
                                     }
                                 }
                                 if(isPkerAround()){
-                                    break;
-                                }
-                                if(!super.isRunning()){
                                     break;
                                 }
                                 if(!Rs2GroundItem.exists(whattoloot.getItem().getId(), 10)){
@@ -579,6 +579,9 @@ public class revKillerScript extends Script {
                             int attempts = 0;
                             int tried = generateRandomNumber(2,10);
                             while(attempts<=tried && Rs2GroundItem.exists(whattoloot.getItem().getId(), 10)){
+                                if (!super.isRunning()) {
+                                    break;
+                                }
                                 if(Rs2GroundItem.loot(whattoloot.getItem().getId())){
                                     sleepUntil(() -> Rs2Player.isMoving() || isPkerAround(), generateRandomNumber(350, 1000));
                                     if(Rs2Player.isMoving()) {
@@ -586,9 +589,6 @@ public class revKillerScript extends Script {
                                     }
                                 }
                                 if(isPkerAround()){
-                                    break;
-                                }
-                                if(!super.isRunning()){
                                     break;
                                 }
                                 if(!Rs2GroundItem.exists(whattoloot.getItem().getId(), 10)){
