@@ -533,6 +533,11 @@ public class revKillerScript extends Script {
                     continue;
                 }
 
+                Microbot.log("Item found: "+rs2Item.getItem().getName());
+                Microbot.log("Item's ID': "+rs2Item.getItem().getId());
+                Microbot.log("Item's Price': "+rs2Item.getItem().getPrice());
+                Microbot.log("Item's Quantity': "+rs2Item.getTileItem().getQuantity());
+
                 int totalPrice = rs2Item.getTileItem().getQuantity() * rs2Item.getItem().getPrice();
 
                 if(rs2Item.getItem().getName().contains("arrow")){
@@ -566,7 +571,7 @@ public class revKillerScript extends Script {
                 }
 
                 if(!rs2Item.getItem().getName().contains("arrow")) {
-                    if (totalPrice >= 500) {
+                    if (totalPrice >= 500 || rs2Item.getItem().getName().contains("Blighted")) {
                         whattoloot = rs2Item;
                         if(whattoloot!=null){
                             Microbot.log("Looting with new method");
@@ -884,7 +889,7 @@ public class revKillerScript extends Script {
                             NameOfPlayersWeapon.contains("sceptre") || NameOfPlayersWeapon.contains("ballista") ||
                                 NameOfPlayersWeapon.contains("crossbow") || NameOfPlayersWeapon.contains("Dragon dagger")
                     || NameOfPlayersWeapon.contains("Dragon claws")
-                    || NameOfPlayersWeapon.equals("Dark bow") || NameOfPlayersWeapon.equals("Webweaver bow")){
+                    || NameOfPlayersWeapon.equals("Dark bow")){
                 Microbot.log("This player is weilding a "+NameOfPlayersWeapon+" which is used to pk so we're outy.");
                 return true;
             }
