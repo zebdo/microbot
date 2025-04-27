@@ -767,7 +767,66 @@ public class revKillerScript extends Script {
 
     public boolean areWeEquipped(){
 
-        if(Rs2Equipment.get(EquipmentInventorySlot.AMMO)!=null) {
+public boolean areWeEquipped() {
+    if (Rs2Equipment.get(EquipmentInventorySlot.AMMO) == null) {
+        Microbot.log("We have no ammo!");
+        return false;
+    }
+
+    if (Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity() < LowOnArrowsCount) {
+        Microbot.log("We don't have enough ammo!");
+        return false;
+    }
+
+    if (!Rs2Inventory.contains(it -> it != null && it.getName().contains("Stamina"))) {
+        Microbot.log("We have no stam!");
+        return false;
+    }
+
+    if (!Rs2Inventory.contains(it -> it != null && it.getName().contains("Ranging"))) {
+        Microbot.log("We have no Ranging potion!");
+        return false;
+    }
+
+    if (!Rs2Inventory.contains("Shark")) {
+        Microbot.log("We're out of sharks!");
+        return false;
+    }
+
+    if (Rs2Inventory.count("Shark") < 2) {
+        Microbot.log("We have less than 2 sharks!");
+        return false;
+    }
+
+    if (Rs2Equipment.get(EquipmentInventorySlot.RING) == null) {
+        Microbot.log("ring is null");
+        return false;
+    }
+
+    if (!Rs2Equipment.get(EquipmentInventorySlot.RING).getName().contains("dueling")) {
+        Microbot.log("We don't have our ring of dueling");
+        return false;
+    }
+
+    if (isItTimeToGo()) {
+        Microbot.log("We have too much loot! Banking");
+        return false;
+    }
+
+    if (Rs2Equipment.get(EquipmentInventorySlot.AMULET) == null) {
+        Microbot.log("amulet is null");
+        return false;
+    }
+
+    if (!Rs2Equipment.get(EquipmentInventorySlot.AMULET).getName().contains("Amulet of glory(")) {
+        Microbot.log("amulet is not charged");
+        return false;
+    }
+
+    Microbot.log("We're fully equipped and ready to go.");
+    return true;
+}
+
             if (Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity() >= LowOnArrowsCount) {
                 if (Rs2Inventory.contains(it -> it != null && it.getName().contains("Stamina"))) {
                     if (Rs2Inventory.contains(it -> it != null && it.getName().contains("Ranging"))) {
