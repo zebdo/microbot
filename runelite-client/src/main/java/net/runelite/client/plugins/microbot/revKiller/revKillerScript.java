@@ -876,22 +876,29 @@ public class revKillerScript extends Script {
 
         List<Rs2PlayerModel> playerlist = new ArrayList<Rs2PlayerModel>();
         playerlist.addAll(Rs2Player.getPlayersInCombatLevelRange());
+        List<String> weapons = Arrays.asList(
+                "staff", "shadow", "wand", "sceptre", "ballista",
+                "crossbow", "dragon dagger", "dragon claws", "dark bow"
+        );
 
         for (Rs2PlayerModel player : playerlist) {
             Microbot.log("There may be a pker around us "+player.getName());
 
             String NameOfPlayersWeapon = Rs2Player.getPlayerEquipmentNames(player).get(KitType.WEAPON);
 
+            if(NameOfPlayersWeapon == null){
+                continue;
+            }
+
+            String lowercaseWeapon = NameOfPlayersWeapon.toLowerCase();
+
             Microbot.log("They have a "+NameOfPlayersWeapon);
 
-            if(NameOfPlayersWeapon.contains("Staff") || NameOfPlayersWeapon.contains("staff")
-                    || NameOfPlayersWeapon.contains("shadow") || NameOfPlayersWeapon.contains("wand") ||
-                            NameOfPlayersWeapon.contains("sceptre") || NameOfPlayersWeapon.contains("ballista") ||
-                                NameOfPlayersWeapon.contains("crossbow") || NameOfPlayersWeapon.contains("Dragon dagger")
-                    || NameOfPlayersWeapon.contains("Dragon claws")
-                    || NameOfPlayersWeapon.equals("Dark bow")){
-                Microbot.log("This player is weilding a "+NameOfPlayersWeapon+" which is used to pk so we're outy.");
-                return true;
+            for (String weapon : weapons) {
+                if (lowercaseWeapon.contains(weapon) || lowercaseWeapon.equals(weapon)) {
+                    Microbot.log("This player is wielding a " + NameOfPlayersWeapon + " which is used to pk so we're outy.");
+                    return true;
+                }
             }
 
             if ((player.getInteracting() != null) && (player.getInteracting().equals(Rs2Player.getLocalPlayer()))) {
