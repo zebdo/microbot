@@ -41,6 +41,7 @@ import net.runelite.http.api.worlds.WorldType;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -66,6 +67,9 @@ public class revKillerScript extends Script {
     int LowOnArrowsCount = generateRandomNumber(30,60);
     List<World> filteredWorlds = new ArrayList<>();
     long randomdelay = generateRandomNumber(350,1000);
+    private ScheduledFuture<?> checkForPKerFuture;
+
+
     public boolean run(revKillerConfig config) {
         this.config = config;
         Microbot.enableAutoRunOn = false;
@@ -86,6 +90,10 @@ public class revKillerScript extends Script {
 
                 if(areWeEquipped()){
 
+                    if(checkForPKerFuture == null || checkForPKerFuture.isDone() || checkForPKerFuture.isCancelled()){
+                        startPkerDetection();
+                    }
+
                     if(Rs2Player.getWorldLocation().distanceTo(revimp)>10){
 
                         WalkToRevs();
@@ -94,54 +102,21 @@ public class revKillerScript extends Script {
 
                         equipArrows();
 
-                        if(isPkerAround()){
-                            getAwayFromPker();
-                            return;
-                        }
-
                         drinkPotion();
 
-                        if(isPkerAround()){
-                            getAwayFromPker();
-                            return;
-                        }
-
                         loot();
-
-                        if(isPkerAround()){
-                            getAwayFromPker();
-                            return;
-                        }
 
                         EatFood();
 
-                        if(isPkerAround()){
-                            getAwayFromPker();
-                            return;
-                        }
-
                         specialAttack();
+
                         fightrev();
-                        specialAttack();
 
-                        if(isPkerAround()){
-                            getAwayFromPker();
-                            return;
-                        }
+                        specialAttack();
 
                         EatFood();
 
-                        if(isPkerAround()){
-                            getAwayFromPker();
-                            return;
-                        }
-
                         loot();
-
-                        if(isPkerAround()){
-                            getAwayFromPker();
-                            return;
-                        }
 
                     }
                 }
@@ -404,6 +379,22 @@ public class revKillerScript extends Script {
                 sleepUntil(()-> isPkerAround(), generateRandomNumber(0,1200));
                 hopToNewWorld();
             }
+        }
+    }
+
+    private void startPkerDetection() {
+        Microbot.log("PKer detection started");
+        checkForPKerFuture = scheduledExecutorService.scheduleWithFixedDelay(
+                this::futurePKCheck,
+                0,
+                100,
+                TimeUnit.MILLISECONDS
+        );
+    }
+
+    public void futurePKCheck(){
+        if(isPkerAround()){
+            getAwayFromPker();
         }
     }
 
