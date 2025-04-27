@@ -299,6 +299,7 @@ public class revKillerScript extends Script {
                         break;
                     }
                 }
+                return;
             }
             if(Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 20) {
                 while (Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 20) {
