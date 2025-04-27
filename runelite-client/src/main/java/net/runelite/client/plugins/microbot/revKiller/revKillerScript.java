@@ -39,6 +39,7 @@ import net.runelite.http.api.worlds.WorldResult;
 import net.runelite.http.api.worlds.WorldType;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -512,47 +513,22 @@ public class revKillerScript extends Script {
     }
 
     public void loot(){
-        if(Rs2GroundItem.isItemBasedOnValueOnGround(500,12)){
-            RS2Item whattoloot = null;
-            RS2Item[] groundItems = Rs2GroundItem.getAll(12);
-
-            for (RS2Item rs2Item : groundItems) {
-                int totalPrice = Microbot.getItemManager().getItemPrice(rs2Item.getItem().getId()) * rs2Item.getTileItem().getQuantity();
-                if(rs2Item.getItem().getName().contains("arrow")){
-                    if(totalPrice >= generateRandomNumber(1000,2000)){
-                        whattoloot=rs2Item;
-                        break;// avoid picking up arrows X at a time
-                    }
+        if(Rs2GroundItem.isItemBasedOnValueOnGround(500,12)) {
+            Microbot.log("We got a drop!");
+            while(Rs2GroundItem.isItemBasedOnValueOnGround(500,12)){
+                if(!super.isRunning()){
+                    break;
                 }
-                if(!rs2Item.getItem().getName().contains("arrow")) {
-                    if (totalPrice >= 500) {
-                        whattoloot = rs2Item;
-                        break;// This is the item that matches the value criteria
-                    }
+                if(Rs2GroundItem.lootItemBasedOnValue(500, 12)){
+                    sleepUntil(()-> Rs2Player.isMoving() || isPkerAround(), Rs2Random.between(1000,2000));
+                    sleepUntil(()-> !Rs2Player.isMoving() || isPkerAround(), Rs2Random.between(3000,5000));
+                    sleep(250,600);
                 }
-            }
-
-            if(whattoloot!=null){
-                Microbot.log("Looting with new method");
-                int attempts = 0;
-                int tried = generateRandomNumber(2,10);
-                while(attempts<=tried && Rs2GroundItem.exists(whattoloot.getItem().getId(), 12)){
-                    if(Rs2GroundItem.loot(whattoloot.getItem().getId())){
-                        sleepUntil(() -> Rs2Player.isMoving() || isPkerAround(), generateRandomNumber(350, 1000));
-                        if(Rs2Player.isMoving()) {
-                            sleepUntil(() -> !Rs2Player.isMoving() || isPkerAround(), generateRandomNumber(2000, 3000));
-                        }
-                    }
-                    if(isPkerAround()){
-                        break;
-                    }
-                    if(!super.isRunning()){
-                        break;
-                    }
-                    if(!Rs2GroundItem.exists(whattoloot.getItem().getId(), 12)){
-                        break;
-                    }
-                    attempts++;
+                if(isPkerAround()){
+                    break;
+                }
+                if(!Rs2GroundItem.isItemBasedOnValueOnGround(500,12)){
+                    break;
                 }
             }
         }
@@ -765,9 +741,8 @@ public class revKillerScript extends Script {
         return false;
     }
 
-    public boolean areWeEquipped(){
+    public boolean areWeEquipped() {
 
-public boolean areWeEquipped() {
     if (Rs2Equipment.get(EquipmentInventorySlot.AMMO) == null) {
         Microbot.log("We have no ammo!");
         return false;
@@ -825,57 +800,9 @@ public boolean areWeEquipped() {
 
     Microbot.log("We're fully equipped and ready to go.");
     return true;
-}
 
-            if (Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity() >= LowOnArrowsCount) {
-                if (Rs2Inventory.contains(it -> it != null && it.getName().contains("Stamina"))) {
-                    if (Rs2Inventory.contains(it -> it != null && it.getName().contains("Ranging"))) {
-                        if (Rs2Inventory.contains("Shark")) {
-                            if (Rs2Inventory.count("Shark") >= 2) {
-                                if(Rs2Equipment.get(EquipmentInventorySlot.RING)!=null) {
-                                    if(Rs2Equipment.get(EquipmentInventorySlot.RING).getName().contains("dueling")){
-                                        if(!isItTimeToGo()) {
-                                            if(Rs2Equipment.get(EquipmentInventorySlot.AMULET)!=null) {
-                                                if(Rs2Equipment.get(EquipmentInventorySlot.AMULET).getName().contains("Amulet of glory(")) {
-                                                    Microbot.log("We're fully equipped and ready to go.");
-                                                    return true;
-                                                } else {
-                                                    Microbot.log("amulet is not charged");
-                                                }
-                                            } else {
-                                                Microbot.log("amulet is null");
-                                            }
-                                        } else {
-                                            Microbot.log("We have too much loot! Banking");
-                                        }
-                                    } else {
-                                        Microbot.log("We don't have our ring of dueling");
-                                    }
-                                } else {
-                                    Microbot.log("ring is null");
-                                }
-                            }  else {
-                                Microbot.log("We have less than 10 sharks!");
-                            }
-                        } else {
-                            Microbot.log("We're out of sharks!");
-                        }
-                    } else {
-                        Microbot.log("We have no Ranging potion!");
-                    }
-                } else {
-                    Microbot.log("We have no stam!");
-                }
-            } else {
-                Microbot.log("We don't have enough ammo!");
-            }
-        } else {
-            Microbot.log("We have no ammo!");
-        }
-
-        Microbot.log("We're not ready to go.");
-        return false;
     }
+
 
     public boolean isPkerAround(){
 
