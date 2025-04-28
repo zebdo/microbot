@@ -99,10 +99,6 @@ public class revKillerScript extends Script {
 
                 if(areWeEquipped()){
 
-                    if(checkForPKerFuture == null || checkForPKerFuture.isDone() || checkForPKerFuture.isCancelled()){
-                        startPkerDetection();
-                    }
-
                     if(Rs2Player.getWorldLocation().distanceTo(revimp)>10){
 
                         WalkToRevs();
