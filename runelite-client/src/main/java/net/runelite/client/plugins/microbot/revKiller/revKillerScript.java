@@ -409,7 +409,26 @@ public class revKillerScript extends Script {
             return;
         }
 
-        int newRandomWorld = Login.getRandomWorld(Login.activeProfile.isMember(), currentWorld.getRegion());
+        int newRandomWorld = Login.getRandomWorld(true, currentWorld.getRegion());
+
+        //Login.activeProfile.isMember() returns false regardless of whether you're a member or not
+
+        if(Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.BETA_WORLD)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.PVP_ARENA)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.DEADMAN)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.PVP)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.NOSAVE_MODE)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.LAST_MAN_STANDING)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.QUEST_SPEEDRUNNING)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.FRESH_START_WORLD)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.SEASONAL)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.SKILL_TOTAL)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.HIGH_RISK)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.BOUNTY)||
+                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.TOURNAMENT)){
+            Microbot.log("A bad world was auto selected, trying again.");
+            return;
+        }
 
         if(newRandomWorld == 0){
             Microbot.log("Couldn't find a new random world");
