@@ -46,6 +46,7 @@ public class revKillerPlugin extends Plugin {
             overlayManager.add(revKillerOverlay);
         }
         revKillerScript.run(config);
+        revKillerScript.startPkerDetection();
     }
 
     protected void shutDown() {

@@ -6,8 +6,10 @@ import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemID;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ActorDeath;
 import net.runelite.api.kit.KitType;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -31,6 +33,7 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Pvp;
+import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.http.api.worlds.World;
@@ -67,7 +70,9 @@ public class revKillerScript extends Script {
     int LowOnArrowsCount = generateRandomNumber(30,60);
     List<World> filteredWorlds = new ArrayList<>();
     long randomdelay = generateRandomNumber(350,1000);
-    private ScheduledFuture<?> checkForPKerFuture;
+    protected ScheduledFuture<?> checkForPKerFuture;
+    private boolean weDied = false;
+    private boolean shouldFlee = false;
 
 
     public boolean run(revKillerConfig config) {
@@ -85,6 +90,10 @@ public class revKillerScript extends Script {
                 // set it to our script
                 revimp = selectedWP;
                 randomdelay = generateRandomNumber(400,600);
+
+                if(shouldFlee){
+                    return;
+                }
 
                 DidWeDie();
 
@@ -178,7 +187,7 @@ public class revKillerScript extends Script {
     }
 
     public void DidWeDie(){
-        if(Rs2Player.getWorldLocation().distanceTo(BankLocation.LUMBRIDGE_FRONT.getWorldPoint()) < 50){
+        if(weDied){
             Microbot.log("We died");
             Rs2Player.logout();
             super.shutdown();
@@ -190,10 +199,6 @@ public class revKillerScript extends Script {
         if(!WeAreInTheCaves()){
             //we must walk to the cave entrence
             if(Rs2Player.getWorldLocation().distanceTo(cave) > 6){
-                if(isPkerAround()){
-                    getAwayFromPker();
-                    return;
-                }
                 if(Rs2Walker.walkTo(cave, Rs2Player.getWorldLocation().distanceTo(cave) - (generateRandomNumber(2,5)))){
                     Microbot.log("Walking to cave. with new method.");
                 }
@@ -213,26 +218,14 @@ public class revKillerScript extends Script {
                         Rs2Dialogue.clickOption("Yes", false);
                         sleep(500,1000);
                     }
-                    if(Rs2Dialogue.getDialogueOption("yes", false)!=null){
-                        Rs2Dialogue.clickOption("yes", false);
-                        sleep(500,1000);
-                    }
                     if(Rs2Dialogue.getDialogueOption("Accept", false)!=null){
                         Rs2Dialogue.clickOption("Accept", false);
-                        sleep(500,1000);
-                    }
-                    if(Rs2Dialogue.getDialogueOption("accept", false)!=null){
-                        Rs2Dialogue.clickOption("accept", false);
                         sleep(500,1000);
                     }
                 }
             }
         } else {
             if(WeAreInTheCaves()){
-                if(isPkerAround()){
-                    getAwayFromPker();
-                    return;
-                }
                 if(Rs2Walker.walkTo(revimp, Rs2Player.getWorldLocation().distanceTo(revimp) - (generateRandomNumber(2,5)))){
                     Microbot.log("Walking to Revs. with new method.");
                 }
@@ -299,6 +292,7 @@ public class revKillerScript extends Script {
                         break;
                     }
                 }
+                shouldFlee = false;
                 return;
             }
             if(Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 20) {
@@ -327,6 +321,7 @@ public class revKillerScript extends Script {
                     }
                 }
             }
+            shouldFlee = false;
         } else {
             Microbot.log("Running from the pker");
             while(Rs2Player.getWorldLocation().distanceTo(BankLocation.FEROX_ENCLAVE.getWorldPoint()) > 10){
@@ -391,7 +386,7 @@ public class revKillerScript extends Script {
         }
     }
 
-    private void startPkerDetection() {
+    public void startPkerDetection() {
         Microbot.log("PKer detection started");
         checkForPKerFuture = scheduledExecutorService.scheduleWithFixedDelay(
                 this::futurePKCheck,
@@ -403,64 +398,48 @@ public class revKillerScript extends Script {
 
     public void futurePKCheck(){
         if(isPkerAround()){
+            shouldFlee = true;
             getAwayFromPker();
         }
     }
 
     public void hopToNewWorld(){
-        WorldResult worldResult = Microbot.getWorldService().getWorlds();
-        if (worldResult != null) {
-            // Iterate through worlds and filter manually
-            if (filteredWorlds.isEmpty()) {
-                for (World world : worldResult.getWorlds()) {
-                    if (world.getTypes().contains(WorldType.PVP) ||
-                            world.getTypes().contains(WorldType.BOUNTY) ||
-                            world.getTypes().contains(WorldType.HIGH_RISK) ||
-                            world.getTypes().contains(WorldType.SKILL_TOTAL) ||
-                            world.getTypes().contains(WorldType.SEASONAL) ||
-                            world.getTypes().contains(WorldType.QUEST_SPEEDRUNNING) ||
-                            world.getTypes().contains(WorldType.DEADMAN) ||
-                            world.getTypes().contains(WorldType.LAST_MAN_STANDING) ||
-                            world.getTypes().contains(WorldType.NOSAVE_MODE) ||
-                            world.getTypes().contains(WorldType.PVP_ARENA) ||
-                            world.getTypes().contains(WorldType.BETA_WORLD) ||
-                            world.getTypes().contains(WorldType.FRESH_START_WORLD)) {
-                        continue;
-                    }
-                    if (world.getTypes().contains(WorldType.MEMBERS) && world.getRegion() == WorldRegion.UNITED_STATES_OF_AMERICA) {
-                        filteredWorlds.add(world);
-                    }
-                }
-            }
+        // Thank you george!
 
-            // If there are valid worlds, hop to a random one
-            if (!filteredWorlds.isEmpty()) {
-                World goodworld = filteredWorlds.get(generateRandomNumber(0, (filteredWorlds.size() - 1)));
-                int goodworldInt = goodworld.getId();
-                Microbot.log("We're going to world " + goodworldInt);
-                int attempts = 0;
-                int tries = generateRandomNumber(2,6);
-                while(Rs2Player.getWorld() != goodworldInt){
-                    if (!super.isRunning()) {
-                        break;
-                    }
-                    if(Microbot.hopToWorld(goodworldInt)){
-                        sleepUntil(() -> !Microbot.isHopping() || isPkerAround() || Rs2Player.getWorld() == goodworldInt, generateRandomNumber(5000, 10000));
-                    }
-                    if(Rs2Player.getWorld() == goodworldInt){
-                        break;
-                    }
-                    if(attempts>=tries){
-                        break;
-                    }
-                    sleep(500,700);
-                    attempts++;
-                }
-                hoppedWorld = true;
-            } else {
-                Microbot.log("Couldn't find any acceptable worlds.");
-            }
+        World currentWorld = Microbot.getWorldService().getWorlds().findWorld(Microbot.getClient().getWorld());
+
+        if(currentWorld == null){
+            Microbot.log("Couldn't find our world");
+            return;
         }
+
+        int newRandomWorld = Login.getRandomWorld(Login.activeProfile.isMember(), currentWorld.getRegion());
+
+        if(newRandomWorld == 0){
+            Microbot.log("Couldn't find a new random world");
+            return;
+        }
+
+        Microbot.log("We're going to world " + newRandomWorld);
+        int attempts = 0;
+        int tries = generateRandomNumber(2,6);
+        while(Rs2Player.getWorld() != newRandomWorld){
+            if (!super.isRunning()) {
+                break;
+            }
+            if(Microbot.hopToWorld(newRandomWorld)){
+                sleepUntil(() -> !Microbot.isHopping() || isPkerAround() || Rs2Player.getWorld() == newRandomWorld, generateRandomNumber(5000, 10000));
+            }
+            if(Rs2Player.getWorld() == newRandomWorld){
+                break;
+            }
+            if(attempts>=tries){
+                break;
+            }
+            sleep(500,700);
+            attempts++;
+        }
+        hoppedWorld = true;
     }
 
     public void equipArrows(){
@@ -613,6 +592,14 @@ public class revKillerScript extends Script {
         }
     }
 
+    @Subscribe
+    public void onActorDeath(ActorDeath event) {
+        //Thank you george!
+        if (event.getActor() == Microbot.getClient().getLocalPlayer()) {
+            weDied = true;
+        }
+    }
+
     public void Bankfortrip(){
         if(!Rs2Bank.isOpen()){
             if(WeAreInTheCaves()){
@@ -648,6 +635,7 @@ public class revKillerScript extends Script {
             }
         } else {
             // we're at the bank and it should be open.
+            shouldFlee = false;
             handleBreaks();
             int howtobank;
             howtobank = generateRandomNumber(0,100);
