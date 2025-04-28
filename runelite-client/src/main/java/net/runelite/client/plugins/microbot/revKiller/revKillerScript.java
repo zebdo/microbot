@@ -2,9 +2,7 @@ package net.runelite.client.plugins.microbot.revKiller;
 
 import com.google.inject.Provides;
 import net.runelite.api.EquipmentInventorySlot;
-import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemID;
-import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ActorDeath;
 import net.runelite.api.kit.KitType;
@@ -14,8 +12,6 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
-import net.runelite.client.plugins.microbot.globval.WidgetIndices;
-import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -37,8 +33,6 @@ import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.http.api.worlds.World;
-import net.runelite.http.api.worlds.WorldRegion;
-import net.runelite.http.api.worlds.WorldResult;
 import net.runelite.http.api.worlds.WorldType;
 
 import java.util.ArrayList;
@@ -410,25 +404,6 @@ public class revKillerScript extends Script {
         }
 
         int newRandomWorld = Login.getRandomWorld(true, currentWorld.getRegion());
-
-        //Login.activeProfile.isMember() returns false regardless of whether you're a member or not
-
-        if(Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.BETA_WORLD)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.PVP_ARENA)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.DEADMAN)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.PVP)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.NOSAVE_MODE)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.LAST_MAN_STANDING)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.QUEST_SPEEDRUNNING)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.FRESH_START_WORLD)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.SEASONAL)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.SKILL_TOTAL)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.HIGH_RISK)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.BOUNTY)||
-                Microbot.getWorldService().getWorlds().findWorld(newRandomWorld).getTypes().contains(WorldType.TOURNAMENT)){
-            Microbot.log("A bad world was auto selected, trying again.");
-            return;
-        }
 
         if(newRandomWorld == 0){
             Microbot.log("Couldn't find a new random world");
