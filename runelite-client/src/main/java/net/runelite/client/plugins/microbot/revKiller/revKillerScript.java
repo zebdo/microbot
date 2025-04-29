@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.revKiller;
 
 import com.google.inject.Provides;
 import net.runelite.api.EquipmentInventorySlot;
+import net.runelite.api.Item;
 import net.runelite.api.ItemID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ActorDeath;
@@ -12,6 +13,7 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
+import net.runelite.client.plugins.microbot.questhelper.collections.ItemWithCharge;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -616,6 +618,50 @@ public class revKillerScript extends Script {
                 }
             }
             howtobank = generateRandomNumber(0,100);
+            //bracelet of eth
+            if(howtobank <= 40){
+                if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES)!=null){
+                    if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES).getName().contains("ethereum")){
+                        if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES).getId() == ItemID.BRACELET_OF_ETHEREUM_UNCHARGED || ItemWithCharge.findItem(ItemID.BRACELET_OF_ETHEREUM).getCharges() < 100){
+                            Microbot.log("We need to charge our bracelet");
+                            if(Rs2Bank.hasItem("Revenant ether") && Rs2Bank.count("Revenant ether") > 100){
+                                if(!Rs2Inventory.contains("Revenant ether")){
+                                    if(Rs2Bank.withdrawX("Revenant ether", Rs2Random.between(100,300))){
+                                        sleepUntil(()-> Rs2Inventory.contains("Revenant ether"), Rs2Random.between(2000,4000));
+                                    }
+                                }
+                            } else {
+                                Microbot.log("We're out of ether. Stopping.");
+                                super.shutdown();
+                            }
+                            if(Rs2Inventory.contains("Revenant ether")){
+                                if(Rs2Bank.isOpen()){
+                                    Rs2Bank.closeBank();
+                                    sleepUntil(()-> !Rs2Bank.isOpen(), Rs2Random.between(2000,4000));
+                                }
+                                if(!Rs2Bank.isOpen()){
+                                    if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES)!=null){
+                                        //we need to unequip our braclet.
+                                        Rs2Equipment.unEquip(EquipmentInventorySlot.GLOVES);
+                                        sleepUntil(()-> !Rs2Equipment.hasEquippedSlot(EquipmentInventorySlot.GLOVES), Rs2Random.between(2000,4000));
+                                    }
+                                    if(Rs2Inventory.contains("Revenant ether") && (Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM) || Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM_UNCHARGED))){
+                                        Rs2Inventory.interact("Revenant ether", "use");
+                                        Rs2Inventory.interact(it->it!=null&&it.getName().contains("ethereum"), "use");
+                                        sleepUntil(()-> !Rs2Inventory.contains("Revenant ether"), Rs2Random.between(2000,4000));
+                                    }
+                                    if(!Rs2Inventory.contains("Revenant ether") && (Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM))){
+                                        Rs2Inventory.interact(it->it!=null&&it.getName().contains("ethereum"), "Wear");
+                                        sleepUntil(()-> Rs2Equipment.hasEquippedSlot(EquipmentInventorySlot.GLOVES), Rs2Random.between(2000,4000));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            howtobank = generateRandomNumber(0,100);
             //equip arrows
             if(howtobank <= 40){
                 Microbot.log("We have "+Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity()+" arrows left");
@@ -627,7 +673,7 @@ public class revKillerScript extends Script {
                             }
                         }
                     } else {
-                        Microbot.log("Out of rune arrows");
+                        Microbot.log("Out of arrows");
                         super.shutdown();
                     }
                     if(Rs2Inventory.contains(selectedArrow)){
