@@ -485,11 +485,19 @@ public class revKillerScript extends Script {
 
     public void loot(){
         if(Rs2GroundItem.isItemBasedOnValueOnGround(500,10)){
+
             while(Rs2GroundItem.isItemBasedOnValueOnGround(500,10)){
                 if(!super.isRunning()){
                     break;
                 }
                 if(Rs2GroundItem.lootItemBasedOnValue(500, 10)){
+                    sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(750,1500));
+                    if(Rs2Player.isMoving()){
+                        sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(3000,6000));
+                    }
+                }
+                //fail safe. There's strange interactions between blighted items and this current looter. The looter refuses to pick them up
+                if(Rs2GroundItem.lootAtGePrice(500)){
                     sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(750,1500));
                     if(Rs2Player.isMoving()){
                         sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(3000,6000));
