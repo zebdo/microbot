@@ -72,7 +72,6 @@ public class GECookerScript extends Script {
 
             if (Rs2AntibanSettings.actionCooldownActive) {
                 debug("Cooldown active");
-                Rs2Antiban.actionCooldown();
                 return;
             }
 
