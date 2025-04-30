@@ -55,6 +55,12 @@ public class BarrowsScript extends Script {
                 if (!super.run()) return;
                 long startTime = System.currentTimeMillis();
 
+                if (Rs2Player.getQuestState(Quest.HIS_FAITHFUL_SERVANTS) != QuestState.FINISHED) {
+                    Microbot.showMessage("Complete the 'His Faithful Servants' quest for the webwalker to function correctly");
+                    shutdown();
+                    return;
+                }
+
                 if(barrowsPieces.isEmpty()){
                     barrowsPieces.add("Nothing yet.");
                 }
