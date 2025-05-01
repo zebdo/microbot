@@ -258,7 +258,7 @@ public class RoyalTitansScript extends Script {
         if (Rs2Inventory.isFull()) {
             return;
         }
-        if (enrageTile == null) {
+        if (enrageTile != null) {
             return;
         }
 
