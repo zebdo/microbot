@@ -50,7 +50,6 @@ public class RoyalTitansLooterScript extends Script {
                     lootRunes(config);
                     lootCoins(config);
                     lootUntradeableItems(config);
-                    return;
                 }
                 if (LootedTitanLastIteration) {
                     return;
@@ -86,10 +85,16 @@ public class RoyalTitansLooterScript extends Script {
                         }
                         break;
                 }
-                if (looted) {
+                if (looted && !LootedTitanLastIteration) {
+                    var didWeLoot = Rs2Inventory.waitForInventoryChanges(2400);
+                    if (!didWeLoot) {
+                        looted = false;
+                        return;
+                    }
                     royalTitansScript.kills++;
                     LootedTitanLastIteration = true;
                     evaluateAndConsumePotions(config);
+                    Microbot.log("Looted the titans");
                 }
 
             } catch (Exception ex) {
