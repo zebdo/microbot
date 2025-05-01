@@ -327,7 +327,7 @@ public class revKillerScript extends Script {
     public void enablePrayer(){
         if(!Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_MAGIC)) {
             if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= 37) {
-                if (Rs2Player.getBoostedSkillLevel(Skill.PRAYER) >= 0) {
+                if (Rs2Player.getBoostedSkillLevel(Skill.PRAYER) > 0) {
                     Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MAGIC);
                 }
             }
