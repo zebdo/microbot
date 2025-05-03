@@ -27,6 +27,10 @@ public class RoyalTitansShared {
         }
     }
 
+    public static boolean isInBossRegion() {
+        return Rs2Player.getWorldLocation().getRegionID() == BOSS_REGION;
+    }
+
     private static boolean isCombatPotionActive(int threshold) {
         return Rs2Player.hasDivineCombatActive() || (Rs2Player.hasAttackActive(threshold) && Rs2Player.hasStrengthActive(threshold));
     }

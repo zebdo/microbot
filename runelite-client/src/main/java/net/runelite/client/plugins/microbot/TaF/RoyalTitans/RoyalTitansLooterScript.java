@@ -6,9 +6,11 @@ import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import javax.inject.Inject;
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 import static net.runelite.client.plugins.microbot.TaF.RoyalTitans.RoyalTitansShared.*;
@@ -16,9 +18,10 @@ import static net.runelite.client.plugins.microbot.TaF.RoyalTitans.RoyalTitansSh
 public class RoyalTitansLooterScript extends Script {
     @Inject
     public RoyalTitansScript royalTitansScript;
-    public String itemsToLoot = "Zenyte shard,Ballista spring,Ballista limbs,Ballista frame,Monkey tail,Heavy frame,Light frame,Rune platelegs,Rune plateskirt,Rune chainbody,Dragon scimitar,Law rune,Death rune,Runite bolts,Grimy kwuarm,Grimy cadantine,Grimy dwarf weed,Grimy lantadyme,Ranarr seed,Snapdragon seed,Torstol seed,Yew seed,Magic seed,Palm tree seed,Spirit seed,Dragonfruit tree seed,Celastrus seed,Redwood tree seed,Prayer potion(3),Shark,Coins,Saradomin brew(2),Rune javelin heads,Dragon javelin heads,Adamantite bar,Diamond,Runite bar";
+    public String itemsToLoot = "Giantsoul amulet,Fire element staff crown,Ice element staff crown,Mystic vigour prayer scroll,Deadeye prayer scroll,Mystic fire staff,Mystic water staff,Fire battlestaff,Water battlestaff,Rune plateskirt,Rune platelegs,Rune scimitar,Rune pickaxe,Rune sq shield,Rune axe,Chaos rune,Death rune,Nature rune,Law rune,Soul rune,Blood rune,Rune arrow,Fire rune,Water rune,Gold ore,Fire orb,Water orb,Coal,Grimy avantoe,Grimy cadantine,Grimy dwarf weed,Grimy irit leaf,Grimy kwuarm,Grimy lantadyme,Grimy ranarr weed,Avantoe seed,Cadantine seed,Dwarf weed seed,Irit seed,Kwuarm seed,Lantadyme seed,Ranarr seed,Maple seed,Palm tree seed,Yew seed,Coins,Prayer potion(4),Desiccated page,Clue scroll (hard),Clue scroll (elite),Bran";
     int minFreeSlots = 0;
     private RoyalTitansConfig.RoyalTitan LootedTitan = null;
+    private Instant lastLootTime = Instant.now();
 
     public RoyalTitansLooterScript() {
 
@@ -32,7 +35,6 @@ public class RoyalTitansLooterScript extends Script {
                 if (!Microbot.isLoggedIn()) return;
                 if (royalTitansScript.state.equals(BotStatus.BANKING) || royalTitansScript.state.equals(BotStatus.TRAVELLING) || royalTitansScript.state.equals(BotStatus.WAITING))
                     return;
-                if (Rs2Inventory.isFull() || Rs2Inventory.getEmptySlots() <= minFreeSlots) return;
                 if (!isInBossRegion()) return;
                 var iceTitanDead = Rs2Npc.getNpcs(ICE_TITAN_DEAD_ID).findFirst().orElse(null);
                 var fireTitanDead = Rs2Npc.getNpcs(FIRE_TITAN_DEAD_ID).findFirst().orElse(null);
@@ -52,16 +54,23 @@ public class RoyalTitansLooterScript extends Script {
                     lootUntradeableItems(config);
                 }
                 if (LootedTitanLastIteration) {
-                    return;
+                    if (lastLootTime.plusSeconds(30).isBefore(Instant.now())) {
+                        // If 30 seconds have passed, reset the flag and try looting again
+                        LootedTitanLastIteration = false;
+                        Microbot.log("30 seconds passed since last loot - trying again");
+                    } else {
+                        // Less than 30 seconds have passed since last loot, skip looting
+                        return;
+                    }
                 }
-                royalTitansScript.subState = "Handling looting from Titans";
 
+                royalTitansScript.subState = "Handling looting from Titans";
                 switch (config.loot()) {
                     case ICE_TITAN:
-                        looted = Rs2Npc.interact(iceTitanDead, "Loot");
+                        looted = lootTitan(iceTitanDead);
                         break;
                     case FIRE_TITAN:
-                        looted = Rs2Npc.interact(fireTitanDead, "Loot");
+                        looted = lootTitan(fireTitanDead);
                         break;
                     case ALTERNATE:
                         if (LootedTitan == null) {
@@ -72,30 +81,28 @@ public class RoyalTitansLooterScript extends Script {
                             LootedTitan = RoyalTitansConfig.RoyalTitan.ICE_TITAN;
                         }
                         if (LootedTitan == RoyalTitansConfig.RoyalTitan.ICE_TITAN) {
-                            looted = Rs2Npc.interact(iceTitanDead, "Loot");
+                            looted = lootTitan(fireTitanDead);
                         } else {
-                            looted = Rs2Npc.interact(fireTitanDead, "Loot");
+                            looted = lootTitan(iceTitanDead);
                         }
                         break;
                     case RANDOM:
                         if (Math.random() < 0.5) {
-                            looted = Rs2Npc.interact(iceTitanDead, "Loot");
+                            looted = lootTitan(iceTitanDead);
                         } else {
-                            looted = Rs2Npc.interact(fireTitanDead, "Loot");
+                            looted = lootTitan(fireTitanDead);
                         }
                         break;
                 }
                 if (looted && !LootedTitanLastIteration) {
-                    var didWeLoot = Rs2Inventory.waitForInventoryChanges(2400);
-                    if (!didWeLoot) {
-                        looted = false;
-                        return;
-                    }
+                    Rs2Player.waitForAnimation(2400);
                     royalTitansScript.kills++;
                     LootedTitanLastIteration = true;
+                    lastLootTime = Instant.now();
                     evaluateAndConsumePotions(config);
                     Microbot.log("Looted the titans");
                 }
+                // Animation: 829 for looting
 
             } catch (Exception ex) {
                 System.out.println("Royal Titan Looter: " + ex.getMessage());
@@ -106,9 +113,14 @@ public class RoyalTitansLooterScript extends Script {
         return true;
     }
 
-    private boolean isInBossRegion() {
-        return Rs2Player.getWorldLocation().getRegionID() == BOSS_REGION;
+    private static boolean lootTitan(Rs2NpcModel iceTitanDead) {
+        Rs2Npc.interact(iceTitanDead, "Loot");
+        sleepUntil(() -> !Rs2Player.isMoving(), 3200);
+        var looted = Rs2Npc.interact(iceTitanDead, "Loot");
+        Rs2Player.waitForAnimation(1800);
+        return looted;
     }
+
 
     private void lootUntradeableItems(RoyalTitansConfig config) {
         LootingParameters untradeableItemsParams = new LootingParameters(

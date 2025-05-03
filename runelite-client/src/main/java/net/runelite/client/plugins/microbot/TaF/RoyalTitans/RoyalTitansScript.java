@@ -2,9 +2,7 @@ package net.runelite.client.plugins.microbot.TaF.RoyalTitans;
 
 import net.runelite.api.Skill;
 import net.runelite.api.Tile;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
@@ -124,7 +122,36 @@ public class RoyalTitansScript extends Script {
                 Microbot.log("Exception: " + e.getMessage());
             }
         }, 0, 600, TimeUnit.MILLISECONDS);
+
+        scheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
+            try {
+                if (!Microbot.isLoggedIn()) return;
+                if (!super.run()) return;
+                if (!isRunning) return;
+                if (!this.isRunning()) return;
+                detectState(config);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        }, 10000, 10000, TimeUnit.MILLISECONDS);
+
         return true;
+    }
+
+    /**
+     * Handles edgecases where the bot get stuck due to the other players actions
+     * @param config
+     */
+    private void detectState(RoyalTitansConfig config) {
+        if (RoyalTitansShared.isInBossRegion() && state != BotStatus.FIGHTING) {
+            Microbot.log("Boss region detected - But not in state FIGHTING, changing state");
+            state = BotStatus.FIGHTING;
+        }
+        if (state == BotStatus.FIGHTING && !RoyalTitansShared.isInBossRegion()) {
+            Microbot.log("Not in boss region - Changing state to TRAVELLING to instance");
+            state = BotStatus.TRAVELLING;
+            travelStatus = TravelStatus.TO_INSTANCE;
+        }
     }
 
     private void equipArmor(Rs2InventorySetup inventorySetup) {
@@ -194,7 +221,7 @@ public class RoyalTitansScript extends Script {
         }
         if (teammate == null && waitingTimeStart == null && config.resupplyWithTeammate()) {
             waitingTimeStart = Instant.now();
-        } else if (config.resupplyWithTeammate() && teammate == null && Instant.now().isAfter(waitingTimeStart.plusSeconds(config.waitingTimeForTeammate()))) {
+        } else if (config.resupplyWithTeammate() && teammate == null && Instant.now().isAfter(waitingTimeStart.plusSeconds(60))) { /*if teammate is gone for 60 seconds, we assume they went to resupply*/
             shouldLeave = true;
         }
         if ((noFood && currentHealth <= config.healthThreshold()) || (noPrayerPotions && currentPrayer < 10)) {
@@ -216,6 +243,7 @@ public class RoyalTitansScript extends Script {
             }
             state = BotStatus.TRAVELLING;
             travelStatus = TravelStatus.TO_BANK;
+            Rs2Prayer.disableAllPrayers();
             return true;
         }
         return false;
@@ -223,7 +251,7 @@ public class RoyalTitansScript extends Script {
 
     private void handlePrayers(RoyalTitansConfig config) {
         subState = "Handling prayers";
-        var isPrayerActive = Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_MELEE);
+        handleOffensivePrayers(config);
         if (Rs2Combat.inCombat()) {
             Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MELEE, true);
             return;
@@ -233,6 +261,31 @@ public class RoyalTitansScript extends Script {
             return;
         }
         Rs2Prayer.toggle(Rs2PrayerEnum.PROTECT_MELEE, false);
+    }
+
+    private void handleOffensivePrayers(RoyalTitansConfig config) {
+        if (config.enableOffensivePrayer() && Rs2Player.isInCombat()) {
+            if (meleeInventorySetup.doesEquipmentMatch()) {
+                var bestMeleePrayer = Rs2Prayer.getBestMeleePrayer();
+                if (bestMeleePrayer != null) {
+                    Rs2Prayer.toggle(bestMeleePrayer, true);
+                }
+                return;
+            }
+            if (rangedInventorySetup.doesEquipmentMatch()) {
+                var bestRangedPrayer = Rs2Prayer.getBestRangePrayer();
+                if (bestRangedPrayer != null) {
+                    Rs2Prayer.toggle(bestRangedPrayer, true);
+                }
+                return;
+            }
+            if (magicInventorySetup.doesEquipmentMatch()) {
+                var bestMagicPrayer = Rs2Prayer.getBestMagePrayer();
+                if (bestMagicPrayer != null) {
+                    Rs2Prayer.toggle(bestMagicPrayer, true);
+                }
+            }
+        }
     }
 
     private void attackBoss(RoyalTitansConfig config) {
@@ -393,12 +446,15 @@ public class RoyalTitansScript extends Script {
 
     private void handleDangerousTiles() {
         subState = "Handling dangerous tiles";
-        if (enrageTile != null && Rs2Player.getWorldLocation() != enrageTile.getWorldLocation()) {
+        if (enrageTile != null && !Rs2Player.getWorldLocation().equals(enrageTile.getWorldLocation())) {
             Rs2Walker.walkFastCanvas(enrageTile.getWorldLocation());
             return;
         }
-        // I have no idea why this is needed - It should be handled by the Initialization of Rs2Tile.Init()
-        var dangerousGraphicsObjectTiles = Rs2Tile.getDangerousGraphicsObjectTiles().stream().filter(x -> x.getValue() > 0).collect(Collectors.toList());
+
+        var dangerousGraphicsObjectTiles = Rs2Tile.getDangerousGraphicsObjectTiles().stream()
+                .filter(x -> x.getValue() > 0)
+                .collect(Collectors.toList());
+
         List<WorldPoint> dangerousWorldPoints = dangerousGraphicsObjectTiles
                 .stream()
                 .map(Pair::getKey)
@@ -407,17 +463,32 @@ public class RoyalTitansScript extends Script {
         if (dangerousWorldPoints.isEmpty()) {
             return;
         }
-        if (dangerousWorldPoints.stream().noneMatch(x -> x.equals(Rs2Player.getWorldLocation()))) {
+
+        // Check if player is on OR adjacent to a dangerous tile
+        boolean playerInDanger = dangerousWorldPoints.stream()
+                .anyMatch(x -> x.equals(Rs2Player.getWorldLocation()) ||
+                        x.distanceTo(Rs2Player.getWorldLocation()) <= 1);
+
+        if (!playerInDanger) {
             return;
         }
 
         final WorldPoint safeTile = findSafeTile(Rs2Player.getWorldLocation(), dangerousWorldPoints);
         if (safeTile != null) {
             Rs2Walker.walkFastCanvas(safeTile);
+            if (Rs2Player.getWorldLocation().equals(safeTile)) {
+                Microbot.log("Successfully moved to safe tile: " + safeTile);
+            } else {
+                Microbot.log("Trying again to walk to safe tile: " + safeTile);
+                Rs2Walker.walkFastCanvas(safeTile); // Try again
+            }
+        } else {
+            Microbot.log("No safe tiles found nearby!");
         }
     }
 
     private WorldPoint findSafeTile(WorldPoint playerLocation, List<WorldPoint> dangerousWorldPoints) {
+        Microbot.log("Finding safe tile");
         List<WorldPoint> nearbyTiles = List.of(
                 new WorldPoint(playerLocation.getX(), playerLocation.getY(), playerLocation.getPlane()),
                 new WorldPoint(playerLocation.getX() + 1, playerLocation.getY(), playerLocation.getPlane()),
@@ -431,14 +502,13 @@ public class RoyalTitansScript extends Script {
         );
 
         for (WorldPoint tile : nearbyTiles) {
-            Microbot.log("NearbyTiles:" + tile.getRegionX() + " " + tile.getRegionY() + " " + tile.getPlane());
             // Tiles outside the arena returns true for isWalkable - Discard them
-            if (tile.getRegionX() == MELEE_TITAN_FIRE_REGION_X ||
-                    (tile.getRegionX() > MELEE_TITAN_FIRE_REGION_X && tile.getRegionX() < MELEE_TITAN_ICE_REGION_X)) {
+            if (tile.getRegionX() < MELEE_TITAN_FIRE_REGION_X || tile.getRegionX() > MELEE_TITAN_ICE_REGION_X) {
+                Microbot.log("Tile is outside the arena, skipping");
                 continue;
             }
-            final LocalPoint location = LocalPoint.fromWorld(Microbot.getClient(), tile);
-            if (!dangerousWorldPoints.contains(tile) && Rs2Tile.isWalkable(location)) {
+            if (!dangerousWorldPoints.contains(tile)) {
+                Microbot.log("Found safe tile: " + tile);
                 return tile;
             }
         }
@@ -462,12 +532,12 @@ public class RoyalTitansScript extends Script {
                 break;
             case TO_TITANS:
                 subState = "Walking to titans";
-                var gotToTitans = Rs2Walker.walkTo(BOSS_LOCATION, 3);
+                var gotToTitans = Rs2Walker.walkTo(BOSS_LOCATION, 1);
                 if (gotToTitans) {
                     state = BotStatus.WAITING;
                     travelStatus = TravelStatus.TO_BANK;
                 } else {
-                    Rs2Walker.walkTo(BOSS_LOCATION, 3);
+                    Rs2Walker.walkTo(BOSS_LOCATION, 1);
                 }
                 break;
             case TO_INSTANCE:
@@ -508,24 +578,21 @@ public class RoyalTitansScript extends Script {
         boolean equipmentLoaded;
         boolean inventoryLoaded;
         if (!inventorySetup.doesEquipmentMatch()) {
-            equipmentLoaded = inventorySetup.loadEquipment();
-        } else {
-            equipmentLoaded = true;
+            inventorySetup.loadEquipment();
         }
         subState = "Loading inventory";
         if (!inventorySetup.doesInventoryMatch()) {
-            inventoryLoaded = inventorySetup.loadInventory();
-        } else {
-            inventoryLoaded = true;
+            inventorySetup.loadInventory();
         }
-
+        equipmentLoaded = inventorySetup.doesEquipmentMatch();
+        inventoryLoaded = inventorySetup.doesInventoryMatch();
         if (equipmentLoaded && inventoryLoaded) {
             var ate = false;
             boolean ateFood = false;
             boolean drankPrayerPot = false;
             while (Rs2Player.getHealthPercentage() < 70 || ateFood || drankPrayerPot) {
                 ateFood = Rs2Player.eatAt(80);
-                drankPrayerPot = Rs2Player.drinkPrayerPotionAt(config.minEatPercent());
+                drankPrayerPot = Rs2Player.drinkPrayerPotionAt(config.minPrayerPercent());
                 ate = true;
                 sleep(1200);
                 if (!isRunning) {
