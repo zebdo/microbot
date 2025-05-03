@@ -1,9 +1,6 @@
 package net.runelite.client.plugins.microbot.bee.MossKiller;
 
-import net.runelite.api.Perspective;
-import net.runelite.api.Point;
 import net.runelite.api.Skill;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -16,10 +13,10 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
-import net.runelite.client.plugins.microbot.util.coords.Rs2LocalPoint;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
@@ -87,7 +84,33 @@ public class MossKillerScript extends Script {
     public int[] LOOT_LIST = new int[]{MOSSY_KEY, LAW_RUNE, AIR_RUNE, FIRE_RUNE, COSMIC_RUNE, DEATH_RUNE, CHAOS_RUNE, NATURE_RUNE};
     public static final int[] LOOT_LIST1 = new int[]{2354, BIG_BONES, RUNE_PLATELEGS, RUNE_LONGSWORD, RUNE_MED_HELM, RUNE_SWORD, ADAMANT_KITESHIELD, RUNE_CHAINBODY, RUNITE_BAR, RUNE_PLATESKIRT, RUNE_SQ_SHIELD, RUNE_SWORD, RUNE_MED_HELM, 1124, ADAMANT_KITESHIELD, NATURE_RUNE, COSMIC_RUNE, LAW_RUNE, DEATH_RUNE, CHAOS_RUNE, ADAMANT_ARROW, RUNITE_BAR, 1620, ADAMANT_KITESHIELD, 1618, 2354, 995, 114, BRYOPHYTAS_ESSENCE, MOSSY_KEY};
     public int[] ALCHABLES = new int[]{STEEL_KITESHIELD, MITHRIL_SWORD, BLACK_SQ_SHIELD};
-
+    public String[] bryophytaDrops = {
+            "Big bones",
+            "Clue scroll (beginner)",
+            "Rune platelegs",
+            "Rune longsword",
+            "Rune med helm",
+            "Rune chainbody",
+            "Rune plateskirt",
+            "Rune sq shield",
+            "Rune sword",
+            "Adamant platebody",
+            "Adamant kiteshield",
+            "Nature rune",
+            "Cosmic rune",
+            "Law rune",
+            "Death rune",
+            "Chaos rune",
+            "Adamant arrow",
+            "Runite bar",
+            "Uncut ruby",
+            "Uncut diamond",
+            "Steel bar",
+            "Coins",
+            "Strength potion(4)",
+            "Bryophyta's essence",
+            "Mossy key"
+    };
     public MossKillerState state = MossKillerState.BANK;
 
 
@@ -440,13 +463,12 @@ public class MossKillerScript extends Script {
 
         if (Rs2Npc.getNpc("Bryophyta") == null) {
             Microbot.log("Boss is dead, let's loot.");
-            Microbot.log("Sleeping for 3-5 seconds for loot to appear");
-            sleep(3000, 5000);
+            Microbot.log("Sleeping for 2-5 seconds for loot to appear");
+            sleep(2000, 5000);
 
             Microbot.log("attempting to take loot");
-            //lootWorldPoint(MossKillerPlugin.bryoTile);
             lootBoss();
-            sleep(3000, 5000);
+            sleep(2000, 5000);
 
             Microbot.log("Moving to TELEPORT state");
             state = MossKillerState.TELEPORT;
@@ -458,36 +480,25 @@ public class MossKillerScript extends Script {
     }
 
     public void lootBoss() {
-        int lootCounter = 0;
-        int randInt = Rs2Random.between(7, 12);
-        for (int i = 0; i < randInt; i++) {
-            if(lootCounter >= 3){
-                break;
-            }
+        Microbot.log("Looting boss");
+        LootingParameters bossLootParams = new LootingParameters(
+                10,
+                1,
+                1,
+                0,
+                false,
+                false,
+                bryophytaDrops
+        );
+        for (String lootItem: bryophytaDrops){
+            Microbot.log("Attempting to loot " + lootItem);
             if(Rs2Inventory.isFull()){
                 Rs2Player.eatAt(0);
             }
-            int currentInventoryCount = Rs2Inventory.count();
-            LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), MossKillerPlugin.bryoTile);
-            if (localPoint == null) {
-                localPoint = Rs2LocalPoint.fromWorldInstance(MossKillerPlugin.bryoTile);
+            if(Rs2GroundItem.lootItemsBasedOnNames(bossLootParams)){
+                Microbot.log("Looting " + lootItem);
+                sleepUntil(() -> Rs2Inventory.contains(lootItem), 2000);
             }
-            Point canvasPoint = Perspective.localToCanvas(Microbot.getClient(), localPoint, Microbot.getClient().getPlane());
-            Microbot.getMouse().move(canvasPoint);
-            Microbot.getMouse().click(canvasPoint, false);
-            sleepUntil(() -> !Rs2Player.isMoving() && (currentInventoryCount != Rs2Inventory.count()), 3000);
-            if(currentInventoryCount == Rs2Inventory.count()){
-                lootCounter += 1;
-            }
-        }
-    }
-
-
-    public void lootWorldPoint(WorldPoint worldPoint) {
-        for (int lootItem : LOOT_LIST1) {
-            Microbot.log("Attempting to loot item ID: " + lootItem + " at tile: " + MossKillerPlugin.bryoTile);
-            Rs2GroundItem.lootItemsBasedOnLocation(MossKillerPlugin.bryoTile, lootItem);
-            sleep(300, 600);
         }
     }
 
