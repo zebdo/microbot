@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GraphicsObject;
 import net.runelite.api.GroundObject;
 import net.runelite.api.Tile;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.events.GroundObjectDespawned;
 import net.runelite.api.events.GroundObjectSpawned;
@@ -85,7 +86,7 @@ public class RoyalTitansPlugin extends Plugin {
     public void onGraphicsObjectCreated(GraphicsObjectCreated event) {
         final GraphicsObject graphicsObject = event.getGraphicsObject();
         if (graphicsObject.getId() == GRAPHICS_OBJECT_ICE || graphicsObject.getId() == GRAPHICS_OBJECT_FIRE) {
-            Rs2Tile.addDangerousGraphicsObjectTile(graphicsObject, 600 * 3);
+            Rs2Tile.addDangerousGraphicsObjectTile(graphicsObject, 600 * 5);
         }
     }
 

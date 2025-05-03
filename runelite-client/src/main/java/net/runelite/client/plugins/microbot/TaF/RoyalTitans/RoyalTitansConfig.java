@@ -4,12 +4,19 @@ import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 
 @ConfigInformation(
-        "This plugin kills Royal Titans together with another bot"
-                + "Select an equipment config with all 3 combat styles"
-                + "<br/>"
-                + "TODO"
-                + "<br/>"
-                + "</html>")
+        "<html>" +
+                "<h2 style='color: #6d9eeb;'>Royal Titans Bot by TaF</h2>" +
+                "<p>This script kills the Royal Titans with another bot or player.</p>" +
+                "<h3 style='color: #93c47d;'>Requirements:</h3>" +
+                "<ul>" +
+                "<li><b>Combat Styles:</b> All 3 combat styles are required</li>" +
+                "<li><b>Magic Gear:</b> Must provide +70 magic bonus (or +39 with void mage)</li>" +
+                "<li><b>Ranged Gear:</b> Must use a weapon with range of 7+ (crossbows/bowfa)</li>" +
+                "<li><b>Melee Gear:</b> Best available melee gear for optimal killing speeds</li>" +
+                "<li><b>Spell Selection:</b> Preselect autocast spell for minions (i.e. Water spells for fire minions/walls)</li>" +
+                "</ul>" +
+                "<p style='color: #cc0000;'><i>Note: Both bots should be configured to focus on different titans for best efficiency.</i></p>" +
+                "</html>")
 @ConfigGroup("RoyalTitans")
 public interface RoyalTitansConfig extends Config {
     @ConfigSection(
