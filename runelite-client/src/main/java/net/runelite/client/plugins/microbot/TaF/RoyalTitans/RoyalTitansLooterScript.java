@@ -4,7 +4,6 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -33,7 +32,7 @@ public class RoyalTitansLooterScript extends Script {
             try {
                 if (!super.run()) return;
                 if (!Microbot.isLoggedIn()) return;
-                if (royalTitansScript.state.equals(BotStatus.BANKING) || royalTitansScript.state.equals(BotStatus.TRAVELLING) || royalTitansScript.state.equals(BotStatus.WAITING))
+                if (royalTitansScript.state.equals(RoyalTitansBotStatus.BANKING) || royalTitansScript.state.equals(RoyalTitansBotStatus.TRAVELLING) || royalTitansScript.state.equals(RoyalTitansBotStatus.WAITING))
                     return;
                 if (!isInBossRegion()) return;
                 var iceTitanDead = Rs2Npc.getNpcs(ICE_TITAN_DEAD_ID).findFirst().orElse(null);

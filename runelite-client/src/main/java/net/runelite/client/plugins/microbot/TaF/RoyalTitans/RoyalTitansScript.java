@@ -49,7 +49,7 @@ public class RoyalTitansScript extends Script {
     private final Integer TUNNEL_ID_ESCAPE = 55987;
     private final Integer WIDGET_START_A_FIGHT = 14352385;
     private final WorldPoint BOSS_LOCATION = new WorldPoint(2951, 9574, 0);
-    public BotStatus state = BotStatus.TRAVELLING;
+    public RoyalTitansBotStatus state = RoyalTitansBotStatus.TRAVELLING;
     public volatile Tile enrageTile = null;
     public String subState = "";
     public int kills = 0;
@@ -58,7 +58,7 @@ public class RoyalTitansScript extends Script {
     private Rs2InventorySetup meleeInventorySetup = null;
     private Rs2InventorySetup specialAttackInventorySetup = null;
     private Rs2InventorySetup rangedInventorySetup = null;
-    private TravelStatus travelStatus = TravelStatus.TO_BANK;
+    private RoyalTitansTravelStatus travelStatus = RoyalTitansTravelStatus.TO_BANK;
     private Instant waitingTimeStart = null;
     private boolean waitedLastIteration = false;
     private boolean isRunning;
@@ -86,8 +86,8 @@ public class RoyalTitansScript extends Script {
         isRunning = true;
         enrageTile = null;
         waitingTimeStart = null;
-        travelStatus = TravelStatus.TO_BANK;
-        state = BotStatus.TRAVELLING;
+        travelStatus = RoyalTitansTravelStatus.TO_BANK;
+        state = RoyalTitansBotStatus.TRAVELLING;
         Microbot.enableAutoRunOn = false;
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
@@ -143,14 +143,14 @@ public class RoyalTitansScript extends Script {
      * @param config
      */
     private void detectState(RoyalTitansConfig config) {
-        if (RoyalTitansShared.isInBossRegion() && state != BotStatus.FIGHTING) {
+        if (RoyalTitansShared.isInBossRegion() && state != RoyalTitansBotStatus.FIGHTING) {
             Microbot.log("Boss region detected - But not in state FIGHTING, changing state");
-            state = BotStatus.FIGHTING;
+            state = RoyalTitansBotStatus.FIGHTING;
         }
-        if (state == BotStatus.FIGHTING && !RoyalTitansShared.isInBossRegion()) {
+        if (state == RoyalTitansBotStatus.FIGHTING && !RoyalTitansShared.isInBossRegion()) {
             Microbot.log("Not in boss region - Changing state to TRAVELLING to instance");
-            state = BotStatus.TRAVELLING;
-            travelStatus = TravelStatus.TO_INSTANCE;
+            state = RoyalTitansBotStatus.TRAVELLING;
+            travelStatus = RoyalTitansTravelStatus.TO_INSTANCE;
         }
     }
 
@@ -171,8 +171,8 @@ public class RoyalTitansScript extends Script {
             if (teammate.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) < 5) {
                 waitedLastIteration = false;
                 waitingTimeStart = null;
-                state = BotStatus.TRAVELLING;
-                travelStatus = TravelStatus.TO_INSTANCE;
+                state = RoyalTitansBotStatus.TRAVELLING;
+                travelStatus = RoyalTitansTravelStatus.TO_INSTANCE;
                 evaluateAndConsumePotions(config);
                 sleep(1200, 2400);
                 return;
@@ -241,8 +241,8 @@ public class RoyalTitansScript extends Script {
                 enrageTile = null;
                 Rs2GameObject.interact(TUNNEL_ID_ESCAPE, "Quick-escape");
             }
-            state = BotStatus.TRAVELLING;
-            travelStatus = TravelStatus.TO_BANK;
+            state = RoyalTitansBotStatus.TRAVELLING;
+            travelStatus = RoyalTitansTravelStatus.TO_BANK;
             Rs2Prayer.disableAllPrayers();
             return true;
         }
@@ -520,22 +520,22 @@ public class RoyalTitansScript extends Script {
         switch (travelStatus) {
             case TO_BANK:
                 if (inventorySetup.doesInventoryMatch() && inventorySetup.doesEquipmentMatch()) {
-                    state = BotStatus.TRAVELLING;
-                    travelStatus = TravelStatus.TO_TITANS;
+                    state = RoyalTitansBotStatus.TRAVELLING;
+                    travelStatus = RoyalTitansTravelStatus.TO_TITANS;
                     return;
                 }
                 subState = "Walking to bank";
                 var isAtBank = Rs2Bank.walkToBank();
                 if (isAtBank) {
-                    state = BotStatus.BANKING;
+                    state = RoyalTitansBotStatus.BANKING;
                 }
                 break;
             case TO_TITANS:
                 subState = "Walking to titans";
                 var gotToTitans = Rs2Walker.walkTo(BOSS_LOCATION, 1);
                 if (gotToTitans) {
-                    state = BotStatus.WAITING;
-                    travelStatus = TravelStatus.TO_BANK;
+                    state = RoyalTitansBotStatus.WAITING;
+                    travelStatus = RoyalTitansTravelStatus.TO_BANK;
                 } else {
                     Rs2Walker.walkTo(BOSS_LOCATION, 1);
                 }
@@ -548,7 +548,7 @@ public class RoyalTitansScript extends Script {
                         sleep(600, 1200);
                         Rs2Widget.clickWidget("Start a fight (Your friends will be able to join you).");
                         sleep(600, 1200);
-                        state = BotStatus.FIGHTING;
+                        state = RoyalTitansBotStatus.FIGHTING;
                     } else {
                         var teammate = Rs2Player.getPlayers(x -> Objects.equals(x.getName(), config.teammateName())).findFirst().orElse(null);
                         if (teammate != null) {
@@ -561,7 +561,7 @@ public class RoyalTitansScript extends Script {
                         sleep(600, 1200);
                         Rs2Keyboard.keyPress(KeyEvent.VK_ENTER);
                         sleep(600, 1200);
-                        state = BotStatus.FIGHTING;
+                        state = RoyalTitansBotStatus.FIGHTING;
                         sleep(1200, 1600);
                     }
                 } else {
@@ -603,8 +603,8 @@ public class RoyalTitansScript extends Script {
                 inventorySetup.loadInventory();
             }
             Rs2Bank.closeBank();
-            travelStatus = TravelStatus.TO_TITANS;
-            state = BotStatus.TRAVELLING;
+            travelStatus = RoyalTitansTravelStatus.TO_TITANS;
+            state = RoyalTitansBotStatus.TRAVELLING;
         } else {
             var items = inventorySetup.getEquipmentItems();
             var inventory = inventorySetup.getInventoryItems();
@@ -621,8 +621,8 @@ public class RoyalTitansScript extends Script {
             }
             if (inventorySetup.doesInventoryMatch() && inventorySetup.doesEquipmentMatch()) {
                 Rs2Bank.closeBank();
-                travelStatus = TravelStatus.TO_TITANS;
-                state = BotStatus.TRAVELLING;
+                travelStatus = RoyalTitansTravelStatus.TO_TITANS;
+                state = RoyalTitansBotStatus.TRAVELLING;
             } else {
                 Microbot.log("Failed to load inventory or equipment");
                 shutdown();
@@ -634,8 +634,8 @@ public class RoyalTitansScript extends Script {
     public void shutdown() {
         super.shutdown();
         isRunning = false;
-        state = BotStatus.BANKING;
-        travelStatus = TravelStatus.TO_BANK;
+        state = RoyalTitansBotStatus.BANKING;
+        travelStatus = RoyalTitansTravelStatus.TO_BANK;
         enrageTile = null;
         kills = 0;
         disableAllPrayers();
