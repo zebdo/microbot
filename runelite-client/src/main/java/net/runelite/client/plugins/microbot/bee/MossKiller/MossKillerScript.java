@@ -1,6 +1,9 @@
 package net.runelite.client.plugins.microbot.bee.MossKiller;
 
+import net.runelite.api.Perspective;
+import net.runelite.api.Point;
 import net.runelite.api.Skill;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -13,6 +16,7 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
+import net.runelite.client.plugins.microbot.util.coords.Rs2LocalPoint;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -440,7 +444,8 @@ public class MossKillerScript extends Script {
             sleep(3000, 5000);
 
             Microbot.log("attempting to take loot");
-            lootWorldPoint(MossKillerPlugin.bryoTile);
+            //lootWorldPoint(MossKillerPlugin.bryoTile);
+            lootBoss();
             sleep(3000, 5000);
 
             Microbot.log("Moving to TELEPORT state");
@@ -449,6 +454,31 @@ public class MossKillerScript extends Script {
             Microbot.log("Bryophyta is still alive, attacking");
             var interactingNpc = (Rs2NpcModel) Rs2Player.getInteracting();
             if (interactingNpc == null) Rs2Npc.attack("Bryophyta");
+        }
+    }
+
+    public void lootBoss() {
+        int lootCounter = 0;
+        int randInt = Rs2Random.between(7, 12);
+        for (int i = 0; i < randInt; i++) {
+            if(lootCounter >= 3){
+                break;
+            }
+            if(Rs2Inventory.isFull()){
+                Rs2Player.eatAt(0);
+            }
+            int currentInventoryCount = Rs2Inventory.count();
+            LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), MossKillerPlugin.bryoTile);
+            if (localPoint == null) {
+                localPoint = Rs2LocalPoint.fromWorldInstance(MossKillerPlugin.bryoTile);
+            }
+            Point canvasPoint = Perspective.localToCanvas(Microbot.getClient(), localPoint, Microbot.getClient().getPlane());
+            Microbot.getMouse().move(canvasPoint);
+            Microbot.getMouse().click(canvasPoint, false);
+            sleepUntil(() -> !Rs2Player.isMoving() && (currentInventoryCount != Rs2Inventory.count()), 3000);
+            if(currentInventoryCount == Rs2Inventory.count()){
+                lootCounter += 1;
+            }
         }
     }
 
