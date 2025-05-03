@@ -4,6 +4,7 @@ import net.runelite.api.Varbits;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Login;
@@ -34,6 +35,7 @@ public class PlayerMonitorScript extends Script {
     int otherPlayerWorld;
     private boolean logoutInitiated = false;
     Color offColor = new Color(0, 0, 0, 0);
+    private boolean naturalmouse = false;
 
     public boolean run(PlayerMonitorConfig config, OverlayManager overlayManager) {
         this.config = config;
@@ -147,6 +149,7 @@ public class PlayerMonitorScript extends Script {
     }
 
     private void logoutPlayer() {
+        if (Rs2AntibanSettings.naturalMouse) {Rs2AntibanSettings.naturalMouse = false; naturalmouse = true;}
         ClientUI.getClient().setEnabled(false);
         if (this.isRunning()) {
             sleep(61, 93);}
@@ -155,6 +158,7 @@ public class PlayerMonitorScript extends Script {
         if (this.isRunning()) {
             sleep(61, 93);}
         ClientUI.getClient().setEnabled(true);
+        if (naturalmouse && !Rs2AntibanSettings.naturalMouse) {Rs2AntibanSettings.naturalMouse = true; naturalmouse = false;}
     }
 
     @Override
