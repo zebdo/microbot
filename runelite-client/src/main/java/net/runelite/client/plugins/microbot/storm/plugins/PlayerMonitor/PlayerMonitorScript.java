@@ -132,10 +132,12 @@ public class PlayerMonitorScript extends Script {
                         Microbot.log("PlayerMonitorLite: Player detected - logging out");
                         logoutInitiated = true;
                         // Perform logout
+                        if (Rs2AntibanSettings.naturalMouse) {Rs2AntibanSettings.naturalMouse = false; naturalmouse = true;}
                         Microbot.getClientThread().runOnSeperateThread(() -> {
                             logoutPlayer();
                             return true;
                         });
+                        if (naturalmouse && !Rs2AntibanSettings.naturalMouse) {Rs2AntibanSettings.naturalMouse = true; naturalmouse = false;}
                     } else if (!plugin.isPlayerDetected() && logoutInitiated) {
                         logoutInitiated = false;
                     }
@@ -149,7 +151,6 @@ public class PlayerMonitorScript extends Script {
     }
 
     private void logoutPlayer() {
-        if (Rs2AntibanSettings.naturalMouse) {Rs2AntibanSettings.naturalMouse = false; naturalmouse = true;}
         ClientUI.getClient().setEnabled(false);
         if (this.isRunning()) {
             sleep(61, 93);}
@@ -158,7 +159,6 @@ public class PlayerMonitorScript extends Script {
         if (this.isRunning()) {
             sleep(61, 93);}
         ClientUI.getClient().setEnabled(true);
-        if (naturalmouse && !Rs2AntibanSettings.naturalMouse) {Rs2AntibanSettings.naturalMouse = true; naturalmouse = false;}
     }
 
     @Override
