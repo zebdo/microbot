@@ -41,6 +41,8 @@ public class RoyalTitansScript extends Script {
 
     private final Integer MELEE_TITAN_ICE_REGION_X = 34;
     private final Integer MELEE_TITAN_FIRE_REGION_X = 26;
+    private final Integer ARENA_X_START = 28;
+    private final Integer ARENA_X_END = 33;
     private final Integer FIRE_MINION_ID = 14150;
     private final Integer ICE_MINION_ID = 14151;
     private final Integer FIRE_WALL = 14152;
@@ -503,7 +505,7 @@ public class RoyalTitansScript extends Script {
 
         for (WorldPoint tile : nearbyTiles) {
             // Tiles outside the arena returns true for isWalkable - Discard them
-            if (tile.getRegionX() < MELEE_TITAN_FIRE_REGION_X || tile.getRegionX() > MELEE_TITAN_ICE_REGION_X) {
+            if (tile.getRegionX() < ARENA_X_START || tile.getRegionX() > ARENA_X_END) {
                 Microbot.log("Tile is outside the arena, skipping");
                 continue;
             }
@@ -517,6 +519,7 @@ public class RoyalTitansScript extends Script {
     }
 
     private void handleTravelling(RoyalTitansConfig config) {
+        Rs2Prayer.disableAllPrayers();
         switch (travelStatus) {
             case TO_BANK:
                 if (inventorySetup.doesInventoryMatch() && inventorySetup.doesEquipmentMatch()) {
