@@ -95,7 +95,6 @@ public class TearsOfGuthixScript extends Script {
                             if (Rs2Player.distanceTo(junaLocation) <= 5) {
                                 BOT_STATUS = State.GETTING_WORLD;
                             }
-
                         }
                         break;
                     case GETTING_WORLD:
