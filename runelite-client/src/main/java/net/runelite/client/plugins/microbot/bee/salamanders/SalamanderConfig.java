@@ -14,16 +14,56 @@ public interface SalamanderConfig extends Config {
             position = 1
     )
     default String pluginDescription() {
-        return "This plugin is a WORK IN PROGRESS and needs testers!\n\n"
-                + "Join the Microbot Discord -> Community Plugins -> Salamanders\n"
-                + "to leave feedback and help improve the plugin.\n\n"
-                + "How to Use:\n"
-                + "- Have at least 5 Small Fishing Nets & 5 Ropes in your INVENTORY\n"
-                + "- Keep more Nets and Ropes in your BANK\n"
-                + "- You need the Hunter level to hunt minimum green salamanders to use this plugin\n"
-                + "\n"
-                + "Coded by the hands of a Venezuelan gold-farmer under B's instruction. Under the hood this is the "
-                + "First Microbot Plugin fully developed in Spanish! 🌎";
+        return "";
+    }
+
+    @ConfigItem(
+            keyName = "salamanderHunting",
+            name = "Salamander to hunt",
+            description = "Select which salamander to hunt"
+    )
+    default SalamanderHunting salamanderHunting() {
+        return null;
+    }
+
+    @ConfigItem(
+            position = 1,
+            keyName = "MinSleepAfterCatch",
+            name = "Min. Sleep After Catch",
+            description = "Min sleep after catch"
+    )
+    default int minSleepAfterCatch() {
+        return 8300;
+    }
+
+    @ConfigItem(
+            position = 2,
+            keyName = "MaxSleepAfterCatch",
+            name = "Max. Sleep After Catch",
+            description = "Max sleep after catch"
+    )
+    default int maxSleepAfterCatch() {
+        return 8400;
+    }
+
+    @ConfigItem(
+            position = 3,
+            keyName = "MinSleepAfterLay",
+            name = "Min. Sleep After Lay",
+            description = "Min sleep after lay"
+    )
+    default int minSleepAfterLay() {
+        return 5500;
+    }
+
+    @ConfigItem(
+            position = 4,
+            keyName = "MaxSleepAfterLay",
+            name = "Max. Sleep After Lay",
+            description = "Max sleep after lay"
+    )
+    default int maxSleepAfterLay() {
+        return 5700;
     }
 
     @ConfigItem(
