@@ -18,7 +18,7 @@ public enum Ores {
     ADAMANTITE("adamantite ore"),
     RUNITE("runite ore"),
     BUCKET_OF_SAND("bucket of sand"),
-    SODA_ASK("soda ash"),;
+    SODA_ASH("soda ash"),;
 
     private final String name;
     @Override
