@@ -91,12 +91,13 @@ public class DriftNetScript extends Script {
      * Increments netFetchAttempts if no nets were found
      */
     private void fetchNetsFromAnnette() {
-        Microbot.getClient().getWeight();
+        final int maxWeight = 25; // https://oldschool.runescape.wiki/w/Drift_net_fishing
+        var maxDriftnets = maxWeight - Microbot.getClient().getWeight() - 1; // Driftnets are 1kg each; doing - 1 to be safe
         Rs2GameObject.interact(ObjectID.ANNETTE, "Nets");
         sleepUntil(() -> Rs2Widget.getWidget(20250629) != null);
         Rs2Widget.clickWidgetFast(Rs2Widget.getWidget(20250629), 0, 3);
         sleepGaussian(1500, 300);
-        Rs2Keyboard.typeString("22");
+        Rs2Keyboard.typeString(String.valueOf(maxDriftnets));
         sleepGaussian(1500, 300);
         Rs2Keyboard.keyPress(KeyEvent.VK_ENTER);
         sleepGaussian(1500, 300);
