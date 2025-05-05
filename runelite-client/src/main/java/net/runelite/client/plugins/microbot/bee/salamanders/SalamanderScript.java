@@ -5,6 +5,9 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.hunter.HunterTrap;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
+import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
@@ -15,12 +18,18 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+import static net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity.EXTREME;
+import static net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity.MODERATE;
+
 public class SalamanderScript extends Script {
     public static final int SMALL_FISHING_NET = 303;
     public static final int ROPE = 954;
-    public int SalamandersCaught = 0;
+    public static int SalamandersCaught = 0;
 
     public boolean run(SalamanderConfig config, SalamanderPlugin plugin) {
+        Rs2Antiban.resetAntibanSettings();
+        applyAntiBanSettings();
+        Rs2Antiban.setActivity(Activity.GENERAL_HUNTER);
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!super.run()) return;
@@ -67,6 +76,22 @@ public class SalamanderScript extends Script {
             }
         }, 0, 1000, TimeUnit.MILLISECONDS);
         return true;
+    }
+
+    private void applyAntiBanSettings() {
+        Rs2AntibanSettings.antibanEnabled = true;
+        Rs2AntibanSettings.usePlayStyle = true;
+        Rs2AntibanSettings.simulateFatigue = true;
+        Rs2AntibanSettings.simulateAttentionSpan = true;
+        Rs2AntibanSettings.behavioralVariability = true;
+        Rs2AntibanSettings.nonLinearIntervals = true;
+        Rs2AntibanSettings.naturalMouse = true;
+        Rs2AntibanSettings.simulateMistakes = true;
+        Rs2AntibanSettings.moveMouseOffScreen = true;
+        Rs2AntibanSettings.contextualVariability = true;
+        Rs2AntibanSettings.devDebug = false;
+        Rs2AntibanSettings.playSchedule = true;
+        Rs2AntibanSettings.actionCooldownChance = 0.1;
     }
 
     private void handleBanking(SalamanderConfig config) {

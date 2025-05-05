@@ -15,7 +15,7 @@ public class SalamanderOverlay extends OverlayPanel {
     private final SalamanderConfig config;
     private final SalamanderPlugin plugin;
     private final SalamanderScript script;
-    private final int startingLevel;
+    private int startingLevel = 0;
 
     @Inject
     public SalamanderOverlay(Client client, SalamanderConfig config, SalamanderPlugin plugin, SalamanderScript script) {
@@ -26,13 +26,16 @@ public class SalamanderOverlay extends OverlayPanel {
         this.script = script;
         setPosition(OverlayPosition.TOP_LEFT);
         setNaughty();
-        startingLevel = client.getRealSkillLevel(Skill.HUNTER);
     }
 
     @Override
     public Dimension render(Graphics2D graphics) {
         if (!config.showOverlay()) {
             return null;
+        }
+
+        if (startingLevel == 0) {
+            startingLevel = client.getRealSkillLevel(Skill.HUNTER);
         }
 
         panelComponent.getChildren().clear();
@@ -82,7 +85,7 @@ public class SalamanderOverlay extends OverlayPanel {
         // Statistics
         panelComponent.getChildren().add(LineComponent.builder()
                 .left("Salamanders Caught:")
-                .right(String.valueOf(script.SalamandersCaught))
+                .right(String.valueOf(SalamanderScript.SalamandersCaught))
                 .leftColor(Color.WHITE)
                 .rightColor(Color.GREEN)
                 .build());
