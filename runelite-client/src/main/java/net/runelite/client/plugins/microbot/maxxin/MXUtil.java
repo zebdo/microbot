@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.maxxin.util;
+package net.runelite.client.plugins.microbot.maxxin;
 
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
