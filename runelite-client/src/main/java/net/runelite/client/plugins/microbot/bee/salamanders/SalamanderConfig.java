@@ -26,7 +26,17 @@ public interface SalamanderConfig extends Config {
             description = "Select which salamander to hunt"
     )
     default SalamanderHunting salamanderHunting() {
-        return null;
+        return SalamanderHunting.GREEN;
+    }
+
+    @ConfigItem(
+            position = 1,
+            keyName = "withdrawNumber",
+            name = "Number of nets/ropes to withdraw",
+            description = "Number of nets/ropes to withdraw from bank"
+    )
+    default int withdrawNumber() {
+        return 8;
     }
 
     @ConfigItem(

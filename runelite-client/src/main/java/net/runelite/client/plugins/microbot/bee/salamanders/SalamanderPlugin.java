@@ -3,14 +3,12 @@ package net.runelite.client.plugins.microbot.bee.salamanders;
 import com.google.inject.Provides;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.GameObject;
-import net.runelite.api.Player;
-import net.runelite.api.Tile;
+import net.runelite.api.*;
 import net.runelite.api.coords.Angle;
 import net.runelite.api.coords.Direction;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.gameval.ObjectID;
@@ -19,6 +17,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.hunter.HunterTrap;
+import net.runelite.client.plugins.microbot.magic.orbcharger.enums.OrbChargerState;
 import net.runelite.client.plugins.microbot.util.misc.TimeUtils;
 import net.runelite.client.ui.overlay.OverlayManager;
 
@@ -153,6 +152,13 @@ public class SalamanderPlugin extends Plugin {
                     myTrap.setState(HunterTrap.State.TRANSITION);
                 }
                 break;
+        }
+    }
+
+    @Subscribe
+    public void onChatMessage(ChatMessage event) {
+        if (event.getType() == ChatMessageType.GAMEMESSAGE && event.getMessage().equalsIgnoreCase("oh dear, you are dead!")) {
+            script.hasDied = true;
         }
     }
 

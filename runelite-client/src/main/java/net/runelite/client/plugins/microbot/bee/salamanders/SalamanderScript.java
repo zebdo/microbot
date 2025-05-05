@@ -25,6 +25,7 @@ public class SalamanderScript extends Script {
     public static final int SMALL_FISHING_NET = 303;
     public static final int ROPE = 954;
     public static int SalamandersCaught = 0;
+    public boolean hasDied = false;
 
     public boolean run(SalamanderConfig config, SalamanderPlugin plugin) {
         Rs2Antiban.resetAntibanSettings();
@@ -37,11 +38,15 @@ public class SalamanderScript extends Script {
                 if (!this.isRunning()) return;
 
                 // Check if we have enough supplies
-                if (Rs2Inventory.count(ROPE) < 1 || Rs2Inventory.count(SMALL_FISHING_NET) < 1) {
+                if (config.salamanderHunting().getName().equals("Black salamander") && hasDied) {
+                    Microbot.log("We died - Restocking supplies");
+                    handleBanking(config);
+                } else if ((Rs2Inventory.count(ROPE) < 1 || Rs2Inventory.count(SMALL_FISHING_NET) < 1) && plugin.getTraps().isEmpty()) {
                     Microbot.log("Not enough supplies, need ropes and fishing nets");
                     handleBanking(config);
                     return;
                 }
+
 
                 // Get selected salamander type from config
                 SalamanderHunting salamanderType = config.salamanderHunting();
@@ -97,8 +102,10 @@ public class SalamanderScript extends Script {
     private void handleBanking(SalamanderConfig config) {
         Rs2Bank.walkToBank();
         Rs2Bank.openBank();
-        Rs2Bank.withdrawX(ROPE, 8);
-        Rs2Bank.withdrawX(SMALL_FISHING_NET, 8);
+        Rs2Bank.withdrawX(ROPE, config.withdrawNumber());
+        Rs2Bank.withdrawX(SMALL_FISHING_NET, config.withdrawNumber());
+        Rs2Bank.closeBank();
+        hasDied = false;
     }
 
     private boolean isNearSalamanderArea(SalamanderHunting salamanderType) {
