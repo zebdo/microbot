@@ -40,7 +40,7 @@ public interface SalamanderConfig extends Config {
     }
 
     @ConfigItem(
-            position = 1,
+            position = 2,
             keyName = "MinSleepAfterCatch",
             name = "Min. Sleep After Catch - Recommended minimum 7500ms",
             description = "Min sleep after catch"
@@ -50,7 +50,7 @@ public interface SalamanderConfig extends Config {
     }
 
     @ConfigItem(
-            position = 2,
+            position = 3,
             keyName = "MaxSleepAfterCatch",
             name = "Max. Sleep After Catch",
             description = "Max sleep after catch"
@@ -60,7 +60,7 @@ public interface SalamanderConfig extends Config {
     }
 
     @ConfigItem(
-            position = 3,
+            position = 4,
             keyName = "MinSleepAfterLay",
             name = "Min. Sleep After Lay - Recommended minimum 4000ms",
             description = "Min sleep after lay"
@@ -70,7 +70,7 @@ public interface SalamanderConfig extends Config {
     }
 
     @ConfigItem(
-            position = 4,
+            position = 5,
             keyName = "MaxSleepAfterLay",
             name = "Max. Sleep After Lay",
             description = "Max sleep after lay"
