@@ -129,7 +129,6 @@ public class SalamanderScript extends Script {
         if (trapToHandle == null) return false;
         WorldPoint location = trapToHandle.getKey();
         if (!Rs2Player.isAnimating() && !Rs2Player.isMoving()) {
-            Microbot.log("Checking full trap");
             Rs2Walker.walkTo(location);
             var gameObject = Rs2GameObject.getGameObject(location);
             if (gameObject != null) {
@@ -143,9 +142,7 @@ public class SalamanderScript extends Script {
     }
 
     private void setNewTrap(SalamanderHunting salamanderType, SalamanderConfig config) {
-        Microbot.log("Looking for tree to set trap");
         if (Rs2GameObject.exists(salamanderType.getTreeId())) {
-            Microbot.log("Setting trap at " + salamanderType.getName() + " tree");
             Rs2GameObject.interact(salamanderType.getTreeId(), "Set-trap");
             sleep(config.minSleepAfterLay(), config.maxSleepAfterLay());
         }

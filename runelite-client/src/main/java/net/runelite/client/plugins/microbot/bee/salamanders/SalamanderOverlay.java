@@ -51,8 +51,10 @@ public class SalamanderOverlay extends OverlayPanel {
 
         // Basic information
         panelComponent.getChildren().add(LineComponent.builder()
-                .left("Running: " + plugin.getTimeRunning())
+                .left("Running: ")
+                .right(plugin.getTimeRunning())
                 .leftColor(Color.WHITE)
+                .rightColor(Color.WHITE)
                 .build());
 
         panelComponent.getChildren().add(LineComponent.builder()
