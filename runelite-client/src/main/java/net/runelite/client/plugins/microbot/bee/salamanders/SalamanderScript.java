@@ -5,6 +5,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.hunter.HunterTrap;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -17,12 +18,21 @@ import java.util.stream.Collectors;
 public class SalamanderScript extends Script {
     public static final int SMALL_FISHING_NET = 303;
     public static final int ROPE = 954;
+    public int SalamandersCaught = 0;
+
     public boolean run(SalamanderConfig config, SalamanderPlugin plugin) {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!super.run()) return;
                 if (!Microbot.isLoggedIn()) return;
                 if (!this.isRunning()) return;
+
+                // Check if we have enough supplies
+                if (Rs2Inventory.count(ROPE) < 1 || Rs2Inventory.count(SMALL_FISHING_NET) < 1) {
+                    Microbot.log("Not enough supplies, need ropes and fishing nets");
+                    handleBanking(config);
+                    return;
+                }
 
                 // Get selected salamander type from config
                 SalamanderHunting salamanderType = config.salamanderHunting();
@@ -38,15 +48,9 @@ public class SalamanderScript extends Script {
                     return;
                 }
 
-                // Check if we have enough supplies
-                if (Rs2Inventory.count(ROPE) < 1 || Rs2Inventory.count(SMALL_FISHING_NET) < 1) {
-                    Microbot.log("Not enough supplies, need ropes and fishing nets");
-                    return;
-                }
-
                 // Count existing traps from plugin's trap map
                 int activeTrapCount = plugin.getTraps().size();
-                int maxTraps = getMaxTrapsForHunterLevel();
+                int maxTraps = getMaxTrapsForHunterLevel(config);
 
                 // Tend to active traps
                 boolean handledTrap = handleExistingTraps(plugin, config);
@@ -65,18 +69,30 @@ public class SalamanderScript extends Script {
         return true;
     }
 
+    private void handleBanking(SalamanderConfig config) {
+        Rs2Bank.walkToBank();
+        Rs2Bank.openBank();
+        Rs2Bank.withdrawX(ROPE, 8);
+        Rs2Bank.withdrawX(SMALL_FISHING_NET, 8);
+    }
+
     private boolean isNearSalamanderArea(SalamanderHunting salamanderType) {
         // Check if within ~20 tiles of the hunting point
         WorldPoint currentLocation = Rs2Player.getWorldLocation();
         return currentLocation.distanceTo(salamanderType.getHuntingPoint()) <= 20;
     }
 
-    private int getMaxTrapsForHunterLevel() {
+    public int getMaxTrapsForHunterLevel(SalamanderConfig config) {
         int hunterLevel = Microbot.getClient().getRealSkillLevel(Skill.HUNTER);
-        if (hunterLevel >= 80) return 5;
-        if (hunterLevel >= 60) return 4;
-        if (hunterLevel >= 40) return 3;
-        if (hunterLevel >= 20) return 2;
+        int base = 0;
+        // In the wilderness we get +1 trap
+        if (config.salamanderHunting() != null && config.salamanderHunting().getName().equals("Black salamander")) {
+            base = 1;
+        }
+        if (hunterLevel >= 80) return 5 + base;
+        if (hunterLevel >= 60) return 4 + base;
+        if (hunterLevel >= 40) return 3 + base;
+        if (hunterLevel >= 20) return 2 + base;
         return 1;
     }
 
@@ -93,6 +109,7 @@ public class SalamanderScript extends Script {
             var gameObject = Rs2GameObject.getGameObject(location);
             if (gameObject != null) {
                 Rs2GameObject.interact(gameObject, "Reset");
+                SalamandersCaught++;
                 sleep(config.minSleepAfterCatch(), config.maxSleepAfterCatch());
                 return true;
             }
@@ -116,5 +133,6 @@ public class SalamanderScript extends Script {
     @Override
     public void shutdown() {
         super.shutdown();
+        SalamandersCaught = 0;
     }
 }

@@ -11,9 +11,9 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import java.util.concurrent.TimeUnit;
 
 public class SalamanderGroundItemLooter extends Script {
+    private final String itemsToLoot = "rope,small fishing net";
     private SalamanderConfig config;
     private SalamanderScript script;
-    private final String itemsToLoot = "rope,small fishing net";
 
     public boolean run(SalamanderConfig config, SalamanderScript script) {
         this.config = config;

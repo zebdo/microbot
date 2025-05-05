@@ -19,6 +19,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.hunter.HunterTrap;
+import net.runelite.client.plugins.microbot.util.misc.TimeUtils;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
@@ -49,6 +50,7 @@ public class SalamanderPlugin extends Plugin {
     private SalamanderScript script;
     private SalamanderGroundItemLooter looter;
     private WorldPoint lastTickLocalPlayerLocation;
+    private Instant scriptStartTime;
 
     @Provides
     SalamanderConfig provideConfig(ConfigManager configManager) {
@@ -58,6 +60,7 @@ public class SalamanderPlugin extends Plugin {
     @Override
     protected void startUp() throws Exception {
         log.info("Salamander Plugin started!");
+        scriptStartTime = Instant.now();
         overlayManager.add(salamanderOverlay);
         script = new SalamanderScript();
         script.run(config, this);
@@ -68,11 +71,16 @@ public class SalamanderPlugin extends Plugin {
     @Override
     protected void shutDown() throws Exception {
         log.info("Salamander Plugin stopped!");
+        scriptStartTime = null;
         overlayManager.remove(salamanderOverlay);
         if (script != null) {
             script.shutdown();
             looter.shutdown();
         }
+    }
+
+    protected String getTimeRunning() {
+        return scriptStartTime != null ? TimeUtils.getFormattedDurationBetween(scriptStartTime, Instant.now()) : "";
     }
 
     @Subscribe

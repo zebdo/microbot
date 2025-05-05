@@ -2,20 +2,23 @@ package net.runelite.client.plugins.microbot.bee.salamanders;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigInformation;
 import net.runelite.client.config.ConfigItem;
 
+@ConfigInformation("<html>"
+        + "Salamander script by Bee & TaF"
+        + "<p>This plugin automates salamander hunting all over Gielinor.</p>\n"
+        + "<p>Requirements:</p>\n"
+        + "<ol>\n"
+        + "    <li>Appropriate Hunter level for your chosen salamander type</li>\n"
+        + "    <li>Small fishing nets in bank or inventory</li>\n"
+        + "    <li>Rope in bank or inventory</li>\n"
+        + "</ol>\n"
+        + "<p>Configure sleep timings and salamander type in the settings for optimal performance.</p>\n"
+        + "<p>Use the overlay option to display trap status and hunter information on screen.</p>"
+        + "</html>")
 @ConfigGroup("Salamander")
 public interface SalamanderConfig extends Config {
-
-    @ConfigItem(
-            keyName = "pluginDescription",
-            name = "Plugin Info & How to Use",
-            description = "Instructions and plugin status",
-            position = 1
-    )
-    default String pluginDescription() {
-        return "";
-    }
 
     @ConfigItem(
             keyName = "salamanderHunting",
@@ -29,11 +32,11 @@ public interface SalamanderConfig extends Config {
     @ConfigItem(
             position = 1,
             keyName = "MinSleepAfterCatch",
-            name = "Min. Sleep After Catch",
+            name = "Min. Sleep After Catch - Recommended minimum 7500ms",
             description = "Min sleep after catch"
     )
     default int minSleepAfterCatch() {
-        return 8300;
+        return 7500;
     }
 
     @ConfigItem(
@@ -49,11 +52,11 @@ public interface SalamanderConfig extends Config {
     @ConfigItem(
             position = 3,
             keyName = "MinSleepAfterLay",
-            name = "Min. Sleep After Lay",
+            name = "Min. Sleep After Lay - Recommended minimum 4000ms",
             description = "Min sleep after lay"
     )
     default int minSleepAfterLay() {
-        return 5500;
+        return 4000;
     }
 
     @ConfigItem(
@@ -63,7 +66,7 @@ public interface SalamanderConfig extends Config {
             description = "Max sleep after lay"
     )
     default int maxSleepAfterLay() {
-        return 5700;
+        return 5400;
     }
 
     @ConfigItem(
@@ -74,6 +77,4 @@ public interface SalamanderConfig extends Config {
     default boolean showOverlay() {
         return true;
     }
-
-
 }

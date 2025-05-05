@@ -3,17 +3,18 @@ package net.runelite.client.plugins.microbot.bee.salamanders;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.plugins.microbot.util.walker.enums.Salamanders;
 
 @Getter
 @RequiredArgsConstructor
 public enum SalamanderHunting {
 
 
-    GREEN("Green salamander", 8990, new WorldPoint(2340, 3630, 0)),
-    ORANGE("Orange salamander", 8990, new WorldPoint(2340, 3167, 0)),
-    RED("Red salamander", 8990, new WorldPoint(2464, 3226, 0)),
-    BLACK("Black salamander", 8990, new WorldPoint(3348, 3794, 0)),
-    TECU("Tecu salamander", 8990, new WorldPoint(3725, 3200, 0));
+    GREEN("Green salamander", 9341, Salamanders.GREEN_SALAMANDER.getWorldPoint()),
+    ORANGE("Orange salamander", 8732, Salamanders.ORANGE_SALAMANDER_2.getWorldPoint()),
+    RED("Red salamander", 8990, Salamanders.RED_SALAMANDER.getWorldPoint()),
+    BLACK("Black salamander", 9000, Salamanders.BLACK_SALAMANDER.getWorldPoint()),
+    TECU("Tecu salamander", 50721, Salamanders.TECU_SALAMANDER.getWorldPoint());
 
     private final String name;
     private final int treeId;
@@ -24,10 +25,3 @@ public enum SalamanderHunting {
         return name;
     }
 }
-
-/*
-*
-*     WorldArea AREA_LUMBRIDGE = new WorldArea(3205, 3200, 34, 37, 0);
-    WorldArea AREA_VERDE_SALAMANDER = new WorldArea(3531, 3444, 10, 9, 0);
-    WorldArea AREA_ROJA_SALAMANDER = new WorldArea(2443, 3217, 13, 12, 0);
-    WorldArea AREA_NEGRA_SALAMANDER = new WorldArea(3290, 3663, 14, 16, 0);*/
