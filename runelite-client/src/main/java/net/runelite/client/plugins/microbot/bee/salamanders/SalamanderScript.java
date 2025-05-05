@@ -129,7 +129,6 @@ public class SalamanderScript extends Script {
         if (trapToHandle == null) return false;
         WorldPoint location = trapToHandle.getKey();
         if (!Rs2Player.isAnimating() && !Rs2Player.isMoving()) {
-            Rs2Walker.walkTo(location);
             var gameObject = Rs2GameObject.getGameObject(location);
             if (gameObject != null) {
                 Rs2GameObject.interact(gameObject, "Reset");
