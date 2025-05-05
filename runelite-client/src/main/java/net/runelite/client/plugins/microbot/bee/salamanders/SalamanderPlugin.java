@@ -30,7 +30,7 @@ import java.util.Map;
 
 @Slf4j
 @PluginDescriptor(
-        name = PluginDescriptor.Bee + "Salamanders",
+        name = PluginDescriptor.TaFCat + "Salamanders",
         description = "Automates salamander hunting",
         tags = {"hunter", "salamanders", "skilling"},
         enabledByDefault = false
