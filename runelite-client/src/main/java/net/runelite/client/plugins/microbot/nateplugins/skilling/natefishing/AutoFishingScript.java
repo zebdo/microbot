@@ -32,7 +32,7 @@ enum State {
 
 public class AutoFishingScript extends Script {
 
-    private static final List<String> rawFishNames = List.of("raw shrimps", "raw anchovies", "raw sardine", "raw herring", "raw mackerel", "raw cod", "raw bass", "raw trout", "raw salmon", "raw pike", "raw tuna", "raw swordfish", "raw cave eel", "raw slimy eel", "raw lobster", "raw monkfish", "raw karambwanji", "raw shark", "anglerfish", "raw karambwan");
+    private static final List<String> rawFishNames = List.of("raw shrimps", "raw anchovies", "raw sardine", "raw herring", "raw mackerel", "raw cod", "raw bass", "raw trout", "raw salmon", "raw pike", "raw tuna", "raw swordfish", "raw cave eel", "raw slimy eel", "raw lobster", "raw monkfish", "raw karambwanji", "raw shark", "raw anglerfish", "raw karambwan");
     public static String version = "1.6.0";
     private String fishAction = "";
     State state;
