@@ -36,6 +36,8 @@ import com.google.inject.Provides;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.Notifier;
+import net.runelite.client.config.Notification;
 import net.runelite.api.GameState;
 import net.runelite.api.Skill;
 import net.runelite.api.events.GameStateChanged;
@@ -77,6 +79,7 @@ import net.runelite.client.util.ImageUtil;
         + "Plugin Scheduler", description = "Schedule plugins at your will", tags = { "microbot", "schedule",
                 "automation" }, enabledByDefault = false,priority = false)
 public class SchedulerPlugin extends Plugin {
+    public static String VERSION = "0.1.0";
     @Inject
     private SchedulerConfig config;
     final static String configGroup = "pluginscheduler";
@@ -129,7 +132,8 @@ public class SchedulerPlugin extends Plugin {
     private Optional<ZonedDateTime> breakStartTime = Optional.empty();
     // login tracking
     private Thread loginMonitor;
-
+    @Inject
+    private Notifier notifier;
     @Override
     protected void startUp() {
 
@@ -329,7 +333,9 @@ public class SchedulerPlugin extends Plugin {
             }
 
             setState(SchedulerState.HOLD);
-            logout();
+            if(config.autoLogOutOnStop()){
+                logout();
+            }
 
             log.info("Scheduler stopped - status: {}", currentState);
             return false;
@@ -404,13 +410,12 @@ public class SchedulerPlugin extends Plugin {
                 }
 
                 if (!currentState.isActivelyRunning() && !currentState.isAboutStarting()) {
-                    log.info("\n\tScheduling next plugin: {}, not activly running, current state {}", nextPluginWith.getCleanName(),this.currentState);
+                    
+                    
                     scheduleNextPlugin();
                 } else {
-                    if(currentPlugin==null){
-                                                
-                        currentState = SchedulerState.WAITING_FOR_SCHEDULE;
-                        
+                    if(currentPlugin==null){                                                
+                        currentState = SchedulerState.WAITING_FOR_SCHEDULE;                        
                     }else{
                         if (!currentPlugin.isRunning() && !currentState.isAboutStarting()) {
                             currentState = SchedulerState.WAITING_FOR_SCHEDULE;
@@ -428,7 +433,9 @@ public class SchedulerPlugin extends Plugin {
                 if (!isOnBreak &&
                         currentState != SchedulerState.WAITING_FOR_SCHEDULE &&
                         currentState == SchedulerState.SCHEDULING) {
-                    startShortBreakUntilNextPlugin(true, 3);// short break with logout and max 3 minutes
+                    
+                    int breakDuration = Math.max(minTimeToNextScheduleForTakingABreak, config.maxBreakDuratation());
+                    startShortBreakUntilNextPlugin(config.autoLogOutOnBreak(), breakDuration);// short break with logout and max 3 minutes
                 }
             }
 
@@ -496,7 +503,7 @@ public class SchedulerPlugin extends Plugin {
         PluginScheduleEntry nextPlugin = getNextScheduledPlugin();
         Duration timeUntilNext = Duration.ZERO;
         ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
-        Microbot.getConfigManager().setConfiguration(BreakHandlerConfig.configGroup, "logout", logout);
+        Microbot.getConfigManager().setConfiguration(BreakHandlerConfig.configGroup, "Logout", logout);
         if (nextPlugin == null) {
             timeUntilNext = Duration.between(now, now.plusMinutes(beakDurationMinutes));
         } else {
@@ -568,6 +575,8 @@ public class SchedulerPlugin extends Plugin {
             log.info("\nInterrupting active break to start scheduled plugin: \n\t{}", selected.get().getCleanName());
             interruptBreak();
         }
+     
+       
         log.info("\nStarting scheduled plugin: \n\t{}\ncurrent state \n\t{}", selected.get().getCleanName(),this.currentState);
         startPluginScheduleEntry(selected.get());
         if (!selected.get().isRunning()) {
@@ -984,7 +993,7 @@ public class SchedulerPlugin extends Plugin {
     public boolean saveScheduledPluginsToFile(File file) {
         try {
             // Convert to JSON
-            String json = PluginScheduleEntry.toJson(scheduledPlugins);
+            String json = PluginScheduleEntry.toJson(scheduledPlugins, this.VERSION);
             
             // Write to file
             java.nio.file.Files.writeString(file.toPath(), json);
@@ -1015,7 +1024,7 @@ public class SchedulerPlugin extends Plugin {
             log.info("Loading scheduled plugins from file: {}", file.getAbsolutePath());
             
             // Parse JSON
-            List<PluginScheduleEntry> loadedPlugins = PluginScheduleEntry.fromJson(json);
+            List<PluginScheduleEntry> loadedPlugins = PluginScheduleEntry.fromJson(json,  this.VERSION); 
             if (loadedPlugins == null) {
                 log.error("Failed to parse JSON from file");
                 return false;
@@ -1109,7 +1118,7 @@ public class SchedulerPlugin extends Plugin {
 
     public void saveScheduledPlugins() {
         // Convert to JSON and save to config
-        String json = PluginScheduleEntry.toJson(scheduledPlugins);
+        String json = PluginScheduleEntry.toJson(scheduledPlugins, this.VERSION);
 
         // log.info("Saving scheduled plugins to config: {}", json);
         // config.setScheduledPlugins(json);
@@ -1131,7 +1140,7 @@ public class SchedulerPlugin extends Plugin {
             log.info("Loading scheduled plugins from config: {}\n\n", json);
 
             if (json != null && !json.isEmpty()) {
-                scheduledPlugins = PluginScheduleEntry.fromJson(json);
+                scheduledPlugins = PluginScheduleEntry.fromJson(json,  this.VERSION);
 
                 // Apply stop settings from config to all loaded plugins
                 for (PluginScheduleEntry plugin : scheduledPlugins) {
@@ -1382,7 +1391,22 @@ public class SchedulerPlugin extends Plugin {
 
         // Check if conditions are met
         boolean stopStarted = currentPlugin.checkConditionsAndStop(true);
+        if (currentPlugin.isRunning() && !stopStarted && currentState != SchedulerState.SOFT_STOPPING_PLUGIN && currentPlugin.isDefault()){
+            boolean stopDefaultPlugin = config.stopDefaultPluginMode();
+            //TODO 1 minute .> but problem for now is cant ensure its not scheduled agin, we would must disable all default plugins -> until the next or adped the "getNextScheduledPlugin" ->  dont return default, when there is a plugin not default withn the time perioty
+//            int minTimeToNextScheduleBeforeStoppingDefaultPlugin = config.stopDefaultPluginGracePeriod(); 
+            int minTimeToNextScheduleBeforeStoppingDefaultPlugin = 0; // TODO: we must update getNextScheduledPlugin mehthod to return the next plugin with a time period
+            PluginScheduleEntry nextPluginWith = getNextScheduledPlugin(true, Duration.ofMinutes(minTimeToNextScheduleBeforeStoppingDefaultPlugin)).orElse(null);
+            if(stopDefaultPlugin && nextPluginWith != null && nextPluginWith.isDefault()){
+                stopStarted = currentPlugin.stop(true);
+            }
+
+        }
         if (stopStarted) {
+            if (config.notificationsOn()){
+                String notificationMessage = "SoftStop Plugin '" + currentPlugin.getCleanName() + "' stopped because conditions were met";         
+                notifier.notify(Notification.ON, notificationMessage);
+            }
             log.info("Plugin '{}' stopped because conditions were met",
                     currentPlugin.getCleanName());
             // Set state to indicate we're stopping the plugin
@@ -2207,7 +2231,16 @@ public class SchedulerPlugin extends Plugin {
                     currentPlugin.getCleanName(),
                     event.getReason(),
                     event.isSuccess());
-
+            if (config.notificationsOn()){                
+                String notificationMessage = "Plugin '" + currentPlugin.getCleanName() + "' finished: " + event.getReason();
+                if (event.isSuccess()) {
+                    notificationMessage += " (Success)";
+                } else {
+                    notificationMessage += " (Failed)";
+                }
+                notifier.notify(Notification.ON, notificationMessage);
+                
+            }
             // Update the stop reason information
             currentPlugin.setLastStopReason(event.getReason());
             currentPlugin.setLastRunSuccessful(event.isSuccess());
@@ -2341,7 +2374,7 @@ public class SchedulerPlugin extends Plugin {
 
                     // Set state to error
                     setState(SchedulerState.SCHEDULING);
-                } else if (currentState == SchedulerState.SOFT_STOPPING_PLUGIN) {
+                } else if (currentState == SchedulerState.SOFT_STOPPING_PLUGIN) {                    
                     // If we were soft stopping and it completed, make sure stop reason is set
                     if (currentPlugin.getStopReasonType() == PluginScheduleEntry.StopReason.NONE) {
                         // Set stop reason if it wasn't already set
@@ -2349,7 +2382,7 @@ public class SchedulerPlugin extends Plugin {
                         currentPlugin.setLastStopReason("Scheduled stop completed successfully");
                         currentPlugin.setLastRunSuccessful(true);
                     }
-                } else if (currentState == SchedulerState.HARD_STOPPING_PLUGIN) {
+                } else if (currentState == SchedulerState.HARD_STOPPING_PLUGIN) {                    
                     // Hard stop completed
                     if (currentPlugin.getStopReasonType() == PluginScheduleEntry.StopReason.NONE) {
                         currentPlugin.setStopReasonType(PluginScheduleEntry.StopReason.HARD_STOP_TIMEOUT);

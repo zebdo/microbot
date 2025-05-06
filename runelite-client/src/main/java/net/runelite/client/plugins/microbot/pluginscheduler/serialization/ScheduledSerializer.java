@@ -47,6 +47,18 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.s
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.serialization.LootItemConditionAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.serialization.ProcessItemConditionAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.serialization.ResourceConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.SkillLevelCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.SkillXpCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.serialization.SkillLevelConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.serialization.SkillXpConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.npc.NpcKillCountCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.npc.serialization.NpcKillCountConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.location.AreaCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.location.RegionCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.location.PositionCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.location.serialization.AreaConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.location.serialization.RegionConditionAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.location.serialization.PositionConditionAdapter;
 
 import java.io.IOException;
 import java.lang.reflect.Type;
@@ -95,7 +107,7 @@ public class ScheduledSerializer {
         builder.registerTypeAdapter(Alpha.class, new AlphaAdapter());
         builder.registerTypeAdapter(Units.class, new UnitsAdapter());
         
-        // Other adapters still needed for individual conditions
+        // Time condition adapters
         builder.registerTypeAdapter(TimeCondition.class, new TimeConditionAdapter());
         builder.registerTypeAdapter(IntervalCondition.class, new IntervalConditionAdapter());
         builder.registerTypeAdapter(SingleTriggerTimeCondition.class, new SingleTriggerTimeConditionAdapter());
@@ -113,6 +125,18 @@ public class ScheduledSerializer {
         builder.registerTypeAdapter(LootItemCondition.class, new LootItemConditionAdapter());
         builder.registerTypeAdapter(GatheredResourceCondition.class, new GatheredResourceConditionAdapter());
         builder.registerTypeAdapter(ProcessItemCondition.class, new ProcessItemConditionAdapter());
+        
+        // Skill condition adapters
+        builder.registerTypeAdapter(SkillLevelCondition.class, new SkillLevelConditionAdapter());
+        builder.registerTypeAdapter(SkillXpCondition.class, new SkillXpConditionAdapter());
+        
+        // NPC condition adapters
+        builder.registerTypeAdapter(NpcKillCountCondition.class, new NpcKillCountConditionAdapter());
+        
+        // Location condition adapters
+        builder.registerTypeAdapter(AreaCondition.class, new AreaConditionAdapter());
+        builder.registerTypeAdapter(RegionCondition.class, new RegionConditionAdapter());
+        builder.registerTypeAdapter(PositionCondition.class, new PositionConditionAdapter());
         
         // Varbit condition adapter
         builder.registerTypeAdapter(VarbitCondition.class, new VarbitConditionAdapter());
@@ -145,7 +169,7 @@ public class ScheduledSerializer {
     /**
      * Serialize a list of ScheduledPlugin objects to JSON
      */
-    public static String toJson(List<PluginScheduleEntry> plugins) {
+    public static String toJson(List<PluginScheduleEntry> plugins, String version) {
         try {
             return createGson().toJson(plugins);
         } catch (Exception e) {
@@ -157,7 +181,7 @@ public class ScheduledSerializer {
     /**
      * Deserialize a JSON string to a list of ScheduledPlugin objects
      */
-    public static List<PluginScheduleEntry> fromJson(String json) {
+    public static List<PluginScheduleEntry> fromJson(String json,String version) {
         if (json == null || json.isEmpty()) {
             return new ArrayList<>();
         }

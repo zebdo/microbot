@@ -70,8 +70,7 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
         ConfigDescriptor configDescriptor = src.getConfigScheduleEntryDescriptor() != null ? src.getConfigScheduleEntryDescriptor(): null;
         if (configDescriptor != null) {
             result.add("configDescriptor", context.serialize(configDescriptor));
-        }else {
-            log.info("null configDescriptor -cannot serialize");
+        }else {            
             result.add("configDescriptor", new JsonObject());
         }
             

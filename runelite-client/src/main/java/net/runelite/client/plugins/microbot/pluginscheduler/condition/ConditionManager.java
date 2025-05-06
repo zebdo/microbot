@@ -113,7 +113,7 @@ public class ConditionManager implements AutoCloseable {
      * Stores the current update strategy for watchdog condition updates.
      * Controls how new conditions are merged with existing ones during watchdog checks.
      */
-    private UpdateOption currentWatchdogUpdateOption = UpdateOption.ADD_ONLY;
+    private UpdateOption currentWatchdogUpdateOption = UpdateOption.SYNC;
     
     /**
      * The current interval in milliseconds between watchdog condition checks.
@@ -653,7 +653,13 @@ public class ConditionManager implements AutoCloseable {
             log.warn("Attempted to remove a plugin-defined condition");
             return false;
         }
-        
+        if (condition instanceof LogicalCondition) {
+            // If the condition is a logical condition, check if it's part of the user logical structure
+            if (userLogicalCondition.equals(condition)) {
+                log.warn("Attempted to remove the user logical condition itself");
+                userLogicalCondition =  new AndCondition(); 
+            }
+        }
         // Remove from user logical structure
         if (userLogicalCondition.removeCondition(condition)) {
             return true;
@@ -1630,7 +1636,7 @@ public void onStatChanged(StatChanged event) {
      */
     public boolean updatePluginCondition(LogicalCondition newPluginCondition) {
         // Use the default update option (ADD_ONLY)
-        return updatePluginCondition(newPluginCondition, UpdateOption.ADD_ONLY);
+        return updatePluginCondition(newPluginCondition, UpdateOption.SYNC);
     }
     
     /**
@@ -1710,7 +1716,7 @@ public void onStatChanged(StatChanged event) {
                 return true;
             } else if (updateOption == UpdateOption.SYNC) {
                 // For SYNC with type mismatch, log a warning but try to merge anyway
-                log.warn("Attempting to synchronize plugin conditions with different logical types: {} ({})-> {} ({})", 
+                log.warn("\nAttempting to synchronize plugin conditions with different logical types: {} ({})-> {} ({})", 
                         pluginCondition.getClass().getSimpleName(),pluginCondition.getConditions().size(),
                         newPluginCondition.getClass().getSimpleName(),newPluginCondition.getConditions().size());
                 // Continue with sync by creating a new condition of the correct type
@@ -1742,7 +1748,9 @@ public void onStatChanged(StatChanged event) {
         
         // Use the LogicalCondition's updateLogicalStructure method with the specified options
         boolean conditionsUpdated = pluginCondition.updateLogicalStructure(
-            newPluginCondition, updateOption, preserveState);
+            newPluginCondition, 
+            updateOption, 
+            preserveState);
         
         if (!optimizedNewCondition.equals(pluginCondition)) {            
             StringBuilder sb = new StringBuilder();
@@ -1850,7 +1858,7 @@ public void onStatChanged(StatChanged event) {
             java.util.function.Supplier<LogicalCondition> conditionSupplier,
             long interval) {
         
-        return scheduleConditionWatchdog(conditionSupplier, interval, UpdateOption.ADD_ONLY);
+        return scheduleConditionWatchdog(conditionSupplier, interval, UpdateOption.SYNC);
     }
     
     /**

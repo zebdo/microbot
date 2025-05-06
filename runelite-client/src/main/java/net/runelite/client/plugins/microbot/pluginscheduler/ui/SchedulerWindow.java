@@ -174,7 +174,9 @@ public class SchedulerWindow extends JFrame implements ConditionUpdateCallback {
      * Called when conditions are updated in the UI and need to be saved.
      */
     @Override
-    public void onConditionsUpdated(LogicalCondition logicalCondition, PluginScheduleEntry plugin, boolean isStopCondition) {
+    public void onConditionsUpdated(    LogicalCondition logicalCondition, 
+                                        PluginScheduleEntry plugin, 
+                                        boolean isStopCondition) {
         // Save to default configuration
         onConditionsUpdated(logicalCondition, plugin, isStopCondition, null);
     }
@@ -191,9 +193,7 @@ public class SchedulerWindow extends JFrame implements ConditionUpdateCallback {
             return;
         }
         
-        log.info("Saving {} conditions for plugin: {}", 
-                isStopCondition ? "stop" : "start", 
-                pluginEntry.getCleanName());
+       
         
         try {
            

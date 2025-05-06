@@ -267,7 +267,7 @@ public class ScheduleTablePanel extends JPanel implements ScheduleTableModel {
             @Override
             public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
                 Component c = super.getTableCellRendererComponent(table, value, isSelected, hasFocus, row, column);                
-                if (row >= 0 && row < rowToPluginMap.size()) {
+                if (row > 0 && row < rowToPluginMap.size()) {
                     PluginScheduleEntry rowPlugin = rowToPluginMap.get(row);
                     
                     if (isSelected) {

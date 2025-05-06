@@ -1,22 +1,4 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.model;
-
-
-import java.time.Duration;
-import java.time.Instant;
-import java.time.LocalTime;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Supplier;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalTime;
@@ -29,32 +11,24 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Supplier;
-
-import com.google.gson.JsonObject;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.config.ConfigDescriptor;
-import net.runelite.client.config.ConfigDescriptor;
 import net.runelite.client.config.ConfigDescriptor;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionManager;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.enums.UpdateOption;
-import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.enums.UpdateOption;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
-import net.runelite.client.plugins.microbot.pluginscheduler.config.ScheduleEntryConfigManager;
 import net.runelite.client.plugins.microbot.pluginscheduler.config.ScheduleEntryConfigManager;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.ScheduledSerializer;
@@ -75,9 +49,8 @@ public class PluginScheduleEntry implements AutoCloseable {
     private boolean enabled;
     private boolean hasStarted = false; // Flag to indicate if the plugin has started
     @Setter
-    private boolean needsStopCondition = false; // Flag to indicate if a time-based stop condition is needed
-    private transient ScheduleEntryConfigManager configManager; // Added field for config management    
-    private transient ScheduleEntryConfigManager scheduleEntryConfigManager; // Added field for config management
+    private boolean needsStopCondition = false; // Flag to indicate if a time-based stop condition is needed    
+    private transient ScheduleEntryConfigManager scheduleEntryConfigManager; 
 
     // New fields for tracking stop reason
     private String lastStopReason;
@@ -211,7 +184,7 @@ public class PluginScheduleEntry implements AutoCloseable {
             this.isDefault = true;
             this.priority = 0;
         }
-        registerPluginConditions();
+        //registerPluginConditions();
         scheduleConditionWatchdogs(10000, UpdateOption.SYNC);                
         // Only start watchdogs if auto-start is enabled
         if (autoStartWatchdogs) {
@@ -261,7 +234,7 @@ public class PluginScheduleEntry implements AutoCloseable {
             startConditionManager.registerEvents();
             //log  this object id-> memory hashcode
             log.info("PluginScheduleEntry {} - {} - {} - {} - {}", this.hashCode(), this.name, this.cleanName, this.enabled, this.allowRandomScheduling);
-            registerPluginConditions();                        
+            //registerPluginConditions();                        
             this.finished = false; // Reset finished state when re-enabled
             this.setLastStopReason("");
             this.setLastRunSuccessful(false);
@@ -345,13 +318,13 @@ public class PluginScheduleEntry implements AutoCloseable {
                     .findFirst()
                     .orElse(null);
             
-            // Initialize configManager when plugin is first retrieved
-            if (this.plugin instanceof SchedulablePlugin && configManager == null) {
+            // Initialize scheduleEntryConfigManager when plugin is first retrieved
+            if (this.plugin instanceof SchedulablePlugin && scheduleEntryConfigManager == null) {
                 SchedulablePlugin schedulablePlugin = (SchedulablePlugin) this.plugin;
                 log.info("Plugin '{}' is a SchedulablePlugin", name);
                 ConfigDescriptor descriptor = schedulablePlugin.getConfigDescriptor();
                 if (descriptor != null) {
-                    configManager = new ScheduleEntryConfigManager(descriptor);
+                    scheduleEntryConfigManager = new ScheduleEntryConfigManager(descriptor);
                 }
             }
         }
@@ -385,8 +358,8 @@ public class PluginScheduleEntry implements AutoCloseable {
             this.finished = false; // Reset finished state when starting
             
             // Set scheduleMode to true in plugin config
-            if (configManager != null) {
-                configManager.setScheduleMode(true);
+            if (scheduleEntryConfigManager != null) {
+                scheduleEntryConfigManager.setScheduleMode(true);
                 log.debug("Set scheduleMode=true for plugin '{}'", name);
             }
             
@@ -504,8 +477,8 @@ public class PluginScheduleEntry implements AutoCloseable {
                         log.info("\nPlugin '{}' has successfully stopped - updating state - successfulRun {}", name, successfulRun);
                         
                         // Set scheduleMode back to false when the plugin stops
-                        if (configManager != null) {
-                            configManager.setScheduleMode(false);
+                        if (scheduleEntryConfigManager != null) {
+                            scheduleEntryConfigManager.setScheduleMode(false);
                             log.debug("Set scheduleMode=false for plugin '{}'", name);
                         }
                         
@@ -1218,63 +1191,66 @@ public class PluginScheduleEntry implements AutoCloseable {
     public String getConditionsDescription() {
         return stopConditionManager.getDescription();
     }
-
-    
-    public boolean checkConditionsAndStop(boolean successfulRun) {
+    public boolean stop(boolean successfulRun) {
         ZonedDateTime now = ZonedDateTime.now();
+        // Initial stop attempt
+        if (!stopInitiated) {
+            logStopConditionsWithDetails();
+            log.info("Stopping plugin {} due to conditions being met - initiating soft stop", name);
+            this.softStop(successfulRun); // This will start the monitoring thread
+        }
+        // Plugin didn't stop after previous attempts
+        else if (isRunning()) {
+            Duration timeSinceFirstAttempt = Duration.between(stopInitiatedTime, now);
+            Duration timeSinceLastAttempt = Duration.between(lastStopAttemptTime, now);
+            
+            // Force hard stop if we've waited too long
+            if ( hardStopTimeout.compareTo(Duration.ZERO) > 0 && timeSinceFirstAttempt.compareTo(hardStopTimeout) > 0 
+                && (getPlugin() instanceof SchedulablePlugin)
+                && ((SchedulablePlugin) getPlugin()).isHardStoppable()) {
+                log.warn("Plugin {} failed to respond to soft stop after {} seconds - forcing hard stop", 
+                         name, timeSinceFirstAttempt.toSeconds());
+                
+                // Stop current monitoring and start new one for hard stop
+                stopMonitoringThread();
+                this.hardStop(true);
+            }
+            // Retry soft stop at configured intervals
+            else if (timeSinceLastAttempt.compareTo(softStopRetryInterval) > 0) {
+                log.info("Plugin {} still running after soft stop - retrying (attempt time: {} seconds)", 
+                         name, timeSinceFirstAttempt.toSeconds());
+                lastStopAttemptTime = now;
+                this.softStop(true);
+            }else if (hardStopTimeout.compareTo(Duration.ZERO) > 0  && timeSinceLastAttempt.compareTo(hardStopTimeout.multipliedBy(2)) > 0) {                    
+                log.error("Forcibly shutting down the client due to unresponsive plugin: {}", name);
+
+                // Schedule client shutdown on the client thread to ensure it happens safely
+                Microbot.getClientThread().invoke(() -> {
+                    try {
+                        // Log that we're shutting down
+                        log.warn("Initiating emergency client shutdown due to plugin: {} cant be stopped", name);
+                        
+                        // Give a short delay for logging to complete
+                        Thread.sleep(1000);
+                        
+                        // Forcibly exit the JVM with a non-zero status code to indicate abnormal termination
+                        System.exit(1);
+                    } catch (Exception e) {
+                        log.error("Failed to shut down client", e);
+                        // Ultimate fallback
+                        Runtime.getRuntime().halt(1);
+                    }
+                    return true;
+                });  
+            }
+        }
+        return this.stopInitiated;
+    }
+    
+    public boolean checkConditionsAndStop(boolean successfulRun) {        
         
         if (shouldStop()) {
-            // Initial stop attempt
-            if (!stopInitiated) {
-                logStopConditionsWithDetails();
-                log.info("Stopping plugin {} due to conditions being met - initiating soft stop", name);
-                this.softStop(true); // This will start the monitoring thread
-            }
-            // Plugin didn't stop after previous attempts
-            else if (isRunning()) {
-                Duration timeSinceFirstAttempt = Duration.between(stopInitiatedTime, now);
-                Duration timeSinceLastAttempt = Duration.between(lastStopAttemptTime, now);
-                
-                // Force hard stop if we've waited too long
-                if ( hardStopTimeout.compareTo(Duration.ZERO) > 0 && timeSinceFirstAttempt.compareTo(hardStopTimeout) > 0 
-                    && (getPlugin() instanceof SchedulablePlugin)
-                    && ((SchedulablePlugin) getPlugin()).isHardStoppable()) {
-                    log.warn("Plugin {} failed to respond to soft stop after {} seconds - forcing hard stop", 
-                             name, timeSinceFirstAttempt.toSeconds());
-                    
-                    // Stop current monitoring and start new one for hard stop
-                    stopMonitoringThread();
-                    this.hardStop(true);
-                }
-                // Retry soft stop at configured intervals
-                else if (timeSinceLastAttempt.compareTo(softStopRetryInterval) > 0) {
-                    log.info("Plugin {} still running after soft stop - retrying (attempt time: {} seconds)", 
-                             name, timeSinceFirstAttempt.toSeconds());
-                    lastStopAttemptTime = now;
-                    this.softStop(true);
-                }else if (hardStopTimeout.compareTo(Duration.ZERO) > 0  && timeSinceLastAttempt.compareTo(hardStopTimeout.multipliedBy(2)) > 0) {                    
-                    log.error("Forcibly shutting down the client due to unresponsive plugin: {}", name);
-    
-                    // Schedule client shutdown on the client thread to ensure it happens safely
-                    Microbot.getClientThread().invoke(() -> {
-                        try {
-                            // Log that we're shutting down
-                            log.warn("Initiating emergency client shutdown due to plugin: {} cant be stopped", name);
-                            
-                            // Give a short delay for logging to complete
-                            Thread.sleep(1000);
-                            
-                            // Forcibly exit the JVM with a non-zero status code to indicate abnormal termination
-                            System.exit(1);
-                        } catch (Exception e) {
-                            log.error("Failed to shut down client", e);
-                            // Ultimate fallback
-                            Runtime.getRuntime().halt(1);
-                        }
-                        return true;
-                    });  
-                }
-            }
+            this.stopInitiated = this.stop(successfulRun);
             // Monitor thread will handle the successful stop case
         }
         // Reset stop tracking if conditions no longer require stopping
@@ -1450,14 +1426,14 @@ public class PluginScheduleEntry implements AutoCloseable {
      * 
      * @param updateMode Controls how conditions are merged (default: ADD_ONLY)
      */
-    public void registerPluginConditions(UpdateOption updateOption) {
+    private void registerPluginConditions(UpdateOption updateOption) {
         if (this.plugin == null) {
             this.plugin = getPlugin();
         }
         
         log.info("Registering plugin conditions for plugin '{}' with update mode: {}", name, updateOption);
         
-       
+        
         // Register start conditions
         boolean startConditionsUpdated = registerPluginStartingConditions(updateOption);
         
@@ -1479,8 +1455,8 @@ public class PluginScheduleEntry implements AutoCloseable {
     /**
      * Default version of registerPluginConditions that uses ADD_ONLY mode
      */
-    public void registerPluginConditions() {
-        registerPluginConditions(UpdateOption.ADD_ONLY);
+    private void registerPluginConditions() {
+        registerPluginConditions(UpdateOption.SYNC);
     }
 
     /**
@@ -1495,7 +1471,8 @@ public class PluginScheduleEntry implements AutoCloseable {
         }
         
         log.debug("Registering start conditions for plugin '{}'", name);
-        
+        this.startConditionManager.pauseWatchdogs();
+        this.startConditionManager.setPluginCondition(new OrCondition());
         if (!(this.plugin instanceof SchedulablePlugin)) {
             log.debug("Plugin '{}' is not a SchedulablePlugin, skipping start condition registration", name);
             return false;
@@ -1533,7 +1510,7 @@ public class PluginScheduleEntry implements AutoCloseable {
             // Validate the condition structure
             validateStartConditions();
         }
-           
+        this.startConditionManager.resumeWatchdogs();
         
         return updated;
     }
@@ -1548,7 +1525,8 @@ public class PluginScheduleEntry implements AutoCloseable {
         if (this.plugin == null) {
             this.plugin = getPlugin();
         }
-        
+        this.stopConditionManager.pauseWatchdogs();
+        this.stopConditionManager.setPluginCondition(new OrCondition());
         log.debug("Registering stopping conditions for plugin '{}'", name);
         
         if (!(this.plugin instanceof SchedulablePlugin)) {
@@ -1588,7 +1566,7 @@ public class PluginScheduleEntry implements AutoCloseable {
             // Validate the condition structure
             validateStopConditions();
         }
-        
+        this.stopConditionManager.resumeWatchdogs();
         
         return updated;
     }
@@ -1668,7 +1646,7 @@ public class PluginScheduleEntry implements AutoCloseable {
      * @return true if at least one watchdog was successfully scheduled
      */
     public boolean scheduleConditionWatchdogs(long checkIntervalMillis) {
-        return scheduleConditionWatchdogs(checkIntervalMillis, UpdateOption.ADD_ONLY);
+        return scheduleConditionWatchdogs(checkIntervalMillis, UpdateOption.SYNC);
     }
     
 /**
@@ -1869,16 +1847,16 @@ public class PluginScheduleEntry implements AutoCloseable {
     /**
      * Convert a list of ScheduledPlugin objects to JSON
      */
-    public static String toJson(List<PluginScheduleEntry> plugins) {
-        return ScheduledSerializer.toJson(plugins);
+    public static String toJson(List<PluginScheduleEntry> plugins, String version) {
+        return ScheduledSerializer.toJson(plugins, version);
     }
 
 
         /**
      * Parse JSON into a list of ScheduledPlugin objects
      */
-    public static List<PluginScheduleEntry> fromJson(String json) {
-        return ScheduledSerializer.fromJson(json);
+    public static List<PluginScheduleEntry> fromJson(String json, String version) {
+        return ScheduledSerializer.fromJson(json, version);
     }
     @Override
     public boolean equals(Object o) {

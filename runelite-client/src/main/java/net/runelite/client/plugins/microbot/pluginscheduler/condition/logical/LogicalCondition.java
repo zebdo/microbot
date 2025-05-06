@@ -760,7 +760,7 @@ public abstract class LogicalCondition implements Condition {
      * @return true if any changes were made, false if no changes were needed
      */
     public boolean updateLogicalStructure(LogicalCondition newLogicalCondition) {
-        return updateLogicalStructure(newLogicalCondition, UpdateOption.ADD_ONLY, true);
+        return updateLogicalStructure(newLogicalCondition, UpdateOption.SYNC, true);
     }
     
     /**
