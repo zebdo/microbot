@@ -17,24 +17,44 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalTime;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.concurrent.ScheduledFuture;
+import java.util.function.Supplier;
+
+import com.google.gson.JsonObject;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.config.ConfigDescriptor;
+import net.runelite.client.config.ConfigDescriptor;
 import net.runelite.client.config.ConfigDescriptor;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionManager;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.enums.UpdateOption;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.enums.UpdateOption;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.config.ScheduleEntryConfigManager;
 import net.runelite.client.plugins.microbot.pluginscheduler.config.ScheduleEntryConfigManager;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.ScheduledSerializer;
@@ -56,7 +76,8 @@ public class PluginScheduleEntry implements AutoCloseable {
     private boolean hasStarted = false; // Flag to indicate if the plugin has started
     @Setter
     private boolean needsStopCondition = false; // Flag to indicate if a time-based stop condition is needed
-    private transient ScheduleEntryConfigManager configManager; // Added field for config management
+    private transient ScheduleEntryConfigManager configManager; // Added field for config management    
+    private transient ScheduleEntryConfigManager scheduleEntryConfigManager; // Added field for config management
 
     // New fields for tracking stop reason
     private String lastStopReason;
@@ -86,8 +107,11 @@ public class PluginScheduleEntry implements AutoCloseable {
 
     private boolean allowRandomScheduling = true; // Whether this plugin can be randomly scheduled
     private int runCount = 0; // Track how many times this plugin has been run
-
     
+    // Watchdog configuration
+    private boolean autoStartWatchdogs = true;  // Whether to auto-start watchdogs on creation
+    private boolean watchdogsEnabled = true;    // Whether watchdogs are allowed to run
+
     private ZonedDateTime stopInitiatedTime; // When the first stop was attempted
     private ZonedDateTime lastStopAttemptTime; // When the last stop attempt was made
     private Duration softStopRetryInterval = Duration.ofSeconds(30); // Default 30 seconds between retries
@@ -101,7 +125,32 @@ public class PluginScheduleEntry implements AutoCloseable {
     public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
     public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");    
     private int priority = 0; // Higher numbers = higher priority
-    private boolean isDefault = false; // Flag to indicate if this is a default plugin
+    private boolean isDefault = false; // Flag to indicate if this is a default plugin        
+    /**
+     * Sets the serialized ConfigDescriptor for this schedule entry
+     * This is used during deserialization
+     * 
+     * @param serializedConfigDescriptor The serialized ConfigDescriptor as a JsonObject
+     */
+    public void setSerializedConfigDescriptor(ConfigDescriptor serializedConfigDescriptor) {        
+        // If we already have a scheduleEntryConfigManager, update it with the new config
+        if (this.scheduleEntryConfigManager != null) {
+            this.scheduleEntryConfigManager.setConfigScheduleEntryDescriptor(serializedConfigDescriptor);
+        }
+    }
+    
+    /**
+     * Gets the serialized ConfigDescriptor for this schedule entry
+     * 
+     * @return The serialized ConfigDescriptor as a JsonObject, or null if not set
+     */
+    public ConfigDescriptor getConfigScheduleEntryDescriptor() {
+        // If we have a scheduleEntryConfigManager, get the serialized config from it
+        if (this.scheduleEntryConfigManager != null) {
+            return this.scheduleEntryConfigManager.getConfigScheduleEntryDescriptor();
+        }        
+        return null;
+    }
     public PluginScheduleEntry(String pluginName, String duration, boolean enabled, boolean allowRandomScheduling) {
         this(pluginName, parseDuration(duration), enabled, allowRandomScheduling);
     }
@@ -127,10 +176,16 @@ public class PluginScheduleEntry implements AutoCloseable {
     public PluginScheduleEntry(String pluginName, Duration interval, boolean enabled, boolean allowRandomScheduling) { //allowRandomScheduling .>allows soft start
         this(pluginName, new IntervalCondition(interval), enabled, allowRandomScheduling);                
     }
+    
     public PluginScheduleEntry(String pluginName, TimeCondition startingCondition, boolean enabled, boolean allowRandomScheduling) {
+        this(pluginName, startingCondition, enabled, allowRandomScheduling, true);
+    }
+
+    public PluginScheduleEntry(String pluginName, TimeCondition startingCondition, boolean enabled, boolean allowRandomScheduling, boolean autoStartWatchdogs) {
         this.name = pluginName;        
         this.enabled = enabled;
         this.allowRandomScheduling = allowRandomScheduling;
+        this.autoStartWatchdogs = autoStartWatchdogs;
         this.cleanName = pluginName.replaceAll("<html>|</html>", "")
                 .replaceAll("<[^>]*>([^<]*)</[^>]*>", "$1")
                 .replaceAll("<[^>]*>", "");
@@ -147,7 +202,7 @@ public class PluginScheduleEntry implements AutoCloseable {
                     isDefaultByScheduleType = true;
                 }
             }
-            this.mainTimeStartCondition  = startingCondition;
+            this.mainTimeStartCondition = startingCondition;
             startConditionManager.setUserLogicalCondition(new OrCondition(startingCondition));
         }
         
@@ -156,12 +211,21 @@ public class PluginScheduleEntry implements AutoCloseable {
             this.isDefault = true;
             this.priority = 0;
         }
-        
-        //registerPluginConditions();
-        scheduleConditionWatchdogs(10000,UpdateOption.SYNC);
-        if (enabled){
-            startConditionManager.registerEvents();
+        registerPluginConditions();
+        scheduleConditionWatchdogs(10000, UpdateOption.SYNC);                
+        // Only start watchdogs if auto-start is enabled
+        if (autoStartWatchdogs) {
+            //stopConditionManager.resumeWatchdogs();
+            //startConditionManager.resumeWatchdogs();
         }
+        
+        // Always register events if enabled
+        if (enabled) {
+            startConditionManager.registerEvents();
+        }else {
+            startConditionManager.unregisterEventsAndPauseWatchdogs();
+            stopConditionManager.unregisterEventsAndPauseWatchdogs();
+        }                        
     }
 
     /**
@@ -189,8 +253,8 @@ public class PluginScheduleEntry implements AutoCloseable {
         }
         this.enabled = enabled;
         if (!enabled) {
-            stopConditionManager.unregisterEvents();
-            startConditionManager.unregisterEvents();
+            stopConditionManager.unregisterEventsAndPauseWatchdogs();
+            startConditionManager.unregisterEventsAndPauseWatchdogs();
             runCount = 0;
         } else {
             stopConditionManager.registerEvents();
@@ -202,8 +266,78 @@ public class PluginScheduleEntry implements AutoCloseable {
             this.setLastStopReason("");
             this.setLastRunSuccessful(false);
             this.setStopReasonType(PluginScheduleEntry.StopReason.NONE);
+            
+            // Resume watchdogs if they were previously configured and watchdogs are enabled
+            if (watchdogsEnabled) {
+                startConditionManager.resumeWatchdogs();
+                stopConditionManager.resumeWatchdogs();
+            }
         }
     }
+
+    /**
+     * Controls whether watchdogs are allowed to run for this schedule entry.
+     * This provides a way to temporarily disable watchdogs without losing their configuration.
+     * 
+     * @param enabled true to enable watchdogs, false to disable them
+     */
+    public void setWatchdogsEnabled(boolean enabled) {
+        if (this.watchdogsEnabled == enabled) {
+            return; // No change
+        }
+        
+        this.watchdogsEnabled = enabled;
+        
+        if (enabled) {
+            // Resume watchdogs if the plugin is enabled
+            if (this.enabled) {
+                startConditionManager.resumeWatchdogs();
+                stopConditionManager.resumeWatchdogs();
+                log.debug("Watchdogs resumed for '{}'", name);
+            }
+        } else {
+            // Pause watchdogs regardless of plugin state
+            startConditionManager.pauseWatchdogs();
+            stopConditionManager.pauseWatchdogs();
+            log.debug("Watchdogs paused for '{}'", name);
+        }
+    }
+    
+    /**
+     * Checks if watchdogs are currently running for this schedule entry
+     * 
+     * @return true if at least one watchdog is running
+     */
+    public boolean areWatchdogsRunning() {
+        return startConditionManager.areWatchdogsRunning() || 
+               stopConditionManager.areWatchdogsRunning();
+    }
+
+    /**
+     * Manually start the condition watchdogs for this schedule entry.
+     * This will only have an effect if watchdogs are enabled and the plugin is enabled.
+     * 
+     * @param intervalMillis The interval at which to check for condition changes
+     * @param updateOption How to handle condition changes
+     * @return true if watchdogs were successfully started
+     */
+    public boolean startConditionWatchdogs(long intervalMillis, UpdateOption updateOption) {
+        if (!watchdogsEnabled || !enabled) {
+            return false;
+        }
+        
+        return scheduleConditionWatchdogs(intervalMillis, updateOption);
+    }
+
+    /**
+     * Stops all watchdogs associated with this schedule entry
+     */
+    public void stopWatchdogs() {
+        log.debug("Stopping all watchdogs for '{}'", name);
+        startConditionManager.pauseWatchdogs();
+        stopConditionManager.pauseWatchdogs();
+    }
+    
     public Plugin getPlugin() {
         if (this.plugin == null) {
             this.plugin = Microbot.getPluginManager().getPlugins().stream()
@@ -788,7 +922,8 @@ public class PluginScheduleEntry implements AutoCloseable {
     public boolean updatePrimaryTimeCondition(TimeCondition newTimeCondition) {
         if (startConditionManager == null || newTimeCondition == null) {
             return false;
-        }        
+        }     
+        startConditionManager.pauseWatchdogs();           
         // First, find the existing time condition. We'll assume the first time condition 
         // we find is the primary one that was added at creation
         TimeCondition existingTimeCondition = this.mainTimeStartCondition;                
@@ -797,7 +932,7 @@ public class PluginScheduleEntry implements AutoCloseable {
         if (existingTimeCondition != null) {
             Optional<ZonedDateTime> currentTrigDateTime = existingTimeCondition.getCurrentTriggerTime();
             Optional<ZonedDateTime> newTrigDateTime = newTimeCondition.getCurrentTriggerTime();
-            log.debug("Replacing time condition {} with {}", 
+            log.info("Replacing time condition {} with {}", 
                     existingTimeCondition.getDescription(), 
                     newTimeCondition.getDescription());
             
@@ -839,12 +974,12 @@ public class PluginScheduleEntry implements AutoCloseable {
             if (currentTrigDateTime.isPresent() && newTrigDateTime.isPresent()) {
                 // Check if the new trigger time is different from the current one
                 if (!currentTrigDateTime.get().equals(newTrigDateTime.get())) {
-                    log.info("Updated main start time for Plugin'{}'\nfrom {}\nto {}", 
+                    log.info("\n\tUpdated main start time for Plugin'{}'\nfrom {}\nto {}", 
                             name, 
                             currentTrigDateTime.get().format(DATE_TIME_FORMATTER),
                             newTrigDateTime.get().format(DATE_TIME_FORMATTER));                    
                 } else {
-                    log.info("Start next time for Pugin '{}' remains unchanged", name);
+                    log.info("\n\tStart next time for Pugin '{}' remains unchanged", name);
                 }
             }
         } else {
@@ -861,7 +996,8 @@ public class PluginScheduleEntry implements AutoCloseable {
             }            
             this.mainTimeStartCondition = newTimeCondition;                 
             //updateStartConditions();// we have new condition ->  new start time ?
-        }        
+        }     
+        startConditionManager.resumeWatchdogs();   
         return true;
     }
 
@@ -881,7 +1017,7 @@ public class PluginScheduleEntry implements AutoCloseable {
             
             if (triggerTimeAfterReset.isPresent()) {
                 ZonedDateTime nextRunTime = triggerTimeAfterReset.get();
-                log.info("Updated run time for Plugin '{}'\nbefore\n next{}", 
+                log.info("\n\tUpdated run time for Plugin '{}'\nruntime before: {}\n next runtime: {}", 
                         name, 
                         nextTriggerTimeBeforeReset.map(t -> t.format(DATE_TIME_FORMATTER)).orElse("N/A"),
                         nextRunTime.format(DATE_TIME_FORMATTER));
@@ -1470,16 +1606,25 @@ public class PluginScheduleEntry implements AutoCloseable {
      * @return true if at least one watchdog was successfully scheduled
      */
     public boolean scheduleConditionWatchdogs(long checkIntervalMillis, UpdateOption updateOption) {
-        if(this.plugin == null ){
-            this.plugin  = getPlugin();
+        if(this.plugin == null) {
+            this.plugin = getPlugin();
         }
+        
+        if (!watchdogsEnabled) {
+            log.debug("Watchdogs are disabled for '{}', not scheduling", name);
+            return false;
+        }
+        
+        log.info("Scheduling condition watchdogs for plugin '{}' with interval {}ms using update mode: {}", 
+                 name, checkIntervalMillis, updateOption);
+                 
         if (!(this.plugin instanceof SchedulablePlugin)) {            
             log.debug("Cannot schedule condition watchdogs for non-SchedulablePlugin");
             return false;                                        
         }
         
         // Cancel any existing watchdog tasks first
-        cancelConditionWatchdogs();
+        //cancelConditionWatchdogs();
         
         SchedulablePlugin schedulablePlugin = (SchedulablePlugin) this.plugin;
         boolean anyScheduled = false;
@@ -1492,16 +1637,15 @@ public class PluginScheduleEntry implements AutoCloseable {
             Supplier<LogicalCondition> stopConditionSupplier = 
                 () -> schedulablePlugin.getStopCondition();
             
-            
             // Schedule the start condition watchdog
-            startConditionWatchdogFuture = getStartConditionManager().scheduleConditionWatchdog(
+            startConditionWatchdogFuture = startConditionManager.scheduleConditionWatchdog(
                 startConditionSupplier,
                 checkIntervalMillis,
                 updateOption
             );
             
             // Schedule the stop condition watchdog
-            stopConditionWatchdogFuture = getStopConditionManager().scheduleConditionWatchdog(
+            stopConditionWatchdogFuture = stopConditionManager.scheduleConditionWatchdog(
                 stopConditionSupplier,
                 checkIntervalMillis,
                 updateOption
@@ -1517,7 +1661,7 @@ public class PluginScheduleEntry implements AutoCloseable {
         return anyScheduled;
     }
 
-       /**
+    /**
      * Schedules condition watchdogs with the default ADD_ONLY update mode.
      * 
      * @param checkIntervalMillis How often to check for condition changes in milliseconds
@@ -1527,7 +1671,7 @@ public class PluginScheduleEntry implements AutoCloseable {
         return scheduleConditionWatchdogs(checkIntervalMillis, UpdateOption.ADD_ONLY);
     }
     
-    /**
+/**
      * Validates the start conditions structure and logs any issues found.
      * This helps identify potential problems with condition hierarchies.
      */
@@ -1582,21 +1726,7 @@ public class PluginScheduleEntry implements AutoCloseable {
             }
         }
     }
-    /**
-     * Cancels any active condition watchdog tasks.
-     * This should be called when the plugin is stopped or when refreshing the watchdogs.
-     */
-    public void cancelConditionWatchdogs() {
-        if (startConditionWatchdogFuture != null) {
-            startConditionWatchdogFuture.cancel(false);
-            startConditionWatchdogFuture = null;
-        }
-        
-        if (stopConditionWatchdogFuture != null) {
-            stopConditionWatchdogFuture.cancel(false);
-            stopConditionWatchdogFuture = null;
-        }
-    }
+ 
     
     /**
      * Checks if any condition watchdogs are currently active for this plugin.
@@ -1604,8 +1734,8 @@ public class PluginScheduleEntry implements AutoCloseable {
      * @return true if at least one watchdog is active
      */
     public boolean hasActiveWatchdogs() {
-        return (startConditionWatchdogFuture != null && !startConditionWatchdogFuture.isDone()) || 
-               (stopConditionWatchdogFuture != null && !stopConditionWatchdogFuture.isDone());
+        return (startConditionManager != null && startConditionManager.areWatchdogsRunning()) || 
+               (stopConditionManager != null && stopConditionManager.areWatchdogsRunning());
     }
     
     /**
@@ -1615,14 +1745,23 @@ public class PluginScheduleEntry implements AutoCloseable {
     @Override
     public void close() {
         // Clean up watchdogs and other resources
-        cancelConditionWatchdogs();
+        //cancelConditionWatchdogs();
         
         // Stop any monitoring threads
         stopMonitoringThread();
         
+        // Ensure both condition managers are closed properly
+        if (startConditionManager != null) {
+            startConditionManager.close();
+        }
+        
+        if (stopConditionManager != null) {
+            stopConditionManager.close();
+        }
+        
         log.debug("Resources cleaned up for plugin schedule entry: '{}'", name);
     }
-    
+   
     /**
      * Calculates overall progress percentage across all conditions.
      * This respects the logical structure of conditions.
@@ -2116,4 +2255,6 @@ public class PluginScheduleEntry implements AutoCloseable {
         
         return timeOnlyEntry;
     }
+
+    
 }

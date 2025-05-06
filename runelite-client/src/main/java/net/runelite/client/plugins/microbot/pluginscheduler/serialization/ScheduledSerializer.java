@@ -7,6 +7,7 @@ import com.google.gson.stream.JsonToken;
 import com.google.gson.stream.JsonWriter;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionManager;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
@@ -26,6 +27,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginSchedule
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ConditionTypeAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ConditionManagerAdapter;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.ZonedDateTimeAdapter;
+import net.runelite.client.plugins.microbot.pluginscheduler.serialization.adapter.config.*;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.DayOfWeekCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
@@ -80,6 +82,18 @@ public class ScheduledSerializer {
         
         // Register our custom PluginScheduleEntry adapter
         builder.registerTypeAdapter(PluginScheduleEntry.class, new PluginScheduleEntryAdapter());
+        
+        // Register config descriptor adapters
+        builder.registerTypeAdapter(ConfigDescriptor.class, new ConfigDescriptorAdapter());
+        builder.registerTypeAdapter(ConfigGroup.class, new ConfigGroupAdapter());
+        builder.registerTypeAdapter(ConfigSection.class, new ConfigSectionAdapter());
+        builder.registerTypeAdapter(ConfigSectionDescriptor.class, new ConfigSectionDescriptorAdapter());
+        builder.registerTypeAdapter(ConfigItem.class, new ConfigItemAdapter());
+        builder.registerTypeAdapter(ConfigItemDescriptor.class, new ConfigItemDescriptorAdapter());
+        builder.registerTypeAdapter(ConfigInformation.class, new ConfigInformationAdapter());
+        builder.registerTypeAdapter(Range.class, new RangeAdapter());
+        builder.registerTypeAdapter(Alpha.class, new AlphaAdapter());
+        builder.registerTypeAdapter(Units.class, new UnitsAdapter());
         
         // Other adapters still needed for individual conditions
         builder.registerTypeAdapter(TimeCondition.class, new TimeConditionAdapter());
