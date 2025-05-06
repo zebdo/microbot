@@ -33,7 +33,7 @@ public class SalamanderGroundItemLooter extends Script {
                     cleanInventory();
                 }
             } catch (Exception ex) {
-                System.out.println("Royal Titan Looter: " + ex.getMessage());
+                System.out.println("Salamander Looter: " + ex.getMessage());
                 ex.printStackTrace();
             }
         }, 0, 1800, TimeUnit.MILLISECONDS);
