@@ -718,10 +718,10 @@ public class revKillerScript extends Script {
             //equip arrows
             if(howtobank <= 40){
                 Microbot.log("We have "+Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity()+" arrows left");
-                if(Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity() < 100){
+                if(Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity() < LowOnArrowsCount){
                     if(Rs2Bank.count(selectedArrow)>100){
                         if(!Rs2Inventory.contains(selectedArrow)||Rs2Inventory.get(selectedArrow).getQuantity() < LowOnArrowsCount){
-                            if(Rs2Bank.withdrawX(selectedArrow, (generateRandomNumber(120,200)-Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity()) )){
+                            if(Rs2Bank.withdrawX(selectedArrow, (generateRandomNumber(120,300)-Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity()) )){
                                 sleepUntil(()-> Rs2Inventory.contains(selectedArrow), generateRandomNumber(5000,15000));
                             }
                         }
