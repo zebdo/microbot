@@ -1,5 +1,7 @@
 package net.runelite.client.plugins.microbot.bee.salamanders;
 
+import net.runelite.api.Item;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
@@ -40,7 +42,7 @@ public class SalamanderGroundItemLooter extends Script {
 
     private void cleanInventory() {
         for (Rs2ItemModel item : Rs2Inventory.items()) {
-            if (item.getId() == 10147 || item.getId() == 10148 || item.getId() == 10149) {
+            if (item.getId() == ItemID.BLACK_SALAMANDER || item.getId() == ItemID.GREEN_SALAMANDER || item.getId() == ItemID.ORANGE_SALAMANDER || item.getId() == ItemID.RED_SALAMANDER) {
                 Rs2Inventory.interact(item, "Release");
                 sleep(150, 350);
             }
@@ -54,7 +56,7 @@ public class SalamanderGroundItemLooter extends Script {
                 1,
                 1,
                 false,
-                false,
+                true,
                 itemsToLoot.trim().split(",")
         );
         if (Rs2GroundItem.lootItemsBasedOnNames(valueParams)) {
