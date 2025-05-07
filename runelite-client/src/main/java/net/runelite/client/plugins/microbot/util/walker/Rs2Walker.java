@@ -28,7 +28,6 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
-import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -1835,7 +1834,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         if (displayInfo == null || displayInfo.isEmpty()) return false;
 
         List<String> validActions = List.of("chop-down", "shape-canoe", "float canoe", "paddle canoe");
-        ObjectComposition CANOE_COMPOSITION = Rs2GameObject.getObjectComposition(transport.getObjectId());
+        ObjectComposition CANOE_COMPOSITION = Rs2GameObject.convertToObjectComposition(transport.getObjectId());
         if (CANOE_COMPOSITION == null) return false;
 
         String currentAction = Arrays.stream(CANOE_COMPOSITION.getActions())
@@ -1851,7 +1850,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 Rs2GameObject.interact(transport.getObjectId(), "Chop-down");
                 sleepUntil(() -> Rs2Player.isAnimating(1200));
                 return sleepUntilTrue(() -> {
-                    ObjectComposition composition = Rs2GameObject.findObjectComposition(transport.getObjectId());
+                    ObjectComposition composition = Rs2GameObject.convertToObjectComposition(transport.getObjectId());
 
                     if (composition == null) return false;
                     return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
@@ -1888,7 +1887,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 Rs2Widget.clickWidget(canoeSelectionWidget);
                 sleepUntil(() -> Rs2Player.isAnimating(1200));
                 return sleepUntilTrue(() -> {
-                    ObjectComposition composition = Rs2GameObject.findObjectComposition(transport.getObjectId());
+                    ObjectComposition composition = Rs2GameObject.convertToObjectComposition(transport.getObjectId());
 
                     if (composition == null) return false;
                     return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
@@ -1897,7 +1896,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 Rs2GameObject.interact(transport.getObjectId(), "Float Canoe");
                 sleepUntil(() -> Rs2Player.isAnimating(1200));
                 return sleepUntilTrue(() -> {
-                    ObjectComposition composition = Rs2GameObject.findObjectComposition(transport.getObjectId());
+                    ObjectComposition composition = Rs2GameObject.convertToObjectComposition(transport.getObjectId());
 
                     if (composition == null) return false;
                     return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
