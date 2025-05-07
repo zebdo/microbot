@@ -56,7 +56,9 @@ public class PluginScheduleEntry implements AutoCloseable {
     private String lastStopReason;
     private boolean lastRunSuccessful;
     private StopReason stopReasonType = StopReason.NONE;
-    
+    private Duration lastRunDuration = Duration.ZERO; // Duration of the last run
+    private ZonedDateTime lastRunStartTime; // When the plugin started running
+    private ZonedDateTime lastRunEndTime; // When the plugin finished running
     /**
     * Enumeration of reasons why a plugin might stop
     */
@@ -154,7 +156,11 @@ public class PluginScheduleEntry implements AutoCloseable {
         this(pluginName, startingCondition, enabled, allowRandomScheduling, true);
     }
 
-    public PluginScheduleEntry(String pluginName, TimeCondition startingCondition, boolean enabled, boolean allowRandomScheduling, boolean autoStartWatchdogs) {
+    public PluginScheduleEntry( String pluginName, 
+                                TimeCondition startingCondition, 
+                                boolean enabled, 
+                                boolean allowRandomScheduling, 
+                                boolean autoStartWatchdogs) {
         this.name = pluginName;        
         this.enabled = enabled;
         this.allowRandomScheduling = allowRandomScheduling;
@@ -374,7 +380,8 @@ public class PluginScheduleEntry implements AutoCloseable {
             });
             stopInitiated = false;
             hasStarted = true;
-            
+            lastRunDuration = Duration.ZERO; // Reset last run duration
+            lastRunStartTime = ZonedDateTime.now(); // Set the start time of the last run
             // Register/unregister appropriate event handlers
             stopConditionManager.registerEvents();
             startConditionManager.unregisterEvents();            
@@ -404,7 +411,8 @@ public class PluginScheduleEntry implements AutoCloseable {
             stopInitiated = true;
             stopInitiatedTime = ZonedDateTime.now();
             lastStopAttemptTime = ZonedDateTime.now();
-            
+            lastRunDuration = Duration.between(lastRunStartTime, ZonedDateTime.now());
+            lastRunEndTime = ZonedDateTime.now();
             // Start monitoring for successful stop
             startStopMonitoringThread(successfulRun);            
 
@@ -909,14 +917,9 @@ public class PluginScheduleEntry implements AutoCloseable {
                     existingTimeCondition.getDescription(), 
                     newTimeCondition.getDescription());
             
-            // Check if current condition is a one-second interval (default)
-            boolean isDefaultByScheduleType = false;
-            if (existingTimeCondition instanceof IntervalCondition) {
-                IntervalCondition intervalCondition = (IntervalCondition) existingTimeCondition;
-                if (intervalCondition.getInterval().getSeconds() <= 1) {
-                    isDefaultByScheduleType = true;
-                }
-            }
+            
+            boolean isDefaultByScheduleType = this.isDefault();
+          
             
             // Check if new condition is a one-second interval (default)
             boolean willBeDefaultByScheduleType = false;
@@ -935,11 +938,11 @@ public class PluginScheduleEntry implements AutoCloseable {
                 
                 // Update default status if needed
                 if (willBeDefaultByScheduleType) {
-                    this.setDefault(true);
-                    this.setPriority(0);
+                    //this.setDefault(true);
+                    //this.setPriority(0);
                 } else if (isDefaultByScheduleType && !willBeDefaultByScheduleType) {
                     // Only change from default if it was set automatically by condition type
-                    this.setDefault(false);
+                    //this.setDefault(false);
                 }                
                 
                 this.mainTimeStartCondition = newTimeCondition;                                
@@ -1909,6 +1912,7 @@ public class PluginScheduleEntry implements AutoCloseable {
     }
     
     public void setDefault(boolean isDefault) {
+        log.info("Setting default to {} for plugin '{}'", isDefault, name);
         this.isDefault = isDefault;
     }
     /**

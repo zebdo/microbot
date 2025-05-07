@@ -44,7 +44,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.enums
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
 @Slf4j
 public class TimeConditionPanelUtil {
-    public static void createIntervalConfigPanel(JPanel panel, GridBagConstraints gbc, JPanel configPanel) {
+    public static void createIntervalConfigPanel(JPanel panel, GridBagConstraints gbc) {
         // Title and initial setup
         JLabel titleLabel = new JLabel("Time Interval Configuration:");
         titleLabel.setForeground(Color.WHITE);
@@ -74,7 +74,7 @@ public class TimeConditionPanelUtil {
         panel.add(randomInfoLabel, gbc);
         
         // Store component for later access
-        configPanel.putClientProperty("intervalPicker", intervalPicker);
+        panel.putClientProperty("intervalPicker", intervalPicker);
     }
     
     /**
@@ -123,7 +123,7 @@ public class TimeConditionPanelUtil {
         return intervalPicker.createIntervalCondition();
     }
     
-    public static void createEnhancedTimeWindowConfigPanel(JPanel panel, GridBagConstraints gbc, JPanel configPanel) {
+    public static void createTimeWindowConfigPanel(JPanel panel, GridBagConstraints gbc) {
         // Section Title
         JLabel titleLabel = new JLabel("Time Window Configuration:");
         titleLabel.setForeground(Color.WHITE);
@@ -237,15 +237,15 @@ public class TimeConditionPanelUtil {
         panel.add(timezonePanel, gbc);
         
         // Store components for later access
-        configPanel.putClientProperty("dateRangePanel", dateRangePanel); 
-        configPanel.putClientProperty("timeRangePanel", timeRangePanel);
-        configPanel.putClientProperty("repeatComboBox", repeatComboBox);
-        configPanel.putClientProperty("intervalSpinner", intervalSpinner);
-        configPanel.putClientProperty("randomizeCheckBox", randomizeCheckBox);
-        configPanel.putClientProperty("randomizeSpinner", randomizeSpinner);
+        panel.putClientProperty("dateRangePanel", dateRangePanel); 
+        panel.putClientProperty("timeRangePanel", timeRangePanel);
+        panel.putClientProperty("repeatComboBox", repeatComboBox);
+        panel.putClientProperty("intervalSpinner", intervalSpinner);
+        panel.putClientProperty("randomizeCheckBox", randomizeCheckBox);
+        panel.putClientProperty("randomizeSpinner", randomizeSpinner);
     }
 
-    public static TimeWindowCondition createEnhancedTimeWindowCondition(JPanel configPanel) {
+    public static TimeWindowCondition createTimeWindowCondition(JPanel configPanel) {
         DateRangePanel dateRangePanel = (DateRangePanel) configPanel.getClientProperty("dateRangePanel");
         TimeRangePanel timeRangePanel = (TimeRangePanel) configPanel.getClientProperty("timeRangePanel");
         JComboBox<String> repeatComboBox = (JComboBox<String>) configPanel.getClientProperty("repeatComboBox");
@@ -323,7 +323,7 @@ public class TimeConditionPanelUtil {
      * Creates a panel for configuring SingleTriggerTimeCondition
      * Uses the enhanced SingleDateTimePickerPanel component
      */
-    public static void createSingleTriggerConfigPanel(JPanel panel, GridBagConstraints gbc, JPanel configPanel) {
+    public static void createSingleTriggerConfigPanel(JPanel panel, GridBagConstraints gbc) {
         // Section title
         JLabel titleLabel = new JLabel("One-Time Trigger Configuration:");
         titleLabel.setForeground(Color.WHITE);
@@ -351,7 +351,7 @@ public class TimeConditionPanelUtil {
         panel.add(timezoneLabel, gbc);
         
         // Store components for later access
-        configPanel.putClientProperty("dateTimePicker", dateTimePicker);        
+        panel.putClientProperty("dateTimePicker", dateTimePicker);        
         
     }
     /**
@@ -360,10 +360,10 @@ public class TimeConditionPanelUtil {
      */
     public static SingleTriggerTimeCondition createSingleTriggerCondition(JPanel configPanel) {
         SingleDateTimePickerPanel dateTimePicker = (SingleDateTimePickerPanel) configPanel.getClientProperty("dateTimePicker");        
-        JRadioButton removeAfterRadio = (JRadioButton) configPanel.getClientProperty("singleTriggerRemoveAfterRadio");
         
         if (dateTimePicker == null) {
-            throw new IllegalStateException("Date/time picker not found. Please check the panel configuration.");
+            log.error("Date time picker component not found in panel");
+            return null;
         }
         
         // Get the selected date and time as LocalDateTime
@@ -372,14 +372,10 @@ public class TimeConditionPanelUtil {
         // Convert to ZonedDateTime using the system default timezone
         ZonedDateTime triggerTime = selectedDateTime.atZone(ZoneId.systemDefault());
         
-        
-        // Get post-trigger behavior (whether to remove the condition after triggering)
-        boolean removeAfterTrigger = removeAfterRadio == null || removeAfterRadio.isSelected();
-        
-        // Create the condition with the appropriate settings
+        // Create and return the condition
         return new SingleTriggerTimeCondition(triggerTime);
     }
-    public static void createDayOfWeekConfigPanel(JPanel panel, GridBagConstraints gbc, JPanel configPanel) {
+    public static void createDayOfWeekConfigPanel(JPanel panel, GridBagConstraints gbc) {
         // Title and initial setup
         JLabel titleLabel = new JLabel("Day of Week Configuration:");
         titleLabel.setForeground(Color.WHITE);
@@ -545,11 +541,11 @@ public class TimeConditionPanelUtil {
         panel.add(intervalDescLabel, gbc);
         
         // Store components for later access
-        configPanel.putClientProperty("dayCheckboxes", dayCheckboxes);
-        configPanel.putClientProperty("dailyLimitSpinner", dailyLimitSpinner);
-        configPanel.putClientProperty("weeklyLimitSpinner", weeklyLimitSpinner);
-        configPanel.putClientProperty("useIntervalCheckBox", useIntervalCheckBox);
-        configPanel.putClientProperty("intervalPicker", intervalPicker);
+        panel.putClientProperty("dayCheckboxes", dayCheckboxes);
+        panel.putClientProperty("dailyLimitSpinner", dailyLimitSpinner);
+        panel.putClientProperty("weeklyLimitSpinner", weeklyLimitSpinner);
+        panel.putClientProperty("useIntervalCheckBox", useIntervalCheckBox);
+        panel.putClientProperty("intervalPicker", intervalPicker);
 }
 public static DayOfWeekCondition createDayOfWeekCondition(JPanel configPanel) {
     JCheckBox[] dayCheckboxes = (JCheckBox[]) configPanel.getClientProperty("dayCheckboxes");

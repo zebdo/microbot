@@ -113,24 +113,25 @@ public interface SchedulerConfig extends Config {
         Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, "minManualStartThresholdMinutes", minutes);
     }
     @ConfigItem(
-        keyName = "stopDefaultPluginMode",
-        name = "Stop Default Plugin Mode",
-        description = "Stop automatily a default plugin when a not default plugin due within the grace period", 
+        keyName = "prioritizeNonDefaultPlugins",
+        name = "Prioritize Non-Default Plugins",
+        description = "Stop automatically running default plugins when a non-default plugin is due within the grace period", 
         position = 5,
         section = controlSection
     )
-    default boolean stopDefaultPluginMode() {
+    default boolean prioritizeNonDefaultPlugins() {
         return true;
     }
-    void setStopDefaultPluginMode(boolean stopDefaultPluginMode);
+    void setPrioritizeNonDefaultPlugins(boolean prioritizeNonDefaultPlugins);
+
     @ConfigItem(
-        keyName = "stopDefaultPluginGracePeriod",
-        name = "Stop Default Plugin Grace Period (minutes)",
-        description = "Time in minutes before a default plugin is stopped when a not default plugin is due to start",
+        keyName = "nonDefaultPluginLookAheadMinutes",
+        name = "Non-Default Plugin Look-Ahead (minutes)",
+        description = "Time window in minutes to look ahead for non-default plugins when deciding to stop a default plugin",
         position = 6,
         section = controlSection
     )
-    default int stopDefaultPluginGracePeriod() {
+    default int nonDefaultPluginLookAheadMinutes() {
         return 1;
     }
     @ConfigItem(
