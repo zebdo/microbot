@@ -24,9 +24,11 @@ public class Global {
 
     public static void sleep(int start) {
         if (Microbot.getClient().isClientThread()) return;
-        long startTime = System.currentTimeMillis();
-        do {
-        } while (System.currentTimeMillis() - startTime < start);
+        try {
+            Thread.sleep(start);
+        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     public static void sleep(int start, int end) {
@@ -61,22 +63,30 @@ public class Global {
         if (Microbot.getClient().isClientThread()) return false;
         boolean done = false;
         long startTime = System.currentTimeMillis();
-        do {
-            done = awaitedCondition.getAsBoolean();
-            sleep(100);
-        } while (!done && System.currentTimeMillis() - startTime < time);
+        try {
+            do {
+                done = awaitedCondition.getAsBoolean();
+                sleep(100);
+            } while (!done && System.currentTimeMillis() - startTime < time);
+        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+        }
         return done;
     }
 
     public static boolean sleepUntil(BooleanSupplier awaitedCondition, Runnable action, long timeoutMillis, int sleepMillis) {
         long startTime = System.nanoTime();
         long timeoutNanos = TimeUnit.MILLISECONDS.toNanos(timeoutMillis);
-        while (System.nanoTime() - startTime < timeoutNanos) {
-            action.run();
-            if (awaitedCondition.getAsBoolean()) {
-                return true;
+        try {
+            while (System.nanoTime() - startTime < timeoutNanos) {
+                action.run();
+                if (awaitedCondition.getAsBoolean()) {
+                    return true;
+                }
+                sleep(sleepMillis);
             }
-            sleep(sleepMillis);
+        } catch (Exception e) {
+            Thread.currentThread().interrupt();
         }
         return false;
     }
@@ -84,39 +94,51 @@ public class Global {
     public static boolean sleepUntilTrue(BooleanSupplier awaitedCondition) {
         if (Microbot.getClient().isClientThread()) return false;
         long startTime = System.currentTimeMillis();
-        do {
-            if (awaitedCondition.getAsBoolean()) {
-                return true;
-            }
-            sleep(100);
-        } while (System.currentTimeMillis() - startTime < 5000);
+        try {
+            do {
+                if (awaitedCondition.getAsBoolean()) {
+                    return true;
+                }
+                sleep(100);
+            } while (System.currentTimeMillis() - startTime < 5000);
+        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+        }
         return false;
     }
 
     public static boolean sleepUntilTrue(BooleanSupplier awaitedCondition, int time, int timeout) {
         if (Microbot.getClient().isClientThread()) return false;
         long startTime = System.currentTimeMillis();
-        do {
-            if (awaitedCondition.getAsBoolean()) {
-                return true;
-            }
-            sleep(time);
-        } while (System.currentTimeMillis() - startTime < timeout);
+        try {
+            do {
+                if (awaitedCondition.getAsBoolean()) {
+                    return true;
+                }
+                sleep(time);
+            } while (System.currentTimeMillis() - startTime < timeout);
+        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+        }
         return false;
     }
 
     public static boolean sleepUntilTrue(BooleanSupplier awaitedCondition, BooleanSupplier resetCondition, int time, int timeout) {
         if (Microbot.getClient().isClientThread()) return false;
         long startTime = System.currentTimeMillis();
-        do {
-            if (resetCondition.getAsBoolean()) {
-                startTime = System.currentTimeMillis();
-            }
-            if (awaitedCondition.getAsBoolean()) {
-                return true;
-            }
-            sleep(time);
-        } while (System.currentTimeMillis() - startTime < timeout);
+        try {
+            do {
+                if (resetCondition.getAsBoolean()) {
+                    startTime = System.currentTimeMillis();
+                }
+                if (awaitedCondition.getAsBoolean()) {
+                    return true;
+                }
+                sleep(time);
+            } while (System.currentTimeMillis() - startTime < timeout);
+        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+        }
         return false;
     }
 
@@ -128,10 +150,14 @@ public class Global {
         if (Microbot.getClient().isClientThread()) return;
         boolean done;
         long startTime = System.currentTimeMillis();
-        do {
-            done = Microbot.getClientThread().runOnClientThreadOptional(awaitedCondition::getAsBoolean)
-                    .orElse(false);
-        } while (!done && System.currentTimeMillis() - startTime < time);
+        try {
+            do {
+                done = Microbot.getClientThread().runOnClientThreadOptional(awaitedCondition::getAsBoolean)
+                        .orElse(false);
+            } while (!done && System.currentTimeMillis() - startTime < time);
+        } catch (Exception e) {
+            Thread.currentThread().interrupt();
+        }
     }
 
     public boolean sleepUntilTick(int ticksToWait) {
