@@ -202,13 +202,12 @@ public class MossKillerScript extends Script {
         if(Rs2Inventory.containsAll(AIR_RUNE, FIRE_RUNE, LAW_RUNE)){
             Rs2Magic.cast(MagicAction.VARROCK_TELEPORT);}
         //static sleep to wait till out of combat
-        sleep(10000);
-            stopBreakHandlerPlugin();
-            stopAutologin();
+        sleepUntil(() -> !Rs2Player.isInCombat(), 10000);
+        stopBreakHandlerPlugin();
+        stopAutologin();
         sleep(1000);
         plugin.reportFinished("lacking teleports or consumables or have reached desired combat skill level)", false);
         Microbot.log("calling script shutdown");
-        Rs2Player.logout();
         shutdown();
     }
 
@@ -277,7 +276,7 @@ public class MossKillerScript extends Script {
      * @return true if the plugin was successfully stopped, false if it was not found or not active.
      */
     public static boolean stopAutologin() {
-        // Attempt to retrieve the BreakHandlerPlugin from the active plugin list
+        // Attempt to retrieve the autologin from the active plugin list
         AutoLoginPlugin autoLoginPlugin = (AutoLoginPlugin) Microbot.getPluginManager().getPlugins().stream()
                 .filter(plugin -> plugin.getClass().getName().equals(AutoLoginPlugin.class.getName()))
                 .findFirst()
@@ -285,7 +284,7 @@ public class MossKillerScript extends Script {
 
         // Check if the plugin was found
         if (autoLoginPlugin == null) {
-            System.out.println("BreakHandlerPlugin not found or not running.");
+            System.out.println("autologin not found or not running.");
             return false;
         }
 
