@@ -415,12 +415,6 @@ public class BarrowsScript extends Script {
                         Rs2Bank.walkToBankAndUseBank(BankLocation.FEROX_ENCLAVE);
                     } else {
 
-                        Microbot.log("Our rune is "+neededRune+" We'll need at least "+config.minRuneAmount());
-                        Microbot.log("Our min food is "+config.minFood()+" Our max food is "+config.targetFoodAmount());
-                        Microbot.log("Our min prayer pot amt is "+config.minPrayerPots()+" Our max prayer pot amt is "+config.targetPrayerPots());
-                        Microbot.log("Our min forgotten brew amt is "+config.minForgottenBrew()+" Our max forgotten brew amt is "+config.targetForgottenBrew());
-                        Microbot.log("Our min barrows teleport amt is "+config.minBarrowsTeleports()+" Our max barrows teleport amt is "+config.targetBarrowsTeleports());
-
                         if(Rs2Inventory.isFull() || Rs2Inventory.contains(it->it!=null&&it.getName().contains("'s") || it.getName().contains("Coins"))){
                             List<Rs2ItemModel> ourfood = Rs2Inventory.getInventoryFood();
                             String ourfoodsname = ourfood.get(0).getName();
@@ -889,7 +883,6 @@ public class BarrowsScript extends Script {
                 Rs2Prayer.toggle(NeededPrayer);
                 sleep(0,750);
                 if (Rs2Prayer.isPrayerActive(NeededPrayer)) {
-                    //we made it in
                     Microbot.log("Praying");
                     break;
                 }
@@ -927,10 +920,11 @@ public class BarrowsScript extends Script {
     }
     public void antiPatternDropVials(){
         if(Rs2Random.between(0,100) <= Rs2Random.between(1,25)) {
-                if (Rs2Inventory.contains("Vial")) {
-                    Rs2Inventory.drop("Vial");
+            if (Rs2Inventory.contains("Vial")) {
+                if(Rs2Inventory.drop("Vial")){
                     sleep(0, 750);
                 }
+            }
         }
     }
     public void outOfSupplies(){

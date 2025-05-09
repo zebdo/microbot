@@ -169,6 +169,11 @@ public class revKillerScript extends Script {
 
     public boolean timeToBreak(){
 
+        if (BreakHandlerScript.breakIn <= 0) {
+            //break handler not enabled?
+            return false;
+        }
+
         if (BreakHandlerScript.breakIn <= 300) {
             return true;
         }
