@@ -70,7 +70,7 @@ public class revKillerScript extends Script {
     private boolean weDied = false;
     private boolean useTimedWorldHopper = false;
     private long howLongUntilHop = 0;
-    private volatile boolean shouldFlee = false;
+    public volatile boolean shouldFlee = false;
     private long startTime = System.currentTimeMillis();
 
 
