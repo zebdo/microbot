@@ -1679,20 +1679,21 @@ public class Rs2GameObject {
     @SneakyThrows
     public static List<Integer> getObjectIdsByName(String name) {
         List<Integer> ids = new ArrayList<>();
-        ObjectID objectID = new ObjectID();
-        Class<?> objectIDClass = ObjectID.class;
+        String lowerName = name.toLowerCase();
 
-        // Loop through all declared fields of the class
-        for (Field field : objectIDClass.getDeclaredFields()) {
+        Class<?>[] classesToScan = {
+                net.runelite.api.ObjectID.class,
+                net.runelite.api.gameval.ObjectID.class
+        };
 
-            // Get the name of the current field
-            String fieldName = field.getName();
+        for (Class<?> clazz : classesToScan) {
+            for (Field f : clazz.getFields()) {
+                if (f.getType() != int.class) continue;
 
-            // Check if the current field's name matches the desired property name
-            if (fieldName.toLowerCase().contains(name)) {
-                field.setAccessible(true);
-                int propertyValue = (int) field.get(objectID);
-                ids.add(propertyValue);
+                if (f.getName().toLowerCase().contains(lowerName)) {
+                    f.setAccessible(true);
+                    ids.add(f.getInt(null));
+                }
             }
         }
         return ids;
