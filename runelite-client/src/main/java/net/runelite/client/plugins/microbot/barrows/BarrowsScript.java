@@ -263,27 +263,7 @@ public class BarrowsScript extends Script {
                             // We could be in ahrims mound while ahrim is tunnel. We need to stop the bot from leaving the mound and going back in.
                             if(brother.name.equals(WhoisTun) && brother.name.contains("Ahrim")) {
                                 if (Rs2Dialogue.isInDialogue()) {
-                                    while (Rs2Dialogue.isInDialogue()) {
-                                        if (!super.isRunning()) {
-                                            break;
-                                        }
-                                        if (Rs2Dialogue.hasContinue()) {
-                                            Rs2Dialogue.clickContinue();
-                                            sleep(300, 600);
-                                        }
-                                        if (Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!")) {
-                                            if (Rs2Dialogue.clickOption("Yeah I'm fearless!")) {
-                                                sleep(300, 600);
-                                                inTunnels = true;
-                                            }
-                                        }
-                                        if (!Rs2Dialogue.isInDialogue()) {
-                                            break;
-                                        }
-                                        if (inTunnels) {
-                                            break;
-                                        }
-                                    }
+                                    dialogueEnterTunnels();
                                     return;
                                 }
                             }
@@ -334,37 +314,9 @@ public class BarrowsScript extends Script {
 
                             }
 
+                            dialogueEnterTunnels();
 
-                            while(Rs2Dialogue.isInDialogue()) {
-                                if (!super.isRunning()) {
-                                    break;
-                                }
-                                if (Rs2Dialogue.hasContinue()) {
-                                    Rs2Dialogue.clickContinue();
-                                    sleepUntil(() -> Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!"), Rs2Random.between(2000, 5000));
-                                    sleep(300, 600);
-                                }
-                                if (Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!")) {
-                                    if (Rs2Dialogue.clickOption("Yeah I'm fearless!")) {
-                                        sleepUntil(() -> Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730, Rs2Random.between(2500, 6000));
-                                        //allow some time for the tunnel to load.
-                                        sleep(1000, 2000);
-                                        inTunnels = true;
-                                    }
-                                }
-                                if (!Rs2Dialogue.isInDialogue()) {
-                                    break;
-                                }
-                                if (inTunnels) {
-                                    break;
-                                }
-                                if (Rs2Player.getWorldLocation().getPlane() != 3) {
-                                    //we're not in the mound
-                                    break;
-                                }
-                            }
-
-                            break; // done
+                            break;
                         }
                     }
                 }
@@ -671,6 +623,39 @@ public class BarrowsScript extends Script {
             return true;
         }
         return false;
+    }
+
+    public void dialogueEnterTunnels(){
+        if (Rs2Dialogue.isInDialogue()) {
+            while(Rs2Dialogue.isInDialogue()) {
+                if (!super.isRunning()) {
+                    break;
+                }
+                if (Rs2Dialogue.hasContinue()) {
+                    Rs2Dialogue.clickContinue();
+                    sleepUntil(() -> Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!"), Rs2Random.between(2000, 5000));
+                    sleep(300, 600);
+                }
+                if (Rs2Dialogue.hasDialogueOption("Yeah I'm fearless!")) {
+                    if (Rs2Dialogue.clickOption("Yeah I'm fearless!")) {
+                        sleepUntil(() -> Rs2Player.getWorldLocation().getY() > 9600 && Rs2Player.getWorldLocation().getY() < 9730, Rs2Random.between(2500, 6000));
+                        //allow some time for the tunnel to load.
+                        sleep(1000, 2000);
+                        inTunnels = true;
+                    }
+                }
+                if (!Rs2Dialogue.isInDialogue()) {
+                    break;
+                }
+                if (inTunnels) {
+                    break;
+                }
+                if (Rs2Player.getWorldLocation().getPlane() != 3) {
+                    //we're not in the mound
+                    break;
+                }
+            }
+        }
     }
 
     public void digIntoTheMound(Rs2WorldArea moundArea){
