@@ -67,7 +67,7 @@ public class revKillerScript extends Script {
     long randomdelay = generateRandomNumber(350,1000);
     protected ScheduledFuture<?> checkForPKerFuture;
     protected ScheduledFuture<?> healthCheckFuture;
-    private boolean weDied = false;
+    public boolean weDied = false;
     private boolean useTimedWorldHopper = false;
     private long howLongUntilHop = 0;
     private volatile boolean shouldFlee = false;
@@ -168,6 +168,11 @@ public class revKillerScript extends Script {
     }
 
     public boolean timeToBreak(){
+
+        if (BreakHandlerScript.breakIn <= 0) {
+            //break handler not enabled?
+            return false;
+        }
 
         if (BreakHandlerScript.breakIn <= 300) {
             return true;
@@ -611,15 +616,11 @@ public class revKillerScript extends Script {
     public void stuckAtEnclave(){
         WorldPoint stuckSpot = new WorldPoint(3124,3636,0);
         if(Rs2Player.getWorldLocation().equals(stuckSpot)){
-            if(Rs2Equipment.get(EquipmentInventorySlot.RING)!=null){
-
-            } else {
-                Microbot.log("We're stuck outside of the enclave");
-                if(Rs2GameObject.exists(39653)){
-                    if(Rs2GameObject.interact(39653, "Pass-Through")){
-                        sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(2000,4000));
-                        sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(4000,8000));
-                    }
+            Microbot.log("We're stuck outside of the enclave");
+            if(Rs2GameObject.exists(39653)){
+                if(Rs2GameObject.interact(39653, "Pass-Through")){
+                    sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(2000,4000));
+                    sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(4000,8000));
                 }
             }
         }
@@ -671,8 +672,7 @@ public class revKillerScript extends Script {
             Microbot.log("Random number: " + howtobank);
             //equipring
             if(howtobank <= 80){
-                if(isItTimeToGo()||Rs2Inventory.contains(it->it!=null&&it.getName().contains("sack")||it.getName().contains("Blighted")||it.getName().contains("rune"))){
-                    //If we have more than 200k loot or the Inventory is full
+                if(isItTimeToGo() || weHaveLoot()){
                     Microbot.log("We have loot, depositing all");
                     Rs2Bank.depositAll();
                     sleepUntil(()-> Rs2Inventory.isEmpty(), generateRandomNumber(5000,15000));
@@ -847,6 +847,46 @@ public class revKillerScript extends Script {
     }
     public int generateRandomNumber(int min, int max) {
         return Rs2Random.nextInt(min, max, 1000, true);
+    }
+    private boolean weHaveLoot(){
+
+        if(Rs2Inventory.contains(it->it!=null&&it.getName().contains("Blighted"))){
+            return true;
+        }
+
+        if(Rs2Inventory.contains(it->it!=null&&it.getName().toLowerCase().contains("rune"))){
+            return true;
+        }
+
+        if(Rs2Inventory.contains(it->it!=null&&it.getName().toLowerCase().contains("seed"))){
+            return true;
+        }
+
+        if(Rs2Inventory.contains(it->it!=null&&it.getName().toLowerCase().contains("dragon"))){
+            return true;
+        }
+
+        if(Rs2Inventory.contains(it->it!=null&&it.getName().toLowerCase().contains("logs"))){
+            return true;
+        }
+
+        if(Rs2Inventory.contains(it->it!=null&&it.getName().toLowerCase().contains("bar"))){
+            return true;
+        }
+
+        if(Rs2Inventory.contains(it->it!=null&&it.getName().toLowerCase().contains("runite"))){
+            return true;
+        }
+
+        if(Rs2Inventory.contains(it->it!=null&&it.getName().toLowerCase().contains("bolt tips"))){
+            return true;
+        }
+
+        if(Rs2Inventory.contains(it->it!=null&&it.getName().toLowerCase().contains("battlestaff"))){
+            return true;
+        }
+
+        return false;
     }
     public boolean isItTimeToGo(){
         int value = 0; //set to 0 so list doesn't compound with each run
