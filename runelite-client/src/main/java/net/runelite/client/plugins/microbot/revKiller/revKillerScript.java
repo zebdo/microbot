@@ -59,11 +59,10 @@ public class revKillerScript extends Script {
     WorldPoint caveBeginning = new WorldPoint(3201, 10058, 0);
 
     public static boolean test = false;
-    WorldPoint selectedWP;
-    WorldPoint revimp;
-    int selectedArrow;
+    public WorldPoint selectedWP;
+    public String selectedRev;
+    public int selectedArrow;
     int LowOnArrowsCount = generateRandomNumber(30,60);
-    List<World> filteredWorlds = new ArrayList<>();
     long randomdelay = generateRandomNumber(350,1000);
     protected ScheduledFuture<?> checkForPKerFuture;
     protected ScheduledFuture<?> healthCheckFuture;
@@ -83,11 +82,6 @@ public class revKillerScript extends Script {
                 if (!super.run()) return;
                 long startTime = System.currentTimeMillis();
 
-                //get the selected rev WP via config.
-                selectedWP = config.selectedRev().getWorldPoint();
-                selectedArrow = config.selectedArrow().getArrowID();
-                // set it to our script
-                revimp = selectedWP;
                 useTimedWorldHopper = config.shouldUseTimedWorldHopper();
                 randomdelay = generateRandomNumber(400,900);
                 if(howLongUntilHop == 0){
@@ -104,7 +98,7 @@ public class revKillerScript extends Script {
 
                 if(areWeEquipped()){
 
-                    if(Rs2Player.getWorldLocation().distanceTo(revimp)>10){
+                    if(Rs2Player.getWorldLocation().distanceTo(selectedWP)>10){
 
                         WalkToRevs();
 
@@ -207,7 +201,7 @@ public class revKillerScript extends Script {
         if(!WeAreInTheCaves()){
             //we must walk to the cave entrence
             if(Rs2Player.getWorldLocation().distanceTo(cave) > 6){
-                if(Rs2Walker.walkTo(cave, Rs2Player.getWorldLocation().distanceTo(cave) - (generateRandomNumber(2,5)))){
+                if(Rs2Walker.walkTo(cave)){
                     Microbot.log("Walking to cave. with new method.");
                 }
             } else {
@@ -234,7 +228,7 @@ public class revKillerScript extends Script {
             }
         } else {
             if(WeAreInTheCaves()){
-                if(Rs2Walker.walkTo(revimp, Rs2Player.getWorldLocation().distanceTo(revimp) - (generateRandomNumber(2,5)))){
+                if(Rs2Walker.walkTo(selectedWP)){
                     Microbot.log("Walking to Revs. with new method.");
                 }
             }
@@ -293,6 +287,9 @@ public class revKillerScript extends Script {
     public void getAwayFromPker(){
         // code to run or teleport from pker
         Microbot.log("Attemping to get away from the PKer.");
+        //kill the walker incase we were walking.
+        Rs2Walker.setTarget(null);
+
         if(!Rs2Player.isTeleBlocked()){
             Microbot.log("At least we're not teleblocked.");
             if(Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) > 30) {
@@ -332,9 +329,8 @@ public class revKillerScript extends Script {
                         }
                     }
                     if (!WeAreInTheCaves()) {
-                        if(Rs2Player.isInCombat()){
-                            sleepUntil(()-> !Rs2Player.isInCombat(), generateRandomNumber(10000,15000));
-                            sleep(0,1200);
+                        if(Rs2Player.isInCombat() || Rs2Player.isAnimating()){
+                            sleepUntil(()-> !Rs2Player.isInCombat() && !Rs2Player.isAnimating(), generateRandomNumber(10000,15000));
                         }
                         hopToNewWorld();
                         break;
@@ -361,9 +357,8 @@ public class revKillerScript extends Script {
                         }
                     }
                     if (!WeAreInTheCaves()) {
-                        if(Rs2Player.isInCombat()){
-                            sleepUntil(()-> !Rs2Player.isInCombat(), generateRandomNumber(10000,15000));
-                            sleep(0,1200);
+                        if(Rs2Player.isInCombat() || Rs2Player.isAnimating()){
+                            sleepUntil(()-> !Rs2Player.isInCombat() && !Rs2Player.isAnimating(), generateRandomNumber(10000,15000));
                         }
                         hopToNewWorld();
                         break;
@@ -434,6 +429,18 @@ public class revKillerScript extends Script {
             }
 
         } else {
+            if(selectedRev.contains("Goblins") || selectedRev.contains("Imps")){
+                if(selectedRev.contains("Goblins")){
+                    selectedWP = new WorldPoint(3199, 10071, 0);
+                    selectedRev = "Rev Imps";
+                    return;
+                }
+                if(selectedRev.contains("Imps")){
+                    selectedWP = new WorldPoint(3226, 10067, 0);
+                    selectedRev = "Rev Goblins";
+                    return;
+                }
+            }
             if(!Rs2Player.isInCombat()) {
                 Microbot.log("No revs found, hopping");
                 sleepUntil(()-> isPkerAround(), generateRandomNumber(0,1200));
