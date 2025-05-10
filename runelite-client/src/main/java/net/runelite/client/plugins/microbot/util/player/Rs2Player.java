@@ -1003,7 +1003,7 @@ public class Rs2Player {
      * @return The local player wrapped in an {@link Rs2PlayerModel}.
      */
     public static Rs2PlayerModel getLocalPlayer() {
-        return new Rs2PlayerModel(Microbot.getClient().getLocalPlayer());
+        return getPlayers(player -> player.getId() == Microbot.getClient().getLocalPlayer().getId()).findFirst().orElse(null);
     }
 
     /**
