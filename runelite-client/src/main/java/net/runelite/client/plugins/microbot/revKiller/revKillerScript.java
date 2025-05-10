@@ -432,10 +432,12 @@ public class revKillerScript extends Script {
             if(selectedRev.contains("Goblins") || selectedRev.contains("Imps")){
                 if(selectedRev.contains("Goblins")){
                     selectedWP = new WorldPoint(3199, 10071, 0);
+                    selectedRev = "Rev Imps";
                     return;
                 }
                 if(selectedRev.contains("Imps")){
                     selectedWP = new WorldPoint(3226, 10067, 0);
+                    selectedRev = "Rev Goblins";
                     return;
                 }
             }
