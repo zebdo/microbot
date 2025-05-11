@@ -270,7 +270,7 @@ public class WildyKillerScript extends Script {
         scheduledFuture = scheduledExecutorService.schedule(() -> {
             try {
                 Microbot.log("Entered Asynch Walking Thread");
-                WorldPoint playerLocation = client.getLocalPlayer().getWorldLocation();
+                WorldPoint playerLocation = Rs2Player.getLocalPlayer().getWorldLocation();
 
                 if (playerLocation.getY() > 3520) {
                     // Check and reset the appropriate flag
@@ -454,6 +454,12 @@ public class WildyKillerScript extends Script {
 
         }
 
+        if (!scheduledFuture.isDone()) {
+            if (!Rs2Equipment.hasEquipped(STAFF_OF_FIRE)) {
+                Rs2Inventory.equip(STAFF_OF_FIRE);
+            }
+        }
+
         if (mossKillerPlugin.currentTarget != null
                 && mossKillerPlugin.currentTarget.getCombatLevel() > 87
                 && getWildernessLevelFrom(Rs2Player.getWorldLocation()) > 20) {
@@ -471,11 +477,16 @@ public class WildyKillerScript extends Script {
                     && !Rs2Prayer.isPrayerActive(PROTECT_RANGE)){
                 toggle(PROTECT_RANGE);
             }
-            if (hasPlayerEquippedItem(mossKillerPlugin.currentTarget, "Staff")
-                    && Microbot.getClient().getRealSkillLevel(PRAYER) > 36
-                    && Microbot.getClient().getBoostedSkillLevel(PRAYER) > 0
+            if (Microbot.getClient().getBoostedSkillLevel(PRAYER) > 0
                     && !Rs2Prayer.isPrayerActive(PROTECT_MAGIC)){
-                toggle(PROTECT_MAGIC);
+                if (Rs2Player.getRealSkillLevel(PRAYER) > 36) {
+                    Rs2Prayer.toggle(PROTECT_MAGIC, hasPlayerEquippedItem(mossKillerPlugin.currentTarget, STAFF_OF_FIRE)
+                            || hasPlayerEquippedItem(mossKillerPlugin.currentTarget, STAFF_OF_AIR)
+                            || hasPlayerEquippedItem(mossKillerPlugin.currentTarget, STAFF_OF_WATER)
+                            || hasPlayerEquippedItem(mossKillerPlugin.currentTarget, STAFF_OF_EARTH)
+                            || hasPlayerEquippedItem(mossKillerPlugin.currentTarget, BRYOPHYTAS_STAFF)
+                            || hasPlayerEquippedItem(mossKillerPlugin.currentTarget, BRYOPHYTAS_STAFF_UNCHARGED));
+                }
             }
             if (ShortestPathPlugin.getPathfinder() == null && !MossKillerPlugin.isPlayerSnared()) {
                 handleAsynchWalk("Twenty Wild");
@@ -483,8 +494,14 @@ public class WildyKillerScript extends Script {
         }
 
         if (mossKillerConfig.combatMode() != LURE) {
-            if (Rs2Player.isInMulti()
-                    && scheduledFuture.isDone()
+            if (Rs2Player.isInMulti()) {
+                Microbot.log("In multi");
+                Microbot.log("scheduledFuture" + scheduledFuture.isDone());
+                if(ShortestPathPlugin.getPathfinder() == null) {Microbot.log("shortestpath is null");}
+                if(ShortestPathPlugin.getPathfinder() != null) {
+                        Microbot.log("shortest path is not null");}
+            }
+                    if (scheduledFuture.isDone()
                     && ShortestPathPlugin.getPathfinder() == null) {
 
                 handleAsynchWalk("Moss Giants");
@@ -2406,13 +2423,14 @@ public class WildyKillerScript extends Script {
             if (scheduledFuture.isDone() && !Rs2Inventory.hasItemAmount(FOOD, 17)) { // Only initiate if not already walking to Twenty Wild
                 handleAsynchWalk("Twenty Wild");
             }
+            if (Rs2Walker.getDistanceBetween(playerLocation, TWENTY_WILD) < 5) {
+                teleportAndStopWalking();
             if (Rs2Inventory.hasItemAmount(FOOD, 17)) {
                 state = MossKillerState.WALK_TO_MOSS_GIANTS;
             }
             Microbot.log("Hitting Return");
             return;
-        } else if (Rs2Walker.getDistanceBetween(playerLocation, TWENTY_WILD) < 5) {
-            teleportAndStopWalking();
+        }
         }
 
         // Check if the player has teleported (Y-coordinate condition)
