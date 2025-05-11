@@ -92,7 +92,10 @@ public class TearsOfGuthixScript extends Script {
                         } else {
                             Microbot.log("Travelling to Tears of Guthix...");
                             Rs2Walker.walkTo(junaLocation);
-                            BOT_STATUS = State.GETTING_WORLD;
+                            if (Rs2Player.distanceTo(junaLocation) <= 5) {
+                                BOT_STATUS = State.GETTING_WORLD;
+                            }
+
                         }
                         break;
                     case GETTING_WORLD:
