@@ -106,10 +106,9 @@ public class PyreFoxStateManager extends Script
 		var trapPoint = PyreFoxConstants.TRAP_OBJECT_POINT;
 		var trap = trapPoint != null ? Rs2GameObject.getGameObject(PyreFoxConstants.TRAP_OBJECT_POINT) : null;
 		boolean trapCaughtFox = (trap != null && trap.getId() == PyreFoxConstants.GAMEOBJECT_ROCK_FOX_CAUGHT);
-		boolean surpassedLogCutThreshold = Rs2Inventory.count("logs") <= PyreFoxConstants.GATHER_LOGS_AT_AMOUNT;
-		if ((!trapCaughtFox || trap == null) && surpassedLogCutThreshold && Rs2Player.distanceTo(PyreFoxConstants.PYRE_FOX_CENTER_POINT) < 60)
+		boolean needMoreLogs = Rs2Inventory.count("logs") < PyreFoxConstants.GATHER_LOGS_AT_AMOUNT;
+		if (!trapCaughtFox || needMoreLogs && Rs2Player.distanceTo(PyreFoxConstants.PYRE_FOX_CENTER_POINT) < 60)
 			return CHOPPING_TREES;
-
 
 		// Handles banking.
 		boolean shouldBank = (_config.ForceBank() || Rs2Inventory.getEmptySlots() <= 2);
