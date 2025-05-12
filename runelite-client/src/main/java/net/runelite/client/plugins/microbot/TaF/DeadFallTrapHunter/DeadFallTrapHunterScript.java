@@ -112,7 +112,7 @@ public class DeadFallTrapHunterScript extends Script {
                 }
 
             } catch (Exception ex) {
-                System.out.println("Salamander Script Error: " + ex.getMessage());
+                System.out.println("DeadfallTrapHunter Script Error: " + ex.getMessage());
                 ex.printStackTrace();
             }
         }, 0, 1000, TimeUnit.MILLISECONDS);
@@ -318,9 +318,9 @@ public class DeadFallTrapHunterScript extends Script {
         return bestPickaxe;
     }
 
-    private boolean isNearArea(DeadFallTrapHunting salamanderType) {
+    private boolean isNearArea(DeadFallTrapHunting deadFallTrapHunting) {
         WorldPoint currentLocation = Rs2Player.getWorldLocation();
-        return currentLocation.distanceTo(salamanderType.getHuntingPoint()) <= 50;
+        return currentLocation.distanceTo(deadFallTrapHunting.getHuntingPoint()) <= 50;
     }
 
     private boolean handleExistingTraps(DeadFallTrapHunterPlugin plugin, DeadFallTrapHunterConfig config) {
@@ -346,9 +346,9 @@ public class DeadFallTrapHunterScript extends Script {
         return false;
     }
 
-    private void setNewTrap(DeadFallTrapHunting salamanderType, DeadFallTrapHunterConfig config) {
-        if (Rs2GameObject.exists(salamanderType.getTrapId())) {
-            Rs2GameObject.interact(salamanderType.getTrapId(), "Set-trap");
+    private void setNewTrap(DeadFallTrapHunting deadFallTrapHunting, DeadFallTrapHunterConfig config) {
+        if (Rs2GameObject.exists(deadFallTrapHunting.getTrapId())) {
+            Rs2GameObject.interact(deadFallTrapHunting.getTrapId(), "Set-trap");
             sleep(config.minSleepAfterLay(), config.maxSleepAfterLay());
         }
     }

@@ -42,7 +42,7 @@ public class DeadFallTrapHunterPlugin extends Plugin {
     @Inject
     private OverlayManager overlayManager;
     @Inject
-    private DeadFallTrapHunterOverlay salamanderOverlay;
+    private DeadFallTrapHunterOverlay deadFallTrapHunterOverlay;
     private DeadFallTrapHunterScript script;
     private DeadFallTrapInventoryHandlerScript looter;
     private WorldPoint lastTickLocalPlayerLocation;
@@ -57,7 +57,7 @@ public class DeadFallTrapHunterPlugin extends Plugin {
     protected void startUp() throws Exception {
         log.info("Deadfall hunter plugin started!");
         scriptStartTime = Instant.now();
-        overlayManager.add(salamanderOverlay);
+        overlayManager.add(deadFallTrapHunterOverlay);
         script = new DeadFallTrapHunterScript();
         script.run(config, this);
         looter = new DeadFallTrapInventoryHandlerScript();
@@ -68,7 +68,7 @@ public class DeadFallTrapHunterPlugin extends Plugin {
     protected void shutDown() throws Exception {
         log.info("Deadfall hunter plugin stopped!");
         scriptStartTime = null;
-        overlayManager.remove(salamanderOverlay);
+        overlayManager.remove(deadFallTrapHunterOverlay);
         if (script != null) {
             script.shutdown();
             looter.shutdown();
