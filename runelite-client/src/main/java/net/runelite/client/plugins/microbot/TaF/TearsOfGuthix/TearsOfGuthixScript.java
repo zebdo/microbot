@@ -45,11 +45,14 @@ public class TearsOfGuthixScript extends Script {
     private final int TearsCaveX = 3252;
     private int bestWorld = 0;
     private boolean hasBeenRunning = false;
+    private DecorativeObject currentStream = null;
+    private Instant lastStreamClickTime = null;
+    private Instant currentStreamSpawnTime = null;
 
     {
         Microbot.enableAutoRunOn = false;
         Rs2Antiban.resetAntibanSettings();
-        Rs2AntibanSettings.usePlayStyle = true;
+        Rs2AntibanSettings.usePlayStyle = false;
         Rs2AntibanSettings.simulateFatigue = false;
         Rs2AntibanSettings.simulateAttentionSpan = false;
         Rs2AntibanSettings.behavioralVariability = true;
@@ -171,39 +174,78 @@ public class TearsOfGuthixScript extends Script {
      * Finds and collects the optimal blue tear streams
      */
     private void collectTears() {
-        // Wait if player is moving
-        if (Rs2Player.isMoving()) {
+        // Display current stream info if we have one selected
+        if (currentStream != null && currentStreamSpawnTime != null) {
+            long timeRemaining = 9 - Duration.between(currentStreamSpawnTime, Instant.now()).getSeconds();
+            if (timeRemaining > 0) {
+                boolean isCollecting = isCollectingTears();
+                String status = isCollecting ? "Collecting from" : "Moving to";
+
+                String timeSinceClick = "";
+                if (lastStreamClickTime != null) {
+                    long millisSinceClick = Duration.between(lastStreamClickTime, Instant.now()).toMillis();
+                    timeSinceClick = " (Clicked " + (millisSinceClick / 1000.0) + "s ago)";
+                }
+
+                Microbot.log(status + " stream: ~" + timeRemaining + "s remaining" + timeSinceClick);
+            }
+        }
+
+        // If moving and we have a current stream, return (continue moving to selected stream)
+        if (Rs2Player.isMoving() && currentStream != null && currentStreamSpawnTime != null) {
+            long timeRemaining = 9 - Duration.between(currentStreamSpawnTime, Instant.now()).getSeconds();
+            if (timeRemaining > 0) {
+                clickStream(currentStream, timeRemaining);
+                return;
+            }
+        } else if (Rs2Player.isMoving()) {
+            // Moving but no stream selected or stream expired
             return;
         }
 
-        // Get all available blue streams
+        // Rest of method continues with finding streams, etc.
         List<DecorativeObject> blueStreams = findBlueStreams();
-
-        // If there are no blue streams, wait for them to appear
-        if (blueStreams.isEmpty()) {
-            Microbot.log("Waiting for blue tear streams to appear");
-            sleep(600, 1200);
-            return;
-        }
-
-        // Check if already collecting a blue stream
         boolean isCollecting = isCollectingTears();
 
-        // Only change streams if not collecting
-        if (!isCollecting) {
-            DecorativeObject bestStream = findBestStream(blueStreams);
+        // If recently clicked a stream but not collecting yet, wait for animation
+        if (!isCollecting && lastStreamClickTime != null &&
+                Duration.between(lastStreamClickTime, Instant.now()).toMillis() < 1500) {
+            return;
+        }
 
-            if (bestStream != null) {
-                Instant spawnTime = Streams.get(bestStream);
-                if (spawnTime != null) {
-                    long timeRemaining = 9 - Duration.between(spawnTime, Instant.now()).getSeconds();
+        DecorativeObject bestStream = findBestStream(blueStreams);
+        if (bestStream == null) return;
 
-                    // Only switch if not collecting or the new stream has significant time left
-                    if (!isCollecting || timeRemaining > 6) {
-                        clickStream(bestStream, timeRemaining);
-                    }
-                }
+        Instant bestStreamSpawnTime = Streams.get(bestStream);
+        if (bestStreamSpawnTime == null) return;
+
+        long bestStreamTimeRemaining = 9 - Duration.between(bestStreamSpawnTime, Instant.now()).getSeconds();
+        boolean shouldSwitch = false;
+
+        WorldPoint playerLocation = Rs2Player.getWorldLocation();
+        int distanceToBestStream = playerLocation.distanceTo(bestStream.getWorldLocation());
+
+        if (!isCollecting || currentStream == null || currentStreamSpawnTime == null) {
+            shouldSwitch = true;
+        } else {
+            // Use currentStreamSpawnTime directly instead of looking up in Streams map
+            long currentTimeRemaining = 9 - Duration.between(currentStreamSpawnTime, Instant.now()).getSeconds();
+
+            int movementPenalty = Math.max(0, distanceToBestStream * 300);
+
+            if ((bestStreamTimeRemaining > currentTimeRemaining + 2 + (movementPenalty / 1000)) ||
+                    currentTimeRemaining < 1.5 ||
+                    (distanceToBestStream <= 1 && bestStreamTimeRemaining > 5)) {
+                shouldSwitch = true;
             }
+        }
+
+        if (shouldSwitch && (lastStreamClickTime == null ||
+                Duration.between(lastStreamClickTime, Instant.now()).toMillis() > 500)) {
+            clickStream(bestStream, bestStreamTimeRemaining);
+            currentStream = bestStream;
+            currentStreamSpawnTime = bestStreamSpawnTime; // Update the spawn time when switching streams
+            lastStreamClickTime = Instant.now();
         }
     }
 
@@ -232,7 +274,7 @@ public class TearsOfGuthixScript extends Script {
      */
     private DecorativeObject findBestStream(List<DecorativeObject> blueStreams) {
         final WorldPoint playerLocation = Rs2Player.getWorldLocation();
-        // Find the stream with the maximum score based on time remaining and distance
+
         return blueStreams.stream()
                 .max(Comparator.<DecorativeObject>comparingInt(stream -> {
                     // Calculate score based on time remaining and distance
@@ -246,23 +288,31 @@ public class TearsOfGuthixScript extends Script {
                     // Weight time remaining heavily (0-90 points)
                     int timeScore = timeRemaining * 10;
 
-                    // Factor in distance (0-30 points)
+                    // Factor in distance more aggressively (0-50 points)
                     int distance = playerLocation.distanceTo(stream.getWorldLocation());
-                    int distScore = Math.max(0, 30 - (distance * 7));
+                    int distScore = Math.max(0, 50 - (distance * 6));
+
+                    // Extra bonus for very close streams (within 2 tiles)
+                    if (distance <= 2) {
+                        distScore += 20;
+                    }
 
                     return timeScore + distScore;
                 }))
                 .orElse(null);
     }
 
+
     /**
      * Clicks on the selected stream and logs the action
      */
     private void clickStream(DecorativeObject stream, long timeRemaining) {
+        WorldPoint playerLocation = Rs2Player.getWorldLocation();
+        int distance = playerLocation.distanceTo(stream.getWorldLocation());
+
         Microbot.getClientThread().invoke(() -> {
             Microbot.getMouse().click(stream.getCanvasLocation());
-            Microbot.log("Collecting blue tear stream (Time remaining: ~" + timeRemaining + "s)");
-            sleep(300, 600);
+            Microbot.log("Switching to blue tear stream (Time left: ~" + timeRemaining + "s, Distance: " + distance + " tiles)");
             return true;
         });
     }
