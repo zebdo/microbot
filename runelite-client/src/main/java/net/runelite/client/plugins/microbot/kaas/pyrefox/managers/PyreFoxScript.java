@@ -34,7 +34,7 @@ public class PyreFoxScript extends Script
     public boolean run(PyreFoxConfig config)
     {
         this._config = config;
-        Microbot.pauseAllScripts = false;
+        Microbot.enableAutoRunOn = true;
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -350,7 +350,7 @@ public class PyreFoxScript extends Script
 
     @Override
     public void shutdown() {
-
+        Microbot.pauseAllScripts = true;
         Rs2Antiban.resetAntibanSettings();
         super.shutdown();
     }
