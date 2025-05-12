@@ -20,6 +20,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.awt.*;
 import java.time.Duration;
 import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 
 
 /**
@@ -64,6 +65,12 @@ public class SchedulerInfoPanel extends JPanel {
     private final JLabel nextBreakLabel;
     private final JLabel breakDurationLabel;    
     
+    // Previous plugin panel
+    private final JPanel prevPluginPanel;
+    private final JLabel prevPluginNameLabel;
+    private final JLabel prevPluginDurationLabel;
+    private final JLabel prevPluginStatusLabel;
+    private final JLabel prevPluginStopTimeLabel;
   
   
     public SchedulerInfoPanel(SchedulerPlugin plugin) {
@@ -277,6 +284,39 @@ public class SchedulerInfoPanel extends JPanel {
         nextPluginPanel.add(nextPluginScheduleLabel, gbc);
         
         add(nextPluginPanel);
+        add(Box.createRigidArea(new Dimension(0, 10))); // Add spacing
+        
+        // Create Previous Plugin Panel
+        prevPluginPanel = createInfoPanel("Previous Plugin");
+        gbc = createGbc(0, 0);
+        
+        prevPluginPanel.add(new JLabel("Name:"), gbc);
+        gbc.gridx++;
+        prevPluginNameLabel = createValueLabel("None");
+        prevPluginPanel.add(prevPluginNameLabel, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy++;
+        prevPluginPanel.add(new JLabel("Duration:"), gbc);
+        gbc.gridx++;
+        prevPluginDurationLabel = createValueLabel("00:00:00");
+        prevPluginPanel.add(prevPluginDurationLabel, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy++;
+        prevPluginPanel.add(new JLabel("Stop Reason:"), gbc);
+        gbc.gridx++;
+        prevPluginStatusLabel = createValueLabel("None");
+        prevPluginPanel.add(prevPluginStatusLabel, gbc);
+        
+        gbc.gridx = 0;
+        gbc.gridy++;
+        prevPluginPanel.add(new JLabel("Stop Time:"), gbc);
+        gbc.gridx++;
+        prevPluginStopTimeLabel = createValueLabel("--:--:--");
+        prevPluginPanel.add(prevPluginStopTimeLabel, gbc);
+        
+        add(prevPluginPanel);
        
         // Initial refresh
         refresh();
@@ -328,6 +368,7 @@ public class SchedulerInfoPanel extends JPanel {
         updateCurrentPluginInfo();
         updateNextPluginInfo();
         updatePlayerStatusInfo();
+        updatePreviousPluginInfo();
         updateButtonStates();
     }
     
@@ -604,6 +645,76 @@ public class SchedulerInfoPanel extends JPanel {
         } else {
             breakDurationLabel.setText("00:00:00");
             breakDurationLabel.setForeground(Color.GRAY);
+        }
+    }
+
+    /**
+     * Updates information about the previously run plugin
+     */
+    private void updatePreviousPluginInfo() {
+        PluginScheduleEntry lastPlugin = plugin.getLastPlugin();
+        
+        if (lastPlugin != null) {
+            // Set visibility
+            updatePanelVisibility(prevPluginPanel, true);
+            
+            // Update name
+            prevPluginNameLabel.setText(lastPlugin.getCleanName());
+            
+            // Update duration if available
+            if (lastPlugin.getLastRunDuration() != null && !lastPlugin.getLastRunDuration().isZero()) {
+                Duration duration = lastPlugin.getLastRunDuration();
+                long hours = duration.toHours();
+                long minutes = (duration.toMinutes() % 60);
+                long seconds = (duration.getSeconds() % 60);
+                prevPluginDurationLabel.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+            } else {
+                prevPluginDurationLabel.setText("Unknown");
+            }
+            
+            // Update stop reason
+            String stopReason = lastPlugin.getLastStopReason();
+            PluginScheduleEntry.StopReason stopReasonType = lastPlugin.getLastStopReasonType();
+            
+            if (stopReason != null && !stopReason.isEmpty()) {
+                prevPluginStatusLabel.setText(stopReason);
+                
+                // Set color based on stop reason type
+                if (stopReasonType != null) {
+                    switch (stopReasonType) {
+                        case PLUGIN_FINISHED:
+                            prevPluginStatusLabel.setForeground(new Color(76, 175, 80)); // Green
+                            break;
+                        case ERROR:
+                            prevPluginStatusLabel.setForeground(new Color(244, 67, 54)); // Red
+                            break;
+                        case INTERRUPTED:
+                            prevPluginStatusLabel.setForeground(new Color(255, 152, 0)); // Orange
+                            break;
+                        default:
+                            prevPluginStatusLabel.setForeground(Color.WHITE);
+                            break;
+                    }
+                }
+            } else {
+                prevPluginStatusLabel.setText("Unknown");
+                prevPluginStatusLabel.setForeground(Color.WHITE);
+            }
+            
+            // Update stop time
+            if (lastPlugin.getLastRunEndTime() != null) {
+                ZonedDateTime stopTime = lastPlugin.getLastRunEndTime();
+                prevPluginStopTimeLabel.setText(stopTime.format(DateTimeFormatter.ofPattern("HH:mm:ss")));
+            } else {
+                prevPluginStopTimeLabel.setText("Unknown");
+            }
+        } else {
+            // Reset all fields
+            prevPluginNameLabel.setText("None");
+            prevPluginDurationLabel.setText("00:00:00");
+            prevPluginStatusLabel.setText("N/A");
+            prevPluginStopTimeLabel.setText("--:--:--");
+            updatePanelVisibility(prevPluginPanel, false);
         }
     }
 

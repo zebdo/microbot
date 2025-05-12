@@ -6,6 +6,7 @@ import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.antiban.enums.PlaySchedule;
 
 @ConfigGroup("PluginScheduler")
 public interface SchedulerConfig extends Config {
@@ -236,13 +237,13 @@ public interface SchedulerConfig extends Config {
    
     // Break settings
     @ConfigItem(
-        keyName = "enableBreakHandlerAutomatically",
-        name = "Auto-enable BreakHandler",
-        description = "Automatically enable the BreakHandler plugin when starting a plugin",
+        keyName = "enableBreakHandlerForSchedule",
+        name = "BreakHandler on Start",
+        description = "Automatically enable the BreakHandler when starting a plugin",
         position = 1,
         section = breakSection
     )
-    default boolean enableBreakHandlerAutomatically() {
+    default boolean enableBreakHandlerForSchedule() {
         return true;
     }
     
@@ -263,13 +264,13 @@ public interface SchedulerConfig extends Config {
         max = 60
     )
     @ConfigItem(
-        keyName = "minTimeToNextScheduleForTakingABreak",
-        name = "Min Break Time (minutes)",        
-        description = "The Minimum Time until to the next scheduled plugin is due to run for taking a break",
+        keyName = "minBreakDuration",
+        name = "Min Break Duration (minutes)",        
+        description = "The minimum duration of breaks between schedules",
         position = 3,
         section = breakSection
     )
-    default int minTimeToNextScheduleForTakingABreak() {
+    default int minBreakDuration() {
         return 2;
     }
     @Range(
@@ -288,13 +289,35 @@ public interface SchedulerConfig extends Config {
     }
     @ConfigItem(
         keyName = "autoLogOutOnBreak",
-        name = "Auto Log Out on Break",        
+        name = "Log Out During A Break",        
         description = "Automatically log out when taking a break",
         position = 5,
         section =  breakSection
     )
     default boolean autoLogOutOnBreak() {
         return false;
+    }
+    
+    @ConfigItem(
+        keyName = "usePlaySchedule",
+        name = "Use Play Schedule",
+        description = "Enable use of a play schedule to control when the scheduler is active",
+        position = 6,
+        section = breakSection
+    )
+    default boolean usePlaySchedule() {
+        return false;
+    }
+    
+    @ConfigItem(
+        keyName = "playSchedule",
+        name = "Play Schedule",
+        description = "Select the play schedule to use",
+        position = 7,
+        section = breakSection
+    )
+    default PlaySchedule playSchedule() {
+        return PlaySchedule.MEDIUM_DAY;
     }
 
    

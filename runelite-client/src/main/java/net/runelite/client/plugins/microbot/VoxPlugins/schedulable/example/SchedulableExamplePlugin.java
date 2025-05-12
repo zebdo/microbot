@@ -267,8 +267,8 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
          // Add a lock condition that can be toggled manually
          // NOTE: This condition uses AND logic with the other conditions since it's in an AND condition
          AndCondition andCondition = new AndCondition();
-         andCondition.addCondition(orCondition);
-         andCondition.addCondition(lockCondition);
+         //andCondition.addCondition(orCondition);
+         //andCondition.addCondition(lockCondition);
          this.currentCondition = andCondition;         
          //log.info("\nCreated stop condition: \n{}", andCondition.getDescription());
          return andCondition;

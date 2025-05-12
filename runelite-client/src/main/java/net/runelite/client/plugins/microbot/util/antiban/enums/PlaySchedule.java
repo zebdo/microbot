@@ -86,4 +86,42 @@ public enum PlaySchedule {
         }
     }
 
+    
+    /**
+     * Returns a string representation of the PlaySchedule, including the start and end times,
+     * and the time until the next schedule.
+     *
+     * @return A string representation of the PlaySchedule.
+     */
+    public String displayString() {
+        String formattedStartTime = formatTime(startTime);
+        String formattedEndTime = formatTime(endTime);
+        String scheduleDisplay = "["+this.toString()+"]" + formattedStartTime + " - " + formattedEndTime;
+        
+        Duration timeUntil = timeUntilNextSchedule();
+        if (!timeUntil.isZero()) {
+            long hours = timeUntil.toHours();
+            long minutes = timeUntil.toMinutesPart();
+            scheduleDisplay += " (Next in: " + 
+                (hours > 0 ? hours + "h " : "") + 
+                (minutes > 0 ? minutes + "m" : (hours == 0 ? "< 1m" : "")) + ")";
+        } else {
+            scheduleDisplay += " (Currently active)";
+        }
+        
+        return scheduleDisplay;
+    }
+    
+    private String formatTime(LocalTime time) {
+        int hour = time.getHour();
+        int minute = time.getMinute();
+        boolean isPM = hour >= 12;
+        
+        hour = hour % 12;
+        if (hour == 0) {
+            hour = 12;
+        }
+        
+        return String.format("%02d:%02d %s", hour, minute, isPM ? "PM" : "AM");
+    }
 }
