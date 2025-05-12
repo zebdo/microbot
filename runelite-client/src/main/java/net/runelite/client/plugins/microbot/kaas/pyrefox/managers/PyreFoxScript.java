@@ -13,7 +13,6 @@ import net.runelite.client.plugins.microbot.kaas.pyrefox.enums.PyreFoxState;
 import net.runelite.client.plugins.microbot.kaas.pyrefox.helpers.BankHelper;
 import net.runelite.client.plugins.microbot.kaas.pyrefox.helpers.PlayerHelper;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
-import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
@@ -35,7 +34,8 @@ public class PyreFoxScript extends Script
     public boolean run(PyreFoxConfig config)
     {
         this._config = config;
-        applyAntiBanSettings();
+        Microbot.pauseAllScripts = false;
+
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
@@ -109,9 +109,6 @@ public class PyreFoxScript extends Script
         while (Rs2Inventory.count("Logs") < PyreFoxConstants.GATHER_LOGS_AMOUNT)
         {
             if (!isRunning())
-                break;
-
-            if (getCurrentState() != PyreFoxState.CHOPPING_TREES)
                 break;
 
             // Break the loop when we are below configured hitpoints.
@@ -353,22 +350,8 @@ public class PyreFoxScript extends Script
 
     @Override
     public void shutdown() {
-        super.shutdown();
-    }
 
-    private void applyAntiBanSettings() {
-        Rs2AntibanSettings.antibanEnabled = true;
-        Rs2AntibanSettings.usePlayStyle = true;
-        Rs2AntibanSettings.simulateFatigue = true;
-        Rs2AntibanSettings.simulateAttentionSpan = true;
-        Rs2AntibanSettings.behavioralVariability = true;
-        Rs2AntibanSettings.nonLinearIntervals = true;
-        Rs2AntibanSettings.naturalMouse = true;
-        Rs2AntibanSettings.simulateMistakes = true;
-        Rs2AntibanSettings.moveMouseOffScreen = true;
-        Rs2AntibanSettings.contextualVariability = true;
-        Rs2AntibanSettings.devDebug = false;
-        Rs2AntibanSettings.playSchedule = true;
-        Rs2AntibanSettings.actionCooldownChance = 0.1;
+        Rs2Antiban.resetAntibanSettings();
+        super.shutdown();
     }
 }
