@@ -26,9 +26,23 @@ public class DeadFallTrapHunterScript extends Script {
     public static final int SMALL_FISHING_NET = 303;
     public static final int ROPE = 954;
     public static int creaturesCaught = 0;
+    private final int MAX_DEADFALL_TRAPS = 1;
     public boolean hasDied = false;
     public boolean forceBank = false;
-    private final int MAX_DEADFALL_TRAPS = 1;
+    public boolean forceDrop = false;
+
+    private static void WalkBackToHunterArea(DeadFallTrapHunterConfig config, DeadFallTrapHunterPlugin plugin) {
+        if (!plugin.getTraps().isEmpty()) {
+            var trap = plugin.getTraps().values().stream().findFirst().orElse(null);
+            if (trap != null) {
+                Rs2Walker.walkTo(trap.getWorldLocation());
+            } else {
+                Rs2Walker.walkTo(config.deadFallTrapHunting().getHuntingPoint());
+            }
+        } else {
+            Rs2Walker.walkTo(config.deadFallTrapHunting().getHuntingPoint());
+        }
+    }
 
     public boolean run(DeadFallTrapHunterConfig config, DeadFallTrapHunterPlugin plugin) {
         Rs2Antiban.resetAntibanSettings();
@@ -135,19 +149,6 @@ public class DeadFallTrapHunterScript extends Script {
         }
     }
 
-    private static void WalkBackToHunterArea(DeadFallTrapHunterConfig config, DeadFallTrapHunterPlugin plugin) {
-        if (!plugin.getTraps().isEmpty()) {
-            var trap = plugin.getTraps().values().stream().findFirst().orElse(null);
-            if (trap != null) {
-                Rs2Walker.walkTo(trap.getWorldLocation());
-            } else {
-                Rs2Walker.walkTo(config.deadFallTrapHunting().getHuntingPoint());
-            }
-        } else {
-            Rs2Walker.walkTo(config.deadFallTrapHunting().getHuntingPoint());
-        }
-    }
-
     private DeadFallTrapHunting getDeadFallHunting(DeadFallTrapHunterConfig config) {
         if (config.progressiveHunting()) {
             return getBestDeadFallHuntingCreature();
@@ -194,8 +195,7 @@ public class DeadFallTrapHunterScript extends Script {
         Rs2Bank.walkToBank();
         Rs2Bank.openBank();
 
-        if (config.UseMeatPouch())
-        {
+        if (config.UseMeatPouch()) {
             if (!Rs2Inventory.hasItem(config.MeatPouch().getClosedItemID()) && !Rs2Inventory.hasItem(config.MeatPouch().getOpenItemID())) {
                 Rs2Bank.withdrawOne(config.MeatPouch().getOpenItemID());
                 sleep(600, 1200);
@@ -225,10 +225,8 @@ public class DeadFallTrapHunterScript extends Script {
         sleep(50, 1200);
 
         // Auto-eat until full.
-        if (config.AutoEat())
-        {
-            while (!Rs2Player.isFullHealth())
-            {
+        if (config.AutoEat()) {
+            while (!Rs2Player.isFullHealth()) {
                 if (!isRunning()) {
                     break;
                 }
@@ -245,8 +243,7 @@ public class DeadFallTrapHunterScript extends Script {
         }
 
         // Close the bank
-        if (Rs2Bank.isOpen())
-        {
+        if (Rs2Bank.isOpen()) {
             Rs2Bank.closeBank();
             sleep(600, 900);
         }
@@ -326,7 +323,6 @@ public class DeadFallTrapHunterScript extends Script {
         return currentLocation.distanceTo(salamanderType.getHuntingPoint()) <= 50;
     }
 
-    public boolean forceDrop = false;
     private boolean handleExistingTraps(DeadFallTrapHunterPlugin plugin, DeadFallTrapHunterConfig config) {
         // Filter for FULL traps and sort by time (traps about to collapse first) and then pick the first one
         var trapToHandle = plugin.getTraps().entrySet().stream()

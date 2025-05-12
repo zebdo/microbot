@@ -1,6 +1,9 @@
 package net.runelite.client.plugins.microbot.TaF.DeadFallTrapHunter;
 
-import net.runelite.client.config.*;
+import net.runelite.client.config.Config;
+import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigInformation;
+import net.runelite.client.config.ConfigItem;
 import net.runelite.client.plugins.microbot.kaas.pyrefox.enums.MeatPouch;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 
@@ -41,18 +44,17 @@ public interface DeadFallTrapHunterConfig extends Config {
             name = "Use axe in inventory?",
             description = "Use axe in inventory?"
     )
-    default boolean axeInInventory()
-    {
+    default boolean axeInInventory() {
         return true;
     }
+
     @ConfigItem(
             position = 2,
             keyName = "UseMeatPouch",
             name = "Use meat pouch?",
             description = "Do you have a meat pouch?"
     )
-    default boolean UseMeatPouch()
-    {
+    default boolean UseMeatPouch() {
         return true;
     }
 
@@ -62,18 +64,17 @@ public interface DeadFallTrapHunterConfig extends Config {
             name = "Meat pouch",
             description = "Which meat pouch should the script use?"
     )
-    default MeatPouch MeatPouch()
-    {
+    default MeatPouch MeatPouch() {
         return MeatPouch.LARGE_MEAT_POUCH;
     }
+
     @ConfigItem(
             position = 4,
             keyName = "EatAtBank",
             name = "Eat at bank",
             description = "Auto eats food at the bank to fill up your hitpoints."
     )
-    default boolean AutoEat()
-    {
+    default boolean AutoEat() {
         return true;
     }
 
@@ -83,8 +84,7 @@ public interface DeadFallTrapHunterConfig extends Config {
             name = "Food to eat at bank",
             description = "What food should we eat at the bank?"
     )
-    default Rs2Food FoodToEatAtBank()
-    {
+    default Rs2Food FoodToEatAtBank() {
         return Rs2Food.LOBSTER;
     }
 
@@ -97,6 +97,7 @@ public interface DeadFallTrapHunterConfig extends Config {
     default int runToBankHP() {
         return 25;
     }
+
     @ConfigItem(
             position = 7,
             keyName = "progressiveHunting",
