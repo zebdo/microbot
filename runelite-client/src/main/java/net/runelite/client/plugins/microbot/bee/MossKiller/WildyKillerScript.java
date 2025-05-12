@@ -77,6 +77,9 @@ public class WildyKillerScript extends Script {
     private MossKillerPlugin mossKillerPlugin;
 
     @Inject
+    private MossKillerScript mossKillerScript;
+
+    @Inject
     private MossKillerConfig mossKillerConfig;
 
     @Inject
@@ -164,6 +167,10 @@ public class WildyKillerScript extends Script {
                 long startTime = System.currentTimeMillis();
 
                 Microbot.log("SoL " + state);
+                if (mossKillerPlugin.startedFromScheduler) {prepareSchedulerStart();
+                    mossKillerPlugin.startedFromScheduler = false;}
+                if (mossKillerPlugin.preparingForShutdown) {
+                    MossKillerScript.prepareSoftStop();}
                 Rs2AntibanSettings.antibanEnabled = mossKillerPlugin.currentTarget == null; // Enable Anti-Ban when no target is found
                 Rs2AntibanSettings.naturalMouse = mossKillerPlugin.currentTarget == null;
                 if (isRunning() && BreakHandlerScript.breakIn <= 120 && Rs2Player.getWorldLocation().getY() < 3520) {
@@ -2031,7 +2038,7 @@ public class WildyKillerScript extends Script {
 
 
                 if (!Rs2Equipment.hasEquipped(RUNE_CHAINBODY)) {
-                    OutfitHelper.equipOutfit(OutfitHelper.OutfitType.MAGE);
+                    OutfitHelper.equipOutfit(OutfitHelper.OutfitType.MOSS_MAGE);
                     //equipItems();
 
                     CombatMode mode = mossKillerConfig.combatMode();
@@ -2479,6 +2486,30 @@ public class WildyKillerScript extends Script {
         if (!Rs2Player.isRunEnabled() && Rs2Player.getRunEnergy() > 0) {
             Rs2Player.toggleRunEnergy(true);
         }
+    }
+
+    private void prepareSchedulerStart() {
+        if (isWearingOutfit(OutfitHelper.OutfitType.MOSS_MAGE)) {
+            Microbot.log("Already wearing MOSS_MAGE outfit. Skipping outfit pre-prep.");
+            return;
+        }
+        Rs2Bank.walkToBank();
+        Rs2Bank.openBank();
+        sleepUntil(Rs2Bank::isOpen);
+        Rs2Bank.depositAll();
+        Rs2Bank.depositEquipment();
+        Rs2Bank.closeBank();
+        Rs2Bank.walkToBank(BankLocation.FEROX_ENCLAVE);
+    }
+
+    public static boolean isWearingOutfit(OutfitHelper.OutfitType outfitType) {
+        String[] items = outfitType.getOutfitItems();
+        for (String item : items) {
+            if (!Rs2Equipment.isWearing(item)) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public void toggleRunEnergyOff() {

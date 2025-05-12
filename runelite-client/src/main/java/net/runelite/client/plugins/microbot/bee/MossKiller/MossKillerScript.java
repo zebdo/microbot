@@ -1,6 +1,8 @@
 package net.runelite.client.plugins.microbot.bee.MossKiller;
 
 import com.google.inject.Inject;
+import net.runelite.api.Client;
+import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -12,6 +14,7 @@ import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
@@ -32,6 +35,8 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -53,6 +58,8 @@ public class MossKillerScript extends Script {
     public int playerCounter = 0;
     public boolean bossMode = false;
 
+    @Inject
+    static Client client;
 
     private final MossKillerPlugin plugin;
 
@@ -151,6 +158,11 @@ public class MossKillerScript extends Script {
                     init();
                 }
 
+                if (plugin.startedFromScheduler) {prepareSchedulerStart();
+                    plugin.startedFromScheduler = false;}
+
+                if (plugin.preparingForShutdown) {prepareSoftStop();}
+
                 Microbot.log(String.valueOf(state));
                 Microbot.log("BossMode: " + bossMode);
                 if (bossMode && Rs2AntibanSettings.actionCooldownChance > 0.05) {
@@ -197,11 +209,108 @@ public class MossKillerScript extends Script {
         super.shutdown();
     }
 
+    public static void prepareSchedulerStart() {
+        if (needsRegear(config)) {
+            Microbot.log("Outfit mismatch detected — initiating regear.");
+
+            Rs2Bank.walkToBank(BankLocation.VARROCK_EAST);
+            Rs2Bank.openBank();
+            sleepUntil(Rs2Bank::isOpen);
+            Rs2Bank.depositEquipment();
+            Rs2Bank.depositAll();
+
+            OutfitHelper.equipOutfit(config.selectedOutfit(), config);
+            equipCustomWeapon(config);
+            Rs2Bank.closeBank();
+
+            if (!config.includeHelmet()) {
+                Rs2Equipment.unEquip(EquipmentInventorySlot.HEAD);
+                Rs2Bank.openBank();
+                sleepUntil(Rs2Bank::isOpen);
+                Rs2Bank.depositAll();
+            }
+        }
+    }
+
+    public static void equipCustomWeapon(MossKillerConfig config) {
+        String customWeapon = config.customWeapon().trim();
+        String defaultWeapon = "Rune scimitar";
+
+        // Use custom weapon only if it's different from default
+        if (!customWeapon.equalsIgnoreCase(defaultWeapon)) {
+            Microbot.log("Trying to equip custom weapon: " + customWeapon);
+            Rs2Bank.withdrawAndEquip(customWeapon);
+
+            if (sleepUntil(() -> Rs2Equipment.isWearing(customWeapon), 5000)) {
+                Microbot.log("Successfully equipped custom weapon: " + customWeapon);
+                return;
+            } else {
+                Microbot.log("Custom weapon not found or failed to equip. Falling back to default.");
+            }
+        }
+
+        // Equip default weapon
+        Microbot.log("Equipping default weapon: " + defaultWeapon);
+        Rs2Bank.withdrawAndEquip(defaultWeapon);
+
+        if (!sleepUntil(() -> Rs2Equipment.isWearing(defaultWeapon), 5000)) {
+            Microbot.log("Failed to equip default weapon as well: " + defaultWeapon);
+        } else {
+            Microbot.log("Default weapon equipped: " + defaultWeapon);
+        }
+    }
+
+
+    public static boolean needsRegear(MossKillerConfig config) {
+        OutfitHelper.OutfitType selectedOutfit = config.selectedOutfit(); // e.g., FULL_RUNE
+        List<String> requiredItems = new ArrayList<>(Arrays.asList(selectedOutfit.getOutfitItems()));
+
+        // Handle user weapon preference
+        String weapon = config.customWeapon(); // e.g., "Rune sword"
+        if (weapon != null && !weapon.isEmpty()) {
+            requiredItems.removeIf(item -> item.toLowerCase().contains("scimitar")); // crude fallback
+            requiredItems.add(weapon);
+        }
+
+        // Add cape
+        requiredItems.add(config.cape().name()); // Uses GearEnums.Cape.getItemName()
+
+        // Handle optional helmet
+        if (!config.includeHelmet()) {
+            requiredItems.removeIf(item -> item.toLowerCase().contains("helm"));
+        }
+
+        // Compare current worn gear
+        for (String item : requiredItems) {
+            if (!Rs2Equipment.isWearing(item)) {
+                Microbot.log("Missing: " + item);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    public static void prepareSoftStop() {
+        if (!config.wildy() || !config.wildySafer()) {
+            if (Rs2Magic.canCast(MagicAction.VARROCK_TELEPORT)) {
+                Rs2Magic.cast(MagicAction.VARROCK_TELEPORT);
+                sleep(1000, 3000);
+            }
+            Rs2Bank.walkToBank(BankLocation.VARROCK_EAST);
+        } else if (Rs2Player.getWorldLocation().getY() > 3520) {
+            Rs2Bank.walkToBank(BankLocation.FEROX_ENCLAVE);
+        }
+
+        sleep (60000); //sleep until soft stop comes into effect
+    }
+
+
     public void moarShutDown() {
         Microbot.log("super shutdown triggered");
         if(Rs2Inventory.containsAll(AIR_RUNE, FIRE_RUNE, LAW_RUNE)){
             Rs2Magic.cast(MagicAction.VARROCK_TELEPORT);}
-        //static sleep to wait till out of combat
         sleepUntil(() -> !Rs2Player.isInCombat(), 10000);
         stopBreakHandlerPlugin();
         stopAutologin();
@@ -608,6 +717,7 @@ public class MossKillerScript extends Script {
         if (Rs2Walker.getDistanceBetween(playerLocation, MOSS_GIANT_SPOT) > 10) {
                         if (bossMode) {
                             BreakHandlerScript.setLockState(true);
+                            plugin.lockCondition.lock();
                             if (Rs2Inventory.contains(MOSSY_KEY)) {
                                 if (eatAt(70)) {
                                     sleep(1900,2200);
@@ -785,6 +895,7 @@ public class MossKillerScript extends Script {
 
     public void walkToVarrockWestBank(){
         BreakHandlerScript.setLockState(false);
+        plugin.lockCondition.unlock();
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
         toggleRunEnergy();
         if(!bossMode && Rs2Inventory.containsAll(new int[]{AIR_RUNE, FIRE_RUNE, LAW_RUNE, FOOD})){
