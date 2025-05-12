@@ -10,6 +10,7 @@ public class TOGWorld {
 
     /**
      * Count how many consecutive blue streams appear in the pattern
+     *
      * @return The longest sequence of consecutive blue streams
      */
     public int getLongestBlueSequence() {
@@ -30,6 +31,7 @@ public class TOGWorld {
 
     /**
      * Count how many blue streams are in the pattern
+     *
      * @return The number of blue streams
      */
     public int getBlueCount() {

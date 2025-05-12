@@ -9,7 +9,6 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
-import net.runelite.client.plugins.microbot.TaF.DemonicGorillaKiller.DemonicGorillaScript;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -17,8 +16,6 @@ import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.math.Rs2Random;
-import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
@@ -29,7 +26,10 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.*;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -37,12 +37,15 @@ import static net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIn
 
 public class TearsOfGuthixScript extends Script {
     public static final String VERSION = "1.0";
-    private static final int TOG_REGION = 12948;
     public static final int JUNA = 3193;
+    private static final int TOG_REGION = 12948;
     public static State BOT_STATUS = State.TRAVELLING;
-    public enum State {GETTING_WORLD, TRAVELLING, GETTING_TEARS}
-    public Map<DecorativeObject, Instant> Streams = new HashMap<>();
     private final int TearsCaveX = 3252;
+    public Map<DecorativeObject, Instant> Streams = new HashMap<>();
+    /**
+     * Talks to Juna to enter the tears collection area
+     */
+    boolean hadDialogue = false;
     private int bestWorld = 0;
     private boolean hasBeenRunning = false;
     private DecorativeObject currentStream = null;
@@ -78,7 +81,7 @@ public class TearsOfGuthixScript extends Script {
                             BOT_STATUS = State.GETTING_WORLD;
                             break;
                         }
-                        var junaLocation = new WorldPoint(3251,9516,2);
+                        var junaLocation = new WorldPoint(3251, 9516, 2);
                         if (!Rs2Inventory.hasItem("Games necklace")) {
                             Microbot.log("No games necklace in inventory, going to bank...");
                             Rs2Bank.walkToBank();
@@ -147,10 +150,6 @@ public class TearsOfGuthixScript extends Script {
         }
     }
 
-    /**
-     * Talks to Juna to enter the tears collection area
-     */
-    boolean hadDialogue = false;
     private void enterMinigame() {
         if (!hadDialogue) {
             Microbot.log("Entering Minigame...");
@@ -162,7 +161,7 @@ public class TearsOfGuthixScript extends Script {
                 Microbot.log("Unequipping shield...");
                 Rs2Equipment.unEquip(EquipmentInventorySlot.SHIELD);
             }
-            Rs2GameObject.interact(JUNA,"Story");
+            Rs2GameObject.interact(JUNA, "Story");
         }
         while (Rs2Dialogue.hasContinue() && this.isRunning()) {
             Rs2Dialogue.clickContinue();
@@ -276,13 +275,13 @@ public class TearsOfGuthixScript extends Script {
         final WorldPoint playerLocation = Rs2Player.getWorldLocation();
 
         return blueStreams.stream()
-                .max(Comparator.<DecorativeObject>comparingInt(stream -> {
+                .max(Comparator.comparingInt(stream -> {
                     // Calculate score based on time remaining and distance
                     Instant spawnTime = Streams.get(stream);
                     if (spawnTime == null) return 0;
 
                     long ageInSeconds = Duration.between(spawnTime, Instant.now()).getSeconds();
-                    int timeRemaining = (int)(9 - ageInSeconds);
+                    int timeRemaining = (int) (9 - ageInSeconds);
                     if (timeRemaining <= 0) return 0;
 
                     // Weight time remaining heavily (0-90 points)
@@ -301,7 +300,6 @@ public class TearsOfGuthixScript extends Script {
                 }))
                 .orElse(null);
     }
-
 
     /**
      * Clicks on the selected stream and logs the action
@@ -347,7 +345,8 @@ public class TearsOfGuthixScript extends Script {
 
             // Parse JSON response
             Gson gson = new Gson();
-            Type listType = new TypeToken<List<TOGWorld>>() {}.getType();
+            Type listType = new TypeToken<List<TOGWorld>>() {
+            }.getType();
             List<TOGWorld> worldData = gson.fromJson(jsonResponse, listType);
 
             Microbot.log("Fetched data for " + worldData.size() + " worlds");
@@ -402,4 +401,6 @@ public class TearsOfGuthixScript extends Script {
         }
         Microbot.log("Shutting down Tears of Guthix script");
     }
+
+    public enum State {GETTING_WORLD, TRAVELLING, GETTING_TEARS}
 }

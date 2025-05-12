@@ -25,6 +25,9 @@ import java.time.Instant;
 )
 public class TearsOfGuthixPlugin extends Plugin {
 
+    private static final int TOG_REGION = 12948;
+    @Inject
+    public TearsOfGuthixScript tearsOfGuthixScript;
     private Instant scriptStartTime;
     @Inject
     private TearsOfGuthixConfig config;
@@ -32,9 +35,6 @@ public class TearsOfGuthixPlugin extends Plugin {
     private OverlayManager overlayManager;
     @Inject
     private TearsOfGuthixOverlay tearsOfGuthixOverlay;
-    @Inject
-    public TearsOfGuthixScript tearsOfGuthixScript;
-    private static final int TOG_REGION = 12948;
 
     protected String getTimeRunning() {
         return scriptStartTime != null ? TimeUtils.getFormattedDurationBetween(scriptStartTime, Instant.now()) : "";
@@ -61,27 +61,22 @@ public class TearsOfGuthixPlugin extends Plugin {
     }
 
     @Subscribe
-    public void onDecorativeObjectSpawned(DecorativeObjectSpawned event)
-    {
+    public void onDecorativeObjectSpawned(DecorativeObjectSpawned event) {
         DecorativeObject object = event.getDecorativeObject();
 
         if (object.getId() == ObjectID.TOG_WEEPING_WALL_GOOD_R ||
                 object.getId() == ObjectID.TOG_WEEPING_WALL_GOOD_L ||
                 object.getId() == ObjectID.TOG_WEEPING_WALL_BAD_R ||
-                object.getId() == ObjectID.TOG_WEEPING_WALL_BAD_L)
-        {
-            if (Rs2Player.getWorldLocation().getRegionID() == TOG_REGION)
-            {
+                object.getId() == ObjectID.TOG_WEEPING_WALL_BAD_L) {
+            if (Rs2Player.getWorldLocation().getRegionID() == TOG_REGION) {
                 tearsOfGuthixScript.Streams.put(event.getDecorativeObject(), Instant.now());
             }
         }
     }
 
     @Subscribe
-    public void onDecorativeObjectDespawned(DecorativeObjectDespawned event)
-    {
-        if (tearsOfGuthixScript.Streams.isEmpty())
-        {
+    public void onDecorativeObjectDespawned(DecorativeObjectDespawned event) {
+        if (tearsOfGuthixScript.Streams.isEmpty()) {
             return;
         }
 

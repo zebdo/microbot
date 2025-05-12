@@ -1,6 +1,5 @@
 package net.runelite.client.plugins.microbot.TaF.TearsOfGuthix;
 
-import net.runelite.client.plugins.microbot.TaF.TzhaarVenatorBow.TzhaarVenatorBowScript;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
