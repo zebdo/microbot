@@ -12,6 +12,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchOverlay;
 import net.runelite.client.ui.overlay.OverlayManager;
 
@@ -104,11 +105,13 @@ public class GotrPlugin extends Plugin {
         }
 
         if (msg.contains("The rift becomes active!")) {
+            BreakHandlerScript.setLockState(true);
             GotrScript.nextGameStart = Optional.empty();
             GotrScript.timeSincePortal = Optional.of(Instant.now());
             GotrScript.isFirstPortal = true;
             GotrScript.state = GotrState.ENTER_GAME;
         } else if (msg.contains("The rift will become active in 30 seconds.")) {
+            BreakHandlerScript.setLockState(true);
             GotrScript.shouldMineGuardianRemains = true;
             GotrScript.nextGameStart = Optional.of(Instant.now().plusSeconds(30));
         } else if (msg.contains("The rift will become active in 10 seconds.")) {
@@ -121,6 +124,8 @@ public class GotrPlugin extends Plugin {
             GotrScript.shouldMineGuardianRemains = true;
             GotrScript.nextGameStart = Optional.of(Instant.now().plusSeconds(60));
         }else if (msg.toLowerCase().contains("closed the rift!") || msg.toLowerCase().contains("The great guardian was defeated!")) {
+            Global.sleep(Rs2Random.randomGaussian(2000, 300));
+            BreakHandlerScript.setLockState(false);
             GotrScript.shouldMineGuardianRemains = true;
         }
 
