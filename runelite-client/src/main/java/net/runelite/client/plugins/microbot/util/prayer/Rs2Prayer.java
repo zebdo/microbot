@@ -137,7 +137,7 @@ public class Rs2Prayer {
                 Rs2PrayerEnum.SUPERHUMAN_STRENGTH
         ).anyMatch(Rs2Prayer::isPrayerActive);
     }
-    
+
     public static void swapOverHeadPrayer(Rs2PrayerEnum prayer) {
         Rs2PrayerEnum activeProtectionPrayer = getActiveProtectionPrayer();
         if (activeProtectionPrayer == prayer) {
