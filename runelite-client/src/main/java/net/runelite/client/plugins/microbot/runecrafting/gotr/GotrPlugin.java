@@ -14,6 +14,8 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchOverlay;
+import net.runelite.client.plugins.microbot.util.Global;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
