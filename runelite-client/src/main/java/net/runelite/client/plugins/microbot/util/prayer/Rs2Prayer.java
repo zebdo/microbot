@@ -137,6 +137,17 @@ public class Rs2Prayer {
                 Rs2PrayerEnum.SUPERHUMAN_STRENGTH
         ).anyMatch(Rs2Prayer::isPrayerActive);
     }
+    
+    public static void swapOverHeadPrayer(Rs2PrayerEnum prayer) {
+        Rs2PrayerEnum activeProtectionPrayer = getActiveProtectionPrayer();
+        if (activeProtectionPrayer == prayer) {
+            return;
+        }
+        if (activeProtectionPrayer != null) {
+            Rs2Prayer.toggle(activeProtectionPrayer, false);
+        }
+        Rs2Prayer.toggle(prayer, true);
+    }
 
     public static Rs2PrayerEnum getBestMagePrayer() {
         int prayerLevel = Microbot.getClient().getRealSkillLevel(Skill.PRAYER);
