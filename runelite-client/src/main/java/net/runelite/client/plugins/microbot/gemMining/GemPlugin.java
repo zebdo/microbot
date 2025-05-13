@@ -14,8 +14,8 @@ import java.awt.*;
 
 @PluginDescriptor(
         name = PluginDescriptor.Gage + "Gem Miner",
-        description = "Mines gems in medium diary spot with or without gem pouch",
-        tags = {"Gem Miner Gem bag gem pouch", "microbot"},
+        description = "Mines gems in the Shilo underground mine.",
+        tags = {"Gem Miner", "Gem"},
         enabledByDefault = false
 )
 @Slf4j
