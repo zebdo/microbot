@@ -33,10 +33,6 @@ public class CalcifiedRockMinerOverlay extends OverlayPanel {
                     .left("Running: " + plugin.getTimeRunning())
                     .leftColor(Color.WHITE)
                     .build());
-            panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Running: " + CalcifiedRockMinerScript.BOT_STATUS)
-                    .leftColor(Color.WHITE)
-                    .build());
         } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
