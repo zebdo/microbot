@@ -766,6 +766,7 @@ public class BarrowsScript extends Script {
                             while(Rs2Npc.getNpc("Strange Old Man").getWorldLocation() == randomMoundTile){
                                 if(!super.isRunning()){break;}
                                 randomMoundTile = moundArea.toWorldPointList().get(Rs2Random.between(0,(totalTiles-1)));
+                                sleep(250,500);
                             }
                         }
                     }
