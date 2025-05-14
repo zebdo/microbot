@@ -167,6 +167,9 @@ public class WildySaferScript extends Script {
                 }
 
                 Rs2Player.eatAt(70);
+                if (Rs2Inventory.contains(MOSSY_KEY)) {
+                    doBankingLogic();
+                }
 
                 // if at the safe spot attack the moss giant and run to the safespot
                 if (isAtSafeSpot() && !Rs2Player.isInteracting() && desired2093Exists()) {
