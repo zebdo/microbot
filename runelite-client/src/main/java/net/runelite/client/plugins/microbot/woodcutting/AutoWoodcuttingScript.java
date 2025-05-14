@@ -42,14 +42,6 @@ public class AutoWoodcuttingScript extends Script {
     State state = State.WOODCUTTING;
     private static WorldPoint returnPoint;
 
-    public static WorldPoint initPlayerLoc(AutoWoodcuttingConfig config) {
-        if (config.walkBack() == WoodcuttingWalkBack.INITIAL_LOCATION) {
-            return getInitialPlayerLocation();
-        } else {
-            return returnPoint;
-        }
-    }
-
     public boolean run(AutoWoodcuttingConfig config) {
         if (config.hopWhenPlayerDetected()) {
             Microbot.showMessage("Make sure autologin plugin is enabled and randomWorld checkbox is checked!");
@@ -169,7 +161,7 @@ public class AutoWoodcuttingScript extends Script {
             case BANK:
                 List<String> itemNames = Arrays.stream(config.itemsToBank().split(",")).map(String::toLowerCase).collect(Collectors.toList());
 
-                if (!Rs2Bank.bankItemsAndWalkBackToOriginalPosition(itemNames, calculateReturnPoint(config)))
+                if (!Rs2Bank.bankItemsAndWalkBackToOriginalPosition(itemNames, getReturnPoint(config)))
                     return;
 
                 state = State.WOODCUTTING;
@@ -260,17 +252,17 @@ public class AutoWoodcuttingScript extends Script {
         return Rs2Player.isAnimating(3000) && Rs2Player.getLastAnimationID() == AnimationID.FLETCHING_BOW_CUTTING;
     }
 
-    private WorldPoint calculateReturnPoint(AutoWoodcuttingConfig config) {
+    public static WorldPoint getReturnPoint(AutoWoodcuttingConfig config) {
         if (config.walkBack().equals(WoodcuttingWalkBack.LAST_LOCATION)) {
-            return returnPoint;
+            return returnPoint == null ? Rs2Player.getWorldLocation() : returnPoint;
         } else {
-            return initialPlayerLocation;
+            return initialPlayerLocation == null ? Rs2Player.getWorldLocation() : initialPlayerLocation;
         }
     }
 
     private void walkBack(AutoWoodcuttingConfig config) {
-        Rs2Walker.walkTo(new WorldPoint(calculateReturnPoint(config).getX() - Rs2Random.between(-1, 1), calculateReturnPoint(config).getY() - Rs2Random.between(-1, 1), calculateReturnPoint(config).getPlane()));
-        sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(calculateReturnPoint(config)) <= 4);
+        Rs2Walker.walkTo(new WorldPoint(getReturnPoint(config).getX() - Rs2Random.between(-1, 1), getReturnPoint(config).getY() - Rs2Random.between(-1, 1), getReturnPoint(config).getPlane()));
+        sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(getReturnPoint(config)) <= 4);
     }
 
     @Override
