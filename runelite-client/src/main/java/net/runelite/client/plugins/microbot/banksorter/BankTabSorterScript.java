@@ -137,7 +137,16 @@ public class BankTabSorterScript extends Script {
         SEED_LEVELS_FARMING.put("guam seed", 9);
         SEED_LEVELS_FARMING.put("ranarr seed", 32);
         SEED_LEVELS_FARMING.put("snapdragon seed", 62);
-        // ... add other seeds as needed
+        SEED_LEVELS_FARMING.put("torstol seed", 75);
+        SEED_LEVELS_FARMING.put("irit seed", 40);
+        SEED_LEVELS_FARMING.put("avantoe seed", 48);
+        SEED_LEVELS_FARMING.put("lantadyme seed", 67);
+        SEED_LEVELS_FARMING.put("dwarf weed seed", 70);
+        SEED_LEVELS_FARMING.put("kwuarm seed", 54);
+        SEED_LEVELS_FARMING.put("harralander seed", 20);
+        SEED_LEVELS_FARMING.put("marrentill seed", 5);
+        SEED_LEVELS_FARMING.put("tarromin seed", 11);
+
     }
 
     @Inject
@@ -369,7 +378,7 @@ public class BankTabSorterScript extends Script {
 
                 rearrangeBankItems(sortedItems, tabAbsoluteStartIndex);
 
-                Microbot.log("Bank tab sorting process completed for the current tab!");
+                Microbot.log("Item list sorted with fuzzy similarity prioritization in " + (endTime - startTime) + "ms. Calculated " + sortedItems.size() + " target positions.");
                 Microbot.log("It's recommended to review the tab. If issues, run again or manually adjust.");
             } catch (Exception e) { // Single catch block for Exception
                 log.error("Error during bank sorting script execution:", e);
@@ -511,7 +520,7 @@ public class BankTabSorterScript extends Script {
             return items;
         }
 
-        final double SIMILARITY_THRESHOLD = 0.85;
+        final double SIMILARITY_THRESHOLD = 0.95;
         final int MAX_CLUSTER_SIZE = 30; // Example, adjust as needed
 
         List<BankSortItem> specialItems = new ArrayList<>();
@@ -1161,7 +1170,7 @@ public class BankTabSorterScript extends Script {
                     bestMatch = Math.max(bestMatch, similarity);
                 }
 
-                if (bestMatch > 0.85) { // High similarity threshold for individual words
+                if (bestMatch > 0.95) { // High similarity threshold for individual words
                     matchedWords++;
                 }
                 maxWordSimilarity = Math.max(maxWordSimilarity, bestMatch);
@@ -1177,14 +1186,14 @@ public class BankTabSorterScript extends Script {
 
         private double getCommonWordSimilarity(String str1, String str2) {
             // Check for common words or important keywords
-            String[] commonKeywords = {"sword", "shield", "platebody", "platelegs", "robetop",
+            String[] commonKeywords = {"sword", "shield", "platebody", "platelegs", "robe", "top", "legs", "body",
                     "helm", "granite", "dragon", "rune", "adamant", "mithril", "gold", "iron",
                     "bronze", "potion", "teleport", "seeds", "herb"};
 
             for (String keyword : commonKeywords) {
                 if (str1.contains(keyword) && str2.contains(keyword)) {
                     // If they share an important keyword, boost similarity
-                    return 0.8; // Significant boost for sharing important keywords
+                    return 0.9; // Significant boost for sharing important keywords
                 }
             }
 
