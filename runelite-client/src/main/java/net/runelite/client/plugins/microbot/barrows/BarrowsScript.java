@@ -473,6 +473,11 @@ public class BarrowsScript extends Script {
                                     }
                                 }
                             }
+                        } else {
+                            if(outOfPoweredStaffCharges){
+                                Microbot.log("We're out of staff charges. stopping...");
+                                super.shutdown();
+                            }
                         }
 
                         howtoBank = Rs2Random.between(0,100);
@@ -916,6 +921,9 @@ public class BarrowsScript extends Script {
                 }
                 if(Rs2Inventory.count("Prayer potion(4)") + Rs2Inventory.count("Prayer potion(3)") < 1){
                     Microbot.log("We don't have enough prayer potions.");
+                }
+                if(outOfPoweredStaffCharges){
+                    Microbot.log("We're out of staff charges.");
                 }
                 shouldBank = true;
             } else {
