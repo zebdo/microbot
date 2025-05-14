@@ -10,11 +10,9 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.kit.KitType;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
-import net.runelite.client.plugins.grounditems.GroundItemsPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.VarbitValues;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
-import net.runelite.client.plugins.microbot.util.ActorModel;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -26,7 +24,6 @@ import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
-import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
@@ -358,6 +355,21 @@ public class Rs2Player {
     }
 
     /**
+     * Checks if the specified Rs2PlayerModel is currently moving based on its pose animation.
+     * The model is considered moving if its pose animation is different from its idle pose animation.
+     *
+     * @param playerModel The Rs2PlayerModel to check.
+     * @return {@code true} if the model is moving, {@code false} if it is idle.
+     */
+    public static boolean isMoving(Rs2PlayerModel playerModel) {
+        if (playerModel == null) {
+            return false;
+        }
+
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> playerModel.getPoseAnimation() != playerModel.getIdlePoseAnimation()).orElse(false);
+    }
+
+    /**
      * Checks if the player is currently interacting with another entity (NPC, player, or object).
      *
      * @return {@code true} if the player is interacting with another entity, {@code false} otherwise.
@@ -683,7 +695,6 @@ public class Rs2Player {
                 .players()
                 .stream()
                 .filter(Objects::nonNull)
-                .filter(x -> x != Microbot.getClient().getLocalPlayer())
                 .collect(Collectors.toList());
     }
 
@@ -694,12 +705,23 @@ public class Rs2Player {
      * @return A stream of Rs2PlayerModel objects representing nearby players.
      */
     public static Stream<Rs2PlayerModel> getPlayers(Predicate<Rs2PlayerModel> predicate) {
+        return getPlayers(predicate, false);
+    }
+
+    /**
+     * Get a stream of players around you, optionally filtered by a predicate.
+     *
+     * @param predicate A condition to filter players (optional).
+     * @param includeLocalPlayer a flag on whether to include the local player within the stream
+     * @return A stream of Rs2PlayerModel objects representing nearby players.
+     */
+    public static Stream<Rs2PlayerModel> getPlayers(Predicate<Rs2PlayerModel> predicate, boolean includeLocalPlayer) {
         List<Rs2PlayerModel> players = Microbot.getClientThread().runOnClientThreadOptional(() ->
                 Microbot.getClient().getTopLevelWorldView().players()
                         .stream()
                         .filter(Objects::nonNull)
                         .map(Rs2PlayerModel::new)
-                        .filter(x -> x.getPlayer() != Microbot.getClient().getLocalPlayer())
+                        .filter(x -> includeLocalPlayer || x.getPlayer() != Microbot.getClient().getLocalPlayer())
                         .filter(predicate)
                         .collect(Collectors.toList())
         ).orElse(new ArrayList<>());
@@ -991,7 +1013,7 @@ public class Rs2Player {
      * @return The local player wrapped in an {@link Rs2PlayerModel}.
      */
     public static Rs2PlayerModel getLocalPlayer() {
-        return new Rs2PlayerModel(Microbot.getClient().getLocalPlayer());
+        return getPlayers(player -> player.getId() == Microbot.getClient().getLocalPlayer().getId(), true).findFirst().orElse(null);
     }
 
     /**
@@ -1080,11 +1102,10 @@ public class Rs2Player {
      */
     public static WorldPoint getWorldLocation() {
         if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
-            LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), getLocalPlayer().getWorldLocation());
-            WorldPoint playerInstancedWorldLocation = WorldPoint.fromLocalInstance(Microbot.getClient(), l);
-            return playerInstancedWorldLocation;
+            LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation());
+            return WorldPoint.fromLocalInstance(Microbot.getClient(), l);
         } else {
-            return getLocalPlayer().getWorldLocation();
+            return Microbot.getClient().getLocalPlayer().getWorldLocation();
         }
     }
 
