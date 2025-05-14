@@ -28,7 +28,7 @@ public class IntervalConditionAdapter implements JsonSerializer<IntervalConditio
         data.addProperty("intervalSeconds", src.getInterval().getSeconds());
         
         // Store min/max interval information if using randomized intervals
-        if (src.isRandomized()) {
+        if (src.isRandomize()) {
             data.addProperty("minIntervalSeconds", src.getMinInterval().getSeconds());
             data.addProperty("maxIntervalSeconds", src.getMaxInterval().getSeconds());
             data.addProperty("isMinMaxRandomized", true);

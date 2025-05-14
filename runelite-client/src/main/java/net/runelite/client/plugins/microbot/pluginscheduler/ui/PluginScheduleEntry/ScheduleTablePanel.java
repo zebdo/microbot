@@ -1728,20 +1728,20 @@ public class ScheduleTablePanel extends JPanel implements ScheduleTableModel {
                         
                         // Force tooltip to hide and then show again with fresh content
                         // This two-step approach ensures the tooltip content is refreshed
-                        ToolTipManager.sharedInstance().mouseMoved(
-                            new MouseEvent(scheduleTable, MouseEvent.MOUSE_EXITED,
-                                System.currentTimeMillis(), 0,
-                                hoverLocation.x, hoverLocation.y,
-                                0, false));
+                        //ToolTipManager.sharedInstance().mouseMoved(
+                          //  new MouseEvent(scheduleTable, MouseEvent.MOUSE_EXITED,
+                            //    System.currentTimeMillis(), 0,
+                             //   hoverLocation.x, hoverLocation.y,
+                              //  0, false));
                         
                         // Small delay to allow the tooltip to hide before showing again
                         SwingUtilities.invokeLater(() -> {
                             // Now show fresh tooltip
-                            ToolTipManager.sharedInstance().mouseMoved(
-                                new MouseEvent(scheduleTable, MouseEvent.MOUSE_MOVED,
-                                    System.currentTimeMillis(), 0,
-                                    hoverLocation.x, hoverLocation.y,
-                                    0, false));
+                            //ToolTipManager.sharedInstance().mouseMoved(
+                              //  new MouseEvent(scheduleTable, MouseEvent.MOUSE_MOVED,
+                                //    System.currentTimeMillis(), 0,
+                                  //  hoverLocation.x, hoverLocation.y,
+                                   // 0, false));
                             
                             // Also trigger a cell repaint to ensure tooltip data is current
                             scheduleTable.repaint(scheduleTable.getCellRect(hoverRow, hoverColumn, false));

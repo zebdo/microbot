@@ -55,7 +55,9 @@ import net.runelite.client.plugins.microbot.pluginscheduler.serialization.Schedu
  * </ul>
  */
 public class PluginScheduleEntry implements AutoCloseable {
-
+    // Static formatter for time display
+    public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
+    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm"); 
     // Remove the duplicate executor and use the shared one from ConditionManager
     
     // Store the scheduled futures so they can be cancelled later
@@ -131,9 +133,7 @@ public class PluginScheduleEntry implements AutoCloseable {
     private transient Thread stopMonitorThread;
     private transient volatile boolean isMonitoringStop = false;
 
-    // Static formatter for time display
-    public static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
-    public static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");    
+       
     private int priority = 0; // Higher numbers = higher priority
     private boolean isDefault = false; // Flag to indicate if this is a default plugin        
     /**
@@ -1127,15 +1127,19 @@ public class PluginScheduleEntry implements AutoCloseable {
         Optional<ZonedDateTime> nextTriggerTimeBeforeReset = getCurrentStartTriggerTime();
         
         logMsg.append("Updating start conditions for plugin '").append(name).append("'");
-        
+        logMsg.append("\n  - : last stop reason: ").append(lastStopReasonType.getDescription());
+        logMsg.append("\n  - : last stop reason message: ").append(lastStopReason);
+        logMsg.append("\n  - : allowContinue: ").append(allowContinue);
+        logMsg.append("\n  - : last run duration: ").append(lastRunDuration.toMillis()).append(" ms");
         if (this.lastStopReasonType != StopReason.INTERRUPTED || !allowContinue) {
+    
             logMsg.append("\n  - Completed successfully, resetting all start conditions");
             startConditionManager.reset();
             // Increment the run count since we completed a full run
             incrementRunCount();
         } else {
             logMsg.append("\n  - Only resetting plugin '").append(name).append("' start conditions");
-            startConditionManager.resetUserConditions();
+            startConditionManager.resetPluginConditions();
         }
         
         Optional<ZonedDateTime> triggerTimeAfterReset = getCurrentStartTriggerTime();
@@ -1529,9 +1533,9 @@ public class PluginScheduleEntry implements AutoCloseable {
                 Duration timeSinceFirstAttempt = Duration.between(stopInitiatedTime, now);
                 Duration timeSinceLastAttempt = Duration.between(lastStopAttemptTime, now);                
                 // Force hard stop if we've waited too long
-                if ( reason != StopReason.HARD_STOP || (hardStopTimeout.compareTo(Duration.ZERO) > 0 && timeSinceFirstAttempt.compareTo(hardStopTimeout) > 0 
+                if ( (hardStopTimeout.compareTo(Duration.ZERO) > 0 && timeSinceFirstAttempt.compareTo(hardStopTimeout) > 0) 
                     && (getPlugin() instanceof SchedulablePlugin)
-                    && ((SchedulablePlugin) getPlugin()).isHardStoppable())) {
+                    && ((SchedulablePlugin) getPlugin()).isHardStoppable()) {
                     log.warn("Plugin {} failed to respond to soft stop after {} seconds - forcing hard stop", 
                             name, timeSinceFirstAttempt.toSeconds());
                     
@@ -1539,7 +1543,14 @@ public class PluginScheduleEntry implements AutoCloseable {
                     stopMonitoringThread();
                     this.setLastStopReasonType(StopReason.HARD_STOP);
                     this.hardStop(true);
+                }else if(reason == StopReason.HARD_STOP){ // Stop current monitoring and start new one for hard stop
+                    log.warn("Plugin {} user requested hard stop after {} seconds - forcing hard stop", 
+                            name, timeSinceFirstAttempt.toSeconds());
+                    stopMonitoringThread();
+                    this.setLastStopReasonType(StopReason.HARD_STOP);
+                    this.hardStop(true);
                 }
+
                 // Retry soft stop at configured intervals
                 else if (timeSinceLastAttempt.compareTo(softStopRetryInterval) > 0) {
                     log.info("Plugin {} still running after soft stop - retrying (attempt time: {} seconds)", 
@@ -1647,17 +1658,17 @@ public class PluginScheduleEntry implements AutoCloseable {
         
         StringBuilder sb = new StringBuilder();
         
-        sb.append("\nPlugin '").append(cleanName).append("' [").append(logINFOHeader).append("]: ");
+        sb.append("\n\tPlugin '").append(cleanName).append("' [").append(logINFOHeader).append("]: ");
 
         if (conditionList.isEmpty()) {
-            sb.append("No stop conditions defined");
+            sb.append("\n\t\tNo stop conditions defined");
             log.info(sb.toString());
             return;
         }
         
         // Basic condition count and logic
-        sb.append(conditionList.size()).append(" condition(s) using ")
-          .append(stopConditionManager.requiresAll() ? "AND" : "OR").append(" logic\n");
+        sb.append(conditionList.size()).append(" \n\t\tcondition(s) using ")
+          .append(stopConditionManager.requiresAll() ? "AND" : "OR").append(" logic\n\t\t");
         
         if (!includeDetails) {
             log.info(sb.toString());
@@ -1675,9 +1686,9 @@ public class PluginScheduleEntry implements AutoCloseable {
             
             // Use the new getStatusInfo method for detailed status
             sb.append("  ").append(i + 1).append(". ")
-              .append(condition.getStatusInfo(0, includeDetails).replace("\n", "\n    "));
+              .append(condition.getStatusInfo(0, includeDetails).replace("\n", "\n\t\t    "));
             
-            sb.append("\n");
+            sb.append("\n\t\t");
         }
         
         if (includeDetails) {

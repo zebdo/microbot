@@ -439,7 +439,7 @@ public class IntervalPickerPanel extends JPanel {
         }
         
         // Check if this is a randomized min-max interval or a fixed interval
-        boolean isRandomized = condition.isRandomized();
+        boolean isRandomized = condition.isRandomize();
         
         if (isRandomized) {
             // Set to randomized mode

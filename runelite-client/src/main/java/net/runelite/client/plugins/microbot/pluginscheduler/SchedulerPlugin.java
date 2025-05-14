@@ -510,6 +510,11 @@ public class SchedulerPlugin extends Plugin {
             log.info("Restored original logout setting: {}", savedBreakHandlerLogoutSetting);
             savedBreakHandlerLogoutSetting = null; // Clear the stored value
         }
+        // Restore the original max break time if it was stored
+        if (savedBreakHanlderMaxBreakTime != -1) {
+               Microbot.getConfigManager().setConfiguration(BreakHandlerConfig.configGroup, "Max BreakTime", savedBreakHanlderMaxBreakTime); 
+               savedBreakHanlderMaxBreakTime = -1; // Clear the stored value
+        }
 
         // Ensure we're not locked for future breaks
         unlockBreakHandler();
@@ -565,9 +570,15 @@ public class SchedulerPlugin extends Plugin {
             // Store the original logout setting before changing it
             savedBreakHandlerLogoutSetting = Microbot.getConfigManager().getConfiguration(
                 BreakHandlerConfig.configGroup, "Logout", Boolean.class);
-            
-            // Set the new logout setting
+            // Set the new logout setting            
             Microbot.getConfigManager().setConfiguration(BreakHandlerConfig.configGroup, "Logout", true);
+            if (untilNextSchedule.getSeconds() > 60){
+                savedBreakHanlderMaxBreakTime = Microbot.getConfigManager().getConfiguration(
+                BreakHandlerConfig.configGroup, "Max BreakTime", Integer.class);
+                Microbot.getConfigManager().setConfiguration(BreakHandlerConfig.configGroup, "Max BreakTime",(int)(untilNextSchedule.toMinutes()));
+            }
+            
+            
             
             // Set state to indicate we're in a break
             sleepUntil(() -> BreakHandlerScript.isBreakActive(), 1000);
@@ -583,11 +594,10 @@ public class SchedulerPlugin extends Plugin {
         
         // Store the original logout setting before changing it
         savedBreakHandlerLogoutSetting = Microbot.getConfigManager().getConfiguration(
-            BreakHandlerConfig.configGroup, "Logout", Boolean.class);
-        
+            BreakHandlerConfig.configGroup, "Logout", Boolean.class);        
         // Set the new logout setting
         Microbot.getConfigManager().setConfiguration(BreakHandlerConfig.configGroup, "Logout", logout);
-        
+       
         // Determine the time until the next plugin is scheduled
         if (nextPlugin != null) {
             Optional<ZonedDateTime> nextStartTime = nextPlugin.getCurrentStartTriggerTime();
@@ -602,7 +612,11 @@ public class SchedulerPlugin extends Plugin {
         // Calculate a random break duration between min and max
         int randomBreakMinutes = Rs2Random.between(minBreakDurationMinutes, maxBreakDurationMinutes);
         breakSeconds = randomBreakMinutes * 60;
-        
+         if (randomBreakMinutes >0){
+            savedBreakHanlderMaxBreakTime = Microbot.getConfigManager().getConfiguration(
+                BreakHandlerConfig.configGroup, "Max BreakTime", Integer.class);
+            Microbot.getConfigManager().setConfiguration(BreakHandlerConfig.configGroup, "Max BreakTime",(int)(randomBreakMinutes));
+        }
         // If there's a next plugin scheduled, make sure we don't break past its start time
         if (nextPlugin != null && timeUntilNext.getSeconds() > 0) {
             // Subtract 30 seconds buffer to ensure we're back before the plugin needs to start
@@ -2335,7 +2349,7 @@ public class SchedulerPlugin extends Plugin {
                     //LocalTime startTime = config.playSchedule().getStartTime();
                     //LocalTime endTime = config.playSchedule().getEndTime();
                     if (timeUntilNext != null) {
-                        newState.setStateInformation("Taking a break Play Schedule: \n\t" + config.playSchedule().toString());
+                        newState.setStateInformation("Taking a break Play Schedule: \n\t" + config.playSchedule().displayString());
                     } else {
                         newState.setStateInformation("Taking a break between schedules");    
                     }     

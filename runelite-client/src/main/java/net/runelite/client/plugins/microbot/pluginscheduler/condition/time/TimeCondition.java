@@ -73,7 +73,7 @@ public abstract class TimeCondition implements Condition {
     
     @Override
     public void reset() {        
-        this.reset(false);
+        this.reset(true);
     }
     
     void updateValidReset() {        
