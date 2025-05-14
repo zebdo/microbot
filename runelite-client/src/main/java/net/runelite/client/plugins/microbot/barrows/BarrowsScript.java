@@ -90,6 +90,7 @@ public class BarrowsScript extends Script {
                                 Rs2Equipment.get(EquipmentInventorySlot.WEAPON).getName().contains("Sanguinesti")) {
                     usingPoweredStaffs = true;
                 } else {
+                    usingPoweredStaffs = false;
                     gettheRune();
                     minRuneAmt = config.minRuneAmount();
                 }
