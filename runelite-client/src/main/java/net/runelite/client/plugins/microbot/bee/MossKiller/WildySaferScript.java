@@ -166,6 +166,8 @@ public class WildySaferScript extends Script {
                     doBankingLogic();
                 }
 
+                Rs2Player.eatAt(70);
+
                 // if at the safe spot attack the moss giant and run to the safespot
                 if (isAtSafeSpot() && !Rs2Player.isInteracting() && desired2093Exists()) {
                     attackMossGiant();
@@ -204,7 +206,6 @@ public class WildySaferScript extends Script {
 
                 // Check if any players are near and hop if there are
                 playersCheck();
-
 
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
@@ -461,6 +462,7 @@ public class WildySaferScript extends Script {
                 }
             }
         }
+        sleep(400,900);
     }
 
     private boolean desired2093Exists() {
