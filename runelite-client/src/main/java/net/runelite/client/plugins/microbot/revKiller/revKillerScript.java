@@ -366,8 +366,8 @@ public class revKillerScript extends Script {
                         Rs2Dialogue.clickContinue();
                         sleep(500,1000);
                     }
-                    if(Rs2Dialogue.getDialogueOption("Yes", false)!=null){
-                        Rs2Dialogue.clickOption("Yes", false);
+                    if(Rs2Dialogue.getDialogueOption("Yes, don't", false)!=null){
+                        Rs2Dialogue.clickOption("Yes, don't", false);
                         sleep(500,1000);
                     }
                     if(Rs2Dialogue.getDialogueOption("Accept", false)!=null){
