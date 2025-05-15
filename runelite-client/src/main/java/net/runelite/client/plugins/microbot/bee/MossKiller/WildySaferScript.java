@@ -40,6 +40,7 @@ import static net.runelite.client.plugins.microbot.bee.MossKiller.Enums.AttackSt
 import static net.runelite.client.plugins.microbot.util.npc.Rs2Npc.getNpcs;
 import static net.runelite.client.plugins.microbot.util.walker.Rs2Walker.walkFastCanvas;
 import static net.runelite.client.plugins.microbot.util.walker.Rs2Walker.walkTo;
+import static net.runelite.api.Skill.WOODCUTTING;
 
 public class WildySaferScript extends Script {
     
