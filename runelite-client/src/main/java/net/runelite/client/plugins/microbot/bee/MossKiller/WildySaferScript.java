@@ -291,7 +291,7 @@ public class WildySaferScript extends Script {
     }
 
     private void playersCheck() {
-        if(!mossKillerScript.getNearbyPlayers(7).isEmpty()){
+        if(!mossKillerScript.getNearbyPlayers(14).isEmpty()){
 
             if(playerCounter > 15) {
                 sleep(10000, 15000);
