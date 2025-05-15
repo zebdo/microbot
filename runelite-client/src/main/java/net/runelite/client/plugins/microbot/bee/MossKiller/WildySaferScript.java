@@ -6,9 +6,7 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
-import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
-import net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
@@ -58,6 +56,7 @@ public class WildySaferScript extends Script {
     @Inject
     private MossKillerConfig mossKillerConfig;
 
+    @Getter
     private static MossKillerConfig config;
 
     @Inject
@@ -209,6 +208,7 @@ public class WildySaferScript extends Script {
 
                 // Check if any players are near and hop if there are
                 playersCheck();
+
 
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
@@ -496,10 +496,10 @@ public class WildySaferScript extends Script {
                 Rs2Bank.walkToBank();
                 Rs2Bank.walkToBankAndUseBank();
                 if (!Rs2Bank.isOpen()) {
-                    Rs2Equipment.unEquip(AMMO);
-                    Rs2Bank.walkToBankAndUseBank();
-                    sleep(2000, 4000);
-                }
+                Rs2Equipment.unEquip(AMMO);
+                Rs2Bank.walkToBankAndUseBank();
+                sleep(2000,4000);
+            }
             }
         }
 
@@ -516,18 +516,17 @@ public class WildySaferScript extends Script {
         if (config.attackStyle() == RANGE && !Rs2Bank.isOpen()) {
             Rs2Bank.walkToBank();
             Rs2Bank.walkToBankAndUseBank();
-            sleep(800, 1900);
-            if (Rs2Bank.openBank()) {
-                sleep(2200, 3200);
-                if (Rs2Bank.count(APPLE_PIE) < 16 ||
-                        Rs2Bank.count(MITHRIL_ARROW) < config.mithrilArrowAmount() ||
-                        !Rs2Bank.hasItem(MAPLE_SHORTBOW)) {
+            sleep(800,1900);
+            if (Rs2Bank.openBank()){
+                sleep(2200,3200); if (Rs2Bank.count(APPLE_PIE) < 16 ||
+                    Rs2Bank.count(MITHRIL_ARROW) < config.mithrilArrowAmount() ||
+                    !Rs2Bank.hasItem(MAPLE_SHORTBOW)) {
 
-                    Microbot.log("Missing required items in the bank. Shutting down script.");
-                    shutdown(); // Stop script
-                    return;
-                }
+                Microbot.log("Missing required items in the bank. Shutting down script.");
+                shutdown(); // Stop script
+                return;
             }
+        }
         }
         if (config.attackStyle() == MAGIC) {
             Rs2Bank.walkToBank();
@@ -578,7 +577,7 @@ public class WildySaferScript extends Script {
 
                 if (!Rs2Equipment.isNaked()) {
                     Rs2Bank.depositEquipment();
-                    sleep(400, 900);
+                    sleep(400,900);
                 }
 
                 OutfitHelper.equipOutfit(OutfitHelper.OutfitType.NAKED_MAGE);
@@ -593,10 +592,10 @@ public class WildySaferScript extends Script {
                 if (!Rs2Equipment.isNaked()) {
                     Rs2Bank.depositEquipment();
                     Rs2Bank.withdrawX(MITHRIL_ARROW, config.mithrilArrowAmount());
-                    sleep(400, 800);
+                    sleep(400,800);
                     Rs2Inventory.equip(MITHRIL_ARROW);
                     sleep(300);
-                    sleep(400, 900);
+                    sleep(400,900);
                 }
 
                 int[] equipItems = {
@@ -614,18 +613,17 @@ public class WildySaferScript extends Script {
                     sleepUntil(() -> Rs2Equipment.isWearing(itemId), 5000);
                 }
             }
-
-
-            Rs2Bank.withdrawX(MITHRIL_ARROW, config.mithrilArrowAmount());
-            sleep(400, 800);
-            Rs2Inventory.equip(MITHRIL_ARROW);
-            sleep(300);
-
-            Rs2Bank.closeBank();
         }
 
+        Rs2Bank.withdrawX(MITHRIL_ARROW, config.mithrilArrowAmount());
+        sleep(400,800);
+        Rs2Inventory.equip(MITHRIL_ARROW);
+        sleep(300);
+
         if (config.alchLoot()) {Rs2Bank.withdrawX(NATURE_RUNE, 10);
-            Rs2Bank.withdrawX(FIRE_RUNE,50);}
+            if (config.attackStyle() == RANGE) Rs2Bank.withdrawX(FIRE_RUNE,50);}
+
+        Rs2Bank.closeBank();
     }
 
 
