@@ -7,7 +7,9 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -613,12 +615,14 @@ public class WildySaferScript extends Script {
                     sleepUntil(() -> Rs2Equipment.isWearing(itemId), 5000);
                 }
             }
-        }
 
         Rs2Bank.withdrawX(MITHRIL_ARROW, config.mithrilArrowAmount());
         sleep(400,800);
         Rs2Inventory.equip(MITHRIL_ARROW);
         sleep(300);
+
+        }
+
 
         if (config.alchLoot()) {Rs2Bank.withdrawX(NATURE_RUNE, 10);
             if (config.attackStyle() == RANGE) Rs2Bank.withdrawX(FIRE_RUNE,50);}
