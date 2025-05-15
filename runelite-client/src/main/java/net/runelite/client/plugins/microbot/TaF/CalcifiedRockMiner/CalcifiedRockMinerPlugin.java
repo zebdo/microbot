@@ -62,7 +62,7 @@ public class CalcifiedRockMinerPlugin extends Plugin {
 
     @Subscribe
     public void onChatMessage(ChatMessage event) {
-        if (event.getType() == ChatMessageType.GAMEMESSAGE && event.getMessage().equalsIgnoreCase("Some cracks around the cave begin to ooze water.")) {
+        if (event.getType() == ChatMessageType.GAMEMESSAGE && event.getMessage().equalsIgnoreCase("Some cracks around the cave begin to ooze water")) {
             Microbot.log("Spawned a calcified rock.");
         }
     }
