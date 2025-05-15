@@ -9,8 +9,8 @@ import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 public interface CalcifiedRockMinerConfig extends Config {
     @ConfigItem(
             keyName = "dropDeposits",
-            name = "Drop deposits",
-            description = "When enabled, the deposits will be dropped",
+            name = "Drop deposits & gems",
+            description = "When enabled, the deposits and any uncut gems will be dropped",
             position = 1
     )
     default boolean dropDeposits() {
@@ -32,9 +32,19 @@ public interface CalcifiedRockMinerConfig extends Config {
             keyName = "focusCrackedWaterDeposits",
             name = "Focus on cracked water deposits",
             description = "Go out of the way to focus on mining cracked water deposits",
-            position = 2
+            position = 3
     )
     default boolean focusCrackedWaterDeposits() {
         return false;
+    }
+
+    @ConfigItem(
+            keyName = "maxPlayersInArea",
+            name = "Max players in area",
+            description = "If more players than this are nearby, hop worlds. 0 = disable",
+            position = 4
+    )
+    default int maxPlayersInArea() {
+        return 0;
     }
 }
