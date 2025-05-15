@@ -627,6 +627,11 @@ public class WildySaferScript extends Script {
         if (config.alchLoot()) {Rs2Bank.withdrawX(NATURE_RUNE, 10);
             if (config.attackStyle() == RANGE) Rs2Bank.withdrawX(FIRE_RUNE,50);}
 
+    
+        if (Microbot.getClient().getRealSkillLevel(WOODCUTTING) > 56 && Rs2Player.getWorldLocation().getY() < 3520) {
+            Rs2Bank.withdrawOne("axe", false);
+        }
+
         Rs2Bank.closeBank();
     }
 
