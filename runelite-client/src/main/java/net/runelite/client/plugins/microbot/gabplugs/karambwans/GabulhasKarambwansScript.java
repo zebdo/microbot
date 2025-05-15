@@ -7,6 +7,7 @@ import net.runelite.client.Notifier;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -96,16 +97,13 @@ public class GabulhasKarambwansScript extends Script {
 
     private void walkToRingToBank() {
         Rs2GameObject.interact(29495, "Zanaris");
+        Rs2Bank.walkToBank(BankLocation.ZANARIS);
+
         sleepUntil(() -> Rs2Player.getWorldLocation().equals(zanarisRing));
     }
 
     private void doBank() {
-        Rs2Walker.walkTo(bankPoint, 6);
-        while (!Rs2Player.isNearArea(bankPoint, 6)  && super.isRunning()) {
-            sleep(100, 600);
-        }
-        Rs2Bank.handleBankPin("");
-        Rs2Bank.useBank();
+        Rs2Bank.openBank();
     }
 
     private void useBank() {
@@ -117,32 +115,13 @@ public class GabulhasKarambwansScript extends Script {
     }
 
     private void walkToRingToFish() {
-
-        while(!Rs2Walker.isInArea(zanarisRing.dx(2), zanarisRing.dy(-2))  && super.isRunning()) {
-
-            Rs2Walker.walkTo(zanarisRing.dx(2), 2);
-            sleep(1000, 2000);
-            var fairyRing = Rs2GameObject.findObjectById(29560);
-            if(!Objects.isNull(fairyRing)) {
-                Rs2GameObject.interact(fairyRing, "Last-destination (DKP)");
-            }
-
-        }
-        System.out.println("Done walking");
-        sleep(100, 2000);
-
+        Rs2Walker.walkTo(2412,4435,0);
         var fairyRing = Rs2GameObject.findObjectById(29560);
-
-        System.out.println("Ring:" + fairyRing.getId());
-
-        while (!Rs2Player.getWorldLocation().equals(new WorldPoint(2900, 3111, 0))  && super.isRunning()) {
+        if(!Objects.isNull(fairyRing)) {
             Rs2GameObject.interact(fairyRing, "Last-destination (DKP)");
-            sleep(1000, 10000);
         }
 
-
+        Rs2Walker.walkTo(2899,3118,0);
     }
-
-
 }
 
