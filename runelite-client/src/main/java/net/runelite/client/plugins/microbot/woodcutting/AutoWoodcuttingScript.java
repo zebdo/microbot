@@ -37,7 +37,7 @@ enum State {
 public class AutoWoodcuttingScript extends Script {
 
     public static String version = "1.6.4";
-    public boolean cannotLightFire = false;
+    public volatile boolean cannotLightFire = false;
 
     State state = State.WOODCUTTING;
     private static WorldPoint returnPoint;
@@ -213,7 +213,7 @@ public class AutoWoodcuttingScript extends Script {
         Map<Integer, List<WorldPoint>> distanceMap = new HashMap<>();
 
         for (WorldPoint walkablePoint : worldPoints) {
-            if (Rs2GameObject.getGameObject(walkablePoint) == null) {
+            if (Rs2GameObject.getGameObject(walkablePoint, distance) == null) {
                 int tileDistance = playerLocation.distanceTo(walkablePoint);
                 distanceMap.computeIfAbsent(tileDistance, k -> new ArrayList<>()).add(walkablePoint);
             }
