@@ -8,6 +8,7 @@ import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.bee.EquipmentIdentifier;
 import net.runelite.client.plugins.microbot.bee.MossKiller.Enums.CombatMode;
 import net.runelite.client.plugins.microbot.bee.MossKiller.Enums.MossKillerState;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
@@ -803,7 +804,7 @@ public class WildyKillerScript extends Script {
                 && target.getOverheadIcon() == null
                 && !MossKillerPlugin.isPlayerSnared()) {
 
-            if (hasPlayerEquippedItem(target, RUNE_PLATEBODY) && Rs2Inventory.contains(DEATH_RUNE)) {
+            if (EquipmentIdentifier.isWearingRuneArmor(target) && Rs2Inventory.contains(DEATH_RUNE)) {
                 castWindBlast(target);
                 sleep(600);
             }
