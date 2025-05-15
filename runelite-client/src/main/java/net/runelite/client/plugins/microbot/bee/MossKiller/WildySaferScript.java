@@ -58,7 +58,6 @@ public class WildySaferScript extends Script {
     @Inject
     private MossKillerConfig mossKillerConfig;
 
-    @Getter
     private static MossKillerConfig config;
 
     @Inject
