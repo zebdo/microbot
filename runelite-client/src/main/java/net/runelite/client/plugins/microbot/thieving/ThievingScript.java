@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.thieving;
 
+import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.NPC;
 import net.runelite.api.Skill;
 import net.runelite.api.Varbits;
@@ -25,9 +26,11 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment.isEquipped;
+
 public class ThievingScript extends Script {
 
-    public static String version = "1.6.2";
+    public static String version = "1.6.3";
     ThievingConfig config;
 
     public boolean run(ThievingConfig config) {
@@ -259,10 +262,15 @@ public class ThievingScript extends Script {
 
         Rs2Bank.withdrawDeficit("dodgy necklace", config.dodgyNecklaceAmount());
         if (config.shadowVeil()) {
-            Rs2Bank.withdrawAll(true, "Fire rune", true);
-            Rs2Inventory.waitForInventoryChanges(5000);
-            Rs2Bank.withdrawAll(true, "Earth rune", true);
-            Rs2Inventory.waitForInventoryChanges(5000);
+            // Check if Lava battlestaff is equipped
+            if (!isEquipped("Lava battlestaff", EquipmentInventorySlot.WEAPON)) {
+                // Withdraw Fire and Earth runes only if Lava battlestaff is not equipped
+                Rs2Bank.withdrawAll(true, "Fire rune", true);
+                Rs2Inventory.waitForInventoryChanges(5000);
+                Rs2Bank.withdrawAll(true, "Earth rune", true);
+                Rs2Inventory.waitForInventoryChanges(5000);
+            }
+            // Always withdraw Cosmic runes
             Rs2Bank.withdrawAll(true, "Cosmic rune", true);
             Rs2Inventory.waitForInventoryChanges(5000);
         }
