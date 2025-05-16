@@ -69,6 +69,8 @@ public class AgilityScript extends Script {
                 return varrockCourse;
             case GNOME_STRONGHOLD_AGILITY_COURSE:
                 return gnomeStrongholdCourse;
+            case CANIFIS_ROOFTOP_COURSE:
+                return canafisCourse;
             case FALADOR_ROOFTOP_COURSE:
                 return faladorCourse;
             case SEERS_VILLAGE_ROOFTOP_COURSE:
