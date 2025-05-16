@@ -12,14 +12,10 @@ import net.runelite.client.plugins.loottracker.LootTrackerItem;
 import net.runelite.client.plugins.loottracker.LootTrackerRecord;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
-import net.runelite.client.plugins.microbot.shortestpath.Transport;
-import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
-import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
-import net.runelite.client.plugins.microbot.util.gameobject.Rs2BankID;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -45,6 +41,7 @@ import java.util.List;
 import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static net.runelite.api.Varbits.*;
 import static net.runelite.api.widgets.ComponentID.BANK_INVENTORY_ITEM_CONTAINER;
@@ -63,17 +60,7 @@ public class Rs2Bank {
     public static final int BANK_ITEMS_PER_ROW = 8;
     private static final int X_AMOUNT_VARBIT = VarbitID.BANK_REQUESTEDQUANTITY;
     private static final int SELECTED_OPTION_VARBIT = VarbitID.BANK_QUANTITY_TYPE;
-    
-    // BANK actions
-    private static final int BANK_HANDLE_X_SET = 4;
-    private static final int BANK_HANDLE_X_UNSET = 5;
-    private static final int BANK_HANDLE_ALL = 6;
 
-    // INVENTORY actions (e.g., for deposit)
-    private static final int INVENTORY_HANDLE_X_SET = 6;
-    private static final int INVENTORY_HANDLE_X_UNSET = 7;
-    private static final int INVENTORY_HANDLE_ALL = 8;
-    
     private static final int WITHDRAW_AS_NOTE_VARBIT = 3958;
     public static List<Rs2ItemModel> bankItems = new ArrayList<Rs2ItemModel>();
     // Used to synchronize calls
@@ -212,7 +199,7 @@ public class Rs2Bank {
     public static boolean hasItem(String name, boolean exact) {
         return findBankItem(name, exact) != null;
     }
-    
+
     /**
      * Checks if the bank contains any of the specified item names.
      *
@@ -244,7 +231,7 @@ public class Rs2Bank {
     public static boolean hasItem(List<String> names, int amount) {
         return hasItem(names, false, amount);
     }
-    
+
     /**
      * Checks if the bank contains all items from a list of names with a minimum quantity.
      *
@@ -259,7 +246,7 @@ public class Rs2Bank {
             return item != null;
         });
     }
-    
+
     /**
      * Checks if the bank contains any items from a list of names with a minimum quantity.
      *
@@ -508,45 +495,67 @@ public class Rs2Bank {
      * @param safe    will wait for item to appear in inventory before continuing if set to true
      */
     private static boolean handleAmount(Rs2ItemModel rs2Item, int amount, boolean safe) {
-        int inventorySize = Rs2Inventory.size();
+        int selected = Microbot.getVarbitValue(SELECTED_OPTION_VARBIT);
+        int configuredX = Microbot.getVarbitValue(X_AMOUNT_VARBIT);
+        boolean hasX = configuredX > 0;
 
-        boolean isInventory = container == BANK_INVENTORY_ITEM_CONTAINER;
-        int handleXSet = isInventory ? INVENTORY_HANDLE_X_SET : BANK_HANDLE_X_SET;
-        int handleXUnset = isInventory ? INVENTORY_HANDLE_X_UNSET : BANK_HANDLE_X_UNSET;
-        
-        if (!isInventory && Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 4) {
-            handleXSet++;
-            handleXUnset++;
-        }
-        
-        if (Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 3) {
-            handleXSet = isInventory ? 2 : 1;
-        }
-        
-        if (Microbot.getVarbitValue(X_AMOUNT_VARBIT) == amount) {
-            invokeMenu(handleXSet, rs2Item);
+        boolean isInventory = (container == BANK_INVENTORY_ITEM_CONTAINER);
 
-            if (safe)
-                return sleepUntilTrue(() -> inventorySize != Rs2Inventory.size(), 100, 2500);
+        int xSetOffset = -1;
+        int xPromptOffset = -1;
 
-            return true;
+        if (hasX) {
+            switch (selected) {
+                case 0:
+                case 1:
+                case 2:
+                    xSetOffset = isInventory ? 6 : 4;
+                    xPromptOffset = isInventory ? 7 : 5;
+                    break;
+                case 3:
+                    xSetOffset = isInventory ? 2 : 1;
+                    xPromptOffset = isInventory ? 7 : 5;
+                    break;
+                case 4:
+                    xSetOffset = isInventory ? 6 : 5;
+                    xPromptOffset = isInventory ? 7 : 6;
+                    break;
+                default:
+                    throw new IllegalStateException("Unknown BANK_QUANTITY_TYPE: " + selected);
+            }
         } else {
-            invokeMenu(handleXUnset, rs2Item);
+            switch (selected) {
+                case 0:
+                case 1:
+                case 2:
+                    xPromptOffset = isInventory ? 7 : 4;
+                    break;
+                default:
+                    xPromptOffset = isInventory ? 7 : 5;
+            }
+        }
 
-             boolean foundEnterAmount = sleepUntil(() -> {
-                Widget widget = Rs2Widget.getWidget(162, 42);
-                if (widget == null) return false;
-                return widget.getText().equalsIgnoreCase("Enter amount:");
-            }, 5000);
-            
-            if (!foundEnterAmount) return false;
-            
-            Rs2Random.waitEx(1200, 100);
-            Rs2Keyboard.typeString(String.valueOf(amount));
-            Rs2Keyboard.enter();
-            sleepUntil(() -> Rs2Inventory.hasItem(rs2Item.id), 2500);
+        if (hasX && configuredX == amount) {
+            int before = Rs2Inventory.size();
+            invokeMenu(xSetOffset, rs2Item);
+            if (safe) return sleepUntilTrue(() -> Rs2Inventory.size() != before, 100, 2500);
             return true;
         }
+
+        invokeMenu(xPromptOffset, rs2Item);
+        boolean foundEnterAmount = sleepUntil(() -> {
+            Widget widget = Rs2Widget.getWidget(162, 42);
+            return widget != null && widget.getText().equalsIgnoreCase("Enter amount:");
+        }, 5000);
+        if (!foundEnterAmount) return false;
+
+        Rs2Random.waitEx(1200, 100);
+        Rs2Keyboard.typeString(String.valueOf(amount));
+        Rs2Keyboard.enter();
+
+        if (safe) return sleepUntilTrue(() -> isInventory != Rs2Inventory.hasItem(rs2Item.getId()), 100, 2500);
+
+        return true;
     }
 
     /**
@@ -601,7 +610,7 @@ public class Rs2Bank {
         if (Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 4) {
             invokeMenu(2, rs2Item);
         } else {
-            invokeMenu(INVENTORY_HANDLE_ALL, rs2Item);
+            invokeMenu(8, rs2Item);
         }
         return true;
     }
@@ -674,7 +683,7 @@ public class Rs2Bank {
 
         Widget widget = Rs2Widget.findWidget(SpriteID.BANK_DEPOSIT_INVENTORY, null);
         if (widget == null) return;
-        
+
         Rs2Widget.clickWidget(widget);
         Rs2Inventory.waitForInventoryChanges(10000);
     }
@@ -859,7 +868,7 @@ public class Rs2Bank {
         if (rs2Item == null) return;
         if (Rs2Inventory.isFull()) return;
         container = BANK_ITEM_CONTAINER;
-        
+
         invokeMenu(7, rs2Item);
     }
 
@@ -996,7 +1005,7 @@ public class Rs2Bank {
         if (Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 4) {
             invokeMenu(1, rs2Item);
         } else {
-            invokeMenu(BANK_HANDLE_ALL, rs2Item);
+            invokeMenu(6, rs2Item);
         }
         return true;
     }
@@ -1162,88 +1171,45 @@ public class Rs2Bank {
     }
 
     /**
-     * Check if a bank (or equivalent) is close by without interacting.
-     * Prioritizes bank > bank booth > chest > banker NPC.
-     *
-     * @return True if a nearby bank candidate is found, otherwise false.
-     */
-    public static boolean isBankCloseby() {
-        Microbot.status = "Checking bank proximity";
-        try {
-            // If bank interface is already open, consider a bank available.
-            if (isOpen()) return true;
-
-            // Identify potential banking objects.
-            WallObject grandExchangeBooth = Rs2GameObject.getWallObjects()
-                    .stream()
-                    .filter(x -> x.getId() == 10060 || x.getId() == 30389)
-                    .filter(y -> Rs2Tile.isTileReachable(y.getWorldLocation()))
-                    .findFirst()
-                    .orElse(null);
-            GameObject bank = Rs2GameObject.findBank();
-            GameObject chest = Rs2GameObject.findChest();
-
-            // Determine if chest is closer than the bank.
-            boolean useChest = bank != null && chest != null &&
-                    bank.getWorldLocation().distanceTo2D(Rs2Player.getWorldLocation()) >
-                            chest.getWorldLocation().distanceTo2D(Rs2Player.getWorldLocation()) && Rs2Tile.isTileReachable(chest.getWorldLocation());
-
-            // Check for a nearby bank candidate based on prioritized order.
-            if (!useChest && bank != null &&
-                    (grandExchangeBooth == null ||
-                            bank.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <=
-                                    grandExchangeBooth.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) && Rs2Tile.isTileReachable(bank.getWorldLocation())) ) {
-                return true;
-            } else if (grandExchangeBooth != null) {
-                return true;
-            } else if (chest != null) {
-                return true;
-            } else {
-                // Fallback: Check for a banker NPC.
-                Rs2NpcModel npc = Rs2Npc.getBankerNPC();
-                return (npc != null && Rs2Tile.isTileReachable(npc.getWorldLocation()));
-            }
-        } catch (Exception ex) {
-            System.out.println(ex.getMessage());
-        }
-        return false;
-    }
-
-
-    /**
      * Find closest available bank
      * finds closest npc then bank booth then chest
      * @return True if bank was successfully opened, otherwise false.
      */
     public static boolean openBank() {
         Microbot.status = "Opening bank";
+
         try {
-            if (Microbot.getClient().isWidgetSelected())
+            if (Microbot.getClient().isWidgetSelected()) {
                 Microbot.getMouse().click();
+            }
+
             if (isOpen()) return true;
-            boolean action;
-            WallObject grandExchangeBooth = Rs2GameObject.getWallObjects()
-                    .stream()
-                    .filter(x -> x.getId() == 10060 || x.getId() == 30389)
-                    .findFirst()
-                    .orElse(null);
-            GameObject bank = Rs2GameObject.findBank();
-            GameObject chest = Rs2GameObject.findChest();
 
-            // Determine if bank should be skipped in favor of chest
-            boolean useChest = bank != null && chest != null && bank.getWorldLocation().distanceTo2D(Rs2Player.getWorldLocation()) > chest.getWorldLocation().distanceTo2D(Rs2Player.getWorldLocation());
+            Player player = Microbot.getClient().getLocalPlayer();
+            if (player == null) return false;
+            WorldPoint anchor = player.getWorldLocation();
 
-            if (!useChest && bank != null && (grandExchangeBooth == null ||
-                    bank.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= grandExchangeBooth.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()))) {
-                action = Rs2GameObject.interact(bank, "bank");
-            } else if (grandExchangeBooth != null) {
-                action = Rs2GameObject.interact(grandExchangeBooth, "bank");
-            } else if (chest != null) {
-                action = Rs2GameObject.interact(chest, "use");
+            List<TileObject> candidates = Stream.of(
+                            Rs2GameObject.findBank(),
+                            Rs2GameObject.findGrandExchangeBooth()
+                    )
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            Optional<TileObject> nearestObj = Rs2GameObject.pickClosest(
+                    candidates,
+                    TileObject::getWorldLocation,
+                    anchor
+            );
+
+            boolean action = false;
+            if (nearestObj.isPresent()) {
+                action = Rs2GameObject.interact(nearestObj.get(), "Bank");
             } else {
-                Rs2NpcModel npc = Rs2Npc.getBankerNPC();
-                if (npc == null) return false;
-                action = Rs2Npc.interact(npc, "bank");
+                Rs2NpcModel banker = Rs2Npc.getBankerNPC();
+                if (banker != null) {
+                    action = Rs2Npc.interact(banker, "Bank");
+                }
             }
 
             if (action) {
@@ -1252,8 +1218,8 @@ public class Rs2Bank {
             return action;
         } catch (Exception ex) {
             Microbot.logStackTrace("Rs2Bank", ex);
+            return false;
         }
-        return false;
     }
 
     public static boolean openBank(Rs2NpcModel npc) {
@@ -1278,7 +1244,7 @@ public class Rs2Bank {
         }
         return false;
     }
-    
+
     public static boolean openBank(NPC npc) {
         return openBank(new Rs2NpcModel(npc));
     }
@@ -1408,23 +1374,40 @@ public class Rs2Bank {
     }
 
     /**
-     * Get the nearest bank
+     * Returns the nearest accessible bank to the local player’s current location.
      *
-     * @return BankLocation
+     * @return the nearest {@link BankLocation}, or {@code null} if none was reachable
      */
     public static BankLocation getNearestBank() {
         return getNearestBank(Microbot.getClient().getLocalPlayer().getWorldLocation());
     }
 
     /**
-     * Finds the nearest bank, prioritizing available transports first before pathfinding
-     * @param worldPoint The current location
-     * @return The nearest bank location, or null if no accessible bank was found
+     * Returns the nearest accessible bank to the specified world point,
+     * using a default search radius of 15 tiles.
+     *
+     * @param worldPoint the starting location from which to search for banks
+     * @return the nearest {@link BankLocation}, or {@code null} if none was reachable
      */
     public static BankLocation getNearestBank(WorldPoint worldPoint) {
-        return getNearestBank(worldPoint, 15);
+        return getNearestBank(worldPoint, 20);
     }
 
+    /**
+     * Finds the nearest accessible bank location from the given world point.
+     * <p>
+     * First, searches for bank booth {@link TileObject}s within
+     * {@code maxObjectSearchRadius} tiles of the player and picks the closest
+     * one whose underlying {@link BankLocation#hasRequirements()} passes. If no booth
+     * is found or none are within range, falls back to running a full pathfinding
+     * search (including configured transports) to all accessible bank coordinates,
+     * then returns the bank at the end of the shortest path.
+     * </p>
+     *
+     * @param worldPoint            the starting location for pathfinding
+     * @param maxObjectSearchRadius the maximum radius (in tiles) to scan for bank booth objects
+     * @return the nearest {@link BankLocation}, or {@code null} if no accessible bank could be reached
+     */
     public static BankLocation getNearestBank(WorldPoint worldPoint, int maxObjectSearchRadius) {
         Microbot.log("Finding nearest bank...");
 
@@ -1437,31 +1420,34 @@ public class Rs2Bank {
             return null;
         }
 
-        List<Integer> boothIds = Arrays.asList(Rs2BankID.bankIds);
-        List<TileObject> bankObjs = Rs2GameObject.getGameObjects().stream()
-                .filter(obj -> obj.getWorldLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) < maxObjectSearchRadius)
-                .filter(obj -> boothIds.contains(obj.getId()))
-                .collect(Collectors.toList());
+        if (Objects.equals(Microbot.getClient().getLocalPlayer().getWorldLocation(), worldPoint)) {
+            List<TileObject> bankObjs = Stream.concat(
+                            Stream.of(Rs2GameObject.findBank(maxObjectSearchRadius)),
+                            Stream.of(Rs2GameObject.findGrandExchangeBooth(maxObjectSearchRadius))
+                    )
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
 
-        Optional<BankLocation> fromObject = bankObjs.stream()
-                .map(obj -> {
-                    BankLocation closest = accessibleBanks.stream()
-                            .min(Comparator.comparingInt(b -> obj.getWorldLocation().distanceTo(b.getWorldPoint())))
-                            .orElse(null);
+            Optional<BankLocation> byObject = bankObjs.stream()
+                    .map(obj -> {
+                        BankLocation closestBank = accessibleBanks.stream()
+                                .min(Comparator.comparingInt(b -> obj.getWorldLocation().distanceTo(b.getWorldPoint())))
+                                .orElse(null);
 
-                    int dist = closest == null
-                            ? Integer.MAX_VALUE
-                            : obj.getWorldLocation().distanceTo(closest.getWorldPoint());
+                        int dist = closestBank == null
+                                ? Integer.MAX_VALUE
+                                : obj.getWorldLocation().distanceTo(closestBank.getWorldPoint());
 
-                    return new AbstractMap.SimpleEntry<>(closest, dist);
-                })
-                .filter(e -> e.getKey() != null && e.getValue() <= maxObjectSearchRadius)
-                .min(Comparator.comparingInt(Map.Entry::getValue))
-                .map(Map.Entry::getKey);
+                        return new AbstractMap.SimpleEntry<>(closestBank, dist);
+                    })
+                    .filter(e -> e.getKey() != null && e.getValue() <= maxObjectSearchRadius)
+                    .min(Comparator.comparingInt(Map.Entry::getValue))
+                    .map(Map.Entry::getKey);
 
-        if (fromObject.isPresent()) {
-            Microbot.log("Found nearest bank (object): " + fromObject.get());
-            return fromObject.get();
+            if (byObject.isPresent()) {
+                Microbot.log("Found nearest bank (object): " + byObject.get());
+                return byObject.get();
+            }
         }
 
         Set<WorldPoint> targets = accessibleBanks.stream()
@@ -1534,8 +1520,8 @@ public class Rs2Bank {
 
     /**
      * Distance from the nearest bank location
-     * 
-     * @param distance 
+     *
+     * @param distance
      * @return true if player location is less than distance away from the bank location
      */
     public static boolean isNearBank(int distance) {
@@ -1544,13 +1530,13 @@ public class Rs2Bank {
 
     /**
      * Distance from bank location
-     * 
-     * @param bankLocation 
-     * @param distance 
+     *
+     * @param bankLocation
+     * @param distance
      * @return true if player location is less than distance away from the bank location
      */
     public static boolean isNearBank(BankLocation bankLocation, int distance) {
-        int distanceToBank = Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(bankLocation.getWorldPoint());
+        int distanceToBank = Rs2Walker.getDistanceBetween(Microbot.getClient().getLocalPlayer().getWorldLocation(), bankLocation.getWorldPoint());
         return distanceToBank <= distance;
     }
 
@@ -1561,9 +1547,6 @@ public class Rs2Bank {
      * @return true if the bank interface is successfully opened.
      */
     public static boolean walkToBankAndUseBank() {
-        if(isBankCloseby()){
-            return openBank();
-        }
         return walkToBankAndUseBank(getNearestBank());
     }
 
@@ -1590,7 +1573,7 @@ public class Rs2Bank {
         if (Rs2Bank.isOpen()) return true;
         Rs2Player.toggleRunEnergy(toggleRun);
         Microbot.status = "Walking to nearest bank " + bankLocation.toString();
-        boolean result = bankLocation.getWorldPoint().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 8;
+        boolean result = Rs2Walker.getDistanceBetween(Microbot.getClient().getLocalPlayer().getWorldLocation(), bankLocation.getWorldPoint()) <= 8;
         if (result) {
             return Rs2Bank.useBank();
         } else {
@@ -1631,7 +1614,7 @@ public class Rs2Bank {
             Microbot.log("Unable to enter bankpin with value " + pin);
             return false;
         }
-        
+
         String[] digitInstructions = {
                 "FIRST digit", "SECOND digit", "THIRD digit", "FOURTH digit"
         };
@@ -1660,7 +1643,7 @@ public class Rs2Bank {
         }
         return false;
     }
-    
+
     public static boolean isBankPinWidgetVisible() {
         return Rs2Widget.isWidgetVisible(ComponentID.BANK_PIN_CONTAINER);
     }
@@ -2327,9 +2310,9 @@ public class Rs2Bank {
                 return hoverOverObject(bank);
             }
 
-            GameObject chest = Rs2GameObject.findChest();
-            if (chest != null) {
-                return hoverOverObject(chest);
+            WallObject grandExchangeBooth = Rs2GameObject.findGrandExchangeBooth();
+            if (grandExchangeBooth != null) {
+                return hoverOverObject(grandExchangeBooth);
             }
 
             Rs2NpcModel npc = Rs2Npc.getBankerNPC();
@@ -2348,7 +2331,7 @@ public class Rs2Bank {
     private static boolean isBankPluginEnabled() {
         return Microbot.isPluginEnabled(BankPlugin.class);
     }
-    
+
     private static boolean hasKeyboardBankPinEnabled() {
         return Microbot.getConfigManager().getConfiguration("bank","bankPinKeyboard").equalsIgnoreCase("true");
     }

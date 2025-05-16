@@ -1,17 +1,25 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.api;
 
 
+import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LockCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntryFinishedEvent;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
+import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
+
+import static net.runelite.client.plugins.microbot.Microbot.log;
 
 import java.awt.List;
-
+import org.slf4j.event.Level;
+import lombok.extern.java.Log;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.config.ConfigDescriptor;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
+
 
 /**
  * Interface for plugins that want to provide custom stopping conditions and scheduling capabilities.
@@ -19,8 +27,9 @@ import net.runelite.client.plugins.microbot.Microbot;
  * to have your plugin report when it has finished its tasks.
  */
 
-public interface ConditionProvider {
-    
+
+public interface SchedulablePlugin {
+
        
     default LogicalCondition getStartCondition() {
         return new AndCondition();
@@ -51,7 +60,9 @@ public interface ConditionProvider {
      * 
      * @return A logical condition structure, or null to use simple AND logic
      */
-    LogicalCondition getStopCondition();
+    default LogicalCondition getStopCondition(){
+        return new AndCondition();
+    }
     
     
      /**
@@ -113,9 +124,30 @@ public interface ConditionProvider {
      * @param success Whether the task was completed successfully
      */
     default public void reportFinished(String reason, boolean success) {
+        SchedulerPlugin schedulablePlugin =  (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
+        if (schedulablePlugin == null) {
+            Microbot.log("\n SchedulerPlugin is not loaded. so stopping the current plugin.", Level.INFO);
+            Microbot.getClientThread().invoke(()-> Microbot.stopPlugin((Plugin)this));
+            return;
+        }
+        PluginScheduleEntry currentPlugin =  schedulablePlugin.getCurrentPlugin();
+        if (currentPlugin == null) {
+            Microbot.log("\n SchedulerPlugin is not running any plugin. so stopping the current plugin.");
+            Microbot.getClientThread().invoke(()-> Microbot.stopPlugin((Plugin)this));
+            return;
+        }
+        if (currentPlugin.isRunning() && currentPlugin.getPlugin() != null && !currentPlugin.getPlugin().equals(this)) {
+            Microbot.log("\nCurrent running plugin running by the SchedulerPlugin is not the same as the one being stopped. Stopping current plugin.");
+            Microbot.getClientThread().invoke(()-> Microbot.stopPlugin((Plugin)this));
+            return;
+        }
+        String prefix = "Plugin [" + this.getClass().getSimpleName() + "] finished: ";
+        String reasonExt= reason == null ? prefix+"No reason provided" : prefix+reason;
+
+
         Microbot.getEventBus().post(new PluginScheduleEntryFinishedEvent(
             (Plugin) this, // "this" will be the plugin instance
-            reason,
+            reasonExt,
             success
         ));
     }
@@ -224,4 +256,8 @@ public interface ConditionProvider {
         }
         return null;
     }
+    default public ConfigDescriptor getConfigDescriptor(){
+        return null;
+    }
+
 }

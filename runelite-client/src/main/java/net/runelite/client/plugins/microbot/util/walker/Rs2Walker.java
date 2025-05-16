@@ -28,7 +28,6 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
-import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -758,15 +757,13 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         if(Microbot.getClient().getTopLevelWorldView().isInstance()) return false;
         
         // If we are not inside of the Motherloade mine, ignore the following logic
-        if (Rs2Player.getWorldLocation().getRegionID() != 14936) return false;
+        if (Rs2Player.getWorldLocation().getRegionID() != 14936 || currentTarget.getRegionID() != 14936) return false;
         
         // We kill the path if no pickaxe is found to avoid walking around like an idiot
         if (!Rs2Inventory.hasItem("pickaxe")) {
             if (!Rs2Equipment.isWearing("pickaxe")) {
                 Microbot.log("Unable to find pickaxe to mine rockfall");
-                if (currentTarget.getRegionID() == 14936) {
-                    setTarget(null);
-                }
+                setTarget(null);
                 return false;
             }
         }
@@ -795,88 +792,82 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     }
 
     private static boolean handleDoors(List<WorldPoint> path, int index) {
+        if (ShortestPathPlugin.getPathfinder() == null || index >= path.size() - 1) return false;
 
-        if (ShortestPathPlugin.getPathfinder() == null) return false;
+        List<String> doorActions = List.of("pay-toll", "pick-lock", "walk-through", "go-through", "open");
+        boolean isInstance = Microbot.getClient()
+                .getTopLevelWorldView()
+                .getScene()
+                .isInstance();
 
-        if (index == path.size() - 1) return false;
+        WorldPoint rawFrom = path.get(index);
+        WorldPoint rawTo = path.get(index + 1);
+        WorldPoint fromWp = isInstance
+                ? Rs2WorldPoint.convertInstancedWorldPoint(rawFrom)
+                : rawFrom;
+        WorldPoint toWp = isInstance
+                ? Rs2WorldPoint.convertInstancedWorldPoint(rawTo)
+                : rawTo;
 
-        var doorActions = Arrays.asList("pay-toll", "pick-lock", "walk-through", "go-through", "open");
+        boolean diagonal = Math.abs(fromWp.getX() - toWp.getX()) > 0
+                && Math.abs(fromWp.getY() - toWp.getY()) > 0;
 
-        boolean isInstance = Microbot.getClient().getTopLevelWorldView().getScene().isInstance();
+        for (int offset = 0; offset <= 1; offset++) {
+            int doorIdx = index + offset;
+            if (doorIdx < 0 || doorIdx >= path.size()) continue;
 
-        // Check this and the next tile for door objects
-        for (int doorIndex = index; doorIndex < index + 2; doorIndex++) {
-            var point = path.get(doorIndex);
+            WorldPoint rawDoorWp = path.get(doorIdx);
+            WorldPoint doorWp = isInstance
+                    ? Rs2WorldPoint.convertInstancedWorldPoint(rawDoorWp)
+                    : rawDoorWp;
 
-            // Handle wall and game objects
-            TileObject object = null;
-            var tile = Rs2GameObject.getTiles(3).stream()
-                    .filter(x -> isInstance ? x.getWorldLocation().equals(Rs2WorldPoint.convertInstancedWorldPoint(point)) : x.getWorldLocation().equals(point))
-                    .findFirst().orElse(null);
-            if (tile != null)
-                object = tile.getWallObject();
-
-            if (object == null)
-                object = Rs2GameObject.getGameObject(point);
-
-            if (object == null) continue;
-
-            var objectComp = Rs2GameObject.getObjectComposition(object.getId());
-            if (objectComp == null) continue;
-
-            // Match action
-            var action = Arrays.stream(objectComp.getActions())
-                    .filter(x -> x != null && doorActions.stream().anyMatch(doorAction -> x.toLowerCase().startsWith(doorAction)))
-                    .min(Comparator.comparing(x -> doorActions.indexOf(
-                            doorActions.stream().filter(doorAction -> x.toLowerCase().startsWith(doorAction)).findFirst().orElse(""))))
-                    .orElse(null);
-
-            if (action == null) continue;
-
-            boolean found = false;
-            if (object instanceof WallObject) {
-                // Match wall objects by orientation
-                var orientation = ((WallObject) object).getOrientationA();
-
-                if (doorIndex == index) {
-                    // Forward
-                    var neighborPoint = path.get(doorIndex + 1);
-                    found = searchNeighborPoint(orientation, point, neighborPoint);
-                    System.out.println(doorIndex + " wallobject ");
-                } else if (doorIndex == index + 1) {
-                    // Backward
-                    var neighborPoint = path.get(doorIndex - 1);
-                    found = searchNeighborPoint(orientation, point, neighborPoint);
-                    System.out.println(doorIndex + " else  wallobject ");
-                    // Diagonal objects with any orientation
-                    if (index + 2 < path.size() && (orientation == 16 || orientation == 32 || orientation == 64 || orientation == 128)) {
-                        var prevPoint = path.get(doorIndex - 1);
-                        var nextPoint = path.get(doorIndex + 1);
-
-                        if (Math.abs(prevPoint.getX() - nextPoint.getX()) > 0 && Math.abs(prevPoint.getY() - nextPoint.getY()) > 0) {
-                            System.out.println("math abs found door");
-                            found = true;
-                        }
-                    }
-                }
-            } else if (object instanceof GameObject) {
-                // Match game objects by name
-                // Orientation does not work as game objects are not strictly oriented like walls
-                var objectNames = List.of("door");
-
-                if (objectNames.contains(objectComp.getName().toLowerCase())) {
-                    System.out.println("found door " + objectComp.getName());
-                    found = true;
-                }
+            List<WorldPoint> probes = new ArrayList<>();
+            probes.add(doorWp);
+            if (diagonal) {
+                probes.add(new WorldPoint(toWp.getX(), fromWp.getY(), doorWp.getPlane()));
+                probes.add(new WorldPoint(fromWp.getX(), toWp.getY(), doorWp.getPlane()));
             }
 
+            for (WorldPoint probe : probes) {
+                WallObject wall = Rs2GameObject.getWallObject(o -> o.getWorldLocation().equals(probe), probe, 3);
 
-            if (found) {
-                if (!handleDoorException(object, action)) {
-                    Rs2GameObject.interact(object, action);
-                    Rs2Player.waitForWalking();
+                TileObject object = (wall != null)
+                        ? wall
+                        : Rs2GameObject.getGameObject(o -> o.getWorldLocation().equals(probe), probe, 3);
+                if (object == null) continue;
+
+                ObjectComposition comp = Rs2GameObject.convertToObjectComposition(object);
+                if (comp == null) continue;
+
+                String action = doorActions.stream()
+                        .filter(a -> Rs2GameObject.hasAction(comp, a, false))
+                        .min(Comparator.comparing(x -> doorActions.indexOf(doorActions.stream().filter(doorAction -> x.toLowerCase().startsWith(doorAction)).findFirst().orElse(""))))
+                        .orElse(null);
+
+                if (action == null) continue;
+
+                boolean found = false;
+
+                if (object instanceof WallObject) {
+                    int orientation = ((WallObject) object).getOrientationA();
+
+                    if (searchNeighborPoint(orientation, probe, fromWp) || searchNeighborPoint(orientation, probe, toWp)) {
+                        found = true;
+                    }
+                } else {
+                    String name = comp.getName();
+                    if (name != null && name.toLowerCase().contains("door")) {
+                        found = true;
+                    }
                 }
-                return true;
+
+                if (found) {
+                    if (!handleDoorException(object, action)) {
+                        Rs2GameObject.interact(object, action);
+                        Rs2Player.waitForWalking();
+                    }
+                    return true;
+                }
             }
         }
 
@@ -939,11 +930,50 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         return false;
     }
 
-    private static boolean searchNeighborPoint(int orientation, WorldPoint point, WorldPoint neighborPoint) {
-        return orientation == 1 && point.dx(-1).getX() == neighborPoint.getX()
-                || orientation == 4 && point.dx(+1).getX() == neighborPoint.getX()
-                || orientation == 2 && point.dy(1).getY() == neighborPoint.getY()
-                || orientation == 8 && point.dy(-1).getY() == neighborPoint.getY();
+    /**
+     * Determines whether a given neighbor tile lies immediately adjacent to
+     * a reference tile, in the direction specified by a wall orientation code.
+     *
+     * @param orientation the wall orientation code:
+     *                    <ul>
+     *                      <li>1 = west</li>
+     *                      <li>2 = north</li>
+     *                      <li>4 = east</li>
+     *                      <li>8 = south</li>
+     *                      <li>16 = northwest</li>
+     *                      <li>32 = northeast</li>
+     *                      <li>64 = southeast</li>
+     *                      <li>128 = southwest</li>
+     *                    </ul>
+     * @param point       the reference {@link WorldPoint} representing the tile at the wall’s base
+     * @param neighbor    the {@link WorldPoint} to test for adjacency
+     * @return {@code true} if {@code neighbor} is exactly one tile away from {@code point}
+     *         in the direction indicated by {@code orientation}, {@code false} otherwise
+     */
+    private static boolean searchNeighborPoint(int orientation, WorldPoint point, WorldPoint neighbor) {
+        int dx = neighbor.getX() - point.getX();
+        int dy = neighbor.getY() - point.getY();
+
+        switch (orientation) {
+            case 1:   // west
+                return dx == -1 && dy == 0;
+            case 2:   // north
+                return dx == 0  && dy == 1;
+            case 4:   // east
+                return dx == 1  && dy == 0;
+            case 8:   // south
+                return dx == 0  && dy == -1;
+            case 16:  // northwest
+                return dx == -1 && dy == 1;
+            case 32:  // northeast
+                return dx == 1  && dy == 1;
+            case 64:  // southeast
+                return dx == 1  && dy == -1;
+            case 128: // southwest
+                return dx == -1 && dy == -1;
+            default:
+                return false;
+        }
     }
 
     /**
@@ -1163,8 +1193,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                                     Rs2Dialogue.clickContinue();
                                 }
                                 sleepUntil(() -> !Rs2Player.isAnimating());
-                                sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
-                                sleep(600 * 4);
+                                sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
+                                sleep(600 * 6);
                             } else {
                                 Rs2Walker.walkFastCanvas(path.get(i));
                                 sleep(1200, 1600);
@@ -1179,15 +1209,14 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     }
 
                     if (transport.getType() == TransportType.CHARTER_SHIP) {
-                        if (Rs2Widget.getWidget(72, 0) != null) {
-                            Widget destination = Rs2Widget.findWidget(transport.getDisplayInfo(), Arrays.stream(Rs2Widget.getWidget(72, 0).getStaticChildren()).collect(Collectors.toList()), false);
-                            if (destination == null) break;
+                        sleepUntil(() -> Rs2Widget.isWidgetVisible(72, 0));
+                        Widget destination = Rs2Widget.findWidget(transport.getDisplayInfo(), Arrays.stream(Rs2Widget.getWidget(72, 0).getStaticChildren()).collect(Collectors.toList()), false);
+                        if (destination == null) break;
 
-                            Rs2Widget.clickWidget(destination);
-                            sleepUntil(() -> !Rs2Player.isAnimating());
-                            sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
-                            sleep(600 * 2); // wait 2 ticks befor einteracting, this is a delay of ships
-                        }
+                        Rs2Widget.clickWidget(destination);
+                        sleepUntil(() -> !Rs2Player.isAnimating());
+                        sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
+                        sleep(600 * 4);
                     }
                     
                     if (transport.getType() == TransportType.CANOE) {
@@ -1264,7 +1293,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     }
                     
 
-                    GameObject gameObject = Rs2GameObject.getGameObjects(transport.getObjectId(), transport.getOrigin()).stream().findFirst().orElse(null);
+                    GameObject gameObject = Rs2GameObject.getGameObject(transport.getObjectId(), transport.getOrigin());
                     //check game objects
                     if (gameObject != null && gameObject.getId() == transport.getObjectId()) {
                         if (!Rs2Tile.isTileReachable(transport.getOrigin())) {
@@ -1276,7 +1305,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     }
 
                     //check tile objects
-                    List<TileObject> tileObjects = Rs2GameObject.getTileObjects(transport.getObjectId(), transport.getOrigin());
+                    List<TileObject> tileObjects = Rs2GameObject.getTileObjects(obj -> obj.getId() == transport.getObjectId(), transport.getOrigin());
                     TileObject tileObject = tileObjects.stream().findFirst().orElse(null);
                     if (tileObject instanceof GroundObject)
                         tileObject = tileObjects.stream()
@@ -1294,7 +1323,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     }
                     
                     // check wall objects
-                    List<WallObject> wallObjects = Rs2GameObject.getWallObjects(transport.getObjectId(), transport.getOrigin());
+                    List<WallObject> wallObjects = Rs2GameObject.getWallObjects(obj -> obj.getId() == transport.getObjectId(), transport.getOrigin());
                     TileObject wallObject = wallObjects.stream().findFirst().orElse(null);
                     if (wallObject != null && wallObject.getId() == transport.getObjectId()) {
                         handleObject(transport, wallObject);
@@ -1318,6 +1347,9 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             } else if (transport.getType() == TransportType.MINECART) {
                 if (interactWithAdventureLog(transport)) {
                     sleep(600 * 2); // wait extra 2 game ticks before moving
+                } else {
+                    sleepUntil(() -> Rs2Player.getPoseAnimation() == 2148, 5000);
+                    sleepUntil(() -> Rs2Player.getPoseAnimation() != 2148, 10000);
                 }
             } else if (transport.getType() == TransportType.TELEPORTATION_PORTAL) {
                     sleep(600 * 2); // wait extra 2 game ticks before moving
@@ -1430,13 +1462,11 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     }
     
     private static boolean handleWildernessObelisk(Transport transport) {
-        GameObject obelisk = Rs2GameObject.getGameObjects(transport.getObjectId(), transport.getOrigin()).stream()
-                .findFirst()
-                .orElse(null);
+        GameObject obelisk = Rs2GameObject.getGameObject(obj -> obj.getId() == transport.getObjectId(), transport.getOrigin());
         
         if (obelisk != null) {
             Rs2GameObject.interact(obelisk, transport.getAction());
-            sleepUntil(() -> Rs2GameObject.getGameObjects(ObjectID.OBELISK_14825, transport.getOrigin()).stream().findFirst().orElse(null) != null);
+            sleepUntil(() -> Rs2GameObject.getGameObject(obj -> obj.getId() == transport.getObjectId(), transport.getOrigin()) != null);
             walkFastCanvas(transport.getOrigin());
             return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 10000);
         }
@@ -1493,7 +1523,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         List<String> locationKeyWords = Arrays.asList("farm", "monastery", "lletya", "prifddinas", "rellekka", "waterbirth island", "neitiznot", "jatiszo",
                 "ver sinhaza", "darkmeyer", "slepe", "troll stronghold", "weiss", "ecto", "burgh", "duradel", "gem mine", "nardah", "kalphite cave",
                 "kourend woodland", "mount karuulm", "outside", "fishing guild", "otto's grotto", "stronghold slayer cave", "slayer tower", "fremennik", "tarn's lair", "dark beasts");
-        List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "teleport", "rub", "break", "reminisce", "signal", "play");
+        List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "teleport", "rub", "break", "reminisce", "signal", "play","commune");
 
         boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
         String destination = hasMultipleDestination
@@ -1543,6 +1573,11 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     Rs2Dialogue.clickOption(destination);
                     Rs2Dialogue.sleepUntilHasDialogueOption("Okay, teleport to level");
                     Rs2Dialogue.clickOption("Okay, teleport to level");
+                }
+
+                if (itemAction.equalsIgnoreCase("teleport") && transport.getDisplayInfo().toLowerCase().contains("revenant cave teleport")) {
+                    Rs2Dialogue.sleepUntilHasDialogueOption("Yes, teleport me now");
+                    Rs2Dialogue.clickOption("Yes, teleport me now");
                 }
 
                 if (itemAction.equalsIgnoreCase("teleport") && transport.getDisplayInfo().toLowerCase().contains("slayer ring")) {
@@ -1804,7 +1839,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         if (displayInfo == null || displayInfo.isEmpty()) return false;
 
         List<String> validActions = List.of("chop-down", "shape-canoe", "float canoe", "paddle canoe");
-        ObjectComposition CANOE_COMPOSITION = Rs2GameObject.getObjectComposition(transport.getObjectId());
+        ObjectComposition CANOE_COMPOSITION = Rs2GameObject.convertToObjectComposition(transport.getObjectId());
         if (CANOE_COMPOSITION == null) return false;
 
         String currentAction = Arrays.stream(CANOE_COMPOSITION.getActions())
@@ -1820,7 +1855,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 Rs2GameObject.interact(transport.getObjectId(), "Chop-down");
                 sleepUntil(() -> Rs2Player.isAnimating(1200));
                 return sleepUntilTrue(() -> {
-                    ObjectComposition composition = Rs2GameObject.findObjectComposition(transport.getObjectId());
+                    ObjectComposition composition = Rs2GameObject.convertToObjectComposition(transport.getObjectId());
 
                     if (composition == null) return false;
                     return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
@@ -1857,7 +1892,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 Rs2Widget.clickWidget(canoeSelectionWidget);
                 sleepUntil(() -> Rs2Player.isAnimating(1200));
                 return sleepUntilTrue(() -> {
-                    ObjectComposition composition = Rs2GameObject.findObjectComposition(transport.getObjectId());
+                    ObjectComposition composition = Rs2GameObject.convertToObjectComposition(transport.getObjectId());
 
                     if (composition == null) return false;
                     return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
@@ -1866,7 +1901,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 Rs2GameObject.interact(transport.getObjectId(), "Float Canoe");
                 sleepUntil(() -> Rs2Player.isAnimating(1200));
                 return sleepUntilTrue(() -> {
-                    ObjectComposition composition = Rs2GameObject.findObjectComposition(transport.getObjectId());
+                    ObjectComposition composition = Rs2GameObject.convertToObjectComposition(transport.getObjectId());
 
                     if (composition == null) return false;
                     return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();

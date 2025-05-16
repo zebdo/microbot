@@ -484,6 +484,11 @@ public class Rs2Npc {
             List<String> baseActions = baseComposition != null ? Arrays.asList(baseComposition.getActions()) : Collections.emptyList();
             List<String> transformedActions = transformedComposition != null ? Arrays.asList(transformedComposition.getActions()) : Collections.emptyList();
 
+            // Exception, hunters guild npc requires 46 hunter in-order to access
+            if (Objects.equals(npc.getWorldLocation(), new WorldPoint(1542, 3041, 0))) {
+                return Rs2Player.getSkillRequirement(Skill.HUNTER, 46, false);
+            }
+
             return baseActions.contains("Bank") || transformedActions.contains("Bank");
         }).findFirst().orElse(null);
     }
@@ -606,6 +611,10 @@ public class Rs2Npc {
                     Microbot.log("Error: Could not get menu action for action '" + action + "' on NPC: " + npc.getName());
                 }
                 return false;
+            }
+
+            if (!Rs2Camera.isTileOnScreen(npc.getLocalLocation())) {
+                Rs2Camera.turnTo(npc);
             }
 
             Microbot.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc),
@@ -812,7 +821,7 @@ public class Rs2Npc {
             if (Rs2Combat.inCombat()) continue;
             if (npc.isInteracting() && npc.getInteracting() != Microbot.getClient().getLocalPlayer() && !Rs2Player.isInMulti())
                 continue;
-            if (npc.getHealthScale() == 0) return false;
+            if (npc.isDead()) continue;
 
             return interact(npc, "attack");
         }

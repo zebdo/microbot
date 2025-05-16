@@ -321,10 +321,7 @@ public class MageTrainingArenaScript extends Script {
         var bonusShape = getBonusShape();
         if (bonusShape == null) return;
 
-        var object = Rs2GameObject.getGameObjects(bonusShape.getObjectId()).stream()
-                .filter(Rs2Camera::isTileOnScreen)
-                .min(Comparator.comparing(x -> x.getWorldLocation().distanceTo(Rs2Player.getWorldLocation())))
-                .orElse(null);
+        var object = Rs2GameObject.getGameObject(obj -> (obj.getId() == bonusShape.getObjectId()) && Rs2Camera.isTileOnScreen(obj));
 
         if (object == null) {
             var index = Rs2Random.between(0, 4);
@@ -521,6 +518,8 @@ public class MageTrainingArenaScript extends Script {
         if (item != null) {
             Rs2Magic.alch(item);
             return;
+        }else {
+            Rs2Inventory.dropAll(6897,6896,6895,6894,6893);
         }
 
         var timer = (AlchemyRoomTimer) Microbot.getInfoBoxManager().getInfoBoxes().stream()

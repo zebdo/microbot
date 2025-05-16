@@ -4,11 +4,10 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.Range;
 import net.runelite.client.plugins.microbot.Microbot;
 
-import static net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin.configGroup;
-
-@ConfigGroup(configGroup)
+@ConfigGroup("PluginScheduler")
 public interface SchedulerConfig extends Config {
     final static String CONFIG_GROUP = "PluginScheduler";
     
@@ -55,7 +54,10 @@ public interface SchedulerConfig extends Config {
    
     void setScheduledPlugins(String json);
     /// Control settings
-
+    @Range(
+		min = 60,
+        max = 3600
+	)  
     @ConfigItem(
         keyName = "softStopRetrySeconds",
         name = "Soft Stop Retry (seconds)",
@@ -85,24 +87,66 @@ public interface SchedulerConfig extends Config {
         section = controlSection
     )
     default int hardStopTimeoutSeconds() {
-        return 600;
+        return 0;
     }
     default void setHardStopTimeoutSeconds(int seconds){
+        if  (Microbot.getConfigManager() == null){
+            return;
+        }
         Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, "hardStopTimeoutSeconds", seconds);
     }
 
     @ConfigItem(
         keyName = "minManualStartThresholdMinutes",
         name = "Manual Start Threshold (minutes)",
-        description = "Minimum time (in minutes) before a scheduled plugin can be manually started",
+        description = "Minimum time (in minutes) to next scheduled plugin, needed so a plugin can be started manually",
         position = 4,
         section = controlSection
     )
+    @Range(
+        min = 1,
+        max = 60
+    )
     default int minManualStartThresholdMinutes() {
-        return 5;
+        return 1;
     }
     default void setMinManualStartThresholdMinutes(int minutes){
+        if  (Microbot.getConfigManager() == null){
+            return;
+        }
         Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, "minManualStartThresholdMinutes", minutes);
+    }
+    @ConfigItem(
+        keyName = "prioritizeNonDefaultPlugins",
+        name = "Prioritize Non-Default Plugins",
+        description = "Stop automatically running default plugins when a non-default plugin is due within the grace period", 
+        position = 5,
+        section = controlSection
+    )
+    default boolean prioritizeNonDefaultPlugins() {
+        return true;
+    }
+    void setPrioritizeNonDefaultPlugins(boolean prioritizeNonDefaultPlugins);
+
+    @ConfigItem(
+        keyName = "nonDefaultPluginLookAheadMinutes",
+        name = "Non-Default Plugin Look-Ahead (minutes)",
+        description = "Time window in minutes to look ahead for non-default plugins when deciding to stop a default plugin",
+        position = 6,
+        section = controlSection
+    )
+    default int nonDefaultPluginLookAheadMinutes() {
+        return 1;
+    }
+    @ConfigItem(
+        keyName ="notifcationsOn",
+        name = "Notifications On",
+        description = "Enable notifications for plugin scheduler events",
+        position = 7,
+        section = controlSection
+    )
+    default boolean notificationsOn() {
+        return false;
     }
   
 
@@ -134,7 +178,7 @@ public interface SchedulerConfig extends Config {
     @ConfigItem(
         keyName = "conditionConfigTimeoutSeconds",
         name = "Config Timeout (seconds)",
-        description = "Time in seconds to wait for a user to add conditions before canceling plugin start",
+        description = "Time in seconds to wait for a user to add time based stop conditions before canceling plugin start",
         position = 3,
         section = conditionsSection
     )
@@ -164,10 +208,32 @@ public interface SchedulerConfig extends Config {
     default int autoLogInWorld() {
         return 0;
     }
-  
+    @Range(
+        min = 0,
+        max = 2
+    )
+    @ConfigItem(
+        keyName = "WorldType",
+        name = "World Type",
+        description = "World type to log in to, 0 for F2P, 1 for P2P, 2 for any world",
+        position = 3,
+        section =  loginLogOutSection
+    )
+    default int worldType() {
+        return 2;
+    }
+    @ConfigItem(
+        keyName = "autoLogOutOnStop",
+        name = "Auto Log Out on Stop",
+        description = "Automatically log out when stopping the scheduler",
+        position = 3,
+        section =  loginLogOutSection
+    )
+    default boolean autoLogOutOnStop() {
+        return false;
+    }
+    
    
-
-
     // Break settings
     @ConfigItem(
         keyName = "enableBreakHandlerAutomatically",
@@ -180,36 +246,55 @@ public interface SchedulerConfig extends Config {
         return true;
     }
     
-    @ConfigItem(
-        keyName = "enableAntibanAutomatically",
-        name = "Auto-enable Antiban",
-        description = "Automatically enable the Antiban plugin when starting a plugin",
-        position = 2,
-        section = breakSection
-    )
-    default boolean enableAntibanAutomatically() {
-        return true;
-    }
+ 
     
     @ConfigItem(
         keyName = "breakDuringWait",
         name = "Break During Wait",
         description = "Break when waiting for the next schedule",
-        position = 3,
+        position = 2,
         section = breakSection
     )
     default boolean breakDuringWait() {
         return true;
     }
+    @Range(
+        min = 2,
+        max = 60
+    )
     @ConfigItem(
         keyName = "minTimeToNextScheduleForTakingABreak",
         name = "Min Break Time (minutes)",        
-        description = "Minimum Time until next schedule to to take a break",
-        position = 4,
+        description = "The Minimum Time until to the next scheduled plugin is due to run for taking a break",
+        position = 3,
         section = breakSection
     )
     default int minTimeToNextScheduleForTakingABreak() {
         return 2;
+    }
+    @Range(
+        min = 2,
+        max = 60
+    )
+    @ConfigItem(
+        keyName = "maxBreakDuratation",
+        name = "Max Break Duration (minutes)",        
+        description = "When taking a break, the maximum duration of the break",
+        position = 4,
+        section = breakSection
+    )
+    default int maxBreakDuratation() {
+        return 2;
+    }
+    @ConfigItem(
+        keyName = "autoLogOutOnBreak",
+        name = "Auto Log Out on Break",        
+        description = "Automatically log out when taking a break",
+        position = 5,
+        section =  breakSection
+    )
+    default boolean autoLogOutOnBreak() {
+        return false;
     }
 
    

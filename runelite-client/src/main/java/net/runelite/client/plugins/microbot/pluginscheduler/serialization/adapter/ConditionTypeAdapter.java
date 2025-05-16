@@ -12,6 +12,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.*
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.skill.*;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.*;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.enums.RepeatCycle;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.varbit.VarbitCondition;
 
 import java.lang.reflect.Type;
 import java.time.DayOfWeek;
@@ -55,21 +56,17 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
                                    
             data = (JsonObject) context.serialize(src, TimeWindowCondition.class);     
         }
+        else if (src instanceof VarbitCondition) {
+            // Use the specialized adapter for VarbitCondition
+            data = (JsonObject) context.serialize(src, VarbitCondition.class);
+        }
         else if (src instanceof SkillLevelCondition) {
-            SkillLevelCondition skillLevel = (SkillLevelCondition) src;
-            data.addProperty("skill", skillLevel.getSkill().name());
-            data.addProperty("targetLevelMin", skillLevel.getTargetLevelMin());
-            data.addProperty("targetLevelMax", skillLevel.getTargetLevelMax());
-            data.addProperty("currentTargetLevel", skillLevel.getCurrentTargetLevel());
-            data.addProperty("startLevel", skillLevel.getStartLevel());
+            // Use the specialized adapter for SkillLevelCondition
+            data = (JsonObject) context.serialize(src, SkillLevelCondition.class);
         }
         else if (src instanceof SkillXpCondition) {
-            SkillXpCondition skillXp = (SkillXpCondition) src;
-            data.addProperty("skill", skillXp.getSkill().name());
-            data.addProperty("targetXpMin", skillXp.getTargetXpMin());
-            data.addProperty("targetXpMax", skillXp.getTargetXpMax());
-            data.addProperty("currentTargetXp", skillXp.getCurrentTargetXp());
-            data.addProperty("startXp", skillXp.getStartXp());
+            // Use the specialized adapter for SkillXpCondition
+            data = (JsonObject) context.serialize(src, SkillXpCondition.class);
         }
         else if (src instanceof LootItemCondition) {
             LootItemCondition item = (LootItemCondition) src;
@@ -99,46 +96,25 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             data.addProperty("currentItemCount", item.getCurrentItemCount());
         }
         else if (src instanceof PositionCondition) {
-            PositionCondition pos = (PositionCondition) src;
-            WorldPoint point = pos.getTargetPosition();
-            data.addProperty("name", pos.getName());
-            data.addProperty("x", point.getX());
-            data.addProperty("y", point.getY());
-            data.addProperty("plane", point.getPlane());
-            data.addProperty("maxDistance", pos.getMaxDistance());
+            // Use the specialized adapter for PositionCondition
+            data = (JsonObject) context.serialize(src, PositionCondition.class);
         }
         else if (src instanceof AreaCondition) {
-            AreaCondition areaCondition = (AreaCondition) src;
-            WorldArea area = areaCondition.getArea();
-            data.addProperty("name", areaCondition.getName());
-            data.addProperty("x", area.getX());
-            data.addProperty("y", area.getY());
-            data.addProperty("width", area.getWidth());
-            data.addProperty("height", area.getHeight());
-            data.addProperty("plane", area.getPlane());
+            // Use the specialized adapter for AreaCondition
+            data = (JsonObject) context.serialize(src, AreaCondition.class);
         }
         else if (src instanceof RegionCondition) {
-            RegionCondition region = (RegionCondition) src;
-            JsonArray regionIds = new JsonArray();
-            for (Integer regionId : region.getTargetRegions()) {
-                regionIds.add(regionId);
-            }
-            data.addProperty("name", region.getName());
-            data.add("regionIds", regionIds);
+            // Use the specialized adapter for RegionCondition
+            data = (JsonObject) context.serialize(src, RegionCondition.class);
         }
         else if (src instanceof NpcKillCountCondition) {
-            NpcKillCountCondition npc = (NpcKillCountCondition) src;
-            data.addProperty("npcName", npc.getNpcName());
-            data.addProperty("targetCountMin", npc.getTargetCountMin());
-            data.addProperty("targetCountMax", npc.getTargetCountMax());
-            data.addProperty("currentTargetCount", npc.getCurrentTargetCount());
-            data.addProperty("currentKillCount", npc.getCurrentKillCount());
+            // Use the specialized adapter for NpcKillCountCondition
+            data = (JsonObject) context.serialize(src, NpcKillCountCondition.class);
         }
         else if (src instanceof SingleTriggerTimeCondition) {
             assert(1==0); // This should never be serialized here, sperate adapter for this
-
-       
-        }else if (src instanceof LockCondition) {
+        }
+        else if (src instanceof LockCondition) {
             LockCondition lock = (LockCondition) src;
             data.addProperty("reason", lock.getReason());
         }
@@ -189,11 +165,14 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
             else if (TimeWindowCondition.class.isAssignableFrom(clazz)) {                
                 return context.deserialize(data, TimeWindowCondition.class);
             }
+            else if (VarbitCondition.class.isAssignableFrom(clazz)) {
+                return context.deserialize(data, VarbitCondition.class);
+            }
             else if (SkillLevelCondition.class.isAssignableFrom(clazz)) {
-                return deserializeSkillLevelCondition(data);
+                return context.deserialize(data, SkillLevelCondition.class);
             }
             else if (SkillXpCondition.class.isAssignableFrom(clazz)) {
-                return deserializeSkillXpCondition(data);
+                return context.deserialize(data, SkillXpCondition.class);
             }
             else if (LootItemCondition.class.isAssignableFrom(clazz)) {
                 return deserializeLootItemCondition(data);
@@ -205,19 +184,19 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
                 return deserializeBankItemCountCondition(data);
             }
             else if (PositionCondition.class.isAssignableFrom(clazz)) {
-                return deserializePositionCondition(data);
+                return context.deserialize(data, PositionCondition.class);
             }
             else if (AreaCondition.class.isAssignableFrom(clazz)) {
-                return deserializeAreaCondition(data);
+                return context.deserialize(data, AreaCondition.class);
             }
             else if (RegionCondition.class.isAssignableFrom(clazz)) {
-                return deserializeRegionCondition(data);
+                return context.deserialize(data, RegionCondition.class);
             }
             else if (NpcKillCountCondition.class.isAssignableFrom(clazz)) {
-                return deserializeNpcKillCountCondition(data);
+                return context.deserialize(data, NpcKillCountCondition.class);
             }
             else if (SingleTriggerTimeCondition.class.isAssignableFrom(clazz)) {
-                return deserializeSingleTriggerTimeCondition(data);
+                return context.deserialize(data, SingleTriggerTimeCondition.class);                
             }
             else if (LockCondition.class.isAssignableFrom(clazz)) {
                 if (data.has("data")){
@@ -260,114 +239,6 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
     private NotCondition deserializeNotCondition(JsonObject data, JsonDeserializationContext context) {
         Condition inner = context.deserialize(data.get("condition"), Condition.class);
         return new NotCondition(inner);
-    }
-    
-    private IntervalCondition deserializeIntervalCondition(JsonObject data) {
-        if (data.has("data")) {
-            data = data.getAsJsonObject("data");
-        }
-        log.info("Deserializing IntervalCondition: {}", data.toString());
-        long intervalSeconds = data.get("intervalSeconds").getAsLong();
-        boolean randomize = data.has("randomize") && data.get("randomize").getAsBoolean();
-        double randomFactor = randomize && data.has("randomFactor") ? 
-                             data.get("randomFactor").getAsDouble() : 0.0;
-        
-        Duration interval = Duration.ofSeconds(intervalSeconds);
-        int maximumNumberOfRepeats = data.has("maximumNumberOfRepeats") ? 
-                data.get("maximumNumberOfRepeats").getAsInt() : 0;
-        return new IntervalCondition(interval, randomize, randomFactor,maximumNumberOfRepeats);
-    }
-    
-    private DayOfWeekCondition deserializeDayOfWeekCondition(JsonObject data) {
-        if (data.has("data")){
-            data = data.getAsJsonObject("data");
-        }
-        Set<DayOfWeek> days = EnumSet.noneOf(DayOfWeek.class);
-        JsonArray activeDays = data.getAsJsonArray("activeDays");
-        for (JsonElement day : activeDays) {
-            days.add(DayOfWeek.valueOf(day.getAsString()));
-        }
-        // Handle maximum number of repeats if present
-        int maximumNumberOfRepeats = data.has("maximumNumberOfRepeats") ? 
-                data.get("maximumNumberOfRepeats").getAsInt() : 0;
-        return new DayOfWeekCondition(maximumNumberOfRepeats,days);
-    }
-    
-    private TimeWindowCondition deserializeTimeWindowCondition(JsonObject data) {
-        try {
-            if (data.has("data")){
-                data = data.getAsJsonObject("data");
-            }
-            // Check for older format with min/max values (backward compatibility)
-            if (data.has("startTimeMin") && data.has("endTimeMin")) {
-                // Handle legacy format - convert to new format
-                LocalTime startTime = LocalTime.parse(data.get("currentStartTime").getAsString());
-                LocalTime endTime = LocalTime.parse(data.get("currentEndTime").getAsString());
-                
-                // Create a basic TimeWindowCondition with daily repeat cycle
-                return new TimeWindowCondition(startTime, endTime);
-            }
-            
-            // Handle new format
-            LocalTime startTime = LocalTime.parse(data.get("startTime").getAsString());
-            LocalTime endTime = LocalTime.parse(data.get("endTime").getAsString());
-            
-            // Parse dates if present, otherwise use defaults
-            LocalDate startDate = data.has("startDate") ? 
-                    LocalDate.parse(data.get("startDate").getAsString()) : 
-                    LocalDate.now();
-            
-            LocalDate endDate = data.has("endDate") ? 
-                    LocalDate.parse(data.get("endDate").getAsString()) : 
-                    LocalDate.now().plusMonths(1);
-            
-            // Parse repeat cycle information
-            RepeatCycle repeatCycle = data.has("repeatCycle") ? 
-            RepeatCycle.valueOf(data.get("repeatCycle").getAsString()) : 
-                    RepeatCycle.DAYS;
-            
-            int repeatInterval = data.has("repeatInterval") ? 
-                    data.get("repeatInterval").getAsInt() : 1;
-            
-            int maximumNumberOfRepeats = data.has("maximumNumberOfRepeats") ? 
-                    data.get("maximumNumberOfRepeats").getAsInt() : 0;
-            // Create the condition
-            TimeWindowCondition condition = new TimeWindowCondition(
-                    startTime, endTime, startDate, endDate, repeatCycle, repeatInterval,maximumNumberOfRepeats);
-            
-            // Set randomization if present
-            if (data.has("useRandomization") && data.has("randomizeMinutes")) {
-                boolean useRandomization = data.get("useRandomization").getAsBoolean();
-                int randomizeMinutes = data.get("randomizeMinutes").getAsInt();
-                condition.setRandomization(useRandomization, randomizeMinutes);
-            }
-                   
-            
-            return condition;
-        } catch (Exception e) {
-            log.error("Error deserializing TimeWindowCondition, returning default", e);
-            throw new JsonParseException("Error deserializing TimeWindowCondition", e);
-        }
-    }
-    
-    private SkillLevelCondition deserializeSkillLevelCondition(JsonObject data) {
-        if (data.has("data")){
-            data = data.getAsJsonObject("data");
-        }
-        Skill skill = Skill.valueOf(data.get("skill").getAsString());
-        int targetLevelMin = data.get("targetLevelMin").getAsInt();
-        int targetLevelMax = data.get("targetLevelMax").getAsInt();
-        return new SkillLevelCondition(skill, targetLevelMin, targetLevelMax);
-    }
-    
-    private SkillXpCondition deserializeSkillXpCondition(JsonObject data) {
-        if (data.has("data")){
-            data = data.getAsJsonObject("data");
-        }
-        Skill skill = Skill.valueOf(data.get("skill").getAsString());
-        int targetXpMin = data.get("targetXpMin").getAsInt();
-        int targetXpMax = data.get("targetXpMax").getAsInt();
-        return new SkillXpCondition(skill, targetXpMin, targetXpMax);
     }
     
     private LootItemCondition deserializeLootItemCondition(JsonObject data) {
@@ -426,91 +297,5 @@ public class ConditionTypeAdapter implements JsonSerializer<Condition>, JsonDese
                 .targetCountMin(targetCountMin)
                 .targetCountMax(targetCountMax)
                 .build();
-    }
-    
-    private PositionCondition deserializePositionCondition(JsonObject data) {
-        String name = data.get("name").getAsString();
-        int x = data.get("x").getAsInt();
-        int y = data.get("y").getAsInt();
-        int plane = data.get("plane").getAsInt();
-        int maxDistance = data.get("maxDistance").getAsInt();
-        
-        return new PositionCondition(name,x, y, plane, maxDistance);
-    }
-    
-    private AreaCondition deserializeAreaCondition(JsonObject data) {
-        String name = data.get("name").getAsString();
-        int x = data.get("x").getAsInt();
-        int y = data.get("y").getAsInt();
-        int width = data.get("width").getAsInt();
-        int height = data.get("height").getAsInt();
-        int plane = data.get("plane").getAsInt();
-        
-        WorldArea area = new WorldArea(x, y, width, height, plane);
-        return new AreaCondition(name,area);
-    }
-    
-    private RegionCondition deserializeRegionCondition(JsonObject data) {
-        String name = data.get("name").getAsString();
-        JsonArray regionIdsArray = data.getAsJsonArray("regionIds");
-        int[] regionIds = new int[regionIdsArray.size()];
-        
-        for (int i = 0; i < regionIdsArray.size(); i++) {
-            regionIds[i] = regionIdsArray.get(i).getAsInt();
-        }
-        
-        return new RegionCondition(name,regionIds);
-    }
-    
-    private NpcKillCountCondition deserializeNpcKillCountCondition(JsonObject data) {
-        String npcName = data.get("npcName").getAsString();
-        int targetCountMin = data.get("targetCountMin").getAsInt();
-        int targetCountMax = data.get("targetCountMax").getAsInt();
-        
-        return NpcKillCountCondition.builder()
-                .npcName(npcName)
-                .targetCountMin(targetCountMin)
-                .targetCountMax(targetCountMax)
-                .build();
-    }
-
-    private SingleTriggerTimeCondition deserializeSingleTriggerTimeCondition(JsonObject data) {
-        try {
-            // Extract the target time epoch millis
-            long targetTimeMillis = data.get("targetTimeMillis").getAsLong();
-            
-            // Extract timezone ID if present, otherwise use system default
-            ZoneId zoneId = ZoneId.systemDefault();
-            if (data.has("timeZoneId")) {
-                try {
-                    zoneId = ZoneId.of(data.get("timeZoneId").getAsString());
-                } catch (Exception e) {
-                    log.warn("Invalid timezone ID in SingleTriggerTimeCondition, using system default", e);
-                }
-            }
-            
-            // Create the ZonedDateTime from the epoch millis and zone ID
-            ZonedDateTime targetTime = ZonedDateTime.ofInstant(
-                    Instant.ofEpochMilli(targetTimeMillis), zoneId);
-            
-            // Create the condition
-            SingleTriggerTimeCondition condition = new SingleTriggerTimeCondition(targetTime);
-            
-            // Set triggered status if present
-            if (data.has("hasTriggered")) {
-                boolean hasTriggered = data.get("hasTriggered").getAsBoolean();
-                if (hasTriggered) {
-                    // We can't directly set hasTriggered since it's private
-                    // But we can call reset which sets hasResetAfterTrigger
-                    condition.reset(false);
-                }
-            }
-            
-            return condition;
-        } catch (Exception e) {
-            log.error("Error deserializing SingleTriggerTimeCondition, returning default", e);
-            // Return a condition that triggers after 24 hours
-            return SingleTriggerTimeCondition.afterDelay(24 * 60 * 60);
-        }
     }
 }

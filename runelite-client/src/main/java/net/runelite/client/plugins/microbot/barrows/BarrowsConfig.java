@@ -3,7 +3,7 @@ package net.runelite.client.plugins.microbot.barrows;
 import net.runelite.client.config.*;
 
 @ConfigGroup("barrows")
-@ConfigInformation("1. Start with your ring of dueling equipped.<br /><br /> 2. Your auto-cast spell selected. <br /><br /> 3. Your chosen food in the inventory. <br /><br /> Required items: prayer potions, forgotten brews, barrows teleports, food, catalyic Runes, and a spade.<br /><br /> Spells: Wind: Blast, Wave, and Surge. <br /><br /> Special thanks to george for adding the barrows dungeon to the walker; and Crannyy for script testing!<br /><br /> Config by Crannyy")
+@ConfigInformation("1. Start with your ring of dueling equipped.<br /><br /> 2. Your auto-cast spell selected or powered staff equipped. <br /><br /> 3. Your chosen food in the inventory. <br /><br /> Required items: prayer potions, forgotten brews, barrows teleports, food, catalyic Runes, and a spade.<br /><br /> Spells: Wind: Blast, Wave, and Surge. Or Powered staffs: supports any trident, any sceptre, any crystal staff, Tumeken's, and Sanguinesti. <br /><br /> Special thanks to george for adding the barrows dungeon to the walker; and Crannyy for script testing!<br /><br /> Config by Crannyy")
 public interface BarrowsConfig extends Config {
     @ConfigItem(
             keyName = "targetFoodAmount",
@@ -66,7 +66,7 @@ public interface BarrowsConfig extends Config {
             description = "Minimum amount of forgotten brews to withdraw from the bank.",
             position = 5
     )
-    @Range(min = 1, max = 5)
+    @Range(min = 0, max = 5)
     default int minForgottenBrew() {
         return 1;
     }
@@ -102,6 +102,16 @@ public interface BarrowsConfig extends Config {
     @Range(min = 50, max = 1000)
     default int minRuneAmount() {
         return 180;
+    }
+
+    @ConfigItem(
+            keyName = "shouldGainRP",
+            name = "Aim for 86+% rewards potential",
+            description = "Should we gain additional RP other than the barrows brothers?",
+            position = 9
+    )
+    default boolean shouldGainRP() {
+        return false;
     }
 
 }

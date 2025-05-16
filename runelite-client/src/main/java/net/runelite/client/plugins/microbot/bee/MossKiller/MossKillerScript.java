@@ -1,21 +1,26 @@
 package net.runelite.client.plugins.microbot.bee.MossKiller;
 
+import com.google.inject.Inject;
+import net.runelite.api.Client;
+import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.accountselector.AutoLoginPlugin;
 import net.runelite.client.plugins.microbot.bee.MossKiller.Enums.MossKillerState;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerPlugin;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
@@ -30,6 +35,8 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import java.awt.event.KeyEvent;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
@@ -51,6 +58,15 @@ public class MossKillerScript extends Script {
     public int playerCounter = 0;
     public boolean bossMode = false;
 
+    @Inject
+    static Client client;
+
+    private final MossKillerPlugin plugin;
+
+    @Inject
+    public MossKillerScript (MossKillerPlugin plugin) {
+        this.plugin = plugin;
+    }
 
     public final WorldPoint SEWER_ENTRANCE = new WorldPoint(3237, 3459, 0);
     public final WorldPoint SEWER_LADDER = new WorldPoint(3237, 9859, 0);
@@ -83,7 +99,33 @@ public class MossKillerScript extends Script {
     public int[] LOOT_LIST = new int[]{MOSSY_KEY, LAW_RUNE, AIR_RUNE, FIRE_RUNE, COSMIC_RUNE, DEATH_RUNE, CHAOS_RUNE, NATURE_RUNE};
     public static final int[] LOOT_LIST1 = new int[]{2354, BIG_BONES, RUNE_PLATELEGS, RUNE_LONGSWORD, RUNE_MED_HELM, RUNE_SWORD, ADAMANT_KITESHIELD, RUNE_CHAINBODY, RUNITE_BAR, RUNE_PLATESKIRT, RUNE_SQ_SHIELD, RUNE_SWORD, RUNE_MED_HELM, 1124, ADAMANT_KITESHIELD, NATURE_RUNE, COSMIC_RUNE, LAW_RUNE, DEATH_RUNE, CHAOS_RUNE, ADAMANT_ARROW, RUNITE_BAR, 1620, ADAMANT_KITESHIELD, 1618, 2354, 995, 114, BRYOPHYTAS_ESSENCE, MOSSY_KEY};
     public int[] ALCHABLES = new int[]{STEEL_KITESHIELD, MITHRIL_SWORD, BLACK_SQ_SHIELD};
-
+    public String[] bryophytaDrops = {
+            "Big bones",
+            "Clue scroll (beginner)",
+            "Rune platelegs",
+            "Rune longsword",
+            "Rune med helm",
+            "Rune chainbody",
+            "Rune plateskirt",
+            "Rune sq shield",
+            "Rune sword",
+            "Adamant platebody",
+            "Adamant kiteshield",
+            "Nature rune",
+            "Cosmic rune",
+            "Law rune",
+            "Death rune",
+            "Chaos rune",
+            "Adamant arrow",
+            "Runite bar",
+            "Uncut ruby",
+            "Uncut diamond",
+            "Steel bar",
+            "Coins",
+            "Strength potion(4)",
+            "Bryophyta's essence",
+            "Mossy key"
+    };
     public MossKillerState state = MossKillerState.BANK;
 
 
@@ -115,6 +157,11 @@ public class MossKillerScript extends Script {
                 if(!isStarted){
                     init();
                 }
+
+                if (plugin.startedFromScheduler) {prepareSchedulerStart();
+                    plugin.startedFromScheduler = false;}
+
+                if (plugin.preparingForShutdown) {prepareSoftStop();}
 
                 Microbot.log(String.valueOf(state));
                 Microbot.log("BossMode: " + bossMode);
@@ -162,23 +209,114 @@ public class MossKillerScript extends Script {
         super.shutdown();
     }
 
-    public void moarShutDown() {
-        System.out.println("super shutdown triggered");
-        varrockTeleport();
-        //static sleep to wait till out of combat
-        sleep(10000);
-        //turn off breakhandler
-        stopBreakHandlerPlugin();
-        //turn off autologin and all other scripts in 5 seconds
-        Microbot.getClientThread().runOnSeperateThread(() -> {
-            if (!Microbot.pauseAllScripts) {
-                sleep(5000);
-                Microbot.pauseAllScripts = true;
+    public static void prepareSchedulerStart() {
+        if (needsRegear(config)) {
+            Microbot.log("Outfit mismatch detected — initiating regear.");
+
+            Rs2Bank.walkToBank(BankLocation.VARROCK_EAST);
+            Rs2Bank.openBank();
+            sleepUntil(Rs2Bank::isOpen);
+            Rs2Bank.depositEquipment();
+            Rs2Bank.depositAll();
+
+            OutfitHelper.equipOutfit(config.selectedOutfit(), config);
+            equipCustomWeapon(config);
+            Rs2Bank.closeBank();
+
+            if (!config.includeHelmet()) {
+                Rs2Equipment.unEquip(EquipmentInventorySlot.HEAD);
+                Rs2Bank.openBank();
+                sleepUntil(Rs2Bank::isOpen);
+                Rs2Bank.depositAll();
             }
-            return null;
-        });
-        Rs2Player.logout();
+        }
+    }
+
+    public static void equipCustomWeapon(MossKillerConfig config) {
+        String customWeapon = config.customWeapon().trim();
+        String defaultWeapon = "Rune scimitar";
+
+        // Use custom weapon only if it's different from default
+        if (!customWeapon.equalsIgnoreCase(defaultWeapon)) {
+            Microbot.log("Trying to equip custom weapon: " + customWeapon);
+            Rs2Bank.withdrawAndEquip(customWeapon);
+
+            if (sleepUntil(() -> Rs2Equipment.isWearing(customWeapon), 5000)) {
+                Microbot.log("Successfully equipped custom weapon: " + customWeapon);
+                return;
+            } else {
+                Microbot.log("Custom weapon not found or failed to equip. Falling back to default.");
+            }
+        }
+
+        // Equip default weapon
+        Microbot.log("Equipping default weapon: " + defaultWeapon);
+        Rs2Bank.withdrawAndEquip(defaultWeapon);
+
+        if (!sleepUntil(() -> Rs2Equipment.isWearing(defaultWeapon), 5000)) {
+            Microbot.log("Failed to equip default weapon as well: " + defaultWeapon);
+        } else {
+            Microbot.log("Default weapon equipped: " + defaultWeapon);
+        }
+    }
+
+
+    public static boolean needsRegear(MossKillerConfig config) {
+        OutfitHelper.OutfitType selectedOutfit = config.selectedOutfit(); // e.g., FULL_RUNE
+        List<String> requiredItems = new ArrayList<>(Arrays.asList(selectedOutfit.getOutfitItems()));
+
+        // Handle user weapon preference
+        String weapon = config.customWeapon(); // e.g., "Rune sword"
+        if (weapon != null && !weapon.isEmpty()) {
+            requiredItems.removeIf(item -> item.toLowerCase().contains("scimitar")); // crude fallback
+            requiredItems.add(weapon);
+        }
+
+        // Add cape
+        requiredItems.add(config.cape().name()); // Uses GearEnums.Cape.getItemName()
+
+        // Handle optional helmet
+        if (!config.includeHelmet()) {
+            requiredItems.removeIf(item -> item.toLowerCase().contains("helm"));
+        }
+
+        // Compare current worn gear
+        for (String item : requiredItems) {
+            if (!Rs2Equipment.isWearing(item)) {
+                Microbot.log("Missing: " + item);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+
+    public static void prepareSoftStop() {
+        if (!config.wildy() || !config.wildySafer()) {
+            if (Rs2Magic.canCast(MagicAction.VARROCK_TELEPORT)) {
+                Rs2Magic.cast(MagicAction.VARROCK_TELEPORT);
+                sleep(1000, 3000);
+            }
+            Rs2Bank.walkToBank(BankLocation.VARROCK_EAST);
+        } else if (Rs2Player.getWorldLocation().getY() > 3520) {
+            Rs2Bank.walkToBank(BankLocation.FEROX_ENCLAVE);
+        }
+
+        sleep (60000); //sleep until soft stop comes into effect
+    }
+
+
+    public void moarShutDown() {
+        Microbot.log("super shutdown triggered");
+        if(Rs2Inventory.containsAll(AIR_RUNE, FIRE_RUNE, LAW_RUNE)){
+            Rs2Magic.cast(MagicAction.VARROCK_TELEPORT);}
+        sleepUntil(() -> !Rs2Player.isInCombat(), 10000);
+        stopBreakHandlerPlugin();
+        stopAutologin();
         sleep(1000);
+        plugin.reportFinished("lacking teleports or consumables or have reached desired combat skill level)", false);
+        Microbot.log("calling script shutdown");
         shutdown();
     }
 
@@ -230,16 +368,46 @@ public class MossKillerScript extends Script {
             return false;
         }
 
-        try {
-            // Stop the BreakHandlerPlugin
-            Microbot.getPluginManager().stopPlugin(breakHandlerPlugin);
-            System.out.println("BreakHandlerPlugin successfully stopped.");
-            return true;
-        } catch (PluginInstantiationException e) {
-            System.err.println("Failed to stop BreakHandlerPlugin: " + e.getMessage());
-            throw new RuntimeException("An error occurred while stopping BreakHandlerPlugin", e);
-        }
+        Microbot.getClientThread().invokeLater(() -> {
+            try {
+                Microbot.getPluginManager().setPluginEnabled(breakHandlerPlugin, false);
+                Microbot.stopPlugin(breakHandlerPlugin);
+            } catch (Exception e) {
+                Microbot.log("Error stopping plugin", e);
+            }
+        });
+        return true;
     }
+
+    /**
+     * Stops the BreakHandlerPlugin if it's currently active.
+     *
+     * @return true if the plugin was successfully stopped, false if it was not found or not active.
+     */
+    public static boolean stopAutologin() {
+        // Attempt to retrieve the autologin from the active plugin list
+        AutoLoginPlugin autoLoginPlugin = (AutoLoginPlugin) Microbot.getPluginManager().getPlugins().stream()
+                .filter(plugin -> plugin.getClass().getName().equals(AutoLoginPlugin.class.getName()))
+                .findFirst()
+                .orElse(null);
+
+        // Check if the plugin was found
+        if (autoLoginPlugin == null) {
+            System.out.println("autologin not found or not running.");
+            return false;
+        }
+
+        Microbot.getClientThread().invokeLater(() -> {
+            try {
+                Microbot.getPluginManager().setPluginEnabled(autoLoginPlugin, false);
+                Microbot.stopPlugin(autoLoginPlugin);
+            } catch (Exception e) {
+                Microbot.log("Error stopping plugin", e);
+            }
+        });
+        return true;
+    }
+
 
     public void handleMossGiants() {
 
@@ -436,12 +604,12 @@ public class MossKillerScript extends Script {
 
         if (Rs2Npc.getNpc("Bryophyta") == null) {
             Microbot.log("Boss is dead, let's loot.");
-            Microbot.log("Sleeping for 3-5 seconds for loot to appear");
-            sleep(3000, 5000);
+            Microbot.log("Sleeping for 2-5 seconds for loot to appear");
+            sleep(2000, 5000);
 
             Microbot.log("attempting to take loot");
-            lootWorldPoint(MossKillerPlugin.bryoTile);
-            sleep(3000, 5000);
+            lootBoss();
+            sleep(2000, 5000);
 
             Microbot.log("Moving to TELEPORT state");
             state = MossKillerState.TELEPORT;
@@ -452,12 +620,26 @@ public class MossKillerScript extends Script {
         }
     }
 
-
-    public void lootWorldPoint(WorldPoint worldPoint) {
-        for (int lootItem : LOOT_LIST1) {
-            Microbot.log("Attempting to loot item ID: " + lootItem + " at tile: " + MossKillerPlugin.bryoTile);
-            Rs2GroundItem.lootItemsBasedOnLocation(MossKillerPlugin.bryoTile, lootItem);
-            sleep(300, 600);
+    public void lootBoss() {
+        Microbot.log("Looting boss");
+        LootingParameters bossLootParams = new LootingParameters(
+                10,
+                1,
+                1,
+                0,
+                false,
+                false,
+                bryophytaDrops
+        );
+        for (String lootItem: bryophytaDrops){
+            Microbot.log("Attempting to loot " + lootItem);
+            if(Rs2Inventory.isFull()){
+                Rs2Player.eatAt(0);
+            }
+            if(Rs2GroundItem.lootItemsBasedOnNames(bossLootParams)){
+                Microbot.log("Looting " + lootItem);
+                sleepUntil(() -> Rs2Inventory.contains(lootItem), 2000);
+            }
         }
     }
 
@@ -535,6 +717,7 @@ public class MossKillerScript extends Script {
         if (Rs2Walker.getDistanceBetween(playerLocation, MOSS_GIANT_SPOT) > 10) {
                         if (bossMode) {
                             BreakHandlerScript.setLockState(true);
+                            plugin.lockCondition.lock();
                             if (Rs2Inventory.contains(MOSSY_KEY)) {
                                 if (eatAt(70)) {
                                     sleep(1900,2200);
@@ -712,6 +895,7 @@ public class MossKillerScript extends Script {
 
     public void walkToVarrockWestBank(){
         BreakHandlerScript.setLockState(false);
+        plugin.lockCondition.unlock();
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
         toggleRunEnergy();
         if(!bossMode && Rs2Inventory.containsAll(new int[]{AIR_RUNE, FIRE_RUNE, LAW_RUNE, FOOD})){
@@ -766,8 +950,13 @@ public class MossKillerScript extends Script {
             return;
         }
 
+        if(Rs2Walker.getDistanceBetween(playerLocation, VARROCK_SQUARE) > 10 || Rs2Walker.getDistanceBetween(playerLocation, VARROCK_WEST_BANK) > 10){
+            state = MossKillerState.WALK_TO_BANK;
+            return;
+        }
 
-        System.out.println("Must start near varrock square, bank, or moss giant spot.");
+
+        Microbot.log("Must start near varrock square, bank, or moss giant spot.");
         state = MossKillerState.EXIT_SCRIPT;
     }
 
@@ -776,7 +965,7 @@ public class MossKillerScript extends Script {
         getInitiailState();
 
         if(!Rs2Combat.enableAutoRetialiate()){
-            System.out.println("Could not turn on auto retaliate.");
+            Microbot.log("Could not turn on auto retaliate.");
             state = MossKillerState.EXIT_SCRIPT;
         }
 
