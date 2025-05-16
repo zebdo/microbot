@@ -57,7 +57,6 @@ public class AutoWoodcuttingPlugin extends Plugin {
             if (event.getType() == ChatMessageType.GAMEMESSAGE) {
                 String message = event.getMessage().toLowerCase();
                 if (message.equals("you can't light a fire here.")){
-            Microbot.log("you cannot light a fire here message recieved");
             autoWoodcuttingScript.cannotLightFire = true;}
             }
         }
