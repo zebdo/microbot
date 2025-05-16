@@ -100,7 +100,6 @@ public class MotherloadMineScript extends Script
         if (Rs2AntibanSettings.actionCooldownActive) return;
         if (Rs2Player.isAnimating() || Microbot.getClient().getLocalPlayer().isInteracting()) return;
 
-        handleDragonPickaxeSpec();
         determineStatusFromInventory();
 
         switch (status)
@@ -127,9 +126,9 @@ public class MotherloadMineScript extends Script
         }
     }
 
-    private void handleDragonPickaxeSpec()
+    private void handlePickaxeSpec()
     {
-        if (Rs2Equipment.isWearing("dragon pickaxe"))
+        if (Rs2Equipment.isWearing("dragon pickaxe") || Rs2Equipment.isWearing("crystal pickaxe"))
         {
             Rs2Combat.setSpecState(true, 1000);
         }
@@ -290,7 +289,7 @@ public class MotherloadMineScript extends Script
             Rs2Bank.depositAllExcept("hammer", pickaxeName);
             sleep(100, 300);
 
-            if (!Rs2Inventory.hasItem("hammer") || Rs2Equipment.isWearing("hammer"))
+            if (!Rs2Inventory.hasItem("hammer") && !Rs2Equipment.isWearing("hammer"))
             {
                 if (!Rs2Bank.hasItem("hammer"))
                 {
@@ -338,7 +337,8 @@ public class MotherloadMineScript extends Script
             repositionCameraAndMove();
             return;
         }
-
+        // once a vein is found and ready to be interacted (mined), trigger the pickaxe special attack function
+        handlePickaxeSpec();
         if (Rs2GameObject.interact(vein))
         {
             oreVein = vein;
