@@ -1281,7 +1281,7 @@ public class Rs2Bank {
     public static boolean bankAllCollectionBoxItems() {
         openCollectionBox();
         sleepUntil(Rs2Bank::collectionBoxIsOpen, 5000);
-        Rs2Widget.clickWidget("Bank");
+        Rs2Widget.clickWidget(26345476);
         return true;
     }
     /**
@@ -1293,7 +1293,6 @@ public class Rs2Bank {
     public static boolean inventoryAllCollectionBoxItems() {
         openCollectionBox();
         sleepUntil(Rs2Bank::collectionBoxIsOpen, 5000);
-        Rs2Widget.clickWidget("Inventory");
         return true;
     }
 
@@ -1301,7 +1300,8 @@ public class Rs2Bank {
      * Closes the collection box interface.
      */
     public static void closeCollectionBox() {
-        Rs2Widget.clickWidget("Close");
+        Widget[] closeWidget = Rs2Widget.getWidget(402,2).getDynamicChildren();
+        Rs2Widget.clickWidget(closeWidget[3]);
         sleepUntil(() -> !collectionBoxIsOpen(), 5000);
     }
 
