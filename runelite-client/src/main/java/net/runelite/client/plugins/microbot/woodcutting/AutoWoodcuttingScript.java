@@ -65,8 +65,6 @@ public class AutoWoodcuttingScript extends Script {
                     initialPlayerLocation = Rs2Player.getWorldLocation();
                 }
 
-                System.out.println("break");
-
                 if (returnPoint == null) {
                     returnPoint = Rs2Player.getWorldLocation();
                 }
@@ -211,14 +209,11 @@ public class AutoWoodcuttingScript extends Script {
         List<WorldPoint> worldPoints = Rs2Tile.getWalkableTilesAroundPlayer(distance);
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
 
-        Microbot.log("Firespot Distance: " + distance);
-
         // Create a map to group tiles by their distance from the player
         Map<Integer, WorldPoint> distanceMap = new HashMap<>();
 
         for (WorldPoint walkablePoint : worldPoints) {
             if (Rs2GameObject.getGameObject(o -> o.getWorldLocation().equals(walkablePoint), distance) == null) {
-                Microbot.log("No Object found @ Point: " + walkablePoint);
                 int tileDistance = playerLocation.distanceTo(walkablePoint);
                 distanceMap.putIfAbsent(tileDistance, walkablePoint);
             }
