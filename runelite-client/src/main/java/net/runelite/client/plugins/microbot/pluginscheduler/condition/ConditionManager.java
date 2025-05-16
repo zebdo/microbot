@@ -520,6 +520,12 @@ public class ConditionManager implements AutoCloseable {
         if (userLogicalCondition != null) {
             userLogicalCondition.reset(randomize);
         }
+    
+    }
+    public void hardResetUserConditions() {
+        if (userLogicalCondition != null) {
+            userLogicalCondition.hardReset();
+        }
     }
     
     /**
@@ -1061,7 +1067,7 @@ public class ConditionManager implements AutoCloseable {
         // Check if conditions are already met
         boolean conditionsMet = areAllConditionsMet();
         if (conditionsMet) {
-            log.debug("Conditions already met, searching for most recent trigger time in the past");
+
             
             // Find the most recent trigger time in the past from all satisfied conditions
             ZonedDateTime mostRecentTriggerTime = null;
@@ -1078,8 +1084,7 @@ public class ConditionManager implements AutoCloseable {
                         if (triggerTime.isBefore(now) || triggerTime.isEqual(now)) {
                             // Keep the most recent time in the past
                             if (mostRecentTriggerTime == null || triggerTime.isAfter(mostRecentTriggerTime)) {
-                                mostRecentTriggerTime = triggerTime;
-                                log.debug("Found more recent past trigger time: {}", mostRecentTriggerTime);
+                                mostRecentTriggerTime = triggerTime;                                
                             }
                         }
                     }
@@ -1087,14 +1092,12 @@ public class ConditionManager implements AutoCloseable {
             }
             
             // If we found a trigger time from satisfied conditions, return it
-            if (mostRecentTriggerTime != null) {
-                log.debug("Selected most recent past trigger time: {}", mostRecentTriggerTime);
+            if (mostRecentTriggerTime != null) {                
                 return Optional.of(mostRecentTriggerTime);
             }
             
             // If no trigger times found from satisfied conditions, default to immediate past
-            ZonedDateTime immediateTime = now.minusSeconds(1);
-            log.debug("No past trigger times found from satisfied conditions, returning immediate past time: {}", immediateTime);
+            ZonedDateTime immediateTime = now.minusSeconds(1);            
             return Optional.of(immediateTime);
         }
         
@@ -1785,7 +1788,7 @@ public class ConditionManager implements AutoCloseable {
             sb.append("newPluginCondition: \n\n\t").append(optimizedNewCondition.getDescription()).append("\n\n");
             sb.append("pluginCondition: \n\n\t").append(pluginCondition.getDescription()).append("\n\n");
             sb.append("Differences: \n\t").append(pluginCondition.getStructureDifferences(optimizedNewCondition));
-            log.info(sb.toString());
+            log.debug(sb.toString());
             
         }
         
@@ -1806,7 +1809,7 @@ public class ConditionManager implements AutoCloseable {
                 return true;
             } else if (updateOption == UpdateOption.SYNC) {
                 // For SYNC with type mismatch, log a warning but try to merge anyway
-                log.warn("\nAttempting to synchronize plugin conditions with different logical types: {} ({})-> {} ({})", 
+                log.debug("\nAttempting to synchronize plugin conditions with different logical types: {} ({})-> {} ({})", 
                         pluginCondition.getClass().getSimpleName(),pluginCondition.getConditions().size(),
                         newPluginCondition.getClass().getSimpleName(),newPluginCondition.getConditions().size());
                 // Continue with sync by creating a new condition of the correct type

@@ -5,10 +5,13 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.time.DayOfWeek;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Supplier;
 import lombok.AllArgsConstructor;
@@ -25,10 +28,12 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionM
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.OrCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.enums.UpdateOption;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.DayOfWeekCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.SingleTriggerTimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.TimeWindowCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.enums.RepeatCycle;
 import net.runelite.client.plugins.microbot.pluginscheduler.config.ScheduleEntryConfigManager;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
 import net.runelite.client.plugins.microbot.pluginscheduler.serialization.ScheduledSerializer;
@@ -114,8 +119,8 @@ public class PluginScheduleEntry implements AutoCloseable {
 
     private String cleanName;
     final private ConditionManager stopConditionManager;
-    final private ConditionManager startConditionManager;
-    private boolean stopInitiated = false;    
+    final private ConditionManager startConditionManager;    
+    private transient boolean stopInitiated = false;    
 
     private boolean allowRandomScheduling = true; // Whether this plugin can be randomly scheduled
     private int runCount = 0; // Track how many times this plugin has been run
@@ -136,6 +141,36 @@ public class PluginScheduleEntry implements AutoCloseable {
        
     private int priority = 0; // Higher numbers = higher priority
     private boolean isDefault = false; // Flag to indicate if this is a default plugin        
+
+    /**
+     * Functional interface for handling successful plugin stop events
+     */
+    @FunctionalInterface
+    public interface StopCompletionCallback {
+        /**
+         * Called when a plugin has successfully completed its stop operation
+         * @param entry The PluginScheduleEntry that has stopped
+         * @param wasSuccessful Whether the plugin run was successful
+         */
+        void onStopCompleted(PluginScheduleEntry entry, boolean wasSuccessful);
+    }
+    
+    /**
+     * Callback that will be invoked when this plugin successfully stops
+     */
+    private transient StopCompletionCallback stopCompletionCallback;
+    
+    /**
+     * Sets the callback to be invoked when this plugin successfully stops
+     * @param callback The callback to invoke
+     * @return This PluginScheduleEntry for method chaining
+     */
+    public PluginScheduleEntry setStopCompletionCallback(StopCompletionCallback callback) {
+        this.stopCompletionCallback = callback;
+        return this;
+    }
+    
+  
     /**
      * Sets the serialized ConfigDescriptor for this schedule entry
      * This is used during deserialization
@@ -261,7 +296,7 @@ public class PluginScheduleEntry implements AutoCloseable {
      * @return A new PluginScheduleEntry configured to trigger once at the specified time
      */
     public static PluginScheduleEntry createOneTimeSchedule(String pluginName, ZonedDateTime triggerTime, boolean enabled) {
-        SingleTriggerTimeCondition condition = new SingleTriggerTimeCondition(triggerTime);
+        SingleTriggerTimeCondition condition = new SingleTriggerTimeCondition(triggerTime, Duration.ZERO, 1);
         PluginScheduleEntry entry = new PluginScheduleEntry(
             pluginName, 
             condition, 
@@ -282,10 +317,10 @@ public class PluginScheduleEntry implements AutoCloseable {
             runCount = 0;
         } else {
             //stopConditionManager.registerEvents();
-            log.info("registering start events for plugin '{}'", name);
+            log.debug("registering start events for plugin '{}'", name);
             startConditionManager.registerEvents();
             //log  this object id-> memory hashcode
-            log.info("PluginScheduleEntry {} - {} - {} - {} - {}", this.hashCode(), this.name, this.cleanName, this.enabled, this.allowRandomScheduling);
+            log.debug("PluginScheduleEntry {} - {} - {} - {} - {}", this.hashCode(), this.name, this.cleanName, this.enabled, this.allowRandomScheduling);
             //registerPluginConditions();                        
             this.setLastStopReason("");
             this.setLastRunSuccessful(false);
@@ -371,8 +406,7 @@ public class PluginScheduleEntry implements AutoCloseable {
             
             // Initialize scheduleEntryConfigManager when plugin is first retrieved
             if (this.plugin instanceof SchedulablePlugin && scheduleEntryConfigManager == null) {
-                SchedulablePlugin schedulablePlugin = (SchedulablePlugin) this.plugin;
-                log.info("Plugin '{}' is a SchedulablePlugin", name);
+                SchedulablePlugin schedulablePlugin = (SchedulablePlugin) this.plugin;                
                 ConfigDescriptor descriptor = schedulablePlugin.getConfigDescriptor();
                 if (descriptor != null) {
                     scheduleEntryConfigManager = new ScheduleEntryConfigManager(descriptor);
@@ -381,7 +415,6 @@ public class PluginScheduleEntry implements AutoCloseable {
         }
         return plugin;
     }
-
     public boolean start(boolean logConditions) {
         if (getPlugin() == null) {
             return false;
@@ -451,7 +484,7 @@ public class PluginScheduleEntry implements AutoCloseable {
             return false;
         }
     }
-
+    
     /**
      * Initiates a graceful (soft) stop of the plugin.
      * <p>
@@ -578,7 +611,7 @@ public class PluginScheduleEntry implements AutoCloseable {
         
         stopMonitorThread = new Thread(() -> {
             StringBuilder logMsg = new StringBuilder();
-            logMsg.append("Stop monitoring thread started for plugin '").append(name).append("'");
+            logMsg.append("\n\tStop monitoring thread started for plugin '").append(getCleanName()).append("'");
             log.info(logMsg.toString());
             
             try {
@@ -587,13 +620,13 @@ public class PluginScheduleEntry implements AutoCloseable {
                     // Check if plugin has stopped running
                     if (!isRunning()) {
                         logMsg = new StringBuilder();
-                        logMsg.append("\nPlugin '").append(name).append("' has successfully stopped")
+                        logMsg.append("\nPlugin '").append(getCleanName()).append("' has successfully stopped")
                              .append(" - updating state - successfulRun ").append(successfulRun);
                         
                         // Set scheduleMode back to false when the plugin stops
                         if (scheduleEntryConfigManager != null) {
                             scheduleEntryConfigManager.setScheduleMode(false);
-                            logMsg.append("\nSet scheduleMode=false for plugin '").append(name).append("'");
+                            logMsg.append("\nSet scheduleMode=false for plugin '").append(getCleanName()).append("'");
                         }
                         
                         // Update lastRunTime and start conditions for next run
@@ -610,6 +643,17 @@ public class PluginScheduleEntry implements AutoCloseable {
                         hasStarted = false;
                         stopInitiatedTime = null;
                         lastStopAttemptTime = null;
+                        
+                        // Invoke the stop completion callback if one is registered
+                        if (stopCompletionCallback != null) {
+                            try {
+                                stopCompletionCallback.onStopCompleted(PluginScheduleEntry.this, successfulRun);
+                                log.debug("Stop completion callback executed for plugin '{}'", name);
+                            } catch (Exception e) {
+                                log.error("Error executing stop completion callback for plugin '{}'", name, e);
+                            }
+                        }
+                        
                         break;
                     }
                     
@@ -759,6 +803,17 @@ public class PluginScheduleEntry implements AutoCloseable {
             return Microbot.isPluginEnabled(plugin.getClass()) && hasStarted;
         }
         return false; 
+    }
+    
+    public boolean isStopped() {                
+        Plugin plugin = getPlugin();
+        if (plugin != null) {
+            return !Microbot.isPluginEnabled(plugin.getClass()) && !stopInitiated;
+        }
+        return false; 
+    }
+    public boolean isStopping() {                      
+        return stopInitiated; 
     }
 
     /**
@@ -1051,7 +1106,7 @@ public class PluginScheduleEntry implements AutoCloseable {
         if (existingTimeCondition != null) {
             Optional<ZonedDateTime> currentTrigDateTime = existingTimeCondition.getCurrentTriggerTime();
             Optional<ZonedDateTime> newTrigDateTime = newTimeCondition.getCurrentTriggerTime();
-            log.info("Replacing time condition {} with {}", 
+            log.debug("Replacing time condition {} with {}", 
                     existingTimeCondition.getDescription(), 
                     newTimeCondition.getDescription());
             
@@ -1088,12 +1143,12 @@ public class PluginScheduleEntry implements AutoCloseable {
             if (currentTrigDateTime.isPresent() && newTrigDateTime.isPresent()) {
                 // Check if the new trigger time is different from the current one
                 if (!currentTrigDateTime.get().equals(newTrigDateTime.get())) {
-                    log.info("\n\tUpdated main start time for Plugin'{}'\nfrom {}\nto {}", 
+                    log.debug("\n\tUpdated main start time for Plugin'{}'\nfrom {}\nto {}", 
                             name, 
                             currentTrigDateTime.get().format(DATE_TIME_FORMATTER),
                             newTrigDateTime.get().format(DATE_TIME_FORMATTER));                    
                 } else {
-                    log.info("\n\tStart next time for Pugin '{}' remains unchanged", name);
+                    log.debug("\n\tStart next time for Pugin '{}' remains unchanged", name);
                 }
             }
         } else {
@@ -1126,11 +1181,11 @@ public class PluginScheduleEntry implements AutoCloseable {
         StringBuilder logMsg = new StringBuilder("\n");
         Optional<ZonedDateTime> nextTriggerTimeBeforeReset = getCurrentStartTriggerTime();
         
-        logMsg.append("Updating start conditions for plugin '").append(name).append("'");
-        logMsg.append("\n  - : last stop reason: ").append(lastStopReasonType.getDescription());
-        logMsg.append("\n  - : last stop reason message: ").append(lastStopReason);
-        logMsg.append("\n  - : allowContinue: ").append(allowContinue);
-        logMsg.append("\n  - : last run duration: ").append(lastRunDuration.toMillis()).append(" ms");
+        logMsg.append("Updating start conditions for plugin '").append(getCleanName()).append("'");
+        logMsg.append("\n  -last stop reason: ").append(lastStopReasonType.getDescription());
+        logMsg.append("\n  -last stop reason message: ").append(lastStopReason);
+        logMsg.append("\n  -allowContinue: ").append(allowContinue);
+        logMsg.append("\n  -last run duration: ").append(lastRunDuration.toMillis()).append(" ms");
         if (this.lastStopReasonType != StopReason.INTERRUPTED || !allowContinue) {
     
             logMsg.append("\n  - Completed successfully, resetting all start conditions");
@@ -1138,7 +1193,7 @@ public class PluginScheduleEntry implements AutoCloseable {
             // Increment the run count since we completed a full run
             incrementRunCount();
         } else {
-            logMsg.append("\n  - Only resetting plugin '").append(name).append("' start conditions");
+            logMsg.append("\n  - Only resetting plugin '").append(getCleanName()).append("' start conditions");
             startConditionManager.resetPluginConditions();
         }
         
@@ -1147,7 +1202,7 @@ public class PluginScheduleEntry implements AutoCloseable {
         // Update the nextRunTime for legacy compatibility if possible
         if (triggerTimeAfterReset.isPresent()) {
             ZonedDateTime nextRunTime = triggerTimeAfterReset.get();
-            logMsg.append("\n  - Updated run time for Plugin '").append(name).append("'")
+            logMsg.append("\n  - Updated run time for Plugin '").append(getCleanName()).append("'")
                   .append("\n    Before: ").append(nextTriggerTimeBeforeReset.map(t -> t.format(DATE_TIME_FORMATTER)).orElse("N/A"))
                   .append("\n    After:  ").append(nextRunTime.format(DATE_TIME_FORMATTER));
         } else if (hasTriggeredOneTimeStartConditions() && !canStartTriggerAgain()) {
@@ -1173,6 +1228,24 @@ public class PluginScheduleEntry implements AutoCloseable {
 
         }
     }
+     /**
+     * Reset stop conditions
+     */
+    public void hardResetConditions() {
+                
+        if (stopConditionManager != null) {
+            stopConditionManager.hardResetUserConditions();            
+            // Log that stop conditions were reset
+            log.debug("Hard Reset stop conditions for plugin '{}'", name);
+        }
+        if (startConditionManager != null) {
+            startConditionManager.hardResetUserConditions();            
+            // Log that stop conditions were reset
+            log.debug("Hard Reset start conditions for plugin '{}'", name);
+        }
+        
+    }
+
 
     
     /**
@@ -1192,39 +1265,271 @@ public class PluginScheduleEntry implements AutoCloseable {
         if (timeConditions.size() == 1) {
             TimeCondition condition = timeConditions.get(0);
             
-            if (condition instanceof SingleTriggerTimeCondition) {
-                ZonedDateTime triggerTime = ((SingleTriggerTimeCondition) condition).getTargetTime();
-                return "Once at " + triggerTime.format(DATE_TIME_FORMATTER);
-            } 
-            else if (condition instanceof IntervalCondition) {
-                Duration interval = ((IntervalCondition) condition).getInterval();
-                long hours = interval.toHours();
-                long minutes = interval.toMinutes() % 60;
-                
-                if (hours > 0) {
-                    return String.format("Every %d hour%s %s", 
-                            hours, 
-                            hours > 1 ? "s" : "",
-                            minutes > 0 ? minutes + " min" : "");
-                } else {
-                    return String.format("Every %d minute%s", 
-                            minutes, 
-                            minutes > 1 ? "s" : "");
-                }
-            }
-            else if (condition instanceof TimeWindowCondition) {
-                TimeWindowCondition windowCondition = (TimeWindowCondition) condition;
-                LocalTime startTime = windowCondition.getStartTime();
-                LocalTime endTime = windowCondition.getEndTime();
-                
-                return String.format("Between %s and %s daily", 
-                        startTime.format(DateTimeFormatter.ofPattern("HH:mm")),
-                        endTime.format(DateTimeFormatter.ofPattern("HH:mm")));
+            return getTimeDisplayFromTimeCondition(condition);
+        }
+        
+        // If we have multiple time conditions, find the one that will trigger first
+        if (timeConditions.size() > 1) {
+            TimeCondition earliestTriggerCondition = findEarliestTriggerTimeCondition(timeConditions);
+            if (earliestTriggerCondition != null) {
+                return getTimeDisplayFromTimeCondition(earliestTriggerCondition) + " (Next to trigger)";
             }
         }
         
-        // If we have multiple time conditions or other complex scenarios
+        // If we have multiple time conditions or other complex scenarios but couldn't determine earliest
         return "Complex time schedule";
+    }
+    
+    /**
+     * Finds the time condition that will trigger first among a list of time conditions
+     * 
+     * @param timeConditions List of time conditions to check
+     * @return The time condition that will trigger first, or null if none is found
+     */
+    private TimeCondition findEarliestTriggerTimeCondition(List<TimeCondition> timeConditions) {
+        ZonedDateTime earliestTriggerTime = null;
+        TimeCondition earliestCondition = null;
+        
+        for (TimeCondition condition : timeConditions) {
+            Optional<ZonedDateTime> triggerTime = condition.getCurrentTriggerTime();
+            if (triggerTime.isPresent()) {
+                ZonedDateTime nextTrigger = triggerTime.get();
+                
+                // If this is the first valid trigger time we've found, or it's earlier than our current earliest
+                if (earliestTriggerTime == null || nextTrigger.isBefore(earliestTriggerTime)) {
+                    earliestTriggerTime = nextTrigger;
+                    earliestCondition = condition;
+                }
+            }
+        }
+        
+        return earliestCondition;
+    }
+    private String getTimeDisplayFromTimeCondition(TimeCondition condition) {
+        if (condition instanceof SingleTriggerTimeCondition) {
+            ZonedDateTime triggerTime = ((SingleTriggerTimeCondition) condition).getTargetTime();
+            return "Once at " + triggerTime.format(DATE_TIME_FORMATTER);
+        } 
+        else if (condition instanceof IntervalCondition) {
+            return formatIntervalCondition((IntervalCondition) condition);
+        }
+        else if (condition instanceof TimeWindowCondition) {
+            return formatTimeWindowCondition((TimeWindowCondition) condition);
+        }
+        else if (condition instanceof DayOfWeekCondition) {
+            return formatDayOfWeekCondition((DayOfWeekCondition) condition);
+        }
+        return "Unknown time condition type: " + condition.getClass().getSimpleName();
+    }
+    
+    /**
+     * Formats an interval condition into a user-friendly string
+     */
+    private String formatIntervalCondition(IntervalCondition condition) {
+        Duration avgInterval = condition.getInterval();
+        Duration minInterval = condition.getMinInterval();
+        Duration maxInterval = condition.getMaxInterval();
+        boolean isRandomized = condition.isRandomize();
+        
+        if (!isRandomized) {
+            return formatTimeRange(avgInterval, null, false);
+        } else {
+            return "Randomized " + formatTimeRange(minInterval, maxInterval, true);
+        }
+    }
+    
+    /**
+     * Formats a time window condition into a user-friendly string
+     */
+    private String formatTimeWindowCondition(TimeWindowCondition condition) {
+        LocalTime startTime = condition.getStartTime();
+        LocalTime endTime = condition.getEndTime();
+        String timesStr = String.format("%s-%s", 
+                startTime.format(DateTimeFormatter.ofPattern("HH:mm")),
+                endTime.format(DateTimeFormatter.ofPattern("HH:mm")));
+        
+        // Check repeat cycle
+        String cycleStr = "";
+        boolean useRandomization = false;
+        
+        try {
+            useRandomization = condition.isUseRandomization();
+            RepeatCycle repeatCycle = condition.getRepeatCycle();
+            int interval = condition.getRepeatIntervalUnit();
+            
+            switch (repeatCycle) {
+                case DAYS:
+                    cycleStr = (interval == 1) ? "daily" : "every " + interval + " days";
+                    break;
+                case WEEKS:
+                    cycleStr = (interval == 1) ? "weekly" : "every " + interval + " weeks";
+                    break;
+                case HOURS:
+                    cycleStr = (interval == 1) ? "hourly" : "every " + interval + " hours";
+                    break;
+                case MINUTES:
+                    cycleStr = (interval == 1) ? "every minute" : "every " + interval + " minutes";
+                    break;
+                case ONE_TIME:
+                    cycleStr = "once";
+                    break;
+                default:
+                    cycleStr = "daily";
+            }
+        } catch (Exception e) {
+            // Fallback if we can't access some property
+            cycleStr = "daily";
+        }
+        
+        return useRandomization 
+                ? String.format("Randomized %s %s", timesStr, cycleStr)
+                : String.format("%s %s", timesStr, cycleStr);
+    }
+    
+    /**
+     * Formats a day of week condition into a user-friendly string
+     */
+    private String formatDayOfWeekCondition(DayOfWeekCondition condition) {
+        Set<DayOfWeek> activeDays = condition.getActiveDays();
+        
+        // Format day names
+        StringBuilder daysStr = new StringBuilder();
+        
+        if (activeDays.size() == 7) {
+            daysStr.append("Every day");
+        } else if (activeDays.size() == 5 && activeDays.contains(DayOfWeek.MONDAY) && 
+                activeDays.contains(DayOfWeek.TUESDAY) && activeDays.contains(DayOfWeek.WEDNESDAY) &&
+                activeDays.contains(DayOfWeek.THURSDAY) && activeDays.contains(DayOfWeek.FRIDAY)) {
+            daysStr.append("Weekdays");
+        } else if (activeDays.size() == 2 && activeDays.contains(DayOfWeek.SATURDAY) && 
+                activeDays.contains(DayOfWeek.SUNDAY)) {
+            daysStr.append("Weekends");
+        } else {
+            List<String> dayNames = new ArrayList<>();
+            for (DayOfWeek day : activeDays) {
+                // Convert to short day name (Mon, Tue, etc.)
+                String dayName = day.toString().substring(0, 3);
+                dayNames.add(dayName.charAt(0) + dayName.substring(1).toLowerCase());
+            }
+            // Sort days in week order (Monday first)
+            Collections.sort(dayNames);
+            daysStr.append(String.join("/", dayNames));
+        }
+        
+        // Check if it has an interval condition
+        if (condition.hasIntervalCondition()) {
+            Optional<IntervalCondition> intervalOpt = condition.getIntervalCondition();
+            if (intervalOpt.isPresent()) {
+                IntervalCondition interval = intervalOpt.get();
+                
+                // Add interval info
+                if (interval.isRandomize()) {
+                    Duration minInterval = interval.getMinInterval();
+                    Duration maxInterval = interval.getMaxInterval();
+                    daysStr.append(", random ").append(formatTimeRange(minInterval, maxInterval, true));
+                } else {
+                    Duration avgInterval = interval.getInterval();
+                    daysStr.append(", ").append(formatTimeRange(avgInterval, null, false));
+                }
+            }
+        }
+        
+        // Add max repeats information if applicable
+        long maxPerDay = condition.getMaxRepeatsPerDay();
+        long maxPerWeek = condition.getMaxRepeatsPerWeek();
+        
+        if (maxPerDay > 0 || maxPerWeek > 0) {
+            daysStr.append(" (");
+            boolean needsComma = false;
+            
+            if (maxPerDay > 0) {
+                daysStr.append("max ").append(maxPerDay).append("/day");
+                needsComma = true;
+            }
+            
+            if (maxPerWeek > 0) {
+                if (needsComma) {
+                    daysStr.append(", ");
+                }
+                daysStr.append("max ").append(maxPerWeek).append("/week");
+            }
+            
+            daysStr.append(")");
+        }
+        
+        return daysStr.toString();
+    }
+    
+    /**
+     * Helper to format time durations in a user-friendly string
+     */
+    private String formatTimeRange(Duration duration, Duration maxDuration, boolean isRange) {
+        if (duration == null) {
+            return "unknown interval";
+        }
+        
+        long hours = duration.toHours();
+        long minutes = duration.toMinutes() % 60;
+        
+        if (!isRange) {
+            if (hours > 0) {
+                return String.format("every %d hour%s%s", 
+                        hours, 
+                        hours > 1 ? "s" : "",
+                        minutes > 0 ? " " + minutes + " min" : "");
+            } else {
+                return String.format("every %d minute%s", 
+                        minutes, 
+                        minutes > 1 ? "s" : "");
+            }
+        } else {
+            // Format a range - "every X to Y hours/minutes"
+            if (maxDuration == null) {
+                return formatTimeRange(duration, null, false);
+            }
+            
+            long maxHours = maxDuration.toHours();
+            long maxMinutes = maxDuration.toMinutes() % 60;
+            
+            if (hours > 0) {
+                if (maxHours > 0) {
+                    // Both have hours component
+                    String minStr = String.format("%d hour%s%s", 
+                            hours, 
+                            hours > 1 ? "s" : "",
+                            minutes > 0 ? " " + minutes + "m" : "");
+                    
+                    String maxStr = String.format("%d hour%s%s", 
+                            maxHours, 
+                            maxHours > 1 ? "s" : "",
+                            maxMinutes > 0 ? " " + maxMinutes + "m" : "");
+                    
+                    return String.format("every %s to %s", minStr, maxStr);
+                } else {
+                    // Min has hours but max only has minutes
+                    return String.format("every %d hour%s%s to %d minutes", 
+                            hours, 
+                            hours > 1 ? "s" : "",
+                            minutes > 0 ? " " + minutes + "m" : "",
+                            maxMinutes);
+                }
+            } else {
+                if (maxHours > 0) {
+                    // Min has only minutes but max has hours
+                    return String.format("every %d minutes to %d hour%s%s", 
+                            minutes,
+                            maxHours, 
+                            maxHours > 1 ? "s" : "",
+                            maxMinutes > 0 ? " " + maxMinutes + "m" : "");
+                } else {
+                    // Both only have minutes
+                    return String.format("every %d to %d minute%s", 
+                            minutes,
+                            maxMinutes,
+                            maxMinutes > 1 ? "s" : "");
+                }
+            }
+        }
     }
 
     /**
@@ -1597,6 +1902,7 @@ public class PluginScheduleEntry implements AutoCloseable {
             logMsg.append("\n\t -user stop conditions: ").append(areUserDefinedStopConditionsMet());
             log.info(logMsg.toString());
         }
+        log.info("Plugin {} stop initiated: {}", name, stopInitiated);
         return this.stopInitiated;
     }
     

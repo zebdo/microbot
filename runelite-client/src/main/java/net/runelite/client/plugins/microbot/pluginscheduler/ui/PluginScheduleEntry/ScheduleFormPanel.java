@@ -979,7 +979,7 @@ public class ScheduleFormPanel extends JPanel {
         
         // Create the plugin schedule entry
         PluginScheduleEntry entry;
-        log.info("\n priority {}\n isDefault {} \n needsStopCondition {} \n randomScheduling {}",priority, isDefault, needsStopCondition, randomScheduling);
+        log.debug("values for PluginScheduleEntry entry {}\n priority {}\n isDefault {} \n needsStopCondition {} \n randomScheduling {}",pluginName,priority, isDefault, needsStopCondition, randomScheduling);
         if (existingPlugin != null) {            
             log.debug("Updating existing plugin entry");
                 

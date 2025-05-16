@@ -421,7 +421,11 @@ public abstract class LogicalCondition implements Condition {
         
     }
 
-
+    public void hardReset(){
+        for (Condition condition : conditions) {
+            condition.hardReset();
+        }    
+    }
     /**
      * Adds a condition to a specific position in the condition tree
      * Useful for preserving ordering when reconstructing the tree.

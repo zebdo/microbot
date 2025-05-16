@@ -33,7 +33,7 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
         result.addProperty("enabled", src.isEnabled());
         result.addProperty("cleanName", src.getCleanName());
         result.addProperty("needsStopCondition", src.isNeedsStopCondition());
-    
+        result.addProperty("hardResetOnLoad", false);
         // Serialize time fields
         if (src.getLastRunStartTime() != null) {
             result.addProperty("lastRunStartTime", src.getLastRunStartTime().toInstant().toEpochMilli());
@@ -70,7 +70,7 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
      
         
         // Serialize other properties
-        result.addProperty("stopInitiated", src.isStopInitiated());
+        
         result.addProperty("allowRandomScheduling", src.isAllowRandomScheduling());
         result.addProperty("allowContinue", src.isAllowContinue());
         result.addProperty("runCount", src.getRunCount());
@@ -200,11 +200,7 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
                 }                
             }
         }                        
-        
-        // Deserialize other properties
-        if (jsonObject.has("stopInitiated")) {
-            entry.setStopInitiated(jsonObject.get("stopInitiated").getAsBoolean());
-        }
+                
         
         if (jsonObject.has("allowRandomScheduling")) {
             entry.setAllowRandomScheduling(jsonObject.get("allowRandomScheduling").getAsBoolean());
@@ -267,7 +263,12 @@ public class PluginScheduleEntryAdapter implements JsonSerializer<PluginSchedule
         }
         //entry.registerPluginConditions();
         
-       
+       if (jsonObject.has("hardResetOnLoad")) {
+            boolean hardResetFlag = jsonObject.get("hardResetOnLoad").getAsBoolean();
+            if (hardResetFlag) {
+               entry.hardResetConditions();
+            }
+       }
         
         return entry;
     }

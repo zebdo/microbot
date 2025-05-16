@@ -15,6 +15,9 @@ import javax.swing.*;
 import javax.swing.border.EmptyBorder;
 import javax.swing.border.TitledBorder;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
@@ -28,8 +31,7 @@ import java.time.format.DateTimeFormatter;
  */
 @Slf4j
 public class SchedulerInfoPanel extends JPanel {
-    private final SchedulerPlugin plugin;
-    
+    private final SchedulerPlugin plugin;    
     // Scheduler status components
     private final JLabel statusLabel;
     private final JLabel runtimeLabel;
@@ -40,6 +42,7 @@ public class SchedulerInfoPanel extends JPanel {
     private final JButton stopSchedulerButton;
     private final JButton loginButton;
     private final JButton pauseResumeButton;
+    private final JButton hardResetButton; // Added hard reset button
     
     // Current plugin components
     private final JPanel currentPluginPanel;
@@ -100,14 +103,12 @@ public class SchedulerInfoPanel extends JPanel {
         gbc.gridx = 0;
         gbc.gridy++;
         gbc.gridwidth = 2;
-        JPanel buttonPanel = new JPanel(new GridLayout(2, 2, 5, 5));
+        // Use GridLayout with 3 rows instead of 2x2 to properly fit all 5 buttons
+        JPanel buttonPanel = new JPanel(new GridLayout(3, 2, 5, 5));
         buttonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
         // Create run scheduler button
-        runSchedulerButton = new JButton("Run Scheduler");
-        runSchedulerButton.setBackground(new Color(76, 175, 80));
-        runSchedulerButton.setForeground(Color.WHITE);
-        runSchedulerButton.setFocusPainted(false);
+        runSchedulerButton = createCompactButton("Run Scheduler", new Color(76, 175, 80));
         runSchedulerButton.addActionListener(e -> {
             plugin.startScheduler();
             updateButtonStates();
@@ -115,10 +116,7 @@ public class SchedulerInfoPanel extends JPanel {
         buttonPanel.add(runSchedulerButton);
         
         // Create stop scheduler button
-        stopSchedulerButton = new JButton("Stop Scheduler");
-        stopSchedulerButton.setBackground(new Color(244, 67, 54));
-        stopSchedulerButton.setForeground(Color.WHITE);
-        stopSchedulerButton.setFocusPainted(false);
+        stopSchedulerButton = createCompactButton("Stop Scheduler", new Color(244, 67, 54));
         stopSchedulerButton.addActionListener(e -> {
             SwingUtilities.invokeLater(() -> {
                 plugin.stopScheduler();
@@ -128,10 +126,7 @@ public class SchedulerInfoPanel extends JPanel {
         buttonPanel.add(stopSchedulerButton);
         
         // Create login button
-        loginButton = new JButton("Login");
-        loginButton.setBackground(new Color(33, 150, 243)); // Blue
-        loginButton.setForeground(Color.WHITE);
-        loginButton.setFocusPainted(false);
+        loginButton = createCompactButton("Login", new Color(33, 150, 243)); // Blue
         loginButton.addActionListener(e -> {            
             // Attempt login
             SwingUtilities.invokeLater(() -> {
@@ -141,10 +136,7 @@ public class SchedulerInfoPanel extends JPanel {
         buttonPanel.add(loginButton);
         
         // Create pause/resume button
-        pauseResumeButton = new JButton("Pause Plugin");
-        pauseResumeButton.setBackground(new Color(255, 152, 0)); // Orange color
-        pauseResumeButton.setForeground(Color.WHITE);
-        pauseResumeButton.setFocusPainted(false);
+        pauseResumeButton = createCompactButton("Pause Plugin", new Color(255, 152, 0)); // Orange color
         pauseResumeButton.setVisible(false); // Initially hidden
         pauseResumeButton.addActionListener(e -> {
             // Toggle the pause state
@@ -164,6 +156,12 @@ public class SchedulerInfoPanel extends JPanel {
             updateCurrentPluginInfo();
         });
         buttonPanel.add(pauseResumeButton);
+        
+        // Create hard reset button
+        hardResetButton = createCompactButton("Hard Reset", new Color(156, 39, 176)); // Purple color
+        hardResetButton.setToolTipText("Reset all user condition states for all scheduled plugins");
+        hardResetButton.addActionListener(e -> showHardResetConfirmation());
+        buttonPanel.add(hardResetButton);
         
         statusPanel.add(buttonPanel, gbc);
         
@@ -361,6 +359,23 @@ public class SchedulerInfoPanel extends JPanel {
     }
     
     /**
+     * Helper method to create and style a compact button
+     * @param text Button text
+     * @param bgColor Background color
+     * @return Styled JButton
+     */
+    private JButton createCompactButton(String text, Color bgColor) {
+        JButton button = new JButton(text);
+        button.setBackground(bgColor);
+        button.setForeground(Color.WHITE);
+        button.setFocusPainted(false);
+        // Make buttons more compact
+        button.setFont(button.getFont().deriveFont(11f)); // Smaller font
+        button.setMargin(new Insets(2, 4, 2, 4)); // Smaller margins
+        return button;
+    }
+    
+    /**
      * Refreshes all displayed information
      */
     public void refresh() {
@@ -407,6 +422,14 @@ public class SchedulerInfoPanel extends JPanel {
             pauseResumeButton.setText("Pause Plugin");
             pauseResumeButton.setBackground(new Color(255, 152, 0));
         }
+        
+        // Hard reset button is always enabled if there are plugins scheduled
+        boolean hasScheduledPlugins = !plugin.getScheduledPlugins().isEmpty();
+        hardResetButton.setEnabled(hasScheduledPlugins);
+        hardResetButton.setToolTipText(
+            hasScheduledPlugins ? 
+            "Hard reset all user condition states for scheduled plugins" : 
+            "No plugins scheduled to reset");
     }
     
     /**
@@ -739,6 +762,85 @@ public class SchedulerInfoPanel extends JPanel {
                 revalidate();
                 repaint();
             });
+        }
+    }
+    
+    /**
+     * Shows a confirmation dialog for hard resetting all user conditions
+     */
+    private void showHardResetConfirmation() {
+        String message = 
+            "<html><body width='400'>" +
+            "<h2>Hard Reset All User Conditions</h2>" +
+            "<p>This will perform a complete reset of all user conditions for all scheduled plugins.</p>" +
+            "<p><b>This will reset:</b></p>" +
+            "<ul>" +
+            "<li>All accumulated state tracking variables</li>" +
+            "<li>Maximum trigger counters</li>" +
+            "<li>Daily/periodic usage limits</li>" +
+            "<li>Historical tracking data</li>" +
+            "<li>Time-based condition states</li>" +
+            "</ul>" +
+            "<p><b>Are you sure you want to continue?</b></p>" +
+            "</body></html>";
+        
+        int result = JOptionPane.showConfirmDialog(
+            SwingUtilities.getWindowAncestor(this),
+            message,
+            "Hard Reset Confirmation",
+            JOptionPane.YES_NO_OPTION,
+            JOptionPane.WARNING_MESSAGE
+        );
+        
+        if (result == JOptionPane.YES_OPTION) {
+            hardResetAllUserConditions();
+        }
+    }
+    
+    /**
+     * Performs a hard reset on all user conditions for all scheduled plugins
+     */
+    private void hardResetAllUserConditions() {
+        try {
+            // Delegate the hard reset operation to the SchedulerPlugin
+            List<String> resetPlugins = plugin.hardResetAllUserConditions();
+            
+            // Show success message with details
+            String resultMessage = String.format(
+                "<html><body width='400'>" +
+                "<h2>Hard Reset Complete</h2>" +
+                "<p>Successfully reset %d user condition states.</p>",
+                resetPlugins.size());
+            
+            if (!resetPlugins.isEmpty()) {
+                resultMessage += "<p><b>Reset conditions for:</b></p><ul>";
+                for (String pluginName : resetPlugins) {
+                    resultMessage += "<li>" + pluginName + "</li>";
+                }
+                resultMessage += "</ul>";
+            }
+            
+            resultMessage += "</body></html>";
+            
+            JOptionPane.showMessageDialog(
+                SwingUtilities.getWindowAncestor(this),
+                resultMessage,
+                "Hard Reset Complete",
+                JOptionPane.INFORMATION_MESSAGE
+            );
+            
+            log.info("Hard reset completed for {} user condition states", resetPlugins.size());
+            
+        } catch (Exception e) {
+            // Show error message
+            JOptionPane.showMessageDialog(
+                SwingUtilities.getWindowAncestor(this),
+                "An error occurred while resetting user conditions: " + e.getMessage(),
+                "Hard Reset Error",
+                JOptionPane.ERROR_MESSAGE
+            );
+            
+            log.error("Error during hard reset of user conditions", e);
         }
     }
 }

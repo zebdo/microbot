@@ -173,5 +173,6 @@ public class GotrPlugin extends Plugin {
             GotrScript.timeSincePortal = Optional.of(Instant.now());
         }
     }
+    
 
 }
