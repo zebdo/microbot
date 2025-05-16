@@ -54,7 +54,7 @@ public class ChaosAltarScript extends Script {
 
                 // Determine current state
                 currentState = determineState();
-                Microbot.log("Current state: " + currentState);
+                System.out.println("Current state: " + currentState);
 
                 // Execute state action
                 switch (currentState) {
