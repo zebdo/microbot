@@ -118,7 +118,7 @@ public class ChaosAltarScript extends Script {
         Rs2Npc.attack("Chaos Fanatic");
         // Wait until player dies
         sleepUntil(() -> Microbot.getClient().getBoostedSkillLevel(Skill.HITPOINTS) == 0, 60000);
-        sleepUntil(() -> !Rs2Pvp.isInWilderness(), 5000);
+        sleepUntil(() -> !Rs2Pvp.isInWilderness(), 15000);
         sleep(1000,2000);
     }
 
