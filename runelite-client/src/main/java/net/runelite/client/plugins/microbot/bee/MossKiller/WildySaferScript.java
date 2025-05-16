@@ -512,6 +512,7 @@ public class WildySaferScript extends Script {
             Rs2Bank.walkToBankAndUseBank();
             sleep(800,1900);
             if (Rs2Bank.openBank()){
+                if (Rs2Bank.isOpen()) {
                 sleep(2200,3200); if (Rs2Bank.count(APPLE_PIE) < 16 ||
                     Rs2Bank.count(MITHRIL_ARROW) < config.mithrilArrowAmount() ||
                     !Rs2Bank.hasItem(MAPLE_SHORTBOW)) {
@@ -521,6 +522,7 @@ public class WildySaferScript extends Script {
                 return;
             }
         }
+            }
         }
         if (config.attackStyle() == MAGIC) {
             if (!Rs2Bank.isOpen()) {
