@@ -65,6 +65,8 @@ public class AutoWoodcuttingScript extends Script {
                     initialPlayerLocation = Rs2Player.getWorldLocation();
                 }
 
+                System.out.println("break");
+
                 if (returnPoint == null) {
                     returnPoint = Rs2Player.getWorldLocation();
                 }
@@ -209,13 +211,16 @@ public class AutoWoodcuttingScript extends Script {
         List<WorldPoint> worldPoints = Rs2Tile.getWalkableTilesAroundPlayer(distance);
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
 
+        Microbot.log("Firespot Distance: " + distance);
+
         // Create a map to group tiles by their distance from the player
-        Map<Integer, List<WorldPoint>> distanceMap = new HashMap<>();
+        Map<Integer, WorldPoint> distanceMap = new HashMap<>();
 
         for (WorldPoint walkablePoint : worldPoints) {
-            if (Rs2GameObject.getGameObject(walkablePoint, distance) == null) {
+            if (Rs2GameObject.getGameObject(o -> o.getWorldLocation().equals(walkablePoint), distance) == null) {
+                Microbot.log("No Object found @ Point: " + walkablePoint);
                 int tileDistance = playerLocation.distanceTo(walkablePoint);
-                distanceMap.computeIfAbsent(tileDistance, k -> new ArrayList<>()).add(walkablePoint);
+                distanceMap.putIfAbsent(tileDistance, walkablePoint);
             }
         }
 
@@ -223,13 +228,7 @@ public class AutoWoodcuttingScript extends Script {
         Optional<Integer> minDistanceOpt = distanceMap.keySet().stream().min(Integer::compare);
 
         if (minDistanceOpt.isPresent()) {
-            List<WorldPoint> closestPoints = distanceMap.get(minDistanceOpt.get());
-
-            // Return a random point from the closest points
-            if (!closestPoints.isEmpty()) {
-                int randomIndex = Rs2Random.between(0, closestPoints.size());
-                return closestPoints.get(randomIndex);
-            }
+            return distanceMap.get(minDistanceOpt.get());
         }
 
         // Recursively increase the distance if no valid point is found
