@@ -49,8 +49,8 @@ public class ChaosAltarScript extends Script {
                 long startTime = System.currentTimeMillis();
 
                 if (!autoRetaliate) {
-                    Rs2Combat.setAutoRetaliate(false);
-                    autoRetaliate = true;}
+                Rs2Combat.setAutoRetaliate(false);
+                autoRetaliate = true;}
 
                 // Determine current state
                 currentState = determineState();
