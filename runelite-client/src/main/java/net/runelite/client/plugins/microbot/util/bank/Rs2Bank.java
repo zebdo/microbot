@@ -1293,6 +1293,7 @@ public class Rs2Bank {
     public static boolean inventoryAllCollectionBoxItems() {
         openCollectionBox();
         sleepUntil(Rs2Bank::collectionBoxIsOpen, 5000);
+        Rs2Widget.clickWidget(26345475);
         return true;
     }
 
