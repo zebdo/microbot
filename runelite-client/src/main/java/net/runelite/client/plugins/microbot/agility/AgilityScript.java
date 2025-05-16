@@ -260,16 +260,16 @@ public class AgilityScript extends Script {
     private void tryAlchingItem(MicroAgilityConfig config) {
         if (!config.alchemy()) return;
 
-        String itemForAlching = getRandomItemForAlching(config);
+        String itemForAlching = getItemForAlching(config);
 
         if (itemForAlching == null) {
-            Microbot.log("No items specified for alching.");
-        }else{
+            Microbot.log("No items specified for alching or none available.");
+        } else {
             Rs2Magic.alch(itemForAlching, 50, 75);
         }
-
     }
-    private String getRandomItemForAlching(MicroAgilityConfig config) {
+
+    private String getItemForAlching(MicroAgilityConfig config) {
         String itemsInput = config.itemsToAlch().trim();
         if (itemsInput.isEmpty()) {
             return null;
@@ -285,8 +285,8 @@ public class AgilityScript extends Script {
             return null;
         }
 
-        Random random = new Random();
-        return items.get(random.nextInt(items.size()));
+        // Return the first available item in the list
+        return items.get(0);
     }
 
     @Override
