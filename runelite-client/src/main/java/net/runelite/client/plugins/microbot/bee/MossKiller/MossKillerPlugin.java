@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import static net.runelite.api.EquipmentInventorySlot.WEAPON;
@@ -58,6 +59,7 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
 
     @Inject
     private Client client;
+    private ScheduledFuture<?> mainScheduledFuture;
     @Inject
     private OverlayManager overlayManager;
     @Inject
@@ -200,6 +202,16 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
         }
 
         Microbot.log("Target " + name + " not found in current player list.");
+    }
+
+    @Subscribe
+    public void onGameStateChanged(GameStateChanged event) {
+        if (event.getGameState() == GameState.LOGGED_IN && config.wildySafer()) {
+            if (mainScheduledFuture == null || mainScheduledFuture.isCancelled() || mainScheduledFuture.isDone()) {
+                Microbot.log("GameState is LOGGED_IN and script was idle. Restarting run loop...");
+                wildySaferScript.run(config); // Or call your safe wrapper to resume the script
+            }
+        }
     }
 
     @Subscribe
