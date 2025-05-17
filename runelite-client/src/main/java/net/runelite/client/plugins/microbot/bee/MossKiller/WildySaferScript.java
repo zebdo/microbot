@@ -120,7 +120,6 @@ public class WildySaferScript extends Script {
                     System.out.println("not in moss giant area but we are prepared");
                     if (config.attackStyle() == MAGIC && isEquippedWithRequiredItems() && isInventoryPreparedMage()) {walkTo(SAFESPOT);}
                     if (config.attackStyle() == RANGE && isEquippedWithRequiredItemsRange() && isInventoryPreparedArcher()) {walkTo(SAFESPOT);}
-                    return;
                     // if you're not at moss giants but don't have prepared inventory, prepare inventory
                 }
 
