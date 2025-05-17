@@ -254,13 +254,22 @@ public class ThievingScript extends Script {
         if (config.shadowVeil()) {
             Rs2Inventory.waitForInventoryChanges(5000);
             if (!isEquipped("Lava battlestaff", EquipmentInventorySlot.WEAPON)) {
-                Rs2Bank.withdrawAll(true, "Fire rune", true);
-                Rs2Inventory.waitForInventoryChanges(5000);
-                Rs2Bank.withdrawAll(true, "Earth rune", true);
+                if (Rs2Bank.hasBankItem("Lava battlestaff")) {
+                    Rs2Bank.withdrawItem("Lava battlestaff");
+                    Rs2Inventory.waitForInventoryChanges(5000);
+                    if (Rs2Inventory.contains("Lava battlestaff")) {
+                        Rs2Inventory.wear("Lava battlestaff");
+                        Rs2Inventory.waitForInventoryChanges(5000);
+                    } else {
+                        Rs2Bank.withdrawAll(true, "Fire rune", true);
+                        Rs2Inventory.waitForInventoryChanges(5000);
+                        Rs2Bank.withdrawAll(true, "Earth rune", true);
+                        Rs2Inventory.waitForInventoryChanges(5000);
+                    }
+                }
+                Rs2Bank.withdrawAll(true, "Cosmic rune", true);
                 Rs2Inventory.waitForInventoryChanges(5000);
             }
-            Rs2Bank.withdrawAll(true, "Cosmic rune", true);
-            Rs2Inventory.waitForInventoryChanges(5000);
         }
 
         boolean successfullyWithdrawFood = Rs2Bank.withdrawX(true, config.food().getName(), config.foodAmount(), true);
