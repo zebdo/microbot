@@ -28,9 +28,9 @@ import java.awt.*;
 @Slf4j
 public class revKillerPlugin extends Plugin {
     @Inject
-    private net.runelite.client.plugins.microbot.revKiller.revKillerConfig config;
+    private revKillerConfig config;
     @Provides
-    net.runelite.client.plugins.microbot.revKiller.revKillerConfig provideConfig(ConfigManager configManager) {
+    revKillerConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(revKillerConfig.class);
     }
 

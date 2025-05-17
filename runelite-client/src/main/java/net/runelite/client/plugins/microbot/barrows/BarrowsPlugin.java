@@ -37,9 +37,9 @@ import java.util.regex.Matcher;
 @Slf4j
 public class BarrowsPlugin extends Plugin {
     @Inject
-    private net.runelite.client.plugins.microbot.barrows.BarrowsConfig config;
+    private BarrowsConfig config;
     @Provides
-    net.runelite.client.plugins.microbot.barrows.BarrowsConfig provideConfig(ConfigManager configManager) {
+    BarrowsConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(BarrowsConfig.class);
     }
 
