@@ -140,7 +140,10 @@ public class WildyKillerScript extends Script {
     }
 
     public boolean run(MossKillerConfig config) {
-        System.out.println("getting to run");
+        if (mainScheduledFuture != null && !mainScheduledFuture.isCancelled() && !mainScheduledFuture.isDone()) {
+            Microbot.log("Scheduled task already running.");
+            return false;
+        }
         WildyKillerScript.config = config;
         Microbot.enableAutoRunOn = false;
         Rs2Walker.disableTeleports = false;
@@ -163,8 +166,15 @@ public class WildyKillerScript extends Script {
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                if (!Microbot.isLoggedIn()) return;
-                if (!super.run()) return;
+                if (!Microbot.isLoggedIn()) {
+                    Microbot.log("Not logged in, skipping tick.");
+                    return;}
+                if (!super.run()) {Microbot.log("super.run() returned false, skipping tick.");
+                    return;}
+                if (Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
+                    Microbot.log("Client or local player not ready. Skipping tick.");
+                    return;
+                }
                 long startTime = System.currentTimeMillis();
 
                 Microbot.log("SoL " + state);
