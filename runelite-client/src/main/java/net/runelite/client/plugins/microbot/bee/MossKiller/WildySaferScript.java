@@ -84,14 +84,25 @@ public class WildySaferScript extends Script {
 
     public static boolean test = false;
     public boolean run(MossKillerConfig config) {
+        if (mainScheduledFuture != null && !mainScheduledFuture.isCancelled() && !mainScheduledFuture.isDone()) {
+            Microbot.log("Scheduled task already running.");
+            return false;
+        }
         Microbot.enableAutoRunOn = false;
         Rs2AntibanSettings.naturalMouse = true;
         Rs2AntibanSettings.simulateMistakes = true;
         Rs2Antiban.setActivityIntensity(ActivityIntensity.MODERATE);
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                if (!Microbot.isLoggedIn()) return;
-                if (!super.run()) return;
+                if (!Microbot.isLoggedIn()) {
+                    Microbot.log("Not logged in, skipping tick.");
+                    return;}
+                if (!super.run()) {Microbot.log("super.run() returned false, skipping tick.");
+                    return;}
+                if (Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
+                    Microbot.log("Client or local player not ready. Skipping tick.");
+                    return;
+                }
                 long startTime = System.currentTimeMillis();
 
                 if (mossKillerPlugin.startedFromScheduler) {prepareSchedulerStart();
