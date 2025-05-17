@@ -1,9 +1,6 @@
 package net.runelite.client.plugins.microbot.thieving;
 
-import net.runelite.client.config.Config;
-import net.runelite.client.config.ConfigGroup;
-import net.runelite.client.config.ConfigItem;
-import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.thieving.enums.ThievingNpc;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 
@@ -136,6 +133,7 @@ public interface ThievingConfig extends Config {
             position = 1,
             section = coinPouchSection
     )
+    @Range(min = 1, max = 28)
     default int coinPouchTreshHold()
     {
         return 28;

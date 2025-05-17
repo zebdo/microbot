@@ -64,12 +64,12 @@ public class ThievingScript extends Script {
                 if (config.shadowVeil()) {
                     handleShadowVeil();
                 }
-                
+
                 // Randomize coinpouch threshold +-3 between 1 & 28
                 int threshold = config.coinPouchTreshHold();
                 threshold += (int) (Math.random() * 7 - 3);
                 threshold = Math.max(1, Math.min(28, threshold));
-                  
+
                 openCoinPouches(threshold);
                 wearDodgyNecklace();
                 pickpocket();
@@ -227,7 +227,7 @@ public class ThievingScript extends Script {
                 if (wealthyCitizenToPickpocket.isPresent()) {
                     Rs2NpcModel pickpocketnpc = wealthyCitizenToPickpocket.get();
                     if (!Rs2Player.isAnimating(3000) && Rs2Npc.pickpocket(pickpocketnpc)) {
-                        Microbot.status = "Pickpocketting " + pickpocketnpc.getName();
+                        Microbot.status = "Pickpocketing " + pickpocketnpc.getName();
                         sleep(300, 600);
                     }
                 }
@@ -261,6 +261,8 @@ public class ThievingScript extends Script {
         }
 
         Rs2Bank.withdrawDeficit("dodgy necklace", config.dodgyNecklaceAmount());
+        Rs2Inventory.waitForInventoryChanges(5000);
+
         if (config.shadowVeil()) {
             // Check if Lava battlestaff is equipped
             if (!isEquipped("Lava battlestaff", EquipmentInventorySlot.WEAPON)) {
