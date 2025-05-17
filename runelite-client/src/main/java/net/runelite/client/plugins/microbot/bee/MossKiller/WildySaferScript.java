@@ -36,6 +36,7 @@ import static net.runelite.api.EquipmentInventorySlot.AMMO;
 import static net.runelite.api.EquipmentInventorySlot.WEAPON;
 import static net.runelite.api.ItemID.*;
 import static net.runelite.api.NpcID.MOSS_GIANT_2093;
+import static net.runelite.api.Skill.DEFENCE;
 import static net.runelite.client.plugins.microbot.bee.MossKiller.Enums.AttackStyle.MAGIC;
 import static net.runelite.client.plugins.microbot.bee.MossKiller.Enums.AttackStyle.RANGE;
 import static net.runelite.client.plugins.microbot.util.npc.Rs2Npc.getNpcs;
@@ -550,12 +551,14 @@ public class WildySaferScript extends Script {
         sleep(600);
 
         // Withdraw required consumables
-        Rs2Bank.withdrawX(APPLE_PIE, 16);
+        if (Rs2Player.getRealSkillLevel(DEFENCE) < 30) {Rs2Bank.withdrawX(APPLE_PIE, 16);} else {Rs2Bank.withdrawX(APPLE_PIE, 8);}
         sleep(300);
         if (config.attackStyle() == MAGIC) {
             Rs2Bank.withdrawX(MIND_RUNE, 750);
             sleep(300);
             Rs2Bank.withdrawX(AIR_RUNE, 1550);
+            sleep(300);
+            Rs2Bank.withdrawOne(LAW_RUNE);
             sleep(300);
 
             // Check if equipped with necessary items
@@ -614,6 +617,14 @@ public class WildySaferScript extends Script {
             sleep(400,800);
             Rs2Inventory.equip(MITHRIL_ARROW);
             sleep(300);
+            if (Rs2Player.getRealSkillLevel(Skill.MAGIC) > 24) {
+                Rs2Bank.withdrawOne(LAW_RUNE);
+                sleep(400,800);
+                Rs2Bank.withdrawX(AIR_RUNE,3);
+                sleep(400,800);
+                Rs2Bank.withdrawOne(FIRE_RUNE);
+                sleep(400,800);
+            }
 
         }
 
