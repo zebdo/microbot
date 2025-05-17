@@ -192,17 +192,19 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
 
         String name = currentTarget.getName();
 
-        for (Player p : Microbot.getClient().getPlayers()) {
-            if (p != null && p.getName() != null && p.getName().equals(name)) {
-                // Replace stale reference with a fresh one
-                currentTarget = new Rs2PlayerModel(p);
-                Microbot.log("Refreshed target reference for: " + name);
-                return;
-            }
-        }
+        // Use Rs2Player.getPlayers with a predicate to match the name
+        Optional<Rs2PlayerModel> updatedTarget = Rs2Player.getPlayers(
+                p -> p.getName() != null && p.getName().equals(name)
+        ).findFirst();
 
-        Microbot.log("Target " + name + " not found in current player list.");
+        if (updatedTarget.isPresent()) {
+            currentTarget = updatedTarget.get();
+            Microbot.log("Refreshed target reference for: " + name);
+        } else {
+            Microbot.log("Target " + name + " not found in current player list.");
+        }
     }
+
 
     @Subscribe
     public void onGameStateChanged(GameStateChanged event) {
