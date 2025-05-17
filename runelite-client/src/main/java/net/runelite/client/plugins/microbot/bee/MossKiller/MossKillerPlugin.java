@@ -185,6 +185,23 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
 
     }
 
+    public void updateTargetByName() {
+        if (currentTarget == null || currentTarget.getPlayer() == null) return;
+
+        String name = currentTarget.getName();
+
+        for (Player p : Microbot.getClient().getPlayers()) {
+            if (p != null && p.getName() != null && p.getName().equals(name)) {
+                // Replace stale reference with a fresh one
+                currentTarget = new Rs2PlayerModel(p);
+                Microbot.log("Refreshed target reference for: " + name);
+                return;
+            }
+        }
+
+        Microbot.log("Target " + name + " not found in current player list.");
+    }
+
     @Subscribe
     public void onVarbitChanged(VarbitChanged event) {
         if (config.wildy()) {
