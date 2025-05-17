@@ -1860,7 +1860,17 @@ public class WildyKillerScript extends Script {
                 Microbot.log("You're in the wilderness and I don't get the problem");
                 if (Rs2Equipment.isNaked()) {
                     state = MossKillerState.WALK_TO_BANK;
+                } else { Microbot.log("You've got equipment on, let's just reset inventory at ferox bank");
+                Rs2Bank.walkToBank(BankLocation.FEROX_ENCLAVE);
+                Rs2Bank.walkToBankAndUseBank(BankLocation.FEROX_ENCLAVE);
+                sleep(3000,6000);
+                if(!Rs2Bank.isOpen()) {
+                    Rs2Bank.openBank();
+                    sleep(2000,6000);
                 }
+                Rs2Bank.depositAll();
+                sleep(2000);
+            }
             }
             if (playerLocation.getY() < 3520) {
                 state = MossKillerState.WALK_TO_BANK;
