@@ -7,6 +7,7 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -40,9 +41,8 @@ import static net.runelite.api.Skill.DEFENCE;
 import static net.runelite.client.plugins.microbot.bee.MossKiller.Enums.AttackStyle.MAGIC;
 import static net.runelite.client.plugins.microbot.bee.MossKiller.Enums.AttackStyle.RANGE;
 import static net.runelite.client.plugins.microbot.util.npc.Rs2Npc.getNpcs;
-import static net.runelite.client.plugins.microbot.util.walker.Rs2Walker.walkFastCanvas;
-import static net.runelite.client.plugins.microbot.util.walker.Rs2Walker.walkTo;
 import static net.runelite.api.Skill.WOODCUTTING;
+import static net.runelite.client.plugins.microbot.util.walker.Rs2Walker.*;
 
 public class WildySaferScript extends Script {
     
@@ -303,7 +303,7 @@ public class WildySaferScript extends Script {
 
     private void playersCheck() {
         if(!mossKillerScript.getNearbyPlayers(14).isEmpty()){
-
+            if (ShortestPathPlugin.isStartPointSet()) {setTarget(null);}
             if(playerCounter > 15) {
                 sleep(10000, 15000);
                 int world = Login.getRandomWorld(false, null);
