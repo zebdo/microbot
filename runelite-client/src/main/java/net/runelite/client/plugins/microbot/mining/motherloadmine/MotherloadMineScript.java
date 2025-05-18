@@ -24,6 +24,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -264,10 +265,9 @@ public class MotherloadMineScript extends Script
     private void depositHopper()
     {
         // if using a gem bag, fill the gem bag and return to mining if the inventory is no longer full
-        if (Rs2Inventory.isFull() && Rs2Inventory.hasItem("gem bag"))
+        if (Rs2Inventory.isFull() && Rs2Gembag.hasGemBag())
         {
             Rs2Inventory.interact("gem bag", "Fill");
-            sleepUntil(() -> !Rs2Inventory.contains("Uncut sapphire", "Uncut emerald", "Uncut ruby", "Uncut diamond"), 2000);
             gemBagEmptiedThisCycle = false;
             if (!Rs2Inventory.isFull())
             {
@@ -303,11 +303,15 @@ public class MotherloadMineScript extends Script
             sleepUntil(Rs2Bank::isOpen);
 
             // if using the gem sack, empty its contents directly into the bank
-            if (!gemBagEmptiedThisCycle && Rs2Inventory.hasItem("gem bag")) 
+            if (Rs2Gembag.hasGemBag() && !gemBagEmptiedThisCycle) 
             {
-                Rs2Inventory.interact("gem bag", "Empty");
+                Rs2Gembag.checkGemBag();
+                if Rs2Gembag.getTotalGemCount() > 0
+                {
+                    Rs2Inventory.interact("gem bag", "Empty");
+                    sleep(100, 300);
+                }
                 gemBagEmptiedThisCycle = true;
-                sleep(100, 300);
             }
             
             Rs2Bank.depositAllExcept("hammer", pickaxeName, "gem bag");
