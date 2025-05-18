@@ -20,12 +20,10 @@ import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
-import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.models.RS2Item;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.security.Login;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -345,19 +343,9 @@ public class WildySaferScript extends Script {
         if(!mossKillerScript.getNearbyPlayers(14).isEmpty()){
             if (ShortestPathPlugin.isStartPointSet()) {setTarget(null);}
             if(playerCounter > 15) {
-                sleep(10000, 15000);
-                int world = Login.getRandomWorld(false, null);
-                if(world == 301){
-                    return;
-                }
-                boolean isHopped = Microbot.hopToWorld(world);
-                sleepUntil(() -> isHopped, 5000);
-                if (!isHopped) return;
-                playerCounter = 0;
-                int randomThreshold = (int) Rs2Random.truncatedGauss(0, 5, 1.5); // Adjust mean and deviation as needed
-                if (randomThreshold > 3) {
-                    Rs2Inventory.open();
-                }
+                Rs2Player.logout();
+                sleepUntil(() -> !Microbot.isLoggedIn());
+                sleepUntil(Microbot::isLoggedIn);
                 return;
             }
             playerCounter++;
