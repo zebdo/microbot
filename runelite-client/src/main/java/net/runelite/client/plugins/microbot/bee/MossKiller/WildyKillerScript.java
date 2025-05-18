@@ -62,6 +62,7 @@ import static net.runelite.client.plugins.microbot.util.player.Rs2Pvp.getWildern
 import static net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer.isPrayerActive;
 import static net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer.toggle;
 import static net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum.*;
+import static net.runelite.client.plugins.microbot.util.walker.Rs2Walker.setTarget;
 import static net.runelite.client.plugins.skillcalculator.skills.MagicAction.HIGH_LEVEL_ALCHEMY;
 import static net.runelite.client.plugins.skillcalculator.skills.MagicAction.WIND_BLAST;
 
@@ -2356,6 +2357,8 @@ public class WildyKillerScript extends Script {
 
         Microbot.log(String.valueOf(state));
 
+        if (mossKillerPlugin.playerJammed() && ShortestPathPlugin.isStartPointSet()) {setTarget(null);}
+
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
 
         if (!scheduledFuture.isDone()) {
@@ -2553,12 +2556,6 @@ public class WildyKillerScript extends Script {
             }
         }
         return true;
-    }
-
-    public void toggleRunEnergyOff() {
-        if (Rs2Player.isRunEnabled() && Rs2Player.getRunEnergy() > 0) {
-            Rs2Player.toggleRunEnergy(false);
-        }
     }
 
 }
