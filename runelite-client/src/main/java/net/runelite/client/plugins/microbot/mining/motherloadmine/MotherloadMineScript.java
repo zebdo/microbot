@@ -306,7 +306,7 @@ public class MotherloadMineScript extends Script
             if (Rs2Gembag.hasGemBag() && !gemBagEmptiedThisCycle) 
             {
                 Rs2Gembag.checkGemBag();
-                if Rs2Gembag.getTotalGemCount() > 0
+                if (Rs2Gembag.getTotalGemCount() > 0)
                 {
                     Rs2Inventory.interact("gem bag", "Empty");
                     sleep(100, 300);
