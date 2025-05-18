@@ -402,19 +402,21 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
             } else {
                 superNullTarget = false;
             }
-
-            if (!Rs2Player.isMoving()) {
-                tickCount++;
-
-                if (tickCount >= 50) {
-                    isJammed = true;
-                }
-
-            } else {
-                tickCount = 0;
-                isJammed = false;
-            }
         }
+
+            if (config.wildy() || config.wildySafer()) {
+                if (!Rs2Player.isMoving()) {
+                    tickCount++;
+
+                    if (tickCount >= 50) {
+                        isJammed = true;
+                    }
+
+                } else {
+                    tickCount = 0;
+                    isJammed = false;
+                }
+            }
 
         if (!config.wildy() && !config.wildySafer()) {
             NPC bryophyta = findBryophyta();
