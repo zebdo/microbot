@@ -898,6 +898,7 @@ public class revKillerScript extends Script {
                 DidWeDie();
                 OpenTheInv();
                 stuckAtEnclave();
+                stopTeleSpam();
                 Rs2Bank.walkToBankAndUseBank(BankLocation.FEROX_ENCLAVE);
             }
         } else {
