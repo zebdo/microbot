@@ -23,7 +23,7 @@
 2339 3649 0		13143;13144			Y	F	19	4	Western banner
 # Explorer's Ring (2 has 3 teleports per day, 3 and 4 are unlimited)									
 3052 3291 0		13126		4552<3	Y	T	19	4	Explorer's ring: Teleport
-3052 3291 0		13127;13128			Y	F	19	4	Explorer's ring: Teleport
+3052 3291 0		13127;13128			Y	F	19	4	Explorer's ring
 # Rada's Blessing (Kourend Woodland, 1 has 3 teleports, 2 has 5 teleports, 3 and 4 have unlimited. For Mount Karuulum, 3 has 3 teleports and 4 has unlimited)									
 1554 3457 0		22941		7937<3	Y	T	19	4	Rada's blessing: Kourend Woodland
 1554 3457 0		22943		7937<5	Y	T	19	4	Rada's blessing: Kourend Woodland
@@ -34,7 +34,7 @@
 # Games Necklace									
 2520 3571 0		3853;3855;3857;3859;3861;3863;3865;3867			Y	T	19	4	2. Games necklace: Barbarian Outpost
 2898 3553 0		3853;3855;3857;3859;3861;3863;3865;3867			Y	T	19	4	1. Games necklace: Burthorpe
-2965 4254 2		3853;3855;3857;3859;3861;3863;3865;3867			Y	T	19	4	3. Games necklace: Corporeal Beast
+2967 4384 2		3853;3855;3857;3859;3861;3863;3865;3867			Y	T	19	4	3. Games necklace: Corporeal Beast
 3245 9500 2		3853;3855;3857;3859;3861;3863;3865;3867	Tears of Guthix		Y	T	19	4	4. Games necklace: Tears of Guthix
 1631 3940 0		3853;3855;3857;3859;3861;3863;3865;3867			Y	T	19	4	5. Games necklace: Wintertodt Camp
 
