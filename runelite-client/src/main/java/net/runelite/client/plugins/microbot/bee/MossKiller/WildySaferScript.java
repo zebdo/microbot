@@ -6,6 +6,7 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
@@ -96,6 +97,7 @@ public class WildySaferScript extends Script {
                     Microbot.log("Not logged in, skipping tick.");
                     return;}
                 if (!super.run()) {Microbot.log("super.run() returned false, skipping tick.");
+                    if (Microbot.isLoggedIn() && !Rs2Player.isInCombat() && BreakHandlerScript.breakIn <= 1) {Rs2Player.logout();}
                     return;}
                 if (Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
                     Microbot.log("Client or local player not ready. Skipping tick.");
@@ -236,7 +238,7 @@ public class WildySaferScript extends Script {
 
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
-                System.out.println("Total time for loop " + totalTime);
+                Microbot.log("Total time for loop " + totalTime);
 
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
