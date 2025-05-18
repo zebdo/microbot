@@ -263,6 +263,17 @@ public class MotherloadMineScript extends Script
 
     private void depositHopper()
     {
+        // if using a gem bag, fill the gem bag and return to mining if the inventory is no longer full
+        if (Rs2Inventory.isFull() && Rs2Inventory.hasItem("gem bag"))
+        {
+            Rs2Inventory.interact("gem bag", "Fill");
+            sleepUntil(() -> !Rs2Inventory.containsAny("Uncut sapphire", "Uncut emerald", "Uncut ruby", "Uncut diamond"), 2000);
+            if (!Rs2Inventory.isFull())
+            {
+                return;
+            }
+        }
+        
         WorldPoint hopperDeposit = (isUpperFloor() && config.upstairsHopperUnlocked()) ? HOPPER_DEPOSIT_UP : HOPPER_DEPOSIT_DOWN;
         Optional<GameObject> hopper = Optional.ofNullable(Rs2GameObject.findObject(ObjectID.HOPPER_26674, hopperDeposit));
 
@@ -289,7 +300,15 @@ public class MotherloadMineScript extends Script
         if (Rs2Bank.useBank())
         {
             sleepUntil(Rs2Bank::isOpen);
-            Rs2Bank.depositAllExcept("hammer", pickaxeName);
+
+            // if using the gem sack, empty its contents directly into the bank
+            if (!gemBagEmptiedThisCycle && Rs2Inventory.hasItem("gem bag")) 
+            {
+                Rs2Inventory.interact("gem bag", "Empty");
+                sleep(100, 300);
+            }
+            
+            Rs2Bank.depositAllExcept("hammer", pickaxeName, "gem bag");
             sleep(100, 300);
 
             if (!Rs2Inventory.hasItem("hammer") && !Rs2Equipment.isWearing("hammer"))
