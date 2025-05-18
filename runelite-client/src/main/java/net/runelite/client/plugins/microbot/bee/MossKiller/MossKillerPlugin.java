@@ -385,7 +385,7 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
                 }
             }
 
-            if (config.combatMode() == CombatMode.FIGHT) {
+            if (config.combatMode() == CombatMode.FIGHT && currentTarget != null) {
                 trackAttackers();
             }
 
@@ -508,7 +508,7 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
                         && !WildyKillerScript.CORRIDOR.contains(Rs2Player.getWorldLocation()))) {
 
                     int currentCount = attackerTickMap.getOrDefault(player, 0);
-                    attackerTickMap.put(player, currentCount + 1);
+                    attackerTickMap.put(player, currentCount + 3);
                     System.out.println("Player " + player.getName() + " tick count increased to: " + (currentCount + 1));
                 }
             }
@@ -517,7 +517,7 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
         // Create a copy of the entry set to avoid concurrent modification
         List<Map.Entry<Rs2PlayerModel, Integer>> entries = new ArrayList<>(attackerTickMap.entrySet());
 
-        // Process each entry - similar to your original logic
+        // Process each entry
         for (Map.Entry<Rs2PlayerModel, Integer> entry : entries) {
             Rs2PlayerModel player = entry.getKey();
             int tickCount = entry.getValue();
@@ -526,14 +526,14 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
 
             // Increment tick count if the player is interacting and performing combat animation
             if (player.getInteracting() == localPlayer && !isNonCombatAnimation(player)) {
-                tickCount += 1;
+                tickCount += 3;
                 attackerTickMap.put(player, tickCount);
                 System.out.println(player.getName() + " in combat with us, ticks now: " + tickCount);
             }
 
             // Increment tick count if the player is interacting and their hitsplat is applied to you
             if (player.getInteracting() == localPlayer && hitsplatIsTheirs()) {
-                tickCount += 1;
+                tickCount += 3;
                 attackerTickMap.put(player, tickCount);
                 System.out.println(player.getName() + " hitsplat applied, ticks now: " + tickCount);
             }
@@ -557,7 +557,7 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
             // If tick count is >= MIN_TICKS_TO_TRACK, they become your target
             if (tickCount >= MIN_TICKS_TO_TRACK) {
                 currentTarget = player;
-                System.out.println("Setting target to: " + player.getName() + " with ticks: " + tickCount);
+                Microbot.log("Setting target to: " + player.getName() + " with ticks: " + tickCount);
                 break;
             }
 
@@ -565,7 +565,7 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
             if (tickCount == 0) {
                 attackerTickMap.remove(player);
                 Microbot.log("Removing " + player.getName() + " from map due to 0 ticks");
-                if (currentTarget == player) {
+                if (currentTarget == player.getPlayer()) {
                     resetTarget();
                     if (Rs2Player.getWorldLocation().getY() > 3675) wildyKillerScript.handleAsynchWalk("Twenty Wild"); Microbot.log("target has been reset, going twenty wild for safety");
                     Microbot.log("Resetting target since it was " + player.getName());
