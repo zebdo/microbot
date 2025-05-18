@@ -1247,6 +1247,15 @@ public class revKillerScript extends Script {
         return false;
     }
 
+    if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES)!=null) {
+        if (Rs2Equipment.get(EquipmentInventorySlot.GLOVES).getName().contains("ethereum")) {
+            if (Rs2Equipment.get(EquipmentInventorySlot.GLOVES).getId() == ItemID.BRACELET_OF_ETHEREUM_UNCHARGED || ItemWithCharge.findItem(ItemID.BRACELET_OF_ETHEREUM).getCharges() < 5) {
+                Microbot.log("Our bracelet doesn't have enough charges.");
+                return false;
+            }
+        }
+    }
+
     Microbot.log("We're fully equipped and ready to go.");
     return true;
 
