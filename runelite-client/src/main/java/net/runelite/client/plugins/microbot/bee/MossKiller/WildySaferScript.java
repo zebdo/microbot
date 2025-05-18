@@ -265,7 +265,7 @@ public class WildySaferScript extends Script {
 
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
-                Microbot.log("Total time for loop " + totalTime);
+                System.out.println("Total time for loop " + totalTime);
 
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
