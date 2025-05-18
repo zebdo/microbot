@@ -222,7 +222,7 @@ public class WildySaferScript extends Script {
                     iveMoved = false;
                 }
 
-                if (config.buryBones()) {
+                if (config.buryBones() && !Rs2Player.isInteracting()) {
                     if (Rs2Inventory.contains(BIG_BONES)) {
                         sleep(100, 1750);
                         Rs2Inventory.interact(BIG_BONES, "Bury");
@@ -236,7 +236,7 @@ public class WildySaferScript extends Script {
 
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
-                System.out.println("Total time for loop " + totalTime);
+                Microbot.log("Total time for loop " + totalTime);
 
             } catch (Exception ex) {
                 System.out.println(ex.getMessage());
