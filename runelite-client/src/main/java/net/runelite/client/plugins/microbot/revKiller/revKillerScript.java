@@ -1020,6 +1020,10 @@ public class revKillerScript extends Script {
                             if(selectedArrow == ItemID.BOLT_RACK){
                                 min = 600;
                                 max = 700;
+                                if(Rs2Equipment.get(EquipmentInventorySlot.WEAPON).getId() == ItemID.KARILS_CROSSBOW_25){
+                                    Microbot.log("Please get a fresh karil's crossbow. Shutting down.");
+                                    super.shutdown();
+                                }
                             }
                             int amt = (generateRandomNumber(min,max)-Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity());
                             if(amt <= 0){
