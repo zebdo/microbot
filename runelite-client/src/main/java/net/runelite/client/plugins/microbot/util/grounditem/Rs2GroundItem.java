@@ -362,8 +362,7 @@ public class Rs2GroundItem {
     public static boolean lootItemBasedOnValue(LootingParameters params) {
         Predicate<GroundItem> filter = groundItem -> groundItem.getGePrice() > params.getMinValue() && (groundItem.getGePrice() / groundItem.getQuantity()) < params.getMaxValue() &&
                 groundItem.getLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) < params.getRange() &&
-                (!params.isAntiLureProtection() || (params.isAntiLureProtection() && groundItem.getOwnership() == OWNERSHIP_SELF)) &&
-                Arrays.stream(params.getIgnoredNames()).noneMatch(name -> groundItem.getName().trim().toLowerCase().contains(name.trim().toLowerCase()));
+                (!params.isAntiLureProtection() || (params.isAntiLureProtection() && groundItem.getOwnership() == OWNERSHIP_SELF));
 
         List<GroundItem> groundItems = getGroundItems().values().stream()
                 .filter(filter)
@@ -379,6 +378,7 @@ public class Rs2GroundItem {
 
         for (GroundItem groundItem : groundItems) {
             if (groundItem.getQuantity() < params.getMinItems()) continue;
+            if (Arrays.stream(params.getIgnoredNames()).anyMatch(name -> groundItem.getName().trim().toLowerCase().contains(name.trim().toLowerCase()))) continue;
             if (Rs2Inventory.getEmptySlots() < params.getMinInvSlots()) return true;
             coreLoot(groundItem);
         }
