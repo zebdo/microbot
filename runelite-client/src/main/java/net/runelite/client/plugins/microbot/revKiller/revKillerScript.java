@@ -1015,7 +1015,17 @@ public class revKillerScript extends Script {
                 if(Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity() < LowOnArrowsCount){
                     if(Rs2Bank.count(selectedArrow)>100){
                         if(!Rs2Inventory.contains(selectedArrow)||Rs2Inventory.get(selectedArrow).getQuantity() < LowOnArrowsCount){
-                            if(Rs2Bank.withdrawX(selectedArrow, (generateRandomNumber(120,300)-Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity()) )){
+                            int min = 250;
+                            int max = 300;
+                            if(selectedArrow == ItemID.BOLT_RACK){
+                                min = 600;
+                                max = 700;
+                            }
+                            int amt = (generateRandomNumber(min,max)-Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity());
+                            if(amt <= 0){
+                                amt=generateRandomNumber(min,max);
+                            }
+                            if(Rs2Bank.withdrawX(selectedArrow, amt)){
                                 sleepUntil(()-> Rs2Inventory.contains(selectedArrow), generateRandomNumber(5000,15000));
                             }
                         }
