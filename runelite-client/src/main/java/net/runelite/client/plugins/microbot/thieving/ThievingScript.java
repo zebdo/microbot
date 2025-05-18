@@ -267,9 +267,9 @@ public class ThievingScript extends Script {
                         Rs2Inventory.waitForInventoryChanges(5000);
                     }
                 }
-                Rs2Bank.withdrawAll(true, "Cosmic rune", true);
-                Rs2Inventory.waitForInventoryChanges(5000);
             }
+            Rs2Bank.withdrawAll(true, "Cosmic rune", true);
+            Rs2Inventory.waitForInventoryChanges(5000);
         }
 
         boolean successfullyWithdrawFood = Rs2Bank.withdrawX(true, config.food().getName(), config.foodAmount(), true);
