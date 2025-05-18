@@ -111,6 +111,11 @@ public class WildySaferScript extends Script {
                 if (mossKillerPlugin.preparingForShutdown) {
                     MossKillerScript.prepareSoftStop();}
 
+                if (mossKillerPlugin.windStrikeflag) {
+                    Rs2Combat.setAutoCastSpell(Rs2CombatSpells.FIRE_STRIKE, config.forceDefensive());
+                    mossKillerPlugin.windStrikeflag = false;
+                }
+
                 if (Rs2Inventory.contains(MOSSY_KEY)) {
                     doBankingLogic();
                 }
