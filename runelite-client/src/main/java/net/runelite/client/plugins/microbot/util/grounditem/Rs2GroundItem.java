@@ -362,7 +362,8 @@ public class Rs2GroundItem {
     public static boolean lootItemBasedOnValue(LootingParameters params) {
         Predicate<GroundItem> filter = groundItem -> groundItem.getGePrice() > params.getMinValue() && (groundItem.getGePrice() / groundItem.getQuantity()) < params.getMaxValue() &&
                 groundItem.getLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) < params.getRange() &&
-                (!params.isAntiLureProtection() || (params.isAntiLureProtection() && groundItem.getOwnership() == OWNERSHIP_SELF));
+                (!params.isAntiLureProtection() || (params.isAntiLureProtection() && groundItem.getOwnership() == OWNERSHIP_SELF)) &&
+                Arrays.stream(params.getIgnoredNames()).noneMatch(name -> groundItem.getName().trim().toLowerCase().contains(name.trim().toLowerCase()));
 
         List<GroundItem> groundItems = getGroundItems().values().stream()
                 .filter(filter)

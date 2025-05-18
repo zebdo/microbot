@@ -526,9 +526,7 @@ public class revKillerScript extends Script {
                         }
                     }
                     if (!WeAreInTheCaves()) {
-                        if(Rs2Player.isInCombat() || Rs2Player.isAnimating()){
-                            sleepUntil(()-> !Rs2Player.isInCombat() && !Rs2Player.isAnimating(), generateRandomNumber(10000,15000));
-                        }
+                        sleep(10000,15000);
                         hopToNewWorld();
                         break;
                     }
@@ -555,9 +553,7 @@ public class revKillerScript extends Script {
                         }
                     }
                     if (!WeAreInTheCaves()) {
-                        if(Rs2Player.isInCombat() || Rs2Player.isAnimating()){
-                            sleepUntil(()-> !Rs2Player.isInCombat() && !Rs2Player.isAnimating(), generateRandomNumber(10000,15000));
-                        }
+                        sleep(10000,15000);
                         hopToNewWorld();
                         break;
                     }
@@ -834,7 +830,9 @@ public class revKillerScript extends Script {
                         break;
                     }
                 }
-                if(Rs2GroundItem.lootItemBasedOnValue(new LootingParameters(500,50000000, 10,1,1,false,false))){
+                String[] arr1={"Rune arrow","Amethyst arrow"};
+                //Rs2GroundItem.lootItemBasedOnValue(new LootingParameters(500,50000000, 10,1,1,false,false))
+                if(Rs2GroundItem.lootItemBasedOnValue(new LootingParameters(500,50000000,10,1,1,false,false,arr1))){
                     sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(750,1500));
                     if(Rs2Player.isMoving()){
                         sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(3000,6000));
