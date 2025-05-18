@@ -29,8 +29,9 @@ import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static net.runelite.api.ItemID.BUCKET_OF_WATER;
-import static net.runelite.api.ItemID.POT_OF_FLOUR;
+import static net.runelite.api.ItemID.*;
+import static net.runelite.api.gameval.ItemID.CAKE_TIN;
+import static net.runelite.api.gameval.ItemID.EGG;
 import static net.runelite.client.plugins.microbot.util.npc.Rs2Npc.getNpcs;
 import static net.runelite.client.plugins.microbot.util.player.Rs2Player.toggleRunEnergy;
 
@@ -788,6 +789,24 @@ public class BurnBakingScript extends Script {
 
             Rs2Bank.withdrawX("Pot of flour", 7);
             sleep(500, 800);
+
+            if (!Rs2Inventory.isFull()) {
+                Microbot.log("inventory not full after attempted withdrawing of 4x of 7 items (28 items)");
+                Microbot.log("Withdrawing ALL of X item IF inventory doesn't X item");
+                Microbot.log("If you are looping here make sure to have an EVEN NUMBER of EACH ingredient at the start");
+                if (!Rs2Inventory.contains(CAKE_TIN)) Rs2Bank.withdrawAll("Cake tin");
+                sleep(500, 800);
+
+                if (!Rs2Inventory.contains(EGG)) Rs2Bank.withdrawAll("Egg");
+                sleep(500, 800);
+
+                if (!Rs2Inventory.contains(BUCKET_OF_MILK)) Rs2Bank.withdrawAll("Bucket of Milk");
+                sleep(500, 800);
+
+                if (!Rs2Inventory.contains(POT_OF_FLOUR)) Rs2Bank.withdrawAll("Pot of flour");
+                sleep(500, 800);
+
+            }
 
             // Close the bank after completing withdrawals
             Rs2Bank.closeBank();
