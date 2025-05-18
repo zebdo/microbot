@@ -268,7 +268,7 @@ public class MotherloadMineScript extends Script
         {
             Rs2Inventory.interact("gem bag", "Fill");
             sleepUntil(() -> !Rs2Inventory.contains("Uncut sapphire", "Uncut emerald", "Uncut ruby", "Uncut diamond"), 2000);
-            private boolean gemBagEmptiedThisCycle = false;
+            gemBagEmptiedThisCycle = false;
             if (!Rs2Inventory.isFull())
             {
                 return;
