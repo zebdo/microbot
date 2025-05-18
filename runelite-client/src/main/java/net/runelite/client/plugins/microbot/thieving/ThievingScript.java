@@ -1,6 +1,10 @@
 package net.runelite.client.plugins.microbot.thieving;
 
-import net.runelite.api.*;
+import net.runelite.api.EquipmentInventorySlot;
+import net.runelite.api.NPC;
+import net.runelite.api.Skill;
+import net.runelite.api.Varbits;
+import net.runelite.api.ItemID;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.client.game.npcoverlay.HighlightedNpc;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -155,6 +159,7 @@ public class ThievingScript extends Script {
                             if (!ardougneArea.contains(npc.getWorldLocation())) {
                                 Microbot.log("Highlighted Knight is NOT in Ardougne area - shutting down");
                                 shutdown();
+
                                 return;
                             }
                         }
