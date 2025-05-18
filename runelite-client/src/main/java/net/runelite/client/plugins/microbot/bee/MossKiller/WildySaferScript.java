@@ -553,21 +553,22 @@ public class WildySaferScript extends Script {
                 sleepUntil(Rs2Bank::isOpen, 15000);
                 if (!Rs2Bank.isOpen()) {
                     Rs2Bank.openBank();
-                    System.out.println("called to open bank twice");
+                    Microbot.log("called to open bank twice");
                     sleepUntil(Rs2Bank::isOpen);
                 }// Check if required consumables exist in the bank with the correct amounts
-                if (Rs2Bank.isOpen() && Rs2Bank.count(APPLE_PIE) < 16 ||
-                        Rs2Bank.count(MIND_RUNE) < 750 ||
-                        Rs2Bank.count(AIR_RUNE) < 1550 ||
-                        !Rs2Bank.hasItem(STAFF_OF_FIRE)) {
+                if (Rs2Bank.isOpen()) {
+                    if (Rs2Bank.count(APPLE_PIE) < 16 ||
+                            Rs2Bank.count(MIND_RUNE) < 750 ||
+                            Rs2Bank.count(AIR_RUNE) < 1550 ||
+                            !Rs2Bank.hasItem(STAFF_OF_FIRE)) {
 
-                    Microbot.log("Missing required consumables in the bank. Shutting down script.");
-                    shutdown(); // Stop script
-                    return;
+                        Microbot.log("Missing required consumables in the bank. Shutting down script.");
+                        shutdown(); // Stop script
+                        return;
+                    }
                 }
             }
         }
-
         sleepUntil(Rs2Bank::isOpen);
         Rs2Bank.depositAll();
         sleep(600);
