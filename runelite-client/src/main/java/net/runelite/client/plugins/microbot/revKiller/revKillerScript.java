@@ -837,8 +837,7 @@ public class revKillerScript extends Script {
                     if(Rs2Player.isMoving()){
                         sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(3000,6000));
                     }
-                }
-                if(!Rs2GroundItem.isItemBasedOnValueOnGround(500,10)){
+                } else {
                     break;
                 }
             }
