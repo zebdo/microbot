@@ -62,6 +62,7 @@ import static net.runelite.client.plugins.microbot.util.player.Rs2Pvp.getWildern
 import static net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer.isPrayerActive;
 import static net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer.toggle;
 import static net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum.*;
+import static net.runelite.client.plugins.microbot.util.walker.Rs2Walker.setTarget;
 import static net.runelite.client.plugins.skillcalculator.skills.MagicAction.HIGH_LEVEL_ALCHEMY;
 import static net.runelite.client.plugins.skillcalculator.skills.MagicAction.WIND_BLAST;
 
@@ -1935,6 +1936,10 @@ public class WildyKillerScript extends Script {
                         return;
                     }
                 }
+                if (!Rs2Inventory.hasItem(FOOD)) {
+                    Microbot.log("you might have missed banking for food at castle wars");
+                    state = MossKillerState.BANK;
+                }
             }
         }
         if (Rs2Inventory.hasItemAmount(MIND_RUNE, 1500)) {
@@ -2001,6 +2006,10 @@ public class WildyKillerScript extends Script {
         if (Rs2Inventory.hasItemAmount(MIND_RUNE, 1500) &&
                 Rs2Walker.getDistanceBetween(playerLocation, VARROCK_WEST_BANK) > 6) {
             state = MossKillerState.WALK_TO_BANK;
+        }
+
+        if (TOTAL_FEROX_ENCLAVE.contains(Rs2Player.getWorldLocation())) {
+            Rs2Bank.walkToBankAndUseBank(BankLocation.FEROX_ENCLAVE);
         }
 
 
@@ -2356,6 +2365,8 @@ public class WildyKillerScript extends Script {
 
         Microbot.log(String.valueOf(state));
 
+        if (mossKillerPlugin.playerJammed() && ShortestPathPlugin.isStartPointSet()) {setTarget(null);}
+
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
 
         if (!scheduledFuture.isDone()) {
@@ -2553,12 +2564,6 @@ public class WildyKillerScript extends Script {
             }
         }
         return true;
-    }
-
-    public void toggleRunEnergyOff() {
-        if (Rs2Player.isRunEnabled() && Rs2Player.getRunEnergy() > 0) {
-            Rs2Player.toggleRunEnergy(false);
-        }
     }
 
 }

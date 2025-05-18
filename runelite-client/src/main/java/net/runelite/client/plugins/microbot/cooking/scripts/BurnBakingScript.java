@@ -387,8 +387,8 @@ public class BurnBakingScript extends Script {
                         if (!Rs2Inventory.hasItem(POT_OF_FLOUR) || !Rs2Inventory.hasItem(BUCKET_OF_WATER)) {
                             Microbot.log("trying to withdrawX didn't populate inventory, so withdrawing all");
                             Rs2Bank.openBank();
-                            Rs2Bank.withdrawAll(POT_OF_FLOUR);
-                            Rs2Bank.withdrawAll(BUCKET_OF_WATER);
+                            if (!Rs2Inventory.hasItem(POT_OF_FLOUR)) {Rs2Bank.withdrawAll(POT_OF_FLOUR);}
+                            if (!Rs2Inventory.hasItem(BUCKET_OF_WATER)) {Rs2Bank.withdrawAll(BUCKET_OF_WATER);}
                         }
                     } else {
                         Rs2Bank.depositAll(); //if inventory is not empty deposit all
