@@ -22,8 +22,8 @@
 # Western Banner (3 has 1 teleport per day, 4 is unlimited)									
 2339 3649 0		13143;13144			Y	F	19	4	Western banner
 # Explorer's Ring (2 has 3 teleports per day, 3 and 4 are unlimited)									
-3052 3291 0		13126		4552<3	Y	T	19	4	Explorer's ring
-3052 3291 0		13127;13128			Y	F	19	4	Explorer's ring
+3052 3291 0		13126		4552<3	Y	T	19	4	Explorer's ring: Teleport
+3052 3291 0		13127;13128			Y	F	19	4	Explorer's ring: Teleport
 # Rada's Blessing (Kourend Woodland, 1 has 3 teleports, 2 has 5 teleports, 3 and 4 have unlimited. For Mount Karuulum, 3 has 3 teleports and 4 has unlimited)									
 1554 3457 0		22941		7937<3	Y	T	19	4	Rada's blessing: Kourend Woodland
 1554 3457 0		22943		7937<5	Y	T	19	4	Rada's blessing: Kourend Woodland
