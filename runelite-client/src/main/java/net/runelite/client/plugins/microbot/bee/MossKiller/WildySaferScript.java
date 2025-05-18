@@ -193,7 +193,12 @@ public class WildySaferScript extends Script {
                 if (isAtSafeSpot() && move) {
                     walkFastCanvas(SAFESPOT1);
                     sleep(900,1400);
-                    Rs2Npc.interact(MOSS_GIANT_2093,"attack");
+                    Rs2Npc.interact(MOSS_GIANT_2093,"Attack");
+                    sleepUntil(() -> Rs2Player.getInteracting() != null);
+                    if (Rs2Player.getInteracting() == null) {
+                        Microbot.log("We are not interacting with anything, trying to attack again");
+                        Rs2Npc.interact(MOSS_GIANT_2093,"Attack");
+                    }
                     move = false;
                     iveMoved = true;
                 }
