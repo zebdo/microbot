@@ -1,17 +1,16 @@
 package net.runelite.client.plugins.microbot.bee.MossKiller;
 
 import net.runelite.api.Client;
-import net.runelite.api.Player;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
-import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
-import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -24,7 +23,6 @@ import net.runelite.client.plugins.microbot.util.models.RS2Item;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.security.Login;
 
 import javax.inject.Inject;
@@ -38,10 +36,10 @@ import static net.runelite.api.EquipmentInventorySlot.WEAPON;
 import static net.runelite.api.ItemID.*;
 import static net.runelite.api.NpcID.MOSS_GIANT_2093;
 import static net.runelite.api.Skill.DEFENCE;
+import static net.runelite.api.Skill.WOODCUTTING;
 import static net.runelite.client.plugins.microbot.bee.MossKiller.Enums.AttackStyle.MAGIC;
 import static net.runelite.client.plugins.microbot.bee.MossKiller.Enums.AttackStyle.RANGE;
 import static net.runelite.client.plugins.microbot.util.npc.Rs2Npc.getNpcs;
-import static net.runelite.api.Skill.WOODCUTTING;
 import static net.runelite.client.plugins.microbot.util.walker.Rs2Walker.*;
 
 public class WildySaferScript extends Script {
@@ -113,6 +111,12 @@ public class WildySaferScript extends Script {
 
                 if (Rs2Inventory.contains(MOSSY_KEY)) {
                     doBankingLogic();
+                }
+
+                if (fired) {
+                    Rs2Bank.walkToBank();
+                    Rs2Player.logout();
+                    fired = false;
                 }
 
                 //if you're at moss giants and your inventory is not prepared, prepare inventory
@@ -249,10 +253,13 @@ public class WildySaferScript extends Script {
         return config.attackStyle() == RANGE && Rs2Equipment.isEquipped(MAPLE_SHORTBOW, WEAPON) && Rs2Equipment.isEquipped(MITHRIL_ARROW, AMMO);
     }
 
-    int interactingTicks = 0;
+    /// /// reserved for anti-pk logic /// ///
 
-    public void checkCombatAndRunToBank() {
-        if (Rs2Player.isInCombat()) {
+    //int interactingTicks = 0;
+
+    /*public void dealWithPker() {
+        if (Rs2Npc.getNpcsForPlayer() == null
+                && Rs2Player.getPlayersInCombatLevelRange() != null) {
             Player localPlayer = Rs2Player.getLocalPlayer();
             for (Rs2PlayerModel p : Rs2Player.getPlayersInCombatLevelRange()) {
                 if (p != null && p != localPlayer && p.getInteracting() == localPlayer) {
@@ -262,13 +269,12 @@ public class WildySaferScript extends Script {
             }
 
             if (interactingTicks > 3) {
-                Rs2Bank.walkToBank();
                 fired = true;
             }
         } else {
             interactingTicks = 0; // reset if not in combat
         }
-    }
+    }*/
 
 
     private boolean isInMossGiantArea() {

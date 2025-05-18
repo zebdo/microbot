@@ -93,6 +93,8 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
     private boolean useMelee = false;
     private boolean useRange = false;
 
+    public boolean firemethod = false;
+
 
     private int consecutiveHitsplatsMain = 0;
     private int consecutiveHitsplatsSafeSpot1 = 0;
@@ -423,10 +425,16 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
             }
         }
 
-        if (config.wildySafer() && !wildySaferScript.fired) {
+        /// reserved for wildysafer anti-pk logic ///
+
+        /*if (config.wildySafer()
+                && !wildySaferScript.fired
+                && Rs2Player.getWorldLocation().getY() > 3700
+                && Rs2Player.getPlayersInCombatLevelRange() != null) {
             wildySaferScript.checkCombatAndRunToBank();
-        }
+        }*/
     }
+
 
     public NPC findBryophyta() {
         return client.getNpcs().stream()
