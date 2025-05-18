@@ -1936,6 +1936,10 @@ public class WildyKillerScript extends Script {
                         return;
                     }
                 }
+                if (!Rs2Inventory.hasItem(FOOD)) {
+                    Microbot.log("you might have missed banking for food at castle wars");
+                    state = MossKillerState.BANK;
+                }
             }
         }
         if (Rs2Inventory.hasItemAmount(MIND_RUNE, 1500)) {
@@ -2002,6 +2006,10 @@ public class WildyKillerScript extends Script {
         if (Rs2Inventory.hasItemAmount(MIND_RUNE, 1500) &&
                 Rs2Walker.getDistanceBetween(playerLocation, VARROCK_WEST_BANK) > 6) {
             state = MossKillerState.WALK_TO_BANK;
+        }
+
+        if (TOTAL_FEROX_ENCLAVE.contains(Rs2Player.getWorldLocation())) {
+            Rs2Bank.walkToBankAndUseBank(BankLocation.FEROX_ENCLAVE);
         }
 
 
