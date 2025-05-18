@@ -59,7 +59,7 @@ public class MotherloadMineScript extends Script
 
     private String pickaxeName = "";
     private boolean shouldEmptySack = false;
-
+    private boolean gemBagEmptiedThisCycle = false;
 
 
     public boolean run(MotherloadMineConfig config)
@@ -267,7 +267,8 @@ public class MotherloadMineScript extends Script
         if (Rs2Inventory.isFull() && Rs2Inventory.hasItem("gem bag"))
         {
             Rs2Inventory.interact("gem bag", "Fill");
-            sleepUntil(() -> !Rs2Inventory.containsAny("Uncut sapphire", "Uncut emerald", "Uncut ruby", "Uncut diamond"), 2000);
+            sleepUntil(() -> !Rs2Inventory.contains("Uncut sapphire", "Uncut emerald", "Uncut ruby", "Uncut diamond"), 2000);
+            private boolean gemBagEmptiedThisCycle = false;
             if (!Rs2Inventory.isFull())
             {
                 return;
@@ -305,6 +306,7 @@ public class MotherloadMineScript extends Script
             if (!gemBagEmptiedThisCycle && Rs2Inventory.hasItem("gem bag")) 
             {
                 Rs2Inventory.interact("gem bag", "Empty");
+                gemBagEmptiedThisCycle = true;
                 sleep(100, 300);
             }
             
