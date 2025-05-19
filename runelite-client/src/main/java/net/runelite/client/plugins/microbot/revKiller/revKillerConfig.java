@@ -61,7 +61,8 @@ public interface revKillerConfig extends Config {
 
     enum ArrowSelections {
         RUNE(ItemID.RUNE_ARROW, "Rune arrows"),
-        AMETHYST(ItemID.AMETHYST_ARROW, "Amethyst arrows");
+        AMETHYST(ItemID.AMETHYST_ARROW, "Amethyst arrows"),
+        BOLT_RACK(ItemID.BOLT_RACK, "Bolt rack");
         //more to come I'm lazy okay
 
         private final int id;
