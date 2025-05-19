@@ -296,7 +296,14 @@ public class BarrowsScript extends Script {
                 }
 
                 if(!WhoisTun.equals("Unknown") && shouldBank == false && !inTunnels){
-                    Microbot.log("Going to the tunnels.");
+                    int howManyBrothersWereKilled = Microbot.getVarbitValue(Varbits.BARROWS_KILLED_DHAROK) + Microbot.getVarbitValue(Varbits.BARROWS_KILLED_GUTHAN) + Microbot.getVarbitValue(Varbits.BARROWS_KILLED_KARIL) + Microbot.getVarbitValue(Varbits.BARROWS_KILLED_TORAG) + Microbot.getVarbitValue(Varbits.BARROWS_KILLED_VERAC) + Microbot.getVarbitValue(Varbits.BARROWS_KILLED_AHRIM);
+                    if(howManyBrothersWereKilled <= 4){
+                        Microbot.log("We seem to have missed someone, checking all mounds again.");
+                        return;
+                    } else {
+                        Microbot.log("Going to the tunnels.");
+                    }
+
                     stopFutureWalker();
                     for (BarrowsBrothers brother : BarrowsBrothers.values()) {
                         if (brother.name.equals(WhoisTun)) {
