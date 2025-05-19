@@ -150,10 +150,10 @@
 2871 3003 0	2871 3008 0	Climb;Rocks;53240	79 Agility			5	
 2880 9813 0	2877 9813 0	Jump-over;Strange floor;16510	80 Agility				
 2878 9813 0	2881 9813 0	Jump-over;Strange floor;16510	80 Agility				
-2775 10003 0	2773 10003 0	Jump-over;Strange floor;16544	81 Agility				
-2773 10003 0	2775 10003 0	Jump-over;Strange floor;16544	81 Agility				
-2768 10002 0	2770 10002 0	Jump-over;Strange floor;16544	81 Agility				
-2770 10002 0	2768 10002 0	Jump-over;Strange floor;16544	81 Agility				
+2775 10003 0	2773 10003 0	Jump-over;Strange floor;16544	43 Agility
+2773 10003 0	2775 10003 0	Jump-over;Strange floor;16544	43 Agility
+2768 10002 0	2770 10002 0	Jump-over;Strange floor;16544	43 Agility
+2770 10002 0	2768 10002 0	Jump-over;Strange floor;16544	43 Agility
 3500 9510 2	3506 9505 2	Squeeze-through;Crevice;16465	86 Agility				
 3506 9505 2	3500 9510 2	Squeeze-through;Crevice;16465	86 Agility				
 3308 3491 0	3308 3493 0	Climb-over;Broken Fence;2618					
