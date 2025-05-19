@@ -168,9 +168,18 @@ public class Rs2Combat {
 
     public static boolean inCombat() {
         if (!Microbot.isLoggedIn()) return false;
-        if (Microbot.getClientThread().runOnClientThreadOptional(() -> !Microbot.getClient().getLocalPlayer().isInteracting() ||
-                Objects.requireNonNull(Microbot.getClient().getLocalPlayer().getInteracting()).getCombatLevel() < 1).orElse(true)) return false;
-        return Rs2Player.isInteracting() || Rs2Player.getAnimation() != -1;
+
+        Player player = Microbot.getClient().getLocalPlayer();
+        if (player == null) return false;
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+                    Actor interactingActor = player.getInteracting();
+
+                    if (interactingActor == null) return false;
+                    if (interactingActor.getCombatLevel() < 1) return false;
+
+                    return player.getAnimation() != -1 || player.isInteracting();
+                })
+                .orElse(false);
     }
 
     /**
