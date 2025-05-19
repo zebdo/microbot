@@ -31,7 +31,7 @@ import static net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment.i
 
 public class ThievingScript extends Script {
 
-    public static String version = "1.6.4";
+    public static String version = "1.6.5";
     ThievingConfig config;
 
     public boolean run(ThievingConfig config) {
@@ -257,34 +257,34 @@ public class ThievingScript extends Script {
         Rs2Bank.depositAll();
 
         if (config.shadowVeil()) {
-            Rs2Inventory.waitForInventoryChanges(5000);
             if (!isEquipped("Lava battlestaff", EquipmentInventorySlot.WEAPON)) {
                 if (Rs2Bank.hasBankItem("Lava battlestaff")) {
                     Rs2Bank.withdrawItem("Lava battlestaff");
-                    Rs2Inventory.waitForInventoryChanges(5000);
+                    Rs2Inventory.waitForInventoryChanges(3000);
                     if (Rs2Inventory.contains("Lava battlestaff")) {
                         Rs2Inventory.wear("Lava battlestaff");
-                        Rs2Inventory.waitForInventoryChanges(5000);
+                        Rs2Inventory.waitForInventoryChanges(3000);
                     } else {
                         Rs2Bank.withdrawAll(true, "Fire rune", true);
-                        Rs2Inventory.waitForInventoryChanges(5000);
+                        Rs2Inventory.waitForInventoryChanges(3000);
                         Rs2Bank.withdrawAll(true, "Earth rune", true);
-                        Rs2Inventory.waitForInventoryChanges(5000);
+                        Rs2Inventory.waitForInventoryChanges(3000);
                     }
                 }
             }
             Rs2Bank.withdrawAll(true, "Cosmic rune", true);
-            Rs2Inventory.waitForInventoryChanges(5000);
+            Rs2Inventory.waitForInventoryChanges(3000);
         }
 
         boolean successfullyWithdrawFood = Rs2Bank.withdrawX(true, config.food().getName(), config.foodAmount(), true);
         if (!successfullyWithdrawFood) {
             Microbot.showMessage(config.food().getName() + " not found in bank");
-            sleep(5000);
+            sleep(3000);
             return;
         }
 
-        Rs2Bank.withdrawDeficit("dodgy necklace", config.dodgyNecklaceAmount());
+        Rs2Inventory.waitForInventoryChanges(3000);
+        Rs2Bank.withdrawX("dodgy necklace", config.dodgyNecklaceAmount(), true);
 
         Rs2Bank.closeBank();
         sleepUntil(() -> !Rs2Bank.isOpen());
