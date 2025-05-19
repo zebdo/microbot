@@ -24,6 +24,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 
 import java.util.Collections;
 import java.util.Comparator;
@@ -59,7 +60,7 @@ public class MotherloadMineScript extends Script
 
     private String pickaxeName = "";
     private boolean shouldEmptySack = false;
-
+    private boolean gemBagEmptiedThisCycle = false;
 
 
     public boolean run(MotherloadMineConfig config)
@@ -263,6 +264,17 @@ public class MotherloadMineScript extends Script
 
     private void depositHopper()
     {
+        // if using a gem bag, fill the gem bag and return to mining if the inventory is no longer full
+        if (Rs2Inventory.isFull() && Rs2Gembag.hasGemBag())
+        {
+            Rs2Inventory.interact("gem bag", "Fill");
+            gemBagEmptiedThisCycle = false;
+            if (!Rs2Inventory.isFull())
+            {
+                return;
+            }
+        }
+        
         WorldPoint hopperDeposit = (isUpperFloor() && config.upstairsHopperUnlocked()) ? HOPPER_DEPOSIT_UP : HOPPER_DEPOSIT_DOWN;
         Optional<GameObject> hopper = Optional.ofNullable(Rs2GameObject.findObject(ObjectID.HOPPER_26674, hopperDeposit));
 
@@ -289,7 +301,20 @@ public class MotherloadMineScript extends Script
         if (Rs2Bank.useBank())
         {
             sleepUntil(Rs2Bank::isOpen);
-            Rs2Bank.depositAllExcept("hammer", pickaxeName);
+
+            // if using the gem sack, empty its contents directly into the bank
+            if (Rs2Gembag.hasGemBag() && !gemBagEmptiedThisCycle) 
+            {
+                Rs2Gembag.checkGemBag();
+                if (Rs2Gembag.getTotalGemCount() > 0)
+                {
+                    Rs2Inventory.interact("gem bag", "Empty");
+                    sleep(100, 300);
+                }
+                gemBagEmptiedThisCycle = true;
+            }
+            
+            Rs2Bank.depositAllExcept("hammer", pickaxeName, "gem bag");
             sleep(100, 300);
 
             if (!Rs2Inventory.hasItem("hammer") && !Rs2Equipment.isWearing("hammer"))
