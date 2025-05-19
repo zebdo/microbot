@@ -19,6 +19,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 /**
  * Utility class for managing inventory setups in the Microbot plugin.
@@ -210,6 +211,7 @@ public class Rs2InventorySetup {
         if (hasExtraGearEquipped) {
             Microbot.log("Found Extra Gear that is not contained within the setup", Level.DEBUG);
             Rs2Bank.depositEquipment();
+            sleepUntil(() -> Rs2Equipment.items().stream().noneMatch(Objects::nonNull));
         }
 
         for (InventorySetupsItem inventorySetupsItem : inventorySetup.getEquipment()) {
