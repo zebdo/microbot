@@ -2,9 +2,6 @@ package net.runelite.client.plugins.microbot.thieving;
 
 import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.NPC;
-import net.runelite.api.Skill;
-import net.runelite.api.Varbits;
-import net.runelite.api.ItemID;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.client.game.npcoverlay.HighlightedNpc;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -298,7 +295,7 @@ public class ThievingScript extends Script {
         }
 
         Rs2Inventory.waitForInventoryChanges(3000);
-        Rs2Bank.withdrawX("dodgy necklace", config.dodgyNecklaceAmount(), true);
+        Rs2Bank.withdrawDeficit("dodgy necklace", config.dodgyNecklaceAmount());
 
         Rs2Bank.closeBank();
         sleepUntil(() -> !Rs2Bank.isOpen());
