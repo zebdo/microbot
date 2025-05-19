@@ -2,9 +2,6 @@ package net.runelite.client.plugins.microbot.thieving;
 
 import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.NPC;
-import net.runelite.api.Skill;
-import net.runelite.api.Varbits;
-import net.runelite.api.ItemID;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.client.game.npcoverlay.HighlightedNpc;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -31,7 +28,7 @@ import static net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment.i
 
 public class ThievingScript extends Script {
 
-    public static String version = "1.6.4";
+    public static String version = "1.6.5";
     ThievingConfig config;
 
     public boolean run(ThievingConfig config) {
@@ -238,13 +235,12 @@ public class ThievingScript extends Script {
         }
 
     private void handleShadowVeil() {
-        if (!Rs2Magic.isShadowVeilActive() &&
-                Rs2Magic.isArceeus() &&
-                Rs2Player.getBoostedSkillLevel(Skill.MAGIC) >= MagicAction.SHADOW_VEIL.getLevel() &&
-                Microbot.getVarbitValue(Varbits.SHADOW_VEIL_COOLDOWN) == 0 &&
-                Rs2Inventory.contains(ItemID.COSMIC_RUNE)
-        ) {
-            Rs2Magic.cast(MagicAction.SHADOW_VEIL);
+        if (!Rs2Magic.isShadowVeilActive() && config.shadowVeil()) {
+            if (Rs2Magic.canCast(MagicAction.SHADOW_VEIL)) {
+                Rs2Magic.cast(MagicAction.SHADOW_VEIL);
+            } else {
+                Microbot.showMessage("Please check, unable to cast Shadow Veil");
+            }
         }
     }
 
@@ -256,34 +252,49 @@ public class ThievingScript extends Script {
         if (!isBankOpen || !Rs2Bank.isOpen()) return;
         Rs2Bank.depositAll();
 
+        Map<String, EquipmentInventorySlot> rogueEquipment = new HashMap<>();
+        rogueEquipment.put("Rogue mask", EquipmentInventorySlot.HEAD);
+        rogueEquipment.put("Rogue top", EquipmentInventorySlot.BODY);
+        rogueEquipment.put("Rogue trousers", EquipmentInventorySlot.LEGS);
+        rogueEquipment.put("Rogue boots", EquipmentInventorySlot.BOOTS);
+        rogueEquipment.put("Rogue gloves", EquipmentInventorySlot.GLOVES);
+
+        for (Map.Entry<String, EquipmentInventorySlot> entry : rogueEquipment.entrySet()) {
+            String itemName = entry.getKey();
+            EquipmentInventorySlot slot = entry.getValue();
+            if (!isEquipped(itemName, slot) && Rs2Bank.hasBankItem(itemName)) {
+                Rs2Bank.withdrawAndEquip(itemName);
+                Rs2Inventory.waitForInventoryChanges(1200);
+            }
+        }
+
         if (config.shadowVeil()) {
-            Rs2Inventory.waitForInventoryChanges(5000);
             if (!isEquipped("Lava battlestaff", EquipmentInventorySlot.WEAPON)) {
                 if (Rs2Bank.hasBankItem("Lava battlestaff")) {
                     Rs2Bank.withdrawItem("Lava battlestaff");
-                    Rs2Inventory.waitForInventoryChanges(5000);
+                    Rs2Inventory.waitForInventoryChanges(3000);
                     if (Rs2Inventory.contains("Lava battlestaff")) {
                         Rs2Inventory.wear("Lava battlestaff");
-                        Rs2Inventory.waitForInventoryChanges(5000);
+                        Rs2Inventory.waitForInventoryChanges(3000);
                     } else {
                         Rs2Bank.withdrawAll(true, "Fire rune", true);
-                        Rs2Inventory.waitForInventoryChanges(5000);
+                        Rs2Inventory.waitForInventoryChanges(3000);
                         Rs2Bank.withdrawAll(true, "Earth rune", true);
-                        Rs2Inventory.waitForInventoryChanges(5000);
+                        Rs2Inventory.waitForInventoryChanges(3000);
                     }
                 }
             }
             Rs2Bank.withdrawAll(true, "Cosmic rune", true);
-            Rs2Inventory.waitForInventoryChanges(5000);
+            Rs2Inventory.waitForInventoryChanges(3000);
         }
 
         boolean successfullyWithdrawFood = Rs2Bank.withdrawX(true, config.food().getName(), config.foodAmount(), true);
         if (!successfullyWithdrawFood) {
             Microbot.showMessage(config.food().getName() + " not found in bank");
-            sleep(5000);
-            return;
+            shutdown();
         }
 
+        Rs2Inventory.waitForInventoryChanges(3000);
         Rs2Bank.withdrawDeficit("dodgy necklace", config.dodgyNecklaceAmount());
 
         Rs2Bank.closeBank();
