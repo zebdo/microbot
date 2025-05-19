@@ -6,6 +6,7 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
@@ -18,12 +19,11 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
-import net.runelite.client.plugins.microbot.util.math.Rs2Random;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.models.RS2Item;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.security.Login;
 
 import javax.inject.Inject;
 import java.util.List;
@@ -41,6 +41,7 @@ import static net.runelite.client.plugins.microbot.bee.MossKiller.Enums.AttackSt
 import static net.runelite.client.plugins.microbot.bee.MossKiller.Enums.AttackStyle.RANGE;
 import static net.runelite.client.plugins.microbot.util.npc.Rs2Npc.getNpcs;
 import static net.runelite.client.plugins.microbot.util.walker.Rs2Walker.*;
+import static net.runelite.client.plugins.skillcalculator.skills.MagicAction.HIGH_LEVEL_ALCHEMY;
 
 public class WildySaferScript extends Script {
     
@@ -96,6 +97,7 @@ public class WildySaferScript extends Script {
                     Microbot.log("Not logged in, skipping tick.");
                     return;}
                 if (!super.run()) {Microbot.log("super.run() returned false, skipping tick.");
+                    if (Microbot.isLoggedIn() && !Rs2Player.isInCombat() && BreakHandlerScript.breakIn <= 1) {Rs2Player.logout();}
                     return;}
                 if (Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
                     Microbot.log("Client or local player not ready. Skipping tick.");
@@ -108,6 +110,11 @@ public class WildySaferScript extends Script {
 
                 if (mossKillerPlugin.preparingForShutdown) {
                     MossKillerScript.prepareSoftStop();}
+
+                if (mossKillerPlugin.windStrikeflag) {
+                    Rs2Combat.setAutoCastSpell(Rs2CombatSpells.FIRE_STRIKE, config.forceDefensive());
+                    mossKillerPlugin.windStrikeflag = false;
+                }
 
                 if (Rs2Inventory.contains(MOSSY_KEY)) {
                     doBankingLogic();
@@ -189,6 +196,26 @@ public class WildySaferScript extends Script {
 
                 Rs2Player.eatAt(70);
 
+                if (Rs2Inventory.contains(NATURE_RUNE) &&
+                        !Rs2Inventory.contains(STAFF_OF_FIRE) &&
+                        Rs2Inventory.contains(ALCHABLES) &&
+                        config.alchLoot()) {
+
+                    if (config.attackStyle() == RANGE && !Rs2Inventory.contains(FIRE_RUNE, 5)) return;
+
+                    if (Rs2Player.getRealSkillLevel(Skill.MAGIC) > 54 && Rs2Magic.canCast(HIGH_LEVEL_ALCHEMY)) {
+
+                        if (Rs2Inventory.contains(STEEL_KITESHIELD)) {
+                            Rs2Magic.alch("Steel kiteshield");
+                        } else if (Rs2Inventory.contains(BLACK_SQ_SHIELD)) {
+                            Rs2Magic.alch("Black sq shield");
+                        } else if (Rs2Inventory.contains(MITHRIL_SWORD)) {
+                            Rs2Magic.alch("Mithril sword");
+                        }
+
+                        Rs2Player.waitForXpDrop(Skill.MAGIC, 10000, false);
+                    }
+                }
                 // if at the safe spot attack the moss giant and run to the safespot
                 if (isAtSafeSpot() && !Rs2Player.isInteracting() && desired2093Exists()) {
                     attackMossGiant();
@@ -316,19 +343,9 @@ public class WildySaferScript extends Script {
         if(!mossKillerScript.getNearbyPlayers(14).isEmpty()){
             if (ShortestPathPlugin.isStartPointSet()) {setTarget(null);}
             if(playerCounter > 15) {
-                sleep(10000, 15000);
-                int world = Login.getRandomWorld(false, null);
-                if(world == 301){
-                    return;
-                }
-                boolean isHopped = Microbot.hopToWorld(world);
-                sleepUntil(() -> isHopped, 5000);
-                if (!isHopped) return;
-                playerCounter = 0;
-                int randomThreshold = (int) Rs2Random.truncatedGauss(0, 5, 1.5); // Adjust mean and deviation as needed
-                if (randomThreshold > 3) {
-                    Rs2Inventory.open();
-                }
+                Rs2Player.logout();
+                sleepUntil(() -> !Microbot.isLoggedIn());
+                sleepUntil(Microbot::isLoggedIn);
                 return;
             }
             playerCounter++;

@@ -171,6 +171,7 @@ public class WildyKillerScript extends Script {
                     Microbot.log("Not logged in, skipping tick.");
                     return;}
                 if (!super.run()) {Microbot.log("super.run() returned false, skipping tick.");
+                    if (Microbot.isLoggedIn() && !Rs2Player.isInCombat() && BreakHandlerScript.breakIn <= 1) {Rs2Player.logout();}
                     return;}
                 if (Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
                     Microbot.log("Client or local player not ready. Skipping tick.");
@@ -1753,18 +1754,8 @@ public class WildyKillerScript extends Script {
         if (mossKillerPlugin.currentTarget == null) {
             if (!getNearbyPlayers(7).isEmpty()) {
                 if (playerCounter > 5) {
-                    sleep(600, 1200);
-                    int world = Login.getRandomWorld(false, null);
-                    if (world == 301 || world == 308) {
-                        return;
-                    }
-                    boolean isHopped = Microbot.hopToWorld(world);
-                    sleepUntil(() -> isHopped, 5000);
-                    if (!isHopped) return;
-                    playerCounter = 0;
-                    int randomThreshold = (int) Rs2Random.truncatedGauss(0, 5, 1.5); // Adjust mean and deviation as needed
-                    if (randomThreshold > 3) {
-                        Rs2Inventory.open();
+                    if (!Rs2Player.isInCombat()) {
+                        Rs2Player.logout();
                     }
                     return;
                 }
@@ -2268,6 +2259,7 @@ public class WildyKillerScript extends Script {
             return;
         }
         if (playerLocation.getY() > 9000) {
+            Microbot.log("attempting to interact with the portal");
             Rs2GameObject.interact("Portal", "Exit");
             sleep(4000, 5000);
             return;
@@ -2365,7 +2357,9 @@ public class WildyKillerScript extends Script {
 
         Microbot.log(String.valueOf(state));
 
-        if (mossKillerPlugin.playerJammed() && ShortestPathPlugin.isStartPointSet()) {setTarget(null);}
+        if (mossKillerPlugin.playerJammed()) {Microbot.log("player registered as Jammed");
+            if(ShortestPathPlugin.isStartPointSet()) {setTarget(null);}
+        }
 
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
 
@@ -2402,6 +2396,8 @@ public class WildyKillerScript extends Script {
             if (Rs2Walker.getDistanceBetween(playerLocation, VARROCK_WEST_BANK) > 6
                     || Rs2Player.isTeleBlocked()
                     || getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 20) {
+                Rs2Walker.setTarget(null);
+                sleep(2000);
                 Rs2Bank.walkToBank(BankLocation.VARROCK_WEST);
             }
 
