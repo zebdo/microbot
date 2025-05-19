@@ -389,7 +389,8 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
                 }
             }
 
-            if (config.combatMode() == CombatMode.FIGHT && currentTarget != null) {
+            if (config.combatMode() == CombatMode.FIGHT) {
+                //note to self - this is where target is set
                 trackAttackers();
             }
 
