@@ -256,6 +256,22 @@ public class ThievingScript extends Script {
         if (!isBankOpen || !Rs2Bank.isOpen()) return;
         Rs2Bank.depositAll();
 
+        Map<String, EquipmentInventorySlot> rogueEquipment = new HashMap<>();
+        rogueEquipment.put("Rogue mask", EquipmentInventorySlot.HEAD);
+        rogueEquipment.put("Rogue top", EquipmentInventorySlot.BODY);
+        rogueEquipment.put("Rogue trousers", EquipmentInventorySlot.LEGS);
+        rogueEquipment.put("Rogue boots", EquipmentInventorySlot.BOOTS);
+        rogueEquipment.put("Rogue gloves", EquipmentInventorySlot.GLOVES);
+
+        for (Map.Entry<String, EquipmentInventorySlot> entry : rogueEquipment.entrySet()) {
+            String itemName = entry.getKey();
+            EquipmentInventorySlot slot = entry.getValue();
+            if (!isEquipped(itemName, slot) && Rs2Bank.hasBankItem(itemName)) {
+                Rs2Bank.withdrawAndEquip(itemName);
+                Rs2Inventory.waitForInventoryChanges(1200);
+            }
+        }
+
         if (config.shadowVeil()) {
             if (!isEquipped("Lava battlestaff", EquipmentInventorySlot.WEAPON)) {
                 if (Rs2Bank.hasBankItem("Lava battlestaff")) {
