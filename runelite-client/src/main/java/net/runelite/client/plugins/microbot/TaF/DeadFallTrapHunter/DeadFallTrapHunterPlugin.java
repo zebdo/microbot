@@ -15,6 +15,12 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.hunter.HunterTrap;
+import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.misc.TimeUtils;
 import net.runelite.client.ui.overlay.OverlayManager;
 
@@ -31,7 +37,7 @@ import java.util.Map;
         tags = {"hunter", "deadfall", "skilling", "xp", "loot", "TaF"},
         enabledByDefault = false
 )
-public class DeadFallTrapHunterPlugin extends Plugin {
+public class DeadFallTrapHunterPlugin extends Plugin implements SchedulablePlugin {
 
     @Getter
     private final Map<WorldPoint, HunterTrap> traps = new HashMap<>();
@@ -47,6 +53,7 @@ public class DeadFallTrapHunterPlugin extends Plugin {
     private DeadFallTrapInventoryHandlerScript looter;
     private WorldPoint lastTickLocalPlayerLocation;
     private Instant scriptStartTime;
+    private LogicalCondition stopCondition = new AndCondition();
 
     @Provides
     DeadFallTrapHunterConfig provideConfig(ConfigManager configManager) {
@@ -208,5 +215,21 @@ public class DeadFallTrapHunterPlugin extends Plugin {
         }
 
         lastTickLocalPlayerLocation = client.getLocalPlayer().getWorldLocation();
+    }
+
+    @Override
+    public void onPluginScheduleEntrySoftStopEvent(PluginScheduleEntrySoftStopEvent event) {
+        if (event.getPlugin() == this) {
+            if (script != null) {
+                Rs2Bank.walkToBank();
+            }
+            Microbot.stopPlugin(this);
+        }
+    }
+
+    @Override
+    public LogicalCondition getStopCondition() {
+        // Create a new stop condition
+        return this.stopCondition;
     }
 }
