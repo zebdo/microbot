@@ -21,7 +21,7 @@ import java.time.Instant;
 @PluginDescriptor(
         name = PluginDescriptor.TaFCat + "Calcified Rock Miner",
         description = "Calcified Rock Miner",
-        tags = {"prayer", "rock", "dailies", "taf", "microbot"},
+        tags = {"prayer", "rock", "calcified", "taf", "microbot"},
         enabledByDefault = false
 )
 public class CalcifiedRockMinerPlugin extends Plugin {
@@ -58,22 +58,5 @@ public class CalcifiedRockMinerPlugin extends Plugin {
     @Provides
     CalcifiedRockMinerConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(CalcifiedRockMinerConfig.class);
-    }
-
-    @Subscribe
-    public void onChatMessage(ChatMessage event) {
-        if (event.getType() == ChatMessageType.GAMEMESSAGE && event.getMessage().equalsIgnoreCase("Some cracks around the cave begin to ooze water")) {
-            Microbot.log("Spawned a calcified rock.");
-        }
-    }
-
-    @Subscribe
-    public void onDecorativeObjectSpawned(DecorativeObjectSpawned event)
-    {
-        DecorativeObject object = event.getDecorativeObject();
-        if (object.getId() == 51493) {
-            Microbot.log("onDecorativeObjectSpawned: " + object.getId());
-        }
-
     }
 }

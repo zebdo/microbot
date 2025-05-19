@@ -103,7 +103,7 @@ public class CalcifiedRockMinerScript extends Script {
 
         if (hopIfTooManyPlayersNearby(config)) return; // Exit current cycle after hop
 
-        if (Rs2Equipment.isWearing("Dragon pickaxe")) {
+        if (Rs2Equipment.isWearing("Dragon pickaxe") || Rs2Equipment.isWearing("Crystal pickaxe")) {
             Rs2Combat.setSpecState(true, 1000);
             return;
         }
