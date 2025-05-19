@@ -238,13 +238,12 @@ public class ThievingScript extends Script {
         }
 
     private void handleShadowVeil() {
-        if (!Rs2Magic.isShadowVeilActive() &&
-                Rs2Magic.isArceeus() &&
-                Rs2Player.getBoostedSkillLevel(Skill.MAGIC) >= MagicAction.SHADOW_VEIL.getLevel() &&
-                Microbot.getVarbitValue(Varbits.SHADOW_VEIL_COOLDOWN) == 0 &&
-                Rs2Inventory.contains(ItemID.COSMIC_RUNE)
-        ) {
-            Rs2Magic.cast(MagicAction.SHADOW_VEIL);
+        if (!Rs2Magic.isShadowVeilActive() && config.shadowVeil()) {
+            if (Rs2Magic.canCast(MagicAction.SHADOW_VEIL)) {
+                Rs2Magic.cast(MagicAction.SHADOW_VEIL);
+            } else {
+                Microbot.showMessage("Please check, unable to cast Shadow Veil");
+            }
         }
     }
 
