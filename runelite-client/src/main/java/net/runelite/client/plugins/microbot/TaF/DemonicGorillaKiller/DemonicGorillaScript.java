@@ -566,11 +566,11 @@ private void handleTravel(DemonicGorillaConfig config) {
     private void activateOffensivePrayer(DemonicGorillaConfig config) {
         Rs2PrayerEnum newOffensivePrayer = null;
 
-        if (config.useMagicStyle() && magicGear.doesEquipmentMatch()) {
+        if (config.useMagicStyle() && currentGear == ArmorEquiped.MAGIC && magicGear.doesEquipmentMatch()) {
             newOffensivePrayer = Rs2PrayerEnum.AUGURY;
-        } else if (config.useRangeStyle() && rangeGear.doesEquipmentMatch()) {
+        } else if (config.useRangeStyle() && currentGear == ArmorEquiped.RANGED && rangeGear.doesEquipmentMatch()) {
             newOffensivePrayer = Rs2PrayerEnum.RIGOUR;
-        } else if (config.useMeleeStyle() && meleeGear.doesEquipmentMatch()) {
+        } else if (config.useMeleeStyle() && currentGear == ArmorEquiped.MELEE && meleeGear.doesEquipmentMatch()) {
             newOffensivePrayer = Rs2PrayerEnum.PIETY;
         }
 
