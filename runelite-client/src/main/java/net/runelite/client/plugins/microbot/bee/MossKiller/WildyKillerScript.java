@@ -216,9 +216,9 @@ public class WildyKillerScript extends Script {
                 if (mossKillerPlugin.shouldHopWorld()) {
                     Microbot.log("Player is dead! Hopping worlds...");
                     sleepUntil(() -> !Rs2Player.isInCombat());
-                    sleep(4900);
-                    performWorldHop();
-                    sleep(2900);
+                    Rs2Player.logout();
+                    sleepUntil(() -> !Microbot.isLoggedIn());
+                    sleepUntil(Microbot::isLoggedIn);
                     mossKillerPlugin.resetWorldHopFlag(); // Reset after hopping
                 }
 
