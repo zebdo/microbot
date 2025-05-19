@@ -294,8 +294,7 @@ public class ThievingScript extends Script {
         boolean successfullyWithdrawFood = Rs2Bank.withdrawX(true, config.food().getName(), config.foodAmount(), true);
         if (!successfullyWithdrawFood) {
             Microbot.showMessage(config.food().getName() + " not found in bank");
-            sleep(3000);
-            return;
+            shutdown();
         }
 
         Rs2Inventory.waitForInventoryChanges(3000);
