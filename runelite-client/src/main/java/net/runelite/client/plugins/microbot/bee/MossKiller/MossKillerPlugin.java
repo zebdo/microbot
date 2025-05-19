@@ -94,15 +94,7 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
     private boolean useMelee = false;
     private boolean useRange = false;
 
-    public boolean firemethod = false;
-
-
     private int consecutiveHitsplatsMain = 0;
-    private int consecutiveHitsplatsSafeSpot1 = 0;
-    private long lastHitsplatTimeMain = 0;
-    private long lastHitsplatTimeSafeSpot1 = 0;
-    private static final long CONSECUTIVE_HITSPLAT_TIMEOUT = 3000; //
-
     private boolean runeScimitar = false;
 
     private final Object targetLock = new Object();
@@ -120,11 +112,12 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
     private boolean superNullTarget = false;
 
     private boolean isJammed;
+    private boolean superJammed;
 
     private boolean hitsplatIsTheirs = false;
 
     private int hitsplatSetTick = -1; // Initialize to an invalid tick value
-
+    private long lastHitsplatTimeMain = 0;
     // Tracks the nearby player condition
     private boolean isPlayerNearby = false;
 
@@ -293,6 +286,10 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
         return isJammed;
     }
 
+    public boolean isSuperJammed() {
+        return superJammed;
+    }
+
     public void resetWorldHopFlag() {
         worldHopFlag = false;
     }
@@ -417,9 +414,14 @@ public class MossKillerPlugin extends Plugin implements SchedulablePlugin {
                         isJammed = true;
                     }
 
+                    if (tickCount >= 500) {
+                        superJammed = true;
+                    }
+
                 } else {
                     tickCount = 0;
                     isJammed = false;
+                    superJammed = false;
                 }
             }
 

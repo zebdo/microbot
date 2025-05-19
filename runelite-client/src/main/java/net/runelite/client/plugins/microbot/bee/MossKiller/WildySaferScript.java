@@ -141,7 +141,7 @@ public class WildySaferScript extends Script {
                 // If you're not at moss giants but have prepared inventory, go to moss giants
                 if (!isInMossGiantArea() && equipmentIsPrepared()) {
                     System.out.println("not in moss giant area but we are prepared");
-                    if (config.attackStyle() == MAGIC && isEquippedWithRequiredItems() && isInventoryPreparedMage()) {walkTo(SAFESPOT);}
+                    if (config.attackStyle() == MAGIC && isEquippedWithRequiredItems() && isInventoryPreparedMage()) {walkTo(SAFESPOT);} else if (config.attackStyle() == MAGIC){doBankingLogic();}
                     if (config.attackStyle() == RANGE && isEquippedWithRequiredItemsRange() && isInventoryPreparedArcher()) {walkTo(SAFESPOT);}
                     // if you're not at moss giants but don't have prepared inventory, prepare inventory
                 }
@@ -258,8 +258,10 @@ public class WildySaferScript extends Script {
                 }
 
                 // Check if any players are near and hop if there are
-                playersCheck();
+                if (SAFE_ZONE_AREA.contains(Rs2Player.getWorldLocation())) playersCheck();
 
+                if (mossKillerPlugin.isSuperJammed()) {if (Rs2Inventory.items() == null) {Microbot.log("Inventory has returned null, doing banking logic");
+                    doBankingLogic();}}
 
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
