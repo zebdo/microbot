@@ -17,7 +17,6 @@ public class EventDismissScript extends Script {
     public boolean run(EventDismissConfig config) {
         List<Plugin> activePlugins = Microbot.getActiveMicrobotPlugins();
         for (Plugin plugin : activePlugins) {
-            Microbot.log(plugin.getName());
             if (plugin.getName().equals("<html>[<font color=#b8f704M>M</font>] Agility")) {
                 Microbot.log("Event Dismiss Start Failed : Cannot use event dismiss with Agility Plugin");
                 return false;
