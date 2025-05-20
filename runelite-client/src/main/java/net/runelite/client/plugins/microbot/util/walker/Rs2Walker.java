@@ -1460,6 +1460,11 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             }
             return true;
         }
+
+        if (tileObject.getId() == ObjectID.ROCK_SLIDE) {
+            Rs2Player.waitForAnimation(600 * 4);
+            return true;
+        }
         return false;
     }
     
