@@ -24,7 +24,7 @@ import static net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIn
 public class VolcanicAshMinerScript extends Script {
     public static final String VERSION = "1.0";
     public static VolcanicAshMinerState BOT_STATUS = VolcanicAshMinerState.MINING;
-    private final WorldPoint SODA_ASH_LOCATION = new WorldPoint(3790, 3770, 0);
+    private final WorldPoint VOLCANIC_ASH_LOCATION = new WorldPoint(3790, 3770, 0);
 
     {
         Microbot.enableAutoRunOn = false;
@@ -67,8 +67,8 @@ public class VolcanicAshMinerScript extends Script {
             Rs2Inventory.dropAll("soda ash");
             BOT_STATUS = VolcanicAshMinerState.MINING;
         }
-        if (Rs2Player.distanceTo(SODA_ASH_LOCATION) > 15) {
-            Rs2Walker.walkTo(SODA_ASH_LOCATION);
+        if (Rs2Player.distanceTo(VOLCANIC_ASH_LOCATION) > 15) {
+            Rs2Walker.walkTo(VOLCANIC_ASH_LOCATION);
         }
 
         if (hopIfTooManyPlayersNearby(config)) return; // Exit current cycle after hop
@@ -82,7 +82,7 @@ public class VolcanicAshMinerScript extends Script {
             return;
         }
 
-        GameObject rock = Rs2GameObject.findReachableObject("Ash pile", true, 12, SODA_ASH_LOCATION);
+        GameObject rock = Rs2GameObject.findReachableObject("Ash pile", true, 12, VOLCANIC_ASH_LOCATION);
         if (rock != null) {
             if (Rs2GameObject.interact(rock)) {
                 Rs2Player.waitForXpDrop(Skill.MINING, true);
