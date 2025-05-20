@@ -199,8 +199,8 @@ public class Rs2Npc {
         List<Rs2NpcModel> npcList = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getTopLevelWorldView().npcs().stream()
                 .filter(Objects::nonNull)
                 .map(Rs2NpcModel::new)
-                .filter(predicate)
                 .filter(x -> x.getName() != null)
+                .filter(predicate)
                 .sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation())))
                 .collect(Collectors.toList()))
                 .orElse(new ArrayList<>());

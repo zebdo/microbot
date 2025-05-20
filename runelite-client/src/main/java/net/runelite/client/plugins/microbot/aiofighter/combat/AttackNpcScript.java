@@ -66,7 +66,11 @@ public class AttackNpcScript extends Script {
                 filteredAttackableNpcs.set(
                         Rs2Npc.getAttackableNpcs(config.attackReachableNpcs())
                                 .filter(npc -> npc.getWorldLocation().distanceTo(config.centerLocation()) <= config.attackRadius())
-                                .filter(npc -> npc.getName() != null && !npcsToAttack.isEmpty() && npcsToAttack.stream().anyMatch(npc.getName()::equalsIgnoreCase))
+                                .filter(npc -> {
+                                    String name = npc.getName();
+                                    if (name == null || name.isEmpty()) return false;
+                                    return !npcsToAttack.isEmpty() && npcsToAttack.stream().anyMatch(name::equalsIgnoreCase);
+                                })
                                 .sorted(Comparator.comparingInt((Rs2NpcModel npc) -> Objects.equals(npc.getInteracting(), Microbot.getClient().getLocalPlayer()) ? 0 : 1)
                                         .thenComparingInt(npc -> Rs2Player.getRs2WorldPoint().distanceToPath(npc.getWorldLocation())))
                                 .collect(Collectors.toList())
