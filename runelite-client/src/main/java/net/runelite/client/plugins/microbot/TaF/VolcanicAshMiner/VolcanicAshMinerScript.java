@@ -16,6 +16,7 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import net.runelite.client.plugins.mining.MiningAnimation;
 
 import java.util.concurrent.TimeUnit;
 
@@ -105,7 +106,7 @@ public class VolcanicAshMinerScript extends Script {
                         return p.getWorldLocation().distanceTo(localLocation) <= 15;
                     })
                     //filter if players are using mining animation
-                    .filter(p -> p.getAnimation() != -1)
+                    .filter(p -> MiningAnimation.MINING_ANIMATIONS.contains(p))
                     .count();
 
             if (nearbyPlayers >= maxPlayers) {

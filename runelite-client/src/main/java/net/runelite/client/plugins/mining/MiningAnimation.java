@@ -28,9 +28,9 @@ import com.google.common.collect.ImmutableSet;
 import java.util.Set;
 import net.runelite.api.gameval.AnimationID;
 
-class MiningAnimation
+public class MiningAnimation
 {
-	static final Set<Integer> MINING_ANIMATIONS = ImmutableSet.of(
+	public static final Set<Integer> MINING_ANIMATIONS = ImmutableSet.of(
 		AnimationID.HUMAN_MINING_BRONZE_PICKAXE,
 		AnimationID.HUMAN_MINING_BRONZE_PICKAXE_WALL,
 		AnimationID.HUMAN_MINING_BRONZE_PICKAXE_NOREACHFORWARD,
