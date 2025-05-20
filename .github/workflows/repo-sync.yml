@@ -1,0 +1,21 @@
+
+on:
+  schedule:
+  - cron:  "*/480 * * * *"
+  workflow_dispatch:
+
+jobs:
+  repo-sync:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        persist-credentials: false
+    - name: repo-sync
+      uses: repo-sync/github-sync@v2
+      with:
+        source_repo: "chsami/Microbot"
+        source_branch: "*"
+        destination_branch: "*"
+        sync_tags: ""
+        github_token: ${{ secrets.PAT }}
