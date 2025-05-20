@@ -2,9 +2,11 @@ package net.runelite.client.plugins.microbot.mining.motherloadmine;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.ObjectID;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.mining.motherloadmine.enums.MLMMiningSpot;
@@ -200,7 +202,7 @@ public class MotherloadMineScript extends Script
 
         if (miningSpot == MLMMiningSpot.IDLE)
         {
-            selectRandomMiningSpot();
+            selectMiningSpotFromConfig();
         }
 
         if (walkToMiningSpot())
@@ -276,6 +278,10 @@ public class MotherloadMineScript extends Script
                 shouldEmptySack = true;
             }
         }
+        // ✅ Check for uncut gems and go bank them
+        if (hasOreInInventory()) {
+            status = MLMStatus.BANKING;
+        }
         else
         {
             Rs2Walker.walkTo(hopperDeposit, 15);
@@ -310,42 +316,88 @@ public class MotherloadMineScript extends Script
         status = MLMStatus.IDLE;
     }
 
-    private void selectRandomMiningSpot()
-    {
-        // Randomly decide which spot to go to
-        // More variety can be added if needed
-        miningSpot = (Rs2Random.between(1, 5) == 2)
-                ? (config.mineUpstairs() ? MLMMiningSpot.WEST_UPPER : MLMMiningSpot.SOUTH)
-                : (config.mineUpstairs() ? MLMMiningSpot.EAST_UPPER : MLMMiningSpot.WEST_LOWER);
-        Collections.shuffle(miningSpot.getWorldPoint());
-    }
+//    private void selectRandomMiningSpot()
+//    {
+//        // Randomly decide which spot to go to
+//        // More variety can be added if needed
+//        miningSpot = (Rs2Random.between(1, 5) == 2)
+//                ? (config.mineUpstairs() ? MLMMiningSpot.WEST_UPPER : MLMMiningSpot.SOUTH)
+//                : (config.mineUpstairs() ? MLMMiningSpot.EAST_UPPER : MLMMiningSpot.WEST_LOWER);
+//        Collections.shuffle(miningSpot.getWorldPoint());
+//    }
 
-    private boolean walkToMiningSpot()
-    {
-        WorldPoint target = miningSpot.getWorldPoint().get(0);
-        if (config.mineUpstairs() && !isUpperFloor())
-        {
-            goUp();
+    private void selectMiningSpotFromConfig() {
+        MLMMiningSpot selected = config.miningArea();
+
+        if (selected == MLMMiningSpot.ANY) {
+            // 🔁 Random selection based on upstairs config
+            if (config.mineUpstairs()) {
+                miningSpot = Rs2Random.between(0, 1) == 0 ? MLMMiningSpot.WEST_UPPER : MLMMiningSpot.EAST_UPPER;
+            }
+            else {
+                miningSpot = Rs2Random.between(0, 1) == 0 ? MLMMiningSpot.WEST_LOWER : MLMMiningSpot.WEST_MID;
+                miningSpot = Rs2Random.between(0, 1) == 0 ? MLMMiningSpot.SOUTH_WEST : MLMMiningSpot.SOUTH_EAST;
+            }
+            Microbot.showMessage("Random mining spot selected: " + miningSpot.name());
+        } else {
+            // ✅ Use the user-specified mining area
+            switch (selected) {
+                case EAST_UPPER:
+                case WEST_UPPER:
+                case WEST_LOWER:
+                case WEST_MID:
+                case SOUTH_WEST:
+                case SOUTH_EAST:
+                    miningSpot = selected;
+                    break;
+                default:
+                    Microbot.showMessage("Invalid mining area selected.");
+                    shutdown();
+                    return;
+            }
         }
-        return config.mineUpstairs() && isUpperFloor() || Rs2Walker.walkTo(target, 10);
+
+        // Shuffle order of veins within the selected area
+        if (miningSpot.getWorldPoint() != null) {
+            Collections.shuffle(miningSpot.getWorldPoint());
+        }
     }
 
-    private void attemptToMineVein()
-    {
+    private boolean walkToMiningSpot() {
+        WorldPoint target = miningSpot.getWorldPoint().get(0);
+
+        // Navigates to correct floor based on selected mining area
+        if ((miningSpot == MLMMiningSpot.EAST_UPPER || miningSpot == MLMMiningSpot.WEST_UPPER) && !isUpperFloor()) {
+            goUp();
+            return false; // Wait until we've gone up
+        }
+
+        if ((miningSpot == MLMMiningSpot.WEST_LOWER || miningSpot == MLMMiningSpot.WEST_MID || miningSpot == MLMMiningSpot.SOUTH_WEST || miningSpot == MLMMiningSpot.SOUTH_EAST) && isUpperFloor()) {
+            goDown();
+            return false; // Wait until we've gone down
+        }
+
+        // Walk to actual mining target tile
+        return Rs2Walker.walkTo(target, 10);
+    }
+
+    private void attemptToMineVein() {
         WallObject vein = findClosestVein();
-        if (vein == null)
-        {
-            repositionCameraAndMove();
+        if (vein == null) {
+            repositionCameraAndMove(); // 🎯 No valid vein found, reposition camera
             return;
         }
 
-        if (Rs2GameObject.interact(vein))
-        {
+        // ✅ Attempt to interact and wait for animation
+        if (Rs2GameObject.interact(vein)) {
             oreVein = vein;
+
+            // 💤 Sleep a bit before checking animation to avoid false negatives
+            sleep(200, 400);
             sleepUntil(Rs2Player::isAnimating, 5000);
-            if (!Rs2Player.isAnimating())
-            {
-                oreVein = null;
+
+            if (!Rs2Player.isAnimating()) {
+                oreVein = null; // ❌ Failed to mine, reset
             }
         }
     }
@@ -364,19 +416,17 @@ public class MotherloadMineScript extends Script
         boolean isVein = (id == 26661 || id == 26662 || id == 26663 || id == 26664);
         if (!isVein) return false;
 
-        if (config.mineUpstairs())
-        {
-            boolean inUpperArea = (miningSpot == MLMMiningSpot.WEST_UPPER && WEST_UPPER_AREA.contains(wallObject.getWorldLocation()))
-                    || (miningSpot == MLMMiningSpot.EAST_UPPER && EAST_UPPER_AREA.contains(wallObject.getWorldLocation()));
-            return inUpperArea && hasWalkableTilesAround(wallObject);
-        }
-        else
-        {
-            boolean inLowerArea = (miningSpot == MLMMiningSpot.WEST_LOWER && WEST_LOWER_AREA.contains(wallObject.getWorldLocation()))
-                    || (miningSpot == MLMMiningSpot.SOUTH && SOUTH_LOWER_AREA.contains(wallObject.getWorldLocation()));
-            return inLowerArea && hasWalkableTilesAround(wallObject);
-        }
+        WorldPoint location = wallObject.getWorldLocation();
 
+        boolean inUpperArea = (miningSpot == MLMMiningSpot.WEST_UPPER && WEST_UPPER_AREA.contains(location))
+                || (miningSpot == MLMMiningSpot.EAST_UPPER && EAST_UPPER_AREA.contains(location));
+
+        boolean inLowerArea = (miningSpot == MLMMiningSpot.WEST_LOWER && WEST_LOWER_AREA.contains(location))
+                || (miningSpot == MLMMiningSpot.WEST_MID && WEST_LOWER_AREA.contains(location))
+                || (miningSpot == MLMMiningSpot.SOUTH_WEST && SOUTH_LOWER_AREA.contains(location))
+                || (miningSpot == MLMMiningSpot.SOUTH_EAST && SOUTH_LOWER_AREA.contains(location));
+
+        return (inUpperArea || inLowerArea) && hasWalkableTilesAround(wallObject);
     }
 
     private boolean hasWalkableTilesAround(WallObject wallObject)

@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.mining.motherloadmine;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
+import net.runelite.client.plugins.microbot.mining.motherloadmine.enums.MLMMiningSpot;
 
 @ConfigGroup("MotherloadMine")
 public interface MotherloadMineConfig extends Config {
@@ -47,5 +48,16 @@ public interface MotherloadMineConfig extends Config {
     )
     default boolean upstairsHopperUnlocked() {
         return false;
+    }
+
+    // Mining Area Selection
+    @ConfigItem(
+            keyName = "miningArea",
+            name = "Mining Area",
+            description = "Choose the specific area to mine in Motherload Mine",
+            position = 4
+    )
+    default MLMMiningSpot miningArea() {
+        return MLMMiningSpot.IDLE;
     }
 }
