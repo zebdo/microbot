@@ -2260,7 +2260,10 @@ public class WildyKillerScript extends Script {
         }
         if (playerLocation.getY() > 9000) {
             Microbot.log("attempting to interact with the portal");
-            Rs2GameObject.interact("Portal", "Exit");
+            if (Rs2GameObject.exists(4389)) {Rs2GameObject.interact(4389, "Exit");}
+            else if (Rs2GameObject.exists(4390)) {
+                Rs2GameObject.interact(4390, "Exit");
+            }
             sleep(4000, 5000);
             return;
         }
