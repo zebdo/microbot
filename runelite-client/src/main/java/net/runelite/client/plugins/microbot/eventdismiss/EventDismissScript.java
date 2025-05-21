@@ -30,7 +30,7 @@ public class EventDismissScript extends Script {
 
                 NPC npc = Rs2Npc.getRandomEventNPC();
 
-                if (npc != null) {
+                if (Rs2Npc.getNpcsInLineOfSight(npc.getName()) != null) {
                     if (shouldDismissNpc(npc, config)) {
                         Microbot.pauseAllScripts = true;
                         dismissNpc(npc);
