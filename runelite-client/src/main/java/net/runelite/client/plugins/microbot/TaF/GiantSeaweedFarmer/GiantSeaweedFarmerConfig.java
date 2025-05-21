@@ -5,7 +5,8 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigInformation;
 import net.runelite.client.config.ConfigItem;
 
-@ConfigInformation("Farms giant seaweed underwater on the fossil island. Can be started anywhere. Ensure you have the fishbowl helmet and apparatus in your bank.")
+@ConfigInformation(
+        "GiantSeaweedFarmer")
 @ConfigGroup("GiantSeaweedFarmer")
 public interface GiantSeaweedFarmerConfig extends Config {
     @ConfigItem(
