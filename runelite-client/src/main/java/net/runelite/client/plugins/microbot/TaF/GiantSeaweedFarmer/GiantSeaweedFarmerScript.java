@@ -25,8 +25,6 @@ import static net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIn
 
 public class GiantSeaweedFarmerScript extends Script {
     public static final String VERSION = "1.0";
-    public static final int UNDERWATER_ANCHOR = 30948;
-    public static final int BOAT = 30919;
     private TileObject currentPatch;
     public GiantSeaweedFarmerStatus BOT_STATE = GiantSeaweedFarmerStatus.BANKING;
     private List<Integer> handledPatches = new ArrayList<>();
@@ -55,6 +53,7 @@ public class GiantSeaweedFarmerScript extends Script {
             try {
                 if (!super.run()) return;
                 if (!Microbot.isLoggedIn()) return;
+                if (Rs2AntibanSettings.actionCooldownActive) return;
                 switch (BOT_STATE) {
                     case BANKING:
                         if (handleBanking(config)) {
@@ -70,6 +69,10 @@ public class GiantSeaweedFarmerScript extends Script {
                         returnToBank();
                         break;
                 }
+                if (handleBanking(config)) {
+                    handleFarming(config);
+                }
+
             } catch (Exception ex) {
                 System.out.println("Exception message: " + ex.getMessage());
                 ex.printStackTrace();
@@ -79,9 +82,9 @@ public class GiantSeaweedFarmerScript extends Script {
     }
 
     private void returnToBank() {
-        Rs2Walker.walkTo(3731,10280,1); // Get to anchor
-        Rs2GameObject.interact(UNDERWATER_ANCHOR, "Climb");
-        sleepUntil(() -> Rs2Player.getWorldLocation().getPlane() == 0, 7000);
+        Rs2Walker.walkTo(3731,10280,1);
+        Rs2GameObject.interact(30948, "Climb");
+        sleepUntil(() -> Rs2Player.getWorldLocation().getPlane() == 0, 5000);
         if (Rs2Player.getWorldLocation().getPlane() != 0) {
             Microbot.log("We failed to get back to the surface");
             return;
@@ -91,14 +94,14 @@ public class GiantSeaweedFarmerScript extends Script {
     }
 
     private void handleDiving() {
-        Rs2GameObject.interact(BOAT, "Dive");
+        Rs2GameObject.interact(30919, "Dive");
         sleepUntil(() -> Rs2Player.getWorldLocation().getPlane() == 1, 5000);
         if (Rs2Player.getWorldLocation().getPlane() != 1) {
             Microbot.log("We failed to get underwater - Make sure to handle the warning dialog manually once");
             shutdown();
             return;
         }
-        Rs2Walker.walkTo(3731,10273,1); // Patch
+        Rs2Walker.walkTo(3731,10273,1);
         BOT_STATE = GiantSeaweedFarmerStatus.FARMING;
     }
 
@@ -195,13 +198,13 @@ public class GiantSeaweedFarmerScript extends Script {
             return;
         }
 
-        var handledPatch = handlePatch(patchToFarm);
+        var handledPatch = handlePatch(patchToFarm, config);
         if (handledPatch) {
             handledPatches.add(patchToFarm);
         }
     }
 
-    private boolean handlePatch(int patchId) {
+    private boolean handlePatch(int patchId, GiantSeaweedFarmerConfig config) {
         if (Rs2Inventory.isFull()) {
             Rs2NpcModel leprechaun = Rs2Npc.getNpc("Tool leprechaun");
             if (leprechaun != null) {
@@ -246,7 +249,6 @@ public class GiantSeaweedFarmerScript extends Script {
         }
     }
 
-    // Shamelessly stolen from HerbRun script
     private static String getSeaweedPatchState(TileObject rs2TileObject) {
         var game_obj = Rs2GameObject.convertToObjectComposition(rs2TileObject, true);
         var varbitValue = Microbot.getVarbitValue(game_obj.getVarbitId());
