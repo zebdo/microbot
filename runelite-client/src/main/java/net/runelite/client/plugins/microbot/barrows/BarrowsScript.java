@@ -639,6 +639,7 @@ public class BarrowsScript extends Script {
                             }
                             if(!Rs2Bank.isOpen()){
                                 reJfount();
+                                handlePOH(config);
                             }
                         } else {
                             if(Rs2Player.getRunEnergy() <= 5){
