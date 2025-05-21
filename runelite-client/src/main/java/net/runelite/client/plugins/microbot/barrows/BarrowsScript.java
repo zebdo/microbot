@@ -126,10 +126,17 @@ public class BarrowsScript extends Script {
 
                 outOfSupplies(config);
 
-                if(Rs2GameObject.getGameObject(4525) != null){
-                    //needed to intercept the walker
-                    handlePOH(config);
-                    return;
+                if(config.selectedToBarrowsTPMethod().getToBarrowsTPMethodItemID() == ItemID.TELEPORT_TO_HOUSE) {
+                    if (!shouldBank && Rs2Player.distanceTo(new WorldPoint(3573, 3296, 0)) > 60) {
+                        //needed to intercept the walker
+                        if(Rs2GameObject.getGameObject(4525) == null){
+                            Rs2Inventory.interact("Teleport to house", "Inside");
+                            sleepUntil(() -> Rs2Player.getAnimation() == 4069, Rs2Random.between(2000, 4000));
+                            sleepUntil(() -> !Rs2Player.isAnimating(), Rs2Random.between(6000, 10000));
+                        }
+                        handlePOH(config);
+                        return;
+                    }
                 }
 
                 if(!inTunnels && shouldBank == false) {
@@ -441,7 +448,7 @@ public class BarrowsScript extends Script {
                                     WhoisTun = "Unknown";
                                     inTunnels = false;
                                 } else {
-                                    Rs2Inventory.interact("Teleport to house", "Break");
+                                    Rs2Inventory.interact("Teleport to house", "Inside");
                                     sleepUntil(() -> Rs2Player.getAnimation() == 4069, Rs2Random.between(2000, 4000));
                                     sleepUntil(() -> !Rs2Player.isAnimating(), Rs2Random.between(6000, 10000));
                                     ChestsOpened++;
