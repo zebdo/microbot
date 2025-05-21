@@ -31,6 +31,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -1211,11 +1212,22 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     }
 
                     if (transport.getType() == TransportType.CHARTER_SHIP) {
-                        sleepUntil(() -> Rs2Widget.isWidgetVisible(72, 0));
-                        Widget destination = Rs2Widget.findWidget(transport.getDisplayInfo(), Arrays.stream(Rs2Widget.getWidget(72, 0).getStaticChildren()).collect(Collectors.toList()), false);
-                        if (destination == null) break;
+                        sleepUntil(() -> Rs2Widget.isWidgetVisible(885, 4));
+                        List<Widget> destinationWidgets = Arrays.stream(Rs2Widget.getWidget(885, 4).getDynamicChildren())
+                                .filter(w -> w.getActions() != null)
+                                .collect(Collectors.toList());
 
-                        Rs2Widget.clickWidget(destination);
+                        if (destinationWidgets.isEmpty()) return false;
+
+                        String destinationText = transport.getDisplayInfo();
+
+                        Widget destinationWidget = Rs2Widget.findWidget(destinationText, destinationWidgets);
+                        if (destinationWidget == null) return false;
+
+                        boolean isWidgetVisible = Microbot.getClientThread().runOnClientThreadOptional(() -> !destinationWidget.isHidden()).orElse(false);
+
+                        NewMenuEntry destinationMenuEntry = new NewMenuEntry(destinationText, "", 1, MenuAction.CC_OP, destinationWidget.getIndex(), destinationWidget.getId(), false);
+                        Microbot.doInvoke(destinationMenuEntry, (Rs2UiHelper.isRectangleWithinCanvas(destinationWidget.getBounds()) && isWidgetVisible) ? destinationWidget.getBounds() : new Rectangle(1,1));
                         sleepUntil(() -> !Rs2Player.isAnimating());
                         sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
                         sleep(600 * 4);
