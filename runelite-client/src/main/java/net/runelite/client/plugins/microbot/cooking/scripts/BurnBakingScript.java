@@ -400,11 +400,14 @@ public class BurnBakingScript extends Script {
                         System.out.println("Missing ingredients in the bank for bread-making.");
                         Microbot.log("Could not find flour or water in the bank for bread-making.");
                     }
-                }
+                } else if (!Rs2Bank.isOpen() && Rs2Inventory.isEmpty()) {Rs2Bank.openBank();}
             }
             // Step 5: If we already have flour and water in the inventory
-            else if (Rs2Inventory.hasItem("Pot of flour", true) && Rs2Inventory.hasItem("Bucket of water", true)) {
+            else if (Rs2Inventory.hasItem(POT_OF_FLOUR) && Rs2Inventory.hasItem(BUCKET_OF_WATER)) {
                 // Combine flour and water to make bread dough
+                if (Rs2Bank.isOpen()) {
+                    Rs2Bank.closeBank();
+                    sleep(900, 1300);}
 
                 Rs2Inventory.combineClosest("Pot of flour", "Bucket of water");
 
