@@ -678,7 +678,7 @@ public class BarrowsScript extends Script {
                     while(Rs2GameObject.getGameObject(4525) != null){
                         if(!super.isRunning()){break;}
                         if(!Rs2Player.isMoving()){
-                            if(Rs2GameObject.interact(Rs2GameObject.getGameObject(37603), "Teleport")){
+                            if(Rs2GameObject.interact(Rs2GameObject.getGameObject(37603), "Enter")){
                                 sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(2000,4000));
                                 sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(10000,15000));
                             }
