@@ -5,7 +5,7 @@ import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.revKiller.revKillerConfig;
 
 @ConfigGroup("barrows")
-@ConfigInformation("1. Start with your ring of dueling equipped.<br /><br /> 2. Your auto-cast spell selected or powered staff equipped. <br /><br /> 3. Your chosen food in the inventory. <br /><br /> Required items: prayer potions, forgotten brews, barrows teleports, food, catalyic Runes, and a spade.<br /><br /> Spells: Wind: Blast, Wave, and Surge. Or Powered staffs: supports any trident, any sceptre, any crystal staff, Tumeken's, and Sanguinesti. <br /><br /> Special thanks to george for adding the barrows dungeon to the walker; and Crannyy for script testing!<br /><br /> Config by Crannyy")
+@ConfigInformation("1. Start with your ring of dueling equipped.<br /><br /> 2. Your auto-cast spell selected or powered staff equipped. <br /><br /> 3. Your chosen food in the inventory. <br /><br /> Required items: prayer potions or moonlight moth mixes(2), barrows teleports tablets, or teleport to house tablets, food, Catalyic runes (if using wind spells), and a spade.<br /><br /> Spells: Wind: Blast, Wave, and Surge. Or Powered staffs: supports any trident, any sceptre, any crystal staff, Tumeken's, and Sanguinesti. <br /><br /> Special thanks to george for adding the barrows dungeon to the walker; and Crannyy for script testing!<br /><br /> Config by Crannyy")
 public interface BarrowsConfig extends Config {
     @ConfigItem(
             keyName = "targetFoodAmount",
@@ -31,7 +31,7 @@ public interface BarrowsConfig extends Config {
 
     @ConfigItem(
             keyName = "selectedPrayerRestoreType",
-            name = "Select a way to restore prayer.",
+            name = "Prayer Restore Type:",
             description = "Between prayer potions, or moonlight moth mixes.",
             position = 2
     )
@@ -108,7 +108,7 @@ public interface BarrowsConfig extends Config {
 
     @ConfigItem(
             keyName = "selectedToBarrowsTPMethod",
-            name = "Select a way to get to barrows.",
+            name = "Barrows TP Method",
             description = "Between using a barrows teleport tablet, or your POH portal.",
             position = 7
     )

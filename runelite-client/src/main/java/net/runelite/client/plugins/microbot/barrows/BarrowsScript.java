@@ -126,6 +126,12 @@ public class BarrowsScript extends Script {
 
                 outOfSupplies(config);
 
+                if(Rs2GameObject.getGameObject(4525) != null){
+                    //needed to intercept the walker
+                    handlePOH(config);
+                    return;
+                }
+
                 if(!inTunnels && shouldBank == false) {
                     for (BarrowsBrothers brother : BarrowsBrothers.values()) {
                         Rs2WorldArea mound = brother.getHumpWP();
