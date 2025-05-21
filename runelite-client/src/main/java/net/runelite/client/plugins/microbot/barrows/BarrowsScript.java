@@ -688,6 +688,13 @@ public class BarrowsScript extends Script {
                 Microbot.log("We're in our POH");
                 boolean regularPortal = Rs2GameObject.getGameObject(37603) != null;
                 if(regularPortal){
+                    GameObject rejPool = Rs2GameObject.getGameObject(it->it!=null&&it.getId() == 29238 || it.getId() == 29239 || it.getId() == 29241 || it.getId() == 29240);
+                    if(rejPool != null){
+                        if(Rs2GameObject.interact(rejPool, "Drink")){
+                            sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(2000,4000));
+                            sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(10000,15000));
+                        }
+                    }
                     while(Rs2GameObject.getGameObject(4525) != null){
                         if(!super.isRunning()){break;}
                         if(!Rs2Player.isMoving()){
