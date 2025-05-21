@@ -18,8 +18,8 @@ import java.awt.*;
 import java.time.Instant;
 
 @PluginDescriptor(
-        name = PluginDescriptor.TaFCat + "GiantSeaweedFarmer",
-        description = "test",
+        name = PluginDescriptor.TaFCat + "Giant Seaweed",
+        description = "Farms giant seaweed.",
         tags = {"GiantSeaweedFarmer", "seaweed", "farming", "ironman", "taf", "microbot"},
         enabledByDefault = false
 )
