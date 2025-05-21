@@ -258,6 +258,7 @@ public class ThievingScript extends Script {
         rogueEquipment.put("Rogue trousers", EquipmentInventorySlot.LEGS);
         rogueEquipment.put("Rogue boots", EquipmentInventorySlot.BOOTS);
         rogueEquipment.put("Rogue gloves", EquipmentInventorySlot.GLOVES);
+        rogueEquipment.put("Thieving cape(t)",EquipmentInventorySlot.CAPE);
 
         for (Map.Entry<String, EquipmentInventorySlot> entry : rogueEquipment.entrySet()) {
             String itemName = entry.getKey();
