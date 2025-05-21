@@ -135,7 +135,7 @@ public class DemonicGorillaScript extends Script {
         return true;
     }
 
-private void handleTravel(DemonicGorillaConfig config) {
+    private void handleTravel(DemonicGorillaConfig config) {
         if (Rs2Walker.walkTo(GORILLA_LOCATION)) {
             BOT_STATUS = State.FIGHTING;
         }
