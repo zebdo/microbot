@@ -6,13 +6,10 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
-
-import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 public class EventDismissScript extends Script {
     public static double version = 1.0;
-
     public boolean run(EventDismissConfig config) {
         Microbot.enableAutoRunOn = false;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
@@ -22,7 +19,7 @@ public class EventDismissScript extends Script {
 
                 NPC npc = Rs2Npc.getRandomEventNPC();
 
-                if (npc != null) {
+                if (Rs2Npc.getNpcsInLineOfSight(npc.getName()) != null) {
                     if (shouldDismissNpc(npc, config)) {
                         Microbot.pauseAllScripts = true;
                         dismissNpc(npc);
