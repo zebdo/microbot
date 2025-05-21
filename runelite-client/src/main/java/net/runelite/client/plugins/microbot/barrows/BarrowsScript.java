@@ -127,7 +127,7 @@ public class BarrowsScript extends Script {
                 outOfSupplies(config);
 
                 if(config.selectedToBarrowsTPMethod().getToBarrowsTPMethodItemID() == ItemID.TELEPORT_TO_HOUSE) {
-                    if (!shouldBank && Rs2Player.distanceTo(new WorldPoint(3573, 3296, 0)) > 60) {
+                    if (!shouldBank && Rs2Player.getWorldLocation().distanceTo(new WorldPoint(3573, 3296, 0)) > 60) {
                         //needed to intercept the walker
                         if(Rs2GameObject.getGameObject(4525) == null){
                             Rs2Inventory.interact("Teleport to house", "Inside");
