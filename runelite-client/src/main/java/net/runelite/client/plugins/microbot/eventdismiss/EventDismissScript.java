@@ -1,27 +1,16 @@
 package net.runelite.client.plugins.microbot.eventdismiss;
 
 import net.runelite.api.NPC;
-import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
-
-
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class EventDismissScript extends Script {
     public static double version = 1.0;
     public boolean run(EventDismissConfig config) {
-        List<Plugin> activePlugins = Microbot.getActiveMicrobotPlugins();
-        for (Plugin plugin : activePlugins) {
-            if (plugin.getName().equals("<html>[<font color=#b8f704M>M</font>] Agility")) {
-                Microbot.log("Event Dismiss Start Failed : Cannot use event dismiss with Agility Plugin");
-                return false;
-            }
-        }
         Microbot.enableAutoRunOn = false;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
