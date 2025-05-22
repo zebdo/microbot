@@ -83,7 +83,7 @@ public class AIOFighterOverlay extends OverlayPanel {
             }
         }
 
-        for (Monster currentMonster: currentMonstersAttackingUs) {
+        for (Monster currentMonster : currentMonstersAttackingUs.get()) {
             if (currentMonster != null && currentMonster.npc != null && currentMonster.npc.getCanvasTilePoly() != null) {
                 try {
                     graphics.setColor(Color.CYAN);
