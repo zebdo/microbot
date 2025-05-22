@@ -69,7 +69,7 @@ public interface BarrowsConfig extends Config {
             description = "Max amount of prayer potions, or moonlight moth mixes to withdraw from the bank.",
             position = 3
     )
-    @Range(min = 1, max = 10)
+    @Range(min = 1, max = 20)
     default int targetPrayerPots() {
         return 8;
     }
