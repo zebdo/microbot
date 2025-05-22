@@ -41,7 +41,8 @@ public interface BarrowsConfig extends Config {
 
     enum prayerRestoreType {
         Prayer_Potion(ItemID.PRAYER_POTION4, "Prayer potion(4)"),
-        MoonlightMoth(ItemID.MOONLIGHT_MOTH_MIX_2, "Moonlight moth mix (2)");
+        MoonlightMothMix(ItemID.MOONLIGHT_MOTH_MIX_2, "Moonlight moth mix (2)"),
+        MoonlightMoth(ItemID.MOONLIGHT_MOTH_28893, "Moonlight moth");
 
         private final int id;
         private final String name;

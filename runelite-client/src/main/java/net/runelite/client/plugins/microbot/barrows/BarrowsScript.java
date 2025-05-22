@@ -489,7 +489,7 @@ public class BarrowsScript extends Script {
                                 }
 
                             }
-                            Rs2Bank.depositAllExcept(neededRune, "Moonlight moth mix (2)", "Teleport to house", "Spade", "Prayer potion(4)", "Prayer potion(3)", "Forgotten brew(4)", "Forgotten brew(3)", "Barrows teleport",
+                            Rs2Bank.depositAllExcept(neededRune, "Moonlight moth", "Moonlight moth mix (2)", "Teleport to house", "Spade", "Prayer potion(4)", "Prayer potion(3)", "Forgotten brew(4)", "Forgotten brew(3)", "Barrows teleport",
                                     ourfoodsname);
                         }
 
@@ -1144,8 +1144,12 @@ public class BarrowsScript extends Script {
     public void drinkPrayerPot(){
         if(Rs2Player.getBoostedSkillLevel(Skill.PRAYER) <= Rs2Random.between(9,15)){
             if(Rs2Inventory.contains(it->it!=null&&it.getName().contains("Prayer potion")||it.getName().contains("moth mix"))){
-                Rs2ItemModel prayerpotion = Rs2Inventory.get(it->it!=null&&it.getName().contains("Prayer potion")||it.getName().contains("moth mix"));
-                if(Rs2Inventory.interact(prayerpotion, "Drink")){
+                Rs2ItemModel prayerpotion = Rs2Inventory.get(it->it!=null&&it.getName().contains("Prayer potion")||it.getName().contains("moth mix")||it.getName().contains("Moonlight moth"));
+                String action = "Drink";
+                if(prayerpotion.getName().equals("Moonlight moth")){
+                    action = "Release";
+                }
+                if(Rs2Inventory.interact(prayerpotion, action)){
                     sleep(0,750);
                 }
             }
