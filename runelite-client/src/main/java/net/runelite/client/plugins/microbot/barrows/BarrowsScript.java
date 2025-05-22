@@ -1143,7 +1143,7 @@ public class BarrowsScript extends Script {
     }
     public void drinkPrayerPot(){
         if(Rs2Player.getBoostedSkillLevel(Skill.PRAYER) <= Rs2Random.between(9,15)){
-            if(Rs2Inventory.contains(it->it!=null&&it.getName().contains("Prayer potion")||it.getName().contains("moth mix"))){
+            if(Rs2Inventory.contains(it->it!=null&&it.getName().contains("Prayer potion")||it.getName().contains("moth mix")||it.getName().contains("Moonlight moth"))){
                 Rs2ItemModel prayerpotion = Rs2Inventory.get(it->it!=null&&it.getName().contains("Prayer potion")||it.getName().contains("moth mix")||it.getName().contains("Moonlight moth"));
                 String action = "Drink";
                 if(prayerpotion.getName().equals("Moonlight moth")){
