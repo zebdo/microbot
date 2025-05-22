@@ -127,12 +127,13 @@ public class BarrowsScript extends Script {
                 outOfSupplies(config);
 
                 if(config.selectedToBarrowsTPMethod().getToBarrowsTPMethodItemID() == ItemID.TELEPORT_TO_HOUSE) {
-                    if (!shouldBank && Rs2Player.getWorldLocation().distanceTo(new WorldPoint(3573, 3296, 0)) > 60) {
+                    if (!inTunnels && !shouldBank && Rs2Player.getWorldLocation().distanceTo(new WorldPoint(3573, 3296, 0)) > 60) {
                         //needed to intercept the walker
                         if(Rs2GameObject.getGameObject(4525) == null){
                             Rs2Inventory.interact("Teleport to house", "Inside");
                             sleepUntil(() -> Rs2Player.getAnimation() == 4069, Rs2Random.between(2000, 4000));
                             sleepUntil(() -> !Rs2Player.isAnimating(), Rs2Random.between(6000, 10000));
+                            sleepUntil(() -> Rs2GameObject.getGameObject(4525) != null, Rs2Random.between(6000, 10000));
                         }
                         handlePOH(config);
                         return;
@@ -451,6 +452,7 @@ public class BarrowsScript extends Script {
                                     Rs2Inventory.interact("Teleport to house", "Inside");
                                     sleepUntil(() -> Rs2Player.getAnimation() == 4069, Rs2Random.between(2000, 4000));
                                     sleepUntil(() -> !Rs2Player.isAnimating(), Rs2Random.between(6000, 10000));
+                                    sleepUntil(() -> Rs2GameObject.getGameObject(4525) != null, Rs2Random.between(6000, 10000));
                                     ChestsOpened++;
                                     WhoisTun = "Unknown";
                                     inTunnels = false;
@@ -693,7 +695,7 @@ public class BarrowsScript extends Script {
                         sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(10000,15000));
                     }
                 }
-                GameObject regularPortal = Rs2GameObject.getGameObject(it->it!=null&&it.getId() == ObjectID.BARROWS_PORTAL_37603 || it.getId() == ObjectID.BARROWS_PORTAL_37615 || it.getId() == ObjectID.BARROWS_PORTAL_56072);
+                GameObject regularPortal = Rs2GameObject.getGameObject("Barrows Portal");
                 if(regularPortal != null){
                     while(Rs2GameObject.getGameObject(4525) != null){
                         if(!super.isRunning()){break;}
@@ -701,6 +703,7 @@ public class BarrowsScript extends Script {
                             if(Rs2GameObject.interact(regularPortal, "Enter")){
                                 sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(2000,4000));
                                 sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(10000,15000));
+                                sleepUntil(()-> Rs2GameObject.getGameObject("Barrows Portal") == null, Rs2Random.between(10000,15000));
                             }
                         }
                     }
@@ -1081,9 +1084,12 @@ public class BarrowsScript extends Script {
     }
     public void antiPatternDropVials(){
         if(Rs2Random.between(0,100) <= Rs2Random.between(1,25)) {
-            if (Rs2Inventory.contains("Vial")) {
-                if(Rs2Inventory.drop("Vial")){
-                    sleep(0, 750);
+            Rs2ItemModel whatToDrop = Rs2Inventory.get(it->it!=null&&it.getName().contains("Vial")||it.getName().contains("Butterfly jar"));
+            if(whatToDrop!=null) {
+                if (Rs2Inventory.contains(whatToDrop.getName())) {
+                    if (Rs2Inventory.drop(whatToDrop.getName())) {
+                        sleep(0, 750);
+                    }
                 }
             }
         }
