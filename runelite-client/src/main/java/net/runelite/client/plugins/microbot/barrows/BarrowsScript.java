@@ -693,12 +693,12 @@ public class BarrowsScript extends Script {
                         sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(10000,15000));
                     }
                 }
-                boolean regularPortal = Rs2GameObject.getGameObject(it->it!=null&&it.getId() == ObjectID.BARROWS_PORTAL_37603 || it.getId() == ObjectID.BARROWS_PORTAL_37615 || it.getId() == ObjectID.BARROWS_PORTAL_56072) != null;
-                if(regularPortal){
+                GameObject regularPortal = Rs2GameObject.getGameObject(it->it!=null&&it.getId() == ObjectID.BARROWS_PORTAL_37603 || it.getId() == ObjectID.BARROWS_PORTAL_37615 || it.getId() == ObjectID.BARROWS_PORTAL_56072);
+                if(regularPortal != null){
                     while(Rs2GameObject.getGameObject(4525) != null){
                         if(!super.isRunning()){break;}
                         if(!Rs2Player.isMoving()){
-                            if(Rs2GameObject.interact(Rs2GameObject.getGameObject(37603), "Enter")){
+                            if(Rs2GameObject.interact(regularPortal, "Enter")){
                                 sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(2000,4000));
                                 sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(10000,15000));
                             }
