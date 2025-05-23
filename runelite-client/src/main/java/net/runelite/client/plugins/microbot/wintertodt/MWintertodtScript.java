@@ -460,7 +460,7 @@ public class MWintertodtScript extends Script {
                     sleepUntil(() -> Rs2Inventory.count(ItemID.REJUVENATION_POTION_UNF) <= Rs2Inventory.count(ItemID.BRUMA_HERB), 8000);
                     Rs2Inventory.combineClosest(ItemID.REJUVENATION_POTION_UNF, ItemID.BRUMA_HERB);
                     Rs2Inventory.waitForInventoryChanges(3000);
-                    sleepUntil(() -> !Rs2Inventory.hasItem(ItemID.REJUVENATION_POTION_UNF), 5000);
+                    sleepUntil(() -> !Rs2Inventory.hasItem(ItemID.REJUVENATION_POTION_UNF), 8000);
                     return true;
                 }
             }
