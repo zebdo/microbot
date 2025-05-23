@@ -647,22 +647,14 @@ public class BarrowsScript extends Script {
                         suppliesCheck(config);
 
                         if(!shouldBank){
-                            if(Rs2Bank.isOpen()){
-                                if(Rs2Bank.closeBank()){
-                                    sleepUntil(()-> Rs2Bank.isOpen(), Rs2Random.between(2000,4000));
-                                }
-                            }
+                            closeBank();
                             if(!Rs2Bank.isOpen()){
                                 reJfount();
                                 handlePOH(config);
                             }
                         } else {
                             if(Rs2Player.getRunEnergy() <= 5){
-                                if(Rs2Bank.isOpen()){
-                                    if(Rs2Bank.closeBank()){
-                                        sleepUntil(()-> Rs2Bank.isOpen(), Rs2Random.between(2000,4000));
-                                    }
-                                }
+                                closeBank();
                                 if(!Rs2Bank.isOpen()){
                                     reJfount();
                                 }
@@ -682,6 +674,19 @@ public class BarrowsScript extends Script {
             }
         }, 0, scriptDelay, TimeUnit.MILLISECONDS);
         return true;
+    }
+
+    public void closeBank(){
+        if(Rs2Bank.isOpen()){
+            while(Rs2Bank.isOpen()) {
+
+                if(!super.isRunning()){break;}
+
+                if (Rs2Bank.closeBank()) {
+                    sleepUntil(() -> Rs2Bank.isOpen(), Rs2Random.between(2000, 4000));
+                }
+            }
+        }
     }
 
     public void handlePOH(BarrowsConfig config){
