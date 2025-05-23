@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.runecrafting.ourania;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -18,6 +19,7 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.gpu.GpuPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.MicrobotOverlay;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.Pouch;
@@ -336,6 +338,7 @@ public class OuraniaScript extends Script
 								);
 
 								WorldPoint randomWorldPoint = nearestTiles.get(Rs2Random.nextInt(0, nearestTiles.size(), 1, false));
+								LocalPoint randomLocalPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), randomWorldPoint);
 								if (Rs2Camera.getPitch() < 210 || Rs2Camera.getPitch() > 280)
 								{
 									int randomPitch = Rs2Random.nextInt(220, 260, 1, false);
@@ -346,7 +349,12 @@ public class OuraniaScript extends Script
 									Rs2Camera.setZoom(128);
 								}
 
-								Rs2Walker.walkFastCanvas(randomWorldPoint);
+								if (!Rs2Camera.isTileOnScreen(randomLocalPoint))
+								{
+									Rs2Camera.turnTo(randomLocalPoint);
+								}
+
+								Rs2Walker.walkCanvas(randomWorldPoint);
 								sleepUntil(this::isNearAltar, 30000);
 							}
 							else
