@@ -191,23 +191,30 @@ public class revKillerScript extends Script {
         WorldPoint fourthTile = new WorldPoint(3244,10222,0);
         WorldPoint fifthTile = new WorldPoint(3248,10225,0);
 
+        if(Rs2GroundItem.isItemBasedOnValueOnGround(500,10)){
+            return;
+        }
 
-            if(Rs2Player.getWorldLocation().equals(fifthTile)){
-                if(weAreInCombat()) {
-                    Microbot.log("We've all ready jammed the knight");
-                    return;
-                } else {
-                    Microbot.log("We need to click the rev.");
-                    if(Rs2Npc.getNpc("Revenant knight")!=null && Rs2Npc.getNpc("Revenant knight").getWorldLocation().distanceTo(Rs2Player.getWorldLocation())<=7) {
-                        if (Rs2Npc.interact(Rs2Npc.getNpc("Revenant knight"), "Attack")) {
-                            Microbot.log("We attacked the knight");
-                            return;
-                        }
-                    } else {
-                        Microbot.log("We need to re-jam the knight");
+        if(!areWeEquipped()||isItTimeToGo()){
+            return;
+        }
+
+        if(Rs2Player.getWorldLocation().equals(fifthTile)){
+            if(weAreInCombat()) {
+                Microbot.log("We've all ready jammed the knight");
+                return;
+            } else {
+                Microbot.log("We need to click the rev.");
+                if(Rs2Npc.getNpc("Revenant knight")!=null && Rs2Npc.getNpc("Revenant knight").getWorldLocation().distanceTo(Rs2Player.getWorldLocation())<=7) {
+                    if (Rs2Npc.interact(Rs2Npc.getNpc("Revenant knight"), "Attack")) {
+                        Microbot.log("We attacked the knight");
+                        return;
                     }
+                } else {
+                    Microbot.log("We need to re-jam the knight");
                 }
             }
+        }
 
 
         playerCheck();
