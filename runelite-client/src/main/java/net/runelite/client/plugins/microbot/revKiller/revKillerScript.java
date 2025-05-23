@@ -11,7 +11,6 @@ import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
-import net.runelite.client.plugins.microbot.questhelper.collections.ItemWithCharge;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -969,7 +968,7 @@ public class revKillerScript extends Script {
             if(howtobank <= 40){
                 if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES)!=null){
                     if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES).getName().contains("ethereum")){
-                        if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES).getId() == ItemID.BRACELET_OF_ETHEREUM_UNCHARGED || ItemWithCharge.findItem(ItemID.BRACELET_OF_ETHEREUM).getCharges() < 100){
+                        if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES).getId() == ItemID.BRACELET_OF_ETHEREUM_UNCHARGED){
                             Microbot.log("We need to charge our bracelet");
                             if(Rs2Bank.hasItem("Revenant ether") && Rs2Bank.count("Revenant ether") > 100){
                                 if(!Rs2Inventory.contains("Revenant ether")){
@@ -1249,7 +1248,7 @@ public class revKillerScript extends Script {
 
     if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES)!=null) {
         if (Rs2Equipment.get(EquipmentInventorySlot.GLOVES).getName().contains("ethereum")) {
-            if (Rs2Equipment.get(EquipmentInventorySlot.GLOVES).getId() == ItemID.BRACELET_OF_ETHEREUM_UNCHARGED || ItemWithCharge.findItem(ItemID.BRACELET_OF_ETHEREUM).getCharges() < 5) {
+            if (Rs2Equipment.get(EquipmentInventorySlot.GLOVES).getId() == ItemID.BRACELET_OF_ETHEREUM_UNCHARGED) {
                 Microbot.log("Our bracelet doesn't have enough charges.");
                 return false;
             }
