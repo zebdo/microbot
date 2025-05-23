@@ -39,4 +39,14 @@ public interface GotrConfig extends Config {
     default int maxAmountEssence() {
         return 20;
     }
+
+    @ConfigItem(
+            keyName = "shouldDepositRunes",
+            name = "Deposit runes?",
+            description = "Should you deposit runes into the deposit pool?",
+            position = 3
+    )
+    default boolean shouldDepositRunes() {
+        return true;
+    }
 }
