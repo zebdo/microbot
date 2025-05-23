@@ -656,7 +656,8 @@ public class AttackTimerMetronomePlugin extends Plugin
                         Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.PIETY.getLevel()) {
                     return Rs2PrayerEnum.PIETY;
                 }
-                if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.CHIVALRY.getLevel()) {
+                if (Microbot.getVarbitValue(CAMELOT_TRAINING_ROOM_STATUS) == 8 &&
+                        Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.CHIVALRY.getLevel()) {
                     return Rs2PrayerEnum.CHIVALRY;
                 }
                 if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.ULTIMATE_STRENGTH.getLevel()) {

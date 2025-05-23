@@ -37,9 +37,9 @@ import java.util.regex.Matcher;
 @Slf4j
 public class BarrowsPlugin extends Plugin {
     @Inject
-    private net.runelite.client.plugins.microbot.barrows.BarrowsConfig config;
+    private BarrowsConfig config;
     @Provides
-    net.runelite.client.plugins.microbot.barrows.BarrowsConfig provideConfig(ConfigManager configManager) {
+    BarrowsConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(BarrowsConfig.class);
     }
 
@@ -69,15 +69,18 @@ public class BarrowsPlugin extends Plugin {
 
     @Subscribe
     public void onChatMessage(ChatMessage chatMessage) {
-        if (chatMessage.getType() != ChatMessageType.SPAM && chatMessage.getType() != ChatMessageType.GAMEMESSAGE) {
+        if (chatMessage.getType() != ChatMessageType.GAMEMESSAGE) {
             return;
         }
 
         String msg = chatMessage.getMessage();
-
         //need to add the chat message we get when we try to attack an NPC with an empty staff.
 
-        if (msg.contains("has run out of charges.")) {
+        if (msg.contains("out of charges")) {
+            BarrowsScript.outOfPoweredStaffCharges = true;
+        }
+
+        if (msg.contains("no charges")) {
             BarrowsScript.outOfPoweredStaffCharges = true;
         }
 

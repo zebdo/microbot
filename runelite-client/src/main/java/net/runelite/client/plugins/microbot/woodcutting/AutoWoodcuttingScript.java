@@ -202,7 +202,9 @@ public class AutoWoodcuttingScript extends Script {
                 Rs2Inventory.useLast(config.TREE().getLogID());
             }, 300, 100);
         }
-        sleepUntil(() -> (!isFiremake() && Rs2Player.waitForXpDrop(Skill.FIREMAKING)) || cannotLightFire, 5000);
+        sleepUntil(() -> !isFiremake());
+        if (!isFiremake()) {sleepUntil(() -> cannotLightFire, 1500);}
+        if (!cannotLightFire && isFiremake()) {sleepUntil(() -> Rs2Player.waitForXpDrop(Skill.FIREMAKING, 40000), 40000);}
     }
 
     private WorldPoint fireSpot(int distance) {
@@ -210,12 +212,12 @@ public class AutoWoodcuttingScript extends Script {
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
 
         // Create a map to group tiles by their distance from the player
-        Map<Integer, List<WorldPoint>> distanceMap = new HashMap<>();
+        Map<Integer, WorldPoint> distanceMap = new HashMap<>();
 
         for (WorldPoint walkablePoint : worldPoints) {
-            if (Rs2GameObject.getGameObject(walkablePoint, distance) == null) {
+            if (Rs2GameObject.getGameObject(o -> o.getWorldLocation().equals(walkablePoint), distance) == null) {
                 int tileDistance = playerLocation.distanceTo(walkablePoint);
-                distanceMap.computeIfAbsent(tileDistance, k -> new ArrayList<>()).add(walkablePoint);
+                distanceMap.putIfAbsent(tileDistance, walkablePoint);
             }
         }
 
@@ -223,13 +225,7 @@ public class AutoWoodcuttingScript extends Script {
         Optional<Integer> minDistanceOpt = distanceMap.keySet().stream().min(Integer::compare);
 
         if (minDistanceOpt.isPresent()) {
-            List<WorldPoint> closestPoints = distanceMap.get(minDistanceOpt.get());
-
-            // Return a random point from the closest points
-            if (!closestPoints.isEmpty()) {
-                int randomIndex = Rs2Random.between(0, closestPoints.size());
-                return closestPoints.get(randomIndex);
-            }
+            return distanceMap.get(minDistanceOpt.get());
         }
 
         // Recursively increase the distance if no valid point is found
@@ -237,6 +233,7 @@ public class AutoWoodcuttingScript extends Script {
     }
 
     private boolean isFiremake() {
+        if (cannotLightFire) return false;
         return Rs2Player.isAnimating(1800) && Rs2Player.getLastAnimationID() == AnimationID.FIREMAKING;
     }
     

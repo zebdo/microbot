@@ -31,6 +31,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -829,6 +830,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             }
 
             for (WorldPoint probe : probes) {
+                if (!Objects.equals(probe.getPlane(), Microbot.getClient().getLocalPlayer().getWorldLocation().getPlane())) continue;
+
                 WallObject wall = Rs2GameObject.getWallObject(o -> o.getWorldLocation().equals(probe), probe, 3);
 
                 TileObject object = (wall != null)
@@ -1181,8 +1184,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     }
 
                     if (path.get(i).equals(origin)) {
-                        if (transport.getType() == TransportType.SHIP || transport.getType() == TransportType.NPC || transport.getType() == TransportType.BOAT
-                                || transport.getType() == TransportType.CHARTER_SHIP) {
+                        if (transport.getType() == TransportType.SHIP || transport.getType() == TransportType.NPC || transport.getType() == TransportType.BOAT) {
 
                             Rs2NpcModel npc = Rs2Npc.getNpc(transport.getName());
 
@@ -1200,23 +1202,21 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                                 sleep(1200, 1600);
                             }
                         }
+
+                        if (transport.getType() == TransportType.CHARTER_SHIP) {
+                            if (handleCharterShip(transport)) {
+                                sleepUntil(() -> !Rs2Player.isAnimating());
+                                sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
+                                sleep(600 * 4); // wait 4 extra ticks before walking
+                                break;
+                            }
+                        }
                     }
 
                     if (handleTrapdoor(transport)) {
                         sleepUntil(() -> !Rs2Player.isAnimating());
                         sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
                         break;
-                    }
-
-                    if (transport.getType() == TransportType.CHARTER_SHIP) {
-                        sleepUntil(() -> Rs2Widget.isWidgetVisible(72, 0));
-                        Widget destination = Rs2Widget.findWidget(transport.getDisplayInfo(), Arrays.stream(Rs2Widget.getWidget(72, 0).getStaticChildren()).collect(Collectors.toList()), false);
-                        if (destination == null) break;
-
-                        Rs2Widget.clickWidget(destination);
-                        sleepUntil(() -> !Rs2Player.isAnimating());
-                        sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
-                        sleep(600 * 4);
                     }
                     
                     if (transport.getType() == TransportType.CANOE) {
@@ -1456,6 +1456,11 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 Rs2Dialogue.clickOption("Yes, don't ask again");
                 Rs2Dialogue.sleepUntilNotInDialogue();
             }
+            return true;
+        }
+
+        if (tileObject.getId() == ObjectID.ROCK_SLIDE) {
+            Rs2Player.waitForAnimation(600 * 4);
             return true;
         }
         return false;
@@ -1971,6 +1976,34 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         Rs2Dialogue.clickOption(transport.getDisplayInfo());
         sleepUntil(() -> Rs2Player.getPoseAnimation() == flyingPoseAnimation, 10000);
         return sleepUntilTrue(() -> Rs2Player.getPoseAnimation() != flyingPoseAnimation, 600,60000);
+    }
+
+    private static boolean handleCharterShip(Transport transport) {
+        String npcName = transport.getName();
+
+        Rs2NpcModel npc = Rs2Npc.getNpc(npcName);
+
+        if (Rs2Npc.canWalkTo(npc, 20) && Rs2Npc.interact(npc, transport.getAction())) {
+            Rs2Player.waitForWalking();
+            sleepUntil(() -> Rs2Widget.isWidgetVisible(885, 4));
+            List<Widget> destinationWidgets = Arrays.stream(Rs2Widget.getWidget(885, 4).getDynamicChildren())
+                    .filter(w -> w.getActions() != null)
+                    .collect(Collectors.toList());
+
+            if (destinationWidgets.isEmpty()) return false;
+
+            String destinationText = transport.getDisplayInfo();
+
+            Widget destinationWidget = Rs2Widget.findWidget(destinationText, destinationWidgets);
+            if (destinationWidget == null) return false;
+
+            boolean isWidgetVisible = Microbot.getClientThread().runOnClientThreadOptional(() -> !destinationWidget.isHidden()).orElse(false);
+
+            NewMenuEntry destinationMenuEntry = new NewMenuEntry(destinationText, "", 1, MenuAction.CC_OP, destinationWidget.getIndex(), destinationWidget.getId(), false);
+            Microbot.doInvoke(destinationMenuEntry, (Rs2UiHelper.isRectangleWithinCanvas(destinationWidget.getBounds()) && isWidgetVisible) ? destinationWidget.getBounds() : new Rectangle(1,1));
+            return true;
+        }
+        return false;
     }
     /**
      * interact with interfaces like spirit tree & xeric talisman etc...
