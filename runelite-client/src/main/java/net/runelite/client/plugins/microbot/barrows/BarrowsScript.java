@@ -683,7 +683,7 @@ public class BarrowsScript extends Script {
                 if(!super.isRunning()){break;}
 
                 if (Rs2Bank.closeBank()) {
-                    sleepUntil(() -> Rs2Bank.isOpen(), Rs2Random.between(2000, 4000));
+                    sleepUntil(() -> !Rs2Bank.isOpen(), Rs2Random.between(2000, 4000));
                 }
             }
         }
