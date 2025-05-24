@@ -370,14 +370,15 @@ public class MahoganyHomesScript extends Script {
                             sleep(Rs2Random.randomGaussian(800, 200));
                             Rs2ItemModel plankSack = Rs2Inventory.get(ItemID.PLANK_SACK);
                             if (plankSack != null) {
-                                Rs2Inventory.interact(plankSack, "Use");
+                                Rs2Bank.closeBank();
+                                Rs2Inventory.interact(plankSack, "Fill");
                                 sleep(Rs2Random.randomGaussian(800, 200));
                             }
                         }, 20000, 1000);
                         if (Rs2Inventory.getEmptySlots() > 0)
+                            Rs2Bank.openBank();
                             Rs2Bank.withdrawAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
-
-
+                            Rs2Bank.closeBank();
                     } else {
                         if (Rs2Inventory.getEmptySlots() - steelBarsNeeded() > 0)
                             Rs2Bank.withdrawX(plugin.getConfig().currentTier().getPlankSelection().getPlankId(), Rs2Inventory.getEmptySlots() - steelBarsNeeded());
