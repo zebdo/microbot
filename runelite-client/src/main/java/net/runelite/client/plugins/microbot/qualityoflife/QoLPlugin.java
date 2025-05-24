@@ -13,7 +13,6 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.config.ConfigPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.qualityoflife.enums.WintertodtActions;
@@ -26,6 +25,7 @@ import net.runelite.client.plugins.microbot.qualityoflife.scripts.bank.BankpinSc
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pvp.PvpScript;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.wintertodt.WintertodtOverlay;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.wintertodt.WintertodtScript;
+import net.runelite.client.plugins.microbot.ui.MicrobotConfigPlugin;
 import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.antiban.FieldUtil;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -722,15 +722,15 @@ public class QoLPlugin extends Plugin {
             FieldUtil.setFinalStatic(accentColorField, config.accentColor());
 
             // Get the PluginToggleButton class to access its ON_SWITCHER field
-            Class<?> pluginButton = Class.forName("net.runelite.client.plugins.config.PluginToggleButton");
+            Class<?> pluginButton = Class.forName("net.runelite.client.plugins.microbot.ui.MicrobotPluginToggleButton");
             Field onSwitcherPluginPanel = pluginButton.getDeclaredField("ON_SWITCHER");
             onSwitcherPluginPanel.setAccessible(true);
             // Update the ON_SWITCHER field with a remapped image based on the config toggle button color
             FieldUtil.setFinalStatic(onSwitcherPluginPanel, remapImage(SWITCHER_ON_IMG, config.toggleButtonColor()));
 
             // Find the ConfigPlugin instance from the plugin manager
-            ConfigPlugin configPlugin = (ConfigPlugin) Microbot.getPluginManager().getPlugins().stream()
-                    .filter(plugin -> plugin instanceof ConfigPlugin)
+            MicrobotConfigPlugin configPlugin = (MicrobotConfigPlugin) Microbot.getPluginManager().getPlugins().stream()
+                    .filter(plugin -> plugin instanceof MicrobotConfigPlugin)
                     .findAny().orElse(null);
 
             // If ConfigPlugin is not found, log an error and return false
@@ -777,9 +777,10 @@ public class QoLPlugin extends Plugin {
         }
     }
 
-    private JPanel getPluginListPanel(ConfigPlugin configPlugin) throws ClassNotFoundException {
 
-        Class<?> pluginListPanelClass = Class.forName("net.runelite.client.plugins.config.PluginListPanel");
+    private JPanel getPluginListPanel(MicrobotConfigPlugin configPlugin) throws ClassNotFoundException {
+
+        Class<?> pluginListPanelClass = Class.forName("net.runelite.client.plugins.microbot.ui.MicrobotPluginListPanel");
         assert configPlugin != null;
         return (JPanel) configPlugin.getInjector().getProvider(pluginListPanelClass).get();
     }
