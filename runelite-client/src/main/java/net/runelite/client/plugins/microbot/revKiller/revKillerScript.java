@@ -216,6 +216,7 @@ public class revKillerScript extends Script {
             }
         }
 
+        drinkStamPotion();
 
         playerCheck();
 
