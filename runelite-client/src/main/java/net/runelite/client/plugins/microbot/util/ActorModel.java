@@ -41,7 +41,7 @@ public class ActorModel implements Actor {
 
     @Override
     public Actor getInteracting() {
-        return actor.getInteracting();
+        return Microbot.getClientThread().runOnClientThreadOptional(actor::getInteracting).orElse(null);
     }
 
     @Override
