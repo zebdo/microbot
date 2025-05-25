@@ -482,7 +482,7 @@ public class revKillerScript extends Script {
                 }
                 sleep(1000, 3000);
                 if (!Microbot.isLoggedIn()) {
-                    new Login(Login.getRandomWorld(Login.activeProfile.isMember()));
+                    new Login(Login.getRandomWorld(true));
                     sleepUntil(() -> Microbot.isLoggedIn(), Rs2Random.between(10000, 20000));
                 }
             }
