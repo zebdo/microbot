@@ -1282,7 +1282,7 @@ public class revKillerScript extends Script {
         playerlist.addAll(Rs2Player.getPlayersInCombatLevelRange());
         List<String> weapons = Arrays.asList(
                 "staff", "shadow", "wand", "sceptre", "ballista",
-                "crossbow", "dragon dagger", "dragon claws", "eclipse atlatl", "dark bow"
+                "crossbow", "dragon dagger", "dragon claws", "burning claws", "eclipse atlatl", "dark bow"
         );
 
         for (Rs2PlayerModel player : playerlist) {
