@@ -125,4 +125,16 @@ public interface HunterKebbitsConfig extends Config {
     default int MaxSleepAfterHuntingKebbit() {
         return 5400;
     }
+
+    @ConfigItem(
+            position = 8,
+            keyName = "buryBones",
+            name = "Bury Bones",
+            description = "If enabled, bones will be buried automatically instead of dropped."
+
+    )
+    default boolean buryBones()
+    {
+        return false; // Standard: false, also droppen.
+    }
 }

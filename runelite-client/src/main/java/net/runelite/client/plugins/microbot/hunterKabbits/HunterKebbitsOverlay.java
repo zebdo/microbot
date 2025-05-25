@@ -111,6 +111,14 @@ public class HunterKebbitsOverlay extends OverlayPanel {
                 .rightColor(Color.CYAN)
                 .build());
 
+        panelComponent.getChildren().add(LineComponent.builder()
+                .left("Bury Bones:")
+                .right(config.buryBones() ? "Yes" : "No")
+                .build());
+
         return super.render(graphics);
+
     }
+
+
 }
