@@ -486,6 +486,7 @@ public class revKillerScript extends Script {
                     sleepUntil(() -> Microbot.isLoggedIn(), Rs2Random.between(10000, 20000));
                 }
             }
+            shouldFlee = false;
             return;
         }
 
