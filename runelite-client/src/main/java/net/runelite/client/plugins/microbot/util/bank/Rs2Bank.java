@@ -1705,6 +1705,13 @@ public class Rs2Bank {
             bankItems = list;
     }
 
+    /**
+     * Handle bank pin boolean.
+     *
+     * @param pin the pin
+     *
+     * @return the boolean
+     */
     public static boolean handleBankPin(String pin) {
         if (pin == null || !pin.matches("\\d+")) {
             Microbot.log("Unable to enter bankpin with value " + pin);

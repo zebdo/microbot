@@ -173,6 +173,18 @@ public interface QoLConfig extends Config {
         return true;
     }
 
+    // boolean to use DoLast action on cooking
+    @ConfigItem(
+            keyName = "useDoLastCooking",
+            name = "Use Do-Last Cooking",
+            description = "Use Do-Last Cooking",
+            position = 3,
+            section = doLastSection
+    )
+    default boolean useDoLastCooking() {
+        return true;
+    }
+
     // boolean for Smart Workbench
     @ConfigItem(
             keyName = "smartWorkbench",
