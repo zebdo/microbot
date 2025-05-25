@@ -19,6 +19,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 /**
  * Utility class for managing inventory setups in the Microbot plugin.
@@ -60,6 +61,15 @@ public class Rs2InventorySetup {
             Microbot.showMessage("Inventory load error!", 10);
             Microbot.pauseAllScripts = true;
         }
+    }
+    /**
+     * Checks if an inventory setup with the specified name exists.
+     *
+     * @param name The name of the inventory setup to check for (case-insensitive)
+     * @return {@code true} if an inventory setup with the specified name exists, {@code false} otherwise
+     */
+    public static boolean isInventorySetup(String name) {
+        return MInventorySetupsPlugin.getInventorySetups().stream().filter(Objects::nonNull).filter(x -> x.getName().equalsIgnoreCase(name)).findFirst().orElse(null) != null;
     }
 
     /**
@@ -210,6 +220,7 @@ public class Rs2InventorySetup {
         if (hasExtraGearEquipped) {
             Microbot.log("Found Extra Gear that is not contained within the setup", Level.DEBUG);
             Rs2Bank.depositEquipment();
+            sleepUntil(() -> Rs2Equipment.items().stream().noneMatch(Objects::nonNull));
         }
 
         for (InventorySetupsItem inventorySetupsItem : inventorySetup.getEquipment()) {
@@ -285,7 +296,7 @@ public class Rs2InventorySetup {
      * @return true if the inventory matches the setup, false otherwise.
      */
     public boolean doesInventoryMatch() {
-        if( inventorySetup.getInventory() == null) {
+        if(inventorySetup ==null || inventorySetup.getInventory() == null) {
             return false;
         }
         Map<Integer, List<InventorySetupsItem>> groupedByItems = inventorySetup.getInventory().stream().collect(Collectors.groupingBy(InventorySetupsItem::getId));
@@ -317,6 +328,9 @@ public class Rs2InventorySetup {
      * @return true if all equipment items match the setup, false otherwise.
      */
     public boolean doesEquipmentMatch() {
+        if(inventorySetup ==null || inventorySetup.getEquipment() == null) {
+            return false;
+        }
         for (InventorySetupsItem inventorySetupsItem : inventorySetup.getEquipment()) {
             if (inventorySetupsItem.getId() == -1) continue;
             if (inventorySetupsItem.isFuzzy()) {

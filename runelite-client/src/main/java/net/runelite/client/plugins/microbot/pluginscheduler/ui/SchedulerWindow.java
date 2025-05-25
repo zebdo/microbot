@@ -115,14 +115,22 @@ public class SchedulerWindow extends JFrame implements ConditionUpdateCallback {
             // When switching to either conditions tab, ensure the condition panel shows the currently selected plugin
             if (tabIndex == 1 || tabIndex == 2) { // Start Conditions or Stop Conditions tab
                 if (selected == null) {
-                    PluginScheduleEntry nextPlugin = plugin.getNextScheduledPlugin(false,null).orElse(selected);
-                    if (nextPlugin == null) {
-                        log.warn("No plugin selected for editing conditions and no next scheduled plugin found.");                        
-                    }else{
-                        tablePanel.selectPlugin(nextPlugin);
-                        log.warn("No plugin selected for editing conditions, taking next scheduled plugin: " + nextPlugin.getCleanName());                    
+                    PluginScheduleEntry currentPlugin = plugin.getCurrentPlugin();
+                    if (currentPlugin != null) {
+                        tablePanel.selectPlugin(currentPlugin);
+                        selected = currentPlugin;
+                    } else {
+                        log.warn("No plugin selected for editing conditions and no current plugin found.");
+                    
+                        PluginScheduleEntry nextPlugin = plugin.getNextScheduledPlugin(false,null).orElse(selected);
+                        if (nextPlugin == null) {
+                            log.warn("No plugin selected for editing conditions and no next scheduled plugin found.");                        
+                        }else{
+                            tablePanel.selectPlugin(nextPlugin);
+                            log.warn("No plugin selected for editing conditions, taking next scheduled plugin: " + nextPlugin.getCleanName());                    
+                        }
+                        selected = nextPlugin;
                     }
-                    selected = nextPlugin;
                 }
                 
                 if (tabIndex == 1) { // Start Conditions tab
@@ -134,7 +142,11 @@ public class SchedulerWindow extends JFrame implements ConditionUpdateCallback {
             }
             if (tabIndex == 0) {
                 formPanel.loadPlugin(selected);
-                formPanel.setEditMode(true);
+                
+                formPanel.setEditMode(selected != null);
+                
+                
+                
             }
         });
         
@@ -711,7 +723,7 @@ public class SchedulerWindow extends JFrame implements ConditionUpdateCallback {
         if (scheduledPlugin == null) return;
 
         // Check if the plugin has stop conditions
-        if (scheduledPlugin.getStopConditionManager().getConditions().isEmpty()) {
+        if (scheduledPlugin.getStopConditionManager().getUserConditions().isEmpty()) {
             // Check if this plugin needs time-based stop conditions (from checkbox)
             if (scheduledPlugin.isNeedsStopCondition()) {
                 int result = JOptionPane.showConfirmDialog(this,

@@ -21,13 +21,17 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class MotherloadMineScript extends Script
@@ -56,7 +60,7 @@ public class MotherloadMineScript extends Script
 
     private String pickaxeName = "";
     private boolean shouldEmptySack = false;
-
+    private boolean gemBagEmptiedThisCycle = false;
 
 
     public boolean run(MotherloadMineConfig config)
@@ -100,7 +104,6 @@ public class MotherloadMineScript extends Script
         if (Rs2AntibanSettings.actionCooldownActive) return;
         if (Rs2Player.isAnimating() || Microbot.getClient().getLocalPlayer().isInteracting()) return;
 
-        handleDragonPickaxeSpec();
         determineStatusFromInventory();
 
         switch (status)
@@ -127,9 +130,9 @@ public class MotherloadMineScript extends Script
         }
     }
 
-    private void handleDragonPickaxeSpec()
+    private void handlePickaxeSpec()
     {
-        if (Rs2Equipment.isWearing("dragon pickaxe"))
+        if (Rs2Equipment.isWearing("dragon pickaxe") || Rs2Equipment.isWearing("crystal pickaxe"))
         {
             Rs2Combat.setSpecState(true, 1000);
         }
@@ -261,6 +264,17 @@ public class MotherloadMineScript extends Script
 
     private void depositHopper()
     {
+        // if using a gem bag, fill the gem bag and return to mining if the inventory is no longer full
+        if (Rs2Inventory.isFull() && Rs2Gembag.hasGemBag())
+        {
+            Rs2Inventory.interact("gem bag", "Fill");
+            gemBagEmptiedThisCycle = false;
+            if (!Rs2Inventory.isFull())
+            {
+                return;
+            }
+        }
+        
         WorldPoint hopperDeposit = (isUpperFloor() && config.upstairsHopperUnlocked()) ? HOPPER_DEPOSIT_UP : HOPPER_DEPOSIT_DOWN;
         Optional<GameObject> hopper = Optional.ofNullable(Rs2GameObject.findObject(ObjectID.HOPPER_26674, hopperDeposit));
 
@@ -287,10 +301,23 @@ public class MotherloadMineScript extends Script
         if (Rs2Bank.useBank())
         {
             sleepUntil(Rs2Bank::isOpen);
-            Rs2Bank.depositAllExcept("hammer", pickaxeName);
+
+            // if using the gem sack, empty its contents directly into the bank
+            if (Rs2Gembag.hasGemBag() && !gemBagEmptiedThisCycle) 
+            {
+                Rs2Gembag.checkGemBag();
+                if (Rs2Gembag.getTotalGemCount() > 0)
+                {
+                    Rs2Inventory.interact("gem bag", "Empty");
+                    sleep(100, 300);
+                }
+                gemBagEmptiedThisCycle = true;
+            }
+            
+            Rs2Bank.depositAllExcept("hammer", pickaxeName, "gem bag");
             sleep(100, 300);
 
-            if (!Rs2Inventory.hasItem("hammer") || Rs2Equipment.isWearing("hammer"))
+            if (!Rs2Inventory.hasItem("hammer") && !Rs2Equipment.isWearing("hammer"))
             {
                 if (!Rs2Bank.hasItem("hammer"))
                 {
@@ -338,7 +365,8 @@ public class MotherloadMineScript extends Script
             repositionCameraAndMove();
             return;
         }
-
+        // once a vein is found and ready to be interacted (mined), trigger the pickaxe special attack function
+        handlePickaxeSpec();
         if (Rs2GameObject.interact(vein))
         {
             oreVein = vein;
@@ -363,6 +391,12 @@ public class MotherloadMineScript extends Script
         int id = wallObject.getId();
         boolean isVein = (id == 26661 || id == 26662 || id == 26663 || id == 26664);
         if (!isVein) return false;
+
+        if (!config.mineUpstairs())
+        {
+            Stream<Rs2PlayerModel> players = Rs2Player.getPlayers(it -> it != null && it.getWorldLocation().distanceTo(wallObject.getWorldLocation()) <= 2);
+            if (players.findAny().isPresent()) return false;
+        }
 
         if (config.mineUpstairs())
         {

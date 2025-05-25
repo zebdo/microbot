@@ -1,52 +1,54 @@
 package net.runelite.client.plugins.microbot.eventdismiss;
 
 import net.runelite.api.NPC;
-import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.BlockingEvent;
+import net.runelite.client.plugins.microbot.BlockingEventPriority;
+import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 
-import java.util.Arrays;
-import java.util.concurrent.TimeUnit;
+public class DismissNpcEvent implements BlockingEvent {
 
-public class EventDismissScript extends Script {
-    public static double version = 1.0;
+    private final EventDismissConfig config;
 
-    public boolean run(EventDismissConfig config) {
-        Microbot.enableAutoRunOn = false;
-        mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            try {
-                if (!Microbot.isLoggedIn()) return;
-                if (!super.run()) return;
-
-                NPC npc = Rs2Npc.getRandomEventNPC();
-
-                if (npc != null) {
-                    if (shouldDismissNpc(npc, config)) {
-                        Microbot.pauseAllScripts = true;
-                        dismissNpc(npc);
-                    } else if (!Rs2Inventory.isFull()) {
-                        Microbot.pauseAllScripts = true;
-                        talkToNPC(npc);
-                    }
-                }
-
-            } catch (Exception ex) {
-                System.out.println(ex.getMessage());
-            }
-        }, 0, 1000, TimeUnit.MILLISECONDS);
-        return true;
+    public DismissNpcEvent(EventDismissConfig config) {
+        this.config = config;
     }
 
     @Override
-    public void shutdown() {
-        super.shutdown();
+    public boolean validate() {
+        Rs2NpcModel randomEventNPC = Rs2Npc.getRandomEventNPC();
+        return Rs2Npc.hasLineOfSight(randomEventNPC);
     }
 
-    private boolean shouldDismissNpc(NPC npc, EventDismissConfig config) {
-        if (npc.getName() == null) return false;
-        switch (npc.getName()) {
+    @Override
+    public boolean execute() {
+        Rs2NpcModel randomEventNPC = Rs2Npc.getRandomEventNPC();
+        boolean shouldDismiss = shouldDismissNpc(randomEventNPC);
+        if (shouldDismiss) {
+            Rs2Npc.interact(randomEventNPC, "Dismiss");
+            Global.sleepUntil(() -> Rs2Npc.getRandomEventNPC() == null);
+            return true;
+        } else if (!Rs2Inventory.isFull()) {
+            Rs2Npc.interact(randomEventNPC, "Talk-to");
+            Rs2Dialogue.sleepUntilHasContinue();
+            Rs2Dialogue.clickContinue();
+            return true;
+        }
+        return false;
+    }
+
+    @Override
+    public BlockingEventPriority priority() {
+        return BlockingEventPriority.LOWEST;
+    }
+
+    private boolean shouldDismissNpc(Rs2NpcModel npc) {
+        String npcName = npc.getName();
+        if (npcName == null) return false;
+        switch (npcName) {
             case "Bee keeper":
                 return config.dismissBeekeeper();
             case "Capt' Arnav":
@@ -95,18 +97,5 @@ public class EventDismissScript extends Script {
             default:
                 return false;
         }
-    }
-    private void dismissNpc(NPC npc) {
-        // Interact with NPC to dismiss it
-        Rs2Npc.interact(npc, "Dismiss");
-        Microbot.pauseAllScripts = false;
-    }
-
-    private void talkToNPC(NPC npc) {
-        // Interact with NPC to claim lamp
-        Rs2Npc.interact(npc, "Talk-to");
-        sleep(1200);
-        Rs2Dialogue.clickContinue();
-        Microbot.pauseAllScripts = false;
     }
 }

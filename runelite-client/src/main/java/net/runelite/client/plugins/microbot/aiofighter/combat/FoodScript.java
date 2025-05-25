@@ -45,8 +45,9 @@ public class FoodScript extends Script {
                     if (treshHold > 51) //return as long as we have more than 51% health and not guthan equipped
                         return;
                 }
-                List<Rs2ItemModel> foods = Microbot.getClientThread().runOnClientThreadOptional(Rs2Inventory::getInventoryFood)
-                        .orElse(null);
+
+                List<Rs2ItemModel> foods = Rs2Inventory.getInventoryFood();
+
                 if (foods == null || foods.isEmpty()) {
                     if (!equipFullGuthans()) {
                         Microbot.showMessage("No more food left & no guthans available. Please teleport");
