@@ -124,15 +124,25 @@ public class ShortestPathPanel extends PluginPanel {
         coordinatesPanel.add(yField);
         coordinatesPanel.add(zField);
 
-        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-        JButton startButton = new JButton("Start");
-        JButton stopButton = new JButton("Stop");
+		JPanel buttonPanel = new JPanel();
+		buttonPanel.setLayout(new BoxLayout(buttonPanel, BoxLayout.Y_AXIS));
 
-        startButton.addActionListener(e -> startWalking(getCustomLocation()));
-        stopButton.addActionListener(e -> stopWalking());
+		JPanel topRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+		JButton startButton = new JButton("Start");
+		JButton stopButton = new JButton("Stop");
+		startButton.addActionListener(e -> startWalking(getCustomLocation()));
+		stopButton.addActionListener(e -> stopWalking());
+		topRow.add(startButton);
+		topRow.add(stopButton);
 
-        buttonPanel.add(startButton);
-        buttonPanel.add(stopButton);
+		JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+		JButton testButton = new JButton("Test");
+		testButton.addActionListener(e -> plugin.setTarget(getCustomLocation()));
+		bottomRow.add(testButton);
+
+		buttonPanel.add(topRow);
+		buttonPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+		buttonPanel.add(bottomRow);
 
         panel.add(coordinatesPanel);
         panel.add(Box.createRigidArea(new Dimension(0, 5)));
