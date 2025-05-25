@@ -135,10 +135,20 @@ public class ShortestPathPanel extends PluginPanel {
 		topRow.add(startButton);
 		topRow.add(stopButton);
 
-		JPanel bottomRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 5, 0));
+		JPanel bottomRow = new JPanel();
+		bottomRow.setLayout(new BoxLayout(bottomRow, BoxLayout.X_AXIS));
 		JButton testButton = new JButton("Test");
+
+		int combinedWidth = startButton.getPreferredSize().width + stopButton.getPreferredSize().width + 10;
+		int buttonHeight = testButton.getPreferredSize().height;
+
+		testButton.setMaximumSize(new Dimension(combinedWidth, buttonHeight));
+		testButton.setPreferredSize(new Dimension(combinedWidth, buttonHeight));
+		testButton.setAlignmentX(Component.CENTER_ALIGNMENT);
 		testButton.addActionListener(e -> plugin.setTarget(getCustomLocation()));
+		bottomRow.add(Box.createHorizontalGlue());
 		bottomRow.add(testButton);
+		bottomRow.add(Box.createHorizontalGlue());
 
 		buttonPanel.add(topRow);
 		buttonPanel.add(Box.createRigidArea(new Dimension(0, 5)));
