@@ -6,6 +6,9 @@ import net.runelite.api.NPC;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
+import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -44,8 +47,9 @@ public class HunterKabbitsScript extends Script {
      * @param plugin  The plugin instance.
      */
     public void run(HunterKebbitsConfig config, HunterKebbitsPlugin plugin) {
-        super.run();
-
+        Rs2Antiban.resetAntibanSettings();
+        applyAntiBanSettings();
+        Rs2Antiban.setActivity(Activity.GENERAL_HUNTER);
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn() || !this.isRunning()) return;
@@ -217,6 +221,21 @@ public class HunterKabbitsScript extends Script {
         return Rs2Npc.getNpc(1342) == null && !isHintArrowNpcActive();
     }
 
+    private void applyAntiBanSettings() {
+        Rs2AntibanSettings.antibanEnabled = true;
+        Rs2AntibanSettings.usePlayStyle = true;
+        Rs2AntibanSettings.simulateFatigue = true;
+        Rs2AntibanSettings.simulateAttentionSpan = true;
+        Rs2AntibanSettings.behavioralVariability = true;
+        Rs2AntibanSettings.nonLinearIntervals = true;
+        Rs2AntibanSettings.naturalMouse = true;
+        Rs2AntibanSettings.simulateMistakes = true;
+        Rs2AntibanSettings.moveMouseOffScreen = true;
+        Rs2AntibanSettings.contextualVariability = true;
+        Rs2AntibanSettings.devDebug = false;
+        Rs2AntibanSettings.playSchedule = true;
+        Rs2AntibanSettings.actionCooldownChance = 0.1;
+    }
     /**
      * Called when the script is stopped. Resets relevant state.
      */
