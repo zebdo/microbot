@@ -17,42 +17,37 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Enum representing the state of the hunting bot.
+ * Enum representing the current bot state.
  */
 enum State {
     CATCHING, RETRIEVING, DROPPING
 }
 
 /**
- * Script for automated Kebbit hunting using a falcon in Old School RuneScape.
- * Handles catching, retrieving the falcon, and inventory management.
+ * Automated script for falconry Kebbit hunting in Old School RuneScape.
+ * Manages catching, retrieving falcon, and inventory logic.
  */
 public class HunterKabbitsScript extends Script {
 
-    /**
-     * Counter for how many kebbits have been successfully caught.
-     */
+    // Falcon NPC IDs - use Set for multiple falcon types
+    private static final int GYR_FALCON_NPC_ID = 1342;
+    private static final Set<Integer> VALID_FALCON_NPC_IDS = Set.of(1342, 1343, 1344, 1345, 1346);
+
     public static int KebbitCaught = 0;
-
-
-
     public boolean hasDied;
 
     @Getter
     private State currentState = State.CATCHING;
-
     private boolean droppingInProgress = false;
 
     /**
-     * Main method to run the hunting script with the provided config and plugin context.
-     *
-     * @param config The configuration for the script.
-     * @param plugin The plugin instance.
+     * Main method to start the script with given config and plugin context.
      */
     public void run(HunterKebbitsConfig config, HunterKebbitsPlugin plugin) {
         Rs2Antiban.resetAntibanSettings();
         applyAntiBanSettings();
         Rs2Antiban.setActivity(Activity.GENERAL_HUNTER);
+
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn() || !this.isRunning()) return;
@@ -83,7 +78,6 @@ public class HunterKabbitsScript extends Script {
                         }
                         break;
                 }
-
             } catch (Exception e) {
                 e.printStackTrace();
                 Microbot.status = "Error: " + e.getClass().getSimpleName() + " - " + e.getMessage();
@@ -92,9 +86,7 @@ public class HunterKabbitsScript extends Script {
     }
 
     /**
-     * Handles logic for dropping or burying items when the inventory is full.
-     *
-     * @param config The configuration for the script.
+     * Handles dropping or burying items when inventory is full.
      */
     private void handleDroppingState(HunterKebbitsConfig config) {
         KebbitHunting currentKebbit = getKebbit(config);
@@ -105,6 +97,8 @@ public class HunterKabbitsScript extends Script {
         }
 
         while (Rs2Inventory.contains(furItemId) || Rs2Inventory.contains(ItemID.BONES)) {
+            if (!isRunning()) break;
+
             if (Rs2Inventory.contains(furItemId)) Rs2Inventory.drop(furItemId);
 
             if (Rs2Inventory.contains(ItemID.BONES)) {
@@ -116,25 +110,21 @@ public class HunterKabbitsScript extends Script {
                 sleep(300, 600);
             }
         }
-
         currentState = State.CATCHING;
     }
+
     /**
-     * Handles retrieving the falcon from the target NPC after an attempted catch.
-     *
-     * @param config The configuration for the script.
+     * Handles retrieving the falcon from the NPC after a catch attempt.
      */
     private void handleRetrievingState(HunterKebbitsConfig config) {
-        // Unterstützte Falcon-NPC-IDs: Spotted, Dark, Dashing
-
-        final Set<Integer> VALID_FALCON_NPC_IDS = Set.of(1342, 1343, 1344, 1345, 1346);
-
         NPC hintNpc = Microbot.getClient().getHintArrowNpc();
 
         if (hintNpc != null && VALID_FALCON_NPC_IDS.contains(hintNpc.getId())) {
             Rs2NpcModel model = new Rs2NpcModel(hintNpc);
             boolean retrieved = false;
             for (int i = 0; i < 5; i++) {
+                if (!isRunning()) break;
+
                 if (Rs2Npc.interact(model, "Retrieve")) {
                     retrieved = true;
                     break;
@@ -148,32 +138,26 @@ public class HunterKabbitsScript extends Script {
                 currentState = State.CATCHING;
             }
         } else {
-            // Dynamisch prüfen, ob noch ein Falcon-NPC sichtbar ist
             boolean anyFalconStillActive = Rs2Npc.getNpcs()
                     .anyMatch(npc -> VALID_FALCON_NPC_IDS.contains(npc.getId()));
-
             if (!anyFalconStillActive) {
                 currentState = State.CATCHING;
             }
         }
     }
 
-
     /**
-     * Attempts to catch a kebbit by interacting with the corresponding NPC.
-     *
-     * @param config The configuration for the script.
+     * Handles interacting with a Kebbit NPC to attempt a catch.
      */
     private void handleCatchingState(HunterKebbitsConfig config) {
-        String npcName = getKebbit(config).getNpcName(); // z. B. "Dark kebbit"
+        String npcName = getKebbit(config).getNpcName();
 
         if (Rs2Npc.interact(npcName, "Catch")) {
-            Set<Integer> validFalconIds = Set.of(1342, 1343, 1344, 1345, 1346); // alle bekannten Falcon-IDs
             boolean falconActive = false;
-
-            // Warte bis Falcon erscheint oder Hint Arrow aktiv wird (max. ~3 Sekunden)
             for (int i = 0; i < 10; i++) {
-                boolean found = Rs2Npc.getNpcs().anyMatch(npc -> validFalconIds.contains(npc.getId()));
+                if (!isRunning()) break;
+
+                boolean found = Rs2Npc.getNpcs().anyMatch(npc -> VALID_FALCON_NPC_IDS.contains(npc.getId()));
                 if (found || isHintArrowNpcActive()) {
                     falconActive = true;
                     break;
@@ -186,16 +170,11 @@ public class HunterKabbitsScript extends Script {
                 return;
             }
         }
-
-        // Falls kein Falcon aktiv oder Catch fehlgeschlagen → kleine Pause
         sleep(config.MinSleepAfterHuntingKebbit(), config.MaxSleepAfterHuntingKebbit());
     }
 
     /**
-     * Determines the appropriate kebbit to hunt based on player level or configuration.
-     *
-     * @param config The configuration for the script.
-     * @return The selected KebbitHunting enum value.
+     * Returns the proper Kebbit type for the player's level or config.
      */
     private KebbitHunting getKebbit(HunterKebbitsConfig config) {
         int level = Microbot.getClient().getRealSkillLevel(Skill.HUNTER);
@@ -208,10 +187,7 @@ public class HunterKabbitsScript extends Script {
     }
 
     /**
-     * Returns the corresponding fur item ID for a given Kebbit type.
-     *
-     * @param kebbit The kebbit type.
-     * @return The item ID for the fur.
+     * Returns the item ID for the fur based on Kebbit type.
      */
     private Integer getSupportedFurItemId(KebbitHunting kebbit) {
         switch (kebbit) {
@@ -228,22 +204,22 @@ public class HunterKabbitsScript extends Script {
 
     /**
      * Checks if a hint arrow is currently pointing to an NPC.
-     *
-     * @return true if an NPC is targeted by a hint arrow.
      */
     private boolean isHintArrowNpcActive() {
         return Microbot.getClient().getHintArrowNpc() != null;
     }
 
     /**
-     * Determines if the falcon is currently with the player (i.e., not visible and no active hint arrow).
-     *
-     * @return true if the falcon is assumed to be with the player.
+     * Returns true if falcon is with player (not visible and no active hint arrow).
      */
     private boolean isFalconWithPlayer() {
-        return Rs2Npc.getNpc(1342) == null && !isHintArrowNpcActive();
+        boolean falconVisible = Rs2Npc.getNpcs().anyMatch(npc -> VALID_FALCON_NPC_IDS.contains(npc.getId()));
+        return !falconVisible && !isHintArrowNpcActive();
     }
 
+    /**
+     * Sets up all antiban settings.
+     */
     private void applyAntiBanSettings() {
         Rs2AntibanSettings.antibanEnabled = true;
         Rs2AntibanSettings.usePlayStyle = true;
@@ -261,7 +237,7 @@ public class HunterKabbitsScript extends Script {
     }
 
     /**
-     * Called when the script is stopped. Resets relevant state.
+     * Called on script shutdown, resets state and status.
      */
     @Override
     public void shutdown() {
