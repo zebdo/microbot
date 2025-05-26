@@ -4,6 +4,7 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.plugins.microbot.mining.motherloadmine.enums.MLMMiningSpot;
+import net.runelite.client.plugins.microbot.mining.motherloadmine.enums.MLMMiningSpotList;
 
 @ConfigGroup("MotherloadMine")
 public interface MotherloadMineConfig extends Config {
@@ -57,7 +58,7 @@ public interface MotherloadMineConfig extends Config {
             description = "Choose the specific area to mine in Motherload Mine",
             position = 4
     )
-    default MLMMiningSpot miningArea() {
-        return MLMMiningSpot.IDLE;
+    default MLMMiningSpotList miningArea() {
+        return MLMMiningSpotList.ANY;
     }
 }

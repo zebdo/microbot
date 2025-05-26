@@ -8,6 +8,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.mining.motherloadmine.enums.MLMMiningSpot;
+import net.runelite.client.plugins.microbot.mining.motherloadmine.enums.MLMMiningSpotList;
 import net.runelite.client.plugins.microbot.mining.motherloadmine.enums.MLMStatus;
 import net.runelite.client.plugins.microbot.util.antiban.AntibanPlugin;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
@@ -348,7 +349,7 @@ public class MotherloadMineScript extends Script
 //    }
 
     private void selectMiningSpotFromConfig() {
-        MLMMiningSpot selected = config.miningArea();
+        MLMMiningSpot selected = MLMMiningSpot.valueOf(config.miningArea().name());
 
         if (selected == MLMMiningSpot.ANY) {
             // 🔁 Random selection based on upstairs config
@@ -359,7 +360,6 @@ public class MotherloadMineScript extends Script
                 miningSpot = Rs2Random.between(0, 1) == 0 ? MLMMiningSpot.WEST_LOWER : MLMMiningSpot.WEST_MID;
                 miningSpot = Rs2Random.between(0, 1) == 0 ? MLMMiningSpot.SOUTH_WEST : MLMMiningSpot.SOUTH_EAST;
             }
-            Microbot.showMessage("Random mining spot selected: " + miningSpot.name());
         } else {
             // ✅ Use the user-specified mining area
             switch (selected) {
@@ -405,8 +405,7 @@ public class MotherloadMineScript extends Script
 
     private void attemptToMineVein() {
         WallObject vein = findClosestVein();
-        if (vein == null)
-        {
+        if (vein == null) {
             repositionCameraAndMove();
             return;
         }
