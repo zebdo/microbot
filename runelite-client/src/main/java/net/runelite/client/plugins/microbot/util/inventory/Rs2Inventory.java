@@ -15,6 +15,7 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
+import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -1089,12 +1090,50 @@ public class Rs2Inventory {
                 .findFirst().orElse(new String[]{});
     }
 
-    public static List<Rs2ItemModel> getInventoryFood() {
-        List<Rs2ItemModel> items = items().stream()
-                .filter(x -> Arrays.stream(x.getInventoryActions()).anyMatch(a -> a != null && a.equalsIgnoreCase("eat")) || x.getName().toLowerCase().contains("jug of wine") && !x.getName().toLowerCase().contains("rock cake"))
-                .collect(Collectors.toList());
-        return items;
-    }
+	/**
+	 * Retrieves a list of all edible food items currently in the player's inventory.
+	 * <p>
+	 * This includes:
+	 * <ul>
+	 *   <li>Items with an "Eat" inventory action</li>
+	 *   <li>Items named "Jug of wine"</li>
+	 * </ul>
+	 * This excludes:
+	 * <ul>
+	 *   <li>Noted items</li>
+	 *   <li>Items containing "rock cake" in the name</li>
+	 * </ul>
+	 *
+	 * @return a list of {@link Rs2ItemModel} representing edible food in the inventory
+	 */
+	public static List<Rs2ItemModel> getInventoryFood() {
+		return items().stream()
+			.filter(item -> {
+				if (item.isNoted()) return false;
+
+				String name = item.getName().toLowerCase();
+
+				boolean isEdible = Arrays.stream(item.getInventoryActions())
+					.anyMatch(action -> action != null && action.equalsIgnoreCase("eat"));
+
+				return (isEdible || name.contains("jug of wine")) && !name.contains("rock cake");
+			})
+			.collect(Collectors.toList());
+	}
+
+	/**
+	 * Retrieves a list of fast food items (tick delay = 1) from the player's inventory.
+	 * <p>
+	 * This is a filtered subset of {@link #getInventoryFood()}, using known food IDs
+	 * with a 1-tick consumption delay.
+	 *
+	 * @return a list of {@link Rs2ItemModel} representing fast food in the inventory
+	 */
+	public static List<Rs2ItemModel> getInventoryFastFood() {
+		return Rs2Inventory.getInventoryFood().stream()
+			.filter(item -> Rs2Food.getFastFoodIds().contains(item.getId()))
+			.collect(Collectors.toList());
+	}
 
     public static List<Rs2ItemModel> getPotions() {
         return items().stream()
