@@ -2,8 +2,10 @@ package net.runelite.client.plugins.microbot.revKiller;
 
 import com.google.inject.Provides;
 import net.runelite.api.*;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ActorDeath;
+import net.runelite.api.geometry.RectangleUnion;
 import net.runelite.api.kit.KitType;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -13,6 +15,7 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
+import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.equipment.JewelleryLocationEnum;
@@ -23,6 +26,7 @@ import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -35,6 +39,7 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.http.api.worlds.World;
 
+import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -224,6 +229,14 @@ public class revKillerScript extends Script {
             while(!Rs2Player.getWorldLocation().equals(startTile)){
                 if(!super.isRunning()){break;}
                 if(isPkerAround()){break;}
+
+                LocalPoint lp = LocalPoint.fromWorld(Microbot.getClient(), startTile);
+
+                if(!Rs2Camera.isTileOnScreen(lp)){
+                    Rs2Camera.turnTo(lp);
+                    sleep(0,250);
+                }
+
                 Rs2Walker.walkCanvas(startTile);
                 sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,3000));
                 sleepUntil(()-> !Rs2Player.isMoving()||Rs2Player.getWorldLocation().equals(startTile), Rs2Random.between(3000,6000));
@@ -242,6 +255,14 @@ public class revKillerScript extends Script {
             while(!Rs2Player.getWorldLocation().equals(secondTile)){
                 if(!super.isRunning()){break;}
                 if(isPkerAround()){break;}
+
+                LocalPoint lp = LocalPoint.fromWorld(Microbot.getClient(), secondTile);
+
+                if(!Rs2Camera.isTileOnScreen(lp)){
+                    Rs2Camera.turnTo(lp);
+                    sleep(0,250);
+                }
+
                 Rs2Walker.walkCanvas(secondTile);
                 sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,3000));
                 sleepUntil(()-> !Rs2Player.isMoving()||Rs2Player.getWorldLocation().equals(secondTile), Rs2Random.between(3000,6000));
