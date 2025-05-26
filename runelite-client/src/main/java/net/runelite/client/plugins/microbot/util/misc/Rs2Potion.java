@@ -32,7 +32,7 @@ public class Rs2Potion
                 "Moonlight potion",
                 "Moonlight moth mix",
                 "Egniol potion",
-                "tears of elidinis"
+                "Tears of elidinis"
         );
     }
 
