@@ -2,11 +2,9 @@ package net.runelite.client.plugins.microbot.mining.motherloadmine;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.ObjectID;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.mining.motherloadmine.enums.MLMMiningSpot;
@@ -23,13 +21,17 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 public class MotherloadMineScript extends Script
@@ -58,7 +60,7 @@ public class MotherloadMineScript extends Script
 
     private String pickaxeName = "";
     private boolean shouldEmptySack = false;
-
+    private boolean gemBagEmptiedThisCycle = false;
 
 
     public boolean run(MotherloadMineConfig config)
@@ -102,7 +104,6 @@ public class MotherloadMineScript extends Script
         if (Rs2AntibanSettings.actionCooldownActive) return;
         if (Rs2Player.isAnimating() || Microbot.getClient().getLocalPlayer().isInteracting()) return;
 
-        handleDragonPickaxeSpec();
         determineStatusFromInventory();
 
         switch (status)
@@ -129,9 +130,9 @@ public class MotherloadMineScript extends Script
         }
     }
 
-    private void handleDragonPickaxeSpec()
+    private void handlePickaxeSpec()
     {
-        if (Rs2Equipment.isWearing("dragon pickaxe"))
+        if (Rs2Equipment.isWearing("dragon pickaxe") || Rs2Equipment.isWearing("crystal pickaxe"))
         {
             Rs2Combat.setSpecState(true, 1000);
         }
@@ -263,6 +264,17 @@ public class MotherloadMineScript extends Script
 
     private void depositHopper()
     {
+        // if using a gem bag, fill the gem bag and return to mining if the inventory is no longer full
+        if (Rs2Inventory.isFull() && Rs2Gembag.hasGemBag())
+        {
+            Rs2Inventory.interact("gem bag", "Fill");
+            gemBagEmptiedThisCycle = false;
+            if (!Rs2Inventory.isFull())
+            {
+                return;
+            }
+        }
+
         WorldPoint hopperDeposit = (isUpperFloor() && config.upstairsHopperUnlocked()) ? HOPPER_DEPOSIT_UP : HOPPER_DEPOSIT_DOWN;
         Optional<GameObject> hopper = Optional.ofNullable(Rs2GameObject.findObject(ObjectID.HOPPER_26674, hopperDeposit));
 
@@ -278,10 +290,6 @@ public class MotherloadMineScript extends Script
                 shouldEmptySack = true;
             }
         }
-        // ✅ Check for uncut gems and go bank them
-        if (hasOreInInventory()) {
-            status = MLMStatus.BANKING;
-        }
         else
         {
             Rs2Walker.walkTo(hopperDeposit, 15);
@@ -293,10 +301,23 @@ public class MotherloadMineScript extends Script
         if (Rs2Bank.useBank())
         {
             sleepUntil(Rs2Bank::isOpen);
-            Rs2Bank.depositAllExcept("hammer", pickaxeName);
+
+            // if using the gem sack, empty its contents directly into the bank
+            if (Rs2Gembag.hasGemBag() && !gemBagEmptiedThisCycle)
+            {
+                Rs2Gembag.checkGemBag();
+                if (Rs2Gembag.getTotalGemCount() > 0)
+                {
+                    Rs2Inventory.interact("gem bag", "Empty");
+                    sleep(100, 300);
+                }
+                gemBagEmptiedThisCycle = true;
+            }
+
+            Rs2Bank.depositAllExcept("hammer", pickaxeName, "gem bag");
             sleep(100, 300);
 
-            if (!Rs2Inventory.hasItem("hammer") || Rs2Equipment.isWearing("hammer"))
+            if (!Rs2Inventory.hasItem("hammer") && !Rs2Equipment.isWearing("hammer"))
             {
                 if (!Rs2Bank.hasItem("hammer"))
                 {
@@ -363,7 +384,8 @@ public class MotherloadMineScript extends Script
         }
     }
 
-    private boolean walkToMiningSpot() {
+    private boolean walkToMiningSpot()
+    {
         WorldPoint target = miningSpot.getWorldPoint().get(0);
 
         // Navigates to correct floor based on selected mining area
@@ -383,21 +405,20 @@ public class MotherloadMineScript extends Script
 
     private void attemptToMineVein() {
         WallObject vein = findClosestVein();
-        if (vein == null) {
-            repositionCameraAndMove(); // 🎯 No valid vein found, reposition camera
+        if (vein == null)
+        {
+            repositionCameraAndMove();
             return;
         }
-
-        // ✅ Attempt to interact and wait for animation
-        if (Rs2GameObject.interact(vein)) {
+        // once a vein is found and ready to be interacted (mined), trigger the pickaxe special attack function
+        handlePickaxeSpec();
+        if (Rs2GameObject.interact(vein))
+        {
             oreVein = vein;
-
-            // 💤 Sleep a bit before checking animation to avoid false negatives
-            sleep(200, 400);
             sleepUntil(Rs2Player::isAnimating, 5000);
-
-            if (!Rs2Player.isAnimating()) {
-                oreVein = null; // ❌ Failed to mine, reset
+            if (!Rs2Player.isAnimating())
+            {
+                oreVein = null;
             }
         }
     }
@@ -418,15 +439,26 @@ public class MotherloadMineScript extends Script
 
         WorldPoint location = wallObject.getWorldLocation();
 
+        if (!config.mineUpstairs())
+        {
+            Stream<Rs2PlayerModel> players = Rs2Player.getPlayers(it -> it != null && it.getWorldLocation().distanceTo(wallObject.getWorldLocation()) <= 2);
+            if (players.findAny().isPresent()) return false;
+        }
+
+        if (config.mineUpstairs())
+        {
         boolean inUpperArea = (miningSpot == MLMMiningSpot.WEST_UPPER && WEST_UPPER_AREA.contains(location))
                 || (miningSpot == MLMMiningSpot.EAST_UPPER && EAST_UPPER_AREA.contains(location));
-
+            return inUpperArea && hasWalkableTilesAround(wallObject);
+        }
+        else
+        {
         boolean inLowerArea = (miningSpot == MLMMiningSpot.WEST_LOWER && WEST_LOWER_AREA.contains(location))
                 || (miningSpot == MLMMiningSpot.WEST_MID && WEST_LOWER_AREA.contains(location))
                 || (miningSpot == MLMMiningSpot.SOUTH_WEST && SOUTH_LOWER_AREA.contains(location))
                 || (miningSpot == MLMMiningSpot.SOUTH_EAST && SOUTH_LOWER_AREA.contains(location));
-
-        return (inUpperArea || inLowerArea) && hasWalkableTilesAround(wallObject);
+        return inLowerArea && hasWalkableTilesAround(wallObject);
+        }
     }
 
     private boolean hasWalkableTilesAround(WallObject wallObject)

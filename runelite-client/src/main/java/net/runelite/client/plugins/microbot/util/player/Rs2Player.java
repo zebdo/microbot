@@ -375,8 +375,7 @@ public class Rs2Player {
      * @return {@code true} if the player is interacting with another entity, {@code false} otherwise.
      */
     public static boolean isInteracting() {
-        return Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getLocalPlayer().isInteracting())
-                .orElse(false);
+        return Optional.of(Microbot.getClient().getLocalPlayer().isInteracting()).orElse(false);
     }
 
     /**
@@ -716,8 +715,7 @@ public class Rs2Player {
      * @return A stream of Rs2PlayerModel objects representing nearby players.
      */
     public static Stream<Rs2PlayerModel> getPlayers(Predicate<Rs2PlayerModel> predicate, boolean includeLocalPlayer) {
-        List<Rs2PlayerModel> players = Microbot.getClientThread().runOnClientThreadOptional(() ->
-                Microbot.getClient().getTopLevelWorldView().players()
+        List<Rs2PlayerModel> players = Optional.of(Microbot.getClient().getTopLevelWorldView().players()
                         .stream()
                         .filter(Objects::nonNull)
                         .map(Rs2PlayerModel::new)

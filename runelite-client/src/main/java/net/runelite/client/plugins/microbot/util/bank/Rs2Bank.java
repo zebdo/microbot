@@ -1222,6 +1222,109 @@ public class Rs2Bank {
         }
     }
 
+    /**
+     * Opens the Bank Collection Box in the game if it is not already open.
+     * The method determines the closest and most appropriate object or NPC to interact with
+     * in order to access the Bank Collection Box. It handles various scenarios such as
+     * interacting with a bank, chest, Grand Exchange booth, or NPC banker.
+     */
+    public static void openCollectionBox() {
+        Microbot.status = "Opening collection box";
+
+        try {
+            if (Microbot.getClient().isWidgetSelected()) {
+                Microbot.getMouse().click();
+            }
+
+            if (collectionBoxIsOpen()) return;
+
+            Player player = Microbot.getClient().getLocalPlayer();
+            if (player == null) return;
+            WorldPoint anchor = player.getWorldLocation();
+
+            List<TileObject> candidates = Stream.of(
+                            Rs2GameObject.findBank(),
+                            Rs2GameObject.findGrandExchangeBooth()
+                    )
+                    .filter(Objects::nonNull)
+                    .collect(Collectors.toList());
+
+            Optional<TileObject> nearestObj = Rs2GameObject.pickClosest(
+                    candidates,
+                    TileObject::getWorldLocation,
+                    anchor
+            );
+
+            boolean action = false;
+            if (nearestObj.isPresent()) {
+                action = Rs2GameObject.interact(nearestObj.get(), "Collect");
+            } else {
+                Rs2NpcModel banker = Rs2Npc.getBankerNPC();
+                if (banker != null) {
+                    action = Rs2Npc.interact(banker, "Collect");
+                }
+            }
+
+            if (action) {
+                sleepUntil(Rs2Bank::collectionBoxIsOpen, 5000);
+            }
+        } catch (Exception ex) {
+            Microbot.logStackTrace("Rs2Bank", ex);
+        }
+    }
+    /**
+     * Collects items from the collection box and deposits them into the bank.
+     *
+     * @return true if the operation is successfully initiated and completes processing.
+     */
+
+    public static boolean bankAllCollectionBoxItems() {
+        openCollectionBox();
+        sleepUntil(Rs2Bank::collectionBoxIsOpen, 5000);
+        Rs2Widget.clickWidget(26345476);
+        return true;
+    }
+    /**
+     * Collects items into the inventory by interacting with the collection box
+     * and selecting the inventory option.
+     *
+     * @return true if the operation to collect items into the inventory is successfully initiated
+     */
+    public static boolean inventoryAllCollectionBoxItems() {
+        openCollectionBox();
+        sleepUntil(Rs2Bank::collectionBoxIsOpen, 5000);
+        Rs2Widget.clickWidget(26345475);
+        return true;
+    }
+
+    /**
+     * Closes the collection box interface.
+     */
+    public static void closeCollectionBox() {
+        Widget[] closeWidget = Rs2Widget.getWidget(402,2).getDynamicChildren();
+        Rs2Widget.clickWidget(closeWidget[3]);
+        sleepUntil(() -> !collectionBoxIsOpen(), 5000);
+    }
+
+    /**
+     * Determines if the collection box is visible in the user interface based on widget text.
+     *
+     * @return true if the collection box widget with the specified text is visible; false otherwise.
+     */
+    public static boolean isCollectionBoxVisible() {
+        return Rs2Widget.hasWidgetText("Collection box", 402, 2, false);
+    }
+
+    /**
+     * Checks if the collection box is currently open and visible.
+     *
+     * @return true if the collection box is visible, false otherwise.
+     */
+    public static boolean collectionBoxIsOpen() {
+        return isCollectionBoxVisible();
+    }
+
+
     public static boolean openBank(Rs2NpcModel npc) {
         Microbot.status = "Opening bank";
         try {
@@ -1602,6 +1705,13 @@ public class Rs2Bank {
             bankItems = list;
     }
 
+    /**
+     * Handle bank pin boolean.
+     *
+     * @param pin the pin
+     *
+     * @return the boolean
+     */
     public static boolean handleBankPin(String pin) {
         if (pin == null || !pin.matches("\\d+")) {
             Microbot.log("Unable to enter bankpin with value " + pin);

@@ -17,6 +17,8 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.concurrent.Callable;
 
 import static net.runelite.client.plugins.microbot.Microbot.log;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
@@ -166,9 +168,19 @@ public class Rs2Combat {
 
     public static boolean inCombat() {
         if (!Microbot.isLoggedIn()) return false;
-        if (Microbot.getClientThread().runOnClientThreadOptional(() -> !Rs2Player.isInteracting()
-                || Rs2Player.getInteracting().getCombatLevel() < 1).orElse(true)) return false;
-        return Rs2Player.isInteracting() || Rs2Player.getAnimation() != -1;
+
+        Player player = Microbot.getClient().getLocalPlayer();
+        if (player == null) return false;
+
+        Actor interactingActor = Microbot.getClientThread().runOnClientThreadOptional(player::getInteracting).orElse(null);
+        if (interactingActor == null) return false;
+
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+                    if (interactingActor.getCombatLevel() < 1) return false;
+
+                    return player.getAnimation() != -1 || player.isInteracting();
+                })
+                .orElse(false);
     }
 
     /**
