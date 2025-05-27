@@ -27,10 +27,11 @@ public class AstralRunesScript extends Script {
     private final AstralRunesPlugin plugin;
 
     private final static List<Integer> LUNAR_ISLE_REGION_IDS = List.of(8509, 8508, 8253);
-    private static final WorldPoint SEAL_OF_PASSAGE_BANKER = new WorldPoint(2098, 3920, 0);
-    private static final WorldPoint DREAM_MENTOR_BANKER = new WorldPoint(2099, 3920, 0);
+    private final static WorldPoint SEAL_OF_PASSAGE_BANKER = new WorldPoint(2098, 3920, 0);
+    private final static WorldPoint DREAM_MENTOR_BANKER = new WorldPoint(2099, 3920, 0);
     private final static WorldPoint LUNAR_ISLE_BANK_WORLD_POINT = new WorldPoint(2099, 3918, 0);
     private final static WorldPoint LUNAR_ISLE_CRAFT_WORLD_POINT = new WorldPoint(2156, 3864, 0);
+    private final static WorldPoint ASTRAL_ALTAR_WORLD_POINT = new WorldPoint(2158, 3864, 0);
 
     public final int runeItemId = ItemID.ASTRALRUNE;
     public static int runesForSession = 0;
@@ -242,20 +243,28 @@ public class AstralRunesScript extends Script {
 
                         MXUtil.handlePouchOutOfSync(hasEmptySlots, colossalPouch);
 
-                        if( Rs2Inventory.allPouchesFull() && Rs2Inventory.getEmptySlots() < 1 ) {
+                        if( !Rs2Inventory.hasDegradedPouch() && Rs2Inventory.allPouchesFull() && Rs2Inventory.getEmptySlots() < 1 ) {
                             state = State.CRAFTING;
                         }
 
                         break;
                     case CRAFTING:
+                        if( Rs2Inventory.hasDegradedPouch() ) {
+                            state = State.REPAIRING;
+                            return;
+                        }
                         plugin.setDebugText1("distance to craft - " + distToCraftPoint);
                         MXUtil.closeWorldMapIfNeeded();
                         if( distToCraftPoint >= 3 && !Rs2Player.isMoving() ) {
                             Rs2Walker.walkTo(LUNAR_ISLE_CRAFT_WORLD_POINT, 2);
+                            MXUtil.closeWorldMapIfNeeded();
                             doAltarCraft();
                         }
 
                         doAltarCraft();
+
+                        if( !Rs2Inventory.allPouchesEmpty() || Rs2Inventory.hasItem(ItemID.BLANKRUNE_HIGH) )
+                            doAltarCraft();
 
                         if( Rs2Inventory.allPouchesEmpty() && !Rs2Inventory.hasItem(ItemID.BLANKRUNE_HIGH) ) {
                             state = State.BANKING;
@@ -277,7 +286,7 @@ public class AstralRunesScript extends Script {
     }
 
     private static void doAltarCraft() {
-        var altarLoc = new WorldPoint(2158, 3864, 0);
+        var altarLoc = ASTRAL_ALTAR_WORLD_POINT;
         var altarTile = Rs2GameObject.findGameObjectByLocation(altarLoc);
         if( altarTile != null && Rs2Player.getWorldLocation().distanceTo(altarLoc) < 5) {
             if( Rs2Inventory.hasItem(ItemID.BLANKRUNE_HIGH) ) {
