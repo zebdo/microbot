@@ -1596,7 +1596,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 }
 
                 Microbot.log("Traveling to " + transport.getDisplayInfo());
-                return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 5000);
+                return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 8000);
             }
         }
         else {
@@ -1625,7 +1625,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     }
                 }
                 Microbot.log("Traveling to " + transport.getDisplayInfo());
-                return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 5000);
+                return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 8000);
             }
         }
         return false;
