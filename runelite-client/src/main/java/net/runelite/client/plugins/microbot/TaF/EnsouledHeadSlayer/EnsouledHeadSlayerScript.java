@@ -77,6 +77,11 @@ public class EnsouledHeadSlayerScript extends Script {
                 switch (BOT_STATE) {
                     case BANKING:
                         if (handleBanking(config)) {
+                            if (Rs2Inventory.count("Ensouled") < 1) {
+                                Microbot.log("No ensouled heads found in inventory, stopping script.");
+                                shutdown();
+                                return;
+                            }
                             BOT_STATE = EnsouledHeadSlayerStatus.WALKING_TO_ALTAR;
                         }
                     case WALKING_TO_ALTAR:
@@ -118,7 +123,7 @@ public class EnsouledHeadSlayerScript extends Script {
         }
         Rs2Combat.enableAutoRetialiate();
         var ensouledHead = Rs2Inventory.count("ensouled");
-        if (ensouledHead == 0 && !Rs2Combat.inCombat()) {
+        if (ensouledHead == 0 && !Rs2Combat.inCombat() && Rs2Player.getInteracting() == null) {
             Microbot.log("No ensouled heads found in inventory, banking...");
             BOT_STATE = EnsouledHeadSlayerStatus.BANKING;
             return;
@@ -165,6 +170,14 @@ public class EnsouledHeadSlayerScript extends Script {
         if (!Rs2Bank.openBank()) {
             return false;
         }
+        if (Rs2Bank.count("Ensouled") < 1) {
+            Microbot.log("No ensouled heads found in bank, stopping script.");
+            shutdown();
+            return false;
+        }
+        if (Rs2Inventory.getEmptySlots() < 28) {
+            Rs2Bank.depositAll();
+        }
         if (!useInventorySetup(config)) return false;
         if (!config.useInventorySetup()) {
             if (!getRunesAndEnsouledHeads(config)) {
@@ -184,32 +197,23 @@ public class EnsouledHeadSlayerScript extends Script {
 
     private boolean getRunesAndEnsouledHeads(EnsouledHeadSlayerConfig config) {
         if (config.ensouledHeads().getName().equals("All")) {
-            // Group ensouled heads by ID and count them
             Map<Integer, Integer> headCounts = new HashMap<>();
-
             for (var item : Rs2Bank.bankItems()) {
                 if (item != null && item.name != null && item.name.toLowerCase().contains("ensouled")) {
-                    headCounts.put(item.id, headCounts.getOrDefault(item.id, 0) + 1);
+                    headCounts.put(item.id, headCounts.getOrDefault(item.id, 0) + item.quantity);
                 }
             }
-
             if (headCounts.isEmpty()) {
                 Microbot.log("No ensouled heads found in bank");
                 return false;
             }
-
-            // Find the head with the highest count
-            int highestId = -1;
-            int highestCount = 0;
-
+            int highestId = -1, highestCount = 0;
             for (Map.Entry<Integer, Integer> entry : headCounts.entrySet()) {
                 if (entry.getValue() > highestCount) {
                     highestId = entry.getKey();
                     highestCount = entry.getValue();
                 }
             }
-
-            // Find corresponding enum
             EnsouledHeads primaryHead = null;
             for (EnsouledHeads head : EnsouledHeads.values()) {
                 if (head.getItemId() == highestId) {
@@ -217,30 +221,21 @@ public class EnsouledHeadSlayerScript extends Script {
                     break;
                 }
             }
-
             if (primaryHead == null) {
                 Microbot.log("Could not identify ensouled head type");
                 return false;
             }
 
-            // Calculate available slots
-            int availableSlots = Rs2Inventory.getEmptySlots() - config.foodAmount() - 3;
-
+            extractRunes(config, primaryHead);
+            int availableSlots = Rs2Inventory.getEmptySlots() - config.foodAmount();
             if (availableSlots <= 0) {
                 Microbot.log("Not enough inventory space");
                 return false;
             }
-
-            // Withdraw the primary head type
-            int toWithdraw = Math.min(highestCount, availableSlots);
-            Rs2Bank.withdrawX(primaryHead.getItemId(), toWithdraw);
-
-            // If we still have space and not enough of primary head
-            if (toWithdraw < availableSlots) {
-                int remainingSlots = availableSlots - toWithdraw;
-                MagicAction requiredSpell = primaryHead.getMagicSpell();
-
-                // Find other heads using the same spell
+            Rs2Bank.withdrawX(primaryHead.getItemId(), availableSlots);
+            int remainingSlots = Rs2Inventory.getEmptySlots();
+            MagicAction requiredSpell = primaryHead.getMagicSpell();
+            if (remainingSlots > 0) {
                 for (EnsouledHeads otherHead : EnsouledHeads.values()) {
                     if (otherHead != primaryHead && otherHead.getMagicSpell() == requiredSpell) {
                         int count = headCounts.getOrDefault(otherHead.getItemId(), 0);
@@ -248,28 +243,14 @@ public class EnsouledHeadSlayerScript extends Script {
                             int otherWithdraw = Math.min(count, remainingSlots);
                             Rs2Bank.withdrawX(otherHead.getItemId(), otherWithdraw);
                             remainingSlots -= otherWithdraw;
-
                             if (remainingSlots == 0) break;
                         }
                     }
                 }
             }
-
-            // Withdraw runes for the spell
-            withdrawRunesForSpell(primaryHead.getMagicSpell());
         } else {
             EnsouledHeads selectedHead = config.ensouledHeads();
-            withdrawRunesForSpell(selectedHead.getMagicSpell());
-            if (config.useGamesNecklaceForBanking() && Rs2Inventory.count("Games necklace") < 1) {
-                Rs2Bank.withdrawX("Games necklace", 1);
-                sleep(600, 800);
-            }
-            if (config.useArcheusLibraryTeleport() && Rs2Inventory.count("earth rune") < 2 && Rs2Inventory.count("law rune") < 1) {
-                Rs2Bank.withdrawX("earth rune", Rs2Random.between(4,10));
-                sleep(600, 800);
-                Rs2Bank.withdrawX("law rune", Rs2Random.between(4,10));
-                sleep(600, 800);
-            }
+            extractRunes(config, selectedHead);
 
             int headCount = Rs2Bank.count(selectedHead.getItemId());
             if (headCount == 0) {
@@ -281,6 +262,20 @@ public class EnsouledHeadSlayerScript extends Script {
             Rs2Bank.withdrawX(selectedHead.getName(), headsToWithdraw);
         }
         return true;
+    }
+
+    private void extractRunes(EnsouledHeadSlayerConfig config, EnsouledHeads selectedHead) {
+        withdrawRunesForSpell(selectedHead.getMagicSpell());
+        if (config.useGamesNecklaceForBanking() && Rs2Inventory.count("Games necklace") < 1) {
+            Rs2Bank.withdrawX("Games necklace", 1);
+            sleep(600, 800);
+        }
+        if (config.useArcheusLibraryTeleport() && Rs2Inventory.count("earth rune") < 2 && Rs2Inventory.count("law rune") < 1) {
+            Rs2Bank.withdrawX("earth rune", Rs2Random.between(4,10));
+            sleep(600, 800);
+            Rs2Bank.withdrawX("law rune", Rs2Random.between(4,10));
+            sleep(600, 800);
+        }
     }
 
     private void withdrawRunesForSpell(MagicAction spell) {

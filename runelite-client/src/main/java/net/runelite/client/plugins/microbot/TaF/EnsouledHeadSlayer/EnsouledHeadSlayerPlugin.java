@@ -37,6 +37,7 @@ public class EnsouledHeadSlayerPlugin extends Plugin implements SchedulablePlugi
     private EnsouledHeadSlayerScript ensouledHeadSlayerScript;
     private LogicalCondition stopCondition = new AndCondition();
     private int startingXp = 0;
+    private int startingLevel = 0;
 
     protected String getTimeRunning() {
         return scriptStartTime != null ? TimeUtils.getFormattedDurationBetween(scriptStartTime, Instant.now()) : "";
@@ -45,6 +46,11 @@ public class EnsouledHeadSlayerPlugin extends Plugin implements SchedulablePlugi
     protected String getTotalXpGained() {
         var currentXp = Microbot.getClient().getSkillExperience(Skill.PRAYER);
         return startingXp > 0 ? String.valueOf(currentXp - startingXp) : "0";
+    }
+
+    protected String getLevelGained() {
+        var currentLevel = Microbot.getClient().getRealSkillLevel(Skill.PRAYER);
+        return String.valueOf(startingLevel + "/" + currentLevel);
     }
 
     protected String getXpAnHour() {
@@ -66,6 +72,7 @@ public class EnsouledHeadSlayerPlugin extends Plugin implements SchedulablePlugi
         ensouledHeadSlayerScript.run(config);
         if (startingXp == 0) {
             startingXp = Microbot.getClient().getSkillExperience(Skill.PRAYER);
+            startingLevel = Microbot.getClient().getRealSkillLevel(Skill.PRAYER);
         }
     }
 
