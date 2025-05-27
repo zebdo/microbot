@@ -82,7 +82,7 @@ public interface OuraniaConfig extends Config
 	@ConfigItem(
 		keyName = directInteract,
 		name = "Direct Interaction",
-		description = "Directly interact with the Altar instead of using the walker (this requires the GPU plugin)",
+		description = "(Experimental) Directly interact with the Altar instead of using the walker (this requires the GPU plugin)",
 		position = 2,
 		section = generalSection
 	)
