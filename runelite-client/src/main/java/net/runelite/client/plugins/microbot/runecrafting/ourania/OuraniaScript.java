@@ -192,10 +192,14 @@ public class OuraniaScript extends Script
 
 						boolean hasRunes = Rs2Inventory.items().stream().anyMatch(item -> item.getName().toLowerCase().contains("rune") && !item.getName().toLowerCase().contains("rune pouch"));
 
-						if (hasRunes) {
-							if (config.useDepositAll()) {
+						if (hasRunes)
+						{
+							if (config.useDepositAll())
+							{
 								Rs2Bank.depositAll();
-							} else {
+							}
+							else
+							{
 								// Get all RunePouchType IDs
 								Integer[] runePouchIds = Arrays.stream(RunePouchType.values())
 									.map(RunePouchType::getItemId)
