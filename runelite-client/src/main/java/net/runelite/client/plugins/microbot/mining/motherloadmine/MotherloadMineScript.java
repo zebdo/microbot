@@ -338,21 +338,10 @@ public class MotherloadMineScript extends Script
         status = MLMStatus.IDLE;
     }
 
-//    private void selectRandomMiningSpot()
-//    {
-//        // Randomly decide which spot to go to
-//        // More variety can be added if needed
-//        miningSpot = (Rs2Random.between(1, 5) == 2)
-//                ? (config.mineUpstairs() ? MLMMiningSpot.WEST_UPPER : MLMMiningSpot.SOUTH)
-//                : (config.mineUpstairs() ? MLMMiningSpot.EAST_UPPER : MLMMiningSpot.WEST_LOWER);
-//        Collections.shuffle(miningSpot.getWorldPoint());
-//    }
-
     private void selectMiningSpotFromConfig() {
         MLMMiningSpot selected = MLMMiningSpot.valueOf(config.miningArea().name());
 
         if (selected == MLMMiningSpot.ANY) {
-            // 🔁 Random selection based on upstairs config
             if (config.mineUpstairs()) {
                 miningSpot = Rs2Random.between(0, 1) == 0 ? MLMMiningSpot.WEST_UPPER : MLMMiningSpot.EAST_UPPER;
             }
@@ -361,7 +350,6 @@ public class MotherloadMineScript extends Script
                 miningSpot = Rs2Random.between(0, 1) == 0 ? MLMMiningSpot.SOUTH_WEST : MLMMiningSpot.SOUTH_EAST;
             }
         } else {
-            // ✅ Use the user-specified mining area
             switch (selected) {
                 case EAST_UPPER:
                 case WEST_UPPER:
@@ -389,12 +377,13 @@ public class MotherloadMineScript extends Script
         WorldPoint target = miningSpot.getWorldPoint().get(0);
 
         // Navigates to correct floor based on selected mining area
-        if ((miningSpot == MLMMiningSpot.EAST_UPPER || miningSpot == MLMMiningSpot.WEST_UPPER) && !isUpperFloor()) {
+        if (miningSpot.isUpstairs() && !isUpperFloor())
+        {
             goUp();
             return false; // Wait until we've gone up
         }
 
-        if ((miningSpot == MLMMiningSpot.WEST_LOWER || miningSpot == MLMMiningSpot.WEST_MID || miningSpot == MLMMiningSpot.SOUTH_WEST || miningSpot == MLMMiningSpot.SOUTH_EAST) && isUpperFloor()) {
+        if (miningSpot.isDownstairs() && isUpperFloor()) {
             goDown();
             return false; // Wait until we've gone down
         }
