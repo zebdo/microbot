@@ -304,15 +304,15 @@ public class TormentedDemonScript extends Script {
 
     private void activateOffensivePrayer(TormentedDemonConfig config) {
         Rs2PrayerEnum newOffensivePrayer = null;
-        if (config.useMagicStyle() && isGearEquipped(parseGear(config.magicGear())) && Rs2Player.getBoostedSkillLevel(Skill.PRAYER) >= 77) {
+        if (config.useMagicStyle() && isGearEquipped(parseGear(config.magicGear())) && Rs2Player.getRealSkillLevel(Skill.PRAYER) >= 77) {
             newOffensivePrayer = Rs2PrayerEnum.AUGURY;
         } else if (config.useMagicStyle() && isGearEquipped(parseGear(config.magicGear()))) {
             newOffensivePrayer = Rs2PrayerEnum.MYSTIC_LORE;
-        } else if (config.useMeleeStyle() && isGearEquipped(parseGear(config.meleeGear())) && Rs2Player.getBoostedSkillLevel(Skill.PRAYER) >= 70) {
+        } else if (config.useMeleeStyle() && isGearEquipped(parseGear(config.meleeGear())) && Rs2Player.getRealSkillLevel(Skill.PRAYER) >= 70) {
             newOffensivePrayer = Rs2PrayerEnum.PIETY;
         } else if (config.useMeleeStyle() && isGearEquipped(parseGear(config.meleeGear()))) {
             newOffensivePrayer = Rs2PrayerEnum.ULTIMATE_STRENGTH;
-        } else if (config.useRangeStyle() && isGearEquipped(parseGear(config.rangeGear())) && Rs2Player.getBoostedSkillLevel(Skill.PRAYER) >= 70) {
+        } else if (config.useRangeStyle() && isGearEquipped(parseGear(config.rangeGear())) && Rs2Player.getRealSkillLevel(Skill.PRAYER) >= 70) {
             newOffensivePrayer = Rs2PrayerEnum.RIGOUR;
         } else if (config.useRangeStyle() && isGearEquipped(parseGear(config.rangeGear()))) {
             newOffensivePrayer = Rs2PrayerEnum.HAWK_EYE;
