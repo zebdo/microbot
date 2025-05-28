@@ -1722,28 +1722,28 @@ public class Rs2Bank {
                 "FIRST digit", "SECOND digit", "THIRD digit", "FOURTH digit"
         };
 
-        if (isBankPinWidgetVisible()) {
-            synchronized (lock) {
-                for (int i = 0; i < pin.length(); i++) {
-                    char c = pin.charAt(i);
-                    String expectedInstruction = digitInstructions[i];
+		synchronized (lock) {
+			if (isBankPinWidgetVisible()) {
+				for (int i = 0; i < pin.length(); i++) {
+					char c = pin.charAt(i);
+					String expectedInstruction = digitInstructions[i];
 
-                    boolean instructionVisible = sleepUntil(() -> Rs2Widget.hasWidgetText(expectedInstruction, 213, 10, false), 2000);
+					boolean instructionVisible = sleepUntil(() -> Rs2Widget.hasWidgetText(expectedInstruction, 213, 10, false), 2000);
 
-                    if (!instructionVisible) {
-                        Microbot.log("Failed to detect instruction within timeout period: " + expectedInstruction);
-                        return false;
-                    }
+					if (!instructionVisible) {
+						Microbot.log("Failed to detect instruction within timeout period: " + expectedInstruction);
+						return false;
+					}
 
-                    if (isBankPluginEnabled() && hasKeyboardBankPinEnabled()) {
-                        Rs2Keyboard.typeString(String.valueOf(c));
-                    } else {
-                        Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
-                    }
-                }
-                return true;
-            }
-        }
+					if (isBankPluginEnabled() && hasKeyboardBankPinEnabled()) {
+						Rs2Keyboard.typeString(String.valueOf(c));
+					} else {
+						Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
+					}
+				}
+				return true;
+			}
+		}
         return false;
     }
 
