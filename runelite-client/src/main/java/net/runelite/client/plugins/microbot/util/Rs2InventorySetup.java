@@ -248,7 +248,6 @@ public class Rs2InventorySetup {
                     Rs2Bank.withdrawAllAndEquip(inventorySetupsItem.getName());
                     sleep(100, 250);
                 } else {
-					System.out.println("break");
                     Rs2Bank.withdrawAndEquip(inventorySetupsItem.getName());
                     sleep(100, 250);
                 }
