@@ -236,13 +236,10 @@ public class Rs2InventorySetup {
             }
 
             if (inventorySetupsItem.isFuzzy()) {
+				if (Rs2Equipment.isWearing(inventorySetupsItem.getName()))
+					continue;
 
-                if (Rs2Inventory.hasItemAmount(inventorySetupsItem.getName(), (int) inventorySetup.getInventory().stream().filter(x -> x.getId() == inventorySetupsItem.getId()).count()))
-                    continue;
-                if (Rs2Equipment.isWearing(inventorySetupsItem.getName()))
-                    continue;
-
-                if (Rs2Inventory.hasItem(inventorySetupsItem.getName())) {
+                if (Rs2Inventory.hasItem(inventorySetupsItem.getName()) || Rs2Inventory.hasItemAmount(inventorySetupsItem.getName(), (int) inventorySetup.getInventory().stream().filter(x -> x.getId() == inventorySetupsItem.getId()).count())) {
                     Rs2Bank.wearItem(inventorySetupsItem.getName());
                     continue;
                 }
@@ -251,6 +248,7 @@ public class Rs2InventorySetup {
                     Rs2Bank.withdrawAllAndEquip(inventorySetupsItem.getName());
                     sleep(100, 250);
                 } else {
+					System.out.println("break");
                     Rs2Bank.withdrawAndEquip(inventorySetupsItem.getName());
                     sleep(100, 250);
                 }
