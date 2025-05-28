@@ -288,6 +288,9 @@ public class MahoganyHomesScript extends Script {
                     if (Rs2Npc.interact(npc, "Talk-to")) {
                         log("Getting reward from NPC");
                         sleepUntil(Rs2Dialogue::hasContinue, 10000);
+                        if (Rs2Dialogue.hasDialogueText("Please excuse me, I'm rather busy.")) {
+                            plugin.setCurrentHome(null);
+                        }
                         sleepUntil(() -> !Rs2Dialogue.isInDialogue(), Rs2Dialogue::clickContinue, 6000, 300);
                         sleep(600, 1200);
 
