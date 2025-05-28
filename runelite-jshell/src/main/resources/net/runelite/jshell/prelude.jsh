@@ -44,6 +44,7 @@ import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.events.*;
 import net.runelite.client.game.*;
+import net.runelite.client.plugins.microbot.util.*;
 
 var $PANEL = net.runelite.jshell.ShellPanel.INSTANCE;
 Logger log = $PANEL.getShellLogger();
