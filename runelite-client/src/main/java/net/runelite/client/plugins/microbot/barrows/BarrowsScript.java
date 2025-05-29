@@ -214,9 +214,9 @@ public class BarrowsScript extends Script {
                         if (Rs2Player.getWorldLocation().getPlane() != 3) {
                             Microbot.log("Entering the mound");
 
-                            handlePOH(config);
-
                             closeBank();
+
+                            handlePOH(config);
 
                             goToTheMound(mound);
 
