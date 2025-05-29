@@ -216,6 +216,8 @@ public class BarrowsScript extends Script {
 
                             handlePOH(config);
 
+                            closeBank();
+
                             goToTheMound(mound);
 
                             digIntoTheMound(mound);
