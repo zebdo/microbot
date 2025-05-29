@@ -1,8 +1,11 @@
 package net.runelite.client.plugins.microbot.TaF.EnsouledHeadSlayer;
 
 import com.google.inject.Provides;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.Skill;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -12,11 +15,15 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.Lo
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.misc.TimeUtils;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
 import java.awt.*;
 import java.time.Instant;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 @PluginDescriptor(
         name = PluginDescriptor.TaFCat + "Ensouled Heads",
@@ -36,6 +43,7 @@ public class EnsouledHeadSlayerPlugin extends Plugin implements SchedulablePlugi
     @Inject
     private EnsouledHeadSlayerScript ensouledHeadSlayerScript;
     private LogicalCondition stopCondition = new AndCondition();
+    private ScheduledExecutorService scheduledExecutorService;
     private int startingXp = 0;
     private int startingLevel = 0;
 
@@ -74,12 +82,16 @@ public class EnsouledHeadSlayerPlugin extends Plugin implements SchedulablePlugi
             startingXp = Microbot.getClient().getSkillExperience(Skill.PRAYER);
             startingLevel = Microbot.getClient().getRealSkillLevel(Skill.PRAYER);
         }
+        scheduledExecutorService = Executors.newScheduledThreadPool(10);
     }
 
     @Override
     protected void shutDown() {
         ensouledHeadSlayerScript.shutdown();
         overlayManager.remove(ensouledHeadSlayerOverlay);
+        startingXp = 0;
+        startingLevel = 0;
+        scriptStartTime = null;
     }
 
     @Provides
@@ -101,5 +113,16 @@ public class EnsouledHeadSlayerPlugin extends Plugin implements SchedulablePlugi
     public LogicalCondition getStopCondition() {
         // Create a new stop condition
         return this.stopCondition;
+    }
+
+    @Subscribe
+    public void onChatMessage(ChatMessage event) {
+        if (event.getType() == ChatMessageType.GAMEMESSAGE && event.getMessage().equalsIgnoreCase("The creature wouldn't have room to re-animate there.")) {
+            Microbot.log("Can't summon here, walking to altar.");
+            scheduledExecutorService.schedule(() ->
+            {
+                Rs2Walker.walkTo(ensouledHeadSlayerScript.ALTAR_LOCATION);
+            }, 100, TimeUnit.MILLISECONDS);
+        }
     }
 }

@@ -37,9 +37,9 @@ public class EnsouledHeadSlayerScript extends Script {
     public static final String VERSION = "1.0";
     public static final int ENSOULED_GROUND_GRAPHICS = 1290;
     public EnsouledHeadSlayerStatus BOT_STATE = EnsouledHeadSlayerStatus.BANKING;
-    private final WorldPoint ALTAR_LOCATION = new WorldPoint(1711, 3882, 0);
+    public final WorldPoint ALTAR_LOCATION = new WorldPoint(1711, 3882, 0);
     private Rs2InventorySetup inventorySetup = null;
-    private final WorldArea SUMMON_AREA = new WorldArea(ALTAR_LOCATION, 25,25);
+    private final WorldArea SUMMON_AREA = new WorldArea(ALTAR_LOCATION, 40,40);
     private boolean firstRun = true;
 
     {
@@ -97,7 +97,7 @@ public class EnsouledHeadSlayerScript extends Script {
                 System.out.println("Exception message: " + ex.getMessage());
                 ex.printStackTrace();
             }
-        }, 0, 1000, TimeUnit.MILLISECONDS);
+        }, 0, 600, TimeUnit.MILLISECONDS);
         return true;
     }
 
@@ -105,11 +105,6 @@ public class EnsouledHeadSlayerScript extends Script {
         if (Rs2Player.getHealthPercentage() < 50) {
             Rs2Player.eatAt(50);
         }
-//        if (!Rs2Player.getWorldLocation().isInArea(SUMMON_AREA) && !Rs2Player.isInCombat()) {
-//            Microbot.log("Not in the summoning area, walking to altar...");
-//            BOT_STATE = EnsouledHeadSlayerStatus.WALKING_TO_ALTAR;
-//            return;
-//        }
     /*
 		0 = Standard
 		1 = Ancient
@@ -136,7 +131,9 @@ public class EnsouledHeadSlayerScript extends Script {
         if (Rs2Player.getInteracting() != null) {
             return;
         }
-        var enemy = Rs2Npc.getAttackableNpcs("Reanimated").collect(Collectors.toList());
+
+        var enemy = Rs2Npc.getNpcsForPlayer("Reanimated", false).stream().filter(x -> !x.isDead() &&
+                x.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= 2).collect(Collectors.toList());
         if (enemy.isEmpty() && Rs2Player.getInteracting() == null && Rs2GameObject.getGroundObject(ENSOULED_GROUND_GRAPHICS) == null) {
             var ensouledHeadItem = Rs2Inventory.get("ensouled");
             var spell = Arrays.stream(EnsouledHeads.values())
@@ -151,17 +148,21 @@ public class EnsouledHeadSlayerScript extends Script {
                 sleepUntil(() -> Rs2GameObject.getGroundObject(ENSOULED_GROUND_GRAPHICS) != null, 4000);
                 // NPC animation finished - NPC should be spawned
                 sleepUntil(() -> Rs2GameObject.getGroundObject(ENSOULED_GROUND_GRAPHICS) == null, 4000);
-                sleep(4000,4000);
+                // Without this delay, we won't wait for the NPC to spawn before trying other actions
+                sleep(3500,4500);
             }
         } else {
-            Microbot.log("Found NPC");
-            enemy.stream().findFirst().ifPresent(Rs2Npc::attack);
+            var animmatedEnemy =  enemy.stream().findFirst().orElse(null);
+            if (animmatedEnemy != null && !animmatedEnemy.isDead()) {
+                Rs2Npc.attack(animmatedEnemy);
+            }
         }
     }
 
     private int attempts = 0;
     private boolean handleBanking(EnsouledHeadSlayerConfig config) {
-        if (firstRun) {
+        // If first run, walk to any bank to prepare. If using a particular inventory setup, always use shortest path
+        if (firstRun || config.useInventorySetup()) {
             Rs2Bank.walkToBank();
             firstRun = false;
         } else {
