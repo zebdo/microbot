@@ -337,7 +337,7 @@ public class revKillerScript extends Script {
             canvasPoint = Perspective.localToCanvas(Microbot.getClient(), lp, wp.getPlane());
             if(canvasPoint != null) {
                 lpRectangle = new Rectangle(canvasPoint.getX(), canvasPoint.getY(), 10, 10);
-                chatBox = Rs2Widget.getWidget(10551392).getBounds();
+                chatBox = Rs2Widget.getWidget(164,93).getBounds();
             }
         }
 
