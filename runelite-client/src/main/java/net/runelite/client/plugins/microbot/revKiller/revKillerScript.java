@@ -8,6 +8,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ActorDeath;
 import net.runelite.api.geometry.RectangleUnion;
 import net.runelite.api.kit.KitType;
+import net.runelite.api.widgets.WidgetID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
@@ -337,7 +338,7 @@ public class revKillerScript extends Script {
             canvasPoint = Perspective.localToCanvas(Microbot.getClient(), lp, wp.getPlane());
             if(canvasPoint != null) {
                 lpRectangle = new Rectangle(canvasPoint.getX(), canvasPoint.getY(), 10, 10);
-                chatBox = Rs2Widget.getWidget(164,93).getBounds();
+                chatBox = Rs2Widget.getWidget(162,0).getBounds();
             }
         }
 
