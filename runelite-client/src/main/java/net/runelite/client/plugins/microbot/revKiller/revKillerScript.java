@@ -329,21 +329,19 @@ public class revKillerScript extends Script {
     }
 
     public void moveCameraToTile(WorldPoint wp){
-        LocalPoint lp = LocalPoint.fromWorld(Microbot.getClient().getWorldView(-1), wp);
-        Rectangle lpRectangle = null;
+        LocalPoint lp = LocalPoint.fromWorld(Microbot.getClient().getWorldView(Microbot.getClient().getTopLevelWorldView().getId()), wp);
         Rectangle chatBox = null;
-        Point canvasPoint;
+        Point canvasPoint = null;
 
         if(lp != null) {
             canvasPoint = Perspective.localToCanvas(Microbot.getClient(), lp, wp.getPlane());
             if(canvasPoint != null) {
-                lpRectangle = new Rectangle(canvasPoint.getX(), canvasPoint.getY(), 10, 10);
                 chatBox = Rs2Widget.getWidget(162,0).getBounds();
             }
         }
 
-        if(lpRectangle != null && chatBox != null) {
-            if (!Rs2Camera.isTileOnScreen(lp) || Rs2UiHelper.isRectangleWithinRectangle(lpRectangle, chatBox)) {
+        if(canvasPoint != null && chatBox != null) {
+            if (!Rs2Camera.isTileOnScreen(lp) || chatBox.contains(canvasPoint.getX(), canvasPoint.getY())) {
                 Rs2Camera.turnTo(lp);
                 sleep(0, 250);
             }
