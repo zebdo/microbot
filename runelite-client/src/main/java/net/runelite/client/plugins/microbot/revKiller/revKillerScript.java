@@ -521,8 +521,7 @@ public class revKillerScript extends Script {
                     break;
                 }
                 Rs2Player.logout();
-                sleepUntil(() -> !Microbot.isLoggedIn(), Rs2Random.between(250, 500));
-                sleep(1000, 3000);
+                sleepUntil(() -> !Microbot.isLoggedIn(), Rs2Random.between(125, 350));
                 if(Rs2Player.isInCombat() && Microbot.isLoggedIn() && io>=tries){
                     Microbot.log("We can't log out, running away instead.");
                     break;
