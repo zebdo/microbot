@@ -229,6 +229,7 @@ public class revKillerScript extends Script {
                     }
                     if (Rs2Npc.interact(Rs2Npc.getNpc("Revenant knight"), "Attack")) {
                         Microbot.log("We attacked the knight");
+                        return;
                     }
                 }
             }
