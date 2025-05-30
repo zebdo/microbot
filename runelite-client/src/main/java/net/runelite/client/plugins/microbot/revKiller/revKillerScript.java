@@ -2,11 +2,13 @@ package net.runelite.client.plugins.microbot.revKiller;
 
 import com.google.inject.Provides;
 import net.runelite.api.*;
+import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ActorDeath;
 import net.runelite.api.geometry.RectangleUnion;
 import net.runelite.api.kit.KitType;
+import net.runelite.api.widgets.WidgetID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
@@ -35,6 +37,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Pvp;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
 import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.walker.Rs2MiniMap;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.http.api.worlds.World;
@@ -160,7 +163,7 @@ public class revKillerScript extends Script {
         }
     }
 
-    public void playerCheck(){
+    public boolean playerCheck(){
         List<Rs2PlayerModel> playerlist = new ArrayList<Rs2PlayerModel>();
         playerlist.addAll(Rs2Player.getPlayers(it->it!=null&&it.getWorldLocation().distanceTo(Rs2Player.getWorldLocation())<= 8&&!it.equals(Rs2Player.getLocalPlayer())).collect(Collectors.toList()));
 
@@ -169,7 +172,9 @@ public class revKillerScript extends Script {
                 Microbot.log("There's another player here hopping.");
                 hopToNewWorld();
             }
+            return true;
         }
+        return false;
     }
 
     public boolean weAreInCombat(){
@@ -196,13 +201,7 @@ public class revKillerScript extends Script {
         WorldPoint fourthTile = new WorldPoint(3244,10222,0);
         WorldPoint fifthTile = new WorldPoint(3248,10225,0);
 
-        if(Rs2GroundItem.isItemBasedOnValueOnGround(500,10)){
-            return;
-        }
-
-        if(!areWeEquipped()||isItTimeToGo()){
-            return;
-        }
+        WorldPoint jammedTile = new WorldPoint(3244,10224,0);
 
         if(Rs2Player.getWorldLocation().equals(fifthTile)){
             if(weAreInCombat()) {
@@ -210,7 +209,7 @@ public class revKillerScript extends Script {
                 return;
             } else {
                 Microbot.log("We need to click the rev.");
-                if(Rs2Npc.getNpc("Revenant knight")!=null && Rs2Npc.getNpc("Revenant knight").getWorldLocation().distanceTo(Rs2Player.getWorldLocation())<=7) {
+                if(Rs2Npc.getNpc("Revenant knight")!=null && Rs2Npc.getNpc("Revenant knight").getWorldLocation().distanceTo(jammedTile)<=2) {
                     if (Rs2Npc.interact(Rs2Npc.getNpc("Revenant knight"), "Attack")) {
                         Microbot.log("We attacked the knight");
                         return;
@@ -219,23 +218,38 @@ public class revKillerScript extends Script {
                     Microbot.log("We need to re-jam the knight");
                 }
             }
+        } else {
+            //if we come back from the bank and the rev is all ready jammed.
+            if(Rs2Npc.getNpc("Revenant knight")!=null && Rs2Npc.getNpc("Revenant knight").getWorldLocation().distanceTo(jammedTile)<=2){
+                if(!weAreInCombat()){
+                    if(!Rs2Player.getWorldLocation().equals(fifthTile)){
+                        Rs2Walker.walkCanvas(fifthTile);
+                        sleepUntil(() -> Rs2Player.isMoving(), Rs2Random.between(1000, 3000));
+                        sleepUntil(() -> !Rs2Player.isMoving(), Rs2Random.between(2000, 3000));
+                    }
+                    if (Rs2Npc.interact(Rs2Npc.getNpc("Revenant knight"), "Attack")) {
+                        Microbot.log("We attacked the knight");
+                    }
+                }
+            }
         }
 
         drinkStamPotion();
 
-        playerCheck();
+        if(Rs2GroundItem.isItemBasedOnValueOnGround(500,10)){
+            return;
+        }
+
+        if(!areWeEquipped()||isItTimeToGo()){
+            return;
+        }
 
         if(!Rs2Player.getWorldLocation().equals(startTile)){
             while(!Rs2Player.getWorldLocation().equals(startTile)){
                 if(!super.isRunning()){break;}
                 if(isPkerAround()){break;}
 
-                LocalPoint lp = LocalPoint.fromWorld(Microbot.getClient(), startTile);
-
-                if(!Rs2Camera.isTileOnScreen(lp)){
-                    Rs2Camera.turnTo(lp);
-                    sleep(0,250);
-                }
+                moveCameraToTile(startTile);
 
                 Rs2Walker.walkCanvas(startTile);
                 sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,3000));
@@ -244,6 +258,8 @@ public class revKillerScript extends Script {
         }
 
         if(Rs2Player.getWorldLocation().equals(startTile)){
+            if(playerCheck()){return;}
+
             if(Rs2Npc.attack("Revenant knight")){
                 Microbot.log("We attacked the knight");
                 sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,3000));
@@ -256,12 +272,7 @@ public class revKillerScript extends Script {
                 if(!super.isRunning()){break;}
                 if(isPkerAround()){break;}
 
-                LocalPoint lp = LocalPoint.fromWorld(Microbot.getClient(), secondTile);
-
-                if(!Rs2Camera.isTileOnScreen(lp)){
-                    Rs2Camera.turnTo(lp);
-                    sleep(0,250);
-                }
+                moveCameraToTile(secondTile);
 
                 Rs2Walker.walkCanvas(secondTile);
                 sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,3000));
@@ -317,6 +328,26 @@ public class revKillerScript extends Script {
 
     }
 
+    public void moveCameraToTile(WorldPoint wp){
+        LocalPoint lp = LocalPoint.fromWorld(Microbot.getClient().getWorldView(Microbot.getClient().getTopLevelWorldView().getId()), wp);
+        Rectangle chatBox = null;
+        Point canvasPoint = null;
+
+        if(lp != null) {
+            canvasPoint = Perspective.localToCanvas(Microbot.getClient(), lp, wp.getPlane());
+            if(canvasPoint != null) {
+                chatBox = Rs2Widget.getWidget(162,0).getBounds();
+            }
+        }
+
+        if(canvasPoint != null && chatBox != null) {
+            if (!Rs2Camera.isTileOnScreen(lp) || chatBox.contains(canvasPoint.getX(), canvasPoint.getY())) {
+                Rs2Camera.turnTo(lp);
+                sleep(0, 250);
+            }
+        }
+    }
+
     public boolean WeAreInTheCaves(){
 
         if(Rs2Player.getWorldLocation().getY() > 9000){
@@ -348,7 +379,12 @@ public class revKillerScript extends Script {
                 }
             }
             if(!Rs2Bank.isOpen()) {
-                sleepUntil(() -> BreakHandlerScript.isBreakActive(), 2000000);
+                sleepUntil(() -> BreakHandlerScript.isBreakActive(), 600000);
+                while(BreakHandlerScript.isBreakActive()){
+                    if(!super.isRunning()){break;}
+                    if(Microbot.isLoggedIn()){Microbot.log("Breaking...");}
+                    sleep(1000,3000);
+                }
             }
         }
     }
@@ -623,25 +659,15 @@ public class revKillerScript extends Script {
         Rs2NpcModel Rev = (Rs2Npc.getNpc("Revenant", false));
         if(Rev!=null){
 
-            List<Rs2PlayerModel> playerlist = new ArrayList<Rs2PlayerModel>();
-            playerlist.addAll(Rs2Player.getPlayers(it->it!=null&&it.getWorldLocation().distanceTo(Rs2Player.getWorldLocation())<= 8&&!it.equals(Rs2Player.getLocalPlayer())).collect(Collectors.toList()));
-
-            if(!playerlist.isEmpty()){
-                if(!Rs2Player.isInCombat()) {
-                    Microbot.log("There's another player here hopping.");
-                    hopToNewWorld();
-                    return;
-                }
-            }
+            if(playerCheck()){return;}
 
             if(!Rev.isInteracting() && !Rs2Player.isInteracting() && !Rev.isDead()) {
                 if(useTimedWorldHopper){
                     hopWorldsBasedOnTimer();
                 }
-                if(Rev==null){
-                    //we hopped
-                    return;
-                }
+
+                if(Rev==null){return;}
+
                 Microbot.log("Attacking Rev");
                 if (Rs2Npc.interact(Rev, "Attack")) {
                     sleepUntil(() -> Rev.isDead() || !Rs2Player.isInCombat() || Rs2GroundItem.isItemBasedOnValueOnGround(500,12) || isItTimeToGo() || Rs2Player.getHealthPercentage() <= generateRandomNumber(70, 80), generateRandomNumber(60000, 120000));
@@ -649,7 +675,7 @@ public class revKillerScript extends Script {
                 }
             }
 
-            if(Rev.isInteracting() && playerlist.isEmpty()) {
+            if(Rev.isInteracting()) {
                 if(hoppedWorld) {
                     Microbot.log("Rev is attacking us attacking back.");
                     if (Rs2Npc.interact(Rev, "Attack")) {
