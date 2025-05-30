@@ -150,6 +150,7 @@ public class BarrowsScript extends Script {
                         }
 
                         stopFutureWalker();
+                        closeBank();
 
                         Microbot.log("Checking mound for: " + brother.getName());
 
@@ -213,8 +214,6 @@ public class BarrowsScript extends Script {
                         //Enter mound
                         if (Rs2Player.getWorldLocation().getPlane() != 3) {
                             Microbot.log("Entering the mound");
-
-                            closeBank();
 
                             handlePOH(config);
 

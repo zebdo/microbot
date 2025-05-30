@@ -1330,21 +1330,37 @@ public class revKillerScript extends Script {
         playerlist.addAll(Rs2Player.getPlayersInCombatLevelRange());
         List<String> weapons = Arrays.asList(
                 "staff", "shadow", "wand", "sceptre", "ballista",
-                "crossbow", "dragon dagger", "dragon claws", "burning claws", "eclipse atlatl", "dark bow"
+                "crossbow", "dragon dagger", "dragon claws", "burning claws", "dragon knife", "eclipse atlatl", "dark bow"
+        );
+
+        List<String> chestArmors = Arrays.asList(
+                "xerician", "mystic robe top", "infinity top", "enchanted top", "dagon'hai", "ahrim's robetop", "blue moon chestplate",
+                "ancestral robe top", "virtus robe top"
         );
 
         for (Rs2PlayerModel player : playerlist) {
             Microbot.log("There may be a pker around us "+player.getName());
 
-            String NameOfPlayersWeapon = Rs2Player.getPlayerEquipmentNames(player).get(KitType.WEAPON);
+            String NameOfPlayersWeapon = "Unknown";
+            String nameOfPlayersChestPiece = "Unknown";
 
-            if(NameOfPlayersWeapon == null){
+            if(Rs2Player.getPlayerEquipmentNames(player).get(KitType.WEAPON) != null) {
+                NameOfPlayersWeapon = Rs2Player.getPlayerEquipmentNames(player).get(KitType.WEAPON);
+            }
+
+            if(Rs2Player.getPlayerEquipmentNames(player).get(KitType.TORSO) != null){
+                nameOfPlayersChestPiece = Rs2Player.getPlayerEquipmentNames(player).get(KitType.TORSO);
+            }
+
+            if(NameOfPlayersWeapon.equals("Unknown") && nameOfPlayersChestPiece.equals("Unknown")){
                 continue;
             }
 
             String lowercaseWeapon = NameOfPlayersWeapon.toLowerCase();
+            String lowercaseChestPiece = nameOfPlayersChestPiece.toLowerCase();
 
             Microbot.log("They have a "+NameOfPlayersWeapon);
+            Microbot.log("They're wearing a' "+nameOfPlayersChestPiece);
 
             for (String weapon : weapons) {
                 if (lowercaseWeapon.contains(weapon) || lowercaseWeapon.equals(weapon)) {
@@ -1352,6 +1368,14 @@ public class revKillerScript extends Script {
                     return true;
                 }
             }
+
+            for (String chestArmor : chestArmors) {
+                if (lowercaseChestPiece.contains(chestArmor) || lowercaseChestPiece.equals(chestArmor)) {
+                    Microbot.log("This player is wielding a " + nameOfPlayersChestPiece + " which is used to pk so we're outy.");
+                    return true;
+                }
+            }
+
 
             if ((player.getInteracting() != null) && (player.getInteracting().equals(Rs2Player.getLocalPlayer()))) {
                 Microbot.log(player.getName() + " is attacking us");
