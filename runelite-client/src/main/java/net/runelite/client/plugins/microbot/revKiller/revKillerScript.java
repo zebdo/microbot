@@ -511,7 +511,7 @@ public class revKillerScript extends Script {
     public void getAwayFromPkerKnight(){
         Rs2Walker.setTarget(null);
         int io = 0;
-        int tries = 2;
+        int tries = 10;
         if (Microbot.isLoggedIn()) {
             while (Microbot.isLoggedIn()) {
                 if (!super.isRunning()) {
