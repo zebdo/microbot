@@ -374,9 +374,8 @@ public class revKillerScript extends Script {
                     equipDeathWalkItem(theItem);
                 }
             }
-        } else {
-            weDied = false;
         }
+        weDied = false;
     }
 
     public void withdrawDeathWalkItem(Rs2ItemModel item){
