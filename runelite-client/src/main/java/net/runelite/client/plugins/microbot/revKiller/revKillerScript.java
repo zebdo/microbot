@@ -875,6 +875,9 @@ public class revKillerScript extends Script {
                     sleepUntil(()-> !Rs2Player.isAnimating(), Rs2Random.between(1000,4000));
                 }
             }
+            if(Rs2Player.getRealSkillLevel(Skill.PRAYER) <= rejat){
+                break;
+            }
             if(Rs2Player.getBoostedSkillLevel(Skill.PRAYER) >= rejat || Rs2Player.getRunEnergy() >= runener){
                 break;
             }
