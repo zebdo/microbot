@@ -85,8 +85,18 @@ public class revKillerScript extends Script {
         Microbot.enableAutoRunOn = false;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                if (!Microbot.isLoggedIn()) return;
+
+                if (!Microbot.isLoggedIn()){
+                    if(!timeToBreak()){
+                        if(selectedRev.contains("Knight")) {
+                            logBackIn();
+                        }
+                    }
+                    return;
+                }
+
                 if (!super.run()) return;
+
                 long startTime = System.currentTimeMillis();
 
                 useTimedWorldHopper = config.shouldUseTimedWorldHopper();
@@ -529,6 +539,20 @@ public class revKillerScript extends Script {
                 io++;
             }
         }
+
+        if (!Microbot.isLoggedIn()) {
+            logBackIn();
+            shouldFlee = false;
+            return;
+        }
+
+        if(Rs2Combat.inCombat() && Microbot.isLoggedIn()) {
+            getAwayFromPker();
+        }
+        shouldFlee = false;
+    }
+
+    public void logBackIn(){
         if (!Microbot.isLoggedIn()) {
             while (!Microbot.isLoggedIn()) {
                 if (!super.isRunning()) {
@@ -544,14 +568,9 @@ public class revKillerScript extends Script {
                 }
             }
             shouldFlee = false;
-            return;
         }
-
-        if(Rs2Combat.inCombat() && Microbot.isLoggedIn()) {
-            getAwayFromPker();
-        }
-        shouldFlee = false;
     }
+
     public void getAwayFromPker(){
         // code to run or teleport from pker
         Microbot.log("Attemping to get away from the PKer.");
