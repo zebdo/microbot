@@ -73,7 +73,7 @@ public class revKillerScript extends Script {
     private long howLongUntilHop = 0;
     public volatile boolean shouldFlee = false;
     private long startTime = System.currentTimeMillis();
-    private List<Rs2ItemModel> ourEquipmentForDeathWalking = new ArrayList<>();
+    public List<Rs2ItemModel> ourEquipmentForDeathWalking = new ArrayList<>();
 
 
     public boolean run(revKillerConfig config) {
