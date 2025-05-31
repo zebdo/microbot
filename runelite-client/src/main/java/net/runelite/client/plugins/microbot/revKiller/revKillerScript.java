@@ -364,6 +364,9 @@ public class revKillerScript extends Script {
                     if(theItem.getName().contains("Amulet of glory") && !theItem.getName().contains("(6)")){
                         theItem = Rs2Bank.getBankItem("Amulet of glory(6)");
                     }
+                    if(theItem.getName().contains("Bracelet of ethereum") && !theItem.getName().contains("(uncharged)")){
+                        theItem = Rs2Bank.getBankItem("Bracelet of ethereum (uncharged)");
+                    }
                     withdrawDeathWalkItem(theItem);
                 }
                 //equip them
@@ -373,6 +376,9 @@ public class revKillerScript extends Script {
                     }
                     if(theItem.getName().contains("Amulet of glory") && !theItem.getName().contains("(6)")){
                         theItem = Rs2Inventory.get("Amulet of glory(6)");
+                    }
+                    if(theItem.getName().contains("Bracelet of ethereum") && !theItem.getName().contains("(uncharged)")){
+                        theItem = Rs2Inventory.get("Bracelet of ethereum (uncharged)");
                     }
                     equipDeathWalkItem(theItem);
                 }
