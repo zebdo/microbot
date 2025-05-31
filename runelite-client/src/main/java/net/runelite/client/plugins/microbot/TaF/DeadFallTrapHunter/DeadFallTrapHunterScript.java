@@ -138,6 +138,9 @@ public class DeadFallTrapHunterScript extends Script {
         }
 
         GameObject tree = Rs2GameObject.findReachableObject("tree", true, 20, config.deadFallTrapHunting().getHuntingPoint());
+        if (tree == null) {
+            tree = Rs2GameObject.findReachableObject("dead tree", true, 20, config.deadFallTrapHunting().getHuntingPoint());
+        }
         if (tree != null) {
             if (Rs2GameObject.interact(tree, "Chop down")) {
                 Rs2Player.waitForAnimation();
