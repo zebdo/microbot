@@ -5,12 +5,8 @@ import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.ActorDeath;
-import net.runelite.api.geometry.RectangleUnion;
 import net.runelite.api.kit.KitType;
-import net.runelite.api.widgets.WidgetID;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -28,7 +24,6 @@ import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
-import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -37,7 +32,6 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Pvp;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
 import net.runelite.client.plugins.microbot.util.security.Login;
-import net.runelite.client.plugins.microbot.util.walker.Rs2MiniMap;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.http.api.worlds.World;
@@ -45,6 +39,7 @@ import net.runelite.http.api.worlds.World;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -78,6 +73,7 @@ public class revKillerScript extends Script {
     private long howLongUntilHop = 0;
     public volatile boolean shouldFlee = false;
     private long startTime = System.currentTimeMillis();
+    private List<Rs2ItemModel> ourEquipmentForDeathWalking = new ArrayList<>();
 
 
     public boolean run(revKillerConfig config) {
@@ -109,6 +105,11 @@ public class revKillerScript extends Script {
 
                 if(shouldFlee){
                     return;
+                }
+
+                if(ourEquipmentForDeathWalking.isEmpty()){
+                    ourEquipmentForDeathWalking = Rs2Equipment.items();
+                    Microbot.log("We'll be re-equipping: "+ourEquipmentForDeathWalking+" if we die.");
                 }
 
                 DidWeDie();
@@ -342,6 +343,56 @@ public class revKillerScript extends Script {
 
     }
 
+    public void deathWalk(){
+        if (!new HashSet<>(Rs2Equipment.items()).equals(new HashSet<>(this.ourEquipmentForDeathWalking))) {
+            //If there's a mismatch between what we're wearing and what we were wearing before we died.
+
+            if (!Rs2Bank.isOpen()) {
+                if (Rs2Bank.walkToBankAndUseBank()) {
+                    sleepUntil(() -> Rs2Bank.isOpen(), Rs2Random.between(2000, 5000));
+                }
+            }
+            if (!Rs2Bank.isOpen()) {
+                //take needed items
+                for (Rs2ItemModel theItem : this.ourEquipmentForDeathWalking) {
+                    withdrawDeathWalkItem(theItem);
+                }
+                //equip them
+                for (Rs2ItemModel theItem2 : this.ourEquipmentForDeathWalking) {
+                    equipDeathWalkItem(theItem2);
+                }
+            }
+        }
+    }
+
+    public void withdrawDeathWalkItem(Rs2ItemModel item){
+        if(!Rs2Inventory.contains(item.getName())){
+            if(Rs2Bank.getBankItem(item.getId()) !=null){
+                Rs2Bank.withdrawOne(item.getId());
+                sleepUntil(()-> Rs2Inventory.contains(item.getId()), Rs2Random.between(3000,5000));
+            } else {
+                Microbot.log("Out of death walking item: "+item.getName());
+                super.shutdown();
+            }
+        }
+    }
+
+    public void equipDeathWalkItem(Rs2ItemModel item){
+        if(Rs2Inventory.contains(item.getName())){
+            if(Rs2Bank.isOpen()){
+                Rs2Bank.closeBank();
+                sleepUntil(() -> !Rs2Bank.isOpen(), Rs2Random.between(2000, 5000));
+            }
+            if(!Rs2Bank.isOpen()){
+                if(Rs2Inventory.contains(item.getId())){
+                    if(Rs2Inventory.equip(item.getId())){
+                        sleepUntil(()-> Rs2Equipment.contains(it->it!=null&&it.getId()==item.getId()), Rs2Random.between(2000,500));
+                    }
+                }
+            }
+        }
+    }
+
     public void moveCameraToTile(WorldPoint wp){
         LocalPoint lp = LocalPoint.fromWorld(Microbot.getClient().getWorldView(Microbot.getClient().getTopLevelWorldView().getId()), wp);
         Rectangle chatBox = null;
@@ -405,9 +456,7 @@ public class revKillerScript extends Script {
 
     public void DidWeDie(){
         if(weDied){
-            Microbot.log("We died");
-            Rs2Player.logout();
-            super.shutdown();
+            deathWalk();
         }
     }
 
