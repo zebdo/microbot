@@ -259,6 +259,7 @@ public class revKillerScript extends Script {
             while(!Rs2Player.getWorldLocation().equals(startTile)){
                 if(!super.isRunning()){break;}
                 if(isPkerAround()){break;}
+                if(Rs2Player.getWorldLocation().distanceTo(startTile) > 30){break;}
 
                 moveCameraToTile(startTile);
 
@@ -282,6 +283,7 @@ public class revKillerScript extends Script {
             while(!Rs2Player.getWorldLocation().equals(secondTile)){
                 if(!super.isRunning()){break;}
                 if(isPkerAround()){break;}
+                if(Rs2Player.getWorldLocation().distanceTo(secondTile) > 30){break;}
 
                 moveCameraToTile(secondTile);
 
@@ -323,6 +325,7 @@ public class revKillerScript extends Script {
                 while(!Rs2Player.getWorldLocation().equals(fifthTile)) {
                     if(!super.isRunning()){break;}
                     if(isPkerAround()){break;}
+                    if(Rs2Player.getWorldLocation().distanceTo(fifthTile) > 30){break;}
                     Rs2Walker.walkCanvas(fifthTile);
                     sleepUntil(() -> Rs2Player.isMoving(), Rs2Random.between(1000, 3000));
                     sleepUntil(() -> !Rs2Player.isMoving(), Rs2Random.between(2000, 3000));
