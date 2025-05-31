@@ -233,6 +233,7 @@ public class revKillerScript extends Script {
             //if we come back from the bank and the rev is all ready jammed.
             if(Rs2Npc.getNpc("Revenant knight")!=null && Rs2Npc.getNpc("Revenant knight").getWorldLocation().distanceTo(jammedTile)<=2){
                 if(!weAreInCombat()){
+                    if(playerCheck()){return;}
                     if(!Rs2Player.getWorldLocation().equals(fifthTile)){
                         Rs2Walker.walkCanvas(fifthTile);
                         sleepUntil(() -> Rs2Player.isMoving(), Rs2Random.between(1000, 3000));
@@ -245,6 +246,8 @@ public class revKillerScript extends Script {
                 }
             }
         }
+
+        if(playerCheck()){return;}
 
         drinkStamPotion();
 
@@ -1414,7 +1417,7 @@ public class revKillerScript extends Script {
         playerlist.addAll(Rs2Player.getPlayersInCombatLevelRange());
         List<String> weapons = Arrays.asList(
                 "staff", "shadow", "wand", "sceptre", "ballista",
-                "crossbow", "dragon dagger", "dragon claws", "burning claws", "dragon knife", "eclipse atlatl", "dark bow"
+                "dragon dagger", "dragon claws", "burning claws", "dragon knife", "eclipse atlatl", "dark bow"
         );
 
         List<String> chestArmors = Arrays.asList(
