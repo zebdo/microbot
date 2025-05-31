@@ -355,13 +355,27 @@ public class revKillerScript extends Script {
             if (Rs2Bank.isOpen()) {
                 //take needed items
                 for (Rs2ItemModel theItem : this.ourEquipmentForDeathWalking) {
+                    if(theItem.getName().contains("Ring of dueling") && !theItem.getName().contains("(8)")){
+                        theItem = Rs2Bank.getBankItem("Ring of dueling(8)");
+                    }
+                    if(theItem.getName().contains("Amulet of glory") && !theItem.getName().contains("(6)")){
+                        theItem = Rs2Bank.getBankItem("Amulet of glory(6)");
+                    }
                     withdrawDeathWalkItem(theItem);
                 }
                 //equip them
-                for (Rs2ItemModel theItem2 : this.ourEquipmentForDeathWalking) {
-                    equipDeathWalkItem(theItem2);
+                for (Rs2ItemModel theItem : this.ourEquipmentForDeathWalking) {
+                    if(theItem.getName().contains("Ring of dueling") && !theItem.getName().contains("(8)")){
+                        theItem = Rs2Inventory.get("Ring of dueling(8)");
+                    }
+                    if(theItem.getName().contains("Amulet of glory") && !theItem.getName().contains("(6)")){
+                        theItem = Rs2Inventory.get("Amulet of glory(6)");
+                    }
+                    equipDeathWalkItem(theItem);
                 }
             }
+        } else {
+            weDied = false;
         }
     }
 
