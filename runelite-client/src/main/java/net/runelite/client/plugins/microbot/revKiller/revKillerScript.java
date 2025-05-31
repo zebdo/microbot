@@ -104,6 +104,9 @@ public class revKillerScript extends Script {
                 }
 
                 if(shouldFlee){
+                    if(weDied){
+                        shouldFlee = false;
+                    }
                     return;
                 }
 
