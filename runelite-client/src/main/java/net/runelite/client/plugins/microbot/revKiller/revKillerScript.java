@@ -352,7 +352,7 @@ public class revKillerScript extends Script {
                     sleepUntil(() -> Rs2Bank.isOpen(), Rs2Random.between(2000, 5000));
                 }
             }
-            if (!Rs2Bank.isOpen()) {
+            if (Rs2Bank.isOpen()) {
                 //take needed items
                 for (Rs2ItemModel theItem : this.ourEquipmentForDeathWalking) {
                     withdrawDeathWalkItem(theItem);
