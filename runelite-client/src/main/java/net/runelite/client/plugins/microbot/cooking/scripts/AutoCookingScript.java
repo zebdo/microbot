@@ -152,7 +152,6 @@ public class AutoCookingScript extends Script {
                         } else {
                             Rs2Bank.withdrawAll(cookingItem.getRawItemName(), true);
                             Rs2Inventory.waitForInventoryChanges(1800);
-
                         }
                         
                         state = CookingState.WALKING;
