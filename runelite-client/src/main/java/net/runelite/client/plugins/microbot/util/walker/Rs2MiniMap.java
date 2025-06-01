@@ -125,7 +125,7 @@ public class Rs2MiniMap {
 	 * @return A {@link Shape} representing the scaled minimap clip area, or {@code null} if the minimap widget is unavailable.
 	 */
 	public static Shape getMinimapClipArea() {
-		return getMinimapClipArea(0.94);
+		return getMinimapClipArea(Microbot.getClient().isResized() ? 0.94 : 1.0);
 	}
 
     /**
