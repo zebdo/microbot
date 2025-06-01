@@ -15,6 +15,7 @@ import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
+import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
@@ -1534,12 +1535,10 @@ public class Rs2Bank {
             Optional<BankLocation> byObject = bankObjs.stream()
                     .map(obj -> {
                         BankLocation closestBank = accessibleBanks.stream()
-                                .min(Comparator.comparingInt(b -> obj.getWorldLocation().distanceTo(b.getWorldPoint())))
+                                .min(Comparator.comparingInt(b -> Rs2WorldPoint.quickDistance(obj.getWorldLocation(), b.getWorldPoint())))
                                 .orElse(null);
 
-                        int dist = closestBank == null
-                                ? Integer.MAX_VALUE
-                                : obj.getWorldLocation().distanceTo(closestBank.getWorldPoint());
+                        int dist = obj.getWorldLocation().distanceTo(closestBank.getWorldPoint());
 
                         return new AbstractMap.SimpleEntry<>(closestBank, dist);
                     })
