@@ -187,8 +187,8 @@ public class Rs2Inventory {
      * @return true if the items were successfully combined, false otherwise
      */
     public static boolean combineClosest(String primaryItemName, String secondaryItemName) {
-        List<Rs2ItemModel> primaryItems = items().stream().filter(x -> x.name.equalsIgnoreCase(primaryItemName)).collect(Collectors.toList());
-        List<Rs2ItemModel> secondaryItems = items().stream().filter(x -> x.name.equalsIgnoreCase(secondaryItemName)).collect(Collectors.toList());
+        List<Rs2ItemModel> primaryItems = items().stream().filter(x -> x.getName().equalsIgnoreCase(primaryItemName)).collect(Collectors.toList());
+        List<Rs2ItemModel> secondaryItems = items().stream().filter(x -> x.getName().equalsIgnoreCase(secondaryItemName)).collect(Collectors.toList());
 
         if (primaryItems.isEmpty() || secondaryItems.isEmpty()) return false;
 
@@ -199,7 +199,7 @@ public class Rs2Inventory {
         // Compare each primary item with each secondary item to find the closest slots
         for (Rs2ItemModel primaryItem : primaryItems) {
             for (Rs2ItemModel secondaryItem : secondaryItems) {
-                int slotDifference = calculateSlotDifference(primaryItem.slot, secondaryItem.slot);
+                int slotDifference = calculateSlotDifference(primaryItem.getSlot(), secondaryItem.getSlot());
                 if (slotDifference <= minSlotDifference) {
                     minSlotDifference = slotDifference;
                     closestPrimaryItem = primaryItem;
@@ -229,8 +229,8 @@ public class Rs2Inventory {
      * @return true if the items were successfully combined, false otherwise
      */
     public static boolean combineClosest(int primaryItemId, int secondaryItemId) {
-        List<Rs2ItemModel> primaryItems = items().stream().filter(x -> x.id == primaryItemId).collect(Collectors.toList());
-        List<Rs2ItemModel> secondaryItems = items().stream().filter(x -> x.id == secondaryItemId).collect(Collectors.toList());
+        List<Rs2ItemModel> primaryItems = items().stream().filter(x -> x.getId() == primaryItemId).collect(Collectors.toList());
+        List<Rs2ItemModel> secondaryItems = items().stream().filter(x -> x.getId() == secondaryItemId).collect(Collectors.toList());
 
         if (primaryItems.isEmpty() || secondaryItems.isEmpty()) return false;
 
@@ -241,7 +241,7 @@ public class Rs2Inventory {
         // Compare each primary item with each secondary item to find the closest slots
         for (Rs2ItemModel primaryItem : primaryItems) {
             for (Rs2ItemModel secondaryItem : secondaryItems) {
-                int slotDifference = calculateSlotDifference(primaryItem.slot, secondaryItem.slot);
+                int slotDifference = calculateSlotDifference(primaryItem.getSlot(), secondaryItem.getSlot());
                 if (slotDifference <= minSlotDifference) {
                     minSlotDifference = slotDifference;
                     closestPrimaryItem = primaryItem;
@@ -277,7 +277,7 @@ public class Rs2Inventory {
      * @return True if the inventory contains an item with the given ID, false otherwise.
      */
     public static boolean contains(int id) {
-        return items().stream().anyMatch(x -> x.id == id);
+        return items().stream().anyMatch(x -> x.getId() == id);
     }
 
     /**
@@ -288,7 +288,7 @@ public class Rs2Inventory {
      * @return True if the inventory contains all the specified IDs, false otherwise.
      */
     public static boolean contains(int[] ids) {
-        return items().stream().anyMatch(x -> Arrays.stream(ids).anyMatch(id -> id == x.id));
+        return items().stream().anyMatch(x -> Arrays.stream(ids).anyMatch(id -> id == x.getId()));
     }
 
     /**
@@ -299,7 +299,7 @@ public class Rs2Inventory {
      * @return True if the inventory contains all the specified IDs, false otherwise.
      */
     public static boolean contains(Integer... ids) {
-        return items().stream().anyMatch(x -> Arrays.stream(ids).anyMatch(i -> i == x.id));
+        return items().stream().anyMatch(x -> Arrays.stream(ids).anyMatch(i -> i == x.getId()));
     }
 
     /**
@@ -310,7 +310,7 @@ public class Rs2Inventory {
      * @return True if the inventory contains an item with the specified name, false otherwise.
      */
     public static boolean contains(String name) {
-        return items().stream().anyMatch(x -> name.equalsIgnoreCase(x.name));
+        return items().stream().anyMatch(x -> name.equalsIgnoreCase(x.getName()));
     }
 
     /**
@@ -321,7 +321,7 @@ public class Rs2Inventory {
      * @return True if the inventory contains all the specified names, false otherwise.
      */
     public static boolean contains(String... names) {
-        return items().stream().anyMatch(x -> Arrays.stream(names).anyMatch(name -> name.equalsIgnoreCase(x.name)));
+        return items().stream().anyMatch(x -> Arrays.stream(names).anyMatch(name -> name.equalsIgnoreCase(x.getName())));
     }
 
     /**
@@ -343,7 +343,7 @@ public class Rs2Inventory {
      * @return True if the inventory contains all the specified IDs, false otherwise.
      */
     public static boolean containsAll(int... ids) {
-        return Arrays.stream(ids).allMatch(x -> items().stream().anyMatch(y -> y.id == x));
+        return Arrays.stream(ids).allMatch(x -> items().stream().anyMatch(y -> y.getId() == x));
     }
 
     /**
@@ -365,7 +365,7 @@ public class Rs2Inventory {
      * @return The count of items that match the ID.
      */
     public static int count(int id) {
-        return (int) items().stream().filter(x -> x.id == id).count();
+        return (int) items().stream().filter(x -> x.getId() == id).count();
     }
 
     /**
@@ -385,7 +385,7 @@ public class Rs2Inventory {
      * @return The count of items that match the name.
      */
     public static int count(String name) {
-        return (int) items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase())).count();
+        return (int) items().stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase())).count();
     }
 
     /**
@@ -419,7 +419,7 @@ public class Rs2Inventory {
      * @return True if the item was successfully dropped, false otherwise.
      */
     public static boolean drop(int id) {
-        Rs2ItemModel item = items().stream().filter(x -> x.id == id).findFirst().orElse(null);
+        Rs2ItemModel item = items().stream().filter(x -> x.getId() == id).findFirst().orElse(null);
         if (item == null) return false;
 
         invokeMenu(item, "Drop");
@@ -446,9 +446,9 @@ public class Rs2Inventory {
     public static boolean drop(String name, boolean exact) {
         Rs2ItemModel item;
         if (exact) {
-             item = items().stream().filter(x -> x.name.toLowerCase().equalsIgnoreCase(name)).findFirst().orElse(null);
+             item = items().stream().filter(x -> x.getName().toLowerCase().equalsIgnoreCase(name)).findFirst().orElse(null);
         } else {
-             item = items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
+             item = items().stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
         }
         if (item == null) return false;
 
@@ -498,7 +498,7 @@ public class Rs2Inventory {
      */
     public static boolean dropAll(int id) {
         for (Rs2ItemModel item :
-                items().stream().filter(x -> x.id == id).collect(Collectors.toList())) {
+                items().stream().filter(x -> x.getId() == id).collect(Collectors.toList())) {
             if (item == null) continue;
             invokeMenu(item, "Drop");
             if (!Rs2AntibanSettings.naturalMouse)
@@ -516,7 +516,7 @@ public class Rs2Inventory {
      */
     public static boolean dropAll(Integer... ids) {
         for (Rs2ItemModel item :
-                items().stream().filter(x -> Arrays.stream(ids).anyMatch(id -> id == x.id)).collect(Collectors.toList())) {
+                items().stream().filter(x -> Arrays.stream(ids).anyMatch(id -> id == x.getId())).collect(Collectors.toList())) {
             if (item == null) continue;
             invokeMenu(item, "Drop");
             if (!Rs2AntibanSettings.naturalMouse)
@@ -534,7 +534,7 @@ public class Rs2Inventory {
      */
     public static boolean dropAll(String name) {
         for (Rs2ItemModel item :
-                items().stream().filter(x -> x.name.equalsIgnoreCase(name)).collect(Collectors.toList())) {
+                items().stream().filter(x -> x.getName().equalsIgnoreCase(name)).collect(Collectors.toList())) {
             if (item == null) continue;
             invokeMenu(item, "Drop");
             if (!Rs2AntibanSettings.naturalMouse)
@@ -552,7 +552,7 @@ public class Rs2Inventory {
      */
     public static boolean dropAll(String... names) {
         for (Rs2ItemModel item :
-                items().stream().filter(x -> Arrays.stream(names).anyMatch(name -> name.equalsIgnoreCase(x.name))).collect(Collectors.toList())) {
+                items().stream().filter(x -> Arrays.stream(names).anyMatch(name -> name.equalsIgnoreCase(x.getName()))).collect(Collectors.toList())) {
             if (item == null) continue;
             invokeMenu(item, "Drop");
             if (!Rs2AntibanSettings.naturalMouse)
@@ -615,7 +615,7 @@ public class Rs2Inventory {
      * @return True if all non-matching items were successfully dropped, false otherwise.
      */
     public static boolean dropAllExcept(Integer... ids) {
-        return dropAll(x -> Arrays.stream(ids).noneMatch(id -> id == x.id));
+        return dropAll(x -> Arrays.stream(ids).noneMatch(id -> id == x.getId()));
     }
 
     /**
@@ -646,9 +646,9 @@ public class Rs2Inventory {
      */
     public static boolean dropAllExcept(boolean exact, InteractOrder dropOrder, String... names) {
         if (exact)
-            return dropAll(x -> Arrays.stream(names).noneMatch(name -> name.equalsIgnoreCase(x.name)), dropOrder);
+            return dropAll(x -> Arrays.stream(names).noneMatch(name -> name.equalsIgnoreCase(x.getName())), dropOrder);
         else
-            return dropAll(x -> Arrays.stream(names).noneMatch(name -> x.name.toLowerCase().contains(name.toLowerCase())), dropOrder);
+            return dropAll(x -> Arrays.stream(names).noneMatch(name -> x.getName().toLowerCase().contains(name.toLowerCase())), dropOrder);
     }
 
     /**
@@ -692,9 +692,9 @@ public class Rs2Inventory {
         for (Rs2ItemModel item :
                 new ArrayList<>(items())) {
             if (item == null) continue;
-            if (ignoreItems.stream().anyMatch(x -> x.equalsIgnoreCase(item.name))) continue;
+            if (ignoreItems.stream().anyMatch(x -> x.equalsIgnoreCase(item.getName()))) continue;
             long totalPrice = (long) Microbot.getClientThread().runOnClientThreadOptional(() ->
-                    Microbot.getItemManager().getItemPrice(item.id) * item.quantity).orElse(0);
+                    Microbot.getItemManager().getItemPrice(item.getId()) * item.getQuantity()).orElse(0);
             if (totalPrice >= gpValue) continue;
 
             invokeMenu(item, "Drop");
@@ -761,7 +761,7 @@ public class Rs2Inventory {
      */
     public static Rs2ItemModel get(Integer id) {
         if (id == null) return null;
-        return items().stream().filter(x -> x.id == id).findFirst().orElse(null);
+        return items().stream().filter(x -> x.getId() == id).findFirst().orElse(null);
     }
 
     /**
@@ -772,7 +772,7 @@ public class Rs2Inventory {
      * @return The first item that matches one of the IDs, or null if not found.
      */
     public static Rs2ItemModel get(Integer... ids) {
-        return items().stream().filter(x -> Arrays.stream(ids).anyMatch(i -> i == x.id)).findFirst().orElse(null);
+        return items().stream().filter(x -> Arrays.stream(ids).anyMatch(i -> i == x.getId())).findFirst().orElse(null);
     }
 
     /**
@@ -797,9 +797,9 @@ public class Rs2Inventory {
      */
     public static Rs2ItemModel get(String name, boolean exact) {
         if (exact)
-            return items().stream().filter(x -> x.name.equalsIgnoreCase(name)).findFirst().orElse(null);
+            return items().stream().filter(x -> x.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
         else
-            return items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
+            return items().stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
     }
 
     /**
@@ -813,15 +813,15 @@ public class Rs2Inventory {
     public static Rs2ItemModel get(String name, boolean stackable, boolean exact) {
         if (!stackable) {
             if (exact)
-                return items().stream().filter(x -> x.name.equalsIgnoreCase(name)).findFirst().orElse(null);
+                return items().stream().filter(x -> x.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
             else
-                return items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
+                return items().stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
         }
 
         if (exact)
-            return items().stream().filter(x -> x.name.equalsIgnoreCase(name) && x.isStackable).findFirst().orElse(null);
+            return items().stream().filter(x -> x.getName().equalsIgnoreCase(name) && x.isStackable()).findFirst().orElse(null);
         else
-            return items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase()) && x.isStackable).findFirst().orElse(null);
+            return items().stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase()) && x.isStackable()).findFirst().orElse(null);
     }
 
     /**
@@ -832,7 +832,7 @@ public class Rs2Inventory {
      * @return The item with one of the specified names, or null if not found.
      */
     public static Rs2ItemModel get(String... names) {
-        return items().stream().filter(x -> Arrays.stream(names).anyMatch(n -> n.equalsIgnoreCase(x.name))).findFirst().orElse(null);
+        return items().stream().filter(x -> Arrays.stream(names).anyMatch(n -> n.equalsIgnoreCase(x.getName()))).findFirst().orElse(null);
     }
 
     /**
@@ -845,9 +845,9 @@ public class Rs2Inventory {
      */
     public static Rs2ItemModel get(List<String> names, boolean exact) {
         if (exact) {
-            return items().stream().filter(x -> names.stream().anyMatch(n -> n.equalsIgnoreCase(x.name))).findFirst().orElse(null);
+            return items().stream().filter(x -> names.stream().anyMatch(n -> n.equalsIgnoreCase(x.getName()))).findFirst().orElse(null);
         } else {
-            return items().stream().filter(x -> names.stream().anyMatch(n -> n.toLowerCase().contains(x.name.split("\\(")[0].toLowerCase()))).findFirst().orElse(null);
+            return items().stream().filter(x -> names.stream().anyMatch(n -> n.toLowerCase().contains(x.getName().split("\\(")[0].toLowerCase()))).findFirst().orElse(null);
         }
     }
 
@@ -895,9 +895,9 @@ public class Rs2Inventory {
         Rs2ItemModel rs2Item = get(id);
         if (rs2Item != null) {
             if (rs2Item.isStackable()) {
-                return rs2Item.quantity;
+                return rs2Item.getQuantity();
             } else {
-                return (int) items().stream().filter(x -> x.id == id).count();
+                return (int) items().stream().filter(x -> x.getId() == id).count();
             }
         } else {
             return 0;
@@ -915,9 +915,9 @@ public class Rs2Inventory {
         Rs2ItemModel rs2Item = get(itemName);
         if (rs2Item != null) {
             if (rs2Item.isStackable()) {
-                return rs2Item.quantity;
+                return rs2Item.getQuantity();
             } else {
-                return (int) items().stream().filter(x -> x.id == rs2Item.getId()).count();
+                return (int) items().stream().filter(x -> x.getId() == rs2Item.getId()).count();
             }
         } else {
             return 0;
@@ -948,12 +948,12 @@ public class Rs2Inventory {
         if (id == null) return false;
         Rs2ItemModel rs2Item = get(id);
         if (rs2Item == null) return false;
-        if (rs2Item.isStackable) {
-            return rs2Item.quantity >= amount;
+        if (rs2Item.isStackable()) {
+            return rs2Item.getQuantity() >= amount;
         } else if (exact){
-            return items().stream().filter(x -> x.id == id).count() == amount;
+            return items().stream().filter(x -> x.getId() == id).count() == amount;
         } else {
-            return items().stream().filter(x -> x.id == id).count() >= amount;
+            return items().stream().filter(x -> x.getId() == id).count() >= amount;
 
         }
     }
@@ -970,7 +970,7 @@ public class Rs2Inventory {
     public static boolean hasItemAmount(String name, int amount) {
         Rs2ItemModel item = get(name);
         if (item == null) return false;
-        return hasItemAmount(name, amount, item.isStackable, false);
+        return hasItemAmount(name, amount, item.isStackable(), false);
     }
 
     /**
@@ -999,16 +999,16 @@ public class Rs2Inventory {
     public static boolean hasItemAmount(String name, int amount, boolean stackable, boolean exact) {
         if (!stackable) {
             if (exact) {
-                return items().stream().filter(x -> x.name.equalsIgnoreCase(name)).count() >= amount;
+                return items().stream().filter(x -> x.getName().equalsIgnoreCase(name)).count() >= amount;
             } else {
-                return items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase())).count() >= amount;
+                return items().stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase())).count() >= amount;
             }
         }
 
         Rs2ItemModel item = get(name, true, exact);
         if (item == null) return false;
 
-        return item.quantity >= amount;
+        return item.getQuantity() >= amount;
     }
 
     /**
@@ -1085,7 +1085,7 @@ public class Rs2Inventory {
      */
     public static String[] getActionsForSlot(int slot) {
         return items().stream()
-                .filter(x -> x.slot == slot)
+                .filter(x -> x.getSlot() == slot)
                 .map(x -> x.getInventoryActions())
                 .findFirst().orElse(new String[]{});
     }
@@ -1144,14 +1144,14 @@ public class Rs2Inventory {
     // get bones with the action "bury"
     public static List<Rs2ItemModel> getBones() {
         return items().stream()
-                .filter(x -> Arrays.stream(x.inventoryActions).anyMatch(a -> a != null && a.equalsIgnoreCase("bury")))
+                .filter(x -> Arrays.stream(x.getInventoryActions()).anyMatch(a -> a != null && a.equalsIgnoreCase("bury")))
                 .collect(Collectors.toList());
     }
 
     // get items with the action "scatter"
     public static List<Rs2ItemModel> getAshes() {
         return items().stream()
-                .filter(x -> Arrays.stream(x.inventoryActions).anyMatch(a -> a != null && a.equalsIgnoreCase("scatter")))
+                .filter(x -> Arrays.stream(x.getInventoryActions()).anyMatch(a -> a != null && a.equalsIgnoreCase("scatter")))
                 .collect(Collectors.toList());
     }
 
@@ -1203,9 +1203,9 @@ public class Rs2Inventory {
      * @return The ID of the item in the slot, or -1 if the slot is empty.
      */
     public static int getIdForSlot(int slot) {
-        Rs2ItemModel item = items().stream().filter(x -> x.slot == slot).findFirst().orElse(null);
+        Rs2ItemModel item = items().stream().filter(x -> x.getSlot() == slot).findFirst().orElse(null);
         if (item == null) return -1;
-        return item.id;
+        return item.getId();
     }
 
     /**
@@ -1226,7 +1226,7 @@ public class Rs2Inventory {
      */
     public static Rs2ItemModel getItemInSlot(int slot) {
         return items().stream()
-                .filter(x -> x.slot == slot)
+                .filter(x -> x.getSlot() == slot)
                 .findFirst()
                 .orElse(null);
     }
@@ -1240,9 +1240,9 @@ public class Rs2Inventory {
      */
     public static String getNameForSlot(int slot) {
         return items().stream()
-                .filter(x -> x.slot == slot)
+                .filter(x -> x.getSlot() == slot)
                 .findFirst()
-                .map(x -> x.name)
+                .map(Rs2ItemModel::getName)
                 .orElse(null);
     }
 
@@ -1256,7 +1256,7 @@ public class Rs2Inventory {
     public static Rs2ItemModel getRandom(int... itemIDs) {
         List<Rs2ItemModel> matchingItems = items().stream()
                 .filter(x -> Arrays.stream(itemIDs)
-                        .anyMatch(i -> i == x.id))
+                        .anyMatch(i -> i == x.getId()))
                 .collect(Collectors.toList());
 
         if (matchingItems.isEmpty()) {
@@ -1278,7 +1278,7 @@ public class Rs2Inventory {
     public static Rs2ItemModel getRandom(String... itemNames) {
         List<Rs2ItemModel> matchingItems = items().stream()
                 .filter(x -> Arrays.stream(itemNames)
-                        .anyMatch(i -> i.equalsIgnoreCase(x.name)))
+                        .anyMatch(i -> i.equalsIgnoreCase(x.getName())))
                 .collect(Collectors.toList());
 
         if (matchingItems.isEmpty()) {
@@ -1363,7 +1363,7 @@ public class Rs2Inventory {
      * @return True if the interaction was successful, false otherwise.
      */
     public static boolean interact(int id, String action) {
-        Rs2ItemModel rs2Item = items().stream().filter(x -> x.id == id).findFirst().orElse(null);
+        Rs2ItemModel rs2Item = items().stream().filter(x -> x.getId() == id).findFirst().orElse(null);
         return interact(rs2Item, action);
     }
     /**
@@ -1375,7 +1375,7 @@ public class Rs2Inventory {
      * @return True if the interaction was successful, false otherwise.
      */
     public static boolean interact(int id, String action, int identifier) {
-        Rs2ItemModel rs2Item = items().stream().filter(x -> x.id == id).findFirst().orElse(null);
+        Rs2ItemModel rs2Item = items().stream().filter(x -> x.getId() == id).findFirst().orElse(null);
         if (rs2Item == null) return false;
         invokeMenu(rs2Item, action, identifier);
         return true;
@@ -1449,9 +1449,9 @@ public class Rs2Inventory {
     public static boolean interact(String name, String action, boolean exact) {
         Rs2ItemModel rs2Item;
         if (exact) {
-            rs2Item = items().stream().filter(x -> x.name.equalsIgnoreCase(name.toLowerCase())).findFirst().orElse(null);
+            rs2Item = items().stream().filter(x -> x.getName().equalsIgnoreCase(name.toLowerCase())).findFirst().orElse(null);
         } else {
-            rs2Item = items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
+            rs2Item = items().stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
         }
         if (rs2Item == null) return false;
         invokeMenu(rs2Item, action);
@@ -1548,7 +1548,7 @@ public class Rs2Inventory {
     public static boolean isFull(String name) {
         Rs2ItemModel rs2Item = get(name);
         if (rs2Item == null && items().size() == CAPACITY) return true;
-        return rs2Item != null && rs2Item.quantity <= 1 && items().size() == CAPACITY;
+        return rs2Item != null && rs2Item.getQuantity() <= 1 && items().size() == CAPACITY;
     }
 
     /**
@@ -1561,7 +1561,7 @@ public class Rs2Inventory {
     public static boolean isFull(int id) {
         Rs2ItemModel rs2Item = get(id);
         if (rs2Item == null && items().size() == CAPACITY) return true;
-        return rs2Item != null && rs2Item.quantity <= 1 && items().size() == CAPACITY;
+        return rs2Item != null && rs2Item.getQuantity() <= 1 && items().size() == CAPACITY;
     }
 
     /**
@@ -1644,7 +1644,7 @@ public class Rs2Inventory {
         if (inventory == null) return null;
 
         Widget item = Arrays.stream(inventory.getDynamicChildren())
-                .filter(x -> x.getIndex() == rs2Item.slot)
+                .filter(x -> x.getIndex() == rs2Item.getSlot())
                 .findFirst()
                 .orElse(null);
 
@@ -1661,7 +1661,7 @@ public class Rs2Inventory {
      * @return True if the inventory only contains items with the specified IDs, false otherwise.
      */
     public static boolean onlyContains(Integer... ids) {
-        return items().stream().allMatch(x -> Arrays.stream(ids).allMatch(id -> x.id == id));
+        return items().stream().allMatch(x -> Arrays.stream(ids).allMatch(id -> x.getId() == id));
     }
 
     /**
@@ -1672,7 +1672,7 @@ public class Rs2Inventory {
      * @return True if the inventory only contains items with the specified names, false otherwise.
      */
     public static boolean onlyContains(String... names) {
-        return items().stream().allMatch(x -> Arrays.stream(names).allMatch(name -> x.name.equalsIgnoreCase(name)));
+        return items().stream().allMatch(x -> Arrays.stream(names).allMatch(name -> x.getName().equalsIgnoreCase(name)));
     }
 
     /**
@@ -1712,7 +1712,7 @@ public class Rs2Inventory {
      * @return The total size of stackable items of the inventory.
      */
     public static int stackableSize() {
-        return items().stream().filter(x -> x.isNoted || x.isStackable).mapToInt(x -> x.quantity).sum();
+        return items().stream().filter(x -> x.isNoted() || x.isStackable()).mapToInt(Rs2ItemModel::getQuantity).sum();
     }
 
     /**
@@ -1723,10 +1723,10 @@ public class Rs2Inventory {
      * @return The slot index for the item, or -1 if not found.
      */
     public static int slot(int id) {
-        Rs2ItemModel item = items().stream().filter(x -> x.id == id).findFirst().orElse(null);
+        Rs2ItemModel item = items().stream().filter(x -> x.getId() == id).findFirst().orElse(null);
         if (item == null) return -1;
 
-        return item.slot;
+        return item.getSlot();
     }
 
     /**
@@ -1737,10 +1737,10 @@ public class Rs2Inventory {
      * @return The slot index for the item, or -1 if not found.
      */
     public static int slot(String name) {
-        Rs2ItemModel item = items().stream().filter(x -> x.name.equalsIgnoreCase(name)).findFirst().orElse(null);
+        Rs2ItemModel item = items().stream().filter(x -> x.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
         if (item == null) return -1;
 
-        return item.slot;
+        return item.getSlot();
     }
 
     /**
@@ -1754,7 +1754,7 @@ public class Rs2Inventory {
         Rs2ItemModel item = items().stream().filter(predicate).findFirst().orElse(null);
         if (item == null) return -1;
 
-        return item.slot;
+        return item.getSlot();
     }
 
     /**
@@ -1769,7 +1769,7 @@ public class Rs2Inventory {
         if (items().isEmpty()) return false;
         Rs2ItemModel item = items().get(slot);
         if (item == null) return false;
-        return Arrays.stream(ids).anyMatch(x -> x == item.id);
+        return Arrays.stream(ids).anyMatch(x -> x == item.getId());
     }
 
     /**
@@ -1784,7 +1784,7 @@ public class Rs2Inventory {
         if (items().isEmpty()) return false;
         Rs2ItemModel item = items().get(slot);
         if (item == null) return false;
-        return Arrays.stream(ids).anyMatch(x -> x == item.id);
+        return Arrays.stream(ids).anyMatch(x -> x == item.getId());
     }
 
     /**
@@ -1799,7 +1799,7 @@ public class Rs2Inventory {
         if (items().isEmpty()) return false;
         Rs2ItemModel item = items().get(slot);
         if (item == null) return false;
-        return Arrays.stream(names).anyMatch(x -> x.equalsIgnoreCase(item.name));
+        return Arrays.stream(names).anyMatch(x -> x.equalsIgnoreCase(item.getName()));
     }
 
 
@@ -1845,7 +1845,7 @@ public class Rs2Inventory {
         if (items().isEmpty()) return false;
         Rs2ItemModel item = items().get(slot);
         if (item == null) return false;
-        return item.name.contains(sub);
+        return item.getName().contains(sub);
     }
 
 
@@ -1871,7 +1871,7 @@ public class Rs2Inventory {
      * @return True if the item is successfully used, false otherwise.
      */
     public static boolean useUnNoted(String name) {
-        Rs2ItemModel item = items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase()) && !x.isNoted).findFirst().orElse(null);
+        Rs2ItemModel item = items().stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase()) && !x.isNoted()).findFirst().orElse(null);
         if (item == null) return false;
         return interact(item, "Use");
     }
@@ -1884,7 +1884,7 @@ public class Rs2Inventory {
      * @return True if the item is successfully used, false otherwise.
      */
     public static boolean use(int id) {
-        Rs2ItemModel item = items().stream().filter(x -> x.id == id).findFirst().orElse(null);
+        Rs2ItemModel item = items().stream().filter(x -> x.getId() == id).findFirst().orElse(null);
         if (item == null) return false;
         return interact(id, "Use");
     }
@@ -1897,7 +1897,7 @@ public class Rs2Inventory {
      * @return True if the item is successfully used, false otherwise.
      */
     public static boolean use(String name) {
-        Rs2ItemModel item = items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
+        Rs2ItemModel item = items().stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
         if (item == null) return false;
         return interact(name, "Use");
     }
@@ -2080,9 +2080,9 @@ public class Rs2Inventory {
      */
     public static Rs2ItemModel getNotedItem(String name, boolean exact) {
         if (exact)
-            return items().stream().filter(x -> x.name.equalsIgnoreCase(name) && x.isNoted).findFirst().orElse(null);
+            return items().stream().filter(x -> x.getName().equalsIgnoreCase(name) && x.isNoted()).findFirst().orElse(null);
         else
-            return items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase()) && x.isNoted).findFirst().orElse(null);
+            return items().stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase()) && x.isNoted()).findFirst().orElse(null);
     }
 
     /**
@@ -2106,9 +2106,9 @@ public class Rs2Inventory {
 
     public static Rs2ItemModel getUnNotedItem(String name, boolean exact) {
         if (exact)
-            return items().stream().filter(x -> x.name.equalsIgnoreCase(name) && !x.isNoted).findFirst().orElse(null);
+            return items().stream().filter(x -> x.getName().equalsIgnoreCase(name) && !x.isNoted()).findFirst().orElse(null);
         else
-            return items().stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase()) && !x.isNoted).findFirst().orElse(null);
+            return items().stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase()) && !x.isNoted()).findFirst().orElse(null);
     }
 
     public static boolean hasUnNotedItem(String name) {
@@ -2129,12 +2129,12 @@ public class Rs2Inventory {
         if (filteredStaminaRestoreItems.isEmpty() && filteredRestoreEnergyItems.isEmpty()) return;
 
         if (filteredStaminaRestoreItems.isEmpty()) {
-            Rs2Inventory.interact(filteredRestoreEnergyItems.stream().findFirst().get().name, "drink");
+            Rs2Inventory.interact(filteredRestoreEnergyItems.stream().findFirst().get().getName(), "drink");
         } else {
             if (Rs2Player.hasStaminaBuffActive() && !filteredRestoreEnergyItems.isEmpty()) {
-                Rs2Inventory.interact(filteredRestoreEnergyItems.stream().findFirst().get().name, "drink");
+                Rs2Inventory.interact(filteredRestoreEnergyItems.stream().findFirst().get().getName(), "drink");
             } else {
-                Rs2Inventory.interact(filteredStaminaRestoreItems.stream().findFirst().get().name, "drink");
+                Rs2Inventory.interact(filteredStaminaRestoreItems.stream().findFirst().get().getName(), "drink");
             }
         }
     }
@@ -2189,14 +2189,14 @@ public class Rs2Inventory {
         if (rs2Item == null) return;
 
         Rs2Tab.switchToInventoryTab();
-        Microbot.status = action + " " + rs2Item.name;
+        Microbot.status = action + " " + rs2Item.getName();
 
         int param0;
         int param1;
         int identifier = -1;
         MenuAction menuAction = MenuAction.CC_OP;
         Widget[] inventoryWidgets;
-        param0 = rs2Item.slot;
+        param0 = rs2Item.getSlot();
         boolean isDepositBoxOpen = !Microbot.getClientThread().runOnClientThreadOptional(() -> Rs2Widget.getWidget(ComponentID.DEPOSIT_BOX_INVENTORY_ITEM_CONTAINER) == null
                 || Rs2Widget.getWidget(ComponentID.DEPOSIT_BOX_INVENTORY_ITEM_CONTAINER).isHidden()).orElse(false);
 
@@ -2228,7 +2228,7 @@ public class Rs2Inventory {
         if (inventoryWidgets == null) return;
 
         if (!action.isEmpty()) {
-            var itemWidget = Arrays.stream(inventoryWidgets).filter(x -> x != null && x.getIndex() == rs2Item.slot).findFirst().orElseGet(null);
+            var itemWidget = Arrays.stream(inventoryWidgets).filter(x -> x != null && x.getIndex() == rs2Item.getSlot()).findFirst().orElseGet(null);
 
             String[] actions = itemWidget != null && itemWidget.getActions() != null ?
                     itemWidget.getActions() :
@@ -2246,7 +2246,7 @@ public class Rs2Inventory {
             menuAction = MenuAction.WIDGET_TARGET_ON_WIDGET;
         }
 
-        Microbot.doInvoke(new NewMenuEntry(action, param0, param1, menuAction.getId(), identifier, rs2Item.id, rs2Item.name), (itemBounds(rs2Item) == null) ? new Rectangle(1, 1) : itemBounds(rs2Item));
+        Microbot.doInvoke(new NewMenuEntry(action, param0, param1, menuAction.getId(), identifier, rs2Item.getId(), rs2Item.getName()), (itemBounds(rs2Item) == null) ? new Rectangle(1, 1) : itemBounds(rs2Item));
 
         if (action.equalsIgnoreCase("destroy")) {
             sleepUntil(() -> Rs2Widget.isWidgetVisible(584, 0));
@@ -2309,7 +2309,7 @@ public class Rs2Inventory {
         try {
             // Retrieve Rs2Item object corresponding to the item name
             Rs2ItemModel rs2Item = items().stream()
-                    .filter(item -> item.name.equalsIgnoreCase(itemName))
+                    .filter(item -> item.getName().equalsIgnoreCase(itemName))
                     .findFirst().orElse(null);
 
             if (rs2Item == null) {
@@ -2399,7 +2399,7 @@ public class Rs2Inventory {
     public static boolean moveItemToSlot(Rs2ItemModel item, int slot) {
         if (item == null) return false;
         if (slot < 0 || slot >= CAPACITY) return false;
-        if (item.slot == slot) return false;
+        if (item.getSlot() == slot) return false;
 
         Widget inventory = getInventory();
         if (inventory == null) {

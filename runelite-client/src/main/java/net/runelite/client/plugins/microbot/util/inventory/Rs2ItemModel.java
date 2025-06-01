@@ -15,27 +15,27 @@ import java.util.Objects;
 
 public class Rs2ItemModel {
     @Getter
-    public int id;
+    private int id;
     @Getter
     @Setter
-    public int quantity;
+	private int quantity;
     @Getter
-    public int slot = -1;
+	private int slot = -1;
     @Getter
-    public String name;
+	private String name;
     @Getter
-    String[] inventoryActions;
+	private String[] inventoryActions;
     @Getter
-    List<String> equipmentActions = new ArrayList();
+	private List<String> equipmentActions = new ArrayList();
     @Getter
-    boolean isStackable;
+	private boolean isStackable;
     @Getter
-    boolean isNoted;
+	private boolean isNoted;
     @Getter
-    boolean isTradeable;
+	private boolean isTradeable;
     @Getter
-    ItemComposition itemComposition;
-    int[] wearableActionIndexes = new int[]{
+	private ItemComposition itemComposition;
+	private int[] wearableActionIndexes = new int[]{
             ParamID.OC_ITEM_OP1,
             ParamID.OC_ITEM_OP2,
             ParamID.OC_ITEM_OP3,
@@ -43,7 +43,8 @@ public class Rs2ItemModel {
             ParamID.OC_ITEM_OP5,
             ParamID.OC_ITEM_OP6,
             ParamID.OC_ITEM_OP7,
-            ParamID.OC_ITEM_OP8};
+            ParamID.OC_ITEM_OP8
+	};
 
 
     public Rs2ItemModel(Item item, ItemComposition itemComposition, int slot) {

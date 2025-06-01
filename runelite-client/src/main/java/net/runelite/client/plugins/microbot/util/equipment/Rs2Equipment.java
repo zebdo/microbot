@@ -95,20 +95,20 @@ public class Rs2Equipment {
 
 
     public static Rs2ItemModel get(EquipmentInventorySlot slot) {
-        return equipmentItems.stream().filter(x -> x.slot == slot.getSlotIdx()).findFirst().orElse(null);
+        return equipmentItems.stream().filter(x -> x.getSlot() == slot.getSlotIdx()).findFirst().orElse(null);
     }
 
     public static Rs2ItemModel get(int id) {
-        return equipmentItems.stream().filter(x -> x.id == id).findFirst().orElse(null);
+        return equipmentItems.stream().filter(x -> x.getId() == id).findFirst().orElse(null);
     }
 
     public static Rs2ItemModel get(String name, boolean exact) {
         if (exact) {
-            return equipmentItems.stream().filter(x -> x.name.equalsIgnoreCase(name))
+            return equipmentItems.stream().filter(x -> x.getName().equalsIgnoreCase(name))
                     .findFirst()
                     .orElse(null);
         }
-        return equipmentItems.stream().filter(x -> x.name.toLowerCase().contains(name.toLowerCase()))
+        return equipmentItems.stream().filter(x -> x.getName().toLowerCase().contains(name.toLowerCase()))
                 .findFirst()
                 .orElse(null);
 
@@ -162,7 +162,7 @@ public class Rs2Equipment {
             for (EquipmentInventorySlot value : EquipmentInventorySlot.values()) {
                 Rs2ItemModel item = get(value);
                 if (item == null) continue;
-                if (item.name.equalsIgnoreCase(itemName)) {
+                if (item.getName().equalsIgnoreCase(itemName)) {
                     return true;
                 }
             }
@@ -175,7 +175,7 @@ public class Rs2Equipment {
             for (EquipmentInventorySlot value : EquipmentInventorySlot.values()) {
                 Rs2ItemModel item = get(value);
                 if (item == null) continue;
-                if (item.name.toLowerCase().contains(itemName.toLowerCase())) {
+                if (item.getName().toLowerCase().contains(itemName.toLowerCase())) {
                     return true;
                 }
             }
@@ -220,15 +220,15 @@ public class Rs2Equipment {
     public static boolean isEquipped(int id, EquipmentInventorySlot slot) {
         final Rs2ItemModel item = get(slot);
 
-        return item != null && item.id == id;
+        return item != null && item.getId() == id;
     }
 
     public static boolean isEquipped(String name, EquipmentInventorySlot slot, boolean exact) {
         final Rs2ItemModel item = get(slot);
         if (exact) {
-            return item != null && item.name.equalsIgnoreCase(name);
+            return item != null && item.getName().equalsIgnoreCase(name);
         } else {
-            return item != null && item.name.toLowerCase().contains(name.toLowerCase());
+            return item != null && item.getName().toLowerCase().contains(name.toLowerCase());
         }
     }
 
@@ -391,14 +391,14 @@ public class Rs2Equipment {
     }
 
     public static boolean isNaked() {
-        return equipmentItems.stream().allMatch(x -> x.id == -1);
+        return equipmentItems.stream().allMatch(x -> x.getId() == -1);
     }
 
     public static void invokeMenu(Rs2ItemModel rs2Item, String action) {
         if (rs2Item == null) return;
 
         Rs2Tab.switchToEquipmentTab();
-        Microbot.status = action + " " + rs2Item.name;
+        Microbot.status = action + " " + rs2Item.getName();
 
         int param0 = -1;
         int param1 = -1;
@@ -444,7 +444,7 @@ public class Rs2Equipment {
         }
 
 
-        Microbot.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), identifier, -1, rs2Item.name), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
+        Microbot.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), identifier, -1, rs2Item.getName()), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
         //Rs2Reflection.invokeMenu(param0, param1, menuAction.getId(), identifier, rs2Item.id, action, target, -1, -1);
     }
 }

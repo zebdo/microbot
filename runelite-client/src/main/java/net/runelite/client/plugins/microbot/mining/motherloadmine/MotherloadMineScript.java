@@ -20,6 +20,7 @@ import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
@@ -82,7 +83,7 @@ public class MotherloadMineScript extends Script
         if (config.pickAxeInInventory())
         {
             pickaxeName = Optional.ofNullable(Rs2Inventory.get("pickaxe"))
-                    .map(i -> i.name)
+                    .map(Rs2ItemModel::getName)
                     .orElse("");
         }
     }

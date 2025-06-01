@@ -458,7 +458,7 @@ public class JewelryScript extends Script {
         // Check if the noted jewelry item is in the inventory
         if (!Rs2Inventory.hasItem(plugin.getJewelry().getItemID() + 1)) return false;
         
-        int notedJewelryAmount = Rs2Inventory.get(plugin.getJewelry().getItemID() + 1).quantity;
+        int notedJewelryAmount = Rs2Inventory.get(plugin.getJewelry().getItemID() + 1).getQuantity();
         int natureRuneAmount = getNatureRunesInInventory();
         
         return notedJewelryAmount <= natureRuneAmount || (plugin.isUseRunePouch() && !Rs2Inventory.hasRunePouch());

@@ -301,7 +301,7 @@ public class Rs2Magic {
             Microbot.status = "Alching x: " + point.getX() + " y: " + point.getY();
             Microbot.getMouse().click(point);
         } else {
-            Microbot.status = "Alching " + item.name;
+            Microbot.status = "Alching " + item.getName();
             Rs2Inventory.interact(item, "cast");
         }
     }
@@ -318,7 +318,7 @@ public class Rs2Magic {
             Microbot.status = "Superheating x: " + point.getX() + " y: " + point.getY();
             Microbot.getMouse().click(point);
         } else {
-            Microbot.status = "Superheating " + item.name;
+            Microbot.status = "Superheating " + item.getName();
             Rs2Inventory.interact(item, "cast");
         }
     }

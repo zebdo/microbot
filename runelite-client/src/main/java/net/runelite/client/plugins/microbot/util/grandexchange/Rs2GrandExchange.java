@@ -488,7 +488,7 @@ public class Rs2GrandExchange {
                 sleep(600);
             }
 
-            Rs2GrandExchange.sellItemUnder5Percent(item.name);
+            Rs2GrandExchange.sellItemUnder5Percent(item.getName());
         }
         return Rs2Inventory.isEmpty();
     }

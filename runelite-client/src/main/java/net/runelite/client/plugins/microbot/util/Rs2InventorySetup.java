@@ -151,7 +151,7 @@ public class Rs2InventorySetup {
         if (items.size() == 1) {
             Rs2ItemModel rs2Item = Rs2Inventory.get(key);
             if (rs2Item != null && rs2Item.isStackable()) {
-                withdrawQuantity = inventorySetupsItem.getQuantity() - rs2Item.quantity;
+                withdrawQuantity = inventorySetupsItem.getQuantity() - rs2Item.getQuantity();
                 if (Rs2Inventory.hasItemAmount(inventorySetupsItem.getName(), inventorySetupsItem.getQuantity())) {
                     return 0;
                 }

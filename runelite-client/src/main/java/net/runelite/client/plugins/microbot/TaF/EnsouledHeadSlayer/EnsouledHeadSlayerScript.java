@@ -200,8 +200,8 @@ public class EnsouledHeadSlayerScript extends Script {
         if (config.ensouledHeads().getName().equals("All")) {
             Map<Integer, Integer> headCounts = new HashMap<>();
             for (var item : Rs2Bank.bankItems()) {
-                if (item != null && item.name != null && item.name.toLowerCase().contains("ensouled")) {
-                    headCounts.put(item.id, headCounts.getOrDefault(item.id, 0) + item.quantity);
+                if (item != null && item.getName() != null && item.getName().toLowerCase().contains("ensouled")) {
+                    headCounts.put(item.getId(), headCounts.getOrDefault(item.getId(), 0) + item.getQuantity());
                 }
             }
             if (headCounts.isEmpty()) {
