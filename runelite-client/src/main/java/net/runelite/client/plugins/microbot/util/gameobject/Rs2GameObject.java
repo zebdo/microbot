@@ -393,6 +393,23 @@ public class Rs2GameObject {
         return convertToObjectComposition(objectId);
     }
 
+	public static String getObjectType(TileObject object)
+	{
+		String type;
+		if (object instanceof WallObject) {
+			type = "WallObject";
+		} else if (object instanceof DecorativeObject) {
+			type = "DecorativeObject";
+		} else if (object instanceof GameObject) {
+			type = "GameObject";
+		} else if (object instanceof GroundObject) {
+			type = "GroundObject";
+		} else {
+			type = "TileObject";
+		}
+		return type;
+	}
+
     public static List<Tile> getTiles(int maxTileDistance) {
         int maxDistance = Math.max(2400, maxTileDistance * 128);
 
@@ -429,13 +446,25 @@ public class Rs2GameObject {
     }
 
     public static <T extends TileObject> List<TileObject> getAll(Predicate<? super T> predicate) {
-        return getAll(predicate, (Constants.SCENE_SIZE / 2));
+        return getAll(predicate, Constants.SCENE_SIZE);
     }
 
-    public static <T extends TileObject> List<TileObject> getAll(Predicate<? super T> predicate, int distance) {
+	public static <T extends TileObject> List<TileObject> getAll(Predicate<? super T> predicate, int distance) {
+		Player player = Microbot.getClient().getLocalPlayer();
+		if (player == null) {
+			return Collections.emptyList();
+		}
+		return getAll(predicate, player.getWorldLocation(), distance);
+	}
+
+	public static <T extends TileObject> List<TileObject> getAll(Predicate<? super T> predicate, WorldPoint anchor) {
+		return getAll(predicate, anchor, Constants.SCENE_SIZE);
+	}
+
+    public static <T extends TileObject> List<TileObject> getAll(Predicate<? super T> predicate, WorldPoint anchor, int distance) {
         List<TileObject> all = new ArrayList<>();
-        all.addAll(fetchGameObjects(predicate, distance));
-        all.addAll(fetchTileObjects(predicate, distance));
+		all.addAll(fetchTileObjects(predicate, anchor, distance));
+        all.addAll(fetchGameObjects(predicate, anchor, distance));
         return all;
     }
 
@@ -1525,14 +1554,42 @@ public class Rs2GameObject {
         };
     }
 
+	@SuppressWarnings("unchecked")
+	private static <T extends TileObject> List<T> fetchTileObjects(Predicate<? super T> predicate, WorldPoint anchor, int distance) {
+		return (List<T>) getTileObjects((Predicate<TileObject>) predicate, anchor, distance);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T extends TileObject> List<T> fetchGameObjects(Predicate<? super T> predicate, WorldPoint anchor, int distance) {
+		return (List<T>) getGameObjects((Predicate<GameObject>) predicate, anchor, distance);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T extends TileObject> List<T> fetchTileObjects(Predicate<? super T> predicate, WorldPoint anchor) {
+		return fetchTileObjects(predicate, anchor, Constants.SCENE_SIZE);
+	}
+
+	@SuppressWarnings("unchecked")
+	private static <T extends TileObject> List<T> fetchGameObjects(Predicate<? super T> predicate, WorldPoint anchor) {
+		return fetchTileObjects(predicate, anchor, Constants.SCENE_SIZE);
+	}
+
     @SuppressWarnings("unchecked")
     private static <T extends TileObject> List<T> fetchTileObjects(Predicate<? super T> predicate, int distance) {
-        return (List<T>) getTileObjects((Predicate<TileObject>) predicate, distance);
+		Player player = Microbot.getClient().getLocalPlayer();
+		if (player == null) {
+			return Collections.emptyList();
+		}
+        return fetchTileObjects(predicate, player.getWorldLocation(), distance);
     }
 
     @SuppressWarnings("unchecked")
     private static <T extends TileObject> List<T> fetchGameObjects(Predicate<? super T> predicate, int distance) {
-        return (List<T>) getGameObjects((Predicate<GameObject>) predicate, distance);
+		Player player = Microbot.getClient().getLocalPlayer();
+		if (player == null) {
+			return Collections.emptyList();
+		}
+        return fetchGameObjects(predicate, player.getWorldLocation(), distance);
     }
 
     @SuppressWarnings("unchecked")

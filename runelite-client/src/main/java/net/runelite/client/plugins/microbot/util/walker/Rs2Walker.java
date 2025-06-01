@@ -1295,43 +1295,30 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     }
                     
 
-                    GameObject gameObject = Rs2GameObject.getGameObject(transport.getObjectId(), transport.getOrigin());
-                    //check game objects
-                    if (gameObject != null && gameObject.getId() == transport.getObjectId()) {
-                        if (!Rs2Tile.isTileReachable(transport.getOrigin())) {
-                            break;
-                        }
-                        handleObject(transport, gameObject);
-                        sleepUntil(() -> !Rs2Player.isAnimating());
-                        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
-                    }
+					List<TileObject> objects = Rs2GameObject.getAll(o -> o.getId() == transport.getObjectId(), transport.getOrigin(), 10).stream()
+						.sorted(Comparator.comparingInt(o -> o.getWorldLocation().distanceTo(transport.getOrigin())))
+						.collect(Collectors.toList());
 
-                    //check tile objects
-                    List<TileObject> tileObjects = Rs2GameObject.getTileObjects(obj -> obj.getId() == transport.getObjectId(), transport.getOrigin());
-                    TileObject tileObject = tileObjects.stream().findFirst().orElse(null);
-                    if (tileObject instanceof GroundObject)
-                        tileObject = tileObjects.stream()
-                                .filter(x -> !x.getWorldLocation().equals(Rs2Player.getWorldLocation()))
-                                .min(Comparator.comparing(x -> ((TileObject) x).getWorldLocation().distanceTo(transport.getOrigin()))
-                                        .thenComparing(x -> ((TileObject) x).getWorldLocation().distanceTo(transport.getDestination()))).orElse(null);
+					TileObject object = objects.stream().findFirst().orElse(null);
+					if (object instanceof GroundObject) {
+						object = objects.stream()
+							.filter(o -> !Objects.equals(o.getWorldLocation(), Microbot.getClient().getLocalPlayer().getWorldLocation()))
+							.min(Comparator.comparing(o -> ((TileObject) o).getWorldLocation().distanceTo(transport.getOrigin()))
+								.thenComparing(o -> ((TileObject) o).getWorldLocation().distanceTo(transport.getDestination()))).orElse(null);
+					}
+					if (object != null && object.getId() == transport.getObjectId()) {
+						System.out.println("Object Type: " + Rs2GameObject.getObjectType(object));
 
-                    if (tileObject != null && tileObject.getId() == transport.getObjectId()) {
-                        if (tileObject.getId() != 16533 && !Rs2Tile.isTileReachable(transport.getOrigin())) {
-                            break;
-                        }
-                        handleObject(transport, tileObject);
-                        sleepUntil(() -> !Rs2Player.isAnimating());
-                        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
-                    }
-                    
-                    // check wall objects
-                    List<WallObject> wallObjects = Rs2GameObject.getWallObjects(obj -> obj.getId() == transport.getObjectId(), transport.getOrigin());
-                    TileObject wallObject = wallObjects.stream().findFirst().orElse(null);
-                    if (wallObject != null && wallObject.getId() == transport.getObjectId()) {
-                        handleObject(transport, wallObject);
-                        sleepUntil(() -> !Rs2Player.isAnimating());
-                        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
-                    }
+						if (!(object instanceof GroundObject)) {
+							if (!Rs2Tile.isTileReachable(transport.getOrigin())) {
+								break;
+							}
+						}
+
+						handleObject(transport, object);
+						sleepUntil(() -> !Rs2Player.isAnimating());
+						return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
+					}
                 }
             }
         }
@@ -1339,7 +1326,6 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     }
 
     private static void handleObject(Transport transport, TileObject tileObject) {
-        System.out.println("tile object");
         Rs2GameObject.interact(tileObject, transport.getAction());
         if (handleObjectExceptions(transport, tileObject)) return;
         if (transport.getDestination().getPlane() == Rs2Player.getWorldLocation().getPlane()) {
@@ -1399,14 +1385,19 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         }
         // Handle Cobwebs blocking path
         if (tileObject.getId() == ObjectID.WEB) {
-            sleepUntil(() -> !Rs2Player.isMoving());
-            if (Rs2GameObject.findObjectByIdAndDistance(ObjectID.WEB, 3) != null) {
-                Rs2Player.waitForAnimation();
-            } else {
-                walkFastCanvas(transport.getDestination());
-                sleepUntil(() -> Rs2Player.getWorldLocation().equals(transport.getDestination()));
-            }
-            return true;
+            sleepUntil(() -> !Rs2Player.isMoving() && !Rs2Player.isAnimating(1200));
+			final WorldPoint webLocation = tileObject.getWorldLocation();
+			final WorldPoint currentPlayerPoint = Microbot.getClient().getLocalPlayer().getWorldLocation();
+			boolean doesWebStillExist = Rs2GameObject.getAll(o -> Objects.equals(webLocation, o.getWorldLocation()) && o.getId() == ObjectID.WEB).stream().findFirst().isPresent();
+			if (doesWebStillExist) {
+				sleepUntil(() -> Rs2GameObject.getAll(o -> Objects.equals(webLocation, o.getWorldLocation()) && o.getId() == ObjectID.WEB).stream().findFirst().isEmpty(),
+				() -> {
+					Rs2GameObject.interact(tileObject, "slash");
+					Rs2Player.waitForAnimation();
+				}, 8000, 1200);
+			}
+			Rs2Walker.walkFastCanvas(transport.getDestination());
+            return sleepUntil(() -> !Objects.equals(currentPlayerPoint, Microbot.getClient().getLocalPlayer().getWorldLocation()));
         }
         
         // Handle Brimhaven Dungeon Entrance
@@ -1587,7 +1578,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     Rs2Dialogue.clickOption("Yes, teleport me now");
                 }
 
-				if (itemAction.equalsIgnoreCase("break") && transport.getDisplayInfo().toLowerCase().contains("ice plateau teleport")) {
+				if (itemAction.equalsIgnoreCase("break") && itemId == ItemID.ICE_PLATEAU_TELEPORT) {
 					Rs2Dialogue.sleepUntilHasQuestion("Teleport into the DEEP wilderness?");
 					Rs2Dialogue.clickOption("Yes");
 				}
