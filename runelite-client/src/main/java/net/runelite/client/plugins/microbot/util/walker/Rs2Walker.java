@@ -843,10 +843,11 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 ObjectComposition comp = Rs2GameObject.convertToObjectComposition(object);
                 if (comp == null) continue;
 
-                String action = doorActions.stream()
-                        .filter(a -> Rs2GameObject.hasAction(comp, a, false))
-                        .min(Comparator.comparing(x -> doorActions.indexOf(doorActions.stream().filter(doorAction -> x.toLowerCase().startsWith(doorAction)).findFirst().orElse(""))))
-                        .orElse(null);
+                String action = Arrays.stream(comp.getActions())
+					.filter(Objects::nonNull)
+					.filter(act -> doorActions.stream().anyMatch(dact -> act.toLowerCase().startsWith(dact.toLowerCase())))
+					.min(Comparator.comparing(act -> doorActions.indexOf(doorActions.stream().filter(dact -> act.toLowerCase().startsWith(dact)).findFirst().orElse(""))))
+					.orElse(null);
 
                 if (action == null) continue;
 
@@ -866,7 +867,6 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 }
 
                 if (found) {
-					System.out.println("break");
                     if (!handleDoorException(object, action)) {
                         Rs2GameObject.interact(object, action);
                         Rs2Player.waitForWalking();
