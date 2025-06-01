@@ -76,7 +76,7 @@ public class revKillerPlugin extends Plugin {
     @Subscribe
     public void onActorDeath(ActorDeath event) {
         //Thank you george!
-        if (event.getActor() == Microbot.getClient().getLocalPlayer()) {
+        if (event.getActor().equals(Microbot.getClient().getLocalPlayer())) {
             revKillerScript.weDied = true;
         }
     }
