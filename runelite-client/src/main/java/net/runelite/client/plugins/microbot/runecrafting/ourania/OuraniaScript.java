@@ -130,7 +130,7 @@ public class OuraniaScript extends Script
 				switch (state)
 				{
 					case CRAFTING:
-						if (Rs2Inventory.hasAnyPouch() && !Rs2Inventory.allPouchesEmpty())
+						if (!Rs2Inventory.hasItem(config.essence().getItemId()) && Rs2Inventory.hasAnyPouch() && !Rs2Inventory.allPouchesEmpty())
 						{
 							Rs2Inventory.emptyPouches();
 							return;
