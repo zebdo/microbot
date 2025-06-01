@@ -57,7 +57,7 @@ public class revKillerPlugin extends Plugin {
         revKillerScript.weDied = false;
         revKillerScript.shouldFlee = false;
         eventBus.register(this);
-
+        revKillerScript.ourEquipmentForDeathWalking.clear();
         revKillerScript.selectedWP = config.selectedRev().getWorldPoint();
         revKillerScript.selectedArrow = config.selectedArrow().getArrowID();
         revKillerScript.selectedRev = config.selectedRev().getName();
@@ -66,6 +66,7 @@ public class revKillerPlugin extends Plugin {
     protected void shutDown() {
         revKillerScript.weDied = false;
         revKillerScript.shouldFlee = false;
+        revKillerScript.ourEquipmentForDeathWalking.clear();
         revKillerScript.stopFutures();
         revKillerScript.shutdown();
         eventBus.unregister(this);
@@ -75,7 +76,7 @@ public class revKillerPlugin extends Plugin {
     @Subscribe
     public void onActorDeath(ActorDeath event) {
         //Thank you george!
-        if (event.getActor() == Microbot.getClient().getLocalPlayer()) {
+        if (event.getActor().equals(Microbot.getClient().getLocalPlayer())) {
             revKillerScript.weDied = true;
         }
     }
