@@ -463,8 +463,8 @@ public class Rs2GameObject {
 
     public static <T extends TileObject> List<TileObject> getAll(Predicate<? super T> predicate, WorldPoint anchor, int distance) {
         List<TileObject> all = new ArrayList<>();
-		all.addAll(fetchTileObjects(predicate, anchor, distance));
         all.addAll(fetchGameObjects(predicate, anchor, distance));
+		all.addAll(fetchTileObjects(predicate, anchor, distance));
         return all;
     }
 
