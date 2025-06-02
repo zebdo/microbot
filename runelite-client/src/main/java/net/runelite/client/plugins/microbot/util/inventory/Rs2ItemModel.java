@@ -65,15 +65,15 @@ public class Rs2ItemModel {
         addEquipmentActions(itemComposition);
     }
 
-    public boolean isFood() {
-        return Arrays.stream(inventoryActions).anyMatch(x -> x != null && x.equalsIgnoreCase("eat"));
-    }
-    
-    public boolean canEquip() {
-        return Arrays.stream(inventoryActions)
-                .filter(Objects::nonNull)
-                .anyMatch(x -> x.toLowerCase().contains("wear") || x.toLowerCase().contains("wield"));
-    }
+	public boolean isFood() {
+		if (isNoted()) return false;
+
+		String lowerName = getName().toLowerCase();
+
+		boolean isEdible = Arrays.stream(getInventoryActions()).anyMatch(action -> action != null && action.equalsIgnoreCase("eat"));
+
+		return (isEdible || lowerName.contains("jug of wine")) && !lowerName.contains("rock cake");
+	}
 
     private void addEquipmentActions(ItemComposition itemComposition) {
         for (int i = 0; i < wearableActionIndexes.length; i++) {

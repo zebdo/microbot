@@ -1108,16 +1108,7 @@ public class Rs2Inventory {
 	 */
 	public static List<Rs2ItemModel> getInventoryFood() {
 		return items().stream()
-			.filter(item -> {
-				if (item.isNoted()) return false;
-
-				String name = item.getName().toLowerCase();
-
-				boolean isEdible = Arrays.stream(item.getInventoryActions())
-					.anyMatch(action -> action != null && action.equalsIgnoreCase("eat"));
-
-				return (isEdible || name.contains("jug of wine")) && !name.contains("rock cake");
-			})
+			.filter(Rs2ItemModel::isFood)
 			.collect(Collectors.toList());
 	}
 
