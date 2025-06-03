@@ -243,6 +243,11 @@ public class AgilityScript extends Script {
 
 							if (o instanceof GameObject) {
 								GameObject _o = (GameObject) o;
+								if (o.getId() == ObjectID.MARKET_STALL_14936) {
+									return Rs2Walker.canReach(_o.getWorldLocation(), _o.sizeX(), _o.sizeY(), 4, 4);
+								} else if (o.getId() == ObjectID.BEAM_42220) {
+									return o.getWorldLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) < 6;
+								}
 								return Rs2Walker.canReach(_o.getWorldLocation(), _o.sizeX() + 2, _o.sizeY() + 2, 4, 4);
 							}
 
