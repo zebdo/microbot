@@ -357,32 +357,6 @@ public class Rs2GameObject {
         return findGrandExchangeBooth(20);
     }
 
-    @Deprecated(since = "1.5.7 - use signature with Integer[] ids", forRemoval = true)
-    public static TileObject findObject(List<Integer> ids) {
-        for (int id : ids) {
-            TileObject object = findObjectById(id);
-            if (object == null) continue;
-            if (Rs2Player.getWorldLocation().getPlane() != object.getPlane()) continue;
-            if (object instanceof GroundObject && !Rs2Walker.canReach(object.getWorldLocation()))
-                continue;
-
-            //exceptions if the pathsize needs to be bigger
-            if (object.getId() == net.runelite.api.ObjectID.MARKET_STALL_14936) {
-                if (object instanceof GameObject && !Rs2Walker.canReach(object.getWorldLocation(), ((GameObject) object).sizeX(), ((GameObject) object).sizeY(), 4, 4))
-                    continue;
-            } else if (object.getId() == net.runelite.api.ObjectID.BEAM_42220) {
-                if (object.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) > 6)
-                    continue;
-            } else {
-                if (object instanceof GameObject && !Rs2Walker.canReach(object.getWorldLocation(), ((GameObject) object).sizeX(), ((GameObject) object).sizeY()))
-                    continue;
-            }
-
-            return object;
-        }
-        return null;
-    }
-
     @Deprecated
     public static ObjectComposition convertGameObjectToObjectComposition(TileObject tileObject) {
         return convertToObjectComposition(tileObject);
