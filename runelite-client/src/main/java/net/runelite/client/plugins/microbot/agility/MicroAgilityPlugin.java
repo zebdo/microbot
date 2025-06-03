@@ -101,10 +101,10 @@ public class MicroAgilityPlugin extends Plugin {
         agilityScript.faladorCourse.add(new AgilityObstacleModel(TIGHTROPE_14899));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(HAND_HOLDS_14901));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(GAP_14903, -1, 3358, Operation.GREATER, Operation.LESS_EQUAL));
-        agilityScript.faladorCourse.add(new AgilityObstacleModel(GAP_14904));
+        agilityScript.faladorCourse.add(new AgilityObstacleModel(GAP_14904, 3041, 3361, Operation.GREATER, Operation.GREATER_EQUAL));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(TIGHTROPE_14905));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(TIGHTROPE_14911));
-        agilityScript.faladorCourse.add(new AgilityObstacleModel(GAP_14919));
+        agilityScript.faladorCourse.add(new AgilityObstacleModel(GAP_14919, -1, 3353, Operation.GREATER, Operation.GREATER_EQUAL));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(LEDGE_14920, 3016, -1, Operation.GREATER_EQUAL, Operation.GREATER));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(LEDGE_14921, -1, 3343, Operation.GREATER, Operation.GREATER_EQUAL));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(LEDGE_14922, -1, 3335, Operation.GREATER, Operation.GREATER_EQUAL));

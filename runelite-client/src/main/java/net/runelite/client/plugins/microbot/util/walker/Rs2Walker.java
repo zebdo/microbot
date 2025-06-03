@@ -584,13 +584,10 @@ public class Rs2Walker {
     // takes an avg 200-300 ms
     // Used mainly for agility, might have to tweak this for other stuff
     public static boolean canReach(WorldPoint worldPoint, int sizeX, int sizeY, int pathSizeX, int pathSizeY) {
-        if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
-            ShortestPathPlugin.getPathfinderConfig().refresh();
-        }
-        Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), Rs2Player.getWorldLocation(), worldPoint);
-        pathfinder.run();
-        WorldArea pathArea = new WorldArea(pathfinder.getPath().get(pathfinder.getPath().size() - 1), pathSizeX, pathSizeY);
-        WorldArea objectArea = new WorldArea(worldPoint, sizeX + 2, sizeY + 2);
+		List<WorldPoint> rs2WorldPointPath = Rs2Player.getRs2WorldPoint().pathTo(worldPoint, true);
+		if (rs2WorldPointPath == null || rs2WorldPointPath.isEmpty()) return false;
+		WorldArea pathArea = new WorldArea(rs2WorldPointPath.get(rs2WorldPointPath.size() - 1), pathSizeX, pathSizeY);
+		WorldArea objectArea = new WorldArea(worldPoint, sizeX + 2, sizeY + 2);
         return pathArea
                 .intersectsWith2D(objectArea);
     }
@@ -598,15 +595,7 @@ public class Rs2Walker {
     // takes an avg 200-300 ms
     // Used mainly for agility, might have to tweak this for other stuff
     public static boolean canReach(WorldPoint worldPoint, int sizeX, int sizeY) {
-        if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
-            ShortestPathPlugin.getPathfinderConfig().refresh();
-        }
-        Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), Rs2Player.getWorldLocation(), worldPoint);
-        pathfinder.run();
-        WorldArea pathArea = new WorldArea(pathfinder.getPath().get(pathfinder.getPath().size() - 1), 3, 3);
-        WorldArea objectArea = new WorldArea(worldPoint, sizeX + 2, sizeY + 2);
-        return pathArea
-                .intersectsWith2D(objectArea);
+        return canReach(worldPoint, sizeX, sizeY, 3, 3);
     }
 
     /**
@@ -616,17 +605,7 @@ public class Rs2Walker {
      * @return
      */
     public static boolean canReach(WorldPoint worldPoint) {
-        if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
-            ShortestPathPlugin.getPathfinderConfig().refresh();
-        }
-        Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), Rs2Player.getWorldLocation(), worldPoint);
-        pathfinder.run();
-        List<WorldPoint> path = pathfinder.getPath();
-        if (path.isEmpty() || path.get(path.size() - 1).getPlane() != worldPoint.getPlane()) return false;
-        WorldArea pathArea = new WorldArea(path.get(path.size() - 1), 2, 2);
-        WorldArea objectArea = new WorldArea(worldPoint, 2, 2);
-        return pathArea
-                .intersectsWith2D(objectArea);
+        return canReach(worldPoint, 2,2,2,2);
     }
 
     /**
