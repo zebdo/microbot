@@ -250,7 +250,6 @@ public class VorkathScript extends Script {
                         }
                         if (Microbot.getClient().getBoostedSkillLevel(Skill.HITPOINTS) <= 0) {
                             state = State.DEAD_WALK;
-                            Rs2Equipment.equipmentItems = new ArrayList<>();
                             return;
                         }
                         if (Rs2Inventory.getInventoryFood().isEmpty()) {
