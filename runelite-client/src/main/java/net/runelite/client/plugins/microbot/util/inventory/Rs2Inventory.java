@@ -1,7 +1,12 @@
 package net.runelite.client.plugins.microbot.util.inventory;
 
-import net.runelite.api.*;
+import net.runelite.api.Item;
+import net.runelite.api.ItemComposition;
+import net.runelite.api.ItemContainer;
+import net.runelite.api.MenuAction;
+import net.runelite.api.NPC;
 import net.runelite.api.Point;
+import net.runelite.api.TileObject;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.ComponentID;
@@ -29,9 +34,17 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import org.apache.commons.lang3.NotImplementedException;
 import org.slf4j.event.Level;
 
-import java.awt.*;
+import java.awt.Rectangle;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
-import java.util.*;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.OptionalInt;
+import java.util.Set;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -266,7 +279,7 @@ public class Rs2Inventory {
      * @return True if the inventory contains all the specified IDs, false otherwise.
      */
     public static boolean contains(int... ids) {
-        return contains(item -> Arrays.stream(ids).anyMatch(i -> i == item.getId()));
+        return contains(item -> Arrays.stream(ids).anyMatch(id -> id == item.getId()));
     }
 
     /**
@@ -303,17 +316,6 @@ public class Rs2Inventory {
     }
 
     /**
-     * Counts the number of items in the inventory that match the specified ID.
-     *
-     * @param id The ID to match.
-     *
-     * @return The count of items that match the ID.
-     */
-    public static int count(int id) {
-        return (int) items(item -> item.getId() == id).count();
-    }
-
-    /**
      * Counts the number of items in the inventory
      *
      * @return The count of items
@@ -331,6 +333,17 @@ public class Rs2Inventory {
      */
     public static int count(Predicate<Rs2ItemModel> predicate) {
         return (int) items(predicate).count();
+    }
+
+    /**
+     * Counts the number of items in the inventory that match the specified ID.
+     *
+     * @param id The ID to match.
+     *
+     * @return The count of items that match the ID.
+     */
+    public static int count(int id) {
+        return count(item -> item.getId() == id);
     }
 
     /**
@@ -353,6 +366,24 @@ public class Rs2Inventory {
         return isItemSelected() && use(getSelectedItemId());
     }
 
+    private static boolean drop(Rs2ItemModel item) {
+        if (item == null) return false;
+
+        invokeMenu(item, "Drop");
+        return true;
+    }
+
+    /**
+     * Drops the item from the inventory that matches the specified filter.
+     *
+     * @param predicate The filter to identify the item to drop.
+     *
+     * @return True if the item was successfully dropped, false otherwise.
+     */
+    public static boolean drop(Predicate<Rs2ItemModel> predicate) {
+        return drop(get(predicate));
+    }
+
     /**
      * Drops the item with the specified ID from the inventory.
      *
@@ -361,11 +392,7 @@ public class Rs2Inventory {
      * @return True if the item was successfully dropped, false otherwise.
      */
     public static boolean drop(int id) {
-        final Rs2ItemModel item = items(_item -> _item.getId() == id).findFirst().orElse(null);
-        if (item == null) return false;
-
-        invokeMenu(item, "Drop");
-        return true;
+        return drop(get(id));
     }
 
     /**
@@ -385,32 +412,7 @@ public class Rs2Inventory {
      * @return
      */
     public static boolean drop(String name, boolean exact) {
-        Rs2ItemModel item;
-        if (exact) {
-             item = items(x -> x.getName().toLowerCase().equalsIgnoreCase(name)).findFirst().orElse(null);
-        } else {
-             item = items(x -> x.getName().toLowerCase().contains(name.toLowerCase())).findFirst().orElse(null);
-        }
-        if (item == null) return false;
-
-        invokeMenu(item, "Drop");
-
-        return true;
-    }
-
-    /**
-     * Drops the item from the inventory that matches the specified filter.
-     *
-     * @param predicate The filter to identify the item to drop.
-     *
-     * @return True if the item was successfully dropped, false otherwise.
-     */
-    public static boolean drop(Predicate<Rs2ItemModel> predicate) {
-        final Rs2ItemModel item = items(predicate).findFirst().orElse(null);
-        if (item == null) return false;
-
-        invokeMenu(item, "Drop");
-        return true;
+        return drop(get(name,exact));
     }
 
     /**
@@ -421,8 +423,8 @@ public class Rs2Inventory {
      * @return True if all matching items were successfully dropped, false otherwise.
      */
     public static boolean dropAll(Predicate<Rs2ItemModel> predicate) {
-        items(Objects::nonNull).filter(predicate).forEachOrdered(item -> {
-            invokeMenu(item, "Drop");
+        items(predicate).forEachOrdered(item -> {
+            drop(item);
             if (!Rs2AntibanSettings.naturalMouse) sleep(150, 300);
         });
         return true;
@@ -489,7 +491,7 @@ public class Rs2Inventory {
      *
      * @return True if all non-matching items were successfully dropped, false otherwise.
      */
-    public static boolean dropAllExcept(Integer... ids) {
+    public static boolean dropAllExcept(int... ids) {
         return dropAll(x -> Arrays.stream(ids).noneMatch(id -> id == x.getId()));
     }
 
@@ -767,7 +769,7 @@ public class Rs2Inventory {
      *
      * @return True if the player has the specified quantity of the item, false otherwise.
      */
-    public static boolean hasItemAmount(Integer id, int amount, boolean exact) {
+    public static boolean hasItemAmount(int id, int amount, boolean exact) {
         return exact ? itemQuantity(id) == amount : itemQuantity(id) >= amount;
     }
 
@@ -829,8 +831,7 @@ public class Rs2Inventory {
      *
      * @return boolean
      */
-    public static boolean hasItem(Integer id) {
-        if (id == null) return false;
+    public static boolean hasItem(int id) {
         return get(id) != null;
     }
 
@@ -1161,7 +1162,7 @@ public class Rs2Inventory {
     }
 
     /**
-     * Interacts with an item with the specified name in the inventory using the specified action.
+     * Interacts with an item with the specified id(s) in the inventory using the specified action.
      *
      * @param ids  The ids of the item to interact with.
      * @param action The action to perform on the item.
@@ -1169,10 +1170,7 @@ public class Rs2Inventory {
      * @return True if the interaction was successful, false otherwise.
      */
     public static boolean interact(int[] ids, String action) {
-        for (Integer id : ids) {
-            if (interact(id, action)) return true;
-        }
-        return false;
+        return Arrays.stream(ids).sequential().anyMatch(id -> interact(id, action));
     }
 
     /**
@@ -1184,10 +1182,7 @@ public class Rs2Inventory {
      * @return True if the interaction was successful, false otherwise.
      */
     public static boolean interact(List<String> names, String action) {
-        for (String name : names) {
-            if (interact(name, action, false)) return true;
-        }
-        return false;
+        return names.stream().anyMatch(name -> interact(name, action));
     }
 
     /**
@@ -1373,7 +1368,7 @@ public class Rs2Inventory {
      *
      * @return True if the inventory only contains items with the specified IDs, false otherwise.
      */
-    public static boolean onlyContains(Integer... ids) {
+    public static boolean onlyContains(int... ids) {
         return onlyContains(item -> Arrays.stream(ids).anyMatch(id -> item.getId() == id));
     }
 
@@ -1741,10 +1736,8 @@ public class Rs2Inventory {
     }
 
     public static Rs2ItemModel getUnNotedItem(String name, boolean exact) {
-        if (exact)
-            return items(x -> x.getName().equalsIgnoreCase(name) && !x.isNoted()).findFirst().orElse(null);
-        else
-            return items(x -> x.getName().toLowerCase().contains(name.toLowerCase()) && !x.isNoted()).findFirst().orElse(null);
+        return get(exact ? item -> item.getName().equalsIgnoreCase(name) && !item.isNoted() :
+                item -> item.getName().toLowerCase().contains(name.toLowerCase()) && !item.isNoted());
     }
 
     public static boolean hasUnNotedItem(String name) {
@@ -1759,19 +1752,15 @@ public class Rs2Inventory {
      * Method will search for restore energy items in inventory & use them
      */
     public static void useRestoreEnergyItem() {
-        List<Rs2ItemModel> filteredRestoreEnergyItems = getFilteredPotionItemsInInventory(Rs2Potion.getRestoreEnergyPotionsVariants());
         List<Rs2ItemModel> filteredStaminaRestoreItems = getFilteredPotionItemsInInventory(Rs2Potion.getStaminaPotion());
+        if (!filteredStaminaRestoreItems.isEmpty() && !Rs2Player.hasStaminaBuffActive()) {
+            Rs2Inventory.interact(filteredStaminaRestoreItems.stream().findFirst().get().getName(), "drink");
+            return;
+        }
 
-        if (filteredStaminaRestoreItems.isEmpty() && filteredRestoreEnergyItems.isEmpty()) return;
-
-        if (filteredStaminaRestoreItems.isEmpty()) {
+        List<Rs2ItemModel> filteredRestoreEnergyItems = getFilteredPotionItemsInInventory(Rs2Potion.getRestoreEnergyPotionsVariants());
+        if (!filteredRestoreEnergyItems.isEmpty()) {
             Rs2Inventory.interact(filteredRestoreEnergyItems.stream().findFirst().get().getName(), "drink");
-        } else {
-            if (Rs2Player.hasStaminaBuffActive() && !filteredRestoreEnergyItems.isEmpty()) {
-                Rs2Inventory.interact(filteredRestoreEnergyItems.stream().findFirst().get().getName(), "drink");
-            } else {
-                Rs2Inventory.interact(filteredStaminaRestoreItems.stream().findFirst().get().getName(), "drink");
-            }
         }
     }
 
