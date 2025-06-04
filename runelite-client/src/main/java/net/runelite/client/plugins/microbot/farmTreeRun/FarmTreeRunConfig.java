@@ -261,8 +261,8 @@ public interface FarmTreeRunConfig extends Config {
 
     @ConfigItem(
             keyName = "lletya",
-            name = "[Not implemented] Lletya",
-            description = "[Not tested] Lletya tree patch",
+            name = "Lletya",
+            description = "Lletya tree patch",
             position = 5,
             section = fruitTreePatchesSection
     )
