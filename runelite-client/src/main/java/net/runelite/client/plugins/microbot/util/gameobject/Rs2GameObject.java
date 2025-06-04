@@ -144,7 +144,27 @@ public class Rs2GameObject {
         return findObjectById(id) != null;
     }
 
-    @Deprecated
+	public static boolean canReach(WorldPoint target, int objectSizeX, int objectSizeY, int pathSizeX, int pathSizeY) {
+		if (target == null) return false;
+
+		List<WorldPoint> path = Rs2Player.getRs2WorldPoint().pathTo(target, true);
+		if (path == null || path.isEmpty()) return false;
+
+		WorldArea pathArea = new WorldArea(path.get(path.size() - 1), pathSizeX, pathSizeY);
+		WorldArea objectArea = new WorldArea(target, objectSizeX + 2, objectSizeY + 2);
+
+		return pathArea.intersectsWith2D(objectArea);
+	}
+
+	public static boolean canReach(WorldPoint target, int objectSizeX, int objectSizeY) {
+		return canReach(target, objectSizeX, objectSizeY, 3, 3);
+	}
+
+	public static boolean canReach(WorldPoint target) {
+		return canReach(target, 2, 2, 2, 2);
+	}
+
+	@Deprecated
     public static TileObject findObjectById(int id) {
         return getAll(o -> o.getId() == id).stream().findFirst().orElse(null);
     }

@@ -209,7 +209,7 @@ public class AgilityScript extends Script {
                     for (RS2Item markOfGraceTile : marksOfGrace) {
                         if (Microbot.getClient().getTopLevelWorldView().getPlane() != markOfGraceTile.getTile().getPlane())
                             continue;
-                        if (!Rs2Walker.canReach(markOfGraceTile.getTile().getWorldLocation()))
+                        if (!Rs2GameObject.canReach(markOfGraceTile.getTile().getWorldLocation()))
                             continue;
                         Rs2GroundItem.loot(markOfGraceTile.getItem().getId());
                         Rs2Player.waitForWalking();
@@ -238,7 +238,7 @@ public class AgilityScript extends Script {
 							if (Microbot.getClient().getLocalPlayer().getWorldLocation().getPlane() != o.getPlane()) return false;
 
 							if (o instanceof GroundObject) {
-								return Rs2Walker.canReach(o.getWorldLocation(), 2, 2);
+								return Rs2GameObject.canReach(o.getWorldLocation(), 2, 2);
 							}
 
 							if (o instanceof GameObject) {
@@ -246,11 +246,11 @@ public class AgilityScript extends Script {
 
 								switch (o.getId()) {
 									case ObjectID.MARKET_STALL_14936:
-										return Rs2Walker.canReach(_o.getWorldLocation(), _o.sizeX(), _o.sizeY(), 4, 4);
+										return Rs2GameObject.canReach(_o.getWorldLocation(), _o.sizeX(), _o.sizeY(), 4, 4);
 									case ObjectID.BEAM_42220:
 										return o.getWorldLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) < 6;
 									default:
-										return Rs2Walker.canReach(_o.getWorldLocation(), _o.sizeX() + 2, _o.sizeY() + 2, 4, 4);
+										return Rs2GameObject.canReach(_o.getWorldLocation(), _o.sizeX() + 2, _o.sizeY() + 2, 4, 4);
 								}
 							}
 

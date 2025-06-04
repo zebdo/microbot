@@ -584,9 +584,12 @@ public class Rs2Walker {
     // takes an avg 200-300 ms
     // Used mainly for agility, might have to tweak this for other stuff
     public static boolean canReach(WorldPoint worldPoint, int sizeX, int sizeY, int pathSizeX, int pathSizeY) {
-		List<WorldPoint> rs2WorldPointPath = Rs2Player.getRs2WorldPoint().pathTo(worldPoint, true);
-		if (rs2WorldPointPath == null || rs2WorldPointPath.isEmpty()) return false;
-		WorldArea pathArea = new WorldArea(rs2WorldPointPath.get(rs2WorldPointPath.size() - 1), pathSizeX, pathSizeY);
+		if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
+			ShortestPathPlugin.getPathfinderConfig().refresh();
+		}
+		Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), Rs2Player.getWorldLocation(), worldPoint);
+		pathfinder.run();
+		WorldArea pathArea = new WorldArea(pathfinder.getPath().get(pathfinder.getPath().size() - 1), pathSizeX, pathSizeY);
 		WorldArea objectArea = new WorldArea(worldPoint, sizeX + 2, sizeY + 2);
         return pathArea
                 .intersectsWith2D(objectArea);
@@ -605,7 +608,7 @@ public class Rs2Walker {
      * @return
      */
     public static boolean canReach(WorldPoint worldPoint) {
-        return canReach(worldPoint, 2,2,2,2);
+        return canReach(worldPoint, 2, 2, 2, 2);
     }
 
     /**
