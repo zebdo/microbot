@@ -214,7 +214,9 @@ public class Rs2InventorySetup {
             For example, player is wearing full graceful set but your desired inventory setup does not contain boots, keeping the graceful boots equipped
          */
         boolean hasExtraGearEquipped = Rs2Equipment.contains(equip ->
-                inventorySetup.getEquipment().stream().noneMatch(setup -> setup.getId() == equip.getId())
+                inventorySetup.getEquipment().stream().noneMatch(setup -> setup.isFuzzy() ?
+					equip.getName().toLowerCase().contains(setup.getName().toLowerCase()) :
+					equip.getName().equalsIgnoreCase(setup.getName()))
         );
 
         if (hasExtraGearEquipped) {
