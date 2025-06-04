@@ -1104,7 +1104,7 @@ public class BarrowsScript extends Script {
         suppliesCheck(config);
         // Needed because the walker won't teleport to the enclave while in the tunnels or in a barrow
         if(shouldBank && (inTunnels || Rs2Player.getWorldLocation().getPlane() == 3)){
-            if(Rs2Equipment.useRingAction(JewelleryLocationEnum.FEROX_ENCLAVE)){
+            if(Rs2Equipment.interact(EquipmentInventorySlot.RING, "Ferox Enclave")){
                 Microbot.log("We're out of supplies. Teleporting.");
                 if(inTunnels){
                     inTunnels=false;

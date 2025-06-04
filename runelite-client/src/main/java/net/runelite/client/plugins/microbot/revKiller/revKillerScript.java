@@ -73,7 +73,7 @@ public class revKillerScript extends Script {
     private long howLongUntilHop = 0;
     public volatile boolean shouldFlee = false;
     private long startTime = System.currentTimeMillis();
-    public List<Rs2ItemModel> ourEquipmentForDeathWalking = new ArrayList<>();
+    public volatile List<Rs2ItemModel> ourEquipmentForDeathWalking = new ArrayList<>();
 
 
     public boolean run(revKillerConfig config) {
@@ -110,14 +110,14 @@ public class revKillerScript extends Script {
                     return;
                 }
 
-                if(ourEquipmentForDeathWalking.isEmpty()){
-                    ourEquipmentForDeathWalking = Rs2Equipment.items();
-                    Microbot.log("We'll be re-equipping: "+ourEquipmentForDeathWalking+" if we die.");
-                }
-
                 DidWeDie();
 
                 if(areWeEquipped()){
+
+                    if(ourEquipmentForDeathWalking.isEmpty()){
+                        ourEquipmentForDeathWalking = Rs2Equipment.items();
+                        Microbot.log("Equipped items saved.");
+                    }
 
                     if(Rs2Player.getWorldLocation().distanceTo(selectedWP)>12){
 
@@ -266,7 +266,7 @@ public class revKillerScript extends Script {
             while(!Rs2Player.getWorldLocation().equals(startTile)){
                 if(!super.isRunning()){break;}
                 if(isPkerAround()){break;}
-                if(Rs2Player.getWorldLocation().distanceTo(startTile) > 30){break;}
+                if(!WeAreInTheCaves()){break;}
 
                 moveCameraToTile(startTile);
 
@@ -290,7 +290,7 @@ public class revKillerScript extends Script {
             while(!Rs2Player.getWorldLocation().equals(secondTile)){
                 if(!super.isRunning()){break;}
                 if(isPkerAround()){break;}
-                if(Rs2Player.getWorldLocation().distanceTo(secondTile) > 30){break;}
+                if(!WeAreInTheCaves()){break;}
 
                 moveCameraToTile(secondTile);
 
@@ -308,6 +308,7 @@ public class revKillerScript extends Script {
                     while(!Rs2Npc.getNpc("Revenant knight").getWorldLocation().equals(thirdTile)){
                         if(!super.isRunning()){break;}
                         if(isPkerAround()){break;}
+                        if(!WeAreInTheCaves()){break;}
                         if(io > tries){break;}
                         if(Rs2Npc.getNpc("Revenant knight").getWorldLocation().distanceTo(Rs2Player.getWorldLocation())<=1 && !Rs2Npc.getNpc("Revenant knight").getWorldLocation().equals(thirdTile)){
                             Microbot.log("Rev is on a bad tile breaking loop");
@@ -332,7 +333,7 @@ public class revKillerScript extends Script {
                 while(!Rs2Player.getWorldLocation().equals(fifthTile)) {
                     if(!super.isRunning()){break;}
                     if(isPkerAround()){break;}
-                    if(Rs2Player.getWorldLocation().distanceTo(fifthTile) > 30){break;}
+                    if(!WeAreInTheCaves()){break;}
                     Rs2Walker.walkCanvas(fifthTile);
                     sleepUntil(() -> Rs2Player.isMoving(), Rs2Random.between(1000, 3000));
                     sleepUntil(() -> !Rs2Player.isMoving(), Rs2Random.between(2000, 3000));
@@ -685,7 +686,7 @@ public class revKillerScript extends Script {
                     if (!super.isRunning()) {
                         break;
                     }
-                    if (Rs2Equipment.useAmuletAction(JewelleryLocationEnum.EDGEVILLE)) {
+                    if (Rs2Equipment.interact(EquipmentInventorySlot.AMULET, "Edgeville")) {
                         sleepUntil(()-> TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(250,500));
                         sleepUntil(()-> !TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(1300,1500));
                         if(Rs2Player.getAnimation() == 714){
@@ -712,7 +713,7 @@ public class revKillerScript extends Script {
                     if (!super.isRunning()) {
                         break;
                     }
-                    if (Rs2Equipment.useRingAction(JewelleryLocationEnum.FEROX_ENCLAVE)) {
+                    if (Rs2Equipment.interact(EquipmentInventorySlot.RING, "Ferox Enclave")) {
                         sleepUntil(()-> TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(250,500));
                         sleepUntil(()-> !TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(1300,1500));
                         if(Rs2Player.getAnimation() == 714){
@@ -1029,7 +1030,7 @@ public class revKillerScript extends Script {
     }
 
     private void teleToFerox(){
-        if (Rs2Equipment.useRingAction(JewelleryLocationEnum.FEROX_ENCLAVE)) {
+        if (Rs2Equipment.interact(EquipmentInventorySlot.RING, "Ferox Enclave")) {
             sleepUntil(()-> Rs2Player.isAnimating(), generateRandomNumber(2000,4000));
             sleepUntil(()-> !Rs2Player.isAnimating(), generateRandomNumber(6000,10000));
             Microbot.log("Teleing");
@@ -1151,7 +1152,7 @@ public class revKillerScript extends Script {
                                     if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES)!=null){
                                         //we need to unequip our braclet.
                                         Rs2Equipment.unEquip(EquipmentInventorySlot.GLOVES);
-                                        sleepUntil(()-> !Rs2Equipment.hasEquippedSlot(EquipmentInventorySlot.GLOVES), Rs2Random.between(2000,4000));
+                                        sleepUntil(()-> !Rs2Equipment.contains(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM_UNCHARGED), Rs2Random.between(2000,4000));
                                     }
                                     if(Rs2Inventory.contains("Revenant ether") && (Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM) || Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM_UNCHARGED))){
                                         Rs2Inventory.interact("Revenant ether", "use");
@@ -1159,8 +1160,8 @@ public class revKillerScript extends Script {
                                         sleepUntil(()-> !Rs2Inventory.contains("Revenant ether"), Rs2Random.between(2000,4000));
                                     }
                                     if(!Rs2Inventory.contains("Revenant ether") && (Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM))){
-                                        Rs2Inventory.interact(it->it!=null&&it.getName().contains("ethereum"), "Wear");
-                                        sleepUntil(()-> Rs2Equipment.hasEquippedSlot(EquipmentInventorySlot.GLOVES), Rs2Random.between(2000,4000));
+                                        Rs2Inventory.interact(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM, "Wear");
+                                        sleepUntil(()-> Rs2Equipment.contains(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM), Rs2Random.between(2000,4000));
                                     }
                                 }
                             }
