@@ -797,7 +797,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 
         for (int offset = 0; offset <= 1; offset++) {
             int doorIdx = index + offset;
-            if (doorIdx < 0 || doorIdx >= path.size()) continue;
+            if (doorIdx >= path.size()) continue;
 
             WorldPoint rawDoorWp = path.get(doorIdx);
             WorldPoint doorWp = isInstance
@@ -823,7 +823,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 if (object == null) continue;
 
                 ObjectComposition comp = Rs2GameObject.convertToObjectComposition(object);
-                if (comp == null) continue;
+				// We include the name "null" here to ignore imposter objects
+                if (comp == null || comp.getName().equals("null")) continue;
 
                 String action = Arrays.stream(comp.getActions())
 					.filter(Objects::nonNull)
@@ -2233,4 +2234,25 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 return -1;
         }
     }
+
+	public static boolean isTeleportItem(int itemId) {
+		if (ShortestPathPlugin.getPathfinderConfig().getAllTransports().isEmpty()) {
+			ShortestPathPlugin.getPathfinderConfig().refresh();
+		}
+
+		Set<Integer> teleportItemIds = ShortestPathPlugin.getPathfinderConfig().getAllTransports().values()
+			.stream()
+			.flatMap(Set::stream)
+			.filter(t -> TransportType.isTeleport(t.getType()))
+			.map(Transport::getItemIdRequirements)
+			.flatMap(Set::stream)
+			.flatMap(Set::stream)
+			.collect(Collectors.toSet());
+
+		// Items that are not included in transports
+		teleportItemIds.add(ItemID.DRAMEN_STAFF);
+		teleportItemIds.add(ItemID.LUNAR_STAFF);
+
+		return teleportItemIds.contains(itemId);
+	}
 }
