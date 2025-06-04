@@ -1322,8 +1322,7 @@ public class revKillerScript extends Script {
     }
     public boolean isItTimeToGo(){
         int value = 0; //set to 0 so list doesn't compound with each run
-        List<Rs2ItemModel> ItemsInInventory = new ArrayList<Rs2ItemModel>();
-        ItemsInInventory.addAll(Rs2Inventory.items());
+        List<Rs2ItemModel> ItemsInInventory = Rs2Inventory.items().collect(Collectors.toList());
 
         for (Rs2ItemModel item : ItemsInInventory) {
             if(item!=null){

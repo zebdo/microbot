@@ -162,7 +162,7 @@ public class Rs2InventorySetup {
                 }
             }
         } else {
-            withdrawQuantity = items.size() - (int) Rs2Inventory.items().stream().filter(x -> x.getId() == key).count();
+            withdrawQuantity = items.size() - (int) Rs2Inventory.items(x -> x.getId() == key).count();
             if (Rs2Inventory.hasItemAmount(inventorySetupsItem.getName(), items.size())) {
                 return 0;
             }

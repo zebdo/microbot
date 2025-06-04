@@ -258,7 +258,7 @@ public class GotrScript extends Script {
     }
 
     private boolean repairCells() {
-        Rs2ItemModel cell = Rs2Inventory.get(CellType.PoweredCellList().toArray(Integer[]::new));
+        Rs2ItemModel cell = Rs2Inventory.get(CellType.PoweredCellList().stream().mapToInt(i -> i).toArray());
         if (cell != null && isInMainRegion() && isInMiniGame() && !shouldMineGuardianRemains && !isInLargeMine() && !isInHugeMine()) {
             int cellTier = CellType.GetCellTier(cell.getId());
             List<Integer> shieldCellIds = Rs2GameObject.getObjectIdsByName("cell_tile");
@@ -343,7 +343,7 @@ public class GotrScript extends Script {
     }
 
     private boolean depositRunesIntoPool() {
-        if (config.shouldDepositRunes() && Rs2Inventory.hasItem(runeIds.toArray(Integer[]::new)) && !isInLargeMine() && !isInHugeMine() && !Rs2Inventory.isFull()) {
+        if (config.shouldDepositRunes() && Rs2Inventory.hasItem(runeIds.stream().mapToInt(i -> i).toArray()) && !isInLargeMine() && !isInHugeMine() && !Rs2Inventory.isFull()) {
             if (Rs2Player.isMoving()) return true;
             if (Rs2GameObject.interact(ObjectID.DEPOSIT_POOL)) {
                 log("Deposit runes into pool...");
