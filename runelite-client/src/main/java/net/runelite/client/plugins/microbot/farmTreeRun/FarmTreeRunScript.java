@@ -4,6 +4,8 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.Notifier;
+import net.runelite.client.config.Notification;
 import net.runelite.client.plugins.microbot.farmTreeRun.enums.FarmTreeRunState;
 import net.runelite.client.plugins.microbot.farmTreeRun.enums.FruitTreeEnum;
 import net.runelite.client.plugins.microbot.farmTreeRun.enums.TreeEnums;
@@ -13,15 +15,18 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
+import javax.inject.Inject;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -67,7 +72,7 @@ public class FarmTreeRunScript extends Script {
         VARROCK_TREE_PATCH(8390, new WorldPoint(3226, 3458, 0), TreeKind.TREE, 1, 0),
         BRIMHAVEN_FRUIT_TREE_PATCH(7964, new WorldPoint(2765, 3213, 0), TreeKind.FRUIT_TREE, 1, 0),
         CATHERBY_FRUIT_TREE_PATCH(7965, new WorldPoint(2858, 3432, 0), TreeKind.FRUIT_TREE, 1, 0),
-        LLETYA_FRUIT_TREE_PATCH(0000000, new WorldPoint(2345, 3163, 0), TreeKind.FRUIT_TREE, 1, 0);
+        LLETYA_FRUIT_TREE_PATCH(26579, new WorldPoint(2345, 3163, 0), TreeKind.FRUIT_TREE, 1, 0);
 
         private final int id;
         private final WorldPoint location;
@@ -98,7 +103,10 @@ public class FarmTreeRunScript extends Script {
 
                 long startTime = System.currentTimeMillis();
                 if (Rs2AntibanSettings.actionCooldownActive) return;
-
+                if(!Rs2Magic.isModern()){
+                    Microbot.log("Not on modern spell book");
+                    shutdown();
+                }
                 calculatePatches(config);
                 checkSaplingLevelRequirement(config);
 
@@ -326,7 +334,7 @@ public class FarmTreeRunScript extends Script {
 
 
             // Add must have items
-            items.add(new FarmingItem(ItemID.COINS_995, 5000));
+            items.add(new FarmingItem(ItemID.COINS_995, 10000));
             items.add(new FarmingItem(ItemID.SPADE, 1));
             items.add(new FarmingItem(ItemID.RAKE, 1));
             items.add(new FarmingItem(ItemID.SEED_DIBBER, 1));
@@ -376,7 +384,9 @@ public class FarmTreeRunScript extends Script {
                 items.add(new FarmingItem(ItemID.TAVERLEY_TELEPORT, 1, false, true));
 
             if (config.lletyaFruitTreePatch()) {
-                if (Rs2Bank.hasItem(ItemID.TELEPORT_CRYSTAL_1)) {
+                if (Rs2Bank.hasItem(ItemID.ETERNAL_TELEPORT_CRYSTAL)) {
+                    items.add(new FarmingItem(ItemID.ETERNAL_TELEPORT_CRYSTAL, 1));
+                } else if (Rs2Bank.hasItem(ItemID.TELEPORT_CRYSTAL_1)) {
                     items.add(new FarmingItem(ItemID.TELEPORT_CRYSTAL_1, 1));
                 } else if (Rs2Bank.hasItem(ItemID.TELEPORT_CRYSTAL_2)) {
                     items.add(new FarmingItem(ItemID.TELEPORT_CRYSTAL_2, 1));
@@ -384,8 +394,11 @@ public class FarmTreeRunScript extends Script {
                     items.add(new FarmingItem(ItemID.TELEPORT_CRYSTAL_3, 1));
                 } else if (Rs2Bank.hasItem(ItemID.TELEPORT_CRYSTAL_4)) {
                     items.add(new FarmingItem(ItemID.TELEPORT_CRYSTAL_4, 1));
-                } else {
+                } else if (Rs2Bank.hasItem(ItemID.TELEPORT_CRYSTAL_5)) {
                     items.add(new FarmingItem(ItemID.TELEPORT_CRYSTAL_5, 1));
+                } else {
+                    Microbot.showMessage("Would not be able to teleport to Lleyta");
+                    shutdown();
                 }
             }
 
