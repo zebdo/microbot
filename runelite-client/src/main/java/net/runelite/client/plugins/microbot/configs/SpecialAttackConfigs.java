@@ -90,7 +90,7 @@ public class SpecialAttackConfigs {
 
         if (currentEquipment == null) {
             currentEquipment = new ArrayList<>();
-            currentEquipment.addAll(Rs2Equipment.equipmentItems);
+            currentEquipment.addAll(Rs2Equipment.items());
         }
 
         if (Rs2Combat.getSpecEnergy() < specEnergy && !NmzScript.isHasSurge()) {
