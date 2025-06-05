@@ -9,6 +9,9 @@ import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
+import net.runelite.client.plugins.microbot.util.inventory.RunePouch;
+import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
+import net.runelite.client.plugins.microbot.util.magic.Runes;
 import org.slf4j.event.Level;
 
 import java.util.ArrayList;
@@ -323,6 +326,49 @@ public class Rs2InventorySetup {
 
         return found;
     }
+
+	public boolean doesRunePouchMatch() {
+		if (inventorySetup == null)
+		{
+			return false;
+		}
+
+		// This is here to ignore blank runepouch configurations
+		if (!Rs2Inventory.hasItem(RunePouchType.getPouchIds()) || inventorySetup.getRune_pouch() == null)
+		{
+			return true;
+		}
+
+		Map<Runes, Integer> requiredRunes = inventorySetup.getRune_pouch().stream()
+			.filter(item -> item.getId() != -1 && item.getQuantity() > 0)
+			.map(item -> Map.entry(Runes.byItemId(item.getId()), item.getQuantity()))
+			.filter(e -> e.getKey() != null)
+			.collect(Collectors.toMap(
+				Map.Entry::getKey,
+				Map.Entry::getValue,
+				Integer::sum
+			));
+
+		return RunePouch.contains(requiredRunes, false);
+	}
+
+	public boolean loadRunePouch() {
+		if (inventorySetup == null || inventorySetup.getRune_pouch() == null) {
+			return false;
+		}
+
+		Map<Runes, Integer> requiredRunes = inventorySetup.getRune_pouch().stream()
+			.filter(item -> item.getId() != -1 && item.getQuantity() > 0)
+			.map(item -> Map.entry(Runes.byItemId(item.getId()), item.getQuantity()))
+			.filter(e -> e.getKey() != null)
+			.collect(Collectors.toMap(
+				Map.Entry::getKey,
+				Map.Entry::getValue,
+				Integer::sum
+			));
+
+		return RunePouch.load(requiredRunes);
+	}
 
     /**
      * Checks if the current equipment setup matches the desired setup.

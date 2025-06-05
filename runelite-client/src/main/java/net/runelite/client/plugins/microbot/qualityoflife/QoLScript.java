@@ -30,6 +30,7 @@ public class QoLScript extends Script {
                 if (!Microbot.isLoggedIn()) {
                     return;
                 }
+				if (!super.run()) return;
 
                 if (config.autoDrinkPrayerPot()) {
                     handleAutoDrinkPrayPot(config.drinkPrayerPotPoints());
@@ -101,6 +102,13 @@ public class QoLScript extends Script {
             if (!inventorySetup.doesInventoryMatch()) {
                 inventorySetup.loadInventory();
             }
+
+			System.out.println("break");
+			boolean doesRunePouchMatch = inventorySetup.doesRunePouchMatch();
+			System.out.println("doesRunePouchMatch: " + doesRunePouchMatch);
+			if (!doesRunePouchMatch) {
+				inventorySetup.loadRunePouch();
+			}
             QoLPlugin.executeLoadoutActions = false;
             QoLPlugin.loadoutToLoad = null;
         } catch (Exception ignored) {
