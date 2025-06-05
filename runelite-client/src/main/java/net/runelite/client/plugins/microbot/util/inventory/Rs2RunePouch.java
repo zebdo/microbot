@@ -26,7 +26,7 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
  * Utility class to manage and interact with the player's Rune Pouch.
  * Includes methods for reading, loading, and depositing rune pouch contents.
  */
-public class RunePouch
+public class Rs2RunePouch
 {
 	private static final int NUM_SLOTS = 4;
 	private static final int[] AMOUNT_VARBITS = {
@@ -362,7 +362,7 @@ public class RunePouch
 		}
 
 		Rs2Widget.clickWidget(BANK_PARENT_ID, RUNEPOUCH_DEPOSIT_ALL_CHILD_ID);
-		return Global.sleepUntil(RunePouch::isEmpty);
+		return Global.sleepUntil(Rs2RunePouch::isEmpty);
 	}
 
 	/**
@@ -387,7 +387,7 @@ public class RunePouch
 			return true;
 		}
 		Rs2Inventory.interact(RunePouchType.getPouchIds(), "Configure");
-		return Global.sleepUntil(RunePouch::isRunePouchOpen);
+		return Global.sleepUntil(Rs2RunePouch::isRunePouchOpen);
 	}
 
 	/**

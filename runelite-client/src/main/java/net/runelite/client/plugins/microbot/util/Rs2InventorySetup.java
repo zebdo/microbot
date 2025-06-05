@@ -9,7 +9,7 @@ import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
-import net.runelite.client.plugins.microbot.util.inventory.RunePouch;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
 import net.runelite.client.plugins.microbot.util.magic.Runes;
 import org.slf4j.event.Level;
@@ -349,7 +349,7 @@ public class Rs2InventorySetup {
 				Integer::sum
 			));
 
-		return RunePouch.contains(requiredRunes, false);
+		return Rs2RunePouch.contains(requiredRunes, false);
 	}
 
 	public boolean loadRunePouch() {
@@ -367,7 +367,7 @@ public class Rs2InventorySetup {
 				Integer::sum
 			));
 
-		return RunePouch.load(requiredRunes);
+		return Rs2RunePouch.load(requiredRunes);
 	}
 
     /**

@@ -27,7 +27,7 @@ import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.RunePouch;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
 import net.runelite.client.plugins.microbot.util.mouse.VirtualMouse;
 import net.runelite.client.plugins.microbot.util.mouse.naturalmouse.NaturalMouse;
@@ -48,7 +48,6 @@ import javax.swing.*;
 import java.awt.*;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
-import java.util.stream.IntStream;
 
 @PluginDescriptor(
         name = PluginDescriptor.Default + "Microbot",
@@ -172,7 +171,7 @@ public class MicrobotPlugin extends Plugin {
     public void onGameStateChanged(GameStateChanged gameStateChanged) {
         if (gameStateChanged.getGameState() == GameState.LOGGED_IN) {
             Microbot.setLoginTime(Instant.now());
-            RunePouch.fullUpdate();
+            Rs2RunePouch.fullUpdate();
         }
         if (gameStateChanged.getGameState() == GameState.HOPPING || gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.CONNECTION_LOST) {
             if (Rs2Bank.bankItems != null) {
@@ -186,7 +185,7 @@ public class MicrobotPlugin extends Plugin {
     public void onVarbitChanged(VarbitChanged event) {
         Rs2Player.handlePotionTimers(event);
         Rs2Player.handleTeleblockTimer(event);
-        RunePouch.onVarbitChanged(event);
+        Rs2RunePouch.onVarbitChanged(event);
     }
     
     @Subscribe
@@ -280,7 +279,7 @@ public class MicrobotPlugin extends Plugin {
 
     @Subscribe
     public void onWidgetLoaded(WidgetLoaded event) {
-		RunePouch.onWidgetLoaded(event);
+		Rs2RunePouch.onWidgetLoaded(event);
     }
 
     @Subscribe
