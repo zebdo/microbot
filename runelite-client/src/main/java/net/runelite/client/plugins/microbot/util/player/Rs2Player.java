@@ -624,7 +624,8 @@ public class Rs2Player {
 
 		Optional<Rs2ItemModel> fastFood = foods.stream().findFirst();
 
-		return fastFood.filter(rs2ItemModel -> Rs2Inventory.interact(rs2ItemModel, "eat")).isPresent();
+		fastFood.ifPresent(rs2ItemModel -> Rs2Inventory.interact(rs2ItemModel, "eat"));
+		return true;
 	}
 
     /**
