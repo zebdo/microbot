@@ -102,11 +102,7 @@ public class QoLScript extends Script {
             if (!inventorySetup.doesInventoryMatch()) {
                 inventorySetup.loadInventory();
             }
-
-			System.out.println("break");
-			boolean doesRunePouchMatch = inventorySetup.doesRunePouchMatch();
-			System.out.println("doesRunePouchMatch: " + doesRunePouchMatch);
-			if (!doesRunePouchMatch) {
+			if (!inventorySetup.doesRunePouchMatch()) {
 				inventorySetup.loadRunePouch();
 			}
             QoLPlugin.executeLoadoutActions = false;
