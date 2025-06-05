@@ -812,8 +812,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             }
 
             for (WorldPoint probe : probes) {
-				if (!path.contains(probe)) continue;
-                if (!Objects.equals(probe.getPlane(), Microbot.getClient().getLocalPlayer().getWorldLocation().getPlane())) continue;
+				boolean adjacentToPath = probe.distanceTo(fromWp) <= 1 || probe.distanceTo(toWp) <= 1;
+				if (!adjacentToPath || !Objects.equals(probe.getPlane(), Microbot.getClient().getLocalPlayer().getWorldLocation().getPlane())) continue;
 
                 WallObject wall = Rs2GameObject.getWallObject(o -> o.getWorldLocation().equals(probe), probe, 3);
 
