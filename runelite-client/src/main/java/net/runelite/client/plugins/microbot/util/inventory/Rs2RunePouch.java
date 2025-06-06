@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 import java.util.logging.Level;
 import java.util.stream.Collectors;
@@ -17,6 +18,7 @@ import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.magic.Runes;
@@ -167,95 +169,186 @@ public class Rs2RunePouch
 	}
 
 	/**
-	 * Checks if the rune pouch contains the given item ID.
+	 * Checks if the rune pouch contains at least one of the specified rune item by item ID.
 	 *
-	 * @param itemId The item ID to check.
-	 * @return True if present, false otherwise.
+	 * @param itemId The item ID of the rune to check.
+	 * @return {@code true} if the rune is present in the pouch, {@code false} otherwise.
 	 */
 	public static boolean contains(int itemId)
 	{
-		return slots.stream()
-			.filter(s -> s.getRune() != null && s.getQuantity() > 0)
-			.anyMatch(s -> s.getRune().getItemId() == itemId);
+		return contains(itemId, 1);
 	}
 
 	/**
-	 * Checks if the rune pouch contains the given rune.
+	 * Checks if the rune pouch contains at least one of the specified rune by item ID,
+	 * allowing optional combination rune matching.
+	 *
+	 * @param itemId                The item ID of the rune to check.
+	 * @param allowCombinationRunes If {@code true}, allows combination runes (e.g. dust, steam) to count toward this rune.
+	 * @return {@code true} if the rune is present (or satisfied via combination runes), {@code false} otherwise.
+	 */
+	public static boolean contains(int itemId, boolean allowCombinationRunes)
+	{
+		return contains(itemId, 1, allowCombinationRunes);
+	}
+
+	/**
+	 * Checks if the rune pouch contains at least one of the specified rune.
 	 *
 	 * @param rune The rune to check.
-	 * @return True if present, false otherwise.
+	 * @return {@code true} if the rune is present, {@code false} otherwise.
 	 */
 	public static boolean contains(Runes rune)
 	{
-		return slots.stream()
-			.filter(s -> s.getRune() != null && s.getQuantity() > 0)
-			.anyMatch(s -> Objects.equals(s.getRune(), rune));
+		return contains(rune, 1);
 	}
 
 	/**
-	 * Checks if the rune pouch contains at least the specified amount of the given item ID.
+	 * Checks if the rune pouch contains at least one of the specified rune,
+	 * allowing optional combination rune matching.
 	 *
-	 * @param itemId The item ID.
-	 * @param amt    The required quantity.
-	 * @return True if sufficient quantity is present, false otherwise.
+	 * @param rune                  The rune to check.
+	 * @param allowCombinationRunes If {@code true}, allows combination runes to satisfy the requirement.
+	 * @return {@code true} if the rune is present or satisfied via a combination rune, {@code false} otherwise.
+	 */
+	public static boolean contains(Runes rune, boolean allowCombinationRunes)
+	{
+		return contains(rune, 1, allowCombinationRunes);
+	}
+
+	/**
+	 * Checks if the rune pouch contains at least the specified quantity of the given rune item ID.
+	 *
+	 * @param itemId The item ID of the rune to check.
+	 * @param amt    The minimum required quantity.
+	 * @return {@code true} if the required quantity is present, {@code false} otherwise.
 	 */
 	public static boolean contains(int itemId, int amt)
 	{
-		return slots.stream()
-			.filter(s -> s.getRune() != null && s.getRune().getItemId() == itemId)
-			.anyMatch(s -> s.getQuantity() >= amt);
+		return contains(Runes.byItemId(itemId), amt, false);
 	}
 
 	/**
-	 * Gets the quantity of the specified item ID in the rune pouch.
+	 * Checks if the rune pouch contains at least the specified quantity of the given rune.
 	 *
-	 * @param itemId The item ID.
-	 * @return Quantity present or 0 if not found.
+	 * @param rune The rune to check.
+	 * @param amt  The minimum required quantity.
+	 * @return {@code true} if the required quantity is present, {@code false} otherwise.
+	 */
+	public static boolean contains(Runes rune, int amt)
+	{
+		return contains(rune, amt, false);
+	}
+
+	/**
+	 * Checks if the rune pouch contains at least the specified quantity of the given rune item ID,
+	 * allowing optional combination rune matching.
+	 *
+	 * @param itemId                The item ID of the rune to check.
+	 * @param amt                   The required quantity.
+	 * @param allowCombinationRunes If {@code true}, allows combination runes to fulfill the requirement.
+	 * @return {@code true} if the requirement is fulfilled, {@code false} otherwise.
+	 */
+	public static boolean contains(int itemId, int amt, boolean allowCombinationRunes)
+	{
+		return contains(Runes.byItemId(itemId), amt, allowCombinationRunes);
+	}
+
+	/**
+	 * Checks if the rune pouch contains at least the specified quantity of the given rune,
+	 * allowing optional combination rune matching.
+	 *
+	 * @param rune                  The rune to check.
+	 * @param amt                   The required quantity.
+	 * @param allowCombinationRunes If {@code true}, allows combination runes to fulfill the requirement.
+	 * @return {@code true} if the requirement is fulfilled, {@code false} otherwise.
+	 */
+	public static boolean contains(Runes rune, int amt, boolean allowCombinationRunes)
+	{
+		Map<Runes, Integer> required = Map.of(rune, amt);
+		return contains(required, allowCombinationRunes);
+	}
+
+	/**
+	 * Retrieves the current quantity of the specified rune item ID in the rune pouch.
+	 *
+	 * @param itemId The item ID of the rune.
+	 * @return The quantity found, or {@code 0} if not present.
 	 */
 	public static int getQuantity(int itemId)
 	{
+		return getQuantity(Runes.byItemId(itemId));
+	}
+
+	/**
+	 * Retrieves the current quantity of the specified rune in the rune pouch.
+	 *
+	 * @param rune The rune to query.
+	 * @return The quantity found, or {@code 0} if not present.
+	 */
+	public static int getQuantity(Runes rune)
+	{
 		return slots.stream()
-			.filter(s -> s.getRune() != null && s.getRune().getItemId() == itemId)
+			.filter(s -> s.getRune() != null && Objects.equals(s.getRune(), rune))
 			.mapToInt(PouchSlot::getQuantity)
 			.findFirst()
 			.orElse(0);
 	}
 
 	/**
-	 * Checks if the rune pouch contains the required runes.
+	 * Checks if the rune pouch contains the required runes and their quantities.
 	 *
-	 * @param requiredRunes Map of runes to required amounts.
-	 * @param exact         If true, requires exact match.
-	 * @return True if the required runes are contained.
+	 * @param requiredRunes         A map of required runes and their corresponding quantities.
+	 * @param allowCombinationRunes If {@code true}, allows combination runes to satisfy matching requirements.
+	 * @return {@code true} if all rune requirements are fulfilled, {@code false} otherwise.
 	 */
-	public static boolean contains(Map<Runes, Integer> requiredRunes, boolean exact)
+	public static boolean contains(Map<Runes, Integer> requiredRunes, boolean allowCombinationRunes)
 	{
-		if (requiredRunes == null || requiredRunes.isEmpty())
-		{
-			return true;
-		}
-
-		Map<Runes, Integer> current = slots.stream()
+		Map<Runes, Integer> availableRunes = slots.stream()
 			.filter(s -> s.getRune() != null && s.getQuantity() > 0)
 			.collect(Collectors.toMap(
 				PouchSlot::getRune,
 				PouchSlot::getQuantity
 			));
 
-		Map<Runes, Integer> filteredRequired = requiredRunes.entrySet().stream()
-			.filter(e -> e.getKey() != null && e.getValue() != null && e.getValue() > 0)
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-
-		return exact ? current.equals(filteredRequired) :
-			filteredRequired.entrySet().stream().allMatch(e -> current.getOrDefault(e.getKey(), 0) >= e.getValue());
+		return contains(requiredRunes, availableRunes, allowCombinationRunes ? COMBO_SUPPORT : STRICT_ONLY);
 	}
 
 	/**
-	 * Checks if the rune pouch contains at least the required runes.
+	 * Internal method for matching required runes against available runes using a custom predicate.
+	 * This allows support for both strict and combination-based matching.
 	 *
-	 * @param requiredRunes Map of required runes and amounts.
-	 * @return True if all required runes are present in sufficient quantities.
+	 * @param requiredRunes  A map of required runes and their quantities.
+	 * @param availableRunes A mutable map of currently available runes in the pouch.
+	 * @param satisfier      A predicate defining how a rune can be matched (strict or fuzzy).
+	 * @return {@code true} if all requirements are met using the given satisfier, {@code false} otherwise.
+	 */
+	private static boolean contains(Map<Runes, Integer> requiredRunes, Map<Runes, Integer> availableRunes, BiPredicate<Runes, Map<Runes, Integer>> satisfier)
+	{
+		for (Map.Entry<Runes, Integer> req : requiredRunes.entrySet())
+		{
+			Runes required = req.getKey();
+			int quantity = req.getValue();
+
+			int remaining = quantity;
+			while (remaining > 0 && satisfier.test(required, availableRunes))
+			{
+				remaining--;
+			}
+			if (remaining > 0)
+			{
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * Checks if the rune pouch contains all of the specified runes in the required quantities,
+	 * using strict matching (no combination runes allowed).
+	 *
+	 * @param requiredRunes A map of {@link Runes} to their required quantities.
+	 * @return {@code true} if all runes are present in the specified amounts, {@code false} otherwise.
 	 */
 	public static boolean contains(Map<Runes, Integer> requiredRunes)
 	{
@@ -263,21 +356,73 @@ public class Rs2RunePouch
 	}
 
 	/**
-	 * Loads the required runes into the rune pouch either from a saved loadout or by withdrawing from the bank.
+	 * Attempts to load the specified runes into the rune pouch using strict matching only.
+	 * <p>
+	 * First checks if the current rune pouch already contains all the required runes (no combination runes allowed).
+	 * If not, it attempts to load the runes via a saved pouch loadout or by withdrawing them directly from the bank.
 	 *
-	 * @param requiredRunes Runes and their quantities to load.
-	 * @return True if the runes were successfully loaded, false otherwise.
+	 * @param requiredRunes A map of required {@link Runes} to their quantities.
+	 * @return {@code true} if the pouch already contains or successfully loads all required runes, {@code false} otherwise.
 	 */
 	public static boolean load(Map<Runes, Integer> requiredRunes)
+	{
+		if (contains(requiredRunes, false))
+		{
+			return true;
+		}
+
+		return coreLoad(requiredRunes);
+	}
+
+	/**
+	 * Attempts to load the specified runes into the rune pouch using fuzzy logic where applicable.
+	 * <p>
+	 * Each rune is evaluated individually: if the corresponding {@link InventorySetupsItem#isFuzzy()} flag is set,
+	 * combination runes will be accepted. If all required runes are already satisfied, this method returns early.
+	 * Otherwise, it falls back to loading from saved pouch loadouts or withdrawing runes from the bank.
+	 *
+	 * @param inventorySetupRunes A map of {@link Runes} to their corresponding {@link InventorySetupsItem} containing quantity and fuzzy status.
+	 * @return {@code true} if the pouch already satisfies the requirements or is successfully loaded, {@code false} otherwise.
+	 */
+	public static boolean loadFromInventorySetup(Map<Runes, InventorySetupsItem> inventorySetupRunes)
+	{
+		boolean allPresent = inventorySetupRunes.entrySet().stream()
+			.allMatch(entry -> {
+				Runes rune = entry.getKey();
+				InventorySetupsItem item = entry.getValue();
+				int qty = item.getQuantity();
+				boolean fuzzy = item.isFuzzy();
+
+				return contains(rune, qty, fuzzy);
+			});
+
+		if (allPresent)
+		{
+			return true;
+		}
+
+		return coreLoad(inventorySetupRunes.entrySet().stream()
+			.collect(Collectors.toMap(
+				Map.Entry::getKey,
+				e -> e.getValue().getQuantity()
+			)));
+	}
+
+	/**
+	 * Core logic for loading runes into the rune pouch from saved loadouts or directly from the bank.
+	 * <p>
+	 * First attempts to load a saved pouch configuration that matches the required runes exactly.
+	 * If no saved loadout matches, all existing pouch contents are deposited and the required runes
+	 * are withdrawn from the bank one-by-one. This method does not perform any fuzzy matching logic.
+	 *
+	 * @param requiredRunes A map of required {@link Runes} to their quantities.
+	 * @return {@code true} if the rune pouch is successfully configured to contain the required runes, {@code false} otherwise.
+	 */
+	private static boolean coreLoad(Map<Runes, Integer> requiredRunes)
 	{
 		if (!Rs2Bank.isOpen() || !Rs2Inventory.hasRunePouch())
 		{
 			return false;
-		}
-
-		if (contains(requiredRunes, false))
-		{
-			return true;
 		}
 
 		Rs2Inventory.interact(RunePouchType.getPouchIds(), "Configure");
@@ -319,7 +464,7 @@ public class Rs2RunePouch
 				Microbot.log("Failed to withdraw rune: " + rune + " x" + qty, Level.WARNING);
 				return false;
 			}
-			Global.sleepUntil(() -> contains(rune.getItemId(), qty));
+			Global.sleepUntil(() -> contains(rune, qty));
 		}
 
 		Global.sleepUntil(() -> {
@@ -409,6 +554,50 @@ public class Rs2RunePouch
 		Rs2Widget.clickWidget(BANK_PARENT_ID, RUNEPOUCH_CLOSE_CHILD_ID);
 		return Global.sleepUntil(() -> !isRunePouchOpen());
 	}
+
+	/**
+	 * BiPredicate that allows fuzzy matching using combination runes.
+	 * <p>
+	 * For a required rune, this predicate checks the available rune map to see if
+	 * any runes can satisfy the requirement via {@code getBaseRunes()}, such as
+	 * dust runes for both air and earth. If found, it decrements the matching
+	 * combination rune count and returns {@code true}.
+	 */
+	private static final BiPredicate<Runes, Map<Runes, Integer>> COMBO_SUPPORT = (required, availableRunes) -> {
+		for (Map.Entry<Runes, Integer> entry : availableRunes.entrySet())
+		{
+			if (entry.getValue() <= 0)
+			{
+				continue;
+			}
+
+			Runes available = entry.getKey();
+			if (available.getBaseRunes().contains(required))
+			{
+				availableRunes.put(available, entry.getValue() - 1);
+				return true;
+			}
+		}
+		return false;
+	};
+
+
+	/**
+	 * BiPredicate that enforces strict rune matching.
+	 * <p>
+	 * Only considers exact rune type matches from the available rune map.
+	 * If the required rune is present in sufficient quantity, decrements it
+	 * and returns {@code true}. Otherwise, returns {@code false}.
+	 */
+	private static final BiPredicate<Runes, Map<Runes, Integer>> STRICT_ONLY = (required, availableRunes) -> {
+		int count = availableRunes.getOrDefault(required, 0);
+		if (count > 0)
+		{
+			availableRunes.put(required, count - 1);
+			return true;
+		}
+		return false;
+	};
 
 	/**
 	 * Represents a slot inside the rune pouch, containing a rune and its quantity.

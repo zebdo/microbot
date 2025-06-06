@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.util.magic;
 
 import java.util.Arrays;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
@@ -36,11 +37,22 @@ public enum Runes
 	WRATH(21, ItemID.WRATH_RUNE),
 	SUNFIRE(22, ItemID.SUNFIRE_RUNE);
 
-
 	@Getter(AccessLevel.PUBLIC)
 	private final int id;
 	@Getter(AccessLevel.PUBLIC)
 	private final int itemId;
+
+	public Set<Runes> getBaseRunes() {
+		switch (this) {
+			case MIST: return Set.of(AIR, WATER);
+			case DUST: return Set.of(AIR, EARTH);
+			case MUD: return Set.of(WATER, EARTH);
+			case SMOKE: return Set.of(AIR, FIRE);
+			case STEAM: return Set.of(WATER, FIRE);
+			case LAVA: return Set.of(EARTH, FIRE);
+			default: return Set.of(this);
+		}
+	}
 
 	private static final Map<Integer, Runes> BY_VARBIT_ID = Arrays.stream(values()).collect(Collectors.toMap(Runes::getId, Function.identity()));
 
