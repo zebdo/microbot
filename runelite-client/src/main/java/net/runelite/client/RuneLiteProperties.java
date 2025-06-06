@@ -24,13 +24,12 @@
  */
 package net.runelite.client;
 
-import lombok.AccessLevel;
-import lombok.Getter;
-
-import javax.annotation.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.Properties;
+import javax.annotation.Nullable;
+import lombok.AccessLevel;
+import lombok.Getter;
 
 public class RuneLiteProperties
 {
@@ -51,6 +50,7 @@ public class RuneLiteProperties
 	private static final String OSRS_TWITTER_LINK = "runelite.osrstwitter.link";
 	private static final String MICROBOT_VERSION = "microbot.version";
 
+	private static final String JAGEX_DOMAINBLOCK = "runelite.jagex.domainblock";
 
 	@Getter(AccessLevel.PACKAGE)
 	private static final Properties properties = new Properties();
@@ -147,4 +147,9 @@ public class RuneLiteProperties
 		return properties.getProperty(MICROBOT_VERSION);
 	}
 
+
+	public static String[] getJagexBlockedDomains()
+	{
+		return properties.getProperty(JAGEX_DOMAINBLOCK).split(",");
+	}
 }
