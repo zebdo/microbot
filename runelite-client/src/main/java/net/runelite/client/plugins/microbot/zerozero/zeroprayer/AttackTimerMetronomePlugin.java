@@ -653,11 +653,13 @@ public class AttackTimerMetronomePlugin extends Plugin
             case CONTROLLED:
             case DEFENSIVE:
                 if (Microbot.getVarbitValue(CAMELOT_TRAINING_ROOM_STATUS) == 8 &&
-                        Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.PIETY.getLevel()) {
+                        Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.PIETY.getLevel() &&
+                        Rs2Player.getRealSkillLevel(Skill.DEFENCE) >= 70) {
                     return Rs2PrayerEnum.PIETY;
                 }
                 if (Microbot.getVarbitValue(CAMELOT_TRAINING_ROOM_STATUS) == 8 &&
-                        Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.CHIVALRY.getLevel()) {
+                        Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.CHIVALRY.getLevel() &&
+                        Rs2Player.getRealSkillLevel(Skill.DEFENCE) >= 65) {
                     return Rs2PrayerEnum.CHIVALRY;
                 }
                 if (Rs2Player.getRealSkillLevel(Skill.PRAYER) >= Rs2PrayerEnum.ULTIMATE_STRENGTH.getLevel()) {
