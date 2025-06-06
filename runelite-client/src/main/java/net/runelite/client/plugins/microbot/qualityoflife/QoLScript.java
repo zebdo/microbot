@@ -31,7 +31,7 @@ public class QoLScript extends Script {
                     return;
                 }
 
-                if (config.autoDrinkPrayerPot()) {
+                if (config.autoDrinkPrayerPot() && !config.enablePotionManager()) {
                     handleAutoDrinkPrayPot(config.drinkPrayerPotPoints());
                 }
 
