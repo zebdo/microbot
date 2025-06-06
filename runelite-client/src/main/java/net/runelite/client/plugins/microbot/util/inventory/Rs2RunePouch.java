@@ -275,6 +275,11 @@ public class Rs2RunePouch
 			return false;
 		}
 
+		if (contains(requiredRunes, false))
+		{
+			return true;
+		}
+
 		Rs2Inventory.interact(RunePouchType.getPouchIds(), "Configure");
 		Global.sleepUntil(() -> Rs2Widget.isWidgetVisible(BANK_PARENT_ID, RUNEPOUCH_ROOT_CHILD_ID));
 
