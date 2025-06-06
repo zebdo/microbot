@@ -2124,7 +2124,6 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     private static final int SLOT_ONE = 26083331;
     private static final int SLOT_TWO = 26083332;
     private static final int SLOT_THREE = 26083333;
-    private static final int TELEPORT_BUTTON = 26083354;
 
     private static final int SLOT_ONE_CW_ROTATION = 26083347;
     private static final int SLOT_ONE_ACW_ROTATION = 26083348;
@@ -2137,7 +2136,6 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     public static boolean handleFairyRing(Transport transport) {
 
 		Rs2ItemModel startingWeapon = null;
-		Rs2ItemModel startingShield = null;
 
 		TileObject fairyRingObject = Rs2GameObject.getAll(o -> Objects.equals(o.getWorldLocation(), transport.getOrigin())).stream().findFirst().orElse(null);
 		if (fairyRingObject == null) return false;
@@ -2149,10 +2147,6 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 		if (!hasLumbridgeElite) {
 			if (Rs2Equipment.isWearing(EquipmentInventorySlot.WEAPON)) {
 				startingWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
-			}
-
-			if (Rs2Equipment.isWearing(EquipmentInventorySlot.SHIELD)) {
-				startingShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
 			}
 
 			if (!Rs2Equipment.isWearing("Dramen staff") && !Rs2Equipment.isWearing("Lunar staff")) {
@@ -2175,7 +2169,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 		rotateSlotToDesiredRotation(SLOT_ONE, Rs2Widget.getWidget(SLOT_ONE).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(0)), SLOT_ONE_ACW_ROTATION, SLOT_ONE_CW_ROTATION);
 		rotateSlotToDesiredRotation(SLOT_TWO, Rs2Widget.getWidget(SLOT_TWO).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(1)), SLOT_TWO_ACW_ROTATION, SLOT_TWO_CW_ROTATION);
 		rotateSlotToDesiredRotation(SLOT_THREE, Rs2Widget.getWidget(SLOT_THREE).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(2)), SLOT_THREE_ACW_ROTATION, SLOT_THREE_CW_ROTATION);
-		Rs2Widget.clickWidget(TELEPORT_BUTTON);
+		Rs2Widget.clickWidget(ComponentID.FAIRY_RING_TELEPORT_BUTTON);
 
 		sleepUntil(() -> Rs2Player.hasSpotAnimation(fairyRingGraphicId));
 		sleepUntil(() -> Objects.equals(Rs2Player.getWorldLocation(), transport.getDestination()) && !Rs2Player.hasSpotAnimation(fairyRingGraphicId), 10000);
@@ -2184,11 +2178,6 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 			Rs2ItemModel finalStartingWeapon = startingWeapon;
 			Rs2Inventory.equip(finalStartingWeapon.getId());
 			sleepUntil(() -> Rs2Equipment.isWearing(finalStartingWeapon.getId()));
-		}
-		if (startingShield != null) {
-			Rs2ItemModel finalStartingShield = startingShield;
-			Rs2Inventory.equip(finalStartingShield.getId());
-			sleepUntil(() -> Rs2Equipment.isWearing(finalStartingShield.getId()));
 		}
 		return true;
     }
