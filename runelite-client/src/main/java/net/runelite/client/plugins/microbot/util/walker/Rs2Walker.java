@@ -1250,7 +1250,10 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                     }
 
                     if (transport.getType() == TransportType.FAIRY_RING && !Rs2Player.getWorldLocation().equals(transport.getDestination())) {
-                        handleFairyRing(transport);
+                        if (handleFairyRing(transport)) {
+							sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
+							break;
+						}
                     }
                     
                     if (transport.getType() == TransportType.TELEPORTATION_MINIGAME) {
@@ -2121,7 +2124,6 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     private static final int SLOT_ONE = 26083331;
     private static final int SLOT_TWO = 26083332;
     private static final int SLOT_THREE = 26083333;
-    private static final int TELEPORT_BUTTON = 26083354;
 
     private static final int SLOT_ONE_CW_ROTATION = 26083347;
     private static final int SLOT_ONE_ACW_ROTATION = 26083348;
@@ -2129,88 +2131,88 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     private static final int SLOT_TWO_ACW_ROTATION = 26083350;
     private static final int SLOT_THREE_CW_ROTATION = 26083351;
     private static final int SLOT_THREE_ACW_ROTATION = 26083352;
-    private static Rs2ItemModel startingWeapon = null;
-    private static int startingWeaponId;
     private static int fairyRingGraphicId = 569;
 
-    public static void handleFairyRing(Transport transport) {
+    public static boolean handleFairyRing(Transport transport) {
 
-        // Check if the widget is already visible
-        if (!Rs2Widget.isHidden(ComponentID.FAIRY_RING_TELEPORT_BUTTON)) {
-            rotateSlotToDesiredRotation(SLOT_ONE, Rs2Widget.getWidget(SLOT_ONE).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(0)), SLOT_ONE_ACW_ROTATION, SLOT_ONE_CW_ROTATION);
-            rotateSlotToDesiredRotation(SLOT_TWO, Rs2Widget.getWidget(SLOT_TWO).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(1)), SLOT_TWO_ACW_ROTATION, SLOT_TWO_CW_ROTATION);
-            rotateSlotToDesiredRotation(SLOT_THREE, Rs2Widget.getWidget(SLOT_THREE).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(2)), SLOT_THREE_ACW_ROTATION, SLOT_THREE_CW_ROTATION);
-            Rs2Widget.clickWidget(TELEPORT_BUTTON);
-            
-            sleepUntil(() -> Rs2Player.hasSpotAnimation(fairyRingGraphicId));
-            sleepUntil(() -> Rs2Player.getWorldLocation().equals(transport.getDestination()) && !Rs2Player.hasSpotAnimation(fairyRingGraphicId), 10000);
-            
-            // Re-equip the starting weapon if it was unequipped
-            if (startingWeapon != null && !Rs2Equipment.isWearing(startingWeaponId)) {
-                Microbot.log("Equipping Starting Weapon: " + startingWeaponId);
-                Rs2Inventory.equip(startingWeaponId);
-                sleepUntil(() -> Rs2Equipment.isWearing(startingWeaponId));
-                startingWeapon = null;
-                startingWeaponId = 0;
-            }
-            return;
-        }
+		Rs2ItemModel startingWeapon = null;
 
-        if (Microbot.getVarbitValue(Varbits.DIARY_LUMBRIDGE_ELITE) == 1) {
-            // Direct interaction without staff if elite Lumbridge Diary is complete
-            Microbot.log("Interacting with the fairy ring directly.");
-            var fairyRing = Rs2GameObject.findObjectByLocation(transport.getOrigin());
-            Rs2GameObject.interact(fairyRing, "Configure");
-            Rs2Player.waitForWalking();
-        } 
-        else {
-            // Manage weapon and staff as needed if elite Lumbridge Diary is not complete
-            if (startingWeapon == null && Rs2Equipment.hasEquippedSlot(EquipmentInventorySlot.WEAPON)) {
-                startingWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
-                startingWeaponId = startingWeapon.getId();
-            }
+		TileObject fairyRingObject = Rs2GameObject.getAll(o -> Objects.equals(o.getWorldLocation(), transport.getOrigin())).stream().findFirst().orElse(null);
+		if (fairyRingObject == null) return false;
 
-            if (!Rs2Equipment.isWearing("Dramen staff") && !Rs2Equipment.isWearing("Lunar staff")) {
-                // Equip Dramen or Lunar staff if not already equipped
-                if (Rs2Inventory.contains("Dramen staff")) {
-                    Rs2Inventory.equip("Dramen staff");
-                    sleep(600);
-                } else if (Rs2Inventory.contains("Lunar staff")) {
-                    Rs2Inventory.equip("Lunar staff");
-                    sleep(600);
-                }
-            }
+		if (!Rs2GameObject.canWalkTo(fairyRingObject, 25)) return false;
 
-            // Interact with fairy ring after equipping the staff
-            Microbot.log("Interacting with the fairy ring using a staff. " + transport.getOrigin().getX() + " " + transport.getOrigin().getY());
-            var fairyRing = Rs2GameObject.findObjectByLocation(transport.getOrigin());
-            if (Rs2GameObject.interact(fairyRing, "Configure")) {
-                Rs2Player.waitForWalking();
-            } else {
-                recalculatePath();
-            }
-        }
+		boolean hasLumbridgeElite = Microbot.getVarbitValue(Varbits.DIARY_LUMBRIDGE_ELITE) == 1;
+
+		if (!hasLumbridgeElite) {
+			if (Rs2Equipment.isWearing(EquipmentInventorySlot.WEAPON)) {
+				startingWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
+			}
+
+			if (!Rs2Equipment.isWearing("Dramen staff") && !Rs2Equipment.isWearing("Lunar staff")) {
+				if (Rs2Inventory.contains("Dramen staff")) {
+					Rs2Inventory.equip("Dramen staff");
+					sleepUntil(() -> Rs2Equipment.isWearing("Dramen staff"));
+				} else if (Rs2Inventory.contains("Lunar staff")) {
+					Rs2Inventory.equip("Lunar staff");
+					sleepUntil(() -> Rs2Equipment.isWearing("Lunar staff"));
+				} else {
+					return false;
+				}
+			}
+		}
+
+		Microbot.log("Interacting with Fairy Ring @ " + fairyRingObject.getWorldLocation());
+		Rs2GameObject.interact(fairyRingObject, "Configure");
+		sleepUntil(() -> !Rs2Player.isMoving() && !Rs2Widget.isHidden(ComponentID.FAIRY_RING_TELEPORT_BUTTON), 10000);
+
+		rotateSlotToDesiredRotation(SLOT_ONE, Rs2Widget.getWidget(SLOT_ONE).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(0)), SLOT_ONE_ACW_ROTATION, SLOT_ONE_CW_ROTATION);
+		rotateSlotToDesiredRotation(SLOT_TWO, Rs2Widget.getWidget(SLOT_TWO).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(1)), SLOT_TWO_ACW_ROTATION, SLOT_TWO_CW_ROTATION);
+		rotateSlotToDesiredRotation(SLOT_THREE, Rs2Widget.getWidget(SLOT_THREE).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(2)), SLOT_THREE_ACW_ROTATION, SLOT_THREE_CW_ROTATION);
+		Rs2Widget.clickWidget(ComponentID.FAIRY_RING_TELEPORT_BUTTON);
+
+		sleepUntil(() -> Rs2Player.hasSpotAnimation(fairyRingGraphicId));
+		sleepUntil(() -> Objects.equals(Rs2Player.getWorldLocation(), transport.getDestination()) && !Rs2Player.hasSpotAnimation(fairyRingGraphicId), 10000);
+
+		if (startingWeapon != null) {
+			Rs2ItemModel finalStartingWeapon = startingWeapon;
+			Rs2Inventory.equip(finalStartingWeapon.getId());
+			sleepUntil(() -> Rs2Equipment.isWearing(finalStartingWeapon.getId()));
+		}
+		return true;
     }
 
-    private static void rotateSlotToDesiredRotation(int slotId, int currentRotation, int desiredRotation, int slotAcwRotationId, int slotCwRotationId) {
-        int anticlockwiseTurns = (desiredRotation - currentRotation + 2048) % 2048;
-        int clockwiseTurns = (currentRotation - desiredRotation + 2048) % 2048;
+	private static void rotateSlotToDesiredRotation(int slotId, int currentRotation, int desiredRotation, int slotAcwRotationId, int slotCwRotationId) {
+		int anticlockwiseTurns = (desiredRotation - currentRotation + 2048) % 2048;
+		int clockwiseTurns = (currentRotation - desiredRotation + 2048) % 2048;
 
-        if (clockwiseTurns <= anticlockwiseTurns) {
-            System.out.println("Rotating slot " + slotId + " clockwise " + (clockwiseTurns / 512) + " times.");
-            for (int i = 0; i < clockwiseTurns / 512; i++) {
-                Rs2Widget.clickWidget(slotCwRotationId);
-                sleep(600, 1200);
-            }
-        } else {
-            System.out.println("Rotating slot " + slotId + " anticlockwise " + (anticlockwiseTurns / 512) + " times.");
-            for (int i = 0; i < anticlockwiseTurns / 512; i++) {
-                Rs2Widget.clickWidget(slotAcwRotationId);
-                sleep(600, 1200);
-            }
-        }
+		int turns = Math.min(clockwiseTurns, anticlockwiseTurns) / 512;
+		boolean rotateCW = clockwiseTurns <= anticlockwiseTurns;
+		int rotationWidget = rotateCW ? slotCwRotationId : slotAcwRotationId;
 
-    }
+		for (int i = 0; i < turns; i++) {
+			final int previousRotation = currentRotation;
+			Rs2Widget.clickWidget(rotationWidget);
+
+			sleepUntil(() -> {
+				Widget slotWidget = Rs2Widget.getWidget(slotId);
+				return slotWidget != null && slotWidget.getRotationY() != previousRotation;
+			}, 2000);
+
+			Widget slotWidget = Rs2Widget.getWidget(slotId);
+			if (slotWidget != null) {
+				currentRotation = slotWidget.getRotationY();
+			} else {
+				break;
+			}
+		}
+
+		sleepUntil(() -> {
+			Widget slotWidget = Rs2Widget.getWidget(slotId);
+			return slotWidget != null && slotWidget.getRotationY() == desiredRotation;
+		}, 3000);
+	}
+
 
     private static int getDesiredRotation(char letter) {
         switch (letter) {

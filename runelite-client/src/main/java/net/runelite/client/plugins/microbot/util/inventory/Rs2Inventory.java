@@ -2164,8 +2164,7 @@ public class Rs2Inventory {
      * @return true if a rune pouch is found in the inventory, false otherwise.
      */
     public static boolean hasRunePouch() {
-        return Arrays.stream(RunePouchType.values())
-                .anyMatch(pouch -> Rs2Inventory.hasItem(pouch.getItemId()));
+        return Rs2Inventory.hasItem(RunePouchType.getPouchIds());
     }
 
     /**
