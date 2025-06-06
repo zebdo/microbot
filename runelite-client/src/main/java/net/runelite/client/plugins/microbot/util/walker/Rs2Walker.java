@@ -2168,6 +2168,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 			}
 		}
 
+		Microbot.log("Interacting with Fairy Ring @ " + fairyRingObject.getWorldLocation());
 		Rs2GameObject.interact(fairyRingObject, "Configure");
 		sleepUntil(() -> !Rs2Player.isMoving() && !Rs2Widget.isHidden(ComponentID.FAIRY_RING_TELEPORT_BUTTON));
 
