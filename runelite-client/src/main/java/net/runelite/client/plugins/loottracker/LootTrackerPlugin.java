@@ -1237,11 +1237,6 @@ public class LootTrackerPlugin extends Plugin
 
 		saveLoot(copy);
 
-		if (client.getEnvironment() != 0)
-		{
-			return null;
-		}
-
 		log.debug("Submitting {} loot records", copy.size());
 
 		return lootTrackerClient.submit(copy);
