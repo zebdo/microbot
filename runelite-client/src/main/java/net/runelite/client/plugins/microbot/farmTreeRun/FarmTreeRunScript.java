@@ -451,8 +451,6 @@ public class FarmTreeRunScript extends Script {
             int fruitTreeSaplingsCount = getSelectedFruitTreePatches(config).size();
             int hardTreeSaplingsCount = getSelectedHardTreePatches(config).size();
 
-            Microbot.log("hard sapling count " + hardTreeSaplingsCount);
-
             if (treeSaplingsCount > 0)
                 items.add(new FarmingItem(selectedTree.getSaplingId(), treeSaplingsCount));
 
