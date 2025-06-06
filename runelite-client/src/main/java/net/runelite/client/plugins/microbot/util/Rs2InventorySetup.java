@@ -122,7 +122,7 @@ public class Rs2InventorySetup {
 
 			if (!Rs2Bank.hasBankItem(lowerCaseName, withdrawQuantity, exact)) {
 				Microbot.pauseAllScripts = true;
-				Microbot.log("Bank is missing the following item: " + item.getName(), 10);
+				Microbot.log("Bank is missing the following item: " + item.getName());
 				return false;
 			}
 
