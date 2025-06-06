@@ -2182,25 +2182,37 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 		return true;
     }
 
-    private static void rotateSlotToDesiredRotation(int slotId, int currentRotation, int desiredRotation, int slotAcwRotationId, int slotCwRotationId) {
-        int anticlockwiseTurns = (desiredRotation - currentRotation + 2048) % 2048;
-        int clockwiseTurns = (currentRotation - desiredRotation + 2048) % 2048;
+	private static void rotateSlotToDesiredRotation(int slotId, int currentRotation, int desiredRotation, int slotAcwRotationId, int slotCwRotationId) {
+		int anticlockwiseTurns = (desiredRotation - currentRotation + 2048) % 2048;
+		int clockwiseTurns = (currentRotation - desiredRotation + 2048) % 2048;
 
-        if (clockwiseTurns <= anticlockwiseTurns) {
-            System.out.println("Rotating slot " + slotId + " clockwise " + (clockwiseTurns / 512) + " times.");
-            for (int i = 0; i < clockwiseTurns / 512; i++) {
-                Rs2Widget.clickWidget(slotCwRotationId);
-                sleep(600, 1200);
-            }
-        } else {
-            System.out.println("Rotating slot " + slotId + " anticlockwise " + (anticlockwiseTurns / 512) + " times.");
-            for (int i = 0; i < anticlockwiseTurns / 512; i++) {
-                Rs2Widget.clickWidget(slotAcwRotationId);
-                sleep(600, 1200);
-            }
-        }
+		int turns = Math.min(clockwiseTurns, anticlockwiseTurns) / 512;
+		boolean rotateCW = clockwiseTurns <= anticlockwiseTurns;
+		int rotationWidget = rotateCW ? slotCwRotationId : slotAcwRotationId;
 
-    }
+		for (int i = 0; i < turns; i++) {
+			final int previousRotation = currentRotation;
+			Rs2Widget.clickWidget(rotationWidget);
+
+			sleepUntil(() -> {
+				Widget slotWidget = Rs2Widget.getWidget(slotId);
+				return slotWidget != null && slotWidget.getRotationY() != previousRotation;
+			}, 2000);
+
+			Widget slotWidget = Rs2Widget.getWidget(slotId);
+			if (slotWidget != null) {
+				currentRotation = slotWidget.getRotationY();
+			} else {
+				break;
+			}
+		}
+
+		sleepUntil(() -> {
+			Widget slotWidget = Rs2Widget.getWidget(slotId);
+			return slotWidget != null && slotWidget.getRotationY() == desiredRotation;
+		}, 3000);
+	}
+
 
     private static int getDesiredRotation(char letter) {
         switch (letter) {
