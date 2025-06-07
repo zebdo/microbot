@@ -475,10 +475,11 @@ public class BarrowsScript extends Script {
                         //walk to and open the bank
                         Rs2Bank.walkToBankAndUseBank(BankLocation.FEROX_ENCLAVE);
                     } else {
+                        List<Rs2ItemModel> ourfood = Rs2Inventory.getInventoryFood();
+                        int ourFoodsID = ourfood.get(0).getId();
+                        String ourfoodsname = ourfood.get(0).getName();
 
                         if(Rs2Inventory.isFull() || Rs2Inventory.contains(it->it!=null&&it.getName().contains("'s") || it.getName().contains("Coins"))){
-                            List<Rs2ItemModel> ourfood = Rs2Inventory.getInventoryFood();
-                            String ourfoodsname = ourfood.get(0).getName();
                             if(Rs2Inventory.contains(it->it!=null&&it.getName().contains("'s"))){
                                 Rs2ItemModel piece = Rs2Inventory.get(it->it!=null&&it.getName().contains("'s"));
 
@@ -580,26 +581,20 @@ public class BarrowsScript extends Script {
                         }
                         howtoBank = Rs2Random.between(0,100);
                         if(howtoBank<= 40){
-                            String neededFood = "Unknown";
-                            if(!Rs2Inventory.getInventoryFood().isEmpty()){
-                                if(Rs2Inventory.getInventoryFood().get(0) !=null) {
-                                    neededFood = Rs2Inventory.getInventoryFood().get(0).getName();
-                                }
-                            }
-                            if(Rs2Inventory.count(neededFood) < config.targetFoodAmount()){
-                                if(Rs2Bank.getBankItem(neededFood)!=null){
-                                    if(Rs2Bank.getBankItem(neededFood).getQuantity()>=config.targetFoodAmount()){
-                                        int amt = (Rs2Random.between(config.minFood(),config.targetFoodAmount()) - (Rs2Inventory.count(neededFood)));
+
+                            if(Rs2Inventory.count(ourFoodsID) < config.targetFoodAmount()){
+                                if(Rs2Bank.getBankItem(ourFoodsID)!=null){
+                                    if(Rs2Bank.getBankItem(ourFoodsID).getQuantity()>=config.targetFoodAmount()){
+                                        int amt = (Rs2Random.between(config.minFood(),config.targetFoodAmount()) - (Rs2Inventory.count(ourFoodsID)));
                                         if(amt <= 0){
                                             amt = 1;
                                         }
                                         Microbot.log("Withdrawing "+amt);
-                                        if(Rs2Bank.withdrawX(neededFood, amt)){
-                                            String finalfood = neededFood;
-                                            sleepUntil(()-> Rs2Inventory.count(finalfood) >= 10, Rs2Random.between(2000,4000));
+                                        if(Rs2Bank.withdrawX(ourFoodsID, amt)){
+                                            sleepUntil(()-> Rs2Inventory.count(ourFoodsID) >= 10, Rs2Random.between(2000,4000));
                                         }
                                     } else {
-                                        Microbot.log("We're out of "+neededFood+" need at least "+config.targetFoodAmount()+" stopping...");
+                                        Microbot.log("We're out of "+ourfoodsname+" need at least "+config.targetFoodAmount()+" stopping...");
                                         super.shutdown();
                                     }
                                 }

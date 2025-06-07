@@ -115,7 +115,7 @@ public class revKillerScript extends Script {
                 if(areWeEquipped()){
 
                     if(ourEquipmentForDeathWalking.isEmpty()){
-                        ourEquipmentForDeathWalking = Rs2Equipment.items();
+                        ourEquipmentForDeathWalking = new ArrayList<>(Rs2Equipment.items());
                         Microbot.log("Equipped items saved.");
                     }
 
@@ -169,8 +169,8 @@ public class revKillerScript extends Script {
 
     public void EatFood(){
         if(Rs2Player.getHealthPercentage() <= generateRandomNumber(70,80)){
-            if(Rs2Inventory.contains("Shark")){
-                if(Rs2Inventory.interact("Shark", "Eat")){
+            if(Rs2Inventory.contains(ItemID.SHARK)){
+                if(Rs2Inventory.interact(ItemID.SHARK, "Eat")){
                     sleepUntil(()-> isPkerAround(),generateRandomNumber(2500,3500));
                 }
             }
@@ -216,6 +216,8 @@ public class revKillerScript extends Script {
         WorldPoint fifthTile = new WorldPoint(3248,10225,0);
 
         WorldPoint jammedTile = new WorldPoint(3244,10224,0);
+
+        Rs2Walker.setTarget(null);
 
         if(Rs2Player.getWorldLocation().equals(fifthTile)){
             if(weAreInCombat()) {
@@ -315,6 +317,7 @@ public class revKillerScript extends Script {
                             return;
                         }
                         if(!Rs2Player.getWorldLocation().equals(secondTile)){
+                            moveCameraToTile(secondTile);
                             Rs2Walker.walkCanvas(secondTile);
                             sleepUntil(()-> Rs2Player.getWorldLocation().equals(secondTile), Rs2Random.between(3000,6000));
                         }
@@ -326,6 +329,7 @@ public class revKillerScript extends Script {
         }
 
         if(Rs2Npc.getNpc("Revenant knight").getWorldLocation().equals(thirdTile)){
+            moveCameraToTile(fourthTile);
             Rs2Walker.walkCanvas(fourthTile);
             sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,3000));
             sleepUntil(()-> !Rs2Player.isMoving(), Rs2Random.between(2000,3000));
@@ -334,6 +338,7 @@ public class revKillerScript extends Script {
                     if(!super.isRunning()){break;}
                     if(isPkerAround()){break;}
                     if(!WeAreInTheCaves()){break;}
+                    moveCameraToTile(fifthTile);
                     Rs2Walker.walkCanvas(fifthTile);
                     sleepUntil(() -> Rs2Player.isMoving(), Rs2Random.between(1000, 3000));
                     sleepUntil(() -> !Rs2Player.isMoving(), Rs2Random.between(2000, 3000));
@@ -984,8 +989,8 @@ public class revKillerScript extends Script {
                     break;
                 }
                 if(Rs2Inventory.isFull()){
-                    if(Rs2Inventory.contains("Shark")){
-                        if(Rs2Inventory.interact("Shark", "Eat")){
+                    if(Rs2Inventory.contains(ItemID.SHARK)){
+                        if(Rs2Inventory.interact(ItemID.SHARK, "Eat")){
                             sleepUntil(()-> !Rs2Player.isAnimating(),generateRandomNumber(2000,3500));
                         }
                     } else {
@@ -1261,11 +1266,11 @@ public class revKillerScript extends Script {
 
             if(howtobank <= 40){
                 Microbot.log("Withdrawing Sharks");
-                if(Rs2Inventory.count("Shark") < 10){
-                    if(Rs2Bank.count("Shark") > 9){
-                        if(!Rs2Inventory.contains("Shark")||Rs2Inventory.count("Shark") < 10){
-                            if(Rs2Bank.withdrawX("Shark",(10-Rs2Inventory.count("Shark")))) {
-                                sleepUntil(() -> Rs2Inventory.count("Shark") >= 10, generateRandomNumber(5000, 15000));
+                if(Rs2Inventory.count(ItemID.SHARK) < 10){
+                    if(Rs2Bank.count(ItemID.SHARK) > 9){
+                        if(!Rs2Inventory.contains(ItemID.SHARK)||Rs2Inventory.count(ItemID.SHARK) < 10){
+                            if(Rs2Bank.withdrawX(ItemID.SHARK,(10-Rs2Inventory.count(ItemID.SHARK)))) {
+                                sleepUntil(() -> Rs2Inventory.count(ItemID.SHARK) >= 10, generateRandomNumber(5000, 15000));
                             }
                         }
                     } else {
@@ -1370,12 +1375,12 @@ public class revKillerScript extends Script {
         return false;
     }
 
-    if (!Rs2Inventory.contains("Shark")) {
+    if (!Rs2Inventory.contains(ItemID.SHARK)) {
         Microbot.log("We're out of sharks!");
         return false;
     }
 
-    if (Rs2Inventory.count("Shark") < 2) {
+    if (Rs2Inventory.count(ItemID.SHARK) < 2) {
         Microbot.log("We have less than 2 sharks!");
         return false;
     }
@@ -1390,11 +1395,12 @@ public class revKillerScript extends Script {
         return false;
     }
 
+    if(timeToBreak()){
+        Microbot.log("It's time to break");
+        return false;
+    }
+
     if (isItTimeToGo()) {
-        if(timeToBreak()){
-            Microbot.log("It's time to break");
-            return false;
-        }
         Microbot.log("We have too much loot! Banking");
         return false;
     }
