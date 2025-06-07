@@ -153,7 +153,7 @@ public class MicroAgilityPlugin extends Plugin {
         agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36225, 3258, -1, Operation.LESS_EQUAL, Operation.GREATER));// before 3255,6109 , after 3272, 6105
         agilityScript.prifddinasCourse.add(new AgilityObstacleModel(CHIMNEY_36227, -1, 6106, Operation.GREATER, Operation.LESS_EQUAL));// before 3273,6105 , after 3269,6112
         agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROOF_EDGE, -1, 6115, Operation.GREATER, Operation.LESS_EQUAL));// before 3269,6112 , after 3269,6117
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(DARK_HOLE_36229, 3267, 6117, Operation.GREATER, Operation.GREATER_EQUAL));// before 3269,6117  , after 2269,3389
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(DARK_HOLE_36229, 3267, 6117, Operation.GREATER, Operation.LESS_EQUAL));// before 3269,6117  , after 2269,3389
         agilityScript.prifddinasCourse.add(new AgilityObstacleModel(LADDER_36231, -1, 3392, Operation.GREATER, Operation.LESS_EQUAL));// before 2269,3389 , after 2269,3393
         agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROPE_BRIDGE_36233, 2265, -1, Operation.GREATER_EQUAL, Operation.GREATER));// before 2269,3393 , after 2257,3390
         agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36234, 2254, -1, Operation.GREATER_EQUAL, Operation.GREATER));// before 2257,3390, after 2247,3397
