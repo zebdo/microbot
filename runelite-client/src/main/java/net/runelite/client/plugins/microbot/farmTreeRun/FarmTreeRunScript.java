@@ -50,7 +50,6 @@ public class FarmTreeRunScript extends Script {
     private List<FarmingItem> items = new ArrayList<>();
     private final FarmTreeRunPlugin plugin;
     private final FarmTreeRunConfig config;
-    public static final boolean DEBUG_MODE = System.getProperty("java.vm.info", "").contains("sharing");
 
     private enum TreeKind {
         FRUIT_TREE,
