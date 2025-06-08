@@ -3,8 +3,6 @@ package net.runelite.client.plugins.microbot;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.WidgetLoaded;
-import net.runelite.api.widgets.InterfaceID;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.util.Global;
@@ -120,13 +118,5 @@ public abstract class Script extends Global implements IScript {
         sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.LOGOUT);
         sleep(600, 1000);
         Rs2Widget.clickWidget("Click here to logout");
-    }
-
-    public void onWidgetLoaded(WidgetLoaded event) {
-        int groupId = event.getGroupId();
-
-        if (groupId == InterfaceID.LEVEL_UP) {
-            hasLeveledUp = true;
-        }
     }
 }

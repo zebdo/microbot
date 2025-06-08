@@ -4,6 +4,7 @@ package net.runelite.client.plugins.microbot.fletching;
 import lombok.Getter;
 import lombok.Setter;
 import net.runelite.api.*;
+import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -282,6 +283,14 @@ public class FletchingScript extends Script {
 
         Rs2Antiban.resetAntibanSettings();
         super.shutdown();
+    }
+
+    public void onWidgetLoaded(WidgetLoaded event) {
+        if (event.getGroupId() == 17694736) {
+            hasLeveledUp = false;
+            Microbot.status = "Fletching";
+            Microbot.showMessage(Microbot.status);
+        }
     }
 }
 
