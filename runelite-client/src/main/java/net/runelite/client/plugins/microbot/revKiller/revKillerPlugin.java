@@ -57,7 +57,6 @@ public class revKillerPlugin extends Plugin {
         revKillerScript.weDied = false;
         revKillerScript.shouldFlee = false;
         eventBus.register(this);
-        revKillerScript.ourEquipmentForDeathWalking.clear();
         revKillerScript.selectedWP = config.selectedRev().getWorldPoint();
         revKillerScript.selectedArrow = config.selectedArrow().getArrowID();
         revKillerScript.selectedRev = config.selectedRev().getName();

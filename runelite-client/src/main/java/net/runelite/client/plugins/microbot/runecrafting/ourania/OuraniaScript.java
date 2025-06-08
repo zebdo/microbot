@@ -11,9 +11,6 @@ import javax.inject.Inject;
 import net.runelite.api.Constants;
 import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
-import net.runelite.api.TileObject;
-import net.runelite.api.coords.LocalPoint;
-import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.NpcID;
@@ -48,7 +45,6 @@ public class OuraniaScript extends Script
 
 	public static OuraniaState state;
 	private final OuraniaConfig config;
-	private final WorldArea ouraniaAltarArea = new WorldArea(new WorldPoint(3054, 5574, 0), 12, 12);
 	private final List<Integer> massWorlds = List.of(327, 480);
 	private final OuraniaPlugin plugin;
 	private int selectedWorld = 0;
@@ -436,7 +432,7 @@ public class OuraniaScript extends Script
 
 	private boolean isNearAltar()
 	{
-		return ouraniaAltarArea.contains(Rs2Player.getWorldLocation());
+		return plugin.getOuraniaAltarArea().contains(Rs2Player.getWorldLocation());
 	}
 
 	private boolean isNearEniola()
