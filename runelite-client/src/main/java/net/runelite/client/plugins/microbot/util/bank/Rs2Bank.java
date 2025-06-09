@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.util.bank;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.VarbitID;
@@ -1569,9 +1570,14 @@ public class Rs2Bank {
             return null;
         }
 
+		// Create a WorldArea around the final tile to be more generous
         WorldPoint nearestTile = path.get(path.size() - 1);
+		WorldArea nearestTileArea = new WorldArea(nearestTile, 2, 2);
         Optional<BankLocation> byPath = accessibleBanks.stream()
-                .filter(b -> b.getWorldPoint().equals(nearestTile))
+                .filter(b -> {
+					WorldArea accessibleBankArea = new WorldArea(b.getWorldPoint(), 2, 2);
+					return accessibleBankArea.intersectsWith2D(nearestTileArea);
+				})
                 .findFirst();
 
         if (byPath.isPresent()) {
