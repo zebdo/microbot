@@ -174,38 +174,9 @@ public class LunarTabletsScript extends Script {
         String selectedTabletName = config.selectedTablet().getName();
         System.out.println("Selected Lunar Tablet: " + selectedTabletName);
 
-        if(Rs2Player.getQuestState(Quest.DREAM_MENTOR) == QuestState.FINISHED) {
-            if (!Rs2Bank.isOpen()) {
-                Rs2Bank.walkToBankAndUseBank(BankLocation.LUNAR_ISLE);
-                return;
-            }
-        } else {
-            //We must use the booths with people behind them.
-            GameObject acceptableBooth = Rs2GameObject.getGameObject("Bank booth", new WorldPoint(2097, 3920, 0));
-            GameObject acceptableBooth2 = Rs2GameObject.getGameObject("Bank booth", new WorldPoint(2098, 3920, 0));
-
-            if(acceptableBooth == null || acceptableBooth2 == null){
-                if(Rs2Walker.walkTo(BankLocation.LUNAR_ISLE.getWorldPoint())){
-                    return;
-                }
-            }
-
-            if(acceptableBooth != null && acceptableBooth.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) > 7){
-                if(Rs2Walker.walkTo(BankLocation.LUNAR_ISLE.getWorldPoint())){
-                    return;
-                }
-            }
-
-            if(!Rs2Bank.isOpen()) {
-                    if(Rs2Random.between(0,100) < 50){
-                        Rs2GameObject.interact(acceptableBooth, "Bank");
-                        sleepUntil(() -> Rs2Bank.isOpen(), Rs2Random.between(3000, 5000));
-                    } else {
-                        Rs2GameObject.interact(acceptableBooth2, "Bank");
-                        sleepUntil(() -> Rs2Bank.isOpen(), Rs2Random.between(3000, 5000));
-                    }
-                }
-
+        if (!Rs2Bank.isOpen()) {
+            Rs2Bank.walkToBankAndUseBank(BankLocation.LUNAR_ISLE);
+            return;
         }
 
         System.out.println("Bank opened successfully.");
