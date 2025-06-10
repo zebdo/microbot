@@ -32,17 +32,14 @@ public class AgilityScript extends Script
 	public static String version = "1.2.0";
 	final MicroAgilityPlugin plugin;
 	final MicroAgilityConfig config;
-	final int MAX_DISTANCE = 2300;
 
 	WorldPoint startPoint = null;
-	final AgilityCourseHandler courseHandler;
 
 	@Inject
 	public AgilityScript(MicroAgilityPlugin plugin, MicroAgilityConfig config)
 	{
 		this.plugin = plugin;
 		this.config = config;
-		this.courseHandler = config.agilityCourse().getHandler();
 	}
 
 	public boolean run()
@@ -50,7 +47,7 @@ public class AgilityScript extends Script
 		Microbot.enableAutoRunOn = true;
 		Rs2Antiban.resetAntibanSettings();
 		Rs2Antiban.antibanSetupTemplates.applyAgilitySetup();
-		startPoint = courseHandler.getStartPoint();
+		startPoint = plugin.getCourseHandler().getStartPoint();
 		mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
 			try
 			{
@@ -69,7 +66,6 @@ public class AgilityScript extends Script
 					return;
 				}
 
-
 				final LocalPoint playerLocation = Microbot.getClient().getLocalPlayer().getLocalLocation();
 				final WorldPoint playerWorldLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
 
@@ -86,9 +82,9 @@ public class AgilityScript extends Script
 					return;
 				}
 
-				if (courseHandler instanceof PrifddinasCourse)
+				if (plugin.getCourseHandler() instanceof PrifddinasCourse)
 				{
-					PrifddinasCourse course = (PrifddinasCourse) courseHandler;
+					PrifddinasCourse course = (PrifddinasCourse) plugin.getCourseHandler();
 					if (course.handlePortal())
 					{
 						return;
@@ -99,9 +95,9 @@ public class AgilityScript extends Script
 						return;
 					}
 				}
-				else if (!(courseHandler instanceof GnomeStrongholdCourse))
+				else if (!(plugin.getCourseHandler() instanceof GnomeStrongholdCourse))
 				{
-					if (courseHandler.handleWalkToStart(playerWorldLocation, playerLocation))
+					if (plugin.getCourseHandler().handleWalkToStart(playerWorldLocation, playerLocation))
 					{
 						return;
 					}
@@ -109,7 +105,7 @@ public class AgilityScript extends Script
 
 				final int agilityExp = Microbot.getClient().getSkillExperience(Skill.AGILITY);
 
-				TileObject gameObject = courseHandler.getCurrentObstacle();
+				TileObject gameObject = plugin.getCourseHandler().getCurrentObstacle();
 
 				if (gameObject == null)
 				{
@@ -124,7 +120,7 @@ public class AgilityScript extends Script
 
 				if (Rs2GameObject.interact(gameObject))
 				{
-					courseHandler.waitForCompletion(agilityExp, Microbot.getClient().getLocalPlayer().getWorldLocation().getPlane());
+					plugin.getCourseHandler().waitForCompletion(agilityExp, Microbot.getClient().getLocalPlayer().getWorldLocation().getPlane());
 				}
 			}
 			catch (Exception ex)
@@ -149,6 +145,12 @@ public class AgilityScript extends Script
 
 			getAlchItem().ifPresent(item -> Rs2Magic.alch(item, 50, 75));
 		}, 0, 300, TimeUnit.MILLISECONDS);
+	}
+
+	@Override
+	public void shutdown()
+	{
+		super.shutdown();
 	}
 
 	private Optional<String> getAlchItem()
@@ -181,12 +183,6 @@ public class AgilityScript extends Script
 		}
 
 		return Optional.empty();
-	}
-
-	@Override
-	public void shutdown()
-	{
-		super.shutdown();
 	}
 
 	private boolean lootMarksOfGrace()

@@ -59,15 +59,16 @@ public class PrifddinasCourse implements AgilityCourseHandler
 			new AgilityObstacleModel(LADDER_36231, -1, 3392, Operation.GREATER, Operation.LESS_EQUAL), // before 2269,3389 , after 2269,3393
 			new AgilityObstacleModel(ROPE_BRIDGE_36233, 2265, -1, Operation.GREATER_EQUAL, Operation.GREATER), // before 2269,3393 , after 2257,3390
 			new AgilityObstacleModel(TIGHTROPE_36234, 2254, -1, Operation.GREATER_EQUAL, Operation.GREATER), // before 2257,3390, after 2247,3397
-			new AgilityObstacleModel(LADDER_36232,-1,6140,Operation.GREATER,Operation.GREATER), // if fail TIGHTROPE_36234 , before 3274,6147, after
+			new AgilityObstacleModel(LADDER_36232, -1, 6140, Operation.GREATER, Operation.GREATER), // if fail TIGHTROPE_36234 , before 3274,6147, after
 			new AgilityObstacleModel(ROPE_BRIDGE_36235, -1, 3398, Operation.GREATER, Operation.LESS_EQUAL), // before 2247,3397, after 2246,3406
 			new AgilityObstacleModel(TIGHTROPE_36236, -1, 3409, Operation.GREATER, Operation.LESS_EQUAL), // before 2246,3406, after 2250,3416
-			new AgilityObstacleModel(TIGHTROPE_36237,-1, 3419, Operation.GREATER, Operation.LESS_EQUAL), // before 2250,3416 , after 2260 3425 //2253,3417 portal spawn
+			new AgilityObstacleModel(TIGHTROPE_36237, -1, 3419, Operation.GREATER, Operation.LESS_EQUAL), // before 2250,3416 , after 2260 3425 //2253,3417 portal spawn
 			new AgilityObstacleModel(DARK_HOLE_36238, -1, 3431, Operation.GREATER, Operation.LESS_EQUAL) // before 2260,3425 , after 3240,6109
 		);
 	}
 
-	public boolean handlePortal() {
+	public boolean handlePortal()
+	{
 		TileObject portal = Rs2GameObject.findObject(PORTAL_OBSTACLE_IDS.toArray(new Integer[0]));
 		if (portal != null && Microbot.getClientThread().runOnClientThreadOptional(portal::getClickbox).isPresent())
 		{
@@ -81,10 +82,15 @@ public class PrifddinasCourse implements AgilityCourseHandler
 	}
 
 	@Override
-	public boolean handleWalkToStart(WorldPoint playerWorldLocation, LocalPoint playerLocalLocation) {
-		if (Microbot.getClient().getTopLevelWorldView().getPlane() != 0) return false;
+	public boolean handleWalkToStart(WorldPoint playerWorldLocation, LocalPoint playerLocalLocation)
+	{
+		if (Microbot.getClient().getTopLevelWorldView().getPlane() != 0)
+		{
+			return false;
+		}
 
-		if (prifFallArea.contains(playerWorldLocation)) {
+		if (prifFallArea.contains(playerWorldLocation))
+		{
 			Rs2Walker.walkTo(getStartPoint(), 8);
 			Microbot.log("Going back to course's starting point");
 			return true;

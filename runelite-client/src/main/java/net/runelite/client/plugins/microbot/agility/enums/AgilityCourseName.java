@@ -1,8 +1,6 @@
 package net.runelite.client.plugins.microbot.agility.enums;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.agility.courses.AgilityCourseHandler;
 import net.runelite.client.plugins.microbot.agility.courses.AlKharidCourse;
 import net.runelite.client.plugins.microbot.agility.courses.ApeAtollCourse;

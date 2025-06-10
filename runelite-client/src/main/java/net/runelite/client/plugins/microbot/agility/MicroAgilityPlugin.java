@@ -1,57 +1,63 @@
 package net.runelite.client.plugins.microbot.agility;
 
 import com.google.inject.Provides;
+import java.awt.AWTException;
+import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.microbot.agility.models.AgilityObstacleModel;
+import net.runelite.client.plugins.microbot.agility.courses.AgilityCourseHandler;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.client.plugins.microbot.util.misc.Operation;
-import javax.inject.Inject;
-import java.awt.*;
-import java.util.ArrayList;
-
-import static net.runelite.api.ObjectID.*;
 
 @PluginDescriptor(
 
-        name = PluginDescriptor.Mocrosoft + "Agility",
-        description = "Microbot agility plugin",
-        tags = {"agility", "microbot"},
-        enabledByDefault = false
+	name = PluginDescriptor.Mocrosoft + "Agility",
+	description = "Microbot agility plugin",
+	tags = {"agility", "microbot"},
+	enabledByDefault = false
 )
 @Slf4j
-public class MicroAgilityPlugin extends Plugin {
-    @Inject
-    private MicroAgilityConfig config;
+public class MicroAgilityPlugin extends Plugin
+{
+	@Inject
+	private MicroAgilityConfig config;
 
-    @Provides
-    MicroAgilityConfig provideConfig(ConfigManager configManager) {
-        return configManager.getConfig(MicroAgilityConfig.class);
-    }
+	@Provides
+	MicroAgilityConfig provideConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(MicroAgilityConfig.class);
+	}
 
-    @Inject
-    private OverlayManager overlayManager;
-    @Inject
-    private MicroAgilityOverlay agilityOverlay;
+	@Inject
+	private OverlayManager overlayManager;
+	@Inject
+	private MicroAgilityOverlay agilityOverlay;
 
-    @Inject
-    private AgilityScript agilityScript;
+	@Inject
+	private AgilityScript agilityScript;
 
 
-    @Override
-    protected void startUp() throws AWTException {
-        if (overlayManager != null) {
-            overlayManager.add(agilityOverlay);
-        }
+	@Override
+	protected void startUp() throws AWTException
+	{
+		if (overlayManager != null)
+		{
+			overlayManager.add(agilityOverlay);
+		}
 
-        agilityScript.run();
+		agilityScript.run();
 		agilityScript.handleAlch();
-    }
+	}
 
-    protected void shutDown() {
+	protected void shutDown()
+	{
 		overlayManager.remove(agilityOverlay);
-        agilityScript.shutdown();
-    }
+		agilityScript.shutdown();
+	}
+
+	public AgilityCourseHandler getCourseHandler()
+	{
+		return config.agilityCourse().getHandler();
+	}
 }
