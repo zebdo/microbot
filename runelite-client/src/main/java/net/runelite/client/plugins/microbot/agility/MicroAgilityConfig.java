@@ -56,7 +56,7 @@ public interface MicroAgilityConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = hitpointsThreshold,
+		keyName = summerPieThreshold,
 		name = "Summer Pie Boost",
 		description = "Use Summer pies to boost agility level at start, set it to 0 to disable, set it to 5 to eat pie when you loose 1 level",
 		position = 3,
