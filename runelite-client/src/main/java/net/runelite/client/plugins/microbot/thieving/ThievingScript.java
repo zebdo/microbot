@@ -305,7 +305,7 @@ public class ThievingScript extends Script {
     private void dropItems(List<Rs2ItemModel> food) {
         List<String> doNotDropItemList = Arrays.stream(config.DoNotDropItemList().split(",")).collect(Collectors.toList());
 
-        List<String> foodNames = food.stream().map(x -> x.name).collect(Collectors.toList());
+        List<String> foodNames = food.stream().map(Rs2ItemModel::getName).collect(Collectors.toList());
 
         doNotDropItemList.addAll(foodNames);
 

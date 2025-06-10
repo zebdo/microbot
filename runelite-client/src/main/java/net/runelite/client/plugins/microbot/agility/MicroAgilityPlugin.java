@@ -101,10 +101,10 @@ public class MicroAgilityPlugin extends Plugin {
         agilityScript.faladorCourse.add(new AgilityObstacleModel(TIGHTROPE_14899));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(HAND_HOLDS_14901));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(GAP_14903, -1, 3358, Operation.GREATER, Operation.LESS_EQUAL));
-        agilityScript.faladorCourse.add(new AgilityObstacleModel(GAP_14904));
+        agilityScript.faladorCourse.add(new AgilityObstacleModel(GAP_14904, 3041, 3361, Operation.GREATER, Operation.GREATER_EQUAL));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(TIGHTROPE_14905));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(TIGHTROPE_14911));
-        agilityScript.faladorCourse.add(new AgilityObstacleModel(GAP_14919));
+        agilityScript.faladorCourse.add(new AgilityObstacleModel(GAP_14919, -1, 3353, Operation.GREATER, Operation.GREATER_EQUAL));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(LEDGE_14920, 3016, -1, Operation.GREATER_EQUAL, Operation.GREATER));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(LEDGE_14921, -1, 3343, Operation.GREATER, Operation.GREATER_EQUAL));
         agilityScript.faladorCourse.add(new AgilityObstacleModel(LEDGE_14922, -1, 3335, Operation.GREATER, Operation.GREATER_EQUAL));
@@ -149,18 +149,19 @@ public class MicroAgilityPlugin extends Plugin {
         agilityScript.ardougneCourse.add(new AgilityObstacleModel(GAP_15612));
 
         //Prifddinas
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(LADDER_36221, 3253, -1, Operation.LESS_EQUAL, Operation.GREATER));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36225, 3258, -1, Operation.LESS_EQUAL, Operation.GREATER));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(CHIMNEY_36227, -1, 6106, Operation.GREATER, Operation.LESS_EQUAL));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROOF_EDGE, -1, 6115, Operation.GREATER, Operation.LESS_EQUAL));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(DARK_HOLE_36229, -1, 6117, Operation.GREATER, Operation.LESS_EQUAL));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(LADDER_36231, -1, 3392, Operation.GREATER, Operation.LESS_EQUAL));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROPE_BRIDGE_36233, 2265, -1, Operation.GREATER_EQUAL, Operation.GREATER));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36234, 2254, -1, Operation.GREATER_EQUAL, Operation.GREATER));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROPE_BRIDGE_36235, -1, 3398, Operation.GREATER, Operation.LESS_EQUAL));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36236, -1, 3409, Operation.GREATER, Operation.LESS_EQUAL));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36237));
-        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(DARK_HOLE_36238, -1, 3431, Operation.GREATER, Operation.LESS_EQUAL));
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(LADDER_36221, 3253, -1, Operation.LESS_EQUAL, Operation.GREATER));// before 3253,6109, after 3255,6109
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36225, 3258, -1, Operation.LESS_EQUAL, Operation.GREATER));// before 3255,6109 , after 3272, 6105
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(CHIMNEY_36227, -1, 6106, Operation.GREATER, Operation.LESS_EQUAL));// before 3273,6105 , after 3269,6112
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROOF_EDGE, -1, 6115, Operation.GREATER, Operation.LESS_EQUAL));// before 3269,6112 , after 3269,6117
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(DARK_HOLE_36229, 3267, 6117, Operation.GREATER, Operation.LESS_EQUAL));// before 3269,6117  , after 2269,3389
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(LADDER_36231, -1, 3392, Operation.GREATER, Operation.LESS_EQUAL));// before 2269,3389 , after 2269,3393
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROPE_BRIDGE_36233, 2265, -1, Operation.GREATER_EQUAL, Operation.GREATER));// before 2269,3393 , after 2257,3390
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36234, 2254, -1, Operation.GREATER_EQUAL, Operation.GREATER));// before 2257,3390, after 2247,3397
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(LADDER_36232,-1,6140,Operation.GREATER,Operation.GREATER));// if fail TIGHTROPE_36234 , before 3274,6147, after
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(ROPE_BRIDGE_36235, -1, 3398, Operation.GREATER, Operation.LESS_EQUAL));// before 2247,3397, after 2246,3406
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36236, -1, 3409, Operation.GREATER, Operation.LESS_EQUAL));//before 2246,3406, after 2250,3416
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(TIGHTROPE_36237,-1, 3419, Operation.GREATER, Operation.LESS_EQUAL));//before 2250,3416 , after 2260 3425 //2253,3417 portal spawn
+        agilityScript.prifddinasCourse.add(new AgilityObstacleModel(DARK_HOLE_36238, -1, 3431, Operation.GREATER, Operation.LESS_EQUAL));// before 2260,3425 , after 3240,6109
 
         //Ape Atoll
         agilityScript.apeatollCourse.add(new AgilityObstacleModel(STEPPING_STONE_15412, 2755, 2742, Operation.GREATER_EQUAL, Operation.GREATER_EQUAL));
