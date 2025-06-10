@@ -61,7 +61,7 @@ public class Rs2GameObject {
     }
 
     public static boolean interact(TileObject tileObject) {
-        return clickObject(tileObject, null);
+        return clickObject(tileObject, "");
     }
 
     public static boolean interact(TileObject tileObject, String action) {
