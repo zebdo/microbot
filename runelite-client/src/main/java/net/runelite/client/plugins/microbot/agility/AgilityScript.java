@@ -10,6 +10,7 @@ import net.runelite.api.Skill;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.agility.AgilityPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -21,6 +22,7 @@ import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.models.RS2Item;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -59,7 +61,8 @@ public class AgilityScript extends Script
 				{
 					return;
 				}
-				if (Rs2AntibanSettings.actionCooldownActive) {
+				if (Rs2AntibanSettings.actionCooldownActive)
+				{
 					return;
 				}
 				if (startPoint == null)
@@ -72,10 +75,17 @@ public class AgilityScript extends Script
 				final LocalPoint playerLocation = Microbot.getClient().getLocalPlayer().getLocalLocation();
 				final WorldPoint playerWorldLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
 
-				// Eat food.
-				Rs2Player.eatAt(config.hitpoints());
+				if (handleFood())
+				{
+					return;
+				}
+				if (handleSummerPies())
+				{
+					return;
+				}
 
-				if (plugin.getCourseHandler().getCurrentObstacleIndex() != 0) {
+				if (plugin.getCourseHandler().getCurrentObstacleIndex() != 0)
+				{
 					if (Rs2Player.isMoving() || Rs2Player.isAnimating())
 					{
 						return;
@@ -145,7 +155,8 @@ public class AgilityScript extends Script
 			{
 				return;
 			}
-			if (plugin.getCourseHandler().getCurrentObstacleIndex() != 0) {
+			if (plugin.getCourseHandler().getCurrentObstacleIndex() != 0)
+			{
 				if (Rs2Player.isMoving() || Rs2Player.isAnimating())
 				{
 					return;
@@ -215,5 +226,56 @@ public class AgilityScript extends Script
 			}
 		}
 		return false;
+	}
+
+	private boolean handleFood()
+	{
+		if (Rs2Player.getHealthPercentage() > config.hitpoints())
+		{
+			return false;
+		}
+
+		List<Rs2ItemModel> foodItems = plugin.getInventoryFood();
+		if (foodItems.isEmpty())
+		{
+			return false;
+		}
+		Rs2ItemModel foodItem = foodItems.get(0);
+
+		Rs2Inventory.interact(foodItem, foodItem.getName().toLowerCase().contains("jug of wine") ? "drink" : "eat");
+		Rs2Inventory.waitForInventoryChanges(1800);
+
+		if (Rs2Inventory.contains(ItemID.JUG_EMPTY))
+		{
+			Rs2Inventory.dropAll(ItemID.JUG_EMPTY);
+		}
+		return true;
+	}
+
+	private boolean handleSummerPies()
+	{
+		if (plugin.getCourseHandler().getCurrentObstacleIndex() != 0)
+		{
+			return false;
+		}
+		if (Rs2Player.getBoostedSkillLevel(Skill.AGILITY) >= (Rs2Player.getRealSkillLevel(Skill.AGILITY) + config.pieThreshold()))
+		{
+			return false;
+		}
+
+		List<Rs2ItemModel> summerPies = plugin.getSummerPies();
+		if (summerPies.isEmpty())
+		{
+			return false;
+		}
+		Rs2ItemModel summerPie = summerPies.get(0);
+
+		Rs2Inventory.interact(summerPie, "eat");
+		Rs2Inventory.waitForInventoryChanges(1800);
+		if (Rs2Inventory.contains(ItemID.PIEDISH))
+		{
+			Rs2Inventory.dropAll(ItemID.PIEDISH);
+		}
+		return true;
 	}
 }

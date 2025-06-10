@@ -2,12 +2,16 @@ package net.runelite.client.plugins.microbot.agility;
 
 import com.google.inject.Provides;
 import java.awt.AWTException;
+import java.util.List;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.agility.courses.AgilityCourseHandler;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 @PluginDescriptor(
@@ -59,5 +63,15 @@ public class MicroAgilityPlugin extends Plugin
 	public AgilityCourseHandler getCourseHandler()
 	{
 		return config.agilityCourse().getHandler();
+	}
+
+	public List<Rs2ItemModel> getInventoryFood()
+	{
+		return Rs2Inventory.getInventoryFood().stream().filter(i -> !(i.getName().toLowerCase().contains("summer pie"))).collect(Collectors.toList());
+	}
+
+	public List<Rs2ItemModel> getSummerPies()
+	{
+		return Rs2Inventory.getInventoryFood().stream().filter(i -> i.getName().toLowerCase().contains("summer pie")).collect(Collectors.toList());
 	}
 }
