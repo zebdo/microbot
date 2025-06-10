@@ -1,6 +1,8 @@
 package net.runelite.client.plugins.microbot.util.walker;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
@@ -28,6 +30,7 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
+import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -272,6 +275,8 @@ public class Rs2Walker {
                 WorldPoint currentWorldPoint = path.get(i);
 
                 System.out.println("start loop " + i);
+
+				// add breakpoint here
 
                 if (ShortestPathPlugin.getMarker() == null) {
                     System.out.println("marker is null");
@@ -1442,6 +1447,15 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
             Rs2Player.waitForAnimation(600 * 4);
             return true;
         }
+
+		if (Rs2GameObject.getObjectIdsByName("Fossil_Rowboat").contains(tileObject.getId())) {
+			if (transport.getDisplayInfo() == null || transport.getDisplayInfo().isEmpty()) return false;
+
+			char option = transport.getDisplayInfo().charAt(0);
+			Rs2Dialogue.sleepUntilSelectAnOption();
+			Rs2Keyboard.keyPress(option);
+			sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 10000);
+		}
         return false;
     }
     
@@ -2017,17 +2031,22 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     private static boolean interactWithNewRuneliteMenu(Transport transport,int itemId) {
         if (transport.getDisplayInfo() == null || transport.getDisplayInfo().isEmpty()) return false;
 
-        int menuOption = transport.getDisplayInfo().charAt(0) - '0';
-        String[] values = transport.getDisplayInfo().split(":");
-        String destination = values[1].trim();
-        int identifier = NewMenuEntry.findIdentifier(menuOption, getIdentifierOffset(transport.getDisplayInfo()));
-        Rs2Inventory.interact(itemId, destination, identifier);
-        if (transport.getDisplayInfo().toLowerCase().contains("burning amulet")) {
-            Rs2Dialogue.sleepUntilHasDialogueOption("Okay, teleport to level");
-            Rs2Dialogue.clickOption("Okay, teleport to level");
-        }
-        Microbot.log("Traveling to " + transport.getDisplayInfo());
-        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 5000);
+		Pattern pattern = Pattern.compile("^(\\d+)\\.");
+		Matcher matcher = pattern.matcher(transport.getDisplayInfo());
+		if (matcher.find()) {
+			int menuOption = Integer.parseInt(matcher.group(1));
+			String[] values = transport.getDisplayInfo().split(":");
+			String destination = values[1].trim();
+			int identifier = NewMenuEntry.findIdentifier(menuOption, getIdentifierOffset(transport.getDisplayInfo()));
+			Rs2Inventory.interact(itemId, destination, identifier);
+			if (transport.getDisplayInfo().toLowerCase().contains("burning amulet")) {
+				Rs2Dialogue.sleepUntilHasDialogueOption("Okay, teleport to level");
+				Rs2Dialogue.clickOption("Okay, teleport to level");
+			}
+			Microbot.log("Traveling to " + transport.getDisplayInfo());
+			return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 5000);
+		}
+        return false;
     }
 
     private static int getIdentifierOffset(String itemName) {
@@ -2044,7 +2063,8 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
                 lowerCaseItemName.contains("burning amulet")) {
             return 6;
         } else if (lowerCaseItemName.contains("xeric's talisman") ||
-                lowerCaseItemName.contains("slayer ring")) {
+                lowerCaseItemName.contains("slayer ring") ||
+				lowerCaseItemName.contains("construct. cape")) {
             return 4;
         } else if (lowerCaseItemName.contains("kharedst's memoirs") ||
                    lowerCaseItemName.contains("giantsoul amulet")) {
