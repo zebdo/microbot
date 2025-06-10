@@ -75,7 +75,7 @@ public class AgilityScript extends Script
 				// Eat food.
 				Rs2Player.eatAt(config.hitpoints());
 
-				if (plugin.getCourseHandler().getCurrentObstacleIndex() > 0) {
+				if (plugin.getCourseHandler().getCurrentObstacleIndex() != 0) {
 					if (Rs2Player.isMoving() || Rs2Player.isAnimating())
 					{
 						return;
@@ -145,9 +145,11 @@ public class AgilityScript extends Script
 			{
 				return;
 			}
-			if (Rs2Player.isAnimating())
-			{
-				return;
+			if (plugin.getCourseHandler().getCurrentObstacleIndex() != 0) {
+				if (Rs2Player.isMoving() || Rs2Player.isAnimating())
+				{
+					return;
+				}
 			}
 
 			getAlchItem().ifPresent(item -> Rs2Magic.alch(item, 50, 75));

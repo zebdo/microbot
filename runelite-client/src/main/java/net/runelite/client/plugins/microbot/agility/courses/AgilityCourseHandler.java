@@ -1,10 +1,8 @@
 package net.runelite.client.plugins.microbot.agility.courses;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import net.runelite.api.GameObject;
 import net.runelite.api.GroundObject;
 import net.runelite.api.Skill;
@@ -38,11 +36,19 @@ public interface AgilityCourseHandler
 			.collect(Collectors.toList());
 
 		Predicate<TileObject> validObjectPredicate = obj -> {
-			if (!objectIds.contains(obj.getId())) return false;
-			if (obj.getPlane() != playerLocation.getPlane()) return false;
+			if (!objectIds.contains(obj.getId()))
+			{
+				return false;
+			}
+			if (obj.getPlane() != playerLocation.getPlane())
+			{
+				return false;
+			}
 
 			if (obj instanceof GroundObject)
+			{
 				return Rs2GameObject.canReach(obj.getWorldLocation(), 2, 2);
+			}
 
 			if (obj instanceof GameObject)
 			{
@@ -63,7 +69,8 @@ public interface AgilityCourseHandler
 		return Rs2GameObject.getAll(validObjectPredicate).stream().findFirst().orElse(null);
 	}
 
-	default boolean waitForCompletion(final int agilityExp, final int plane) {
+	default boolean waitForCompletion(final int agilityExp, final int plane)
+	{
 		double initialHealth = Rs2Player.getHealthPercentage();
 		int timeoutMs = 15000;
 
@@ -76,16 +83,19 @@ public interface AgilityCourseHandler
 		return gainedExp || planeChanged || lostHealth;
 	}
 
-	default int getCurrentObstacleIndex() {
+	default int getCurrentObstacleIndex()
+	{
 		WorldPoint playerLoc = Microbot.getClient().getLocalPlayer().getWorldLocation();
 
-		for (int i = 0; i < getObstacles().size(); i++) {
+		for (int i = 0; i < getObstacles().size(); i++)
+		{
 			AgilityObstacleModel o = getObstacles().get(i);
 
 			boolean xMatches = o.getOperationX().check(playerLoc.getX(), o.getRequiredX());
 			boolean yMatches = o.getOperationY().check(playerLoc.getY(), o.getRequiredY());
 
-			if (xMatches && yMatches) {
+			if (xMatches && yMatches)
+			{
 				return i;
 			}
 		}
@@ -93,12 +103,18 @@ public interface AgilityCourseHandler
 		return -1;
 	}
 
-	default boolean handleWalkToStart(WorldPoint playerWorldLocation, LocalPoint playerLocalLocation) {
-		if (Microbot.getClient().getTopLevelWorldView().getPlane() != 0) return false;
+	default boolean handleWalkToStart(WorldPoint playerWorldLocation, LocalPoint playerLocalLocation)
+	{
+		if (Microbot.getClient().getTopLevelWorldView().getPlane() != 0)
+		{
+			return false;
+		}
 
 		LocalPoint startLocal = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), getStartPoint());
-		if (startLocal == null || playerLocalLocation.distanceTo(startLocal) >= MAX_DISTANCE) {
-			if (playerWorldLocation.distanceTo(getStartPoint()) < 100) {
+		if (startLocal == null || playerLocalLocation.distanceTo(startLocal) >= MAX_DISTANCE)
+		{
+			if (playerWorldLocation.distanceTo(getStartPoint()) < 100)
+			{
 				Rs2Walker.walkTo(getStartPoint(), 8);
 				Microbot.log("Going back to course's starting point");
 				return true;

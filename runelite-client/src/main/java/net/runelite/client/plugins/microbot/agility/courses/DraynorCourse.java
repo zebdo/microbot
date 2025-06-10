@@ -1,14 +1,8 @@
 package net.runelite.client.plugins.microbot.agility.courses;
 
 import java.util.List;
-import static net.runelite.api.ObjectID.CRATE_11632;
-import static net.runelite.api.ObjectID.GAP_11631;
-import static net.runelite.api.ObjectID.NARROW_WALL;
-import static net.runelite.api.ObjectID.ROUGH_WALL;
-import static net.runelite.api.ObjectID.TIGHTROPE;
-import static net.runelite.api.ObjectID.TIGHTROPE_11406;
-import static net.runelite.api.ObjectID.WALL_11630;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.agility.models.AgilityObstacleModel;
 import net.runelite.client.plugins.microbot.util.misc.Operation;
 
@@ -25,13 +19,13 @@ public class DraynorCourse implements AgilityCourseHandler
 	public List<AgilityObstacleModel> getObstacles()
 	{
 		return List.of(
-			new AgilityObstacleModel(ROUGH_WALL),
-			new AgilityObstacleModel(TIGHTROPE),// 3102,3279
-			new AgilityObstacleModel(TIGHTROPE_11406),// 3090,3276
-			new AgilityObstacleModel(NARROW_WALL,-1,3266,Operation.GREATER,Operation.GREATER_EQUAL), // 3092,3266
-			new AgilityObstacleModel(WALL_11630, -1, 3261, Operation.GREATER, Operation.GREATER_EQUAL),// 3088,3261
-			new AgilityObstacleModel(GAP_11631, -1, 3255, Operation.GREATER, Operation.LESS_EQUAL),// 3088 3255
-			new AgilityObstacleModel(CRATE_11632) // 3096,3256
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_DRAYNOR_WALLCLIMB),
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_DRAYNOR_TIGHTROPE_1),// 3102,3279
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_DRAYNOR_TIGHTROPE_2),// 3090,3276
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_DRAYNOR_WALLCROSSING,-1,3266,Operation.GREATER,Operation.GREATER_EQUAL), // 3092,3266
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_DRAYNOR_WALLSCRAMBLE, -1, 3261, Operation.GREATER, Operation.GREATER_EQUAL),// 3088,3261
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_DRAYNOR_LEAPDOWN, -1, 3255, Operation.GREATER, Operation.LESS_EQUAL),// 3088 3255
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_DRAYNOR_CRATE) // 3096,3256
 		);
 	}
 }

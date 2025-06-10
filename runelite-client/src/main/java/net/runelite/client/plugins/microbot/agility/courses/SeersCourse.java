@@ -1,13 +1,8 @@
 package net.runelite.client.plugins.microbot.agility.courses;
 
 import java.util.List;
-import static net.runelite.api.ObjectID.EDGE_14931;
-import static net.runelite.api.ObjectID.GAP_14928;
-import static net.runelite.api.ObjectID.GAP_14929;
-import static net.runelite.api.ObjectID.GAP_14930;
-import static net.runelite.api.ObjectID.TIGHTROPE_14932;
-import static net.runelite.api.ObjectID.WALL_14927;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.agility.models.AgilityObstacleModel;
 
 public class SeersCourse implements AgilityCourseHandler
@@ -22,12 +17,12 @@ public class SeersCourse implements AgilityCourseHandler
 	public List<AgilityObstacleModel> getObstacles()
 	{
 		return List.of(
-			new AgilityObstacleModel(WALL_14927),
-			new AgilityObstacleModel(GAP_14928),
-			new AgilityObstacleModel(TIGHTROPE_14932),
-			new AgilityObstacleModel(GAP_14929),
-			new AgilityObstacleModel(GAP_14930),
-			new AgilityObstacleModel(EDGE_14931)
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_SEERS_WALLCLIMB),
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_SEERS_JUMP),
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_SEERS_TIGHTROPE),
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_SEERS_JUMP_1),
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_SEERS_JUMP_2),
+			new AgilityObstacleModel(ObjectID.ROOFTOPS_SEERS_LEAPDOWN)
 		);
 	}
 }

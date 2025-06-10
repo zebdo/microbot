@@ -1,15 +1,8 @@
 package net.runelite.client.plugins.microbot.agility.courses;
 
 import java.util.List;
-import static net.runelite.api.ObjectID.BEAM;
-import static net.runelite.api.ObjectID.BEAM_42220;
-import static net.runelite.api.ObjectID.EDGE_42218;
-import static net.runelite.api.ObjectID.EDGE_42219;
-import static net.runelite.api.ObjectID.LADDER_42209;
-import static net.runelite.api.ObjectID.MONKEYBARS_42211;
-import static net.runelite.api.ObjectID.TIGHTROPE_42212;
-import static net.runelite.api.ObjectID.ZIPLINE;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.agility.models.AgilityObstacleModel;
 import net.runelite.client.plugins.microbot.util.misc.Operation;
 
@@ -25,14 +18,14 @@ public class ShayzienAdvancedCourse implements AgilityCourseHandler
 	public List<AgilityObstacleModel> getObstacles()
 	{
 		return List.of(
-			new AgilityObstacleModel(LADDER_42209),
-			new AgilityObstacleModel(MONKEYBARS_42211),
-			new AgilityObstacleModel(TIGHTROPE_42212, -1, 3635, Operation.GREATER, Operation.LESS_EQUAL),
-			new AgilityObstacleModel(BEAM, -1, -3633, Operation.GREATER, Operation.GREATER_EQUAL),
-			new AgilityObstacleModel(EDGE_42218, -1, 3635, Operation.GREATER, Operation.GREATER_EQUAL),
-			new AgilityObstacleModel(EDGE_42219, -1, 3630, Operation.GREATER, Operation.LESS_EQUAL),
-			new AgilityObstacleModel(BEAM_42220, 1511, -1, Operation.LESS_EQUAL, Operation.GREATER_EQUAL),
-			new AgilityObstacleModel(ZIPLINE)
+			new AgilityObstacleModel(ObjectID.SHAYZIEN_AGILITY_BOTH_START_LADDER),
+			new AgilityObstacleModel(ObjectID.SHAYZIEN_AGILITY_BOTH_ROPE_CLIMB),
+			new AgilityObstacleModel(ObjectID.SHAYZIEN_AGILITY_BOTH_ROPE_WALK, -1, 3635, Operation.GREATER, Operation.LESS_EQUAL),
+			new AgilityObstacleModel(ObjectID.SHAYZIEN_AGILITY_UP_SWING_JUMP_1, -1, -3633, Operation.GREATER, Operation.GREATER_EQUAL), // 42217
+			new AgilityObstacleModel(ObjectID.SHAYZIEN_AGILITY_UP_JUMP_PLATFORM_1, -1, 3635, Operation.GREATER, Operation.GREATER_EQUAL),
+			new AgilityObstacleModel(ObjectID.SHAYZIEN_AGILITY_UP_JUMP_PLATFORM_2, -1, 3630, Operation.GREATER, Operation.LESS_EQUAL),
+			new AgilityObstacleModel(ObjectID.SHAYZIEN_AGILITY_UP_SWING_JUMP_2, 1511, -1, Operation.LESS_EQUAL, Operation.GREATER_EQUAL),
+			new AgilityObstacleModel(ObjectID.SHAYZIEN_AGILITY_UP_END_JUMP)
 		);
 	}
 }
