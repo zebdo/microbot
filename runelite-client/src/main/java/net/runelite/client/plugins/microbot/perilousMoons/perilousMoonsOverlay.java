@@ -16,15 +16,16 @@ public class perilousMoonsOverlay extends OverlayPanel {
     {
         super(plugin);
         setPosition(OverlayPosition.TOP_LEFT);
+        setSnappable(true);
         setNaughty();
     }
     @Override
     public Dimension render(Graphics2D graphics) {
         try {
-            panelComponent.setPreferredSize(new Dimension(200, 300));
+            panelComponent.setPreferredSize(new Dimension(275, 900));
             panelComponent.getChildren().add(TitleComponent.builder()
                     .text("Perilous Moons Beta V1.0.0")
-                    .color(Color.GREEN)
+                    .color(Color.ORANGE)
                     .build());
 
             panelComponent.getChildren().add(LineComponent.builder().build());
