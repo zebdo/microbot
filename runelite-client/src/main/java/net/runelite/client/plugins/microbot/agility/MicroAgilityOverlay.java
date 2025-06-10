@@ -11,9 +11,13 @@ import javax.inject.Inject;
 import java.awt.*;
 
 public class MicroAgilityOverlay extends OverlayPanel {
+	final MicroAgilityPlugin plugin;
+	final MicroAgilityConfig config;
     @Inject
-    MicroAgilityOverlay(MicroAgilityPlugin plugin) {
+    MicroAgilityOverlay(MicroAgilityPlugin plugin, MicroAgilityConfig config) {
         super(plugin);
+		this.plugin = plugin;
+		this.config = config;
         setPosition(OverlayPosition.TOP_LEFT);
         setNaughty();
     }
@@ -30,13 +34,13 @@ public class MicroAgilityOverlay extends OverlayPanel {
             panelComponent.getChildren().add(LineComponent.builder().build());
 
             panelComponent.getChildren().add(LineComponent.builder()
-                    .left("AgilityExp")
+                    .left("Agility Exp")
                     .right(Integer.toString(Microbot.getClient().getSkillExperience(Skill.AGILITY)))
                     .build());
 
             panelComponent.getChildren().add(LineComponent.builder()
-                    .left("current obstacle")
-                    .right(Integer.toString(AgilityScript.currentObstacle))
+                    .left("Current Obstacle")
+                    .right(Integer.toString(config.agilityCourse().getHandler().getCurrentObstacleIndex()))
                     .build());
 
         } catch (Exception ex) {
