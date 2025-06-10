@@ -5,7 +5,7 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigInformation;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
-import net.runelite.client.plugins.microbot.agility.enums.AgilityCourseName;
+import net.runelite.client.plugins.microbot.agility.enums.AgilityCourse;
 
 @ConfigGroup("MicroAgility")
 @ConfigInformation("Enable the plugin near the start of your selected agility course. <br />" +
@@ -31,9 +31,9 @@ public interface MicroAgilityConfig extends Config
 		position = 1,
 		section = generalSection
 	)
-	default AgilityCourseName agilityCourse()
+	default AgilityCourse agilityCourse()
 	{
-		return AgilityCourseName.CANIFIS_ROOFTOP_COURSE;
+		return AgilityCourse.CANIFIS_ROOFTOP_COURSE;
 	}
 
 	@ConfigItem(

@@ -20,7 +20,7 @@ import net.runelite.client.plugins.microbot.agility.courses.ShayzienBasicCourse;
 import net.runelite.client.plugins.microbot.agility.courses.VarrockCourse;
 
 @Getter
-public enum AgilityCourseName
+public enum AgilityCourse
 {
 	AL_KHARID_ROOFTOP_COURSE("Al Kharid Rooftop Course", new AlKharidCourse()),
 	APE_ATOLL_AGILITY_COURSE("Ape Atoll Agility Course", new ApeAtollCourse()),
@@ -45,7 +45,7 @@ public enum AgilityCourseName
 	private final boolean rooftopCourse;
 	private final AgilityCourseHandler handler;
 
-	AgilityCourseName(String tooltip, AgilityCourseHandler handler)
+	AgilityCourse(String tooltip, AgilityCourseHandler handler)
 	{
 		this.tooltip = tooltip;
 		this.handler = handler;

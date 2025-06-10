@@ -13,10 +13,10 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.agility.AgilityPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
-import net.runelite.client.plugins.microbot.agility.courses.AgilityCourseHandler;
 import net.runelite.client.plugins.microbot.agility.courses.GnomeStrongholdCourse;
 import net.runelite.client.plugins.microbot.agility.courses.PrifddinasCourse;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
@@ -59,6 +59,9 @@ public class AgilityScript extends Script
 				{
 					return;
 				}
+				if (Rs2AntibanSettings.actionCooldownActive) {
+					return;
+				}
 				if (startPoint == null)
 				{
 					Microbot.showMessage("Agility course: " + config.agilityCourse().getTooltip() + " is not supported.");
@@ -72,9 +75,11 @@ public class AgilityScript extends Script
 				// Eat food.
 				Rs2Player.eatAt(config.hitpoints());
 
-				if (Rs2Player.isMoving() || Rs2Player.isAnimating())
-				{
-					return;
+				if (plugin.getCourseHandler().getCurrentObstacleIndex() > 0) {
+					if (Rs2Player.isMoving() || Rs2Player.isAnimating())
+					{
+						return;
+					}
 				}
 
 				if (lootMarksOfGrace())
@@ -121,6 +126,8 @@ public class AgilityScript extends Script
 				if (Rs2GameObject.interact(gameObject))
 				{
 					plugin.getCourseHandler().waitForCompletion(agilityExp, Microbot.getClient().getLocalPlayer().getWorldLocation().getPlane());
+					Rs2Antiban.actionCooldown();
+					Rs2Antiban.takeMicroBreakByChance();
 				}
 			}
 			catch (Exception ex)
@@ -208,5 +215,3 @@ public class AgilityScript extends Script
 		return false;
 	}
 }
-
-

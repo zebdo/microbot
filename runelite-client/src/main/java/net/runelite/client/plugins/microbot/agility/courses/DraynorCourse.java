@@ -26,12 +26,12 @@ public class DraynorCourse implements AgilityCourseHandler
 	{
 		return List.of(
 			new AgilityObstacleModel(ROUGH_WALL),
-			new AgilityObstacleModel(TIGHTROPE),
-			new AgilityObstacleModel(TIGHTROPE_11406),
-			new AgilityObstacleModel(NARROW_WALL),
-			new AgilityObstacleModel(WALL_11630, -1, 3256, Operation.GREATER, Operation.GREATER_EQUAL),
-			new AgilityObstacleModel(GAP_11631, -1, 3255, Operation.GREATER, Operation.LESS_EQUAL),
-			new AgilityObstacleModel(CRATE_11632)
+			new AgilityObstacleModel(TIGHTROPE),// 3102,3279
+			new AgilityObstacleModel(TIGHTROPE_11406),// 3090,3276
+			new AgilityObstacleModel(NARROW_WALL,-1,3266,Operation.GREATER,Operation.GREATER_EQUAL), // 3092,3266
+			new AgilityObstacleModel(WALL_11630, -1, 3261, Operation.GREATER, Operation.GREATER_EQUAL),// 3088,3261
+			new AgilityObstacleModel(GAP_11631, -1, 3255, Operation.GREATER, Operation.LESS_EQUAL),// 3088 3255
+			new AgilityObstacleModel(CRATE_11632) // 3096,3256
 		);
 	}
 }

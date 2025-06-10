@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.agility.courses;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -78,15 +79,18 @@ public interface AgilityCourseHandler
 	default int getCurrentObstacleIndex() {
 		WorldPoint playerLoc = Microbot.getClient().getLocalPlayer().getWorldLocation();
 
-		return IntStream.range(0, getObstacles().size())
-			.filter(i -> {
-				AgilityObstacleModel o = getObstacles().get(i);
-				boolean xMatches = o.getRequiredX() == -1 || o.getOperationX().check(playerLoc.getX(), o.getRequiredX());
-				boolean yMatches = o.getRequiredY() == -1 || o.getOperationY().check(playerLoc.getY(), o.getRequiredY());
-				return xMatches && yMatches;
-			})
-			.findFirst()
-			.orElse(-1);
+		for (int i = 0; i < getObstacles().size(); i++) {
+			AgilityObstacleModel o = getObstacles().get(i);
+
+			boolean xMatches = o.getOperationX().check(playerLoc.getX(), o.getRequiredX());
+			boolean yMatches = o.getOperationY().check(playerLoc.getY(), o.getRequiredY());
+
+			if (xMatches && yMatches) {
+				return i;
+			}
+		}
+
+		return -1;
 	}
 
 	default boolean handleWalkToStart(WorldPoint playerWorldLocation, LocalPoint playerLocalLocation) {
