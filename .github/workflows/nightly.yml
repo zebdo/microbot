@@ -46,7 +46,7 @@ jobs:
         uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631
         with:
           tag_name: ${{ env.TAG_NAME }}
-          name: Nightly Release
+          name: Nightly Build
           generate_release_notes: true
           draft: false
           prerelease: false
