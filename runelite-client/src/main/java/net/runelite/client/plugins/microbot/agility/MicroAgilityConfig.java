@@ -16,6 +16,13 @@ import net.runelite.client.plugins.microbot.agility.enums.AgilityCourse;
 	"</ul>")
 public interface MicroAgilityConfig extends Config
 {
+
+	String selectedCourse = "course";
+	String hitpointsThreshold = "hitpointsThreshold";
+	String shouldAlch = "shouldAlch";
+	String itemsToAlch = "itemsToAlch";
+	String summerPieThreshold = "summerPieThreshold";
+
 	@ConfigSection(
 		name = "General",
 		description = "General",
@@ -25,7 +32,7 @@ public interface MicroAgilityConfig extends Config
 	String generalSection = "general";
 
 	@ConfigItem(
-		keyName = "Course",
+		keyName = selectedCourse,
 		name = "Course",
 		description = "Choose your agility course",
 		position = 1,
@@ -37,8 +44,8 @@ public interface MicroAgilityConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "Hitpoints",
-		name = "Eat at %",
+		keyName = hitpointsThreshold,
+		name = "Eat at",
 		description = "Use food below certain hitpoint percent. If there's no food in the inventory, the script stops. Set to 0 in order to disable.",
 		position = 2,
 		section = generalSection
@@ -48,12 +55,23 @@ public interface MicroAgilityConfig extends Config
 		return 20;
 	}
 
+	@ConfigItem(
+		keyName = summerPieThreshold,
+		name = "Summer Pie Boost",
+		description = "Use Summer pies to boost agility level at start, set it to 0 to disable, set it to 5 to eat pie when you loose 1 level",
+		position = 3,
+		section = generalSection
+	)
+	default int pieThreshold()
+	{
+		return 5;
+	}
 
 	@ConfigItem(
-		keyName = "Alchemy",
+		keyName = shouldAlch,
 		name = "Alch",
 		description = "Use Low/High Alchemy while doing agility",
-		position = 3,
+		position = 4,
 		section = generalSection
 	)
 	default boolean alchemy()
@@ -62,10 +80,10 @@ public interface MicroAgilityConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "itemsToAlch",
+		keyName = itemsToAlch,
 		name = "Items to Alch",
 		description = "Enter items to alch, separated by commas (e.g., Rune sword, Dragon dagger, Mithril platebody)",
-		position = 3,
+		position = 5,
 		section = generalSection
 	)
 	default String itemsToAlch()
