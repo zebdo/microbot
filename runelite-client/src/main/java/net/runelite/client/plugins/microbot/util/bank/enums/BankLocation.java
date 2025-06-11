@@ -156,9 +156,6 @@ public enum BankLocation {
             case LLETYA:
                 // Requires Mournings End Part 1 in progress or completed
                 return Rs2Player.getQuestState(Quest.MOURNINGS_END_PART_I) != QuestState.NOT_STARTED;
-            case PRIFDDINAS:
-                // Requires Song of the elves to be completed
-                return Rs2Player.getQuestState(Quest.SONG_OF_THE_ELVES) == QuestState.FINISHED;
             case SHILO_VILLAGE:
                 // Requires Shilo Village to enter the village & use the bank
                 return Rs2Player.getQuestState(Quest.SHILO_VILLAGE) == QuestState.FINISHED;
