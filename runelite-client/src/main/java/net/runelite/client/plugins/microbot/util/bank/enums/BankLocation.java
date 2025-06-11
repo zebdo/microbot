@@ -78,7 +78,8 @@ public enum BankLocation {
     PISCATORIS_FISHING_COLONY(new WorldPoint(2330, 3689, 0), true),
     PORT_KHAZARD(new WorldPoint(2664, 3161, 0), true),
     PORT_PHASMATYS(new WorldPoint(3688, 3467, 0), true),
-    PRIFDDINAS(new WorldPoint(3257, 6106, 0), true),
+    PRIFDDINAS_NORTH(new WorldPoint(3257, 6106, 0), true),
+    PRIFDDINAS_SOUTH(new WorldPoint(3295, 6059, 0), true),
     ROGUES_DEN_EMERALD_BENEDICT(new WorldPoint(3043, 4973, 1), true),
     ROGUES_DEN_CHEST(new WorldPoint(3040, 4969, 1), true),
     RUINS_OF_UNKAH(new WorldPoint(3156, 2835, 0), true),
@@ -238,6 +239,12 @@ public enum BankLocation {
             case GUARDIANS_OF_THE_RIFT:
                 // Requires Temple of the Eye
                 return Rs2Player.getQuestState(Quest.TEMPLE_OF_THE_EYE) == QuestState.FINISHED;
+            case PRIFDDINAS_NORTH:
+                // Requires Song of the elves to be completed
+                return Rs2Player.getQuestState(Quest.SONG_OF_THE_ELVES) == QuestState.FINISHED;
+            case PRIFDDINAS_SOUTH:
+                // Requires Song of the elves to be completed
+                return Rs2Player.getQuestState(Quest.SONG_OF_THE_ELVES) == QuestState.FINISHED;
             default:
                 return true;
         }
