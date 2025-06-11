@@ -26,15 +26,17 @@ jobs:
         run: mvn clean package
 
       - name: Create Release
-        uses: softprops/action-gh-release@da05d552573ad5aba039eaac05058a918a7bf631
+        uses: ncipollo/release-action@v1
         with:
-          tag_name: ${{ env.TAG_NAME }}
+          tag: ${{ env.TAG_NAME }}
+          commit: refs/heads/main
           name: Release ${{ env.TAG_NAME }}
-          generate_release_notes: true
-          draft: false
-          prerelease: false
-          files: |
+          generateReleaseNotes: true
+          allowUpdates: true
+          replacesArtifacts: true
+          artifacts: |
             /home/runner/work/Microbot/Microbot/runelite-client/target/microbot-*.jar
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload Jar
         uses: "bacongobbler/azure-blob-storage-upload@main"
