@@ -21,7 +21,15 @@ public interface AgilityCourseHandler
 	int MAX_DISTANCE = 2300;
 
 	WorldPoint getStartPoint();
+
 	List<AgilityObstacleModel> getObstacles();
+
+	Integer getRequiredLevel();
+
+	default boolean canBeBoosted()
+	{
+		return true;
+	}
 
 	default TileObject getCurrentObstacle()
 	{
