@@ -34,7 +34,7 @@ public class Rs2Keyboard
 	private static void withFocusCanvas(Runnable action)
 	{
 		Canvas canvas = getCanvas();
-		boolean originalFocus = canvas.isFocusOwner();
+		boolean originalFocus = canvas.isFocusable();
 		if (!originalFocus) canvas.setFocusable(true);
 
 		try
