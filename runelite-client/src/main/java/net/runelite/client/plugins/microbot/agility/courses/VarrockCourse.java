@@ -29,4 +29,10 @@ public class VarrockCourse implements AgilityCourseHandler
 			new AgilityObstacleModel(ObjectID.ROOFTOPS_VARROCK_FINISH)//3236,3410
 		);
 	}
+
+	@Override
+	public Integer getRequiredLevel()
+	{
+		return 30;
+	}
 }
