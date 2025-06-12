@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.perilousMoons.enums;
+package net.runelite.client.plugins.microbot.moonsOfPeril.enums;
 
 public enum State {
     IDLE,

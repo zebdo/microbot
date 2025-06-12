@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.perilousMoons;
+package net.runelite.client.plugins.microbot.moonsOfPeril;
 
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
@@ -13,40 +13,40 @@ import javax.inject.Inject;
 import java.awt.*;
 
 @PluginDescriptor(
-        name = PluginDescriptor.Default + "Perilous Moons Beta",
+        name = PluginDescriptor.Default + "Moons of Peril Beta",
         description = "A plugin to defeat the Perilous Moons bosses",
         tags = {"bossing", "microbot"},
         enabledByDefault = false
 )
 @Slf4j
-public class perilousMoonsPlugin extends Plugin {
+public class moonsOfPerilPlugin extends Plugin {
     @Inject
-    private perilousMoonsConfig config;
+    private moonsOfPerilConfig config;
     @Provides
-    perilousMoonsConfig provideConfig(ConfigManager configManager) {
-        return configManager.getConfig(perilousMoonsConfig.class);
+    moonsOfPerilConfig provideConfig(ConfigManager configManager) {
+        return configManager.getConfig(moonsOfPerilConfig.class);
     }
 
     @Inject
     private OverlayManager overlayManager;
     @Inject
-    private perilousMoonsOverlay perilousMoonsOverlay;
+    private moonsOfPerilOverlay moonsOfPerilOverlay;
 
     @Inject
-    perilousMoonsScript perilousMoonsScript;
+    moonsOfPerilScript moonsOfPerilScript;
 
 
     @Override
     protected void startUp() throws AWTException {
         if (overlayManager != null) {
-            overlayManager.add(perilousMoonsOverlay);
+            overlayManager.add(moonsOfPerilOverlay);
         }
-        perilousMoonsScript.run(config);
+        moonsOfPerilScript.run(config);
     }
 
     protected void shutDown() {
-        perilousMoonsScript.shutdown();
-        overlayManager.remove(perilousMoonsOverlay);
+        moonsOfPerilScript.shutdown();
+        overlayManager.remove(moonsOfPerilOverlay);
     }
     int ticks = 10;
     @Subscribe
