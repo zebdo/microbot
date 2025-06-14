@@ -7,6 +7,7 @@ import org.objectweb.asm.tree.AbstractInsnNode;
 import org.objectweb.asm.tree.ClassNode;
 import org.objectweb.asm.tree.FieldInsnNode;
 import org.objectweb.asm.tree.InsnList;
+import org.objectweb.asm.tree.IntInsnNode;
 import org.objectweb.asm.tree.LdcInsnNode;
 import org.objectweb.asm.tree.MethodInsnNode;
 import org.objectweb.asm.tree.MethodNode;
@@ -36,13 +37,13 @@ public class Rs2Reflection {
         invokeMenu(param0, param1, opcode, identifier, itemId, -1, option, target, canvasX, canvasY);
     }
     private static Method menuAction;
-    private static int menuActionGarbageValue;
+    private static Object menuActionGarbageValue;
     @SneakyThrows
     public static void invokeMenu(int param0, int param1, int opcode, int identifier, int itemId, int worldViewId, String option, String target, int canvasX, int canvasY)
     {
         if (menuAction == null)
         {
-            final String MENU_ACTION_DESCRIPTOR_VANILLA = "(IIIIIILjava/lang/String;Ljava/lang/String;III)V";
+            final String MENU_ACTION_DESCRIPTOR_VANILLA = "(IIIIIILjava/lang/String;Ljava/lang/String;IIB)V";
             final String MENU_ACTION_DESCRIPTOR_RUNELITE = "(IILnet/runelite/api/MenuAction;IILjava/lang/String;Ljava/lang/String;)V";
 
             final Class<?> clientClazz = Microbot.getClient().getClass();
@@ -63,17 +64,29 @@ public class Rs2Reflection {
                 final InsnList instructions = targetMethodNodeContainingMenuActionInvocation.instructions;
                 for (AbstractInsnNode insnNode : instructions)
                 {
-                    if (insnNode instanceof LdcInsnNode && insnNode.getNext() instanceof MethodInsnNode)
+                    if ((insnNode instanceof LdcInsnNode || (insnNode instanceof IntInsnNode)) && insnNode.getNext() instanceof MethodInsnNode)
                     {
-                        final LdcInsnNode menuActionVanillaGarbageValueInsn = (LdcInsnNode) insnNode;
-                        final MethodInsnNode menuActionVanillaInsn = (MethodInsnNode) insnNode.getNext();
+                        if (insnNode instanceof LdcInsnNode)
+                        {
+                            menuActionGarbageValue = ((LdcInsnNode) insnNode).cst;
+                        }
+                        else if (insnNode instanceof IntInsnNode)
+                        {
+                            if (insnNode.getOpcode() == Opcodes.BIPUSH)
+                            {
+                                menuActionGarbageValue = ((byte) ((IntInsnNode) insnNode).operand);
+                            }
+                            else if (insnNode.getOpcode() == Opcodes.SIPUSH)
+                            {
+                                menuActionGarbageValue = ((short) ((IntInsnNode) insnNode).operand);
+                            }
+                        }
 
+                        final MethodInsnNode menuActionVanillaInsn = (MethodInsnNode) insnNode.getNext();
                         if (!menuActionVanillaInsn.desc.equals(MENU_ACTION_DESCRIPTOR_VANILLA))
                         {
                             throw new RuntimeException("Menu action descriptor vanilla has changed from: " + MENU_ACTION_DESCRIPTOR_VANILLA + " to: " + menuActionVanillaInsn.desc);
                         }
-
-                        menuActionGarbageValue = (int) menuActionVanillaGarbageValueInsn.cst;
                         menuAction = Arrays.stream(Class.forName(menuActionVanillaInsn.owner).getDeclaredMethods())
                                 .filter(m -> m.getName().equals(menuActionVanillaInsn.name))
                                 .findFirst()
@@ -84,7 +97,7 @@ public class Rs2Reflection {
             }
         }
 
-        if (menuAction == null)
+        if (menuAction == null || menuActionGarbageValue == null)
         {
             Microbot.showMessage("invokeMenu method is broken! Falling back to runelite menu action");
             Microbot.getClientThread().invoke(() -> Microbot.getClient().menuAction(param0, param1, MenuAction.of(opcode), identifier, itemId, option, target));
