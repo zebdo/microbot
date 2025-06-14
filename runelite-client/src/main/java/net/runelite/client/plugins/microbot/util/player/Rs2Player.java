@@ -1240,9 +1240,16 @@ public class Rs2Player {
      * @return {@code true} if a potion was successfully consumed, {@code false} otherwise.
      */
     public static boolean drinkCombatPotionAt(Skill skill, boolean superCombat) {
-        // If the current boosted level is already 5 or more above the real level, don't drink
-        if (Microbot.getClient().getBoostedSkillLevel(skill)
-                - Microbot.getClient().getRealSkillLevel(skill) > 5) {
+        int real = Microbot.getClient().getRealSkillLevel(skill);
+        int boosted = Microbot.getClient().getBoostedSkillLevel(skill);
+
+        // max boost per wiki: RealLevel * (15/100) + 5
+        double maxBoost = real * 0.15 + 5;
+
+        // threshold is 20% of that max
+        double threshold = maxBoost * 0.20;
+
+        if ((boosted - real) > threshold) {
             return false;
         }
 
