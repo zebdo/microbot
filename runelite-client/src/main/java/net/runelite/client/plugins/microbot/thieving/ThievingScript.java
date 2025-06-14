@@ -337,7 +337,6 @@ public class ThievingScript extends Script {
 
         doNotDropItemList.addAll(foodNames);
 
-        //doNotDropItemList.add(config.food().getName());
         doNotDropItemList.add("dodgy necklace");
         doNotDropItemList.add("coins");
         doNotDropItemList.add("book of the dead");

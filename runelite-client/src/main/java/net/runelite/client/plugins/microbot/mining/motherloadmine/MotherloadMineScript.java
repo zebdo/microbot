@@ -404,8 +404,9 @@ public class MotherloadMineScript extends Script
         if (Rs2GameObject.interact(vein))
         {
             oreVein = vein;
-            sleepUntil(Rs2Player::isAnimating, 5000);
-            if (!Rs2Player.isAnimating())
+            //sleepUntil(Rs2Player::isAnimating, 5000);
+            //if (!Rs2Player.isAnimating())
+            if (vein == null)
             {
                 oreVein = null;
             }
