@@ -5,6 +5,7 @@ import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
+import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
 
 import javax.inject.Inject;
 import java.awt.*;
@@ -34,6 +35,9 @@ public class moonsOfPerilOverlay extends OverlayPanel {
                     .left(Microbot.status)
                     .build());
 
+            panelComponent.getChildren().add(LineComponent.builder()
+                    .left("State: " + moonsOfPerilScript.CURRENT_STATE)
+                    .build());
 
         } catch(Exception ex) {
             System.out.println(ex.getMessage());

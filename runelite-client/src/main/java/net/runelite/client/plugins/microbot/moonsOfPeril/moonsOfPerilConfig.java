@@ -16,11 +16,25 @@ public interface moonsOfPerilConfig extends Config {
     String resupplySection = "Resupply Settings";
 
     @ConfigSection(
-            name = "Bossing",
-            description = "Bossing",
+            name = "Eclipse Moon",
+            description = "Eclipse Moon",
+            position = 1
+    )
+    String eclipseMoonSection = "Eclipse Moon";
+
+    @ConfigSection(
+            name = "Blue Moon",
+            description = "Blue Moon",
             position = 2
     )
-    String bossSection = "Bossing";
+    String blueMoonSection = "Blue Moon";
+
+    @ConfigSection(
+            name = "Blood Moon",
+            description = "Blood Moon",
+            position = 3
+    )
+    String bloodMoonSection = "Blood Moon";
 
 
     @ConfigItem(
@@ -44,7 +58,7 @@ public interface moonsOfPerilConfig extends Config {
     )
     default int moonlightPotionsMinimum()
     {
-        return 1;
+        return 2;
     }
 
     @ConfigItem(
@@ -56,7 +70,95 @@ public interface moonsOfPerilConfig extends Config {
     )
     default int cookedBreamMinimum()
     {
-        return 1;
+        return 10;
     }
+
+    @ConfigItem(
+            keyName = "eclipseWeaponMain",
+            name = "Eclipse - Main Weapon",
+            description = "The exact name of the weapon to wield during the Eclipse Moon normal attack sequence",
+            position = 0,
+            section = eclipseMoonSection
+    )
+    default String eclipseWeaponMain()
+    {
+        return "";
+    };
+
+    @ConfigItem(
+            keyName = "eclipseShield",
+            name = "Eclipse - Shield",
+            description = "Leave blank if main weapon is 2-handed. The exact name of the shield wield during the Eclipse Moon normal attack sequence",
+            position = 1,
+            section = eclipseMoonSection
+    )
+
+    default String eclipseShield()
+    {
+        return "";
+    };
+
+    @ConfigItem(
+            keyName = "eclipseWeaponClones",
+            name = "Eclipse - Clones Weapon",
+            description = "The exact name of the equipment to  wield during the Eclipse Moon Clones attack sequence",
+            position = 2,
+            section = eclipseMoonSection
+    )
+
+    default String eclipseWeaponClones()
+    {
+        return "";
+    }
+
+    @ConfigItem(
+            keyName = "blueWeaponMain",
+            name = "Blue - Main Weapon",
+            description = "The exact name of the weapon to wield during the Blue Moon normal attack sequence",
+            position = 0,
+            section = blueMoonSection
+    )
+    default String blueWeaponMain()
+    {
+        return "";
+    };
+
+    @ConfigItem(
+            keyName = "blueShield",
+            name = "Blue - Shield",
+            description = "Leave blank if main weapon is 2-handed. The exact name of the shield wield during the Blue Moon normal attack sequence",
+            position = 1,
+            section = blueMoonSection
+    )
+
+    default String blueShield()
+    {
+        return "";
+    };
+
+    @ConfigItem(
+            keyName = "bloodWeaponMain",
+            name = "Blood - Main Weapon",
+            description = "The exact name of the weapon to wield during the Blood Moon normal attack sequence",
+            position = 0,
+            section = bloodMoonSection
+    )
+    default String bloodWeaponMain()
+    {
+        return "";
+    };
+
+    @ConfigItem(
+            keyName = "bloodShield",
+            name = "Blood - Shield",
+            description = "Leave blank if main weapon is 2-handed. The exact name of the shield wield during the Blood Moon normal attack sequence",
+            position = 1,
+            section = bloodMoonSection
+    )
+
+    default String bloodShield()
+    {
+        return "";
+    };
 
 }
