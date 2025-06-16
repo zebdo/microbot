@@ -85,7 +85,7 @@ public class DemonicGorillaPlugin extends Plugin {
     @Subscribe
     public void onProjectileMoved(ProjectileMoved event) {
         final Projectile projectile = event.getProjectile();
-        if (projectile.getId() == DEMONIC_GORILLA_ROCK && event.getPosition().getY() == Rs2Player.getWorldLocation().getY()) {
+        if (projectile.getId() == DEMONIC_GORILLA_ROCK && event.getPosition().getY() == Rs2Player.getWorldLocation().getY() && event.getPosition().getX() == Rs2Player.getWorldLocation().getX()) {
             demonicGorillaScript.demonicGorillaRockPosition = event.getPosition();
             demonicGorillaScript.demonicGorillaRockLifeCycle = projectile.getEndCycle();
         }
