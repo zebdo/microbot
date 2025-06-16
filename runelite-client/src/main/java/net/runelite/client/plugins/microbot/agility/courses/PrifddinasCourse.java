@@ -75,7 +75,7 @@ public class PrifddinasCourse implements AgilityCourseHandler
 	}
 
 	@Override
-	public boolean handleWalkToStart(WorldPoint playerWorldLocation, LocalPoint playerLocalLocation)
+	public boolean handleWalkToStart(WorldPoint playerWorldLocation)
 	{
 		if (Microbot.getClient().getTopLevelWorldView().getPlane() != 0)
 		{

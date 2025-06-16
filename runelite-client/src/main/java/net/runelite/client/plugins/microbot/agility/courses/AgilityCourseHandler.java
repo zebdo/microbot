@@ -19,7 +19,6 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 public interface AgilityCourseHandler
 {
-	int MAX_DISTANCE = 2300;
 
 	WorldPoint getStartPoint();
 
@@ -112,22 +111,18 @@ public interface AgilityCourseHandler
 		return -1;
 	}
 
-	default boolean handleWalkToStart(WorldPoint playerWorldLocation, LocalPoint playerLocalLocation)
+	default boolean handleWalkToStart(WorldPoint playerWorldLocation)
 	{
 		if (Microbot.getClient().getTopLevelWorldView().getPlane() != 0)
 		{
 			return false;
 		}
 
-		LocalPoint startLocal = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), getStartPoint());
-		if (startLocal == null || playerLocalLocation.distanceTo(startLocal) >= MAX_DISTANCE)
+		if (playerWorldLocation.distanceTo(getStartPoint()) < 100)
 		{
-			if (playerWorldLocation.distanceTo(getStartPoint()) < 100)
-			{
-				Rs2Walker.walkTo(getStartPoint(), 8);
-				Microbot.log("Going back to course's starting point");
-				return true;
-			}
+			Rs2Walker.walkTo(getStartPoint(), 8);
+			Microbot.log("Going back to course's starting point");
+			return true;
 		}
 		return false;
 	}

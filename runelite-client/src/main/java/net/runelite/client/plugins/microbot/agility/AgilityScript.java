@@ -103,7 +103,6 @@ public class AgilityScript extends Script
 					return;
 				}
 
-				final LocalPoint playerLocation = Microbot.getClient().getLocalPlayer().getLocalLocation();
 				final WorldPoint playerWorldLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
 
 				if (handleFood())
@@ -136,14 +135,14 @@ public class AgilityScript extends Script
 						return;
 					}
 
-					if (course.handleWalkToStart(playerWorldLocation, playerLocation))
+					if (course.handleWalkToStart(playerWorldLocation))
 					{
 						return;
 					}
 				}
 				else if (!(plugin.getCourseHandler() instanceof GnomeStrongholdCourse))
 				{
-					if (plugin.getCourseHandler().handleWalkToStart(playerWorldLocation, playerLocation))
+					if (plugin.getCourseHandler().handleWalkToStart(playerWorldLocation))
 					{
 						return;
 					}
@@ -222,7 +221,7 @@ public class AgilityScript extends Script
 				{
 					continue;
 				}
-				if (!Rs2GameObject.canReach(markOfGraceTile.getTile().getWorldLocation()))
+				if (!Rs2GameObject.canReach(markOfGraceTile.getTile().getWorldLocation(), 1, 1, 1, 1))
 				{
 					continue;
 				}
