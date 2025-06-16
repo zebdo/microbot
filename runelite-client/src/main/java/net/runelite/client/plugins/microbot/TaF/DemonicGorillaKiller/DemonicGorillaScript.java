@@ -154,7 +154,6 @@ public class DemonicGorillaScript extends Script {
                 Microbot.status = "Opening bank...";
                 Rs2Bank.openBank();
                 sleepUntil(Rs2Bank::isOpen, 5000);
-                Rs2Bank.depositAll();
                 bankingStep = BankingStep.LOAD_INVENTORY;
                 break;
 
