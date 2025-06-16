@@ -1456,6 +1456,11 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
 			Rs2Keyboard.keyPress(option);
 			sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 10000);
 		}
+
+		// Handle door/gate near wilderness agility course
+		if (tileObject.getId() == ObjectID.DOOR_23555 || tileObject.getId() == ObjectID.GATE_23554 || tileObject.getId() == ObjectID.GATE_23552) {
+			Rs2Player.waitForAnimation(600 * 4);
+		}
         return false;
     }
     
@@ -1521,7 +1526,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         List<String> locationKeyWords = Arrays.asList("farm", "monastery", "lletya", "prifddinas", "rellekka", "waterbirth island", "neitiznot", "jatiszo",
                 "ver sinhaza", "darkmeyer", "slepe", "troll stronghold", "weiss", "ecto", "burgh", "duradel", "gem mine", "nardah", "kalphite cave",
                 "kourend woodland", "mount karuulm", "outside", "fishing guild", "otto's grotto", "stronghold slayer cave", "slayer tower", "fremennik", "tarn's lair", "dark beasts");
-        List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "teleport", "rub", "break", "reminisce", "signal", "play","commune");
+        List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "teleport", "rub", "break", "reminisce", "signal", "play", "commune", "squash");
 
         boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
         String destination = hasMultipleDestination
