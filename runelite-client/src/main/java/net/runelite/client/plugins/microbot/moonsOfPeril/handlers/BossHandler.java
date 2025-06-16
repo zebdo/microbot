@@ -3,7 +3,10 @@ package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.moonsOfPeril.enums.GameObjects;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -14,6 +17,8 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 
 
 import java.util.Objects;
+import java.util.Arrays;
+import java.util.Collections;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
@@ -73,18 +78,16 @@ public final class BossHandler {
      * 4. Turns on Player's best offensive melee prayer*/
     public static void fightPreparation(String weaponMain, String shield) {
         // 1. Equip the player's chosen weapon + offhand
-/*        if (Rs2Equipment.isWearing(weaponMain, false)) {
-            if (!Rs2Inventory.wield(weaponMain)) {
-                Microbot.log("Could not find " + weaponMain + " in player's inventory");
+        if (!Rs2Equipment.isWearing(Arrays.asList(weaponMain, shield), false, Collections.emptyList())) {
+            if (Rs2Inventory.wield(weaponMain)) {
+                Microbot.log(weaponMain + " is now equipped");
+            }
+            if (Rs2Inventory.wield(shield)) {
+                Microbot.log(weaponMain + " is now equipped");
             }
         }
-        sleep(10_000);
-        if (!Rs2Equipment.isWearing(shield, false)) {
-            if (!Rs2Inventory.wield(shield)) {
-                Microbot.log("Could not find " + shield + " in player's inventory");
-            }
-        }
-        sleep(10_000);*/
+        Microbot.log("Gear equipped: " + weaponMain + " + " + shield);
+        sleep(2_000);
 
         // 2. Eats food if hitpoints below 80%
         Rs2Player.eatAt(80);
@@ -99,6 +102,72 @@ public final class BossHandler {
         Rs2Prayer.disableAllPrayers();
         sleep(600);
         Rs2Prayer.toggle(Objects.requireNonNull(Rs2Prayer.getBestMeleePrayer()), true);
+    }
+
+    /**
+     * Returns true if the sigil NPC (the highlighted attack tile) is present
+     *
+     * @return
+     */
+    public static boolean isNormalAttackSequence(int sigilNpcID) {
+        return Rs2Npc.getNpc(sigilNpcID) != null;
+    }
+
+/*    *//**
+     * Moves the player to stand on the highlighted sigil and attack the boss
+     *
+     * @return void
+     *//*
+    public static void normalAttackSequence(int sigilNpcID, int bossNpcID) {
+        Microbot.log("Player is in a normal attack sequence");
+        Rs2NpcModel sigilNpc = Rs2Npc.getNpc(sigilNpcID);
+        WorldPoint attackTile = sigilNpc.getWorldLocation();
+        Microbot.log("Walking to highlighted sigil");
+        Rs2Walker.walkFastCanvas(attackTile);
+        while (Rs2Player.distanceTo(sigilNpc.getWorldLocation()) <= 2) {
+            if (Rs2Npc.getNpc(bossNpcID) != null) {
+                Microbot.log("Attacking boss from highlighted sigil");
+                if (Rs2Npc.attack(bossNpcID)) {
+                    sleep(600);
+                };
+            }
+        }
+
+    }*/
+
+    /**
+     * Stand on the highlighted sigil tile and attack the boss.
+     */
+    public static void normalAttackSequence(int sigilNpcID, int bossNpcID)
+    {
+        while (true)
+        {
+            /* 1 ─ get current sigil NPC; leave if phase is over */
+            Rs2NpcModel sigil = Rs2Npc.getNpc(sigilNpcID);
+            if (sigil == null) {
+                Microbot.log("Sigil NPC despawned – leaving attack loop");
+                break;
+            }
+
+            WorldPoint sigilTile = sigil.getWorldLocation();
+
+            /* 2 ─ step onto the sigil if we’re not already there */
+            if (Rs2Player.distanceTo(sigilTile) > 2) {
+                Microbot.log("Walking to highlighted sigil at " + sigilTile);
+                if (Rs2Walker.walkFastCanvas(sigilTile)){
+                    sleepUntil(() -> Rs2Player.distanceTo(sigilTile) <= 1, 3_000);
+                }
+            }
+
+            /* 3 ─ once on the sigil, keep attacking the boss */
+            Rs2NpcModel boss = Rs2Npc.getNpc(bossNpcID);
+            if (boss != null && !Rs2Player.isAnimating()) {
+                Microbot.log("Attacking boss from highlighted sigil");
+                Rs2Npc.attack(bossNpcID);
+            }
+
+            sleep(600);   // ~2 game ticks between refreshes
+        }
     }
 
 

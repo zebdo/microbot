@@ -40,7 +40,7 @@ public class ResupplyHandler implements BaseHandler {
         walkToSupplies();
         makeMoonlightPotions(potionBatchSize);
         obtainBream();
-        // add any “return to boss room” walking here if needed
+        rechargeRunEnergy();
         return State.IDLE;
     }
 
@@ -123,19 +123,20 @@ public class ResupplyHandler implements BaseHandler {
                 Rs2Dialogue.clickOption("Take fishing supplies.");
                 Rs2Inventory.waitForInventoryChanges(4_000);
             }
-        }
-        Rs2Walker.walkFastCanvas(new WorldPoint(1520,9689,0));
-        while (!Rs2Inventory.isFull()) {
-            if (!Rs2Player.isAnimating()) {
-                Rs2GameObject.interact(51367, "Fish"); // restart if animation stopped
-                sleep(3000, 4000);
+            Rs2Walker.walkFastCanvas(new WorldPoint(1520,9689,0));
+            while (!Rs2Inventory.isFull() && Rs2Inventory.contains(ItemID.BIG_NET)) {
+                if (!Rs2Player.isAnimating()) {
+                    Rs2GameObject.interact(51367, "Fish"); // restart if animation stopped
+                    sleep(3000, 4000);
+                }
+                sleep(300, 500);
             }
-            sleep(300, 500);
+            Microbot.log("Inventory should now be full of fish");
+            sleep(600, 900);
+            // Drop the Big Fishing Net
+            Rs2Inventory.drop(ItemID.BIG_NET);
         }
-        Microbot.log("Inventory should now be full of fish");
-        sleep(600, 900);
-        // Drop the Big Fishing Net
-        Rs2Inventory.drop(ItemID.BIG_NET);
+
     }
 
     private void cookBream() {
@@ -151,6 +152,11 @@ public class ResupplyHandler implements BaseHandler {
             sleep(900, 1200);
         }
         Microbot.log("Finished cooking bream.");
+    }
+
+    private void rechargeRunEnergy() {
+        Rs2GameObject.interact(ObjectID.PMOON_RANGE, "Make-cuppa");
+        sleep(600);
     }
 
     /* Helpers ---------------------------------------------------------- */
