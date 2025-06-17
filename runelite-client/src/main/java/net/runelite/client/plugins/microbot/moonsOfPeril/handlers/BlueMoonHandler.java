@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.GameObjects;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
@@ -18,8 +19,9 @@ public class BlueMoonHandler implements BaseHandler {
     private static final int bossStatueObjectID = GameObjects.BLUE_MOON_STATUE_ID.getID();
     private static final WorldPoint bossLobbyLocation = Locations.BLUE_LOBBY.getWorldPoint();
     private static final WorldPoint bossArenaCenter = Locations.BLUE_ARENA_CENTER.getWorldPoint();
+    private static final WorldPoint[] ATTACK_TILES = Locations.blueAttackTiles();
     private final int sigilNpcID = GameObjects.SIGIL_NPC_ID.getID();
-    private final int bossNpcID = GameObjects.BLUE_MOON_NPC_ID.getID();
+    private final int bossNpcID = NpcID.PMOON_BOSS_BLUE_MOON_VIS;
     private String weaponMain;
     private String shield;
 
@@ -42,11 +44,11 @@ public class BlueMoonHandler implements BaseHandler {
         BossHandler.fightPreparation(weaponMain, shield);
         sleep(1_000);
         BossHandler.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
-        while (Rs2Player.distanceTo(bossArenaCenter) <= 20) {
+        while (Rs2Player.distanceTo(bossArenaCenter) <= 25) {
             if (BossHandler.isNormalAttackSequence(sigilNpcID)) {
-                BossHandler.normalAttackSequence(sigilNpcID, bossNpcID);
+                BossHandler.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, weaponMain, shield);
             }
-            sleep(600); // ~2 in-game ticks
+            sleep(600); // ~1 in-game ticks
         }
         Rs2Prayer.disableAllPrayers();
         return State.IDLE;

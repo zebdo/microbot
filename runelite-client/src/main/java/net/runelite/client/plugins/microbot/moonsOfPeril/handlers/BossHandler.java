@@ -4,6 +4,7 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.GameObjects;
+import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -78,29 +79,80 @@ public final class BossHandler {
      * 4. Turns on Player's best offensive melee prayer*/
     public static void fightPreparation(String weaponMain, String shield) {
         // 1. Equip the player's chosen weapon + offhand
-        if (!Rs2Equipment.isWearing(Arrays.asList(weaponMain, shield), false, Collections.emptyList())) {
-            if (Rs2Inventory.wield(weaponMain)) {
-                Microbot.log(weaponMain + " is now equipped");
-            }
-            if (Rs2Inventory.wield(shield)) {
-                Microbot.log(weaponMain + " is now equipped");
-            }
+        equipWeapons(weaponMain, shield);
+        sleep(600);
+
+        // 2. Eats food if hitpoints below 70%
+        eatIfNeeded(70);
+        sleep(600);
+
+        // 3. Drinks potions if prayer points below 70%
+        drinkIfNeeded(70);
+        sleep(600);
+
+    }
+
+    /**
+     * Equip the main-hand weapon, and the shield only if one is supplied.
+     * Pass null (or "") for shield when you don’t want to equip anything there.
+     */
+    public static void equipWeapons(String weaponMain, String shield)
+    {
+        /* --- figure out what we actually need to wear ------------------- */
+        boolean hasShield = shield != null && !shield.isEmpty();
+        String[] needed   = hasShield
+                ? new String[] { weaponMain, shield }
+                : new String[] { weaponMain };
+
+        /* --- skip if already wearing everything ------------------------- */
+        if (Rs2Equipment.isWearing(
+                java.util.Arrays.asList(needed),          // no import needed
+                false,
+                java.util.Collections.emptyList()))
+        {
+            return;
         }
-        Microbot.log("Gear equipped: " + weaponMain + " + " + shield);
-        sleep(2_000);
 
-        // 2. Eats food if hitpoints below 80%
-        Rs2Player.eatAt(80);
-        sleep(600);
+        /* --- wield main hand -------------------------------------------- */
+        if (Rs2Inventory.wield(weaponMain)) {
+            Microbot.log(weaponMain + " is now equipped");
+        }
 
-        // 3. Drinks potions if prayer points below 80%
-        int minimumPrayerPoints = (Rs2Player.getRealSkillLevel(Skill.PRAYER) * 4) / 5;
-        Rs2Player.drinkPrayerPotionAt(minimumPrayerPoints);
-        sleep(600);
+        /* --- wield shield if requested ---------------------------------- */
+        if (hasShield && Rs2Inventory.wield(shield)) {
+            Microbot.log(shield + " is now equipped");
+        }
+    }
 
-        // 4. Turns on Player's best offensive melee prayer
+
+    /**
+     * Eats food if hitpoints below percentage threshold
+     *
+     * @return
+     */
+    public static void eatIfNeeded(int percentage) {
+        Rs2Player.eatAt(percentage);
+    }
+
+    /**
+     * Drinks prayer potion if prayer points below percentage threshold
+     *
+     * @return
+     */
+    public static void drinkIfNeeded(int percentage) {
+        int maxPrayer          = Rs2Player.getRealSkillLevel(Skill.PRAYER);
+        int minimumPrayerPoint = (maxPrayer * percentage) / 100;
+        Rs2Player.drinkPrayerPotionAt(minimumPrayerPoint);
+    }
+
+
+    /**
+     * Turns on Player's best offensive melee prayer and returns true
+     *
+     * @return
+     */
+    public static void meleePrayerOn() {
         Rs2Prayer.disableAllPrayers();
-        sleep(600);
         Rs2Prayer.toggle(Objects.requireNonNull(Rs2Prayer.getBestMeleePrayer()), true);
     }
 
@@ -113,63 +165,65 @@ public final class BossHandler {
         return Rs2Npc.getNpc(sigilNpcID) != null;
     }
 
-/*    *//**
-     * Moves the player to stand on the highlighted sigil and attack the boss
-     *
-     * @return void
-     *//*
-    public static void normalAttackSequence(int sigilNpcID, int bossNpcID) {
-        Microbot.log("Player is in a normal attack sequence");
-        Rs2NpcModel sigilNpc = Rs2Npc.getNpc(sigilNpcID);
-        WorldPoint attackTile = sigilNpc.getWorldLocation();
-        Microbot.log("Walking to highlighted sigil");
-        Rs2Walker.walkFastCanvas(attackTile);
-        while (Rs2Player.distanceTo(sigilNpc.getWorldLocation()) <= 2) {
-            if (Rs2Npc.getNpc(bossNpcID) != null) {
-                Microbot.log("Attacking boss from highlighted sigil");
-                if (Rs2Npc.attack(bossNpcID)) {
-                    sleep(600);
-                };
-            }
-        }
-
-    }*/
-
     /**
-     * Stand on the highlighted sigil tile and attack the boss.
+     * Eclipse “normal” phase: follow ≤ 3 sigil squares, stand on the
+     * matching attack tile, and keep attacking the boss.
+     *
+     * @param sigilNpcID  NPC ID of the 2×2 sigil marker
+     * @param bossNpcID   NPC ID of the Eclipse boss
+     * @param attackTiles WorldPoints from Locations enum
      */
-    public static void normalAttackSequence(int sigilNpcID, int bossNpcID)
+    public static void normalAttackSequence(int sigilNpcID,
+                                            int bossNpcID,
+                                            WorldPoint[] attackTiles, String Weapon, String Shield)
     {
-        while (true)
+        WorldPoint lastSigilSW = null;   // south-west anchor of current sigil
+        int sigilMoves = 0;              // how many times the sigil has shifted
+        equipWeapons(Weapon, Shield);
+        sleep(300);
+        meleePrayerOn();
+        sleep(300);
+
+        while (sigilMoves < 3)           // a normal phase has ≤3 sigil positions
         {
-            /* 1 ─ get current sigil NPC; leave if phase is over */
+            /* 1 ─ current sigil NPC; exit if phase is over */
             Rs2NpcModel sigil = Rs2Npc.getNpc(sigilNpcID);
             if (sigil == null) {
-                Microbot.log("Sigil NPC despawned – leaving attack loop");
+                Microbot.log("Sigil despawned – leaving attack loop");
                 break;
             }
 
-            WorldPoint sigilTile = sigil.getWorldLocation();
+            /* 2 ─ detect a new sigil square */
+            WorldPoint sigilSW = sigil.getWorldLocation();
+            if (!sigilSW.equals(lastSigilSW)) {
+                sigilMoves++;
+                lastSigilSW = sigilSW;
+                Microbot.log("Sigil moved → #" + sigilMoves);
+            }
 
-            /* 2 ─ step onto the sigil if we’re not already there */
-            if (Rs2Player.distanceTo(sigilTile) > 2) {
-                Microbot.log("Walking to highlighted sigil at " + sigilTile);
-                if (Rs2Walker.walkFastCanvas(sigilTile)){
-                    sleepUntil(() -> Rs2Player.distanceTo(sigilTile) <= 1, 3_000);
+            /* 3 ─ choose the nearest predefined attack tile ≤2 tiles away */
+            WorldPoint target = sigilSW;   // fallback = sigil itself
+            for (WorldPoint atk : attackTiles) {
+                if (atk.distanceTo(sigilSW) <= 1) { target = atk; break; }
+            }
+
+            /* 4 ─ walk onto the target tile if not already there */
+            if (Rs2Player.distanceTo(target) > 1) {
+                if (Rs2Walker.walkFastCanvas(target)) {
+                    final WorldPoint destinationTile = target;
+                    sleepUntil(() -> Rs2Player.getWorldLocation().equals(destinationTile), 2_000);
                 }
             }
 
-            /* 3 ─ once on the sigil, keep attacking the boss */
+            /* 5 ─ attack the boss whenever idle */
             Rs2NpcModel boss = Rs2Npc.getNpc(bossNpcID);
-            if (boss != null && !Rs2Player.isAnimating()) {
-                Microbot.log("Attacking boss from highlighted sigil");
+            if (boss != null && !Rs2Combat.inCombat()) {
                 Rs2Npc.attack(bossNpcID);
             }
 
-            sleep(600);   // ~2 game ticks between refreshes
+            sleep(600);   // one OSRS game tick
         }
     }
-
 
     /** True while the “boss check mark” widget is showing on-screen. ie. the boss is defeated */
     public static boolean bossIsDefeated(String bossName, int defeatedWidgetId) {

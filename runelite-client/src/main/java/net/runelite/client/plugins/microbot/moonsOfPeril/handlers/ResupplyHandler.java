@@ -21,6 +21,7 @@ public class ResupplyHandler implements BaseHandler {
     private final int minMoonlightPotions;
     private final int minCookedBream;
     private final int potionBatchSize;
+    private final WorldPoint supplyLocation = new WorldPoint(1513, 9692, 0);
 
     public ResupplyHandler(moonsOfPerilConfig cfg) {
         this.minMoonlightPotions = cfg.moonlightPotionsMinimum();
@@ -56,7 +57,7 @@ public class ResupplyHandler implements BaseHandler {
 
     private void walkToSupplies() {
         Microbot.log("Attempting to walk to supply area 1");
-        Rs2Walker.walkTo(1513, 9692, 0, 0);
+        Rs2Walker.walkWithState(supplyLocation, 0);
         Microbot.log("Arrived at supply area 1");
     }
 
@@ -65,7 +66,7 @@ public class ResupplyHandler implements BaseHandler {
         int amountToCreate = checkPotionQuantum(moonlightPotionsQuantum);
         Microbot.log("Need to create " + amountToCreate + " Moonlight potions");
 
-        if (amountToCreate > 0) {
+        if ((amountToCreate > 0) && (Rs2Player.distanceTo(supplyLocation) <= 10)) {
             /* Take herblore supplies */
             while (Rs2Inventory.count(ItemID.VIAL_WATER) < amountToCreate) {
                 Microbot.log("Take herblore supplies from supply crate");

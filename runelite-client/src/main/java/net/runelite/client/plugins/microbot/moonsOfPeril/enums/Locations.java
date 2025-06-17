@@ -19,6 +19,7 @@ public enum Locations {
     ECLIPSE_ATTACK_4(WorldPoint.fromRegion(6038, 13, 31, 0)),
     ECLIPSE_ATTACK_5(WorldPoint.fromRegion(6038, 13, 33, 0)),
     ECLIPSE_ATTACK_6(WorldPoint.fromRegion(6038, 15, 29, 0)),
+    ECLIPSE_CLONE_TILE(WorldPoint.fromRegion(6038, 16, 32, 0)),
     BLOOD_LOBBY(new WorldPoint(1413, 9632, 0)),
     BLOOD_ARENA_CENTER(WorldPoint.fromRegion(5526, 48, 32, 0)),
     BLOOD_ATTACK_1(WorldPoint.fromRegion(5526, 47, 29, 0)),
@@ -35,6 +36,7 @@ public enum Locations {
     BLUE_ATTACK_4(WorldPoint.fromRegion(5783, 35, 17, 0)),
     BLUE_ATTACK_5(WorldPoint.fromRegion(5783, 35, 15, 0)),
     BLUE_ATTACK_6(WorldPoint.fromRegion(5783, 33, 19, 0)),
+    BLUE_ICESHARD_SAFEPOT(WorldPoint.fromRegion(5783, 32, 17, 0)),
     REWARDS_CHEST_LOBBY(new WorldPoint(1513, 9578, 0));
 
     public final WorldPoint worldPoint;

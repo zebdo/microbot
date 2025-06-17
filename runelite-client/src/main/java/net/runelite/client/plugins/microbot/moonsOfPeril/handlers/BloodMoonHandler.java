@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.GameObjects;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
@@ -17,6 +18,8 @@ public class BloodMoonHandler implements BaseHandler {
     private static final int bossStatueObjectID = GameObjects.BLOOD_MOON_STATUE_ID.getID();
     private static final WorldPoint bossLobbyLocation = Locations.BLOOD_LOBBY.getWorldPoint();
     private static final WorldPoint bossArenaCenter = Locations.BLOOD_ARENA_CENTER.getWorldPoint();
+    private static final WorldPoint[] ATTACK_TILES = Locations.bloodAttackTiles();
+    private final int bossNpcID = NpcID.PMOON_BOSS_BLOOD_MOON_VIS;
     private String weaponMain;
     private String shield;
 
@@ -39,7 +42,7 @@ public class BloodMoonHandler implements BaseHandler {
         BossHandler.fightPreparation(weaponMain, shield);
         sleep(1_000);
         BossHandler.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
-        while (Rs2Player.distanceTo(bossArenaCenter) <= 20) {
+        while (Rs2Player.distanceTo(bossArenaCenter) <= 25) {
             sleep(1_000);
             // TODO: add specific combat logic
         }
