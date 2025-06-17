@@ -7,7 +7,6 @@ import net.runelite.api.GameObject;
 import net.runelite.api.GroundObject;
 import net.runelite.api.Skill;
 import net.runelite.api.TileObject;
-import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -91,25 +90,30 @@ public interface AgilityCourseHandler
 		return gainedExp || planeChanged || lostHealth;
 	}
 
-	default int getCurrentObstacleIndex() {
+	default int getCurrentObstacleIndex()
+	{
 		WorldPoint playerLoc = Microbot.getClient().getLocalPlayer().getWorldLocation();
 		int playerPlane = Microbot.getClient().getTopLevelWorldView().getPlane();
 
-		if (playerPlane == 0 && playerLoc.distanceTo(getStartPoint()) < 5) {
+		if (playerPlane == 0 && playerLoc.distanceTo(getStartPoint()) < 5)
+		{
 			return 0;
 		}
 
-		for (int i = 0; i < getObstacles().size(); i++) {
+		for (int i = 0; i < getObstacles().size(); i++)
+		{
 			AgilityObstacleModel o = getObstacles().get(i);
 
-			if (o.getRequiredX() == -1 || o.getRequiredY() == -1) {
+			if (o.getRequiredX() == -1 || o.getRequiredY() == -1)
+			{
 				continue;
 			}
 
 			boolean xMatches = o.getOperationX().check(playerLoc.getX(), o.getRequiredX());
 			boolean yMatches = o.getOperationY().check(playerLoc.getY(), o.getRequiredY());
 
-			if (xMatches && yMatches) {
+			if (xMatches && yMatches)
+			{
 				return i;
 			}
 		}
@@ -117,18 +121,23 @@ public interface AgilityCourseHandler
 		int closestIndex = -1;
 		int shortestDistance = Integer.MAX_VALUE;
 
-		for (int i = 0; i < getObstacles().size(); i++) {
+		for (int i = 0; i < getObstacles().size(); i++)
+		{
 			AgilityObstacleModel o = getObstacles().get(i);
-			if (o.getRequiredX() == -1 || o.getRequiredY() == -1) {
-				continue;
-			}
 
-			WorldPoint obstaclePoint = new WorldPoint(o.getRequiredX(), o.getRequiredY(), playerPlane);
-			int distance = playerLoc.distanceTo(obstaclePoint);
+			TileObject nearestObstacle = Rs2GameObject.getAll(obj -> obj.getId() == o.getObjectID() && obj.getPlane() == playerPlane)
+				.stream()
+				.min(Comparator.comparing(obj -> obj.getWorldLocation().distanceTo(playerLoc)))
+				.orElse(null);
 
-			if (distance < shortestDistance) {
-				shortestDistance = distance;
-				closestIndex = i;
+			if (nearestObstacle != null)
+			{
+				int distance = nearestObstacle.getWorldLocation().distanceTo(playerLoc);
+				if (distance < shortestDistance)
+				{
+					shortestDistance = distance;
+					closestIndex = i;
+				}
 			}
 		}
 
