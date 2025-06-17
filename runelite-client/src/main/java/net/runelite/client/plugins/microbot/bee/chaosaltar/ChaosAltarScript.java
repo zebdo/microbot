@@ -10,6 +10,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
+import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -112,7 +113,7 @@ public class ChaosAltarScript extends Script {
 
     private void dieToNpc() {
         Microbot.log("Walking to dangerous NPC to die");
-        Rs2Walker.walkTo(2978, 3854,0);
+        Rs2Walker.walkTo(2979, 3845,0);
         sleepUntil(() -> Rs2Npc.getNpc(CHAOS_FANATIC) != null, 60000);
         // Attack chaos fanatic to die
         Rs2Npc.attack("Chaos Fanatic");
@@ -182,6 +183,9 @@ public class ChaosAltarScript extends Script {
 
 
     private void handleBanking() {
+        if(Rs2Inventory.contains(x-> x != null && x.getName().contains("Burning amulet"))){
+            Rs2Inventory.wear("Burning amulet");
+        }
         if (!Rs2Bank.isOpen()) {
             System.out.println("Opening bank");
             Rs2Bank.walkToBank();
@@ -194,8 +198,8 @@ public class ChaosAltarScript extends Script {
                 shutdown();
             }
 
-            if(!Rs2Bank.hasItem(BURNING_AMULET5)) {
-                Microbot.log("NO FULL BURNING AMULET, SHUTTING DOWN");
+            if(!Rs2Bank.hasBankItem("Burning Amulet")) {
+                Microbot.log("NO BURNING AMULET, SHUTTING DOWN");
                 shutdown();
             }
 
@@ -203,7 +207,7 @@ public class ChaosAltarScript extends Script {
             if (!hasBurningAmulet()) {
                 sleep(400);
                 Microbot.log("Withdrawing burning amulet");
-                Rs2Bank.withdrawOne("burning amulet");
+                Rs2Bank.withdrawAndEquip("burning amulet");
                 Rs2Inventory.waitForInventoryChanges(2000);
             }
 
@@ -219,11 +223,7 @@ public class ChaosAltarScript extends Script {
     }
 
     public boolean hasBurningAmulet() {
-        return Rs2Inventory.contains(ItemID.BURNING_AMULET1) ||
-                Rs2Inventory.contains(ItemID.BURNING_AMULET2) ||
-                Rs2Inventory.contains(ItemID.BURNING_AMULET3) ||
-                Rs2Inventory.contains(ItemID.BURNING_AMULET4) ||
-                Rs2Inventory.contains(BURNING_AMULET5);
+        return Rs2Inventory.contains(x-> x != null && x.getName().contains("Burning amulet")) || Rs2Equipment.isWearing("burning amulet");
     }
 
     private State determineState() {
