@@ -26,4 +26,16 @@ public class ApeAtollCourse implements AgilityCourseHandler
 			new AgilityObstacleModel(ObjectID._100_ILM_AGILITY_TREE_BASE, 2756, -1, Operation.GREATER_EQUAL, Operation.GREATER)
 		);
 	}
+
+	@Override
+	public Integer getRequiredLevel()
+	{
+		return 48;
+	}
+
+	@Override
+	public boolean canBeBoosted()
+	{
+		return false;
+	}
 }
