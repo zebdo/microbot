@@ -82,6 +82,11 @@ public class PrifddinasCourse implements AgilityCourseHandler
 			return false;
 		}
 
+		if (getCurrentObstacleIndex() > 0)
+		{
+			return false;
+		}
+
 		if (prifFallArea.contains(playerWorldLocation))
 		{
 			Rs2Walker.walkTo(getStartPoint(), 8);

@@ -51,7 +51,7 @@ public class AgilityScript extends Script
 			{
 				return;
 			}
-			if (plugin.getCourseHandler().getCurrentObstacleIndex() != 0)
+			if (plugin.getCourseHandler().getCurrentObstacleIndex() > 0)
 			{
 				if (Rs2Player.isMoving() || Rs2Player.isAnimating())
 				{
@@ -114,7 +114,7 @@ public class AgilityScript extends Script
 					return;
 				}
 
-				if (plugin.getCourseHandler().getCurrentObstacleIndex() != 0)
+				if (plugin.getCourseHandler().getCurrentObstacleIndex() > 0)
 				{
 					if (Rs2Player.isMoving() || Rs2Player.isAnimating())
 					{
@@ -259,7 +259,7 @@ public class AgilityScript extends Script
 
 	private boolean handleSummerPies()
 	{
-		if (plugin.getCourseHandler().getCurrentObstacleIndex() != 0)
+		if (plugin.getCourseHandler().getCurrentObstacleIndex() > 0)
 		{
 			return false;
 		}

@@ -91,24 +91,48 @@ public interface AgilityCourseHandler
 		return gainedExp || planeChanged || lostHealth;
 	}
 
-	default int getCurrentObstacleIndex()
-	{
+	default int getCurrentObstacleIndex() {
 		WorldPoint playerLoc = Microbot.getClient().getLocalPlayer().getWorldLocation();
+		int playerPlane = Microbot.getClient().getTopLevelWorldView().getPlane();
 
-		for (int i = 0; i < getObstacles().size(); i++)
-		{
+		if (playerPlane == 0 && playerLoc.distanceTo(getStartPoint()) < 5) {
+			return 0;
+		}
+
+		for (int i = 0; i < getObstacles().size(); i++) {
 			AgilityObstacleModel o = getObstacles().get(i);
+
+			if (o.getRequiredX() == -1 || o.getRequiredY() == -1) {
+				continue;
+			}
 
 			boolean xMatches = o.getOperationX().check(playerLoc.getX(), o.getRequiredX());
 			boolean yMatches = o.getOperationY().check(playerLoc.getY(), o.getRequiredY());
 
-			if (xMatches && yMatches)
-			{
+			if (xMatches && yMatches) {
 				return i;
 			}
 		}
 
-		return -1;
+		int closestIndex = -1;
+		int shortestDistance = Integer.MAX_VALUE;
+
+		for (int i = 0; i < getObstacles().size(); i++) {
+			AgilityObstacleModel o = getObstacles().get(i);
+			if (o.getRequiredX() == -1 || o.getRequiredY() == -1) {
+				continue;
+			}
+
+			WorldPoint obstaclePoint = new WorldPoint(o.getRequiredX(), o.getRequiredY(), playerPlane);
+			int distance = playerLoc.distanceTo(obstaclePoint);
+
+			if (distance < shortestDistance) {
+				shortestDistance = distance;
+				closestIndex = i;
+			}
+		}
+
+		return (closestIndex != -1) ? closestIndex : 0;
 	}
 
 	default boolean handleWalkToStart(WorldPoint playerWorldLocation)
@@ -118,10 +142,15 @@ public interface AgilityCourseHandler
 			return false;
 		}
 
-		if (playerWorldLocation.distanceTo(getStartPoint()) < 100)
+		if (getCurrentObstacleIndex() > 0)
 		{
-			Rs2Walker.walkTo(getStartPoint(), 8);
+			return false;
+		}
+
+		if (playerWorldLocation.distanceTo(getStartPoint()) > 12)
+		{
 			Microbot.log("Going back to course's starting point");
+			Rs2Walker.walkTo(getStartPoint(), 8);
 			return true;
 		}
 		return false;
