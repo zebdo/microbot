@@ -33,7 +33,7 @@ public class InventorySetupItemSerializable
 		Integer quantity = item.getQuantity() != 1 ? item.getQuantity() : null;
 		Boolean fuzzy = item.isFuzzy() ? Boolean.TRUE : null;
 		Boolean locked = item.isLocked() ? Boolean.TRUE : null;
-		Integer slot = item.getSlot() >= 0 ? item.getSlot() : null;
+		int slot = item.getSlot() >= 0 ? item.getSlot() : -1;
 		InventorySetupsStackCompareID sc = item.getStackCompare() != InventorySetupsStackCompareID.None ? item.getStackCompare() : null;
 		return new InventorySetupItemSerializable(item.getId(), quantity, fuzzy, sc, locked, slot);
 	}
