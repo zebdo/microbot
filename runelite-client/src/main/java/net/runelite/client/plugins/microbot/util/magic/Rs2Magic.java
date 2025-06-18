@@ -48,10 +48,10 @@ public class Rs2Magic {
      * Check if all the settings are correct before we start interacting with spellbook
      */
     public static boolean oneTimeSpellBookCheck() {
-        if (Rs2Player.isInTutorialIsland())
+        if (!Rs2Player.hasCompletedTutorialIsland())
             return true;
         // We add a one time check to avoid performanec issues. Checking varbits is expensive
-        if (firstInteractionWithSpellBook && !Rs2SpellBookSettings.setAllFiltersOn()) {
+        if (firstInteractionWithSpellBook && !Rs2SpellBookSettings.configureSpellbookSettings()) {
             return false;
         }
         firstInteractionWithSpellBook = false;
@@ -66,6 +66,7 @@ public class Rs2Magic {
      * @return
      */
     public static boolean canCast(MagicAction magicSpell) {
+		System.out.println("break");
         if (!oneTimeSpellBookCheck()) {
             Rs2Random.waitEx(800, 150);
             Rs2Dialogue.clickContinue();
