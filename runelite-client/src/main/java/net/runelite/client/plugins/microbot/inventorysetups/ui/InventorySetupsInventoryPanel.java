@@ -52,8 +52,8 @@ public class InventorySetupsInventoryPanel extends InventorySetupsContainerPanel
 	private final InventorySetupsBoltPouchPanel boltPouchPanel;
 
 	InventorySetupsInventoryPanel(final ItemManager itemManager, final MInventorySetupsPlugin plugin,
-									final InventorySetupsRunePouchPanel runePouchPanel,
-									final InventorySetupsBoltPouchPanel boltPouchPanel)
+								  final InventorySetupsRunePouchPanel runePouchPanel,
+								  final InventorySetupsBoltPouchPanel boltPouchPanel)
 	{
 		super(itemManager, plugin, "Inventory");
 		this.runePouchPanel = runePouchPanel;
@@ -79,6 +79,7 @@ public class InventorySetupsInventoryPanel extends InventorySetupsContainerPanel
 			InventorySetupsSlot.addUpdateFromContainerMouseListenerToSlot(plugin, inventorySlots.get(i));
 			InventorySetupsSlot.addUpdateFromSearchMouseListenerToSlot(plugin, inventorySlots.get(i), true);
 			InventorySetupsSlot.addRemoveMouseListenerToSlot(plugin, inventorySlots.get(i));
+			InventorySetupsSlot.addLockMouseListenerToSlot(plugin, inventorySlots.get(i));
 
 			// Shift menu
 			InventorySetupsSlot.addUpdateFromContainerToAllInstancesMouseListenerToSlot(this, plugin, inventorySlots.get(i));
@@ -209,9 +210,9 @@ public class InventorySetupsInventoryPanel extends InventorySetupsContainerPanel
 	}
 
 	private void processExactItems(final InventorySetup inventorySetup,
-									final Map<Integer, List<Integer>> currentInventoryMapping,
-									final List<Boolean> processedInvItems,
-									final boolean allowFuzzy)
+								   final Map<Integer, List<Integer>> currentInventoryMapping,
+								   final List<Boolean> processedInvItems,
+								   final boolean allowFuzzy)
 	{
 		List<InventorySetupsItem> setupInventory = inventorySetup.getInventory();
 
