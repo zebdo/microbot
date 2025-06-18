@@ -66,7 +66,6 @@ public class Rs2Magic {
      * @return
      */
     public static boolean canCast(MagicAction magicSpell) {
-		System.out.println("break");
         if (!oneTimeSpellBookCheck()) {
             Rs2Random.waitEx(800, 150);
             Rs2Dialogue.clickContinue();
