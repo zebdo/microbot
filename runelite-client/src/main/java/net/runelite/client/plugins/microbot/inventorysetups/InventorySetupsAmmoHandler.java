@@ -45,7 +45,7 @@ public class InventorySetupsAmmoHandler
 	private final MInventorySetupsConfig config;
 
 	public InventorySetupsAmmoHandler(MInventorySetupsPlugin plugin, Client client, ItemManager itemManager,
-										InventorySetupsPluginPanel panel, MInventorySetupsConfig config)
+									  InventorySetupsPluginPanel panel, MInventorySetupsConfig config)
 	{
 		this.plugin = plugin;
 		this.client = client;
@@ -82,7 +82,7 @@ public class InventorySetupsAmmoHandler
 
 	// Checks when updating a slot in a setup that it is part of a special ammo. If so, handle it.
 	public void handleSpecialAmmo(final InventorySetup inventorySetup,
-									final InventorySetupsItem oldItem, final InventorySetupsItem newItem)
+								  final InventorySetupsItem oldItem, final InventorySetupsItem newItem)
 	{
 		int newID = newItem.getId();
 		int oldID = oldItem.getId();
@@ -169,7 +169,7 @@ public class InventorySetupsAmmoHandler
 				int runeAmount = client.getVarbitValue(RUNE_POUCH_AMOUNT_VARBITS.get(i));
 				String runeName = itemManager.getItemComposition(runeId).getName();
 				InventorySetupsStackCompareID stackCompareType = panel.isStackCompareForSlotAllowed(InventorySetupsSlotID.RUNE_POUCH, i) ? config.stackCompareType() : InventorySetupsStackCompareID.None;
-				runePouchData.add(new InventorySetupsItem(runeId, runeName, runeAmount, false, stackCompareType));
+				runePouchData.add(new InventorySetupsItem(runeId, runeName, runeAmount, false, stackCompareType, false, -1));
 			}
 		}
 
@@ -209,7 +209,7 @@ public class InventorySetupsAmmoHandler
 				InventorySetupsStackCompareID stackCompareType =
 						panel.isStackCompareForSlotAllowed(InventorySetupsSlotID.BOLT_POUCH, i)
 								? config.stackCompareType() : InventorySetupsStackCompareID.None;
-				boltPouchData.add(new InventorySetupsItem(boltItemId, boltName, boltAmount, false, stackCompareType));
+				boltPouchData.add(new InventorySetupsItem(boltItemId, boltName, boltAmount, false, stackCompareType, false, -1));
 			}
 		}
 
@@ -246,8 +246,7 @@ public class InventorySetupsAmmoHandler
 					panel.isStackCompareForSlotAllowed(InventorySetupsSlotID.QUIVER, 0)
 							? config.stackCompareType() : InventorySetupsStackCompareID.None;
 
-			final InventorySetupsItem quiverItem = new InventorySetupsItem(quiverAmmoId, ammoName,
-					quiverAmmoCount, false, stackCompareType);
+			final InventorySetupsItem quiverItem = new InventorySetupsItem(quiverAmmoId, ammoName, quiverAmmoCount, false, stackCompareType, false, -1);
 			quiverData.add(quiverItem);
 		}
 
