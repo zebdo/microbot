@@ -1,4 +1,4 @@
-# Origin	Destination	menuOption menuTarget objectID	Skills	Item IDs	Currency	Quests	Varbits	Varplayers	isMembers	Duration	Display Info
+# Origin	Destination	menuOption menuTarget objectID	Skills	Item IDs	Currency	Quests	Varbits	Varplayers	isMembers	Duration	Display info
 # Tutorial Island											
 3097 3107 0	3098 3107 0	Open;Door;9398								1	
 3098 3107 0	3097 3107 0	Open;Door;9398								1	
