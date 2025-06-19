@@ -141,138 +141,6 @@ public class EclipseMoonHandler implements BaseHandler {
 
     }
 
-
-
-/*    public void specialAttack1Sequence() {
-        Rs2NpcModel shield = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD);
-        if (shield == null) {
-            Microbot.log("Moonshield NPC not found. Aborting Eclipse specialAttack1Sequence.");
-            return;
-        }
-
-        final WorldPoint CENTER = bossArenaCenter;
-        final int REGION = CENTER.getRegionID();
-        final int PLANE = CENTER.getPlane();
-
-        Microbot.log("Generating safe course around arena center...");
-        Set<WorldPoint> safeCourse = new HashSet<>();
-        for (int dx = -5; dx <= 5; dx++) {
-            for (int dy = -5; dy <= 5; dy++) {
-                safeCourse.add(new WorldPoint(CENTER.getX() + dx, CENTER.getY() + dy, PLANE));
-            }
-        }
-
-        WorldPoint spawn = shield.getWorldLocation();
-        Microbot.log("Waiting for Moonshield to begin movement...");
-        sleepUntil(() -> {
-            Rs2NpcModel currentShield = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD);
-            return currentShield != null && !currentShield.getWorldLocation().equals(spawn);
-        }, 5_000);
-
-        final WorldPoint LAP_END_TILE = WorldPoint.fromRegion(6038, 21, 29, 0);
-        Microbot.log("Beginning shield-follow sequence...");
-
-        while (true) {
-            shield = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD);
-            if (shield == null) {
-                Microbot.log("Moonshield NPC despawned mid-phase.");
-                break;
-            }
-
-            WorldPoint shieldTile = shield.getWorldLocation();
-            WorldPoint playerTile = Rs2Player.getWorldLocation();
-
-            if (shieldTile.distanceTo(LAP_END_TILE) <= 1) {
-                Microbot.log("Moonshield has reached end tile: lap complete.");
-                break;
-            }
-
-            if (playerTile.distanceTo(shieldTile) > 4) {
-                WorldPoint target = safeCourse.stream()
-                        .min(Comparator.comparingInt(t -> t.distanceTo(shieldTile)))
-                        .orElse(CENTER);
-                Microbot.log("Player >4 tiles from shield. Moving to nearest safe tile near shield.");
-                Rs2Walker.walkFastCanvas(target, true);
-            } else if (!safeCourse.contains(playerTile)) {
-                WorldPoint fallback = safeCourse.stream()
-                        .min(Comparator.comparingInt(t -> t.distanceTo(playerTile)))
-                        .orElse(CENTER);
-                Microbot.log("Player outside safe course. Redirecting to fallback safe tile.");
-                Rs2Walker.walkFastCanvas(fallback, true);
-            }
-
-            sleep(600); // 1 game tick
-        }
-
-        WorldPoint postPhase = Locations.ECLIPSE_ATTACK_6.getWorldPoint();
-        Microbot.log("Phase ended. Running to post-phase attack tile.");
-        Rs2Walker.walkFastCanvas(postPhase, true);
-        sleepUntil(() -> Rs2Player.distanceTo(postPhase) <= 1, 3_000);
-
-        Microbot.log("Shield lap complete – Searing Rays phase finished");
-    }*/
-
-
-
-    /**  Eclipse – Special-Attack 1  (“moon-shield lap”)  *//*
-    public void specialAttack1Sequence()
-    {
-        *//* 1 ─ wait until shield starts sliding *//*
-        Rs2NpcModel shield = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD);
-        if (shield == null) return;
-
-        WorldPoint spawn = shield.getWorldLocation();
-        sleepUntil(() -> !shield.getWorldLocation().equals(spawn), 2_000);
-
-        *//* 2 ─ config: center of arena and anchor tiles *//*
-        int region = bossArenaCenter.getRegionID();
-        WorldPoint[] ANCHOR = {
-                WorldPoint.fromRegion(region, 11, 27, 0),  // SW
-                WorldPoint.fromRegion(region, 11, 37, 0),  // NW
-                WorldPoint.fromRegion(region, 21, 37, 0),  // NE
-                WorldPoint.fromRegion(region, 21, 27, 0)   // SE
-        };
-
-        int anchorIdx = 0, corners = 0;
-
-        *//* 3 ─ escort lap *//*
-        while (corners < 4 && Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD) != null)
-        {
-            WorldPoint shieldTile = shield.getWorldLocation();
-
-            *//* Tile on the 5-radius lap, directly “behind” the moving shield *//*
-            int dx = Integer.signum(shieldTile.getX() - bossArenaCenter.getX());  // −1, 0, or 1
-            int dy = Integer.signum(shieldTile.getY() - bossArenaCenter.getY());
-
-            WorldPoint target = new WorldPoint(
-                    bossArenaCenter.getX() + dx * 5,     // ±5 tiles from center in X
-                    bossArenaCenter.getY() + dy * 5,     // ±5 tiles from center in Y
-                    bossArenaCenter.getPlane());
-
-            *//* Click target if we’re not already on/adjacent *//*
-            if (Rs2Player.distanceTo(target) > 0) {
-                Rs2Walker.walkFastCanvas(target, true);            // always run
-            }
-
-            *//* Corner reached? *//*
-            if (shieldTile.distanceTo(ANCHOR[anchorIdx]) <= 1) {
-                corners++;
-                anchorIdx = (anchorIdx + 1) & 3;
-            }
-
-            BossHandler.eatIfNeeded(75);
-            BossHandler.drinkIfNeeded(75);
-            sleep(150);
-        }
-
-        *//* 4 ─ sprint to post-phase attack tile *//*
-        WorldPoint fin = Locations.ECLIPSE_ATTACK_6.getWorldPoint();
-        Rs2Walker.walkFastCanvas(fin, true);
-        sleepUntil(() -> Rs2Player.distanceTo(fin) <= 1, 3_000);
-
-        Microbot.log("Shield lap complete – Searing Rays phase finished");
-    }
-*/
     /**
      * Returns true while the clone‐burst (Special-2) phase is active.
      * ­– Player must be standing on the center knock-back tile
@@ -305,62 +173,6 @@ public class EclipseMoonHandler implements BaseHandler {
         return false;
     }
 
-/*    *//** Eclipse – Special Attack 2 (five waves × 3 clones) *//*
-    public void specialAttack2Sequence()
-    {
-        *//* ---------- helper so we don’t repeat System.currentTimeMillis() ------- *//*
-        java.util.function.Supplier < String > ts = () -> "[" + System.currentTimeMillis() + "] ";
-
-        *//* ---------- 1. ensure clone weapon is wielded (≤3 s) -------------- *//*
-        long until = System.currentTimeMillis() + 3_000;
-        while (!Rs2Equipment.isWearing(weaponClones) && System.currentTimeMillis() < until) {
-            BossHandler.equipWeapons(weaponClones, null);
-            sleep(600);
-        }
-        if (!Rs2Equipment.isWearing(weaponClones)) {
-            Microbot.log("WARNING: weapon not equipped – continuing anyway");
-        }
-
-        sleep(1_800); // This is an important sleep timing to get the sequence correct. It takes 2.32 seconds between main boss despawn & 1st clone spawn
-
-        *//* ---------- 2. parry up to 15 clones ------------------------------ *//*
-        final int MAX_CLONES = 15;
-        int cloneCount       = 0;
-        WorldPoint lastTile  = null;
-        long phaseTimeout    = System.currentTimeMillis() + 10_000;   // safety
-
-        while (cloneCount < MAX_CLONES &&
-                System.currentTimeMillis() < phaseTimeout &&
-                Rs2Player.getWorldLocation().equals(cloneAttackTile))
-        {
-            Rs2NpcModel boss = Rs2Npc.getNpc(bossNpcID);
-            if (boss == null) break;                         // phase ended
-
-            WorldPoint spawnTile = boss.getWorldLocation();
-
-            *//* new spawn? *//*
-            if (!spawnTile.equals(lastTile)) {
-                lastTile = spawnTile;
-                cloneCount++;
-
-                Microbot.log(ts.get() + "Attacking clone " + cloneCount
-                        + "  playerHP=" + Rs2Player.getHealthPercentage());
-                Rs2Walker.walkFastCanvas(spawnTile, true);
-                Microbot.log(ts.get() + "walkFastCanvas() issued for " + spawnTile);
-
-                Microbot.log("[" + System.currentTimeMillis() +
-                        "] Attack click sent");
-
-                phaseTimeout = System.currentTimeMillis() + 10_000; // refresh watchdog
-            }
-
-            *//* tiny sleep so we don’t busy-spin; clones spawn ≥1 tick apart *//*
-            sleep(120);
-        }
-
-        Microbot.log("Clone phase finished after " + cloneCount + " parries");
-    }*/
-
     public void specialAttack2Sequence() {
         final int CLONE_SPAWN_ANIM = 11019;
         final int CLONE_NPC_ID = NpcID.PMOON_BOSS_ECLIPSE_MOON_VIS;
@@ -391,13 +203,11 @@ public class EclipseMoonHandler implements BaseHandler {
                 if (!location.equals(spawn)) {               // new spawn tile
                     spawn = location;
                     lastCloneSeenAt = System.currentTimeMillis();  // reset idle timer
-
-                    WorldPoint parryTile = calculateParryTile(spawn);
                     Microbot.log("Clone #" + (parried + 1) + " spawned at " + spawn
-                            + " → Parrying via " + parryTile);
+                            + " → Parrying via " + spawn);
 
                     sleep(300);                               // one-tick delay
-                    Rs2Walker.walkCanvas(parryTile);
+                    Rs2Walker.walkCanvas(spawn);
 
                     parried++;
                     break;                                    // handle one spawn per tick
@@ -420,44 +230,11 @@ public class EclipseMoonHandler implements BaseHandler {
         Microbot.log("Clone phase ended – total clones parried: " + parried);
     }
 
-    private WorldPoint calculateParryTile(WorldPoint cloneLoc) {
+/*    private WorldPoint calculateParryTile(WorldPoint cloneLoc) {
         WorldPoint center = Rs2Player.getWorldLocation();
         int dx = Integer.signum(cloneLoc.getX() - center.getX());
         int dy = Integer.signum(cloneLoc.getY() - center.getY());
         return new WorldPoint(center.getX() + dx * 3, center.getY() + dy * 3, center.getPlane());
-    }
-
-    public static WorldPoint[] eclipseShieldLapTiles() {
-        WorldPoint center = bossArenaCenter;
-        int region = center.getRegionID();
-        int centerX = center.getRegionX();
-        int centerY = center.getRegionY();
-
-        int minX = centerX - 5;
-        int maxX = centerX + 5;
-        int minY = centerY - 5;
-        int maxY = centerY + 5;
-
-        List<WorldPoint> tiles = new ArrayList<>();
-        // Bottom row (west → east)
-        for (int x = minX; x <= maxX; x++) {
-            tiles.add(WorldPoint.fromRegion(region, x, minY, 0));
-        }
-        // Right column (bottom → top)
-        for (int y = minY + 1; y <= maxY; y++) {
-            tiles.add(WorldPoint.fromRegion(region, maxX, y, 0));
-        }
-        // Top row (east → west)
-        for (int x = maxX - 1; x >= minX; x--) {
-            tiles.add(WorldPoint.fromRegion(region, x, maxY, 0));
-        }
-        // Left column (top → bottom)
-        for (int y = maxY - 1; y > minY; y--) {
-            tiles.add(WorldPoint.fromRegion(region, minX, y, 0));
-        }
-
-        return tiles.toArray(new WorldPoint[0]);
-    }
-
+    }*/
 
 }
