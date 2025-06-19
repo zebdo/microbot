@@ -19,6 +19,8 @@ import net.runelite.client.plugins.microbot.example.ExampleScript;
 import net.runelite.client.plugins.microbot.runecrafting.gotr.GotrScript;
 import net.runelite.client.plugins.microbot.runecrafting.gotr.GotrState;
 import net.runelite.client.plugins.microbot.util.Global;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
+import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.ui.overlay.OverlayManager;
 
@@ -57,12 +59,18 @@ public class BarrowsPlugin extends Plugin {
         if (overlayManager != null) {
             overlayManager.add(barrowsOverlay);
         }
+        Rs2Antiban.activateAntiban();
+        Rs2Antiban.resetAntibanSettings();
+        Rs2Antiban.antibanSetupTemplates.applyCombatSetup();
+        Rs2Antiban.setActivity(Activity.BARROWS);
         barrowsScript.run(config);
         barrowsScript.outOfPoweredStaffCharges = false;
 
     }
 
     protected void shutDown() {
+        Rs2Antiban.resetAntibanSettings();
+        Rs2Antiban.deactivateAntiban();
         barrowsScript.shutdown();
         overlayManager.remove(barrowsOverlay);
     }
