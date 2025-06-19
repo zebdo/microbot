@@ -33,9 +33,10 @@ public final class BossHandler {
 
     // TODO:
     //  add checks at script initialisation:
-    //  1. check that all config weapons are in inventory or wielded
-    //  2. check that Moons of Peril quest has been completed
-    //  add check before equipping weapons that enough inventory space exists, otherwise don't equip
+    //  a. check that all config weapons are in inventory or wielded
+    //  b. check that Moons of Peril quest has been completed
+    //  2. add check before equipping weapons that enough inventory space exists, otherwise don't equip
+    //  3. The while loops on the specific boss handlers should check if boss health widget is visible (instead of player distance to tile)
 
     /** Walks to a boss lobby and logs progress. */
     public static void walkToBoss(String bossName, WorldPoint bossWorldPoint) {
@@ -152,7 +153,6 @@ public final class BossHandler {
      * @return
      */
     public static void meleePrayerOn() {
-        Rs2Prayer.disableAllPrayers();
         Rs2Prayer.toggle(Objects.requireNonNull(Rs2Prayer.getBestMeleePrayer()), true);
     }
 
@@ -180,9 +180,9 @@ public final class BossHandler {
         WorldPoint lastSigilSW = null;   // south-west anchor of current sigil
         int sigilMoves = 0;              // how many times the sigil has shifted
         equipWeapons(Weapon, Shield);
-        sleep(300);
+        sleep(150);
         meleePrayerOn();
-        sleep(300);
+        sleep(150);
 
         while (sigilMoves < 3)           // a normal phase has ≤3 sigil positions
         {
@@ -201,7 +201,7 @@ public final class BossHandler {
                 Microbot.log("Sigil moved → #" + sigilMoves);
             }
 
-            /* 3 ─ choose the nearest predefined attack tile ≤2 tiles away */
+            /* 3 ─ choose the nearest predefined attack tile ≤1 tiles away */
             WorldPoint target = sigilSW;   // fallback = sigil itself
             for (WorldPoint atk : attackTiles) {
                 if (atk.distanceTo(sigilSW) <= 1) { target = atk; break; }
@@ -209,7 +209,7 @@ public final class BossHandler {
 
             /* 4 ─ walk onto the target tile if not already there */
             if (Rs2Player.distanceTo(target) > 1) {
-                if (Rs2Walker.walkFastCanvas(target)) {
+                if (Rs2Walker.walkFastCanvas(target, true)) {
                     final WorldPoint destinationTile = target;
                     sleepUntil(() -> Rs2Player.getWorldLocation().equals(destinationTile), 2_000);
                 }
@@ -221,7 +221,7 @@ public final class BossHandler {
                 Rs2Npc.attack(bossNpcID);
             }
 
-            sleep(600);   // one OSRS game tick
+            sleep(300);   // half a game tick
         }
     }
 
@@ -229,5 +229,24 @@ public final class BossHandler {
     public static boolean bossIsDefeated(String bossName, int defeatedWidgetId) {
         Microbot.log(bossName + " is defeated: " + Rs2Widget.isWidgetVisible(defeatedWidgetId));
         return Rs2Widget.isWidgetVisible(defeatedWidgetId);
+    }
+
+    /** Runs the player out of the arena */
+    public static void bossBailOut(WorldPoint bailOutLocation) {
+        int exitStairsGroundObjectID = 53003;
+        long endTime = System.currentTimeMillis() + 10_000;
+
+        while (System.currentTimeMillis() < endTime) {
+            if (Rs2GameObject.interact(exitStairsGroundObjectID)) {
+                sleepUntil(() -> Rs2Widget.isWidgetVisible(19857413),5_000);
+                Microbot.log("Successfully bailed out of the boss arena");
+                return;
+            }
+
+            Microbot.log("Couldn't interact with the door. Attempting to move closer");
+            Rs2Walker.walkFastCanvas(bailOutLocation, true);
+            sleep(600);
+        }
+        Microbot.log("Timeout: Failed to bail out of the boss arena after 10 seconds.");
     }
 }

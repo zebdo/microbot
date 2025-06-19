@@ -4,22 +4,23 @@ import net.runelite.api.coords.WorldPoint;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 
+import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
+
 import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
 
 @Getter
 @RequiredArgsConstructor
 public enum Locations {
     ECLIPSE_LOBBY(new WorldPoint(1466, 9632, 0)),
-    ECLIPSE_ARENA_CENTER(WorldPoint.fromRegion(6038, 13, 33, 0)),
+    ECLIPSE_ARENA_CENTER(WorldPoint.fromRegion(6038, 16, 32, 0)),
     ECLIPSE_ATTACK_1(WorldPoint.fromRegion(6038, 17, 35, 0)),
     ECLIPSE_ATTACK_2(WorldPoint.fromRegion(6038, 19, 33, 0)),
     ECLIPSE_ATTACK_3(WorldPoint.fromRegion(6038, 19, 31, 0)),
     ECLIPSE_ATTACK_4(WorldPoint.fromRegion(6038, 13, 31, 0)),
     ECLIPSE_ATTACK_5(WorldPoint.fromRegion(6038, 13, 33, 0)),
-    ECLIPSE_ATTACK_6(WorldPoint.fromRegion(6038, 15, 29, 0)),
-    ECLIPSE_CLONE_TILE(WorldPoint.fromRegion(6038, 16, 32, 0)),
+    ECLIPSE_ATTACK_6(new WorldPoint(1487,9629,0)),
+    ECLIPSE_EXIT_TILE(WorldPoint.fromRegion(6038, 7, 32, 0)),
+    ECLIPSE_SHIELD_SPAWN_TILE(new WorldPoint(1491, 9628, 0)),
     BLOOD_LOBBY(new WorldPoint(1413, 9632, 0)),
     BLOOD_ARENA_CENTER(WorldPoint.fromRegion(5526, 48, 32, 0)),
     BLOOD_ATTACK_1(WorldPoint.fromRegion(5526, 47, 29, 0)),
