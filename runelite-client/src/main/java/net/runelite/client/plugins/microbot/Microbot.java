@@ -476,33 +476,26 @@ public class Microbot
 			.orElse(null);
 	}
 
-	/**
-	 * Stops the specified plugin using the plugin manager.
-	 * If the plugin is non-null, this method attempts to stop it and handles any instantiation exceptions.
-	 *
-	 * @param plugin the plugin to be stopped.
-	 */
-	@SneakyThrows
-	public static void stopPlugin(Plugin plugin)
-	{
-		if (plugin == null)
-		{
-			return;
-		}
-		SwingUtilities.invokeAndWait(() ->
-		{
-			try
-			{
-				getPluginManager().setPluginEnabled(plugin, false);
-				getPluginManager().stopPlugin(plugin);
-				//getPluginManager().startPlugins();
-			}
-			catch (PluginInstantiationException e)
-			{
-				e.printStackTrace();
-			}
-		});
-	}
+    /**
+     * Stops the specified plugin using the plugin manager.
+     * If the plugin is non-null, this method attempts to stop it and handles any instantiation exceptions.
+     *
+     * @param plugin the plugin to be stopped.
+     */
+    @SneakyThrows
+    public static void stopPlugin(Plugin plugin) {
+        if (plugin == null) return;
+        SwingUtilities.invokeAndWait(() ->
+        {
+        try {
+            getPluginManager().setPluginEnabled(plugin, false);
+            getPluginManager().stopPlugin(plugin);
+            //getPluginManager().startPlugins();
+        } catch (PluginInstantiationException e) {
+            e.printStackTrace();
+        }
+        });
+    }
 
 	public static void doInvoke(NewMenuEntry entry, Rectangle rectangle)
 	{
@@ -766,10 +759,9 @@ public class Microbot
 		return Microbot.getPluginManager().isPluginEnabled(dashboard);
 	}
 
-	public static boolean isPluginEnabled(Class c)
-	{
-		return isPluginEnabled(c.getName());
-	}
+    public static boolean isPluginEnabled(Class<?> c) {
+        return isPluginEnabled(c.getName());
+    }
 
 	@Deprecated(since = "1.6.2 - Use Rs2Player variant")
 	public static QuestState getQuestState(Quest quest)

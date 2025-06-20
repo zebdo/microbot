@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.util.prayer;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.Varbits;
 import net.runelite.api.annotations.Component;
 import net.runelite.api.annotations.Varbit;
@@ -9,11 +10,11 @@ import net.runelite.api.annotations.Varbit;
 @Getter
 @RequiredArgsConstructor
 public enum Rs2PrayerEnum {
-    THICK_SKIN("Thick Skin", 35454985, 1, Varbits.PRAYER_THICK_SKIN, 0),
-    BURST_STRENGTH("Burst of Strength", 35454986, 4, Varbits.PRAYER_BURST_OF_STRENGTH, 1),
-    CLARITY_THOUGHT("Clarity of Thought", 35454987, 7, Varbits.PRAYER_CLARITY_OF_THOUGHT, 2),
-    SHARP_EYE("Sharp Eye", 35455003, 8, Varbits.PRAYER_SHARP_EYE, 3),
-    MYSTIC_WILL("Mystic Will", 35455006, 9, Varbits.PRAYER_MYSTIC_WILL, 19),
+    THICK_SKIN("Thick Skin", 35454985, 1, VarbitID.PRAYER_THICKSKIN, 0),
+    BURST_STRENGTH("Burst of Strength", 35454986, 4, VarbitID.PRAYER_BURSTOFSTRENGTH, 1),
+    CLARITY_THOUGHT("Clarity of Thought", 35454987, 7, VarbitID.PRAYER_CLARITYOFTHOUGHT, 2),
+    SHARP_EYE("Sharp Eye", 35455003, 8, VarbitID.PRAYER_SHARPEYE, 3),
+    MYSTIC_WILL("Mystic Will", 35455006, 9, VarbitID.PRAYER_MYSTICWILL, 19),
     ROCK_SKIN("Rock Skin", 35454988, 10, Varbits.PRAYER_ROCK_SKIN, 3),
     SUPERHUMAN_STRENGTH("Superhuman Strength", 35454989, 13, Varbits.PRAYER_SUPERHUMAN_STRENGTH, 4),
     IMPROVED_REFLEXES("Improved Reflexes", 35454990, 16, Varbits.PRAYER_IMPROVED_REFLEXES, 5),
