@@ -373,8 +373,7 @@ public class Rs2Bank {
     //hasBankItem overload to check with id and amount
     public static boolean hasBankItem(int id, int amount) {
         Rs2ItemModel rs2Item = findBankItem(id);
-        if (rs2Item == null) return false;
-        log.info("Item: " + rs2Item.getName() + " Amount: " + rs2Item.getQuantity());
+        if (rs2Item == null) return false;        
         return findBankItem(Objects.requireNonNull(rs2Item).getName(), true, amount) != null;
     }
 
@@ -1529,6 +1528,18 @@ public class Rs2Bank {
      * @return the nearest {@link BankLocation}, or {@code null} if no accessible bank could be reached
      */
     public static BankLocation getNearestBank(WorldPoint worldPoint, int maxObjectSearchRadius) {
+        AbstractMap.SimpleEntry<List<WorldPoint>, BankLocation> result = getPathAndBankToNearestBank(worldPoint, maxObjectSearchRadius);
+        return result != null ? result.getValue() : null;
+    }
+
+    /**
+     * Private helper method that finds both the path and bank location to the nearest accessible bank.
+     *
+     * @param worldPoint            the starting location for pathfinding
+     * @param maxObjectSearchRadius the maximum radius (in tiles) to scan for bank booth objects
+     * @return A SimpleEntry containing the path (key) and bank location (value), or null if no accessible bank could be reached
+     */
+    private static AbstractMap.SimpleEntry<List<WorldPoint>, BankLocation> getPathAndBankToNearestBank(WorldPoint worldPoint, int maxObjectSearchRadius) {
         Microbot.log("Finding nearest bank...");
                      
         Set<BankLocation> allBanks = Arrays.stream(BankLocation.values())
@@ -1554,9 +1565,11 @@ public class Rs2Bank {
                     .filter(e -> e.getKey() != null && e.getValue() <= maxObjectSearchRadius)
                     .min(Comparator.comparingInt(Map.Entry::getValue))
                     .map(Map.Entry::getKey);                        
-            if (byObject.isPresent()) {                
+            if (byObject.isPresent() && byObject.get().hasRequirements()) {                
                 Microbot.log("Found nearest bank (object): " + byObject.get());
-                return byObject.get();
+                BankLocation returnBankLocation = byObject.get();
+                List<WorldPoint> path = new ArrayList<>(Collections.singletonList(byObject.get().getWorldPoint()));
+                return new AbstractMap.SimpleEntry<>(path, returnBankLocation);
             }
         }
 
@@ -1581,37 +1594,36 @@ public class Rs2Bank {
             ShortestPathPlugin.getPathfinderConfig().refresh();
         }
         
-        // Performance comparison: parallel vs original pathfinding
         List<WorldPoint> targetsList = targets.stream()
                 .collect(Collectors.toList());
         
-        // Measure original method (pathfinding with all targets at once)
         long originalStart = System.nanoTime();
         Pathfinder pf = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), worldPoint, targets);
         pf.run();        
         List<WorldPoint> path = pf.getPath();
         long originalTime = System.nanoTime() - originalStart;                        
+        
         if (path.isEmpty()) {
-            Microbot.log("Unable to find path to any bank");
+            Microbot.log("Unable to find path to nearest bank");
             return null;
-        }    
-		// Create a WorldArea around the final tile to be more generous
+        }
+        // Create a WorldArea around the final tile to be more generous
         WorldPoint nearestTile = path.get(path.size() - 1);
 		WorldArea nearestTileArea = new WorldArea(nearestTile, 2, 2);
         Optional<BankLocation> byPath = accessibleBanks.stream()
                 .filter(b -> {
 					WorldArea accessibleBankArea = new WorldArea(b.getWorldPoint(), 2, 2);
-					return accessibleBankArea.intersectsWith2D(nearestTileArea) && b.hasRequirements();
+					return accessibleBankArea.intersectsWith2D(nearestTileArea);
 				})
                 .findFirst();      
+        BankLocation returnBankLocation = null;
         if (byPath.isPresent()) {
             Microbot.log("Found nearest bank (shortest path): " + byPath.get());
-            
-            return byPath.get();
+            returnBankLocation = byPath.get();
+        } else {
+            Microbot.log("Nearest bank point " + nearestTile + " did not match any BankLocation");
         }
-
-        Microbot.log("Nearest bank point " + nearestTile + " did not match any BankLocation");
-        return null;
+        return new AbstractMap.SimpleEntry<>(path, returnBankLocation);
     }
 
     /**
@@ -1652,79 +1664,8 @@ public class Rs2Bank {
      * @return the complete path to the nearest bank as List<WorldPoint>, or empty list if no accessible bank could be reached
      */
     public static List<WorldPoint> getPathToNearestBank(WorldPoint worldPoint, int maxObjectSearchRadius) {
-        Microbot.log("Finding path to nearest bank...");
-
-        Set<BankLocation> accessibleBanks = Arrays.stream(BankLocation.values())
-                .filter(BankLocation::hasRequirements)
-                .collect(Collectors.toSet());
-
-        if (accessibleBanks.isEmpty()) {
-            Microbot.log("No accessible banks found");
-            return Collections.emptyList();
-        }
-
-        if (Objects.equals(Microbot.getClient().getLocalPlayer().getWorldLocation(), worldPoint)) {
-            // Measure object-based search performance
-            long objectSearchStart = System.nanoTime();
-            
-            List<TileObject> bankObjs = Stream.concat(
-                            Stream.of(Rs2GameObject.findBank(maxObjectSearchRadius)),
-                            Stream.of(Rs2GameObject.findGrandExchangeBooth(maxObjectSearchRadius))
-                    )
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-
-            Optional<BankLocation> byObject = bankObjs.stream()
-                    .map(obj -> {
-                        BankLocation closestBank = accessibleBanks.stream()
-                                .min(Comparator.comparingInt(b -> Rs2WorldPoint.quickDistance(obj.getWorldLocation(), b.getWorldPoint())))
-                                .orElse(null);
-
-                        int dist = obj.getWorldLocation().distanceTo(closestBank.getWorldPoint());
-
-                        return new AbstractMap.SimpleEntry<>(closestBank, dist);
-                    })
-                    .filter(e -> e.getKey() != null && e.getValue() <= maxObjectSearchRadius)
-                    .min(Comparator.comparingInt(Map.Entry::getValue))
-                    .map(Map.Entry::getKey);
-            
-            long objectSearchTime = System.nanoTime() - objectSearchStart;
-            
-            log.info("Object-based bank search performance (for path):");
-            log.info("  Search radius: {} tiles", maxObjectSearchRadius);
-            log.info("  Bank objects found: {}", bankObjs.size());
-            log.info("  Object search time: {}ms", objectSearchTime / 1_000_000.0);
-
-            if (byObject.isPresent()) {
-                log.info("  Result: Found nearest bank (object-based): {}", byObject.get());
-                Microbot.log("Found nearest bank (object): " + byObject.get());
-                
-                // Create a simple path to the object-based bank (direct path from current location to bank)
-                BankLocation foundBank = byObject.get();
-                return Arrays.asList(worldPoint, foundBank.getWorldPoint());
-            } else {
-                log.info("  Result: No suitable bank objects found within radius, falling back to pathfinding");
-            }
-        }
-
-        Set<WorldPoint> targets = accessibleBanks.stream()
-                .map(BankLocation::getWorldPoint)
-                .collect(Collectors.toSet());
-
-        if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
-            ShortestPathPlugin.getPathfinderConfig().refresh();
-        }        
-        Pathfinder pf = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), worldPoint, targets);
-        pf.run();
-        List<WorldPoint> path = pf.getPath();
-        
-        if (path.isEmpty()) {
-            Microbot.log("Unable to find path to nearest bank");
-            return Collections.emptyList();
-        }
-
-        Microbot.log("Found path to nearest bank with {} waypoints", path.size());
-        return path;
+        AbstractMap.SimpleEntry<List<WorldPoint>, BankLocation> result = getPathAndBankToNearestBank(worldPoint, maxObjectSearchRadius);
+        return result != null ? result.getKey() : new ArrayList<>();
     }
 
     /**

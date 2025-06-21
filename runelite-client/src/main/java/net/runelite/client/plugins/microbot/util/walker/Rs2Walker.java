@@ -593,13 +593,10 @@ public class Rs2Walker {
      *         is empty, on different planes, or doesn't reach the destination
      */
     public static int getTotalTilesFromPath(List<WorldPoint> path, WorldPoint destination) {
-        log.info("path plane: " + (path.isEmpty() ? "empty" : path.get(path.size() - 1).getPlane()));
-        log.info("destination plane: " + destination.getPlane());
         if (path.isEmpty() || path.get(path.size() - 1).getPlane() != destination.getPlane()) return Integer.MAX_VALUE;
         WorldArea pathArea = new WorldArea(path.get(path.size() - 1), 8, 8);
         WorldArea objectArea = new WorldArea(destination, 8, 8);
         if (!pathArea.intersectsWith2D(objectArea)) {
-            log.info("Path does not intersect with destination area");
             return Integer.MAX_VALUE;
         }
         return path.size();
@@ -2989,7 +2986,7 @@ public class Rs2Walker {
                     ShortestPathPlugin.getPathfinderConfig().setUseBankItems(true);
                     ShortestPathPlugin.getPathfinderConfig().refresh();
                     
-                    performanceLog.append("Bank items available: ").append(Rs2Bank.bankItems().size()).append("\n");
+                    performanceLog.append("\t-Bank items available: ").append(Rs2Bank.bankItems().size()).append("\n");
                     
                     long pathWithBankedItemsStartTime = System.nanoTime();
                     pathWithBankedItemsToTarget = getWalkPath(startPoint, target);
@@ -2999,9 +2996,9 @@ public class Rs2Walker {
                     int distanceWithBankedItemsToTarget = getTotalTilesFromPath(pathWithBankedItemsToTarget, target);
                     bankingRouteDistance = distanceWithBankedItemsToTarget;
                     
-                    performanceLog.append("Path from start to target with banked items: ").append(String.format("%.2f ms", pathWithBankedItemsTimeMs))
+                    performanceLog.append("\t-Path from start to target with banked items: ").append(String.format("%.2f ms", pathWithBankedItemsTimeMs))
                             .append(" (").append(pathWithBankedItemsToTarget.size()).append(" waypoints, ").append(distanceWithBankedItemsToTarget).append(" tiles)\n");
-                    performanceLog.append("Total banking route distance: ").append(bankingRouteDistance).append(" tiles\n");
+                    performanceLog.append("\t-Total banking route distance: ").append(bankingRouteDistance).append(" tiles\n");
 
                 } finally {
                     // Always restore original configuration
@@ -3014,9 +3011,9 @@ public class Rs2Walker {
                     long bankSearchEndTime = System.nanoTime();
                     double bankSearchTimeMs = (bankSearchEndTime - bankSearchStartTime) / 1_000_000.0;
                     if (nearestBank != null) {
-                        performanceLog.append("Nearest bank search: ").append(String.format("%.2f ms", bankSearchTimeMs));
+                        performanceLog.append("\t-Nearest bank search: ").append(String.format("%.2f ms", bankSearchTimeMs));
                         WorldPoint bankLocation = nearestBank.getWorldPoint();
-                        performanceLog.append(" -> Found: ").append(nearestBank).append(" at ").append(bankLocation).append("\n");
+                        performanceLog.append("\t -> Found: ").append(nearestBank).append(" at ").append(bankLocation).append("\n");
                     
                         // Calculate distance from start point to bank
                         long pathToBankStartTime = System.nanoTime();
@@ -3025,11 +3022,11 @@ public class Rs2Walker {
                         double pathToBankTimeMs = (pathToBankEndTime - pathToBankStartTime) / 1_000_000.0;
                         
                         int distanceToBank = getTotalTilesFromPath(pathToBank, bankLocation);
-                        performanceLog.append("Path to bank calculation: ").append(String.format("%.2f ms", pathToBankTimeMs))
+                        performanceLog.append("\t-Path to bank calculation: ").append(String.format("%.2f ms", pathToBankTimeMs))
                                 .append(" (").append(pathToBank.size()).append(" waypoints, ").append(distanceToBank).append(" tiles)\n");
                         bankingRouteDistance += distanceToBank;
                     } else {
-                        performanceLog.append(" -> No accessible bank found\n");
+                        performanceLog.append("\t -> No accessible bank found\n");
                     }
                 }
                 
@@ -3040,10 +3037,10 @@ public class Rs2Walker {
             
             long totalEndTime = System.nanoTime();
             double totalTimeMs = (totalEndTime - totalStartTime) / 1_000_000.0;
-            performanceLog.append("=== Total compareRoutes time: ").append(String.format("%.2f ms", totalTimeMs)).append(" ===\n");
+            performanceLog.append("\t=== Total compareRoutes time: ").append(String.format("%.2f ms", totalTimeMs)).append(" ===\n");
             
             if (bankingRouteDistance == -1) {
-                performanceLog.append("Result: Direct route only (banking route unavailable)\n");
+                performanceLog.append("\tResult: Direct route only (banking route unavailable)\n");
                 log.info(performanceLog.toString());
                 return new TransportRouteAnalysis(true, directDistance,new ArrayList<>(),-1, null, null, new ArrayList<>(),new ArrayList<>(),
                     "Direct route only (banking route unavailable)");
@@ -3051,8 +3048,8 @@ public class Rs2Walker {
             
             boolean directIsFaster = directDistance <= bankingRouteDistance;
             String recommendation = directIsFaster ? 
-                String.format("Direct route is faster (%d vs %d tiles)", directDistance, bankingRouteDistance) :
-                String.format("Banking route is faster (%d vs %d tiles)", bankingRouteDistance, directDistance);
+                String.format("\tDirect route is faster (%d vs %d tiles)", directDistance, bankingRouteDistance) :
+                String.format("\tBanking route is faster (%d vs %d tiles)", bankingRouteDistance, directDistance);
             
             performanceLog.append("Result: ").append(recommendation).append("\n");
             log.info(performanceLog.toString());
