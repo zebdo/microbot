@@ -48,6 +48,7 @@ public class EclipseMoonHandler implements BaseHandler {
     @Override
     public boolean validate() {
         // run while boss is alive
+        sleep(1_000);
         return (BossHandler.bossIsAlive(bossName, bossStatusWidgetID));
     }
 
@@ -91,7 +92,7 @@ public class EclipseMoonHandler implements BaseHandler {
     {
         Rs2Prayer.disableAllPrayers();
 
-        /*if we enter arena mid attack phase, bail out*/
+        /*if we enter arena mid attack phase, attempt to use the automated walk sequence*/
         WorldPoint spawn = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD).getWorldLocation();
         Microbot.log("Exact Moonshield location = " + spawn);
         if (!spawn.equals(shieldSpawnTile)) {
@@ -100,12 +101,15 @@ public class EclipseMoonHandler implements BaseHandler {
 
 /*      1 ─ wait until shield starts sliding */
 
-        Microbot.log("Waiting for Moonshield to begin movement...");
-        sleepUntil(() -> {
-            Rs2NpcModel currentShield = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD);
-            return currentShield != null && !currentShield.getWorldLocation().equals(spawn);
-        }, 5_000);
-        Microbot.log("Moonshield has commenced movement...");
+        Microbot.log("Sleeping until knockback animation finishes...");
+        sleepUntil(() ->
+                        Rs2Player.getAnimation() != AnimationID.HUMAN_TROLL_FLYBACK_MERGE &&
+                                Rs2Player.getWorldLocation().equals(new WorldPoint(1491, 9627, 0)),
+                5_000);
+
+        Microbot.log("Now sleeping 4 ticks to perfectly time our walk");
+        sleep(2_400);
+        Microbot.log("Commencing our walk around the lap");
 
 /*         ───── 2. Four anchor tiles around the boss (SW → NW → NE → SE) ───── */
         WorldPoint[] lap = {
@@ -194,7 +198,7 @@ public class EclipseMoonHandler implements BaseHandler {
                 Microbot.log("Spawn true location: " + cloneTrueLocation);
                 WorldPoint cloneLocalLocation = WorldPoint.fromLocal(Microbot.getClient(), clone.getLocalLocation());
                 Microbot.log("Spawn local location: " + cloneLocalLocation);
-                sleep(300); // half-tick delay
+                sleep(150); // half-tick delay
 
                 // 3. Parry / Attack the clone
                 /*WorldPoint parryTile = calculateParryTile(cloneTrueLocation);*/
@@ -222,7 +226,7 @@ public class EclipseMoonHandler implements BaseHandler {
                 }
             }*/
             /* small pause before next poll */
-            sleep(50); // frequent polling
+            sleep(150); // frequent polling
 
             if (!isSpecialAttack2Sequence()) {
                 Microbot.log("Special attack 2 sequence has ended, breaking out");

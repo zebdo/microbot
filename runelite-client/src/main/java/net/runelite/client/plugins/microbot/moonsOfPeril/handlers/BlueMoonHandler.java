@@ -11,6 +11,7 @@ import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
+import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -50,7 +51,7 @@ public class BlueMoonHandler implements BaseHandler {
     @Override
     public boolean validate() {
         // run while boss is alive
-        sleep(2_000);
+        sleep(1_000);
         return BossHandler.bossIsAlive(bossName, bossStatusWidgetID);
     }
 
@@ -83,46 +84,18 @@ public class BlueMoonHandler implements BaseHandler {
 
     /* --------  phase gate --------------------------------------------------- */
     public boolean isSpecialAttack1Sequence() {
-        return Rs2Npc.getNpc(NpcID.PMOON_BOSS_WINTER_STORM) != null;
+        return (Rs2Npc.getNpc(NpcID.PMOON_BOSS_WINTER_STORM) != null && Rs2Npc.getNpc(sigilNpcID) == null);
     }
 
     /* --------  executor ----------------------------------------------------- */
     public void specialAttack1Sequence()
     {
-        // WorldPoints use this instance’s region so tiles are always in-scene
-        int region = Rs2Player.getWorldLocation().getRegionID();
-        WorldPoint BRAZIER_E = WorldPoint.fromRegion(region, 44, 16, 0);   // east
-        WorldPoint BRAZIER_W = WorldPoint.fromRegion(region, 20, 16, 0);   // west
-
-        WorldPoint[] lap = { BRAZIER_E, bossArenaCenter, BRAZIER_W, AFTER_TORNADO };
-
-        int step = 0;
-        while (Rs2GameObject.exists(ObjectID.PMOON_BOSS_BRAZIER_UNLIT) && step < lap.length)
-        {
-            WorldPoint target = lap[step];
-
-            /* 1 ─ run to target (10-s timeout) */
-            if (Rs2Walker.walkFastCanvas(target, true)) {
-                long tEnd = System.currentTimeMillis() + 10_000;
-                sleepUntil(() -> Rs2Player.distanceTo(target) <= 1
-                        || System.currentTimeMillis() > tEnd, 300);
-            }
-
-            /* 2 ─ if at brazier and it’s still unlit → relight */
-            if (target != bossArenaCenter &&                          // we’re on a brazier tile
-                    Rs2Player.distanceTo(target) <= 1 &&
-                    Rs2GameObject.interact(ObjectID.PMOON_BOSS_BRAZIER_UNLIT, "Light"))
-            {
-                Microbot.log("Lit brazier at " + target);
-                sleep(600);                                 // one tick for animation
-            }
-
-            step++;                                         // next leg
-            sleep(150);                                     // small breathing gap
-        }
-
-        Microbot.log("Frost Storm phase complete");
+        Rs2Prayer.disableAllPrayers();
+        Microbot.log("Running to safe tile and waiting out the sequence");
+        Rs2Walker.walkFastCanvas(AFTER_TORNADO, true);
+        sleepUntil(() -> !isSpecialAttack1Sequence());
     }
+
 
     /**
      * Returns True if the icicle NPC is found.
@@ -184,18 +157,16 @@ public class BlueMoonHandler implements BaseHandler {
 
         Microbot.log(ts.get() + "Entering attack-and-dodge loop (timeout " + PHASE_TIMEOUT_MS + " ms)");
 
-        while (icicle.getAnimation() == ICICLE_ANIM_ID &&
+        while (!Rs2Equipment.isWearing(weaponMain) &&
                 System.currentTimeMillis() - phaseStart < PHASE_TIMEOUT_MS)
         {
-            if (!Rs2Combat.inCombat()) {
-                Rs2Npc.attack(icicle);
-            }
+            Rs2Npc.attack(icicle);
             WorldPoint attackTile = Rs2Player.getWorldLocation();
             Microbot.log(ts.get() + "Attack location calculated as: " + attackTile);
-            sleepUntil(() -> BossHandler.inDanger(attackTile),5_000);
+            sleepUntil(() -> BossHandler.inDanger(attackTile),3_000);
             if (BossHandler.inDanger(attackTile)) {
                 Microbot.log(ts.get() + "Standing on dangerous tile: " + attackTile);
-                WorldPoint safeTile = Rs2Tile.getSafeTiles(2).get(0);
+                WorldPoint safeTile = Rs2Tile.getSafeTiles(1).get(0);
                 Microbot.log(ts.get() + "Safe tile calculated to be: " + safeTile);
 
                 if (safeTile != null) {
