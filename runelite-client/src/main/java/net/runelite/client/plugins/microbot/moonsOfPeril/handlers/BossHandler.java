@@ -15,6 +15,7 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
+import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 
 
 import java.util.Objects;
@@ -90,6 +91,9 @@ public final class BossHandler {
         // 3. Drinks potions if prayer points below 70%
         drinkIfNeeded(70);
         sleep(600);
+
+        // 4. Turn run on
+        Rs2Player.toggleRunEnergy(true);
 
     }
 
@@ -182,6 +186,7 @@ public final class BossHandler {
         equipWeapons(Weapon, Shield);
         sleep(150);
         meleePrayerOn();
+        Rs2Player.toggleRunEnergy(true);
         sleep(150);
 
         while (sigilMoves < 3)           // a normal phase has ≤3 sigil positions
@@ -231,6 +236,14 @@ public final class BossHandler {
         return Rs2Widget.isWidgetVisible(defeatedWidgetId);
     }
 
+    /** True if the player is located on a dangerous tile*/
+    public static boolean inDanger(WorldPoint location) {
+        return Rs2Tile.dangerousGraphicsObjectTiles.stream()
+                .filter(p -> p.getValue() > 0)
+                .map(p -> p.getKey())
+                .anyMatch(pt -> pt.equals(location));
+    }
+
     /** Runs the player out of the arena */
     public static void bossBailOut(WorldPoint bailOutLocation) {
         int exitStairsGroundObjectID = 53003;
@@ -249,4 +262,5 @@ public final class BossHandler {
         }
         Microbot.log("Timeout: Failed to bail out of the boss arena after 10 seconds.");
     }
+
 }

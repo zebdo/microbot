@@ -2,11 +2,15 @@ package net.runelite.client.plugins.microbot.moonsOfPeril;
 
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.GraphicsObject;
 import net.runelite.api.events.GameTick;
+import net.runelite.api.events.GraphicsObjectCreated;
+import net.runelite.api.gameval.SpotanimID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
@@ -42,6 +46,15 @@ public class moonsOfPerilPlugin extends Plugin {
             overlayManager.add(moonsOfPerilOverlay);
         }
         moonsOfPerilScript.run(config);
+        Rs2Tile.init();
+    }
+
+    @Subscribe
+    public void onGraphicsObjectCreated(GraphicsObjectCreated event) {
+        final GraphicsObject graphicsObject = event.getGraphicsObject();
+        if (graphicsObject.getId() == SpotanimID.VFX_DJINN_ICE_FLOOR_SPAWN_01) {
+            Rs2Tile.addDangerousGraphicsObjectTile(graphicsObject, 600 * 3);
+        }
     }
 
     protected void shutDown() {
