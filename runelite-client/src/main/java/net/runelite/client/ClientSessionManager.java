@@ -93,7 +93,7 @@ public class ClientSessionManager
 		scheduledFuture = executorService.scheduleWithFixedDelay(
 				RunnableExceptionLogger.wrap(this::ping), 1, 10, TimeUnit.MINUTES);
 		scheduledFutureMicroBot = executorService.scheduleWithFixedDelay(
-				RunnableExceptionLogger.wrap(this::microbotPing), 1, 5, TimeUnit.MINUTES);
+				RunnableExceptionLogger.wrap(this::microbotPing), 1, 10, TimeUnit.MINUTES);
 	}
 
 	@Subscribe
