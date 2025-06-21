@@ -461,7 +461,7 @@ public class FarmTreeRunScript extends Script {
                 items.add(new FarmingItem(selectedTree.getPaymentId(), selectedTree.getPaymentAmount() * treeSaplingsCount, true));
 
             if (config.protectHardTrees())
-                items.add(new FarmingItem(selectedTree.getPaymentId(), selectedHardTree.getPaymentAmount() * hardTreeSaplingsCount, true));
+                items.add(new FarmingItem(selectedHardTree.getPaymentId(), selectedHardTree.getPaymentAmount() * hardTreeSaplingsCount, true));
 
             if (config.protectFruitTrees())
                 items.add(new FarmingItem(selectedFruitTree.getPaymentId(), selectedFruitTree.getPaymentAmount() * fruitTreeSaplingsCount, true));

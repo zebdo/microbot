@@ -235,10 +235,10 @@ public class AstralRunesScript extends Script {
                         }
 
                         if( foodNeeded ) {
-                            Rs2Inventory.interact(foodItemId, "Eat");
+                            Rs2Player.useFood();
                             Rs2Inventory.waitForInventoryChanges(400);
                             if( Rs2Inventory.hasItem(foodItemId) ) {
-                                Rs2Inventory.interact(foodItemId, "Eat");
+                                Rs2Player.useFood();
                                 Rs2Inventory.waitForInventoryChanges(400);
                             }
                         }
