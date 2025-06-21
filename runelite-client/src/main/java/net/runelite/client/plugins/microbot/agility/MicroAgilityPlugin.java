@@ -50,7 +50,6 @@ public class MicroAgilityPlugin extends Plugin
 		}
 
 		agilityScript.run();
-		agilityScript.handleAlch();
 	}
 
 	protected void shutDown()
@@ -81,6 +80,6 @@ public class MicroAgilityPlugin extends Plugin
 			return Rs2Player.getRealSkillLevel(Skill.AGILITY) >= getCourseHandler().getRequiredLevel();
 		}
 
-		return (Rs2Player.getRealSkillLevel(Skill.AGILITY) + 5) >= getCourseHandler().getRequiredLevel();
+		return Rs2Player.getBoostedSkillLevel(Skill.AGILITY) >= getCourseHandler().getRequiredLevel();
 	}
 }
