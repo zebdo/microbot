@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot;
 
 import com.google.inject.Injector;
+import java.util.concurrent.atomic.AtomicBoolean;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
@@ -84,7 +85,7 @@ public class Microbot {
     private static final SpecialAttackConfigs specialAttackConfigs = new SpecialAttackConfigs();
     public static MenuEntry targetMenu;
     public static boolean isGainingExp = false;
-    public static boolean pauseAllScripts = false;
+    public static AtomicBoolean pauseAllScripts = new AtomicBoolean(false);
     public static String status = "IDLE";
     public static boolean enableAutoRunOn = true;
     public static boolean useStaminaPotsIfNeeded = true;

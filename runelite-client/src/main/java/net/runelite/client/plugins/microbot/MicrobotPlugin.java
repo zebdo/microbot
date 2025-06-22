@@ -110,7 +110,7 @@ public class MicrobotPlugin extends Plugin {
 
     @Override
     protected void startUp() throws AWTException {
-        Microbot.pauseAllScripts = false;
+        Microbot.pauseAllScripts.set(false);
         Microbot.setClient(client);
         Microbot.setClientThread(clientThread);
         Microbot.setEventBus(eventBus);

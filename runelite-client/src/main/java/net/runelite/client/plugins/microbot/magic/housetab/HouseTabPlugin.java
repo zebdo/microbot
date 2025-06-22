@@ -52,7 +52,7 @@ public class HouseTabPlugin extends Plugin {
 
     @Override
     protected void startUp() throws AWTException {
-        Microbot.pauseAllScripts = false;
+		Microbot.pauseAllScripts.compareAndSet(true, false);
         Microbot.setClient(client);
         Microbot.setClientThread(clientThread);
         Microbot.setNotifier(notifier);

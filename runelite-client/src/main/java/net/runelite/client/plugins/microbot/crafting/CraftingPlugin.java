@@ -3,7 +3,6 @@ package net.runelite.client.plugins.microbot.crafting;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
-import net.runelite.api.Skill;
 import net.runelite.client.Notifier;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -52,7 +51,7 @@ public class CraftingPlugin extends Plugin {
 
     @Override
     protected void startUp() throws AWTException {
-        Microbot.pauseAllScripts = false;
+		Microbot.pauseAllScripts.compareAndSet(true, false);
         Microbot.setClient(client);
         Microbot.setClientThread(clientThread);
         Microbot.setNotifier(notifier);

@@ -50,7 +50,7 @@ public class PiePlugin extends Plugin {
     @Override
     protected void startUp() throws AWTException {
         PieScript.totalPieShellsMade = 0;
-        Microbot.pauseAllScripts = false;
+		Microbot.pauseAllScripts.compareAndSet(true, false);
         Microbot.setClient(client);
         Microbot.setClientThread(clientThread);
         Microbot.setNotifier(notifier);
