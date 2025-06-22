@@ -70,7 +70,7 @@ public abstract class Script extends Global implements IScript {
             startTime = LocalTime.now();
             //init - things that have to be checked once can be added here
         }
-        if (Microbot.pauseAllScripts)
+        if (Microbot.pauseAllScripts.get())
             return false;
         if (Thread.currentThread().isInterrupted())
             return false;
