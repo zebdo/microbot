@@ -7,8 +7,8 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest  # You can choose a different runner if needed
-    with:
-      repo_token: "${{ secrets.GITHUB_TOKEN }}"
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
