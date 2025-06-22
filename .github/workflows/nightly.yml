@@ -44,5 +44,5 @@ jobs:
           username: root
           key: ${{ secrets.PROD_SSH_KEY }}
           source: runelite-client/target/microbot-*.jar
-          target: /var/www/files/releases/microbot/stable/
+          target: /var/www/files/releases/microbot/nightly/
           strip_components: 2
