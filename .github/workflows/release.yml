@@ -39,5 +39,5 @@ jobs:
           host: ${{ secrets.PROD_HOST }}
           username: root
           key: ${{ secrets.PROD_SSH_KEY }}
-          source: microbot/target/stable/microbot-*.jar
+          source: microbot/stable/microbot-*.jar
           target: /var/www/files/releases/
