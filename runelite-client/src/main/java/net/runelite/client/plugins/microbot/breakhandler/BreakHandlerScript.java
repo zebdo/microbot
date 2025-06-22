@@ -49,7 +49,7 @@ public class BreakHandlerScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 
-                if (config.breakNow() && !Microbot.pauseAllScripts && !isLockState()) {
+                if (config.breakNow() && !Microbot.pauseAllScripts.get() && !isLockState()) {
                     Microbot.log("Break triggered via config toggle: " + config.breakNow());
                     startBreak();
                     return;
@@ -84,10 +84,10 @@ public class BreakHandlerScript extends Script {
                     }
                 }
 
-                if (breakDuration <= 0 && Microbot.pauseAllScripts) {
+                if (breakDuration <= 0 && Microbot.pauseAllScripts.get()) {
                     if (Rs2AntibanSettings.universalAntiban && Rs2AntibanSettings.actionCooldownActive)
-                        return;                    
-                    Microbot.pauseAllScripts = false;
+                        return;
+					Microbot.pauseAllScripts.compareAndSet(true, false);
                     if (breakIn <= 0 && !isLockState())
                         breakIn = Rs2Random.between(config.timeUntilBreakStart() * 60, config.timeUntilBreakEnd() * 60);
 
@@ -107,7 +107,7 @@ public class BreakHandlerScript extends Script {
                     return;
                 }
 
-                if ((breakIn <= 0 && !Microbot.pauseAllScripts && !isLockState()) || (Rs2AntibanSettings.microBreakActive && !Microbot.pauseAllScripts && !isLockState())) {
+                if ((breakIn <= 0 && !Microbot.pauseAllScripts.get() && !isLockState()) || (Rs2AntibanSettings.microBreakActive && !Microbot.pauseAllScripts.get() && !isLockState())) {
                     startBreak();
                 }
 
@@ -121,8 +121,8 @@ public class BreakHandlerScript extends Script {
     private void startBreak() {
         // Log before processing the break
         Microbot.log("Starting break. breakNow setting: " + config.breakNow());
-        
-        Microbot.pauseAllScripts = true;
+
+		Microbot.pauseAllScripts.compareAndSet(false, true);
 
         if (Rs2AntibanSettings.microBreakActive)
             return;

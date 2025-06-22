@@ -1,43 +1,36 @@
 package net.runelite.client.plugins.microbot;
 
 import com.google.inject.Provides;
-import java.awt.AWTException;
 import java.awt.image.BufferedImage;
-import java.lang.reflect.InvocationTargetException;
-import java.time.Instant;
 import java.util.Objects;
-import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import javax.swing.SwingUtilities;
+import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.GameState;
-import net.runelite.api.InventoryID;
-import net.runelite.api.MenuAction;
-import net.runelite.api.MenuEntry;
-import net.runelite.api.NPC;
-import net.runelite.api.Player;
-import net.runelite.api.events.AnimationChanged;
-import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.GameTick;
-import net.runelite.api.events.HitsplatApplied;
-import net.runelite.api.events.ItemContainerChanged;
-import net.runelite.api.events.MenuEntryAdded;
-import net.runelite.api.events.MenuOptionClicked;
-import net.runelite.api.events.StatChanged;
-import net.runelite.api.events.VarbitChanged;
-import net.runelite.api.events.WidgetLoaded;
+import net.runelite.api.*;
+import net.runelite.api.events.*;
+import net.runelite.client.Notifier;
+import net.runelite.client.callback.ClientThread;
+import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.config.ProfileManager;
+import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
-import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.events.OverlayMenuClicked;
+import net.runelite.client.events.RuneScapeProfileChanged;
+import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.NPCManager;
+import net.runelite.client.game.SpriteManager;
+import net.runelite.client.game.WorldService;
+import net.runelite.client.input.MouseManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.PluginInstantiationException;
+import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchOverlay;
+import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchScript;
 import net.runelite.client.plugins.microbot.ui.MicrobotPluginConfigurationDescriptor;
 import net.runelite.client.plugins.microbot.ui.MicrobotPluginListPanel;
 import net.runelite.client.plugins.microbot.ui.MicrobotTopLevelConfigPanel;
@@ -46,15 +39,29 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
+import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
+import net.runelite.client.plugins.microbot.util.mouse.VirtualMouse;
+import net.runelite.client.plugins.microbot.util.mouse.naturalmouse.NaturalMouse;
 import net.runelite.client.plugins.microbot.util.overlay.GembagOverlay;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
+import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.OverlayMenuEntry;
+import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
+import net.runelite.client.ui.overlay.tooltip.TooltipManager;
+import net.runelite.client.ui.overlay.worldmap.WorldMapOverlay;
+import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
+
+import javax.inject.Inject;
+import javax.swing.*;
+import java.awt.*;
+import java.lang.reflect.InvocationTargetException;
+import java.time.Instant;
 import net.runelite.client.util.ImageUtil;
 
 @PluginDescriptor(
@@ -107,7 +114,7 @@ public class MicrobotPlugin extends Plugin
 	@Override
 	protected void startUp() throws AWTException
 	{
-		Microbot.pauseAllScripts = false;
+		Microbot.pauseAllScripts.set(false);
 
 		MicrobotPluginListPanel pluginListPanel = pluginListPanelProvider.get();
 		pluginListPanel.addFakePlugin(new MicrobotPluginConfigurationDescriptor(
@@ -157,12 +164,13 @@ public class MicrobotPlugin extends Plugin
 		Microbot.setIsGainingExp(true);
 	}
 
-    @Subscribe
-    public void onRuneScapeProfileChanged(RuneScapeProfileChanged event) {
-        // Handle profile changes for bank caching
-        Rs2Bank.setUnknownInitialBankState();
-        Rs2Bank.loadInitialBankStateFromConfig();
-    }
+	@Subscribe
+	public void onRuneScapeProfileChanged(RuneScapeProfileChanged event)
+	{
+		// Handle profile changes for bank caching
+		Rs2Bank.setUnknownInitialBankState();
+		Rs2Bank.loadInitialBankStateFromConfig();
+	}
 
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged event)
@@ -186,21 +194,24 @@ public class MicrobotPlugin extends Plugin
 		}
 	}
 
-    @Subscribe
-    public void onGameStateChanged(GameStateChanged gameStateChanged) {
-        if (gameStateChanged.getGameState() == GameState.LOGGED_IN) {
-            Microbot.setLoginTime(Instant.now());
-            Rs2RunePouch.fullUpdate();
-            Rs2Bank.setUnknownInitialBankState();
-            // Load bank state from config when logging in
-            Rs2Bank.loadInitialBankStateFromConfig();
-        }
-        if (gameStateChanged.getGameState() == GameState.HOPPING || gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.CONNECTION_LOST) {            
-            // Clear bank state when logging out
-            Rs2Bank.emptyBankState();
-            Microbot.loggedIn = false;
-        }
-    }
+	@Subscribe
+	public void onGameStateChanged(GameStateChanged gameStateChanged)
+	{
+		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
+		{
+			Microbot.setLoginTime(Instant.now());
+			Rs2RunePouch.fullUpdate();
+			Rs2Bank.setUnknownInitialBankState();
+			// Load bank state from config when logging in
+			Rs2Bank.loadInitialBankStateFromConfig();
+		}
+		if (gameStateChanged.getGameState() == GameState.HOPPING || gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.CONNECTION_LOST)
+		{
+			// Clear bank state when logging out
+			Rs2Bank.emptyBankState();
+			Microbot.loggedIn = false;
+		}
+	}
 
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged event)
@@ -349,12 +360,16 @@ public class MicrobotPlugin extends Plugin
 			});
 		}
 	}
-    @Subscribe
-    public void onGameTick(GameTick event) {
-        Rs2Bank.loadInitialBankStateFromConfig();
-    }
-    @Subscribe(priority = 100)
-    private void onClientShutdown(ClientShutdown e) {
-        Rs2Bank.saveBankToConfig();
-    }
+
+	@Subscribe
+	public void onGameTick(GameTick event)
+	{
+		Rs2Bank.loadInitialBankStateFromConfig();
+	}
+
+	@Subscribe(priority = 100)
+	private void onClientShutdown(ClientShutdown e)
+	{
+		Rs2Bank.saveBankToConfig();
+	}
 }

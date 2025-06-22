@@ -107,7 +107,7 @@ public class QoLScript extends Script {
         } catch (Exception ignored) {
             QoLPlugin.executeLoadoutActions = false;
             QoLPlugin.loadoutToLoad = null;
-            Microbot.pauseAllScripts = false;
+			Microbot.pauseAllScripts.compareAndSet(true, false);
             Microbot.log("Failed to load inventory setup");
         }
 
