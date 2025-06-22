@@ -3146,11 +3146,11 @@ public class Rs2Walker {
             // If forced banking or banking route is more efficient, go via bank
             if (forceBanking || !comparison.isDirectFaster()) {
                 if (comparison.getNearestBank() != null) {
-                    log.info("\n\tUsing banking route: {} -> {} -> {}", 
+                    log.info("\n\tUsing banking route: \n\t\t{} -> {} -> {}", 
                             Rs2Player.getWorldLocation(), comparison.getBankLocation(), target);
                     
                     // Handle the complete banking workflow using legacy walkTo approach
-                    return walkWithBankingState(comparison, missingItemsWithQuantities, target,distance);
+                    return walkWithBankingState(comparison.getBankLocation(), missingItemsWithQuantities, target,distance);
                 } else {
                     log.warn("\n\tBanking route requested but no accessible bank found, trying direct route");
                     return walkWithState(target, distance);
@@ -3180,67 +3180,7 @@ public class Rs2Walker {
      * @return true if the banking workflow was successful, false otherwise
      */
     private static boolean walkWithBanking(WorldPoint bankLocation, Map<Integer, Integer> missingItemsWithQuantities, WorldPoint finalTarget) {
-        try {
-            // Step 1: Walk to bank
-            boolean bankWalkResult = walkTo(bankLocation);
-            if (!bankWalkResult) {
-                log.warn("Failed to arrive at bank at: " + bankLocation);
-                return false;
-            }
-            
-            // Wait for arrival at bank
-            Rs2Player.waitForWalking();
-            
-            // Step 2: Open bank
-            if (!Rs2Bank.walkToBankAndUseBank()) {
-                log.warn("Failed to open bank at: " + bankLocation);
-                return false;
-            }
-            
-            // Step 3: Withdraw missing transport items
-            if (!missingItemsWithQuantities.isEmpty()) {
-                log.debug("Withdrawing transport items with quantities: " + missingItemsWithQuantities);
-                
-                // Withdraw the correct amount of each unique item
-                for (Map.Entry<Integer, Integer> entry : missingItemsWithQuantities.entrySet()) {
-                    int itemId = entry.getKey();
-                    int amountNeeded = entry.getValue();
-                    int currentCount = Rs2Inventory.count(itemId);
-                    int amountToWithdraw = Math.max(0, amountNeeded - currentCount);
-                    
-                    if (amountToWithdraw > 0) {
-                        if (Rs2Bank.hasBankItem(itemId, amountToWithdraw)) {
-                            log.debug("Withdrawing {} x {} (item ID: {})", amountToWithdraw, itemId, itemId);
-                            Rs2Bank.withdrawX(itemId, amountToWithdraw);
-                            sleepUntil(() -> Rs2Inventory.count(itemId) >= currentCount + amountToWithdraw, 3000);
-                        } else {
-                            log.warn("Required transport item {} not found in bank (need {} but bank has less)", 
-                                itemId, amountToWithdraw);
-                        }
-                    } else {
-                        log.debug("Already have enough of item {}: {} (need {})", itemId, currentCount, amountNeeded);
-                    }
-                }
-                
-                // Wait a bit for all withdrawals to complete
-                sleep(600); // 1 tick
-            }
-            
-            // Step 4: Close bank
-            Rs2Bank.closeBank();
-            sleepUntil(() -> !Rs2Bank.isOpen(), 3000);
-            if(!Rs2Bank.isOpen()) {            
-                log.warn("Failed to close bank after withdrawals");
-                return false;
-            }
-            // Step 5: Continue to final target
-            log.debug("Banking complete, continuing to final target: " + finalTarget);
-            return walkTo(finalTarget);
-            
-        } catch (Exception e) {
-            log.error("Error in banking workflow: " + e.getMessage(), e);
-            return false;
-        }
+       return walkWithBankingState(bankLocation, missingItemsWithQuantities, finalTarget, 10)== WalkerState.ARRIVED;
     }
     
     /**
@@ -3252,14 +3192,17 @@ public class Rs2Walker {
      * @param finalTarget The final destination after banking
      * @return WalkerState indicating the result of the banking workflow
      */
-    private static WalkerState walkWithBankingState(TransportRouteAnalysis comparison,
+    private static WalkerState walkWithBankingState(WorldPoint bankLocation,
                                                     Map<Integer, Integer> missingItemsWithQuantities, 
                                                     WorldPoint finalTarget,int distance) {
         try {
+            if (bankLocation == null || finalTarget == null) {
+                log.warn("Cannot perform banking workflow with null locations");
+                return WalkerState.EXIT;
+            }
             // Step 1: Walk to bank
-            setTarget(null);            
-            WorldPoint bankLocation = comparison.getBankLocation();
-            WalkerState bankWalkResult = walkWithState(comparison.getBankLocation());
+            setTarget(null);                        
+            WalkerState bankWalkResult = walkWithState(bankLocation);
             if (bankWalkResult != WalkerState.ARRIVED) {
                 log.warn("Failed to arrive at bank at: " + bankLocation + ", state: " + bankWalkResult);
                 return bankWalkResult;
@@ -3287,7 +3230,7 @@ public class Rs2Walker {
                     int itemId = entry.getKey();
                     int amountNeeded = entry.getValue();
                     int currentCount = Rs2Inventory.count(itemId);
-                    int amountToWithdraw = Math.max(0, amountNeeded - currentCount);
+                    int amountToWithdraw = Math.max(0, amountNeeded );
                     
                     if (amountToWithdraw > 0) {
                         if (Rs2Bank.hasBankItem(itemId, amountToWithdraw)) {
