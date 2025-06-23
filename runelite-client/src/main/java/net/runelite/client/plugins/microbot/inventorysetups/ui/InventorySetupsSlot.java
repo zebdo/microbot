@@ -131,12 +131,12 @@ public class InventorySetupsSlot extends JPanel
 		setLayout(new GridBagLayout());
 		// Set constraints to put it in the north east (top right)
 		GridBagConstraints fuzzyConstraints = new GridBagConstraints(0, 0, 1, 1, 1, 1,
-				GridBagConstraints.NORTHEAST, GridBagConstraints.NONE,
-				new Insets(0, 0, 0, 0), 0, 0);
+																		GridBagConstraints.NORTHEAST, GridBagConstraints.NONE,
+																		new Insets(0, 0, 0, 0), 0, 0);
 		// Set constraints for the bottom right
 		GridBagConstraints stackConstraints = new GridBagConstraints(0, 0, 1, 1, 1, 1,
-				GridBagConstraints.SOUTHEAST, GridBagConstraints.NONE,
-				new Insets(0, 0, 0, 0), 0, 0);
+																		GridBagConstraints.SOUTHEAST, GridBagConstraints.NONE,
+																		new Insets(0, 0, 0, 0), 0, 0);
 		add(imageLabel);
 		add(fuzzyIndicator, fuzzyConstraints);
 		add(stackIndicator, stackConstraints);
@@ -153,15 +153,16 @@ public class InventorySetupsSlot extends JPanel
 		else
 		{
 			imageLabel.setToolTipText(toolTip);
-			if (itemImage instanceof AsyncBufferedImage)
+			if (itemImage instanceof AsyncBufferedImage) // if the slot is a spellbook, use these
 			{
-				AsyncBufferedImage itemImageAsync = (AsyncBufferedImage) itemImage;
+				AsyncBufferedImage itemImageAsync = (AsyncBufferedImage)itemImage;
 				itemImageAsync.addTo(imageLabel);
 			}
 			else
 			{
 				imageLabel.setIcon(new ImageIcon(itemImage));
 			}
+
 		}
 
 		fuzzyIndicator.setText(isFuzzy ? "*" : "");
@@ -186,7 +187,6 @@ public class InventorySetupsSlot extends JPanel
 		validate();
 		repaint();
 	}
-
 
 	public void setImageLabel(String toolTip, BufferedImage itemImage)
 	{

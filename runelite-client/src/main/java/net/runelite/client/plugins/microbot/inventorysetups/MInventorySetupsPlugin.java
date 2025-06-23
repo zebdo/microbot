@@ -414,8 +414,8 @@ public class MInventorySetupsPlugin extends Plugin
 		if (event.getGroup().equals(CONFIG_GROUP))
 		{
 			if (event.getKey().equals(CONFIG_KEY_PANEL_VIEW) || event.getKey().equals(CONFIG_KEY_SECTION_MODE) ||
-					event.getKey().equals(CONFIG_KEY_SORTING_MODE) || event.getKey().equals(CONFIG_KEY_HIDE_BUTTON) ||
-					event.getKey().equals(CONFIG_KEY_UNASSIGNED_MAXIMIZED))
+				event.getKey().equals(CONFIG_KEY_SORTING_MODE) || event.getKey().equals(CONFIG_KEY_HIDE_BUTTON) ||
+				event.getKey().equals(CONFIG_KEY_UNASSIGNED_MAXIMIZED))
 			{
 				SwingUtilities.invokeLater(() ->
 				{
@@ -470,8 +470,8 @@ public class MInventorySetupsPlugin extends Plugin
 
 			// We want to be sure to preserve menu entry order while only sorting the "Take" menu options
 			int firstTakeIndex = IntStream.range(0, clientEntries.length)
-					.filter(i -> clientEntries[i].getOption().equals("Take"))
-					.findFirst().orElse(-1);
+								.filter(i -> clientEntries[i].getOption().equals("Take"))
+								.findFirst().orElse(-1);
 
 			if (firstTakeIndex == -1)
 			{
@@ -480,9 +480,9 @@ public class MInventorySetupsPlugin extends Plugin
 			}
 
 			int lastTakeIndex = IntStream.range(firstTakeIndex, clientEntries.length)
-					.map(i -> firstTakeIndex + (clientEntries.length - 1 - i))
-					.filter(i -> clientEntries[i].getOption().equals("Take"))
-					.findFirst().orElse(-1);
+								.map(i -> firstTakeIndex + (clientEntries.length - 1 - i))
+								.filter(i -> clientEntries[i].getOption().equals("Take"))
+								.findFirst().orElse(-1);
 
 			List<MenuEntry> takeEntriesInSetup = new ArrayList<>();
 			List<MenuEntry> takeEntriesNotInSetup = new ArrayList<>();
@@ -778,11 +778,11 @@ public class MInventorySetupsPlugin extends Plugin
 	private void createSectionSubMenuOnWornItems(Collection<InventorySetup> setups, String name, Color color)
 	{
 		Menu subMenu = client.getMenu()
-				.createMenuEntry(1)
-				.setOption(OPEN_SECTION_MENU_ENTRY)
-				.setTarget(ColorUtil.prependColorTag(name, color))
-				.setType(MenuAction.RUNELITE)
-				.createSubMenu();
+			.createMenuEntry(1)
+			.setOption(OPEN_SECTION_MENU_ENTRY)
+			.setTarget(ColorUtil.prependColorTag(name, color))
+			.setType(MenuAction.RUNELITE)
+			.createSubMenu();
 
 		for (final InventorySetup inventorySetup : setups)
 		{
@@ -819,25 +819,25 @@ public class MInventorySetupsPlugin extends Plugin
 	private void createMenuEntryToAddAdditionalFilteredItem(int inventoryIndex)
 	{
 		client.getMenu()
-				.createMenuEntry(-1)
-				.setOption(ADD_TO_ADDITIONAL_ENTRY)
-				.onClick(e ->
+			.createMenuEntry(-1)
+			.setOption(ADD_TO_ADDITIONAL_ENTRY)
+			.onClick(e ->
+			{
+				final Item newItem = retrieveItemFromBankMenuEntry(inventoryIndex);
+				if (newItem == null)
 				{
-					final Item newItem = retrieveItemFromBankMenuEntry(inventoryIndex);
-					if (newItem == null)
-					{
-						return;
-					}
+					return;
+				}
 
-					final Map<Integer, InventorySetupsItem> additionalFilteredItems =
-							panel.getCurrentSelectedSetup().getAdditionalFilteredItems();
+				final Map<Integer, InventorySetupsItem> additionalFilteredItems =
+						panel.getCurrentSelectedSetup().getAdditionalFilteredItems();
 
-					// Item already exists, don't add it again
-					if (!additionalFilteredItemsHasItem(newItem.getId(), additionalFilteredItems))
-					{
-						addAdditionalFilteredItem(newItem.getId(), panel.getCurrentSelectedSetup(), additionalFilteredItems);
-					}
-				});
+				// Item already exists, don't add it again
+				if (!additionalFilteredItemsHasItem(newItem.getId(), additionalFilteredItems))
+				{
+					addAdditionalFilteredItem(newItem.getId(), panel.getCurrentSelectedSetup(), additionalFilteredItems);
+				}
+			});
 	}
 
 	// Retrieve an item from a selected menu entry in the bank
@@ -926,9 +926,9 @@ public class MInventorySetupsPlugin extends Plugin
 	{
 		final String msg = "Enter the name of this setup (max " + MAX_SETUP_NAME_LENGTH + " chars).";
 		String name = JOptionPane.showInputDialog(panel,
-				msg,
-				"Add New Setup",
-				JOptionPane.PLAIN_MESSAGE);
+			msg,
+			"Add New Setup",
+			JOptionPane.PLAIN_MESSAGE);
 
 		// cancel button was clicked
 		if (name == null || name.isEmpty())
@@ -952,7 +952,8 @@ public class MInventorySetupsPlugin extends Plugin
 
 		final String newName = name;
 
-		clientThread.invokeLater(() -> {
+		clientThread.invokeLater(() ->
+		{
 			List<InventorySetupsItem> inv = getNormalizedContainer(InventoryID.INVENTORY);
 
 			// Tag locked status based on actual slot
@@ -966,18 +967,19 @@ public class MInventorySetupsPlugin extends Plugin
 			List<InventorySetupsItem> runePouchData = ammoHandler.getRunePouchDataIfInContainer(inv);
 			List<InventorySetupsItem> boltPouchData = ammoHandler.getBoltPouchDataIfInContainer(inv);
 			List<InventorySetupsItem> quiverData = ammoHandler.getQuiverDataIfInSetup(inv, eqp);
+
 			int spellbook = getCurrentSpellbook();
 
-			final InventorySetup invSetup = new InventorySetup(
-					inv, eqp, runePouchData, boltPouchData, quiverData,
-					new HashMap<>(), newName, "",
-					config.highlightColor(),
-					config.highlightDifference(),
-					config.enableDisplayColor() ? config.displayColor() : null,
-					config.bankFilter(),
-					config.highlightUnorderedDifference(),
-					spellbook, false, -1
-			);
+			final InventorySetup invSetup = new InventorySetup(inv, eqp, runePouchData, boltPouchData, quiverData,
+				new HashMap<>(),
+				newName,
+				"",
+				config.highlightColor(),
+				config.highlightDifference(),
+				config.enableDisplayColor() ? config.displayColor() : null,
+				config.bankFilter(),
+				config.highlightUnorderedDifference(),
+				spellbook, false, -1);
 
 			cache.addSetup(invSetup);
 			inventorySetups.add(invSetup);
@@ -1164,8 +1166,8 @@ public class MInventorySetupsPlugin extends Plugin
 	public List<InventorySetup> filterSetups(String textToFilter)
 	{
 		return inventorySetups.stream()
-				.filter(inventorySetup -> shouldDisplaySetup(inventorySetup, textToFilter.trim().toLowerCase()))
-				.collect(Collectors.toList());
+			.filter(inventorySetup -> shouldDisplaySetup(inventorySetup, textToFilter.trim().toLowerCase()))
+			.collect(Collectors.toList());
 	}
 
 	private static boolean shouldDisplaySetup(InventorySetup inventorySetup, String trimmedTextToFilterLower)
@@ -1175,8 +1177,8 @@ public class MInventorySetupsPlugin extends Plugin
 			String itemName = trimmedTextToFilterLower.substring(ITEM_SEARCH_TAG.length()).trim();
 			// Find setups containing the given item name
 			return containerContainsItemByName(inventorySetup.getInventory(), itemName) || containerContainsItemByName(inventorySetup.getEquipment(), itemName)
-					|| containerContainsItemByName(inventorySetup.getRune_pouch(), itemName) || containerContainsItemByName(inventorySetup.getAdditionalFilteredItems().values(), itemName)
-					|| containerContainsItemByName(inventorySetup.getBoltPouch(), itemName);
+				|| containerContainsItemByName(inventorySetup.getRune_pouch(), itemName) || containerContainsItemByName(inventorySetup.getAdditionalFilteredItems().values(), itemName)
+				|| containerContainsItemByName(inventorySetup.getBoltPouch(), itemName);
 		}
 		else if (trimmedTextToFilterLower.startsWith(NOTES_SEARCH_TAG) && trimmedTextToFilterLower.length() > NOTES_SEARCH_TAG.length())
 		{
@@ -1194,8 +1196,8 @@ public class MInventorySetupsPlugin extends Plugin
 			return false;
 		}
 		return itemsInContainer.stream()
-				.map(item -> item.getName().toLowerCase())
-				.anyMatch(itemName -> itemName.contains(textToFilterLower));
+			.map(item -> item.getName().toLowerCase())
+			.anyMatch(itemName -> itemName.contains(textToFilterLower));
 	}
 
 	public void doBankSearch()
@@ -1316,7 +1318,7 @@ public class MInventorySetupsPlugin extends Plugin
 		// Avoid extra highlighting calls by deferring the highlighting to GameTick after a bunch of varbit changes come
 		// If the bank is closed, then onItemContainerChanged will handle the highlighting
 		if (bankIsOpen &&
-				(RUNE_POUCH_RUNE_VARBITS.contains(event.getVarbitId()) || RUNE_POUCH_AMOUNT_VARBITS.contains(event.getVarbitId())))
+			(RUNE_POUCH_RUNE_VARBITS.contains(event.getVarbitId()) || RUNE_POUCH_AMOUNT_VARBITS.contains(event.getVarbitId())))
 		{
 			shouldTriggerInventoryHighlightOnGameTick = true;
 			return;
@@ -1400,12 +1402,9 @@ public class MInventorySetupsPlugin extends Plugin
 				InventorySetupsItem item = inv.get(i);
 				item.setFuzzy(setup.getInventory().get(i).isFuzzy());
 				item.setStackCompare(setup.getInventory().get(i).getStackCompare());
-
-				// Flag as locked if current slot is bank-locked
-				boolean locked = isLockedSlot(i); // or your actual method
+				boolean locked = isLockedSlot(i);
 				item.setLocked(locked);
 			}
-
 			for (int i = 0; i < eqp.size(); i++)
 			{
 				eqp.get(i).setFuzzy(setup.getEquipment().get(i).isFuzzy());
@@ -1435,7 +1434,7 @@ public class MInventorySetupsPlugin extends Plugin
 	}
 
 	private boolean updateAllInstancesInContainerSetupWithNewItem(final InventorySetup inventorySetup, List<InventorySetupsItem> containerToUpdate,
-																  final InventorySetupsItem oldItem, final InventorySetupsItem newItem, final InventorySetupsSlotID id)
+																final InventorySetupsItem oldItem, final InventorySetupsItem newItem, final InventorySetupsSlotID id)
 	{
 		boolean updated = false;
 		for (int i = 0; i < containerToUpdate.size(); i++)
@@ -1480,9 +1479,9 @@ public class MInventorySetupsPlugin extends Plugin
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			JOptionPane.showMessageDialog(panel,
-					"You must be logged in to update from " + (slot.getSlotID().toString().toLowerCase() + "."),
-					"Cannot Update Item",
-					JOptionPane.ERROR_MESSAGE);
+				"You must be logged in to update from " + (slot.getSlotID().toString().toLowerCase() + "."),
+				"Cannot Update Item",
+				JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
@@ -1497,12 +1496,8 @@ public class MInventorySetupsPlugin extends Plugin
 			final InventorySetupsItem newItem = playerContainer.get(slot.getIndexInSlot());
 			newItem.setFuzzy(isFuzzy);
 			newItem.setStackCompare(stackCompareType);
-
-// Apply lock status based on current slot
 			boolean locked = isLockedSlot(slot.getIndexInSlot());
 			newItem.setLocked(locked);
-
-
 			if (updateAllInstances)
 			{
 				updateAllInstancesInSetupWithNewItem(oldItem, newItem);
@@ -1527,65 +1522,65 @@ public class MInventorySetupsPlugin extends Plugin
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			JOptionPane.showMessageDialog(panel,
-					"You must be logged in to search.",
-					"Cannot Search for Item",
-					JOptionPane.ERROR_MESSAGE);
+				"You must be logged in to search.",
+				"Cannot Search for Item",
+				JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
 		itemSearch
-				.tooltipText("Set slot to")
-				.onItemSelected((itemId) ->
+			.tooltipText("Set slot to")
+			.onItemSelected((itemId) ->
+			{
+				clientThread.invokeLater(() ->
 				{
-					clientThread.invokeLater(() ->
+					int finalId = itemManager.canonicalize(itemId);
+
+					if (slot.getSlotID() == InventorySetupsSlotID.ADDITIONAL_ITEMS)
 					{
-						int finalId = itemManager.canonicalize(itemId);
-
-						if (slot.getSlotID() == InventorySetupsSlotID.ADDITIONAL_ITEMS)
+						final Map<Integer, InventorySetupsItem> additionalFilteredItems =
+								panel.getCurrentSelectedSetup().getAdditionalFilteredItems();
+						if (!additionalFilteredItemsHasItem(finalId, additionalFilteredItems))
 						{
-							final Map<Integer, InventorySetupsItem> additionalFilteredItems =
-									panel.getCurrentSelectedSetup().getAdditionalFilteredItems();
-							if (!additionalFilteredItemsHasItem(finalId, additionalFilteredItems))
+							removeAdditionalFilteredItem(slot, additionalFilteredItems);
+							addAdditionalFilteredItem(finalId, slot.getParentSetup(), additionalFilteredItems);
+						}
+						return;
+					}
+
+					final String itemName = itemManager.getItemComposition(finalId).getName();
+					final List<InventorySetupsItem> container = getContainerFromSlot(slot);
+					final InventorySetupsItem itemToBeReplaced = container.get(slot.getIndexInSlot());
+					final InventorySetupsItem newItem = new InventorySetupsItem(finalId, itemName, 1, itemToBeReplaced.isFuzzy(), itemToBeReplaced.getStackCompare(), itemToBeReplaced.isLocked(), slot.getIndexInSlot());
+
+					// NOTE: the itemSearch shows items from skill guides which can be selected, which may be highlighted
+
+					// if the item is stackable, ask for a quantity
+					if (allowStackable && itemManager.getItemComposition(finalId).isStackable())
+					{
+						searchInput = chatboxPanelManager.openTextInput("Enter amount")
+							// only allow numbers and k, m, b (if 1 value is available)
+							// stop once k, m, or b is seen
+							.addCharValidator(this::validateCharFromItemSearch)
+							.onDone((input) ->
 							{
-								removeAdditionalFilteredItem(slot, additionalFilteredItems);
-								addAdditionalFilteredItem(finalId, slot.getParentSetup(), additionalFilteredItems);
-							}
-							return;
-						}
-
-						final String itemName = itemManager.getItemComposition(finalId).getName();
-						final List<InventorySetupsItem> container = getContainerFromSlot(slot);
-						final InventorySetupsItem itemToBeReplaced = container.get(slot.getIndexInSlot());
-						final InventorySetupsItem newItem = new InventorySetupsItem(finalId, itemName, 1, itemToBeReplaced.isFuzzy(), itemToBeReplaced.getStackCompare(), itemToBeReplaced.isLocked(), slot.getIndexInSlot());
-
-						// NOTE: the itemSearch shows items from skill guides which can be selected, which may be highlighted
-
-						// if the item is stackable, ask for a quantity
-						if (allowStackable && itemManager.getItemComposition(finalId).isStackable())
-						{
-							searchInput = chatboxPanelManager.openTextInput("Enter amount")
-									// only allow numbers and k, m, b (if 1 value is available)
-									// stop once k, m, or b is seen
-									.addCharValidator(this::validateCharFromItemSearch)
-									.onDone((input) ->
-									{
-										int quantity = InventorySetupUtilities.parseTextInputAmount(input);
-										newItem.setQuantity(quantity);
-										updateSlotFromSearchHelper(slot, itemToBeReplaced, newItem, container, updateAllInstances);
-									}).build();
-						}
-						else
-						{
-							updateSlotFromSearchHelper(slot, itemToBeReplaced, newItem, container, updateAllInstances);
-						}
-					});
-				})
-				.build();
+								int quantity = InventorySetupUtilities.parseTextInputAmount(input);
+								newItem.setQuantity(quantity);
+								updateSlotFromSearchHelper(slot, itemToBeReplaced, newItem, container, updateAllInstances);
+							}).build();
+					}
+					else
+					{
+						updateSlotFromSearchHelper(slot, itemToBeReplaced, newItem, container, updateAllInstances);
+					}
+				});
+			})
+			.build();
 	}
 
 	private void updateSlotFromSearchHelper(final InventorySetupsSlot slot, final InventorySetupsItem itemToBeReplaced,
-											final InventorySetupsItem newItem, final List<InventorySetupsItem> container,
-											boolean updateAllInstances)
+										final InventorySetupsItem newItem, final List<InventorySetupsItem> container,
+										boolean updateAllInstances)
 	{
 		clientThread.invokeLater(() ->
 		{
@@ -1612,9 +1607,9 @@ public class MInventorySetupsPlugin extends Plugin
 	{
 		// allow more numbers to be put in if a letter hasn't been detected
 		boolean stillInputtingNumbers = arg >= '0' && arg <= '9' &&
-				!searchInput.getValue().toLowerCase().contains("k") &&
-				!searchInput.getValue().toLowerCase().contains("m") &&
-				!searchInput.getValue().toLowerCase().contains("b");
+			!searchInput.getValue().toLowerCase().contains("k") &&
+			!searchInput.getValue().toLowerCase().contains("m") &&
+			!searchInput.getValue().toLowerCase().contains("b");
 
 		// if a letter is input, check if there isn't one already and the length is not 0
 		boolean letterIsInput = (arg == 'b' || arg == 'B' ||
@@ -1633,21 +1628,21 @@ public class MInventorySetupsPlugin extends Plugin
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			JOptionPane.showMessageDialog(panel,
-					"You must be logged in to search.",
-					"Cannot Search for Item",
-					JOptionPane.ERROR_MESSAGE);
+				"You must be logged in to search.",
+				"Cannot Search for Item",
+				JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
 		itemSearch
-				.tooltipText("Set slot to")
-				.onItemSelected((itemId) ->
-				{
-					int finalId = itemManager.canonicalize(itemId);
-					setup.setIconID(finalId);
-					dataManager.updateConfig(true, false);
-					SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(false));
-				}).build();
+			.tooltipText("Set slot to")
+			.onItemSelected((itemId) ->
+			{
+				int finalId = itemManager.canonicalize(itemId);
+				setup.setIconID(finalId);
+				dataManager.updateConfig(true, false);
+				SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(false));
+			}).build();
 	}
 
 	public void removeItemFromSlot(final InventorySetupsSlot slot)
@@ -1655,9 +1650,9 @@ public class MInventorySetupsPlugin extends Plugin
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
 			JOptionPane.showMessageDialog(panel,
-					"You must be logged in to remove item from the slot.",
-					"Cannot Remove Item",
-					JOptionPane.ERROR_MESSAGE);
+				"You must be logged in to remove item from the slot.",
+				"Cannot Remove Item",
+				JOptionPane.ERROR_MESSAGE);
 			return;
 		}
 
@@ -2004,7 +1999,7 @@ public class MInventorySetupsPlugin extends Plugin
 		{
 
 			final InventorySetupsStackCompareID stackCompareType = panel != null && panel.isStackCompareForSlotAllowed(InventorySetupsSlotID.fromInventoryID(id), i) ?
-					config.stackCompareType() : InventorySetupsStackCompareID.None;
+				config.stackCompareType() : InventorySetupsStackCompareID.None;
 			if (items == null || i >= items.length || items[i].getId() == -1)
 			{
 				// add a "dummy" item to fill the normalized container to the right size
@@ -2036,9 +2031,9 @@ public class MInventorySetupsPlugin extends Plugin
 		Toolkit.getDefaultToolkit().getSystemClipboard().setContents(contents, null);
 
 		JOptionPane.showMessageDialog(panel,
-				"Setup data was copied to clipboard.",
-				"Export Setup Succeeded",
-				JOptionPane.PLAIN_MESSAGE);
+			"Setup data was copied to clipboard.",
+			"Export Setup Succeeded",
+			JOptionPane.PLAIN_MESSAGE);
 	}
 
 	public void exportSection(final InventorySetupsSection section)
@@ -2100,9 +2095,9 @@ public class MInventorySetupsPlugin extends Plugin
 		try
 		{
 			final String setup = JOptionPane.showInputDialog(panel,
-					"Enter setup data",
-					"Import New Setup",
-					JOptionPane.PLAIN_MESSAGE);
+				"Enter setup data",
+				"Import New Setup",
+				JOptionPane.PLAIN_MESSAGE);
 
 			// cancel button was clicked
 			if (setup == null)
@@ -2149,9 +2144,9 @@ public class MInventorySetupsPlugin extends Plugin
 		{
 			log.error("Couldn't import setup", e);
 			JOptionPane.showMessageDialog(panel,
-					"Invalid setup data.",
-					"Import Setup Failed",
-					JOptionPane.ERROR_MESSAGE);
+				"Invalid setup data.",
+				"Import Setup Failed",
+				JOptionPane.ERROR_MESSAGE);
 		}
 	}
 

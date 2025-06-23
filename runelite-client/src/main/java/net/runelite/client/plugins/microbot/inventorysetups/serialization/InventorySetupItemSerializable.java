@@ -4,11 +4,8 @@ import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsStackCompareID;
 
 import lombok.Value;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 
 import javax.annotation.Nullable;
-
-import static net.runelite.client.plugins.microbot.util.bank.Rs2Bank.findLockedItem;
 
 @Value
 public class InventorySetupItemSerializable

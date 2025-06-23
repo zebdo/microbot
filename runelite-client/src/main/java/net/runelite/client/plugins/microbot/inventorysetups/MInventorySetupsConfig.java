@@ -389,10 +389,10 @@ public interface MInventorySetupsConfig extends Config
 	}
 
 	@ConfigItem(
-			keyName = CONFIG_KEY_PANEL_VIEW,
-			name = "Panel View",
-			description = "Configures which type of panels are displayed for setups",
-			section = otherSection
+		keyName = CONFIG_KEY_PANEL_VIEW,
+		name = "Panel View",
+		description = "Configures which type of panels are displayed for setups",
+		section = otherSection
 	)
 	default InventorySetupsPanelViewID panelView()
 	{

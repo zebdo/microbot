@@ -5,11 +5,9 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ItemContainerChanged;
-import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.bank.BankPlugin;
 import net.runelite.client.plugins.loottracker.LootTrackerItem;
 import net.runelite.client.plugins.loottracker.LootTrackerRecord;
@@ -1572,14 +1570,14 @@ public class Rs2Bank {
             return null;
         }
 
-        // Create a WorldArea around the final tile to be more generous
+		// Create a WorldArea around the final tile to be more generous
         WorldPoint nearestTile = path.get(path.size() - 1);
-        WorldArea nearestTileArea = new WorldArea(nearestTile, 2, 2);
+		WorldArea nearestTileArea = new WorldArea(nearestTile, 2, 2);
         Optional<BankLocation> byPath = accessibleBanks.stream()
                 .filter(b -> {
-                    WorldArea accessibleBankArea = new WorldArea(b.getWorldPoint(), 2, 2);
-                    return accessibleBankArea.intersectsWith2D(nearestTileArea);
-                })
+					WorldArea accessibleBankArea = new WorldArea(b.getWorldPoint(), 2, 2);
+					return accessibleBankArea.intersectsWith2D(nearestTileArea);
+				})
                 .findFirst();
 
         if (byPath.isPresent()) {
@@ -1729,28 +1727,28 @@ public class Rs2Bank {
                 "FIRST digit", "SECOND digit", "THIRD digit", "FOURTH digit"
         };
 
-        synchronized (lock) {
-            if (isBankPinWidgetVisible()) {
-                for (int i = 0; i < pin.length(); i++) {
-                    char c = pin.charAt(i);
-                    String expectedInstruction = digitInstructions[i];
+		synchronized (lock) {
+			if (isBankPinWidgetVisible()) {
+				for (int i = 0; i < pin.length(); i++) {
+					char c = pin.charAt(i);
+					String expectedInstruction = digitInstructions[i];
 
-                    boolean instructionVisible = sleepUntil(() -> Rs2Widget.hasWidgetText(expectedInstruction, 213, 10, false), 2000);
+					boolean instructionVisible = sleepUntil(() -> Rs2Widget.hasWidgetText(expectedInstruction, 213, 10, false), 2000);
 
-                    if (!instructionVisible) {
-                        Microbot.log("Failed to detect instruction within timeout period: " + expectedInstruction);
-                        return false;
-                    }
+					if (!instructionVisible) {
+						Microbot.log("Failed to detect instruction within timeout period: " + expectedInstruction);
+						return false;
+					}
 
-                    if (isBankPluginEnabled() && hasKeyboardBankPinEnabled()) {
-                        Rs2Keyboard.typeString(String.valueOf(c));
-                    } else {
-                        Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
-                    }
-                }
-                return true;
-            }
-        }
+					if (isBankPluginEnabled() && hasKeyboardBankPinEnabled()) {
+						Rs2Keyboard.typeString(String.valueOf(c));
+					} else {
+						Rs2Widget.clickWidget(String.valueOf(c), Optional.of(213), 0, true);
+					}
+				}
+				return true;
+			}
+		}
         return false;
     }
 

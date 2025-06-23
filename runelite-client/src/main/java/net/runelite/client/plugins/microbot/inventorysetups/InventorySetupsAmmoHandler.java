@@ -45,7 +45,7 @@ public class InventorySetupsAmmoHandler
 	private final MInventorySetupsConfig config;
 
 	public InventorySetupsAmmoHandler(MInventorySetupsPlugin plugin, Client client, ItemManager itemManager,
-									  InventorySetupsPluginPanel panel, MInventorySetupsConfig config)
+										InventorySetupsPluginPanel panel, MInventorySetupsConfig config)
 	{
 		this.plugin = plugin;
 		this.client = client;
@@ -82,7 +82,7 @@ public class InventorySetupsAmmoHandler
 
 	// Checks when updating a slot in a setup that it is part of a special ammo. If so, handle it.
 	public void handleSpecialAmmo(final InventorySetup inventorySetup,
-								  final InventorySetupsItem oldItem, final InventorySetupsItem newItem)
+									final InventorySetupsItem oldItem, final InventorySetupsItem newItem)
 	{
 		int newID = newItem.getId();
 		int oldID = oldItem.getId();
@@ -246,7 +246,8 @@ public class InventorySetupsAmmoHandler
 					panel.isStackCompareForSlotAllowed(InventorySetupsSlotID.QUIVER, 0)
 							? config.stackCompareType() : InventorySetupsStackCompareID.None;
 
-			final InventorySetupsItem quiverItem = new InventorySetupsItem(quiverAmmoId, ammoName, quiverAmmoCount, false, stackCompareType, false, -1);
+			final InventorySetupsItem quiverItem = new InventorySetupsItem(quiverAmmoId, ammoName,
+					quiverAmmoCount, false, stackCompareType, false, -1);
 			quiverData.add(quiverItem);
 		}
 
