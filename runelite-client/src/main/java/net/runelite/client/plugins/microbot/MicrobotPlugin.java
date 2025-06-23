@@ -236,7 +236,7 @@ public class MicrobotPlugin extends Plugin
 				}
 				catch (IllegalAccessException | InvocationTargetException e)
 				{
-					log.error(e.getMessage());
+					log.error(e.getMessage(), e);
 				}
 			}
 			Microbot.getClient().getMenu().setMenuEntries(new MenuEntry[]{entry});
