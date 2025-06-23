@@ -9,6 +9,7 @@ import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
+import net.runelite.client.plugins.microbot.util.coords.Rs2LocalPoint;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -25,6 +26,7 @@ import java.util.stream.Collectors;
 public class EclipseMoonHandler implements BaseHandler {
 
     private static final String bossName = "Eclipse Moon";
+    private static final int bossHealthBarWidgetID = Widgets.BOSS_HEALTH_BAR.getID();
     private static final int bossStatusWidgetID = Widgets.ECLIPSE_MOON_ID.getID();
     private static final int bossStatueObjectID = GameObjects.ECLIPSE_MOON_STATUE_ID.getID();
     private static final WorldPoint bossLobbyLocation = Locations.ECLIPSE_LOBBY.getWorldPoint();
@@ -57,8 +59,8 @@ public class EclipseMoonHandler implements BaseHandler {
         BossHandler.walkToBoss(bossName, bossLobbyLocation);
         BossHandler.fightPreparation(weaponMain, shield);
         BossHandler.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
-        sleepUntil(() -> Rs2Widget.isWidgetVisible(19857413),5_000);
-        while (Rs2Widget.isWidgetVisible(19857413) || Rs2Npc.getNpc(bossNpcID) != null) {
+        sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID),5_000);
+        while (Rs2Widget.isWidgetVisible(bossHealthBarWidgetID) || Rs2Npc.getNpc(bossNpcID) != null) {
             if (isSpecialAttack1Sequence()) {
                 specialAttack1Sequence();
             }
@@ -122,6 +124,8 @@ public class EclipseMoonHandler implements BaseHandler {
         for (WorldPoint p : lap) {
             Microbot.log("Walking to WorldPoint: " + p);
             Rs2Walker.walkFastCanvas(p, false);
+            BossHandler.eatIfNeeded(70);
+            BossHandler.drinkIfNeeded(70);
             sleepUntil(() -> Rs2Player.getWorldLocation().equals(p));
         }
         Microbot.log("Shield lap has been completed");
@@ -138,9 +142,10 @@ public class EclipseMoonHandler implements BaseHandler {
 
     /**
      * Returns true while the clone‐burst (Special-2) phase is active.
-     * ­– Player must be standing on the center knock-back tile
-     * ­– Boss (or its shield) must NOT be on that centre tile
-     *   (so we don’t trigger during normal melee phases)
+     * – Player must be standing on the center knock-back tile
+     * – Boss must NOT be on that center tile (so we don’t trigger during normal melee phases)
+     * – Sigil must not be present
+     *
      */
     public boolean isSpecialAttack2Sequence()
     {
@@ -154,12 +159,16 @@ public class EclipseMoonHandler implements BaseHandler {
             sleepUntil(() -> Rs2Player.getAnimation() != AnimationID.HUMAN_TROLL_FLYBACK_MERGE);
             Microbot.log("Knockback animation stopped. Clones are about to spawn");
             BossHandler.equipWeapons(weaponClones, null);
+            BossHandler.eatIfNeeded(70);
+            BossHandler.drinkIfNeeded(70);
+            BossHandler.meleePrayerOn();
             return true;
         }
 
         // 2. Captures the conditions required if we spawn into the arena midway through the special attack phase.
-        if (playerTile.equals(center) && bossNPC != null && Rs2Npc.getNpc(sigilNpcID) == null) {
+        if (playerTile.equals(center) && bossNPC != null && Rs2Npc.getNpc(sigilNpcID) == null && !bossNPC.getLocalLocation().equals(Rs2LocalPoint.fromWorldInstance(center))) {
             BossHandler.equipWeapons(weaponClones, null);
+            BossHandler.meleePrayerOn();
             return true;
         }
 
@@ -170,18 +179,14 @@ public class EclipseMoonHandler implements BaseHandler {
         final int CLONE_SPAWN_ANIM = 11019;
         final int CLONE_NPC_ID = NpcID.PMOON_BOSS_ECLIPSE_MOON_VIS;
         final long PHASE_TIMEOUT_MS = 35_000;
-        final long CLONE_IDLE_TIMEOUT_MS = 4_000;
 
         Microbot.log("Starting Eclipse Special Attack 2 sequence");
 
         int parried = 0;
         WorldPoint spawn = null;
         long phaseStart = System.currentTimeMillis();
-        long lastCloneSeenAt = phaseStart;
 
-        while (System.currentTimeMillis() - phaseStart < PHASE_TIMEOUT_MS &&
-                System.currentTimeMillis() - lastCloneSeenAt < CLONE_IDLE_TIMEOUT_MS &&
-                Rs2Player.getWorldLocation().equals(cloneAttackTile)) {
+        while (isSpecialAttack2Sequence() && System.currentTimeMillis() - phaseStart < PHASE_TIMEOUT_MS) {
 
 
             // 1. Look at ALL Eclipse-Moon NPCs this tick that have the specific spawn animation. Game mechanics mean this list SHOULD only return 1 NPC
@@ -198,7 +203,6 @@ public class EclipseMoonHandler implements BaseHandler {
                 Microbot.log("Spawn true location: " + cloneTrueLocation);
                 WorldPoint cloneLocalLocation = WorldPoint.fromLocal(Microbot.getClient(), clone.getLocalLocation());
                 Microbot.log("Spawn local location: " + cloneLocalLocation);
-                sleep(150); // half-tick delay
 
                 // 3. Parry / Attack the clone
                 /*WorldPoint parryTile = calculateParryTile(cloneTrueLocation);*/
@@ -225,13 +229,13 @@ public class EclipseMoonHandler implements BaseHandler {
                     break;                                    // handle one spawn per tick
                 }
             }*/
-            /* small pause before next poll */
-            sleep(150); // frequent polling
-
             if (!isSpecialAttack2Sequence()) {
                 Microbot.log("Special attack 2 sequence has ended, breaking out");
                 break;
             }
+
+            /* small pause before next poll */
+            sleep(600); // sleep one game tick
         }
         Microbot.log("Clone phase ended – total clones parried: " + parried);
     }
@@ -304,13 +308,69 @@ public class EclipseMoonHandler implements BaseHandler {
      * Returns the “safe tile” one step beyond the given corner, still heading
      * diagonally away from the centre.
      */
-    public static WorldPoint safeTileOneStepOut(WorldPoint tile, WorldPoint centre) {
+    public static WorldPoint safeCornerTileOneStepOut(WorldPoint tile, WorldPoint centre) {
         int stepX = Integer.signum(tile.getX() - centre.getX());  // −1, 0, or +1
         int stepY = Integer.signum(tile.getY() - centre.getY());  // −1, 0, or +1
         return new WorldPoint(
                 tile.getX() + stepX,
                 tile.getY() + stepY,
                 tile.getPlane());
+    }
+
+    /**
+     * Side-tile helper – given any *edge* tile on the perimeter of a square,
+     * return the clockwise-diagonal tile that is one step farther from the
+     * same centre.
+     *
+     * @param edgeTile     A tile that lies on the *north, east, south, or west*
+     *                     side of the square (NOT a corner tile).
+     * @param centre       Centre tile of the square.
+     * @param squareSide   The side-length **of the original square** on which
+     *                     {@code edgeTile} sits. Must be an odd integer ≥ 3.
+     *                     (This is *not* the side-length of the returned tile;
+     *                     we need it only to locate the square’s bounds.)
+     *
+     * @return A new WorldPoint that is diagonally clockwise from {@code edgeTile},
+     *         one tile farther from {@code centre}; or {@code null} if
+     *         {@code edgeTile} is not on the specified perimeter.
+     */
+    public static WorldPoint safeDiagonalClockwiseOut(
+            WorldPoint edgeTile,
+            WorldPoint centre,
+            int squareSide)
+    {
+        if (squareSide < 3 || squareSide % 2 == 0) {
+            throw new IllegalArgumentException("squareSide must be an odd integer ≥ 3");
+        }
+
+        int half  = (squareSide - 1) / 2;
+        int minX  = centre.getX() - half;
+        int maxX  = centre.getX() + half;
+        int minY  = centre.getY() - half;
+        int maxY  = centre.getY() + half;
+        int z     = edgeTile.getPlane();
+        int x     = edgeTile.getX();
+        int y     = edgeTile.getY();
+
+        /* ─────  NORTH edge  ───── */
+        if (y == maxY && x > minX && x < maxX) {
+            return new WorldPoint(x + 1, y + 1, z);  // NE
+        }
+        /* ─────  EAST edge   ───── */
+        if (x == maxX && y > minY && y < maxY) {
+            return new WorldPoint(x + 1, y - 1, z);  // SE
+        }
+        /* ─────  SOUTH edge  ───── */
+        if (y == minY && x > minX && x < maxX) {
+            return new WorldPoint(x - 1, y - 1, z);  // SW
+        }
+        /* ─────  WEST edge   ───── */
+        if (x == minX && y > minY && y < maxY) {
+            return new WorldPoint(x - 1, y + 1, z);  // NW
+        }
+
+        /* Not on the perimeter side – return null so caller can decide. */
+        return null;
     }
 
     public void automatedWalk(boolean playerRun) {
@@ -320,37 +380,38 @@ public class EclipseMoonHandler implements BaseHandler {
         while (isSpecialAttack1Sequence()) {
 
             /* -------------- QUICK-RECOVER if player is >2 tiles away from shield -------------- */
-            WorldPoint currentTile   = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD).getWorldLocation();
+            WorldPoint currentShieldTile   = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD).getWorldLocation();
             WorldPoint playerTile    = Rs2Player.getWorldLocation();
-            if (playerTile.distanceTo(currentTile) > 2) {
-                WorldPoint recovery = safeTileOneStepOut(currentTile, bossArenaCenter);
-                Microbot.log("Out of position (>2). Sprinting to " + recovery);
-                Rs2Walker.walkFastCanvas(recovery, true);   // force run
+            if (playerTile.distanceTo(currentShieldTile) > 1) {
+                WorldPoint recoveryTile = safeDiagonalClockwiseOut(currentShieldTile, bossArenaCenter, 9);
+                Microbot.log("Out of position (>2). Sprinting to " + recoveryTile);
+                Rs2Walker.walkFastCanvas(recoveryTile, true);   // force run
+                sleepUntil(() -> Rs2Player.getWorldLocation().equals(recoveryTile));
                 playerRun = false;                          // revert to walking afterwards
             }
             /* --------------------------------------------------------------------- */
 
-            Microbot.log("Sleeping until the moon shield moves from: " + currentTile);
+/*            Microbot.log("Sleeping until the moon shield moves from: " + currentShieldTile);
             sleepUntil(
                     () -> Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD)
                             .getWorldLocation()
-                            .equals(currentTile)
+                            .equals(currentShieldTile)
                             || !isSpecialAttack1Sequence(),
-                    5_000);
+                    5_000);*/
             if (!isSpecialAttack1Sequence()) {
                 Microbot.log("We've detected the special attack sequence is over: breaking out now");
                 break;
             }
 
-            WorldPoint nextCornerTileShield = nextCornerTile(currentTile, bossArenaCenter, 9);
+            WorldPoint nextCornerTileShield = nextCornerTile(currentShieldTile, bossArenaCenter, 9);
             Microbot.log("The next corner tile the shield will visit is: " + nextCornerTileShield);
 
             if (nextCornerTileShield != null) {
-                WorldPoint safeCornerTile = safeTileOneStepOut(nextCornerTileShield, bossArenaCenter);
+                WorldPoint safeCornerTile = safeCornerTileOneStepOut(nextCornerTileShield, bossArenaCenter);
                 Microbot.log("Moving to: " + safeCornerTile + ". Run switched on: " + playerRun);
                 Rs2Walker.walkFastCanvas(safeCornerTile, playerRun);
                 playerRun = false; // from now on, we walk
-                sleepUntil(() -> Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD).getWorldLocation().distanceTo(nextCornerTileShield) <= 1,10_000);
+                sleepUntil(() -> Rs2Player.getWorldLocation().equals(safeCornerTile),7_500);
             }
 
             /* -------------- Run to next attack cycle tile if the moonshield reaches its final tile  -------------- */

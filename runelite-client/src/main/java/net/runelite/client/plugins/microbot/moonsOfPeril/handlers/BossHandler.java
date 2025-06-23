@@ -2,8 +2,10 @@ package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.GameObjects;
+import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -18,9 +20,8 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 
 
-import java.util.Objects;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
+import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
@@ -48,7 +49,11 @@ public final class BossHandler {
             Rs2Walker.walkFastCanvas(bossWorldPoint);
             sleepUntil(() -> Rs2Player.getWorldLocation().equals(bossWorldPoint));
         }
-        Microbot.log("Arrived at " + bossName + " lobby");
+        if (Rs2Player.getWorldLocation().distanceTo(bossWorldPoint) <= 3) {
+            Microbot.log("Arrived at " + bossName + " lobby");
+            return;
+        }
+        Microbot.log("Something went wrong. Did not arrive at " + bossName + " lobby");
     }
 
 
@@ -161,6 +166,22 @@ public final class BossHandler {
     }
 
     /**
+     * Returns true if the boss NPC currently has an "attack" option
+     *
+     * @return
+     */
+    public static boolean isBossAttackable(int bossNpcID) {
+        Rs2NpcModel boss = Rs2Npc.getNpc(bossNpcID);
+        String bossAction = Rs2Npc.getAvailableAction(boss, Collections.singletonList("attack"));
+        Microbot.log("Boss action returned: '" + bossAction + "'");
+        if (bossAction.isEmpty()) {
+            Microbot.log("The moonfire has spawned – We've entered Special Attack 2, the Blood Rain Sequence");
+            return false;
+        }
+        return true;
+    }
+
+    /**
      * Returns true if the sigil NPC (the highlighted attack tile) is present
      *
      * @return
@@ -236,13 +257,78 @@ public final class BossHandler {
         return Rs2Widget.isWidgetVisible(defeatedWidgetId);
     }
 
-    /** True if the player is located on a dangerous tile*/
+    /** True if the WorldPoint param is located on a dangerous tile*/
     public static boolean inDanger(WorldPoint location) {
-        return Rs2Tile.dangerousGraphicsObjectTiles.stream()
+
+        // Case 1: Dangerous tiles from graphics objects
+        if (Rs2Tile.dangerousGraphicsObjectTiles.stream()
                 .filter(p -> p.getValue() > 0)
                 .map(p -> p.getKey())
-                .anyMatch(pt -> pt.equals(location));
+                .anyMatch(pt -> pt.equals(location))) {
+            Microbot.log(String.format("[inDanger] %s  dGfx=%d  dObj=%d",
+                    location,
+                    Rs2Tile.getDangerousGraphicsObjectTiles().size(),
+                    Rs2Tile.getDangerousGameObjectTiles().size()));
+            return true;
+        }
+
+        // Case 2: Dangerous tiles from game objects
+        if (Rs2Tile.dangerousGameObjectTiles.stream()
+                .filter(p -> p.getValue() > 0)
+                .map(p -> p.getKey())
+                .anyMatch(pt -> pt.equals(location))) {
+            Microbot.log(String.format("[inDanger] %s  dGfx=%d  dObj=%d",
+                    location,
+                    Rs2Tile.getDangerousGraphicsObjectTiles().size(),
+                    Rs2Tile.getDangerousGameObjectTiles().size()));
+            return true;
+        }
+/*        // Case 2: Dangerous tiles from game objects
+        List<TileObject> pools = Rs2GameObject.getAll(
+                o -> o.getId() == ObjectID.PMOON_BOSS_BLOOD_POOL,
+                location,
+                0
+        );
+        if (!pools.isEmpty()) {
+            return true;
+        }*/
+        return false;
     }
+
+/*    *//**
+     * Finds the first tile within a certain distance from the player that does NOT
+     * contain a dangerous GameObject.
+     *
+     * @param int distance The search radius from the player
+     * @param int The ID of the dangerous game object
+     * @return A WorldPoint representing the first safe tile found, or null if none found
+     *//*
+    public static WorldPoint getSafeTile(int distance, int gameObjectID) {
+        WorldPoint playerTile = Rs2Player.getWorldLocation();
+        if (playerTile == null) return null;
+
+        // Gather blood pool tiles using Rs2GameObject
+        List<GameObject> bloodPools = Rs2GameObject.getGameObjects(
+                go -> go != null
+                        && go.getId() == gameObjectID,
+                playerTile,
+                distance
+        );
+        Set<WorldPoint> occupiedTiles = bloodPools.stream()
+                .map(GameObject::getWorldLocation)
+                .collect(Collectors.toSet());
+
+        // Scan outward from player tile
+        for (int dx = -distance; dx <= distance; dx++) {
+            for (int dy = -distance; dy <= distance; dy++) {
+                WorldPoint candidate = playerTile.dx(dx).dy(dy);
+                if (!occupiedTiles.contains(candidate)) {
+                    return candidate;
+                }
+            }
+        }
+        return null;
+    }*/
 
     /** Runs the player out of the arena */
     public static void bossBailOut(WorldPoint bailOutLocation) {
@@ -251,7 +337,7 @@ public final class BossHandler {
 
         while (System.currentTimeMillis() < endTime) {
             if (Rs2GameObject.interact(exitStairsGroundObjectID)) {
-                sleepUntil(() -> Rs2Widget.isWidgetVisible(19857413),5_000);
+                sleepUntil(() -> Rs2Widget.isWidgetVisible(Widgets.BOSS_HEALTH_BAR.getID()),5_000);
                 Microbot.log("Successfully bailed out of the boss arena");
                 return;
             }

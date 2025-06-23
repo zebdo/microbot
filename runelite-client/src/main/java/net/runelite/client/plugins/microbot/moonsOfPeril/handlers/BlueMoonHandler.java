@@ -19,6 +19,7 @@ import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
+import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -31,6 +32,7 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 public class BlueMoonHandler implements BaseHandler {
 
     private static final String bossName = "Blue Moon";
+    private static final int bossHealthBarWidgetID = Widgets.BOSS_HEALTH_BAR.getID();
     private static final int bossStatusWidgetID = Widgets.BLUE_MOON_ID.getID();
     private static final int bossStatueObjectID = GameObjects.BLUE_MOON_STATUE_ID.getID();
     private static final WorldPoint bossLobbyLocation = Locations.BLUE_LOBBY.getWorldPoint();
@@ -60,17 +62,15 @@ public class BlueMoonHandler implements BaseHandler {
         BossHandler.walkToBoss(bossName, bossLobbyLocation);
         BossHandler.fightPreparation(weaponMain, shield);
         BossHandler.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
-        while (Rs2Player.distanceTo(bossArenaCenter) <= 25) {
+        sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID),5_000);
+        while (Rs2Widget.isWidgetVisible(bossHealthBarWidgetID) || Rs2Npc.getNpc(bossNpcID) != null) {
             // PLAYER SHOULD NOW BE INSIDE THE ARENA
             // TODO: check boss widget health bar for ID
-            // TODO: check for Brazier interaction string, currently "relight"
-
 
             if (isSpecialAttack1Sequence()) {
                 specialAttack1Sequence();
             }
             else if (isSpecialAttack2Sequence()) {
-/*                sleepUntil(() -> !isSpecialAttack2Sequence());*/
                 specialAttack2Sequence();
             }
             else if (BossHandler.isNormalAttackSequence(sigilNpcID)) {
@@ -90,10 +90,14 @@ public class BlueMoonHandler implements BaseHandler {
     /* --------  executor ----------------------------------------------------- */
     public void specialAttack1Sequence()
     {
+        sleep(3_500);
         Rs2Prayer.disableAllPrayers();
         Microbot.log("Running to safe tile and waiting out the sequence");
         Rs2Walker.walkFastCanvas(AFTER_TORNADO, true);
-        sleepUntil(() -> !isSpecialAttack1Sequence());
+        BossHandler.eatIfNeeded(70);
+        BossHandler.drinkIfNeeded(70);
+        Microbot.log("Sleeping until the special attack sequence is over");
+        sleepUntil(() -> Rs2Npc.getNpc(sigilNpcID) != null, 35_000);
     }
 
 
@@ -148,19 +152,20 @@ public class BlueMoonHandler implements BaseHandler {
 
         Rs2NpcModel icicle = matches.get(0);
         Microbot.log(ts.get() + "Icicle found at " + icicle.getWorldLocation());
-        Microbot.log(ts.get() + "Walking to icicle…");
-        Rs2Walker.walkFastCanvas(icicle.getWorldLocation(), true);
 
         /* ---------- 2. Attack + dodge loop ------------------------------- */
 
         long phaseStart = System.currentTimeMillis();
 
         Microbot.log(ts.get() + "Entering attack-and-dodge loop (timeout " + PHASE_TIMEOUT_MS + " ms)");
+        Rs2Prayer.disableAllPrayers();
 
         while (!Rs2Equipment.isWearing(weaponMain) &&
                 System.currentTimeMillis() - phaseStart < PHASE_TIMEOUT_MS)
         {
-            Rs2Npc.attack(icicle);
+            if (!Rs2Combat.inCombat()) {
+                Rs2Npc.attack(icicle);
+            }
             WorldPoint attackTile = Rs2Player.getWorldLocation();
             Microbot.log(ts.get() + "Attack location calculated as: " + attackTile);
             sleepUntil(() -> BossHandler.inDanger(attackTile),3_000);
@@ -181,6 +186,8 @@ public class BlueMoonHandler implements BaseHandler {
         /* ---------- 3. Retreat to safespot ------------------------------- */
         Microbot.log(ts.get() + "Retreating to SAFE_SPOT " + SAFE_SPOT);
         Rs2Walker.walkFastCanvas(SAFE_SPOT, true);
+        BossHandler.eatIfNeeded(70);
+        BossHandler.drinkIfNeeded(70);
 
         Microbot.log(ts.get() + "Waiting for all icicles to despawn…");
         sleepUntil(() -> Rs2Npc.getNpc(ICICLE_NPC_ID) == null);
