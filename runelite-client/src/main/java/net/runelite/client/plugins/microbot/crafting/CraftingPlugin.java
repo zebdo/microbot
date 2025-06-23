@@ -53,10 +53,6 @@ public class CraftingPlugin extends Plugin {
     @Override
     protected void startUp() throws AWTException {
         Microbot.pauseAllScripts = false;
-        Microbot.setClient(client);
-        Microbot.setClientThread(clientThread);
-        Microbot.setNotifier(notifier);
-        Microbot.setMouse(new VirtualMouse());
         if (overlayManager != null) {
             overlayManager.add(craftingOverlay);
         }

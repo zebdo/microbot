@@ -14,6 +14,7 @@ import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.MicrobotPlugin;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.qualityoflife.enums.WintertodtActions;
 import net.runelite.client.plugins.microbot.qualityoflife.managers.CraftingManager;
@@ -25,7 +26,6 @@ import net.runelite.client.plugins.microbot.qualityoflife.scripts.bank.BankpinSc
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pvp.PvpScript;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.wintertodt.WintertodtOverlay;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.wintertodt.WintertodtScript;
-import net.runelite.client.plugins.microbot.ui.MicrobotConfigPlugin;
 import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.antiban.FieldUtil;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -734,18 +734,18 @@ public class QoLPlugin extends Plugin {
             FieldUtil.setFinalStatic(onSwitcherPluginPanel, remapImage(SWITCHER_ON_IMG, config.toggleButtonColor()));
 
             // Find the ConfigPlugin instance from the plugin manager
-            MicrobotConfigPlugin configPlugin = (MicrobotConfigPlugin) Microbot.getPluginManager().getPlugins().stream()
-                    .filter(plugin -> plugin instanceof MicrobotConfigPlugin)
+            MicrobotPlugin microbotPlugin = (MicrobotPlugin) Microbot.getPluginManager().getPlugins().stream()
+                    .filter(plugin -> plugin instanceof MicrobotPlugin)
                     .findAny().orElse(null);
 
             // If ConfigPlugin is not found, log an error and return false
-            if (configPlugin == null) {
+            if (microbotPlugin == null) {
                 Microbot.log("Config Plugin not found");
                 return false;
             }
 
             // Get the plugin list panel from the ConfigPlugin instance
-            JPanel pluginListPanel = getPluginListPanel(configPlugin);
+            JPanel pluginListPanel = getPluginListPanel(microbotPlugin);
             // Set the plugin list using the retrieved plugin list panel
             pluginList.set(getPluginList(pluginListPanel));
 
@@ -783,11 +783,11 @@ public class QoLPlugin extends Plugin {
     }
 
 
-    private JPanel getPluginListPanel(MicrobotConfigPlugin configPlugin) throws ClassNotFoundException {
+    private JPanel getPluginListPanel(MicrobotPlugin microbotPlugin) throws ClassNotFoundException {
 
         Class<?> pluginListPanelClass = Class.forName("net.runelite.client.plugins.microbot.ui.MicrobotPluginListPanel");
-        assert configPlugin != null;
-        return (JPanel) configPlugin.getInjector().getProvider(pluginListPanelClass).get();
+        assert microbotPlugin != null;
+        return (JPanel) microbotPlugin.getInjector().getProvider(pluginListPanelClass).get();
     }
 
     private List<?> getPluginList(JPanel pluginListPanel) throws IllegalAccessException {

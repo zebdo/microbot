@@ -51,10 +51,6 @@ public class PiePlugin extends Plugin {
     protected void startUp() throws AWTException {
         PieScript.totalPieShellsMade = 0;
         Microbot.pauseAllScripts = false;
-        Microbot.setClient(client);
-        Microbot.setClientThread(clientThread);
-        Microbot.setNotifier(notifier);
-        Microbot.setMouse(new VirtualMouse());
         if (overlayManager != null) {
             overlayManager.add(pieOverlay);
         }
