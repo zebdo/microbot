@@ -5,6 +5,7 @@ import java.awt.AWTException;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
+import java.util.Objects;
 import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
@@ -235,7 +236,7 @@ public class MicrobotPlugin extends Plugin
 				}
 				catch (IllegalAccessException | InvocationTargetException e)
 				{
-					System.out.println(e.getMessage());
+					log.error(e.getMessage());
 				}
 			}
 			Microbot.getClient().getMenu().setMenuEntries(new MenuEntry[]{entry});
@@ -271,7 +272,7 @@ public class MicrobotPlugin extends Plugin
 	{
 		if (ev.getKey().equals("displayPouchCounter"))
 		{
-			if (ev.getNewValue() == "true")
+			if (Objects.equals(ev.getNewValue(), "true"))
 			{
 				Microbot.getPouchScript().startUp();
 			}
