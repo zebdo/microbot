@@ -1579,7 +1579,7 @@ public class Rs2GameObject {
         return to -> isWithinTiles(anchor, to.getLocalLocation(), distance);
     }
 
-    private static Optional<String> getCompositionName(TileObject obj) {
+    public static Optional<String> getCompositionName(TileObject obj) {
         ObjectComposition comp = convertToObjectComposition(obj);
         if (comp == null) {
             return Optional.empty();
