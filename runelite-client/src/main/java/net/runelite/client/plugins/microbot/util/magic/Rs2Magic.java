@@ -413,6 +413,8 @@ public class Rs2Magic {
     public static boolean isShadowVeilActive() {
         return Microbot.getVarbitValue(SHADOW_VEIL) == 1;
     }
+
+	@Deprecated(since = "1.9.2", forRemoval = true)
     public static boolean isThrallActive() {
         return (Microbot.getVarbitValue(RESURRECT_THRALL) == 1||Microbot.getVarbitValue(RESURRECT_THRALL_COOLDOWN) == 1);
     }
