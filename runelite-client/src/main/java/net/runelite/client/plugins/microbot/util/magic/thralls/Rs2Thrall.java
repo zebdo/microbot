@@ -16,7 +16,7 @@ import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
  */
 @Getter
 @RequiredArgsConstructor
-public enum Thrall
+public enum Rs2Thrall
 {
 	LESSER_GHOST(Rs2Spells.RESURRECT_LESSER_GHOST, ThrallType.MAGIC),
 	LESSER_SKELETON(Rs2Spells.RESURRECT_LESSER_SKELETON, ThrallType.RANGED),
@@ -35,16 +35,16 @@ public enum Thrall
 	/**
 	 * Checks if the given thrall can be cast based on current game state.
 	 *
-	 * @param thrall the thrall to check
+	 * @param rs2Thrall the thrall to check
 	 * @return true if the thrall can be summoned, false otherwise
 	 */
-	public static boolean canCast(Thrall thrall)
+	public static boolean canCast(Rs2Thrall rs2Thrall)
 	{
 		if (isActive())
 		{
 			return false;
 		}
-		return thrall.getRs2spell().hasRequirements() && Rs2Magic.hasRequiredRunes(thrall.getRs2spell());
+		return rs2Thrall.getRs2spell().hasRequirements() && Rs2Magic.hasRequiredRunes(rs2Thrall.getRs2spell());
 	}
 
 	/**
@@ -60,16 +60,16 @@ public enum Thrall
 	/**
 	 * Attempts to summon the given thrall if casting conditions are met.
 	 *
-	 * @param thrall the thrall to summon
+	 * @param rs2Thrall the thrall to summon
 	 * @return true if the cast was successful, false otherwise
 	 */
-	public static boolean cast(Thrall thrall)
+	public static boolean cast(Rs2Thrall rs2Thrall)
 	{
-		if (!canCast(thrall))
+		if (!canCast(rs2Thrall))
 		{
 			return false;
 		}
-		return Rs2Magic.cast(thrall.getRs2spell().getAction());
+		return Rs2Magic.cast(rs2Thrall.getRs2spell().getAction());
 	}
 
 	/**
@@ -78,8 +78,8 @@ public enum Thrall
 	 * @param type the desired ThrallType (MAGIC, RANGED, or MELEE)
 	 * @return the best available Thrall of that type, or null if none can be cast
 	 */
-	public static Thrall getBestThrall(ThrallType type)
+	public static Rs2Thrall getBestThrall(ThrallType type)
 	{
-		return Arrays.stream(Thrall.values()).filter(thrall -> thrall.getThrallType() == type).filter(Thrall::canCast).findFirst().orElse(null);
+		return Arrays.stream(Rs2Thrall.values()).filter(rs2Thrall -> rs2Thrall.getThrallType() == type).filter(Rs2Thrall::canCast).findFirst().orElse(null);
 	}
 }
