@@ -197,13 +197,6 @@ public class Rs2Walker {
                 setTarget(null);
             }
 
-            if (Rs2Npc.getNpcsForPlayer(npc -> npc.getId() == 4417).findAny().isPresent()) { //dead tree in draynor
-                var moveableTiles = Rs2Tile.getReachableTilesFromTile(Rs2Player.getWorldLocation(), 5).keySet().toArray(new WorldPoint[0]);
-                walkMiniMap(moveableTiles[Rs2Random.between(0, moveableTiles.length)]);
-                sleepGaussian(1000, 300);
-            }
-
-            //avoid tree attacking you in draynor
             checkIfStuck();
             if (stuckCount > 10) {
                 var moveableTiles = Rs2Tile.getReachableTilesFromTile(Rs2Player.getWorldLocation(), 5).keySet().toArray(new WorldPoint[0]);
@@ -1137,7 +1130,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
      * @param indexOfStartPoint
      * @return
      */
-    public static boolean handleTransports(List<WorldPoint> path, int indexOfStartPoint) {
+    private static boolean handleTransports(List<WorldPoint> path, int indexOfStartPoint) {
 
         for (Transport transport : ShortestPathPlugin.getTransports().getOrDefault(path.get(indexOfStartPoint), new HashSet<>())) {
             Collection<WorldPoint> worldPointCollections;
@@ -1521,7 +1514,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         return succesfullAction;
     }
 
-    public static boolean handleInventoryTeleports(Transport transport, int itemId) {
+	private static boolean handleInventoryTeleports(Transport transport, int itemId) {
         Rs2ItemModel rs2Item = Rs2Inventory.get(itemId);
         if (rs2Item == null) return false;
 
@@ -1636,7 +1629,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         return false;
     }
 
-    public static boolean handleTrapdoor(Transport transport) {
+    private static boolean handleTrapdoor(Transport transport) {
         Map<Integer, Integer> trapdoors = new HashMap<>();
         trapdoors.put(1579, 1581); // closed trapdoor -> open trapdoor
         trapdoors.put(881, 882); // closed manhole -> open manhole (used for varrock sewers)
@@ -1753,7 +1746,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         return pathfinder.getPath().size();
     }
 
-    public static boolean handleSpiritTree(Transport transport) {
+    private static boolean handleSpiritTree(Transport transport) {
         // Get Transport Information
         String displayInfo = transport.getDisplayInfo();
         int objectId = transport.getObjectId();
@@ -2083,7 +2076,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
         }
     }
 
-    public static boolean handleGlider(Transport transport) {
+    private static boolean handleGlider(Transport transport) {
         int TA_QUIR_PRIW = 9043972;
         int SINDARPOS = 9043975;
         int LEMANTO_ANDRA = 9043978;
@@ -2160,7 +2153,7 @@ public static List<WorldPoint> getWalkPath(WorldPoint target) {
     private static final int SLOT_THREE_ACW_ROTATION = 26083352;
     private static int fairyRingGraphicId = 569;
 
-    public static boolean handleFairyRing(Transport transport) {
+    private static boolean handleFairyRing(Transport transport) {
 
 		Rs2ItemModel startingWeapon = null;
 
