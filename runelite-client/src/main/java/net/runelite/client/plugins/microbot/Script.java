@@ -75,15 +75,12 @@ public abstract class Script extends Global implements IScript {
         if (Thread.currentThread().isInterrupted())
             return false;
         //Avoid executing any blocking events if the player hasn't finished Tutorial Island
-        if (Microbot.isLoggedIn() && !Rs2Player.isInTutorialIsland())
+        if (Microbot.isLoggedIn() && !Rs2Player.hasCompletedTutorialIsland())
             return true;
-        // Add a small delay to ensure the client has fully loaded
-        if (Microbot.getLoginTime().toSeconds() > 5) {
-            if (Microbot.getBlockingEventManager().shouldBlockAndProcess()) {
-                // A blocking event was found & is executing
-                return false;
-            }
-        }
+		if (Microbot.getBlockingEventManager().shouldBlockAndProcess()) {
+			// A blocking event was found & is executing
+			return false;
+		}
         if (Microbot.isLoggedIn()) {
             boolean hasRunEnergy = Microbot.getClient().getEnergy() > Microbot.runEnergyThreshold;
             if (Microbot.enableAutoRunOn && hasRunEnergy)

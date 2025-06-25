@@ -25,7 +25,7 @@ public enum Rooms {
             () -> {
                 var magicLevel = Microbot.getClient().getBoostedSkillLevel(Skill.MAGIC);
                 MagicAction enchant;
-                if (magicLevel >= 87 && Rs2Inventory.hasItem("lava") || Rs2Equipment.isWearing("lava")) {
+                if (magicLevel >= 87 && Rs2Inventory.hasItem("lava") || (magicLevel >= 87 && Rs2Equipment.isWearing("lava"))) {
                     enchant = MagicAction.ENCHANT_ONYX_JEWELLERY;
                 } else if (magicLevel >= 68) {
                     enchant = MagicAction.ENCHANT_DRAGONSTONE_JEWELLERY;

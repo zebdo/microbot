@@ -1934,7 +1934,7 @@ public class Rs2Player {
      *
      * @return {@code true} if the player has finished Tutorial Island, {@code false} otherwise.
      */
-    public static boolean isInTutorialIsland() {
+    public static boolean hasCompletedTutorialIsland() {
         return Microbot.getVarbitPlayerValue(281) >= 1000;
     }
 }

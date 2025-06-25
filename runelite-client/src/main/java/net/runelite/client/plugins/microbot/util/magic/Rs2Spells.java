@@ -689,7 +689,7 @@ public enum Rs2Spells {
         return Microbot.getVarbitValue(Varbits.SPELLBOOK) == getSpellbook().getValue();
     }
     
-    private boolean hasRequirements() {
+    public boolean hasRequirements() {
         return hasRequiredLevel() && hasRequiredSpellbook();
     }
 

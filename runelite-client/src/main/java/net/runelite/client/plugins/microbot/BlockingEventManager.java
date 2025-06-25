@@ -117,7 +117,7 @@ public class BlockingEventManager
             catch (Exception ex)
             {
                 Microbot.log(Level.ERROR,
-                        "Error validating BlockingEvent ({}):",
+                        "Error validating BlockingEvent (%s): %s",
                         event.getName(),
                         ex);
             }
@@ -156,7 +156,7 @@ public class BlockingEventManager
             catch (Exception ex)
             {
                 Microbot.log(Level.ERROR,
-                        "Error executing BlockingEvent ({}):",
+                        "Error executing BlockingEvent (%s): %s",
                         event.getName(),
                         ex);
             }
