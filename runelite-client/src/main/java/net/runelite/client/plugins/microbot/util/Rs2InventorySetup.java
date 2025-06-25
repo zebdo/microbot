@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.util;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Varbits;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
@@ -10,7 +11,6 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
-import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
 import net.runelite.client.plugins.microbot.util.magic.Runes;
 import org.slf4j.event.Level;
 
@@ -20,15 +20,19 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ScheduledFuture;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
+import static net.runelite.client.plugins.microbot.util.bank.Rs2Bank.*;
+import static net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory.moveItemToSlot;
 
 /**
  * Utility class for managing inventory setups in the Microbot plugin.
  * Handles loading inventory and equipment setups, verifying matches, and ensuring
  * the correct items are equipped and in the inventory.
  */
+@Slf4j
 public class Rs2InventorySetup {
 
     InventorySetup inventorySetup;
@@ -95,9 +99,15 @@ public class Rs2InventorySetup {
 			return false;
 		}
 
+        if (!findLockedSlots().isEmpty()) {
+            toggleAllLocks();
+            return false;
+        }
+
 		Rs2Bank.depositAllExcept(itemsToNotDeposit());
 
-		Map<Integer, List<InventorySetupsItem>> groupedByItems = inventorySetup.getInventory().stream()
+        List<InventorySetupsItem> setupItems = inventorySetup.getInventory();
+        Map<Integer, List<InventorySetupsItem>> groupedByItems = inventorySetup.getInventory().stream()
 			.collect(Collectors.groupingBy(InventorySetupsItem::getId));
 
 		for (Map.Entry<Integer, List<InventorySetupsItem>> entry : groupedByItems.entrySet()) {
@@ -129,7 +139,54 @@ public class Rs2InventorySetup {
 			withdrawItem(item, withdrawQuantity);
 		}
 
-		if (inventorySetup.getRune_pouch() != null) {
+        for (InventorySetupsItem setupItem : setupItems) {
+            if (setupItem.getId() == -1 || setupItem.getSlot() < 0) continue;
+
+            Rs2ItemModel invItem = Rs2Inventory.items().stream()
+                    .filter(i -> i.getId() == setupItem.getId())
+                    .findFirst()
+                    .orElse(null);
+
+            if (invItem == null) continue;
+            if (invItem.getSlot() == setupItem.getSlot()) continue;
+
+            moveItemToSlot(invItem, setupItem.getSlot());
+            sleep(300, 600);
+        }
+
+        for (InventorySetupsItem setupItem : setupItems) {
+            int id = setupItem.getId();
+            int desired = setupItem.getSlot();
+            if (id < 0 || desired < 0) {
+                continue;
+            }
+            Rs2ItemModel invItem = Rs2Inventory.items().stream()
+                    .filter(i -> i.getId() == id && i.getSlot() != desired)
+                    .findFirst()
+                    .orElse(null);
+            if (invItem == null) {
+                continue;
+            }
+            Rs2ItemModel occupant = Rs2Inventory.getItemInSlot(desired);
+            if (occupant != null && occupant.getId() != id) {
+                boolean mutual = setupItems.stream()
+                        .anyMatch(si -> si.getId() == occupant.getId() && si.getSlot() == invItem.getSlot());
+                if (mutual) {
+                    moveItemToSlot(invItem, desired);
+                    sleep(300, 600);
+                    log.debug("Swapped " + setupItem.getName());
+                } else {
+                    log.debug("Desired slot occupied, skipping for now: " + setupItem.getName());
+                }
+            } else {
+                moveItemToSlot(invItem, desired);
+                sleep(300, 600);
+                log.debug("Moved " + setupItem.getName() + " to slot " + desired);
+            }
+            break;
+        }
+
+        if (inventorySetup.getRune_pouch() != null) {
 			Map<Runes, InventorySetupsItem> inventorySetupRunes = inventorySetup.getRune_pouch().stream()
 				.filter(item -> item.getId() != -1 && item.getQuantity() > 0)
 				.collect(Collectors.toMap(
@@ -138,12 +195,14 @@ public class Rs2InventorySetup {
 				));
 
 			if (!Rs2RunePouch.loadFromInventorySetup(inventorySetupRunes)) {
-				Microbot.log("Failed to load rune pouch.");
+				log.debug("Failed to load rune pouch.");
 				return false;
 			}
 		}
 
 		sleep(800, 1200);
+
+        lockLockedItemsFromSetup(inventorySetup);
 
 		return doesInventoryMatch();
 	}
@@ -340,11 +399,27 @@ public class Rs2InventorySetup {
 			} else {
 				withdrawQuantity = entry.getValue().size();
 			}
-
-			if (!Rs2Inventory.hasItemAmount(item.getName(), withdrawQuantity, isStackable)) {
-				Microbot.log("Looking for " + item.getName() + " with amount " + withdrawQuantity);
-				found = false;
-			}
+            for (InventorySetupsItem setupItem : entry.getValue()) {
+                int expectedSlot = setupItem.getSlot();
+                if (expectedSlot >= 0) {
+                    Rs2ItemModel invItem = Rs2Inventory.getItemInSlot(expectedSlot);
+                    if (invItem == null || invItem.getId() != setupItem.getId()) {
+                        log.debug("Slot mismatch: expected " + setupItem.getName() + " in slot " + expectedSlot);
+                        found = false;
+                        continue;
+                    }
+                    if (invItem.getQuantity() < setupItem.getQuantity()) {
+                        log.debug("Wrong quantity in slot " + expectedSlot + " for " + setupItem.getName());
+                        found = false;
+                    }
+                } else {
+                    // fallback to amount check across whole inventory if slot is unspecified
+                    if (!Rs2Inventory.hasItemAmount(setupItem.getName(), setupItem.getQuantity(), setupItem.getQuantity() > 1)) {
+                        log.debug("Missing item: " + setupItem.getName() + " with amount " + setupItem.getQuantity());
+                        found = false;
+                    }
+                }
+            }
 		}
 
 		if (inventorySetup.getRune_pouch() != null) {
@@ -459,5 +534,24 @@ public class Rs2InventorySetup {
      */
     public boolean hasSpellBook() {
         return inventorySetup.getSpellBook() == Microbot.getVarbitValue(Varbits.SPELLBOOK);
+    }
+
+    public static boolean lockLockedItemsFromSetup(InventorySetup setup) {
+        List<InventorySetupsItem> setupItems = InventorySetup.getSetupItems(setup);
+
+        // Get the *inventory slot indices* of all locked items (skip equipment, etc.)
+        List<Integer> lockedSlots = IntStream.range(0, setupItems.size())
+                .filter(i -> {
+                    InventorySetupsItem item = setupItems.get(i);
+                    return item != null && item.isLocked();
+                })
+                .boxed()
+                .collect(Collectors.toList());
+
+        if (lockedSlots.isEmpty()) {
+            return false;
+        }
+
+        return lockAllBySlot(lockedSlots.stream().mapToInt(Integer::intValue).toArray());
     }
 }

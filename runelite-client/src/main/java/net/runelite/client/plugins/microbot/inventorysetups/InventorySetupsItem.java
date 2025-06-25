@@ -73,7 +73,9 @@ public class InventorySetupsItem
 		return item.getId() == -1 &&
 				item.getQuantity() == 0 &&
 				!item.isFuzzy() &&
-				(item.getStackCompare() == InventorySetupsStackCompareID.None || item.getStackCompare() == null);
+				(item.getStackCompare() == InventorySetupsStackCompareID.None || item.getStackCompare() == null) &&
+				!item.isLocked() &&
+				item.getSlot() == -1;
 	}
 
 	public String getName() {
