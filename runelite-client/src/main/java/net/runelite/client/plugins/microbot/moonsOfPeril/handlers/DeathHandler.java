@@ -1,18 +1,78 @@
 package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.NpcID;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
+import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+
+import static net.runelite.client.plugins.microbot.util.Global.sleep;
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
+
+import java.util.List;
 
 public class DeathHandler implements BaseHandler {
 
     @Override
     public boolean validate() {
-        // TODO: add real gate-keeping logic
-        return false;  // or true if you want it to run during testing
+        return Rs2Player.isNearArea(new WorldPoint(3221, 3219, 0), 30); // true if near lumbridge spawn point
     }
 
     @Override
     public State execute() {
-        // TODO: add actual actions
+        Microbot.log("Player detected near Lumbridge spawn. Starting death handler sequence");
+        if (retrieveTravelItems()) {
+            sleep(1_200);
+            if (retrieveDeathItems()) {
+                sleep(1_200);
+                equipDeathItems();
+                }
+            }
         return null;
     }
+
+    /**
+     * Travels to nearest bank and retrieves runes required for Civitas illa Fortis teleport.
+     */
+    private boolean retrieveTravelItems() {
+        Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 2);
+        sleep(600);
+        if (Rs2Bank.openBank()) {
+            sleep(600);
+            Rs2Bank.withdrawOne(ItemID.FIRERUNE);
+            Rs2Bank.withdrawOne(ItemID.EARTHRUNE);
+            Rs2Bank.withdrawX(ItemID.LAWRUNE, 2);
+            Rs2Bank.closeBank();
+            return true;
+        }
+        return false;
+    }
+
+    private boolean retrieveDeathItems() {
+        WorldPoint graveLocation = new WorldPoint(1440, 9626, 1);
+        Microbot.log("Attempting to walk back to grave site");
+        Rs2Walker.walkTo(graveLocation, 2);
+        sleepUntil(() -> (Rs2Player.getWorldLocation().distanceTo(graveLocation) <= 3), 60_000);
+        if (Rs2Npc.interact(NpcID.GRAVESTONE_DEFAULT, "Loot")) {
+            Microbot.log("Successfully looted gravestone");
+            return true;
+        }
+        return false;
+    }
+
+    private void equipDeathItems() {
+        Microbot.log("Attempting to equip items retrieved");
+        List<Rs2ItemModel> items = Rs2Inventory.all();
+        for (Rs2ItemModel i:items) {
+            Rs2Inventory.equip(i.getId());
+            sleep(300);
+        }
+    }
+
 }

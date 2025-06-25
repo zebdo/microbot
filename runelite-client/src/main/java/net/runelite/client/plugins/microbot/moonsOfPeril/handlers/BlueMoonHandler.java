@@ -53,20 +53,18 @@ public class BlueMoonHandler implements BaseHandler {
     @Override
     public boolean validate() {
         // run while boss is alive
-        sleep(1_000);
         return BossHandler.bossIsAlive(bossName, bossStatusWidgetID);
     }
 
     @Override
     public State execute() {
-        BossHandler.walkToBoss(bossName, bossLobbyLocation);
-        BossHandler.fightPreparation(weaponMain, shield);
-        BossHandler.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
-        sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID),5_000);
+        if (!Rs2Widget.isWidgetVisible(bossHealthBarWidgetID)) {
+            BossHandler.walkToBoss(bossName, bossLobbyLocation);
+            BossHandler.fightPreparation(weaponMain, shield);
+            BossHandler.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
+            sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID),5_000);
+        }
         while (Rs2Widget.isWidgetVisible(bossHealthBarWidgetID) || Rs2Npc.getNpc(bossNpcID) != null) {
-            // PLAYER SHOULD NOW BE INSIDE THE ARENA
-            // TODO: check boss widget health bar for ID
-
             if (isSpecialAttack1Sequence()) {
                 specialAttack1Sequence();
             }
@@ -78,6 +76,9 @@ public class BlueMoonHandler implements BaseHandler {
             }
             sleep(300); // half an in-game tick
         }
+        Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");
+        Rs2Prayer.disableAllPrayers();
+        sleep(1200);
         Rs2Prayer.disableAllPrayers();
         return State.IDLE;
     }
@@ -106,7 +107,8 @@ public class BlueMoonHandler implements BaseHandler {
      */
     public boolean isSpecialAttack2Sequence() {
         Rs2NpcModel icicle = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ICICLE_UNCRACKED);
-        if (icicle != null) {
+        Rs2NpcModel sigil = Rs2Npc.getNpc(sigilNpcID);
+        if (icicle != null && sigil == null) {
             Microbot.log("An icicle has spawned – We've entered Special Attack 2 Sequence");
             return true;
         }
@@ -133,7 +135,7 @@ public class BlueMoonHandler implements BaseHandler {
         long pollStart = System.currentTimeMillis();
         Microbot.log(ts.get() + "Polling for animated icicle… (timeout " + POLL_TIMEOUT_MS + " ms)");
 
-        while (matches.isEmpty() &&
+        while (isSpecialAttack2Sequence() && matches.isEmpty() &&
                 System.currentTimeMillis() - pollStart < POLL_TIMEOUT_MS)
         {
             matches = Rs2Npc.getNpcs(n ->
@@ -142,11 +144,14 @@ public class BlueMoonHandler implements BaseHandler {
                     .collect(Collectors.toList());
 
             Microbot.log(ts.get() + "Polling tick --> matches=" + matches.size());
-            if (matches.isEmpty()) sleep(600);
+            if (matches.isEmpty()) sleep(300);
         }
 
         if (matches.isEmpty()) {
             Microbot.log(ts.get() + "Timed-out waiting for animated icicle — aborting");
+            return;
+        }
+        if (!isSpecialAttack2Sequence()) {
             return;
         }
 
@@ -165,6 +170,9 @@ public class BlueMoonHandler implements BaseHandler {
         {
             if (!Rs2Combat.inCombat()) {
                 Rs2Npc.attack(icicle);
+                if (Rs2Equipment.isWearing(weaponMain)) {
+                    break;
+                }
             }
             WorldPoint attackTile = Rs2Player.getWorldLocation();
             Microbot.log(ts.get() + "Attack location calculated as: " + attackTile);

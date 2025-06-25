@@ -202,7 +202,9 @@ public final class BossHandler {
                                             int bossNpcID,
                                             WorldPoint[] attackTiles, String Weapon, String Shield)
     {
+        Microbot.log("Script has entered the normal attack sequence loop");
         WorldPoint lastSigilSW = null;   // south-west anchor of current sigil
+        WorldPoint currentTarget = null; // cached attack tile for the current sigil
         int sigilMoves = 0;              // how many times the sigil has shifted
         equipWeapons(Weapon, Shield);
         sleep(150);
@@ -210,88 +212,60 @@ public final class BossHandler {
         Rs2Player.toggleRunEnergy(true);
         sleep(150);
 
-        while (sigilMoves < 3)           // a normal phase has ≤3 sigil positions
+        while (sigilMoves <= 3 && isNormalAttackSequence(sigilNpcID))
         {
-            /* 1 ─ current sigil NPC; exit if phase is over */
+            /* 1 ─ detect a new sigil square */
             Rs2NpcModel sigil = Rs2Npc.getNpc(sigilNpcID);
             if (sigil == null) {
-                Microbot.log("Sigil despawned – leaving attack loop");
+                sleep(300);
+                Microbot.log("Sigil not found. Breaking out of sequence");
                 break;
             }
+            WorldPoint sigilLocation = sigil.getWorldLocation();
+            if (!sigilLocation.equals(lastSigilSW)) {
+                ++sigilMoves;
+                lastSigilSW = sigilLocation;
 
-            /* 2 ─ detect a new sigil square */
-            WorldPoint sigilSW = sigil.getWorldLocation();
-            if (!sigilSW.equals(lastSigilSW)) {
-                sigilMoves++;
-                lastSigilSW = sigilSW;
-                Microbot.log("Sigil moved → #" + sigilMoves);
+                /* 2 ─ choose *once* the nearest predefined attack tile ≤1 away */
+                currentTarget = sigilLocation;               // fallback = sigil itself
+                for (WorldPoint atk : attackTiles) {
+                    if (atk.distanceTo(sigilLocation) <= 1) {
+                        currentTarget = atk;
+                        break;
+                    }
+                }
+                Microbot.log("Sigil #" + sigilMoves + ": target tile = " + currentTarget);
             }
 
-            /* 3 ─ choose the nearest predefined attack tile ≤1 tiles away */
-            WorldPoint target = sigilSW;   // fallback = sigil itself
-            for (WorldPoint atk : attackTiles) {
-                if (atk.distanceTo(sigilSW) <= 1) { target = atk; break; }
-            }
-
-            /* 4 ─ walk onto the target tile if not already there */
-            if (Rs2Player.distanceTo(target) > 1) {
-                if (Rs2Walker.walkFastCanvas(target, true)) {
-                    final WorldPoint destinationTile = target;
-                    sleepUntil(() -> Rs2Player.getWorldLocation().equals(destinationTile), 2_000);
+            /* 3 ─ run onto the target tile if not already there */
+            if (Rs2Player.distanceTo(currentTarget) > 1) {
+                Microbot.log("Running to attack tile target location: " + currentTarget);
+                if (Rs2Walker.walkFastCanvas(currentTarget, true)) {
+                    final WorldPoint dest = currentTarget;
+                    sleepUntil(() -> Rs2Player.getWorldLocation().equals(dest), 3_000);
                 }
             }
 
-            /* 5 ─ attack the boss whenever idle */
+            /* 4 ─ attack the boss whenever not in combat */
             Rs2NpcModel boss = Rs2Npc.getNpc(bossNpcID);
             if (boss != null && !Rs2Combat.inCombat()) {
+                Microbot.log("Attacking the boss");
                 Rs2Npc.attack(bossNpcID);
             }
 
             sleep(300);   // half a game tick
         }
-    }
-
-    /** True while the “boss check mark” widget is showing on-screen. ie. the boss is defeated */
-    public static boolean bossIsDefeated(String bossName, int defeatedWidgetId) {
-        Microbot.log(bossName + " is defeated: " + Rs2Widget.isWidgetVisible(defeatedWidgetId));
-        return Rs2Widget.isWidgetVisible(defeatedWidgetId);
+        Microbot.log("Breaking out of the normal attack sequence");
     }
 
     /** True if the WorldPoint param is located on a dangerous tile*/
     public static boolean inDanger(WorldPoint location) {
-
-        // Case 1: Dangerous tiles from graphics objects
         if (Rs2Tile.dangerousGraphicsObjectTiles.stream()
                 .filter(p -> p.getValue() > 0)
                 .map(p -> p.getKey())
                 .anyMatch(pt -> pt.equals(location))) {
-            Microbot.log(String.format("[inDanger] %s  dGfx=%d  dObj=%d",
-                    location,
-                    Rs2Tile.getDangerousGraphicsObjectTiles().size(),
-                    Rs2Tile.getDangerousGameObjectTiles().size()));
             return true;
         }
-
-        // Case 2: Dangerous tiles from game objects
-        if (Rs2Tile.dangerousGameObjectTiles.stream()
-                .filter(p -> p.getValue() > 0)
-                .map(p -> p.getKey())
-                .anyMatch(pt -> pt.equals(location))) {
-            Microbot.log(String.format("[inDanger] %s  dGfx=%d  dObj=%d",
-                    location,
-                    Rs2Tile.getDangerousGraphicsObjectTiles().size(),
-                    Rs2Tile.getDangerousGameObjectTiles().size()));
-            return true;
-        }
-/*        // Case 2: Dangerous tiles from game objects
-        List<TileObject> pools = Rs2GameObject.getAll(
-                o -> o.getId() == ObjectID.PMOON_BOSS_BLOOD_POOL,
-                location,
-                0
-        );
-        if (!pools.isEmpty()) {
-            return true;
-        }*/
         return false;
     }
 

@@ -121,7 +121,12 @@ public class moonsOfPerilScript extends Script {
         BaseHandler reward = handlers.get(State.REWARDS);
         return reward != null && reward.validate();
     }
-    private boolean isPlayerDead()    { return false; }
+
+    /* ---------- Death Handler ---------------------------------------------- */
+    private boolean isPlayerDead() {
+        BaseHandler reward = handlers.get(State.DEATH);
+        return reward != null && reward.validate();
+    }
 
     /* ------------------------------------------------------------------ */
     /* Clean shutdown – cancels the scheduled task and frees resources    */

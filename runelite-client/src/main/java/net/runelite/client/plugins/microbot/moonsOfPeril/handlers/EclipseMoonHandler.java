@@ -50,16 +50,17 @@ public class EclipseMoonHandler implements BaseHandler {
     @Override
     public boolean validate() {
         // run while boss is alive
-        sleep(1_000);
         return (BossHandler.bossIsAlive(bossName, bossStatusWidgetID));
     }
 
     @Override
     public State execute() {
-        BossHandler.walkToBoss(bossName, bossLobbyLocation);
-        BossHandler.fightPreparation(weaponMain, shield);
-        BossHandler.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
-        sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID),5_000);
+        if (!Rs2Widget.isWidgetVisible(bossHealthBarWidgetID)) {
+            BossHandler.walkToBoss(bossName, bossLobbyLocation);
+            BossHandler.fightPreparation(weaponMain, shield);
+            BossHandler.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
+            sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID), 5_000);
+        }
         while (Rs2Widget.isWidgetVisible(bossHealthBarWidgetID) || Rs2Npc.getNpc(bossNpcID) != null) {
             if (isSpecialAttack1Sequence()) {
                 specialAttack1Sequence();
@@ -72,7 +73,7 @@ public class EclipseMoonHandler implements BaseHandler {
             }
             sleep(300); // half an in-game tick
         }
-        Microbot.log("The boss health bar widget is no longer visible, the fight must have ended.");
+        Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");
         Rs2Prayer.disableAllPrayers();
         sleep(1200);
         return State.IDLE;
@@ -98,7 +99,9 @@ public class EclipseMoonHandler implements BaseHandler {
         WorldPoint spawn = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD).getWorldLocation();
         Microbot.log("Exact Moonshield location = " + spawn);
         if (!spawn.equals(shieldSpawnTile)) {
-            automatedWalk(false);
+            Microbot.log("Player has spawned into the arena in the middle of the sequence. Need to escape.");
+            BossHandler.bossBailOut(exitTile);
+            return;
         }
 
 /*      1 ─ wait until shield starts sliding */
@@ -109,8 +112,8 @@ public class EclipseMoonHandler implements BaseHandler {
                                 Rs2Player.getWorldLocation().equals(new WorldPoint(1491, 9627, 0)),
                 5_000);
 
-        Microbot.log("Now sleeping 4 ticks to perfectly time our walk");
-        sleep(2_400);
+        Microbot.log("Now sleeping 3.5 ticks to perfectly time our walk");
+        sleep(2_100);
         Microbot.log("Commencing our walk around the lap");
 
 /*         ───── 2. Four anchor tiles around the boss (SW → NW → NE → SE) ───── */
@@ -126,6 +129,9 @@ public class EclipseMoonHandler implements BaseHandler {
             Rs2Walker.walkFastCanvas(p, false);
             BossHandler.eatIfNeeded(70);
             BossHandler.drinkIfNeeded(70);
+            if (!isSpecialAttack1Sequence()) {
+                return;
+            }
             sleepUntil(() -> Rs2Player.getWorldLocation().equals(p));
         }
         Microbot.log("Shield lap has been completed");
