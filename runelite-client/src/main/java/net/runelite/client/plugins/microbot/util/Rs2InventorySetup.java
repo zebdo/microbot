@@ -536,10 +536,26 @@ public class Rs2InventorySetup {
         return inventorySetup.getSpellBook() == Microbot.getVarbitValue(Varbits.SPELLBOOK);
     }
 
+    /**
+     * Locks all inventory slots marked as “locked” in the given setup.
+     *
+     * Iterates through the setup’s list of items, collects the indices (slots) of those flagged locked,
+     * and invokes lockAllBySlot on that array of slot indices. Returns true if any slots were processed
+     * (i.e., there were locked slots to act on), false if none were found.
+     *
+     * Preconditions:
+     * - The InventorySetup must be populated, and InventorySetup.getSetupItems(setup) returns a non-null list.
+     * - Each InventorySetupsItem.getSlot() is assumed to correspond to an inventory slot index if used elsewhere.
+     *
+     * Postconditions:
+     * - lockAllBySlot(...) is called with the locked slot indices; its result is returned.
+     * - If no locked items exist, the method returns false without side effects.
+     *
+     * @param setup the InventorySetup whose locked items’ slots should be toggled/locked
+     * @return true if there were locked slots and lockAllBySlot was invoked; false if no locked slots found
+     */
     public static boolean lockLockedItemsFromSetup(InventorySetup setup) {
         List<InventorySetupsItem> setupItems = InventorySetup.getSetupItems(setup);
-
-        // Get the *inventory slot indices* of all locked items (skip equipment, etc.)
         List<Integer> lockedSlots = IntStream.range(0, setupItems.size())
                 .filter(i -> {
                     InventorySetupsItem item = setupItems.get(i);
@@ -547,11 +563,9 @@ public class Rs2InventorySetup {
                 })
                 .boxed()
                 .collect(Collectors.toList());
-
         if (lockedSlots.isEmpty()) {
             return false;
         }
-
         return lockAllBySlot(lockedSlots.stream().mapToInt(Integer::intValue).toArray());
     }
 }

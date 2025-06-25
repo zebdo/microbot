@@ -2444,12 +2444,37 @@ public class Rs2Bank {
         return Microbot.getConfigManager().getConfiguration("bank","bankPinKeyboard").equalsIgnoreCase("true");
     }
 
+    /**
+     * Checks whether the given widget represents a locked bank slot.
+     *
+     * This inspects the widget’s context actions for the “Unlock-slot” option,
+     * which indicates the slot is currently locked. If the widget is null or has
+     * no actions, it is considered not locked.
+     *
+     * @param widget the bank-slot widget to inspect; may be null
+     * @return true if the widget’s actions contain “Unlock-slot” (case-insensitive), false otherwise
+     */
     private static boolean isWidgetLocked(Widget widget) {
         if (widget == null) return false;
         String[] actions = widget.getActions();
         return actions != null && Arrays.stream(actions).filter(Objects::nonNull).anyMatch("Unlock-slot"::equalsIgnoreCase);
     }
 
+    /**
+     * Determines whether the bank inventory slot at the given index is currently locked.
+     *
+     * This method checks that the slot index is within the valid 0–27 range, obtains the bank
+     * inventory widget container, verifies the widget children array is present and that the
+     * specified index exists, then delegates to isWidgetLocked(...) on the child widget.
+     *
+     * Preconditions:
+     * - The slot index must be >= 0 and < 28.
+     * - The bank inventory widget (BANK_INVENTORY_ITEM_CONTAINER) must be loaded in the client.
+     *
+     * @param slot the inventory slot index to check (0-based)
+     * @return true if the widget for this slot is non-null and its actions include “Unlock-slot”,
+     *         indicating the slot is currently locked; false if out of range, widget missing, or not locked
+     */
     public static boolean isLockedSlot(int slot) {
         if (slot < 0 || slot >= 28) return false;
         Widget container = Microbot.getClient().getWidget(BANK_INVENTORY_ITEM_CONTAINER);
@@ -2458,6 +2483,26 @@ public class Rs2Bank {
         return isWidgetLocked(container.getChild(slot));
     }
 
+    /**
+     * Scans the bank inventory widget for slots currently locked and returns their indices.
+     *
+     * Iterates through each child widget of the bank inventory container, logs debug info
+     * about null widgets or their actions, and collects indices where isWidgetLocked(...)
+     * returns true. If the container or its children are unavailable, returns an empty list.
+     *
+     * Preconditions:
+     * - The client must have the bank inventory UI loaded so that BANK_INVENTORY_ITEM_CONTAINER
+     *   is present with a non-null children array.
+     *
+     * Postconditions:
+     * - Returns a list of slot indices (0-based) where the widget’s actions include “Unlock-slot”.
+     * - If no locked slots are found or UI is unavailable, returns an empty list.
+     *
+     * Side Effects:
+     * - Emits debug logs for container presence, each slot’s actions, and whether locked slots were detected.
+     *
+     * @return List of indices of locked slots; empty if none or if the bank UI isn’t ready.
+     */
     public static List<Integer> findLockedSlots() {
         List<Integer> lockedSlots = new ArrayList<>();
         Widget container = Microbot.getClient().getWidget(BANK_INVENTORY_ITEM_CONTAINER);
@@ -2484,24 +2529,29 @@ public class Rs2Bank {
         return lockedSlots;
     }
 
-    public static Rs2ItemModel findLockedItem(int itemId) {
-        return Rs2Inventory.items().stream()
-                .filter(item -> item.getId() == itemId)
-                .filter(item -> isLockedSlot(item.getSlot()))
-                .findFirst().orElse(null);
-    }
-
-    public static Rs2ItemModel findLockedItem(String name, boolean exact) {
-        return Rs2Inventory.items().stream()
-                .filter(item -> exact
-                        ? item.getName().equalsIgnoreCase(name)
-                        : item.getName().toLowerCase().contains(name.toLowerCase())
-                )
-                .filter(item -> isLockedSlot(item.getSlot()))
-                .findFirst()
-                .orElse(null);
-    }
-
+    /**
+     * Toggles the lock state of the given bank inventory item.
+     *
+     * Checks preconditions: the item must be non-null, the bank must be open,
+     * the inventory must contain the item, and the bank’s lock UI options must be enabled.
+     * It reads the current OVERVIEW varbit before invoking the “Lock/Unlock slot” menu action,
+     * then waits until that varbit changes, indicating the lock state flipped.
+     *
+     * Preconditions:
+     * - rs2Item is not null.
+     * - Bank interface is open (isOpen() == true).
+     * - Inventory contains the item ID (Rs2Inventory.hasItem(...)).
+     * - BANK_SIDE_SLOT_IGNOREINVLOCKS varbit == 0 (lock feature enabled).
+     * - BANK_SIDE_SLOT_SHOWOP varbit == 1 (locking option visible).
+     *
+     * Postconditions:
+     * - invokeMenu(10, rs2Item) is called to trigger the lock/unlock action.
+     * - Returns true if the OVERVIEW varbit changes within the timeout, indicating a successful toggle.
+     * - Returns false immediately if any precondition fails or if the varbit does not change within the timeout.
+     *
+     * @param rs2Item the inventory item model to lock or unlock
+     * @return true if the lock state changed (detected via varbit change); false otherwise
+     */
     private static boolean toggleItemLock(Rs2ItemModel rs2Item)
     {
         if (rs2Item == null
@@ -2517,38 +2567,47 @@ public class Rs2Bank {
         return sleepUntilTrue(() -> Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_OVERVIEW) != currentLockState, 300, 2000);
     }
 
-    public static boolean toggleItemLock(String itemName)
-    {
-        return toggleItemLock(itemName, false);
-    }
-
+    /**
+     * Toggles the lock state of an inventory item by its name.
+     *
+     * Looks up the first inventory item whose name matches (exactly or partially),
+     * then delegates to toggleItemLock(Rs2ItemModel) to perform the lock/unlock action.
+     *
+     * Preconditions:
+     * - Bank interface must be open and the item must exist in inventory.
+     * - Varbit checks (ignore-locks and show-option) are handled in the delegated method.
+     *
+     * @param itemName the name of the item to toggle lock on
+     * @param exact if true, matches name exactly (case-insensitive); if false, matches if name contains the given string
+     * @return true if the lock state was toggled successfully; false if item not found or toggle conditions not met
+     */
     public static boolean toggleItemLock(String itemName, boolean exact)
     {
         Rs2ItemModel item = Rs2Inventory.get(itemName, exact);
         return toggleItemLock(item);
     }
 
-    public static boolean toggleItemLock(int itemId)
-    {
-        Rs2ItemModel item = Rs2Inventory.get(itemId);
-        return toggleItemLock(item);
-    }
-
-    private static int previousOverviewState = -1;
-
-    public static boolean onBankInventoryUpdate() {
-        int current = Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_OVERVIEW);
-        if (previousOverviewState == -1) {
-            previousOverviewState = current;
-            return false;
-        }
-        if (current != previousOverviewState) {
-            previousOverviewState = current;
-            return true;
-        }
-        return false;
-    }
-
+    /**
+     * Toggles the lock state of all currently locked bank inventory slots.
+     *
+     * Scans for slots flagged as locked via findLockedSlots(); if none are found, logs and returns false.
+     * Otherwise, for each locked slot, obtains the item in that slot and invokes toggleItemLock(item),
+     * logging success or failure. Returns true if at least one slot was toggled.
+     *
+     * Preconditions:
+     * - The bank UI must be open and loaded so that findLockedSlots() can detect locked slots.
+     * - toggleItemLock(...) handles its own checks (bank open, varbits).
+     *
+     * Postconditions:
+     * - Each slot returned by findLockedSlots() has had toggleItemLock called on its item model.
+     * - Returns true if there were locked slots and at least one toggleItemLock(...) returned true;
+     *   returns false if no locked slots were found or none were successfully toggled.
+     *
+     * Side Effects:
+     * - Logs debug messages for absence of locked slots, missing items, successes, and failures.
+     *
+     * @return true if one or more locked slots were toggled; false if no locked slots existed or none could be toggled
+     */
     public static boolean toggleAllLocks() {
         List<Integer> lockedSlots = findLockedSlots();
         if (lockedSlots.isEmpty()) {
@@ -2572,33 +2631,28 @@ public class Rs2Bank {
         return anyUnlocked;
     }
 
-    public static boolean lockAllListed(String... itemNames) {
-        if (itemNames == null || itemNames.length == 0) {
-            log.debug("No item names provided for locking.");
-            return false;
-        }
-        Set<String> targets = Arrays.stream(itemNames)
-                .map(String::toLowerCase)
-                .collect(Collectors.toSet());
-        boolean anyLocked = false;
-        for (Rs2ItemModel item : Rs2Inventory.items()) {
-            if (item == null || item.getName() == null) continue;
-            String itemName = item.getName().toLowerCase();
-            if (!targets.contains(itemName)) continue;
-            if (isLockedSlot(item.getSlot())) {
-                log.debug("Item '{}' in slot {} is already locked.", item.getName(), item.getSlot());
-                continue;
-            }
-            if (toggleItemLock(item)) {
-                log.debug("Locked item '{}' in slot {}", item.getName(), item.getSlot());
-                anyLocked = true;
-            } else {
-                log.debug("Failed to lock item '{}' in slot {}", item.getName(), item.getSlot());
-            }
-        }
-        return anyLocked;
-    }
-
+    /**
+     * Locks items in the specified inventory slot indices.
+     *
+     * Iterates through each provided slot index, validates the index range (0–27),
+     * retrieves the item in that slot, skips if empty or already locked, and invokes
+     * toggleItemLock(...) to lock it. Returns true if at least one item was successfully locked.
+     *
+     * Preconditions:
+     * - The bank interface must be open and the inventory widgets loaded so that
+     *   Rs2Inventory.getItemInSlot(slot) and isLockedSlot(slot) work correctly.
+     * - The slots array should correspond to actual inventory slots.
+     *
+     * Postconditions:
+     * - For each valid slot with an item not already locked, toggleItemLock is called.
+     * - Logs debug messages for invalid indices, empty slots, already locked items,
+     *   successful locks, or failures.
+     * - Returns true if any toggleItemLock(...) returned true; false if none were locked
+     *   or if no valid slots were provided.
+     *
+     * @param slots varargs of inventory slot indices to lock
+     * @return true if one or more items were locked; false otherwise
+     */
     public static boolean lockAllBySlot(int... slots) {
         if (slots == null || slots.length == 0) {
             log.debug("No slot indices provided for locking.");
