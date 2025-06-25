@@ -196,27 +196,27 @@ public class Rs2Prayer {
 
         return null;
     }
-    public static boolean rigourUnlocked() {
+    public static boolean isRigourUnlocked() {
         return !(Microbot.getVarbitValue(VarbitID.PRAYER_RIGOUR_UNLOCKED) == 0) && Microbot.getClient().getRealSkillLevel(Skill.PRAYER) >= 74 && Microbot.getClient().getRealSkillLevel(Skill.DEFENCE) >= 70;
     }
 
-    public static boolean pietyUnlocked() {
+    public static boolean isPietyUnlocked() {
         return Microbot.getVarbitValue(VarbitID.KR_KNIGHTWAVES_STATE) == 8 && Microbot.getClient().getRealSkillLevel(Skill.PRAYER) >= 70 && Microbot.getClient().getRealSkillLevel(Skill.DEFENCE) >= 70;
     }
-    public static boolean chivalryUnlocked() {
+    public static boolean isChivalryUnlocked() {
         return Microbot.getVarbitValue(VarbitID.KR_KNIGHTWAVES_STATE) == 8 && Microbot.getClient().getRealSkillLevel(Skill.PRAYER) >= 60 && Microbot.getClient().getRealSkillLevel(Skill.DEFENCE) >= 65;
     }
 
-    public static boolean auguryUnlocked() {
+    public static boolean isAuguryUnlocked() {
         return !(Microbot.getVarbitValue(VarbitID.PRAYER_AUGURY_UNLOCKED) == 0) && Microbot.getClient().getRealSkillLevel(Skill.PRAYER) >= 77 && Microbot.getClient().getRealSkillLevel(Skill.DEFENCE) >= 70;
     }
-    public static boolean perservereUnlocked() {
+    public static boolean isPreserveUnlocked() {
         return !(Microbot.getVarbitValue(VarbitID.PRAYER_PRESERVE_UNLOCKED) == 0) && Microbot.getClient().getRealSkillLevel(Skill.PRAYER) >= 55;
     }
-    public static boolean deadeyeUnlocked() {
+    public static boolean isDeadeyeUnlocked() {
         return !(Microbot.getVarbitValue(VarbitID.PRAYER_DEADEYE_UNLOCKED) == 0) && Microbot.getClient().getRealSkillLevel(Skill.PRAYER) >= 62;
     }
-    public static boolean mysticvigourUnlocked() {
+    public static boolean isMysticVigourUnlocked() {
         return !(Microbot.getVarbitValue(VarbitID.PRAYER_MYSTIC_VIGOUR_UNLOCKED) == 0) && Microbot.getClient().getRealSkillLevel(Skill.PRAYER) >= 62;
     }
     

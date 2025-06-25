@@ -2638,7 +2638,7 @@ public class Rs2Walker {
             List<Transport> transports = getTransportsForPath(path, 0, prefTransportType, true);
             
             // Log found transports for debugging
-            transports.forEach(t -> log.info("Transport found: " + t));
+            transports.forEach(t -> log.debug("Transport found: " + t));
             
             return transports;
             
@@ -2946,7 +2946,7 @@ public class Rs2Walker {
         performanceLog.append("\n=== compareRoutes Performance Analysis ===\n");
         
         if (target == null) {
-            return new TransportRouteAnalysis(false, -1,new ArrayList<>(), -1, null, null,new ArrayList<>(),new ArrayList<>(), "Target location is null");
+            return new TransportRouteAnalysis(new ArrayList<>(), null, null,new ArrayList<>(),new ArrayList<>(), "Target location is null");
         }
         
         if (startPoint == null) {
@@ -2954,7 +2954,7 @@ public class Rs2Walker {
         }
         
         if (startPoint == null) {
-            return new TransportRouteAnalysis(false, -1,new ArrayList<>(), -1, null, null, new ArrayList<>(),new ArrayList<>(),"Cannot determine starting location");
+            return new TransportRouteAnalysis(new ArrayList<>(), null, null, new ArrayList<>(),new ArrayList<>(),"Cannot determine starting location");
         }
         
         try {
@@ -3042,7 +3042,7 @@ public class Rs2Walker {
             if (bankingRouteDistance == -1) {
                 performanceLog.append("\tResult: Direct route only (banking route unavailable)\n");
                 log.info(performanceLog.toString());
-                return new TransportRouteAnalysis(true, directDistance,new ArrayList<>(),-1, null, null, new ArrayList<>(),new ArrayList<>(),
+                return new TransportRouteAnalysis(directPath, null, null, new ArrayList<>(),new ArrayList<>(),
                     "Direct route only (banking route unavailable)");
             }
             
@@ -3054,7 +3054,7 @@ public class Rs2Walker {
             performanceLog.append("Result: ").append(recommendation).append("\n");
             log.info(performanceLog.toString());
             
-            return new TransportRouteAnalysis(directIsFaster, directDistance,directPath,bankingRouteDistance, 
+            return new TransportRouteAnalysis(directPath, 
                 nearestBank, nearestBank != null ? nearestBank.getWorldPoint() : null,pathToBank,pathWithBankedItemsToTarget, recommendation);
                 
         } catch (Exception e) {
@@ -3064,7 +3064,7 @@ public class Rs2Walker {
             log.warn(performanceLog.toString());
             log.warn("Error comparing routes to " + target + ": " + e.getMessage());
             e.printStackTrace();
-            return new TransportRouteAnalysis(true, -1,new ArrayList<>(), -1, null, null,new ArrayList<>(),new ArrayList<>(), "Error calculating routes: " + e.getMessage());
+            return new TransportRouteAnalysis(new ArrayList<>(), null, null,new ArrayList<>(),new ArrayList<>(), "Error calculating routes: " + e.getMessage());
         }
     }
     
@@ -3144,7 +3144,7 @@ public class Rs2Walker {
             // Compare routes if we have missing items that could be obtained from bank
             log.info("\n\tRoute comparison: \n\t\t" + comparison.getAnalysis());            
             // If forced banking or banking route is more efficient, go via bank
-            if (forceBanking || !comparison.isDirectFaster()) {
+            if (forceBanking || !comparison.isDirectIsFaster()) {
                 if (comparison.getNearestBank() != null) {
                     log.info("\n\tUsing banking route: \n\t\t{} -> {} -> {}", 
                             Rs2Player.getWorldLocation(), comparison.getBankLocation(), target);
