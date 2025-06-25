@@ -956,10 +956,9 @@ public class MInventorySetupsPlugin extends Plugin
 		{
 			List<InventorySetupsItem> inv = getNormalizedContainer(InventoryID.INVENTORY);
 
-			// Tag locked status based on actual slot
 			for (int i = 0; i < inv.size(); i++) {
 				InventorySetupsItem item = inv.get(i);
-				boolean isLocked = isLockedSlot(i); // assumes this checks Rs2Inventory slot i
+				boolean isLocked = isLockedSlot(i);
 				item.setLocked(isLocked);
 			}
 
@@ -1741,6 +1740,28 @@ public class MInventorySetupsPlugin extends Plugin
 		panel.refreshCurrentSetup();
 	}
 
+	/**
+	 * Toggles the “locked” flag for an item in the inventory setup UI and updates the layout/config.
+	 *
+	 * This handles both regular and “additional” slots:
+	 * - Determines the corresponding InventorySetupsItem based on the slot type and index.
+	 * - Calls item.toggleIsLocked() to flip its locked state.
+	 * - On the client thread, if the item is valid, triggers a layout recalculation for the parent setup.
+	 * - Persists the updated configuration and refreshes the UI panel to reflect the change.
+	 *
+	 * Preconditions:
+	 * - panel.getCurrentSelectedSetup() must be non-null.
+	 * - For ADDITIONAL_ITEMS slots, index must be within the filtered-items map size.
+	 * - For other slots, index must be valid within the container list.
+	 *
+	 * Side Effects:
+	 * - Modifies the item's locked flag.
+	 * - Schedules a layout recalculation on the client thread.
+	 * - Calls dataManager.updateConfig(...) to save changes.
+	 * - Calls panel.refreshCurrentSetup() to redraw the UI.
+	 *
+	 * @param slot the UI slot representation being toggled; identifies which setup item to lock/unlock
+	 */
 	public void toggleLockOnSlot(final InventorySetupsSlot slot)
 	{
 		if (panel.getCurrentSelectedSetup() == null)
