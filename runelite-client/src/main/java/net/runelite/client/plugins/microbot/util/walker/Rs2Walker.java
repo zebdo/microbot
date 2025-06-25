@@ -3,6 +3,8 @@ package net.runelite.client.plugins.microbot.util.walker;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import javax.inject.Inject;
+import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
@@ -75,8 +77,9 @@ import static net.runelite.client.plugins.microbot.util.Global.*;
  */
 @Slf4j
 public class Rs2Walker {
-    @Setter
-    public static ShortestPathConfig config;
+    @Inject
+	@Getter
+	static ShortestPathConfig config;
     static int stuckCount = 0;
     static WorldPoint lastPosition;
     static WorldPoint currentTarget;

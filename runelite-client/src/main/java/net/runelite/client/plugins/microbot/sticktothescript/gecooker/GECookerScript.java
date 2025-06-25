@@ -109,7 +109,7 @@ public class GECookerScript extends Script {
 
                 if (fireObject != null) {
                     lastFireLocation = fireObject.getWorldLocation();
-                    if (Rs2Player.distanceTo(fireObject.getWorldLocation()) > Rs2Walker.config.reachedDistance()) {
+                    if (Rs2Player.distanceTo(fireObject.getWorldLocation()) > Rs2Walker.getConfig().reachedDistance()) {
                         debug("Walking to existing fire");
                         Rs2Walker.walkTo(fireObject.getWorldLocation());
                         sleep(256, 789);
