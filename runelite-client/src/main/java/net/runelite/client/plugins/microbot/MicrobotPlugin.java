@@ -21,6 +21,7 @@ import net.runelite.api.Player;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
 import net.runelite.api.events.HitsplatApplied;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuEntryAdded;
@@ -30,7 +31,9 @@ import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -154,13 +157,20 @@ public class MicrobotPlugin extends Plugin
 		Microbot.setIsGainingExp(true);
 	}
 
+    @Subscribe
+    public void onRuneScapeProfileChanged(RuneScapeProfileChanged event) {
+        // Handle profile changes for bank caching
+        Rs2Bank.setUnknownInitialBankState();
+        Rs2Bank.loadInitialBankStateFromConfig();
+    }
+
 	@Subscribe
 	public void onItemContainerChanged(ItemContainerChanged event)
 	{
 		Microbot.getPouchScript().onItemContainerChanged(event);
 		if (event.getContainerId() == InventoryID.BANK.getId())
 		{
-			Rs2Bank.storeBankItemsInMemory(event);
+			Rs2Bank.updateLocalBank(event);
 		}
 		else if (event.getContainerId() == InventoryID.INVENTORY.getId())
 		{
@@ -176,23 +186,21 @@ public class MicrobotPlugin extends Plugin
 		}
 	}
 
-	@Subscribe
-	public void onGameStateChanged(GameStateChanged gameStateChanged)
-	{
-		if (gameStateChanged.getGameState() == GameState.LOGGED_IN)
-		{
-			Microbot.setLoginTime(Instant.now());
-			Rs2RunePouch.fullUpdate();
-		}
-		if (gameStateChanged.getGameState() == GameState.HOPPING || gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.CONNECTION_LOST)
-		{
-			if (Rs2Bank.bankItems != null)
-			{
-				Rs2Bank.bankItems.clear();
-			}
-			Microbot.loggedIn = false;
-		}
-	}
+    @Subscribe
+    public void onGameStateChanged(GameStateChanged gameStateChanged) {
+        if (gameStateChanged.getGameState() == GameState.LOGGED_IN) {
+            Microbot.setLoginTime(Instant.now());
+            Rs2RunePouch.fullUpdate();
+            Rs2Bank.setUnknownInitialBankState();
+            // Load bank state from config when logging in
+            Rs2Bank.loadInitialBankStateFromConfig();
+        }
+        if (gameStateChanged.getGameState() == GameState.HOPPING || gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.CONNECTION_LOST) {            
+            // Clear bank state when logging out
+            Rs2Bank.emptyBankState();
+            Microbot.loggedIn = false;
+        }
+    }
 
 	@Subscribe
 	public void onVarbitChanged(VarbitChanged event)
@@ -341,4 +349,12 @@ public class MicrobotPlugin extends Plugin
 			});
 		}
 	}
+    @Subscribe
+    public void onGameTick(GameTick event) {
+        Rs2Bank.loadInitialBankStateFromConfig();
+    }
+    @Subscribe(priority = 100)
+    private void onClientShutdown(ClientShutdown e) {
+        Rs2Bank.saveBankToConfig();
+    }
 }

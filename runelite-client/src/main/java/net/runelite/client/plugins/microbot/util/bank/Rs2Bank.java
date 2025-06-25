@@ -1,5 +1,7 @@
 package net.runelite.client.plugins.microbot.util.bank;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldArea;
@@ -8,6 +10,8 @@ import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.config.ConfigManager;
+import net.runelite.client.config.RuneScapeProfileType;
 import net.runelite.client.plugins.bank.BankPlugin;
 import net.runelite.client.plugins.loottracker.LootTrackerItem;
 import net.runelite.client.plugins.loottracker.LootTrackerRecord;
@@ -64,7 +68,15 @@ public class Rs2Bank {
     private static final int SELECTED_OPTION_VARBIT = VarbitID.BANK_QUANTITY_TYPE;
 
     private static final int WITHDRAW_AS_NOTE_VARBIT = 3958;
-    public static List<Rs2ItemModel> bankItems = new ArrayList<Rs2ItemModel>();
+    
+    // Bank data caching system
+    private static final String CONFIG_GROUP = "microbot";
+    private static final String BANK_KEY = "bankitems";
+    private static final Rs2BankData rs2BankData = new Rs2BankData();
+    private static final Gson gson = new Gson();
+    private static String rsProfileKey;
+    private static RuneScapeProfileType worldType;
+    private static boolean loggedInStateKnown = false;
     // Used to synchronize calls
     private static final Object lock = new Object();
     /**
@@ -140,7 +152,7 @@ public class Rs2Bank {
     }
 
     public static List<Rs2ItemModel> bankItems() {
-        return bankItems;
+        return rs2BankData.getBankItems();
     }
 
     /**
@@ -361,8 +373,7 @@ public class Rs2Bank {
     //hasBankItem overload to check with id and amount
     public static boolean hasBankItem(int id, int amount) {
         Rs2ItemModel rs2Item = findBankItem(id);
-        if (rs2Item == null) return false;
-        log.info("Item: " + rs2Item.getName() + " Amount: " + rs2Item.getQuantity());
+        if (rs2Item == null) return false;        
         return findBankItem(Objects.requireNonNull(rs2Item).getName(), true, amount) != null;
     }
 
@@ -1020,7 +1031,7 @@ public class Rs2Bank {
      * withdraw all items identified by its name.
      *
      * @param checkInv check if item is already in inventory
-     * @param name     item name
+     * @param name     item name to search
      * @param exact    name
      */
     public static void withdrawAll(boolean checkInv, String name, boolean exact) {
@@ -1415,6 +1426,7 @@ public class Rs2Bank {
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
     private static Rs2ItemModel findBankItem(int id) {
+        List<Rs2ItemModel> bankItems = rs2BankData.getBankItems();
         if (bankItems == null) return null;
         if (bankItems.stream().findAny().isEmpty()) return null;
 
@@ -1447,6 +1459,7 @@ public class Rs2Bank {
      */
     @SuppressWarnings("UnnecessaryLocalVariable")
     private static Rs2ItemModel findBankItem(String name, boolean exact, int amount) {
+    List<Rs2ItemModel> bankItems = rs2BankData.getBankItems();
     if (bankItems == null || bankItems.isEmpty()) {
         return null;
     }
@@ -1467,6 +1480,7 @@ public class Rs2Bank {
      * @return The first matching item widget, or null if no matching item is found.
      */
     private static Rs2ItemModel findBankItem(List<String> names, boolean exact, int amount) {
+        List<Rs2ItemModel> bankItems = rs2BankData.getBankItems();
         if (bankItems == null || bankItems.isEmpty()) return null;
 
         return bankItems.stream()
@@ -1514,17 +1528,22 @@ public class Rs2Bank {
      * @return the nearest {@link BankLocation}, or {@code null} if no accessible bank could be reached
      */
     public static BankLocation getNearestBank(WorldPoint worldPoint, int maxObjectSearchRadius) {
+        AbstractMap.SimpleEntry<List<WorldPoint>, BankLocation> result = getPathAndBankToNearestBank(worldPoint, maxObjectSearchRadius);
+        return result != null ? result.getValue() : null;
+    }
+
+    /**
+     * Private helper method that finds both the path and bank location to the nearest accessible bank.
+     *
+     * @param worldPoint            the starting location for pathfinding
+     * @param maxObjectSearchRadius the maximum radius (in tiles) to scan for bank booth objects
+     * @return A SimpleEntry containing the path (key) and bank location (value), or null if no accessible bank could be reached
+     */
+    private static AbstractMap.SimpleEntry<List<WorldPoint>, BankLocation> getPathAndBankToNearestBank(WorldPoint worldPoint, int maxObjectSearchRadius) {
         Microbot.log("Finding nearest bank...");
-
-        Set<BankLocation> accessibleBanks = Arrays.stream(BankLocation.values())
-                .filter(BankLocation::hasRequirements)
-                .collect(Collectors.toSet());
-
-        if (accessibleBanks.isEmpty()) {
-            Microbot.log("No accessible banks found");
-            return null;
-        }
-
+                     
+        Set<BankLocation> allBanks = Arrays.stream(BankLocation.values())
+                .collect(Collectors.toSet());                             
         if (Objects.equals(Microbot.getClient().getLocalPlayer().getWorldLocation(), worldPoint)) {
             List<TileObject> bankObjs = Stream.concat(
                             Stream.of(Rs2GameObject.findBank(maxObjectSearchRadius)),
@@ -1535,7 +1554,7 @@ public class Rs2Bank {
 
             Optional<BankLocation> byObject = bankObjs.stream()
                     .map(obj -> {
-                        BankLocation closestBank = accessibleBanks.stream()
+                        BankLocation closestBank = allBanks.stream()
                                 .min(Comparator.comparingInt(b -> Rs2WorldPoint.quickDistance(obj.getWorldLocation(), b.getWorldPoint())))
                                 .orElse(null);
 
@@ -1545,14 +1564,28 @@ public class Rs2Bank {
                     })
                     .filter(e -> e.getKey() != null && e.getValue() <= maxObjectSearchRadius)
                     .min(Comparator.comparingInt(Map.Entry::getValue))
-                    .map(Map.Entry::getKey);
-
-            if (byObject.isPresent()) {
+                    .map(Map.Entry::getKey);                        
+            if (byObject.isPresent() && byObject.get().hasRequirements()) {                
                 Microbot.log("Found nearest bank (object): " + byObject.get());
-                return byObject.get();
+                BankLocation returnBankLocation = byObject.get();
+                List<WorldPoint> path = new ArrayList<>(Collections.singletonList(byObject.get().getWorldPoint()));
+                return new AbstractMap.SimpleEntry<>(path, returnBankLocation);
             }
         }
 
+        // Measure accessible banks filtering performance, expensive operation takes up to 2500 ms
+        long accessibleBanksStart = System.nanoTime();
+        Set<BankLocation> accessibleBanks = allBanks.stream()
+                .filter(BankLocation::hasRequirements)
+                .collect(Collectors.toSet());
+        long accessibleBanksTime = System.nanoTime() - accessibleBanksStart;
+        log.info("Accessible banks filtering performance: {}ms, Found {} accessible banks out of {} total", 
+                 accessibleBanksTime / 1_000_000.0, accessibleBanks.size(), BankLocation.values().length);
+
+        if (accessibleBanks.isEmpty()) {
+            Microbot.log("No accessible banks found");
+            return null;
+        }
         Set<WorldPoint> targets = accessibleBanks.stream()
                 .map(BankLocation::getWorldPoint)
                 .collect(Collectors.toSet());
@@ -1560,17 +1593,21 @@ public class Rs2Bank {
         if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
             ShortestPathPlugin.getPathfinderConfig().refresh();
         }
-
+        
+        List<WorldPoint> targetsList = targets.stream()
+                .collect(Collectors.toList());
+        
+        long originalStart = System.nanoTime();
         Pathfinder pf = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), worldPoint, targets);
-        pf.run();
-
+        pf.run();        
         List<WorldPoint> path = pf.getPath();
+        long originalTime = System.nanoTime() - originalStart;                        
+        
         if (path.isEmpty()) {
-            Microbot.log("Unable to find path to any bank");
+            Microbot.log("Unable to find path to nearest bank");
             return null;
         }
-
-		// Create a WorldArea around the final tile to be more generous
+        // Create a WorldArea around the final tile to be more generous
         WorldPoint nearestTile = path.get(path.size() - 1);
 		WorldArea nearestTileArea = new WorldArea(nearestTile, 2, 2);
         Optional<BankLocation> byPath = accessibleBanks.stream()
@@ -1578,15 +1615,57 @@ public class Rs2Bank {
 					WorldArea accessibleBankArea = new WorldArea(b.getWorldPoint(), 2, 2);
 					return accessibleBankArea.intersectsWith2D(nearestTileArea);
 				})
-                .findFirst();
-
+                .findFirst();      
+        BankLocation returnBankLocation = null;
         if (byPath.isPresent()) {
             Microbot.log("Found nearest bank (shortest path): " + byPath.get());
-            return byPath.get();
+            returnBankLocation = byPath.get();
+        } else {
+            Microbot.log("Nearest bank point " + nearestTile + " did not match any BankLocation");
         }
+        return new AbstractMap.SimpleEntry<>(path, returnBankLocation);
+    }
 
-        Microbot.log("Nearest bank point " + nearestTile + " did not match any BankLocation");
-        return null;
+    /**
+     * Finds the path to the nearest accessible bank location from the given world point.
+     * Uses a default search radius of 50 tiles for bank object scanning.
+     *
+     * @param worldPoint the starting location for pathfinding
+     * @return the complete path to the nearest bank as List<WorldPoint>, or empty list if no accessible bank could be reached
+     */
+    public static List<WorldPoint> getPathToNearestBank(WorldPoint worldPoint) {
+        return getPathToNearestBank(worldPoint, 50);
+    }
+
+    /**
+     * Finds the path to the nearest accessible bank location from the player's current location.
+     * Uses a default search radius of 50 tiles for bank object scanning.
+     *
+     * @return the complete path to the nearest bank as List<WorldPoint>, or empty list if no accessible bank could be reached
+     */
+    public static List<WorldPoint> getPathToNearestBank() {
+        return getPathToNearestBank(Rs2Player.getWorldLocation(), 50);
+    }
+
+    /**
+     * Finds the path to the nearest accessible bank location from the given world point.
+     * <p>
+     * Uses the same logic as getNearestBank but returns the complete path instead of the BankLocation.
+     * First, searches for bank booth {@link TileObject}s within
+     * {@code maxObjectSearchRadius} tiles of the player and picks the closest
+     * one whose underlying {@link BankLocation#hasRequirements()} passes. If no booth
+     * is found or none are within range, falls back to running a full pathfinding
+     * search (including configured transports) to all accessible bank coordinates,
+     * then returns the complete path to the nearest bank.
+     * </p>
+     *
+     * @param worldPoint            the starting location for pathfinding
+     * @param maxObjectSearchRadius the maximum radius (in tiles) to scan for bank booth objects
+     * @return the complete path to the nearest bank as List<WorldPoint>, or empty list if no accessible bank could be reached
+     */
+    public static List<WorldPoint> getPathToNearestBank(WorldPoint worldPoint, int maxObjectSearchRadius) {
+        AbstractMap.SimpleEntry<List<WorldPoint>, BankLocation> result = getPathAndBankToNearestBank(worldPoint, maxObjectSearchRadius);
+        return result != null ? result.getKey() : new ArrayList<>();
     }
 
     /**
@@ -1704,10 +1783,130 @@ public class Rs2Bank {
      *
      * @param e The event containing the latest bank items.
      */
-    public static void storeBankItemsInMemory(ItemContainerChanged e) {
+    public static void updateLocalBank(ItemContainerChanged e) {
         List<Rs2ItemModel> list = updateItemContainer(InventoryID.BANK.getId(), e);
-        if (list != null)
-            bankItems = list;
+        if (list != null) {
+            // Update the centralized bank data
+            rs2BankData.set(list);
+        }
+    }
+
+     
+    /**
+     * Updates the cached bank data with the latest bank items and saves to config.
+     * 
+     * @param items The current bank items
+     */
+    private static void updateBankCache(List<Rs2ItemModel> items) {
+        if (items != null) {
+            rs2BankData.set(items);
+            saveBankToConfig();
+        }
+    }
+
+    /**
+     * Loads the initial bank state from config. Should be called when a player logs in.
+     * Similar to QuestBankManager.loadInitialStateFromConfig().
+     */
+    public static void loadInitialBankStateFromConfig() {
+        if (!loggedInStateKnown) {
+            Player localPlayer = Microbot.getClient().getLocalPlayer();
+            if (localPlayer != null && localPlayer.getName() != null) {
+                loggedInStateKnown = true;
+                loadState();
+            }
+        }
+    }
+
+    /**
+     * Sets the initial state as unknown. Called when logging out or changing profiles.
+     */
+    public static void setUnknownInitialBankState() {
+        loggedInStateKnown = false;
+    }
+
+    /**
+     * Loads bank state from config, handling profile changes.
+     * Similar to QuestBank.loadState().
+     */
+    public static void loadState() {
+        // Only re-load from config if loading from a new profile
+        if (!RuneScapeProfileType.getCurrent(Microbot.getClient()).equals(worldType)) {
+            // If we've hopped between profiles, save current state first
+            if (rsProfileKey != null) {
+                saveBankToConfig();
+            }
+            loadBankFromConfig();
+        }
+    }
+
+    /**
+     * Loads bank data from RuneLite config system.
+     * Similar to QuestBank.loadBankFromConfig().
+     */
+    private static void loadBankFromConfig() {
+        rsProfileKey = Microbot.getConfigManager().getRSProfileKey();
+        worldType = RuneScapeProfileType.getCurrent(Microbot.getClient());
+
+        String json = Microbot.getConfigManager().getRSProfileConfiguration(CONFIG_GROUP, BANK_KEY);
+        try {
+            if (json != null && !json.isEmpty()) {
+                int[] data = gson.fromJson(json, int[].class);
+                rs2BankData.setIdQuantityAndSlot(data);
+                
+                // Load cached items if no live bank data
+                if (rs2BankData.getBankItems().isEmpty()) {
+                    // Cache is already loaded via setIdQuantityAndSlot
+                    log.info("Loaded {} cached bank items from config", rs2BankData.size());
+                }
+            } else {
+                rs2BankData.setEmpty();
+                log.debug("No cached bank data found in config");
+            }
+        } catch (JsonSyntaxException err) {
+            log.warn("Failed to parse cached bank data from config, resetting cache", err);
+            rs2BankData.setEmpty();
+            saveBankToConfig();
+        }
+    }
+
+    /**
+     * Saves the current bank state to RuneLite config system.
+     * Similar to QuestBank.saveBankToConfig().
+     */
+    public static void saveBankToConfig() {
+        if (rsProfileKey == null || Microbot.getConfigManager() == null) {
+            return;
+        }
+
+        try {
+            String json = gson.toJson(rs2BankData.getIdQuantityAndSlot());
+            Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, rsProfileKey, BANK_KEY, json);
+            log.debug("Saved {} bank items to config cache", rs2BankData.size());
+        } catch (Exception e) {
+            log.error("Failed to save bank data to config", e);
+        }
+    }
+
+    /**
+     * Clears the bank cache state. Called when logging out.
+     */
+    public static void emptyBankState() {
+        rsProfileKey = null;
+        worldType = null;
+        rs2BankData.setEmpty();
+        loggedInStateKnown = false;
+        log.debug("Emptied bank state and cache");
+    }
+   
+
+    /**
+     * Checks if we have cached bank data available.
+     * 
+     * @return true if cached bank data is available, false otherwise
+     */
+    public static boolean hasCachedBankData() {
+        return !rs2BankData.isEmpty();
     }
 
     /**
@@ -2055,7 +2254,7 @@ public class Rs2Bank {
      * @return the Rs2Item matching the item name, or null if not found.
      */
     public static Rs2ItemModel getBankItem(String itemName, boolean exact) {
-        return bankItems.stream()
+        return rs2BankData.getBankItems().stream()
                 .filter(item -> exact
                         ? item.getName().equalsIgnoreCase(itemName)
                         : item.getName().toLowerCase().contains(itemName.toLowerCase()))
@@ -2442,5 +2641,5 @@ public class Rs2Bank {
 
     private static boolean hasKeyboardBankPinEnabled() {
         return Microbot.getConfigManager().getConfiguration("bank","bankPinKeyboard").equalsIgnoreCase("true");
-    }
+    }    
 }
