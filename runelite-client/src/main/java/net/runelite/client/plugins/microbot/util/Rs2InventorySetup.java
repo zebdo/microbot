@@ -6,6 +6,8 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -24,8 +26,6 @@ import java.util.stream.IntStream;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
-import static net.runelite.client.plugins.microbot.util.bank.Rs2Bank.*;
-import static net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory.moveItemToSlot;
 
 /**
  * Utility class for managing inventory setups in the Microbot plugin.
@@ -99,8 +99,8 @@ public class Rs2InventorySetup {
 			return false;
 		}
 
-        if (!findLockedSlots().isEmpty()) {
-            toggleAllLocks();
+        if (!Rs2Bank.findLockedSlots().isEmpty()) {
+            Rs2Bank.toggleAllLocks();
             return false;
         }
 
@@ -139,52 +139,14 @@ public class Rs2InventorySetup {
 			withdrawItem(item, withdrawQuantity);
 		}
 
-        for (InventorySetupsItem setupItem : setupItems) {
-            if (setupItem.getId() == -1 || setupItem.getSlot() < 0) continue;
-
-            Rs2ItemModel invItem = Rs2Inventory.items().stream()
-                    .filter(i -> i.getId() == setupItem.getId())
-                    .findFirst()
-                    .orElse(null);
-
-            if (invItem == null) continue;
-            if (invItem.getSlot() == setupItem.getSlot()) continue;
-
-            moveItemToSlot(invItem, setupItem.getSlot());
-            sleep(300, 600);
-        }
-
-        for (InventorySetupsItem setupItem : setupItems) {
-            int id = setupItem.getId();
-            int desired = setupItem.getSlot();
-            if (id < 0 || desired < 0) {
-                continue;
-            }
-            Rs2ItemModel invItem = Rs2Inventory.items().stream()
-                    .filter(i -> i.getId() == id && i.getSlot() != desired)
-                    .findFirst()
-                    .orElse(null);
-            if (invItem == null) {
-                continue;
-            }
-            Rs2ItemModel occupant = Rs2Inventory.getItemInSlot(desired);
-            if (occupant != null && occupant.getId() != id) {
-                boolean mutual = setupItems.stream()
-                        .anyMatch(si -> si.getId() == occupant.getId() && si.getSlot() == invItem.getSlot());
-                if (mutual) {
-                    moveItemToSlot(invItem, desired);
-                    sleep(300, 600);
-                    log.debug("Swapped " + setupItem.getName());
-                } else {
-                    log.debug("Desired slot occupied, skipping for now: " + setupItem.getName());
-                }
-            } else {
-                moveItemToSlot(invItem, desired);
-                sleep(300, 600);
-                log.debug("Moved " + setupItem.getName() + " to slot " + desired);
-            }
-            break;
-        }
+//		if (Rs2AntibanSettings.naturalMouse) {
+//			List<InventorySetupsItem> itemsWithSlots = setupItems.stream()
+//				.filter(item -> item.getId() > 0 && item.getSlot() >= 0)
+//				.collect(Collectors.toList());
+//
+//
+//			sortInventoryItems(itemsWithSlots);
+//		}
 
         if (inventorySetup.getRune_pouch() != null) {
 			Map<Runes, InventorySetupsItem> inventorySetupRunes = inventorySetup.getRune_pouch().stream()
@@ -566,6 +528,6 @@ public class Rs2InventorySetup {
         if (lockedSlots.isEmpty()) {
             return false;
         }
-        return lockAllBySlot(lockedSlots.stream().mapToInt(Integer::intValue).toArray());
+        return Rs2Bank.lockAllBySlot(lockedSlots.stream().mapToInt(Integer::intValue).toArray());
     }
 }
