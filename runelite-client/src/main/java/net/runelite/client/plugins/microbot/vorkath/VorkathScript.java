@@ -112,7 +112,7 @@ public class VorkathScript extends Script {
 
     public boolean run(VorkathConfig config) {
         Microbot.enableAutoRunOn = false;
-        Microbot.pauseAllScripts = false;
+		Microbot.pauseAllScripts.compareAndSet(true, false);
         init = true;
         state = State.BANKING;
         hasEquipment = false;

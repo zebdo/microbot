@@ -48,10 +48,10 @@ public class Rs2Magic {
      * Check if all the settings are correct before we start interacting with spellbook
      */
     public static boolean oneTimeSpellBookCheck() {
-        if (Rs2Player.isInTutorialIsland())
+        if (!Rs2Player.hasCompletedTutorialIsland())
             return true;
         // We add a one time check to avoid performanec issues. Checking varbits is expensive
-        if (firstInteractionWithSpellBook && !Rs2SpellBookSettings.setAllFiltersOn()) {
+        if (firstInteractionWithSpellBook && !Rs2SpellBookSettings.configureSpellbookSettings()) {
             return false;
         }
         firstInteractionWithSpellBook = false;
@@ -413,6 +413,8 @@ public class Rs2Magic {
     public static boolean isShadowVeilActive() {
         return Microbot.getVarbitValue(SHADOW_VEIL) == 1;
     }
+
+	@Deprecated(since = "1.9.2", forRemoval = true)
     public static boolean isThrallActive() {
         return (Microbot.getVarbitValue(RESURRECT_THRALL) == 1||Microbot.getVarbitValue(RESURRECT_THRALL_COOLDOWN) == 1);
     }
@@ -461,6 +463,83 @@ public class Rs2Magic {
     }
     
     /**
+     * Calculates the runes required to cast a specified Rs2Spells spell a certain number of times,
+     * taking into account equipped staves, tomes, inventory, and optionally, rune pouch runes.
+     *
+     * This method automatically determines equipped equipment and calculates the number of runes 
+     * still needed to meet the casting requirement by checking available runes in the inventory 
+     * and rune pouch and accounting for any runes provided by equipped staves and tomes.
+     *
+     * @param spell The spell to cast, represented as an {@link Rs2Spells} enum
+     * @param casts The number of times the spell should be cast. Must be greater than 0
+     * @param checkRunePouch A boolean indicating whether to include runes from the rune pouch in the calculation
+     * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune, 
+     *         and the value is an {@code Integer} representing the quantity of that rune still needed.
+     *         If all required runes are available, the map will be empty
+     */
+    public static Map<Runes, Integer> getRequiredRunes(Rs2Spells spell, int casts, boolean checkRunePouch) {
+        // Calculate total required runes for the desired number of casts
+        Map<Runes, Integer> requiredRunes = new HashMap<>();
+        spell.getRequiredRunes().forEach((rune, amount) -> requiredRunes.put(rune, amount * casts));
+        Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
+        if (equippedWeapon != null) {
+            Rs2Staff equippedStaff = Rs2Magic.getRs2Staff(equippedWeapon.getId());
+            if (equippedStaff != Rs2Staff.NONE) {
+                equippedStaff.getRunes().forEach(requiredRunes::remove);
+            }
+        }
+
+        // Remove runes provided by equipped tomes
+        Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
+        if (equippedShield != null) {
+            Rs2Tome equippedTome = Rs2Magic.getRs2Tome(equippedShield.getId());
+            if (equippedTome != Rs2Tome.NONE) {
+                equippedTome.getRunes().forEach(requiredRunes::remove);
+            }
+        }
+        return getRequiredRunes(requiredRunes, checkRunePouch);
+
+    }
+
+    /**
+     * Calculates the runes required to cast a specified combat spell a certain number of times,
+     * taking into account equipped staves, tomes, inventory, and optionally, rune pouch runes.
+     *
+     * This method automatically determines equipped equipment and calculates the number of runes 
+     * still needed to meet the casting requirement by checking available runes in the inventory 
+     * and rune pouch and accounting for any runes provided by equipped staves and tomes.
+     *
+     * @param spell The combat spell to cast, represented as an {@link Rs2CombatSpells} enum
+     * @param casts The number of times the spell should be cast. Must be greater than 0
+     * @param checkRunePouch A boolean indicating whether to include runes from the rune pouch in the calculation
+     * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune, 
+     *         and the value is an {@code Integer} representing the quantity of that rune still needed.
+     *         If all required runes are available, the map will be empty
+     */
+    public static Map<Runes, Integer> getRequiredRunes(Rs2CombatSpells spell, int casts, boolean checkRunePouch) {
+        // Calculate total required runes for the desired number of casts
+        Map<Runes, Integer> requiredRunes = new HashMap<>();
+        spell.getRequiredRunes().forEach((rune, amount) -> requiredRunes.put(rune, amount * casts));
+        Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
+        if (equippedWeapon != null) {
+            Rs2Staff equippedStaff = Rs2Magic.getRs2Staff(equippedWeapon.getId());
+            if (equippedStaff != Rs2Staff.NONE) {
+                equippedStaff.getRunes().forEach(requiredRunes::remove);
+            }
+        }
+
+        // Remove runes provided by equipped tomes
+        Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
+        if (equippedShield != null) {
+            Rs2Tome equippedTome = Rs2Magic.getRs2Tome(equippedShield.getId());
+            if (equippedTome != Rs2Tome.NONE) {
+                equippedTome.getRunes().forEach(requiredRunes::remove);
+            }
+        }
+        return getRequiredRunes(requiredRunes, checkRunePouch);
+
+    }
+    /**
      * Calculates the runes required to cast a specified spell a certain number of times,
      * taking into account equipped staves, inventory, and optionally, rune pouch runes.
      *
@@ -493,7 +572,24 @@ public class Rs2Magic {
                 requiredRunes.remove(providedRune);
             }
         }
+        return getRequiredRunes(requiredRunes, checkRunePouch);
+    }
 
+    /**
+     * Private helper method that calculates the remaining runes needed based on required runes,
+     * available inventory runes, and optionally rune pouch runes.
+     *
+     * This method compares the required runes against available runes from inventory and
+     * rune pouch to determine what additional runes are still needed.
+     *
+     * @param requiredRunes A map of required runes with their quantities
+     * @param checkRunePouch A boolean indicating whether to include runes from the rune pouch
+     * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune, 
+     *         and the value is an {@code Integer} representing the quantity of that rune still needed.
+     *         Runes that are fully satisfied are removed from the map
+     */
+    private static Map<Runes, Integer> getRequiredRunes(Map<Runes, Integer> requiredRunes , boolean checkRunePouch) {
+      
         // Gather available runes from inventory
         Map<Runes, Integer> availableRunes = new HashMap<>();
         for (Rs2ItemModel item : Rs2Inventory.items()) {
@@ -862,4 +958,59 @@ public class Rs2Magic {
             ItemID.MUD_RUNE,
             ItemID.WRATH_RUNE,
             ItemID.SUNFIRE_RUNE);
+
+    /**
+     * Calculates the available runes for casting a specified spell, taking into account
+     * equipped staves, tomes, inventory runes, and optionally rune pouch runes.
+     *
+     * This method determines what runes are currently available to the player for casting
+     * a specific spell, excluding runes that are provided by equipped equipment.
+     *
+     * @param spell The spell to check available runes for, represented as an {@link Rs2Spells} enum
+     * @param hasRunePouch A boolean indicating whether to include runes from the rune pouch
+     * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune, 
+     *         and the value is an {@code Integer} representing the quantity of that rune available.
+     *         Only includes runes that are not provided by equipped equipment
+     */
+    Map<Runes, Integer> getAvailableRunes(Rs2Spells spell, boolean hasRunePouch) {        
+        Map<Runes, Integer> requiredRunes = new HashMap<>(spell.getRequiredRunes());
+
+        // Check if we have a staff equipped that provides the runes
+        Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
+        if (equippedWeapon != null) {
+            Rs2Staff equippedStaff = getRs2Staff(equippedWeapon.getId());
+            if (equippedStaff != Rs2Staff.NONE) {
+                equippedStaff.getRunes().forEach(requiredRunes::remove);
+            }
+        }
+
+        // Remove runes provided by equipped tomes
+        Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
+        if (equippedShield != null) {
+            Rs2Tome equippedTome = getRs2Tome(equippedShield.getId());
+            if (equippedTome != Rs2Tome.NONE) {
+                equippedTome.getRunes().forEach(requiredRunes::remove);
+            }
+        }
+
+        // Collect available runes from inventory
+        Map<Runes, Integer> availableRunes = new HashMap<>();
+        Rs2Inventory.items().forEach(item -> {
+            Arrays.stream(Runes.values())
+                    .filter(rune -> rune.getItemId() == item.getId())
+                    .findFirst()
+                    .ifPresent(rune -> availableRunes.merge(rune, item.getQuantity(), Integer::sum));
+        });
+
+        // Collect runes from the rune pouch if we have it in inventory
+        if (hasRunePouch) {
+            Rs2RunePouch.getRunes().forEach((runeId, quantity) -> {
+                Arrays.stream(Runes.values())
+                        .filter(r -> r.getItemId() == runeId)
+                        .findFirst()
+                        .ifPresent(rune -> availableRunes.merge(rune, quantity, Integer::sum));
+            });
+        }
+        return availableRunes;
+    }
 }

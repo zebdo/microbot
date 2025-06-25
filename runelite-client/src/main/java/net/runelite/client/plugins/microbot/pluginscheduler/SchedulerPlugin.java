@@ -10,7 +10,6 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.temporal.ChronoUnit;
@@ -2075,7 +2074,7 @@ public class SchedulerPlugin extends Plugin {
             }
             
             if (isAutoLoginEnabled() ) {                
-                if (Microbot.pauseAllScripts==true) {
+                if (Microbot.pauseAllScripts.get()) {
                     log.info("AutoLogin is enabled but paused, stopping AutoLogin");
                                         
                 }

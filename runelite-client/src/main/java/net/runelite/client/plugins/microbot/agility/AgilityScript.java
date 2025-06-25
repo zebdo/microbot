@@ -31,7 +31,7 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 public class AgilityScript extends Script
 {
 
-	public static String version = "1.2.0";
+	public static String version = "1.2.1";
 	final MicroAgilityPlugin plugin;
 	final MicroAgilityConfig config;
 
@@ -42,25 +42,6 @@ public class AgilityScript extends Script
 	{
 		this.plugin = plugin;
 		this.config = config;
-	}
-
-	public void handleAlch()
-	{
-		scheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
-			if (!config.alchemy())
-			{
-				return;
-			}
-			if (plugin.getCourseHandler().getCurrentObstacleIndex() > 0)
-			{
-				if (Rs2Player.isMoving() || Rs2Player.isAnimating())
-				{
-					return;
-				}
-			}
-
-			getAlchItem().ifPresent(item -> Rs2Magic.alch(item, 50, 75));
-		}, 0, 300, TimeUnit.MILLISECONDS);
 	}
 
 	@Override
@@ -126,6 +107,8 @@ public class AgilityScript extends Script
 				{
 					return;
 				}
+
+				getAlchItem().ifPresent(item -> Rs2Magic.alch(item, 50, 75));
 
 				if (plugin.getCourseHandler() instanceof PrifddinasCourse)
 				{

@@ -50,7 +50,7 @@ public class Rs2InventorySetup {
         _mainScheduler = mainScheduler;
         if (inventorySetup == null) {
             Microbot.showMessage("Inventory load with name " + name + " not found!", 10);
-            Microbot.pauseAllScripts = true;
+			Microbot.pauseAllScripts.compareAndSet(false, true);
         }
     }
 
@@ -66,7 +66,7 @@ public class Rs2InventorySetup {
         _mainScheduler = mainScheduler;
         if (inventorySetup == null) {
             Microbot.showMessage("Inventory load error!", 10);
-            Microbot.pauseAllScripts = true;
+			Microbot.pauseAllScripts.compareAndSet(false, true);
         }
     }
     /**
@@ -131,7 +131,7 @@ public class Rs2InventorySetup {
 			boolean exact = !item.isFuzzy();
 
 			if (!Rs2Bank.hasBankItem(lowerCaseName, withdrawQuantity, exact)) {
-				Microbot.pauseAllScripts = true;
+				Microbot.pauseAllScripts.compareAndSet(false, true);
 				Microbot.log("Bank is missing the following item: " + item.getName());
 				return false;
 			}

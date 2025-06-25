@@ -59,7 +59,7 @@ public class AstralRunesScript extends Script {
     }
 
     public boolean run(AstralRunesConfig config) {
-        Microbot.pauseAllScripts = false;
+		Microbot.pauseAllScripts.compareAndSet(true, false);;
         Microbot.enableAutoRunOn = false;
         Rs2Antiban.resetAntibanSettings();
         Rs2AntibanSettings.naturalMouse = true;
@@ -67,7 +67,7 @@ public class AstralRunesScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
-                if (Microbot.pauseAllScripts) return;
+                if (!super.run()) return;
                 if (Rs2AntibanSettings.actionCooldownActive) return;
 
                 // Mitigate how often we check for runes since it switches to magic tab

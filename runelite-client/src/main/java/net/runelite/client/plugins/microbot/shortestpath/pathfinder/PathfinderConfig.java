@@ -492,7 +492,10 @@ public class PathfinderConfig {
         // If the transport has varplayer requirements & the varplayers do not match
         if (!varplayerChecks(transport)) return false;
         // If you don't have the required currency & amount for transport
-        if (transport.getCurrencyAmount() > 0 && !Rs2Inventory.hasItemAmount(transport.getCurrencyName(), transport.getCurrencyAmount())) return false;
+        if (transport.getCurrencyAmount() > 0 
+            && !Rs2Inventory.hasItemAmount(transport.getCurrencyName(), transport.getCurrencyAmount())
+            && !(ShortestPathPlugin.getPathfinderConfig().useBankItems && Rs2Bank.count(transport.getCurrencyName()) >= transport.getCurrencyAmount())
+            ) return false;
         // Check if Teleports are globally disabled
         if (TransportType.isTeleport(transport.getType()) && Rs2Walker.disableTeleports) return false;
         // Check Teleport Item Settings
