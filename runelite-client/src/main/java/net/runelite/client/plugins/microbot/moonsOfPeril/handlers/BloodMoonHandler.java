@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 import net.runelite.api.GameObject;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.GameObjectSpawned;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -12,6 +13,7 @@ import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
+import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -45,6 +47,15 @@ public class BloodMoonHandler implements BaseHandler {
     private String weaponMain;
     private String shield;
     private static final WorldPoint afterRainTile = Locations.BLOOD_ATTACK_6.getWorldPoint();
+
+    // Fields used for Blood Jaguar Sequence and event subcribe //
+    private WorldPoint attackTile;
+    private WorldPoint evadeTile;
+    private Rs2NpcModel targetJaguar;
+    private int     poolTick        = -1;   //
+    private boolean waitingForEvade = false;
+    private int     evadeCount      = 0;
+    private boolean bloodJaguarActive = false;
 
     public BloodMoonHandler(moonsOfPerilConfig cfg) {
         this.weaponMain = cfg.bloodWeaponMain();
@@ -144,8 +155,8 @@ public class BloodMoonHandler implements BaseHandler {
             Microbot.log("Unknown sigil tile: " + sigilLocation);
             return;
         }
-        WorldPoint attackTile = rot.attack;
-        WorldPoint evadeTile  = rot.evade;
+        this.attackTile = rot.attack;
+        this.evadeTile  = rot.evade;
         WorldPoint spawnTile  = rot.spawn;
 
         Microbot.log("Resolved rotation. attackTile=" + attackTile + "  evadeTile=" + evadeTile + "  spawnTile=" + spawnTile);
@@ -158,7 +169,6 @@ public class BloodMoonHandler implements BaseHandler {
         /* 2 ─ move onto Attack tile ---------------------------------------- */
         Microbot.log("Moving to attackTile " + attackTile);
         Rs2Walker.walkFastCanvas(attackTile, true);
-        sleep(600);
         if (!Rs2Player.getWorldLocation().equals(attackTile)) {
             Rs2Walker.walkFastCanvas(attackTile, true);
             sleepUntil(() -> Rs2Player.getWorldLocation().equals(attackTile));
@@ -176,15 +186,70 @@ public class BloodMoonHandler implements BaseHandler {
                 .findFirst().orElse(null);
         if (targetJaguar == null) { Microbot.log("jaguar not on expected spawn"); return; }
 
-        /* 4 ─ blood-pool-tick watcher (3 ticks idle) ----------------------------- */
+        /* 4 ─ blood-pool-tick watcher (3rd tick evade, 5th tick attack) ----------------------------- */
         final long TIMEOUT_MS = 30_000;
+        final long TIMEOUT_SHORT = 4_000;
         final int  POOL_ID       = ObjectID.PMOON_BOSS_BLOOD_POOL;
+        GameObject pool = null;
         int        poolTick      = -1;     // −1 = pool not spawned yet
         int        evadeCount    = 0;
+        waitingForEvade = false;
+        bloodJaguarActive = true;
         boolean    steppedThisCycle = false;
+        Microbot.log("Blood-Jaguar sequence primed – waiting for first pool.");
+
+        /* Get the exact tick the blood pool spawns ----------------------------- */
+        while (pool == null && System.currentTimeMillis() - startMs < TIMEOUT_SHORT) {
+            sleep(50); // tight polling to sync up exact timing
+            pool = Rs2GameObject.getGameObject(g -> g.getId() == POOL_ID, evadeTile,0);
+            if (pool != null) {
+                poolTick = 1;
+                Microbot.log("Pool spawned – starting pool-tick counter");
+            }
+        }
 
         while (isSpecialAttack1Sequence() && evadeCount <= 5 && System.currentTimeMillis() - startMs < TIMEOUT_MS) {
-            /*  detect first tick when the blood pool exists  */
+            /* Get Jaguar attack animation as a safety valve ----------------------------- */
+
+
+            /* Get the exact tick the blood pool spawns ----------------------------- */
+            while (poolTick == -1 && System.currentTimeMillis() - startMs < TIMEOUT_SHORT) {
+                pool = Rs2GameObject.getGameObject(g -> g.getId() == POOL_ID, evadeTile,0);
+                if (pool != null) {
+                    poolTick = 1;
+                    Microbot.log("Pool spawned – starting pool-tick counter");
+                }
+            }
+            Microbot.log("Current tick counter: " + poolTick);
+
+            /* step back exactly on the 3rd tick after pool spawn */
+            if (poolTick == 2) {
+                Microbot.log("poolTick " + poolTick + ": EVADE to " + evadeTile);
+                Rs2Walker.walkFastCanvas(evadeTile, true);
+                evadeCount++;
+                steppedThisCycle = true;
+                Microbot.log("Evade count = " + evadeCount);
+            }
+
+            /* attack the jaguar on exactly the 4th tick after pool spawn */
+            else if (poolTick == 4) {
+                Microbot.log("poolTick " + poolTick + ": ATTACK jaguar");
+                Rs2Npc.attack(targetJaguar);
+            }
+
+            /* Click on ground on 5th tick and reset the cycle */
+            else if (poolTick == 5) {
+                Microbot.log("poolTick " + poolTick + ": STOP attacking jaguar");
+                Rs2Walker.walkFastCanvas(attackTile, true);
+                steppedThisCycle = false;
+                poolTick = -2;
+            }
+            poolTick++; // advance each 600 ms
+            sleep(600);   // 1-tick cadence
+        }
+
+/*        while (isSpecialAttack1Sequence() && evadeCount <= 5 && System.currentTimeMillis() - startMs < TIMEOUT_MS) {
+            *//*  detect first tick when the blood pool exists  *//*
             Microbot.log("Current tick counter: " + poolTick);
             if (poolTick == -1) {
                 GameObject pool = Rs2GameObject.getGameObject(g -> g.getId() == POOL_ID);
@@ -196,30 +261,30 @@ public class BloodMoonHandler implements BaseHandler {
                 poolTick++; // advance each 600 ms
             }
 
-            /* step back exactly on the 3rd tick after pool spawn */
+            *//* step back exactly on the 3rd tick after pool spawn *//*
             if (poolTick == 2 && !steppedThisCycle) {
                 Microbot.log("poolTick 1 – EVADE to " + evadeTile);
                 Rs2Walker.walkFastCanvas(evadeTile, true);
-                sleep(900);
-/*                sleepUntil(() -> (Rs2Player.getWorldLocation()).equals(evadeTile));*/
+                sleep(1200);
+                *//*                sleepUntil(() -> (Rs2Player.getWorldLocation()).equals(evadeTile));*//*
                 evadeCount++;
                 Microbot.log("Evade count = " + evadeCount);
                 Microbot.log("ATTACK jaguar");
                 Rs2Npc.attack(targetJaguar);
                 sleep(600);
-/*                sleepUntil(Rs2Combat::inCombat);*/
+                *//*                sleepUntil(Rs2Combat::inCombat);*//*
                 Microbot.log("Clicking on ground to stop attacking");
                 Rs2Walker.walkFastCanvas(attackTile, true);
                 steppedThisCycle = true; // avoid duplicates
             }
 
-            /* reset for next cycle once pool vanishes */
+            *//* reset for next cycle once pool vanishes *//*
             if (steppedThisCycle) {
                 poolTick = -1;
                 steppedThisCycle = false;
             }
             sleep(600);   // 1-tick cadence
-        }
+        }*/
 
 
 /*        while (isSpecialAttack1Sequence() && System.currentTimeMillis() - startMs < TIMEOUT_MS) {
@@ -237,6 +302,19 @@ public class BloodMoonHandler implements BaseHandler {
             }
             sleep(600); // sleep 1 game tick
         }*/
+    }
+
+    @Subscribe
+    public void onGameObjectSpawned(GameObjectSpawned e)
+    {
+        GameObject obj = e.getGameObject();
+        if (obj.getId() == ObjectID.PMOON_BOSS_BLOOD_POOL &&
+                obj.getWorldLocation().equals(evadeTile))
+        {
+            poolTick = 1;
+            waitingForEvade = true;
+            Microbot.log("Blood pool spawned → poolTick set to 1");
+        }
     }
 
 
