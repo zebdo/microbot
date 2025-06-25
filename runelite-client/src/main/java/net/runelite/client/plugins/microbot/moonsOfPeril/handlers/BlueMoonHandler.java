@@ -85,7 +85,7 @@ public class BlueMoonHandler implements BaseHandler {
 
     /* --------  phase gate --------------------------------------------------- */
     public boolean isSpecialAttack1Sequence() {
-        return (Rs2Npc.getNpc(NpcID.PMOON_BOSS_WINTER_STORM) != null && Rs2Npc.getNpc(sigilNpcID) == null);
+        return (Rs2Npc.getNpc(NpcID.PMOON_BOSS_WINTER_STORM) != null && Rs2Widget.isWidgetVisible(bossHealthBarWidgetID) && Rs2Npc.getNpc(sigilNpcID) == null);
     }
 
     /* --------  executor ----------------------------------------------------- */
@@ -129,11 +129,11 @@ public class BlueMoonHandler implements BaseHandler {
                 () -> "[" + System.currentTimeMillis() + "] ";
 
         Microbot.log(ts.get() + "specialAttack2Sequence() START");
+        Rs2Walker.walkFastCanvas(SAFE_SPOT, true);
 
         /* ---------- 1. Identify the animated icicle ----------------------- */
         List<Rs2NpcModel> matches = Collections.emptyList();
         long pollStart = System.currentTimeMillis();
-        Microbot.log(ts.get() + "Polling for animated icicle… (timeout " + POLL_TIMEOUT_MS + " ms)");
 
         while (isSpecialAttack2Sequence() && matches.isEmpty() &&
                 System.currentTimeMillis() - pollStart < POLL_TIMEOUT_MS)
@@ -142,8 +142,6 @@ public class BlueMoonHandler implements BaseHandler {
                             n.getId() == ICICLE_NPC_ID &&
                                     n.getAnimation() == ICICLE_ANIM_ID)
                     .collect(Collectors.toList());
-
-            Microbot.log(ts.get() + "Polling tick --> matches=" + matches.size());
             if (matches.isEmpty()) sleep(300);
         }
 

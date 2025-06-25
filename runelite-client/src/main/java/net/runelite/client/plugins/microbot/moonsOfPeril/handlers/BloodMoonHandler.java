@@ -89,14 +89,14 @@ public class BloodMoonHandler implements BaseHandler {
      */
     public boolean isSpecialAttack1Sequence() {
         Rs2NpcModel jaguar = Rs2Npc.getNpc(NpcID.PMOON_BOSS_JAGUAR);
-        return jaguar != null;
+        return jaguar != null && Rs2Widget.isWidgetVisible(bossHealthBarWidgetID);
     }
 
     /**
      * Returns True if the Moonfire gameobject is found and the boss is not attackable.
      */
     public boolean isSpecialAttack2Sequence() {
-        return Rs2GameObject.exists(ObjectID.PMOON_BOSS_BLOOD_FIRE) && Rs2Npc.getNpc(sigilNpcID) == null;
+        return Rs2GameObject.exists(ObjectID.PMOON_BOSS_BLOOD_FIRE) && Rs2Npc.getNpc(sigilNpcID) == null && Rs2Widget.isWidgetVisible(bossHealthBarWidgetID);
     }
 
 
@@ -200,7 +200,7 @@ public class BloodMoonHandler implements BaseHandler {
             if (poolTick == 2 && !steppedThisCycle) {
                 Microbot.log("poolTick 1 – EVADE to " + evadeTile);
                 Rs2Walker.walkFastCanvas(evadeTile, true);
-                sleep(600);
+                sleep(900);
 /*                sleepUntil(() -> (Rs2Player.getWorldLocation()).equals(evadeTile));*/
                 evadeCount++;
                 Microbot.log("Evade count = " + evadeCount);

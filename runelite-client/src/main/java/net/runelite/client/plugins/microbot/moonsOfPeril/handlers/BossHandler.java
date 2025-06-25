@@ -75,8 +75,7 @@ public final class BossHandler {
 
         if (Rs2GameObject.interact(bossStatueID, "Use")) {
             Microbot.log("Entering " + bossName + " arena");
-            sleepUntil(() -> !Rs2Player.getWorldLocation().equals(bossWorldPoint));
-            Microbot.log("Teleport into " + bossName + " arena has occurred");
+            sleepUntil(() -> !Rs2Player.getWorldLocation().equals(bossWorldPoint),5_000);
         }
     }
 
