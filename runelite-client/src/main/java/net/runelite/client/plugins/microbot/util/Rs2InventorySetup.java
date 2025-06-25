@@ -10,7 +10,6 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
-import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
 import net.runelite.client.plugins.microbot.util.magic.Runes;
 import org.slf4j.event.Level;
 
@@ -46,7 +45,7 @@ public class Rs2InventorySetup {
         _mainScheduler = mainScheduler;
         if (inventorySetup == null) {
             Microbot.showMessage("Inventory load with name " + name + " not found!", 10);
-            Microbot.pauseAllScripts = true;
+			Microbot.pauseAllScripts.compareAndSet(false, true);
         }
     }
 
@@ -62,7 +61,7 @@ public class Rs2InventorySetup {
         _mainScheduler = mainScheduler;
         if (inventorySetup == null) {
             Microbot.showMessage("Inventory load error!", 10);
-            Microbot.pauseAllScripts = true;
+			Microbot.pauseAllScripts.compareAndSet(false, true);
         }
     }
     /**
@@ -121,7 +120,7 @@ public class Rs2InventorySetup {
 			boolean exact = !item.isFuzzy();
 
 			if (!Rs2Bank.hasBankItem(lowerCaseName, withdrawQuantity, exact)) {
-				Microbot.pauseAllScripts = true;
+				Microbot.pauseAllScripts.compareAndSet(false, true);
 				Microbot.log("Bank is missing the following item: " + item.getName());
 				return false;
 			}

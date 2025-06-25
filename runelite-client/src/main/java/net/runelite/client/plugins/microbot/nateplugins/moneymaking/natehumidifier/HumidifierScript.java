@@ -33,12 +33,11 @@ public class HumidifierScript extends Script {
         profit = processedItemPrice - unprocessedItemPrice;
         itemsProcessedMessage = config.ITEM().getFinished() + " processed: " + itemsProcessed;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            if (!super.run()) return;
-            if (!Microbot.isLoggedIn()) return;
-            if (Rs2AntibanSettings.actionCooldownActive) return;
             try {
+				if (!super.run()) return;
+				if (!Microbot.isLoggedIn()) return;
+				if (Rs2AntibanSettings.actionCooldownActive) return;
                 boolean hasAstralRunesInInventory = Rs2Inventory.hasItem(ItemID.ASTRAL_RUNE);
-                if (Microbot.pauseAllScripts) return;
                 if (Rs2Inventory.hasItem(config.ITEM().getName(), true)
                         && hasAstralRunesInInventory) {
                     if (!Rs2Bank.isOpen())

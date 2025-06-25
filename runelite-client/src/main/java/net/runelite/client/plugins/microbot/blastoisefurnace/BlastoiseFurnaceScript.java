@@ -3,7 +3,6 @@ package net.runelite.client.plugins.microbot.blastoisefurnace;
 import java.awt.event.KeyEvent;
 import java.util.concurrent.TimeUnit;
 
-import net.runelite.api.widgets.ComponentID;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
@@ -576,18 +575,6 @@ public class BlastoiseFurnaceScript extends Script {
 
 
     public void shutdown() {
-
-        if (mainScheduledFuture != null && !mainScheduledFuture.isDone()) {
-            mainScheduledFuture.cancel(true);
-            ShortestPathPlugin.exit();
-            if (Microbot.getClientThread().scheduledFuture != null)
-                Microbot.getClientThread().scheduledFuture.cancel(true);
-            initialPlayerLocation = null;
-            Microbot.pauseAllScripts = false;
-            Microbot.getSpecialAttackConfigs().reset();
-        }
-
-
         state = State.BANKING;
         primaryOreEmpty = false;
         secondaryOreEmpty = false;

@@ -36,7 +36,7 @@ public class AutoLoginPlugin extends Plugin {
 
     @Override
     protected void startUp() throws AWTException {
-        Microbot.pauseAllScripts = false;
+		Microbot.pauseAllScripts.compareAndSet(true, false);
         accountSelectorScript.run(autoLoginConfig);
     }
 

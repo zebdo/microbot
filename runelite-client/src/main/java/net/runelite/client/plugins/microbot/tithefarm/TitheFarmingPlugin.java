@@ -45,12 +45,6 @@ public class TitheFarmingPlugin extends Plugin {
     }
 
     @Inject
-    private Client client;
-    @Inject
-    private ClientThread clientThread;
-    @Inject
-    private Notifier notifier;
-    @Inject
     private OverlayManager overlayManager;
     @Inject
     private TitheFarmingOverlay titheFarmOverlay;
@@ -59,7 +53,8 @@ public class TitheFarmingPlugin extends Plugin {
 
     @Override
     protected void startUp() throws AWTException {
-        Microbot.pauseAllScripts = false;
+		Microbot.pauseAllScripts.compareAndSet(true, false);
+
         if (overlayManager != null) {
             overlayManager.add(titheFarmOverlay);
         }
