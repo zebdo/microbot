@@ -111,7 +111,10 @@ public class Rs2ItemModel {
                     this.isTradeable = itemComposition.isTradeable();
                 }
                 this.inventoryActions = itemComposition.getInventoryActions();
-                addEquipmentActions(itemComposition);
+				Microbot.getClientThread().runOnClientThreadOptional(() -> {
+					addEquipmentActions(itemComposition);
+					return true;
+				});
             }
         }
     }
