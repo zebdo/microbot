@@ -98,7 +98,7 @@ public class BlueMoonHandler implements BaseHandler {
         BossHandler.eatIfNeeded(70);
         BossHandler.drinkIfNeeded(70);
         Microbot.log("Sleeping until the special attack sequence is over");
-        sleepUntil(() -> Rs2Npc.getNpc(sigilNpcID) != null, 35_000);
+        sleepUntil(() -> Rs2Npc.getNpc(sigilNpcID) != null || !Rs2Widget.isWidgetVisible(bossHealthBarWidgetID), 35_000);
     }
 
 
@@ -168,13 +168,13 @@ public class BlueMoonHandler implements BaseHandler {
         {
             if (!Rs2Combat.inCombat()) {
                 Rs2Npc.attack(icicle);
-                if (Rs2Equipment.isWearing(weaponMain)) {
-                    break;
                 }
-            }
             WorldPoint attackTile = Rs2Player.getWorldLocation();
             Microbot.log(ts.get() + "Attack location calculated as: " + attackTile);
-            sleepUntil(() -> BossHandler.inDanger(attackTile),3_000);
+            sleepUntil(() -> BossHandler.inDanger(attackTile) || Rs2Equipment.isWearing(weaponMain),3_000);
+            if (Rs2Equipment.isWearing(weaponMain)) {
+                break;
+            }
             if (BossHandler.inDanger(attackTile)) {
                 Microbot.log(ts.get() + "Standing on dangerous tile: " + attackTile);
                 WorldPoint safeTile = Rs2Tile.getSafeTiles(1).get(0);

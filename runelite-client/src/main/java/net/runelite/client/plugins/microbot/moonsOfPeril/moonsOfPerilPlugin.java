@@ -10,6 +10,7 @@ import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.gameval.SpotanimID;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.plugins.microbot.moonsOfPeril.handlers.BloodMoonHandler;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
@@ -42,6 +43,9 @@ public class moonsOfPerilPlugin extends Plugin {
 
     @Inject
     moonsOfPerilScript moonsOfPerilScript;
+    @Inject
+    private moonsOfPerilConfig moonsOfPerilConfig;
+    private BloodMoonHandler bloodMoonHandler;
 
 
     @Override
@@ -50,6 +54,7 @@ public class moonsOfPerilPlugin extends Plugin {
             overlayManager.add(moonsOfPerilOverlay);
         }
         moonsOfPerilScript.run(config);
+        bloodMoonHandler = new BloodMoonHandler(moonsOfPerilConfig);
         Rs2Tile.init();
     }
 
@@ -57,24 +62,18 @@ public class moonsOfPerilPlugin extends Plugin {
     public void onGraphicsObjectCreated(GraphicsObjectCreated event) {
         final GraphicsObject graphicEvent = event.getGraphicsObject();
         if (graphicEvent.getId() == SpotanimID.VFX_DJINN_ICE_FLOOR_SPAWN_01) {
-            Microbot.log("[EVENT] GraphicsObjectCreated id=" + graphicEvent.getId());
             Rs2Tile.addDangerousGraphicsObjectTile(graphicEvent, 600 * 3);
         }
-        if (graphicEvent.getId() == SpotanimID.VFX_DJINN_BLOOD_POOL_IDLE) {
-            Microbot.log("[EVENT] GraphicsObjectCreated id=" + graphicEvent.getId());
-            Rs2Tile.addDangerousGraphicsObjectTile(graphicEvent, 600 * 3);
-        }
-
     }
 
-/*    @Subscribe
+    @Subscribe
     public void onGameObjectSpawned(GameObjectSpawned event) {
         final GameObject bloodPool = event.getGameObject();
-        if (bloodPool.getId() == ObjectID.PMOON_BOSS_BLOOD_POOL) {
-            Microbot.log("[EVENT] GameObjectCreated id=" + bloodPool.getId());
-            Rs2Tile.addDangerousGameObjectTile(bloodPool, 600 * 3);
+        if (bloodPool.getId() == ObjectID.PMOON_BOSS_BLOOD_POOL && bloodPool.getWorldLocation().equals(bloodMoonHandler.evadeTile) && bloodMoonHandler.bloodJaguarActive && bloodMoonHandler.arrived) {
+            Microbot.log("[EVENT] GameObjectCreated id=" + bloodPool.getId() + "at " + bloodMoonHandler.evadeTile.toString());
+            bloodMoonHandler.handleJaguars(bloodPool);
         }
-    }*/
+    }
 
     protected void shutDown() {
         moonsOfPerilScript.shutdown();
@@ -85,6 +84,9 @@ public class moonsOfPerilPlugin extends Plugin {
     public void onGameTick(GameTick tick)
     {
         //System.out.println(getName().chars().mapToObj(i -> (char)(i + 3)).map(String::valueOf).collect(Collectors.joining()));
+        if (bloodMoonHandler.bloodJaguarActive && bloodMoonHandler.arrived) {
+            bloodMoonHandler.onGameTick();
+        }
 
         if (ticks > 0) {
             ticks--;
