@@ -78,7 +78,7 @@ public class BlueMoonHandler implements BaseHandler {
         }
         Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");
         Rs2Prayer.disableAllPrayers();
-        sleep(1200);
+        sleep(2400);
         Rs2Prayer.disableAllPrayers();
         return State.IDLE;
     }
