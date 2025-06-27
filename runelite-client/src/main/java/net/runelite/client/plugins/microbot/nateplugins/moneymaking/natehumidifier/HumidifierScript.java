@@ -42,7 +42,7 @@ public class HumidifierScript extends Script {
                 if (Rs2Inventory.hasItem(config.ITEM().getName(), true)
                         && hasAstralRunesInInventory) {
                     if (!Rs2Bank.isOpen())
-                        Rs2Magic.cast(MagicAction.HUMIDIFY)
+                        Rs2Magic.cast(MagicAction.HUMIDIFY);
                     sleepUntilOnClientThread(() -> Rs2Inventory.hasItem(config.ITEM().getFinished()));
                     Rs2Antiban.actionCooldown();
                     Rs2Antiban.takeMicroBreakByChance();
