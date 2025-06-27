@@ -6,7 +6,6 @@ import net.runelite.client.plugins.microbot.Script;
 
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.handlers.*;
-import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.EnumMap;
 import java.util.Map;
@@ -22,21 +21,21 @@ public class moonsOfPerilScript extends Script {
     private final Map<State, BaseHandler> handlers = new EnumMap<>(State.class);
 
     public boolean run(moonsOfPerilConfig config) {
-        initHandlers(config);                // one-time wiring
+        initHandlers(config);
 
-        Microbot.enableAutoRunOn = false;    // same toggle as ExampleScript
+        Microbot.enableAutoRunOn = false;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                if (!Microbot.isLoggedIn()) return;   // not in game – do nothing
-                if (!super.run()) return;             // Script paused/stopped
+                if (!Microbot.isLoggedIn()) return;
+                if (!super.run()) return;
                 long start = System.currentTimeMillis();
 
                 /* ---------------- MAIN LOOP ---------------- */
-                state = determineState();             // high-level decision
+                state = determineState();
                 CURRENT_STATE = state;
                 BaseHandler h = handlers.get(state);
-                if (h != null && h.validate()) {      // cheap guard check
-                    h.execute();                      // do real work
+                if (h != null && h.validate()) {
+                    h.execute();
                 }
                 /* ------------------------------------------- */
 
@@ -72,7 +71,7 @@ public class moonsOfPerilScript extends Script {
         /* 2 ─ if all bosses are dead --> end-of-run chest loot */
         if (readyToLootChest())             return State.REWARDS;
 
-        /* 3 ─ always ask for supplies first, unless we're already in that phase */
+        /* 3 ─ Do resupply as needed before boss phases */
         if (needsResupply())                  return State.RESUPPLY;
 
         /* 4 ─ boss phases in order */

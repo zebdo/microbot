@@ -41,13 +41,16 @@ public class DeathHandler implements BaseHandler {
      * Travels to nearest bank and retrieves runes required for Civitas illa Fortis teleport.
      */
     private boolean retrieveTravelItems() {
-        Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 2);
+        Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 1);
         sleep(600);
         if (Rs2Bank.openBank()) {
             sleep(600);
             Rs2Bank.withdrawOne(ItemID.FIRERUNE);
+            sleep(600);
             Rs2Bank.withdrawOne(ItemID.EARTHRUNE);
+            sleep(600);
             Rs2Bank.withdrawX(ItemID.LAWRUNE, 2);
+            sleep(600);
             Rs2Bank.closeBank();
             return true;
         }
@@ -74,5 +77,4 @@ public class DeathHandler implements BaseHandler {
             sleep(300);
         }
     }
-
 }

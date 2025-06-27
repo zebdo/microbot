@@ -18,7 +18,6 @@ public class RewardHandler implements BaseHandler {
 
     @Override
     public boolean validate() {
-        // run if all bosses are not alive
         return !BossHandler.bossIsAlive("Eclipse Moon", Widgets.ECLIPSE_MOON_ID.getID()) &&
                 !BossHandler.bossIsAlive("Blue Moon", Widgets.BLUE_MOON_ID.getID()) &&
                 !BossHandler.bossIsAlive("Blood Moon", Widgets.BLOOD_MOON_ID.getID());
@@ -29,11 +28,11 @@ public class RewardHandler implements BaseHandler {
         BossHandler.walkToBoss("Rewards Chest", rewardChestLocation);
         if (Rs2GameObject.interact(lunarChestGameObjectID, "Claim")) {
             Microbot.log("Successfully claimed rewards from Lunar Chest");
-            sleep(3_500,4_000);
+            sleep(2_400);
         }
         if (Rs2Widget.clickWidget(lunarChestBankAllWidgetID)) {
             Microbot.log("Successfully banked all rewards");
-            sleep(1_500,2_000);
+            sleep(1_200);
         }
         return State.IDLE;
     }

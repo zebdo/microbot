@@ -10,13 +10,11 @@ public class IdleHandler implements BaseHandler {
         Rs2Prayer.disableAllPrayers();
         BossHandler.eatIfNeeded(70);
         BossHandler.drinkIfNeeded(70);
-        // TODO: add real gate-keeping logic
-        return false;  // or true if you want it to run during testing
+        return false;
     }
 
     @Override
     public State execute() {
-        // TODO: add actual actions
         return null;
     }
 }

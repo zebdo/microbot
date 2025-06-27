@@ -29,8 +29,6 @@ public class ResupplyHandler implements BaseHandler {
         this.potionBatchSize     = cfg.moonlightPotionsQuantum();
     }
 
-    /* ========== BaseHandler contract ================================== */
-
     @Override
     public boolean validate() {
         return checkSupplies(minMoonlightPotions, minCookedBream);
@@ -48,7 +46,7 @@ public class ResupplyHandler implements BaseHandler {
     private boolean checkSupplies(int moonlightPotionMinimum, int cookedBreamMinimum) {
         if ((countMoonlightPotions() < moonlightPotionMinimum)
                 || (Rs2Inventory.count(ItemID.BREAM_FISH_COOKED) < cookedBreamMinimum)) {
-            return true;           // triggers resupply
+            return true;
         } else {
             Microbot.log("No need to resupply right now.");
         }
@@ -102,13 +100,13 @@ public class ResupplyHandler implements BaseHandler {
 
             /* Drop leftovers */
             while (Rs2Inventory.contains(ItemID.PESTLE_AND_MORTAR))  Rs2Inventory.drop(ItemID.PESTLE_AND_MORTAR);
-            sleep(600,800);
+            sleep(600);
             while (Rs2Inventory.contains(ItemID.MOONLIGHT_GRUB))      Rs2Inventory.drop(ItemID.MOONLIGHT_GRUB);
-            sleep(600,800);
+            sleep(600);
             while (Rs2Inventory.contains(ItemID.MOONLIGHT_GRUB_PASTE))Rs2Inventory.drop(ItemID.MOONLIGHT_GRUB_PASTE);
-            sleep(600,800);
+            sleep(600);
             while (Rs2Inventory.contains(ItemID.VIAL_WATER))Rs2Inventory.drop(ItemID.VIAL_WATER);
-            sleep(600,800);
+            sleep(600);
         }
     }
 
@@ -134,7 +132,6 @@ public class ResupplyHandler implements BaseHandler {
             }
             Microbot.log("Inventory should now be full of fish");
             sleep(600, 900);
-            // Drop the Big Fishing Net
             Rs2Inventory.drop(ItemID.BIG_NET);
         }
 
@@ -160,8 +157,9 @@ public class ResupplyHandler implements BaseHandler {
         sleep(600);
     }
 
-    /* Helpers ---------------------------------------------------------- */
-
+    /**
+     * Return int: the total number of Moonlight Potions currently in inventory
+     */
     private int countMoonlightPotions() {
         return Rs2Inventory.count(ItemID._4DOSEMOONLIGHTPOTION)
                 + Rs2Inventory.count(ItemID._3DOSEMOONLIGHTPOTION)
@@ -170,12 +168,7 @@ public class ResupplyHandler implements BaseHandler {
     }
 
     /**
-     * How many new Moonlight potions should we make?
-     *
-     * • desired = target – current (unchanged)
-     * • Each potion needs 2 free slots  (vial + grub/paste)  +1 for the pestle & mortar
-     * • Drop cooked bream first, then raw, until we have enough free slots.
-     * • If we can’t free enough space, scale desired down to what fits.
+     * Return int: The number of new Moonlight potions we need to make
      */
     private int checkPotionQuantum(int target)
     {
@@ -200,12 +193,9 @@ public class ResupplyHandler implements BaseHandler {
             sleep(400, 600);
             freeSlots = Rs2Inventory.emptySlotCount();
         }
-
-        /* --------- Final sanity: if space is *still* tight, scale down desired potions-- */
         if (freeSlots < requiredSlots) {
-            desired = Math.max((freeSlots - 1) / 2, 0); // how many potions fit
+            desired = Math.max((freeSlots - 1) / 2, 0);
         }
-
         return desired;
     }
 }

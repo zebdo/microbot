@@ -2,7 +2,6 @@ package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.AnimationID;
-import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.GameObjects;
@@ -16,12 +15,10 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
-import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -52,7 +49,6 @@ public class BlueMoonHandler implements BaseHandler {
 
     @Override
     public boolean validate() {
-        // run while boss is alive
         return BossHandler.bossIsAlive(bossName, bossStatusWidgetID);
     }
 
@@ -74,7 +70,7 @@ public class BlueMoonHandler implements BaseHandler {
             else if (BossHandler.isNormalAttackSequence(sigilNpcID)) {
                 BossHandler.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, weaponMain, shield);
             }
-            sleep(300); // half an in-game tick
+            sleep(300);
         }
         Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");
         Rs2Prayer.disableAllPrayers();
@@ -83,15 +79,16 @@ public class BlueMoonHandler implements BaseHandler {
         return State.IDLE;
     }
 
-    /* --------  phase gate --------------------------------------------------- */
+    /**
+     * Returns True if the tornado NPC is found.
+     */
     public boolean isSpecialAttack1Sequence() {
         return (Rs2Npc.getNpc(NpcID.PMOON_BOSS_WINTER_STORM) != null && Rs2Widget.isWidgetVisible(bossHealthBarWidgetID) && Rs2Npc.getNpc(sigilNpcID) == null);
     }
 
-    /* --------  executor ----------------------------------------------------- */
     public void specialAttack1Sequence()
     {
-        sleep(3_500);
+        sleep(2_400);
         Rs2Prayer.disableAllPrayers();
         Microbot.log("Running to safe tile and waiting out the sequence");
         Rs2Walker.walkFastCanvas(AFTER_TORNADO, true);
@@ -118,7 +115,6 @@ public class BlueMoonHandler implements BaseHandler {
     /**  Blue Moon – Special Attack 2  (“weapon-freeze / icicle smash”)  */
     public void specialAttack2Sequence()
     {
-        /* ---------- constants --------------------------------------------- */
         final int  ICICLE_NPC_ID    = NpcID.PMOON_BOSS_ICICLE_UNCRACKED;            // 13025
         final int  ICICLE_ANIM_ID   = AnimationID.VFX_DJINN_BLUE_ICE_BLOCK_IDLE_02; // 11031
         final long POLL_TIMEOUT_MS  = 5_000;                                        // ≤   5 s
@@ -129,7 +125,7 @@ public class BlueMoonHandler implements BaseHandler {
                 () -> "[" + System.currentTimeMillis() + "] ";
 
         Microbot.log(ts.get() + "specialAttack2Sequence() START");
-        Rs2Walker.walkFastCanvas(SAFE_SPOT, true);
+        Rs2Walker.walkFastCanvas(bossArenaCenter, true);
 
         /* ---------- 1. Identify the animated icicle ----------------------- */
         List<Rs2NpcModel> matches = Collections.emptyList();
@@ -199,39 +195,6 @@ public class BlueMoonHandler implements BaseHandler {
         sleepUntil(() -> Rs2Npc.getNpc(ICICLE_NPC_ID) == null);
 
         Microbot.log(ts.get() + "specialAttack2Sequence() COMPLETE");
-    }
-
-    /**
-     * Path-finds to {@code target} with run ON and checks every 600 ms
-     * that the run-orb is still enabled (e.g. a tornado hit can turn it off).
-     * Returns {@code true} once the player is ≤ 1 tile from the target,
-     * or {@code false} if the path fails or times out (15 s safety net).
-     */
-    public static boolean forceRun(WorldPoint target)
-    {
-        // 0 ─ kick off path-finding in run mode
-        Rs2Player.toggleRunEnergy(true);
-        boolean started = Rs2Walker.walkFastCanvas(target, true);
-        Microbot.log("[forceWalk] started=" + started + "  target=" + target);
-
-        if (!started) return false;
-
-        long tEnd = System.currentTimeMillis() + 15_000;           // safety timeout
-        while (System.currentTimeMillis() < tEnd &&
-                Rs2Player.distanceTo(target) > 1)
-        {
-            /* every 300 ms: make sure run is ON --------------------------------*/
-            sleep(300);
-
-            if (Microbot.getVarbitPlayerValue(173) == 0) {         // run OFF
-                boolean toggled = Rs2Player.toggleRunEnergy(true);
-                Microbot.log("[forceWalk] run re-enabled: " + toggled);
-            }
-        }
-        boolean arrived = Rs2Player.distanceTo(target) <= 1;
-        Microbot.log("[forceWalk] arrived=" + arrived
-                + "  distance=" + Rs2Player.distanceTo(target));
-        return arrived;
     }
 
 }

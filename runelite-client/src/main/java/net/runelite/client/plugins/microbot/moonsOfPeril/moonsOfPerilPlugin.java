@@ -10,11 +10,9 @@ import net.runelite.api.events.GraphicsObjectCreated;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.gameval.SpotanimID;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.plugins.microbot.moonsOfPeril.handlers.BloodMoonHandler;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.ui.overlay.OverlayManager;
 
@@ -69,7 +67,6 @@ public class moonsOfPerilPlugin extends Plugin {
     public void onGameObjectSpawned(GameObjectSpawned event) {
         final GameObject bloodPool = event.getGameObject();
         if (bloodPool.getId() == ObjectID.PMOON_BOSS_BLOOD_POOL) {
-/*            Microbot.log("[EVENT] GameObjectCreated id=" + bloodPool.getId() + "at " + bloodPool.getWorldLocation());*/
             bloodPoolTick = 0;
         }
     }
@@ -82,9 +79,7 @@ public class moonsOfPerilPlugin extends Plugin {
     @Subscribe
     public void onGameTick(GameTick tick)
     {
-        //System.out.println(getName().chars().mapToObj(i -> (char)(i + 3)).map(String::valueOf).collect(Collectors.joining()));
         bloodPoolTick ++;
-
         if (ticks > 0) {
             ticks--;
         } else {

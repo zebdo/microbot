@@ -2,16 +2,13 @@ package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.moonsOfPeril.enums.GameObjects;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -21,26 +18,22 @@ import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
-/** Pure helper methods – no instances. */
 public final class BossHandler {
 
     private BossHandler() {}
 
-    private Rs2PrayerEnum bestMeleePrayer = Objects.requireNonNull(Rs2Prayer.getBestMeleePrayer());
-
     // TODO:
-    //  add checks at script initialisation:
-    //  a. check that all config weapons are in inventory or wielded
-    //  b. check that Moons of Peril quest has been completed
+    //  1. add checks at script initialisation:
+    //  1a. check that all config weapons are in inventory or wielded
+    //  1b. check that Moons of Peril quest has been completed
     //  2. add check before equipping weapons that enough inventory space exists, otherwise don't equip
-    //  3. The while loops on the specific boss handlers should check if boss health widget is visible (instead of player distance to tile)
+    //  3. Bail out of boss arena if no food left
 
-    /** Walks to a boss lobby and logs progress. */
+    /** Walks to the chosen boss lobby. */
     public static void walkToBoss(String bossName, WorldPoint bossWorldPoint) {
         Microbot.log("Walking to " + bossName + " lobby");
         Rs2Walker.walkWithState(bossWorldPoint, 0);
@@ -56,7 +49,6 @@ public final class BossHandler {
         Microbot.log("Something went wrong. Did not arrive at " + bossName + " lobby");
     }
 
-
     /** True while the “boss check mark” widget is hidden on-screen. i.e. the boss is alive*/
     public static boolean bossIsAlive(String bossName, int aliveWidgetId) {
         Microbot.log(bossName + " is alive: " + Rs2Widget.isHidden(aliveWidgetId));
@@ -65,14 +57,12 @@ public final class BossHandler {
 
     /** Interacts with the Boss statue and waits for the player to be teleported into Boss Arena*/
     public static void enterBossArena(String bossName, int bossStatueID, WorldPoint bossWorldPoint) {
-        // Check if player is standing on the exact tile
         if (!Rs2Player.getWorldLocation().equals(bossWorldPoint)) {
             if (Rs2Walker.walkFastCanvas(bossWorldPoint)) {
                 Microbot.log("Walking to statue tile");
             }
             sleepUntil(() -> Rs2Player.getWorldLocation().equals(bossWorldPoint));
         }
-
         if (Rs2GameObject.interact(bossStatueID, "Use")) {
             Microbot.log("Entering " + bossName + " arena");
             sleepUntil(() -> !Rs2Player.getWorldLocation().equals(bossWorldPoint),5_000);
@@ -84,21 +74,13 @@ public final class BossHandler {
      * 3. Drinks potions if required
      * 4. Turns on Player's best offensive melee prayer*/
     public static void fightPreparation(String weaponMain, String shield) {
-        // 1. Equip the player's chosen weapon + offhand
         equipWeapons(weaponMain, shield);
         sleep(600);
-
-        // 2. Eats food if hitpoints below 70%
         eatIfNeeded(70);
         sleep(600);
-
-        // 3. Drinks potions if prayer points below 70%
         drinkIfNeeded(70);
         sleep(600);
-
-        // 4. Turn run on
         Rs2Player.toggleRunEnergy(true);
-
     }
 
     /**
@@ -107,13 +89,11 @@ public final class BossHandler {
      */
     public static void equipWeapons(String weaponMain, String shield)
     {
-        /* --- figure out what we actually need to wear ------------------- */
         boolean hasShield = shield != null && !shield.isEmpty();
         String[] needed   = hasShield
                 ? new String[] { weaponMain, shield }
                 : new String[] { weaponMain };
 
-        /* --- skip if already wearing everything ------------------------- */
         if (Rs2Equipment.isWearing(
                 java.util.Arrays.asList(needed),          // no import needed
                 false,
@@ -122,22 +102,17 @@ public final class BossHandler {
             return;
         }
 
-        /* --- wield main hand -------------------------------------------- */
         if (Rs2Inventory.wield(weaponMain)) {
             Microbot.log(weaponMain + " is now equipped");
         }
 
-        /* --- wield shield if requested ---------------------------------- */
         if (hasShield && Rs2Inventory.wield(shield)) {
             Microbot.log(shield + " is now equipped");
         }
     }
 
-
     /**
      * Eats food if hitpoints below percentage threshold
-     *
-     * @return
      */
     public static void eatIfNeeded(int percentage) {
         Rs2Player.eatAt(percentage);
@@ -145,8 +120,6 @@ public final class BossHandler {
 
     /**
      * Drinks prayer potion if prayer points below percentage threshold
-     *
-     * @return
      */
     public static void drinkIfNeeded(int percentage) {
         int maxPrayer          = Rs2Player.getRealSkillLevel(Skill.PRAYER);
@@ -154,43 +127,22 @@ public final class BossHandler {
         Rs2Player.drinkPrayerPotionAt(minimumPrayerPoint);
     }
 
-
     /**
      * Turns on Player's best offensive melee prayer and returns true
-     *
-     * @return
      */
     public static void meleePrayerOn() {
         Rs2Prayer.toggle(Objects.requireNonNull(Rs2Prayer.getBestMeleePrayer()), true);
     }
 
     /**
-     * Returns true if the boss NPC currently has an "attack" option
-     *
-     * @return
-     */
-    public static boolean isBossAttackable(int bossNpcID) {
-        Rs2NpcModel boss = Rs2Npc.getNpc(bossNpcID);
-        String bossAction = Rs2Npc.getAvailableAction(boss, Collections.singletonList("attack"));
-        Microbot.log("Boss action returned: '" + bossAction + "'");
-        if (bossAction.isEmpty()) {
-            Microbot.log("The moonfire has spawned – We've entered Special Attack 2, the Blood Rain Sequence");
-            return false;
-        }
-        return true;
-    }
-
-    /**
      * Returns true if the sigil NPC (the highlighted attack tile) is present
-     *
-     * @return
      */
     public static boolean isNormalAttackSequence(int sigilNpcID) {
         return Rs2Npc.getNpc(sigilNpcID) != null;
     }
 
     /**
-     * Eclipse “normal” phase: follow ≤ 3 sigil squares, stand on the
+     * “Normal” attack phase: follow ≤ 3 sigil squares, stand on the
      * matching attack tile, and keep attacking the boss.
      *
      * @param sigilNpcID  NPC ID of the 2×2 sigil marker
@@ -202,9 +154,9 @@ public final class BossHandler {
                                             WorldPoint[] attackTiles, String Weapon, String Shield)
     {
         Microbot.log("Script has entered the normal attack sequence loop");
-        WorldPoint lastSigilSW = null;   // south-west anchor of current sigil
-        WorldPoint currentTarget = null; // cached attack tile for the current sigil
-        int sigilMoves = 0;              // how many times the sigil has shifted
+        WorldPoint lastSigilSW = null;
+        WorldPoint currentTarget = null;
+        int sigilMoves = 0;
         equipWeapons(Weapon, Shield);
         sleep(150);
         meleePrayerOn();
@@ -226,7 +178,7 @@ public final class BossHandler {
                 lastSigilSW = sigilLocation;
 
                 /* 2 ─ choose *once* the nearest predefined attack tile ≤1 away */
-                currentTarget = sigilLocation;               // fallback = sigil itself
+                currentTarget = sigilLocation;
                 for (WorldPoint atk : attackTiles) {
                     if (atk.distanceTo(sigilLocation) <= 1) {
                         currentTarget = atk;
@@ -252,7 +204,7 @@ public final class BossHandler {
                 Rs2Npc.attack(bossNpcID);
             }
 
-            sleep(300);   // half a game tick
+            sleep(300);
         }
         Microbot.log("Breaking out of the normal attack sequence");
     }
@@ -267,41 +219,6 @@ public final class BossHandler {
         }
         return false;
     }
-
-/*    *//**
-     * Finds the first tile within a certain distance from the player that does NOT
-     * contain a dangerous GameObject.
-     *
-     * @param int distance The search radius from the player
-     * @param int The ID of the dangerous game object
-     * @return A WorldPoint representing the first safe tile found, or null if none found
-     *//*
-    public static WorldPoint getSafeTile(int distance, int gameObjectID) {
-        WorldPoint playerTile = Rs2Player.getWorldLocation();
-        if (playerTile == null) return null;
-
-        // Gather blood pool tiles using Rs2GameObject
-        List<GameObject> bloodPools = Rs2GameObject.getGameObjects(
-                go -> go != null
-                        && go.getId() == gameObjectID,
-                playerTile,
-                distance
-        );
-        Set<WorldPoint> occupiedTiles = bloodPools.stream()
-                .map(GameObject::getWorldLocation)
-                .collect(Collectors.toSet());
-
-        // Scan outward from player tile
-        for (int dx = -distance; dx <= distance; dx++) {
-            for (int dy = -distance; dy <= distance; dy++) {
-                WorldPoint candidate = playerTile.dx(dx).dy(dy);
-                if (!occupiedTiles.contains(candidate)) {
-                    return candidate;
-                }
-            }
-        }
-        return null;
-    }*/
 
     /** Runs the player out of the arena */
     public static void bossBailOut(WorldPoint bailOutLocation) {
@@ -321,5 +238,4 @@ public final class BossHandler {
         }
         Microbot.log("Timeout: Failed to bail out of the boss arena after 10 seconds.");
     }
-
 }
