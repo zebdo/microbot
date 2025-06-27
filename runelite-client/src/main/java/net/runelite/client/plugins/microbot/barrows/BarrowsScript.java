@@ -1174,6 +1174,7 @@ public class BarrowsScript extends Script {
                 }
             } else {
                 GameObject rej = Rs2GameObject.get("Pool of Refreshment", true);
+                if(rej == null){ break; }
                 Microbot.log("Drinking");
                 if(Rs2GameObject.interact(rej, "Drink")){
                     sleepUntil(()-> Rs2Player.isMoving(), Rs2Random.between(1000,3000));
