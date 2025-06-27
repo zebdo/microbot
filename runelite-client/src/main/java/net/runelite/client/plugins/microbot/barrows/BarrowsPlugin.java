@@ -65,7 +65,7 @@ public class BarrowsPlugin extends Plugin {
         Rs2Antiban.setActivity(Activity.BARROWS);
         barrowsScript.run(config);
         barrowsScript.outOfPoweredStaffCharges = false;
-
+        barrowsScript.firstRun = true;
     }
 
     protected void shutDown() {
