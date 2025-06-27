@@ -40,16 +40,18 @@ public class EclipseMoonHandler implements BaseHandler {
     private final String weaponMain;
     private final String shield;
     private final String weaponClones;
+    private final boolean enableBoss;
 
     public EclipseMoonHandler(moonsOfPerilConfig cfg) {
         this.weaponMain = cfg.eclipseWeaponMain();
         this.shield = cfg.eclipseShield();
         this.weaponClones = cfg.eclipseWeaponClones();
+        this.enableBoss = cfg.enableEclipse();
     }
 
     @Override
     public boolean validate() {
-        return (BossHandler.bossIsAlive(bossName, bossStatusWidgetID));
+        return (enableBoss && BossHandler.bossIsAlive(bossName, bossStatusWidgetID));
     }
 
     @Override
@@ -125,8 +127,8 @@ public class EclipseMoonHandler implements BaseHandler {
         for (WorldPoint p : lap) {
             Microbot.log("Walking to WorldPoint: " + p);
             Rs2Walker.walkFastCanvas(p, false);
-            BossHandler.eatIfNeeded(70);
-            BossHandler.drinkIfNeeded(70);
+            BossHandler.eatIfNeeded();
+            BossHandler.drinkIfNeeded();
             if (!isSpecialAttack1Sequence()) {
                 return;
             }
@@ -163,8 +165,8 @@ public class EclipseMoonHandler implements BaseHandler {
             sleepUntil(() -> Rs2Player.getAnimation() != AnimationID.HUMAN_TROLL_FLYBACK_MERGE);
             Microbot.log("Knockback animation stopped. Clones are about to spawn");
             BossHandler.equipWeapons(weaponClones, null);
-            BossHandler.eatIfNeeded(70);
-            BossHandler.drinkIfNeeded(70);
+            BossHandler.eatIfNeeded();
+            BossHandler.drinkIfNeeded();
             BossHandler.meleePrayerOn();
             return true;
         }

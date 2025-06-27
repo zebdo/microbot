@@ -8,8 +8,8 @@ public class IdleHandler implements BaseHandler {
     @Override
     public boolean validate() {
         Rs2Prayer.disableAllPrayers();
-        BossHandler.eatIfNeeded(70);
-        BossHandler.drinkIfNeeded(70);
+        BossHandler.eatIfNeeded();
+        BossHandler.drinkIfNeeded();
         return false;
     }
 

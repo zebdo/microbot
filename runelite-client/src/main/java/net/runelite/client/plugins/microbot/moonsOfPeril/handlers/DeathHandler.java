@@ -5,6 +5,8 @@ import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
+import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
+import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
@@ -18,6 +20,12 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 import java.util.List;
 
 public class DeathHandler implements BaseHandler {
+    private final moonsOfPerilScript script = null;
+    private final boolean shutdownOnDeath;
+
+    public DeathHandler(moonsOfPerilConfig cfg) {
+        this.shutdownOnDeath = cfg.shutdownOnDeath();
+    }
 
     @Override
     public boolean validate() {
@@ -27,6 +35,11 @@ public class DeathHandler implements BaseHandler {
     @Override
     public State execute() {
         Microbot.log("Player detected near Lumbridge spawn. Starting death handler sequence");
+        if (shutdownOnDeath) {
+            Microbot.showMessage("Script shut down due to player death");
+            script.shutdown();
+        }
+
         if (retrieveTravelItems()) {
             sleep(1_200);
             if (retrieveDeathItems()) {

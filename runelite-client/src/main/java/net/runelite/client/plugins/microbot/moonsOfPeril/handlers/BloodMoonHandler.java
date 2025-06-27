@@ -44,15 +44,17 @@ public class BloodMoonHandler implements BaseHandler {
     private static final WorldPoint afterRainTile = Locations.BLOOD_ATTACK_6.getWorldPoint();
     private int poolTick  = -1;
     public boolean arrived = false;
+    private final boolean enableBoss;
 
     public BloodMoonHandler(moonsOfPerilConfig cfg) {
         this.weaponMain = cfg.bloodWeaponMain();
         this.shield = cfg.bloodShield();
+        this.enableBoss = cfg.enableBlood();
     }
 
     @Override
     public boolean validate() {
-        return BossHandler.bossIsAlive(bossName, bossStatusWidgetID);
+        return (enableBoss && BossHandler.bossIsAlive(bossName, bossStatusWidgetID));
     }
 
     @Override
@@ -117,8 +119,8 @@ public class BloodMoonHandler implements BaseHandler {
                     sleepUntil(() -> Rs2Player.getWorldLocation().equals(safeTile), 600);
                 }
             }
-            BossHandler.eatIfNeeded(70);
-            BossHandler.drinkIfNeeded(70);
+            BossHandler.eatIfNeeded();
+            BossHandler.drinkIfNeeded();
             sleep(600);
         }
     }

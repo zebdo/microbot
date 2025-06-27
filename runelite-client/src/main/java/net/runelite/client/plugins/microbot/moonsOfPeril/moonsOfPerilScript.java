@@ -57,8 +57,8 @@ public class moonsOfPerilScript extends Script {
         handlers.put(State.ECLIPSE_MOON,new EclipseMoonHandler(cfg));
         handlers.put(State.BLUE_MOON,   new BlueMoonHandler(cfg));
         handlers.put(State.BLOOD_MOON,  new BloodMoonHandler(cfg));
-        handlers.put(State.REWARDS,     new RewardHandler());
-        handlers.put(State.DEATH,       new DeathHandler());
+        handlers.put(State.REWARDS,     new RewardHandler(cfg));
+        handlers.put(State.DEATH,       new DeathHandler(cfg));
     }
 
     /* ------------------------------------------------------------------ */

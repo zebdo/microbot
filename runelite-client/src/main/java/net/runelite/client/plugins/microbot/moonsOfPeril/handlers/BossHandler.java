@@ -4,6 +4,7 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
+import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -24,14 +25,24 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 public final class BossHandler {
 
+    static private int healthPercentage;
+    static private int prayerPercentage;
+
+    public BossHandler(moonsOfPerilConfig cfg) {
+        healthPercentage = cfg.healthPercentage();
+        prayerPercentage = cfg.prayerPercentage();
+    }
+
     private BossHandler() {}
 
     // TODO:
     //  1. add checks at script initialisation:
     //  1a. check that all config weapons are in inventory or wielded
     //  1b. check that Moons of Peril quest has been completed
+    //  1c. check if any bosses are enabled
     //  2. add check before equipping weapons that enough inventory space exists, otherwise don't equip
     //  3. Bail out of boss arena if no food left
+    //  4. Make the script compatable with Breakhandler. i.e. only allow breaks during idle phases
 
     /** Walks to the chosen boss lobby. */
     public static void walkToBoss(String bossName, WorldPoint bossWorldPoint) {
@@ -76,9 +87,9 @@ public final class BossHandler {
     public static void fightPreparation(String weaponMain, String shield) {
         equipWeapons(weaponMain, shield);
         sleep(600);
-        eatIfNeeded(70);
+        eatIfNeeded();
         sleep(600);
-        drinkIfNeeded(70);
+        drinkIfNeeded();
         sleep(600);
         Rs2Player.toggleRunEnergy(true);
     }
@@ -114,16 +125,16 @@ public final class BossHandler {
     /**
      * Eats food if hitpoints below percentage threshold
      */
-    public static void eatIfNeeded(int percentage) {
-        Rs2Player.eatAt(percentage);
+    public static void eatIfNeeded() {
+        Rs2Player.eatAt(healthPercentage);
     }
 
     /**
      * Drinks prayer potion if prayer points below percentage threshold
      */
-    public static void drinkIfNeeded(int percentage) {
+    public static void drinkIfNeeded() {
         int maxPrayer          = Rs2Player.getRealSkillLevel(Skill.PRAYER);
-        int minimumPrayerPoint = (maxPrayer * percentage) / 100;
+        int minimumPrayerPoint = (maxPrayer * prayerPercentage) / 100;
         Rs2Player.drinkPrayerPotionAt(minimumPrayerPoint);
     }
 

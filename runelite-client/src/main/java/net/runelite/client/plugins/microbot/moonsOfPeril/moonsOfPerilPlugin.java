@@ -18,10 +18,11 @@ import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
 import java.awt.*;
+import java.time.Instant;
 
 @PluginDescriptor(
-        name = PluginDescriptor.Default + "Moons of Peril Beta",
-        description = "A plugin to defeat the Perilous Moons bosses",
+        name = PluginDescriptor.Funk + "Moons of Peril [Beta]",
+        description = "A plugin to beat the Moons of Peril",
         tags = {"bossing", "microbot"},
         enabledByDefault = false
 )
@@ -45,6 +46,8 @@ public class moonsOfPerilPlugin extends Plugin {
     private moonsOfPerilConfig moonsOfPerilConfig;
     public static int bloodPoolTick;
 
+    public static Instant scriptStartTime;
+
 
     @Override
     protected void startUp() throws AWTException {
@@ -53,6 +56,7 @@ public class moonsOfPerilPlugin extends Plugin {
         }
         moonsOfPerilScript.run(config);
         Rs2Tile.init();
+        this.scriptStartTime = Instant.now();
     }
 
     @Subscribe

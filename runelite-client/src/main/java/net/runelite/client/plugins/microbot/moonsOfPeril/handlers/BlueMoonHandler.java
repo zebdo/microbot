@@ -40,16 +40,18 @@ public class BlueMoonHandler implements BaseHandler {
     private final int bossNpcID = NpcID.PMOON_BOSS_BLUE_MOON_VIS;
     private String weaponMain;
     private String shield;
+    private final boolean enableBoss;
 
     public BlueMoonHandler(moonsOfPerilConfig cfg) {
         this.weaponMain = cfg.blueWeaponMain();
         this.shield = cfg.blueShield();
+        this.enableBoss = cfg.enableBlue();
     }
 
 
     @Override
     public boolean validate() {
-        return BossHandler.bossIsAlive(bossName, bossStatusWidgetID);
+        return (enableBoss && BossHandler.bossIsAlive(bossName, bossStatusWidgetID));
     }
 
     @Override
@@ -92,8 +94,8 @@ public class BlueMoonHandler implements BaseHandler {
         Rs2Prayer.disableAllPrayers();
         Microbot.log("Running to safe tile and waiting out the sequence");
         Rs2Walker.walkFastCanvas(AFTER_TORNADO, true);
-        BossHandler.eatIfNeeded(70);
-        BossHandler.drinkIfNeeded(70);
+        BossHandler.eatIfNeeded();
+        BossHandler.drinkIfNeeded();
         Microbot.log("Sleeping until the special attack sequence is over");
         sleepUntil(() -> Rs2Npc.getNpc(sigilNpcID) != null || !Rs2Widget.isWidgetVisible(bossHealthBarWidgetID), 35_000);
     }
@@ -188,8 +190,8 @@ public class BlueMoonHandler implements BaseHandler {
         /* ---------- 3. Retreat to safespot ------------------------------- */
         Microbot.log(ts.get() + "Retreating to SAFE_SPOT " + SAFE_SPOT);
         Rs2Walker.walkFastCanvas(SAFE_SPOT, true);
-        BossHandler.eatIfNeeded(70);
-        BossHandler.drinkIfNeeded(70);
+        BossHandler.eatIfNeeded();
+        BossHandler.drinkIfNeeded();
 
         Microbot.log(ts.get() + "Waiting for all icicles to despawn…");
         sleepUntil(() -> Rs2Npc.getNpc(ICICLE_NPC_ID) == null);
