@@ -356,34 +356,41 @@ public class Rs2InventorySetup {
 
 			int withdrawQuantity;
 			boolean isStackable = false;
-
 			if (entry.getValue().size() == 1) {
 				withdrawQuantity = item.getQuantity();
 				isStackable = withdrawQuantity > 1;
 			} else {
 				withdrawQuantity = entry.getValue().size();
 			}
-            for (InventorySetupsItem setupItem : entry.getValue()) {
-                int expectedSlot = setupItem.getSlot();
-                if (expectedSlot >= 0) {
-                    Rs2ItemModel invItem = Rs2Inventory.getItemInSlot(expectedSlot);
-                    if (invItem == null || invItem.getId() != setupItem.getId()) {
-                        Microbot.log("Slot mismatch: expected " + setupItem.getName() + " in slot " + expectedSlot, Level.WARN);
-                        found = false;
-                        continue;
-                    }
-                    if (invItem.getQuantity() < setupItem.getQuantity()) {
-                        Microbot.log("Wrong quantity in slot " + expectedSlot + " for " + setupItem.getName(), Level.WARN);
-                        found = false;
-                    }
-                } else {
-                    // fallback to amount check across whole inventory if slot is unspecified
-                    if (!Rs2Inventory.hasItemAmount(setupItem.getName(), withdrawQuantity, isStackable)) {
-                        Microbot.log("Missing item: " + setupItem.getName() + " with amount " + setupItem.getQuantity(), Level.WARN);
-                        found = false;
-                    }
-                }
-            }
+
+			for (InventorySetupsItem setupItem : entry.getValue()) {
+				int expectedSlot = setupItem.getSlot();
+
+				if (expectedSlot >= 0) {
+					Rs2ItemModel invItem = Rs2Inventory.getItemInSlot(expectedSlot);
+
+					boolean itemDoesntExist = invItem == null;
+					boolean itemDoesntMatch = invItem != null && (setupItem.isFuzzy()
+						? !invItem.getName().toLowerCase().contains(setupItem.getName().toLowerCase())
+						: invItem.getId() != setupItem.getId());
+
+					if (itemDoesntExist || itemDoesntMatch) {
+						Microbot.log("Slot mismatch: expected " + setupItem.getName() + " in slot " + expectedSlot, Level.WARN);
+						found = false;
+						continue;
+					}
+
+					if (invItem.getQuantity() < setupItem.getQuantity()) {
+						Microbot.log("Wrong quantity in slot " + expectedSlot + " for " + setupItem.getName(), Level.WARN);
+						found = false;
+					}
+				} else {
+					if (!Rs2Inventory.hasItemAmount(setupItem.getName(), withdrawQuantity, isStackable)) {
+						Microbot.log("Missing item: " + setupItem.getName() + " with amount " + setupItem.getQuantity(), Level.WARN);
+						found = false;
+					}
+				}
+			}
 		}
 
 		if (inventorySetup.getRune_pouch() != null) {
