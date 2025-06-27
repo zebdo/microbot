@@ -530,10 +530,10 @@ public class BarrowsScript extends Script {
                         int howtoBank = Rs2Random.between(0,100);
                         if(!usingPoweredStaffs) {
                             if (howtoBank <= 40) {
-                                if (Rs2Inventory.get(neededRune) == null || Rs2Inventory.get(neededRune).getQuantity() < config.minRuneAmount()) {
+                                if (Rs2Inventory.get(neededRune) == null || Rs2Inventory.get(neededRune).getQuantity() <= config.minRuneAmount()) {
                                     if (Rs2Bank.getBankItem(neededRune) != null) {
                                         if (Rs2Bank.getBankItem(neededRune).getQuantity() > config.minRuneAmount()) {
-                                            if (Rs2Bank.withdrawX(neededRune, Rs2Random.between(config.minRuneAmount(), 1000))) {
+                                            if (Rs2Bank.withdrawX(neededRune, Rs2Random.between(config.minRuneAmount(), Rs2Bank.getBankItem(neededRune).getQuantity()))) {
                                                 String therune = neededRune;
                                                 sleepUntil(() -> Rs2Inventory.get(therune).getQuantity() > config.minRuneAmount(), Rs2Random.between(2000, 4000));
                                             }
