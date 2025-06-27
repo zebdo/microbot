@@ -48,7 +48,7 @@ public class BloodMoonHandler implements BaseHandler {
     private static final WorldPoint afterRainTile = Locations.BLOOD_ATTACK_6.getWorldPoint();
 
     // Fields used for Blood Jaguar Sequence and event subcribe //
-    private int  poolTick  = -1;
+    private int poolTick  = -1;
     private boolean waitingForEvade = false;
     public boolean bloodJaguarActive = false;
     private int  evadeCount = 0;
@@ -80,7 +80,7 @@ public class BloodMoonHandler implements BaseHandler {
 
         while (Rs2Widget.isWidgetVisible(bossHealthBarWidgetID) || Rs2Npc.getNpc(bossNpcID) != null) {
             if (isSpecialAttack1Sequence()) {
-                moveToJaguar();
+                specialAttack1Sequence();
             }
             else if (isSpecialAttack2Sequence()) {
                 specialAttack2Sequence();
@@ -92,7 +92,7 @@ public class BloodMoonHandler implements BaseHandler {
         }
         Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");
         Rs2Prayer.disableAllPrayers();
-        sleep(1200);
+        sleep(2400);
         return State.IDLE;
     }
 
@@ -102,13 +102,7 @@ public class BloodMoonHandler implements BaseHandler {
      */
     public boolean isSpecialAttack1Sequence() {
         Rs2NpcModel jaguar = Rs2Npc.getNpc(NpcID.PMOON_BOSS_JAGUAR);
-        if (jaguar != null && Rs2Widget.isWidgetVisible(bossHealthBarWidgetID)) {
-            bloodJaguarActive = true;
-            return true;
-        }
-        bloodJaguarActive = false;
-        arrived = false;
-        return false;
+        return (jaguar != null && Rs2Widget.isWidgetVisible(bossHealthBarWidgetID));
     }
 
     /**
@@ -147,15 +141,116 @@ public class BloodMoonHandler implements BaseHandler {
         }
     }
 
-    /**
+    public void specialAttack1Sequence() {
+        Microbot.log("Entering Special Attack Sequence: Blood Jaguar");
+        Rs2Prayer.disableAllPrayers(); // prayer not required for this special attack
+        final long startMs = System.currentTimeMillis();
+
+        /* 1  find the sigil NPC (2×2, SW tile = sigilLoc) */
+        Rs2NpcModel sigilNpc = Rs2Npc.getNpcs(n -> n.getId() == sigilNpcID).findFirst().orElse(null);
+        if (sigilNpc == null) {
+            Microbot.log("no sigil NPC – bail");
+            return;
+        }
+        WorldPoint sigilLocation = sigilNpc.getWorldLocation();
+        /* derive the trio of tiles */
+        Locations.Rotation rot = Locations.bloodJaguarRotation(sigilLocation);
+        if (rot == null) {
+            Microbot.log("Unknown sigil tile: " + sigilLocation);
+            return;
+        }
+        WorldPoint attackTile = rot.attack;
+        WorldPoint evadeTile = rot.evade;
+        WorldPoint spawnTile = rot.spawn;
+
+        Microbot.log("Resolved rotation. attackTile=" + attackTile + "  evadeTile=" + evadeTile + "  spawnTile=" + spawnTile);
+
+        if (attackTile == null || spawnTile == null || evadeTile == null) {
+            Microbot.log("Unknown sigilLocation tile: " + sigilLocation);
+            return;
+        }
+
+        /* 2 ─ move onto Attack tile ---------------------------------------- */
+        Microbot.log("Moving to attackTile " + attackTile);
+        Rs2Walker.walkFastCanvas(attackTile, true);
+        sleep(600);
+        if (!Rs2Player.getWorldLocation().equals(attackTile)) {
+            Rs2Walker.walkFastCanvas(attackTile, true);
+            sleepUntil(() -> Rs2Player.getWorldLocation().equals(attackTile));
+        }
+        boolean arrived = sleepUntil(() -> Rs2Player.getWorldLocation().equals(attackTile), 5_000);
+        Microbot.log(arrived
+                ? "Arrived on attackTile"
+                : "Failed to reach attackTile – aborting");
+        if (!arrived) return;
+
+        /* 3 ─ lock the target jaguar (SW tile == spawnTile) ---------------- */
+        Rs2NpcModel targetJaguar = Rs2Npc.getNpcs(n ->
+                        n.getId() == NpcID.PMOON_BOSS_JAGUAR &&
+                                n.getWorldLocation().equals(spawnTile))
+                .findFirst().orElse(null);
+        if (targetJaguar == null) {
+            Microbot.log("jaguar not on expected spawn");
+            return;
+        }
+
+        /* 4 ─ blood-pool-tick watcher (3 ticks idle) ----------------------------- */
+        final long TIMEOUT_MS = 30_000;
+        final int POOL_ID = ObjectID.PMOON_BOSS_BLOOD_POOL;
+        int evadeCount = 0;
+        boolean evadedThisCycle = false;
+
+        while (isSpecialAttack1Sequence() && evadeCount <= 5 && System.currentTimeMillis() - startMs < TIMEOUT_MS) {
+            /*  detect first tick when the blood pool exists  */
+            poolTick = moonsOfPerilPlugin.bloodPoolTick;
+            Microbot.log("Current tick counter: " + poolTick);
+/*            if (poolTick == -1) {
+                GameObject pool = Rs2GameObject.getGameObject(g -> g.getId() == POOL_ID);
+                if (pool != null && pool.getWorldLocation().equals(evadeTile)) {
+                    poolTick = 1;                                    // T0
+                    Microbot.log("Pool spawned – starting pool-tick counter");
+                }
+            } else {
+                poolTick++; // advance each 600 ms
+            }*/
+
+            /* step back exactly on the 3rd tick after pool spawn */
+            if (poolTick == 3) {
+                Microbot.log("EVADE to " + evadeTile);
+                Rs2Walker.walkFastCanvas(evadeTile, true);
+/*                evadedThisCycle = true;*/
+                evadeCount++;
+                Microbot.log("Evade count = " + evadeCount);
+            } else if (poolTick == 5) {
+                Microbot.log("ATTACK jaguar");
+                Rs2Npc.attack(targetJaguar);
+            }
+            else if (poolTick == 6) {
+                Microbot.log("Clicking on ground to stop attacking");
+                Rs2Walker.walkFastCanvas(attackTile, true);
+            }
+
+            /* reset for next cycle */
+/*            if (evadedThisCycle) {
+                evadedThisCycle = false;
+            }*/
+            sleep(100);   // short polling. Let OnGameTick method in MoonsOfPerilPlugin.java handle the ticks
+            poolTick++;
+        }
+    }
+
+
+
+
+/*    *//**
      * Handles the Blood Rain Sequence.
-     */
+     *//*
      public void moveToJaguar() {
          if (!arrived) {
              Microbot.log("Handler hashCode=" + System.identityHashCode(this));
              Microbot.log("Entering Special Attack Sequence: Blood Jaguar");
              Rs2Prayer.disableAllPrayers(); // prayer not required for this special attack
-             /*1 find the sigil NPC (2×2, SW tile = sigilLoc)*/
+             *//*1 find the sigil NPC (2×2, SW tile = sigilLoc)*//*
              Rs2NpcModel sigilNpc = Rs2Npc.getNpcs(n -> n.getId() == sigilNpcID).findFirst().orElse(null);
              if (sigilNpc == null) {
                  Microbot.log("no sigil NPC – bail");
@@ -163,7 +258,7 @@ public class BloodMoonHandler implements BaseHandler {
              }
 
              WorldPoint sigilLocation = sigilNpc.getWorldLocation();
-             /*derive the trio of tiles*/
+             *//*derive the trio of tiles*//*
              Locations.Rotation rot = Locations.bloodJaguarRotation(sigilLocation);
              if (rot == null) {
                  Microbot.log("Unknown sigil tile: " + sigilLocation);
@@ -181,7 +276,7 @@ public class BloodMoonHandler implements BaseHandler {
                  return;
              }
 
-             /* 2 ─ move onto Attack tile ---------------------------------------- */
+             *//* 2 ─ move onto Attack tile ---------------------------------------- *//*
              Microbot.log("Moving to attackTile " + attackTile);
              Rs2Walker.walkFastCanvas(attackTile, true);
              if (!Rs2Player.getWorldLocation().equals(attackTile)) {
@@ -227,7 +322,7 @@ public class BloodMoonHandler implements BaseHandler {
             }
         }
         poolTick++;
-    }
+    }*/
 
     /**
      * Returns a random safe WorldPoint within {@code distance} tiles of the player.

@@ -45,7 +45,7 @@ public class moonsOfPerilPlugin extends Plugin {
     moonsOfPerilScript moonsOfPerilScript;
     @Inject
     private moonsOfPerilConfig moonsOfPerilConfig;
-    private BloodMoonHandler bloodMoonHandler;
+    public static int bloodPoolTick;
 
 
     @Override
@@ -54,7 +54,6 @@ public class moonsOfPerilPlugin extends Plugin {
             overlayManager.add(moonsOfPerilOverlay);
         }
         moonsOfPerilScript.run(config);
-        bloodMoonHandler = new BloodMoonHandler(moonsOfPerilConfig);
         Rs2Tile.init();
     }
 
@@ -69,9 +68,9 @@ public class moonsOfPerilPlugin extends Plugin {
     @Subscribe
     public void onGameObjectSpawned(GameObjectSpawned event) {
         final GameObject bloodPool = event.getGameObject();
-        if (bloodPool.getId() == ObjectID.PMOON_BOSS_BLOOD_POOL && bloodPool.getWorldLocation().equals(bloodMoonHandler.evadeTile) && bloodMoonHandler.bloodJaguarActive && bloodMoonHandler.arrived) {
-            Microbot.log("[EVENT] GameObjectCreated id=" + bloodPool.getId() + "at " + bloodMoonHandler.evadeTile.toString());
-            bloodMoonHandler.handleJaguars(bloodPool);
+        if (bloodPool.getId() == ObjectID.PMOON_BOSS_BLOOD_POOL) {
+/*            Microbot.log("[EVENT] GameObjectCreated id=" + bloodPool.getId() + "at " + bloodPool.getWorldLocation());*/
+            bloodPoolTick = 0;
         }
     }
 
@@ -84,9 +83,7 @@ public class moonsOfPerilPlugin extends Plugin {
     public void onGameTick(GameTick tick)
     {
         //System.out.println(getName().chars().mapToObj(i -> (char)(i + 3)).map(String::valueOf).collect(Collectors.joining()));
-        if (bloodMoonHandler.bloodJaguarActive && bloodMoonHandler.arrived) {
-            bloodMoonHandler.onGameTick();
-        }
+        bloodPoolTick ++;
 
         if (ticks > 0) {
             ticks--;
