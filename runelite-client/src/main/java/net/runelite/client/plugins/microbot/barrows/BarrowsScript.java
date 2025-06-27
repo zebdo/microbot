@@ -237,7 +237,13 @@ public class BarrowsScript extends Script {
                         if (Rs2Player.getWorldLocation().getPlane() == 3) {
                             Microbot.log("We're in the mound");
 
-                            activatePrayer();
+                            if(config.shouldPrayAgainstWeakerBrothers()){
+                                activatePrayer();
+                            } else {
+                                if(!brother.getName().contains("Torag") && !brother.getName().contains("Guthan") && !brother.getName().contains("Verac")){
+                                    activatePrayer();
+                                }
+                            }
 
                             // we're in the mound, prayer is active
                             GameObject sarc = Rs2GameObject.get("Sarcophagus");
@@ -291,13 +297,27 @@ public class BarrowsScript extends Script {
                                         break;
                                     }
 
-                                    activatePrayer();
+                                    if(config.shouldPrayAgainstWeakerBrothers()){
+                                        activatePrayer();
+                                    } else {
+                                        if(!brother.getName().contains("Torag") && !brother.getName().contains("Guthan") && !brother.getName().contains("Verac")){
+                                            activatePrayer();
+                                        }
+                                    }
+
                                     sleep(500,1500);
                                     eatFood();
                                     outOfSupplies(config);
                                     antiPatternDropVials();
                                     drinkforgottonbrew();
-                                    drinkPrayerPot();
+
+                                    if(config.shouldPrayAgainstWeakerBrothers()){
+                                        drinkPrayerPot();
+                                    } else {
+                                        if(!brother.getName().contains("Torag") && !brother.getName().contains("Guthan") && !brother.getName().contains("Verac")){
+                                            drinkPrayerPot();
+                                        }
+                                    }
 
                                     if(Microbot.getClient().getHintArrowNpc() == null){
                                         break;
