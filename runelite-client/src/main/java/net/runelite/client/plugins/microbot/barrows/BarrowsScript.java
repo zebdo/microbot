@@ -4,6 +4,7 @@ import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
@@ -55,7 +56,7 @@ public class BarrowsScript extends Script {
     public static boolean usingPoweredStaffs = false;
     public static boolean firstRun = false;
 
-    public boolean run(BarrowsConfig config) {
+    public boolean run(BarrowsConfig config, BarrowsPlugin plugin) {
         Microbot.enableAutoRunOn = false;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -156,6 +157,9 @@ public class BarrowsScript extends Script {
                             return;
                         }
 
+
+
+
                         stopFutureWalker();
                         closeBank();
 
@@ -221,6 +225,8 @@ public class BarrowsScript extends Script {
                                 }
                             }
                         }
+
+                        plugin.getLockCondition().lock();
 
                         //Enter mound
                         if (Rs2Player.getWorldLocation().getPlane() != 3) {
@@ -505,6 +511,8 @@ public class BarrowsScript extends Script {
                         outOfSupplies(config);
                         //walk to and open the bank
                         Rs2Bank.walkToBankAndUseBank(BankLocation.FEROX_ENCLAVE);
+                        //unlock
+                        plugin.getLockCondition().unlock();
                     } else {
                         Rs2Food ourfood = config.food();
                         int ourFoodsID = ourfood.getId();

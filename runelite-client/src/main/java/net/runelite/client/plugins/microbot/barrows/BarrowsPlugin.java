@@ -18,6 +18,7 @@ import net.runelite.client.plugins.microbot.example.ExampleOverlay;
 import net.runelite.client.plugins.microbot.example.ExampleScript;
 import net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LockCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
 import net.runelite.client.plugins.microbot.runecrafting.gotr.GotrScript;
@@ -57,6 +58,7 @@ public class BarrowsPlugin extends Plugin implements SchedulablePlugin {
     @Inject
     BarrowsScript barrowsScript;
     LogicalCondition stopCondition = new AndCondition();
+    LockCondition lockCondition = new LockCondition();
 
 
     @Override
@@ -109,6 +111,11 @@ public class BarrowsPlugin extends Plugin implements SchedulablePlugin {
             log.error("Error stopping plugin: ", e);
         }
     }
+
+    public LockCondition getLockCondition(){
+        return lockCondition;
+    }
+
     @Override
     public LogicalCondition getStopCondition() {
         // Create a new stop condition
