@@ -1121,9 +1121,9 @@ public class revKillerScript extends Script {
             //equip arrows
             if(howtobank <= 40){
                 Microbot.log("We have "+Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity()+" arrows left");
-                if(Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity() < LowOnArrowsCount){
+                if(Rs2Equipment.get(EquipmentInventorySlot.AMMO) == null || Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity() < LowOnArrowsCount){
                     if(Rs2Bank.count(selectedArrow)>100){
-                        if(!Rs2Inventory.contains(selectedArrow)||Rs2Inventory.get(selectedArrow).getQuantity() < LowOnArrowsCount){
+                        if(!Rs2Inventory.contains(selectedArrow)||Rs2Equipment.get(EquipmentInventorySlot.AMMO) == null || Rs2Inventory.get(selectedArrow).getQuantity() < LowOnArrowsCount){
                             int min = 250;
                             int max = 300;
                             if(selectedArrow == ItemID.BOLT_RACK){
