@@ -1120,7 +1120,6 @@ public class revKillerScript extends Script {
             howtobank = generateRandomNumber(0,100);
             //equip arrows
             if(howtobank <= 40){
-                Microbot.log("We have "+Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity()+" arrows left");
                 if(Rs2Equipment.get(EquipmentInventorySlot.AMMO) == null || Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity() < LowOnArrowsCount){
                     if(Rs2Bank.count(selectedArrow)>100){
                         if(!Rs2Inventory.contains(selectedArrow)||Rs2Equipment.get(EquipmentInventorySlot.AMMO) == null || Rs2Inventory.get(selectedArrow).getQuantity() < LowOnArrowsCount){
