@@ -58,6 +58,7 @@ public class revKillerPlugin extends Plugin {
         revKillerScript.startHealthCheck();
         revKillerScript.weDied = false;
         revKillerScript.shouldFlee = false;
+        revKillerScript.firstRun = true;
         eventBus.register(this);
         revKillerScript.selectedWP = config.selectedRev().getWorldPoint();
         revKillerScript.selectedArrow = config.selectedArrow().getArrowID();
@@ -71,7 +72,6 @@ public class revKillerPlugin extends Plugin {
     protected void shutDown() {
         revKillerScript.weDied = false;
         revKillerScript.shouldFlee = false;
-        revKillerScript.ourEquipmentForDeathWalking.clear();
         Rs2Antiban.resetAntibanSettings();
         Rs2Antiban.deactivateAntiban();
         revKillerScript.stopFutures();
