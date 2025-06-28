@@ -1067,14 +1067,14 @@ public class BarrowsScript extends Script {
             }
         }
 
-        if(magicLvl >= 62 && magicLvl < 81){
+        if(magicLvl >= 62 && magicLvl < 81 || Rs2Equipment.get(EquipmentInventorySlot.WEAPON).getName().equals("Twinflame staff")){
             neededRune = "Blood rune";
             if (Rs2Magic.getCurrentAutoCastSpell() != Rs2CombatSpells.WIND_WAVE) {
                 Rs2Combat.setAutoCastSpell(Rs2CombatSpells.WIND_WAVE, false);
             }
         }
 
-        if(magicLvl >= 81){
+        if(magicLvl >= 81 && !Rs2Equipment.get(EquipmentInventorySlot.WEAPON).getName().equals("Twinflame staff")){
             neededRune = "Wrath rune";
             if (Rs2Magic.getCurrentAutoCastSpell() != Rs2CombatSpells.WIND_SURGE) {
                 Rs2Combat.setAutoCastSpell(Rs2CombatSpells.WIND_SURGE, false);
@@ -1090,13 +1090,13 @@ public class BarrowsScript extends Script {
             }
         }
 
-        if(magicLvl >= 62 && magicLvl < 81){
+        if(magicLvl >= 62 && magicLvl < 81 || Rs2Equipment.get(EquipmentInventorySlot.WEAPON).getName().equals("Twinflame staff")){
             if (Rs2Magic.getCurrentAutoCastSpell() != Rs2CombatSpells.WIND_WAVE) {
                 Rs2Combat.setAutoCastSpell(Rs2CombatSpells.WIND_WAVE, false);
             }
         }
 
-        if(magicLvl >= 81){
+        if(magicLvl >= 81 && !Rs2Equipment.get(EquipmentInventorySlot.WEAPON).getName().equals("Twinflame staff")){
             if (Rs2Magic.getCurrentAutoCastSpell() != Rs2CombatSpells.WIND_SURGE) {
                 Rs2Combat.setAutoCastSpell(Rs2CombatSpells.WIND_SURGE, false);
             }
