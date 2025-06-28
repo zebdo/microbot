@@ -676,8 +676,20 @@ public class Rs2InventorySetup {
 		if (useChugBarrel && !handleChugBarrel())
 		{
 			return false;
-		} else {
-			findBoostingPotions(potionsToPrePot).stream().forEachOrdered(potion -> {
+		}
+		else
+		{
+			List<String> setupPotionNames = additionalItems.stream()
+				.map(InventorySetupsItem::getName)
+				.filter(Objects::nonNull)
+				.map(String::toLowerCase)
+				.collect(Collectors.toList());
+
+			List<String> validPotionsToPrePot = potionsToPrePot.stream()
+				.filter(pot -> setupPotionNames.stream().anyMatch(setupName -> setupName.equalsIgnoreCase(pot.toLowerCase())))
+				.collect(Collectors.toList());
+
+			findBoostingPotions(validPotionsToPrePot).stream().forEachOrdered(potion -> {
 				if (isMainSchedulerCancelled() || isPotionEffectActive(potion.getName().toLowerCase()))
 				{
 					return;
@@ -689,16 +701,28 @@ public class Rs2InventorySetup {
 					Rs2Bank.withdrawOne(potion.getName());
 					Rs2Inventory.waitForInventoryChanges(1800);
 				}
+
 				Rs2Inventory.interact(potion.getId(), "drink");
 				Rs2Random.wait(1200, 1800); // added pot delay
 
 				if (!fromInventory)
 				{
-					String simplifiedPotionName = potion.getName().replaceAll("\\s*\\(\\d+\\)", "").trim();
-					if (Rs2Inventory.hasItem(simplifiedPotionName))
+					Matcher matcher = Pattern.compile("\\((\\d)\\)").matcher(potion.getName());
+					int resultingDose = matcher.find() ? Integer.parseInt(matcher.group(1)) - 1 : -1;
+
+					if (resultingDose > 0)
 					{
-						Rs2Bank.depositOne(simplifiedPotionName);
-						Rs2Inventory.waitForInventoryChanges(1800);
+						String resultingName = potion.getName().replaceAll("\\(\\d\\)", "(" + resultingDose + ")");
+						Rs2ItemModel resultingItem = Rs2Inventory.items().stream()
+							.filter(item -> item.getName().equalsIgnoreCase(resultingName))
+							.findFirst()
+							.orElse(null);
+
+						if (resultingItem != null)
+						{
+							Rs2Bank.depositOne(resultingItem.getId());
+							Rs2Inventory.waitForInventoryChanges(1800);
+						}
 					}
 					else if (Rs2Inventory.hasItem(ItemID.VIAL_EMPTY))
 					{
@@ -793,31 +817,17 @@ public class Rs2InventorySetup {
 	 * @return a list of unique matching potions from inventory or bank
 	 */
 	private List<Rs2ItemModel> findBoostingPotions(List<String> potionsToPrePot) {
-		List<Rs2ItemModel> potions = Rs2Inventory.items().stream()
-			.filter(item -> item.getName() != null)
-			.filter(item -> potionsToPrePot.stream().anyMatch(name -> item.getName().toLowerCase().contains(name)))
-			.collect(Collectors.collectingAndThen(
-				Collectors.toMap(Rs2ItemModel::getId, Function.identity(), (a, b) -> a),
-				map -> new ArrayList<>(map.values())
-			));
+		List<Rs2ItemModel> potions = Rs2Bank.bankItems().stream()
+			.filter(item -> item.getName() != null &&
+				potionsToPrePot.stream().anyMatch(name -> item.getName().toLowerCase().contains(name)))
+			.collect(Collectors.toList());
 
-		if (potions.isEmpty()) {
-			potions = Rs2Bank.bankItems().stream()
-				.filter(item -> item.getName() != null)
-				.filter(item -> getAdditionalItems().stream()
-					.anyMatch(additionalItem -> additionalItem.getName() != null &&
-						item.getName().toLowerCase().contains(additionalItem.getName().toLowerCase())))
-				.filter(item -> potionsToPrePot.stream()
-					.anyMatch(name -> item.getName().toLowerCase().contains(name)))
-				.collect(Collectors.toList());
-
-			if (!potions.isEmpty()) {
-				potions.sort(Comparator.comparingInt(item -> {
-					String name = item.getName().toLowerCase();
-					Matcher matcher = Pattern.compile("\\((\\d)\\)").matcher(name);
-					return matcher.find() ? Integer.parseInt(matcher.group(1)) : 0;
-				}));
-			}
+		if (!potions.isEmpty()) {
+			potions.sort(Comparator.comparingInt(item -> {
+				String name = item.getName().toLowerCase();
+				Matcher matcher = Pattern.compile("\\((\\d)\\)").matcher(name);
+				return matcher.find() ? Integer.parseInt(matcher.group(1)) : 0;
+			}));
 		}
 
 		return potions;
