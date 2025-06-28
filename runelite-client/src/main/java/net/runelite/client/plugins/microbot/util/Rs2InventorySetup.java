@@ -676,38 +676,38 @@ public class Rs2InventorySetup {
 		if (useChugBarrel && !handleChugBarrel())
 		{
 			return false;
+		} else {
+			findBoostingPotions(potionsToPrePot).stream().forEachOrdered(potion -> {
+				if (isMainSchedulerCancelled() || isPotionEffectActive(potion.getName().toLowerCase()))
+				{
+					return;
+				}
+
+				boolean fromInventory = Rs2Inventory.hasItem(potion.getId());
+				if (!fromInventory)
+				{
+					Rs2Bank.withdrawOne(potion.getName());
+					Rs2Inventory.waitForInventoryChanges(1800);
+				}
+				Rs2Inventory.interact(potion.getId(), "drink");
+				Rs2Random.wait(1200, 1800); // added pot delay
+
+				if (!fromInventory)
+				{
+					String simplifiedPotionName = potion.getName().replaceAll("\\s*\\(\\d+\\)", "").trim();
+					if (Rs2Inventory.hasItem(simplifiedPotionName))
+					{
+						Rs2Bank.depositOne(simplifiedPotionName);
+						Rs2Inventory.waitForInventoryChanges(1800);
+					}
+					else if (Rs2Inventory.hasItem(ItemID.VIAL_EMPTY))
+					{
+						Rs2Bank.depositAll(ItemID.VIAL_EMPTY);
+						Rs2Inventory.waitForInventoryChanges(1800);
+					}
+				}
+			});
 		}
-
-		findBoostingPotions(potionsToPrePot).stream().forEachOrdered(potion -> {
-			if (isMainSchedulerCancelled() || isPotionEffectActive(potion.getName().toLowerCase()))
-			{
-				return;
-			}
-
-			boolean fromInventory = Rs2Inventory.hasItem(potion.getId());
-			if (!fromInventory)
-			{
-				Rs2Bank.withdrawOne(potion.getName());
-				Rs2Inventory.waitForInventoryChanges(1800);
-			}
-			Rs2Inventory.interact(potion.getId(), "drink");
-			Rs2Random.wait(1200, 1800); // added pot delay
-
-			if (!fromInventory)
-			{
-				String simplifiedPotionName = potion.getName().replaceAll("\\s*\\(\\d+\\)", "").trim();
-				if (Rs2Inventory.hasItem(simplifiedPotionName))
-				{
-					Rs2Bank.depositOne(simplifiedPotionName);
-					Rs2Inventory.waitForInventoryChanges(1800);
-				}
-				else if (Rs2Inventory.hasItem(ItemID.VIAL_EMPTY))
-				{
-					Rs2Bank.depositAll(ItemID.VIAL_EMPTY);
-					Rs2Inventory.waitForInventoryChanges(1800);
-				}
-			}
-		});
 
 		if (Rs2Player.getHealthPercentage() < 100)
 		{
