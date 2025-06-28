@@ -14,6 +14,10 @@ import net.runelite.client.plugins.microbot.MicrobotApi;
 import net.runelite.client.plugins.microbot.example.ExampleConfig;
 import net.runelite.client.plugins.microbot.example.ExampleOverlay;
 import net.runelite.client.plugins.microbot.example.ExampleScript;
+import net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -28,7 +32,7 @@ import java.awt.*;
         enabledByDefault = false
 )
 @Slf4j
-public class revKillerPlugin extends Plugin {
+public class revKillerPlugin extends Plugin implements SchedulablePlugin {
     @Inject
     private revKillerConfig config;
     @Provides
@@ -43,6 +47,7 @@ public class revKillerPlugin extends Plugin {
 
     @Inject
     revKillerScript revKillerScript;
+    LogicalCondition stopCondition = new AndCondition();
 
     @Inject
     private EventBus eventBus;
@@ -86,6 +91,22 @@ public class revKillerPlugin extends Plugin {
         if (event.getActor().equals(Microbot.getClient().getLocalPlayer())) {
             revKillerScript.weDied = true;
         }
+    }
+
+    @Subscribe
+    public void onPluginScheduleEntrySoftStopEvent(PluginScheduleEntrySoftStopEvent event) {
+        try{
+            if (event.getPlugin() == this) {
+                Microbot.stopPlugin(this);
+            }
+        } catch (Exception e) {
+            log.error("Error stopping plugin: ", e);
+        }
+    }
+    @Override
+    public LogicalCondition getStopCondition() {
+        // Create a new stop condition
+        return this.stopCondition;
     }
 
     int ticks = 10;

@@ -16,6 +16,10 @@ import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.example.ExampleConfig;
 import net.runelite.client.plugins.microbot.example.ExampleOverlay;
 import net.runelite.client.plugins.microbot.example.ExampleScript;
+import net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
 import net.runelite.client.plugins.microbot.runecrafting.gotr.GotrScript;
 import net.runelite.client.plugins.microbot.runecrafting.gotr.GotrState;
 import net.runelite.client.plugins.microbot.util.Global;
@@ -37,7 +41,7 @@ import java.util.regex.Matcher;
         enabledByDefault = false
 )
 @Slf4j
-public class BarrowsPlugin extends Plugin {
+public class BarrowsPlugin extends Plugin implements SchedulablePlugin {
     @Inject
     private BarrowsConfig config;
     @Provides
@@ -52,6 +56,7 @@ public class BarrowsPlugin extends Plugin {
 
     @Inject
     BarrowsScript barrowsScript;
+    LogicalCondition stopCondition = new AndCondition();
 
 
     @Override
@@ -92,6 +97,22 @@ public class BarrowsPlugin extends Plugin {
             BarrowsScript.outOfPoweredStaffCharges = true;
         }
 
+    }
+
+    @Subscribe
+    public void onPluginScheduleEntrySoftStopEvent(PluginScheduleEntrySoftStopEvent event) {
+        try{
+            if (event.getPlugin() == this) {
+                Microbot.stopPlugin(this);
+            }
+        } catch (Exception e) {
+            log.error("Error stopping plugin: ", e);
+        }
+    }
+    @Override
+    public LogicalCondition getStopCondition() {
+        // Create a new stop condition
+        return this.stopCondition;
     }
 
     int ticks = 10;
