@@ -8,6 +8,7 @@ import net.runelite.api.NPC;
 import net.runelite.api.Point;
 import net.runelite.api.TileObject;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
@@ -45,6 +46,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -184,6 +186,8 @@ public class Rs2Inventory {
         // Compare each primary item with each secondary item to find the closest slots
         for (Rs2ItemModel primaryItem : first) {
             for (Rs2ItemModel secondaryItem : second) {
+                if (primaryItem == secondaryItem) continue;
+
                 int slotDifference = calculateSlotDifference(primaryItem.getSlot(), secondaryItem.getSlot());
                 if (slotDifference < minSlotDifference) {
                     minSlotDifference = slotDifference;
@@ -247,17 +251,18 @@ public class Rs2Inventory {
         return use(closest.y);
     }
 
+    private static int getRow(int slot) {
+        return (slot - 1) / 4;
+    }
+
+    private static int getColumn(int slot) {
+        return (slot - 1) % 4;
+    }
 
     // Helper method to calculate the Manhattan distance between two inventory slots
     private static int calculateSlotDifference(int slot1, int slot2) {
-        // Calculate the row and column for each slot
-        int row1 = (slot1 - 1) / 4;
-        int col1 = (slot1 - 1) % 4;
-        int row2 = (slot2 - 1) / 4;
-        int col2 = (slot2 - 1) % 4;
-
         // Calculate the Manhattan distance between the two slots
-        return Math.abs(row1 - row2) + Math.abs(col1 - col2);
+        return Math.abs(getRow(slot1) - getRow(slot2)) + Math.abs(getColumn(slot1) - getColumn(slot2));
     }
 
     /**
@@ -344,6 +349,18 @@ public class Rs2Inventory {
      */
     public static int count(int id) {
         return count(item -> item.getId() == id);
+    }
+
+    /**
+     * Counts the number of items in the inventory that match the specified name.
+     *
+     * @param name The name to match.
+     *
+     * @return The count of items that match the name.
+     */
+    public static int count(String name, boolean exact) {
+        return count(exact ? item -> item.getName().equalsIgnoreCase(name) :
+                item -> item.getName().toLowerCase().contains(name.toLowerCase()));
     }
 
     /**
@@ -545,7 +562,7 @@ public class Rs2Inventory {
      * @return
      */
     public static boolean dropAllExcept(int gpValue) {
-        return dropAllExcept(gpValue, List.of());
+        return dropAllExcept(gpValue, (String[]) EMPTY_ARRAY);
     }
 
     /**
@@ -556,8 +573,8 @@ public class Rs2Inventory {
      *
      * @return
      */
-    public static boolean dropAllExcept(int gpValue, List<String> ignoreItems) {
-        final Predicate<Rs2ItemModel> ignore = item -> ignoreItems.stream().anyMatch(x -> x.equalsIgnoreCase(item.getName()));
+    public static boolean dropAllExcept(int gpValue, String[] ignoreItems) {
+        final Predicate<Rs2ItemModel> ignore = item -> Arrays.stream(ignoreItems).anyMatch(x -> x.equalsIgnoreCase(item.getName()));
         final Predicate<Rs2ItemModel> price = item -> (long) Microbot.getClientThread().runOnClientThreadOptional(() ->
                 Microbot.getItemManager().getItemPrice(item.getId()) * item.getQuantity()).orElse(0) >= gpValue;
         return dropAllExcept(ignore.or(price));
@@ -685,23 +702,12 @@ public class Rs2Inventory {
      *
      * @return The item with one of the specified names, or null if not found.
      */
-    public static Rs2ItemModel get(List<String> names, boolean exact) {
+    public static Rs2ItemModel get(String[] names, boolean exact) {
         if (exact) {
-            return get(item -> names.stream().anyMatch(n -> n.equalsIgnoreCase(item.getName())));
+            return get(item -> Arrays.stream(names).anyMatch(n -> n.equalsIgnoreCase(item.getName())));
         } else {
-            return get(item -> names.stream().anyMatch(n -> n.toLowerCase().contains(item.getName().split("\\(")[0].toLowerCase())));
+            return get(item -> Arrays.stream(names).anyMatch(n -> n.toLowerCase().contains(item.getName().split("\\(")[0].toLowerCase())));
         }
-    }
-
-    /**
-     * Gets the item in the inventory with one of the specified names.
-     *
-     * @param names The names to match.
-     *
-     * @return The item with one of the specified names, or null if not found.
-     */
-    public static Rs2ItemModel get(List<String> names) {
-        return get(names, false);
     }
 
     /**
@@ -745,8 +751,20 @@ public class Rs2Inventory {
      *
      * @return The quantity of the item if found, otherwise 0.
      */
+    public static int itemQuantity(String itemName, boolean exact) {
+        return itemQuantity(exact ? item -> item.getName().equalsIgnoreCase(itemName) :
+                item -> item.getName().toLowerCase().contains(itemName.toLowerCase()));
+    }
+
+    /**
+     * Retrieves the quantity of an item based on its name.
+     *
+     * @param itemName The name of the item.
+     *
+     * @return The quantity of the item if found, otherwise 0.
+     */
     public static int itemQuantity(String itemName) {
-        return itemQuantity(item -> item.getName().equalsIgnoreCase(itemName));
+        return itemQuantity(itemName,true);
     }
 
     /**
@@ -812,27 +830,8 @@ public class Rs2Inventory {
      * @return True if the player has the specified quantity of the item, false otherwise.
      */
     public static boolean hasItemAmount(String name, int amount, boolean stackable, boolean exact) {
-        if (!stackable) {
-            if (exact) {
-                return items(x -> x.getName().equalsIgnoreCase(name)).count() >= amount;
-            } else {
-                return items(x -> x.getName().toLowerCase().contains(name.toLowerCase())).count() >= amount;
-            }
-        }
-
-        Rs2ItemModel item = get(name, true, exact);
-        if (item == null) return false;
-
-        return item.getQuantity() >= amount;
-    }
-
-    /**
-     * @param id
-     *
-     * @return boolean
-     */
-    public static boolean hasItem(int id) {
-        return get(id) != null;
+        if (stackable) return itemQuantity(name, exact) >= amount;
+        return count(name, exact) >= amount;
     }
 
     /**
@@ -861,15 +860,6 @@ public class Rs2Inventory {
      */
     public static boolean hasItem(String name, boolean exact) {
         return get(name, false, exact) != null;
-    }
-
-    /**
-     * @param names
-     *
-     * @return boolean
-     */
-    public static boolean hasItem(List<String> names) {
-        return get(names) != null;
     }
 
     /**
@@ -978,7 +968,7 @@ public class Rs2Inventory {
      * @return The basic inventory widget.
      */
     public static Widget getInventoryWidget() {
-        return Rs2Widget.getWidget(ComponentID.INVENTORY_CONTAINER);
+        return Rs2Widget.getWidget(InterfaceID.INVENTORY, 0);
     }
 
     /**
@@ -1055,6 +1045,11 @@ public class Rs2Inventory {
         return getRandom(item -> Arrays.stream(names).anyMatch(name -> item.getName().equalsIgnoreCase(name)));
     }
 
+    private static <T> T getSelectedValueOrDefault(Function<Widget, T> valueSupplier, T _default) {
+        final Widget widget = Microbot.getClient().getSelectedWidget();
+        return widget == null ? _default : valueSupplier.apply(widget);
+    }
+
     /**
      * Gets the ID of the currently selected item in the inventory.
      * Returns -1 if none is found
@@ -1062,8 +1057,7 @@ public class Rs2Inventory {
      * @return The ID of the currently selected item, or -1 if no item is selected.
      */
     public static int getSelectedItemId() {
-        if (Microbot.getClient().getSelectedWidget() == null) return -1;
-        return Microbot.getClient().getSelectedWidget().getItemId();
+        return getSelectedValueOrDefault(Widget::getItemId, -1);
     }
 
     /**
@@ -1073,8 +1067,7 @@ public class Rs2Inventory {
      * @return The index of the currently selected item, or -1 if no item is selected.
      */
     public static int getSelectedItemIndex() {
-        if (Microbot.getClient().getSelectedWidget() == null) return -1;
-        return Microbot.getClient().getSelectedWidget().getIndex();
+        return getSelectedValueOrDefault(Widget::getIndex, -1);
     }
 
     /**
@@ -1083,8 +1076,7 @@ public class Rs2Inventory {
      * @return The name of the currently selected item, or an empty string if no item is selected.
      */
     public static String getSelectedItemName() {
-        if (Microbot.getClient().getSelectedWidget() == null) return null;
-        return Rs2UiHelper.stripColTags(Microbot.getClient().getSelectedWidget().getName());
+        return getSelectedValueOrDefault(w -> Rs2UiHelper.stripColTags(w.getName()), null);
     }
 
     /**
@@ -1182,8 +1174,8 @@ public class Rs2Inventory {
      *
      * @return True if the interaction was successful, false otherwise.
      */
-    public static boolean interact(List<String> names, String action) {
-        return names.stream().anyMatch(name -> interact(name, action));
+    public static boolean interact(String[] names, String action) {
+        return Arrays.stream(names).anyMatch(name -> interact(name, action));
     }
 
     /**
@@ -1326,12 +1318,12 @@ public class Rs2Inventory {
     /**
      * Checks if the given slot in the inventory is full (contains an item).
      *
-     * @param slot The slot to check.
+     * @param slots The slot(s) to check.
      *
      * @return True if the slot is full, false otherwise.
      */
-    public static boolean isSlotFull(int slot) {
-        return !isSlotEmpty(slot);
+    public static boolean isSlotFull(int... slots) {
+        return !isSlotsEmpty(slots);
     }
 
     /**
@@ -1345,10 +1337,9 @@ public class Rs2Inventory {
         Widget inventory = getInventory();
         if (inventory == null) return null;
 
-        Widget item = Arrays.stream(inventory.getDynamicChildren())
+        return Arrays.stream(inventory.getDynamicChildren())
                 .filter(widget -> widget.getIndex() == rs2Item.getSlot())
-                .findFirst().orElse(null);
-        return item == null ? null : item.getBounds();
+                .findFirst().map(Widget::getBounds).orElse(null);
     }
 
     /**
@@ -1753,16 +1744,13 @@ public class Rs2Inventory {
      * Method will search for restore energy items in inventory & use them
      */
     public static void useRestoreEnergyItem() {
-        List<Rs2ItemModel> filteredStaminaRestoreItems = getFilteredPotionItemsInInventory(Rs2Potion.getStaminaPotion());
-        if (!filteredStaminaRestoreItems.isEmpty() && !Rs2Player.hasStaminaBuffActive()) {
-            Rs2Inventory.interact(filteredStaminaRestoreItems.stream().findFirst().get().getName(), "drink");
-            return;
+        Rs2ItemModel restoreItem = getPotionsInInventory(Rs2Potion.getStaminaPotion()).findFirst().orElse(null);
+        if (restoreItem == null || Rs2Player.hasStaminaBuffActive()) {
+            restoreItem = getPotionsInInventory(Rs2Potion.getRestoreEnergyPotionsVariants().toArray(String[]::new)).findFirst().orElse(null);
+            if (restoreItem == null) return;
         }
 
-        List<Rs2ItemModel> filteredRestoreEnergyItems = getFilteredPotionItemsInInventory(Rs2Potion.getRestoreEnergyPotionsVariants());
-        if (!filteredRestoreEnergyItems.isEmpty()) {
-            Rs2Inventory.interact(filteredRestoreEnergyItems.stream().findFirst().get().getName(), "drink");
-        }
+        Rs2Inventory.interact(restoreItem.getName(), "drink");
     }
 
     /**
@@ -1776,6 +1764,14 @@ public class Rs2Inventory {
         return getFilteredPotionItemsInInventory(Collections.singletonList(potionName));
     }
 
+    private static final Pattern usesRegexPattern = Pattern.compile("^(.*?)(?:\\(\\d+\\))?$");
+    private static Stream<Rs2ItemModel> getPotionsInInventory(String... potionNames) {
+        return getPotions().stream().filter(item -> {
+                    final Matcher matcher = usesRegexPattern.matcher(item.getName());
+                    return matcher.matches() && Arrays.stream(potionNames).anyMatch(name -> name.equalsIgnoreCase(matcher.group(1).trim()));
+        });
+    }
+
     /**
      * Method fetches list of potion items in Inventory, will ignore uses
      *
@@ -1784,13 +1780,7 @@ public class Rs2Inventory {
      * @return List of Potion Items in Inventory
      */
     public static List<Rs2ItemModel> getFilteredPotionItemsInInventory(List<String> potionNames) {
-        Pattern usesRegexPattern = Pattern.compile("^(.*?)(?:\\(\\d+\\))?$");
-        return getPotions().stream()
-                .filter(item -> {
-                    Matcher matcher = usesRegexPattern.matcher(item.getName());
-                    return matcher.matches() && potionNames.contains(matcher.group(1).trim());
-                })
-                .collect(Collectors.toList());
+        return getPotionsInInventory(potionNames.toArray(String[]::new)).collect(Collectors.toList());
     }
 
     /**
@@ -1894,29 +1884,12 @@ public class Rs2Inventory {
         final int BANK_PIN_INVENTORY_ITEM_CONTAINER = 17563648;
         final int SHOP_INVENTORY_ITEM_CONTAINER = 19726336;
         return Microbot.getClientThread().runOnClientThreadOptional(() -> {
-            Widget inventoryWidget = Microbot.getClient().getWidget(ComponentID.INVENTORY_CONTAINER);
-            Widget bankInventoryWidget = Microbot.getClient().getWidget(ComponentID.BANK_INVENTORY_ITEM_CONTAINER);
-            Widget bankPinInventoryWidget = Microbot.getClient().getWidget(BANK_PIN_INVENTORY_ITEM_CONTAINER);
-            Widget shopInventoryWidget = Microbot.getClient().getWidget(SHOP_INVENTORY_ITEM_CONTAINER);
-            Widget grandExchangeWidget = Microbot.getClient().getWidget(ComponentID.GRAND_EXCHANGE_INVENTORY_INVENTORY_ITEM_CONTAINER);
-            Widget depositBoxWidget = Microbot.getClient().getWidget(ComponentID.DEPOSIT_BOX_INVENTORY_ITEM_CONTAINER);
-            if (inventoryWidget != null && inventoryWidget.getDynamicChildren() != null && !inventoryWidget.isHidden()) {
-                return inventoryWidget;
-            }
-            if (bankInventoryWidget != null && bankInventoryWidget.getDynamicChildren() != null && !bankInventoryWidget.isHidden()) {
-                return bankInventoryWidget;
-            }
-            if (bankPinInventoryWidget != null && bankPinInventoryWidget.getDynamicChildren() != null && !bankPinInventoryWidget.isHidden()) {
-                return bankPinInventoryWidget;
-            }
-            if (shopInventoryWidget != null && shopInventoryWidget.getDynamicChildren() != null && !shopInventoryWidget.isHidden()) {
-                return shopInventoryWidget;
-            }
-            if (grandExchangeWidget != null && grandExchangeWidget.getDynamicChildren() != null && !grandExchangeWidget.isHidden()) {
-                return grandExchangeWidget;
-            }
-            if (depositBoxWidget != null && depositBoxWidget.getDynamicChildren() != null && !depositBoxWidget.isHidden()) {
-                return depositBoxWidget;
+            for (int id : new int[] {ComponentID.INVENTORY_CONTAINER, ComponentID.BANK_INVENTORY_ITEM_CONTAINER,
+                    BANK_PIN_INVENTORY_ITEM_CONTAINER, SHOP_INVENTORY_ITEM_CONTAINER,
+                    ComponentID.GRAND_EXCHANGE_INVENTORY_INVENTORY_ITEM_CONTAINER,
+                    ComponentID.DEPOSIT_BOX_INVENTORY_ITEM_CONTAINER}) {
+                final Widget widget = Microbot.getClient().getWidget(id);
+                if (widget != null && widget.getDynamicChildren() != null && !widget.isHidden()) return widget;
             }
             return null;
         }).orElse(null);
