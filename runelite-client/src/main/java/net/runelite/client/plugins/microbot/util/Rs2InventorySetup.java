@@ -544,26 +544,20 @@ public class Rs2InventorySetup {
 	private void sortInventoryItems(List<InventorySetupsItem> setupItems) {
 		if (setupItems == null || setupItems.isEmpty()) return;
 
-		Set<Integer> matchingSlots = setupItems.stream()
-			.filter(item -> {
-				Rs2ItemModel invItem = Rs2Inventory.getItemInSlot(item.getSlot());
-				return invItem != null && (
-					item.isFuzzy()
-						? invItem.getName().toLowerCase().contains(item.getName().toLowerCase())
-						: invItem.getId() == item.getId()
-				);
-			})
-			.map(InventorySetupsItem::getSlot)
-			.peek(slot -> {
-				Rs2ItemModel invItem = Rs2Inventory.getItemInSlot(slot);
-				if (invItem != null) {
-					Microbot.log("Item " + invItem.getName() + " already in correct slot " + slot, Level.DEBUG);
-				}
-			})
-			.collect(Collectors.toSet());
-
 		for (InventorySetupsItem setupItem : setupItems) {
 			if (isMainSchedulerCancelled()) break;
+
+			Set<Integer> matchingSlots = setupItems.stream()
+				.filter(item -> {
+					Rs2ItemModel invItem = Rs2Inventory.getItemInSlot(item.getSlot());
+					return invItem != null && (
+						item.isFuzzy()
+							? invItem.getName().toLowerCase().contains(item.getName().toLowerCase())
+							: invItem.getId() == item.getId()
+					);
+				})
+				.map(InventorySetupsItem::getSlot)
+				.collect(Collectors.toSet());
 
 			int targetSlot = setupItem.getSlot();
 
@@ -588,8 +582,6 @@ public class Rs2InventorySetup {
 				Microbot.log("Moving " + itemToMove.getName() + " from slot " + sourceSlot + " to slot " + targetSlot, Level.DEBUG);
 
 				if (Rs2Inventory.moveItemToSlot(itemToMove, targetSlot)) {
-
-					matchingSlots.add(targetSlot);
 					Rs2Inventory.waitForInventoryChanges(2000);
 				}
 			} else {
