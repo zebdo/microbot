@@ -73,7 +73,7 @@ public class ShootingStarScript extends Script {
                     return;
                 }
 
-                if (Rs2Player.isMoving() || Rs2Antiban.getCategory().isBusy() || Microbot.pauseAllScripts) return;
+                if (Rs2Player.isMoving() || Rs2Antiban.getCategory().isBusy()) return;
                 if (Rs2AntibanSettings.actionCooldownActive) return;
                 
                 if (Rs2Gembag.isUnknown()) {

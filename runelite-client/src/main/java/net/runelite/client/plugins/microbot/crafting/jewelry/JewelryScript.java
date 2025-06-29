@@ -59,7 +59,7 @@ public class JewelryScript extends Script {
                 
                 if (state == null) return; // Used to switch into completion action 
                 
-                if (Rs2Player.isMoving() || Rs2Player.isAnimating() || Rs2Antiban.getCategory().isBusy() || Microbot.pauseAllScripts) return;
+                if (Rs2Player.isMoving() || Rs2Player.isAnimating() || Rs2Antiban.getCategory().isBusy()) return;
                 if (Rs2AntibanSettings.actionCooldownActive) return;
                 
                 switch (state) {
