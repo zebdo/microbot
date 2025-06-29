@@ -14,7 +14,7 @@ import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.RunePouch;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -205,7 +205,7 @@ public class BlueDragonsScript extends Script {
 
     private boolean checkRuneAvailability(int runeId, int requiredAmount, boolean checkRunePouch) {
         boolean inInventory = Rs2Inventory.hasItemAmount(runeId, requiredAmount);
-        boolean inRunePouch = checkRunePouch && RunePouch.contains(runeId, requiredAmount);
+        boolean inRunePouch = checkRunePouch && Rs2RunePouch.contains(runeId, requiredAmount);
         return inInventory || inRunePouch;
     }
 
@@ -495,7 +495,7 @@ public class BlueDragonsScript extends Script {
     }
 
     private void moveToSafeSpot() {
-        Microbot.pauseAllScripts = true;
+		Microbot.pauseAllScripts.compareAndSet(false, true);
         
         int distance = Rs2Player.distanceTo(SAFE_SPOT);
         
@@ -524,7 +524,7 @@ public class BlueDragonsScript extends Script {
             logOnceToChat("Successfully reached safe spot.", true, config);
         }
 
-        Microbot.pauseAllScripts = false;
+		Microbot.pauseAllScripts.compareAndSet(true, false);
     }
 
     private boolean hopIfPlayerAtSafeSpot() {
@@ -542,12 +542,12 @@ public class BlueDragonsScript extends Script {
                 
         if (otherPlayersAtSafeSpot) {
             logOnceToChat("Player detected at safe spot. Pausing script and hopping worlds.", false, config);
-            Microbot.pauseAllScripts = true;
+            Microbot.pauseAllScripts.set(true);
             
             boolean hopSuccess = Microbot.hopToWorld(findRandomWorld());
             sleep(5000);
             
-            Microbot.pauseAllScripts = false;
+            Microbot.pauseAllScripts.set(false);
             return hopSuccess;
         }
         

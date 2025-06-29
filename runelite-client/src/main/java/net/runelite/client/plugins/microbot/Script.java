@@ -14,17 +14,14 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
-
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 
-
 @Slf4j
 public abstract class Script extends Global implements IScript {
-
     protected ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10);
     protected ScheduledFuture<?> scheduledFuture;
     protected ScheduledFuture<?> mainScheduledFuture;
@@ -37,7 +34,6 @@ public abstract class Script extends Global implements IScript {
 
     @Getter
     protected static WorldPoint initialPlayerLocation;
-
     public LocalTime startTime;
 
     /**
@@ -47,9 +43,7 @@ public abstract class Script extends Global implements IScript {
      */
     public Duration getRunTime() {
         if (startTime == null) return Duration.ofSeconds(0);
-
         LocalTime currentTime = LocalTime.now();
-
         return Duration.between(startTime, currentTime);
     }
 
@@ -60,7 +54,7 @@ public abstract class Script extends Global implements IScript {
             if (Microbot.getClientThread().scheduledFuture != null)
                 Microbot.getClientThread().scheduledFuture.cancel(true);
             initialPlayerLocation = null;
-            Microbot.pauseAllScripts = false;
+            Microbot.pauseAllScripts.set(false);
             Rs2Walker.disableTeleports = false;
             Microbot.getSpecialAttackConfigs().reset();
             Rs2Walker.setTarget(null);
@@ -76,36 +70,25 @@ public abstract class Script extends Global implements IScript {
             startTime = LocalTime.now();
             //init - things that have to be checked once can be added here
         }
-
-        if (Microbot.pauseAllScripts)
+        if (Microbot.pauseAllScripts.get())
             return false;
-
         if (Thread.currentThread().isInterrupted())
             return false;
-
         //Avoid executing any blocking events if the player hasn't finished Tutorial Island
-        if (Microbot.isLoggedIn() && !Rs2Player.isInTutorialIsland())
+        if (Microbot.isLoggedIn() && !Rs2Player.hasCompletedTutorialIsland())
             return true;
-
-        // Add a small delay to ensure the client has fully loaded
-        if (Microbot.getLoginTime().toSeconds() > 5) {
-            if (Microbot.getBlockingEventManager().shouldBlockAndProcess()) {
-                // A blocking event was found & is executing
-                return false;
-            }
-        }
-
+		if (Microbot.getBlockingEventManager().shouldBlockAndProcess()) {
+			// A blocking event was found & is executing
+			return false;
+		}
         if (Microbot.isLoggedIn()) {
             boolean hasRunEnergy = Microbot.getClient().getEnergy() > Microbot.runEnergyThreshold;
             if (Microbot.enableAutoRunOn && hasRunEnergy)
                 Rs2Player.toggleRunEnergy(true);
-
-
             if (!hasRunEnergy && Microbot.useStaminaPotsIfNeeded && Rs2Player.isMoving()) {
                 Rs2Inventory.useRestoreEnergyItem();
             }
         }
-
         return true;
     }
 

@@ -1043,6 +1043,7 @@ public class Rs2Inventory {
         return getRandom(item -> Arrays.stream(ids).anyMatch(id -> id == item.getId()));
     }
 
+
     /**
      * Gets a random item from the inventory that matches the specified item names.
      *
@@ -1798,7 +1799,7 @@ public class Rs2Inventory {
      * @return true if a rune pouch is found in the inventory, false otherwise.
      */
     public static boolean hasRunePouch() {
-        return Arrays.stream(RunePouchType.values()).mapToInt(RunePouchType::getItemId).anyMatch(Rs2Inventory::hasItem);
+        return Rs2Inventory.hasItem(RunePouchType.getPouchIds());
     }
 
     /**
@@ -1889,7 +1890,7 @@ public class Rs2Inventory {
         invokeMenu(rs2Item, action, -1);
     }
 
-    private static Widget getInventory() {
+    public static Widget getInventory() {
         final int BANK_PIN_INVENTORY_ITEM_CONTAINER = 17563648;
         final int SHOP_INVENTORY_ITEM_CONTAINER = 19726336;
         return Microbot.getClientThread().runOnClientThreadOptional(() -> {

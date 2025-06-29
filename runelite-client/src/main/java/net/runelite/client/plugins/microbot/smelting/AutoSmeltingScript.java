@@ -44,7 +44,7 @@ public class AutoSmeltingScript extends Script {
                     initialPlayerLocation = Rs2Player.getWorldLocation();
                 }
 
-                if (Rs2Player.isMoving() || Rs2Player.isAnimating(6500) || Microbot.pauseAllScripts) return;
+                if (Rs2Player.isMoving() || Rs2Player.isAnimating(6500)) return;
                 if (Rs2AntibanSettings.actionCooldownActive) return;
 
                 // walk to bank until it's open then deposit everything and withdraw materials

@@ -30,8 +30,9 @@ public class QoLScript extends Script {
                 if (!Microbot.isLoggedIn()) {
                     return;
                 }
+				if (!super.run()) return;
 
-                if (config.autoDrinkPrayerPot()) {
+                if (config.autoDrinkPrayerPot() && !config.enablePotionManager()) {
                     handleAutoDrinkPrayPot(config.drinkPrayerPotPoints());
                 }
 
@@ -101,12 +102,15 @@ public class QoLScript extends Script {
             if (!inventorySetup.doesInventoryMatch()) {
                 inventorySetup.loadInventory();
             }
+			if (!inventorySetup.getAdditionalItems().isEmpty()) {
+				inventorySetup.prePot();
+			}
             QoLPlugin.executeLoadoutActions = false;
             QoLPlugin.loadoutToLoad = null;
         } catch (Exception ignored) {
             QoLPlugin.executeLoadoutActions = false;
             QoLPlugin.loadoutToLoad = null;
-            Microbot.pauseAllScripts = false;
+			Microbot.pauseAllScripts.compareAndSet(true, false);
             Microbot.log("Failed to load inventory setup");
         }
 

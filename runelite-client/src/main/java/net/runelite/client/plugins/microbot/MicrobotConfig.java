@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.ui;
+package net.runelite.client.plugins.microbot;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;

@@ -4,13 +4,11 @@ import net.runelite.api.GameState;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.TileObject;
-import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
-import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -48,7 +46,7 @@ public class HouseThievingScript extends Script {
     private ThievingHouse currentThievingHouse = null;
 
     public boolean run(HouseThievingConfig config) {
-        Microbot.pauseAllScripts = false;
+		Microbot.pauseAllScripts.compareAndSet(true, false);
         Microbot.enableAutoRunOn = false;
         initialPlayerLocation = null;
         Rs2Antiban.resetAntibanSettings();
@@ -57,7 +55,6 @@ public class HouseThievingScript extends Script {
             try {
                 if (!super.run()) return;
                 if (!Microbot.isLoggedIn()) return;
-                if (Microbot.pauseAllScripts) return;
                 if (Rs2AntibanSettings.actionCooldownActive) return;
 
                 var childrenOfTheSunComplete = Rs2Player.getQuestState(Quest.CHILDREN_OF_THE_SUN) == QuestState.FINISHED;

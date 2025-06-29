@@ -8,7 +8,9 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
+import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Getter
 /**
@@ -689,7 +691,7 @@ public enum Rs2Spells {
         return Microbot.getVarbitValue(Varbits.SPELLBOOK) == getSpellbook().getValue();
     }
     
-    private boolean hasRequirements() {
+    public boolean hasRequirements() {
         return hasRequiredLevel() && hasRequiredSpellbook();
     }
 
@@ -699,5 +701,18 @@ public enum Rs2Spells {
         this.spellbook = spellbook;
         this.name = action.getName();
         this.requiredLevel = action.getLevel();
+    }
+    
+    /**
+     * Returns only the elemental runes (Air, Water, Earth, Fire) required for this spell.
+     * This is useful for transports that use elemental staves or combination runes.
+     *
+     * @return A list of elemental Runes enums used in this spell
+     */
+    public List<Runes> getElementalRunes() {
+        return requiredRunes.keySet().stream()
+                .filter(rune -> rune == Runes.AIR || rune == Runes.WATER || 
+                        rune == Runes.EARTH || rune == Runes.FIRE)
+                .collect(Collectors.toList());
     }
 }

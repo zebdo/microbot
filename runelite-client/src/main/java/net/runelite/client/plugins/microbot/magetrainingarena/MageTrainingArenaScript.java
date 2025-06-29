@@ -424,7 +424,7 @@ public class MageTrainingArenaScript extends Script {
             }
 
             if (!Rs2Player.isAnimating()
-                    && StreamSupport.stream(Microbot.getClient().getTopLevelWorldView().getProjectiles().spliterator(), false).noneMatch(x -> x.getId() == GraphicID.TELEKINETIC_SPELL)
+                    && StreamSupport.stream(Microbot.getClient().getProjectiles().spliterator(), false).noneMatch(x -> x.getId() == GraphicID.TELEKINETIC_SPELL)
                     && !TelekineticRoom.getMoves().isEmpty()
                     && TelekineticRoom.getMoves().peek() == room.getPosition()
                     && room.getGuardian().getId() != NullNpcID.NULL_6778
@@ -445,6 +445,8 @@ public class MageTrainingArenaScript extends Script {
             staffId = config.earthStaff().getItemId();
         } else if (Rs2Inventory.hasItem("earth rune")) {
             staffId = config.waterStaff().getItemId();
+        } else if (config.waterStaff() == WaterStaves.TOME_OF_WATER) {
+            staffId = config.earthStaff().getItemId();
         }
 
         if (Rs2Inventory.hasItem(staffId) || Rs2Equipment.isWearing(staffId)) {

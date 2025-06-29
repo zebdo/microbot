@@ -14,6 +14,8 @@ import net.runelite.client.plugins.microbot.MicrobotApi;
 import net.runelite.client.plugins.microbot.example.ExampleConfig;
 import net.runelite.client.plugins.microbot.example.ExampleOverlay;
 import net.runelite.client.plugins.microbot.example.ExampleScript;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
+import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
@@ -57,16 +59,21 @@ public class revKillerPlugin extends Plugin {
         revKillerScript.weDied = false;
         revKillerScript.shouldFlee = false;
         eventBus.register(this);
-        revKillerScript.ourEquipmentForDeathWalking.clear();
         revKillerScript.selectedWP = config.selectedRev().getWorldPoint();
         revKillerScript.selectedArrow = config.selectedArrow().getArrowID();
         revKillerScript.selectedRev = config.selectedRev().getName();
+        Rs2Antiban.activateAntiban();
+        Rs2Antiban.resetAntibanSettings();
+        Rs2Antiban.antibanSetupTemplates.applyCombatSetup();
+        Rs2Antiban.setActivity(Activity.KILLING_REVENANTS_MAGIC_SHORTBOW);
     }
 
     protected void shutDown() {
         revKillerScript.weDied = false;
         revKillerScript.shouldFlee = false;
         revKillerScript.ourEquipmentForDeathWalking.clear();
+        Rs2Antiban.resetAntibanSettings();
+        Rs2Antiban.deactivateAntiban();
         revKillerScript.stopFutures();
         revKillerScript.shutdown();
         eventBus.unregister(this);

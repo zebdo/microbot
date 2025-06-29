@@ -59,7 +59,7 @@ public class SalamanderGroundItemLooter extends Script {
                 itemsToLoot.trim().split(",")
         );
         if (Rs2GroundItem.lootItemsBasedOnNames(valueParams)) {
-            Microbot.pauseAllScripts = false;
+            Microbot.pauseAllScripts.compareAndSet(true, false);
         }
     }
 }
