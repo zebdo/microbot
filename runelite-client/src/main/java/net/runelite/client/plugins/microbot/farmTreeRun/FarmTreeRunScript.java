@@ -118,7 +118,7 @@ public class FarmTreeRunScript extends Script {
 
                 long startTime = System.currentTimeMillis();
                 if (Rs2AntibanSettings.actionCooldownActive) return;
-                if(Rs2Magic.getSpellbook() != Rs2Spellbook.MODERN){
+                if(!Rs2Magic.isSpellbook(Rs2Spellbook.MODERN)){
                     Microbot.log("Not on modern spell book");
                     shutdown();
                 }

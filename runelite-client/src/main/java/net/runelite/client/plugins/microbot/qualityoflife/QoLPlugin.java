@@ -476,7 +476,7 @@ public class QoLPlugin extends Plugin {
         }
 
         if (config.useQuickTeleportToHouse() && menuEntry.getOption().contains("Open") && menuEntry.getTarget().toLowerCase().contains("rune pouch")) {
-            if (Rs2Magic.getSpellbook() == Rs2Spellbook.MODERN) {
+            if (Rs2Magic.isSpellbook(Rs2Spellbook.MODERN)) {
                 addMenuEntry(event, "<col=FFA500>Teleport to House</col>", target, this::quickTeleportToHouse);
             }
         }

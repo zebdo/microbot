@@ -43,19 +43,17 @@ import static net.runelite.client.plugins.microbot.util.Global.*;
 
 public class Rs2Magic {
     //use this boolean to do one time checks
-    private static boolean firstInteractionWithSpellBook = true;
+    private static boolean checkedSpellBook = false;
 
     /**
      * Check if all the settings are correct before we start interacting with spellbook
      */
     public static boolean oneTimeSpellBookCheck() {
-        if (!Rs2Player.hasCompletedTutorialIsland())
-            return true;
-        // We add a one time check to avoid performanec issues. Checking varbits is expensive
-        if (firstInteractionWithSpellBook && !Rs2SpellBookSettings.configureSpellbookSettings()) {
-            return false;
-        }
-        firstInteractionWithSpellBook = false;
+        if (checkedSpellBook) return true;
+        if (!Rs2Player.hasCompletedTutorialIsland()) return true;
+        if (!Rs2SpellBookSettings.configureSpellbookSettings()) return false;
+
+        checkedSpellBook = true;
         return true;
     }
 
@@ -79,7 +77,7 @@ public class Rs2Magic {
             sleep(150, 300);
         }
 
-        if (getSpellbook() != magicSpell.getSpellbook()) {
+        if (!isSpellbook(magicSpell.getSpellbook())) {
             Microbot.log("You need to be on the " + magicSpell.getSpellbook() + " spellbook to cast " + magicSpell.getName() + ".");
             return false;
         }
@@ -315,7 +313,7 @@ public class Rs2Magic {
 
     private final static int CHOOSE_CHARACTER_WIDGET_ID = 4915200;
     public static boolean npcContact(String npcName) {
-        if (getSpellbook() != Rs2Spellbook.LUNAR) {
+        if (!isSpellbook(Rs2Spellbook.LUNAR)) {
             Microbot.log("Tried casting npcContact, but lunar spellbook was not found.");
             return false;
         }
@@ -381,6 +379,10 @@ public class Rs2Magic {
         return Rs2Spellbook.getCurrentSpellbook();
     }
 
+    public static boolean isSpellbook(Rs2Spellbook spellbook) {
+        return getSpellbook() == spellbook;
+    }
+
     public static boolean isShadowVeilActive() {
         return Microbot.getVarbitValue(SHADOW_VEIL) == 1;
     }
@@ -398,7 +400,7 @@ public class Rs2Magic {
      */
     public static Rs2CombatSpells getCurrentAutoCastSpell() {
         final int currentVarbitValue = Microbot.getVarbitValue(276);
-        int offset = getSpellbook() == Rs2Spellbook.ANCIENT ? ANCIENT_VARBIT_OFFSET : 0;
+        final int offset = isSpellbook(Rs2Spellbook.ANCIENT) ? ANCIENT_VARBIT_OFFSET : 0;
         return Arrays.stream(Rs2CombatSpells.values())
                 .filter(spell -> (spell.getVarbitValue() + offset) == currentVarbitValue)
                 .findAny().orElse(null);

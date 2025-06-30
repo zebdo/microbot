@@ -83,7 +83,7 @@ public class OuraniaScript extends Script
 				}
 				long startTime = System.currentTimeMillis();
 
-				if (Rs2Magic.getSpellbook() != Rs2Spellbook.LUNAR)
+				if (!Rs2Magic.isSpellbook(Rs2Spellbook.LUNAR))
 				{
 					Microbot.showMessage("Not currently on Lunar Spellbook");
 					Microbot.stopPlugin(plugin);

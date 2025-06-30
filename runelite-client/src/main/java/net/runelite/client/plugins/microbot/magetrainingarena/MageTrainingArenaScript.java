@@ -75,7 +75,7 @@ public class MageTrainingArenaScript extends Script {
                 if (!super.run()) return;
                 if (mtaPlugin != null && !Microbot.getPluginManager().isActive(mtaPlugin)) return;
 
-                if (Rs2Magic.getSpellbook() != Rs2Spellbook.MODERN) {
+                if (!Rs2Magic.isSpellbook(Rs2Spellbook.MODERN)) {
                     Microbot.log("Wrong spellbook found...please use the modern spellbook for this script.");
                     sleep(5000);
                     return;

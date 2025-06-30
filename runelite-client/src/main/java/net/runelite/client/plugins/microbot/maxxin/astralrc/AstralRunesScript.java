@@ -62,7 +62,7 @@ public class AstralRunesScript extends Script {
     }
 
     private boolean isLunar() {
-        return Rs2Magic.getSpellbook() == Rs2Spellbook.LUNAR;
+        return Rs2Magic.isSpellbook(Rs2Spellbook.LUNAR);
     }
 
     public boolean run(AstralRunesConfig config) {

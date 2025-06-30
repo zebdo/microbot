@@ -115,7 +115,7 @@ public class GotrScript extends Script {
 
                 if (!initCheck) {
                     initializeGuardianPortalInfo();
-                    if (Rs2Magic.getSpellbook() != Rs2Spellbook.LUNAR) {
+                    if (!Rs2Magic.isSpellbook(Rs2Spellbook.LUNAR)) {
                         Microbot.log("Lunar spellbook not found...disabling npc contact");
                         useNpcContact = false;
                     }

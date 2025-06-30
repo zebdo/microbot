@@ -683,7 +683,7 @@ public enum Rs2Spells implements RequiresRunes {
     }
     
     public boolean hasRequiredSpellbook() {
-        return Rs2Magic.getSpellbook() == getSpellbook();
+        return Rs2Magic.isSpellbook(getSpellbook());
     }
     
     public boolean hasRequirements() {
