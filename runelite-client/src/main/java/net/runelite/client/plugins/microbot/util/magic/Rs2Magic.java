@@ -1,9 +1,11 @@
 package net.runelite.client.plugins.microbot.util.magic;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
-import net.runelite.api.Point;
 import net.runelite.api.*;
+import net.runelite.api.Point;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
@@ -60,8 +62,8 @@ public class Rs2Magic {
 
     /**
      * Checks if a specific spell can be cast
-     * contains all the necessary checks to do a succesfull check
-     * use quickCanCast if the performance of this method is to slow for you
+     * contains all the necessary checks to do a successful check
+     * use quickCanCast if the performance of this method is too slow for you
      * @param magicSpell
      * @return
      */
@@ -78,8 +80,8 @@ public class Rs2Magic {
             sleep(150, 300);
         }
 
-        if ( Microbot.getVarbitValue(Varbits.SPELLBOOK) != magicSpell.getSpellbook().getId()) {
-            Microbot.log("You need to be on the " + magicSpell.getSpellbook().getName() + " spellbook to cast " + magicSpell.getName() + ".");
+        if (getSpellbook() != magicSpell.getSpellbook()) {
+            Microbot.log("You need to be on the " + magicSpell.getSpellbook() + " spellbook to cast " + magicSpell.getName() + ".");
             return false;
         }
 
@@ -88,7 +90,7 @@ public class Rs2Magic {
                 sleepUntil(() -> Rs2Widget.hasWidgetText("Jewellery Enchantments", 218, 3, true), 2000);
             }
         } else if (!Rs2Widget.isHidden(14286852)) {
-            // back button inside the enchant jewellery interface has no text, thats why we use hardcoded id
+            // back button inside the enchant jewellery interface has no text, that's why we use hardcoded id
             Rs2Widget.clickWidget(14286852);
         }
 
@@ -105,6 +107,8 @@ public class Rs2Magic {
      * @return
      */
     public static boolean quickCanCast(MagicAction magicSpell) {
+        if (magicSpell == null) return false;
+
         if (Rs2Tab.getCurrentTab() != InterfaceTab.MAGIC) {
             Rs2Tab.switchToMagicTab();
             sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.MAGIC);
@@ -118,10 +122,7 @@ public class Rs2Magic {
     }
 
     public static boolean quickCanCast(String spellName) {
-        if (spellName == null) return false;
-        MagicAction magicAction = Arrays.stream(MagicAction.values()).filter(x -> x.getName().toLowerCase().contains(spellName.toLowerCase())).findFirst().orElse(null);
-        if (magicAction == null) return false;
-        return quickCanCast(magicAction);
+        return quickCanCast(MagicAction.fromString(spellName));
     }
     
     public static boolean cast(MagicAction magicSpell) {
@@ -137,7 +138,9 @@ public class Rs2Magic {
             log("Unable to cast " + magicSpell.getName());
             return false;
         }
-        if (magicSpell.getName().toLowerCase().contains("teleport") || magicSpell.getName().toLowerCase().contains("Bones to") || (magicSpell.getActions() != null && Arrays.stream(magicSpell.getActions()).anyMatch(x -> x != null && x.equalsIgnoreCase("cast")))) {
+        if (magicSpell.getName().toLowerCase().contains("teleport") ||
+                magicSpell.getName().toLowerCase().contains("bones to") ||
+                (magicSpell.getActions() != null && Arrays.stream(magicSpell.getActions()).anyMatch(x -> x != null && x.equalsIgnoreCase("cast")))) {
             menuAction = MenuAction.CC_OP;
         } else {
             menuAction = MenuAction.WIDGET_TARGET;
@@ -163,21 +166,19 @@ public class Rs2Magic {
         return false;
     }
 
-    public static void castOn(MagicAction magicSpell, Actor actor) {
-        if (actor == null) return;
+    public static boolean castOn(MagicAction magicSpell, Actor actor) {
+        if (actor == null) return false;
         cast(magicSpell);
-        Global.sleepUntil(() -> Microbot.getClient().isWidgetSelected());
-        if (!Rs2Camera.isTileOnScreen(actor.getLocalLocation())) {
-            Rs2Camera.turnTo(actor.getLocalLocation());
-            return;
-        }
+        if (!Global.sleepUntil(() -> Microbot.getClient().isWidgetSelected())) return false;
+
+        if (!Rs2Camera.isTileOnScreen(actor.getLocalLocation())) Rs2Camera.turnTo(actor.getLocalLocation());
+
         if (actor instanceof Rs2NpcModel) {
-            Rs2Npc.interact(new Rs2NpcModel((NPC) (actor)));
-        } else {
-            if (actor instanceof Player) {
-                Rs2Player.cast(new Rs2PlayerModel((Player) actor));
-            }
+            return Rs2Npc.interact(new Rs2NpcModel((NPC) (actor)));
+        } else if (actor instanceof Player) {
+            return Rs2Player.cast(new Rs2PlayerModel((Player) actor));
         }
+        return false;
     }
 
     public static void alch(String itemName, int sleepMin, int sleepMax) {
@@ -221,69 +222,59 @@ public class Rs2Magic {
     }
 
     public static void superHeat(String itemName) {
-        Rs2ItemModel item = Rs2Inventory.get(itemName);
-        superHeat(item, 300, 600);
+        superHeat(Rs2Inventory.get(itemName));
     }
 
     public static void superHeat(String itemName, int sleepMin, int sleepMax) {
-        Rs2ItemModel item = Rs2Inventory.get(itemName);
-        superHeat(item, sleepMin, sleepMax);
+        superHeat(Rs2Inventory.get(itemName), sleepMin, sleepMax);
     }
 
     public static void superHeat(int id) {
-        Rs2ItemModel item = Rs2Inventory.get(id);
-        superHeat(item, 300, 600);
+        superHeat(Rs2Inventory.get(id));
     }
 
     public static void superHeat(int id, int sleepMin, int sleepMax) {
-        Rs2ItemModel item = Rs2Inventory.get(id);
-        superHeat(item, sleepMin, sleepMax);
+        superHeat(Rs2Inventory.get(id), sleepMin, sleepMax);
     }
 
     public static void superHeat(Rs2ItemModel item) {
         superHeat(item, 300, 600);
     }
 
-    public static void superHeat(Rs2ItemModel item, int sleepMin, int sleepMax) {
-        sleepUntil(() -> {
-            Rs2Tab.switchToMagicTab();
-            sleep(50, 150);
-            return Rs2Tab.getCurrentTab() == InterfaceTab.MAGIC;
-        });
-        if (Rs2Widget.isWidgetVisible(218, 4) && Arrays.stream(Rs2Widget.getWidget(218, 4).getActions()).anyMatch(x -> x.equalsIgnoreCase("back"))){
-            Rs2Widget.clickWidget(218, 4);
+    private static boolean setup() {
+        Rs2Tab.switchToMagicTab();
+        if (!sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.MAGIC)) return false;
+        sleep(50, 150);
+
+        final Widget widget = Rs2Widget.getWidget(218, 4);
+        if (widget != null && widget.getActions() != null && Rs2Widget.isWidgetVisible(218, 4) &&
+                Arrays.stream(widget.getActions()).anyMatch(x -> x.equalsIgnoreCase("back"))) {
+            if (!Rs2Widget.clickWidget(widget)) return false;
             sleep(150, 300);
         }
-        Widget superHeat = Rs2Widget.findWidget(MagicAction.SUPERHEAT_ITEM.getName());
+        return true;
+    }
+
+    public static void superHeat(Rs2ItemModel item, int sleepMin, int sleepMax) {
+        if (!setup()) return;
+
+        final Widget superHeat = Rs2Widget.findWidget(MagicAction.SUPERHEAT_ITEM.getName());
         if (superHeat.getSpriteId() != SpriteID.SPELL_SUPERHEAT_ITEM) return;
+
         superHeat(superHeat, item, sleepMin, sleepMax);
     }
 
     private static void highAlch(Rs2ItemModel item, int sleepMin, int sleepMax) {
-        sleepUntil(() -> {
-            Rs2Tab.switchToMagicTab();
-            sleep(50, 150);
-            return Rs2Tab.getCurrentTab() == InterfaceTab.MAGIC;
-        });
-        if (Rs2Widget.isWidgetVisible(218, 4) && Arrays.stream(Rs2Widget.getWidget(218, 4).getActions()).anyMatch(x -> x.equalsIgnoreCase("back"))){
-            Rs2Widget.clickWidget(218, 4);
-            sleep(150, 300);
-        }
+        if (!setup()) return;
+
         Widget highAlch = Rs2Widget.findWidget(MagicAction.HIGH_LEVEL_ALCHEMY.getName());
         if (highAlch.getSpriteId() != 41) return;
         alch(highAlch, item, sleepMin, sleepMax);
     }
 
     private static void lowAlch(Rs2ItemModel item, int sleepMin, int sleepMax) {
-        sleepUntil(() -> {
-            Rs2Tab.switchToMagicTab();
-            sleep(50, 150);
-            return Rs2Tab.getCurrentTab() == InterfaceTab.MAGIC;
-        });
-        if (Rs2Widget.isWidgetVisible(218, 4) && Arrays.stream(Rs2Widget.getWidget(218, 4).getActions()).anyMatch(x -> x.equalsIgnoreCase("back"))){
-            Rs2Widget.clickWidget(218, 4);
-            sleep(150, 300);
-        }
+        if (!setup()) return;
+
         Widget lowAlch = Rs2Widget.findWidget(MagicAction.LOW_LEVEL_ALCHEMY.getName());
         if (lowAlch.getSpriteId() != 25) return;
         alch(lowAlch, item, sleepMin, sleepMax);
@@ -366,23 +357,25 @@ public class Rs2Magic {
     }
 
     public static boolean repairPouchesWithLunar() {
+        if (!Rs2Inventory.hasDegradedPouch()) return false;
         log("Repairing pouches...");
-        if (npcContact("dark mage")) {
-            sleep(Rs2Random.randomGaussian(1100, 200));
-            Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
-            Rs2Dialogue.clickContinue();
-            sleep(Rs2Random.randomGaussian(1100, 200));
-            Rs2Widget.sleepUntilHasWidget("Can you repair my pouches?");
-            sleep(Rs2Random.randomGaussian(900, 300));
-            Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
-            Rs2Widget.clickWidget("Can you repair my pouches?", Optional.of(162), 0, true);
-            sleep(Rs2Random.randomGaussian(900, 200));
-            Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
-            sleepGaussian(700,200);
-            Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
-            sleep(Rs2Random.randomGaussian(1500, 300));
-            Rs2Tab.switchToInventoryTab();
-        }
+        if (!npcContact("dark mage")) return false;
+
+        sleep(Rs2Random.randomGaussian(1100, 200));
+        Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
+        Rs2Dialogue.clickContinue();
+        sleep(Rs2Random.randomGaussian(1100, 200));
+        Rs2Widget.sleepUntilHasWidget("Can you repair my pouches?");
+        sleep(Rs2Random.randomGaussian(900, 300));
+        Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
+        Rs2Widget.clickWidget("Can you repair my pouches?", Optional.of(162), 0, true);
+        sleep(Rs2Random.randomGaussian(900, 200));
+        Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
+        sleepGaussian(700,200);
+        Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
+        sleep(Rs2Random.randomGaussian(1500, 300));
+        Rs2Tab.switchToInventoryTab(); // TODO: can this be removed?
+
         return !Rs2Inventory.hasDegradedPouch();
     }
 
@@ -394,20 +387,28 @@ public class Rs2Magic {
         superHeat(superHeat, null, 300, 600);
     }
 
+    public static Rs2Spellbook getSpellbook() {
+        return Rs2Spellbook.getCurrentSpellbook();
+    }
+
+    @Deprecated(since = "use getSpellbook")
     public static boolean isLunar() {
-        return Microbot.getVarbitValue(Varbits.SPELLBOOK) == 2;
+        return getSpellbook() == Rs2Spellbook.LUNAR;
     }
 
+    @Deprecated(since = "use getSpellbook")
     public static boolean isAncient() {
-        return Microbot.getVarbitValue(Varbits.SPELLBOOK) == 1;
+        return getSpellbook() == Rs2Spellbook.ANCIENT;
     }
 
+    @Deprecated(since = "use getSpellbook")
     public static boolean isModern() {
-        return Microbot.getVarbitValue(Varbits.SPELLBOOK) == 0;
+        return getSpellbook() == Rs2Spellbook.MODERN;
     }
 
-    public static boolean isArceeus() {
-        return Microbot.getVarbitValue(Varbits.SPELLBOOK) == 3;
+    @Deprecated(since = "use getSpellbook")
+    public static boolean isArceuus() {
+        return getSpellbook() == Rs2Spellbook.ARCEUUS;
     }
 
     public static boolean isShadowVeilActive() {
@@ -416,44 +417,39 @@ public class Rs2Magic {
 
 	@Deprecated(since = "1.9.2", forRemoval = true)
     public static boolean isThrallActive() {
-        return (Microbot.getVarbitValue(RESURRECT_THRALL) == 1||Microbot.getVarbitValue(RESURRECT_THRALL_COOLDOWN) == 1);
+        return (Microbot.getVarbitValue(RESURRECT_THRALL) == 1 || Microbot.getVarbitValue(RESURRECT_THRALL_COOLDOWN) == 1);
     }
+
+    private static final int ANCIENT_VARBIT_OFFSET = 10;
     /**
      * Gets the currently selected auto-cast spell based on varbit 276.
      *
      * @return the matching Rs2CombatSpells or null if none matches.
      */
     public static Rs2CombatSpells getCurrentAutoCastSpell() {
-        int currentVarbitValue = Microbot.getVarbitValue(276);
-        int ancientVarbitOffset = 10;
-        int offset = isAncient() ? ancientVarbitOffset : 0;
-        for (Rs2CombatSpells spell : Rs2CombatSpells.values()) {
-            if ((spell.getVarbitValue() + offset) == currentVarbitValue) {
-                return spell;
-            }
-        }
-        return null;
+        final int currentVarbitValue = Microbot.getVarbitValue(276);
+        int offset = isAncient() ? ANCIENT_VARBIT_OFFSET : 0;
+        return Arrays.stream(Rs2CombatSpells.values())
+                .filter(spell -> (spell.getVarbitValue() + offset) == currentVarbitValue)
+                .findAny().orElse(null);
     }
     
     public static Rs2Spells getRs2Spell(String spellName){
         return Arrays.stream(Rs2Spells.values())
                 .filter(spell -> spell.getName().toLowerCase().contains(spellName.toLowerCase()))
-                .findFirst()
-                .orElse(null);
+                .findFirst().orElse(null);
     }
     
     public static Rs2Staff getRs2Staff(int itemID) {
         return Stream.of(Rs2Staff.values())
                 .filter(staff -> staff.getItemID() == itemID)
-                .findFirst()
-                .orElse(Rs2Staff.NONE);
+                .findAny().orElse(Rs2Staff.NONE);
     }
 
     public static Rs2Tome getRs2Tome(int itemID) {
         return Stream.of(Rs2Tome.values())
                 .filter(tome -> tome.getItemID() == itemID)
-                .findFirst()
-                .orElse(Rs2Tome.NONE);
+                .findAny().orElse(Rs2Tome.NONE);
     }
 
     public static List<Rs2Staff> findStavesByRunes(List<Runes> runes) {
@@ -831,93 +827,28 @@ public class Rs2Magic {
      * @return true if all required runes are available; false otherwise.
      */
     public static boolean hasRequiredRunes(Rs2Spells spell, boolean hasRunePouch, boolean hasInBank) {
-        Map<Runes, Integer> requiredRunes = new HashMap<>(spell.getRequiredRunes());
-
-        // Check if we have a staff equipped that provides the runes
-        Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
-        if (equippedWeapon != null) {
-            Rs2Staff equippedStaff = getRs2Staff(equippedWeapon.getId());
-            if (equippedStaff != Rs2Staff.NONE) {
-                equippedStaff.getRunes().forEach(requiredRunes::remove);
-            }
-        }
-
-        // Remove runes provided by equipped tomes
-        Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
-        if (equippedShield != null) {
-            Rs2Tome equippedTome = getRs2Tome(equippedShield.getId());
-            if (equippedTome != Rs2Tome.NONE) {
-                equippedTome.getRunes().forEach(requiredRunes::remove);
-            }
-        }
-
-        // Collect available runes from inventory
-        Map<Runes, Integer> availableRunes = new HashMap<>();
-        Rs2Inventory.items().forEach(item -> {
-            Arrays.stream(Runes.values())
-                    .filter(rune -> rune.getItemId() == item.getId())
-                    .findFirst()
-                    .ifPresent(rune -> availableRunes.merge(rune, item.getQuantity(), Integer::sum));
-        });
-
-        // Collect runes from the rune pouch if we have it in inventory
-        if (hasRunePouch) {
-            Rs2RunePouch.getRunes().forEach((runeId, quantity) -> {
-                Arrays.stream(Runes.values())
-                        .filter(r -> r.getItemId() == runeId)
-                        .findFirst()
-                        .ifPresent(rune -> availableRunes.merge(rune, quantity, Integer::sum));
-            });
-        }
+        final Map<Integer, Integer> runes = getRunes(true, hasRunePouch);
 
         // Add runes from bank if required
         if (hasInBank) {
             Rs2Bank.bankItems().stream()
                     .flatMap(item -> Arrays.stream(Runes.values())
                             .filter(r -> r.getItemId() == item.getId())
-                            .map(rune -> Map.entry(rune, item.getQuantity())))
-                    .forEach(entry -> availableRunes.merge(entry.getKey(), entry.getValue(), Integer::sum));
+                            .map(rune -> Map.entry(rune.getItemId(), item.getQuantity())))
+                    .forEach(entry -> runes.merge(entry.getKey(), entry.getValue(), Integer::sum));
         }
 
-        // Check each required rune, using combination runes if necessary
-        for (Map.Entry<Runes, Integer> entry : requiredRunes.entrySet()) {
-            Runes rune = entry.getKey();
-            int requiredAmount = entry.getValue();
-            int availableAmount = availableRunes.getOrDefault(rune, 0);
+        return spell.getRequiredRunes().entrySet().stream().allMatch(runeToQuantity -> {
+            final int runeId = runeToQuantity.getKey().getItemId();
+            final int quantity = runeToQuantity.getValue();
+            if (runes.get(runeId) >= quantity) return true;
 
-            // Use regular runes first
-            if (availableAmount >= requiredAmount) {
-                continue;
-            }
-
-            int deficit = requiredAmount - availableAmount;
-            int comboRuneCount = 0;
-
-            // Calculate combination rune availability
-            switch (rune) {
-                case AIR:
-                    comboRuneCount = availableRunes.getOrDefault(Runes.MIST, 0) + availableRunes.getOrDefault(Runes.SMOKE, 0) + availableRunes.getOrDefault(Runes.DUST, 0);
-                    break;
-                case WATER:
-                    comboRuneCount = availableRunes.getOrDefault(Runes.MIST, 0) + availableRunes.getOrDefault(Runes.MUD, 0) + availableRunes.getOrDefault(Runes.STEAM, 0);
-                    break;
-                case EARTH:
-                    comboRuneCount = availableRunes.getOrDefault(Runes.MUD, 0) + availableRunes.getOrDefault(Runes.DUST, 0) + availableRunes.getOrDefault(Runes.LAVA, 0);
-                    break;
-                case FIRE:
-                    comboRuneCount = availableRunes.getOrDefault(Runes.LAVA, 0) + availableRunes.getOrDefault(Runes.SMOKE, 0) + availableRunes.getOrDefault(Runes.STEAM, 0);
-                    break;
-                default:
-                    comboRuneCount = 0;
-            }
-
-            // Check if combination runes are sufficient to cover the deficit
-            if (comboRuneCount < deficit) {
-                return false;
-            }
-        }
-
-        return true;
+            // TODO: could overflow? can probably ignore tho
+            // equipment returning Integer.MAX_VALUE runes won't matter since those aren't combination runes and are checked first
+            final int comboQuantity = quantity + Arrays.stream(COMBO_RUNES.getOrDefault(runeId, new int[0]))
+                    .map(id -> runes.getOrDefault(id,0)).sum();
+            return comboQuantity >= quantity;
+        });
     }
 
     /**
@@ -932,37 +863,92 @@ public class Rs2Magic {
         return hasRequiredRunes(spell, Rs2Inventory.hasRunePouch(), false);
     }
 
-    //DATA
+    public static final Map<Integer, int[]> COMBO_RUNES = ImmutableMap.of(
+            ItemID.AIRRUNE, new int[] {ItemID.MISTRUNE, ItemID.SMOKERUNE, ItemID.DUSTRUNE},
+            ItemID.WATERRUNE, new int[] {ItemID.MISTRUNE, ItemID.MUDRUNE, ItemID.STEAMRUNE},
+            ItemID.EARTHRUNE, new int[] {ItemID.MUDRUNE, ItemID.DUSTRUNE, ItemID.LAVARUNE},
+            ItemID.FIRERUNE, new int[] {ItemID.LAVARUNE, ItemID.SMOKERUNE, ItemID.STEAMRUNE}
+    );
 
-    @Getter
-    private final List<Integer> runeIds = ImmutableList.of(
-            ItemID.NATURE_RUNE,
-            ItemID.LAW_RUNE,
-            ItemID.BODY_RUNE,
-            ItemID.DUST_RUNE,
-            ItemID.LAVA_RUNE,
-            ItemID.STEAM_RUNE,
-            ItemID.SMOKE_RUNE,
-            ItemID.SOUL_RUNE,
-            ItemID.WATER_RUNE,
-            ItemID.AIR_RUNE,
-            ItemID.EARTH_RUNE,
-            ItemID.FIRE_RUNE,
-            ItemID.MIND_RUNE,
-            ItemID.CHAOS_RUNE,
-            ItemID.DEATH_RUNE,
-            ItemID.BLOOD_RUNE,
-            ItemID.COSMIC_RUNE,
-            ItemID.ASTRAL_RUNE,
-            ItemID.MIST_RUNE,
-            ItemID.MUD_RUNE,
-            ItemID.WRATH_RUNE,
-            ItemID.SUNFIRE_RUNE);
+    //DATA
+    public static final List<Integer> RUNE_IDS = ImmutableList.of(
+            ItemID.NATURERUNE,
+            ItemID.LAWRUNE,
+            ItemID.BODYRUNE,
+            ItemID.DUSTRUNE,
+            ItemID.LAVARUNE,
+            ItemID.STEAMRUNE,
+            ItemID.SMOKERUNE,
+            ItemID.SOULRUNE,
+            ItemID.WATERRUNE,
+            ItemID.AIRRUNE,
+            ItemID.EARTHRUNE,
+            ItemID.FIRERUNE,
+            ItemID.MINDRUNE,
+            ItemID.CHAOSRUNE,
+            ItemID.DEATHRUNE,
+            ItemID.BLOODRUNE,
+            ItemID.COSMICRUNE,
+            ItemID.ASTRALRUNE,
+            ItemID.MISTRUNE,
+            ItemID.MUDRUNE,
+            ItemID.WRATHRUNE,
+            ItemID.SUNFIRERUNE
+    );
+
+    /**
+     * Calculates the available runes
+     *
+     * @param includeEquipment whether runes provided by equipment should be counted
+     * @param includeRunePouch whether runes provided by rune pouches should be counted
+     * @return A {@link Map} where the key is {@link ItemID} of the rune,
+     * and the value is an {@code Integer} representing the quantity of that rune available
+     * or {@code Integer.MAX_VALUE} if the rune is provided by equipment.
+     */
+    public static Map<Integer, Integer> getRunes(boolean includeEquipment, boolean includeRunePouch) {
+        final Map<Integer, Integer> availableRunes = includeRunePouch && Rs2Inventory.hasRunePouch() ?
+                Rs2RunePouch.getRunes() : new HashMap<>();
+        RUNE_IDS.forEach(rune -> {
+            availableRunes.merge(rune, Rs2Inventory.itemQuantity(rune), Integer::sum);
+        });
+
+        if (!includeEquipment) return availableRunes;
+
+        final Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
+        if (equippedWeapon != null) {
+            Rs2Staff equippedStaff = getRs2Staff(equippedWeapon.getId());
+            if (equippedStaff != Rs2Staff.NONE) {
+                equippedStaff.getRunes().forEach(rune -> availableRunes.put(rune.getItemId(), Integer.MAX_VALUE));
+            }
+        }
+
+        // Remove runes provided by equipped tomes
+        final Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
+        if (equippedShield != null) {
+            Rs2Tome equippedTome = getRs2Tome(equippedShield.getId());
+            if (equippedTome != Rs2Tome.NONE) {
+                equippedTome.getRunes().forEach(rune -> availableRunes.put(rune.getItemId(), Integer.MAX_VALUE));
+            }
+        }
+
+        return availableRunes;
+    }
+
+    /**
+     * Calculates the available runes
+     *
+     * @return A {@link Map} where the key is {@link ItemID} of the rune,
+     * and the value is an {@code Integer} representing the quantity of that rune available
+     * or {@code Integer.MAX_VALUE} if the rune is provided by equipment.
+     */
+    public static Map<Integer, Integer> getRunes() {
+        return getRunes(true, true);
+    }
 
     /**
      * Calculates the available runes for casting a specified spell, taking into account
      * equipped staves, tomes, inventory runes, and optionally rune pouch runes.
-     *
+     * <p>
      * This method determines what runes are currently available to the player for casting
      * a specific spell, excluding runes that are provided by equipped equipment.
      *
@@ -972,11 +958,12 @@ public class Rs2Magic {
      *         and the value is an {@code Integer} representing the quantity of that rune available.
      *         Only includes runes that are not provided by equipped equipment
      */
-    Map<Runes, Integer> getAvailableRunes(Rs2Spells spell, boolean hasRunePouch) {        
+    @Deprecated(since = "Use getRunes")
+    Map<Runes, Integer> getAvailableRunes(Rs2Spells spell, boolean hasRunePouch) {
         Map<Runes, Integer> requiredRunes = new HashMap<>(spell.getRequiredRunes());
 
         // Check if we have a staff equipped that provides the runes
-        Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
+        final Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
         if (equippedWeapon != null) {
             Rs2Staff equippedStaff = getRs2Staff(equippedWeapon.getId());
             if (equippedStaff != Rs2Staff.NONE) {
@@ -985,7 +972,7 @@ public class Rs2Magic {
         }
 
         // Remove runes provided by equipped tomes
-        Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
+        final Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
         if (equippedShield != null) {
             Rs2Tome equippedTome = getRs2Tome(equippedShield.getId());
             if (equippedTome != Rs2Tome.NONE) {

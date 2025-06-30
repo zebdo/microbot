@@ -84,23 +84,16 @@ public class Rs2RunePouch
 	 *
 	 * @param ev The varbit changed event.
 	 */
-	public static void onVarbitChanged(VarbitChanged ev)
-	{
-
+	public static void onVarbitChanged(VarbitChanged ev) {
 		assert Microbot.getClient().isClientThread();
 
-		int varbitId = ev.getVarbitId();
-		for (int i = 0; i < NUM_SLOTS; i++)
-		{
-			if (varbitId == RUNE_VARBITS[i])
-			{
-				int rawRune = Microbot.getClient().getVarbitValue(varbitId);
-				slots.get(i).setRune(Runes.byVarbitId(rawRune));
+		for (int i = 0; i < NUM_SLOTS; i++) {
+			if (ev.getVarbitId() == RUNE_VARBITS[i]) {
+				slots.get(i).setRune(Runes.byVarbitId(ev.getValue()));
 				break;
 			}
-			if (varbitId == AMOUNT_VARBITS[i])
-			{
-				slots.get(i).setQuantity(Microbot.getClient().getVarbitValue(varbitId));
+			if (ev.getVarbitId() == AMOUNT_VARBITS[i]) {
+				slots.get(i).setQuantity(ev.getValue());
 				break;
 			}
 		}
@@ -484,7 +477,7 @@ public class Rs2RunePouch
 	{
 		return slots.stream()
 			.filter(s -> s.getRune() != null && s.getQuantity() > 0)
-			.collect(Collectors.toUnmodifiableMap(
+			.collect(Collectors.toMap(
 				s -> s.getRune().getItemId(),
 				PouchSlot::getQuantity
 			));

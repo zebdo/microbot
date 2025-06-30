@@ -676,19 +676,17 @@ public enum Rs2Spells {
             Runes.DEATH, 1,
             Runes.SOUL, 1
     ), Rs2Spellbook.ARCEUUS);
-    
-    private final String name;
+
     private final MagicAction action;
     private final Map<Runes, Integer> requiredRunes;
     private final Rs2Spellbook spellbook;
-    private final int requiredLevel;
     
     public boolean hasRequiredLevel() {
-        return Rs2Player.getSkillRequirement(Skill.MAGIC, this.requiredLevel);
+        return Rs2Player.getSkillRequirement(Skill.MAGIC, getRequiredLevel());
     }
     
     public boolean hasRequiredSpellbook() {
-        return Microbot.getVarbitValue(Varbits.SPELLBOOK) == getSpellbook().getValue();
+        return Rs2Magic.getSpellbook() == getSpellbook();
     }
     
     public boolean hasRequirements() {
@@ -699,8 +697,14 @@ public enum Rs2Spells {
         this.action = action;
         this.requiredRunes = requiredRunes;
         this.spellbook = spellbook;
-        this.name = action.getName();
-        this.requiredLevel = action.getLevel();
+    }
+
+    public String getName() {
+        return action.getName();
+    }
+
+    public int getRequiredLevel() {
+        return action.getLevel();
     }
     
     /**
