@@ -23,6 +23,7 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -86,7 +87,19 @@ public class TemporossScript extends Script {
                         determineWorkArea();
                         sleep(300, 600);
                     } else {
-
+                        // --- PRIORITY: Check if tethering is needed due to incoming wave ---
+                        if (TemporossPlugin.incomingWave && !TemporossPlugin.isTethered) {
+                            log("Wave incoming, prioritizing tethering!");
+                            if (Rs2Player.isMoving()) {
+                                log("Interrupting movement to safe spot, prioritizing tethering.");
+                                // Stop the current walking (interrupt the movement)
+                                Rs2Walker.setTarget(null);  // Stop walking towards the safe spot
+                                ShortestPathPlugin.exit();  // Exit the current pathfinding
+                            }
+                                handleTether();  // Force tethering action
+                                TemporossPlugin.isTethered = true;  // Set the tethered flag to true once tethering is complete
+                            return;
+                        }
                         handleMinigame();
                         handleStateLoop();
                         if(areItemsMissing())
@@ -94,7 +107,6 @@ public class TemporossScript extends Script {
                         // In solo mode, continuously handle fires.
                         // In mass world mode, fire-fighting is now handled dynamically before objectives.
                         handleFires();
-                        handleTether();
                         if(isFightingFire || TemporossPlugin.isTethered || TemporossPlugin.incomingWave)
                             return;
                         handleDamagedMast();
@@ -126,7 +138,7 @@ public class TemporossScript extends Script {
     }
 
     private boolean hasHarpoon() {
-        return Rs2Inventory.contains(harpoonType.getId()) || Rs2Equipment.hasEquipped(harpoonType.getId());
+        return Rs2Inventory.contains(harpoonType.getId()) || Rs2Equipment.isWearing(harpoonType.getId());
     }
 
     private void determineWorkArea() {
@@ -468,7 +480,7 @@ public class TemporossScript extends Script {
         TemporossOverlay.setCloudList(sortedClouds);
     }
 
-    // update ammocrate data
+    // update ammo crate data
     public static void updateAmmoCrateData(){
         List<Rs2NpcModel> ammoCrates = Rs2Npc
                 .getNpcs()
@@ -562,25 +574,44 @@ public class TemporossScript extends Script {
     }
 
     private void handleTether() {
-        TileObject tether = workArea.getClosestTether();
-        if (tether == null) {
-            return;
-        }
-        if (TemporossPlugin.incomingWave != TemporossPlugin.isTethered) {
+        // Only proceed if tethering is necessary (when a wave is incoming)
+        if (TemporossPlugin.incomingWave && !TemporossPlugin.isTethered) {
+
+            log("Wave incoming, prioritizing tethering!");
+
+            // Get the closest tether object (assuming workArea is the area being worked on)
+            TileObject tether = workArea.getClosestTether();
+            if (tether == null) {
+                log("No tether found in the area");
+                return;
+            }
+
+            // Clear the current target and reset pathfinding to prioritize tethering
             ShortestPathPlugin.exit();
             Rs2Walker.setTarget(null);
-            String action = TemporossPlugin.incomingWave ? "Tether" : "Untether";
+
+            // Turn the camera to the tether object
             Rs2Camera.turnTo(tether);
 
-            if (action.equals("Tether")) {
-                if (Rs2GameObject.interact(tether, action)) {
-                    log(action + "ing");
-                    sleepUntil(() -> TemporossPlugin.isTethered == TemporossPlugin.incomingWave, 3500);
-                }
+            // Perform tethering action
+            if (Rs2GameObject.interact(tether, "Tether")) {
+                log("Tethering to Tempoross");
+                // Wait until tethering is complete
+                sleepUntil(() -> TemporossPlugin.isTethered, 3500);  // Wait until we are tethered
+            } else {
+                log("Failed to interact with tether");
             }
-            if (action.equals("Untether")) {
-                log(action + "ing");
-                sleepUntil(() -> TemporossPlugin.isTethered == TemporossPlugin.incomingWave, 3500);
+        } else {
+            // Optionally, untether if we are tethered and the wave is not incoming
+            if (!TemporossPlugin.incomingWave && TemporossPlugin.isTethered) {
+                TileObject tether = workArea.getClosestTether();
+                if (tether != null) {
+                    Rs2Camera.turnTo(tether);
+                    if (Rs2GameObject.interact(tether, "Untether")) {
+                        log("Untethering from Tempoross");
+                        sleepUntil(() -> !TemporossPlugin.isTethered, 3500);  // Wait until we are untethered
+                    }
+                }
             }
         }
     }
@@ -614,13 +645,36 @@ public class TemporossScript extends Script {
             case SECOND_CATCH:
             case THIRD_CATCH:
                 isFilling = false;
-                if (inCloud(Microbot.getClient().getLocalPlayer().getWorldLocation(),5)) {
+                if (inCloud(Microbot.getClient().getLocalPlayer().getWorldLocation(), 1)) {
                     GameObject cloud = sortedClouds.stream()
                             .findFirst()
                             .orElse(null);
-                    Rs2Walker.walkNextToInstance(cloud);
-                    Rs2Player.waitForWalking();
-                    return;
+                    if (cloud != null) {
+                        Rs2Walker.walkNextToInstance(cloud);
+                        Rs2Player.waitForWalking();
+                        if (inCloud(Microbot.getClient().getLocalPlayer().getWorldLocation(), 1)) {
+                            Microbot.log("Current spot is clouded, looking for a better fishing spot...");
+
+                            var playerLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
+
+                            var safeFishSpot = fishSpots.stream()
+                                    .filter(spot -> !inCloud(spot.getWorldLocation(), 1))
+                                    .min(Comparator.comparingInt(spot -> spot.getWorldLocation().distanceTo(playerLocation)))
+                                    .orElse(null);
+
+                            if (safeFishSpot != null) {
+                                Rs2Camera.turnTo(safeFishSpot);
+                                Rs2Npc.interact(safeFishSpot, "Harpoon");
+                                Microbot.log("Moved to a " +
+                                        (safeFishSpot.getId() == NpcID.FISHING_SPOT_10569 ? "double" : "single") +
+                                        " fish spot.");
+                                Rs2Player.waitForWalking(2000);
+                            } else {
+                                Microbot.log("No safe fishing spots found. Waiting...");
+                            }
+                            return;
+                        }
+                    }
                 }
 
                 var fishSpot = fishSpots.stream()
@@ -696,7 +750,10 @@ public class TemporossScript extends Script {
             case INITIAL_FILL:
                 List<Rs2NpcModel> ammoCrates = Rs2Npc
                         .getNpcs()
-                        .filter(npc -> Arrays.asList(npc.getComposition().getActions()).contains("Fill"))
+                        .filter(npc ->
+                                npc.getComposition() != null &&
+                                npc.getComposition().getActions() != null &&
+                                Arrays.asList(npc.getComposition().getActions()).contains("Fill"))
                         .filter(npc -> npc.getWorldLocation().distanceTo(workArea.mastPoint) <= 4)
                         .filter(npc -> !inCloud(npc.getWorldLocation(),1))
                         .map(Rs2NpcModel::new)
@@ -763,9 +820,27 @@ public class TemporossScript extends Script {
                         }
                         return;
                     }
-                    Rs2Npc.interact(temporossPool, "Harpoon");
-                    log("Attacking Tempoross");
-                    Rs2Player.waitForWalking(2000);
+                    // --- Check and trigger the special attack if conditions are met ---
+                    int currentSpecEnergy = Rs2Combat.getSpecEnergy()/ 10;
+                    log("Current Spec Energy: " + currentSpecEnergy);
+                    // Check if special attack is enabled and the harpoon is the correct type
+                    if (temporossConfig.enableHarpoonSpec()  // Check if special attack is enabled in config
+                            && (temporossConfig.harpoonType() == HarpoonType.DRAGON_HARPOON
+                            || temporossConfig.harpoonType() == HarpoonType.INFERNAL_HARPOON
+                            || temporossConfig.harpoonType() == HarpoonType.CRYSTAL_HARPOON)
+                            && currentSpecEnergy >= 100) {  // Ensure spec energy is >= 100%
+
+                        // Trigger the special attack only if energy is 100% or more
+                        Rs2Combat.setSpecState(true, 100);  // Activate special attack at 100% energy
+                        sleep(600);  // Wait for the special animation to complete
+                        log("Using harpoon special attack at 100% energy");
+                    } else {
+                        // Log message when special energy is below 100%
+                        log("Special energy is below 100%, not using harpoon special attack.");
+                    }
+                Rs2Npc.interact(temporossPool, "Harpoon");
+                log("Harpooning Tempoross");
+                Rs2Player.waitForWalking(2000);
                 } else {
                     if (ENERGY > 0) {
                         state = null;
