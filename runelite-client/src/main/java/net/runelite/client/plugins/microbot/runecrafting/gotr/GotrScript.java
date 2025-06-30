@@ -19,6 +19,7 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Spellbook;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -114,7 +115,7 @@ public class GotrScript extends Script {
 
                 if (!initCheck) {
                     initializeGuardianPortalInfo();
-                    if (!Rs2Magic.isLunar()) {
+                    if (Rs2Magic.getSpellbook() != Rs2Spellbook.LUNAR) {
                         Microbot.log("Lunar spellbook not found...disabling npc contact");
                         useNpcContact = false;
                     }

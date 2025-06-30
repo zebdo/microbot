@@ -1,10 +1,7 @@
 package net.runelite.client.plugins.microbot.util.magic;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import net.runelite.api.Skill;
-import net.runelite.api.Varbits;
-import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
@@ -16,7 +13,7 @@ import java.util.stream.Collectors;
 /**
  * TODO: Add Tele-other spells from modern spellbook
  */
-public enum Rs2Spells {
+public enum Rs2Spells implements RequiresRunes {
     CONFUSE(MagicAction.CONFUSE, Map.of(
             Runes.EARTH, 2,
             Runes.WATER, 3,

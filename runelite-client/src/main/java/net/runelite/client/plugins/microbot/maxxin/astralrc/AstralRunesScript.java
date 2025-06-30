@@ -18,6 +18,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Spellbook;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -60,6 +61,10 @@ public class AstralRunesScript extends Script {
         this.plugin = plugin;
     }
 
+    private boolean isLunar() {
+        return Rs2Magic.getSpellbook() == Rs2Spellbook.LUNAR;
+    }
+
     public boolean run(AstralRunesConfig config) {
 		Microbot.pauseAllScripts.compareAndSet(true, false);;
         Microbot.enableAutoRunOn = false;
@@ -74,7 +79,7 @@ public class AstralRunesScript extends Script {
 
                 // Mitigate how often we check for runes since it switches to magic tab
                 if( !Rs2Bank.isOpen() )
-                    canCastMoonclanTeleport = Rs2Magic.isLunar() && Rs2Magic.canCast(MagicAction.MOONCLAN_TELEPORT);
+                    canCastMoonclanTeleport = isLunar() && Rs2Magic.canCast(MagicAction.MOONCLAN_TELEPORT);
 
                 if( config.autoSetup() ) {
                     if (!handleAutoSetup(config)) {
@@ -91,8 +96,8 @@ public class AstralRunesScript extends Script {
                     return;
                 }
 
-                if(!Rs2Magic.isLunar()) {
-                    plugin.setDebugText1("Is Lunar Spellbook: " + Rs2Magic.isLunar());
+                if(!isLunar()) {
+                    plugin.setDebugText1("Is Lunar Spellbook: " + isLunar());
                     Microbot.showMessage("Set spellbook to Lunar Spellbook");
                     shutdown();
                     return;
@@ -324,7 +329,7 @@ public class AstralRunesScript extends Script {
         if(canCastMoonclanTeleport && isLunarIsleRegion())
             return true;
 
-        if(!Rs2Magic.isLunar() && isLunarIsleRegion() && Rs2Player.getWorldLocation().distanceTo(LUNAR_ISLE_CRAFT_WORLD_POINT) < 20) {
+        if(!isLunar() && isLunarIsleRegion() && Rs2Player.getWorldLocation().distanceTo(LUNAR_ISLE_CRAFT_WORLD_POINT) < 20) {
             setSpellbookLunarAltar();
             canCastMoonclanTeleport = Rs2Magic.canCast(MagicAction.MOONCLAN_TELEPORT);
         }
@@ -339,16 +344,16 @@ public class AstralRunesScript extends Script {
             setRunePouchLoadout(config);
             Rs2Inventory.waitForInventoryChanges(600);
             Rs2Bank.closeBank();
-            if( Rs2Magic.isLunar() )
+            if(isLunar())
                 canCastMoonclanTeleport = Rs2Magic.canCast(MagicAction.MOONCLAN_TELEPORT);
         }
 
-        if(Rs2Magic.isLunar() && !canCastMoonclanTeleport) {
+        if(isLunar() && !canCastMoonclanTeleport) {
             Microbot.showMessage("Equipment is correct, but unable to cast Moonclan Teleport! Check if Rune Pouch contains correct runes or disable auto setup in config");
             return false;
         }
 
-        if(!Rs2Magic.isLunar() && !isLunarIsleRegion()) {
+        if(!isLunar() && !isLunarIsleRegion()) {
             if(!openBank()){
                 Microbot.showMessage("Failed to open bank for auto setup! Move closer to a bank or disable auto setup in config");
                 return false;
@@ -367,17 +372,17 @@ public class AstralRunesScript extends Script {
         }
 
         if( !isLunarIsleRegion() ) {
-            if( !Rs2Magic.isLunar() && Rs2Inventory.hasItem(ItemID.TELEPORTSCROLL_LUNARISLE) ) {
+            if( !isLunar() && Rs2Inventory.hasItem(ItemID.TELEPORTSCROLL_LUNARISLE) ) {
                 Rs2Inventory.interact(ItemID.TELEPORTSCROLL_LUNARISLE, "Teleport");
                 sleep(2500);
-            } else if( Rs2Magic.isLunar() && canCastMoonclanTeleport ) {
+            } else if(isLunar() && canCastMoonclanTeleport ) {
                 Rs2Magic.cast(MagicAction.MOONCLAN_TELEPORT);
                 sleep(2500);
             }
             sleepUntil(() -> LUNAR_ISLE_REGION_IDS.contains(Rs2Player.getWorldLocation().getRegionID()));
         }
 
-        if( !Rs2Magic.isLunar() )
+        if(!isLunar())
             setSpellbookLunarAltar();
 
         return true;
@@ -427,7 +432,7 @@ public class AstralRunesScript extends Script {
             var altarGameObject = Rs2GameObject.getGameObject(ASTRAL_ALTAR_ID);
             if( altarGameObject != null ) {
                 Rs2GameObject.interact(altarGameObject, "Pray");
-                sleepUntil(Rs2Magic::isLunar);
+                sleepUntil(this::isLunar);
                 Rs2Random.wait(400, 800);
                 canCastMoonclanTeleport = Rs2Magic.canCast(MagicAction.MOONCLAN_TELEPORT);
             }

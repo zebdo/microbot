@@ -2,7 +2,6 @@ package net.runelite.client.plugins.microbot.util.magic;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import lombok.Getter;
 import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.gameval.ItemID;
@@ -314,34 +313,25 @@ public class Rs2Magic {
         }
     }
 
-    @Deprecated(since = "1.9.2 - use Rs2Magic.cast", forRemoval = true)
-    public static void humidify() {
-        sleepUntil(() -> {
-            Rs2Tab.switchToMagicTab();
-            sleep(50, 150);
-            return Rs2Tab.getCurrentTab() == InterfaceTab.MAGIC;
-        });
-        Widget humidify = Rs2Widget.findWidget(MagicAction.HUMIDIFY.getName());
-        if (humidify.getSpriteId() == 1972) {
-            Microbot.click(humidify.getBounds());
-        }
-    }
-
+    private final static int CHOOSE_CHARACTER_WIDGET_ID = 4915200;
     public static boolean npcContact(String npcName) {
-        if (!isLunar()) {
+        if (getSpellbook() != Rs2Spellbook.LUNAR) {
             Microbot.log("Tried casting npcContact, but lunar spellbook was not found.");
             return false;
         }
-        final int chooseCharacterWidgetId = 4915200;
-        boolean didCast = cast(MagicAction.NPC_CONTACT);
-        if (!didCast) return false;
-        boolean result = sleepUntilTrue(() -> Rs2Widget.getWidget(chooseCharacterWidgetId) != null && !Rs2Widget.isHidden(chooseCharacterWidgetId), 100, 5000);
-        if (!result) return false;
-        Widget chooseCharacterWidget = Rs2Widget.getWidget(chooseCharacterWidgetId);
-        Widget npcWidget = Rs2Widget.findWidget(npcName);
+
+        if (!cast(MagicAction.NPC_CONTACT)) return false;
+        if (!sleepUntilTrue(() -> !Rs2Widget.isHidden(CHOOSE_CHARACTER_WIDGET_ID), 100, 5000)) return false;
+
+        final Widget chooseCharacterWidget = Rs2Widget.getWidget(CHOOSE_CHARACTER_WIDGET_ID);
+        if (chooseCharacterWidget == null) return false;
+
+        final Widget npcWidget = Rs2Widget.findWidget(npcName);
+        if (npcWidget == null) return false;
+
         // check if npc widget is fully visible inside the choose character widget
-        Rectangle npcBounds = npcWidget.getBounds();
-        Rectangle chooseCharacterBounds = chooseCharacterWidget.getBounds();
+        final Rectangle npcBounds = npcWidget.getBounds();
+        final Rectangle chooseCharacterBounds = chooseCharacterWidget.getBounds();
         if (!Rs2UiHelper.isRectangleWithinRectangle(chooseCharacterBounds, npcBounds)) {
             Microbot.log("NPC widget is not fully visible inside the choose character widget, scrolling...");
             Global.sleepUntil(() -> Rs2UiHelper.isRectangleWithinRectangle(chooseCharacterBounds, Rs2Widget.findWidget(npcName).getBounds()), () -> {
@@ -350,8 +340,8 @@ public class Rs2Magic {
                 else Microbot.getMouse().scrollUp(Rs2UiHelper.getClickingPoint(chooseCharacterWidget.getBounds(),true));
             }, 5000, 300);
         }
-        boolean clickResult = Rs2Widget.clickWidget(npcName, Optional.of(75), 0, false);
-        if (!clickResult) return false;
+
+        if (!Rs2Widget.clickWidget(npcName, Optional.of(75), 0, false)) return false;
         Rs2Player.waitForAnimation();
         return true;
     }
@@ -391,26 +381,6 @@ public class Rs2Magic {
         return Rs2Spellbook.getCurrentSpellbook();
     }
 
-    @Deprecated(since = "use getSpellbook")
-    public static boolean isLunar() {
-        return getSpellbook() == Rs2Spellbook.LUNAR;
-    }
-
-    @Deprecated(since = "use getSpellbook")
-    public static boolean isAncient() {
-        return getSpellbook() == Rs2Spellbook.ANCIENT;
-    }
-
-    @Deprecated(since = "use getSpellbook")
-    public static boolean isModern() {
-        return getSpellbook() == Rs2Spellbook.MODERN;
-    }
-
-    @Deprecated(since = "use getSpellbook")
-    public static boolean isArceuus() {
-        return getSpellbook() == Rs2Spellbook.ARCEUUS;
-    }
-
     public static boolean isShadowVeilActive() {
         return Microbot.getVarbitValue(SHADOW_VEIL) == 1;
     }
@@ -428,7 +398,7 @@ public class Rs2Magic {
      */
     public static Rs2CombatSpells getCurrentAutoCastSpell() {
         final int currentVarbitValue = Microbot.getVarbitValue(276);
-        int offset = isAncient() ? ANCIENT_VARBIT_OFFSET : 0;
+        int offset = getSpellbook() == Rs2Spellbook.ANCIENT ? ANCIENT_VARBIT_OFFSET : 0;
         return Arrays.stream(Rs2CombatSpells.values())
                 .filter(spell -> (spell.getVarbitValue() + offset) == currentVarbitValue)
                 .findAny().orElse(null);
@@ -457,45 +427,6 @@ public class Rs2Magic {
                 .filter(staff -> staff.getRunes().containsAll(runes))
                 .collect(Collectors.toList());
     }
-    
-    /**
-     * Calculates the runes required to cast a specified Rs2Spells spell a certain number of times,
-     * taking into account equipped staves, tomes, inventory, and optionally, rune pouch runes.
-     *
-     * This method automatically determines equipped equipment and calculates the number of runes 
-     * still needed to meet the casting requirement by checking available runes in the inventory 
-     * and rune pouch and accounting for any runes provided by equipped staves and tomes.
-     *
-     * @param spell The spell to cast, represented as an {@link Rs2Spells} enum
-     * @param casts The number of times the spell should be cast. Must be greater than 0
-     * @param checkRunePouch A boolean indicating whether to include runes from the rune pouch in the calculation
-     * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune, 
-     *         and the value is an {@code Integer} representing the quantity of that rune still needed.
-     *         If all required runes are available, the map will be empty
-     */
-    public static Map<Runes, Integer> getRequiredRunes(Rs2Spells spell, int casts, boolean checkRunePouch) {
-        // Calculate total required runes for the desired number of casts
-        Map<Runes, Integer> requiredRunes = new HashMap<>();
-        spell.getRequiredRunes().forEach((rune, amount) -> requiredRunes.put(rune, amount * casts));
-        Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
-        if (equippedWeapon != null) {
-            Rs2Staff equippedStaff = Rs2Magic.getRs2Staff(equippedWeapon.getId());
-            if (equippedStaff != Rs2Staff.NONE) {
-                equippedStaff.getRunes().forEach(requiredRunes::remove);
-            }
-        }
-
-        // Remove runes provided by equipped tomes
-        Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
-        if (equippedShield != null) {
-            Rs2Tome equippedTome = Rs2Magic.getRs2Tome(equippedShield.getId());
-            if (equippedTome != Rs2Tome.NONE) {
-                equippedTome.getRunes().forEach(requiredRunes::remove);
-            }
-        }
-        return getRequiredRunes(requiredRunes, checkRunePouch);
-
-    }
 
     /**
      * Calculates the runes required to cast a specified combat spell a certain number of times,
@@ -505,227 +436,15 @@ public class Rs2Magic {
      * still needed to meet the casting requirement by checking available runes in the inventory 
      * and rune pouch and accounting for any runes provided by equipped staves and tomes.
      *
-     * @param spell The combat spell to cast, represented as an {@link Rs2CombatSpells} enum
+     * @param spell The combat spell to cast, represented as an {@link RequiresRunes} enum
      * @param casts The number of times the spell should be cast. Must be greater than 0
      * @param checkRunePouch A boolean indicating whether to include runes from the rune pouch in the calculation
      * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune, 
      *         and the value is an {@code Integer} representing the quantity of that rune still needed.
      *         If all required runes are available, the map will be empty
      */
-    public static Map<Runes, Integer> getRequiredRunes(Rs2CombatSpells spell, int casts, boolean checkRunePouch) {
-        // Calculate total required runes for the desired number of casts
-        Map<Runes, Integer> requiredRunes = new HashMap<>();
-        spell.getRequiredRunes().forEach((rune, amount) -> requiredRunes.put(rune, amount * casts));
-        Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
-        if (equippedWeapon != null) {
-            Rs2Staff equippedStaff = Rs2Magic.getRs2Staff(equippedWeapon.getId());
-            if (equippedStaff != Rs2Staff.NONE) {
-                equippedStaff.getRunes().forEach(requiredRunes::remove);
-            }
-        }
-
-        // Remove runes provided by equipped tomes
-        Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
-        if (equippedShield != null) {
-            Rs2Tome equippedTome = Rs2Magic.getRs2Tome(equippedShield.getId());
-            if (equippedTome != Rs2Tome.NONE) {
-                equippedTome.getRunes().forEach(requiredRunes::remove);
-            }
-        }
-        return getRequiredRunes(requiredRunes, checkRunePouch);
-
-    }
-    /**
-     * Calculates the runes required to cast a specified spell a certain number of times,
-     * taking into account equipped staves, inventory, and optionally, rune pouch runes.
-     *
-     * This method dynamically determines the number of runes still needed to meet the
-     * casting requirement by checking available runes in the inventory and rune pouch
-     * and accounting for any runes provided by equipped staves.
-     *
-     * @param spell          The combat spell to cast, represented as an {@link Rs2CombatSpells} enum.
-     * @param equippedStaff  The currently equipped staff, represented as an {@link Rs2Staff} object,
-     *                       which can reduce the number of required runes.
-     * @param casts          The number of times the spell should be cast. Must be greater than 0.
-     * @param checkRunePouch A boolean indicating whether to include runes from the rune pouch in the calculation.
-     * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune, 
-     *         and the value is an {@code Integer} representing the quantity of that rune still needed.
-     *         If all required runes are available, the map will be empty.
-     * @throws IllegalArgumentException if the {@code casts} parameter is less than or equal to 0.
-     */
-    public static Map<Runes, Integer> getRequiredRunes(Rs2CombatSpells spell, Rs2Staff equippedStaff, int casts, boolean checkRunePouch) {
-        if (casts <= 0) {
-            throw new IllegalArgumentException("Number of casts must be greater than 0.");
-        }
-
-        // Calculate total required runes for the desired number of casts
-        Map<Runes, Integer> requiredRunes = new HashMap<>();
-        spell.getRequiredRunes().forEach((rune, amount) -> requiredRunes.put(rune, amount * casts));
-
-        // Subtract runes provided by the equipped staff
-        if (equippedStaff != null) {
-            for (Runes providedRune : equippedStaff.getRunes()) {
-                requiredRunes.remove(providedRune);
-            }
-        }
-        return getRequiredRunes(requiredRunes, checkRunePouch);
-    }
-
-    /**
-     * Private helper method that calculates the remaining runes needed based on required runes,
-     * available inventory runes, and optionally rune pouch runes.
-     *
-     * This method compares the required runes against available runes from inventory and
-     * rune pouch to determine what additional runes are still needed.
-     *
-     * @param requiredRunes A map of required runes with their quantities
-     * @param checkRunePouch A boolean indicating whether to include runes from the rune pouch
-     * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune, 
-     *         and the value is an {@code Integer} representing the quantity of that rune still needed.
-     *         Runes that are fully satisfied are removed from the map
-     */
-    private static Map<Runes, Integer> getRequiredRunes(Map<Runes, Integer> requiredRunes , boolean checkRunePouch) {
-      
-        // Gather available runes from inventory
-        Map<Runes, Integer> availableRunes = new HashMap<>();
-        Rs2Inventory.items().forEachOrdered(item -> {
-            Arrays.stream(Runes.values())
-                    .filter(rune -> rune.getItemId() == item.getId())
-                    .findFirst()
-                    .ifPresent(rune -> availableRunes.merge(rune, item.getQuantity(), Integer::sum));
-        });
-
-        // Optionally add runes from the rune pouch
-        if (checkRunePouch) {
-            Rs2RunePouch.getRunes().forEach((runeId, quantity) -> {
-                Arrays.stream(Runes.values())
-                        .filter(r -> r.getItemId() == runeId)
-                        .findFirst()
-                        .ifPresent(rune -> availableRunes.merge(rune, quantity, Integer::sum));
-            });
-        }
-
-        // Calculate remaining runes needed
-        for (Runes rune : requiredRunes.keySet()) {
-            int requiredAmount = requiredRunes.get(rune);
-            int availableAmount = availableRunes.getOrDefault(rune, 0);
-
-            if (availableAmount >= requiredAmount) {
-                requiredRunes.put(rune, 0);
-            } else {
-                requiredRunes.put(rune, requiredAmount - availableAmount);
-            }
-        }
-
-        // Remove runes that are fully satisfied
-        requiredRunes.entrySet().removeIf(entry -> entry.getValue() <= 0);
-
-        return requiredRunes;
-    }
-
-    /**
-     * Checks if the player has the required runes to cast a specified combat spell.
-     *
-     * This method checks runes from the following sources:
-     * - Inventory: All runes present in the player's inventory.
-     * - Rune Pouch: If the player has a rune pouch, runes from it are counted.
-     * - Bank: If specified, runes from the bank are considered.
-     * - Equipped Items: Runes provided by equipped staffs and tomes are excluded from the requirements.
-     * - Combination Runes: Supports runes like Mist, Mud, Smoke, Steam, Dust, and Lava as substitutes.
-     *
-     * @param spell       The combat spell to cast, represented as an {@link Rs2CombatSpells} enum.
-     * @param hasRunePouch Whether the player has a rune pouch.
-     * @param hasInBank    Whether to consider runes available in the bank.
-     * @return true if all required runes are available; false otherwise.
-     */
-    public static boolean hasRequiredRunes(Rs2CombatSpells spell, boolean hasRunePouch, boolean hasInBank) {
-        Map<Runes, Integer> requiredRunes = new HashMap<>(spell.getRequiredRunes());
-
-        // Remove runes provided by equipped staffs
-        Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
-        if (equippedWeapon != null) {
-            Rs2Staff equippedStaff = getRs2Staff(equippedWeapon.getId());
-            if (equippedStaff != Rs2Staff.NONE) {
-                equippedStaff.getRunes().forEach(requiredRunes::remove);
-            }
-        }
-
-        // Remove runes provided by equipped tomes
-        Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
-        if (equippedShield != null) {
-            Rs2Tome equippedTome = getRs2Tome(equippedShield.getId());
-            if (equippedTome != Rs2Tome.NONE) {
-                equippedTome.getRunes().forEach(requiredRunes::remove);
-            }
-        }
-
-        // Gather available runes from inventory
-        Map<Runes, Integer> availableRunes = new HashMap<>();
-        Rs2Inventory.items().forEach(item -> {
-            Arrays.stream(Runes.values())
-                    .filter(rune -> rune.getItemId() == item.getId())
-                    .findFirst()
-                    .ifPresent(rune -> availableRunes.merge(rune, item.getQuantity(), Integer::sum));
-        });
-
-        // Gather runes from the rune pouch
-        if (hasRunePouch) {
-            Rs2RunePouch.getRunes().forEach((runeId, quantity) -> {
-                Arrays.stream(Runes.values())
-                        .filter(r -> r.getItemId() == runeId)
-                        .findFirst()
-                        .ifPresent(rune -> availableRunes.merge(rune, quantity, Integer::sum));
-            });
-        }
-
-        // Gather runes from the bank if needed
-        if (hasInBank) {
-            Rs2Bank.bankItems().stream()
-                    .flatMap(item -> Arrays.stream(Runes.values())
-                            .filter(r -> r.getItemId() == item.getId())
-                            .map(rune -> Map.entry(rune, item.getQuantity())))
-                    .forEach(entry -> availableRunes.merge(entry.getKey(), entry.getValue(), Integer::sum));
-        }
-
-        // Check each required rune, using combination runes if necessary
-        for (Map.Entry<Runes, Integer> entry : requiredRunes.entrySet()) {
-            Runes rune = entry.getKey();
-            int requiredAmount = entry.getValue();
-            int availableAmount = availableRunes.getOrDefault(rune, 0);
-
-            // Use regular runes first
-            if (availableAmount >= requiredAmount) {
-                continue;
-            }
-
-            int deficit = requiredAmount - availableAmount;
-            int comboRuneCount = 0;
-
-            // Calculate combination rune availability
-            switch (rune) {
-                case AIR:
-                    comboRuneCount = availableRunes.getOrDefault(Runes.MIST, 0) + availableRunes.getOrDefault(Runes.SMOKE, 0) + availableRunes.getOrDefault(Runes.DUST, 0);
-                    break;
-                case WATER:
-                    comboRuneCount = availableRunes.getOrDefault(Runes.MIST, 0) + availableRunes.getOrDefault(Runes.MUD, 0) + availableRunes.getOrDefault(Runes.STEAM, 0);
-                    break;
-                case EARTH:
-                    comboRuneCount = availableRunes.getOrDefault(Runes.MUD, 0) + availableRunes.getOrDefault(Runes.DUST, 0) + availableRunes.getOrDefault(Runes.LAVA, 0);
-                    break;
-                case FIRE:
-                    comboRuneCount = availableRunes.getOrDefault(Runes.LAVA, 0) + availableRunes.getOrDefault(Runes.SMOKE, 0) + availableRunes.getOrDefault(Runes.STEAM, 0);
-                    break;
-                default:
-                    comboRuneCount = 0;
-            }
-
-            // Check if combination runes are sufficient to cover the deficit
-            if (comboRuneCount < deficit) {
-                return false;
-            }
-        }
-
-        return true;
+    public static Map<Integer, Integer> getMissingRunes(RequiresRunes spell, int casts, boolean checkRunePouch) {
+        return getMissingRunes(spell, casts, true, true, checkRunePouch, false);
     }
 
     /**
@@ -740,7 +459,13 @@ public class Rs2Magic {
         return hasRequiredRunes(spell, Rs2Inventory.hasRunePouch(), false);
     }
 
-    public static Map<Integer, Integer> getRequiredRunes(Rs2Spells spell, int casts) {
+    @Deprecated(since = "Use getMissingRunes")
+    public static Map<Runes, Integer> getRequiredRunes(RequiresRunes spell, int casts, boolean checkRunePouch) {
+        return getMissingRunes(spell, casts, true, true, checkRunePouch, false).entrySet().stream()
+                .collect(Collectors.toMap(entry -> Runes.byItemId(entry.getKey()), Map.Entry::getValue));
+    }
+
+    public static Map<Integer, Integer> getRequiredRunes(RequiresRunes spell, int casts) {
         final Map<Integer, Integer> runes = spell.getRequiredRunes().entrySet().stream().collect(Collectors.toMap(e -> (e.getKey().getItemId()), Map.Entry::getValue));
         if (casts != 1) runes.replaceAll((key, value) -> casts * value);
         return runes;
@@ -768,79 +493,8 @@ public class Rs2Magic {
         return reqRunes;
     }
 
-    public static Map<Integer, Integer> getMissingRunes(Rs2Spells spell, int casts, boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank) {
+    public static Map<Integer, Integer> getMissingRunes(RequiresRunes spell, int casts, boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank) {
         return getMissingRunes(getRequiredRunes(spell, casts), includeInventory, includeEquipment, includeRunePouch, includeBank, true);
-    }
-
-    /**
-     * Calculates the runes required to cast a specified spell a certain number of times,
-     * taking into account equipped staves, inventory, and optionally, rune pouch runes.
-     *
-     * This method dynamically determines the number of runes still needed to meet the
-     * casting requirement by checking available runes in the inventory and rune pouch
-     * and accounting for any runes provided by equipped staves.
-     *
-     * @param spell          The spell to cast, represented as an {@link Rs2Spells} enum.
-     * @param equippedStaff  The currently equipped staff, represented as an {@link Rs2Staff} object,
-     *                       which can reduce the number of required runes.
-     * @param casts          The number of times the spell should be cast. Must be greater than 0.
-     * @param checkRunePouch A boolean indicating whether to include runes from the rune pouch in the calculation.
-     * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune, 
-     *         and the value is an {@code Integer} representing the quantity of that rune still needed.
-     *         If all required runes are available, the map will be empty.
-     * @throws IllegalArgumentException if the {@code casts} parameter is less than or equal to 0.
-     */
-    public static Map<Runes, Integer> getRequiredRunes(Rs2Spells spell, Rs2Staff equippedStaff, int casts, boolean checkRunePouch) {
-        if (casts <= 0) {
-            throw new IllegalArgumentException("Number of casts must be greater than 0.");
-        }
-
-        // Calculate total required runes for the desired number of casts
-        Map<Runes, Integer> requiredRunes = new HashMap<>();
-        spell.getRequiredRunes().forEach((rune, amount) -> requiredRunes.put(rune, amount * casts));
-
-        // Subtract runes provided by the equipped staff
-        if (equippedStaff != null) {
-            for (Runes providedRune : equippedStaff.getRunes()) {
-                requiredRunes.remove(providedRune);
-            }
-        }
-
-        // Gather available runes from inventory
-        Map<Runes, Integer> availableRunes = new HashMap<>();
-        Rs2Inventory.items().forEachOrdered(item -> {
-            Arrays.stream(Runes.values())
-                    .filter(rune -> rune.getItemId() == item.getId())
-                    .findFirst()
-                    .ifPresent(rune -> availableRunes.merge(rune, item.getQuantity(), Integer::sum));
-        });
-
-        // Optionally add runes from the rune pouch
-        if (checkRunePouch) {
-            Rs2RunePouch.getRunes().forEach((runeId, quantity) -> {
-                Arrays.stream(Runes.values())
-                        .filter(r -> r.getItemId() == runeId)
-                        .findFirst()
-                        .ifPresent(rune -> availableRunes.merge(rune, quantity, Integer::sum));
-            });
-        }
-
-        // Calculate remaining runes needed
-        for (Runes rune : requiredRunes.keySet()) {
-            int requiredAmount = requiredRunes.get(rune);
-            int availableAmount = availableRunes.getOrDefault(rune, 0);
-
-            if (availableAmount >= requiredAmount) {
-                requiredRunes.put(rune, 0);
-            } else {
-                requiredRunes.put(rune, requiredAmount - availableAmount);
-            }
-        }
-
-        // Remove runes that are fully satisfied
-        requiredRunes.entrySet().removeIf(entry -> entry.getValue() <= 0);
-
-        return requiredRunes;
     }
 
     public static boolean hasRunes(Map<Integer, Integer> runeQuantities, boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank) {
@@ -864,11 +518,11 @@ public class Rs2Magic {
      * @param hasInBank    Whether to consider runes available in the bank.
      * @return true if all required runes are available; false otherwise.
      */
-    public static boolean hasRequiredRunes(Rs2Spells spell, boolean hasRunePouch, boolean hasInBank) {
+    public static boolean hasRequiredRunes(RequiresRunes spell, boolean hasRunePouch, boolean hasInBank) {
         return hasRequiredRunes(spell,1,true,true,hasRunePouch,hasInBank);
     }
 
-    public static boolean hasRequiredRunes(Rs2Spells spell, int casts, boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank) {
+    public static boolean hasRequiredRunes(RequiresRunes spell, int casts, boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank) {
         return hasRunes(getRequiredRunes(spell,casts),includeInventory,includeEquipment,includeRunePouch,includeBank);
     }
 
@@ -990,61 +644,5 @@ public class Rs2Magic {
      */
     public static Map<Integer, Integer> getRunes() {
         return getRunes(true, true, true, false);
-    }
-
-    /**
-     * Calculates the available runes for casting a specified spell, taking into account
-     * equipped staves, tomes, inventory runes, and optionally rune pouch runes.
-     * <p>
-     * This method determines what runes are currently available to the player for casting
-     * a specific spell, excluding runes that are provided by equipped equipment.
-     *
-     * @param spell The spell to check available runes for, represented as an {@link Rs2Spells} enum
-     * @param hasRunePouch A boolean indicating whether to include runes from the rune pouch
-     * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune, 
-     *         and the value is an {@code Integer} representing the quantity of that rune available.
-     *         Only includes runes that are not provided by equipped equipment
-     */
-    @Deprecated(since = "Use getRunes")
-    Map<Runes, Integer> getAvailableRunes(Rs2Spells spell, boolean hasRunePouch) {
-        Map<Runes, Integer> requiredRunes = new HashMap<>(spell.getRequiredRunes());
-
-        // Check if we have a staff equipped that provides the runes
-        final Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
-        if (equippedWeapon != null) {
-            Rs2Staff equippedStaff = getRs2Staff(equippedWeapon.getId());
-            if (equippedStaff != Rs2Staff.NONE) {
-                equippedStaff.getRunes().forEach(requiredRunes::remove);
-            }
-        }
-
-        // Remove runes provided by equipped tomes
-        final Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
-        if (equippedShield != null) {
-            Rs2Tome equippedTome = getRs2Tome(equippedShield.getId());
-            if (equippedTome != Rs2Tome.NONE) {
-                equippedTome.getRunes().forEach(requiredRunes::remove);
-            }
-        }
-
-        // Collect available runes from inventory
-        Map<Runes, Integer> availableRunes = new HashMap<>();
-        Rs2Inventory.items().forEach(item -> {
-            Arrays.stream(Runes.values())
-                    .filter(rune -> rune.getItemId() == item.getId())
-                    .findFirst()
-                    .ifPresent(rune -> availableRunes.merge(rune, item.getQuantity(), Integer::sum));
-        });
-
-        // Collect runes from the rune pouch if we have it in inventory
-        if (hasRunePouch) {
-            Rs2RunePouch.getRunes().forEach((runeId, quantity) -> {
-                Arrays.stream(Runes.values())
-                        .filter(r -> r.getItemId() == runeId)
-                        .findFirst()
-                        .ifPresent(rune -> availableRunes.merge(rune, quantity, Integer::sum));
-            });
-        }
-        return availableRunes;
     }
 }

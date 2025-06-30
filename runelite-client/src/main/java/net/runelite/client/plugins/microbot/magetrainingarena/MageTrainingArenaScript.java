@@ -20,6 +20,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Spellbook;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -74,7 +75,7 @@ public class MageTrainingArenaScript extends Script {
                 if (!super.run()) return;
                 if (mtaPlugin != null && !Microbot.getPluginManager().isActive(mtaPlugin)) return;
 
-                if (!Rs2Magic.isModern()) {
+                if (Rs2Magic.getSpellbook() != Rs2Spellbook.MODERN) {
                     Microbot.log("Wrong spellbook found...please use the modern spellbook for this script.");
                     sleep(5000);
                     return;

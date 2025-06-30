@@ -34,6 +34,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Spellbook;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -475,7 +476,7 @@ public class QoLPlugin extends Plugin {
         }
 
         if (config.useQuickTeleportToHouse() && menuEntry.getOption().contains("Open") && menuEntry.getTarget().toLowerCase().contains("rune pouch")) {
-            if (Rs2Magic.isModern()) {
+            if (Rs2Magic.getSpellbook() == Rs2Spellbook.MODERN) {
                 addMenuEntry(event, "<col=FFA500>Teleport to House</col>", target, this::quickTeleportToHouse);
             }
         }

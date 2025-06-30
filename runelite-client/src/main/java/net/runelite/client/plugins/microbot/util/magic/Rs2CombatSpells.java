@@ -10,8 +10,7 @@ import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 import java.util.Map;
 
 @Getter
-public enum Rs2CombatSpells
-{
+public enum Rs2CombatSpells implements RequiresRunes {
     WIND_STRIKE(MagicAction.WIND_STRIKE, Map.of(
             Runes.AIR, 1,
             Runes.MIND, 1
