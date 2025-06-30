@@ -109,6 +109,11 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
     private final HotkeyListener lockConditionHotkeyListener = new HotkeyListener(() -> config.lockConditionHotkey()) {
         @Override
         public void hotkeyPressed() {
+            log.info("Toggling lock condition for plugin: {}", getName());
+            if (stopCondition == null || stopCondition.getConditions().isEmpty()) {
+                log.warn("Stop condition is not initialized. Cannot toggle lock condition.");
+                return;
+            }
             boolean newState = toggleLock((Condition)(stopCondition));
             log.info("Lock condition toggled: {}", newState ? "LOCKED - " + config.lockDescription() : "UNLOCKED");
         }
@@ -267,8 +272,10 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
          // NOTE: This condition uses AND logic with the other conditions since it's in an AND condition
          AndCondition andCondition = new AndCondition();
          //andCondition.addCondition(orCondition);
-         //andCondition.addCondition(lockCondition);         
-         //log.info("\nCreated stop condition: \n{}", andCondition.getDescription());
+         andCondition.addCondition(lockCondition);         
+         log.info("\nCreated stop condition: \n{}", andCondition.getDescription());
+         List<LockCondition> all = andCondition.findAllLockConditions();
+         log.info("Found {} lock conditions in stop condition: {}", all.size(), all);
          return andCondition;
        
     }

@@ -1343,13 +1343,13 @@ public class ConditionManager implements AutoCloseable {
 
     @Subscribe(priority = -1)
     public void onStatChanged(StatChanged event) {
-             
         for (Condition condition : getConditions( )) {
             try {
                 condition.onStatChanged(event);
             } catch (Exception e) {
                 log.error("Error in condition {} during StatChanged event: {}", 
                     condition.getDescription(), e.getMessage(), e);
+                e.printStackTrace();
             }
         }        
     }
@@ -2485,5 +2485,104 @@ public class ConditionManager implements AutoCloseable {
         }
         
         return summary.toString();
+    }
+    
+    /**
+     * Pauses all time-based conditions in both user and plugin logical structures.
+     * When paused, time conditions cannot be satisfied and their trigger times will be
+     * shifted by the duration of the pause when resumed.
+     */
+    public void pause(){
+        pauseAllConditions();
+        // Unregister from events while paused
+        if (eventsRegistered) {
+            unregisterEvents();
+        }
+    }
+    public void pauseUserConditions() {
+        // Pause all time conditions and unregister events
+        List<Condition> timeConditions = getUserConditions();
+        for (Condition condition : timeConditions) {
+            condition.pause();
+        }
+        
+    }
+    public void pausePluginConditions() {
+        // Pause all time conditions and unregister events
+        List<Condition> timeConditions = getPluginConditions();
+        for (Condition condition : timeConditions) {
+            condition.pause();
+        }
+        
+    }
+    public void pauseAllConditions() {
+        // Pause all time conditions and unregister events
+        List<Condition> timeConditions = getConditions();
+        for (Condition condition : timeConditions) {
+            condition.pause();
+        }
+        
+    }
+      
+    /**
+     * resumes all time-based conditions in both user and plugin logical structures.
+     * When resumed, time conditions will resume normal operation with their trigger
+     * times shifted by the duration of the pause.
+     */
+    public void resume(){
+        resumeAllConditions();
+        // Re-register for events when resumed
+        if (!eventsRegistered) {
+            registerEvents();
+        }
+
+    }
+  
+    public void resumeAllConditions() {
+        // resume all time conditions
+        List<Condition> timeConditions = getConditions();
+        for (Condition condition : timeConditions) {
+            condition.resume();
+        }
+     
+    }
+    public void resumeUserConditions() {
+        // resume all time conditions
+        List<Condition> timeConditions = getUserConditions();
+        for (Condition condition : timeConditions) {
+            condition.resume();
+        }
+        
+    }
+    public void resumePluginTimeConditions() {
+        // resume all time conditions
+        List<Condition> timeConditions = getPluginConditions();
+        for (Condition condition : timeConditions) {
+            condition.resume();
+        }
+        
+    }
+    
+    /**
+     * Checks if any time-based conditions are currently paused.
+     * 
+     * @return true if at least one time condition is paused, false otherwise
+     */
+    public boolean hasAnyPausedConditions() {
+        List<TimeCondition> timeConditions = getAllTimeConditions();
+        for (TimeCondition condition : timeConditions) {
+            if (condition.isPaused()) {
+                return true;
+            }
+        }
+        return false;
+    }
+    /**
+     * Checks if any time-based conditions are currently paused.
+     * 
+     * @return true if at least one time condition is paused, false otherwise
+     */
+    public boolean isPaused() {
+        return hasAnyPausedConditions();
     }
 }

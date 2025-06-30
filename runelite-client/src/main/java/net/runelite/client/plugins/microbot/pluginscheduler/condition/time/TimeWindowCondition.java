@@ -10,6 +10,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionT
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.enums.RepeatCycle;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 
+import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
@@ -26,8 +27,12 @@ import java.util.logging.Level;
 @Slf4j
 public class TimeWindowCondition extends TimeCondition {
     
+    // Constants for unlimited date ranges
+    public static final LocalDate UNLIMITED_START_DATE = LocalDate.of(1900, 1, 1);
+    public static final LocalDate UNLIMITED_END_DATE = LocalDate.of(2100, 12, 31);
+    
     public static String getVersion() {
-        return "0.0.2";
+        return "0.0.3";
     }
     // Time window bounds (daily start/end times)
     private final LocalTime startTime;
@@ -43,9 +48,9 @@ public class TimeWindowCondition extends TimeCondition {
     
 
     // Next window tracking (for non-daily cycles)
-    @Getter
-    @Setter
-    private transient LocalDateTime currentStartDateTime;
+    //@Getter
+    //@Setter
+    
     @Getter
     @Setter
     private transient LocalDateTime currentEndDateTime;
@@ -63,11 +68,34 @@ public class TimeWindowCondition extends TimeCondition {
     @Setter
     private transient int transientNumberOfResetsWithinDailyInterval = 0; // Number of resets since last calculation
 
+    /**
+     * Checks if the start date represents an unlimited (no restriction) start date
+     * @return true if start date is unlimited
+     */
+    public boolean isUnlimitedStartDate() {
+        return startDate != null && startDate.equals(UNLIMITED_START_DATE);
+    }
+    
+    /**
+     * Checks if the end date represents an unlimited (no restriction) end date
+     * @return true if end date is unlimited
+     */
+    public boolean isUnlimitedEndDate() {
+        return endDate != null && endDate.equals(UNLIMITED_END_DATE);
+    }
+    
+    /**
+     * Checks if this condition has unlimited date range (both start and end are unlimited)
+     * @return true if both dates are unlimited
+     */
+    public boolean hasUnlimitedDateRange() {
+        return isUnlimitedStartDate() && isUnlimitedEndDate();
+    }
+
     
     /**
      * Creates a time window condition with just daily start and end times.
-     * Uses default values for other parameters: current date for start date, 
-     * one month in the future for end date, daily repeat cycle, and unlimited repeats.
+     * Uses unlimited date range (no start/end date restrictions), daily repeat cycle, and unlimited repeats.
      *
      * @param startTime The daily start time of the window
      * @param endTime The daily end time of the window
@@ -76,8 +104,8 @@ public class TimeWindowCondition extends TimeCondition {
         this(
             startTime, 
             endTime, 
-            LocalDate.now(), 
-            LocalDate.now().plusMonths(1),
+            UNLIMITED_START_DATE, 
+            UNLIMITED_END_DATE,
             RepeatCycle.DAYS,
             1,
             0// 0 means infinity 
@@ -119,12 +147,12 @@ public class TimeWindowCondition extends TimeCondition {
         this.useRandomization = true;
         
         // Initialize next window times based on repeat cycle
-        calculateNextWindow();
+        calculateNextWindow(getNow().toLocalDateTime());
     }
     /**
      * Factory method to create a simple daily time window that repeats every day.
      * Creates a window that starts and ends at the specified times each day,
-     * valid for one year from the current date.
+     * with unlimited date range (no start/end date restrictions).
      *
      * @param startTime The daily start time of the window
      * @param endTime The daily end time of the window
@@ -134,8 +162,8 @@ public class TimeWindowCondition extends TimeCondition {
         return new TimeWindowCondition(
             startTime, 
             endTime, 
-            LocalDate.now(), 
-            LocalDate.now().plusYears(1),
+            UNLIMITED_START_DATE, 
+            UNLIMITED_END_DATE,
             RepeatCycle.DAYS,
             1,
             0// 0 means infinity
@@ -175,10 +203,12 @@ public class TimeWindowCondition extends TimeCondition {
    /**
      * Calculate the next window start and end times based on current time and reset settings
      */
-    private void calculateNextWindow() {
+    private void calculateNextWindow(LocalDateTime lastValidTime) {
         ZonedDateTime now = ZonedDateTime.now(getZoneId());
         LocalDateTime nowLocal = now.toLocalDateTime();
-        LocalDateTime referenceTime = lastValidResetTime != null ? lastValidResetTime : nowLocal;
+
+
+        LocalDateTime referenceTime = lastValidTime != null ? lastValidTime : nowLocal;
         
         //LocalDateTime todayStartDateTime = LocalDateTime.of(nowLocal.toLocalDate(), startTime);
         //LocalDateTime todayEndDateTime = LocalDateTime.of(nowLocal.toLocalDate(), endTime);
@@ -213,11 +243,17 @@ public class TimeWindowCondition extends TimeCondition {
         if(Microbot.isDebug() ) log.info("After calculate new cycle window : \n" +  this,Level.INFO);
         // Apply randomization if enabled
         
-        LocalDateTime lastEnd = LocalDateTime.of(endDate, endTime);
-        if (currentStartDateTime != null) {
-            if (this.currentStartDateTime.isAfter(lastEnd)){
-                this.currentStartDateTime = null;
-                this.currentEndDateTime = null;
+        // Only check end date bounds if not unlimited
+        if (!isUnlimitedEndDate()) {
+            LocalDateTime lastEnd = LocalDateTime.of(endDate, endTime);
+            if (getNextTriggerTimeWithPause().orElse(null) != null) {
+                LocalDateTime nextTrigger = getNextTriggerTimeWithPause().get().toLocalDateTime();
+                if (nextTrigger.isAfter(lastEnd)){
+                    setNextTriggerTime(null);
+                    this.currentEndDateTime = null;
+                }
+            }else{
+                   this.currentEndDateTime = null;
             }
         }
         if(Microbot.isDebug() ) log.info("Calculating done -  new time window: \n" +  this,Level.INFO);
@@ -236,17 +272,17 @@ public class TimeWindowCondition extends TimeCondition {
                 todayEndDateTime = todayEndDateTime.plusDays(1);
             }
             if (referenceTime.isAfter(todayStartDateTime) && referenceTime.isBefore(todayEndDateTime)) {
-                this.currentStartDateTime = todayStartDateTime;
+                setNextTriggerTime(todayStartDateTime.atZone(getZoneId()));
                 this.currentEndDateTime = todayEndDateTime;
             } else {
-                this.currentStartDateTime = todayEndDateTime.plusDays(1);
+                setNextTriggerTime(todayEndDateTime.plusDays(1).atZone(getZoneId()));
                 this.currentEndDateTime = todayEndDateTime.plusDays(1);
                 
             }
         }else{
             // If the reset time is after the end of the window, set to null
             if (lastValidResetTime.isAfter(currentEndDateTime)) {
-                this.currentStartDateTime = null;
+                 setNextTriggerTime(null);
                 this.currentEndDateTime = null;
             } else {
                 // wait until we are outside current vaild window
@@ -274,18 +310,18 @@ public class TimeWindowCondition extends TimeCondition {
                 
 
         
-                        
-        this.currentStartDateTime = calculateNextStartWindow(referenceTime);        
+        LocalDateTime nextTriggerTime =  calculateNextStartWindow(referenceTime);
+        setNextTriggerTime(nextTriggerTime.atZone(getZoneId()));        
         if (Microbot.isDebug()) log.info("calculation of new cycle window after calculation of next start window:\n {}", this);
         
         
         // If next interval starts after the outer window end, it's not valid today      
-        LocalDate startday = currentStartDateTime.toLocalDate();           
+        LocalDate startday = nextTriggerTime.toLocalDate();           
         this.currentEndDateTime = LocalDateTime.of(startday, endTime);        
-        if (currentEndDateTime.isBefore(currentStartDateTime)) {
+        if (currentEndDateTime.isBefore(nextTriggerTime)) {
             this.currentEndDateTime = calculateNextTime( this.currentEndDateTime);  
             LocalDateTime endDateTimeNextDay = LocalDateTime.of(startday.plusDays(1), endTime);
-            if (this.currentEndDateTime.isBefore(currentStartDateTime) || endDateTimeNextDay.isBefore(this.currentEndDateTime)) {
+            if (this.currentEndDateTime.isBefore(nextTriggerTime) || endDateTimeNextDay.isBefore(this.currentEndDateTime)) {
                 throw new IllegalStateException("Invalid end time calculation: " + this.currentEndDateTime);
             }
         }      
@@ -301,14 +337,16 @@ public class TimeWindowCondition extends TimeCondition {
         int maxOffset=-1;
         long intervalLength =0 ;
         randomizerValueUnit = null;
-        log.info(" currentStartDateTime: {} - currentEndDateTime: {}", currentStartDateTime, currentEndDateTime);
-        if (useRandomization && currentStartDateTime != null && this.currentEndDateTime != null) {     
+        LocalDateTime nextTriggerTime = getNextTriggerTimeWithPause().orElse(null).toLocalDateTime();
+        log.info(" currentStartDateTime: {} - currentEndDateTime: {}", nextTriggerTime, currentEndDateTime);
+        if (useRandomization && nextTriggerTime != null && this.currentEndDateTime != null) {
+
             switch (repeatCycle) {
                 case ONE_TIME:
                     randomizerValueUnit = RepeatCycle.ONE_TIME;
                     break;
                 case DAYS:                                                      
-                    intervalLength = ChronoUnit.MINUTES.between(currentStartDateTime, currentEndDateTime);   
+                    intervalLength = ChronoUnit.MINUTES.between(nextTriggerTime, currentEndDateTime);   
                                     
                     randomizerValueUnit = RepeatCycle.MINUTES;
                     minOffset = Math.max(0,(int)(intervalLength*0.1));
@@ -316,8 +354,8 @@ public class TimeWindowCondition extends TimeCondition {
                     
                     this.randomizerValue = Rs2Random.between(minOffset, maxOffset);
                     
-                    if (currentStartDateTime.plusMinutes(this.randomizerValue).isBefore(nextEndDateTime)){
-                        currentStartDateTime = currentStartDateTime.plusMinutes(this.randomizerValue);
+                    if (nextTriggerTime.plusMinutes(this.randomizerValue).isBefore(nextEndDateTime)){
+                        nextTriggerTime =  nextTriggerTime.plusMinutes(this.randomizerValue);
                     }
                     if (!LocalDateTime.of(endDate, endTime).isBefore(this.currentEndDateTime.plusMinutes(randomizerValue))) {                
                         this.currentEndDateTime = this.currentEndDateTime.plusMinutes(randomizerValue);
@@ -328,15 +366,15 @@ public class TimeWindowCondition extends TimeCondition {
                     break;
                 case WEEKS:
                                     
-                    long intervalLengthHours= ChronoUnit.HOURS.between(currentStartDateTime, currentEndDateTime);   
+                    long intervalLengthHours= ChronoUnit.HOURS.between(nextTriggerTime, currentEndDateTime);   
                     randomizerValueUnit = RepeatCycle.HOURS;
                     minOffset = Math.max( 0,(int)(intervalLengthHours*0.1));
                     maxOffset = Math.max((int)(intervalLengthHours*0.2),1 );
                     this.randomizerValue = Rs2Random.between(minOffset, maxOffset);
                     //when on next day
-                    if (currentStartDateTime.isAfter(nextStartDateTime)){
-                        if (currentStartDateTime.plusHours(this.randomizerValue).isBefore(nextEndDateTime)){
-                            currentStartDateTime = currentStartDateTime.plusHours(this.randomizerValue);
+                    if (nextTriggerTime.isAfter(nextStartDateTime)){
+                        if (nextTriggerTime.plusHours(this.randomizerValue).isBefore(nextEndDateTime)){
+                            nextTriggerTime = nextTriggerTime.plusHours(this.randomizerValue);
                         }  
                     }                  
                     if (!LocalDateTime.of(endDate, endTime).isBefore(this.currentEndDateTime.plusHours(randomizerValue))) {                
@@ -347,12 +385,12 @@ public class TimeWindowCondition extends TimeCondition {
                     break;
                 case MINUTES:                
                    
-                    intervalLength = ChronoUnit.MILLIS.between(currentStartDateTime, currentEndDateTime);   
+                    intervalLength = ChronoUnit.MILLIS.between(nextTriggerTime, currentEndDateTime);   
                     randomizerValueUnit = RepeatCycle.MILLIS;
                     minOffset = Math.max(0,(int)(intervalLength*0.1));
                     maxOffset = Math.max(1,(int)(intervalLength*0.2));
                     this.randomizerValue = Rs2Random.between(minOffset, maxOffset);
-                    currentStartDateTime = currentStartDateTime.plusSeconds(this.randomizerValue*1000);
+                    nextTriggerTime = nextTriggerTime.plusSeconds(this.randomizerValue*1000);
 
                     if (!LocalDateTime.of(endDate, endTime).isBefore(this.currentEndDateTime.plusSeconds(randomizerValue*1000))) {                
                         this.currentEndDateTime = this.currentEndDateTime.plusSeconds(randomizerValue*1000);
@@ -361,12 +399,12 @@ public class TimeWindowCondition extends TimeCondition {
                     }            
                     break;
                 case HOURS:                                  
-                    long intervalLengthSeconds = ChronoUnit.SECONDS.between(currentStartDateTime, currentEndDateTime);                   
+                    long intervalLengthSeconds = ChronoUnit.SECONDS.between(nextTriggerTime, currentEndDateTime);                   
                     randomizerValueUnit = RepeatCycle.SECONDS;
                     minOffset =  Math.max(0, (int)(intervalLengthSeconds*0.1));
                     maxOffset = Math.max(1,(int)(intervalLengthSeconds*0.2));
                     this.randomizerValue = Rs2Random.between(minOffset, maxOffset);
-                    currentStartDateTime = currentStartDateTime.plusSeconds(this.randomizerValue);
+                    nextTriggerTime = nextTriggerTime.plusSeconds(this.randomizerValue);
                     if (!LocalDateTime.of(endDate, endTime).isBefore(this.currentEndDateTime.plusSeconds(randomizerValue))) {                
                         this.currentEndDateTime = this.currentEndDateTime.plusSeconds(randomizerValue);
                     }else {
@@ -378,6 +416,7 @@ public class TimeWindowCondition extends TimeCondition {
                     log.warn("Unsupported repeat cycle: {}", repeatCycle);
                     break;
             }
+            setNextTriggerTime(nextTriggerTime.atZone(zoneId));
             log.info("Interval length in hours: {} - min: {} - max: {} - randomizerValue: {} {}", intervalLength, minOffset, maxOffset,randomizerValue,repeatCycle.unit());
         }
        
@@ -498,6 +537,21 @@ public class TimeWindowCondition extends TimeCondition {
      */
     @Override
     public boolean isSatisfied() {
+        if (getNextTriggerTimeWithPause().isPresent()) {
+            return isSatisfied(getNextTriggerTimeWithPause().get().toLocalDateTime());
+        }        
+        return false;
+    }
+    @Override
+    public boolean isSatisfiedAt(ZonedDateTime triggerTime) {
+        return isSatisfied(triggerTime.toLocalDateTime());
+        
+    }
+    
+    private boolean isSatisfied(LocalDateTime currentStartDateTime) {
+        if (isPaused()) {
+            return false;
+        }
         if (!canTriggerAgain()) {
             return false;
         }
@@ -521,7 +575,7 @@ public class TimeWindowCondition extends TimeCondition {
         }
         if ((currentStartDateTime.isAfter(beforeDayWindowStart) && currentEndDateTime.isBefore(beforeDayWindowEnd))) {
             lastValidResetTime = currentDayWindowStart;
-            this.calculateNextWindow();
+            this.calculateNextWindow(this.lastValidResetTime);
             
         }
         // Check if window has passed - but don't auto-recalculate
@@ -549,14 +603,14 @@ public class TimeWindowCondition extends TimeCondition {
         }
         
         // If our window bounds aren't set, we can't calculate progress
-        if (currentStartDateTime == null || currentEndDateTime == null) {
+        if (getNextTriggerTimeWithPause().orElse(null) == null || currentEndDateTime == null) {
             log.debug("Unable to calculate progress - window bounds are null");
             return 0.0;
         }
         
         ZonedDateTime now = ZonedDateTime.now(getZoneId());
         LocalDateTime nowLocal = now.toLocalDateTime();
-        
+        LocalDateTime currentStartDateTime = getNextTriggerTimeWithPause().get().toLocalDateTime();
         // Calculate total window duration in seconds
         long totalDuration = ChronoUnit.SECONDS.between(currentStartDateTime, currentEndDateTime);
         if (totalDuration <= 0) {
@@ -593,12 +647,27 @@ public class TimeWindowCondition extends TimeCondition {
         DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
         String timeRangeStr = startTime.format(timeFormatter) + " to " + endTime.format(timeFormatter);
         description.append(timeRangeStr);
-        DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-            description.append(" ( Between: ")
-                      .append(startDate.format(dateFormatter))
-                      .append(" to ")
-                      .append(endDate.format(dateFormatter))
-                      .append(")");
+        // Add date range information only if not unlimited
+        if (!hasUnlimitedDateRange()) {
+            DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+            description.append(" ( Between: ");
+            
+            if (isUnlimitedStartDate()) {
+                description.append("No start limit");
+            } else {
+                description.append(startDate.format(dateFormatter));
+            }
+            
+            description.append(" to ");
+            
+            if (isUnlimitedEndDate()) {
+                description.append("No end limit");
+            } else {
+                description.append(endDate.format(dateFormatter));
+            }
+            
+            description.append(")");
+        }
         // Add repeat information
         if (repeatCycle != RepeatCycle.ONE_TIME) {
             
@@ -666,13 +735,15 @@ public class TimeWindowCondition extends TimeCondition {
   
     public void hardReset() {
         this.currentValidResetCount = 0;
+        resume();
         this.lastValidResetTime = LocalDateTime.now();
-        this.currentStartDateTime = null;
+        this.setNextTriggerTime(null);
+        
         this.currentEndDateTime = null;
         this.useRandomization = true;
         this.transientNumberOfResetsWithinDailyInterval = 0;
         // Initialize next window times based on repeat cycle
-        calculateNextWindow();
+        calculateNextWindow(this.lastValidResetTime);
   
     }
     /**
@@ -691,22 +762,28 @@ public class TimeWindowCondition extends TimeCondition {
         ZonedDateTime now = ZonedDateTime.now(getZoneId());
         LocalDateTime nowLocal = now.toLocalDateTime();        
         // If we are have a current window and we are within the window or after it, we need to force an advance
-        boolean needsAdvance = currentStartDateTime != null && nowLocal.isAfter(currentStartDateTime);                           
+        Optional<ZonedDateTime>    currentZoneStartDateTime =     getNextTriggerTimeWithPause();
+        
+        if (currentZoneStartDateTime ==null || !currentZoneStartDateTime.isPresent()) {
+            return;
+        }
+        LocalDateTime  currentStartDateTime =currentZoneStartDateTime.get().toLocalDateTime();            
+        boolean needsAdvance = currentZoneStartDateTime!=null && currentZoneStartDateTime.isPresent() && nowLocal.isAfter(currentZoneStartDateTime.get().toLocalDateTime());                           
         // If this the next  start window that's passed or any window that needs advancing
         if (needsAdvance && canTriggerAgain() ) {     
             this.currentValidResetCount++;       
-            calculateNextWindow();            
+            calculateNextWindow(this.lastValidResetTime);            
         }          
-        if (nowLocal.isAfter(this.currentStartDateTime) && nowLocal.isBefore(this.currentEndDateTime)) {
+        if (nowLocal.isAfter(currentStartDateTime) && nowLocal.isBefore(this.currentEndDateTime)) {
             transientNumberOfResetsWithinDailyInterval++;
         }else {
             transientNumberOfResetsWithinDailyInterval = 0;
         }       
         // Log the new window for debugging
-        if (this.currentStartDateTime != null && this.currentEndDateTime != null) {
+        if (currentStartDateTime != null && this.currentEndDateTime != null) {
             log.debug("Next window after reset: {} to {}", 
-                DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(this.currentStartDateTime),
-                DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(this.currentEndDateTime));
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(currentStartDateTime),
+                DateTimeFormatter.ISO_LOCAL_DATE_TIME.format(currentEndDateTime));
         } else {
             log.debug("No next window available after reset");
         }
@@ -734,11 +811,11 @@ public class TimeWindowCondition extends TimeCondition {
      */
     @Override
     public Optional<ZonedDateTime> getCurrentTriggerTime() {
-        if (currentStartDateTime == null || currentEndDateTime == null || !canTriggerAgain()) {
+        if (getNextTriggerTimeWithPause().orElse(null) == null || currentEndDateTime == null || !canTriggerAgain()) {
             return Optional.empty();
         }
         ZonedDateTime now = ZonedDateTime.now(getZoneId());
-        
+        LocalDateTime currentStartDateTime = getNextTriggerTimeWithPause().get().toLocalDateTime();
         // If the condition is already satisfied (we're in the window), return the current time
         if (isSatisfied()) {
             assert(!currentStartDateTime.isAfter(now.toLocalDateTime()) && !currentEndDateTime.isBefore(now.toLocalDateTime()));
@@ -756,6 +833,11 @@ public class TimeWindowCondition extends TimeCondition {
     public boolean canTriggerAgain(){
 
         boolean canTrigger = super.canTriggerAgain();
+        
+        // If end date is unlimited, only check parent class logic
+        if (isUnlimitedEndDate()) {
+            return canTrigger;
+        }
         
         LocalDateTime lastDateTime = LocalDateTime.of( endDate, endTime);
         if (canTrigger ) {
@@ -787,8 +869,19 @@ public class TimeWindowCondition extends TimeCondition {
         sb.append("  ┌─ Configuration ─────────────────────────────\n");
         sb.append("  │ Time Range: ").append(startTime.format(timeFormatter))
           .append(" to ").append(endTime.format(timeFormatter)).append("\n");
-        sb.append("  │ Date Range: ").append(startDate.format(dateFormatter))
-          .append(" to ").append(endDate.format(dateFormatter)).append("\n");
+        sb.append("  │ Date Range: ");
+        if (isUnlimitedStartDate()) {
+            sb.append("No start limit");
+        } else {
+            sb.append(startDate.format(dateFormatter));
+        }
+        sb.append(" to ");
+        if (isUnlimitedEndDate()) {
+            sb.append("No end limit");
+        } else {
+            sb.append(endDate.format(dateFormatter));
+        }
+        sb.append("\n");
         sb.append("  │ Repeat: ").append(repeatCycle)
           .append(", Unit: ").append(repeatIntervalUnit).append("\n");
         sb.append("  │ Timezone: ").append(getZoneId().getId()).append("\n");
@@ -796,11 +889,12 @@ public class TimeWindowCondition extends TimeCondition {
         // Status information
         sb.append("  ├─ Status ──────────────────────────────────\n");
         sb.append("  │ Satisfied: ").append(isSatisfied()).append("\n");
-        if (currentStartDateTime != null && currentEndDateTime != null) {
-            sb.append("  │ Current Window: ").append(currentStartDateTime.format(dateTimeFormatter))
+        sb.append("  │ Paused: ").append(isPaused()).append("\n");
+        if (getNextTriggerTimeWithPause().orElse(null) != null && currentEndDateTime != null) {
+            sb.append("  │ Current Window: ").append(getNextTriggerTimeWithPause().get().toLocalDateTime().format(dateTimeFormatter))
               .append("\n  │ To: ").append(currentEndDateTime.format(dateTimeFormatter)).append("\n");
-        } else if (currentStartDateTime != null) {
-            sb.append("  │ Current Window: ").append(currentStartDateTime.format(dateTimeFormatter))
+        } else if (getNextTriggerTimeWithPause().orElse(null) != null) {
+            sb.append("  │ Current Window: ").append(getNextTriggerTimeWithPause().get().toLocalDateTime().format(dateTimeFormatter))
               .append("\n  │ To: Not available\n");
         } else {
             sb.append("  │ Current Window: Not available\n");
@@ -847,6 +941,16 @@ public class TimeWindowCondition extends TimeCondition {
         sb.append("    Daily Reset Count: ").append(transientNumberOfResetsWithinDailyInterval).append("\n");
         sb.append("    Can Trigger Again: ").append(canTriggerAgain()).append("\n");
         
+        // Add pause information
+        if (isPaused()) {
+            sb.append("    Paused: Yes\n");
+            Duration currentPauseDuration = Duration.between(pauseStartTime, getNow());
+            sb.append("    Current Pause Duration: ").append(formatDuration(currentPauseDuration)).append("\n");
+        }
+        if (totalPauseDuration.getSeconds() > 0) {
+            sb.append("    Total Pause Duration: ").append(formatDuration(totalPauseDuration)).append("\n");
+        }
+        
         return sb.toString();
     }
     
@@ -869,13 +973,41 @@ public class TimeWindowCondition extends TimeCondition {
         
         // Repeat cycle
         if (repeatCycle == RepeatCycle.ONE_TIME) {
-            sb.append("Schedule: One time only (").append(startDate.format(dateFormatter))
-              .append(" - ").append(endDate.format(dateFormatter)).append(")\n");
+            sb.append("Schedule: One time only");
+            if (!hasUnlimitedDateRange()) {
+                sb.append(" (");
+                if (isUnlimitedStartDate()) {
+                    sb.append("No start limit");
+                } else {
+                    sb.append(startDate.format(dateFormatter));
+                }
+                sb.append(" - ");
+                if (isUnlimitedEndDate()) {
+                    sb.append("No end limit");
+                } else {
+                    sb.append(endDate.format(dateFormatter));
+                }
+                sb.append(")");
+            }
+            sb.append("\n");
         } else {
             sb.append("Schedule: Repeats every ").append(repeatIntervalUnit).append(" ")
               .append(repeatCycle.toString().toLowerCase()).append("\n");
-            sb.append("Valid period: ").append(startDate.format(dateFormatter))
-              .append(" - ").append(endDate.format(dateFormatter)).append("\n");
+            if (!hasUnlimitedDateRange()) {
+                sb.append("Valid period: ");
+                if (isUnlimitedStartDate()) {
+                    sb.append("No start limit");
+                } else {
+                    sb.append(startDate.format(dateFormatter));
+                }
+                sb.append(" - ");
+                if (isUnlimitedEndDate()) {
+                    sb.append("No end limit");
+                } else {
+                    sb.append(endDate.format(dateFormatter));
+                }
+                sb.append("\n");
+            }
         }
         
         // Status information
@@ -886,18 +1018,18 @@ public class TimeWindowCondition extends TimeCondition {
         ZonedDateTime now = ZonedDateTime.now(getZoneId());
         LocalDateTime nowLocal = now.toLocalDateTime();
         
-        if (currentStartDateTime != null && currentEndDateTime != null) {
-            sb.append("Current window: ").append(currentStartDateTime.format(dateTimeFormatter))
+        if (getNextTriggerTimeWithPause() != null && currentEndDateTime != null) {
+            sb.append("Current window: ").append(getNextTriggerTimeWithPause().get().toLocalDateTime().format(dateTimeFormatter))
               .append(" to ").append(currentEndDateTime.format(dateTimeFormatter)).append("\n");
               
-            if (nowLocal.isAfter(currentStartDateTime) && nowLocal.isBefore(currentEndDateTime)) {
+            if (nowLocal.isAfter(getNextTriggerTimeWithPause().get().toLocalDateTime()) && nowLocal.isBefore(currentEndDateTime)) {
                 sb.append("Time remaining: ")
                   .append(ChronoUnit.MINUTES.between(nowLocal, currentEndDateTime))
                   .append(" minutes\n");
                 sb.append("Progress: ").append(String.format("%.1f%%", getProgressPercentage())).append("\n");
-            } else if (nowLocal.isBefore(currentStartDateTime)) {
+            } else if (nowLocal.isBefore(getNextTriggerTimeWithPause().get().toLocalDateTime())) {
                 sb.append("Window starts in: ")
-                  .append(ChronoUnit.MINUTES.between(nowLocal, currentStartDateTime))
+                  .append(ChronoUnit.MINUTES.between(nowLocal, getNextTriggerTimeWithPause().get().toLocalDateTime()))
                   .append(" minutes\n");
             } else {
                 sb.append("Window has passed\n");
@@ -944,5 +1076,33 @@ public class TimeWindowCondition extends TimeCondition {
         sb.append("Timezone: ").append(getZoneId().getId()).append("\n");
         
         return sb.toString();
+    }
+
+    /**
+     * Called when the condition is resumed.
+     * Shifts time windows by the pause duration to maintain the same
+     * relative timing after a pause.
+     * 
+     * @param pauseDuration The duration of the most recent pause
+     */
+    @Override
+    protected void onResume(Duration pauseDuration) {
+        if (isPaused()) {
+            return;
+        }
+        ZonedDateTime currentTriggerTimeWithOutPause = getNextTriggerTimeWithPause().orElse(null);
+        ZonedDateTime newTriggerTime = currentTriggerTimeWithOutPause.plus(pauseDuration);
+        if (currentTriggerTimeWithOutPause != null) {            
+            if (isSatisfied(newTriggerTime.toLocalDateTime())){
+                setNextTriggerTime(currentTriggerTimeWithOutPause);
+            }
+            // Recalculate the next window after being paused
+            // This will adjust the timing based on the current time
+            calculateNextWindow(newTriggerTime.toLocalDateTime());
+        }
+        
+        
+        log.debug("TimeWindowCondition resumed after {}, window recalculated, new trigger time: {}", 
+                formatDuration(pauseDuration),  getNextTriggerTimeWithPause().orElse(null));
     }
 }

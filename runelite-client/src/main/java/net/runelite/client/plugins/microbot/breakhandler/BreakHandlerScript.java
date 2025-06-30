@@ -1,9 +1,10 @@
 package net.runelite.client.plugins.microbot.breakhandler;
 
-import lombok.Getter;
 import lombok.Setter;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LockCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -12,6 +13,7 @@ import net.runelite.client.ui.ClientUI;
 
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class BreakHandlerScript extends Script {
@@ -25,7 +27,6 @@ public class BreakHandlerScript extends Script {
     public static Duration duration;
     public static Duration breakInDuration;
     @Setter
-    @Getter
     public static boolean lockState = false;
     private String title = "";
     private BreakHandlerConfig config;
@@ -132,7 +133,6 @@ public class BreakHandlerScript extends Script {
         }
 
         breakDuration = Rs2Random.between(config.breakDurationStart() * 60, config.breakDurationEnd() * 60);
-
         if (config.logoutAfterBreak()) {
             Rs2Player.logout();
         }
@@ -150,5 +150,50 @@ public class BreakHandlerScript extends Script {
         breakIn = 0;
         breakDuration = 0;
         ClientUI.getFrame().setTitle(title);
+    }
+
+    /**
+     * Checks if the break handler is currently in a locked state.
+     * This includes both the manual lock state and any locked conditions from schedulable plugins.
+     * 
+     * @return true if locked, false otherwise
+     */
+    public static boolean isLockState() {
+        return lockState || hasLockedSchedulablePlugins();
+    }
+
+    /**
+     * Detects if any enabled SchedulablePlugin has locked LockConditions.
+     * This prevents the break handler from taking breaks during critical plugin operations.
+     * 
+     * @return true if any schedulable plugin has locked conditions, false otherwise
+     */
+    private static boolean hasLockedSchedulablePlugins() {
+        try {
+            // Get all enabled plugins from the plugin manager
+            return Microbot.getPluginManager().getPlugins().stream()
+                .filter(plugin -> Microbot.getPluginManager().isPluginEnabled(plugin))
+                .filter(plugin -> plugin instanceof net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin)
+                .map(plugin -> (net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin) plugin)
+                .anyMatch(schedulablePlugin -> {
+                    try {
+                        // Get the stop condition from the schedulable plugin
+                        LogicalCondition stopCondition = schedulablePlugin.getStopCondition();
+                        if (stopCondition != null) {
+                            // Find all LockConditions in the logical condition structure using the utility method
+                            List<LockCondition> lockConditions = stopCondition.findAllLockConditions();
+                            // Check if any LockCondition is currently locked
+                            return lockConditions.stream().anyMatch(LockCondition::isLocked);
+                        }
+                        return false;
+                    } catch (Exception e) {
+                        Microbot.log("Error checking stop conditions for schedulable plugin - " + e.getMessage());
+                        return false;
+                    }
+                });
+        } catch (Exception e) {
+            Microbot.log("Error checking schedulable plugins for lock conditions: " + e.getMessage());
+            return false;
+        }
     }
 }

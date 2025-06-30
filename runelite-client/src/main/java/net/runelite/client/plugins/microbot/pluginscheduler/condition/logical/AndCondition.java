@@ -180,4 +180,21 @@ public class AndCondition extends LogicalCondition {
         return maxUnsatisfiedTimeConditionTriggerTime != null ? 
             Optional.of(maxUnsatisfiedTimeConditionTriggerTime) : Optional.empty();
     }
+    public void pause() {
+        // Pause all child conditions
+        for (Condition condition : conditions) {
+            condition.pause();
+        }
+                
+        
+    }
+    
+   
+    public void resume() {
+        // Resume all child conditions
+        for (Condition condition : conditions) {
+            condition.resume();
+        }        
+        
+    }
 }

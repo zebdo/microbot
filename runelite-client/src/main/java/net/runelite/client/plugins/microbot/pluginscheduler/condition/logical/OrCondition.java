@@ -173,4 +173,21 @@ public class OrCondition extends LogicalCondition {
         
         return sb.toString();
     }
+    public void pause() {
+        // Pause all child conditions
+        for (Condition condition : conditions) {
+            condition.pause();
+        }
+                
+        
+    }
+    
+   
+    public void resume() {
+        // Resume all child conditions
+        for (Condition condition : conditions) {
+            condition.resume();
+        }        
+        
+    }
 }

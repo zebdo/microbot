@@ -238,7 +238,7 @@ public interface SchedulerConfig extends Config {
     // Break settings
     @ConfigItem(
         keyName = "enableBreakHandlerForSchedule",
-        name = "BreakHandler on Start",
+        name = "Break Handler on Start",
         description = "Automatically enable the BreakHandler when starting a plugin",
         position = 1,
         section = breakSection

@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.pluginscheduler.ui;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerState;
 import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
+import net.runelite.client.plugins.microbot.util.events.PluginPauseEvent;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
@@ -39,7 +40,9 @@ public class SchedulerPanel extends PluginPanel {
     private final JButton configButton;
     private final JButton runButton;
     private final JButton stopButton;
-    private final JButton antibanButton; // Added button for Antiban settings
+    private final JButton pauseSchedulerButton; 
+    private final JButton pauseResumePluginButton; 
+    private final JButton antibanButton; 
 
 
     public SchedulerPanel(SchedulerPlugin plugin) {
@@ -146,7 +149,7 @@ public class SchedulerPanel extends PluginPanel {
         statusPanel.add(schedulerStatusLabel, createGbc(1, 0));
 
         // Button panel - vertical layout (one button per row)
-        JPanel buttonPanel = new JPanel(new GridLayout(4, 1, 0, 5)); // Changed to 4 rows for the new button
+        JPanel buttonPanel = new JPanel(new GridLayout(6, 1, 0, 5)); // Changed to 6 rows for all buttons
         buttonPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
         
         // Add config button
@@ -177,12 +180,56 @@ public class SchedulerPanel extends PluginPanel {
         antibanButton.addActionListener(this::onAntibanButtonClicked);
         antibanButton.setToolTipText("Open Antiban settings in a separate window");
         this.antibanButton = antibanButton;
+ 
 
-        // Add buttons in order
+        // Add pause/resume button - uses orange color
+        Color orangeColor = new Color(255, 152, 0);
+        JButton pauseSchedulerButton = createButton("Pause Scheduler", orangeColor);
+        pauseSchedulerButton.addActionListener(e -> {
+            if (plugin.isPaused()) {
+                plugin.resumeScheduler();
+                pauseSchedulerButton.setText("Pause Scheduler");
+                pauseSchedulerButton.setBackground(orangeColor);
+            } else {
+                plugin.pauseScheduler();
+                pauseSchedulerButton.setText("Resume Scheduler");
+                pauseSchedulerButton.setBackground(greenColor);
+            }
+            refresh();
+        });
+        pauseSchedulerButton.setToolTipText("Pause or resume the scheduler without stopping it");
+        this.pauseSchedulerButton = pauseSchedulerButton;
+
+        // Add pause/resume button for the currently running plugin - use cyan color
+        Color cyanColor = new Color(0, 188, 212); // Material design cyan color
+        JButton pauseResumePluginButton = createButton("Pause Plugin", cyanColor);
+        pauseResumePluginButton.addActionListener(e -> {
+            // Toggle the pause state
+            boolean newPauseState = !PluginPauseEvent.isPaused();
+            PluginPauseEvent.setPaused(newPauseState);
+            
+            // Update button text and color based on state
+            if (newPauseState) {
+                plugin.pauseRunningPlugin();
+                pauseResumePluginButton.setText("Resume Plugin");
+                pauseResumePluginButton.setBackground(greenColor); // Change to green for resume
+            } else {
+                plugin.resumeRunningPlugin();
+                pauseResumePluginButton.setText("Pause Plugin");
+                pauseResumePluginButton.setBackground(cyanColor); // Change back to cyan for pause
+            }
+            refresh();
+        });
+        pauseResumePluginButton.setToolTipText("Pause or resume the currently running plugin");
+        this.pauseResumePluginButton = pauseResumePluginButton;
+
         buttonPanel.add(configButton);
         buttonPanel.add(runButton);
         buttonPanel.add(stopButton);
-        buttonPanel.add(antibanButton); // Add the new Antiban button
+        buttonPanel.add(pauseSchedulerButton); 
+        buttonPanel.add(pauseResumePluginButton); 
+        buttonPanel.add(antibanButton);
+        
 
         // Add components to main panel
         mainPanel.add(infoPanel);
@@ -196,7 +243,18 @@ public class SchedulerPanel extends PluginPanel {
         mainPanel.add(buttonPanel);
         mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
 
-        add(mainPanel, BorderLayout.NORTH);
+        // Wrap main panel in scroll pane for better fit in different sidebar sizes
+        JScrollPane scrollPane = new JScrollPane(mainPanel);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_NEVER);
+        scrollPane.setBorder(BorderFactory.createEmptyBorder());
+        scrollPane.setBackground(ColorScheme.DARK_GRAY_COLOR);
+        scrollPane.getViewport().setBackground(ColorScheme.DARK_GRAY_COLOR);
+        
+        // Set the preferred width to maintain proper sidebar display
+        scrollPane.setPreferredSize(new Dimension(200, 400));
+        
+        add(scrollPane, BorderLayout.CENTER); // Changed from NORTH to CENTER for proper filling
         refresh();
     }
 
@@ -289,20 +347,56 @@ public class SchedulerPanel extends PluginPanel {
         
         
         SchedulerState state = plugin.getCurrentState();
-        boolean active = plugin.getCurrentState().isSchedulerActive();
+        boolean schedulerActive = plugin.getCurrentState().isSchedulerActive();
+        boolean pluginRunning = plugin.getCurrentState().isPluginRunning();
         configButton.setEnabled(state != SchedulerState.UNINITIALIZED || state != SchedulerState.ERROR || state != SchedulerState.INITIALIZING);
         
         // Only enable run button if we're in READY or HOLD state
-        runButton.setEnabled(!active && (state != SchedulerState.UNINITIALIZED || state != SchedulerState.ERROR || state != SchedulerState.INITIALIZING));
+        runButton.setEnabled(!schedulerActive && (state != SchedulerState.UNINITIALIZED || state != SchedulerState.ERROR || state != SchedulerState.INITIALIZING));
         
         // Only enable stop button in certain states
-        stopButton.setEnabled(active);
+        stopButton.setEnabled(schedulerActive);
+        
+        // Update pause scheduler button state
+        pauseSchedulerButton.setEnabled(schedulerActive|| state == SchedulerState.SCHEDULER_PAUSED);
+        if (plugin.isPaused()) {
+            pauseSchedulerButton.setText("Resume Scheduler");
+            pauseSchedulerButton.setBackground(new Color(76, 175, 80)); // Green color
+            pauseSchedulerButton.setToolTipText("Resume the paused scheduler");
+        } else {
+            pauseSchedulerButton.setText("Pause Scheduler");
+            pauseSchedulerButton.setBackground(new Color(255, 152, 0)); // Orange color
+            pauseSchedulerButton.setToolTipText("Pause the scheduler without stopping it");
+        }
+        
+        // Update pause plugin button state - only visible and enabled when a plugin is running
+        boolean pluginCanBePaused = state == SchedulerState.RUNNING_PLUGIN || 
+                                    state == SchedulerState.RUNNING_PLUGIN_PAUSED;
+        pauseResumePluginButton.setVisible(pluginCanBePaused);
+        pauseResumePluginButton.setEnabled(pluginCanBePaused);
+        
+        // Update button text and color based on plugin pause state
+        if (PluginPauseEvent.isPaused()) {
+            pauseResumePluginButton.setText("Resume Plugin");
+            pauseResumePluginButton.setBackground(new Color(76, 175, 80)); // Green color
+            pauseResumePluginButton.setToolTipText("Resume the paused plugin");
+        } else {
+            pauseResumePluginButton.setText("Pause Plugin");
+            pauseResumePluginButton.setBackground(new Color(0, 188, 212)); // Cyan color
+            pauseResumePluginButton.setToolTipText("Pause the currently running plugin");
+        }
+        
+        // Only enable antiban button when no plugin is running
+        antibanButton.setEnabled(!pluginRunning);
+    
+        
         
         // Add tooltips
         if (state == SchedulerState.UNINITIALIZED || state == SchedulerState.ERROR || state == SchedulerState.INITIALIZING) {
             configButton.setToolTipText("Plugin not initialized yet");
             runButton.setToolTipText("Plugin not initialized yet");
             stopButton.setToolTipText("Plugin not initialized yet");
+            pauseSchedulerButton.setToolTipText("Plugin not initialized yet");
         } else {
             configButton.setToolTipText("Open scheduler configuration");
             runButton.setToolTipText(!runButton.isEnabled() ? 
@@ -312,6 +406,8 @@ public class SchedulerPanel extends PluginPanel {
                 "Cannot stop scheduler: not running" : 
                 "Stop the scheduler");
         }
+        
+
     }
 
     void updatePluginInfo() {

@@ -14,6 +14,16 @@ import net.runelite.client.config.ConfigDescriptor;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
 
+import java.awt.Component;
+import java.awt.Window;
+import java.time.Duration;
+import java.util.List;
+import java.util.Optional;
+
+import javax.swing.*;
+import javax.swing.border.EmptyBorder;
+
+
 
 /**
  * Interface for plugins that want to provide custom stopping conditions and scheduling capabilities.
@@ -119,31 +129,62 @@ public interface SchedulablePlugin {
      */
     default public void reportFinished(String reason, boolean success) {
         SchedulerPlugin schedulablePlugin =  (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
+        boolean shouldStop = false;
         if (schedulablePlugin == null) {
             Microbot.log("\n SchedulerPlugin is not loaded. so stopping the current plugin.", Level.INFO);
-            Microbot.getClientThread().invoke(()-> Microbot.stopPlugin((Plugin)this));
-            return;
-        }
-        PluginScheduleEntry currentPlugin =  schedulablePlugin.getCurrentPlugin();
-        if (currentPlugin == null) {
-            Microbot.log("\n SchedulerPlugin is not running any plugin. so stopping the current plugin.");
-            Microbot.getClientThread().invoke(()-> Microbot.stopPlugin((Plugin)this));
-            return;
-        }
-        if (currentPlugin.isRunning() && currentPlugin.getPlugin() != null && !currentPlugin.getPlugin().equals(this)) {
-            Microbot.log("\nCurrent running plugin running by the SchedulerPlugin is not the same as the one being stopped. Stopping current plugin.");
-            Microbot.getClientThread().invoke(()-> Microbot.stopPlugin((Plugin)this));
-            return;
+            shouldStop = true;
+            
+        }else{
+            PluginScheduleEntry currentPlugin =  schedulablePlugin.getCurrentPlugin();
+            if (currentPlugin == null) {
+                Microbot.log("\n SchedulerPlugin is not running any plugin. so stopping the current plugin.");
+                shouldStop = true;
+            }else{
+                if (currentPlugin.isRunning() && currentPlugin.getPlugin() != null && !currentPlugin.getPlugin().equals(this)) {
+                    Microbot.log("\n Current running plugin running by the SchedulerPlugin is not the same as the one being stopped. Stopping current plugin.");
+                    shouldStop = true;
+                }
+            }
         }
         String prefix = "Plugin [" + this.getClass().getSimpleName() + "] finished: ";
         String reasonExt= reason == null ? prefix+"No reason provided" : prefix+reason;
-
-
-        Microbot.getEventBus().post(new PluginScheduleEntryFinishedEvent(
-            (Plugin) this, // "this" will be the plugin instance
-            reasonExt,
-            success
-        ));
+        if (shouldStop){
+            // If plugin finished unsuccessfully, show a non-blocking notification dialog
+            //if (!success) {
+                SwingUtilities.invokeLater(() -> {
+                    // Find a parent frame to attach the dialog to
+                    Component clientComponent = (Component)Microbot.getClient();
+                    Window window = SwingUtilities.getWindowAncestor(clientComponent);
+                    // Create message with HTML for proper text wrapping
+                    JLabel messageLabel = new JLabel("<html><div style='width: 350px;'>" + 
+                            "Plugin [" + ((Plugin)this).getClass().getSimpleName() + 
+                            "] stopped: " + (reason != null ? reason : "No reason provided") + 
+                            "</div></html>");
+                     // Show error message if starting failed
+                    JOptionPane.showMessageDialog(
+                        SwingUtilities.getWindowAncestor(clientComponent),
+                        messageLabel,
+                        "Plugin Stopped",
+                        JOptionPane.WARNING_MESSAGE
+                    );
+                   
+                });
+            //}
+            Microbot.getClientThread().invokeLater(()->Microbot.stopPlugin((Plugin)this));
+            return;
+        }else{
+            if (success) {
+                Microbot.log("\nPlugin [" + this.getClass().getSimpleName() + "] finished: " + reasonExt, Level.INFO);
+            } else {
+                Microbot.log("\nPlugin [" + this.getClass().getSimpleName() + "] finished with error: " + reasonExt, Level.ERROR);
+            }            
+            Microbot.getEventBus().post(new PluginScheduleEntryFinishedEvent(
+                (Plugin) this, // "this" will be the plugin instance
+                reasonExt,
+                success
+            ));
+            return;
+        }
     }
     
     /**
@@ -187,13 +228,12 @@ public interface SchedulablePlugin {
         }
         
         if (condition instanceof LogicalCondition) {
-            LogicalCondition logicalCondition = (LogicalCondition) condition;
-            for (Condition subCondition : logicalCondition.getConditions()) {
-                LockCondition lockCondition = findLockCondition(subCondition);
-                if (lockCondition != null) {
-                    return lockCondition;
-                }
-            }
+            List<LockCondition> allLockCondtions = ((LogicalCondition)condition).findAllLockConditions();
+            // todo think of only allow one lock condition per plugin in the nested structure... because more makes no sense?
+            
+            return allLockCondtions.isEmpty() ? null : allLockCondtions.get(0);
+                
+            
         }
         
         return null;
@@ -244,7 +284,11 @@ public interface SchedulablePlugin {
      * @return The new lock state (true if locked, false if unlocked), or null if no lock condition exists
      */
     default Boolean toggleLock(Condition stopConditions) {
+        if (stopConditions == null) {
+            return null; // No stop conditions defined
+        }
         LockCondition lockCondition = getLockCondition( stopConditions);
+        
         if (lockCondition != null) {
             return lockCondition.toggleLock();
         }
@@ -253,5 +297,145 @@ public interface SchedulablePlugin {
     default public ConfigDescriptor getConfigDescriptor(){
         return null;
     }
+
+    // ...existing code...
+
+    /**
+     * Gets the time until the next scheduled plugin will run.
+     * This method checks the SchedulerPlugin for the upcoming plugin and calculates
+     * the duration until it's scheduled to execute.
+     * 
+     * @return Optional containing the duration until the next plugin runs, 
+     *         or empty if no plugin is upcoming or time cannot be determined
+     */
+    default Optional<Duration> getTimeUntilNextScheduledPlugin() {
+        try {
+            // Get the SchedulerPlugin instance
+            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
+            
+            // Check if scheduler plugin exists and is running
+            if (schedulerPlugin == null) {
+                Microbot.log("SchedulerPlugin is not loaded, cannot determine next plugin time", Level.DEBUG);
+                return Optional.empty();
+            }
+            
+            // Check if the scheduler is in an active state
+            if (!schedulerPlugin.getCurrentState().isSchedulerActive()) {
+                Microbot.log("SchedulerPlugin is not in active state: " + schedulerPlugin.getCurrentState(), Level.DEBUG);
+                return Optional.empty();
+            }
+            
+            // Get the upcoming plugin
+            PluginScheduleEntry upcomingPlugin = schedulerPlugin.getUpComingPlugin();
+            if (upcomingPlugin == null) {
+                Microbot.log("No upcoming plugin found in scheduler", Level.DEBUG);
+                return Optional.empty();
+            }
+            
+            // Get the time until the next run for this plugin
+            Optional<Duration> timeUntilRun = upcomingPlugin.getTimeUntilNextRun();
+            if (!timeUntilRun.isPresent()) {
+                Microbot.log("Cannot determine time until next run for plugin: " + upcomingPlugin.getCleanName(), Level.DEBUG);
+                return Optional.empty();
+            }
+            
+            Duration duration = timeUntilRun.get();
+            
+            // Log the result for debugging
+            Microbot.log("Next plugin '" + upcomingPlugin.getCleanName() + "' scheduled in: " + 
+                        formatDurationForLogging(duration), Level.DEBUG);
+            
+            return Optional.of(duration);
+            
+        } catch (Exception e) {
+            Microbot.log("Error getting time until next scheduled plugin: " + e.getMessage(), Level.ERROR);
+            return Optional.empty();
+        }
+    }
+    
+    /**
+     * Gets information about the next scheduled plugin.
+     * This method provides both the plugin entry and the time until it runs.
+     * 
+     * @return Optional containing a formatted string with plugin name and time until run,
+     *         or empty if no plugin is upcoming
+     */
+    default Optional<String> getNextScheduledPluginInfo() {
+        try {
+            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
+            
+            if (schedulerPlugin == null || !schedulerPlugin.getCurrentState().isSchedulerActive()) {
+                return Optional.empty();
+            }
+            
+            PluginScheduleEntry upcomingPlugin = schedulerPlugin.getUpComingPlugin();
+            if (upcomingPlugin == null) {
+                return Optional.empty();
+            }
+            
+            Optional<Duration> timeUntilRun = upcomingPlugin.getTimeUntilNextRun();
+            if (!timeUntilRun.isPresent()) {
+                return Optional.of("Next plugin: " + upcomingPlugin.getCleanName() + " (time unknown)");
+            }
+            
+            String formattedTime = formatDurationForLogging(timeUntilRun.get());
+            return Optional.of("Next plugin: " + upcomingPlugin.getCleanName() + " in " + formattedTime);
+            
+        } catch (Exception e) {
+            Microbot.log("Error getting next scheduled plugin info: " + e.getMessage(), Level.ERROR);
+            return Optional.empty();
+        }
+    }
+    
+    /**
+     * Gets the next scheduled plugin entry with its complete information.
+     * This provides access to the full PluginScheduleEntry object.
+     * 
+     * @return Optional containing the next scheduled plugin entry,
+     *         or empty if no plugin is upcoming
+     */
+    default Optional<PluginScheduleEntry> getNextScheduledPluginEntry() {
+        try {
+            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
+            
+            if (schedulerPlugin == null || !schedulerPlugin.getCurrentState().isSchedulerActive()) {
+                return Optional.empty();
+            }
+            
+            PluginScheduleEntry upcomingPlugin = schedulerPlugin.getUpComingPlugin();
+            return Optional.ofNullable(upcomingPlugin);
+            
+        } catch (Exception e) {
+            Microbot.log("Error getting next scheduled plugin entry: " + e.getMessage(), Level.ERROR);
+            return Optional.empty();
+        }
+    }
+    
+    /**
+     * Helper method to format duration for user-friendly display
+     * 
+     * @param duration The duration to format
+     * @return A formatted string representation of the duration
+     */
+    private String formatDurationForLogging(Duration duration) {
+        if (duration == null) {
+            return "unknown";
+        }
+        
+        long totalSeconds = duration.getSeconds();
+        long hours = totalSeconds / 3600;
+        long minutes = (totalSeconds % 3600) / 60;
+        long seconds = totalSeconds % 60;
+        
+        if (hours > 0) {
+            return String.format("%dh %dm %ds", hours, minutes, seconds);
+        } else if (minutes > 0) {
+            return String.format("%dm %ds", minutes, seconds);
+        } else {
+            return String.format("%ds", seconds);
+        }
+    }
+
+
 
 }

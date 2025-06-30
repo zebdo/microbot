@@ -26,6 +26,28 @@ import java.util.Map;
 public abstract class ResourceCondition implements Condition {
     @Getter
     protected final Pattern itemPattern;  
+
+     /**
+     * Queue of item events waiting to be processed at the end of a game tick.
+     * Events are accumulated during the tick and processed together for efficiency.
+     */
+    protected final List<ItemTrackingEvent> pendingEvents = new ArrayList<>();
+    
+    /**
+     * Map tracking recently dropped items by the player, keyed by world location.
+     * Values are timestamps when the items were dropped, used to identify player actions.
+     */
+    protected final Map<WorldPoint, Long> playerDroppedItems = new HashMap<>();
+    
+    /**
+     * The player's last known position in the game world.
+     * Used for determining if items appearing nearby were likely dropped by the player.
+     */
+    protected WorldPoint lastPlayerPosition = null;
+    
+    // Pause-related fields
+    @Getter
+    protected transient boolean isPaused = false;
     public ResourceCondition() {
         this.itemPattern = null;
     }  
@@ -255,23 +277,7 @@ public abstract class ResourceCondition implements Condition {
         }
     }
     
-    /**
-     * Queue of item events waiting to be processed at the end of a game tick.
-     * Events are accumulated during the tick and processed together for efficiency.
-     */
-    protected final List<ItemTrackingEvent> pendingEvents = new ArrayList<>();
-    
-    /**
-     * Map tracking recently dropped items by the player, keyed by world location.
-     * Values are timestamps when the items were dropped, used to identify player actions.
-     */
-    protected final Map<WorldPoint, Long> playerDroppedItems = new HashMap<>();
-    
-    /**
-     * The player's last known position in the game world.
-     * Used for determining if items appearing nearby were likely dropped by the player.
-     */
-    protected WorldPoint lastPlayerPosition = null;
+   
     
     /**
      * Determines if an item spawned at a location was likely dropped by the player.
@@ -329,10 +335,33 @@ public abstract class ResourceCondition implements Condition {
      */
     @Override
     public void onGameTick(GameTick event) {
+        // Skip processing if paused
+        if (isPaused) {
+            return;
+        }
+        
         // Update player position
         updatePlayerPosition();
         
         // Process any pending events
         processPendingEvents();
+    }
+
+    @Override
+    public void pause() {
+        if (!isPaused) {
+            isPaused = true;
+            log.debug("Resource condition paused for item pattern: {}", 
+                    itemPattern != null ? itemPattern.pattern() : "any");
+        }
+    }
+    
+    @Override
+    public void resume() {
+        if (isPaused) {
+            isPaused = false;
+            log.debug("Resource condition resumed for item pattern: {}", 
+                    itemPattern != null ? itemPattern.pattern() : "any");
+        }
     }
 }

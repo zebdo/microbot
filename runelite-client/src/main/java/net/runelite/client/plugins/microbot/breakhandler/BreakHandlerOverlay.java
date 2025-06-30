@@ -35,9 +35,35 @@ public class BreakHandlerOverlay extends OverlayPanel {
                     .left("Total breaks: " + BreakHandlerScript.totalBreaks)
                     .build());
 
-            long hours = BreakHandlerScript.duration.toHours();
-            long minutes = BreakHandlerScript.duration.toMinutes() % 60;
-            long seconds = BreakHandlerScript.duration.getSeconds() % 60;
+            // Display lock state information
+            if (BreakHandlerScript.isLockState()) {
+                panelComponent.getChildren().add(LineComponent.builder()
+                        .left("Status: LOCKED")
+                        .right("Breaks Prevented")
+                        .leftColor(Color.RED)
+                        .rightColor(Color.RED)
+                        .build());
+                
+                // Show specific lock reason if it's manual lock vs plugin lock
+                if (BreakHandlerScript.lockState) {
+                    panelComponent.getChildren().add(LineComponent.builder()
+                            .left("Reason: Manual Lock")
+                            .leftColor(Color.ORANGE)
+                            .build());
+                } else {
+                    panelComponent.getChildren().add(LineComponent.builder()
+                            .left("Reason: Plugin Lock Active")
+                            .leftColor(Color.ORANGE)
+                            .build());
+                }
+            } else {
+                panelComponent.getChildren().add(LineComponent.builder()
+                        .left("Status: UNLOCKED")
+                        .right("Breaks Allowed")
+                        .leftColor(Color.GREEN)
+                        .rightColor(Color.GREEN)
+                        .build());
+            }
 
             if (BreakHandlerScript.breakIn > 0) {
                 panelComponent.getChildren().add(LineComponent.builder()

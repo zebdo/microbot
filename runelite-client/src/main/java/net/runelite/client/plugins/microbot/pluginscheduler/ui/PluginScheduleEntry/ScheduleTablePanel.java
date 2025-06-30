@@ -7,6 +7,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionType;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
+import net.runelite.client.plugins.microbot.pluginscheduler.util.SchedulerPluginUtil;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 
@@ -33,9 +34,6 @@ import java.util.function.Consumer;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.awt.font.TextAttribute;
-import javax.swing.Timer;
-import javax.swing.ToolTipManager;
-import javax.swing.Timer;
 
 @Slf4j
 public class ScheduleTablePanel extends JPanel implements ScheduleTableModel {
@@ -1077,9 +1075,10 @@ public class ScheduleTablePanel extends JPanel implements ScheduleTableModel {
             detectChangesInPluginlist();
             // Save current selection
             PluginScheduleEntry selectedPlugin = getSelectedPlugin();
-            
+            int selectedRow = scheduleTable.getSelectedRow();
             // Get current plugins and sort them by next run time
             List<PluginScheduleEntry> sortedPlugins = schedulerPlugin.sortPluginScheduleEntries();
+            //SchedulerPluginUtil.logSortedPluginScheduleEntryList(sortedPlugins);
             
             
             
@@ -1126,11 +1125,25 @@ public class ScheduleTablePanel extends JPanel implements ScheduleTableModel {
             }
             
             // Update our tracking map
-            rowToPluginMap = newRowMap;
+            this.rowToPluginMap = newRowMap;
             
             // Restore selection if possible
             if (selectedPlugin != null) {
-                //selectPlugin(selectedPlugin);
+                int newSlectedRow = -1;
+                for (int i = 0; i < newRowMap.size(); i++) {
+                    if (newRowMap.get(i).equals(selectedPlugin)) {
+                        newSlectedRow = i;
+                        break;
+                    }
+                }
+                if (newSlectedRow != -1) {
+                    scheduleTable.setRowSelectionInterval(newSlectedRow, newSlectedRow);
+                    scheduleTable.scrollRectToVisible(scheduleTable.getCellRect(newSlectedRow, 0, true));
+                } else {
+                    // If the selected plugin is no longer in the list, clear selection
+                    scheduleTable.clearSelection();
+                }
+                
             }
             
             // Force repaint if needed
@@ -1188,8 +1201,7 @@ public class ScheduleTablePanel extends JPanel implements ScheduleTableModel {
         // For default plugins, add a visual indicator
         if (plugin.isDefault()) {
             pluginName = "⭐ " + pluginName;
-        }
-        
+        }        
         // Update existing row with focused columns
         tableModel.setValueAt(pluginName, rowIndex, 0);
         tableModel.setValueAt(getEnhancedScheduleDisplay(plugin), rowIndex, 1);

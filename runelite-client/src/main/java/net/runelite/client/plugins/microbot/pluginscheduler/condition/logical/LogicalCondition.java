@@ -525,8 +525,36 @@ public abstract class LogicalCondition implements Condition {
      */
     public String getTooltipHtml() {
         return getHtmlDescription(100);
+    }        
+    /**
+     * Recursively finds all LockConditions within this LogicalCondition structure.
+     * This utility method is used by the break handler to detect locked conditions
+     * that should prevent breaks from occurring.
+     * 
+     * @return List of all LockConditions found in the structure
+     */
+    public List<LockCondition> findAllLockConditions() {
+        List<LockCondition> lockConditions = new ArrayList<>();
+        
+        for (Condition condition : conditions) {
+            if (condition instanceof LockCondition) {
+                lockConditions.add((LockCondition) condition);
+            } else if (condition instanceof LogicalCondition) {
+                // Recursively search in nested logical conditions
+                lockConditions.addAll(((LogicalCondition) condition).findAllLockConditions());
+            } else if (condition instanceof NotCondition) {
+                // Check if the wrapped condition is a LockCondition or contains LockConditions
+                Condition wrappedCondition = ((NotCondition) condition).getCondition();
+                if (wrappedCondition instanceof LockCondition) {
+                    lockConditions.add((LockCondition) wrappedCondition);
+                } else if (wrappedCondition instanceof LogicalCondition) {
+                    lockConditions.addAll(((LogicalCondition) wrappedCondition).findAllLockConditions());
+                }
+            }
+        }
+        
+        return lockConditions;
     }
-
     /**
      * Recursively finds all TimeCondition instances in this logical condition structure.
      * This searches through the entire hierarchy including nested logical conditions.
@@ -1421,6 +1449,7 @@ public abstract class LogicalCondition implements Condition {
         
         return summary.toString();
     }
+
 }
 
 

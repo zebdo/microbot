@@ -81,7 +81,6 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.WorldUtil;
 import net.runelite.http.api.worlds.World;
 import org.slf4j.event.Level;
-
 @Slf4j
 @NoArgsConstructor
 public class Microbot {
@@ -492,6 +491,35 @@ public class Microbot {
 	public static boolean stopPlugin(String className) {
 		return stopPlugin(getPlugin(className));
 	}
+    /**
+     * Stops the specified plugin using the plugin manager.
+     * If the plugin is non-null, this method attempts to stop it and handles any instantiation exceptions.
+     *
+     * @param plugin the plugin to be stopped.
+     */
+    public static void stopPluginV(Plugin plugin) {
+        if (plugin == null) return;
+        
+        // Check if we're currently on the client thread for logging purposes
+        boolean isOnClientThread = getClient().isClientThread();
+        log("Stopping plugin: " + plugin.getClass().getSimpleName() + ", on client thread: " + isOnClientThread);
+        
+        // Always use invokeLater to avoid InterruptedException in all thread contexts
+        // This makes the method non-blocking regardless of which thread it's called from
+        Runnable pluginDisabler = () -> {
+            try {
+                getPluginManager().setPluginEnabled(plugin, false);
+                getPluginManager().stopPlugin(plugin);
+                //getPluginManager().startPlugins();
+            } catch (PluginInstantiationException e) {
+                log("Error in plugin disabler: " + e.getMessage(), Level.ERROR);
+                e.printStackTrace();
+            }
+        };
+        
+        // Use invokeLater in all cases to avoid InterruptedException
+        SwingUtilities.invokeLater(pluginDisabler);
+    }
 
 	public static void doInvoke(NewMenuEntry entry, Rectangle rectangle)
 	{
