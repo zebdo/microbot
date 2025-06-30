@@ -740,6 +740,38 @@ public class Rs2Magic {
         return hasRequiredRunes(spell, Rs2Inventory.hasRunePouch(), false);
     }
 
+    public static Map<Integer, Integer> getRequiredRunes(Rs2Spells spell, int casts) {
+        final Map<Integer, Integer> runes = spell.getRequiredRunes().entrySet().stream().collect(Collectors.toMap(e -> (e.getKey().getItemId()), Map.Entry::getValue));
+        if (casts != 1) runes.replaceAll((key, value) -> casts * value);
+        return runes;
+    }
+
+    public static Map<Integer, Integer> getMissingRunes(Map<Integer, Integer> reqRunes, boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank, boolean includeComboRunes) {
+        if (reqRunes.isEmpty()) return reqRunes;
+
+        final Map<Integer, Integer> runes = getRunes(includeInventory, includeEquipment, includeRunePouch, includeBank);
+        reqRunes.replaceAll((key, value) -> Math.max(0,value-runes.getOrDefault(key, 0)));
+        reqRunes.keySet().forEach(key -> {
+            if (reqRunes.get(key) == 0) reqRunes.remove(key);
+        });
+
+        if (!includeComboRunes || reqRunes.isEmpty()) return reqRunes;
+        reqRunes.replaceAll((key, value) -> {
+            final int comboQuantity = Arrays.stream(COMBO_RUNES.getOrDefault(key, new int[0]))
+                    .map(id -> runes.getOrDefault(id, 0)).reduce(0, Rs2Magic::limitSum);
+            return Math.max(0,value-comboQuantity);
+        });
+        reqRunes.keySet().forEach(key -> {
+            if (reqRunes.get(key) == 0) reqRunes.remove(key);
+        });
+
+        return reqRunes;
+    }
+
+    public static Map<Integer, Integer> getMissingRunes(Rs2Spells spell, int casts, boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank) {
+        return getMissingRunes(getRequiredRunes(spell, casts), includeInventory, includeEquipment, includeRunePouch, includeBank, true);
+    }
+
     /**
      * Calculates the runes required to cast a specified spell a certain number of times,
      * taking into account equipped staves, inventory, and optionally, rune pouch runes.
@@ -811,15 +843,21 @@ public class Rs2Magic {
         return requiredRunes;
     }
 
+    public static boolean hasRunes(Map<Integer, Integer> runeQuantities, boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank) {
+        return getMissingRunes(runeQuantities, includeInventory, includeEquipment, includeRunePouch, includeBank, true).isEmpty();
+    }
+
     /**
      * Checks if the player has the required runes to cast a specified spell.
-     *
+     * <p>
      * This method checks runes from the following sources:
-     * - Inventory: All runes present in the player's inventory.
-     * - Rune Pouch: If the player has a rune pouch, runes from it are counted.
-     * - Bank: If specified, runes from the bank are considered.
-     * - Equipped Items: Runes provided by equipped staffs and tomes are excluded from the requirements.
-     * - Combination Runes: Supports runes like Mist, Mud, Smoke, Steam, Dust, and Lava as substitutes.
+     * <ul>
+     *     <li>Inventory: All runes present in the player's inventory.</li>
+     *     <li>Rune Pouch: If the player has a rune pouch, runes from it are counted.</li>
+     *     <li>Bank: If specified, runes from the bank are considered.</li>
+     *     <li>Equipped: Runes provided by equipped staffs and tomes.</li>
+     *     <li>Combination Runes: Supports runes like Mist, Mud, Smoke, etc.</li>
+     * </ul>
      *
      * @param spell       The spell to cast, represented as an {@link Rs2Spells} enum.
      * @param hasRunePouch Whether the player has a rune pouch.
@@ -827,28 +865,11 @@ public class Rs2Magic {
      * @return true if all required runes are available; false otherwise.
      */
     public static boolean hasRequiredRunes(Rs2Spells spell, boolean hasRunePouch, boolean hasInBank) {
-        final Map<Integer, Integer> runes = getRunes(true, hasRunePouch);
+        return hasRequiredRunes(spell,1,true,true,hasRunePouch,hasInBank);
+    }
 
-        // Add runes from bank if required
-        if (hasInBank) {
-            Rs2Bank.bankItems().stream()
-                    .flatMap(item -> Arrays.stream(Runes.values())
-                            .filter(r -> r.getItemId() == item.getId())
-                            .map(rune -> Map.entry(rune.getItemId(), item.getQuantity())))
-                    .forEach(entry -> runes.merge(entry.getKey(), entry.getValue(), Integer::sum));
-        }
-
-        return spell.getRequiredRunes().entrySet().stream().allMatch(runeToQuantity -> {
-            final int runeId = runeToQuantity.getKey().getItemId();
-            final int quantity = runeToQuantity.getValue();
-            if (runes.get(runeId) >= quantity) return true;
-
-            // TODO: could overflow? can probably ignore tho
-            // equipment returning Integer.MAX_VALUE runes won't matter since those aren't combination runes and are checked first
-            final int comboQuantity = quantity + Arrays.stream(COMBO_RUNES.getOrDefault(runeId, new int[0]))
-                    .map(id -> runes.getOrDefault(id,0)).sum();
-            return comboQuantity >= quantity;
-        });
+    public static boolean hasRequiredRunes(Rs2Spells spell, int casts, boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank) {
+        return hasRunes(getRequiredRunes(spell,casts),includeInventory,includeEquipment,includeRunePouch,includeBank);
     }
 
     /**
@@ -896,6 +917,50 @@ public class Rs2Magic {
             ItemID.SUNFIRERUNE
     );
 
+    private static int limitSum(int i, int j) {
+        try {
+            return Math.addExact(i,j);
+        } catch (ArithmeticException ignored) {
+            return Integer.MAX_VALUE;
+        }
+    }
+
+    private static Map<Integer, Integer> addInventoryRunes(Map<Integer, Integer> runes) {
+        RUNE_IDS.forEach(rune -> {
+            runes.merge(rune, Rs2Inventory.itemQuantity(rune), Rs2Magic::limitSum);
+        });
+        return runes;
+    }
+
+    private static Map<Integer, Integer> addEquipmentRunes(Map<Integer, Integer> runes) {
+        final Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
+        if (equippedWeapon != null) {
+            Rs2Staff equippedStaff = getRs2Staff(equippedWeapon.getId());
+            if (equippedStaff != Rs2Staff.NONE) {
+                equippedStaff.getRunes().forEach(rune -> runes.put(rune.getItemId(), Integer.MAX_VALUE));
+            }
+        }
+
+        // Remove runes provided by equipped tomes
+        final Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
+        if (equippedShield != null) {
+            Rs2Tome equippedTome = getRs2Tome(equippedShield.getId());
+            if (equippedTome != Rs2Tome.NONE) {
+                equippedTome.getRunes().forEach(rune -> runes.put(rune.getItemId(), Integer.MAX_VALUE));
+            }
+        }
+        return runes;
+    }
+
+    private static Map<Integer, Integer> addBankRunes(Map<Integer, Integer> runes) {
+        Rs2Bank.bankItems().stream()
+                .flatMap(item -> Arrays.stream(Runes.values())
+                        .filter(r -> r.getItemId() == item.getId())
+                        .map(rune -> Map.entry(rune.getItemId(), item.getQuantity())))
+                .forEach(entry -> runes.merge(entry.getKey(), entry.getValue(), Rs2Magic::limitSum));
+        return runes;
+    }
+
     /**
      * Calculates the available runes
      *
@@ -905,31 +970,13 @@ public class Rs2Magic {
      * and the value is an {@code Integer} representing the quantity of that rune available
      * or {@code Integer.MAX_VALUE} if the rune is provided by equipment.
      */
-    public static Map<Integer, Integer> getRunes(boolean includeEquipment, boolean includeRunePouch) {
+    public static Map<Integer, Integer> getRunes(boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank) {
         final Map<Integer, Integer> availableRunes = includeRunePouch && Rs2Inventory.hasRunePouch() ?
                 Rs2RunePouch.getRunes() : new HashMap<>();
-        RUNE_IDS.forEach(rune -> {
-            availableRunes.merge(rune, Rs2Inventory.itemQuantity(rune), Integer::sum);
-        });
 
-        if (!includeEquipment) return availableRunes;
-
-        final Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
-        if (equippedWeapon != null) {
-            Rs2Staff equippedStaff = getRs2Staff(equippedWeapon.getId());
-            if (equippedStaff != Rs2Staff.NONE) {
-                equippedStaff.getRunes().forEach(rune -> availableRunes.put(rune.getItemId(), Integer.MAX_VALUE));
-            }
-        }
-
-        // Remove runes provided by equipped tomes
-        final Rs2ItemModel equippedShield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
-        if (equippedShield != null) {
-            Rs2Tome equippedTome = getRs2Tome(equippedShield.getId());
-            if (equippedTome != Rs2Tome.NONE) {
-                equippedTome.getRunes().forEach(rune -> availableRunes.put(rune.getItemId(), Integer.MAX_VALUE));
-            }
-        }
+        if (includeInventory) addInventoryRunes(availableRunes);
+        if (includeEquipment) addEquipmentRunes(availableRunes);
+        if (includeBank) addBankRunes(availableRunes);
 
         return availableRunes;
     }
@@ -942,7 +989,7 @@ public class Rs2Magic {
      * or {@code Integer.MAX_VALUE} if the rune is provided by equipment.
      */
     public static Map<Integer, Integer> getRunes() {
-        return getRunes(true, true);
+        return getRunes(true, true, true, false);
     }
 
     /**
