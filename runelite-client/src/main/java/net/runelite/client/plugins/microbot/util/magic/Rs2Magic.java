@@ -5,6 +5,7 @@ import com.google.common.collect.ImmutableMap;
 import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
@@ -44,6 +45,12 @@ import static net.runelite.client.plugins.microbot.util.Global.*;
 public class Rs2Magic {
     //use this boolean to do one time checks
     private static boolean checkedSpellBook = false;
+
+    private static final boolean DEFAULT_INCL_COMBO_RUNES = true;
+    private static final boolean DEFAULT_INCL_BANK_RUNES = false;
+    private static final boolean DEFAULT_INCL_RUNE_POUCH_RUNES = true;
+    private static final boolean DEFAULT_INCL_EQUIPMENT_RUNES = true;
+    private static final boolean DEFAULT_INCL_INVENTORY_RUNES = true;
 
     /**
      * Check if all the settings are correct before we start interacting with spellbook
@@ -178,44 +185,29 @@ public class Rs2Magic {
         return false;
     }
 
-    public static void alch(String itemName, int sleepMin, int sleepMax) {
-        Rs2ItemModel item = Rs2Inventory.get(itemName);
-        if (Microbot.getClient().getRealSkillLevel(Skill.MAGIC) >= 55) {
-            highAlch(item, sleepMin, sleepMax);
-        } else {
-            lowAlch(item, sleepMin, sleepMax);
-        }
-    }
-
-    public static void alch(String itemName) {
-        Rs2ItemModel item = Rs2Inventory.get(itemName);
-        if (Microbot.getClient().getRealSkillLevel(Skill.MAGIC) >= 55) {
-            highAlch(item, 300, 600);
-        } else {
-            lowAlch(item, 300, 600);
-        }
-    }
-
-    /**
-     * alch item with minsleep of 300 and maxsleep of 600
-     *
-     * @param item
-     */
-    public static void alch(Rs2ItemModel item) {
-        alch(item, 300, 600);
-    }
-
-    /**
-     * @param item
-     * @param sleepMin
-     * @param sleepMax
-     */
     public static void alch(Rs2ItemModel item, int sleepMin, int sleepMax) {
         if (Microbot.getClient().getRealSkillLevel(Skill.MAGIC) >= 55) {
             highAlch(item, sleepMin, sleepMax);
         } else {
             lowAlch(item, sleepMin, sleepMax);
         }
+    }
+
+    public static void alch(String itemName, int sleepMin, int sleepMax) {
+        alch(Rs2Inventory.get(itemName), sleepMin, sleepMax);
+    }
+
+    public static void alch(String itemName) {
+        alch(Rs2Inventory.get(itemName));
+    }
+
+    /**
+     * alch item with min sleep of 300 and max sleep of 600
+     *
+     * @param item to alch
+     */
+    public static void alch(Rs2ItemModel item) {
+        alch(item, 300, 600);
     }
 
     public static void superHeat(String itemName) {
@@ -252,19 +244,10 @@ public class Rs2Magic {
         return true;
     }
 
-    public static void superHeat(Rs2ItemModel item, int sleepMin, int sleepMax) {
-        if (!setup()) return;
-
-        final Widget superHeat = Rs2Widget.findWidget(MagicAction.SUPERHEAT_ITEM.getName());
-        if (superHeat.getSpriteId() != SpriteID.SPELL_SUPERHEAT_ITEM) return;
-
-        superHeat(superHeat, item, sleepMin, sleepMax);
-    }
-
     private static void highAlch(Rs2ItemModel item, int sleepMin, int sleepMax) {
         if (!setup()) return;
 
-        Widget highAlch = Rs2Widget.findWidget(MagicAction.HIGH_LEVEL_ALCHEMY.getName());
+        final Widget highAlch = Rs2Widget.findWidget(MagicAction.HIGH_LEVEL_ALCHEMY.getName());
         if (highAlch.getSpriteId() != 41) return;
         alch(highAlch, item, sleepMin, sleepMax);
     }
@@ -277,6 +260,16 @@ public class Rs2Magic {
         alch(lowAlch, item, sleepMin, sleepMax);
     }
 
+    private static void interact(Rs2ItemModel item, Point point, String info) {
+        if (item == null) {
+            Microbot.status = info + " x: " + point.getX() + " y: " + point.getY();
+            Microbot.getMouse().click(point);
+        } else {
+            Microbot.status = info + " " + item.getName();
+            Rs2Inventory.interact(item, "cast");
+        }
+    }
+
     private static void alch(Widget alch, Rs2ItemModel item, int sleepMin, int sleepMax) {
         if (alch == null) return;
         Point point = new Point((int) alch.getBounds().getCenterX(), (int) alch.getBounds().getCenterY());
@@ -285,30 +278,21 @@ public class Rs2Magic {
         Microbot.getMouse().click(point);
         sleepUntil(() -> Microbot.getClientThread().runOnClientThreadOptional(() -> Rs2Tab.getCurrentTab() == InterfaceTab.INVENTORY).orElse(false), 5000);
         sleep(sleepMin, sleepMax);
-        if (item == null) {
-            Microbot.status = "Alching x: " + point.getX() + " y: " + point.getY();
-            Microbot.getMouse().click(point);
-        } else {
-            Microbot.status = "Alching " + item.getName();
-            Rs2Inventory.interact(item, "cast");
-        }
+        interact(item, point, "Alching");
     }
 
-    private static void superHeat(Widget superheat, Rs2ItemModel item, int sleepMin, int sleepMax) {
+    public static void superHeat(Rs2ItemModel item, int sleepMin, int sleepMax) {
+        if (!setup()) return;
+        final Widget superheat = Rs2Widget.findWidget(MagicAction.SUPERHEAT_ITEM.getName());
         if (superheat == null) return;
-        Point point = new Point((int) superheat.getBounds().getCenterX(), (int) superheat.getBounds().getCenterY());
-        sleepUntil(() -> Microbot.getClientThread().runOnClientThreadOptional(() -> Rs2Tab.getCurrentTab() == InterfaceTab.MAGIC).orElse(false), 5000);
-        sleep(sleepMin, sleepMax);
-        Microbot.getMouse().click(point);
+        if (superheat.getSpriteId() != SpriteID.SPELL_SUPERHEAT_ITEM) return;
+
+        if (!quickCast(MagicAction.SUPERHEAT_ITEM)) return;
         sleepUntil(() -> Microbot.getClientThread().runOnClientThreadOptional(() -> Rs2Tab.getCurrentTab() == InterfaceTab.INVENTORY).orElse(false), 5000);
         sleep(sleepMin, sleepMax);
-        if (item == null) {
-            Microbot.status = "Superheating x: " + point.getX() + " y: " + point.getY();
-            Microbot.getMouse().click(point);
-        } else {
-            Microbot.status = "Superheating " + item.getName();
-            Rs2Inventory.interact(item, "cast");
-        }
+
+        final Point point = new Point((int) superheat.getBounds().getCenterX(), (int) superheat.getBounds().getCenterY());
+        interact(item, point, "Superheating");
     }
 
     private final static int CHOOSE_CHARACTER_WIDGET_ID = 4915200;
@@ -367,14 +351,6 @@ public class Rs2Magic {
         return !Rs2Inventory.hasDegradedPouch();
     }
 
-    private static void alch(Widget alch) {
-        alch(alch, null, 300, 600);
-    }
-
-    private static void superHeat(Widget superHeat) {
-        superHeat(superHeat, null, 300, 600);
-    }
-
     public static Rs2Spellbook getSpellbook() {
         return Rs2Spellbook.getCurrentSpellbook();
     }
@@ -399,10 +375,9 @@ public class Rs2Magic {
      * @return the matching Rs2CombatSpells or null if none matches.
      */
     public static Rs2CombatSpells getCurrentAutoCastSpell() {
-        final int currentVarbitValue = Microbot.getVarbitValue(276);
-        final int offset = isSpellbook(Rs2Spellbook.ANCIENT) ? ANCIENT_VARBIT_OFFSET : 0;
+        final int autoCastSpell = Microbot.getVarbitValue(VarbitID.AUTOCAST_SPELL) - (isSpellbook(Rs2Spellbook.ANCIENT) ? ANCIENT_VARBIT_OFFSET : 0);
         return Arrays.stream(Rs2CombatSpells.values())
-                .filter(spell -> (spell.getVarbitValue() + offset) == currentVarbitValue)
+                .filter(spell -> spell.getVarbitValue() == autoCastSpell)
                 .findAny().orElse(null);
     }
     
@@ -446,7 +421,7 @@ public class Rs2Magic {
      *         If all required runes are available, the map will be empty
      */
     public static Map<Integer, Integer> getMissingRunes(RequiresRunes spell, int casts, boolean checkRunePouch) {
-        return getMissingRunes(spell, casts, true, true, checkRunePouch, false);
+        return getMissingRunes(spell, casts, DEFAULT_INCL_INVENTORY_RUNES, DEFAULT_INCL_EQUIPMENT_RUNES, checkRunePouch, DEFAULT_INCL_BANK_RUNES);
     }
 
     /**
@@ -476,21 +451,9 @@ public class Rs2Magic {
     public static Map<Integer, Integer> getMissingRunes(Map<Integer, Integer> reqRunes, boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank, boolean includeComboRunes) {
         if (reqRunes.isEmpty()) return reqRunes;
 
-        final Map<Integer, Integer> runes = getRunes(includeInventory, includeEquipment, includeRunePouch, includeBank);
+        final Map<Integer, Integer> runes = getRunes(includeInventory, includeEquipment, includeRunePouch, includeBank, includeComboRunes);
         reqRunes.replaceAll((key, value) -> Math.max(0,value-runes.getOrDefault(key, 0)));
-        reqRunes.keySet().forEach(key -> {
-            if (reqRunes.get(key) == 0) reqRunes.remove(key);
-        });
-
-        if (!includeComboRunes || reqRunes.isEmpty()) return reqRunes;
-        reqRunes.replaceAll((key, value) -> {
-            final int comboQuantity = Arrays.stream(COMBO_RUNES.getOrDefault(key, new int[0]))
-                    .map(id -> runes.getOrDefault(id, 0)).reduce(0, Rs2Magic::limitSum);
-            return Math.max(0,value-comboQuantity);
-        });
-        reqRunes.keySet().forEach(key -> {
-            if (reqRunes.get(key) == 0) reqRunes.remove(key);
-        });
+        reqRunes.keySet().removeIf(e -> reqRunes.get(e) <= 0);
 
         return reqRunes;
     }
@@ -617,6 +580,19 @@ public class Rs2Magic {
         return runes;
     }
 
+    private static final int[] EMPTY_INT_ARRAY = new int[0];
+    private static Map<Integer, Integer> addComboRunes(Map<Integer, Integer> runes) {
+        runes.replaceAll((key, value) -> {
+            final int[] comboRunes = COMBO_RUNES.getOrDefault(key, EMPTY_INT_ARRAY);
+            if (comboRunes.length == 0) return value;
+
+            final int comboQuantity = Arrays.stream(comboRunes).map(id -> runes.getOrDefault(id, 0))
+                    .reduce(0, Rs2Magic::limitSum);
+            return limitSum(value, comboQuantity);
+        });
+        return runes;
+    }
+
     /**
      * Calculates the available runes
      *
@@ -626,13 +602,14 @@ public class Rs2Magic {
      * and the value is an {@code Integer} representing the quantity of that rune available
      * or {@code Integer.MAX_VALUE} if the rune is provided by equipment.
      */
-    public static Map<Integer, Integer> getRunes(boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank) {
+    public static Map<Integer, Integer> getRunes(boolean includeInventory, boolean includeEquipment, boolean includeRunePouch, boolean includeBank, boolean includeComboRunes) {
         final Map<Integer, Integer> availableRunes = includeRunePouch && Rs2Inventory.hasRunePouch() ?
                 Rs2RunePouch.getRunes() : new HashMap<>();
 
         if (includeInventory) addInventoryRunes(availableRunes);
         if (includeEquipment) addEquipmentRunes(availableRunes);
         if (includeBank) addBankRunes(availableRunes);
+        if (includeComboRunes) addComboRunes(availableRunes);
 
         return availableRunes;
     }
@@ -645,6 +622,6 @@ public class Rs2Magic {
      * or {@code Integer.MAX_VALUE} if the rune is provided by equipment.
      */
     public static Map<Integer, Integer> getRunes() {
-        return getRunes(true, true, true, false);
+        return getRunes(DEFAULT_INCL_INVENTORY_RUNES, DEFAULT_INCL_EQUIPMENT_RUNES, DEFAULT_INCL_RUNE_POUCH_RUNES, DEFAULT_INCL_BANK_RUNES, DEFAULT_INCL_COMBO_RUNES);
     }
 }
