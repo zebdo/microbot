@@ -344,7 +344,7 @@ public class ThievingScript extends Script {
         keep.add("dodgy necklace"); keep.add("coins"); keep.add("book of the dead");
         if (config.shadowVeil()) Collections.addAll(keep, "Fire rune", "Earth rune", "Cosmic rune");
         keep.addAll(VYRE_SET.keySet()); keep.addAll(ROGUE_SET.keySet());
-        Rs2Inventory.dropAllExcept(config.keepItemsAboveValue(), new ArrayList<>(keep));
+        Rs2Inventory.dropAllExcept(config.keepItemsAboveValue(), keep.toArray(new String[0]));
     }
 
     private boolean waitUntilBothInPolygon(WorldPoint[] polygon, Rs2NpcModel npc, long timeoutMs) {
