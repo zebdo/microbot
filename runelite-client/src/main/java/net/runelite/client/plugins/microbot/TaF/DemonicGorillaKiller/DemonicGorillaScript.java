@@ -681,7 +681,7 @@ public class DemonicGorillaScript extends Script {
     }
 
     private void consumePotion(List<String> keyword) {
-        var potion = Rs2Inventory.get(keyword.toArray(String[]::new));
+        var potion = Rs2Inventory.get(keyword.toArray(String[]::new),true);
         if (potion != null) {
             Rs2Inventory.interact(potion, "Drink");
         }
