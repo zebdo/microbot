@@ -703,8 +703,8 @@ public class Rs2Inventory {
      * @return The item with one of the specified names, or null if not found.
      */
     public static Rs2ItemModel get(String[] names, boolean exact) {
-        return get(exact ? item -> Arrays.stream(names).anyMatch(n -> n.equalsIgnoreCase(item.getName())) :
-                item -> Arrays.stream(names).anyMatch(n -> n.toLowerCase().contains(item.getName().split("\\(")[0].toLowerCase())));
+        return get(exact ? item -> Arrays.stream(names).anyMatch(name -> name.equalsIgnoreCase(item.getName())) :
+                item -> Arrays.stream(names).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase())));
     }
 
     /**
