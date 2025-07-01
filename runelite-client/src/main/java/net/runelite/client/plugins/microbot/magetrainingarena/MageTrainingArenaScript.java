@@ -8,8 +8,6 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.magetrainingarena.enums.*;
-import net.runelite.client.plugins.microbot.magetrainingarena.enums.staves.FireStaves;
-import net.runelite.client.plugins.microbot.magetrainingarena.enums.staves.WaterStaves;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
@@ -18,8 +16,9 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.magic.*;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -38,6 +37,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
+
+import static net.runelite.client.plugins.microbot.util.magic.Rs2Magic.getRs2Staff;
+import static net.runelite.client.plugins.microbot.util.magic.Rs2Magic.getRs2Tome;
 
 public class MageTrainingArenaScript extends Script {
     public static String version = "1.1.2";
@@ -119,10 +121,11 @@ public class MageTrainingArenaScript extends Script {
 
                     var missingPoints = currentPoints.entrySet().stream()
                             .filter(entry -> {
-                                var requiredPoints = getRequiredPoints().get(entry.getKey()) * (config.buyRewards() ? 1 : (buyable + 1));
-                                var roomMatches = Arrays.stream(Rooms.values())
-                                        .anyMatch(room -> room.getPoints() == entry.getKey() && Rs2Inventory.contains(room.getRunesId()));
-                                return requiredPoints > entry.getValue() && roomMatches;
+                                var required = getRequiredPoints().get(entry.getKey()) * (config.buyRewards() ? 1 : (buyable + 1));
+                                return required > entry.getValue()
+                                        && Arrays.stream(Rooms.values())
+                                        .anyMatch(room -> room.getPoints() == entry.getKey()
+                                                && room.getRequirements().getAsBoolean());
                             })
                             .map(Map.Entry::getKey)
                             .collect(Collectors.toList());
@@ -139,10 +142,10 @@ public class MageTrainingArenaScript extends Script {
                         sleep(500);
                         shutdown();
                     }
-                } else if (!Rs2Inventory.contains(currentRoom.getRunesId())
+                } else if (!currentRoom.getRequirements().getAsBoolean()
                         || currentPoints.get(currentRoom.getPoints()) >= getRequiredPoints().get(currentRoom.getPoints()) * (config.buyRewards() ? 1 : (buyable + 1))) {
                     leaveRoom();
-                } else {
+            } else {
                     switch (currentRoom) {
                         case ALCHEMIST:
                             handleAlchemistRoom();
@@ -248,55 +251,20 @@ public class MageTrainingArenaScript extends Script {
 
     private void handleEnchantmentRoom() {
         MagicAction enchant;
-        int staffId;
         var magicLevel = Microbot.getClient().getBoostedSkillLevel(Skill.MAGIC);
 
-        if (magicLevel >= 87 && (config.fireStaff() == FireStaves.TOME_OF_FIRE)) {
+        if (magicLevel >= 87 && currentRoom.getRequirements().getAsBoolean()) {
             enchant = MagicAction.ENCHANT_ONYX_JEWELLERY;
-            staffId = config.earthStaff().getItemId();
-            if (Rs2Inventory.hasItem("tome of fire")) {
-                staffId = config.fireStaff().getItemId();
-            }
-        } else if (magicLevel >= 87 && (config.fireStaff() == FireStaves.LAVA_BATTLESTAFF || config.fireStaff() == FireStaves.MYSTIC_LAVA_STAFF)) {
-            enchant = MagicAction.ENCHANT_ONYX_JEWELLERY;
-            staffId = config.fireStaff().getItemId();
-        } else if (magicLevel >= 68 && (config.waterStaff() == WaterStaves.TOME_OF_WATER)) {
+        } else if (magicLevel >= 68 && currentRoom.getRequirements().getAsBoolean()) {
             enchant = MagicAction.ENCHANT_DRAGONSTONE_JEWELLERY;
-            staffId = config.earthStaff().getItemId();
-            if (Rs2Inventory.hasItem("tome of water")) {
-                staffId = config.waterStaff().getItemId();
-            }
-        } else if (magicLevel >= 68) {
-            enchant = MagicAction.ENCHANT_DRAGONSTONE_JEWELLERY;
-            staffId = config.waterStaff().getItemId();
-            if (Rs2Inventory.hasItem("water rune")) {
-                staffId = config.earthStaff().getItemId();
-            }
-        } else if (magicLevel >= 57) {
+        } else if (magicLevel >= 57 && currentRoom.getRequirements().getAsBoolean()) {
             enchant = MagicAction.ENCHANT_DIAMOND_JEWELLERY;
-            staffId = config.waterStaff().getItemId();
-            if (Rs2Inventory.hasItem("water rune")) {
-                staffId = config.earthStaff().getItemId();
-            }
-        } else if (magicLevel >= 49) {
+        } else if (magicLevel >= 49 && currentRoom.getRequirements().getAsBoolean()) {
             enchant = MagicAction.ENCHANT_RUBY_JEWELLERY;
-            staffId = config.fireStaff().getItemId();
-        } else if (magicLevel >= 27) {
+        } else if (magicLevel >= 27 && currentRoom.getRequirements().getAsBoolean()) {
             enchant = MagicAction.ENCHANT_EMERALD_JEWELLERY;
-            staffId = config.airStaff().getItemId();
         } else {
             enchant = MagicAction.ENCHANT_SAPPHIRE_JEWELLERY;
-            staffId = config.waterStaff().getItemId();
-        }
-
-        if (!Rs2Equipment.isWearing(staffId)) {
-            if (!Rs2Inventory.wear(staffId)) {
-                final int _staffId = staffId;
-                ItemComposition item = Microbot.getClientThread().runOnClientThreadOptional(() ->
-                        Microbot.getClient().getItemDefinition(_staffId)).orElse(null);
-                Microbot.log("Inventory is missing " + item.getName());
-            }
-            return;
         }
 
         if (!isRoomRequirementsValid()) return;
@@ -365,15 +333,6 @@ public class MageTrainingArenaScript extends Script {
     }
 
     private void handleTelekineticRoom() {
-        if (!Rs2Equipment.isWearing(config.airStaff().getItemId())) {
-            if (!Rs2Inventory.wear(config.airStaff().getItemId())) {
-                ItemComposition item = Microbot.getClientThread().runOnClientThreadOptional(() ->
-                        Microbot.getClient().getItemDefinition(config.airStaff().getItemId())).orElse(null);
-                Microbot.log("Inventory is missing " + item.getName());
-            }
-            return;
-        }
-
         if (!isRoomRequirementsValid()) return;
 
         var room = mtaPlugin.getTelekineticRoom();
@@ -440,26 +399,6 @@ public class MageTrainingArenaScript extends Script {
     }
 
     private void handleGraveyardRoom() {
-        int staffId = config.waterStaff().getItemId();
-        if (Rs2Inventory.hasItem("water rune")) {
-            staffId = config.earthStaff().getItemId();
-        } else if (Rs2Inventory.hasItem("earth rune")) {
-            staffId = config.waterStaff().getItemId();
-        } else if (config.waterStaff() == WaterStaves.TOME_OF_WATER) {
-            staffId = config.earthStaff().getItemId();
-        }
-
-        if (Rs2Inventory.hasItem(staffId) || Rs2Equipment.isWearing(staffId)) {
-            if (!Rs2Equipment.isWearing(staffId) && !Rs2Inventory.wear(staffId)) {
-                final int _staffId = staffId;
-                ItemComposition item = Microbot.getClientThread().runOnClientThreadOptional(() ->
-                        Microbot.getClient().getItemDefinition(_staffId)).orElse(null);
-                Microbot.log("Inventory is missing " + item.getName());
-                leaveRoom();
-                return;
-            }
-        }
-
         if (!isRoomRequirementsValid()) {
             leaveRoom();
             return;
@@ -503,15 +442,6 @@ public class MageTrainingArenaScript extends Script {
     }
 
     private void handleAlchemistRoom() {
-        if (!Rs2Equipment.isWearing(config.fireStaff().getItemId())) {
-            if (!Rs2Inventory.wear(config.fireStaff().getItemId())) {
-                ItemComposition item = Microbot.getClientThread().runOnClientThreadOptional(() ->
-                        Microbot.getClient().getItemDefinition(config.fireStaff().getItemId())).orElse(null);
-                Microbot.log("Inventory is missing " + item.getName());
-            }
-            return;
-        }
-
         if (!isRoomRequirementsValid()) return;
 
         var room = mtaPlugin.getAlchemyRoom();
@@ -647,4 +577,74 @@ public class MageTrainingArenaScript extends Script {
     public void shutdown() {
         super.shutdown();
     }
+
+    public static boolean tryEquipBestStaffAndCast(Rs2Spells spell, boolean hasRunePouch) {
+        Map<Runes, Integer> requiredRunes = spell.getRequiredRunes();
+        List<Rs2ItemModel> candidates = new ArrayList<>();
+        Rs2ItemModel equipped = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
+        if (equipped != null) candidates.add(equipped);
+        candidates.addAll(Rs2Inventory.items().collect(Collectors.toList()));
+
+        Rs2Tome equippedTome = Rs2Tome.NONE;
+        Rs2ItemModel shield = Rs2Equipment.get(EquipmentInventorySlot.SHIELD);
+        if (shield != null) equippedTome = getRs2Tome(shield.getId());
+
+        Map<Runes, Integer> inventoryRunes = new EnumMap<>(Runes.class);
+        Rs2Inventory.items().forEach(item -> {
+            Arrays.stream(Runes.values())
+                    .filter(r -> r.getItemId() == item.getId())
+                    .findFirst()
+                    .ifPresent(r -> inventoryRunes.merge(r, item.getQuantity(), Integer::sum));
+        });
+
+        if (hasRunePouch) {
+            Rs2RunePouch.getRunes().forEach((id, qty) -> {
+                Arrays.stream(Runes.values())
+                        .filter(r -> r.getItemId() == id)
+                        .findFirst()
+                        .ifPresent(r -> inventoryRunes.merge(r, qty, Integer::sum));
+            });
+        }
+
+        int maxSavings = -1;
+        Integer bestStaffId = null;
+
+        for (Rs2ItemModel staffItem : candidates) {
+            Rs2Staff staff = getRs2Staff(staffItem.getId());
+            if (staff == Rs2Staff.NONE) continue;
+
+            Set<Runes> providedRunes = new HashSet<>(staff.getRunes());
+            if (equippedTome != Rs2Tome.NONE) providedRunes.addAll(equippedTome.getRunes());
+
+            boolean castable = true;
+            int savings = 0;
+
+            for (Map.Entry<Runes, Integer> entry : requiredRunes.entrySet()) {
+                if (providedRunes.contains(entry.getKey())) {
+                    savings += entry.getValue();
+                    continue;
+                }
+                int have = inventoryRunes.getOrDefault(entry.getKey(), 0);
+                if (have < entry.getValue()) {
+                    castable = false;
+                    break;
+                }
+            }
+
+            if (castable && savings > maxSavings) {
+                maxSavings = savings;
+                bestStaffId = staff.getItemID();
+            }
+        }
+
+        if (bestStaffId != null) {
+            if (!Rs2Equipment.isWearing(bestStaffId)) {
+                Rs2Inventory.wear(bestStaffId);
+            }
+            return true;
+        }
+
+        return false;
+    }
+
 }
