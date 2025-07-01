@@ -549,17 +549,17 @@ public class Rs2Npc {
             if (Microbot.isCantReachTargetDetectionEnabled && Microbot.cantReachTarget) {
                 if (!hasLineOfSight(npc)) {
                     if (Microbot.cantReachTargetRetries >= Rs2Random.between(3, 5)) {
-                        Microbot.pauseAllScripts = true;
+						Microbot.pauseAllScripts.compareAndSet(false, true);
                         Microbot.showMessage("Your bot tried to interact with an NPC for "
                                 + Microbot.cantReachTargetRetries + " times but failed. Please take a look at what is happening.");
                         return false;
                     }
                     Rs2Walker.walkTo(Rs2Tile.getNearestWalkableTileWithLineOfSight(npc.getWorldLocation()), 0);
-                    Microbot.pauseAllScripts = false;
+                    Microbot.pauseAllScripts.compareAndSet(true, false);
                     Microbot.cantReachTargetRetries++;
                     return false;
                 } else {
-                    Microbot.pauseAllScripts = false;
+					Microbot.pauseAllScripts.compareAndSet(true, false);
                     Microbot.cantReachTarget = false;
                     Microbot.cantReachTargetRetries = 0;
                 }

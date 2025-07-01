@@ -22,6 +22,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import javax.swing.JDialog;
@@ -32,19 +33,8 @@ import lombok.Getter;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Client;
-import net.runelite.api.EnumComposition;
-import net.runelite.api.GameState;
-import net.runelite.api.Item;
-import net.runelite.api.ItemComposition;
-import net.runelite.api.MenuAction;
-import net.runelite.api.MenuEntry;
 import net.runelite.api.Point;
-import net.runelite.api.Quest;
-import net.runelite.api.QuestState;
-import net.runelite.api.StructComposition;
-import net.runelite.api.WidgetNode;
+import net.runelite.api.*;
 import net.runelite.api.annotations.Component;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.widgets.Widget;
@@ -109,7 +99,7 @@ public class Microbot
 	private static final SpecialAttackConfigs specialAttackConfigs = new SpecialAttackConfigs();
 	public static MenuEntry targetMenu;
 	public static boolean isGainingExp = false;
-	public static boolean pauseAllScripts = false;
+	public static AtomicBoolean pauseAllScripts = new AtomicBoolean(false);
 	public static String status = "IDLE";
 
 	// Feature Flags
@@ -766,7 +756,7 @@ public class Microbot
 		return Microbot.getPluginManager().isPluginEnabled(dashboard);
 	}
 
-	public static boolean isPluginEnabled(Class c)
+	public static boolean isPluginEnabled(Class<?> c)
 	{
 		return isPluginEnabled(c.getName());
 	}

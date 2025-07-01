@@ -59,7 +59,7 @@ public class JewelryScript extends Script {
                 
                 if (state == null) return; // Used to switch into completion action 
                 
-                if (Rs2Player.isMoving() || Rs2Player.isAnimating() || Rs2Antiban.getCategory().isBusy() || Microbot.pauseAllScripts) return;
+                if (Rs2Player.isMoving() || Rs2Player.isAnimating() || Rs2Antiban.getCategory().isBusy()) return;
                 if (Rs2AntibanSettings.actionCooldownActive) return;
                 
                 switch (state) {
@@ -469,14 +469,14 @@ public class JewelryScript extends Script {
     }
     
     private int getNatureRunesInInventory() {
-        return plugin.isUseRunePouch() ? Rs2RunePouch.getQuantity(ItemID.NATURE_RUNE) : Rs2Inventory.items().stream()
+        return plugin.isUseRunePouch() ? Rs2RunePouch.getQuantity(ItemID.NATURE_RUNE) : Rs2Inventory.items()
                 .filter(item -> item.getId() == ItemID.NATURE_RUNE)
                 .mapToInt(Rs2ItemModel::getQuantity)
                 .sum();
     }
     
     private int getNotedJewelryInInventory() {
-        return Rs2Inventory.items().stream()
+        return Rs2Inventory.items()
                 .filter(item -> item.getId() == (plugin.getJewelry().getItemID() + 1))
                 .mapToInt(Rs2ItemModel::getQuantity)
                 .sum();
@@ -560,7 +560,7 @@ public class JewelryScript extends Script {
         Map<Integer, Integer> availableRunes = new HashMap<>();
 
         // Inventory
-        Rs2Inventory.items().stream()
+        Rs2Inventory.items()
                 .filter(item -> requiredRunes.containsKey(item.getId()))
                 .forEach(item -> availableRunes.merge(item.getId(), item.getQuantity(), Integer::sum));
 
