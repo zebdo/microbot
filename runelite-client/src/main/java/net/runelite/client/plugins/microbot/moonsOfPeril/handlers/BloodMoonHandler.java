@@ -35,34 +35,40 @@ public class BloodMoonHandler implements BaseHandler {
     private static final int bossStatusWidgetID = Widgets.BLOOD_MOON_ID.getID();
     private static final int bossStatueObjectID = GameObjects.BLOOD_MOON_STATUE_ID.getID();
     private static final WorldPoint bossLobbyLocation = Locations.BLOOD_LOBBY.getWorldPoint();
-    private static final WorldPoint bossArenaCenter = Locations.BLOOD_ARENA_CENTER.getWorldPoint();
     private static final WorldPoint[] ATTACK_TILES = Locations.bloodAttackTiles();
     private final int bossNpcID = NpcID.PMOON_BOSS_BLOOD_MOON_VIS;
     private final int sigilNpcID = GameObjects.SIGIL_NPC_ID.getID();
-    private String weaponMain;
-    private String shield;
-    private static final WorldPoint afterRainTile = Locations.BLOOD_ATTACK_6.getWorldPoint();
-    private int poolTick  = -1;
-    public boolean arrived = false;
     private final boolean enableBoss;
+    private final String weaponMain;
+    private final String shield;
+    private static final WorldPoint afterRainTile = Locations.BLOOD_ATTACK_6.getWorldPoint();
+    private int bloodPoolTick = -1;
+    public boolean arrived = false;
+    private final BossHandler boss;
+    private final boolean debugLogging;
 
     public BloodMoonHandler(moonsOfPerilConfig cfg) {
+        this.enableBoss = cfg.enableEclipse();
         this.weaponMain = cfg.bloodWeaponMain();
         this.shield = cfg.bloodShield();
-        this.enableBoss = cfg.enableBlood();
+        this.boss = new BossHandler(cfg);
+        this.debugLogging = cfg.debugLogging();
     }
 
     @Override
     public boolean validate() {
-        return (enableBoss && BossHandler.bossIsAlive(bossName, bossStatusWidgetID));
+        if (!enableBoss) {
+            return false;
+        }
+        return (boss.bossIsAlive(bossName, bossStatusWidgetID));
     }
 
     @Override
     public State execute() {
         if (!Rs2Widget.isWidgetVisible(bossHealthBarWidgetID)) {
-            BossHandler.walkToBoss(bossName, bossLobbyLocation);
-            BossHandler.fightPreparation(weaponMain, shield);
-            BossHandler.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
+            boss.walkToBoss(bossName, bossLobbyLocation);
+            boss.fightPreparation(weaponMain, shield);
+            boss.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
             sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID), 5_000);
         }
 
@@ -74,11 +80,11 @@ public class BloodMoonHandler implements BaseHandler {
                 specialAttack2Sequence();
             }
             else if (BossHandler.isNormalAttackSequence(sigilNpcID)) {
-                BossHandler.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, weaponMain, shield);
+                boss.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, weaponMain, shield);
             }
             sleep(300);
         }
-        Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");
+        if (debugLogging) {Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");}
         Rs2Prayer.disableAllPrayers();
         sleep(2400);
         return State.IDLE;
@@ -101,7 +107,7 @@ public class BloodMoonHandler implements BaseHandler {
 
     /**  Blood Moon – Blood Rain Special Attack Handler */
     public void specialAttack2Sequence() {
-        Microbot.log("The moonfire has spawned – We've entered Special Attack 2, the Blood Rain Sequence");
+        if (debugLogging) {Microbot.log("The moonfire has spawned – We've entered Special Attack 2, the Blood Rain Sequence");}
         sleepUntil(() -> !Rs2Player.isAnimating(),5000);
         Rs2Prayer.disableAllPrayers();
         Rs2Walker.walkFastCanvas(afterRainTile,true);
@@ -110,53 +116,53 @@ public class BloodMoonHandler implements BaseHandler {
             WorldPoint playerTile = Rs2Player.getWorldLocation();
             GameObject bloodPool = Rs2GameObject.getGameObject(o -> o.getId() == ObjectID.PMOON_BOSS_BLOOD_POOL && o.getWorldLocation().equals(playerTile));
             if (bloodPool != null) {
-                Microbot.log("Standing on dangerous tile: " + playerTile);
+                if (debugLogging) {Microbot.log("Standing on dangerous tile: " + playerTile);}
                 WorldPoint safeTile = getRandomSafeTile(ObjectID.PMOON_BOSS_BLOOD_POOL, 1);
-                Microbot.log("Safe tile calculated to be: " + safeTile);
+                if (debugLogging) {Microbot.log("Safe tile calculated to be: " + safeTile);}
                 if (safeTile != null) {
                     Rs2Walker.walkFastCanvas(safeTile, true);
-                    Microbot.log("Now standing on safe tile: " + safeTile);
+                    if (debugLogging) {Microbot.log("Now standing on safe tile: " + safeTile);}
                     sleepUntil(() -> Rs2Player.getWorldLocation().equals(safeTile), 600);
                 }
             }
-            BossHandler.eatIfNeeded();
-            BossHandler.drinkIfNeeded();
+            boss.eatIfNeeded();
+            boss.drinkIfNeeded();
             sleep(600);
         }
     }
 
     /**  Blood Moon – Blood Jaguar Special Attack Handler */
     public void specialAttack1Sequence() {
-        Microbot.log("Entering Special Attack Sequence: Blood Jaguar");
+        if (debugLogging) {Microbot.log("Entering Special Attack Sequence: Blood Jaguar");}
         Rs2Prayer.disableAllPrayers();
         final long startMs = System.currentTimeMillis();
 
         /* 1  find the sigil NPC (2×2, SW tile = sigilLoc) */
         Rs2NpcModel sigilNpc = Rs2Npc.getNpcs(n -> n.getId() == sigilNpcID).findFirst().orElse(null);
         if (sigilNpc == null) {
-            Microbot.log("no sigil NPC – bail");
+            if (debugLogging) {Microbot.log("no sigil NPC – bail");}
             return;
         }
         WorldPoint sigilLocation = sigilNpc.getWorldLocation();
         /* 2 derive the trio of tiles for this rotation */
         Locations.Rotation rot = Locations.bloodJaguarRotation(sigilLocation);
         if (rot == null) {
-            Microbot.log("Unknown sigil tile: " + sigilLocation);
+            if (debugLogging) {Microbot.log("Unknown sigil tile: " + sigilLocation);}
             return;
         }
         WorldPoint attackTile = rot.attack;
         WorldPoint evadeTile = rot.evade;
         WorldPoint spawnTile = rot.spawn;
 
-        Microbot.log("Resolved rotation. attackTile=" + attackTile + "  evadeTile=" + evadeTile + "  spawnTile=" + spawnTile);
+        if (debugLogging) {Microbot.log("Resolved rotation. attackTile=" + attackTile + "  evadeTile=" + evadeTile + "  spawnTile=" + spawnTile);}
 
         if (attackTile == null || spawnTile == null || evadeTile == null) {
-            Microbot.log("Unknown sigilLocation tile: " + sigilLocation);
+            if (debugLogging) {Microbot.log("Unknown sigilLocation tile: " + sigilLocation);}
             return;
         }
 
         /* 3 ─ move onto Attack tile ---------------------------------------- */
-        Microbot.log("Moving to attackTile " + attackTile);
+        if (debugLogging) {Microbot.log("Moving to attackTile " + attackTile);}
         Rs2Walker.walkFastCanvas(attackTile, true);
         sleep(600);
         if (!Rs2Player.getWorldLocation().equals(attackTile)) {
@@ -164,9 +170,9 @@ public class BloodMoonHandler implements BaseHandler {
             sleepUntil(() -> Rs2Player.getWorldLocation().equals(attackTile));
         }
         boolean arrived = sleepUntil(() -> Rs2Player.getWorldLocation().equals(attackTile), 5_000);
-        Microbot.log(arrived
+        if (debugLogging) {Microbot.log(arrived
                 ? "Arrived on attackTile"
-                : "Failed to reach attackTile – aborting");
+                : "Failed to reach attackTile – aborting");}
         if (!arrived) return;
 
         /* 4 ─ lock the target jaguar (SW tile == spawnTile) ---------------- */
@@ -175,7 +181,7 @@ public class BloodMoonHandler implements BaseHandler {
                                 n.getWorldLocation().equals(spawnTile))
                 .findFirst().orElse(null);
         if (targetJaguar == null) {
-            Microbot.log("jaguar not on expected spawn");
+            if (debugLogging) {Microbot.log("jaguar not on expected spawn");}
             return;
         }
 
@@ -183,24 +189,26 @@ public class BloodMoonHandler implements BaseHandler {
         final long TIMEOUT_MS = 30_000;
         int evadeCount = 0;
 
-        while (isSpecialAttack1Sequence() && evadeCount <= 5 && System.currentTimeMillis() - startMs < TIMEOUT_MS) {
-            poolTick = moonsOfPerilPlugin.bloodPoolTick;
-            Microbot.log("Current tick counter: " + poolTick);
-            if (poolTick == 3) {
-                Microbot.log("EVADE to " + evadeTile);
+        while (isSpecialAttack1Sequence() && System.currentTimeMillis() - startMs < TIMEOUT_MS) {
+            bloodPoolTick = moonsOfPerilPlugin.bloodPoolTick;
+            if (debugLogging) {Microbot.log("Current tick counter: " + bloodPoolTick);}
+            if (bloodPoolTick == 3) {
+                if (debugLogging) {Microbot.log("EVADE to " + evadeTile);}
                 Rs2Walker.walkFastCanvas(evadeTile, true);
                 evadeCount++;
-                Microbot.log("Evade count = " + evadeCount);
-            } else if (poolTick == 5) {
-                Microbot.log("ATTACK jaguar");
+                if (debugLogging) {Microbot.log("Evade count = " + evadeCount);}
+                if (evadeCount > 5) {
+                    break;
+                }
+            } else if (bloodPoolTick == 5) {
+                if (debugLogging) {Microbot.log("ATTACK jaguar");}
                 Rs2Npc.attack(targetJaguar);
             }
-            else if (poolTick == 6) {
-                Microbot.log("Clicking on ground to stop attacking");
+            else if (bloodPoolTick == 6) {
+                if (debugLogging) {Microbot.log("Clicking on ground to stop attacking");}
                 Rs2Walker.walkFastCanvas(attackTile, true);
             }
             sleep(100);   // OnGameTick method in MoonsOfPerilPlugin.java handles the game ticks
-            poolTick++;
         }
     }
 

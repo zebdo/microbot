@@ -41,25 +41,32 @@ public class EclipseMoonHandler implements BaseHandler {
     private final String shield;
     private final String weaponClones;
     private final boolean enableBoss;
+    private final BossHandler boss;
+    private final boolean debugLogging;
 
     public EclipseMoonHandler(moonsOfPerilConfig cfg) {
         this.weaponMain = cfg.eclipseWeaponMain();
         this.shield = cfg.eclipseShield();
         this.weaponClones = cfg.eclipseWeaponClones();
         this.enableBoss = cfg.enableEclipse();
+        this.boss = new BossHandler(cfg);
+        this.debugLogging = cfg.debugLogging();
     }
 
     @Override
     public boolean validate() {
-        return (enableBoss && BossHandler.bossIsAlive(bossName, bossStatusWidgetID));
+        if (!enableBoss) {
+            return false;
+        }
+        return (boss.bossIsAlive(bossName, bossStatusWidgetID));
     }
 
     @Override
     public State execute() {
         if (!Rs2Widget.isWidgetVisible(bossHealthBarWidgetID)) {
-            BossHandler.walkToBoss(bossName, bossLobbyLocation);
-            BossHandler.fightPreparation(weaponMain, shield);
-            BossHandler.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
+            boss.walkToBoss(bossName, bossLobbyLocation);
+            boss.fightPreparation(weaponMain, shield);
+            boss.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
             sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID), 5_000);
         }
         while (Rs2Widget.isWidgetVisible(bossHealthBarWidgetID) || Rs2Npc.getNpc(bossNpcID) != null) {
@@ -70,11 +77,11 @@ public class EclipseMoonHandler implements BaseHandler {
                 specialAttack2Sequence();
             }
             else if (BossHandler.isNormalAttackSequence(sigilNpcID)) {
-                BossHandler.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, weaponMain, shield);
+                boss.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, weaponMain, shield);
             }
             sleep(300);
         }
-        Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");
+        if (debugLogging) {Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");}
         Rs2Prayer.disableAllPrayers();
         sleep(2400);
         return State.IDLE;
@@ -96,25 +103,25 @@ public class EclipseMoonHandler implements BaseHandler {
     {
         Rs2Prayer.disableAllPrayers();
         WorldPoint spawn = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD).getWorldLocation();
-        Microbot.log("Exact Moonshield location = " + spawn);
+        if (debugLogging) {Microbot.log("Exact Moonshield location = " + spawn);}
         /*if we enter arena mid attack phase, bail out*/
         if (!spawn.equals(shieldSpawnTile)) {
             Microbot.log("Player has spawned into the arena in the middle of the sequence. Need to escape.");
-            BossHandler.bossBailOut(exitTile);
+            boss.bossBailOut(exitTile);
             return;
         }
 
 /*      1 ─ wait until shield starts sliding */
 
-        Microbot.log("Sleeping until knockback animation finishes...");
+        if (debugLogging) {Microbot.log("Sleeping until knockback animation finishes...");}
         sleepUntil(() ->
                         Rs2Player.getAnimation() != AnimationID.HUMAN_TROLL_FLYBACK_MERGE &&
                                 Rs2Player.getWorldLocation().equals(new WorldPoint(1491, 9627, 0)),
                 5_000);
 
-        Microbot.log("Now sleeping 3.5 ticks to perfectly time our walk");
+        if (debugLogging) {Microbot.log("Now sleeping 3.5 ticks to perfectly time our walk");}
         sleep(2_100);
-        Microbot.log("Commencing our walk around the lap");
+        if (debugLogging) {Microbot.log("Commencing our walk around the lap");}
 
 /*         ───── 2. Four anchor tiles around the boss (SW → NW → NE → SE) ───── */
         WorldPoint[] lap = {
@@ -125,24 +132,24 @@ public class EclipseMoonHandler implements BaseHandler {
         };
 
         for (WorldPoint p : lap) {
-            Microbot.log("Walking to WorldPoint: " + p);
+            if (debugLogging) {Microbot.log("Walking to WorldPoint: " + p);}
             Rs2Walker.walkFastCanvas(p, false);
-            BossHandler.eatIfNeeded();
-            BossHandler.drinkIfNeeded();
+            boss.eatIfNeeded();
+            boss.drinkIfNeeded();
             if (!isSpecialAttack1Sequence()) {
                 return;
             }
             sleepUntil(() -> Rs2Player.getWorldLocation().equals(p));
         }
-        Microbot.log("Shield lap has been completed");
+        if (debugLogging) {Microbot.log("Shield lap has been completed");}
 
 /*         3 ─ run to post-phase attack tile */
         WorldPoint fin = Locations.ECLIPSE_ATTACK_6.getWorldPoint();
-        Microbot.log("Running to the normal attack sequence tile");
+        if (debugLogging) {Microbot.log("Running to the normal attack sequence tile");}
         Rs2Walker.walkFastCanvas(fin, true);
-        Microbot.log("Sleeping until the Sigil tile spawns");
+        if (debugLogging) {Microbot.log("Sleeping until the Sigil tile spawns");}
         sleepUntil(() -> Rs2Npc.getNpc(sigilNpcID) != null, 4_000);
-        Microbot.log("Searing Rays phase finished");
+        if (debugLogging) {Microbot.log("Searing Rays phase finished");}
 
     }
 
@@ -155,25 +162,25 @@ public class EclipseMoonHandler implements BaseHandler {
      */
     public boolean isSpecialAttack2Sequence()
     {
-        WorldPoint center = cloneAttackTile;               // the forced-push tile
+        WorldPoint center = cloneAttackTile;
         WorldPoint playerTile = Rs2Player.getWorldLocation();
         Rs2NpcModel bossNPC = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_VIS);
 
         // 1. Captures the conditions required for the start of the special attack sequence.
         if (playerTile.equals(center) && Rs2Player.getAnimation() == AnimationID.HUMAN_TROLL_FLYBACK_MERGE) {
-            Microbot.log("Player located on center tile and knock back animation – entering Special Attack 2");
+            if (debugLogging) {Microbot.log("Player located on center tile and knock back animation – entering Special Attack 2");}
             sleepUntil(() -> Rs2Player.getAnimation() != AnimationID.HUMAN_TROLL_FLYBACK_MERGE);
-            Microbot.log("Knockback animation stopped. Clones are about to spawn");
-            BossHandler.equipWeapons(weaponClones, null);
-            BossHandler.eatIfNeeded();
-            BossHandler.drinkIfNeeded();
+            if (debugLogging) {Microbot.log("Knockback animation stopped. Clones are about to spawn");}
+            boss.equipWeapons(weaponClones, null);
+            boss.eatIfNeeded();
+            boss.drinkIfNeeded();
             BossHandler.meleePrayerOn();
             return true;
         }
 
         // 2. Captures the conditions required if we spawn into the arena midway through the special attack phase.
         if (playerTile.equals(center) && bossNPC != null && Rs2Npc.getNpc(sigilNpcID) == null && !bossNPC.getLocalLocation().equals(Rs2LocalPoint.fromWorldInstance(center))) {
-            BossHandler.equipWeapons(weaponClones, null);
+            boss.equipWeapons(weaponClones, null);
             BossHandler.meleePrayerOn();
             return true;
         }
@@ -186,7 +193,7 @@ public class EclipseMoonHandler implements BaseHandler {
         final int CLONE_NPC_ID = NpcID.PMOON_BOSS_ECLIPSE_MOON_VIS;
         final long PHASE_TIMEOUT_MS = 35_000;
 
-        Microbot.log("Starting Eclipse Special Attack 2 sequence");
+        if (debugLogging) {Microbot.log("Starting Eclipse Special Attack 2 sequence");}
 
         int parried = 0;
         long phaseStart = System.currentTimeMillis();
@@ -199,28 +206,28 @@ public class EclipseMoonHandler implements BaseHandler {
                     .getNpcs(n -> n.getId() == CLONE_NPC_ID
                             && n.getAnimation() == CLONE_SPAWN_ANIM)
                     .collect(Collectors.toList());
-            Microbot.log("Collected all NPCs that match NPC ID & NPC Animation. Total = " + spawningClones.size());
+            if (debugLogging) {Microbot.log("Collected all NPCs that match NPC ID & NPC Animation. Total = " + spawningClones.size());}
 
             // 2. Find the first clone within the list that matches the filter
             if (!spawningClones.isEmpty()) {
                 Rs2NpcModel clone = spawningClones.get(0);
                 WorldPoint cloneTrueLocation = clone.getWorldLocation();
-                Microbot.log("Spawn true location: " + cloneTrueLocation);
+                if (debugLogging) {Microbot.log("Spawn true location: " + cloneTrueLocation);}
                 WorldPoint cloneLocalLocation = WorldPoint.fromLocal(Microbot.getClient(), clone.getLocalLocation());
-                Microbot.log("Spawn local location: " + cloneLocalLocation);
+                if (debugLogging) {Microbot.log("Spawn local location: " + cloneLocalLocation);}
 
                 // 3. Parry / Attack the clone
                 WorldPoint parryTile = cloneLocalLocation;
-                Microbot.log("Clone #" + (parried + 1) + " spawned at " + cloneTrueLocation + " → Parrying via " + parryTile);
+                if (debugLogging) {Microbot.log("Clone #" + (parried + 1) + " spawned at " + cloneTrueLocation + " → Parrying via " + parryTile);}
                 Rs2Walker.walkCanvas(parryTile);
                 parried++;
             }
             if (!isSpecialAttack2Sequence()) {
-                Microbot.log("Special attack 2 sequence has ended, breaking out");
+                if (debugLogging) {Microbot.log("Special attack 2 sequence has ended, breaking out");}
                 break;
             }
             sleep(600);
         }
-        Microbot.log("Clone phase ended – total clones parried: " + parried);
+        if (debugLogging) {Microbot.log("Clone phase ended – total clones parried: " + parried);}
     }
 }

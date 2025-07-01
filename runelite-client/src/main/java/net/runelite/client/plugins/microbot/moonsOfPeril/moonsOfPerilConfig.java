@@ -73,7 +73,7 @@ public interface moonsOfPerilConfig extends Config {
     @ConfigItem(
             keyName  = "prayerPercentage",
             name     = "Prayer % topup",
-            description = "Strategically drink during boss sequences below this health %",
+            description = "Strategically drink during boss sequences below this prayer %",
             position = 2,
             section  = generalSection
     )
@@ -82,7 +82,7 @@ public interface moonsOfPerilConfig extends Config {
     @ConfigItem(
             keyName = "moonlightPotionsQuantum",
             name = "Moonlight Potions Resupply",
-            description = "Choose how many moonlight potions to have in inventory after resupplying",
+            description = "Choose how many moonlight potions to have in inventory post resupply",
             position = 0,
             section = resupplySection
     )

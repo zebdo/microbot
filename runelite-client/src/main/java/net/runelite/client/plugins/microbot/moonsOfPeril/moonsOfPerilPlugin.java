@@ -19,9 +19,12 @@ import net.runelite.client.ui.overlay.OverlayManager;
 import javax.inject.Inject;
 import java.awt.*;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 @PluginDescriptor(
-        name = PluginDescriptor.Funk + "Moons of Peril [Beta]",
+        name = PluginDescriptor.Funk + "Moons of Peril",
         description = "A plugin to beat the Moons of Peril",
         tags = {"bossing", "microbot"},
         enabledByDefault = false
@@ -45,7 +48,6 @@ public class moonsOfPerilPlugin extends Plugin {
     @Inject
     private moonsOfPerilConfig moonsOfPerilConfig;
     public static int bloodPoolTick;
-
     public static Instant scriptStartTime;
 
 
@@ -91,5 +93,4 @@ public class moonsOfPerilPlugin extends Plugin {
         }
 
     }
-
 }

@@ -26,32 +26,36 @@ public class RewardHandler implements BaseHandler {
     private boolean eclipseEnabled;
     private boolean blueEnabled;
     private boolean bloodEnabled;
+    private final boolean debugLogging;
+    private final BossHandler boss;
 
     @Inject
     public RewardHandler(moonsOfPerilConfig cfg) {
         this.eclipseEnabled = cfg.enableEclipse();
         this.blueEnabled = cfg.enableBlue();
         this.bloodEnabled = cfg.enableBlood();
+        this.boss = new BossHandler(cfg);
+        this.debugLogging = cfg.debugLogging();
     }
 
     @Override
     public boolean validate() {
-        boolean eclipseDone = !eclipseEnabled || !BossHandler.bossIsAlive("Eclipse Moon", Widgets.ECLIPSE_MOON_ID.getID());
-        boolean blueDone = !blueEnabled || !BossHandler.bossIsAlive("Blue Moon", Widgets.BLUE_MOON_ID.getID());
-        boolean bloodDone = !bloodEnabled || !BossHandler.bossIsAlive("Blood Moon", Widgets.BLOOD_MOON_ID.getID());
+        boolean eclipseDone = !eclipseEnabled || !boss.bossIsAlive("Eclipse Moon", Widgets.ECLIPSE_MOON_ID.getID());
+        boolean blueDone = !blueEnabled || !boss.bossIsAlive("Blue Moon", Widgets.BLUE_MOON_ID.getID());
+        boolean bloodDone = !bloodEnabled || !boss.bossIsAlive("Blood Moon", Widgets.BLOOD_MOON_ID.getID());
         return eclipseDone && blueDone && bloodDone;
     }
 
     @Override
     public State execute() {
-        BossHandler.walkToBoss("Rewards Chest", rewardChestLocation);
+        boss.walkToBoss("Rewards Chest", rewardChestLocation);
         if (Rs2GameObject.interact(lunarChestGameObjectID, "Claim")) {
-            Microbot.log("Successfully claimed rewards from Lunar Chest");
+            if (debugLogging) {Microbot.log("Successfully claimed rewards from Lunar Chest");}
             rewardChestCount.incrementAndGet();
             sleep(2_400);
         }
         if (Rs2Widget.clickWidget(lunarChestBankAllWidgetID)) {
-            Microbot.log("Successfully banked all rewards");
+            if (debugLogging) {Microbot.log("Successfully banked all rewards");}
             sleep(1_200);
         }
         return State.IDLE;

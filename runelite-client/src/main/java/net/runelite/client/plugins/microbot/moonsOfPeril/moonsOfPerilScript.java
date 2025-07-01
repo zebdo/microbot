@@ -7,8 +7,7 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.handlers.*;
 
-import java.util.EnumMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 public class moonsOfPerilScript extends Script {
@@ -52,7 +51,7 @@ public class moonsOfPerilScript extends Script {
     /* One-off wiring of state → handler instances                        */
     /* ------------------------------------------------------------------ */
     private void initHandlers(moonsOfPerilConfig cfg) {
-        handlers.put(State.IDLE,        new IdleHandler());
+        handlers.put(State.IDLE,        new IdleHandler(cfg));
         handlers.put(State.RESUPPLY,    new ResupplyHandler(cfg));
         handlers.put(State.ECLIPSE_MOON,new EclipseMoonHandler(cfg));
         handlers.put(State.BLUE_MOON,   new BlueMoonHandler(cfg));
