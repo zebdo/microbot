@@ -578,8 +578,33 @@ public class MageTrainingArenaScript extends Script {
         super.shutdown();
     }
 
+    /**
+     * Attempts to equip the best available {@code staff} from inventory that reduces rune cost for the specified {@link Rs2Spells} spell.
+     * This method also accounts for any equipped or equippable {@code tome} in the shield slot which may provide passive rune substitution.
+     *
+     * <p>The method evaluates all available staff+tome combinations, selects the one with the highest effective rune savings,
+     * equips the staff if not already equipped, and verifies that the spell is now castable with the resulting equipment and runes.
+     *
+     * <p><strong>Logic Summary:</strong>
+     * <ul>
+     *     <li>Scans equipped weapon/shield and inventory for candidate staff and tome combinations</li>
+     *     <li>Simulates rune savings provided by each staff+tome combo</li>
+     *     <li>Verifies castability after accounting for free runes and available inventory/pouch supply</li>
+     *     <li>Equips the best staff (if not already equipped) and confirms the spell is ready for casting</li>
+     * </ul>
+     *
+     * <p>This method <strong>does not</strong> return {@code true} unless a valid staff was equipped (or already equipped)
+     * and the spell is verifiably castable after staff+tome rune substitution.
+     *
+     * @param spell The {@link Rs2Spells} spell to evaluate for castability.
+     * @param hasRunePouch {@code true} if the player's rune pouch is available and should be included in rune calculations.
+     * @return {@code true} if the spell is castable after equipping the best available staff (and considering any tome); {@code false} otherwise.
+     *
+     * <p><strong>Side effects:</strong> May trigger staff equipping from inventory. No tome swapping is performed — only passively recognized if equipped.</p>
+     */
     public static boolean tryEquipBestStaffAndCast(Rs2Spells spell, boolean hasRunePouch) {
         Map<Runes, Integer> requiredRunes = spell.getRequiredRunes();
+
         List<Rs2ItemModel> candidates = new ArrayList<>();
         Rs2ItemModel equipped = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
         if (equipped != null) candidates.add(equipped);
@@ -608,6 +633,7 @@ public class MageTrainingArenaScript extends Script {
 
         int maxSavings = -1;
         Integer bestStaffId = null;
+        Set<Runes> bestProvidedRunes = null;
 
         for (Rs2ItemModel staffItem : candidates) {
             Rs2Staff staff = getRs2Staff(staffItem.getId());
@@ -624,8 +650,7 @@ public class MageTrainingArenaScript extends Script {
                     savings += entry.getValue();
                     continue;
                 }
-                int have = inventoryRunes.getOrDefault(entry.getKey(), 0);
-                if (have < entry.getValue()) {
+                if (inventoryRunes.getOrDefault(entry.getKey(), 0) < entry.getValue()) {
                     castable = false;
                     break;
                 }
@@ -634,6 +659,7 @@ public class MageTrainingArenaScript extends Script {
             if (castable && savings > maxSavings) {
                 maxSavings = savings;
                 bestStaffId = staff.getItemID();
+                bestProvidedRunes = providedRunes;
             }
         }
 
@@ -641,10 +667,20 @@ public class MageTrainingArenaScript extends Script {
             if (!Rs2Equipment.isWearing(bestStaffId)) {
                 Rs2Inventory.wear(bestStaffId);
             }
+
+            Set<Runes> activeRunes = new HashSet<>(bestProvidedRunes != null ? bestProvidedRunes : Set.of());
+            if (Rs2Equipment.get(EquipmentInventorySlot.SHIELD) != null) {
+                Rs2Tome newTome = getRs2Tome(Rs2Equipment.get(EquipmentInventorySlot.SHIELD).getId());
+                if (newTome != Rs2Tome.NONE) activeRunes.addAll(newTome.getRunes());
+            }
+
+            for (Map.Entry<Runes, Integer> entry : requiredRunes.entrySet()) {
+                if (activeRunes.contains(entry.getKey())) continue;
+                if (inventoryRunes.getOrDefault(entry.getKey(), 0) < entry.getValue()) return false;
+            }
             return true;
         }
 
         return false;
     }
-
 }
