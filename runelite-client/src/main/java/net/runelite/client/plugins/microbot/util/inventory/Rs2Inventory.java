@@ -691,7 +691,7 @@ public class Rs2Inventory {
      * @return The item with one of the specified names, or null if not found.
      */
     public static Rs2ItemModel get(String... names) {
-        return get(names, false);
+        return get(item -> Arrays.stream(names).anyMatch(n -> n.equalsIgnoreCase(item.getName())));
     }
 
     /**
@@ -703,8 +703,11 @@ public class Rs2Inventory {
      * @return The item with one of the specified names, or null if not found.
      */
     public static Rs2ItemModel get(String[] names, boolean exact) {
-        return get(exact ? item -> Arrays.stream(names).anyMatch(n -> n.equalsIgnoreCase(item.getName())) :
-                item -> Arrays.stream(names).anyMatch(n -> n.toLowerCase().contains(item.getName().split("\\(")[0].toLowerCase())));
+        if (exact) {
+            return get(item -> Arrays.stream(names).anyMatch(n -> n.equalsIgnoreCase(item.getName())));
+        } else {
+            return get(item -> Arrays.stream(names).anyMatch(n -> n.toLowerCase().contains(item.getName().split("\\(")[0].toLowerCase())));
+        }
     }
 
     /**
@@ -848,10 +851,6 @@ public class Rs2Inventory {
      */
     public static boolean hasItem(String... names) {
         return get(names) != null;
-    }
-
-    public static boolean hasItem(String[] names, boolean exact) {
-        return get(names, exact) != null;
     }
 
     /**

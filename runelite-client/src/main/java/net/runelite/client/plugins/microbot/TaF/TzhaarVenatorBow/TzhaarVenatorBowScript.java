@@ -256,7 +256,7 @@ public class TzhaarVenatorBowScript extends Script {
     }
 
     private void consumePotion(List<String> keyword) {
-        var potion = Rs2Inventory.get(keyword.toArray(String[]::new),true);
+        var potion = Rs2Inventory.get(keyword.toArray(String[]::new));
         if (potion != null) {
             Rs2Inventory.interact(potion, "Drink");
         }
