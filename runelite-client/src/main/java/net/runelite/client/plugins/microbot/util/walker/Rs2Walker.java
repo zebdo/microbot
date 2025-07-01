@@ -36,11 +36,7 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Staff;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Tome;
-import net.runelite.client.plugins.microbot.util.magic.Runes;
+import net.runelite.client.plugins.microbot.util.magic.*;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
@@ -2695,7 +2691,7 @@ public class Rs2Walker {
                     : transport.getDisplayInfo();
                 log.info("Looking for spell rune requirements for: '{}' - display info {}", spellName, displayInfo);
                 Rs2Spells rs2Spell = Rs2Magic.getRs2Spell(displayInfo);
-                return Rs2Magic.hasRequiredRunes(rs2Spell, true,false);                                                                
+                return Rs2Magic.hasRequiredRunes(rs2Spell);
             }
             if (isCurrencyBasedTransport(transport.getType()) && 
                 (transport.getItemIdRequirements() == null || transport.getItemIdRequirements().isEmpty()) &&
