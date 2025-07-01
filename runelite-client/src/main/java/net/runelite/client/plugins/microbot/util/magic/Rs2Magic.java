@@ -494,7 +494,7 @@ public class Rs2Magic {
     /**
      * Calculates the available runes
      *
-     * @param runeFilter which runes should be counted
+     * @param runeFilter which Inventories to search for rune
      * @return A {@link Map} where the key is {@link ItemID} of the rune,
      * and the value is an {@code Integer} representing the quantity of that rune available
      * or {@code Integer.MAX_VALUE} if the rune is provided by equipment.
@@ -529,6 +529,13 @@ public class Rs2Magic {
                 .entrySet().stream().collect(Collectors.toMap(entry -> Runes.byItemId(entry.getKey()), Map.Entry::getValue));
     }
 
+    /**
+     * Calculates the required runes to cast {@code spell} for {@code casts}
+     * amount of times.
+     *
+     * @return A {@link Map} where the key is {@link ItemID} of the rune,
+     * and the value is an {@link Integer} representing the quantity of that runes required
+     */
     public static Map<Integer, Integer> getRequiredRunes(RequiresRunes spell, int casts) {
         final Map<Integer, Integer> runes = getRequiredRunes(spell);
         if (casts != 1) runes.replaceAll((key, value) -> casts * value);
@@ -540,16 +547,13 @@ public class Rs2Magic {
     }
 
     /**
-     * Calculates the runes required to cast a specified combat spell a certain number of times,
-     * taking into account equipped staves, tomes, inventory, and optionally, rune pouch runes.
+     * Calculates how many runes we are missing in Inventory, Equipment, Rune Pouch & Bank
+     * to meet the Rune Requirements {@code reqRunes}
      *
-     * This method automatically determines equipped equipment and calculates the number of runes
-     * still needed to meet the casting requirement by checking available runes in the inventory
-     * and rune pouch and accounting for any runes provided by equipped staves and tomes.
-     *
-     * @return A {@link Map} where the key is a {@link Runes} enum representing the type of rune,
-     *         and the value is an {@code Integer} representing the quantity of that rune still needed.
-     *         If all required runes are available, the map will be empty
+     * @param reqRunes the Rune Requirements (ItemID -> requiredQuantity)
+     * @param runeFilter which Inventories to search for runes
+     * @return A {@link Map} where the key is {@link ItemID} of the rune, and the
+     * value is an {@link Integer} representing the quantity of missing runes.
      */
     public static Map<Integer, Integer> getMissingRunes(Map<Integer, Integer> reqRunes, RuneFilter runeFilter) {
         if (reqRunes.isEmpty()) return reqRunes;
@@ -570,7 +574,7 @@ public class Rs2Magic {
     }
 
     public static Map<Integer, Integer> getMissingRunes(RequiresRunes spell, int casts) {
-        return getMissingRunes(getRequiredRunes(spell, casts));
+        return getMissingRunes(spell, casts, DEFAULT_RUNE_FILTER);
     }
 
     public static Map<Integer, Integer> getMissingRunes(RequiresRunes spell) {
@@ -580,8 +584,8 @@ public class Rs2Magic {
     /**
      * Checks if the player has the required runes to cast a specified spell.
      *
-     * @param reqRunes          required runes (itemId -> required Quantity)
-     * TODO: params
+     * @param reqRunes the Rune Requirements (ItemID -> requiredQuantity)
+     * @param runeFilter which Inventories to search for runes
      * @return true if all required runes are available; false otherwise.
      */
     public static boolean hasRequiredRunes(Map<Integer, Integer> reqRunes, RuneFilter runeFilter) {
@@ -597,7 +601,7 @@ public class Rs2Magic {
     }
 
     public static boolean hasRequiredRunes(RequiresRunes spell, int casts) {
-        return hasRequiredRunes(getRequiredRunes(spell, casts));
+        return hasRequiredRunes(spell, casts, DEFAULT_RUNE_FILTER);
     }
 
     public static boolean hasRequiredRunes(RequiresRunes spell, RuneFilter runeFilter) {
