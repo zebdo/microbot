@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 /**
  * TODO: Add Tele-other spells from modern spellbook
  */
-public enum Rs2Spells implements RequiresRunes {
+public enum Rs2Spells implements Spell {
     CONFUSE(MagicAction.CONFUSE, Map.of(
             Runes.EARTH, 2,
             Runes.WATER, 3,
@@ -674,8 +674,8 @@ public enum Rs2Spells implements RequiresRunes {
             Runes.SOUL, 1
     ), Rs2Spellbook.ARCEUUS);
 
-    private final MagicAction action;
-    private final Map<Runes, Integer> requiredRunes;
+    private final MagicAction magicAction;
+    private final Map<Integer, Integer> requiredRunes;
     private final Rs2Spellbook spellbook;
     
     public boolean hasRequiredLevel() {
@@ -691,17 +691,17 @@ public enum Rs2Spells implements RequiresRunes {
     }
 
     Rs2Spells(MagicAction action, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
-        this.action = action;
-        this.requiredRunes = requiredRunes;
+        this.magicAction = action;
+        this.requiredRunes = Spell.convertRequiredRunes(requiredRunes);
         this.spellbook = spellbook;
     }
 
     public String getName() {
-        return action.getName();
+        return magicAction.getName();
     }
 
     public int getRequiredLevel() {
-        return action.getLevel();
+        return magicAction.getLevel();
     }
     
     /**
@@ -712,6 +712,7 @@ public enum Rs2Spells implements RequiresRunes {
      */
     public List<Runes> getElementalRunes() {
         return requiredRunes.keySet().stream()
+                .map(Runes::byItemId)
                 .filter(rune -> rune == Runes.AIR || rune == Runes.WATER || 
                         rune == Runes.EARTH || rune == Runes.FIRE)
                 .collect(Collectors.toList());

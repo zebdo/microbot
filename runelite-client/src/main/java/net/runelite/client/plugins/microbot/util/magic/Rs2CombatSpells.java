@@ -10,7 +10,7 @@ import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 import java.util.Map;
 
 @Getter
-public enum Rs2CombatSpells implements RequiresRunes {
+public enum Rs2CombatSpells implements Spell {
     WIND_STRIKE(MagicAction.WIND_STRIKE, Map.of(
             Runes.AIR, 1,
             Runes.MIND, 1
@@ -202,7 +202,7 @@ public enum Rs2CombatSpells implements RequiresRunes {
 
     private final String name;
     private final MagicAction magicAction;
-    private final Map<Runes, Integer> requiredRunes;
+    private final Map<Integer, Integer> requiredRunes;
     private final Integer varbitValue; // Varbit 276
     private final Rs2Spellbook spellbook;
     private final int requiredLevel;
@@ -222,7 +222,7 @@ public enum Rs2CombatSpells implements RequiresRunes {
     Rs2CombatSpells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook)
     {
         this.magicAction = magicAction;
-        this.requiredRunes = requiredRunes;
+        this.requiredRunes = Spell.convertRequiredRunes(requiredRunes);
         this.spellbook = spellbook;
         this.name = magicAction.getName();
         this.requiredLevel = magicAction.getLevel();
@@ -232,7 +232,7 @@ public enum Rs2CombatSpells implements RequiresRunes {
     Rs2CombatSpells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook, int varbitValue)
     {
         this.magicAction = magicAction;
-        this.requiredRunes = requiredRunes;
+        this.requiredRunes = Spell.convertRequiredRunes(requiredRunes);
         this.spellbook = spellbook;
         this.name = magicAction.getName();
         this.requiredLevel = magicAction.getLevel();

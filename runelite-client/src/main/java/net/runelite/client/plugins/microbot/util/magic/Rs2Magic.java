@@ -523,7 +523,7 @@ public class Rs2Magic {
     }
 
     @Deprecated(since = "Use getMissingRunes")
-    public static Map<Runes, Integer> getRequiredRunes(RequiresRunes spell, int casts, boolean checkRunePouch) {
+    public static Map<Runes, Integer> getRequiredRunes(Spell spell, int casts, boolean checkRunePouch) {
         final RuneFilter filter = RuneFilter.builder().includeRunePouch(checkRunePouch).build();
         return getMissingRunes(spell, casts, filter)
                 .entrySet().stream().collect(Collectors.toMap(entry -> Runes.byItemId(entry.getKey()), Map.Entry::getValue));
@@ -536,14 +536,12 @@ public class Rs2Magic {
      * @return A {@link Map} where the key is {@link ItemID} of the rune,
      * and the value is an {@link Integer} representing the quantity of that runes required
      */
-    public static Map<Integer, Integer> getRequiredRunes(RequiresRunes spell, int casts) {
-        final Map<Integer, Integer> runes = getRequiredRunes(spell);
-        if (casts != 1) runes.replaceAll((key, value) -> casts * value);
-        return runes;
+    public static Map<Integer, Integer> getRequiredRunes(Spell spell, int casts) {
+        return spell.getRequiredRunes(casts);
     }
 
-    public static Map<Integer, Integer> getRequiredRunes(RequiresRunes spell) {
-        return spell.getRequiredRunes().entrySet().stream().collect(Collectors.toMap(e -> (e.getKey().getItemId()), Map.Entry::getValue));
+    public static Map<Integer, Integer> getRequiredRunes(Spell spell) {
+        return spell.getRequiredRunes();
     }
 
     /**
@@ -569,15 +567,15 @@ public class Rs2Magic {
         return getMissingRunes(reqRunes, DEFAULT_RUNE_FILTER);
     }
 
-    public static Map<Integer, Integer> getMissingRunes(RequiresRunes spell, int casts, RuneFilter runeFilter) {
+    public static Map<Integer, Integer> getMissingRunes(Spell spell, int casts, RuneFilter runeFilter) {
         return getMissingRunes(getRequiredRunes(spell, casts), runeFilter);
     }
 
-    public static Map<Integer, Integer> getMissingRunes(RequiresRunes spell, int casts) {
+    public static Map<Integer, Integer> getMissingRunes(Spell spell, int casts) {
         return getMissingRunes(spell, casts, DEFAULT_RUNE_FILTER);
     }
 
-    public static Map<Integer, Integer> getMissingRunes(RequiresRunes spell) {
+    public static Map<Integer, Integer> getMissingRunes(Spell spell) {
         return getMissingRunes(spell, 1);
     }
 
@@ -596,19 +594,19 @@ public class Rs2Magic {
         return hasRequiredRunes(reqRunes, DEFAULT_RUNE_FILTER);
     }
 
-    public static boolean hasRequiredRunes(RequiresRunes spell, int casts, RuneFilter runeFilter) {
+    public static boolean hasRequiredRunes(Spell spell, int casts, RuneFilter runeFilter) {
         return hasRequiredRunes(getRequiredRunes(spell, casts), runeFilter);
     }
 
-    public static boolean hasRequiredRunes(RequiresRunes spell, int casts) {
+    public static boolean hasRequiredRunes(Spell spell, int casts) {
         return hasRequiredRunes(spell, casts, DEFAULT_RUNE_FILTER);
     }
 
-    public static boolean hasRequiredRunes(RequiresRunes spell, RuneFilter runeFilter) {
+    public static boolean hasRequiredRunes(Spell spell, RuneFilter runeFilter) {
         return hasRequiredRunes(spell, 1, runeFilter);
     }
 
-    public static boolean hasRequiredRunes(RequiresRunes spell) {
+    public static boolean hasRequiredRunes(Spell spell) {
         return hasRequiredRunes(spell, 1);
     }
 }
