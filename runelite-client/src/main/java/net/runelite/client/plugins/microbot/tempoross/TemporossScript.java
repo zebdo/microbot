@@ -87,19 +87,7 @@ public class TemporossScript extends Script {
                         determineWorkArea();
                         sleep(300, 600);
                     } else {
-                        // --- PRIORITY: Check if tethering is needed due to incoming wave ---
-                        if (TemporossPlugin.incomingWave && !TemporossPlugin.isTethered) {
-                            log("Wave incoming, prioritizing tethering!");
-                            if (Rs2Player.isMoving()) {
-                                log("Interrupting movement to safe spot, prioritizing tethering.");
-                                // Stop the current walking (interrupt the movement)
-                                Rs2Walker.setTarget(null);  // Stop walking towards the safe spot
-                                ShortestPathPlugin.exit();  // Exit the current pathfinding
-                            }
-                                handleTether();  // Force tethering action
-                                TemporossPlugin.isTethered = true;  // Set the tethered flag to true once tethering is complete
-                            return;
-                        }
+
                         handleMinigame();
                         handleStateLoop();
                         if(areItemsMissing())
@@ -107,6 +95,7 @@ public class TemporossScript extends Script {
                         // In solo mode, continuously handle fires.
                         // In mass world mode, fire-fighting is now handled dynamically before objectives.
                         handleFires();
+                        handleTether();
                         if(isFightingFire || TemporossPlugin.isTethered || TemporossPlugin.incomingWave)
                             return;
                         handleDamagedMast();
@@ -574,44 +563,25 @@ public class TemporossScript extends Script {
     }
 
     private void handleTether() {
-        // Only proceed if tethering is necessary (when a wave is incoming)
-        if (TemporossPlugin.incomingWave && !TemporossPlugin.isTethered) {
-
-            log("Wave incoming, prioritizing tethering!");
-
-            // Get the closest tether object (assuming workArea is the area being worked on)
-            TileObject tether = workArea.getClosestTether();
-            if (tether == null) {
-                log("No tether found in the area");
-                return;
-            }
-
-            // Clear the current target and reset pathfinding to prioritize tethering
+        TileObject tether = workArea.getClosestTether();
+        if (tether == null) {
+            return;
+        }
+        if (TemporossPlugin.incomingWave != TemporossPlugin.isTethered) {
             ShortestPathPlugin.exit();
             Rs2Walker.setTarget(null);
-
-            // Turn the camera to the tether object
+            String action = TemporossPlugin.incomingWave ? "Tether" : "Untether";
             Rs2Camera.turnTo(tether);
 
-            // Perform tethering action
-            if (Rs2GameObject.interact(tether, "Tether")) {
-                log("Tethering to Tempoross");
-                // Wait until tethering is complete
-                sleepUntil(() -> TemporossPlugin.isTethered, 3500);  // Wait until we are tethered
-            } else {
-                log("Failed to interact with tether");
-            }
-        } else {
-            // Optionally, untether if we are tethered and the wave is not incoming
-            if (!TemporossPlugin.incomingWave && TemporossPlugin.isTethered) {
-                TileObject tether = workArea.getClosestTether();
-                if (tether != null) {
-                    Rs2Camera.turnTo(tether);
-                    if (Rs2GameObject.interact(tether, "Untether")) {
-                        log("Untethering from Tempoross");
-                        sleepUntil(() -> !TemporossPlugin.isTethered, 3500);  // Wait until we are untethered
-                    }
+            if (action.equals("Tether")) {
+                if (Rs2GameObject.interact(tether, action)) {
+                    log(action + "ing");
+                    sleepUntil(() -> TemporossPlugin.isTethered == TemporossPlugin.incomingWave, 3500);
                 }
+            }
+            if (action.equals("Untether")) {
+                log(action + "ing");
+                sleepUntil(() -> TemporossPlugin.isTethered == TemporossPlugin.incomingWave, 3500);
             }
         }
     }
