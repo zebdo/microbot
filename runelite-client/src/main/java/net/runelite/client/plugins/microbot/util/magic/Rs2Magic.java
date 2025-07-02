@@ -401,39 +401,6 @@ public class Rs2Magic {
                 .collect(Collectors.toList());
     }
 
-    public static final Map<Integer, int[]> COMBO_RUNES = ImmutableMap.of(
-            ItemID.AIRRUNE, new int[] {ItemID.MISTRUNE, ItemID.SMOKERUNE, ItemID.DUSTRUNE},
-            ItemID.WATERRUNE, new int[] {ItemID.MISTRUNE, ItemID.MUDRUNE, ItemID.STEAMRUNE},
-            ItemID.EARTHRUNE, new int[] {ItemID.MUDRUNE, ItemID.DUSTRUNE, ItemID.LAVARUNE},
-            ItemID.FIRERUNE, new int[] {ItemID.LAVARUNE, ItemID.SMOKERUNE, ItemID.STEAMRUNE}
-    );
-
-    //DATA
-    public static final List<Integer> RUNE_IDS = ImmutableList.of(
-            ItemID.NATURERUNE,
-            ItemID.LAWRUNE,
-            ItemID.BODYRUNE,
-            ItemID.DUSTRUNE,
-            ItemID.LAVARUNE,
-            ItemID.STEAMRUNE,
-            ItemID.SMOKERUNE,
-            ItemID.SOULRUNE,
-            ItemID.WATERRUNE,
-            ItemID.AIRRUNE,
-            ItemID.EARTHRUNE,
-            ItemID.FIRERUNE,
-            ItemID.MINDRUNE,
-            ItemID.CHAOSRUNE,
-            ItemID.DEATHRUNE,
-            ItemID.BLOODRUNE,
-            ItemID.COSMICRUNE,
-            ItemID.ASTRALRUNE,
-            ItemID.MISTRUNE,
-            ItemID.MUDRUNE,
-            ItemID.WRATHRUNE,
-            ItemID.SUNFIRERUNE
-    );
-
     private static int limitSum(int i, int j) {
         try {
             return Math.addExact(i,j);
@@ -442,19 +409,19 @@ public class Rs2Magic {
         }
     }
 
-    private static Map<Integer, Integer> addInventoryRunes(Map<Integer, Integer> runes) {
-        RUNE_IDS.forEach(rune -> {
-            runes.merge(rune, Rs2Inventory.itemQuantity(rune), Rs2Magic::limitSum);
-        });
+    private static Map<Runes, Integer> addInventoryRunes(Map<Runes, Integer> runes) {
+        for (Runes rune : Runes.values()) {
+            runes.merge(rune, Rs2Inventory.itemQuantity(rune.getItemId()), Rs2Magic::limitSum);
+        }
         return runes;
     }
 
-    private static Map<Integer, Integer> addEquipmentRunes(Map<Integer, Integer> runes) {
+    private static Map<Runes, Integer> addEquipmentRunes(Map<Runes, Integer> runes) {
         final Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
         if (equippedWeapon != null) {
             Rs2Staff equippedStaff = getRs2Staff(equippedWeapon.getId());
             if (equippedStaff != Rs2Staff.NONE) {
-                equippedStaff.getRunes().forEach(rune -> runes.put(rune.getItemId(), Integer.MAX_VALUE));
+                equippedStaff.getRunes().forEach(rune -> runes.put(rune, Integer.MAX_VALUE));
             }
         }
 
@@ -463,28 +430,28 @@ public class Rs2Magic {
         if (equippedShield != null) {
             Rs2Tome equippedTome = getRs2Tome(equippedShield.getId());
             if (equippedTome != Rs2Tome.NONE) {
-                equippedTome.getRunes().forEach(rune -> runes.put(rune.getItemId(), Integer.MAX_VALUE));
+                equippedTome.getRunes().forEach(rune -> runes.put(rune, Integer.MAX_VALUE));
             }
         }
         return runes;
     }
 
-    private static Map<Integer, Integer> addBankRunes(Map<Integer, Integer> runes) {
+    private static Map<Runes, Integer> addBankRunes(Map<Runes, Integer> runes) {
         Rs2Bank.bankItems().stream()
                 .flatMap(item -> Arrays.stream(Runes.values())
                         .filter(r -> r.getItemId() == item.getId())
-                        .map(rune -> Map.entry(rune.getItemId(), item.getQuantity())))
+                        .map(rune -> Map.entry(rune, item.getQuantity())))
                 .forEach(entry -> runes.merge(entry.getKey(), entry.getValue(), Rs2Magic::limitSum));
         return runes;
     }
 
-    private static final int[] EMPTY_INT_ARRAY = new int[0];
-    private static Map<Integer, Integer> addComboRunes(Map<Integer, Integer> runes) {
+    private static Map<Runes, Integer> addComboRunes(Map<Runes, Integer> runes) {
         runes.replaceAll((key, value) -> {
-            final int[] comboRunes = COMBO_RUNES.getOrDefault(key, EMPTY_INT_ARRAY);
+            final Runes[] comboRunes = Runes.getComboRunes(key);
             if (comboRunes.length == 0) return value;
 
-            final int comboQuantity = Arrays.stream(comboRunes).map(id -> runes.getOrDefault(id, 0))
+            final int comboQuantity = Arrays.stream(comboRunes)
+                    .map(rune -> runes.getOrDefault(rune, 0))
                     .reduce(0, Rs2Magic::limitSum);
             return limitSum(value, comboQuantity);
         });
@@ -499,8 +466,8 @@ public class Rs2Magic {
      * and the value is an {@code Integer} representing the quantity of that rune available
      * or {@code Integer.MAX_VALUE} if the rune is provided by equipment.
      */
-    public static Map<Integer, Integer> getRunes(RuneFilter runeFilter) {
-        final Map<Integer, Integer> availableRunes = runeFilter.isIncludeRunePouch() && Rs2Inventory.hasRunePouch() ?
+    public static Map<Runes, Integer> getRunes(RuneFilter runeFilter) {
+        final Map<Runes, Integer> availableRunes = runeFilter.isIncludeRunePouch() && Rs2Inventory.hasRunePouch() ?
                 Rs2RunePouch.getRunes() : new HashMap<>();
 
         if (runeFilter.isIncludeInventory()) addInventoryRunes(availableRunes);
@@ -518,15 +485,14 @@ public class Rs2Magic {
      * and the value is an {@code Integer} representing the quantity of that rune available
      * or {@code Integer.MAX_VALUE} if the rune is provided by equipment.
      */
-    public static Map<Integer, Integer> getRunes() {
+    public static Map<Runes, Integer> getRunes() {
         return getRunes(DEFAULT_RUNE_FILTER);
     }
 
     @Deprecated(since = "Use getMissingRunes")
     public static Map<Runes, Integer> getRequiredRunes(Spell spell, int casts, boolean checkRunePouch) {
         final RuneFilter filter = RuneFilter.builder().includeRunePouch(checkRunePouch).build();
-        return getMissingRunes(spell, casts, filter)
-                .entrySet().stream().collect(Collectors.toMap(entry -> Runes.byItemId(entry.getKey()), Map.Entry::getValue));
+        return getMissingRunes(spell, casts, filter);
     }
 
     /**
@@ -536,11 +502,11 @@ public class Rs2Magic {
      * @return A {@link Map} where the key is {@link ItemID} of the rune,
      * and the value is an {@link Integer} representing the quantity of that runes required
      */
-    public static Map<Integer, Integer> getRequiredRunes(Spell spell, int casts) {
+    public static Map<Runes, Integer> getRequiredRunes(Spell spell, int casts) {
         return spell.getRequiredRunes(casts);
     }
 
-    public static Map<Integer, Integer> getRequiredRunes(Spell spell) {
+    public static Map<Runes, Integer> getRequiredRunes(Spell spell) {
         return spell.getRequiredRunes();
     }
 
@@ -553,29 +519,29 @@ public class Rs2Magic {
      * @return A {@link Map} where the key is {@link ItemID} of the rune, and the
      * value is an {@link Integer} representing the quantity of missing runes.
      */
-    public static Map<Integer, Integer> getMissingRunes(Map<Integer, Integer> reqRunes, RuneFilter runeFilter) {
+    public static Map<Runes, Integer> getMissingRunes(Map<Runes, Integer> reqRunes, RuneFilter runeFilter) {
         if (reqRunes.isEmpty()) return reqRunes;
 
-        final Map<Integer, Integer> runes = getRunes(runeFilter);
+        final Map<Runes, Integer> runes = getRunes(runeFilter);
         reqRunes.replaceAll((key, value) -> Math.max(0,value-runes.getOrDefault(key, 0)));
         reqRunes.keySet().removeIf(e -> reqRunes.get(e) <= 0);
 
         return reqRunes;
     }
 
-    public static Map<Integer, Integer> getMissingRunes(Map<Integer, Integer> reqRunes) {
+    public static Map<Runes, Integer> getMissingRunes(Map<Runes, Integer> reqRunes) {
         return getMissingRunes(reqRunes, DEFAULT_RUNE_FILTER);
     }
 
-    public static Map<Integer, Integer> getMissingRunes(Spell spell, int casts, RuneFilter runeFilter) {
+    public static Map<Runes, Integer> getMissingRunes(Spell spell, int casts, RuneFilter runeFilter) {
         return getMissingRunes(getRequiredRunes(spell, casts), runeFilter);
     }
 
-    public static Map<Integer, Integer> getMissingRunes(Spell spell, int casts) {
+    public static Map<Runes, Integer> getMissingRunes(Spell spell, int casts) {
         return getMissingRunes(spell, casts, DEFAULT_RUNE_FILTER);
     }
 
-    public static Map<Integer, Integer> getMissingRunes(Spell spell) {
+    public static Map<Runes, Integer> getMissingRunes(Spell spell) {
         return getMissingRunes(spell, 1);
     }
 
@@ -586,11 +552,11 @@ public class Rs2Magic {
      * @param runeFilter which Inventories to search for runes
      * @return true if all required runes are available; false otherwise.
      */
-    public static boolean hasRequiredRunes(Map<Integer, Integer> reqRunes, RuneFilter runeFilter) {
+    public static boolean hasRequiredRunes(Map<Runes, Integer> reqRunes, RuneFilter runeFilter) {
         return getMissingRunes(reqRunes, runeFilter).isEmpty();
     }
 
-    public static boolean hasRequiredRunes(Map<Integer, Integer> reqRunes) {
+    public static boolean hasRequiredRunes(Map<Runes, Integer> reqRunes) {
         return hasRequiredRunes(reqRunes, DEFAULT_RUNE_FILTER);
     }
 

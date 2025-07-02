@@ -14,12 +14,12 @@ import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spellbook;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
+import net.runelite.client.plugins.microbot.util.magic.Runes;
+import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -455,9 +455,16 @@ public class AstralRunesScript extends Script {
 
     private Integer initialRuneCount = null;
 
+    private static final RuneFilter INV_POUCH_FILTER = RuneFilter.builder()
+            .includeInventory(true)
+            .includeRunePouch(true)
+            .includeEquipment(false)
+            .includeComboRunes(false)
+            .includeBank(false)
+            .build();
     private void updateRuneStates() {
         // 1. tally all runes in inventory + pouch
-        final int currentCount = Rs2Inventory.itemQuantity(this.runeItemId) + Rs2RunePouch.getRunes().getOrDefault(this.runeItemId,0);
+        final int currentCount = Rs2Magic.getRunes(INV_POUCH_FILTER).getOrDefault(Runes.byItemId(runeItemId),0);
 
         if (initialRuneCount == null) {
             initialRuneCount = currentCount;

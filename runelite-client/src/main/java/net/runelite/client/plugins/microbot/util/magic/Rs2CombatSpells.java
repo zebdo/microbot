@@ -2,8 +2,6 @@ package net.runelite.client.plugins.microbot.util.magic;
 
 import lombok.Getter;
 import net.runelite.api.Skill;
-import net.runelite.api.Varbits;
-import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
@@ -202,7 +200,7 @@ public enum Rs2CombatSpells implements Spell {
 
     private final String name;
     private final MagicAction magicAction;
-    private final Map<Integer, Integer> requiredRunes;
+    private final Map<Runes, Integer> requiredRunes;
     private final Integer varbitValue; // Varbit 276
     private final Rs2Spellbook spellbook;
     private final int requiredLevel;
@@ -212,27 +210,25 @@ public enum Rs2CombatSpells implements Spell {
     }
 
     public boolean hasRequiredSpellbook() {
-        return Microbot.getVarbitValue(Varbits.SPELLBOOK) == getSpellbook().getValue();
+        return Rs2Magic.isSpellbook(getSpellbook());
     }
 
     private boolean hasRequirements() {
         return hasRequiredLevel() && hasRequiredSpellbook();
     }
 
-    Rs2CombatSpells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook)
-    {
+    Rs2CombatSpells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
         this.magicAction = magicAction;
-        this.requiredRunes = Spell.convertRequiredRunes(requiredRunes);
+        this.requiredRunes = requiredRunes;
         this.spellbook = spellbook;
         this.name = magicAction.getName();
         this.requiredLevel = magicAction.getLevel();
         this.varbitValue = ordinal() + 1;
     }
 
-    Rs2CombatSpells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook, int varbitValue)
-    {
+    Rs2CombatSpells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook, int varbitValue) {
         this.magicAction = magicAction;
-        this.requiredRunes = Spell.convertRequiredRunes(requiredRunes);
+        this.requiredRunes = requiredRunes;
         this.spellbook = spellbook;
         this.name = magicAction.getName();
         this.requiredLevel = magicAction.getLevel();

@@ -7,9 +7,9 @@ import java.util.stream.Collectors;
 
 public interface Spell {
     MagicAction getMagicAction();
-    Map<Integer, Integer>  getRequiredRunes();
-    default Map<Integer, Integer> getRequiredRunes(int casts) {
-        final Map<Integer, Integer> reqRunes = getRequiredRunes();
+    Map<Runes, Integer>  getRequiredRunes();
+    default Map<Runes, Integer> getRequiredRunes(int casts) {
+        final Map<Runes, Integer> reqRunes = getRequiredRunes();
         if (casts != 1) reqRunes.replaceAll((key, value) -> value * casts);
         return reqRunes;
     }

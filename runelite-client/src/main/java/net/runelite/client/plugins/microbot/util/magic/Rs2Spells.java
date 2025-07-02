@@ -675,7 +675,7 @@ public enum Rs2Spells implements Spell {
     ), Rs2Spellbook.ARCEUUS);
 
     private final MagicAction magicAction;
-    private final Map<Integer, Integer> requiredRunes;
+    private final Map<Runes, Integer> requiredRunes;
     private final Rs2Spellbook spellbook;
     
     public boolean hasRequiredLevel() {
@@ -692,7 +692,7 @@ public enum Rs2Spells implements Spell {
 
     Rs2Spells(MagicAction action, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
         this.magicAction = action;
-        this.requiredRunes = Spell.convertRequiredRunes(requiredRunes);
+        this.requiredRunes = requiredRunes;
         this.spellbook = spellbook;
     }
 
@@ -712,7 +712,6 @@ public enum Rs2Spells implements Spell {
      */
     public List<Runes> getElementalRunes() {
         return requiredRunes.keySet().stream()
-                .map(Runes::byItemId)
                 .filter(rune -> rune == Runes.AIR || rune == Runes.WATER || 
                         rune == Runes.EARTH || rune == Runes.FIRE)
                 .collect(Collectors.toList());
