@@ -8,6 +8,7 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 
 import javax.inject.Inject;
 import java.awt.*;
+import java.time.Duration;
 
 public class BreakHandlerOverlay extends OverlayPanel {
     private final BreakHandlerConfig config;
@@ -45,7 +46,7 @@ public class BreakHandlerOverlay extends OverlayPanel {
                         .build());
                 
                 // Show specific lock reason if it's manual lock vs plugin lock
-                if (BreakHandlerScript.lockState) {
+                if (BreakHandlerScript.lockState.get()) {
                     panelComponent.getChildren().add(LineComponent.builder()
                             .left("Reason: Manual Lock")
                             .leftColor(Color.ORANGE)
@@ -67,12 +68,12 @@ public class BreakHandlerOverlay extends OverlayPanel {
 
             if (BreakHandlerScript.breakIn > 0) {
                 panelComponent.getChildren().add(LineComponent.builder()
-                        .left((Rs2AntibanSettings.takeMicroBreaks && config.onlyMicroBreaks()) ? "Only Micro Breaks" : BreakHandlerScript.formatDuration(BreakHandlerScript.breakInDuration, "Break in:"))
+                        .left((Rs2AntibanSettings.takeMicroBreaks && config.onlyMicroBreaks()) ? "Only Micro Breaks" : BreakHandlerScript.formatDuration(Duration.ofSeconds(BreakHandlerScript.breakIn), "Break in:"))
                         .build());
             }
             if (BreakHandlerScript.breakDuration > 0) {
                 panelComponent.getChildren().add(LineComponent.builder()
-                        .left(BreakHandlerScript.formatDuration(BreakHandlerScript.duration, "Break duration:"))
+                        .left(BreakHandlerScript.formatDuration(Duration.ofSeconds(BreakHandlerScript.breakDuration), "Break duration:"))
                         .build());
             }
 

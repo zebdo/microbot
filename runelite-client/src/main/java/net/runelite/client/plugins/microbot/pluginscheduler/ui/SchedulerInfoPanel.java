@@ -523,12 +523,14 @@ public class SchedulerInfoPanel extends JPanel {
             updatePreviousPluginInfo();
             lastTrackedPreviousPlugin = previousPlugin;
         }
+        updatePreviousPluginInfo();
         
         // Update next plugin info only if it changed
         if (nextPlugin != lastTrackedNextPlugin) {
             updateNextPluginInfo();
             lastTrackedNextPlugin = nextPlugin;
         }
+        updateNextPluginInfo();
     }
     
     /**
