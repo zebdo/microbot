@@ -61,7 +61,9 @@ public class AutoSmeltingScript extends Script {
                     }
                     Rs2Player.waitForWalking();
                     sleep(600,1200);
-                    Rs2Bank.depositAllExcept(coalBag);
+                    if (!Rs2Player.isInMemberWorld()) {
+                        Rs2Bank.depositAll();
+                    } else if (Rs2Player.isMember()) Rs2Bank.depositAllExcept(coalBag);
                     if (config.SELECTED_BAR_TYPE().getId() == ItemID.IRON_BAR && Rs2Bank.hasItem(ItemID.RING_OF_FORGING) && !Rs2Equipment.isWearing(ItemID.RING_OF_FORGING)) {
                         Rs2Bank.withdrawAndEquip(ItemID.RING_OF_FORGING);
                         return;
@@ -87,13 +89,13 @@ public class AutoSmeltingScript extends Script {
                     boolean needsCoalBag = false;
 
                     for (int i : new int[]{ItemID.STEEL_BAR, ItemID.MITHRIL_BAR, ItemID.ADAMANTITE_BAR, ItemID.RUNITE_BAR}) {
-                        if (selectedBar == i) {
+                        if (selectedBar == i && Rs2Player.isInMemberWorld()) {
                             needsCoalBag = true;
                             break;
                         }
                     }
 
-                    if (needsCoalBag && Rs2Bank.hasItem(coalBag) && !Rs2Inventory.hasItem(coalBag)) {
+                    if (needsCoalBag && Rs2Bank.hasItem(coalBag) && !Rs2Inventory.hasItem(coalBag) && Rs2Player.isInMemberWorld()) {
                         Rs2Bank.withdrawItem(coalBag);
                         return;
                     }
@@ -102,7 +104,7 @@ public class AutoSmeltingScript extends Script {
                         Rs2Bank.depositItems(coalBag);
                         return;
                     }
-                    if ((coalBagEmpty || !hasBeenFilled) && Rs2Inventory.hasItem(coalBag)) {
+                    if ((coalBagEmpty || !hasBeenFilled) && Rs2Inventory.hasItem(coalBag) && Rs2Player.isInMemberWorld()) {
                         handleCoalBag();
                     }
                     withdrawRightAmountOfMaterials(config);
