@@ -18,7 +18,6 @@ import javax.inject.Inject;
 import java.awt.*;
 
 
-
 @PluginDescriptor(
         name = "<html>[<font color=#00ffff>§</font>] " + "BlastoiseFurnace",
         description = "Storm's test plugin",
@@ -45,6 +44,7 @@ public class BlastoiseFurnacePlugin extends Plugin {
 
     @Override
     protected void startUp() throws AWTException {
+        BlastoiseFurnaceScript.init = false;
         if (overlayManager != null) {
             overlayManager.add(BlastoiseFurnaceOverlay);
         }
@@ -105,6 +105,7 @@ public class BlastoiseFurnacePlugin extends Plugin {
 
     }
     protected void shutDown() {
+        BlastoiseFurnaceScript.init = false;
         BlastoiseFurnaceScript.shutdown();
         overlayManager.remove(BlastoiseFurnaceOverlay);
     }
