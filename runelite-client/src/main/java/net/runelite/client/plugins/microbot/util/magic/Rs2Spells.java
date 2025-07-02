@@ -674,9 +674,11 @@ public enum Rs2Spells implements Spell {
             Runes.SOUL, 1
     ), Rs2Spellbook.ARCEUUS);
 
+    private final String name;
     private final MagicAction magicAction;
     private final Map<Runes, Integer> requiredRunes;
     private final Rs2Spellbook spellbook;
+    private final int requiredLevel;
     
     public boolean hasRequiredLevel() {
         return Rs2Player.getSkillRequirement(Skill.MAGIC, getRequiredLevel());
@@ -690,18 +692,12 @@ public enum Rs2Spells implements Spell {
         return hasRequiredLevel() && hasRequiredSpellbook();
     }
 
-    Rs2Spells(MagicAction action, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
-        this.magicAction = action;
+    Rs2Spells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
+        this.magicAction = magicAction;
         this.requiredRunes = requiredRunes;
         this.spellbook = spellbook;
-    }
-
-    public String getName() {
-        return magicAction.getName();
-    }
-
-    public int getRequiredLevel() {
-        return magicAction.getLevel();
+        this.name = magicAction.getName();
+        this.requiredLevel = magicAction.getLevel();
     }
     
     /**
