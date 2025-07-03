@@ -6,11 +6,22 @@ import net.runelite.client.plugins.microbot.Script;
 
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.handlers.*;
+import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 
 import java.util.*;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class moonsOfPerilScript extends Script {
+
+    ScheduledFuture<?> getMainScheduledFuture() {
+        return mainScheduledFuture;
+    }
+    
+    public Rs2InventorySetup bloodEquipment;
+    public Rs2InventorySetup blueEquipment;
+    public Rs2InventorySetup eclipseEquipment;
+    public Rs2InventorySetup eclipseClones;
 
     @Getter
     private State state = State.IDLE;
@@ -20,6 +31,12 @@ public class moonsOfPerilScript extends Script {
     private final Map<State, BaseHandler> handlers = new EnumMap<>(State.class);
 
     public boolean run(moonsOfPerilConfig config) {
+
+        this.bloodEquipment = new Rs2InventorySetup(config.bloodEquipmentNormal(), getMainScheduledFuture());
+        this.blueEquipment = new Rs2InventorySetup(config.blueEquipmentNormal(), getMainScheduledFuture());
+        this.eclipseEquipment = new Rs2InventorySetup(config.eclipseEquipmentNormal(), getMainScheduledFuture());
+        this.eclipseClones = new Rs2InventorySetup(config.eclipseEquipmentClones(), getMainScheduledFuture());
+
         initHandlers(config);
 
         Microbot.enableAutoRunOn = false;

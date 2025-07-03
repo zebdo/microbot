@@ -12,7 +12,6 @@ import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
-import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -39,9 +38,7 @@ public class BlueMoonHandler implements BaseHandler {
     private static final WorldPoint[] ATTACK_TILES = Locations.blueAttackTiles();
     private static final WorldPoint AFTER_TORNADO = Locations.BLUE_ATTACK_1.getWorldPoint();
     private final int sigilNpcID = GameObjects.SIGIL_NPC_ID.getID();
-    private final int bossNpcID = NpcID.PMOON_BOSS_BLUE_MOON_VIS;
     private final Rs2InventorySetup equipmentNormal;
-    private final moonsOfPerilScript script;
     private final moonsOfPerilConfig cfg;
     private final boolean enableBoss;
     private final BossHandler boss;
@@ -49,8 +46,7 @@ public class BlueMoonHandler implements BaseHandler {
 
     public BlueMoonHandler(moonsOfPerilConfig cfg, moonsOfPerilScript script) {
         this.cfg = cfg;
-        this.script = script;
-        this.equipmentNormal = new Rs2InventorySetup(cfg.blueEquipmentNormal(), script.mainScheduledFuture);
+        this.equipmentNormal = script.blueEquipment;
         this.enableBoss = cfg.enableBlue();
         this.boss = new BossHandler(cfg);
         this.debugLogging = cfg.debugLogging();
@@ -73,6 +69,7 @@ public class BlueMoonHandler implements BaseHandler {
             boss.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
             sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID),5_000);
         }
+        int bossNpcID = NpcID.PMOON_BOSS_BLUE_MOON_VIS;
         while (Rs2Widget.isWidgetVisible(bossHealthBarWidgetID) || Rs2Npc.getNpc(bossNpcID) != null) {
             if (isSpecialAttack1Sequence()) {
                 specialAttack1Sequence();
