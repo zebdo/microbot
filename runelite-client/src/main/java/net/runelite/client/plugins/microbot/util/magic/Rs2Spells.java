@@ -693,7 +693,7 @@ public enum Rs2Spells implements Spell {
         return hasRequiredLevel() && hasRequiredSpellbook();
     }
 
-	Rs2Spells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
+    Rs2Spells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
         this.magicAction = magicAction;
         this.requiredRunes = requiredRunes;
         this.spellbook = spellbook;

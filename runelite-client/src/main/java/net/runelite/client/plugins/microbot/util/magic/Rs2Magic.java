@@ -507,7 +507,7 @@ public class Rs2Magic {
     }
 
     public static Map<Runes, Integer> getRequiredRunes(Spell spell) {
-        return getRequiredRunes(spell, 1);
+        return spell.getRequiredRunes();
     }
 
     /**
@@ -523,8 +523,8 @@ public class Rs2Magic {
         if (reqRunes.isEmpty()) return reqRunes;
 
         final Map<Runes, Integer> runes = getRunes(runeFilter);
-		reqRunes.replaceAll((key, value) -> Math.max(0,value-runes.getOrDefault(key, 0)));
-		reqRunes.keySet().removeIf(e -> reqRunes.get(e) <= 0);
+        reqRunes.replaceAll((key, value) -> Math.max(0,value-runes.getOrDefault(key, 0)));
+        reqRunes.keySet().removeIf(e -> reqRunes.get(e) <= 0);
 
         return reqRunes;
     }
