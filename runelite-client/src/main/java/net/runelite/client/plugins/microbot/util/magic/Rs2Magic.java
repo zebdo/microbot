@@ -522,11 +522,13 @@ public class Rs2Magic {
     public static Map<Runes, Integer> getMissingRunes(Map<Runes, Integer> reqRunes, RuneFilter runeFilter) {
         if (reqRunes.isEmpty()) return reqRunes;
 
-        final Map<Runes, Integer> runes = getRunes(runeFilter);
-        reqRunes.replaceAll((key, value) -> Math.max(0,value-runes.getOrDefault(key, 0)));
-        reqRunes.keySet().removeIf(e -> reqRunes.get(e) <= 0);
+		final Map<Runes, Integer> mutableReqRunes = new HashMap<>(reqRunes);
 
-        return reqRunes;
+        final Map<Runes, Integer> runes = getRunes(runeFilter);
+		mutableReqRunes.replaceAll((key, value) -> Math.max(0,value-runes.getOrDefault(key, 0)));
+		mutableReqRunes.keySet().removeIf(e -> mutableReqRunes.get(e) <= 0);
+
+        return mutableReqRunes;
     }
 
     public static Map<Runes, Integer> getMissingRunes(Map<Runes, Integer> reqRunes) {
