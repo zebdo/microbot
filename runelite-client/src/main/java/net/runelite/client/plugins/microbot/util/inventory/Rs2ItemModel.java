@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.util.inventory;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.gameval.ItemID;
@@ -12,6 +13,8 @@ import net.runelite.client.plugins.microbot.Microbot;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+
 @Slf4j
 public class Rs2ItemModel {
     @Getter
@@ -311,5 +314,24 @@ public class Rs2ItemModel {
         
         sb.append("}");
         return sb.toString();
+    }
+
+    public static boolean matches(Rs2ItemModel item, boolean exact, String... names) {
+        if (item.getName() == null) return false;
+        final String itemName = item.getName().toLowerCase();
+        return Arrays.stream(names).filter(Objects::nonNull).anyMatch(exact ?
+                name -> itemName.equals(name.toLowerCase()) :
+                name -> itemName.contains(name.toLowerCase())
+        );
+    }
+
+    public static boolean matches(Rs2ItemModel item, int... ids) {
+        final int itemId = item.getId();
+        return Arrays.stream(ids).anyMatch(id -> id == itemId);
+    }
+
+    public static boolean matches(Rs2ItemModel item, EquipmentInventorySlot... slots) {
+        final int itemSlot = item.getSlot();
+        return Arrays.stream(slots).map(EquipmentInventorySlot::getSlotIdx).anyMatch(slot -> itemSlot == slot);
     }
 }
