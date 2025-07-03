@@ -571,10 +571,10 @@ public class revKillerScript extends Script {
             logBackIn();
             shouldFlee = false;
             return;
-        }
-
-        if(isPkerAround() && Microbot.isLoggedIn()) {
-            getAwayFromPker();
+        } else {
+            if(isPkerAround() && Microbot.isLoggedIn()) {
+                getAwayFromPker();
+            }
         }
 
         shouldFlee = false;
