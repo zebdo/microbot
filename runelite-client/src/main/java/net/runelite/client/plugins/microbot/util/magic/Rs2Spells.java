@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.util.magic;
 
+import java.util.HashMap;
 import lombok.Getter;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -692,7 +693,13 @@ public enum Rs2Spells implements Spell {
         return hasRequiredLevel() && hasRequiredSpellbook();
     }
 
-    Rs2Spells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
+	@Override
+	public Map<Runes, Integer> getRequiredRunes()
+	{
+		return new HashMap<>(requiredRunes);
+	}
+
+	Rs2Spells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
         this.magicAction = magicAction;
         this.requiredRunes = requiredRunes;
         this.spellbook = spellbook;
