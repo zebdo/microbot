@@ -107,6 +107,7 @@ public class revKillerScript extends Script {
                 if(shouldFlee){
                     if(weDied){
                         shouldFlee = false;
+                        Rs2Walker.setTarget(null);
                     }
                     return;
                 }
@@ -572,10 +573,12 @@ public class revKillerScript extends Script {
             return;
         }
 
-        if(Rs2Combat.inCombat() && Microbot.isLoggedIn()) {
+        if(isPkerAround() && Microbot.isLoggedIn()) {
             getAwayFromPker();
         }
+
         shouldFlee = false;
+        Rs2Walker.setTarget(null);
     }
 
     public void logBackIn(){
@@ -687,6 +690,7 @@ public class revKillerScript extends Script {
             Rs2Walker.walkTo(BankLocation.FEROX_ENCLAVE.getWorldPoint());
             Rs2Prayer.disableAllPrayers();
             shouldFlee = false;
+            Rs2Walker.setTarget(null);
         }
     }
 
@@ -1119,10 +1123,11 @@ public class revKillerScript extends Script {
 
             howtobank = generateRandomNumber(0,100);
             //equip arrows
-            if(howtobank <= 40){
+            if(howtobank <= 60){
+                Microbot.log("Grabbing ammo");
                 if(Rs2Equipment.get(EquipmentInventorySlot.AMMO) == null || Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity() < LowOnArrowsCount){
                     if(Rs2Bank.count(selectedArrow)>100){
-                        if(!Rs2Inventory.contains(selectedArrow)||Rs2Equipment.get(EquipmentInventorySlot.AMMO) == null || Rs2Inventory.get(selectedArrow).getQuantity() < LowOnArrowsCount){
+                        if(!Rs2Inventory.contains(selectedArrow)){
                             int min = 250;
                             int max = 300;
                             if(selectedArrow == ItemID.BOLT_RACK){
@@ -1133,10 +1138,7 @@ public class revKillerScript extends Script {
                                     super.shutdown();
                                 }
                             }
-                            int amt = (generateRandomNumber(min,max)-Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity());
-                            if(amt <= 0){
-                                amt=generateRandomNumber(min,max);
-                            }
+                            int amt = (generateRandomNumber(min,max));
                             if(Rs2Bank.withdrawX(selectedArrow, amt)){
                                 sleepUntil(()-> Rs2Inventory.contains(selectedArrow), generateRandomNumber(5000,15000));
                             }
