@@ -503,7 +503,7 @@ public class Rs2Magic {
      * and the value is an {@link Integer} representing the quantity of that runes required
      */
     public static Map<Runes, Integer> getRequiredRunes(Spell spell, int casts) {
-        return spell.getRequiredRunes(casts);
+        return new HashMap<>(spell.getRequiredRunes());
     }
 
     public static Map<Runes, Integer> getRequiredRunes(Spell spell) {
@@ -522,13 +522,11 @@ public class Rs2Magic {
     public static Map<Runes, Integer> getMissingRunes(Map<Runes, Integer> reqRunes, RuneFilter runeFilter) {
         if (reqRunes.isEmpty()) return reqRunes;
 
-		final Map<Runes, Integer> mutableReqRunes = new HashMap<>(reqRunes);
-
         final Map<Runes, Integer> runes = getRunes(runeFilter);
-		mutableReqRunes.replaceAll((key, value) -> Math.max(0,value-runes.getOrDefault(key, 0)));
-		mutableReqRunes.keySet().removeIf(e -> mutableReqRunes.get(e) <= 0);
+		reqRunes.replaceAll((key, value) -> Math.max(0,value-runes.getOrDefault(key, 0)));
+		reqRunes.keySet().removeIf(e -> reqRunes.get(e) <= 0);
 
-        return mutableReqRunes;
+        return reqRunes;
     }
 
     public static Map<Runes, Integer> getMissingRunes(Map<Runes, Integer> reqRunes) {
