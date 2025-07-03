@@ -10,6 +10,8 @@ import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
+import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
+import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -39,18 +41,18 @@ public class BloodMoonHandler implements BaseHandler {
     private final int bossNpcID = NpcID.PMOON_BOSS_BLOOD_MOON_VIS;
     private final int sigilNpcID = GameObjects.SIGIL_NPC_ID.getID();
     private final boolean enableBoss;
-    private final String weaponMain;
-    private final String shield;
+    private final Rs2InventorySetup equipmentNormal;
+    private final moonsOfPerilScript script;
     private static final WorldPoint afterRainTile = Locations.BLOOD_ATTACK_6.getWorldPoint();
     private int bloodPoolTick = -1;
     public boolean arrived = false;
     private final BossHandler boss;
     private final boolean debugLogging;
 
-    public BloodMoonHandler(moonsOfPerilConfig cfg) {
+    public BloodMoonHandler(moonsOfPerilConfig cfg, moonsOfPerilScript script) {
         this.enableBoss = cfg.enableEclipse();
-        this.weaponMain = cfg.bloodWeaponMain();
-        this.shield = cfg.bloodShield();
+        this.script = script;
+        this.equipmentNormal = new Rs2InventorySetup(cfg.bloodEquipmentNormal(), script.mainScheduledFuture);
         this.boss = new BossHandler(cfg);
         this.debugLogging = cfg.debugLogging();
     }
@@ -66,8 +68,8 @@ public class BloodMoonHandler implements BaseHandler {
     @Override
     public State execute() {
         if (!Rs2Widget.isWidgetVisible(bossHealthBarWidgetID)) {
-            boss.walkToBoss(bossName, bossLobbyLocation);
-            boss.fightPreparation(weaponMain, shield);
+            boss.walkToBoss(equipmentNormal, bossName, bossLobbyLocation);
+            boss.fightPreparation(equipmentNormal);
             boss.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
             sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID), 5_000);
         }
@@ -80,7 +82,7 @@ public class BloodMoonHandler implements BaseHandler {
                 specialAttack2Sequence();
             }
             else if (BossHandler.isNormalAttackSequence(sigilNpcID)) {
-                boss.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, weaponMain, shield);
+                boss.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, equipmentNormal);
             }
             sleep(300);
         }

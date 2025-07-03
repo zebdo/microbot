@@ -9,6 +9,8 @@ import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
+import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
+import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.coords.Rs2LocalPoint;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -37,17 +39,17 @@ public class EclipseMoonHandler implements BaseHandler {
     private static final WorldPoint[] ATTACK_TILES = Locations.eclipseAttackTiles();
     private final int sigilNpcID = GameObjects.SIGIL_NPC_ID.getID();
     private final int bossNpcID = NpcID.PMOON_BOSS_ECLIPSE_MOON_VIS;
-    private final String weaponMain;
-    private final String shield;
-    private final String weaponClones;
+    private final Rs2InventorySetup equipmentNormal;
+    private final Rs2InventorySetup equipmentClones;
+    private final moonsOfPerilScript script;
     private final boolean enableBoss;
     private final BossHandler boss;
     private final boolean debugLogging;
 
-    public EclipseMoonHandler(moonsOfPerilConfig cfg) {
-        this.weaponMain = cfg.eclipseWeaponMain();
-        this.shield = cfg.eclipseShield();
-        this.weaponClones = cfg.eclipseWeaponClones();
+    public EclipseMoonHandler(moonsOfPerilConfig cfg, moonsOfPerilScript script) {
+        this.script = script;
+        this.equipmentNormal = new Rs2InventorySetup(cfg.eclipseEquipmentNormal(), script.mainScheduledFuture);
+        this.equipmentClones = new Rs2InventorySetup(cfg.eclipseEquipmentClones(), script.mainScheduledFuture);
         this.enableBoss = cfg.enableEclipse();
         this.boss = new BossHandler(cfg);
         this.debugLogging = cfg.debugLogging();
@@ -64,8 +66,8 @@ public class EclipseMoonHandler implements BaseHandler {
     @Override
     public State execute() {
         if (!Rs2Widget.isWidgetVisible(bossHealthBarWidgetID)) {
-            boss.walkToBoss(bossName, bossLobbyLocation);
-            boss.fightPreparation(weaponMain, shield);
+            boss.walkToBoss(equipmentNormal, bossName, bossLobbyLocation);
+            boss.fightPreparation(equipmentNormal);
             boss.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
             sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID), 5_000);
         }
@@ -77,7 +79,7 @@ public class EclipseMoonHandler implements BaseHandler {
                 specialAttack2Sequence();
             }
             else if (BossHandler.isNormalAttackSequence(sigilNpcID)) {
-                boss.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, weaponMain, shield);
+                boss.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, equipmentNormal);
             }
             sleep(300);
         }
@@ -171,7 +173,7 @@ public class EclipseMoonHandler implements BaseHandler {
             if (debugLogging) {Microbot.log("Player located on center tile and knock back animation – entering Special Attack 2");}
             sleepUntil(() -> Rs2Player.getAnimation() != AnimationID.HUMAN_TROLL_FLYBACK_MERGE);
             if (debugLogging) {Microbot.log("Knockback animation stopped. Clones are about to spawn");}
-            boss.equipWeapons(weaponClones, null);
+            boss.equipInventorySetup(equipmentClones);
             boss.eatIfNeeded();
             boss.drinkIfNeeded();
             BossHandler.meleePrayerOn();
@@ -180,7 +182,7 @@ public class EclipseMoonHandler implements BaseHandler {
 
         // 2. Captures the conditions required if we spawn into the arena midway through the special attack phase.
         if (playerTile.equals(center) && bossNPC != null && Rs2Npc.getNpc(sigilNpcID) == null && !bossNPC.getLocalLocation().equals(Rs2LocalPoint.fromWorldInstance(center))) {
-            boss.equipWeapons(weaponClones, null);
+            boss.equipInventorySetup(equipmentClones);
             BossHandler.meleePrayerOn();
             return true;
         }

@@ -5,8 +5,8 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
+import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -14,7 +14,6 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
-import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 
 
@@ -36,7 +35,8 @@ public final class BossHandler {
     }
 
     /** Walks to the chosen boss lobby. */
-    public void walkToBoss(String bossName, WorldPoint bossWorldPoint) {
+    public void walkToBoss(Rs2InventorySetup inventorySetup, String bossName, WorldPoint bossWorldPoint) {
+        equipInventorySetup(inventorySetup);
         if (debugLogging) {Microbot.log("Walking to " + bossName + " lobby");}
         Rs2Walker.walkWithState(bossWorldPoint, 0);
         sleep(600);
@@ -75,8 +75,8 @@ public final class BossHandler {
      * 2. Eats food if required
      * 3. Drinks potions if required
      * 4. Turns on Player's best offensive melee prayer*/
-    public void fightPreparation(String weaponMain, String shield) {
-        equipWeapons(weaponMain, shield);
+    public void fightPreparation(Rs2InventorySetup inventorySetup) {
+        equipInventorySetup(inventorySetup);
         sleep(600);
         eatIfNeeded();
         sleep(600);
@@ -86,30 +86,11 @@ public final class BossHandler {
     }
 
     /**
-     * Equip the main-hand weapon, and the shield only if one is supplied.
-     * Pass null (or "") for shield when you don’t want to equip anything there.
+     * Equips the inventory setup.
      */
-    public void equipWeapons(String weaponMain, String shield)
-    {
-        boolean hasShield = shield != null && !shield.isEmpty();
-        String[] needed   = hasShield
-                ? new String[] { weaponMain, shield }
-                : new String[] { weaponMain };
-
-        if (Rs2Equipment.isWearing(
-                java.util.Arrays.asList(needed),          // no import needed
-                false,
-                java.util.Collections.emptyList()))
-        {
-            return;
-        }
-
-        if (Rs2Inventory.wield(weaponMain)) {
-            if (debugLogging) {Microbot.log(weaponMain + " is now equipped");}
-        }
-
-        if (hasShield && Rs2Inventory.wield(shield)) {
-            if (debugLogging) {Microbot.log(shield + " is now equipped");}
+    public void equipInventorySetup(Rs2InventorySetup inventorySetup) {
+        if (!inventorySetup.doesEquipmentMatch()) {
+            inventorySetup.wearEquipment();
         }
     }
 
@@ -153,13 +134,13 @@ public final class BossHandler {
      */
     public void normalAttackSequence(int sigilNpcID,
                                             int bossNpcID,
-                                            WorldPoint[] attackTiles, String Weapon, String Shield)
+                                            WorldPoint[] attackTiles, Rs2InventorySetup inventorySetup)
     {
         if (debugLogging) {Microbot.log("Script has entered the normal attack sequence loop");}
         WorldPoint lastSigilSW = null;
         WorldPoint currentTarget = null;
         int sigilMoves = 0;
-        equipWeapons(Weapon, Shield);
+        equipInventorySetup(inventorySetup);
         sleep(150);
         meleePrayerOn();
         Rs2Player.toggleRunEnergy(true);

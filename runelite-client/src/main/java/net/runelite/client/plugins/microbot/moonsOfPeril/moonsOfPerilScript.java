@@ -53,9 +53,9 @@ public class moonsOfPerilScript extends Script {
     private void initHandlers(moonsOfPerilConfig cfg) {
         handlers.put(State.IDLE,        new IdleHandler(cfg));
         handlers.put(State.RESUPPLY,    new ResupplyHandler(cfg));
-        handlers.put(State.ECLIPSE_MOON,new EclipseMoonHandler(cfg));
-        handlers.put(State.BLUE_MOON,   new BlueMoonHandler(cfg));
-        handlers.put(State.BLOOD_MOON,  new BloodMoonHandler(cfg));
+        handlers.put(State.ECLIPSE_MOON,new EclipseMoonHandler(cfg, this));
+        handlers.put(State.BLUE_MOON,   new BlueMoonHandler(cfg, this));
+        handlers.put(State.BLOOD_MOON,  new BloodMoonHandler(cfg, this));
         handlers.put(State.REWARDS,     new RewardHandler(cfg));
         handlers.put(State.DEATH,       new DeathHandler(cfg));
     }

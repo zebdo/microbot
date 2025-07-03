@@ -9,6 +9,8 @@ import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
+import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
+import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -38,15 +40,17 @@ public class BlueMoonHandler implements BaseHandler {
     private static final WorldPoint AFTER_TORNADO = Locations.BLUE_ATTACK_1.getWorldPoint();
     private final int sigilNpcID = GameObjects.SIGIL_NPC_ID.getID();
     private final int bossNpcID = NpcID.PMOON_BOSS_BLUE_MOON_VIS;
-    private final String weaponMain;
-    private final String shield;
+    private final Rs2InventorySetup equipmentNormal;
+    private final moonsOfPerilScript script;
+    private final moonsOfPerilConfig cfg;
     private final boolean enableBoss;
     private final BossHandler boss;
     private final boolean debugLogging;
 
-    public BlueMoonHandler(moonsOfPerilConfig cfg) {
-        this.weaponMain = cfg.blueWeaponMain();
-        this.shield = cfg.blueShield();
+    public BlueMoonHandler(moonsOfPerilConfig cfg, moonsOfPerilScript script) {
+        this.cfg = cfg;
+        this.script = script;
+        this.equipmentNormal = new Rs2InventorySetup(cfg.blueEquipmentNormal(), script.mainScheduledFuture);
         this.enableBoss = cfg.enableBlue();
         this.boss = new BossHandler(cfg);
         this.debugLogging = cfg.debugLogging();
@@ -64,8 +68,8 @@ public class BlueMoonHandler implements BaseHandler {
     @Override
     public State execute() {
         if (!Rs2Widget.isWidgetVisible(bossHealthBarWidgetID)) {
-            boss.walkToBoss(bossName, bossLobbyLocation);
-            boss.fightPreparation(weaponMain, shield);
+            boss.walkToBoss(equipmentNormal, bossName, bossLobbyLocation);
+            boss.fightPreparation(equipmentNormal);
             boss.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
             sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID),5_000);
         }
@@ -74,10 +78,10 @@ public class BlueMoonHandler implements BaseHandler {
                 specialAttack1Sequence();
             }
             else if (isSpecialAttack2Sequence()) {
-                specialAttack2Sequence();
+                specialAttack2Sequence(this.cfg);
             }
             else if (BossHandler.isNormalAttackSequence(sigilNpcID)) {
-                boss.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, weaponMain, shield);
+                boss.normalAttackSequence(sigilNpcID, bossNpcID, ATTACK_TILES, equipmentNormal);
             }
             sleep(300);
         }
@@ -122,7 +126,7 @@ public class BlueMoonHandler implements BaseHandler {
     }
 
     /**  Blue Moon – Special Attack 2  (“weapon-freeze / icicle smash”)  */
-    public void specialAttack2Sequence()
+    public void specialAttack2Sequence(moonsOfPerilConfig cfg)
     {
         final int  ICICLE_NPC_ID    = NpcID.PMOON_BOSS_ICICLE_UNCRACKED;
         final int  ICICLE_ANIM_ID   = AnimationID.VFX_DJINN_BLUE_ICE_BLOCK_IDLE_02;
@@ -168,7 +172,8 @@ public class BlueMoonHandler implements BaseHandler {
         if (debugLogging) {Microbot.log(ts.get() + "Entering attack-and-dodge loop (timeout " + PHASE_TIMEOUT_MS + " ms)");}
         Rs2Prayer.disableAllPrayers();
 
-        while (!Rs2Equipment.isWearing(weaponMain) &&
+        Rs2InventorySetup invSetup = equipmentNormal;
+        while (!invSetup.doesEquipmentMatch() &&
                 System.currentTimeMillis() - phaseStart < PHASE_TIMEOUT_MS)
         {
             if (!Rs2Combat.inCombat()) {
@@ -176,8 +181,8 @@ public class BlueMoonHandler implements BaseHandler {
                 }
             WorldPoint attackTile = Rs2Player.getWorldLocation();
             if (debugLogging) {Microbot.log(ts.get() + "Attack location calculated as: " + attackTile);}
-            sleepUntil(() -> BossHandler.inDanger(attackTile) || Rs2Equipment.isWearing(weaponMain),3_000);
-            if (Rs2Equipment.isWearing(weaponMain)) {
+            sleepUntil(() -> BossHandler.inDanger(attackTile) || invSetup.doesEquipmentMatch(),3_000);
+            if (invSetup.doesEquipmentMatch()) {
                 break;
             }
             if (BossHandler.inDanger(attackTile)) {

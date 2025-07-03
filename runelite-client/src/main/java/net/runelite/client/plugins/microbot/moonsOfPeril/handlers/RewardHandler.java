@@ -48,7 +48,7 @@ public class RewardHandler implements BaseHandler {
 
     @Override
     public State execute() {
-        boss.walkToBoss("Rewards Chest", rewardChestLocation);
+        boss.walkToBoss(null, "Rewards Chest", rewardChestLocation);
         if (Rs2GameObject.interact(lunarChestGameObjectID, "Claim")) {
             if (debugLogging) {Microbot.log("Successfully claimed rewards from Lunar Chest");}
             rewardChestCount.incrementAndGet();

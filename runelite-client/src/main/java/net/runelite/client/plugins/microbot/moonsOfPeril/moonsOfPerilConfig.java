@@ -4,6 +4,7 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
+import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 
 @ConfigGroup("perilousMoons")
 public interface moonsOfPerilConfig extends Config {
@@ -125,41 +126,28 @@ public interface moonsOfPerilConfig extends Config {
     default boolean enableEclipse() { return true; }
 
     @ConfigItem(
-            keyName = "eclipseWeaponMain",
-            name = "Eclipse - Main Weapon",
-            description = "The exact name of the weapon to wield during the Eclipse Moon normal attack sequence",
+            keyName = "eclipseEquipmentNormal",
+            name = "Eclipse - Normal Setup",
+            description = "The InventorySetup to use during the Eclipse Moon normal attack sequence",
             position = 1,
             section = eclipseMoonSection
     )
-    default String eclipseWeaponMain()
+    default InventorySetup eclipseEquipmentNormal()
     {
-        return "";
-    };
+        return null;
+    }
 
     @ConfigItem(
-            keyName = "eclipseShield",
-            name = "Eclipse - Shield",
-            description = "Leave blank if main weapon is 2-handed. The exact name of the shield wield during the Eclipse Moon normal attack sequence",
+            keyName = "eclipseEquipmentClones",
+            name = "Eclipse - Clones Setup",
+            description = "The InventorySetup to use during the Eclipse Moon Clones attack sequence",
             position = 2,
             section = eclipseMoonSection
     )
 
-    default String eclipseShield()
+    default InventorySetup eclipseEquipmentClones()
     {
-        return "";
-    };
-
-    @ConfigItem(
-            keyName = "eclipseWeaponClones",
-            name = "Eclipse - Clones Weapon",
-            description = "The exact name of the equipment to  wield during the Eclipse Moon Clones attack sequence",
-            position = 3,
-            section = eclipseMoonSection
-    )
-
-    default String eclipseWeaponClones()
-    {
-        return "";
+        return null;
     }
 
     @ConfigItem(
@@ -172,29 +160,16 @@ public interface moonsOfPerilConfig extends Config {
     default boolean enableBlue() { return true; }
 
     @ConfigItem(
-            keyName = "blueWeaponMain",
-            name = "Blue - Main Weapon",
-            description = "The exact name of the weapon to wield during the Blue Moon normal attack sequence",
+            keyName = "blueEquipmentNormal",
+            name = "Blue - Normal Setup",
+            description = "The InventorySetup to use during the Blue Moon normal attack sequence",
             position = 1,
             section = blueMoonSection
     )
-    default String blueWeaponMain()
+    default InventorySetup blueEquipmentNormal()
     {
-        return "";
-    };
-
-    @ConfigItem(
-            keyName = "blueShield",
-            name = "Blue - Shield",
-            description = "Leave blank if main weapon is 2-handed. The exact name of the shield wield during the Blue Moon normal attack sequence",
-            position = 2,
-            section = blueMoonSection
-    )
-
-    default String blueShield()
-    {
-        return "";
-    };
+        return null;
+    }
 
     @ConfigItem(
             keyName  = "enableBlood",
@@ -206,28 +181,14 @@ public interface moonsOfPerilConfig extends Config {
     default boolean enableBlood() { return true; }
 
     @ConfigItem(
-            keyName = "bloodWeaponMain",
-            name = "Blood - Main Weapon",
-            description = "The exact name of the weapon to wield during the Blood Moon normal attack sequence",
+            keyName = "bloodEquipmentNormal",
+            name = "Blood - Normal Setup",
+            description = "The InventorySetup to use during the Blood Moon normal attack sequence",
             position = 1,
             section = bloodMoonSection
     )
-    default String bloodWeaponMain()
+    default InventorySetup bloodEquipmentNormal()
     {
-        return "";
-    };
-
-    @ConfigItem(
-            keyName = "bloodShield",
-            name = "Blood - Shield",
-            description = "Leave blank if main weapon is 2-handed. The exact name of the shield wield during the Blood Moon normal attack sequence",
-            position = 2,
-            section = bloodMoonSection
-    )
-
-    default String bloodShield()
-    {
-        return "";
-    };
-
+        return null;
+    }
 }
