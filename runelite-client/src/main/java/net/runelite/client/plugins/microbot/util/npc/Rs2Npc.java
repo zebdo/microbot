@@ -913,7 +913,7 @@ public class Rs2Npc {
      *
      * @param npc The {@link NPC} whose world location is to be retrieved.
      * @return The {@link WorldPoint} representing the NPC's world location.
-     * @deprecated Since 1.7.2 - Use {@link Rs2NpcModel#getWorldLocation()} instead.
+         * @deprecated Since 1.7.2 - Use {@link Rs2NpcModel#getWorldLocation()} instead.
      */
     @Deprecated(since = "1.7.2", forRemoval = true)
     public static WorldPoint getWorldLocation(NPC npc) {
