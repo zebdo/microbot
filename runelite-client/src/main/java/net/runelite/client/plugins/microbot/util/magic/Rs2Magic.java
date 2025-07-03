@@ -503,7 +503,7 @@ public class Rs2Magic {
      * and the value is an {@link Integer} representing the quantity of that runes required
      */
     public static Map<Runes, Integer> getRequiredRunes(Spell spell, int casts) {
-        return new HashMap<>(spell.getRequiredRunes());
+        return new HashMap<>(spell.getRequiredRunes(casts));
     }
 
     public static Map<Runes, Integer> getRequiredRunes(Spell spell) {
