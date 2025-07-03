@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.util.magic;
 
+import java.util.HashMap;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import java.util.Map;
@@ -9,7 +10,7 @@ public interface Spell {
     MagicAction getMagicAction();
     Map<Runes, Integer>  getRequiredRunes();
     default Map<Runes, Integer> getRequiredRunes(int casts) {
-        final Map<Runes, Integer> reqRunes = getRequiredRunes();
+        final Map<Runes, Integer> reqRunes = new HashMap<>(getRequiredRunes());
         if (casts != 1) reqRunes.replaceAll((key, value) -> value * casts);
         return reqRunes;
     }

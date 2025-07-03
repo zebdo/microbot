@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.util.magic;
 
+import java.util.HashMap;
 import lombok.Getter;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
