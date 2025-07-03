@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.util.magic;
 
+import java.util.HashMap;
 import lombok.Getter;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -233,5 +234,10 @@ public enum Rs2CombatSpells implements Spell {
         this.name = magicAction.getName();
         this.requiredLevel = magicAction.getLevel();
         this.varbitValue = varbitValue;
+    }
+
+    @Override
+    public HashMap<Runes, Integer> getRequiredRunes() {
+        return new HashMap<>(requiredRunes);
     }
 }
