@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.moonsOfPeril;
 
+import javax.inject.Inject;
 import lombok.Getter;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -13,31 +14,33 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class moonsOfPerilScript extends Script {
-
-    ScheduledFuture<?> getMainScheduledFuture() {
-        return mainScheduledFuture;
-    }
     
-    public Rs2InventorySetup bloodEquipment;
-    public Rs2InventorySetup blueEquipment;
-    public Rs2InventorySetup eclipseEquipment;
-    public Rs2InventorySetup eclipseClones;
+	private Rs2InventorySetup bloodEquipment;
+	private Rs2InventorySetup blueEquipment;
+	private Rs2InventorySetup eclipseEquipment;
+	private Rs2InventorySetup eclipseClones;
 
     @Getter
     private State state = State.IDLE;
     public static boolean test = false;
     public static volatile State CURRENT_STATE = State.IDLE;
+	private final moonsOfPerilConfig config;
 
     private final Map<State, BaseHandler> handlers = new EnumMap<>(State.class);
 
-    public boolean run(moonsOfPerilConfig config) {
+	@Inject
+	public moonsOfPerilScript(moonsOfPerilConfig config) {
+		this.config = config;
+	}
 
-        this.bloodEquipment = new Rs2InventorySetup(config.bloodEquipmentNormal(), getMainScheduledFuture());
-        this.blueEquipment = new Rs2InventorySetup(config.blueEquipmentNormal(), getMainScheduledFuture());
-        this.eclipseEquipment = new Rs2InventorySetup(config.eclipseEquipmentNormal(), getMainScheduledFuture());
-        this.eclipseClones = new Rs2InventorySetup(config.eclipseEquipmentClones(), getMainScheduledFuture());
+    public boolean run() {
 
-        initHandlers(config);
+        this.bloodEquipment = new Rs2InventorySetup(config.bloodEquipmentNormal(), mainScheduledFuture);
+        this.blueEquipment = new Rs2InventorySetup(config.blueEquipmentNormal(), mainScheduledFuture);
+        this.eclipseEquipment = new Rs2InventorySetup(config.eclipseEquipmentNormal(), mainScheduledFuture);
+        this.eclipseClones = new Rs2InventorySetup(config.eclipseEquipmentClones(), mainScheduledFuture);
+
+        initHandlers();
 
         Microbot.enableAutoRunOn = false;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
@@ -67,14 +70,14 @@ public class moonsOfPerilScript extends Script {
     /* ------------------------------------------------------------------ */
     /* One-off wiring of state → handler instances                        */
     /* ------------------------------------------------------------------ */
-    private void initHandlers(moonsOfPerilConfig cfg) {
-        handlers.put(State.IDLE,        new IdleHandler(cfg));
-        handlers.put(State.RESUPPLY,    new ResupplyHandler(cfg));
-        handlers.put(State.ECLIPSE_MOON,new EclipseMoonHandler(cfg, this));
-        handlers.put(State.BLUE_MOON,   new BlueMoonHandler(cfg, this));
-        handlers.put(State.BLOOD_MOON,  new BloodMoonHandler(cfg, this));
-        handlers.put(State.REWARDS,     new RewardHandler(cfg));
-        handlers.put(State.DEATH,       new DeathHandler(cfg));
+    private void initHandlers() {
+        handlers.put(State.IDLE,        new IdleHandler(config));
+        handlers.put(State.RESUPPLY,    new ResupplyHandler(config));
+        handlers.put(State.ECLIPSE_MOON,new EclipseMoonHandler(config, eclipseEquipment, eclipseClones));
+        handlers.put(State.BLUE_MOON,   new BlueMoonHandler(config, blueEquipment));
+        handlers.put(State.BLOOD_MOON,  new BloodMoonHandler(config, bloodEquipment));
+        handlers.put(State.REWARDS,     new RewardHandler(config));
+        handlers.put(State.DEATH,       new DeathHandler(config));
     }
 
     /* ------------------------------------------------------------------ */

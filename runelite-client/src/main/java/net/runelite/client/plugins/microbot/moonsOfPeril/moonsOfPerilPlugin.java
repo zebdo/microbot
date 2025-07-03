@@ -56,7 +56,7 @@ public class moonsOfPerilPlugin extends Plugin {
         if (overlayManager != null) {
             overlayManager.add(moonsOfPerilOverlay);
         }
-        moonsOfPerilScript.run(config);
+        moonsOfPerilScript.run();
         Rs2Tile.init();
         this.scriptStartTime = Instant.now();
     }

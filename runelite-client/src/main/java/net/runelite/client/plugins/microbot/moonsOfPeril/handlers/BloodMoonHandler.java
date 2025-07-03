@@ -46,9 +46,9 @@ public class BloodMoonHandler implements BaseHandler {
     private final BossHandler boss;
     private final boolean debugLogging;
 
-    public BloodMoonHandler(moonsOfPerilConfig cfg, moonsOfPerilScript script) {
+    public BloodMoonHandler(moonsOfPerilConfig cfg, Rs2InventorySetup equipmentNormal) {
         this.enableBoss = cfg.enableEclipse();
-        this.equipmentNormal = script.bloodEquipment;
+        this.equipmentNormal = equipmentNormal;
         this.boss = new BossHandler(cfg);
         this.debugLogging = cfg.debugLogging();
     }

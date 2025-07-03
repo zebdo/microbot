@@ -44,9 +44,9 @@ public class BlueMoonHandler implements BaseHandler {
     private final BossHandler boss;
     private final boolean debugLogging;
 
-    public BlueMoonHandler(moonsOfPerilConfig cfg, moonsOfPerilScript script) {
+    public BlueMoonHandler(moonsOfPerilConfig cfg, Rs2InventorySetup equipmentNormal) {
         this.cfg = cfg;
-        this.equipmentNormal = script.blueEquipment;
+        this.equipmentNormal = equipmentNormal;
         this.enableBoss = cfg.enableBlue();
         this.boss = new BossHandler(cfg);
         this.debugLogging = cfg.debugLogging();

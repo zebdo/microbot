@@ -12,6 +12,7 @@ import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.coords.Rs2LocalPoint;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -44,13 +45,14 @@ public class EclipseMoonHandler implements BaseHandler {
     private final BossHandler boss;
     private final boolean debugLogging;
 
-    public EclipseMoonHandler(moonsOfPerilConfig cfg, moonsOfPerilScript script) {
-        this.equipmentNormal = script.eclipseEquipment;
-        this.equipmentClones = script.eclipseClones;
-        this.enableBoss = cfg.enableEclipse();
-        this.boss = new BossHandler(cfg);
-        this.debugLogging = cfg.debugLogging();
-    }
+	public EclipseMoonHandler(moonsOfPerilConfig cfg, Rs2InventorySetup equipmentNormal, Rs2InventorySetup equipmentClones)
+	{
+		this.equipmentNormal = equipmentNormal;
+		this.equipmentClones = equipmentClones;
+		this.enableBoss = cfg.enableEclipse();
+		this.boss = new BossHandler(cfg);
+		this.debugLogging = cfg.debugLogging();
+	}
 
     @Override
     public boolean validate() {
