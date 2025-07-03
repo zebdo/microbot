@@ -507,7 +507,7 @@ public class Rs2Magic {
     }
 
     public static Map<Runes, Integer> getRequiredRunes(Spell spell) {
-        return spell.getRequiredRunes();
+        return getRequiredRunes(spell, 1);
     }
 
     /**

@@ -693,12 +693,6 @@ public enum Rs2Spells implements Spell {
         return hasRequiredLevel() && hasRequiredSpellbook();
     }
 
-	@Override
-	public Map<Runes, Integer> getRequiredRunes()
-	{
-		return new HashMap<>(requiredRunes);
-	}
-
 	Rs2Spells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
         this.magicAction = magicAction;
         this.requiredRunes = requiredRunes;
