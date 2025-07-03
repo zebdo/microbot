@@ -20,6 +20,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Spellbook;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -74,7 +75,7 @@ public class MageTrainingArenaScript extends Script {
                 if (!super.run()) return;
                 if (mtaPlugin != null && !Microbot.getPluginManager().isActive(mtaPlugin)) return;
 
-                if (!Rs2Magic.isModern()) {
+                if (!Rs2Magic.isSpellbook(Rs2Spellbook.MODERN)) {
                     Microbot.log("Wrong spellbook found...please use the modern spellbook for this script.");
                     sleep(5000);
                     return;
@@ -471,7 +472,7 @@ public class MageTrainingArenaScript extends Script {
         var bonepile = Rs2GameObject.findObjectByLocation(new WorldPoint(3352, 9637, 1));
         var foodChute = Rs2GameObject.findObjectByLocation(new WorldPoint(3354, 9639, 1));
 
-        var boneGoal = 28 - Rs2Inventory.items().stream().filter(x -> x.getName().equalsIgnoreCase("Animals' bones")).count();
+        var boneGoal = 28 - Rs2Inventory.items().filter(x -> x.getName().equalsIgnoreCase("Animals' bones")).count();
         if (mtaPlugin.getGraveyardRoom().getCounter() != null && mtaPlugin.getGraveyardRoom().getCounter().getCount() >= boneGoal) {
             Rs2Magic.cast(btp ? MagicAction.BONES_TO_PEACHES : MagicAction.BONES_TO_BANANAS);
             Rs2Player.waitForAnimation();

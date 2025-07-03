@@ -69,7 +69,7 @@ public enum Rs2Thrall
 		{
 			return false;
 		}
-		return Rs2Magic.cast(rs2Thrall.getRs2spell().getAction());
+		return Rs2Magic.cast(rs2Thrall.getRs2spell().getMagicAction());
 	}
 
 	/**

@@ -1,10 +1,7 @@
 package net.runelite.client.plugins.microbot.util.magic;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import net.runelite.api.Skill;
-import net.runelite.api.Varbits;
-import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
@@ -16,7 +13,7 @@ import java.util.stream.Collectors;
 /**
  * TODO: Add Tele-other spells from modern spellbook
  */
-public enum Rs2Spells {
+public enum Rs2Spells implements Spell {
     CONFUSE(MagicAction.CONFUSE, Map.of(
             Runes.EARTH, 2,
             Runes.WATER, 3,
@@ -676,31 +673,31 @@ public enum Rs2Spells {
             Runes.DEATH, 1,
             Runes.SOUL, 1
     ), Rs2Spellbook.ARCEUUS);
-    
+
     private final String name;
-    private final MagicAction action;
+    private final MagicAction magicAction;
     private final Map<Runes, Integer> requiredRunes;
     private final Rs2Spellbook spellbook;
     private final int requiredLevel;
     
     public boolean hasRequiredLevel() {
-        return Rs2Player.getSkillRequirement(Skill.MAGIC, this.requiredLevel);
+        return Rs2Player.getSkillRequirement(Skill.MAGIC, getRequiredLevel());
     }
     
     public boolean hasRequiredSpellbook() {
-        return Microbot.getVarbitValue(Varbits.SPELLBOOK) == getSpellbook().getValue();
+        return Rs2Magic.isSpellbook(getSpellbook());
     }
     
     public boolean hasRequirements() {
         return hasRequiredLevel() && hasRequiredSpellbook();
     }
 
-    Rs2Spells(MagicAction action, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
-        this.action = action;
+    Rs2Spells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
+        this.magicAction = magicAction;
         this.requiredRunes = requiredRunes;
         this.spellbook = spellbook;
-        this.name = action.getName();
-        this.requiredLevel = action.getLevel();
+        this.name = magicAction.getName();
+        this.requiredLevel = magicAction.getLevel();
     }
     
     /**

@@ -33,8 +33,8 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 /**
  * Enum representing the different spellbooks in RuneScape with switching mechanics.
- * The integer values correspond to the varbit {@link net.runelite.api.Varbits#SPELLBOOK}.
- * 
+ * The integer values correspond to the varbit {@link net.runelite.api.gameval.VarbitID#SPELLBOOK}.
+ * <p>
  * Enhanced with spellbook switching information including locations, methods,
  * object IDs, NPC IDs, and dialogue requirements.
  */
