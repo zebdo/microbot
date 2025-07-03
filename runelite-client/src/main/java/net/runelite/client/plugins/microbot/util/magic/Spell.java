@@ -8,9 +8,9 @@ import java.util.stream.Collectors;
 
 public interface Spell {
     MagicAction getMagicAction();
-    Map<Runes, Integer>  getRequiredRunes();
-    default Map<Runes, Integer> getRequiredRunes(int casts) {
-        final Map<Runes, Integer> reqRunes = new HashMap<>(getRequiredRunes());
+    HashMap<Runes, Integer>  getRequiredRunes();
+    default HashMap<Runes, Integer> getRequiredRunes(int casts) {
+        final HashMap<Runes, Integer> reqRunes = getRequiredRunes();
         if (casts != 1) reqRunes.replaceAll((key, value) -> value * casts);
         return reqRunes;
     }

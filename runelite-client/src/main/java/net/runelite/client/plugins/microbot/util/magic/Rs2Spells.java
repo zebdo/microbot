@@ -693,7 +693,7 @@ public enum Rs2Spells implements Spell {
         return hasRequiredLevel() && hasRequiredSpellbook();
     }
 
-	Rs2Spells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
+    Rs2Spells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
         this.magicAction = magicAction;
         this.requiredRunes = requiredRunes;
         this.spellbook = spellbook;
@@ -712,5 +712,10 @@ public enum Rs2Spells implements Spell {
                 .filter(rune -> rune == Runes.AIR || rune == Runes.WATER || 
                         rune == Runes.EARTH || rune == Runes.FIRE)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public HashMap<Runes, Integer> getRequiredRunes() {
+        return new HashMap<>(requiredRunes);
     }
 }

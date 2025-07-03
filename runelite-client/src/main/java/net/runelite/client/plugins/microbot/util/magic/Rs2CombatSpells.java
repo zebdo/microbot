@@ -235,4 +235,9 @@ public enum Rs2CombatSpells implements Spell {
         this.requiredLevel = magicAction.getLevel();
         this.varbitValue = varbitValue;
     }
+
+    @Override
+    public HashMap<Runes, Integer> getRequiredRunes() {
+        return new HashMap<>(requiredRunes);
+    }
 }
