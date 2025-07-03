@@ -38,18 +38,15 @@ public class EclipseMoonHandler implements BaseHandler {
     private static final WorldPoint cloneAttackTile = bossArenaCenter;
     private static final WorldPoint[] ATTACK_TILES = Locations.eclipseAttackTiles();
     private final int sigilNpcID = GameObjects.SIGIL_NPC_ID.getID();
-    private final int bossNpcID = NpcID.PMOON_BOSS_ECLIPSE_MOON_VIS;
     private final Rs2InventorySetup equipmentNormal;
     private final Rs2InventorySetup equipmentClones;
-    private final moonsOfPerilScript script;
     private final boolean enableBoss;
     private final BossHandler boss;
     private final boolean debugLogging;
 
     public EclipseMoonHandler(moonsOfPerilConfig cfg, moonsOfPerilScript script) {
-        this.script = script;
-        this.equipmentNormal = new Rs2InventorySetup(cfg.eclipseEquipmentNormal(), script.mainScheduledFuture);
-        this.equipmentClones = new Rs2InventorySetup(cfg.eclipseEquipmentClones(), script.mainScheduledFuture);
+        this.equipmentNormal = script.eclipseEquipment;
+        this.equipmentClones = script.eclipseClones;
         this.enableBoss = cfg.enableEclipse();
         this.boss = new BossHandler(cfg);
         this.debugLogging = cfg.debugLogging();
@@ -71,6 +68,7 @@ public class EclipseMoonHandler implements BaseHandler {
             boss.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
             sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID), 5_000);
         }
+        int bossNpcID = NpcID.PMOON_BOSS_ECLIPSE_MOON_VIS;
         while (Rs2Widget.isWidgetVisible(bossHealthBarWidgetID) || Rs2Npc.getNpc(bossNpcID) != null) {
             if (isSpecialAttack1Sequence()) {
                 specialAttack1Sequence();
@@ -94,10 +92,7 @@ public class EclipseMoonHandler implements BaseHandler {
      */
     public boolean isSpecialAttack1Sequence() {
         Rs2NpcModel eclipseMoonShield = Rs2Npc.getNpc(NpcID.PMOON_BOSS_ECLIPSE_MOON_SHIELD);
-        if (eclipseMoonShield != null && Rs2Npc.getNpc(sigilNpcID) == null) {
-            return true;
-        }
-        return false;
+        return eclipseMoonShield != null && Rs2Npc.getNpc(sigilNpcID) == null;
     }
 
     /**  Eclipse – Moon Shield Special-Attack Handler */
@@ -219,9 +214,8 @@ public class EclipseMoonHandler implements BaseHandler {
                 if (debugLogging) {Microbot.log("Spawn local location: " + cloneLocalLocation);}
 
                 // 3. Parry / Attack the clone
-                WorldPoint parryTile = cloneLocalLocation;
-                if (debugLogging) {Microbot.log("Clone #" + (parried + 1) + " spawned at " + cloneTrueLocation + " → Parrying via " + parryTile);}
-                Rs2Walker.walkCanvas(parryTile);
+                if (debugLogging) {Microbot.log("Clone #" + (parried + 1) + " spawned at " + cloneTrueLocation + " → Parrying via " + cloneLocalLocation);}
+                Rs2Walker.walkCanvas(cloneLocalLocation);
                 parried++;
             }
             if (!isSpecialAttack2Sequence()) {

@@ -38,21 +38,17 @@ public class BloodMoonHandler implements BaseHandler {
     private static final int bossStatueObjectID = GameObjects.BLOOD_MOON_STATUE_ID.getID();
     private static final WorldPoint bossLobbyLocation = Locations.BLOOD_LOBBY.getWorldPoint();
     private static final WorldPoint[] ATTACK_TILES = Locations.bloodAttackTiles();
-    private final int bossNpcID = NpcID.PMOON_BOSS_BLOOD_MOON_VIS;
     private final int sigilNpcID = GameObjects.SIGIL_NPC_ID.getID();
     private final boolean enableBoss;
     private final Rs2InventorySetup equipmentNormal;
-    private final moonsOfPerilScript script;
     private static final WorldPoint afterRainTile = Locations.BLOOD_ATTACK_6.getWorldPoint();
-    private int bloodPoolTick = -1;
     public boolean arrived = false;
     private final BossHandler boss;
     private final boolean debugLogging;
 
     public BloodMoonHandler(moonsOfPerilConfig cfg, moonsOfPerilScript script) {
         this.enableBoss = cfg.enableEclipse();
-        this.script = script;
-        this.equipmentNormal = new Rs2InventorySetup(cfg.bloodEquipmentNormal(), script.mainScheduledFuture);
+        this.equipmentNormal = script.bloodEquipment;
         this.boss = new BossHandler(cfg);
         this.debugLogging = cfg.debugLogging();
     }
@@ -74,6 +70,7 @@ public class BloodMoonHandler implements BaseHandler {
             sleepUntil(() -> Rs2Widget.isWidgetVisible(bossHealthBarWidgetID), 5_000);
         }
 
+        int bossNpcID = NpcID.PMOON_BOSS_BLOOD_MOON_VIS;
         while (Rs2Widget.isWidgetVisible(bossHealthBarWidgetID) || Rs2Npc.getNpc(bossNpcID) != null) {
             if (isSpecialAttack1Sequence()) {
                 specialAttack1Sequence();
@@ -192,7 +189,7 @@ public class BloodMoonHandler implements BaseHandler {
         int evadeCount = 0;
 
         while (isSpecialAttack1Sequence() && System.currentTimeMillis() - startMs < TIMEOUT_MS) {
-            bloodPoolTick = moonsOfPerilPlugin.bloodPoolTick;
+            int bloodPoolTick = moonsOfPerilPlugin.bloodPoolTick;
             if (debugLogging) {Microbot.log("Current tick counter: " + bloodPoolTick);}
             if (bloodPoolTick == 3) {
                 if (debugLogging) {Microbot.log("EVADE to " + evadeTile);}
