@@ -13,6 +13,7 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
+import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -646,7 +647,7 @@ public class PathfinderConfig {
                 : transport.getDisplayInfo();
         Rs2Spells rs2Spell = Rs2Magic.getRs2Spell(displayInfo);
         if (rs2Spell == null) return false;
-        return Rs2Magic.hasRequiredRunes(rs2Spell, Rs2Inventory.hasRunePouch(), useBankItems);
+        return Rs2Magic.hasRequiredRunes(rs2Spell, RuneFilter.builder().includeBank(useBankItems).build());
 //        return Rs2Magic.quickCanCast(displayInfo);
     }
 

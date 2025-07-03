@@ -21,9 +21,7 @@ import net.runelite.client.plugins.microbot.shortestpath.ShortestPathConfig;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
 import net.runelite.client.plugins.microbot.shortestpath.TransportType;
-import net.runelite.client.plugins.microbot.shortestpath.WorldPointUtil;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
-import net.runelite.client.plugins.microbot.shortestpath.pathfinder.PathfinderConfig;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
@@ -38,8 +36,6 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Staff;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Tome;
 import net.runelite.client.plugins.microbot.util.magic.Runes;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -2695,7 +2691,7 @@ public class Rs2Walker {
                     : transport.getDisplayInfo();
                 log.info("Looking for spell rune requirements for: '{}' - display info {}", spellName, displayInfo);
                 Rs2Spells rs2Spell = Rs2Magic.getRs2Spell(displayInfo);
-                return Rs2Magic.hasRequiredRunes(rs2Spell, true,false);                                                                
+                return Rs2Magic.hasRequiredRunes(rs2Spell);
             }
             if (isCurrencyBasedTransport(transport.getType()) && 
                 (transport.getItemIdRequirements() == null || transport.getItemIdRequirements().isEmpty()) &&
