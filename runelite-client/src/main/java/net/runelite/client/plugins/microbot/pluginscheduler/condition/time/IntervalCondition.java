@@ -676,7 +676,7 @@ public class IntervalCondition extends TimeCondition {
     @Override
     public Optional<ZonedDateTime> getCurrentTriggerTime() {
         // If paused or can't trigger again, don't provide a trigger time
-        if (isPaused || !canTriggerAgain()) {
+        if ( getNextTriggerTimeWithPause().orElse(null) == null || !canTriggerAgain()) {
             return Optional.empty(); // No trigger time during pause or if already triggered too often
         }
         
@@ -692,7 +692,7 @@ public class IntervalCondition extends TimeCondition {
         }
         
         // Otherwise return the scheduled next trigger time
-        return Optional.of(nextTriggerTime);
+        return Optional.of(nextTriggerTime);          
     }
     
     /**

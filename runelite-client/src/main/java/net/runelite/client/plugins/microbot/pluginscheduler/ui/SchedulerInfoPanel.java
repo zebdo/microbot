@@ -52,9 +52,9 @@ public class SchedulerInfoPanel extends JPanel {
     private ZonedDateTime currentPluginStartTime;
     
     // Next plugin components
-    private JLabel nextPluginNameLabel;
-    private JLabel nextPluginTimeLabel;
-    private JLabel nextPluginScheduleLabel;
+    private JLabel nextUpComingPluginNameLabel;
+    private JLabel nextUpComingPluginTimeLabel;
+    private JLabel nextUpComingPluginScheduleLabel;
     
     // Previous plugin components
     private JLabel prevPluginNameLabel;
@@ -75,14 +75,14 @@ public class SchedulerInfoPanel extends JPanel {
     // State tracking for optimized updates
     private PluginScheduleEntry lastTrackedCurrentPlugin;
     private PluginScheduleEntry lastTrackedPreviousPlugin;
-    private PluginScheduleEntry lastTrackedNextPlugin;
+    private PluginScheduleEntry lastTrackedNextUpComingPlugin;
   
   
     public SchedulerInfoPanel(SchedulerPlugin plugin) {
         this.plugin = plugin;    
         // Use a box layout instead of BorderLayout
         setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
-        setBorder(new EmptyBorder(10, 10, 10, 10));
+        setBorder(new EmptyBorder(8, 8, 8, 8));
         setBackground(ColorScheme.DARKER_GRAY_COLOR);
         
         // Add panels with some vertical spacing
@@ -250,7 +250,7 @@ public class SchedulerInfoPanel extends JPanel {
         add(playerStatusPanel, BorderLayout.CENTER);
 
         // Create compact plugin information panel
-        pluginInfoPanel = createCompactPluginInfoPanel();
+        pluginInfoPanel = createStructuredPluginInfoPanel();
         add(pluginInfoPanel);
         add(Box.createRigidArea(new Dimension(0, 10))); // Add spacing
        
@@ -260,13 +260,15 @@ public class SchedulerInfoPanel extends JPanel {
     
     /**
      * Creates a compact panel that combines previous, current, and next plugin information
+     * with improved layout for small spaces and proper scrolling support
      */
     private JPanel createCompactPluginInfoPanel() {
-        JPanel panel = new JPanel(new BorderLayout());
-        panel.setBorder(BorderFactory.createTitledBorder(
+        // Create outer wrapper panel
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createCompoundBorder(
                 BorderFactory.createMatteBorder(1, 1, 1, 1, ColorScheme.DARK_GRAY_COLOR),
-                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+                BorderFactory.createEmptyBorder(3, 3, 3, 3) // Reduced padding
             ),
             "Plugin Information",
             TitledBorder.DEFAULT_JUSTIFICATION,
@@ -274,14 +276,24 @@ public class SchedulerInfoPanel extends JPanel {
             FontManager.getRunescapeBoldFont(),
             Color.WHITE
         ));
-        panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        wrapperPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 
-        // Create three sections: Previous, Current, Next
-        JPanel topRow = new JPanel(new GridLayout(1, 3, 10, 0));
+        // Create main content panel that will be scrollable
+        JPanel contentPanel = new JPanel(new BorderLayout());
+        contentPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
+        // Create three sections with improved layout - use FlowLayout for better space handling
+        JPanel topRow = new JPanel(new FlowLayout(FlowLayout.CENTER, 8, 5)); // Increased vertical gap
         topRow.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        // Set minimum and preferred sizes for sections to ensure readability
+        Dimension sectionMinSize = new Dimension(120, 140); // Increased height for proper content display
+        Dimension sectionPrefSize = new Dimension(140, 160); // Increased preferred height
 
         // Previous Plugin Section
         JPanel prevSection = createCompactSection("Previous");
+        prevSection.setMinimumSize(sectionMinSize);
+        prevSection.setPreferredSize(sectionPrefSize);
         GridBagConstraints gbc = createGbc(0, 0);
         
         prevSection.add(new JLabel("Name:"), gbc);
@@ -303,6 +315,8 @@ public class SchedulerInfoPanel extends JPanel {
 
         // Current Plugin Section
         JPanel currentSection = createCompactSection("Current");
+        currentSection.setMinimumSize(sectionMinSize);
+        currentSection.setPreferredSize(sectionPrefSize);
         gbc = createGbc(0, 0);
         
         currentSection.add(new JLabel("Name:"), gbc);
@@ -325,33 +339,35 @@ public class SchedulerInfoPanel extends JPanel {
 
         // Next Plugin Section
         JPanel nextSection = createCompactSection("Next");
+        nextSection.setMinimumSize(sectionMinSize);
+        nextSection.setPreferredSize(sectionPrefSize);
         gbc = createGbc(0, 0);
         
         nextSection.add(new JLabel("Name:"), gbc);
         gbc.gridx++;
-        nextPluginNameLabel = createCompactValueLabel("None");
-        nextSection.add(nextPluginNameLabel, gbc);
+        nextUpComingPluginNameLabel = createCompactValueLabel("None");
+        nextSection.add(nextUpComingPluginNameLabel, gbc);
         
         gbc.gridx = 0; gbc.gridy++;
         nextSection.add(new JLabel("Time:"), gbc);
         gbc.gridx++;
-        nextPluginTimeLabel = createCompactValueLabel("--:--");
-        nextSection.add(nextPluginTimeLabel, gbc);
+        nextUpComingPluginTimeLabel = createCompactValueLabel("--:--");
+        nextSection.add(nextUpComingPluginTimeLabel, gbc);
         
         gbc.gridx = 0; gbc.gridy++;
         nextSection.add(new JLabel("Type:"), gbc);
         gbc.gridx++;
-        nextPluginScheduleLabel = createCompactValueLabel("None");
-        nextSection.add(nextPluginScheduleLabel, gbc);
+        nextUpComingPluginScheduleLabel = createCompactValueLabel("None");
+        nextSection.add(nextUpComingPluginScheduleLabel, gbc);
 
         topRow.add(prevSection);
         topRow.add(currentSection);
         topRow.add(nextSection);
 
-        // Add progress bar for current plugin at bottom
+        // Add progress bar for current plugin - much more compact
         JPanel bottomPanel = new JPanel(new BorderLayout());
         bottomPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        bottomPanel.setBorder(new EmptyBorder(2, 0, 2, 0)); // Reduced padding around progress bar
+        bottomPanel.setBorder(new EmptyBorder(1, 0, 1, 0)); // Minimal padding
         
         stopConditionProgressBar = new JProgressBar(0, 100);
         stopConditionProgressBar.setStringPainted(true);
@@ -359,46 +375,62 @@ public class SchedulerInfoPanel extends JPanel {
         stopConditionProgressBar.setForeground(new Color(76, 175, 80));
         stopConditionProgressBar.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         stopConditionProgressBar.setBorder(BorderFactory.createLineBorder(ColorScheme.DARK_GRAY_COLOR));
-        stopConditionProgressBar.setPreferredSize(new Dimension(0, 12)); // Much thinner progress bar
+        stopConditionProgressBar.setPreferredSize(new Dimension(0, 12)); // Slightly increased height for better visibility
+        stopConditionProgressBar.setMinimumSize(new Dimension(0, 12));
+        stopConditionProgressBar.setMaximumSize(new Dimension(Integer.MAX_VALUE, 12));
         
-        JLabel stopProgressLabel = new JLabel("Stop Progress:");
+        JLabel stopProgressLabel = new JLabel("Progress:");
         stopProgressLabel.setForeground(Color.WHITE);
         stopProgressLabel.setFont(FontManager.getRunescapeSmallFont());
         
-        bottomPanel.add(stopProgressLabel, BorderLayout.WEST); // Shorter label
+        bottomPanel.add(stopProgressLabel, BorderLayout.WEST);
         bottomPanel.add(stopConditionProgressBar, BorderLayout.CENTER);
 
-        // Add stop reason display for previous plugin
+        // Add stop reason display for previous plugin - more compact
         JPanel stopReasonPanel = new JPanel(new BorderLayout());
         stopReasonPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
-        stopReasonPanel.setBorder(new EmptyBorder(2, 0, 0, 0)); // Reduced padding around stop reason
+        stopReasonPanel.setBorder(new EmptyBorder(1, 0, 0, 0)); // Minimal padding
         
         JLabel stopReasonLabel = new JLabel("Stop Reason:");
         stopReasonLabel.setForeground(Color.WHITE);
-        stopReasonLabel.setFont(FontManager.getRunescapeSmallFont()); // Smaller font to save space
+        stopReasonLabel.setFont(FontManager.getRunescapeSmallFont());
         
         prevPluginStatusLabel = createMultiLineTextArea("None");
-        prevPluginStatusLabel.setPreferredSize(new Dimension(0, 45)); // Increased height for stop reason
+        prevPluginStatusLabel.setPreferredSize(new Dimension(0, 40)); // Increased height for better readability
+        prevPluginStatusLabel.setMinimumSize(new Dimension(0, 30));
         
         stopReasonPanel.add(stopReasonLabel, BorderLayout.WEST);
         stopReasonPanel.add(prevPluginStatusLabel, BorderLayout.CENTER);
 
-        panel.add(topRow, BorderLayout.NORTH);
-        panel.add(bottomPanel, BorderLayout.CENTER);
-        panel.add(stopReasonPanel, BorderLayout.SOUTH);
+        contentPanel.add(topRow, BorderLayout.NORTH);
+        contentPanel.add(bottomPanel, BorderLayout.CENTER);
+        contentPanel.add(stopReasonPanel, BorderLayout.SOUTH);
 
-        return panel;
+        // Wrap content panel in a scroll pane for horizontal scrolling when needed
+        JScrollPane scrollPane = new JScrollPane(contentPanel);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        scrollPane.setBorder(null); // Remove scroll pane border
+        scrollPane.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        scrollPane.getViewport().setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
+        // Set minimum size for the content to ensure it's always readable
+        contentPanel.setMinimumSize(new Dimension(420, 200)); // Increased height for better content display
+        
+        wrapperPanel.add(scrollPane, BorderLayout.CENTER);
+
+        return wrapperPanel;
     }
     
     /**
-     * Creates a compact section panel for plugin information
+     * Creates a compact section panel for plugin information with improved spacing
      */
     private JPanel createCompactSection(String title) {
         JPanel panel = new JPanel(new GridBagLayout());
         panel.setBorder(BorderFactory.createTitledBorder(
             BorderFactory.createCompoundBorder(
                 BorderFactory.createLineBorder(ColorScheme.DARK_GRAY_COLOR),
-                BorderFactory.createEmptyBorder(8, 8, 8, 8) // Increased padding for more space
+                BorderFactory.createEmptyBorder(6, 4, 6, 4) // Increased vertical padding for better spacing
             ),
             title,
             TitledBorder.CENTER,
@@ -407,6 +439,11 @@ public class SchedulerInfoPanel extends JPanel {
             Color.LIGHT_GRAY
         ));
         panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        
+        // Set minimum and preferred sizes to ensure consistent layout
+        panel.setMinimumSize(new Dimension(120, 140)); // Increased height to match section requirements
+        panel.setPreferredSize(new Dimension(140, 160)); // Increased preferred height
+        
         return panel;
     }
     
@@ -445,10 +482,10 @@ public class SchedulerInfoPanel extends JPanel {
         gbc.gridwidth = 1;
         gbc.gridheight = 1;
         gbc.weightx = (x == 0) ? 0.0 : 1.0; // Labels (x=0) don't expand, values (x=1) do
-        gbc.weighty = 1.0;
+        gbc.weighty = 0.0; // Changed to 0.0 to prevent vertical compression
         gbc.anchor = (x == 0) ? GridBagConstraints.WEST : GridBagConstraints.EAST;
         gbc.fill = GridBagConstraints.HORIZONTAL;
-        gbc.insets = new Insets(6, 4, 6, 4); // Increased vertical spacing
+        gbc.insets = new Insets(8, 4, 8, 4); // Increased vertical spacing even more
         return gbc;
     }
     
@@ -509,13 +546,15 @@ public class SchedulerInfoPanel extends JPanel {
         // Get current plugin states
         PluginScheduleEntry currentPlugin = plugin.getCurrentPlugin();
         PluginScheduleEntry previousPlugin = plugin.getLastPlugin();
-        PluginScheduleEntry nextPlugin = plugin.getNextScheduledPlugin();
+        PluginScheduleEntry nextUpComingPlugin = plugin.getUpComingPlugin();
         
         // Update current plugin info if it changed or is running (for runtime updates)
-        if (currentPlugin != lastTrackedCurrentPlugin || 
-            (currentPlugin != null && currentPlugin.isRunning())) {
+        if (currentPlugin != lastTrackedCurrentPlugin) {
             updateCurrentPluginInfo();
             lastTrackedCurrentPlugin = currentPlugin;
+        } else if (currentPlugin != null && currentPlugin.isRunning()) {
+            // Always update runtime for running plugins even if plugin object hasn't changed
+            updateCurrentPluginRuntimeOnly();
         }
         
         // Update previous plugin info only if it changed
@@ -523,14 +562,15 @@ public class SchedulerInfoPanel extends JPanel {
             updatePreviousPluginInfo();
             lastTrackedPreviousPlugin = previousPlugin;
         }
-        updatePreviousPluginInfo();
         
-        // Update next plugin info only if it changed
-        if (nextPlugin != lastTrackedNextPlugin) {
-            updateNextPluginInfo();
-            lastTrackedNextPlugin = nextPlugin;
+        // Update next plugin info if it changed
+        if (nextUpComingPlugin != lastTrackedNextUpComingPlugin) {
+            updateNextUpComingPluginInfo();
+            lastTrackedNextUpComingPlugin = nextUpComingPlugin;
+        } else if (nextUpComingPlugin != null) {
+            // Always update time display for next plugin since countdown changes every second
+            updateNextUpComingPluginTimeDisplay(nextUpComingPlugin);
         }
-        updateNextPluginInfo();
     }
     
     /**
@@ -540,10 +580,10 @@ public class SchedulerInfoPanel extends JPanel {
     public void forcePluginInfoUpdate() {
         lastTrackedCurrentPlugin = null;
         lastTrackedPreviousPlugin = null;
-        lastTrackedNextPlugin = null;
+        lastTrackedNextUpComingPlugin = null;
         updateCurrentPluginInfo();
         updatePreviousPluginInfo(); 
-        updateNextPluginInfo();
+        updateNextUpComingPluginInfo();
     }
     
     /**
@@ -582,21 +622,23 @@ public class SchedulerInfoPanel extends JPanel {
             pauseResumeSchedulerButton.setText("Resume Scheduler");
             pauseResumeSchedulerButton.setBackground(new Color(76, 175, 80)); // Green color
             pauseResumeSchedulerButton.setToolTipText("Resume the paused scheduler");
+            pauseResumePluginButton.setEnabled(false); // Disable plugin pause/resume while scheduler is paused
         } else {
             pauseResumeSchedulerButton.setText("Pause Scheduler");
             pauseResumeSchedulerButton.setBackground(new Color(255, 152, 0)); // Orange color
             pauseResumeSchedulerButton.setToolTipText("Pause the scheduler without stopping it");
+            pauseResumePluginButton.setEnabled(true); // Enable plugin pause/resume while scheduler is running
         }
         boolean currentRunningPluginPaused = plugin.isCurrentPluginPaused();        
-        pauseResumeSchedulerButton.setEnabled(isActive || plugin.getCurrentState()==  SchedulerState.RUNNING_PLUGIN_PAUSED);
+        
          // Only show the pause button when a plugin is actively running
         pauseResumePluginButton.setVisible(state == SchedulerState.RUNNING_PLUGIN || 
                                     state == SchedulerState.RUNNING_PLUGIN_PAUSED);
         
         // If Scheulder PLugin is not Running any Plugin at the moment -> detect changed state and we're no longer running, ensure pause for scripts and plugin is reset to false is reset
-        if (!(  state == SchedulerState.RUNNING_PLUGIN || 
-                state == SchedulerState.RUNNING_PLUGIN_PAUSED ||  
-                state == SchedulerState.SCHEDULER_PAUSED ) && PluginPauseEvent.isPaused()) {            
+        
+        if (state == SchedulerState.RUNNING_PLUGIN && !(state == SchedulerState.RUNNING_PLUGIN_PAUSED ||  
+                state == SchedulerState.SCHEDULER_PAUSED) && PluginPauseEvent.isPaused()) {            
             PluginPauseEvent.setPaused(false); 
             pauseResumePluginButton.setText("Pause Plugin");
             pauseResumePluginButton.setBackground(new Color(255, 152, 0));
@@ -609,10 +651,12 @@ public class SchedulerInfoPanel extends JPanel {
                 pauseResumePluginButton.setText("Resume Plugin");
                 pauseResumePluginButton.setBackground(new Color(76, 175, 80)); // Green color
                 pauseResumePluginButton.setToolTipText("Resume the currently paused plugin");
+                pauseResumeSchedulerButton.setEnabled(false); // Disable scheduler pause/resume while a plugin is paused
             } else {
                 pauseResumePluginButton.setText("Pause Plugin");
                 pauseResumePluginButton.setBackground(new Color(0, 188, 212)); // Cyan color
                 pauseResumePluginButton.setToolTipText("Pause the currently running plugin");
+                pauseResumeSchedulerButton.setEnabled(true); // Disable scheduler pause/resume while a plugin is paused
             }
         }else {
             // If the scheduler is paused, disable the pause/resume plugin button
@@ -736,35 +780,34 @@ public class SchedulerInfoPanel extends JPanel {
     /**
      * Updates information about the next scheduled plugin
      */
-    private void updateNextPluginInfo() {
-
-        PluginScheduleEntry nextPlugin = plugin.getUpComingPlugin();
+    private void updateNextUpComingPluginInfo() {
+        PluginScheduleEntry nextUpComingPlugin = plugin.getUpComingPlugin();
         
-        if (nextPlugin != null) {
+        if (nextUpComingPlugin != null) {                        
             // Update name
-            nextPluginNameLabel.setText(nextPlugin.getCleanName());
+            nextUpComingPluginNameLabel.setText(nextUpComingPlugin.getCleanName());
             
             // Set the next run time display (already handles various condition types)
-            nextPluginTimeLabel.setText(nextPlugin.getNextRunDisplay());
+            nextUpComingPluginTimeLabel.setText(nextUpComingPlugin.getNextRunDisplay());
             
             // Create an enhanced schedule description
-            StringBuilder scheduleDesc = new StringBuilder(nextPlugin.getIntervalDisplay());
+            StringBuilder scheduleDesc = new StringBuilder(nextUpComingPlugin.getIntervalDisplay());
             
             // Add information about one-time schedules
-            if (nextPlugin.hasAnyOneTimeStartConditions()) {
-                if (nextPlugin.hasTriggeredOneTimeStartConditions() && !nextPlugin.canStartTriggerAgain()) {
+            if (nextUpComingPlugin.hasAnyOneTimeStartConditions()) {
+                if (nextUpComingPlugin.hasTriggeredOneTimeStartConditions() && !nextUpComingPlugin.canStartTriggerAgain()) {
                     scheduleDesc.append(" (Completed)");
                 } else {
                     scheduleDesc.append(" (One-time)");
                 }
             }
             
-            nextPluginScheduleLabel.setText(scheduleDesc.toString());
+            nextUpComingPluginScheduleLabel.setText(scheduleDesc.toString());
         } else {
             // Reset all fields
-            nextPluginNameLabel.setText("None");
-            nextPluginTimeLabel.setText("--:--");
-            nextPluginScheduleLabel.setText("None");
+            nextUpComingPluginNameLabel.setText("None");
+            nextUpComingPluginTimeLabel.setText("--:--");
+            nextUpComingPluginScheduleLabel.setText("None");
         }
     }
     
@@ -1013,5 +1056,364 @@ public class SchedulerInfoPanel extends JPanel {
             
             log.error("Error during hard reset of user conditions", e);
         }
+    }
+    
+    /**
+     * Updates only the time display for the next plugin without full refresh.
+     * This is used for regular time updates when the plugin hasn't changed.
+     * 
+     * @param nextUpComingPlugin The next scheduled plugin
+     */
+    private void updateNextUpComingPluginTimeDisplay(PluginScheduleEntry nextUpComingPlugin) {
+        if (nextUpComingPlugin != null) {
+            // Only update the time display, keep other fields unchanged            
+            nextUpComingPluginTimeLabel.setText(nextUpComingPlugin.getNextRunDisplay());
+        }
+    }
+    
+    /**
+     * Updates only the runtime display for the current plugin without refreshing other info.
+     * This is used for regular runtime updates when the plugin hasn't changed.
+     */
+    private void updateCurrentPluginRuntimeOnly() {
+        PluginScheduleEntry currentPlugin = plugin.getCurrentPlugin();
+        
+        if (currentPlugin != null && currentPlugin.isRunning()) {
+            // Update runtime
+            if (currentPluginStartTime != null) {
+                Duration runtime = Duration.between(currentPluginStartTime, ZonedDateTime.now());
+                long totalSeconds = runtime.getSeconds();
+                long hours = totalSeconds / 3600;
+                long minutes = (totalSeconds % 3600) / 60;
+                long seconds = totalSeconds % 60;
+                
+                currentPluginRuntimeLabel.setText(String.format("%02d:%02d:%02d", hours, minutes, seconds));
+            }
+            
+            // Update stop condition progress (in case conditions have progressed)
+            if (currentPlugin.hasAnyStopConditions()) {
+                double progress = currentPlugin.getStopConditionProgress();
+                stopConditionProgressBar.setValue((int) progress);
+                stopConditionProgressBar.setString(String.format("%.1f%%", progress));
+                
+                // Color the progress bar based on progress
+                if (progress > 80) {
+                    stopConditionProgressBar.setForeground(new Color(76, 175, 80)); // Green
+                } else if (progress > 50) {
+                    stopConditionProgressBar.setForeground(new Color(255, 193, 7)); // Amber
+                } else {
+                    stopConditionProgressBar.setForeground(new Color(33, 150, 243)); // Blue
+                }
+            }
+        }
+    }
+    
+    /**
+     * Creates an alternative tabbed layout for extremely small spaces
+     * This method provides a fallback when the regular layout doesn't fit
+     */
+    private JPanel createTabbedPluginInfoPanel() {
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 1, 1, 1, ColorScheme.DARK_GRAY_COLOR),
+                BorderFactory.createEmptyBorder(2, 2, 2, 2)
+            ),
+            "Plugin Information",
+            TitledBorder.DEFAULT_JUSTIFICATION,
+            TitledBorder.DEFAULT_POSITION,
+            FontManager.getRunescapeBoldFont(),
+            Color.WHITE
+        ));
+        wrapperPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        // Create tabbed pane for very small spaces
+        JTabbedPane tabbedPane = new JTabbedPane();
+        tabbedPane.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        tabbedPane.setForeground(Color.WHITE);
+        tabbedPane.setFont(FontManager.getRunescapeSmallFont());
+
+        // Previous Plugin Tab
+        JPanel prevTab = new JPanel(new GridBagLayout());
+        prevTab.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        GridBagConstraints gbc = createGbc(0, 0);
+        
+        prevTab.add(new JLabel("Name:"), gbc);
+        gbc.gridx++;
+        prevPluginNameLabel = createCompactValueLabel("None");
+        prevTab.add(prevPluginNameLabel, gbc);
+        
+        gbc.gridx = 0; gbc.gridy++;
+        prevTab.add(new JLabel("Duration:"), gbc);
+        gbc.gridx++;
+        prevPluginDurationLabel = createCompactValueLabel("00:00:00");
+        prevTab.add(prevPluginDurationLabel, gbc);
+        
+        gbc.gridx = 0; gbc.gridy++;
+        prevTab.add(new JLabel("Stop Time:"), gbc);
+        gbc.gridx++;
+        prevPluginStopTimeLabel = createCompactValueLabel("--:--:--");
+        prevTab.add(prevPluginStopTimeLabel, gbc);
+        
+        gbc.gridx = 0; gbc.gridy++;
+        gbc.gridwidth = 2;
+        prevPluginStatusLabel = createMultiLineTextArea("None");
+        prevPluginStatusLabel.setPreferredSize(new Dimension(0, 40));
+        prevTab.add(prevPluginStatusLabel, gbc);
+
+        // Current Plugin Tab
+        JPanel currentTab = new JPanel(new GridBagLayout());
+        currentTab.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        gbc = createGbc(0, 0);
+        
+        currentTab.add(new JLabel("Name:"), gbc);
+        gbc.gridx++;
+        currentPluginNameLabel = createCompactValueLabel("None");
+        currentTab.add(currentPluginNameLabel, gbc);
+        
+        gbc.gridx = 0; gbc.gridy++;
+        currentTab.add(new JLabel("Runtime:"), gbc);
+        gbc.gridx++;
+        currentPluginRuntimeLabel = createCompactValueLabel("00:00:00");
+        currentTab.add(currentPluginRuntimeLabel, gbc);
+        
+        gbc.gridx = 0; gbc.gridy++;
+        currentTab.add(new JLabel("Conditions:"), gbc);
+        gbc.gridx++;
+        stopConditionStatusLabel = createCompactValueLabel("None");
+        currentTab.add(stopConditionStatusLabel, gbc);
+        
+        gbc.gridx = 0; gbc.gridy++;
+        gbc.gridwidth = 2;
+        stopConditionProgressBar = new JProgressBar(0, 100);
+        stopConditionProgressBar.setStringPainted(true);
+        stopConditionProgressBar.setString("No conditions");
+        stopConditionProgressBar.setForeground(new Color(76, 175, 80));
+        stopConditionProgressBar.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        stopConditionProgressBar.setPreferredSize(new Dimension(0, 8));
+        currentTab.add(stopConditionProgressBar, gbc);
+
+        // Next Plugin Tab
+        JPanel nextTab = new JPanel(new GridBagLayout());
+        nextTab.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        gbc = createGbc(0, 0);
+        
+        nextTab.add(new JLabel("Name:"), gbc);
+        gbc.gridx++;
+        nextUpComingPluginNameLabel = createCompactValueLabel("None");
+        nextTab.add(nextUpComingPluginNameLabel, gbc);
+        
+        gbc.gridx = 0; gbc.gridy++;
+        nextTab.add(new JLabel("Time:"), gbc);
+        gbc.gridx++;
+        nextUpComingPluginTimeLabel = createCompactValueLabel("--:--");
+        nextTab.add(nextUpComingPluginTimeLabel, gbc);
+        
+        gbc.gridx = 0; gbc.gridy++;
+        nextTab.add(new JLabel("Type:"), gbc);
+        gbc.gridx++;
+        nextUpComingPluginScheduleLabel = createCompactValueLabel("None");
+        nextTab.add(nextUpComingPluginScheduleLabel, gbc);
+
+        tabbedPane.addTab("Prev", prevTab);
+        tabbedPane.addTab("Current", currentTab);
+        tabbedPane.addTab("Next", nextTab);
+
+        wrapperPanel.add(tabbedPane, BorderLayout.CENTER);
+
+        return wrapperPanel;
+    }
+    
+    /**
+     * Creates a structured plugin info panel using BoxLayout for better vertical control
+     * This is an alternative to the FlowLayout approach if height issues persist
+     */
+    private JPanel createStructuredPluginInfoPanel() {
+        JPanel wrapperPanel = new JPanel(new BorderLayout());
+        wrapperPanel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createMatteBorder(1, 1, 1, 1, ColorScheme.DARK_GRAY_COLOR),
+                BorderFactory.createEmptyBorder(5, 5, 5, 5)
+            ),
+            "Plugin Information",
+            TitledBorder.DEFAULT_JUSTIFICATION,
+            TitledBorder.DEFAULT_POSITION,
+            FontManager.getRunescapeBoldFont(),
+            Color.WHITE
+        ));
+        wrapperPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        // Create main content panel with BoxLayout for better vertical control
+        JPanel contentPanel = new JPanel();
+        contentPanel.setLayout(new BoxLayout(contentPanel, BoxLayout.Y_AXIS));
+        contentPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        // Create sections panel using a more structured approach
+        JPanel sectionsPanel = new JPanel(new BorderLayout());
+        sectionsPanel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        // Create individual section panels with fixed heights
+        JPanel prevSection = createStructuredSection("Previous");
+        JPanel currentSection = createStructuredSection("Current");
+        JPanel nextSection = createStructuredSection("Next");
+
+        // Add content to sections
+        addPreviousPluginContent(prevSection);
+        addCurrentPluginContent(currentSection);
+        addNextPluginContent(nextSection);
+
+        // Use a horizontal layout with equal weights
+        sectionsPanel.add(prevSection, BorderLayout.WEST);
+        sectionsPanel.add(currentSection, BorderLayout.CENTER);
+        sectionsPanel.add(nextSection, BorderLayout.EAST);
+
+        contentPanel.add(sectionsPanel);
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+
+        // Add progress panel
+        JPanel progressPanel = createProgressPanel();
+        contentPanel.add(progressPanel);
+        contentPanel.add(Box.createRigidArea(new Dimension(0, 5)));
+
+        // Add stop reason panel
+        JPanel stopReasonPanel = createStopReasonPanel();
+        contentPanel.add(stopReasonPanel);
+
+        // Wrap in scroll pane
+        JScrollPane scrollPane = new JScrollPane(contentPanel);
+        scrollPane.setHorizontalScrollBarPolicy(JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        scrollPane.setVerticalScrollBarPolicy(JScrollPane.VERTICAL_SCROLLBAR_NEVER);
+        scrollPane.setBorder(null);
+        scrollPane.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        scrollPane.getViewport().setBackground(ColorScheme.DARKER_GRAY_COLOR);
+
+        wrapperPanel.add(scrollPane, BorderLayout.CENTER);
+        return wrapperPanel;
+    }
+
+    /**
+     * Creates a structured section with fixed height and proper spacing
+     */
+    private JPanel createStructuredSection(String title) {
+        JPanel panel = new JPanel();
+        panel.setLayout(new BoxLayout(panel, BoxLayout.Y_AXIS));
+        panel.setBorder(BorderFactory.createTitledBorder(
+            BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(ColorScheme.DARK_GRAY_COLOR),
+                BorderFactory.createEmptyBorder(8, 6, 8, 6)
+            ),
+            title,
+            TitledBorder.CENTER,
+            TitledBorder.TOP,
+            FontManager.getRunescapeSmallFont(),
+            Color.LIGHT_GRAY
+        ));
+        panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        panel.setPreferredSize(new Dimension(140, 140)); // Fixed height
+        panel.setMinimumSize(new Dimension(120, 120));
+        panel.setMaximumSize(new Dimension(160, 160));
+        return panel;
+    }
+
+    /**
+     * Adds content to the previous plugin section
+     */
+    private void addPreviousPluginContent(JPanel section) {
+        section.add(createLabelValueRow("Name:", prevPluginNameLabel = createCompactValueLabel("None")));
+        section.add(Box.createRigidArea(new Dimension(0, 5)));
+        section.add(createLabelValueRow("Duration:", prevPluginDurationLabel = createCompactValueLabel("00:00:00")));
+        section.add(Box.createRigidArea(new Dimension(0, 5)));
+        section.add(createLabelValueRow("Stop Time:", prevPluginStopTimeLabel = createCompactValueLabel("--:--:--")));
+        section.add(Box.createVerticalGlue());
+    }
+
+    /**
+     * Adds content to the current plugin section
+     */
+    private void addCurrentPluginContent(JPanel section) {
+        section.add(createLabelValueRow("Name:", currentPluginNameLabel = createCompactValueLabel("None")));
+        section.add(Box.createRigidArea(new Dimension(0, 5)));
+        section.add(createLabelValueRow("Runtime:", currentPluginRuntimeLabel = createCompactValueLabel("00:00:00")));
+        section.add(Box.createRigidArea(new Dimension(0, 5)));
+        section.add(createLabelValueRow("Conditions:", stopConditionStatusLabel = createCompactValueLabel("None")));
+        section.add(Box.createVerticalGlue());
+    }
+
+    /**
+     * Adds content to the next plugin section
+     */
+    private void addNextPluginContent(JPanel section) {
+        section.add(createLabelValueRow("Name:", nextUpComingPluginNameLabel = createCompactValueLabel("None")));
+        section.add(Box.createRigidArea(new Dimension(0, 5)));
+        section.add(createLabelValueRow("Time:", nextUpComingPluginTimeLabel = createCompactValueLabel("--:--")));
+        section.add(Box.createRigidArea(new Dimension(0, 5)));
+        section.add(createLabelValueRow("Type:", nextUpComingPluginScheduleLabel = createCompactValueLabel("None")));
+        section.add(Box.createVerticalGlue());
+    }
+
+    /**
+     * Creates a label-value row with proper alignment
+     */
+    private JPanel createLabelValueRow(String labelText, JLabel valueLabel) {
+        JPanel row = new JPanel(new BorderLayout());
+        row.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        row.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
+        
+        JLabel label = new JLabel(labelText);
+        label.setForeground(Color.WHITE);
+        label.setFont(FontManager.getRunescapeSmallFont());
+        
+        row.add(label, BorderLayout.WEST);
+        row.add(valueLabel, BorderLayout.EAST);
+        
+        return row;
+    }
+
+    /**
+     * Creates the progress panel
+     */
+    private JPanel createProgressPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        panel.setBorder(new EmptyBorder(2, 0, 2, 0));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20));
+        
+        JLabel label = new JLabel("Progress:");
+        label.setForeground(Color.WHITE);
+        label.setFont(FontManager.getRunescapeSmallFont());
+        
+        stopConditionProgressBar = new JProgressBar(0, 100);
+        stopConditionProgressBar.setStringPainted(true);
+        stopConditionProgressBar.setString("No conditions");
+        stopConditionProgressBar.setForeground(new Color(76, 175, 80));
+        stopConditionProgressBar.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        stopConditionProgressBar.setPreferredSize(new Dimension(0, 12));
+        
+        panel.add(label, BorderLayout.WEST);
+        panel.add(stopConditionProgressBar, BorderLayout.CENTER);
+        
+        return panel;
+    }
+
+    /**
+     * Creates the stop reason panel
+     */
+    private JPanel createStopReasonPanel() {
+        JPanel panel = new JPanel(new BorderLayout());
+        panel.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+        panel.setBorder(new EmptyBorder(2, 0, 0, 0));
+        panel.setMaximumSize(new Dimension(Integer.MAX_VALUE, 50));
+        
+        JLabel label = new JLabel("Stop Reason:");
+        label.setForeground(Color.WHITE);
+        label.setFont(FontManager.getRunescapeSmallFont());
+        
+        prevPluginStatusLabel = createMultiLineTextArea("None");
+        prevPluginStatusLabel.setPreferredSize(new Dimension(0, 40));
+        
+        panel.add(label, BorderLayout.WEST);
+        panel.add(prevPluginStatusLabel, BorderLayout.CENTER);
+        
+        return panel;
     }
 }

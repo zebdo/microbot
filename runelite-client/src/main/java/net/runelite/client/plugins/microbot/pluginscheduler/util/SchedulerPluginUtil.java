@@ -14,6 +14,8 @@ import java.util.Optional;
 
 import javax.swing.SwingUtilities;
 
+import org.slf4j.event.Level;
+
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.Plugin;
@@ -24,6 +26,7 @@ import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerPlugin;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import java.time.format.DateTimeFormatter;
 
+import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LockCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
@@ -469,12 +472,14 @@ public class SchedulerPluginUtil{
      * Sorts a list of plugins according to a consistent order, with weighted
      * selection for randomizable plugins:
      * 1. Enabled plugins first
-     * 2. Then by priority (highest first)
-     * 3. Then by non-default status (non-default first)
-     * 4. For non-randomizable plugins: by trigger time (earliest first)
-     * 5. For randomizable plugins with equal priority: weighted by run count (less
-     * run = higher chance)
-     * 6. Finally by name and object identity for stable ordering
+     * 2. Running status (running plugins first)
+     * 3. Due-to-run status (due plugins first) - prioritizes actionable plugins
+     * 4. Next run time (earliest first) - within due/not-due groups
+     * 5. Priority (highest first) - within due/runtime groups  
+     * 6. Non-default status (non-default first)
+     * 7. Prefer non-randomizable plugins (for ties in timing)
+     * 8. For randomizable plugins with equal criteria: weighted by run count
+     * 9. Finally by name and object identity for stable ordering
      * 
      * @param plugins                The list of plugins to sort
      * @param applyWeightedSelection Whether to apply weighted selection for
@@ -504,7 +509,32 @@ public class SchedulerPluginUtil{
                 return p1IsRunning ? -1 : 1;
             }
 
-            // Then sort by priority (highest first)
+            // Sort by due-to-run status first (due plugins first)
+            boolean p1IsDue = p1.isDueToRun();
+            boolean p2IsDue = p2.isDueToRun();
+
+            if (p1IsDue != p2IsDue) {
+                return p1IsDue ? -1 : 1;
+            }
+
+            // Then sort by next run time (earliest first) - within due/not-due groups
+            Optional<ZonedDateTime> time1 = p1.getCurrentStartTriggerTime();
+            Optional<ZonedDateTime> time2 = p2.getCurrentStartTriggerTime();
+
+            if (time1.isPresent() && time2.isPresent()) {
+                ZonedDateTime t1 = time1.get().truncatedTo(ChronoUnit.MILLIS);
+                ZonedDateTime t2 = time2.get().truncatedTo(ChronoUnit.MILLIS);
+                int timeCompare = t1.compareTo(t2);
+                if (timeCompare != 0) {
+                    return timeCompare;
+                }
+            } else if (time1.isPresent()) {
+                return -1; // p1 has time, p2 doesn't
+            } else if (time2.isPresent()) {
+                return 1; // p2 has time, p1 doesn't
+            }
+
+            // Then sort by priority within due/runtime groups (highest first)
             int priorityCompare = Integer.compare(p2.getPriority(), p1.getPriority());
             if (priorityCompare != 0) {
                 return priorityCompare;
@@ -515,29 +545,9 @@ public class SchedulerPluginUtil{
                 return p1.isDefault() ? 1 : -1;
             }
 
-            // Prefer non-randomizable plugins
+            // Prefer non-randomizable plugins for deterministic behavior
             if (p1.isAllowRandomScheduling() != p2.isAllowRandomScheduling()) {
                 return p1.isAllowRandomScheduling() ? 1 : -1;
-            }
-
-            // For non-randomizable plugins, sort by trigger time (earliest first)
-            if (!p1.isAllowRandomScheduling() && !p2.isAllowRandomScheduling()) {
-                Optional<ZonedDateTime> time1 = p1.getCurrentStartTriggerTime();
-                Optional<ZonedDateTime> time2 = p2.getCurrentStartTriggerTime();
-
-                if (time1.isPresent() && time2.isPresent()) {
-                    // Truncate to milliseconds for stable comparison
-                    ZonedDateTime t1 = time1.get().truncatedTo(ChronoUnit.MILLIS);
-                    ZonedDateTime t2 = time2.get().truncatedTo(ChronoUnit.MILLIS);
-                    int timeCompare = t1.compareTo(t2);
-                    if (timeCompare != 0) {
-                        return timeCompare;
-                    }
-                } else if (time1.isPresent()) {
-                    return -1; // p1 has time, p2 doesn't
-                } else if (time2.isPresent()) {
-                    return 1; // p2 has time, p1 doesn't
-                }
             }
 
             // As final tiebreakers use plugin name and object identity
@@ -555,19 +565,21 @@ public class SchedulerPluginUtil{
             return sortedPlugins;
         }
 
-        // Now we need to look for groups of randomizable plugins at the same priority
-        // and apply weighted selection
+        // Now we need to look for groups of randomizable plugins at the same priority,
+        // default status, and similar timing for weighted selection
         List<PluginScheduleEntry> result = new ArrayList<>();
         List<PluginScheduleEntry> randomizableGroup = new ArrayList<>();
         Integer currentPriority = null;
         boolean currentDefault = false;
+        ZonedDateTime currentTimeGroup = null;
+        final Duration TIME_GROUP_WINDOW = Duration.ofMinutes(5); // Group plugins within 5 minutes
 
-        // Iterate through sorted plugins to find groups with the same priority and
-        // default status
+        // Iterate through sorted plugins to find groups with the same priority,
+        // default status, and similar timing
         for (int i = 0; i < sortedPlugins.size(); i++) {
             PluginScheduleEntry current = sortedPlugins.get(i);
 
-            // Skip non-randomizable plugins (they're already properly sorted)
+            // Skip non-randomizable plugins (they're already properly sorted by time)
             if (!current.isAllowRandomScheduling()) {
                 // If we had a randomizable group, process it before adding this
                 // non-randomizable plugin
@@ -580,10 +592,25 @@ public class SchedulerPluginUtil{
                 continue;
             }
 
-            // Check if this is part of an existing group
-            if (currentPriority != null
+            // Get the trigger time for timing group comparison
+            Optional<ZonedDateTime> triggerTime = current.getCurrentStartTriggerTime();
+            ZonedDateTime currentTime = triggerTime.map(t -> t.truncatedTo(ChronoUnit.MINUTES)).orElse(null);
+
+            // Check if this is part of an existing group (same priority, default status, and timing)
+            boolean sameGroup = currentPriority != null
                     && current.getPriority() == currentPriority
-                    && current.isDefault() == currentDefault) {
+                    && current.isDefault() == currentDefault;
+
+            // Add timing group check - plugins should be in same time window for randomization
+            if (sameGroup && currentTimeGroup != null && currentTime != null) {
+                Duration timeDifference = Duration.between(currentTimeGroup, currentTime).abs();
+                sameGroup = timeDifference.compareTo(TIME_GROUP_WINDOW) <= 0;
+            } else if (sameGroup) {
+                // If one has time and other doesn't, they're not in the same group
+                sameGroup = (currentTimeGroup == null && currentTime == null);
+            }
+
+            if (sameGroup) {
                 // Same group, add to current batch of randomizable plugins
                 randomizableGroup.add(current);
             } else {
@@ -597,6 +624,7 @@ public class SchedulerPluginUtil{
                 randomizableGroup.add(current);
                 currentPriority = current.getPriority();
                 currentDefault = current.isDefault();
+                currentTimeGroup = currentTime;
             }
         }
 
@@ -866,4 +894,118 @@ public class SchedulerPluginUtil{
         }
     }
 
+
+    // ...existing code...
+
+    /**
+     * Gets the time until the next scheduled plugin will run.
+     * This method checks the SchedulerPlugin for the upcoming plugin and calculates
+     * the duration until it's scheduled to execute.
+     * 
+     * @return Optional containing the duration until the next plugin runs, 
+     *         or empty if no plugin is upcoming or time cannot be determined
+     */
+    public static Optional<Duration> getTimeUntilNextScheduledPlugin() {
+        try {
+            // Get the SchedulerPlugin instance
+            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
+            
+            // Check if scheduler plugin exists and is running
+            if (schedulerPlugin == null) {
+                Microbot.log("SchedulerPlugin is not loaded, cannot determine next plugin time", Level.DEBUG);
+                return Optional.empty();
+            }
+            
+            // Check if the scheduler is in an active state
+            if (!schedulerPlugin.getCurrentState().isSchedulerActive()) {
+                Microbot.log("SchedulerPlugin is not in active state: " + schedulerPlugin.getCurrentState(), Level.DEBUG);
+                return Optional.empty();
+            }
+            
+            // Get the upcoming plugin
+            PluginScheduleEntry upcomingPlugin = schedulerPlugin.getUpComingPlugin();
+            if (upcomingPlugin == null) {
+                Microbot.log("No upcoming plugin found in scheduler", Level.DEBUG);
+                return Optional.empty();
+            }
+            
+            // Get the time until the next run for this plugin
+            Optional<Duration> timeUntilRun = upcomingPlugin.getTimeUntilNextRun();
+            if (!timeUntilRun.isPresent()) {
+                Microbot.log("Cannot determine time until next run for plugin: " + upcomingPlugin.getCleanName(), Level.DEBUG);
+                return Optional.empty();
+            }
+            
+            Duration duration = timeUntilRun.get();
+            
+            // Log the result for debugging
+            Microbot.log("Next plugin '" + upcomingPlugin.getCleanName() + "' scheduled in: " + 
+                        formatDuration(duration), Level.DEBUG);
+            
+            return Optional.of(duration);
+            
+        } catch (Exception e) {
+            Microbot.log("Error getting time until next scheduled plugin: " + e.getMessage(), Level.ERROR);
+            return Optional.empty();
+        }
+    }
+    
+    /**
+     * Gets information about the next scheduled plugin.
+     * This method provides both the plugin entry and the time until it runs.
+     * 
+     * @return Optional containing a formatted string with plugin name and time until run,
+     *         or empty if no plugin is upcoming
+     */
+    public static Optional<String> getNextScheduledPluginInfo() {
+        try {
+            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
+            
+            if (schedulerPlugin == null || !schedulerPlugin.getCurrentState().isSchedulerActive()) {
+                return Optional.empty();
+            }
+            
+            PluginScheduleEntry upcomingPlugin = schedulerPlugin.getUpComingPlugin();
+            if (upcomingPlugin == null) {
+                return Optional.empty();
+            }
+            
+            Optional<Duration> timeUntilRun = upcomingPlugin.getTimeUntilNextRun();
+            if (!timeUntilRun.isPresent()) {
+                return Optional.of("Next plugin: " + upcomingPlugin.getCleanName() + " (time unknown)");
+            }
+            
+            String formattedTime = formatDuration(timeUntilRun.get());
+            return Optional.of("Next plugin: " + upcomingPlugin.getCleanName() + " in " + formattedTime);
+            
+        } catch (Exception e) {
+            Microbot.log("Error getting next scheduled plugin info: " + e.getMessage(), Level.ERROR);
+            return Optional.empty();
+        }
+    }
+    
+    /**
+     * Gets the next scheduled plugin entry with its complete information.
+     * This provides access to the full PluginScheduleEntry object.
+     * 
+     * @return Optional containing the next scheduled plugin entry,
+     *         or empty if no plugin is upcoming
+     */
+    public static Optional<PluginScheduleEntry> getNextScheduledPluginEntry() {
+        try {
+            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
+            
+            if (schedulerPlugin == null || !schedulerPlugin.getCurrentState().isSchedulerActive()) {
+                return Optional.empty();
+            }
+            
+            PluginScheduleEntry upcomingPlugin = schedulerPlugin.getUpComingPlugin();
+            return Optional.ofNullable(upcomingPlugin);
+            
+        } catch (Exception e) {
+            Microbot.log("Error getting next scheduled plugin entry: " + e.getMessage(), Level.ERROR);
+            return Optional.empty();
+        }
+    }
+    
 }

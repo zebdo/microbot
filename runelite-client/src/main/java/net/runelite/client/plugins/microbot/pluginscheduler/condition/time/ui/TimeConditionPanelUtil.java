@@ -5,6 +5,7 @@ import javax.swing.BoxLayout;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.BorderFactory;
+import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
 import java.awt.BorderLayout;
 import java.awt.Component;
@@ -462,10 +463,11 @@ public class TimeConditionPanelUtil {
         randomizeAmountLabel.setFont(FontManager.getRunescapeSmallFont());
         randomPanel.add(randomizeAmountLabel);
         
-        SpinnerNumberModel randomizeModel = new SpinnerNumberModel(15, 1, 60, 1);
+        SpinnerNumberModel randomizeModel = new SpinnerNumberModel(3, 1, 15, 1); // Default to 3 minutes, max 15 for default "Every Day"
         JSpinner randomizeSpinner = new JSpinner(randomizeModel);
         randomizeSpinner.setPreferredSize(new Dimension(50, randomizeSpinner.getPreferredSize().height));
         randomizeSpinner.setEnabled(false);
+        randomizeSpinner.setToolTipText("<html>Randomization range: ±1 to ±15 minutes<br>Maximum is 40% of 1 days interval</html>");
         randomPanel.add(randomizeSpinner);
         
         JLabel minutesLabel = new JLabel("min");
@@ -476,12 +478,24 @@ public class TimeConditionPanelUtil {
         // Control interactions
         repeatComboBox.addActionListener(e -> {
             String selected = (String) repeatComboBox.getSelectedItem();
-            intervalSpinner.setEnabled(!selected.equals("Every Day") && !selected.equals("One Time Only"));
+            boolean enableInterval = !selected.equals("Every Day") && !selected.equals("One Time Only");
+            intervalSpinner.setEnabled(enableInterval);
+            
+            // Update randomizer limits based on selected repeat cycle and interval
+            updateRandomizerLimits(repeatComboBox, intervalSpinner, randomizeSpinner);
+        });
+        
+        // Update randomizer limits when interval changes
+        intervalSpinner.addChangeListener(e -> {
+            updateRandomizerLimits(repeatComboBox, intervalSpinner, randomizeSpinner);
         });
         
         randomizeCheckBox.addActionListener(e -> 
             randomizeSpinner.setEnabled(randomizeCheckBox.isSelected())
         );
+        
+        // Set initial randomizer limits based on default selection
+        SwingUtilities.invokeLater(() -> updateRandomizerLimits(repeatComboBox, intervalSpinner, randomizeSpinner));
         
         // Layout both panels
         JPanel combinedPanel = new JPanel(new GridLayout(2, 1, 0, 2));
@@ -500,6 +514,76 @@ public class TimeConditionPanelUtil {
         return mainPanel;
     }
     
+    /**
+     * Updates the randomizer spinner limits based on the current repeat cycle and interval
+     */
+    private static void updateRandomizerLimits(JComboBox<String> repeatComboBox, JSpinner intervalSpinner, JSpinner randomizeSpinner) {
+        String selectedOption = (String) repeatComboBox.getSelectedItem();
+        int interval = (Integer) intervalSpinner.getValue();
+        
+        // Map the selected option to RepeatCycle
+        RepeatCycle repeatCycle;
+        switch (selectedOption) {
+            case "Every Day":
+                repeatCycle = RepeatCycle.DAYS;
+                interval = 1;
+                break;
+            case "Every X Days":
+                repeatCycle = RepeatCycle.DAYS;
+                break;
+            case "Every X Hours":
+                repeatCycle = RepeatCycle.HOURS;
+                break;
+            case "Every X Minutes":
+                repeatCycle = RepeatCycle.MINUTES;
+                break;
+            case "Every X Weeks":
+                repeatCycle = RepeatCycle.WEEKS;
+                break;
+            case "One Time Only":
+                repeatCycle = RepeatCycle.ONE_TIME;
+                break;
+            default:
+                repeatCycle = RepeatCycle.DAYS;
+                interval = 1;
+        }
+        
+        // Calculate the maximum allowed randomizer value
+        int maxRandomizer = calculateMaxRandomizerValue(repeatCycle, interval);
+        
+        // Ensure minimum valid bounds for SpinnerNumberModel
+        if (maxRandomizer < 1) {
+            maxRandomizer = 1;
+        }
+        
+        // Update the spinner model with new limits
+        SpinnerNumberModel currentModel = (SpinnerNumberModel) randomizeSpinner.getModel();
+        int currentValue = currentModel.getNumber().intValue();
+        
+        // Ensure current value is within valid bounds
+        int validatedCurrentValue = Math.max(1, Math.min(currentValue, maxRandomizer));
+        
+        // Create new model with validated values
+        SpinnerNumberModel newModel = new SpinnerNumberModel(
+            validatedCurrentValue, // current value, validated to be within bounds
+            1, // minimum
+            maxRandomizer, // maximum (at least 1)
+            1 // step
+        );
+        
+        randomizeSpinner.setModel(newModel);
+        
+        // Update tooltip to show the reasoning
+        randomizeSpinner.setToolTipText(String.format(
+            "<html>Randomization range: ±1 to ±%d minutes<br>" +
+            "Maximum is %d%% of %d %s interval</html>",
+            maxRandomizer, 
+            (int)(40), // 40% as we use in calculation
+            interval,
+            repeatCycle.toString().toLowerCase()
+        ));
+    }
+
     /**
      * Creates a help panel with useful information
      */
@@ -600,8 +684,20 @@ public class TimeConditionPanelUtil {
         // Apply randomization if enabled
         if (randomizeCheckBox.isSelected()) {
             int randomizerValue = (Integer) randomizeSpinner.getValue();
+            
+            // Validate randomizer value against the interval to ensure it stays within reasonable bounds
+            int maxAllowedRandomizer = calculateMaxRandomizerValue(repeatCycle, interval);
+            if (randomizerValue > maxAllowedRandomizer) {
+                log.warn("Randomizer value {} is too large for interval {} {}. Capping at {}", 
+                    randomizerValue, interval, repeatCycle, maxAllowedRandomizer);
+                randomizerValue = maxAllowedRandomizer;
+                randomizeSpinner.setValue(maxAllowedRandomizer); // Update UI to reflect capped value
+            }
+            
             condition.setRandomization(true);
             condition.setRandomizerValue(randomizerValue);
+            // Set the randomization unit based on the repeat cycle - for TimeWindow, randomization is always in minutes
+            condition.setRandomizerValueUnit(RepeatCycle.MINUTES);
         }
         
         return condition;
@@ -1018,8 +1114,46 @@ public static DayOfWeekCondition createDayOfWeekCondition(JPanel configPanel) {
         if (randomizeCheckBox != null && randomizeSpinner != null) {
             randomizeCheckBox.setSelected(condition.isUseRandomization());
             randomizeSpinner.setEnabled(condition.isUseRandomization());
-            if (condition.getRandomizerValue() > 0) {
-                randomizeSpinner.setValue(condition.getRandomizerValue());
+            
+            // Validate and set randomizer value
+            int savedRandomizerValue = condition.getRandomizerValue();
+            if (savedRandomizerValue > 0) {
+                // Calculate max allowed for this condition's settings
+                int maxAllowedRandomizer = calculateMaxRandomizerValue(condition.getRepeatCycle(), condition.getRepeatIntervalUnit());
+                int validatedValue = Math.max(1, Math.min(savedRandomizerValue, maxAllowedRandomizer));
+                
+                // Ensure maximum is at least 1
+                maxAllowedRandomizer = Math.max(1, maxAllowedRandomizer);
+                
+                // Update spinner model with proper limits
+                SpinnerNumberModel newModel = new SpinnerNumberModel(
+                    validatedValue, // current value, validated
+                    1, // minimum
+                    maxAllowedRandomizer, // maximum
+                    1 // step
+                );
+                randomizeSpinner.setModel(newModel);
+                
+                if (validatedValue != savedRandomizerValue) {
+                    log.warn("Randomizer value {} was too large for {}x{} interval. Capped at {}", 
+                        savedRandomizerValue, condition.getRepeatIntervalUnit(), condition.getRepeatCycle(), validatedValue);
+                }
+            } else {
+                // Set default value if no randomization value is set
+                int maxAllowedRandomizer = calculateMaxRandomizerValue(condition.getRepeatCycle(), condition.getRepeatIntervalUnit());
+                int defaultValue = Math.max(1, Math.min(3, maxAllowedRandomizer));
+                
+                // Ensure maximum is at least 1
+                maxAllowedRandomizer = Math.max(1, maxAllowedRandomizer);
+                
+                // Update spinner model with proper limits  
+                SpinnerNumberModel newModel = new SpinnerNumberModel(
+                    defaultValue, // default value
+                    1, // minimum
+                    maxAllowedRandomizer, // maximum
+                    1 // step
+                );
+                randomizeSpinner.setModel(newModel);
             }
         }
     }
@@ -1185,5 +1319,66 @@ public static DayOfWeekCondition createDayOfWeekCondition(JPanel configPanel) {
             dateTimePicker.setDateTime(condition.getNextTriggerTimeWithPause().get().toLocalDateTime());
         }
         
+    }
+    
+    /**
+     * Calculates the maximum allowed randomizer value for a given repeat cycle and interval.
+     * Ensures randomization doesn't exceed 40% of the total interval to prevent overlapping.
+     * 
+     * @param repeatCycle The repeat cycle (MINUTES, HOURS, DAYS, etc.)
+     * @param interval The interval value
+     * @return Maximum allowed randomizer value in minutes
+     */
+    private static int calculateMaxRandomizerValue(RepeatCycle repeatCycle, int interval) {
+        int totalIntervalMinutes;
+        
+        switch (repeatCycle) {
+            case MINUTES:
+                totalIntervalMinutes = interval;
+                break;
+            case HOURS:
+                totalIntervalMinutes = interval * 60;
+                break;
+            case DAYS:
+                totalIntervalMinutes = interval * 24 * 60;
+                break;
+            case WEEKS:
+                totalIntervalMinutes = interval * 7 * 24 * 60;
+                break;
+            case ONE_TIME:
+                return 60; // For one-time, allow up to 1 hour randomization
+            default:
+                return 15; // Default fallback
+        }
+        
+        // Allow randomization up to 40% of the total interval, but cap at reasonable limits
+        int maxRandomizer = (int) (totalIntervalMinutes * 0.4);
+        
+        // Apply caps based on interval type
+        int result;
+        switch (repeatCycle) {
+            case MINUTES:
+                // For minute intervals, cap at half the interval or 30 minutes, whichever is smaller
+                result = Math.min(maxRandomizer, Math.min(interval / 2, 30));
+                break;
+            case HOURS:
+                // For hour intervals, cap at 2 hours
+                result = Math.min(maxRandomizer, 120);
+                break;
+            case DAYS:
+                // For day intervals, cap at 12 hours
+                result = Math.min(maxRandomizer, 720);
+                break;
+            case WEEKS:
+                // For week intervals, cap at 2 days
+                result = Math.min(maxRandomizer, 2880);
+                break;
+            default:
+                result = Math.min(maxRandomizer, 60);
+                break;
+        }
+        
+        // Ensure result is at least 1 to avoid invalid SpinnerNumberModel creation
+        return Math.max(1, result);
     }
 }

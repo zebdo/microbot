@@ -30,9 +30,9 @@ public class SchedulerPanel extends PluginPanel {
     private final JLabel prevPluginStopTimeLabel;
 
     // Next plugin section
-    private final JLabel nextPluginNameLabel;
-    private final JLabel nextPluginTimeLabel;
-    private final JLabel nextPluginScheduleLabel;
+    private final JLabel nextUpComingPluginNameLabel;
+    private final JLabel nextUpComingPluginTimeLabel;
+    private final JLabel nextUpComingPluginScheduleLabel;
 
     // Scheduler status section
     private final JLabel schedulerStatusLabel;
@@ -44,12 +44,17 @@ public class SchedulerPanel extends PluginPanel {
     private final JButton pauseResumePluginButton; 
     private final JButton antibanButton; 
 
+    // State tracking for optimized updates
+    private PluginScheduleEntry lastTrackedCurrentPlugin;
+    private PluginScheduleEntry lastTrackedNextUpComingPlugin;
+    private SchedulerState lastTrackedState; 
+
 
     public SchedulerPanel(SchedulerPlugin plugin) {
         super(false);
         this.plugin = plugin;
 
-        setBorder(new EmptyBorder(10, 10, 10, 10));
+        setBorder(new EmptyBorder(8, 8, 8, 8));
         setBackground(ColorScheme.DARK_GRAY_COLOR);
         setLayout(new BorderLayout());
 
@@ -112,30 +117,30 @@ public class SchedulerPanel extends PluginPanel {
         prevPluginPanel.add(prevPluginStopTimeLabel, createGbc(1, 3));
 
         // Next plugin info panel
-        JPanel nextPluginPanel = createInfoPanel("Next Scheduled Plugin");
-        JLabel nextPluginTitleLabel = new JLabel("Plugin:");
-        nextPluginTitleLabel.setForeground(Color.WHITE);
-        nextPluginTitleLabel.setFont(FontManager.getRunescapeFont());
-        nextPluginPanel.add(nextPluginTitleLabel, createGbc(0, 0));
+        JPanel nextUpComingPluginPanel = createInfoPanel("Next Scheduled Plugin");
+        JLabel nextUpComingPluginTitleLabel = new JLabel("Plugin:");
+        nextUpComingPluginTitleLabel.setForeground(Color.WHITE);
+        nextUpComingPluginTitleLabel.setFont(FontManager.getRunescapeFont());
+        nextUpComingPluginPanel.add(nextUpComingPluginTitleLabel, createGbc(0, 0));
 
-        nextPluginNameLabel = createValueLabel("None");
-        nextPluginPanel.add(nextPluginNameLabel, createGbc(1, 0));
+        nextUpComingPluginNameLabel = createValueLabel("None");
+        nextUpComingPluginPanel.add(nextUpComingPluginNameLabel, createGbc(1, 0));
 
         JLabel nextRunLabel = new JLabel("Next Run:");
         nextRunLabel.setForeground(Color.WHITE);
         nextRunLabel.setFont(FontManager.getRunescapeFont());
-        nextPluginPanel.add(nextRunLabel, createGbc(0, 1));
+        nextUpComingPluginPanel.add(nextRunLabel, createGbc(0, 1));
 
-        nextPluginTimeLabel = createValueLabel("--:--");
-        nextPluginPanel.add(nextPluginTimeLabel, createGbc(1, 1));
+        nextUpComingPluginTimeLabel = createValueLabel("--:--");
+        nextUpComingPluginPanel.add(nextUpComingPluginTimeLabel, createGbc(1, 1));
 
         JLabel scheduleLabel = new JLabel("Schedule:");
         scheduleLabel.setForeground(Color.WHITE);
         scheduleLabel.setFont(FontManager.getRunescapeFont());
-        nextPluginPanel.add(scheduleLabel, createGbc(0, 2));
+        nextUpComingPluginPanel.add(scheduleLabel, createGbc(0, 2));
 
-        nextPluginScheduleLabel = createValueLabel("None");
-        nextPluginPanel.add(nextPluginScheduleLabel, createGbc(1, 2));
+        nextUpComingPluginScheduleLabel = createValueLabel("None");
+        nextUpComingPluginPanel.add(nextUpComingPluginScheduleLabel, createGbc(1, 2));
 
         // Scheduler status panel
         JPanel statusPanel = createInfoPanel("Scheduler Status");
@@ -233,15 +238,15 @@ public class SchedulerPanel extends PluginPanel {
 
         // Add components to main panel
         mainPanel.add(infoPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         mainPanel.add(prevPluginPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
-        mainPanel.add(nextPluginPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 8)));
+        mainPanel.add(nextUpComingPluginPanel);
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         mainPanel.add(statusPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 8)));
         mainPanel.add(buttonPanel);
-        mainPanel.add(Box.createRigidArea(new Dimension(0, 10)));
+        mainPanel.add(Box.createRigidArea(new Dimension(0, 8)));
 
         // Wrap main panel in scroll pane for better fit in different sidebar sizes
         JScrollPane scrollPane = new JScrollPane(mainPanel);
@@ -329,15 +334,40 @@ public class SchedulerPanel extends PluginPanel {
     }
 
     public void refresh() {
-        updatePluginInfo();
-        updateNextPluginInfo();
-        updateButtonStates();
+        // Get current state information
+        SchedulerState currentState = plugin.getCurrentState();
+        PluginScheduleEntry currentPlugin = plugin.getCurrentPlugin();
+        PluginScheduleEntry nextUpComingPlugin = plugin.getUpComingPlugin();
         
-        // Update scheduler status
-        SchedulerState state = plugin.getCurrentState();
-        schedulerStatusLabel.setText(state.getDisplayName());
-        schedulerStatusLabel.setForeground(state.getColor());
-        schedulerStatusLabel.setToolTipText(state.getDescription());
+        // Update current plugin info if it changed
+        if (currentPlugin != lastTrackedCurrentPlugin) {
+            updatePluginInfo();
+            lastTrackedCurrentPlugin = currentPlugin;
+        } else if (currentPlugin != null && currentPlugin.isRunning()) {
+            // Update only the runtime display without full refresh when plugin is running
+            updateCurrentPluginRuntimeOnly();
+        }
+        
+        // Update next plugin info if it changed
+        if (nextUpComingPlugin != lastTrackedNextUpComingPlugin) {
+            updateNextPluginInfo();
+            lastTrackedNextUpComingPlugin = nextUpComingPlugin;
+        } else if (nextUpComingPlugin != null && nextUpComingPlugin.isEnabled()) {
+            // Update only the time display without full refresh for real-time countdown
+            updateNextPluginTimeDisplayOnly(nextUpComingPlugin);
+        }
+        
+        // Update scheduler status and buttons if state changed
+        if (currentState != lastTrackedState) {
+            updateButtonStates();
+            
+            // Update scheduler status
+            schedulerStatusLabel.setText(currentState.getDisplayName());
+            schedulerStatusLabel.setForeground(currentState.getColor());
+            schedulerStatusLabel.setToolTipText(currentState.getDescription());
+            
+            lastTrackedState = currentState;
+        }
     }
       
     /**
@@ -530,21 +560,21 @@ public class SchedulerPanel extends PluginPanel {
     }
     
     void updateNextPluginInfo() {
-        PluginScheduleEntry nextPlugin = plugin.getNextScheduledPlugin();
+        PluginScheduleEntry nextUpComingPlugin = plugin.getUpComingPlugin();
 
-        if (nextPlugin != null) {
+        if (nextUpComingPlugin != null) {
             // Set the plugin name
-            nextPluginNameLabel.setText(nextPlugin.getCleanName());
+            nextUpComingPluginNameLabel.setText(nextUpComingPlugin.getCleanName());
             
             // Set the next run time display (already handles various condition types)
-            nextPluginTimeLabel.setText(nextPlugin.getNextRunDisplay());
+            nextUpComingPluginTimeLabel.setText(nextUpComingPlugin.getNextRunDisplay());
 
             // Create an enhanced schedule description
-            StringBuilder scheduleDesc = new StringBuilder(nextPlugin.getIntervalDisplay());
+            StringBuilder scheduleDesc = new StringBuilder(nextUpComingPlugin.getIntervalDisplay());
             
             // Add information about one-time schedules
-            if (nextPlugin.hasAnyOneTimeStartConditions()) {
-                if (nextPlugin.hasTriggeredOneTimeStartConditions() && !nextPlugin.canStartTriggerAgain()) {
+            if (nextUpComingPlugin.hasAnyOneTimeStartConditions()) {
+                if (nextUpComingPlugin.hasTriggeredOneTimeStartConditions() && !nextUpComingPlugin.canStartTriggerAgain()) {
                     scheduleDesc.append(" (Completed)");
                 } else {
                     scheduleDesc.append(" (One-time)");
@@ -552,9 +582,9 @@ public class SchedulerPanel extends PluginPanel {
             }
             
             // Add condition status information if available
-            if (nextPlugin.hasAnyStartConditions()) {
-                int total = nextPlugin.getStartConditionManager().getConditions().size();
-                long satisfied = nextPlugin.getStartConditionManager().getConditions().stream()
+            if (nextUpComingPlugin.hasAnyStartConditions()) {
+                int total = nextUpComingPlugin.getStartConditionManager().getConditions().size();
+                long satisfied = nextUpComingPlugin.getStartConditionManager().getConditions().stream()
                         .filter(condition -> condition.isSatisfied())
                         .count();
                 
@@ -564,12 +594,44 @@ public class SchedulerPanel extends PluginPanel {
             }
             
             // Set the updated schedule description
-            nextPluginScheduleLabel.setText(scheduleDesc.toString());
+            nextUpComingPluginScheduleLabel.setText(scheduleDesc.toString());
         } else {
             // No next plugin scheduled
-            nextPluginNameLabel.setText("None");
-            nextPluginTimeLabel.setText("--:--");
-            nextPluginScheduleLabel.setText("None");
+            nextUpComingPluginNameLabel.setText("None");
+            nextUpComingPluginTimeLabel.setText("--:--");
+            nextUpComingPluginScheduleLabel.setText("None");
+        }
+    }
+
+    /**
+     * Updates only the runtime display for the current plugin without refreshing other info.
+     * This is used for regular runtime updates when the plugin hasn't changed.
+     */
+    private void updateCurrentPluginRuntimeOnly() {
+        PluginScheduleEntry currentPlugin = plugin.getCurrentPlugin();
+        if (currentPlugin != null && currentPlugin.isRunning()) {
+            // Calculate and display current runtime for active plugin
+            ZonedDateTime startTimeZdt = currentPlugin.getLastRunStartTime();
+            if (startTimeZdt != null) {
+                long startTimeMillis = startTimeZdt.toInstant().toEpochMilli();
+                long runtimeMillis = System.currentTimeMillis() - startTimeMillis;
+                runtimeLabel.setText(formatDuration(runtimeMillis));
+            } else {
+                runtimeLabel.setText("Running");
+            }
+        }
+    }
+    
+    /**
+     * Updates only the time display for the next plugin without full refresh.
+     * This is used for regular time updates when the plugin hasn't changed.
+     * 
+     * @param nextUpComingPlugin The next scheduled plugin
+     */
+    private void updateNextPluginTimeDisplayOnly(PluginScheduleEntry nextUpComingPlugin) {
+        if (nextUpComingPlugin != null && nextUpComingPlugin.isEnabled()) {
+            // Update only the time display - this calls getCurrentStartTriggerTime() for real-time accuracy
+            nextUpComingPluginTimeLabel.setText(nextUpComingPlugin.getNextRunDisplay());
         }
     }
 

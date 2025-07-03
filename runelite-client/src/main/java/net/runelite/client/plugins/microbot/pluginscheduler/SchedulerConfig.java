@@ -54,6 +54,18 @@ public interface SchedulerConfig extends Config {
     }
    
     void setScheduledPlugins(String json);
+    
+    // UI Settings
+    @ConfigItem(
+        keyName = "showOverlay",
+        name = "Show Info Overlay",
+        description = "Show a concise in-game overlay with scheduler status information",
+        position = 1
+    )
+    default boolean showOverlay() {
+        return false;
+    }
+    
     /// Control settings
     @Range(
 		min = 60,

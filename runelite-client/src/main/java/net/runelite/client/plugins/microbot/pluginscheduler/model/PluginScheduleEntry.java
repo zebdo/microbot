@@ -14,6 +14,9 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.function.Supplier;
+
+import org.lwjgl.opencl.CL;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -98,7 +101,8 @@ public class PluginScheduleEntry implements AutoCloseable {
         ERROR("Error"),
         SCHEDULED_STOP("Scheduled Stop"),
         INTERRUPTED("Interrupted"),
-        HARD_STOP("Hard Stop");
+        HARD_STOP("Hard Stop"),
+        CLIENT_SHUTDOWN("Client Shutdown");
         
         private final String description;
         

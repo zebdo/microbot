@@ -9,6 +9,9 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.Lo
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntryFinishedEvent;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
 import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
+import net.runelite.client.plugins.microbot.pluginscheduler.ui.util.SchedulerUIUtils;
+import net.runelite.client.plugins.microbot.pluginscheduler.util.SchedulerPluginUtil;
+
 import org.slf4j.event.Level;
 import net.runelite.client.config.ConfigDescriptor;
 import net.runelite.client.plugins.Plugin;
@@ -310,42 +313,7 @@ public interface SchedulablePlugin {
      */
     default Optional<Duration> getTimeUntilNextScheduledPlugin() {
         try {
-            // Get the SchedulerPlugin instance
-            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
-            
-            // Check if scheduler plugin exists and is running
-            if (schedulerPlugin == null) {
-                Microbot.log("SchedulerPlugin is not loaded, cannot determine next plugin time", Level.DEBUG);
-                return Optional.empty();
-            }
-            
-            // Check if the scheduler is in an active state
-            if (!schedulerPlugin.getCurrentState().isSchedulerActive()) {
-                Microbot.log("SchedulerPlugin is not in active state: " + schedulerPlugin.getCurrentState(), Level.DEBUG);
-                return Optional.empty();
-            }
-            
-            // Get the upcoming plugin
-            PluginScheduleEntry upcomingPlugin = schedulerPlugin.getUpComingPlugin();
-            if (upcomingPlugin == null) {
-                Microbot.log("No upcoming plugin found in scheduler", Level.DEBUG);
-                return Optional.empty();
-            }
-            
-            // Get the time until the next run for this plugin
-            Optional<Duration> timeUntilRun = upcomingPlugin.getTimeUntilNextRun();
-            if (!timeUntilRun.isPresent()) {
-                Microbot.log("Cannot determine time until next run for plugin: " + upcomingPlugin.getCleanName(), Level.DEBUG);
-                return Optional.empty();
-            }
-            
-            Duration duration = timeUntilRun.get();
-            
-            // Log the result for debugging
-            Microbot.log("Next plugin '" + upcomingPlugin.getCleanName() + "' scheduled in: " + 
-                        formatDurationForLogging(duration), Level.DEBUG);
-            
-            return Optional.of(duration);
+           return SchedulerPluginUtil.getTimeUntilNextScheduledPlugin();
             
         } catch (Exception e) {
             Microbot.log("Error getting time until next scheduled plugin: " + e.getMessage(), Level.ERROR);
@@ -362,25 +330,7 @@ public interface SchedulablePlugin {
      */
     default Optional<String> getNextScheduledPluginInfo() {
         try {
-            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
-            
-            if (schedulerPlugin == null || !schedulerPlugin.getCurrentState().isSchedulerActive()) {
-                return Optional.empty();
-            }
-            
-            PluginScheduleEntry upcomingPlugin = schedulerPlugin.getUpComingPlugin();
-            if (upcomingPlugin == null) {
-                return Optional.empty();
-            }
-            
-            Optional<Duration> timeUntilRun = upcomingPlugin.getTimeUntilNextRun();
-            if (!timeUntilRun.isPresent()) {
-                return Optional.of("Next plugin: " + upcomingPlugin.getCleanName() + " (time unknown)");
-            }
-            
-            String formattedTime = formatDurationForLogging(timeUntilRun.get());
-            return Optional.of("Next plugin: " + upcomingPlugin.getCleanName() + " in " + formattedTime);
-            
+            return SchedulerPluginUtil.getNextScheduledPluginInfo();            
         } catch (Exception e) {
             Microbot.log("Error getting next scheduled plugin info: " + e.getMessage(), Level.ERROR);
             return Optional.empty();
@@ -396,46 +346,10 @@ public interface SchedulablePlugin {
      */
     default Optional<PluginScheduleEntry> getNextScheduledPluginEntry() {
         try {
-            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
-            
-            if (schedulerPlugin == null || !schedulerPlugin.getCurrentState().isSchedulerActive()) {
-                return Optional.empty();
-            }
-            
-            PluginScheduleEntry upcomingPlugin = schedulerPlugin.getUpComingPlugin();
-            return Optional.ofNullable(upcomingPlugin);
-            
+            return SchedulerPluginUtil.getNextScheduledPluginEntry();
         } catch (Exception e) {
             Microbot.log("Error getting next scheduled plugin entry: " + e.getMessage(), Level.ERROR);
             return Optional.empty();
         }
     }
-    
-    /**
-     * Helper method to format duration for user-friendly display
-     * 
-     * @param duration The duration to format
-     * @return A formatted string representation of the duration
-     */
-    private String formatDurationForLogging(Duration duration) {
-        if (duration == null) {
-            return "unknown";
-        }
-        
-        long totalSeconds = duration.getSeconds();
-        long hours = totalSeconds / 3600;
-        long minutes = (totalSeconds % 3600) / 60;
-        long seconds = totalSeconds % 60;
-        
-        if (hours > 0) {
-            return String.format("%dh %dm %ds", hours, minutes, seconds);
-        } else if (minutes > 0) {
-            return String.format("%dm %ds", minutes, seconds);
-        } else {
-            return String.format("%ds", seconds);
-        }
-    }
-
-
-
 }

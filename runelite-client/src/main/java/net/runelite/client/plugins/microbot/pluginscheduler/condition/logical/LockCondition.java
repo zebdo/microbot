@@ -121,7 +121,7 @@ public class LockCondition implements Condition {
     
     @Override
     public String getDescription() {
-        return "Lock Condition: " + (isLocked() ? "\nLOCKED - " + reason : "\nUNLOCKED");
+        return "Lock Condition: " + (isLocked() ? "\"LOCKED\" - " + reason : "UNLOCKED");
     }
     
     @Override

@@ -1037,8 +1037,16 @@ public class ScheduleTablePanel extends JPanel implements ScheduleTableModel {
             return false;
         }
         
-        PluginScheduleEntry nextPlugin = schedulerPlugin.getNextScheduledPlugin();
-        return nextPlugin != null && nextPlugin.equals(scheduledPlugin);
+        PluginScheduleEntry nextPlugin = schedulerPlugin.getNextPluginToBeScheduled();
+        PluginScheduleEntry nextUpCommigPlugin = schedulerPlugin.getNextPluginToBeScheduled();
+        boolean isNextUpComingPlugin = nextUpCommigPlugin != null && nextUpCommigPlugin.equals(scheduledPlugin);
+        boolean isNextPlugin = nextPlugin != null && nextPlugin.equals(scheduledPlugin);
+        if (nextPlugin!= null){
+            return isNextPlugin;
+        }else{
+            return isNextUpComingPlugin;
+        }
+//        return nextPlugin != null && nextPlugin.equals(scheduledPlugin);
     }   
     private void detectChangesInPluginlist(){
         List<PluginScheduleEntry> sortedPlugins = schedulerPlugin.sortPluginScheduleEntries();

@@ -15,7 +15,7 @@ public enum SchedulerState {
     SCHEDULING("SCHEDULING", "Scheduler is running and monitoring", new Color(76, 175, 80)),
     STARTING_PLUGIN("Starting Plugin", "Starting a scheduled plugin", new Color(200, 230, 0)),
     RUNNING_PLUGIN("Running Plugin", "Scheduled plugin is running", new Color(0, 200, 83)),
-    RUNNING_PLUGIN_PAUSED("Running Plugin Paused", "Current plugin execution is paused", new Color(255, 140, 0)),
+    RUNNING_PLUGIN_PAUSED("Plugin Paused", "Current plugin execution is paused", new Color(255, 140, 0)),
     SCHEDULER_PAUSED("Scheduler Paused", "All scheduler activities are paused", new Color(255, 165, 0)),
     WAITING_FOR_LOGIN("Waiting for Login", "Waiting for user to log in", new Color(255, 215, 0)),
     HARD_STOPPING_PLUGIN("Hard Stopping Plugin", "Stopping the current plugin", new Color(255, 120, 0)),
