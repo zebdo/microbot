@@ -14,6 +14,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
 
 @Slf4j
 public class Rs2ItemModel {
@@ -316,22 +318,20 @@ public class Rs2ItemModel {
         return sb.toString();
     }
 
-    public static boolean matches(Rs2ItemModel item, boolean exact, String... names) {
-        if (item.getName() == null) return false;
-        final String itemName = item.getName().toLowerCase();
-        return Arrays.stream(names).filter(Objects::nonNull).anyMatch(exact ?
-                name -> itemName.equals(name.toLowerCase()) :
-                name -> itemName.contains(name.toLowerCase())
-        );
+    private static <T> Predicate<Rs2ItemModel> matches(T[] values, BiPredicate<Rs2ItemModel, T> biPredicate) {
+        return item -> Arrays.stream(values).filter(Objects::nonNull).anyMatch(value -> biPredicate.test(item, value));
     }
 
-    public static boolean matches(Rs2ItemModel item, int... ids) {
-        final int itemId = item.getId();
-        return Arrays.stream(ids).anyMatch(id -> id == itemId);
+    public static Predicate<Rs2ItemModel> matches(boolean exact, String... names) {
+        return matches(names, exact ? (item, name) -> item.getName().equalsIgnoreCase(name) :
+                (item, name) -> item.getName().toLowerCase().contains(name.toLowerCase()));
     }
 
-    public static boolean matches(Rs2ItemModel item, EquipmentInventorySlot... slots) {
-        final int itemSlot = item.getSlot();
-        return Arrays.stream(slots).map(EquipmentInventorySlot::getSlotIdx).anyMatch(slot -> itemSlot == slot);
+    public static Predicate<Rs2ItemModel> matches(int... ids) {
+        return item -> Arrays.stream(ids).anyMatch(id -> item.getId() == id);
+    }
+
+    public static Predicate<Rs2ItemModel> matches(EquipmentInventorySlot... slots) {
+        return matches(slots, (item, slot) -> item.getSlot() == slot.getSlotIdx());
     }
 }

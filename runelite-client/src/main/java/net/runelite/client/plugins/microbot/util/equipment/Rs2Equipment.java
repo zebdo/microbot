@@ -96,19 +96,19 @@ public class Rs2Equipment {
     }
 
     public static Stream<Rs2ItemModel> all(EquipmentInventorySlot... slots) {
-        return all(item -> Rs2ItemModel.matches(item, slots));
+        return all(Rs2ItemModel.matches(slots));
     }
 
     public static Stream<Rs2ItemModel> all(int... ids) {
-        return all(item -> Rs2ItemModel.matches(item, ids));
+        return all(Rs2ItemModel.matches(ids));
     }
 
     public static Stream<Rs2ItemModel> all(String[] names, boolean exact) {
-        return all(item -> Rs2ItemModel.matches(item, exact, names));
+        return all(Rs2ItemModel.matches(exact, names));
     }
 
     public static Stream<Rs2ItemModel> all(String name, boolean exact) {
-        return all(item -> Rs2ItemModel.matches(item, exact, name));
+        return all(Rs2ItemModel.matches(exact, name));
     }
 
     public static Stream<Rs2ItemModel> all(String... names) {
@@ -263,7 +263,7 @@ public class Rs2Equipment {
     public static boolean isWearing(String[] names, boolean exact, EquipmentInventorySlot[] searchSlots) {
         final Rs2ItemModel[] equipment = all(searchSlots).toArray(Rs2ItemModel[]::new);
         return Arrays.stream(names).allMatch(
-                name -> Arrays.stream(equipment).anyMatch(item -> Rs2ItemModel.matches(item, exact, name))
+                name -> Arrays.stream(equipment).anyMatch(Rs2ItemModel.matches(exact, name))
         );
     }
 
