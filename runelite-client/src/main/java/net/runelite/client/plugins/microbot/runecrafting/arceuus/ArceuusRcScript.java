@@ -17,7 +17,7 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import java.util.concurrent.TimeUnit;
 
 public class ArceuusRcScript extends Script {
-    public static String version = "1.0.0";
+    public static String version = "1.0.1";
     public static int darkAltarTripCount = 0;
 
     private static ArceuusRcConfig config;
@@ -36,7 +36,7 @@ public class ArceuusRcScript extends Script {
     private static final String STR_DENSE_RUNESTONE = "Dense runestone";
 
     public static final WorldPoint ARCEUUS_BLOOD_ALTAR = new WorldPoint(1720, 3828, 0);
-    public static final WorldPoint ARCEUUS_SOUL_ALTAR = new WorldPoint(1818, 3860, 0);
+    public static final WorldPoint ARCEUUS_SOUL_ALTAR = new WorldPoint(1815, 3856, 0);
     public static final WorldPoint ARCEUUS_DARK_ALTAR = new WorldPoint(1718, 3880, 0);
     public static final WorldPoint DENSE_RUNESTONE = new WorldPoint(1760, 3853, 0);
 
@@ -197,13 +197,11 @@ public class ArceuusRcScript extends Script {
     }
 
     public boolean chipEssenceFast(boolean all) {
-        final int craftingXp = Microbot.getClient().getSkillExperience(Skill.CRAFTING);
-        if(Rs2Inventory.combineClosest(DARK_ESSENCE_BLOCK,ItemID.CHISEL)) {
-            if (!sleepUntil(() -> craftingXp < Microbot.getClient().getSkillExperience(Skill.CRAFTING))) {
-                Microbot.log("Failed to await crafting XP drop");
+        if(!Rs2Inventory.combineClosest(DARK_ESSENCE_BLOCK,ItemID.CHISEL)) {
+            if (Rs2Inventory.hasItem(DARK_ESSENCE_BLOCK)) {
+                Microbot.log("Failed to combine closest chisel & dark essence block");
                 return false;
             }
-            sleep(150, 350);
         }
         if (all && Rs2Inventory.hasItem(DARK_ESSENCE_BLOCK)) return chipEssenceFast(all);
         return true;
