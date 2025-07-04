@@ -522,10 +522,17 @@ public class SchedulerPluginUtil{
             Optional<ZonedDateTime> time2 = p2.getCurrentStartTriggerTime();
 
             if (time1.isPresent() && time2.isPresent()) {
-                ZonedDateTime t1 = time1.get().truncatedTo(ChronoUnit.MILLIS);
-                ZonedDateTime t2 = time2.get().truncatedTo(ChronoUnit.MILLIS);
+                ZonedDateTime t1 = time1.get().truncatedTo(ChronoUnit.SECONDS);
+                ZonedDateTime t2 = time2.get().truncatedTo(ChronoUnit.SECONDS);
                 int timeCompare = t1.compareTo(t2);
-                if (timeCompare != 0) {
+                float timeDifference = Duration.between(t1, t2).toMillis();
+                int priorityCompare = Integer.compare(p2.getPriority(), p1.getPriority());
+                if (timeCompare != 0 && priorityCompare == 0) {
+                    log.debug("Comparing times: {}() vs {}() -> result: {} ({} ms difference)", 
+                        t1.format(DateTimeFormatter.ISO_ZONED_DATE_TIME), 
+                        t2.format(DateTimeFormatter.ISO_ZONED_DATE_TIME), 
+                        timeCompare
+                        , timeDifference);
                     return timeCompare;
                 }
             } else if (time1.isPresent()) {
@@ -785,7 +792,16 @@ public class SchedulerPluginUtil{
     public static void logPluginScheduleEntryList(List<PluginScheduleEntry> sortedPlugins) {
         StringBuilder tableOrderLog = new StringBuilder();
         tableOrderLog.append("\n=== SCHEDULE TABLE ORDERING DEBUG ===\n");
-        tableOrderLog.append("Plugins are sorted by: 1) Priority (Higher first), 2) Default status (Non-default first), 3) Next trigger time (Earlier first)\n");
+        tableOrderLog.append("Plugins are sorted by priority order:\n");
+        tableOrderLog.append("1. Enabled status (enabled first)\n");
+        tableOrderLog.append("2. Running status (running first)\n");
+        tableOrderLog.append("3. Due-to-run status (due first)\n");
+        tableOrderLog.append("4. Next run time (earliest first)\n");
+        tableOrderLog.append("5. Priority level (highest first)\n");
+        tableOrderLog.append("6. Default status (non-default first)\n");
+        tableOrderLog.append("7. Random scheduling (non-random first)\n");
+        tableOrderLog.append("8. Plugin name (alphabetical)\n");
+        tableOrderLog.append("9. Object identity (stable ordering)\n\n");
         tableOrderLog.append("Total plugins: ").append(sortedPlugins.size()).append("\n\n");
 
         for (int i = 0; i < sortedPlugins.size(); i++) {
@@ -894,9 +910,6 @@ public class SchedulerPluginUtil{
         }
     }
 
-
-    // ...existing code...
-
     /**
      * Gets the time until the next scheduled plugin will run.
      * This method checks the SchedulerPlugin for the upcoming plugin and calculates
@@ -905,7 +918,7 @@ public class SchedulerPluginUtil{
      * @return Optional containing the duration until the next plugin runs, 
      *         or empty if no plugin is upcoming or time cannot be determined
      */
-    public static Optional<Duration> getTimeUntilNextScheduledPlugin() {
+    public static Optional<Duration> getTimeUntilUpComingScheduledPlugin() {
         try {
             // Get the SchedulerPlugin instance
             SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
@@ -957,7 +970,7 @@ public class SchedulerPluginUtil{
      * @return Optional containing a formatted string with plugin name and time until run,
      *         or empty if no plugin is upcoming
      */
-    public static Optional<String> getNextScheduledPluginInfo() {
+    public static Optional<String> getUpComingScheduledPluginInfo() {
         try {
             SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
             
@@ -991,7 +1004,7 @@ public class SchedulerPluginUtil{
      * @return Optional containing the next scheduled plugin entry,
      *         or empty if no plugin is upcoming
      */
-    public static Optional<PluginScheduleEntry> getNextScheduledPluginEntry() {
+    public static Optional<PluginScheduleEntry> getNextUpComingPluginScheduleEntry() {
         try {
             SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
             
@@ -1004,6 +1017,129 @@ public class SchedulerPluginUtil{
             
         } catch (Exception e) {
             Microbot.log("Error getting next scheduled plugin entry: " + e.getMessage(), Level.ERROR);
+            return Optional.empty();
+        }
+    }
+    
+    /**
+     * Gets the estimated time until the next scheduled plugin will be ready to run.
+     * This method uses the enhanced estimation system to provide more accurate
+     * predictions by considering both current plugin stop conditions and upcoming
+     * plugin start conditions.
+     * 
+     * @return Optional containing the estimated duration until the next plugin runs, 
+     *         or empty if no plugin is upcoming or time cannot be determined
+     */
+    public static Optional<Duration> getEstimatedTimeUntilNextScheduledPlugin() {
+        try {
+            // Get the SchedulerPlugin instance
+            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
+            
+            // Check if scheduler plugin exists and is running
+            if (schedulerPlugin == null) {
+                Microbot.log("SchedulerPlugin is not loaded, cannot determine estimated next plugin time", Level.DEBUG);
+                return Optional.empty();
+            }
+            
+            // Check if the scheduler is in an active state
+            if (!schedulerPlugin.getCurrentState().isSchedulerActive()) {
+                Microbot.log("SchedulerPlugin is not in active state: " + schedulerPlugin.getCurrentState(), Level.DEBUG);
+                return Optional.empty();
+            }
+            
+            // Get the estimated schedule time using the new system
+            Optional<Duration> estimatedTime = schedulerPlugin.getUpComingEstimatedScheduleTime();
+            
+            if (estimatedTime.isPresent()) {
+                Duration duration = estimatedTime.get();
+                
+                // Log the result for debugging
+                Microbot.log("Next plugin estimated to be scheduled in: " + 
+                            formatDuration(duration), Level.DEBUG);
+                
+                return Optional.of(duration);
+            } else {
+                Microbot.log("Cannot estimate time until next scheduled plugin", Level.DEBUG);
+                return Optional.empty();
+            }
+            
+        } catch (Exception e) {
+            Microbot.log("Error getting estimated time until next scheduled plugin: " + e.getMessage(), Level.ERROR);
+            return Optional.empty();
+        }
+    }
+    
+    /**
+     * Gets enhanced information about the next scheduled plugin using the estimation system.
+     * This method provides more accurate predictions by considering both current plugin
+     * stop conditions and upcoming plugin start conditions.
+     * 
+     * @return Optional containing a formatted string with plugin name and estimated time until run,
+     *         or empty if no plugin is upcoming
+     */
+    public static Optional<String> getNextScheduledPluginInfoWithEstimation() {
+        try {
+            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
+            
+            if (schedulerPlugin == null || !schedulerPlugin.getCurrentState().isSchedulerActive()) {
+                return Optional.empty();
+            }
+            
+            PluginScheduleEntry upcomingPlugin = schedulerPlugin.getUpComingPlugin();
+            if (upcomingPlugin == null) {
+                return Optional.empty();
+            }
+            
+            // Use the enhanced estimation system
+            Optional<Duration> estimatedTime = schedulerPlugin.getUpComingEstimatedScheduleTime();
+            if (!estimatedTime.isPresent()) {
+                return Optional.of("Next plugin: " + upcomingPlugin.getCleanName() + " (estimation unavailable)");
+            }
+            
+            String formattedTime = formatDuration(estimatedTime.get());
+            return Optional.of("Next plugin: " + upcomingPlugin.getCleanName() + " estimated in " + formattedTime);
+            
+        } catch (Exception e) {
+            Microbot.log("Error getting next scheduled plugin info with estimation: " + e.getMessage(), Level.ERROR);
+            return Optional.empty();
+        }
+    }
+    
+    /**
+     * Gets enhanced information about the next scheduled plugin within a time window.
+     * This method provides predictions for plugins that will be ready within the specified timeframe.
+     * 
+     * @param timeWindow The time window to look ahead for upcoming plugins
+     * @return Optional containing a formatted string with plugin name and estimated time until run,
+     *         or empty if no plugin is upcoming within the window
+     */
+    public static Optional<String> getNextScheduledPluginInfoWithinTimeWindow(Duration timeWindow) {
+        try {
+            SchedulerPlugin schedulerPlugin = (SchedulerPlugin) Microbot.getPlugin(SchedulerPlugin.class.getName());
+            
+            if (schedulerPlugin == null || !schedulerPlugin.getCurrentState().isSchedulerActive()) {
+                return Optional.empty();
+            }
+            
+            // Get plugin within the time window
+            PluginScheduleEntry upcomingPlugin = schedulerPlugin.getUpComingPluginWithinTime(timeWindow);
+            if (upcomingPlugin == null) {
+                return Optional.empty();
+            }
+            
+            // Use the enhanced estimation system for the time window
+            Optional<Duration> estimatedTime = schedulerPlugin.getUpComingEstimatedScheduleTimeWithinTime(timeWindow);
+            if (!estimatedTime.isPresent()) {
+                return Optional.of("Next plugin within " + formatDuration(timeWindow) + ": " + 
+                                 upcomingPlugin.getCleanName() + " (estimation unavailable)");
+            }
+            
+            String formattedTime = formatDuration(estimatedTime.get());
+            return Optional.of("Next plugin within " + formatDuration(timeWindow) + ": " + 
+                             upcomingPlugin.getCleanName() + " estimated in " + formattedTime);
+            
+        } catch (Exception e) {
+            Microbot.log("Error getting next scheduled plugin info within time window: " + e.getMessage(), Level.ERROR);
             return Optional.empty();
         }
     }

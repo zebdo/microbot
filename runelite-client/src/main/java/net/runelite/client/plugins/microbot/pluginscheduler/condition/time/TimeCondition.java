@@ -448,4 +448,40 @@ public abstract class TimeCondition implements Condition {
         // Default implementation defers to subclasses using isSatisfiedAt
         return isSatisfiedAt(getNow());
     }
+
+    /**
+     * Gets the estimated time until this time condition will be satisfied.
+     * This implementation leverages getCurrentTriggerTime() to provide accurate estimates
+     * for time-based conditions, taking into account pause adjustments.
+     * 
+     * @return Optional containing the estimated duration until satisfaction, or empty if not determinable
+     */
+    @Override
+    public Optional<Duration> getEstimatedTimeWhenIsSatisfied() {
+        // If the condition is already satisfied, return zero duration
+        if (isSatisfied()) {
+            return Optional.of(Duration.ZERO);
+        }
+        
+        // Get the next trigger time, accounting for pauses
+        Optional<ZonedDateTime> triggerTime = getNextTriggerTimeWithPause();
+        if (!triggerTime.isPresent()) {
+            // Try the regular getCurrentTriggerTime as fallback
+            triggerTime = getCurrentTriggerTime();
+        }
+        
+        if (triggerTime.isPresent()) {
+            ZonedDateTime now = getEffectiveNow();
+            Duration duration = Duration.between(now, triggerTime.get());
+            
+            // Ensure we don't return negative durations
+            if (duration.isNegative()) {
+                return Optional.of(Duration.ZERO);
+            }
+            return Optional.of(duration);
+        }
+        
+        // If we can't determine the trigger time, return empty
+        return Optional.empty();
+    }
 }

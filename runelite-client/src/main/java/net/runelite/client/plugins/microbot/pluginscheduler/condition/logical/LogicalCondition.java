@@ -1,7 +1,9 @@
 package net.runelite.client.plugins.microbot.pluginscheduler.condition.logical;
 
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
@@ -1449,7 +1451,24 @@ public abstract class LogicalCondition implements Condition {
         
         return summary.toString();
     }
-
+    
+    /**
+     * Base implementation for estimated satisfaction time in logical conditions.
+     * This is overridden by specific logical condition types (And/Or) to provide
+     * appropriate logic for their semantics.
+     * 
+     * @return Optional containing the estimated duration until satisfaction, or empty if not determinable
+     */
+    @Override
+    public Optional<Duration> getEstimatedTimeWhenIsSatisfied() {
+        if (conditions.isEmpty()) {
+            return Optional.of(Duration.ZERO);
+        }
+        
+        // This base implementation should be overridden by concrete classes
+        // Default behavior: return empty if we can't determine
+        return Optional.empty();
+    }
 }
 
 

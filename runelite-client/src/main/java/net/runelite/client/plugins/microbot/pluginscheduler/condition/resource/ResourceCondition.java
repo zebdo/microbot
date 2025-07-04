@@ -11,7 +11,9 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionT
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 
+import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.ArrayList;
@@ -80,6 +82,34 @@ public abstract class ResourceCondition implements Condition {
     @Override
     public double getProgressPercentage() {
         return isSatisfied() ? 100.0 : 0.0;
+    }
+    
+    /**
+     * Gets the estimated time until this resource condition will be satisfied.
+     * Resource conditions typically cannot provide reliable time estimates since they
+     * depend on player actions, game events, or unpredictable external factors.
+     * 
+     * Subclasses may override this method if they can provide meaningful estimates
+     * (e.g., based on historical data or known resource generation rates).
+     * 
+     * @return Optional.empty() for most resource conditions, as time cannot be reliably estimated
+     */
+    @Override
+    public Optional<Duration> getEstimatedTimeWhenIsSatisfied() {
+        // If the condition is already satisfied, return zero duration
+        if (isSatisfied()) {
+            return Optional.of(Duration.ZERO);
+        }
+        
+        // Resource conditions generally cannot provide reliable time estimates
+        // since they depend on unpredictable factors like:
+        // - Player actions and behavior
+        // - Random game events
+        // - External market conditions
+        // - Item drop rates
+        // - NPC spawning patterns
+        
+        return Optional.empty();
     }
     
     /**

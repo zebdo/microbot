@@ -696,8 +696,8 @@ public class TimeConditionPanelUtil {
             
             condition.setRandomization(true);
             condition.setRandomizerValue(randomizerValue);
-            // Set the randomization unit based on the repeat cycle - for TimeWindow, randomization is always in minutes
-            condition.setRandomizerValueUnit(RepeatCycle.MINUTES);
+            // Note: randomization unit is now automatically determined based on repeat cycle
+            // No need to manually set it anymore - TimeWindow handles this internally
         }
         
         return condition;

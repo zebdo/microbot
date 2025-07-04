@@ -152,27 +152,38 @@ public interface SchedulablePlugin {
         String prefix = "Plugin [" + this.getClass().getSimpleName() + "] finished: ";
         String reasonExt= reason == null ? prefix+"No reason provided" : prefix+reason;
         if (shouldStop){
+    
             // If plugin finished unsuccessfully, show a non-blocking notification dialog
-            //if (!success) {
-                SwingUtilities.invokeLater(() -> {
-                    // Find a parent frame to attach the dialog to
-                    Component clientComponent = (Component)Microbot.getClient();
-                    Window window = SwingUtilities.getWindowAncestor(clientComponent);
-                    // Create message with HTML for proper text wrapping
-                    JLabel messageLabel = new JLabel("<html><div style='width: 350px;'>" + 
-                            "Plugin [" + ((Plugin)this).getClass().getSimpleName() + 
-                            "] stopped: " + (reason != null ? reason : "No reason provided") + 
-                            "</div></html>");
-                     // Show error message if starting failed
-                    JOptionPane.showMessageDialog(
-                        SwingUtilities.getWindowAncestor(clientComponent),
-                        messageLabel,
-                        "Plugin Stopped",
-                        JOptionPane.WARNING_MESSAGE
-                    );
-                   
+            if (!success) {
+                Microbot.log("\nPlugin [" + this.getClass().getSimpleName() + "] stopped with error: " + reasonExt, Level.ERROR);
+                Microbot.getClientThread().invokeLater(()->{
+                    try {
+                        SwingUtilities.invokeAndWait(() -> {
+                            // Find a parent frame to attach the dialog to
+                            Component clientComponent = (Component)Microbot.getClient();
+                            Window window = SwingUtilities.getWindowAncestor(clientComponent);
+                            // Create message with HTML for proper text wrapping
+                            JLabel messageLabel = new JLabel("<html><div style='width: 350px;'>" + 
+                                    "Plugin [" + ((Plugin)this).getClass().getSimpleName() + 
+                                    "] stopped: " + (reason != null ? reason : "No reason provided") + 
+                                    "</div></html>");
+                            // Show error message if starting failed
+                            JOptionPane.showMessageDialog(
+                                SwingUtilities.getWindowAncestor(clientComponent),
+                                messageLabel,
+                                "Plugin Stopped",
+                                JOptionPane.WARNING_MESSAGE
+                            );
+                        
+                        });
+                    } catch (InterruptedException e) {
+                        Thread.currentThread().interrupt();
+                        Microbot.log("Dialog display was interrupted: " + e.getMessage(), Level.WARN);
+                    } catch (java.lang.reflect.InvocationTargetException e) {
+                        Microbot.log("Error displaying plugin stopped dialog: " + e.getCause().getMessage(), Level.ERROR);
+                    }
                 });
-            //}
+            }
             Microbot.getClientThread().invokeLater(()->Microbot.stopPlugin((Plugin)this));
             return;
         }else{
@@ -311,9 +322,9 @@ public interface SchedulablePlugin {
      * @return Optional containing the duration until the next plugin runs, 
      *         or empty if no plugin is upcoming or time cannot be determined
      */
-    default Optional<Duration> getTimeUntilNextScheduledPlugin() {
+    default Optional<Duration> getTimeUntilUpComingScheduledPlugin() {
         try {
-           return SchedulerPluginUtil.getTimeUntilNextScheduledPlugin();
+           return SchedulerPluginUtil.getTimeUntilUpComingScheduledPlugin();
             
         } catch (Exception e) {
             Microbot.log("Error getting time until next scheduled plugin: " + e.getMessage(), Level.ERROR);
@@ -328,9 +339,9 @@ public interface SchedulablePlugin {
      * @return Optional containing a formatted string with plugin name and time until run,
      *         or empty if no plugin is upcoming
      */
-    default Optional<String> getNextScheduledPluginInfo() {
+    default Optional<String> getUpComingScheduledPluginInfo() {
         try {
-            return SchedulerPluginUtil.getNextScheduledPluginInfo();            
+            return SchedulerPluginUtil.getUpComingScheduledPluginInfo();            
         } catch (Exception e) {
             Microbot.log("Error getting next scheduled plugin info: " + e.getMessage(), Level.ERROR);
             return Optional.empty();
@@ -344,9 +355,9 @@ public interface SchedulablePlugin {
      * @return Optional containing the next scheduled plugin entry,
      *         or empty if no plugin is upcoming
      */
-    default Optional<PluginScheduleEntry> getNextScheduledPluginEntry() {
+    default Optional<PluginScheduleEntry> getNextUpComingPluginScheduleEntry() {
         try {
-            return SchedulerPluginUtil.getNextScheduledPluginEntry();
+            return SchedulerPluginUtil.getNextUpComingPluginScheduleEntry();
         } catch (Exception e) {
             Microbot.log("Error getting next scheduled plugin entry: " + e.getMessage(), Level.ERROR);
             return Optional.empty();

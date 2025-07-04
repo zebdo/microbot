@@ -64,7 +64,10 @@ public class BreakHandlerScript extends Script {
     private BreakHandlerConfig config;
 
     public static boolean isBreakActive() {
-        return breakDuration > 0 ;
+        return breakDuration >= 0 ;
+    }
+    public static boolean isMicroBreakActive() {
+        return Rs2AntibanSettings.takeMicroBreaks && Rs2AntibanSettings.microBreakActive;
     }
 
     public static String formatDuration(Duration duration, String header) {
@@ -153,13 +156,13 @@ public class BreakHandlerScript extends Script {
      */
     private boolean handleConfigToggles() {
         if (config.breakNow() && !Microbot.pauseAllScripts.get() && !isLockState() && !PluginPauseEvent.isPaused()) {
-            Microbot.log("Break triggered via config toggle");
+            Microbot.log("Break start triggered via config toggle");
             startBreak();
             return true;
         }
 
         if (config.breakEndNow()) {
-            Microbot.log("Break ended via config toggle");
+            Microbot.log("Break ended triggered via config toggle");
             stopBreak();
             return true;
         }
@@ -198,7 +201,7 @@ public class BreakHandlerScript extends Script {
         // Count down active break
         if (breakDuration >= 0) {
             breakDuration--;            
-        }
+        }        
     }
 
     /**
@@ -232,6 +235,7 @@ public class BreakHandlerScript extends Script {
     private boolean shouldStartBreak() {
         boolean normalBreakTime = breakIn <= 0 && !Microbot.pauseAllScripts.get() && !isLockState() && !PluginPauseEvent.isPaused();
         boolean microBreakTime = Rs2AntibanSettings.microBreakActive && !Microbot.pauseAllScripts.get() && !isLockState();
+        
         return normalBreakTime || microBreakTime;
     }
 
@@ -251,7 +255,7 @@ public class BreakHandlerScript extends Script {
      */
     private void startBreak() {
         Microbot.log("Starting break - breakNow: " + config.breakNow() + 
-                    ", microBreak: " + Rs2AntibanSettings.microBreakActive);
+                    ", microBreak: " + Rs2AntibanSettings.microBreakActive+", playSchedule: " + config.usePlaySchedule() );
 
         // Pause all scripts
         Microbot.pauseAllScripts.compareAndSet(false, true);
@@ -284,7 +288,7 @@ public class BreakHandlerScript extends Script {
 
         // Resume scripts and reset state
         resumeFromBreak();
-        
+
         // Handle world switching
         handleWorldSwitching();
         
@@ -323,12 +327,12 @@ public class BreakHandlerScript extends Script {
     private void resumeFromBreak() {
         Microbot.pauseAllScripts.compareAndSet(true, false);
         PluginPauseEvent.setPaused(false);
-        breakDuration = 0;
-        setBreakDurationTime = Duration.ofSeconds(breakDuration);
-        log.info("Resuming scripts after break  breakDuration: " + breakDuration+ " breakIn: " + breakIn);
+        breakDuration = -1;
+        setBreakDurationTime = Duration.ZERO;        
         if (breakIn <= 0) {
             initializeNextBreakTimer();
         }
+        log.info("\n\tResuming scripts after break. \n\t\tcurrent duration: " + breakDuration+ "\n\t\tnext break in: " + breakIn);
     }
 
     /**
@@ -424,15 +428,4 @@ public class BreakHandlerScript extends Script {
         return lockState.get();
     }
 
-    /**
-     * Checks if a break can be safely ended.
-     * This includes checking if we're actually in a break
-     * 
-     * @return true if break can be ended, false otherwise
-     */
-    public static boolean canEndBreak() {
-        return isBreakActive();
-    }
-
-   
 }

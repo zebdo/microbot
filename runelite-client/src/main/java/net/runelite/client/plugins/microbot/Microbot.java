@@ -66,6 +66,8 @@ import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchScr
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntilNotNull;
+import static net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject.get;
+
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -418,10 +420,13 @@ public class Microbot {
 	@SneakyThrows
 	private static boolean togglePlugin(Plugin plugin, boolean enable) {
 		if (plugin == null) return !enable;
-
 		final AtomicBoolean success = new AtomicBoolean(false);
-		SwingUtilities.invokeAndWait(() -> {
-			try {
+        // Check if we're currently on the client thread for logging purposes
+        boolean isOnClientThread = getClient().isClientThread();                
+        // This makes the method non-blocking regardless of which thread it's called from		
+        if(isOnClientThread) {
+        	// If already on client thread, execute directly to avoid nested invokeAndWait
+        	try {
 				getPluginManager().setPluginEnabled(plugin, enable);
 				if (enable) {
 					success.set(getPluginManager().startPlugin(plugin));
@@ -432,8 +437,27 @@ public class Microbot {
 			} catch (PluginInstantiationException e) {
 				e.printStackTrace();
 			}
-		});
-		return success.get();
+			return success.get();
+		}else{
+			// When not on client thread, use client thread to execute
+			return getClientThread().runOnClientThreadOptional(() -> {
+				try {
+					getPluginManager().setPluginEnabled(plugin, enable);
+					if (enable) {
+						boolean startResult = getPluginManager().startPlugin(plugin);
+						getPluginManager().startPlugins();
+						return startResult;
+					} else {
+						return getPluginManager().stopPlugin(plugin);
+					}
+				} catch (PluginInstantiationException e) {
+					e.printStackTrace();
+					return false;
+				}
+			}).orElse(false);
+		}
+
+		
 	}
 
 	/**

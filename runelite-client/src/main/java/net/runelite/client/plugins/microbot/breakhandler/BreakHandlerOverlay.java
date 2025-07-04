@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.breakhandler;
 
+import net.runelite.client.plugins.microbot.pluginscheduler.util.SchedulerPluginUtil;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -46,14 +47,14 @@ public class BreakHandlerOverlay extends OverlayPanel {
                         .build());
                 
                 // Show specific lock reason if it's manual lock vs plugin lock
-                if (BreakHandlerScript.lockState.get()) {
+                if (BreakHandlerScript.lockState.get() && !SchedulerPluginUtil.hasLockedSchedulablePlugins()) {
                     panelComponent.getChildren().add(LineComponent.builder()
                             .left("Reason: Manual Lock")
                             .leftColor(Color.ORANGE)
                             .build());
                 } else {
                     panelComponent.getChildren().add(LineComponent.builder()
-                            .left("Reason: Plugin Lock Active")
+                            .left("Reason: Plugin Lock Condition Active")
                             .leftColor(Color.ORANGE)
                             .build());
                 }

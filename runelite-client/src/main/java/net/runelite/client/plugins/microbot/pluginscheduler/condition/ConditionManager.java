@@ -2585,4 +2585,107 @@ public class ConditionManager implements AutoCloseable {
     public boolean isPaused() {
         return hasAnyPausedConditions();
     }
+
+      /**
+     * Gets the estimated time until the next condition trigger.
+     * This method uses the new estimation system that provides more accurate
+     * predictions for when conditions will be satisfied.
+     * 
+     * @return Optional containing the estimated duration until next trigger, or empty if not determinable
+     */
+    public Optional<Duration> getEstimatedDurationUntilSatisfied() {
+        // If conditions are already met, return zero duration
+        if (areAllConditionsMet()) {
+            return Optional.of(Duration.ZERO);
+        }
+        
+        return getEstimatedTimeWhenIsSatisfiedForLogical(getFullLogicalCondition());
+    }
+    
+    /**
+     * Gets the estimated time until user conditions will be satisfied.
+     * This method focuses only on user-defined conditions.
+     * 
+     * @return Optional containing the estimated duration until user conditions are satisfied
+     */
+    public Optional<Duration> getEstimatedDurationUntilUserConditionsSatisfied() {
+        if (areUserConditionsMet()) {
+            return Optional.of(Duration.ZERO);
+        }
+        
+        return getEstimatedTimeWhenIsSatisfiedForLogical(getFullLogicalUserCondition());
+    }
+    
+    /**
+     * Gets the estimated time until plugin conditions will be satisfied.
+     * This method focuses only on plugin-defined conditions.
+     * 
+     * @return Optional containing the estimated duration until plugin conditions are satisfied
+     */
+    public Optional<Duration> getEstimatedDurationUntilPluginConditionsSatisfied() {
+        if (arePluginConditionsMet()) {
+            return Optional.of(Duration.ZERO);
+        }
+        
+        return getEstimatedTimeWhenIsSatisfiedForLogical(getFullLogicalPluginCondition());
+    }
+    
+    /**
+     * Helper method to get estimated satisfaction time for a logical condition.
+     * This recursively evaluates the condition hierarchy using the new estimation system.
+     * 
+     * @param logicalCondition The logical condition to evaluate
+     * @return Optional containing the estimated duration, or empty if not determinable
+     */
+    private Optional<Duration> getEstimatedTimeWhenIsSatisfiedForLogical(LogicalCondition logicalCondition) {
+        if (logicalCondition == null) {
+            return Optional.empty();
+        }
+        
+        return logicalCondition.getEstimatedTimeWhenIsSatisfied();
+    }
+    
+    /**
+     * Formats the estimated trigger time as a human-readable string.
+     * 
+     * @return A string representing the estimated time until conditions will be satisfied
+     */
+    public String getEstimatedTriggerTimeString() {
+        Optional<Duration> estimate = getEstimatedDurationUntilSatisfied();
+        if (estimate.isPresent()) {
+            return formatDurationEstimate(estimate.get());
+        }
+        return "Cannot estimate trigger time";
+    }
+    
+    /**
+     * Formats an estimated duration into a human-readable string.
+     * 
+     * @param duration The duration to format
+     * @return A formatted string representation of the duration
+     */
+    private String formatDurationEstimate(Duration duration) {
+        long seconds = duration.getSeconds();
+        
+        if (seconds < 0) {
+            return "Already satisfied";
+        } else if (seconds == 0) {
+            return "Satisfied now";
+        } else if (seconds < 60) {
+            return String.format("Estimated in ~%d seconds", seconds);
+        } else if (seconds < 3600) {
+            return String.format("Estimated in ~%d minutes %d seconds", 
+                    seconds / 60, seconds % 60);
+        } else if (seconds < 86400) { // Less than a day
+            return String.format("Estimated in ~%d hours %d minutes", 
+                    seconds / 3600, (seconds % 3600) / 60);
+        } else {
+            // More than a day away
+            long days = seconds / 86400;
+            long hours = (seconds % 86400) / 3600;
+            return String.format("Estimated in ~%d days %d hours", days, hours);
+        }
+    }
+
+    
 }

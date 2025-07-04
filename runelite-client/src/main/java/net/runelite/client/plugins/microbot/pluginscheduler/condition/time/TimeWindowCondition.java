@@ -57,8 +57,8 @@ public class TimeWindowCondition extends TimeCondition {
    
     // Randomization
     private transient boolean useRandomization = false;
-    private transient int randomizerValue = 0; // Randomization value, depands on the repeat cycle
-    private transient RepeatCycle randomizerValueUnit;
+    private transient int randomizerValue = 0; // Randomization value, depends on the repeat cycle
+    // randomizerValueUnit is now automatically determined based on repeatCycle - no longer stored as field
     // Cached timezone for computation - not serialized
     private transient ZoneId zoneId;
 
@@ -297,7 +297,6 @@ public class TimeWindowCondition extends TimeCondition {
      */
     private void calculateCycleWindow(LocalDateTime referenceTime) {
         ZonedDateTime now = ZonedDateTime.now(getZoneId());
-        LocalDateTime nowLocal = now.toLocalDateTime();
         // First, determine the bounds of today's overall window
         LocalDate today = now.toLocalDate();
         LocalDateTime currentDayWindowStart = LocalDateTime.of(today, startTime);
@@ -327,101 +326,7 @@ public class TimeWindowCondition extends TimeCondition {
         }      
     
     }
-    private void randomizeCurrentStartEnd( ) {
-        ZonedDateTime now = ZonedDateTime.now(getZoneId());
-        LocalDateTime nowLocal = now.toLocalDateTime();                
-        LocalDateTime nextStartDateTime = LocalDateTime.of(nowLocal.toLocalDate().plusDays(1), startTime);
-        LocalDateTime nextEndDateTime = LocalDateTime.of(nowLocal.toLocalDate().plusDays(1), endTime);
-        if(Microbot.isDebug() ) log.info("Calculating next window - current: \n" +  this,Level.INFO);
-        int minOffset = -1;
-        int maxOffset=-1;
-        long intervalLength =0 ;
-        randomizerValueUnit = null;
-        LocalDateTime nextTriggerTime = getNextTriggerTimeWithPause().orElse(null).toLocalDateTime();
-        log.info(" currentStartDateTime: {} - currentEndDateTime: {}", nextTriggerTime, currentEndDateTime);
-        if (useRandomization && nextTriggerTime != null && this.currentEndDateTime != null) {
 
-            switch (repeatCycle) {
-                case ONE_TIME:
-                    randomizerValueUnit = RepeatCycle.ONE_TIME;
-                    break;
-                case DAYS:                                                      
-                    intervalLength = ChronoUnit.MINUTES.between(nextTriggerTime, currentEndDateTime);   
-                                    
-                    randomizerValueUnit = RepeatCycle.MINUTES;
-                    minOffset = Math.max(0,(int)(intervalLength*0.1));
-                    maxOffset = Math.max((int)(intervalLength*0.2),1);
-                    
-                    this.randomizerValue = Rs2Random.between(minOffset, maxOffset);
-                    
-                    if (nextTriggerTime.plusMinutes(this.randomizerValue).isBefore(nextEndDateTime)){
-                        nextTriggerTime =  nextTriggerTime.plusMinutes(this.randomizerValue);
-                    }
-                    if (!LocalDateTime.of(endDate, endTime).isBefore(this.currentEndDateTime.plusMinutes(randomizerValue))) {                
-                        this.currentEndDateTime = this.currentEndDateTime.plusMinutes(randomizerValue);
-                    }else {
-                        this.currentEndDateTime = this.currentEndDateTime.plusMinutes(randomizerValue);
-                    }
-                    
-                    break;
-                case WEEKS:
-                                    
-                    long intervalLengthHours= ChronoUnit.HOURS.between(nextTriggerTime, currentEndDateTime);   
-                    randomizerValueUnit = RepeatCycle.HOURS;
-                    minOffset = Math.max( 0,(int)(intervalLengthHours*0.1));
-                    maxOffset = Math.max((int)(intervalLengthHours*0.2),1 );
-                    this.randomizerValue = Rs2Random.between(minOffset, maxOffset);
-                    //when on next day
-                    if (nextTriggerTime.isAfter(nextStartDateTime)){
-                        if (nextTriggerTime.plusHours(this.randomizerValue).isBefore(nextEndDateTime)){
-                            nextTriggerTime = nextTriggerTime.plusHours(this.randomizerValue);
-                        }  
-                    }                  
-                    if (!LocalDateTime.of(endDate, endTime).isBefore(this.currentEndDateTime.plusHours(randomizerValue))) {                
-                        this.currentEndDateTime = this.currentEndDateTime.plusHours(randomizerValue);
-                    }else {
-                        this.currentEndDateTime = this.currentEndDateTime.plusHours(randomizerValue);
-                    }                    
-                    break;
-                case MINUTES:                
-                   
-                    intervalLength = ChronoUnit.MILLIS.between(nextTriggerTime, currentEndDateTime);   
-                    randomizerValueUnit = RepeatCycle.MILLIS;
-                    minOffset = Math.max(0,(int)(intervalLength*0.1));
-                    maxOffset = Math.max(1,(int)(intervalLength*0.2));
-                    this.randomizerValue = Rs2Random.between(minOffset, maxOffset);
-                    nextTriggerTime = nextTriggerTime.plusSeconds(this.randomizerValue*1000);
-
-                    if (!LocalDateTime.of(endDate, endTime).isBefore(this.currentEndDateTime.plusSeconds(randomizerValue*1000))) {                
-                        this.currentEndDateTime = this.currentEndDateTime.plusSeconds(randomizerValue*1000);
-                    }else {
-                        this.currentEndDateTime = this.currentEndDateTime.plusSeconds(randomizerValue*1000);
-                    }            
-                    break;
-                case HOURS:                                  
-                    long intervalLengthSeconds = ChronoUnit.SECONDS.between(nextTriggerTime, currentEndDateTime);                   
-                    randomizerValueUnit = RepeatCycle.SECONDS;
-                    minOffset =  Math.max(0, (int)(intervalLengthSeconds*0.1));
-                    maxOffset = Math.max(1,(int)(intervalLengthSeconds*0.2));
-                    this.randomizerValue = Rs2Random.between(minOffset, maxOffset);
-                    nextTriggerTime = nextTriggerTime.plusSeconds(this.randomizerValue);
-                    if (!LocalDateTime.of(endDate, endTime).isBefore(this.currentEndDateTime.plusSeconds(randomizerValue))) {                
-                        this.currentEndDateTime = this.currentEndDateTime.plusSeconds(randomizerValue);
-                    }else {
-                        this.currentEndDateTime = this.currentEndDateTime.plusSeconds(randomizerValue);
-                    }                    
-                    break;
-                    
-                default:
-                    log.warn("Unsupported repeat cycle: {}", repeatCycle);
-                    break;
-            }
-            setNextTriggerTime(nextTriggerTime.atZone(zoneId));
-            log.info("Interval length in hours: {} - min: {} - max: {} - randomizerValue: {} {}", intervalLength, minOffset, maxOffset,randomizerValue,repeatCycle.unit());
-        }
-       
-
-    }
     private LocalDateTime calculateNextTime( LocalDateTime referenceTime) {
         LocalDateTime nextStartTime;
         
@@ -466,17 +371,17 @@ public class TimeWindowCondition extends TimeCondition {
             // Store the base time before applying randomization for logging
             LocalDateTime baseTime = nextStartTime;
             
-            // Apply the randomization based on the configured unit (default to MINUTES for TimeWindow)
-            RepeatCycle randomUnit = randomizerValueUnit != null ? randomizerValueUnit : RepeatCycle.MINUTES;
+            // Automatically determine the appropriate randomization unit based on repeat cycle
+            RepeatCycle randomUnit = getAutomaticRandomizerValueUnit();
             switch (randomUnit) {
+                case SECONDS:
+                    nextStartTime = nextStartTime.plusSeconds(randomOffset);
+                    break;
                 case MINUTES:
                     nextStartTime = nextStartTime.plusMinutes(randomOffset);
                     break;
                 case HOURS:
                     nextStartTime = nextStartTime.plusHours(randomOffset);
-                    break;
-                case SECONDS:
-                    nextStartTime = nextStartTime.plusSeconds(randomOffset);
                     break;
                 default:
                     // Default to minutes if unsupported unit
@@ -496,11 +401,11 @@ public class TimeWindowCondition extends TimeCondition {
      * Calculates the maximum allowed randomization value based on the repeat cycle and interval.
      * This ensures randomization stays within meaningful bounds relative to the interval.
      * 
-     * @return Maximum allowed randomization value in the randomizerValueUnit
+     * @return Maximum allowed randomization value in the automatic randomization unit
      */
     private int calculateMaxAllowedRandomization() {
         // Convert interval to the same unit as randomization for comparison
-        RepeatCycle randomUnit = randomizerValueUnit != null ? randomizerValueUnit : RepeatCycle.MINUTES;
+        RepeatCycle randomUnit = getAutomaticRandomizerValueUnit();
         
         // Calculate total interval in the randomization unit
         long totalIntervalInRandomUnit;
@@ -806,15 +711,6 @@ public class TimeWindowCondition extends TimeCondition {
     }
     
     /**
-     * Sets the randomization unit (e.g., MINUTES, HOURS) for the randomization value.
-     * 
-     * @param randomizerValueUnit The unit for the randomization value
-     */
-    public void setRandomizerValueUnit(RepeatCycle randomizerValueUnit) {
-        this.randomizerValueUnit = randomizerValueUnit;
-    }
-    
-    /**
      * Gets the randomization value.
      * 
      * @return The current randomization value
@@ -824,12 +720,12 @@ public class TimeWindowCondition extends TimeCondition {
     }
     
     /**
-     * Gets the randomization unit.
+     * Gets the randomization unit that is automatically determined based on the repeat cycle.
      * 
-     * @return The current randomization unit
+     * @return The current automatically determined randomization unit
      */
     public RepeatCycle getRandomizerValueUnit() {
-        return this.randomizerValueUnit;
+        return getAutomaticRandomizerValueUnit();
     }
     
    
@@ -1215,19 +1111,210 @@ public class TimeWindowCondition extends TimeCondition {
         if (isPaused()) {
             return;
         }
-        ZonedDateTime currentTriggerTimeWithPause = getNextTriggerTimeWithPause().orElse(null);
-        ZonedDateTime newTriggerTime = currentTriggerTimeWithPause;
-        if (currentTriggerTimeWithPause != null) {            
-            if (isSatisfied(newTriggerTime.toLocalDateTime())){
-                setNextTriggerTime(currentTriggerTimeWithPause);
+        
+        // Get the original trigger time (since isPaused=false at this point after resume())
+        // getNextTriggerTimeWithPause() now returns the original nextTriggerTime without pause adjustments
+        ZonedDateTime originalTriggerTime = getNextTriggerTimeWithPause().orElse(null);
+        
+        if (originalTriggerTime != null) {
+            // Shift the original trigger time by the pause duration to preserve timing
+            ZonedDateTime shiftedTriggerTime = originalTriggerTime.plus(pauseDuration);
+            LocalDateTime shiftedLocalTime = shiftedTriggerTime.toLocalDateTime();
+            
+            // Validate that the shifted time still falls within allowed bounds
+            boolean isValidShiftedTime = isShiftedTimeWithinBounds(shiftedLocalTime);
+            
+            if (isValidShiftedTime) {
+                // Shifted time is valid, use it
+                setNextTriggerTime(shiftedTriggerTime);
+                
+                // Also shift the current end time by the same duration to maintain window length
+                if (currentEndDateTime != null) {
+                    LocalDateTime shiftedEndTime = currentEndDateTime.plus(pauseDuration);
+                    // Validate that the shifted end time is also within bounds
+                    if (isShiftedEndTimeWithinBounds(shiftedEndTime)) {
+                        currentEndDateTime = shiftedEndTime;
+                    } else {
+                        // If shifted end time goes out of bounds, recalculate the window
+                        log.warn("Shifted end time {} goes beyond allowed bounds, recalculating window", shiftedEndTime);
+                        calculateNextWindow(getNow().toLocalDateTime());
+                        return;
+                    }
+                }
+                
+                // Shift the last valid reset time if it exists
+                if (lastValidResetTime != null) {
+                    lastValidResetTime = lastValidResetTime.plus(pauseDuration);
+                }
+                
+                log.debug("TimeWindowCondition resumed after {}, window shifted by pause duration, new trigger time: {}", 
+                        formatDuration(pauseDuration), getNextTriggerTimeWithPause().orElse(null));
+            } else {
+                // Shifted time goes out of bounds, recalculate next valid window
+                log.warn("Shifted trigger time {} goes beyond allowed bounds, recalculating next valid window", shiftedLocalTime);
+                calculateNextWindow(getNow().toLocalDateTime());
             }
-            // Recalculate the next window after being paused
-            // This will adjust the timing based on the current time
-            calculateNextWindow(newTriggerTime.toLocalDateTime());
+        } else {
+            // If no trigger time was set, calculate a new window from current time
+            // This should only happen if the condition was never properly initialized
+            log.warn("TimeWindowCondition resumed but no trigger time was set, recalculating window");
+            calculateNextWindow(getNow().toLocalDateTime());
+        }
+    }
+    
+    /**
+     * Validates that a shifted trigger time is still within the allowed time window and date bounds.
+     * 
+     * @param shiftedTime The shifted trigger time to validate
+     * @return true if the shifted time is within bounds, false otherwise
+     */
+    private boolean isShiftedTimeWithinBounds(LocalDateTime shiftedTime) {
+        // Check date range bounds (if not unlimited)
+        if (!isUnlimitedStartDate() && shiftedTime.toLocalDate().isBefore(startDate)) {
+            log.debug("Shifted time {} is before start date {}", shiftedTime, startDate);
+            return false;
         }
         
+        if (!isUnlimitedEndDate()) {
+            LocalDateTime lastValidDateTime = LocalDateTime.of(endDate, endTime);
+            if (shiftedTime.isAfter(lastValidDateTime)) {
+                log.debug("Shifted time {} is after end date/time {}", shiftedTime, lastValidDateTime);
+                return false;
+            }
+        }
         
-        log.debug("TimeWindowCondition resumed after {}, window recalculated, new trigger time: {}", 
-                formatDuration(pauseDuration),  getNextTriggerTimeWithPause().orElse(null));
+        // Check daily time bounds
+        LocalTime shiftedLocalTime = shiftedTime.toLocalTime();
+        
+        // Handle cross-midnight windows
+        if (endTime.isBefore(startTime)) {
+            // Cross-midnight window (e.g., 22:00 to 06:00)
+            boolean isInFirstPart = !shiftedLocalTime.isBefore(startTime); // >= startTime
+            boolean isInSecondPart = !shiftedLocalTime.isAfter(endTime);   // <= endTime
+            
+            if (!(isInFirstPart || isInSecondPart)) {
+                log.debug("Shifted time {} is outside cross-midnight window {} to {}", 
+                         shiftedLocalTime, startTime, endTime);
+                return false;
+            }
+        } else {
+            // Normal window (e.g., 09:00 to 17:00)
+            if (shiftedLocalTime.isBefore(startTime) || shiftedLocalTime.isAfter(endTime)) {
+                log.debug("Shifted time {} is outside time window {} to {}", 
+                         shiftedLocalTime, startTime, endTime);
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Validates that a shifted end time is still within the allowed date bounds.
+     * 
+     * @param shiftedEndTime The shifted end time to validate
+     * @return true if the shifted end time is within bounds, false otherwise
+     */
+    private boolean isShiftedEndTimeWithinBounds(LocalDateTime shiftedEndTime) {
+        // Only need to check date bounds for end time, not daily time bounds
+        if (!isUnlimitedEndDate()) {
+            LocalDateTime lastValidDateTime = LocalDateTime.of(endDate, endTime);
+            if (shiftedEndTime.isAfter(lastValidDateTime)) {
+                log.debug("Shifted end time {} is after end date/time {}", shiftedEndTime, lastValidDateTime);
+                return false;
+            }
+        }
+        
+        return true;
+    }
+    
+    /**
+     * Gets the estimated time until this time window condition will be satisfied.
+     * This provides a more accurate estimate by considering the window start time,
+     * repeat cycles, and current window state.
+     * 
+     * @return Optional containing the estimated duration until satisfaction, or empty if not determinable
+     */
+    @Override
+    public Optional<Duration> getEstimatedTimeWhenIsSatisfied() {
+        // If the condition is already satisfied (we're in the window), return zero
+        if (isSatisfied()) {
+            return Optional.of(Duration.ZERO);
+        }
+        
+        // If we can't trigger again, return empty
+        if (!canTriggerAgain()) {
+            return Optional.empty();
+        }
+        
+        // Get the next trigger time with pause adjustments
+        Optional<ZonedDateTime> triggerTime = getNextTriggerTimeWithPause();
+        if (!triggerTime.isPresent()) {
+            // Fallback to regular getCurrentTriggerTime
+            triggerTime = getCurrentTriggerTime();
+        }
+        
+        if (triggerTime.isPresent()) {
+            ZonedDateTime now = getEffectiveNow();
+            Duration duration = Duration.between(now, triggerTime.get());
+            
+            // Apply randomization if enabled to provide a range estimate
+            if (useRandomization && randomizerValue > 0) {
+                // Add some uncertainty based on the randomizer value
+                Duration randomComponent = Duration.of(randomizerValue, 
+                    getRandomizerChronoUnit());
+                duration = duration.plus(randomComponent.dividedBy(2)); // Add half the random range
+            }
+            
+            // Ensure we don't return negative durations
+            if (duration.isNegative()) {
+                return Optional.of(Duration.ZERO);
+            }
+            return Optional.of(duration);
+        }
+        
+        return Optional.empty();
+    }
+    
+    /**
+     * Helper method to get the ChronoUnit for randomization based on the repeat cycle
+     */
+    private java.time.temporal.ChronoUnit getRandomizerChronoUnit() {
+        RepeatCycle automaticUnit = getAutomaticRandomizerValueUnit();
+        switch (automaticUnit) {
+            case SECONDS:
+                return java.time.temporal.ChronoUnit.SECONDS;
+            case MINUTES:
+                return java.time.temporal.ChronoUnit.MINUTES;
+            case HOURS:
+                return java.time.temporal.ChronoUnit.HOURS;
+            case DAYS:
+                return java.time.temporal.ChronoUnit.DAYS;
+            default:
+                return java.time.temporal.ChronoUnit.MINUTES;
+        }
+    }
+    
+    /**
+     * Automatically determines the appropriate randomization unit based on the repeat cycle.
+     * This ensures randomization uses sensible granularity relative to the repeat interval.
+     * 
+     * @return The appropriate RepeatCycle for randomization based on the current repeatCycle
+     */
+    private RepeatCycle getAutomaticRandomizerValueUnit() {
+        switch (repeatCycle) {
+            case MINUTES:
+                return RepeatCycle.SECONDS; // For minute intervals, randomize in seconds
+            case HOURS:
+                return RepeatCycle.MINUTES; // For hour intervals, randomize in minutes
+            case DAYS:
+                return RepeatCycle.MINUTES; // For day intervals, randomize in minutes
+            case WEEKS:
+                return RepeatCycle.HOURS;   // For week intervals, randomize in hours
+            case ONE_TIME:
+                return RepeatCycle.MINUTES; // For one-time, use minutes as default
+            default:
+                return RepeatCycle.MINUTES; // Default fallback to minutes
+        }
     }
 }

@@ -1206,17 +1206,17 @@ public class PluginScheduleEntry implements AutoCloseable {
         
         logMsg.append("Updating start conditions for plugin '").append(getCleanName()).append("'");
         logMsg.append("\n  -last stop reason: ").append(lastStopReasonType.getDescription());
-        logMsg.append("\n  -last stop reason message: ").append(lastStopReason);
+        logMsg.append("\n  -last stop reason message:\n\t").append(lastStopReason);
         logMsg.append("\n  -allowContinue: ").append(allowContinue);
         logMsg.append("\n  -last run duration: ").append(lastRunDuration.toMillis()).append(" ms");
         if (this.lastStopReasonType != StopReason.INTERRUPTED || !allowContinue) {
     
-            logMsg.append("\n  - Completed successfully, resetting all start conditions");
+            logMsg.append("\n  -Completed successfully, resetting all start conditions");
             startConditionManager.reset();
             // Increment the run count since we completed a full run
             incrementRunCount();
         } else {
-            logMsg.append("\n  - Only resetting plugin '").append(getCleanName()).append("' start conditions");
+            logMsg.append("\n  -Only resetting plugin '").append(getCleanName()).append("' start conditions");
             startConditionManager.resetPluginConditions();
         }
         
@@ -2556,6 +2556,12 @@ public class PluginScheduleEntry implements AutoCloseable {
 
     // Setter methods for the configurable timeouts
     public void setSoftStopRetryInterval(Duration interval) {
+        if (interval == null || interval.isNegative() || interval.isZero()) {
+            return; // Invalid interval, do not set
+        }
+        if(interval.compareTo(Duration.ofSeconds(30)) < 0) {
+            interval = Duration.ofSeconds(30); // Ensure minimum interval of 1 second
+        }
         this.softStopRetryInterval = interval;
     }
 
@@ -2997,7 +3003,6 @@ public class PluginScheduleEntry implements AutoCloseable {
         if (!paused) {
             return false; // Not paused
         }
-        log.info("resumed conditions for plugin: {}", name);
         // resume both condition managers
         if (stopConditionManager != null) {
             stopConditionManager.resume();
@@ -3005,10 +3010,8 @@ public class PluginScheduleEntry implements AutoCloseable {
         
         if (startConditionManager != null) {
             startConditionManager.resume();
-        }
-        
+        }        
         paused = false;
-        log.info("resumed conditions for plugin: {}", name);
         return true;
     }
     
@@ -3019,5 +3022,109 @@ public class PluginScheduleEntry implements AutoCloseable {
      */
     public boolean isPaused() {
         return paused;
+    }
+
+    /**
+     * Gets the estimated time until start conditions will be satisfied.
+     * This method uses the new estimation system to provide more accurate
+     * predictions for when the plugin can start running.
+     * 
+     * @return Optional containing the estimated duration until start conditions are satisfied
+     */
+    public Optional<Duration> getEstimatedStartTimeWhenIsSatisfied() {
+        if (!enabled) {
+            return Optional.empty();
+        }
+        
+        if (startConditionManager == null) {
+            // No start conditions means plugin can start immediately
+            return Optional.of(Duration.ZERO);
+        }
+        
+        return startConditionManager.getEstimatedDurationUntilSatisfied();
+    }
+    
+    /**
+     * Gets the estimated time until start conditions will be satisfied, considering only user-defined conditions.
+     * This method focuses only on user-configurable start conditions.
+     * 
+     * @return Optional containing the estimated duration until user start conditions are satisfied
+     */
+    public Optional<Duration> getEstimatedStartTimeWhenIsSatisfiedUserBased() {
+        if (!enabled) {
+            return Optional.empty();
+        }
+        
+        if (startConditionManager == null) {
+            return Optional.of(Duration.ZERO);
+        }
+        
+        return startConditionManager.getEstimatedDurationUntilUserConditionsSatisfied();
+    }
+    
+    /**
+     * Gets the estimated time until stop conditions will be satisfied.
+     * This method uses only user-defined stop conditions to predict when the plugin
+     * should stop based on user configuration.
+     * 
+     * @return Optional containing the estimated duration until stop conditions are satisfied
+     */
+    public Optional<Duration> getEstimatedStopTimeWhenIsSatisfied() {
+        if (stopConditionManager == null) {
+            // No stop conditions means plugin will run indefinitely
+            return Optional.empty();
+        }
+        
+        return stopConditionManager.getEstimatedDurationUntilUserConditionsSatisfied();
+    }
+    
+    /**
+     * Gets a formatted string representation of the estimated start time.
+     * 
+     * @return A human-readable string describing when the plugin is estimated to start
+     */
+    public String getEstimatedStartTimeDisplay() {
+        Optional<Duration> estimate = getEstimatedStartTimeWhenIsSatisfied();
+        if (estimate.isPresent()) {
+            return formatEstimatedDuration(estimate.get(), "start");
+        }
+        return "Cannot estimate start time";
+    }
+    
+    /**
+     * Gets a formatted string representation of the estimated stop time.
+     * 
+     * @return A human-readable string describing when the plugin is estimated to stop
+     */
+    public String getEstimatedStopTimeDisplay() {
+        Optional<Duration> estimate = getEstimatedStopTimeWhenIsSatisfied();
+        if (estimate.isPresent()) {
+            return formatEstimatedDuration(estimate.get(), "stop");
+        }
+        return "No stop conditions or cannot estimate";
+    }
+    
+    /**
+     * Helper method to format estimated durations into human-readable strings.
+     * 
+     * @param duration The duration to format
+     * @param action The action description ("start" or "stop")
+     * @return A formatted string representation
+     */
+    private String formatEstimatedDuration(Duration duration, String action) {
+        long seconds = duration.getSeconds();
+        
+        if (seconds <= 0) {
+            return "Ready to " + action + " now";
+        } else if (seconds < 60) {
+            return String.format("Estimated to %s in ~%d seconds", action, seconds);
+        } else if (seconds < 3600) {
+            return String.format("Estimated to %s in ~%d minutes", action, seconds / 60);
+        } else if (seconds < 86400) {
+            return String.format("Estimated to %s in ~%d hours", action, seconds / 3600);
+        } else {
+            long days = seconds / 86400;
+            return String.format("Estimated to %s in ~%d days", action, days);
+        }
     }
 }

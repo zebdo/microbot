@@ -273,9 +273,10 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
          AndCondition andCondition = new AndCondition();
          //andCondition.addCondition(orCondition);
          andCondition.addCondition(lockCondition);         
-         log.info("\nCreated stop condition: \n{}", andCondition.getDescription());
+         
          List<LockCondition> all = andCondition.findAllLockConditions();
-         log.info("Found {} lock conditions in stop condition: {}", all.size(), all);
+         log.info("\nCreated stop condition: \n{}"+"\nFound {} lock conditions in stop condition: {}", andCondition.getDescription(), all.size(), all);
+    
          return andCondition;
        
     }
@@ -661,6 +662,10 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
             WorldPoint currentLocation = null;
             if (Microbot.isLoggedIn()) {
                 currentLocation = Rs2Player.getWorldLocation();
+            }
+            if ( Microbot.getConfigManager() == null) {
+                log.warn("Cannot save last location - ConfigManager or current location is null");
+                return;
             }
             Microbot.getConfigManager().setConfiguration("SchedulableExample", "lastLocation", currentLocation);
             log.info("Scheduling stop for plugin: {}", event.getPlugin().getClass().getSimpleName());

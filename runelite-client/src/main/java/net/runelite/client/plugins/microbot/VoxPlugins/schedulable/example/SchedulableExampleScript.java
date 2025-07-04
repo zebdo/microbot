@@ -424,8 +424,11 @@ public class SchedulableExampleScript extends Script {
         }
         
         // Take micro breaks by chance
-        if (config.enableMicroBreaks() && Math.random() < (config.microBreakChancePercent() / 100.0 / 100.0)) {
+        if (config.enableMicroBreaks() && Math.random() < (config.microBreakChancePercent() / 100.0 )) {
             Rs2Antiban.takeMicroBreakByChance();
+            if (Rs2AntibanSettings.microBreakActive) {                
+                Microbot.log("Taking a new micro break - Count: " + microBreakCount);
+            }
         }
         
         // Move mouse randomly
