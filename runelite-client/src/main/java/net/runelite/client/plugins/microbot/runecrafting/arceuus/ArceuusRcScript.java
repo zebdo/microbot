@@ -13,6 +13,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import org.apache.commons.lang3.NotImplementedException;
 
 import java.util.concurrent.TimeUnit;
 
@@ -67,7 +68,7 @@ public class ArceuusRcScript extends Script {
             if (shouldGoToBloodAltar()) {
                 state = "Go to " + getAltarName();
                 goToAltar();
-            } else if (shouldUseBloodAltar()) {
+            } else if (shouldUseAltar()) {
                 state = "Use " + getAltarName();
                 useAltar();
             } else if (shouldGoToDarkAltar()) {
@@ -145,13 +146,14 @@ public class ArceuusRcScript extends Script {
         Rs2Walker.walkTo(DENSE_RUNESTONE);
     }
 
-    public boolean shouldUseBloodAltar() {
-        return Rs2Inventory.hasItem(DARK_ESSENCE_FRAGMENTS)
-                && Rs2GameObject.findObject(getAltarName(), true,10,false,Rs2Player.getWorldLocation()) != null;
+    public boolean shouldUseAltar() {
+        if (!Rs2Inventory.hasItem(DARK_ESSENCE_FRAGMENTS)) return false;
+        final GameObject altar = Rs2GameObject.getGameObject(getAltarName(), true, 11);
+        return altar != null;
     }
 
     public void useAltar() {
-        final GameObject altar = Rs2GameObject.findObject(getAltarName(), true,10,false,Rs2Player.getWorldLocation());
+        final GameObject altar = Rs2GameObject.getGameObject(getAltarName(), true, 11);
         if (altar != null) {
             if (Rs2GameObject.interact(altar,"Bind"))
                 Rs2Inventory.waitForInventoryChanges(6000);
@@ -161,10 +163,11 @@ public class ArceuusRcScript extends Script {
     }
 
     public boolean shouldChipEssence() {
+        final GameObject altar = Rs2GameObject.getGameObject(getAltarName(), true, 11);
         return Rs2Inventory.isFull() && !Rs2Inventory.hasItem(DARK_ESSENCE_FRAGMENTS) && Rs2Inventory.hasItem(DARK_ESSENCE_BLOCK)
                 || (!Rs2Inventory.hasItem(DARK_ESSENCE_FRAGMENTS)
                     && Rs2Inventory.hasItem(DARK_ESSENCE_BLOCK)
-                    && Rs2GameObject.findObject(getAltarName(), true,10,false,Rs2Player.getWorldLocation()) != null);
+                    && altar != null);
     }
 
     public boolean moveChisel() {
@@ -185,7 +188,7 @@ public class ArceuusRcScript extends Script {
 
     public boolean chipEssence(boolean fast) {
         if (!moveChisel()) return false;
-        return fast ? chipEssenceFast(true) : chipEssenceSlow();
+        return fast ? chipEssenceFast() : chipEssenceSlow();
     }
 
     public boolean chipEssenceSlow() {
@@ -196,31 +199,39 @@ public class ArceuusRcScript extends Script {
         return false;
     }
 
-    public boolean chipEssenceFast(boolean all) {
-        if(!Rs2Inventory.combineClosest(DARK_ESSENCE_BLOCK,ItemID.CHISEL)) {
-            if (Rs2Inventory.hasItem(DARK_ESSENCE_BLOCK)) {
+    private void reverse(int[] ints) {
+        if (ints.length != 2) throw new NotImplementedException("reverse does not support length != 2");
+        final int tmp = ints[0];
+        ints[0] = ints[1];
+        ints[1] = tmp;
+    }
+
+    public boolean chipEssenceFast() {
+        final int[] ids = {ItemID.CHISEL, DARK_ESSENCE_BLOCK};
+        while (Rs2Inventory.containsAll(ids)) {
+            if (!Rs2Inventory.combineClosest(ids[0], ids[1])) {
                 Microbot.log("Failed to combine closest chisel & dark essence block");
                 return false;
             }
+            reverse(ids);
         }
-        if (all && Rs2Inventory.hasItem(DARK_ESSENCE_BLOCK)) return chipEssenceFast(all);
         return true;
     }
 
     public boolean shouldUseDarkAltar() {
-        GameObject darkAltar = Rs2GameObject.findObject(DARK_ALTAR, true,10,false,Rs2Player.getWorldLocation());
-        return Rs2Inventory.isFull()
-                && Rs2Inventory.hasItem(DENSE_ESSENCE_BLOCK)
-                && darkAltar != null;
+        if (!Rs2Inventory.isFull()) return false;
+        if (!Rs2Inventory.hasItem(DENSE_ESSENCE_BLOCK)) return false;
+        final GameObject darkAltar = Rs2GameObject.getGameObject(DARK_ALTAR, true, 11);
+        return darkAltar != null;
     }
 
     public void useDarkAltar() {
-        GameObject darkAltar = Rs2GameObject.findObject(DARK_ALTAR, true,10,false,Rs2Player.getWorldLocation());
-        if (darkAltar != null) {
-            Rs2GameObject.interact(darkAltar,"Venerate");
-            sleepUntil(()->!Rs2Inventory.hasItem(DENSE_ESSENCE_BLOCK),6_000);
-            darkAltarTripCount++;
-        }
+        final GameObject darkAltar = Rs2GameObject.getGameObject(DARK_ALTAR, true, 11);
+        if (darkAltar == null) return;
+
+        Rs2GameObject.interact(darkAltar,"Venerate");
+        sleepUntil(()->!Rs2Inventory.hasItem(DENSE_ESSENCE_BLOCK),6_000);
+        darkAltarTripCount++;
     }
 
     public void mineEssence() {
