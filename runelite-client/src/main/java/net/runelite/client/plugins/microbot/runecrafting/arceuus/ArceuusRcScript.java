@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.runecrafting.arceuus;
 
+import lombok.Getter;
 import net.runelite.api.GameObject;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
@@ -31,10 +32,16 @@ public class ArceuusRcScript extends Script {
     private static final int DENSE_ESSENCE_BLOCK = ItemID.ARCEUUS_ESSENCE_BLOCK;
     private static final int DARK_ESSENCE_BLOCK = ItemID.ARCEUUS_ESSENCE_BLOCK_DARK;
 
+    private static final String DARK_ALTAR = "Dark altar";
+    private static final String STR_DENSE_RUNESTONE = "Dense runestone";
+
     public static final WorldPoint ARCEUUS_BLOOD_ALTAR = new WorldPoint(1720, 3828, 0);
     public static final WorldPoint ARCEUUS_SOUL_ALTAR = new WorldPoint(1818, 3860, 0);
     public static final WorldPoint ARCEUUS_DARK_ALTAR = new WorldPoint(1718, 3880, 0);
     public static final WorldPoint DENSE_RUNESTONE = new WorldPoint(1760, 3853, 0);
+
+    @Getter
+    private String state = "Unknown";
 
     public boolean run(ArceuusRcConfig config) {
         ArceuusRcScript.config = config;
@@ -54,22 +61,32 @@ public class ArceuusRcScript extends Script {
     private void executeTask() {
         try {
             if (!super.run() || !Microbot.isLoggedIn()) {
+                state = "Disabled";
                 return;
             }
             if (shouldGoToBloodAltar()) {
+                state = "Go to " + getAltarName();
                 goToAltar();
             } else if (shouldUseBloodAltar()) {
-                useBloodAltar();
+                state = "Use " + getAltarName();
+                useAltar();
             } else if (shouldGoToDarkAltar()) {
+                state = "Go to Dark Altar";
                 goToDarkAltar();
             } else if (shouldUseDarkAltar()) {
+                state = "Use Dark Altar";
                 useDarkAltar();
             } else if (shouldGoToRunestone()) {
+                state = "Go to Runestone";
                 goToRunestone();
             } else if (shouldChipEssence()) {
+                state = "Chip Essence" + (config.getChipEssenceFast() ? " Fast" : "");
                 chipEssence(config.getChipEssenceFast());
             } else if (shouldMineEssence()) {
+                state = "Mine Essence";
                 mineEssence();
+            } else {
+                state = "Unknown";
             }
         } catch (Exception e) {
             Microbot.log("Error in Arceuus Runecrafter: " + e.getMessage());
@@ -82,7 +99,7 @@ public class ArceuusRcScript extends Script {
         if (level >= 90) return Altar.SOUL;
         if (level >= 77) return Altar.BLOOD;
         // TODO: handle this better
-        throw new IllegalStateException("Runecraft Level " + level + " is not high enough for Arceuus RC");
+        throw new IllegalStateException("Runecraft Level " + level + " to low");
     }
 
     public WorldPoint getAltarWorldPoint() {
@@ -133,10 +150,10 @@ public class ArceuusRcScript extends Script {
                 && Rs2GameObject.findObject(getAltarName(), true,10,false,Rs2Player.getWorldLocation()) != null;
     }
 
-    public void useBloodAltar() {
-        GameObject bloodAltar = Rs2GameObject.findObject(getAltarName(), true,10,false,Rs2Player.getWorldLocation());
-        if (bloodAltar != null) {
-            if (Rs2GameObject.interact(bloodAltar,"Bind"))
+    public void useAltar() {
+        final GameObject altar = Rs2GameObject.findObject(getAltarName(), true,10,false,Rs2Player.getWorldLocation());
+        if (altar != null) {
+            if (Rs2GameObject.interact(altar,"Bind"))
                 Rs2Inventory.waitForInventoryChanges(6000);
             darkAltarTripCount = 0;
 
@@ -193,37 +210,39 @@ public class ArceuusRcScript extends Script {
     }
 
     public boolean shouldUseDarkAltar() {
-        GameObject darkAltar = Rs2GameObject.findObject("Dark altar", true,10,false,Rs2Player.getWorldLocation());
+        GameObject darkAltar = Rs2GameObject.findObject(DARK_ALTAR, true,10,false,Rs2Player.getWorldLocation());
         return Rs2Inventory.isFull()
                 && Rs2Inventory.hasItem(DENSE_ESSENCE_BLOCK)
                 && darkAltar != null;
     }
 
     public void useDarkAltar() {
-        GameObject darkAltar = Rs2GameObject.findObject("Dark altar", true,10,false,Rs2Player.getWorldLocation());
+        GameObject darkAltar = Rs2GameObject.findObject(DARK_ALTAR, true,10,false,Rs2Player.getWorldLocation());
         if (darkAltar != null) {
             Rs2GameObject.interact(darkAltar,"Venerate");
-            sleepUntil(()->!Rs2Inventory.hasItem(DENSE_ESSENCE_BLOCK),6000);
+            sleepUntil(()->!Rs2Inventory.hasItem(DENSE_ESSENCE_BLOCK),6_000);
             darkAltarTripCount++;
         }
     }
 
     public void mineEssence() {
-        if(!Rs2Inventory.hasItem(BLOOD_ESSENCE_ACTIVE)){
+        if(getAltar() == Altar.BLOOD && !Rs2Inventory.hasItem(BLOOD_ESSENCE_ACTIVE)){
             Rs2Inventory.interact(BLOOD_ESSENCE, "Activate");
         }
-        GameObject runeStone = Rs2GameObject.findObject("Dense runestone", true,11,false,Rs2Player.getWorldLocation());
-        if (runeStone != null) {
-            Rs2GameObject.interact(runeStone,"Chip");
-            Rs2Player.waitForAnimation(10000);
+        final GameObject runeStone = Rs2GameObject.getGameObject(STR_DENSE_RUNESTONE, true, 11);
+        if (runeStone == null) { // should never happen bc shouldMineEssence checks for the runestone
+            Microbot.log("Cannot find runestone");
+            return;
         }
+        Rs2GameObject.interact(runeStone,"Chip");
+        Rs2Player.waitForAnimation(10000);
     }
     public static boolean shouldMineEssence() {
-        GameObject runeStone = Rs2GameObject.findObject("Dense runestone", true,11,false,Rs2Player.getWorldLocation());
-        return !Rs2Inventory.hasItem(DARK_ESSENCE_BLOCK)
-                && !Rs2Inventory.isFull()
-                && !Rs2Player.isAnimating()
-                && runeStone != null;
+        if (Rs2Inventory.hasItem(DARK_ESSENCE_BLOCK)) return false;
+        if (Rs2Inventory.isFull()) return false;
+        if (Rs2Player.isAnimating()) return false;
+        final GameObject runeStone = Rs2GameObject.getGameObject(STR_DENSE_RUNESTONE, true, 11);
+        return runeStone != null;
     }
 
     @Override
