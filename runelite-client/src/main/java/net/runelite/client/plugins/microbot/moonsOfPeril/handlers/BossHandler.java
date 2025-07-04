@@ -36,7 +36,9 @@ public final class BossHandler {
 
     /** Walks to the chosen boss lobby. */
     public void walkToBoss(Rs2InventorySetup inventorySetup, String bossName, WorldPoint bossWorldPoint) {
-        equipInventorySetup(inventorySetup);
+        if (inventorySetup != null) {
+            equipInventorySetup(inventorySetup);
+        }
         if (debugLogging) {Microbot.log("Walking to " + bossName + " lobby");}
         Rs2Walker.walkWithState(bossWorldPoint, 0);
         sleep(600);
