@@ -203,13 +203,15 @@ public class MicrobotPlugin extends Plugin
 	 * Retrieves all container IDs from {@link net.runelite.api.gameval.InventoryID}
 	 * whose field names suggest they are shop-related.
 	 *
-	 * <p>This includes fields containing the keywords:
-	 * "shop", "store", "merchant", "bazaar", "stall", or "trader" (case-insensitive).
+	 * <p>This includes fields containing any of the following keywords
+	 * (case-insensitive): {@code "shop"}, {@code "store"}, {@code "merchant"},
+	 * {@code "bazaar"}, {@code "stall"}, {@code "trader"}, or {@code "supplies"}.
 	 *
-	 * <p>The method reflects over the public static integer fields in the InventoryID class,
-	 * collecting their values if their names match any of the defined keywords.
+	 * <p>The method reflects over the public static integer fields in the
+	 * {@code InventoryID} class and collects those whose names match
+	 * one or more of the defined keywords.
 	 *
-	 * @return an array of container IDs potentially associated with shops or NPC vendors
+	 * @return an array of container IDs potentially associated with shop-like inventories
 	 */
 	private int[] getShopContainerIds()
 	{
@@ -224,20 +226,16 @@ public class MicrobotPlugin extends Plugin
 
 			String fieldName = field.getName().toLowerCase();
 
-			for (String keyword : keywords)
+			if (Arrays.stream(keywords).anyMatch(fieldName::contains))
 			{
-				if (fieldName.contains(keyword))
+				try
 				{
-					try
-					{
-						int id = field.getInt(null);
-						shopContainerIds.add(id);
-					}
-					catch (IllegalAccessException e)
-					{
-						log.error("Failed to access field: {}", field.getName(), e);
-					}
-					break;
+					int id = field.getInt(null);
+					shopContainerIds.add(id);
+				}
+				catch (IllegalAccessException e)
+				{
+					log.error("Failed to access field: {}", field.getName(), e);
 				}
 			}
 		}
