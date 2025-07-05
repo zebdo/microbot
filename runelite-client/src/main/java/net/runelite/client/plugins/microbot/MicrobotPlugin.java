@@ -201,23 +201,32 @@ public class MicrobotPlugin extends Plugin
 
 	/**
 	 * Retrieves all container IDs from {@link net.runelite.api.gameval.InventoryID}
-	 * that contain the word "shop" in their field names.
-	 * <p>
-	 * This method uses reflection to scan fields in the {@code InventoryID} class
-	 * and collects the integer values of those whose names include "shop" (case-insensitive).
-	 * It returns the result as an array of primitive integers.
+	 * whose field names suggest they are shop-related.
 	 *
-	 * @return an array of container IDs related to shop inventories
+	 * <p>This includes fields containing any of the following keywords
+	 * (case-insensitive): {@code "shop"}, {@code "store"}, {@code "merchant"},
+	 * {@code "bazaar"}, {@code "stall"}, {@code "trader"}, or {@code "supplies"}.
+	 *
+	 * <p>The method reflects over the public static integer fields in the
+	 * {@code InventoryID} class and collects those whose names match
+	 * one or more of the defined keywords.
+	 *
+	 * @return an array of container IDs potentially associated with shop-like inventories
 	 */
 	private int[] getShopContainerIds()
 	{
 		Field[] fields = net.runelite.api.gameval.InventoryID.class.getFields();
 		List<Integer> shopContainerIds = new ArrayList<>();
+		String[] keywords = { "shop", "store", "merchant", "bazaar", "stall", "trader", "supplies" };
+
 		for (Field field : fields)
 		{
-			if (field.getType() != int.class) continue;
+			if (field.getType() != int.class)
+				continue;
 
-			if (field.getName().toLowerCase().contains("shop"))
+			String fieldName = field.getName().toLowerCase();
+
+			if (Arrays.stream(keywords).anyMatch(fieldName::contains))
 			{
 				try
 				{
