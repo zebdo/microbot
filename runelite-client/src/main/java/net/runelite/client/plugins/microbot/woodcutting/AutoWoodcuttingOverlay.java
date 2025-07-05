@@ -5,6 +5,7 @@ import net.runelite.api.Perspective;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
 import net.runelite.client.ui.overlay.components.LineComponent;
@@ -78,7 +79,14 @@ public class AutoWoodcuttingOverlay extends OverlayPanel {
                     .right(this.plugin.autoWoodcuttingScript.woodcuttingScriptState.toString())
                     .rightColor(HIGHLIGHT_COLOR)
                     .build());
-
+            var forestry = config.enableForestry() ? plugin.autoWoodcuttingScript.currentForestryEvent != ForestryEvents.NONE ? plugin.autoWoodcuttingScript.currentForestryEvent.toString() : "None" : "Disabled";
+            if (forestry != null && !forestry.equals("None") && !forestry.equals("Disabled")) {
+                panelComponent.getChildren().add(LineComponent.builder()
+                        .left("Forestry Event:")
+                        .right(forestry)
+                        .rightColor(HIGHLIGHT_COLOR)
+                        .build());
+            }
             // Current tree
             if (config.TREE() != null) {
                 panelComponent.getChildren().add(LineComponent.builder()
