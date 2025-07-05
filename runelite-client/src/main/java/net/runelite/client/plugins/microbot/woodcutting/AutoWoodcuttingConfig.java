@@ -1,15 +1,18 @@
 package net.runelite.client.plugins.microbot.woodcutting;
 
-import net.runelite.client.config.Config;
-import net.runelite.client.config.ConfigGroup;
-import net.runelite.client.config.ConfigItem;
-import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.util.inventory.InteractOrder;
 import net.runelite.client.plugins.microbot.woodcutting.enums.WoodcuttingResetOptions;
 import net.runelite.client.plugins.microbot.woodcutting.enums.WoodcuttingTree;
 import net.runelite.client.plugins.microbot.woodcutting.enums.WoodcuttingWalkBack;
 
 @ConfigGroup("Woodcutting")
+@ConfigInformation(
+        "<html>" +
+                "<p>This script automatically cuts trees and handles the logs based on your settings.</p>" +
+                "<p>Forestry support implemented by TaF</p>" +
+                "<p>If forestry is enabled, remember to use one of the forestry worlds for best results</p>" +
+                "</html>")
 public interface AutoWoodcuttingConfig extends Config {
     @ConfigSection(
             name = "General",
@@ -109,7 +112,7 @@ public interface AutoWoodcuttingConfig extends Config {
             section = resetSection
     )
     default String itemsToBank() {
-        return "logs";
+        return "logs,sturdy beehive parts,petal garland,golden pheasant egg,pheasant tail feathers,fox whistle";
     }
 
     @ConfigItem(

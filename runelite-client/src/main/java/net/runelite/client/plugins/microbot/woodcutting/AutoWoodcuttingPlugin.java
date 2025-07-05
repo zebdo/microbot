@@ -2,14 +2,17 @@ package net.runelite.client.plugins.microbot.woodcutting;
 
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
-import net.runelite.api.Skill;
+import net.runelite.api.*;
 import net.runelite.api.events.ChatMessage;
+import net.runelite.api.events.NpcDespawned;
+import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.StatChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
@@ -67,6 +70,43 @@ public class AutoWoodcuttingPlugin extends Plugin {
 
         if (msg.equals("you can't light a fire here.")) {
             autoWoodcuttingScript.cannotLightFire = true;
+        }
+
+        if (msg.startsWith("The sapling seems to love")) {
+            int ingredientNum = msg.contains("first") ? 0 : (msg.contains("second") ? 1 : (msg.contains("third") ? 2 : -1));
+            if (ingredientNum == -1) {
+                return;
+            }
+
+            // Find which ingredient this message refers to
+            for (TileObject ingredient : Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("leaves", false))) {
+                var ingredientName = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getObjectDefinition(ingredient.getId()).getName()).orElse(null);
+
+                if (msg.contains(ingredientName)) {
+                    autoWoodcuttingScript.saplingOrder[ingredientNum] = (GameObject) ingredient;
+                    break;
+                }
+            }
+        }
+    }
+
+    private static final int RITUAL_CIRCLE_GREEN = 12527;
+    private static final int RITUAL_CIRCLE_RED = 12535;
+    @Subscribe
+    public void onNpcSpawned(NpcSpawned event) {
+        NPC npc = event.getNpc();
+        int id = npc.getId();
+        if (id >= RITUAL_CIRCLE_GREEN && id <= RITUAL_CIRCLE_RED) {
+            autoWoodcuttingScript.ritualCircles.add(npc);
+        }
+    }
+
+    @Subscribe
+    public void onNpcDespawned(NpcDespawned event) {
+        NPC npc = event.getNpc();
+        int id = npc.getId();
+        if (id >= RITUAL_CIRCLE_GREEN && id <= RITUAL_CIRCLE_RED) {
+            autoWoodcuttingScript.ritualCircles.remove(npc);
         }
     }
 }

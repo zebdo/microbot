@@ -23,6 +23,7 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.woodcutting.Rs2Woodcutting;
 import net.runelite.client.plugins.microbot.woodcutting.enums.*;
+import net.runelite.api.*;
 
 import java.awt.event.KeyEvent;
 import java.util.*;
@@ -57,8 +58,10 @@ public class AutoWoodcuttingScript extends Script {
     WoodcuttingScriptState woodcuttingScriptState = WoodcuttingScriptState.WOODCUTTING;
     private boolean hasAutoHopMessageShown = false;
     // Forestry event variables
-    private final List<NPC> ritualCircles = new ArrayList<>();
-    private ForestryEvents currentForestryEvent = ForestryEvents.NONE;
+    public final List<NPC> ritualCircles = new ArrayList<>();
+    public ForestryEvents currentForestryEvent = ForestryEvents.NONE;
+    public final GameObject[] saplingOrder = new GameObject[3];
+    public boolean debugForestry = true;
 
     private static void handleFiremaking(AutoWoodcuttingConfig config) {
         if (!Rs2Inventory.hasItem(TINDERBOX)) {
@@ -147,49 +150,166 @@ public class AutoWoodcuttingScript extends Script {
     private boolean handleForestryEvents(AutoWoodcuttingConfig config) {
         if (!config.enableForestry()) return false;
 
-        // Check for forestry events in priority order
+        if (CheckForStrugglingSapling()) {
+            if (debugForestry) {
+                Microbot.log("Struggling sapling found");
+            }
+            handleStrugglingSapling();
+        }
+
         if (checkForTreeRoot()) {
+            if (debugForestry) {
+                Microbot.log("Infused tree root found");
+            }
             handleTreeRoot();
             return true;
         }
 
         if (checkForFoxTrap()) {
+            if (debugForestry) {
+                Microbot.log("Fox trap found");
+            }
             handleFoxTrap();
             return true;
         }
 
         if (checkForRainbow()) {
+            if (debugForestry) {
+                Microbot.log("Rainbow found");
+            }
             handleRainbow();
             return true;
         }
 
         if (checkForBeeHive() && Rs2Inventory.contains("logs")) {
+            if (debugForestry) {
+                Microbot.log("Bee hive found");
+            }
             handleBeeHive();
             return true;
         }
 
         if (checkForPheasant()) {
+            if (debugForestry) {
+                Microbot.log("Pheasant nest found");
+            }
             handlePheasant();
             return true;
         }
 
         if (checkForRitualCircles()) {
+            if (debugForestry) {
+                Microbot.log("Ritual circles found");
+            }
             handleRitualCircles();
             return true;
         }
 
         PruningAction pruningAction = findEntlingToPrune();
         if (pruningAction != null) {
+            if (debugForestry) {
+                Microbot.log("Entling found: " + pruningAction.getEntling().getName() + " with action: " + pruningAction.getAction());
+            }
             handleEntling(pruningAction);
             return true;
         }
 
+        if (checkForFoxPoacher()) {
+            if (debugForestry) {
+                Microbot.log("Fox poacher found");
+            }
+            handleFoxTrap();
+            return true;
+        }
+        // If no forestry events are active, reset the current event state
+        if (currentForestryEvent != ForestryEvents.NONE) {
+            currentForestryEvent = ForestryEvents.NONE;
+        }
         return false;
+    }
+
+    private void handleStrugglingSapling() {
+        currentForestryEvent = ForestryEvents.STRUGGLING_SAPLING;
+        breakPlayersAnimation();
+
+        // Find the struggling sapling
+        var sapling = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("Struggling sapling", false))
+                .stream()
+                .filter(obj ->
+                        Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(obj), "Add-mulch") &&
+                                obj.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
+                )
+                .findFirst()
+                .orElse(null);
+
+        if (sapling == null) {
+            currentForestryEvent = ForestryEvents.NONE;
+            return;
+        }
+
+        // Find all available leaf ingredients
+        var ingredients = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("leaves", false))
+                .stream()
+                .filter(obj -> Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(obj), "Collect"))
+                .collect(Collectors.toList());
+
+        if (ingredients.isEmpty()) {
+            currentForestryEvent = ForestryEvents.NONE;
+            return;
+        }
+
+        // If we have leaves in inventory, add them to the sapling
+        if (Rs2Inventory.contains("leaves")) {
+            Rs2GameObject.interact(sapling, "Add-mulch");
+            Rs2Player.waitForAnimation();
+            sleep(1000, 2000);
+            return;
+        }
+
+        // Check if we have knowledge of correct ingredients from previous attempts
+        for (int i = 0; i < 3; i++) {
+            GameObject correctIngredient = saplingOrder[i];
+            if (correctIngredient != null) {
+                // Look for matching ingredient in our available ingredients
+                for (TileObject ingredient : ingredients) {
+                    if (ingredient.getId() == correctIngredient.getId()) {
+                        // Collect this ingredient as it's known to be correct
+                        Rs2GameObject.interact(ingredient, "Collect");
+                        Rs2Player.waitForAnimation();
+                        sleep(800, 1500);
+                        return;
+                    }
+                }
+            }
+        }
+
+        // If we don't know the correct order yet or the correct ingredients aren't available,
+        // collect the closest ingredient to try it
+        TileObject closestIngredient = ingredients.stream()
+                .min(Comparator.comparingInt(i ->
+                        i.getWorldLocation().distanceTo(Rs2Player.getWorldLocation())))
+                .orElse(null);
+
+        if (closestIngredient != null) {
+            Rs2GameObject.interact(closestIngredient, "Collect");
+            Rs2Player.waitForAnimation();
+            sleep(800, 1500);
+        }
+    }
+
+    private boolean CheckForStrugglingSapling() {
+        var strugglingSaplings = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("Struggling sapling", false));
+        if (strugglingSaplings == null) return false;
+        if (strugglingSaplings.isEmpty()) return false;
+        return strugglingSaplings.stream().anyMatch(obj ->
+                Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(obj), "Add-mulch") &&
+                        obj.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
+        );
     }
 
     // Event detection methods
     private boolean checkForTreeRoot() {
-        var roots = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("infused tree root", false));
+        var roots = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("infused tree root", false));
         if (roots == null) return false;
         if (roots.isEmpty()) return false;
         return roots.stream().anyMatch(obj ->
@@ -205,7 +325,7 @@ public class AutoWoodcuttingScript extends Script {
     }
 
     private boolean checkForRainbow() {
-        var rainbows = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("ainbow", false));
+        var rainbows = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("ainbow", false));
         if (rainbows == null) return false;
         if (rainbows.isEmpty()) return false;
         return rainbows.stream().anyMatch(obj ->
@@ -214,19 +334,18 @@ public class AutoWoodcuttingScript extends Script {
     }
 
     private boolean checkForBeeHive() {
-        var beehives = Rs2Npc.getNpcs("nfinished beehive", false);
-        if (beehives == null) return false;
+        var beehives = Rs2Npc.getNpcs(x -> x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_1 || x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_2);
         return beehives.findAny().isPresent();
     }
 
     private boolean checkForSturdyBeeHive() {
-        var sturdyBeehives = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("sturdy beehive", false));
+        var sturdyBeehives = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("sturdy beehive", false));
         if (sturdyBeehives == null) return false;
         return !sturdyBeehives.isEmpty();
     }
 
     private boolean checkForPheasant() {
-        var pheasantNests = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("pheasant nest", false));
+        var pheasantNests = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("pheasant nest", false));
         if (pheasantNests == null) return false;
         if (pheasantNests.isEmpty()) return false;
         return pheasantNests.stream().anyMatch(obj ->
@@ -254,7 +373,7 @@ public class AutoWoodcuttingScript extends Script {
         if (Rs2Woodcutting.isWearingAxeWithSpecialAttack())
             Rs2Combat.setSpecState(true, 1000);
 
-        var roots = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("infused tree root", false)).stream().filter(
+        var roots = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("infused tree root", false)).stream().filter(
                 x -> x != null &&
                         Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(x), "Chop down") &&
                         x.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
@@ -276,8 +395,9 @@ public class AutoWoodcuttingScript extends Script {
                         Rs2Npc.hasAction(npc.getId(), "Disarm")
         );
 
-        if (foxTraps.findAny().isPresent()) {
-            var foxTrap = foxTraps.findFirst().get();
+        var foxtrapOpt = foxTraps.findFirst();
+        if (foxtrapOpt.isPresent()) {
+            var foxTrap = foxtrapOpt.get();
             Rs2Npc.interact(foxTrap, "Disarm");
             Rs2Player.waitForAnimation();
         } else if (!checkForFoxPoacher()) {
@@ -289,7 +409,7 @@ public class AutoWoodcuttingScript extends Script {
         currentForestryEvent = ForestryEvents.RAINBOW;
         breakPlayersAnimation();
 
-        var rainbows = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("ainbow", false)).stream().filter(
+        var rainbows = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("ainbow", false)).stream().filter(
                 x -> x != null &&
                         x.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
         ).collect(Collectors.toList());
@@ -313,12 +433,7 @@ public class AutoWoodcuttingScript extends Script {
             return;
         }
 
-        var beehives = Rs2Npc.getNpcs(npc ->
-                npc.getName() != null &&
-                        npc.getName().toLowerCase().contains("nfinished beehive") &&
-                        Rs2Npc.hasAction(npc.getId(), "Build")
-        );
-
+        var beehives = Rs2Npc.getNpcs(x -> x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_1 || x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_2);
         var beehiveOpt = beehives.findFirst();
         if (beehiveOpt.isPresent()) {
             var beehive = beehiveOpt.get();
@@ -449,6 +564,9 @@ public class AutoWoodcuttingScript extends Script {
 
         for (Rs2NpcModel entling : entlings) {
             String request = entling.getOverheadText();
+            if (request == null || request.isEmpty()) {
+                return null;
+            }
             String action = null;
 
             switch (request) {
@@ -468,23 +586,6 @@ public class AutoWoodcuttingScript extends Script {
         }
 
         return null;
-    }
-
-    // Event subscription methods that will be called by the plugin
-    public void onNpcSpawned(NpcSpawned event) {
-        NPC npc = event.getNpc();
-        int id = npc.getId();
-        if (id >= RITUAL_CIRCLE_GREEN && id <= RITUAL_CIRCLE_RED) {
-            ritualCircles.add(npc);
-        }
-    }
-
-    public void onNpcDespawned(NpcDespawned event) {
-        NPC npc = event.getNpc();
-        int id = npc.getId();
-        if (id >= RITUAL_CIRCLE_GREEN && id <= RITUAL_CIRCLE_RED) {
-            ritualCircles.remove(npc);
-        }
     }
 
     private boolean breakPlayersAnimation() {
@@ -568,7 +669,6 @@ public class AutoWoodcuttingScript extends Script {
 
                 if (!Rs2Bank.bankItemsAndWalkBackToOriginalPosition(itemNames, getReturnPoint(config)))
                     return;
-
                 woodcuttingScriptState = WoodcuttingScriptState.WOODCUTTING;
                 break;
             case CAMPFIRE_FIREMAKE:
