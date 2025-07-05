@@ -63,12 +63,6 @@ public class BlessedWinePlugin extends Plugin implements SchedulablePlugin {
     }
 
     @Subscribe
-    public void onGameTick(GameTick tick) {
-        if (!Microbot.isLoggedIn()) return;
-        // Future overlay or reaction logic
-    }
-
-    @Subscribe
     public void onPluginScheduleEntrySoftStopEvent(PluginScheduleEntrySoftStopEvent event) {
         if (event.getPlugin() == this) {
             Microbot.stopPlugin(this);
