@@ -5,8 +5,6 @@ import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
-import net.runelite.client.callback.ClientThread;
-import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -15,19 +13,12 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
-import javax.inject.Inject;
 import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 @Slf4j
 public class BlessedWineScript extends Script {
-    @Inject
-    private ConfigManager configManager;
-    @Inject
-    ClientThread clientThread;
-    private final BlessedWinePlugin plugin;
-    private final BlessedWineConfig config;
     private BlessedWineState state = BlessedWineState.INITIALIZING;
     private boolean initialized = false;
 
@@ -54,16 +45,10 @@ public class BlessedWineScript extends Script {
     private static final Integer JUG_OF_WINE = ItemID.JUG_WINE;
     private static final Integer BLESSED_WINE = ItemID.JUG_WINE_BLESSED;
 
-
-    @Inject
-    public BlessedWineScript(BlessedWinePlugin plugin, BlessedWineConfig config) {
-        this.plugin = plugin;
-        this.config = config;
-    }
-
     public boolean run() {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             if (!Microbot.isLoggedIn()) return;
+            if (!super.run()) return;
             int maxPrayerLevel = Microbot.getClient().getRealSkillLevel(Skill.PRAYER);
             int currentPrayerPoints = (Rs2Player.getPrayerPercentage() * maxPrayerLevel) / 100;
 
@@ -71,7 +56,6 @@ public class BlessedWineScript extends Script {
                 case INITIALIZING:
                     BlessedWinePlugin.status = "Initializing run...";
                     initialize();
-                    if (!super.run()) return;
                     break;
 
                 case WALK_TO_ALTAR:
@@ -134,6 +118,7 @@ public class BlessedWineScript extends Script {
                     BlessedWinePlugin.status = "Teleporting back to Cam Torum Bank...";
                     if (Rs2Player.getWorldLocation().getPlane() != 2) {
                         for (int id : CALCIFIED_MOTH) {
+                            if (!isRunning()) break;
                             if (Rs2Inventory.hasItem(id)) {
                                 Rs2Inventory.interact(id, "Crush");
                                 Rs2Player.waitForAnimation();
@@ -216,6 +201,7 @@ public class BlessedWineScript extends Script {
         sleepUntilTrue(() -> !Rs2Inventory.isFull(), 300, 2000);
 
         for (int id : CALCIFIED_MOTH) {
+            if (!isRunning()) break;
             if (Rs2Bank.hasItem(id)) {
                 Rs2Bank.withdrawAll(id);
                 Rs2Inventory.waitForInventoryChanges(2400);
