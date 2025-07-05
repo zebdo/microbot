@@ -6,6 +6,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
+import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -85,6 +86,8 @@ public final class BossHandler {
         drinkIfNeeded();
         sleep(600);
         Rs2Player.toggleRunEnergy(true);
+        Rs2Camera.resetPitch();
+        Rs2Camera.resetZoom();
     }
 
     /**
