@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 
 import net.runelite.api.GameObject;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -10,7 +11,6 @@ import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
-import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -47,7 +47,7 @@ public class BloodMoonHandler implements BaseHandler {
     private final boolean debugLogging;
 
     public BloodMoonHandler(moonsOfPerilConfig cfg, Rs2InventorySetup equipmentNormal) {
-        this.enableBoss = cfg.enableEclipse();
+        this.enableBoss = cfg.enableBlood();
         this.equipmentNormal = equipmentNormal;
         this.boss = new BossHandler(cfg);
         this.debugLogging = cfg.debugLogging();
@@ -186,19 +186,16 @@ public class BloodMoonHandler implements BaseHandler {
 
         /* 5 ─ Jaguar evade & attack sequence ----------------------------- */
         final long TIMEOUT_MS = 30_000;
-        int evadeCount = 0;
 
         while (isSpecialAttack1Sequence() && System.currentTimeMillis() - startMs < TIMEOUT_MS) {
             int bloodPoolTick = moonsOfPerilPlugin.bloodPoolTick;
-            if (debugLogging) {Microbot.log("Current tick counter: " + bloodPoolTick);}
+            if (targetJaguar.getAnimation() == AnimationID.NPC_LYNX_COMBAT_DEATH_BLOOD_JAGUAR) {
+                sleep(600);
+                break;
+            }
             if (bloodPoolTick == 3) {
                 if (debugLogging) {Microbot.log("EVADE to " + evadeTile);}
                 Rs2Walker.walkFastCanvas(evadeTile, true);
-                evadeCount++;
-                if (debugLogging) {Microbot.log("Evade count = " + evadeCount);}
-                if (evadeCount > 5) {
-                    break;
-                }
             } else if (bloodPoolTick == 5) {
                 if (debugLogging) {Microbot.log("ATTACK jaguar");}
                 Rs2Npc.attack(targetJaguar);
@@ -210,7 +207,6 @@ public class BloodMoonHandler implements BaseHandler {
             sleep(100);   // OnGameTick method in MoonsOfPerilPlugin.java handles the game ticks
         }
     }
-
 
     /**
      * Returns a random safe WorldPoint within {@code distance} tiles of the player.
