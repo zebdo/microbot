@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.tithefarm;
 
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.tithefarm.enums.TitheFarmLanes;
@@ -345,11 +346,11 @@ public class TitheFarmingScript extends Script {
 
         // Helper method to validate inventory items
         private void validateInventory() {
-            if (!Rs2Inventory.hasItem(ItemID.SEED_DIBBER) || !Rs2Inventory.hasItem(ItemID.SPADE)) {
+            if (!Rs2Inventory.hasItem(ItemID.DIBBER) || !Rs2Inventory.hasItem(ItemID.SPADE)) {
                 Microbot.showMessage("You need a seed dibber and a spade in your inventory!");
                 shutdown();
             }
-            if (!Rs2Inventory.hasItemAmount("watering can", WATERING_CANS_AMOUNT) && !Rs2Inventory.hasItem(ItemID.GRICOLLERS_CAN)) {
+            if (!Rs2Inventory.hasItemAmount("watering can", WATERING_CANS_AMOUNT) && !Rs2Inventory.hasItem(ItemID.ZEAH_WATERINGCAN)) {
                 Microbot.showMessage("You need at least 8 watering can(8) or a Gricoller's can!");
                 shutdown();
             }
@@ -408,7 +409,7 @@ public class TitheFarmingScript extends Script {
             sleepUntil(() -> gricollerCanCharges != -1);
             if (gricollerCanCharges < config.gricollerCanRefillTreshhold()) {
                 walkToBarrel();
-                Rs2Inventory.interact(ItemID.GRICOLLERS_CAN, "Use");
+                Rs2Inventory.interact(ItemID.ZEAH_WATERINGCAN, "Use");
                 Rs2GameObject.interact("Water barrel");
                 sleepUntil(Rs2Player::isAnimating, 10000);
             } else {
@@ -418,7 +419,7 @@ public class TitheFarmingScript extends Script {
             walkToBarrel();
             Rs2Inventory.interact(TitheFarmMaterial.getWateringCanToBeFilled(), "Use");
             Rs2GameObject.interact(ObjectID.WATER_BARREL, "Use");
-            sleepUntil(() -> Rs2Inventory.hasItemAmount(ItemID.WATERING_CAN8, WATERING_CANS_AMOUNT), 60000);
+            sleepUntil(() -> Rs2Inventory.hasItemAmount(ItemID.WATERING_CAN_8, WATERING_CANS_AMOUNT), 60000);
         } else {
             state = PLANTING_SEEDS;
         }
@@ -435,7 +436,7 @@ public class TitheFarmingScript extends Script {
 
     private void checkGricollerCharges() {
         gricollerCanCharges = -1;
-        Rs2Inventory.interact(ItemID.GRICOLLERS_CAN, "check");
+        Rs2Inventory.interact(ItemID.ZEAH_WATERINGCAN, "check");
     }
 
     private void takeSeeds() {

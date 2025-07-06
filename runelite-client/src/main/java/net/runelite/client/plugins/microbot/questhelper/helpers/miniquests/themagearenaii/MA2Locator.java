@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.miniquests.themagearenaii;
 
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.QuestState;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.bank.banktab.BankSlotIcons;

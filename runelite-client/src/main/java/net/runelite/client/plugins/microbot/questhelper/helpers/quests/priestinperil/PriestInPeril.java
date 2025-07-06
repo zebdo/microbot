@@ -24,8 +24,7 @@
  */
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.priestinperil;
 
-
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.Skill;
@@ -45,7 +44,6 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRe
 import net.runelite.client.plugins.microbot.questhelper.rewards.ExperienceReward;
 import net.runelite.client.plugins.microbot.questhelper.rewards.QuestPointReward;
 import net.runelite.client.plugins.microbot.questhelper.rewards.UnlockReward;
-
 
 import java.util.*;
 

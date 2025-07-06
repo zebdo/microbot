@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.bankjs.BanksBankStander;
 
 import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.Item;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;

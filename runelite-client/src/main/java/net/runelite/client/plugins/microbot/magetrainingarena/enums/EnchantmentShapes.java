@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.magetrainingarena.enums;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.ObjectID;
 
 @Getter

@@ -3,7 +3,6 @@ package net.runelite.client.plugins.microbot.piebaker;
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.InventoryID;
-import net.runelite.api.ItemID;
 import net.runelite.api.Skill;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
@@ -18,6 +17,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 import net.runelite.client.ui.overlay.OverlayManager;
+import net.runelite.api.gameval.ItemID;
 
 import javax.inject.Inject;
 import java.time.Instant;

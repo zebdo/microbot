@@ -24,9 +24,31 @@
  */
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.deserttreasureii;
 
-
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
+import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
+import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
+import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
+import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirements;
+import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
+import net.runelite.client.plugins.microbot.questhelper.requirements.var.VarbitRequirement;
+import net.runelite.client.plugins.microbot.questhelper.requirements.ZoneRequirement;
+import net.runelite.client.plugins.microbot.questhelper.requirements.conditional.Conditions;
+import net.runelite.client.plugins.microbot.questhelper.requirements.util.Operation;
+import net.runelite.client.plugins.microbot.questhelper.steps.DetailedQuestStep;
+import net.runelite.client.plugins.microbot.questhelper.steps.ItemStep;
+import net.runelite.client.plugins.microbot.questhelper.steps.NpcStep;
+import net.runelite.client.plugins.microbot.questhelper.steps.ObjectStep;
+import net.runelite.client.plugins.microbot.questhelper.steps.QuestStep;
+import net.runelite.client.plugins.microbot.questhelper.steps.conditional.ConditionForStep;
+import net.runelite.client.plugins.microbot.questhelper.steps.conditional.ItemRequirementCondition;
+import net.runelite.client.plugins.microbot.questhelper.steps.conditional.VarbitCondition;
+import net.runelite.client.plugins.microbot.questhelper.steps.conditional.ZoneCondition;
 import net.runelite.api.NpcID;
+import net.runelite.api.ObjectID;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.Quest;
+import net.runelite.api.QuestState;
+import net.runelite.api.Skill;
 import net.runelite.api.NullObjectID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.coords.WorldPoint;
@@ -42,7 +64,6 @@ import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.client.plugins.microbot.questhelper.bank.QuestBank;
 import net.runelite.client.plugins.microbot.questhelper.bank.banktab.BankSlotIcons;
 import net.runelite.client.plugins.microbot.questhelper.collections.ItemCollections;
-import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestUtil;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.conditional.Conditions;
@@ -52,12 +73,10 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRe
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.Operation;
 import net.runelite.client.plugins.microbot.questhelper.requirements.var.VarbitRequirement;
 
-
 import java.util.Arrays;
 import java.util.List;
 
 import static net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicHelper.*;
-
 
 public class WhispererSteps extends ConditionalStep {
     QuestBank questBank;

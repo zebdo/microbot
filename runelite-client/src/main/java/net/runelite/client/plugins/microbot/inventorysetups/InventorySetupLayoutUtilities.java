@@ -6,7 +6,7 @@ import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemContainer;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.NullItemID;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.banktags.TagManager;

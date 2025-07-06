@@ -27,7 +27,7 @@ package net.runelite.client.plugins.microbot.questhelper.helpers.miniquests.ench
 import com.google.inject.Inject;
 import lombok.NonNull;
 import net.runelite.api.ChatMessageType;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.Player;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;

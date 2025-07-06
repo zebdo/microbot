@@ -4,7 +4,7 @@ import com.google.common.collect.ImmutableMap;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.events.MenuOptionClicked;
@@ -156,25 +156,25 @@ public class PouchScript extends Script {
         // Count ess/space, and change pouch states
         for (Item item : items) {
             switch (item.getId()) {
-                case ItemID.PURE_ESSENCE:
-                case ItemID.DAEYALT_ESSENCE:
-                case ItemID.GUARDIAN_ESSENCE:
+                case ItemID.BLANKRUNE_HIGH:
+                case ItemID.BLANKRUNE_DAEYALT:
+                case ItemID.GOTR_GUARDIAN_ESSENCE:
                     newEss += 1;
                     break;
                 case -1:
                     newSpace += 1;
                     break;
-                case ItemID.MEDIUM_POUCH:
-                case ItemID.LARGE_POUCH:
-                case ItemID.GIANT_POUCH:
-                case ItemID.COLOSSAL_POUCH:
+                case ItemID.RCU_POUCH_MEDIUM:
+                case ItemID.RCU_POUCH_LARGE:
+                case ItemID.RCU_POUCH_GIANT:
+                case ItemID.RCU_POUCH_COLOSSAL:
                     Pouch pouch = Pouch.forItem(item.getId());
                     pouch.degrade(false);
                     break;
-                case ItemID.MEDIUM_POUCH_5511:
-                case ItemID.LARGE_POUCH_5513:
-                case ItemID.GIANT_POUCH_5515:
-                case ItemID.COLOSSAL_POUCH_26786:
+                case ItemID.RCU_POUCH_MEDIUM_DEGRADE:
+                case ItemID.RCU_POUCH_LARGE_DEGRADE:
+                case ItemID.RCU_POUCH_GIANT_DEGRADE:
+                case ItemID.RCU_POUCH_COLOSSAL_DEGRADE:
                     pouch = Pouch.forItem(item.getId());
                     pouch.degrade(true);
                     break;

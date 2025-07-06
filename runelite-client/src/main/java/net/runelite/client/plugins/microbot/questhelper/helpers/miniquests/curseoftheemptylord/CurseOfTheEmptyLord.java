@@ -24,8 +24,7 @@
  */
 package net.runelite.client.plugins.microbot.questhelper.helpers.miniquests.curseoftheemptylord;
 
-
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.QuestState;
@@ -45,7 +44,6 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.conditional
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.var.VarbitRequirement;
 import net.runelite.client.plugins.microbot.questhelper.rewards.UnlockReward;
-
 
 import java.util.*;
 

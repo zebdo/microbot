@@ -2,13 +2,13 @@ package net.runelite.client.plugins.microbot.mixology;
 
 import com.google.common.collect.ImmutableMap;
 import lombok.Getter;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 
 import java.util.Arrays;
 import java.util.Map;
 
 public enum PotionType {
-    MAMMOTH_MIGHT_MIX(ItemID.MAMMOTHMIGHT_MIX, ItemID.MAMMOTHMIGHT_MIX_30021, 1900, new PotionComponent[]{PotionComponent.MOX, PotionComponent.MOX, PotionComponent.MOX}),
+    MAMMOTH_MIGHT_MIX(ItemID.MM_POTION_MMM_UNFINISHED, ItemID.MM_POTION_MMM_FINISHED, 1900, new PotionComponent[]{PotionComponent.MOX, PotionComponent.MOX, PotionComponent.MOX}),
     MYSTIC_MANA_AMALGAM(ItemID.MYSTIC_MANA_AMALGAM, ItemID.MYSTIC_MANA_AMALGAM_30022, 2150, new PotionComponent[]{PotionComponent.MOX, PotionComponent.MOX, PotionComponent.AGA}),
     MARLEYS_MOONLIGHT(ItemID.MARLEYS_MOONLIGHT, ItemID.MARLEYS_MOONLIGHT_30023, 2400, new PotionComponent[]{PotionComponent.MOX, PotionComponent.MOX, PotionComponent.LYE}),
     ALCO_AUGMENTATOR(ItemID.ALCOAUGMENTATOR, ItemID.ALCOAUGMENTATOR_30024, 1900, new PotionComponent[]{PotionComponent.AGA, PotionComponent.AGA, PotionComponent.AGA}),

@@ -1,6 +1,5 @@
 package net.runelite.client.plugins.microbot.mining.amethyst;
 
-import net.runelite.api.ItemID;
 import net.runelite.api.Skill;
 import net.runelite.api.TileObject;
 import net.runelite.api.WallObject;
@@ -25,6 +24,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
+import net.runelite.api.gameval.ItemID;
 
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;

@@ -25,8 +25,7 @@
  */
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.clocktower;
 
-
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.coords.WorldPoint;
@@ -48,7 +47,6 @@ import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.conditional.ObjectCondition;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
-
 
 import java.util.*;
 

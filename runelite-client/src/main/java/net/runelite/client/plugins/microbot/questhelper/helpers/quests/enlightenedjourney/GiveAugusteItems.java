@@ -25,7 +25,6 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.enlightenedjourney;
 
 
-import net.runelite.api.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
@@ -35,6 +34,7 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.var.VarbitR
 import net.runelite.client.plugins.microbot.questhelper.steps.NpcStep;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
+import net.runelite.api.gameval.ItemID;
 
 public class GiveAugusteItems extends NpcStep {
     private static final ItemRequirement sandbag8 = new ItemRequirement("Sandbag", ItemID.SANDBAG, 8);

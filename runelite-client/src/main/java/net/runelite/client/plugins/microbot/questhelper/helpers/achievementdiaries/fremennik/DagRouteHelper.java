@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.achievementdiaries.fremennik;
 
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.Prayer;
 import net.runelite.api.QuestState;
 import net.runelite.client.plugins.microbot.questhelper.questinfo.QuestHelperQuest;

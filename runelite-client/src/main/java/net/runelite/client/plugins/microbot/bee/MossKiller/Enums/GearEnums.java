@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.bee.MossKiller.Enums;
 
 import lombok.Getter;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 
 import static net.runelite.api.ItemID.*;
 

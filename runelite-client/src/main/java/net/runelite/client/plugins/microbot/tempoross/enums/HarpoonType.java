@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.tempoross.enums;
 
 import net.runelite.api.AnimationID;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 
 public enum HarpoonType
 {
@@ -10,7 +10,7 @@ public enum HarpoonType
 
     HARPOON(ItemID.HARPOON, AnimationID.FISHING_HARPOON, "Harpoon"),
     BAREHAND(-1, AnimationID.FISHING_BAREHAND, "Bare-handed"),
-    BARBTAIL_HARPOON(ItemID.BARBTAIL_HARPOON, AnimationID.FISHING_BARBTAIL_HARPOON, "Barb-tail harpoon"),
+    BARBTAIL_HARPOON(ItemID.HUNTING_BARBED_HARPOON, AnimationID.FISHING_BARBTAIL_HARPOON, "Barb-tail harpoon"),
     DRAGON_HARPOON(ItemID.DRAGON_HARPOON, AnimationID.FISHING_DRAGON_HARPOON,  "Dragon harpoon"),
     INFERNAL_HARPOON(ItemID.INFERNAL_HARPOON, AnimationID.FISHING_INFERNAL_HARPOON, "Infernal harpoon"),
     CRYSTAL_HARPOON(ItemID.CRYSTAL_HARPOON, AnimationID.FISHING_CRYSTAL_HARPOON, "Crystal harpoon");

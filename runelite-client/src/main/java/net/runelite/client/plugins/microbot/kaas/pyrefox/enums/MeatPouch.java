@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.kaas.pyrefox.enums;
 
 import lombok.Getter;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 
 public enum MeatPouch
 {

@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.aiofighter.combat;
 
 import lombok.SneakyThrows;
 import net.runelite.api.Actor;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;

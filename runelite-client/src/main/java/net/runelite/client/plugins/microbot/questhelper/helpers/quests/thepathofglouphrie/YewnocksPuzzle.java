@@ -28,7 +28,7 @@ package net.runelite.client.plugins.microbot.questhelper.helpers.quests.thepatho
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.InventoryID;
 import net.runelite.api.Item;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
@@ -143,7 +143,10 @@ public class YewnocksPuzzle extends DetailedOwnerStep {
         // List of exchanges that an input disc can make
         var validExchangesForDisc = new HashMap<Integer, HashSet<List<Integer>>>();
 
-        validExchangesForDisc.put(ItemID.RED_PENTAGON, new HashSet<>(List.of(List.of(ItemID.GREEN_CIRCLE, ItemID.RED_CIRCLE), List.of(ItemID.RED_SQUARE, ItemID.RED_CIRCLE), List.of(ItemID.BLUE_CIRCLE), List.of(ItemID.RED_PENTAGON))));
+        validExchangesForDisc.put(ItemID.RED_CIRCLE, new HashSet<>(List.of(List.of(ItemID.RED_CIRCLE))));
+        validExchangesForDisc.put(ItemID.RED_TRIANGLE, new HashSet<>(List.of(List.of(ItemID.RED_TRIANGLE))));
+        validExchangesForDisc.put(ItemID.RED_SQUARE, new HashSet<>(List.of(List.of(ItemID.GREEN_CIRCLE))));
+        validExchangesForDisc.put(ItemID.EYEGLO_RED_PENTAGON, new HashSet<>(List.of(List.of(ItemID.GREEN_CIRCLE, ItemID.RED_CIRCLE), List.of(ItemID.RED_SQUARE, ItemID.RED_CIRCLE), List.of(ItemID.BLUE_CIRCLE), List.of(ItemID.EYEGLO_RED_PENTAGON))));
         validExchangesForDisc.put(ItemID.ORANGE_CIRCLE, new HashSet<>(List.of(List.of(ItemID.ORANGE_CIRCLE))));
         validExchangesForDisc.put(ItemID.ORANGE_TRIANGLE, new HashSet<>(List.of(List.of(ItemID.INDIGO_CIRCLE), List.of(ItemID.ORANGE_TRIANGLE), List.of(ItemID.BLUE_CIRCLE, ItemID.RED_CIRCLE), List.of(ItemID.RED_SQUARE, ItemID.ORANGE_CIRCLE), List.of(ItemID.RED_PENTAGON, ItemID.RED_CIRCLE), List.of(ItemID.GREEN_CIRCLE, ItemID.ORANGE_CIRCLE))));
         validExchangesForDisc.put(ItemID.ORANGE_SQUARE, new HashSet<>(List.of(List.of(ItemID.ORANGE_SQUARE), List.of(ItemID.ORANGE_TRIANGLE, ItemID.ORANGE_CIRCLE), List.of(ItemID.INDIGO_CIRCLE, ItemID.ORANGE_CIRCLE), List.of(ItemID.BLUE_CIRCLE, ItemID.RED_TRIANGLE), List.of(ItemID.RED_PENTAGON, ItemID.RED_TRIANGLE), List.of(ItemID.VIOLET_CIRCLE, ItemID.RED_CIRCLE))));
@@ -282,7 +285,7 @@ public class YewnocksPuzzle extends DetailedOwnerStep {
         discs.put(ItemID.VIOLET_SQUARE, new ItemRequirement("Violet square", ItemID.VIOLET_SQUARE).highlighted());
 
         // 9600
-        discs.put(ItemID.RED_PENTAGON, new ItemRequirement("Red pentagon", ItemID.RED_PENTAGON).highlighted());
+        discs.put(ItemID.EYEGLO_RED_PENTAGON, new ItemRequirement("Red pentagon", ItemID.EYEGLO_RED_PENTAGON).highlighted());
 
         // 9604
         discs.put(ItemID.ORANGE_PENTAGON, new ItemRequirement("Orange pentagon", ItemID.ORANGE_PENTAGON).highlighted());
@@ -309,7 +312,7 @@ public class YewnocksPuzzle extends DetailedOwnerStep {
         var greenCircleRedSquare = new ItemRequirement("Green circle/red square", ItemID.GREEN_CIRCLE).highlighted();
         greenCircleRedSquare.addAlternates(ItemID.RED_SQUARE);
         var blueCircleRedPentagon = new ItemRequirement("Blue circle/red pentagon", ItemID.BLUE_CIRCLE).highlighted();
-        blueCircleRedPentagon.addAlternates(ItemID.RED_PENTAGON);
+        blueCircleRedPentagon.addAlternates(ItemID.EYEGLO_RED_PENTAGON);
         var indigoCircleOrangeTriangle = new ItemRequirement("Indigo circle/orange triangle", ItemID.INDIGO_CIRCLE).highlighted();
         indigoCircleOrangeTriangle.addAlternates(ItemID.ORANGE_TRIANGLE);
         var yellowSquareGreenTriangle = new ItemRequirement("Yellow square/green triangle", ItemID.YELLOW_SQUARE).highlighted();
@@ -346,7 +349,7 @@ public class YewnocksPuzzle extends DetailedOwnerStep {
         discToValue.put(ItemID.RED_CIRCLE, 1);
         discToValue.put(ItemID.RED_TRIANGLE, 3);
         discToValue.put(ItemID.RED_SQUARE, 4);
-        discToValue.put(ItemID.RED_PENTAGON, 5);
+        discToValue.put(ItemID.EYEGLO_RED_PENTAGON, 5);
         discToValue.put(ItemID.ORANGE_CIRCLE, 2);
         discToValue.put(ItemID.ORANGE_TRIANGLE, 6);
         discToValue.put(ItemID.ORANGE_SQUARE, 8);

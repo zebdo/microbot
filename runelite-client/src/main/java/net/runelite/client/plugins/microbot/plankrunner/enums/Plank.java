@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.plankrunner.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 
 @Getter
 @RequiredArgsConstructor

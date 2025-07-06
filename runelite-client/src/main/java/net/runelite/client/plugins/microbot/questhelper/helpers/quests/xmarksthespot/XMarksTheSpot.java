@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.xmarksthespot;
 
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.collections.ItemCollections;

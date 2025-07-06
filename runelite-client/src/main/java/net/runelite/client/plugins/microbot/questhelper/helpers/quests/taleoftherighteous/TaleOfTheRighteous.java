@@ -44,6 +44,7 @@ import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.conditional.NpcCondition;
 import net.runelite.client.plugins.microbot.questhelper.requirements.conditional.ObjectCondition;
+import net.runelite.api.gameval.ItemID;
 
 
 import java.util.*;

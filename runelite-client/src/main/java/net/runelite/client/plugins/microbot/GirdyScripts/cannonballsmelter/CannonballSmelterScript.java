@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.GirdyScripts.cannonballsmelter;
 
 
 import net.runelite.api.Client;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.TileObject;
 import net.runelite.client.plugins.microbot.GirdyScripts.cannonballsmelter.enums.CannonballSmelterStates;
@@ -40,7 +40,7 @@ public class CannonballSmelterScript extends Script {
 
 
     private boolean hasBalls() {
-        return Rs2Inventory.hasItem(ItemID.CANNONBALL);
+        return Rs2Inventory.hasItem(ItemID.MCANNONBALL);
     }
     private boolean hasBars() {
         return Rs2Inventory.hasItem(ItemID.STEEL_BAR);

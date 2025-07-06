@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.skills.agility;
 
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.questhelper.collections.ItemCollections;
 import net.runelite.client.plugins.microbot.questhelper.panel.PanelDetails;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.ComplexStateQuestHelper;
@@ -113,7 +113,7 @@ public class Agility extends ComplexStateQuestHelper {
 
         //Setup item requirements
         bootsOfLightness = new ItemRequirement(
-                "Boots of Lightness", ItemID.BOOTS_OF_LIGHTNESS).showConditioned(
+                "Boots of Lightness", ItemID.IKOV_BOOTSOFLIGHTNESS).showConditioned(
                 new Conditions(LogicType.NOR, ag45)
         ).isNotConsumed();
 
@@ -146,7 +146,7 @@ public class Agility extends ComplexStateQuestHelper {
                 "Graceful boots", ItemCollections.GRACEFUL_BOOTS, 1, true).showConditioned(
                 new Conditions(ag45)
         ).isNotConsumed();
-        gracefulBoots.addAlternates(ItemID.BOOTS_OF_LIGHTNESS);
+        gracefulBoots.addAlternates(ItemID.IKOV_BOOTSOFLIGHTNESS);
 
         gracefulOutfit = new ItemRequirements(
                 "Graceful outfit (equipped)",

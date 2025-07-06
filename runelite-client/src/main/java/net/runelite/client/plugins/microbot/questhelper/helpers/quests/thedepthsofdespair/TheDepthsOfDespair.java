@@ -44,6 +44,7 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.player.Skil
 import net.runelite.client.plugins.microbot.questhelper.requirements.quest.QuestRequirement;
 import net.runelite.client.plugins.microbot.questhelper.rewards.ExperienceReward;
 import net.runelite.client.plugins.microbot.questhelper.rewards.QuestPointReward;
+import net.runelite.api.gameval.ItemID;
 
 
 import java.util.*;

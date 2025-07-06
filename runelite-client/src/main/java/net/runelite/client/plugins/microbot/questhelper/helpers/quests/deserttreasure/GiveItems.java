@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.deserttreasure;
 
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.NullItemID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.VarbitChanged;

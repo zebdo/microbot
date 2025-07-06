@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.waterfallquest;
 
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.Skill;
@@ -135,25 +135,25 @@ public class WaterfallQuest extends BasicQuestHelper {
         highlightRope.setHighlightInInventory(true);
         rope = new ItemRequirement("Rope", ItemID.ROPE).isNotConsumed();
 
-        book = new ItemRequirement("Book on baxtorian", ItemID.BOOK_ON_BAXTORIAN);
+        book = new ItemRequirement("Book on baxtorian", ItemID.BAXTORIAN_BOOK_WATERFALL_QUEST);
         book.setHighlightInInventory(true);
-        glarialsPebble = new ItemRequirement("Glarial's pebble", ItemID.GLARIALS_PEBBLE);
+        glarialsPebble = new ItemRequirement("Glarial's pebble", ItemID.GLARIALS_PEBBLE_WATERFALL_QUEST);
         glarialsPebble.setHighlightInInventory(true);
         glarialsPebble.setTooltip("You can get another from Golrie under the Tree Gnome Village");
-        glarialsUrn = new ItemRequirement("Glarial's urn", ItemID.GLARIALS_URN);
+        glarialsUrn = new ItemRequirement("Glarial's urn", ItemID.GLARIALS_URN_FULL_WATERFALL_QUEST);
         glarialsUrn.setTooltip("You can get another from the chest in Glarial's tomb");
-        glarialsAmulet = new ItemRequirement("Glarial's amulet", ItemID.GLARIALS_AMULET, 1, true);
+        glarialsAmulet = new ItemRequirement("Glarial's amulet", ItemID.GLARIALS_AMULET_WATERFALL_QUEST, 1, true);
         glarialsAmulet.setTooltip("You can get another from the chest in Glarial's tomb");
-        unequippedAmulet = new ItemRequirement("Glarial's amulet", ItemID.GLARIALS_AMULET);
-        key = new ItemRequirement("Key", ItemID.KEY_293);
-        baxKey = new ItemRequirement("Key", ItemID.KEY_298);
+        unequippedAmulet = new ItemRequirement("Glarial's amulet", ItemID.GLARIALS_AMULET_WATERFALL_QUEST);
+        key = new ItemRequirement("Key", ItemID.GOLRIE_KEY_WATERFALL_QUEST);
+        baxKey = new ItemRequirement("Key", ItemID.BAXTORIAN_KEY_WATERFALL_QUEST);
 
-        airRunes = new ItemRequirement("Air runes", ItemID.AIR_RUNE, 6);
-        airRune = new ItemRequirement("Air rune", ItemID.AIR_RUNE);
-        earthRunes = new ItemRequirement("Earth runes", ItemID.EARTH_RUNE, 6);
-        earthRune = new ItemRequirement("Earth rune", ItemID.EARTH_RUNE);
-        waterRunes = new ItemRequirement("Water runes", ItemID.WATER_RUNE, 6);
-        waterRune = new ItemRequirement("Water rune", ItemID.WATER_RUNE);
+        airRunes = new ItemRequirement("Air runes", ItemID.AIRRUNE, 6);
+        airRune = new ItemRequirement("Air rune", ItemID.AIRRUNE);
+        earthRunes = new ItemRequirement("Earth runes", ItemID.EARTHRUNE, 6);
+        earthRune = new ItemRequirement("Earth rune", ItemID.EARTHRUNE);
+        waterRunes = new ItemRequirement("Water runes", ItemID.WATERRUNE, 6);
+        waterRune = new ItemRequirement("Water rune", ItemID.WATERRUNE);
 
         gamesNecklace = new ItemRequirement("Games necklace", ItemCollections.GAMES_NECKLACES);
         food = new ItemRequirement("Food", ItemCollections.GOOD_EATING_FOOD, -1);
@@ -249,7 +249,7 @@ public class WaterfallQuest extends BasicQuestHelper {
         enterGnomeDoor = new ObjectStep(this, ObjectID.DOOR_1991, new WorldPoint(2515, 9575, 0), "Go through the gate in the west room.", key);
         talkToGolrie = new NpcStep(this, NpcID.GOLRIE_4183, new WorldPoint(2514, 9580, 0), "Talk to Golrie.");
         usePebble = new ObjectStep(this, ObjectID.GLARIALS_TOMBSTONE, new WorldPoint(2559, 3445, 0), "Bank everything besides the pebble and some food. After, go use Glarial's pebble to Glarial's Tombstone east of Baxtorian Falls.", glarialsPebble);
-        usePebble.addIcon(ItemID.GLARIALS_PEBBLE);
+        usePebble.addIcon(ItemID.GLARIALS_PEBBLE_WATERFALL_QUEST);
 
         searchGlarialChest = new ObjectStep(this, ObjectID.CHEST_1994, new WorldPoint(2530, 9844, 0), "Search the chest in the western room.");
         searchGlarialChest.addAlternateObjects(ObjectID.CHEST_1995);
@@ -270,10 +270,10 @@ public class WaterfallQuest extends BasicQuestHelper {
         useRunes = new DetailedQuestStep(this, "Use 1 earth, water and air rune on each of the 6 pillars in the room. Afterwards, use Glarial's amulet on the statue of Glarial.", airRune, waterRune, earthRune);
 
         useAmuletOnStatue = new ObjectStep(this, ObjectID.STATUE_OF_GLARIAL, new WorldPoint(2603, 9915, 0), "Use Glarial's amulet on the Statue of Glarial", unequippedAmulet);
-        useAmuletOnStatue.addIcon(ItemID.GLARIALS_AMULET);
+        useAmuletOnStatue.addIcon(ItemID.GLARIALS_AMULET_WATERFALL_QUEST);
 
         useUrnOnChalice = new ObjectStep(this, ObjectID.CHALICE, new WorldPoint(2604, 9911, 0), "DO NOT LEFT-CLICK THE CHALICE! Use Glarial's urn on the Chalice to finish the quest.", glarialsUrn);
-        useUrnOnChalice.addIcon(ItemID.GLARIALS_URN);
+        useUrnOnChalice.addIcon(ItemID.GLARIALS_URN_FULL_WATERFALL_QUEST);
     }
 
     @Override
@@ -318,7 +318,7 @@ public class WaterfallQuest extends BasicQuestHelper {
         return Arrays.asList(
                 new ItemReward("Diamonds", ItemID.DIAMOND, 2),
                 new ItemReward("Gold Bars", ItemID.GOLD_BAR, 2),
-                new ItemReward("Mithril Seeds", ItemID.MITHRIL_SEEDS, 40));
+                new ItemReward("Mithril Seeds", ItemID.MITHRIL_SEED, 40));
     }
 
     @Override

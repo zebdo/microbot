@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.liftedmango.autoGauntletPrayer;
 
 import com.google.inject.Provides;
 import net.runelite.api.HeadIcon;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.NPC;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.GameTick;

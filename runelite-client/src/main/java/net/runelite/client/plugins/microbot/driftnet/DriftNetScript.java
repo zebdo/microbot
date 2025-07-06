@@ -1,6 +1,6 @@
 package net.runelite.client.plugins.microbot.driftnet;
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -56,7 +56,7 @@ public class DriftNetScript extends Script {
                 }
 
                 // 3) Ensure we have drift nets in inventory; if not, try to fetch
-                if (!Rs2Inventory.hasItem(ItemID.DRIFT_NET)) {
+                if (!Rs2Inventory.hasItem(ItemID.FOSSIL_DRIFT_NET)) {
                     Microbot.log("No nets in inventory");
                     fetchNetsFromAnnette();
                     return;
@@ -169,7 +169,7 @@ public class DriftNetScript extends Script {
 
     /**
      * Iterates over nearby fish (sorted by distance to player) and chases the first
-     * fish that hasn’t been tagged yet.
+     * fish that hasn't been tagged yet.
      */
     private void chaseNearbyFish(Set<Integer> fishSet) {
         // Sort the NPC indexes by distance to the player

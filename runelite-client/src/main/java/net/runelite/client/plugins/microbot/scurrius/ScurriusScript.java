@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.scurrius;
 
 import com.google.inject.Inject;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldArea;
@@ -60,7 +60,7 @@ public class ScurriusScript extends Script {
     public boolean run(ScurriusConfig config) {
         this.config = config;
         Microbot.enableAutoRunOn = true;
-        List<Integer> importantItems = List.of(config.foodSelection().getId(), config.potionSelection().getItemId(), ItemID.VARROCK_TELEPORT);
+        List<Integer> importantItems = List.of(config.foodSelection().getId(), config.potionSelection().getItemId(), ItemID.POH_TABLET_VARROCKTELEPORT);
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
@@ -88,7 +88,7 @@ public class ScurriusScript extends Script {
 
                 if (!isScurriusPresent && !hasFood && !hasPrayerPotions) {
                     if (isInFightRoom) {
-                        if (Rs2Inventory.hasItem(ItemID.VARROCK_TELEPORT)) {
+                        if (Rs2Inventory.hasItem(ItemID.POH_TABLET_VARROCKTELEPORT)) {
                             state = State.TELEPORT_AWAY;
                         } else {
                             Microbot.log("No teleport available. Attempting to walk to bank (will likely fail).");
@@ -147,7 +147,7 @@ public class ScurriusScript extends Script {
                                 shutdown();
                                 return;
                             }
-                            if (!Rs2Bank.withdrawDeficit(ItemID.VARROCK_TELEPORT, requiredTeleports)) {
+                            if (!Rs2Bank.withdrawDeficit(ItemID.POH_TABLET_VARROCKTELEPORT, requiredTeleports)) {
                                 Microbot.showMessage("Missing Teleports in Bank");
                                 shutdown();
                                 return;

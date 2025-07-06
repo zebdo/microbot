@@ -25,7 +25,6 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.monkeymadnessii;
 
 
-import net.runelite.api.ItemID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.SpriteID;
 import net.runelite.api.coords.WorldPoint;
@@ -42,6 +41,7 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.var.VarbitRequirement;
 import net.runelite.client.plugins.microbot.questhelper.steps.DetailedQuestStep;
+import net.runelite.api.gameval.ItemID;
 
 import java.util.Arrays;
 import java.util.List;
@@ -103,15 +103,15 @@ public class MM2Sabotage extends ConditionalStep {
     }
 
     public void setupRequirements() {
-        satchelCurrentQuantity = new ItemRequirement("Satchel", ItemID.SATCHEL, 6);
-        satchelCurrentQuantity.addAlternates(ItemID.SATCHEL_19528);
+        satchelCurrentQuantity = new ItemRequirement("Satchel", ItemID.MM2_EXPLOSIVES_SATCHEL, 6);
+        satchelCurrentQuantity.addAlternates(ItemID.MM2_EXPLOSIVES_SATCHEL_FULL);
 
-        filledSatchel1 = new ItemRequirement("Satchel (filled)", ItemID.SATCHEL_19528);
+        filledSatchel1 = new ItemRequirement("Satchel (filled)", ItemID.MM2_EXPLOSIVES_SATCHEL_FULL);
         filledSatchel1.setTooltip("You can fill another satchel from the gunpowder barrels in the north east of the platform");
-        filledSatchel1Highlighted = new ItemRequirement("Satchel (filled)", ItemID.SATCHEL_19528);
+        filledSatchel1Highlighted = new ItemRequirement("Satchel (filled)", ItemID.MM2_EXPLOSIVES_SATCHEL_FULL);
         filledSatchel1Highlighted.setTooltip("You can fill another satchel from the gunpowder barrels in the north east of the platform");
         filledSatchel1Highlighted.setHighlightInInventory(true);
-        filledSatchelCurrentQuantity = new ItemRequirement("Satchel (filled)", ItemID.SATCHEL_19528, 6);
+        filledSatchelCurrentQuantity = new ItemRequirement("Satchel (filled)", ItemID.MM2_EXPLOSIVES_SATCHEL_FULL, 6);
     }
 
     public void setupZones() {
@@ -221,7 +221,7 @@ public class MM2Sabotage extends ConditionalStep {
         goUpFromGunpowder.setLinePoints(pathToGunpowder);
 
         placeSatchel1 = new ObjectStep(getQuestHelper(), ObjectID.COMPROMISED_FLOORBOARDS_28624, new WorldPoint(2098, 5413, 2), "Place a satchel to the south.", filledSatchel1Highlighted);
-        placeSatchel1.addIcon(ItemID.SATCHEL_19528);
+        placeSatchel1.addIcon(ItemID.MM2_EXPLOSIVES_SATCHEL_FULL);
 
         goDownFromSatchel1 = new ObjectStep(getQuestHelper(), ObjectID.LADDER_28619, new WorldPoint(2085, 5431, 2), "Go down the ladder to the north west.", filledSatchel1);
         goDownFromSatchel1.addTileMarkers(new WorldPoint(2098, 5423, 2), new WorldPoint(2098, 5432, 2));
@@ -231,7 +231,7 @@ public class MM2Sabotage extends ConditionalStep {
         placeSatchel2 = new ObjectStep(getQuestHelper(), ObjectID.COMPROMISED_SUPPORT_28622, new WorldPoint(2090, 5418, 1), "Place a satchel on the support to the south.", filledSatchel1Highlighted);
         placeSatchel2.addTileMarkers(new WorldPoint(2085, 5430, 1));
         placeSatchel2.setHideMinimapLines(true);
-        placeSatchel2.addIcon(ItemID.SATCHEL_19528);
+        placeSatchel2.addIcon(ItemID.MM2_EXPLOSIVES_SATCHEL_FULL);
         placeSatchel2.setLinePoints(pathToSatchel2);
 
         goUpToSatchel3 = new ObjectStep(getQuestHelper(), ObjectID.LADDER_28618, new WorldPoint(2098, 5408, 1), "Go to the east side and climb the ladder there.", filledSatchel1);
@@ -243,7 +243,7 @@ public class MM2Sabotage extends ConditionalStep {
         goUpToSatchel3.setLinePoints(pathToSatchel3F0);
 
         placeSatchel3 = new ObjectStep(getQuestHelper(), ObjectID.COMPROMISED_FLOORBOARDS, new WorldPoint(2082, 5431, 2), "Make your way to the west across the vine, then north then east. Place a satchel here.", filledSatchel1Highlighted);
-        placeSatchel3.addIcon(ItemID.SATCHEL_19528);
+        placeSatchel3.addIcon(ItemID.MM2_EXPLOSIVES_SATCHEL_FULL);
         placeSatchel3.addTileMarkers(
                 new WorldPoint(2096, 5408, 2),
                 new WorldPoint(2093, 5408, 2),
@@ -455,7 +455,6 @@ public class MM2Sabotage extends ConditionalStep {
                 new WorldPoint(2082, 5419, 1),
                 new WorldPoint(2083, 5419, 1),
                 new WorldPoint(2083, 5418, 1),
-                new WorldPoint(2085, 5418, 1),
                 new WorldPoint(2083, 5418, 1),
                 new WorldPoint(2083, 5415, 1),
                 new WorldPoint(2083, 5412, 1),
@@ -786,11 +785,26 @@ public class MM2Sabotage extends ConditionalStep {
                 new WorldPoint(2082, 5423, 1),
                 new WorldPoint(2081, 5423, 1),
                 new WorldPoint(2081, 5420, 1),
-                new WorldPoint(2082, 5420, 1),
                 new WorldPoint(2082, 5419, 1),
+                new WorldPoint(2082, 5418, 1),
                 new WorldPoint(2083, 5419, 1),
                 new WorldPoint(2083, 5418, 1),
-                new WorldPoint(2085, 5418, 1)
+                new WorldPoint(2083, 5415, 1),
+                new WorldPoint(2083, 5412, 1),
+                new WorldPoint(2081, 5412, 1),
+                new WorldPoint(2083, 5412, 1),
+                new WorldPoint(2083, 5410, 1),
+                new WorldPoint(2085, 5410, 1),
+                new WorldPoint(2085, 5408, 1),
+                new WorldPoint(2090, 5408, 1),
+                new WorldPoint(2090, 5410, 1),
+                new WorldPoint(2090, 5408, 1),
+                new WorldPoint(2091, 5408, 1),
+                new WorldPoint(2092, 5408, 1),
+                new WorldPoint(2092, 5409, 1),
+                new WorldPoint(2096, 5409, 1),
+                new WorldPoint(2096, 5408, 1),
+                new WorldPoint(2098, 5408, 1)
         );
 
         pathToSatchel3 = Arrays.asList(

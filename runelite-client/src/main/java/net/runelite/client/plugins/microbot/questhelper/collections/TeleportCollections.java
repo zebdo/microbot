@@ -1,6 +1,6 @@
 package net.runelite.client.plugins.microbot.questhelper.collections;
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.TeleportItemRequirement;
 
 public enum TeleportCollections {
@@ -14,7 +14,7 @@ public enum TeleportCollections {
     VARROCK_TELEPORT() {
         public TeleportItemRequirement getItemRequirement() {
             TeleportItemRequirement varrockTele = new TeleportItemRequirement("Teleport to Varrock. Varrock teleport tablet/spell, Chronicle, Ring of Wealth (Grand Exchange [2])",
-                    ItemID.VARROCK_TELEPORT);
+                    ItemID.POH_TABLET_VARROCKTELEPORT);
             varrockTele.addAlternates(ItemID.CHRONICLE);
             varrockTele.addAlternates(ItemCollections.RING_OF_WEALTHS);
             return varrockTele;

@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.collections;
 
 import lombok.Getter;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.KeyringRequirement;
 
@@ -35,10 +35,10 @@ import java.util.Collections;
 import java.util.List;
 
 public enum KeyringCollection {
-    SHINY_KEY(ItemID.SHINY_KEY),
-    BRASS_KEY(ItemID.BRASS_KEY),
+    SHINY_KEY(ItemID.IKOV_SHINYKEY),
+    BRASS_KEY(ItemID.EDGEVILLEDUNGEONKEY),
     METAL_KEY(ItemID.METAL_KEY),
-    WROUGHT_IRON_KEY(ItemID.WROUGHT_IRON_KEY),
+    WROUGHT_IRON_KEY(ItemID.THGOODMINEKEY),
     DUSTY_KEY(ItemID.DUSTY_KEY),
     BATTERED_KEY(ItemID.BATTERED_KEY),
     CRYSTAL_MINE_KEY(ItemID.CRYSTALMINE_KEY),

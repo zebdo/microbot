@@ -1,6 +1,6 @@
 package net.runelite.client.plugins.microbot.sticktothescript.varrockanvil;
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;

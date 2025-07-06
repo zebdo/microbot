@@ -25,11 +25,10 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.princealirescue;
 
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.widgets.ComponentID;
 import net.runelite.client.plugins.microbot.questhelper.collections.ItemCollections;
 import net.runelite.client.plugins.microbot.questhelper.panel.PanelDetails;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.BasicQuestHelper;
@@ -128,14 +127,14 @@ public class PrinceAliRescue extends BasicQuestHelper {
 
     @Override
     protected void setupRequirements() {
-        softClay = new ItemRequirement("Soft clay", ItemID.SOFT_CLAY);
+        softClay = new ItemRequirement("Soft clay", ItemID.SOFTCLAY);
         ballsOfWool3 = new ItemRequirement("Balls of wool", ItemID.BALL_OF_WOOL, 3);
-        yellowDye = new ItemRequirement("Yellow dye", ItemID.YELLOW_DYE);
+        yellowDye = new ItemRequirement("Yellow dye", ItemID.YELLOWDYE);
         yellowDye.setHighlightInInventory(true);
         redberries = new ItemRequirement("Redberries", ItemID.REDBERRIES);
         ashes = new ItemRequirement("Ashes", ItemID.ASHES);
-        bucketOfWater = new ItemRequirement("Bucket of water", ItemID.BUCKET_OF_WATER);
-        potOfFlour = new ItemRequirement("Pot of flour", ItemID.POT_OF_FLOUR);
+        bucketOfWater = new ItemRequirement("Bucket of water", ItemID.BUCKET_WATER);
+        potOfFlour = new ItemRequirement("Pot of flour", ItemID.POT_FLOUR);
         bronzeBar = new ItemRequirement("Bronze bar", ItemID.BRONZE_BAR);
         pinkSkirt = new ItemRequirement("Pink skirt", ItemID.PINK_SKIRT);
         beers3 = new ItemRequirement("Beers", ItemID.BEER, 3);
@@ -145,17 +144,17 @@ public class PrinceAliRescue extends BasicQuestHelper {
         ropeHighlighted.setHighlightInInventory(true);
         ropeReqs = new ItemRequirement("Rope, or 15 coins / 4 balls of wool to obtain during the quest", ItemID.ROPE);
         coins100 = new ItemRequirement("Coins minimum", ItemCollections.COINS, 100);
-        wig = new ItemRequirement("Wig", ItemID.WIG_2421);
+        wig = new ItemRequirement("Wig", ItemID.PLAINWIG);
         wig.setHighlightInInventory(true);
-        dyedWig = new ItemRequirement("Wig (dyed)", ItemID.WIG);
-        paste = new ItemRequirement("Paste", ItemID.PASTE);
-        keyMould = new ItemRequirement("Key print", ItemID.KEY_PRINT);
-        key = new ItemRequirement("Bronze key", ItemID.BRONZE_KEY);
+        dyedWig = new ItemRequirement("Wig (dyed)", ItemID.BLONDWIG);
+        paste = new ItemRequirement("Paste", ItemID.SKINPASTE);
+        keyMould = new ItemRequirement("Key print", ItemID.KEYPRINT);
+        key = new ItemRequirement("Bronze key", ItemID.PRINCESKEY);
         key.setTooltip("You can get another from Leela for 15 coins");
 
-        keyHighlighted = new ItemRequirement("Bronze key", ItemID.BRONZE_KEY);
+        keyHighlighted = new ItemRequirement("Bronze key", ItemID.PRINCESKEY);
         keyHighlighted.setHighlightInInventory(true);
-        yellowDyeReqs = new ItemRequirement("Yellow dye, or 2 onions + 5 coins to obtain during quest", ItemID.YELLOW_DYE);
+        yellowDyeReqs = new ItemRequirement("Yellow dye, or 2 onions + 5 coins to obtain during quest", ItemID.YELLOWDYE);
         glory = new ItemRequirement("Amulet of Glory for Al Kharid and Draynor Village teleports", ItemCollections.AMULET_OF_GLORIES);
     }
 
@@ -163,8 +162,8 @@ public class PrinceAliRescue extends BasicQuestHelper {
         inCell = new ZoneRequirement(cell);
         hasWigPasteAndKey = new Conditions(dyedWig.alsoCheckBank(questBank), paste.alsoCheckBank(questBank), key.alsoCheckBank(questBank));
         givenKeyMould = new Conditions(true, LogicType.OR,    // TODO quest journal widget text outdated
-                new WidgetTextRequirement(ComponentID.DIARY_TEXT, true, "I have duplicated a key, I need to get it from"),
-                new WidgetTextRequirement(ComponentID.DIARY_TEXT, true, "I got a duplicated cell door key"),
+                // new WidgetTextRequirement(ComponentID.DIARY_TEXT, true, "I have duplicated a key, I need to get it from"),
+                // new WidgetTextRequirement(ComponentID.DIARY_TEXT, true, "I got a duplicated cell door key"),
                 new WidgetTextRequirement(11, 2, true, "You give Osman the imprint along with a bronze bar."),
                 new DialogRequirement("I'll use this to have a copy of the key made. I'll send it to Leela once it's ready."),
                 new DialogRequirement("I think I have everything needed."),
@@ -206,7 +205,7 @@ public class PrinceAliRescue extends BasicQuestHelper {
         useRopeOnKeli = new NpcStep(this, NpcID.LADY_KELI, new WorldPoint(3127, 3244, 0), "Use rope on Keli.", ropeHighlighted);
         useRopeOnKeli.addIcon(ItemID.ROPE);
         useKeyOnDoor = new ObjectStep(this, ObjectID.PRISON_GATE_2881, new WorldPoint(3123, 3243, 0), "Use the key on the prison door. If Lady Keli respawned you'll need to tie her up again.", keyHighlighted, dyedWig, paste, pinkSkirt);
-        useKeyOnDoor.addIcon(ItemID.BRONZE_KEY);
+        useKeyOnDoor.addIcon(ItemID.PRINCESKEY);
         talkToAli = new NpcStep(this, NpcID.PRINCE_ALI, new WorldPoint(3123, 3240, 0), "Talk to Prince Ali and free him.", key, dyedWig, paste, pinkSkirt);
 
         returnToHassan = new NpcStep(this, NpcID.CHANCELLOR_HASSAN, new WorldPoint(3298, 3163, 0), "Return to Hassan in the Al Kharid Palace to complete the quest.");
@@ -251,7 +250,7 @@ public class PrinceAliRescue extends BasicQuestHelper {
 
     @Override
     public List<ItemReward> getItemRewards() {
-        return Collections.singletonList(new ItemReward("Coins", ItemID.COINS_995, 700));
+        return Collections.singletonList(new ItemReward("Coins", ItemID.COINS, 700));
     }
 
     @Override

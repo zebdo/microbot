@@ -1,6 +1,6 @@
 package net.runelite.client.plugins.microbot.barrows;
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.revKiller.revKillerConfig;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;

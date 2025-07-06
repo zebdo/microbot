@@ -25,7 +25,6 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.deserttreasureii;
 
 
-import net.runelite.api.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.NullObjectID;
 import net.runelite.api.ObjectID;
@@ -45,6 +44,7 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRe
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicType;
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.Operation;
 import net.runelite.client.plugins.microbot.questhelper.requirements.var.VarbitRequirement;
+import net.runelite.api.gameval.ItemID;
 
 
 import java.util.Arrays;

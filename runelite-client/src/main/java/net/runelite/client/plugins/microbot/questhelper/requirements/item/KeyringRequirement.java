@@ -27,7 +27,7 @@ package net.runelite.client.plugins.microbot.questhelper.requirements.item;
 
 import net.runelite.api.Client;
 import net.runelite.api.Item;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperConfig;
 import net.runelite.client.plugins.microbot.questhelper.collections.KeyringCollection;
@@ -48,7 +48,7 @@ public class KeyringRequirement extends ItemRequirement {
 
     public KeyringRequirement(String name, ConfigManager configManager, KeyringCollection key) {
         super(name, key.getItemID());
-        keyring = new ItemRequirement("Steel key ring", ItemID.STEEL_KEY_RING);
+        keyring = new ItemRequirement("Steel key ring", ItemID.FAVOUR_KEY_RING);
         runeliteRequirement = new RuneliteRequirement(configManager, key.runeliteName(),
                 "true", key.toChatText());
         this.keyringCollection = key;
@@ -57,7 +57,7 @@ public class KeyringRequirement extends ItemRequirement {
 
     public KeyringRequirement(ConfigManager configManager, KeyringCollection key) {
         super(key.toChatText(), key.getItemID());
-        keyring = new ItemRequirement("Steel key ring", ItemID.STEEL_KEY_RING);
+        keyring = new ItemRequirement("Steel key ring", ItemID.FAVOUR_KEY_RING);
         runeliteRequirement = new RuneliteRequirement(configManager, key.runeliteName(),
                 "true", key.toChatText());
         this.keyringCollection = key;

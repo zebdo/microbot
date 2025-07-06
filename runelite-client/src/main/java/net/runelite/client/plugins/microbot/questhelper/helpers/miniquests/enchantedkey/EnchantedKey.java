@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.miniquests.enchantedkey;
 
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.QuestState;
 import net.runelite.client.plugins.microbot.questhelper.collections.KeyringCollection;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.BasicQuestHelper;

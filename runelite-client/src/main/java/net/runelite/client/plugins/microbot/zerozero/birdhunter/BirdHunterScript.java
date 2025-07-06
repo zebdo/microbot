@@ -3,7 +3,7 @@ package net.runelite.client.plugins.microbot.zerozero.birdhunter;
 import lombok.Getter;
 import net.runelite.api.GameObject;
 import net.runelite.api.ObjectID;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
@@ -89,7 +89,7 @@ public class BirdHunterScript extends Script {
         int hunterLevel = Rs2Player.getRealSkillLevel(Skill.HUNTER);
         int allowedSnares = getAvailableTraps(hunterLevel);  // Calculate the allowed number of snares
 
-        int snaresInInventory = Rs2Inventory.count(ItemID.BIRD_SNARE);
+        int snaresInInventory = Rs2Inventory.count(ItemID.HUNTING_OJIBWAY_BIRD_SNARE);
         Microbot.log("Allowed snares: " + allowedSnares + ", Snares in inventory: " + snaresInInventory);
 
         return snaresInInventory >= allowedSnares;  // Return true if enough snares, false otherwise
@@ -145,7 +145,7 @@ public class BirdHunterScript extends Script {
         int availableTraps = getAvailableTraps(Rs2Player.getRealSkillLevel(Skill.HUNTER));
         int totalTraps = successfulTraps.size() + failedTraps.size() + idleTraps.size() + catchingTraps.size();
 
-        if (Rs2GroundItem.exists(ItemID.BIRD_SNARE, 20)) {
+        if (Rs2GroundItem.exists(ItemID.HUNTING_OJIBWAY_BIRD_SNARE, 20)) {
             pickUpBirdSnare();
             return;
         }
@@ -176,7 +176,7 @@ public class BirdHunterScript extends Script {
 
 
     private void setTrap(BirdHunterConfig config) {
-        if (!Rs2Inventory.contains(ItemID.BIRD_SNARE)) return;
+        if (!Rs2Inventory.contains(ItemID.HUNTING_OJIBWAY_BIRD_SNARE)) return;
 
         if (Rs2Player.isStandingOnGameObject()) {
             if (!movePlayerOffObject())
@@ -187,7 +187,7 @@ public class BirdHunterScript extends Script {
     }
 
     private void layBirdSnare() {
-        Rs2ItemModel birdSnare = Rs2Inventory.get(ItemID.BIRD_SNARE);
+        Rs2ItemModel birdSnare = Rs2Inventory.get(ItemID.HUNTING_OJIBWAY_BIRD_SNARE);
         if (Rs2Inventory.interact(birdSnare, "Lay")) {
             if (sleepUntil(Rs2Player::isAnimating, 2000)) {
                 sleepUntil(() -> !Rs2Player.isAnimating(), 3000);
@@ -258,9 +258,8 @@ public class BirdHunterScript extends Script {
     }
 
     private void pickUpBirdSnare() {
-        if (Rs2GroundItem.exists(ItemID.BIRD_SNARE, 20)) {
-            Rs2GroundItem.loot(ItemID.BIRD_SNARE);
-            Microbot.log("Picked up bird snare from the ground.");
+        if (Rs2GroundItem.loot(ItemID.HUNTING_OJIBWAY_BIRD_SNARE)) {
+            sleepUntil(() -> Rs2Inventory.contains(ItemID.HUNTING_OJIBWAY_BIRD_SNARE), 2000);
         }
     }
 

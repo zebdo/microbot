@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.mixology;
 
 import net.runelite.api.DynamicObject;
 import net.runelite.api.GameObject;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -104,19 +104,19 @@ public class MixologyScript extends Script {
                         }
                     }
 
-                    moxPasteAmount = Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[8].getText()) + Rs2Inventory.itemQuantity(ItemID.MOX_PASTE);
-                    agaPasteAmount = Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[11].getText()) + Rs2Inventory.itemQuantity(ItemID.AGA_PASTE);
-                    lyePasteAmount = Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[14].getText()) + Rs2Inventory.itemQuantity(ItemID.LYE_PASTE);
+                    moxPasteAmount = Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[8].getText()) + Rs2Inventory.itemQuantity(ItemID.MM_MOX_PASTE);
+                    agaPasteAmount = Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[11].getText()) + Rs2Inventory.itemQuantity(ItemID.MM_AGA_PASTE);
+                    lyePasteAmount = Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[14].getText()) + Rs2Inventory.itemQuantity(ItemID.MM_LYE_PASTE);
 
                     if (mixologyState != MixologyState.REFINER && (moxPasteAmount < 100 || agaPasteAmount < 100 || lyePasteAmount < 100)) {
                         mixologyState = MixologyState.REFINER;
-                    } else if (Rs2Inventory.hasItem(ItemID.MOX_PASTE) || Rs2Inventory.hasItem(ItemID.LYE_PASTE) || Rs2Inventory.hasItem(ItemID.AGA_PASTE)) {
-                        if (Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[8].getText()) >= 3000 && Rs2Inventory.hasItem(ItemID.MOX_PASTE)) {
+                    } else if (Rs2Inventory.hasItem(ItemID.MM_MOX_PASTE) || Rs2Inventory.hasItem(ItemID.MM_LYE_PASTE) || Rs2Inventory.hasItem(ItemID.MM_AGA_PASTE)) {
+                        if (Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[8].getText()) >= 3000 && Rs2Inventory.hasItem(ItemID.MM_MOX_PASTE)) {
                             mixologyState = MixologyState.BANK;
-                        } else if (Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[11].getText()) >= 3000 && Rs2Inventory.hasItem(ItemID.AGA_PASTE)) {
+                        } else if (Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[11].getText()) >= 3000 && Rs2Inventory.hasItem(ItemID.MM_AGA_PASTE)) {
                             mixologyState = MixologyState.BANK;
 
-                        } else if (Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[14].getText()) >= 3000 && Rs2Inventory.hasItem(ItemID.LYE_PASTE)) {
+                        } else if (Integer.parseInt(Rs2Widget.getWidget(882, 2).getDynamicChildren()[14].getText()) >= 3000 && Rs2Inventory.hasItem(ItemID.MM_LYE_PASTE)) {
                             mixologyState = MixologyState.BANK;
                         } else {
                             mixologyState = MixologyState.DEPOSIT_HOPPER;
@@ -161,9 +161,9 @@ public class MixologyScript extends Script {
                         }
                         if (Rs2Bank.openBank()) {
                             sleepUntil(Rs2Bank::isOpen);
-                            moxPasteAmount = Rs2Bank.count(ItemID.MOX_PASTE);
-                            lyePasteAmount = Rs2Bank.count(ItemID.LYE_PASTE);
-                            agaPasteAmount = Rs2Bank.count(ItemID.AGA_PASTE);
+                            moxPasteAmount = Rs2Bank.count(ItemID.MM_MOX_PASTE);
+                            lyePasteAmount = Rs2Bank.count(ItemID.MM_LYE_PASTE);
+                            agaPasteAmount = Rs2Bank.count(ItemID.MM_AGA_PASTE);
                             if (moxPasteAmount < config.amtMoxHerb()) {
                                 herb = config.moxHerb().toString();
                             } else if (lyePasteAmount < config.amtLyeHerb()) {
@@ -173,9 +173,9 @@ public class MixologyScript extends Script {
                             } else {
                                 if (Rs2Bank.openBank()) {
                                     Rs2Bank.depositAll();
-                                    Rs2Bank.withdrawAll(ItemID.MOX_PASTE);
-                                    Rs2Bank.withdrawAll(ItemID.LYE_PASTE);
-                                    Rs2Bank.withdrawAll(ItemID.AGA_PASTE);
+                                    Rs2Bank.withdrawAll(ItemID.MM_MOX_PASTE);
+                                    Rs2Bank.withdrawAll(ItemID.MM_LYE_PASTE);
+                                    Rs2Bank.withdrawAll(ItemID.MM_AGA_PASTE);
                                     mixologyState = MixologyState.DEPOSIT_HOPPER;
                                     return;
                                 }

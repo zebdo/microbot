@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.bank.banktab;
 
 import lombok.Getter;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 
 public class BankSlotIcons {
     @Getter

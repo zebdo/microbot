@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.familycrest;
 
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.Skill;
@@ -224,8 +224,8 @@ public class FamilyCrest extends BasicQuestHelper {
         talkToCalebWithFish = new NpcStep(this, NpcID.CALEB, new WorldPoint(2819, 3452, 0),
                 "Talk to Caleb again with the required fish.", shrimp, salmon, tuna, bass, swordfish);
 
-        talkToCalebOnceMore = new NpcStep(this, NpcID.CALEB, new WorldPoint(2819, 3452, 0), "Talk to Caleb in " +
-                "Catherby once more.");
+        talkToCalebOnceMore = new NpcStep(this, NpcID.CALEB, new WorldPoint(2819, 3452, 0), "Talk to Caleb in "
+                + "Catherby once more.");
         talkToCalebOnceMore.addDialogStep("Uh.. what happened to the rest of the crest?");
 
         talkToGemTrader = new NpcStep(this, NpcID.GEM_TRADER, new WorldPoint(3286, 3211, 0), "Talk to the Gem Trader in Al Kharid.");
@@ -326,8 +326,8 @@ public class FamilyCrest extends BasicQuestHelper {
     @Override
     public List<String> getNotes() {
         ArrayList<String> reqs = new ArrayList<>();
-        reqs.add("The final boss of this quest is in the Edgeville WILDERNESS dungeon, where other players can kill " +
-                "you. Make sure when you go there you aren't risking anything you'd not be willing to lose.");
+        reqs.add("The final boss of this quest is in the Edgeville WILDERNESS dungeon, where other players can kill "
+                + "you. Make sure when you go there you aren't risking anything you'd not be willing to lose.");
         return reqs;
     }
 

@@ -1,6 +1,6 @@
 package net.runelite.client.plugins.microbot.magic.housetab;
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.Point;
 import net.runelite.api.widgets.Widget;

@@ -1,6 +1,6 @@
 package net.runelite.client.plugins.microbot.GeoffPlugins.construction2;
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;

@@ -1,6 +1,6 @@
 package net.runelite.client.plugins.microbot.quest.logic;
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.Quest;
 import net.runelite.client.plugins.microbot.questhelper.steps.QuestStep;
@@ -33,7 +33,7 @@ public class RomeoAndJuliet extends BaseQuest {
     }
 
     private boolean fetchCadavaBerries() {
-        if (Rs2Inventory.hasItem(ItemID.CADAVA_BERRIES)) {
+        if (Rs2Inventory.hasItem(ItemID.CADAVABERRIES)) {
             return true;
         }
         if (Rs2Walker.walkTo(3266, 3374, 0, 10)) {
@@ -42,6 +42,6 @@ public class RomeoAndJuliet extends BaseQuest {
             Rs2Inventory.waitForInventoryChanges(2000);
         }
 
-        return Rs2Inventory.hasItem(ItemID.CADAVA_BERRIES);
+        return Rs2Inventory.hasItem(ItemID.CADAVABERRIES);
     }
 }

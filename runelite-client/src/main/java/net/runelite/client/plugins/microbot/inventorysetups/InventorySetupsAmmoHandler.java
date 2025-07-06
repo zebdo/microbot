@@ -5,7 +5,7 @@ import net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsRu
 import net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsSlot;
 import net.runelite.api.Client;
 import net.runelite.api.EnumComposition;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.VarPlayer;
 import net.runelite.client.game.ItemManager;
 

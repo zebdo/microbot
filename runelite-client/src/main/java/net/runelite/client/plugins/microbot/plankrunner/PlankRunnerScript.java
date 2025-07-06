@@ -1,8 +1,8 @@
 package net.runelite.client.plugins.microbot.plankrunner;
 
 import com.google.inject.Inject;
-import net.runelite.api.ItemID;
 import net.runelite.api.NpcID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.plankrunner.enums.PlankRunnerState;

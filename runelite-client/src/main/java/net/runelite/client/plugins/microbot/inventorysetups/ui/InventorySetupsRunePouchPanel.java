@@ -38,7 +38,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.Varbits;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
