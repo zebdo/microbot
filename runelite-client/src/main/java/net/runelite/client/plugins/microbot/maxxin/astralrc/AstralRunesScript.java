@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.maxxin.astralrc;
 
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
+import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -161,7 +162,7 @@ public class AstralRunesScript extends Script {
                             return;
                         }
 
-                        if( Rs2Inventory.allPouchesFull() && Rs2Inventory.getEmptySlots() < 1 && Rs2Inventory.hasItem(ItemID.BLANKRUNE_HIGH) ) {
+                        if( Rs2Inventory.allPouchesFull() && Rs2Inventory.emptySlotCount() < 1 && Rs2Inventory.hasItem(ItemID.BLANKRUNE_HIGH) ) {
                             state = State.CRAFTING;
                             return;
                         }
@@ -177,7 +178,7 @@ public class AstralRunesScript extends Script {
 
                             MXUtil.switchInventoryTabIfNeeded();
                             var bankTileLoc = !dreamMentorComplete ? SEAL_OF_PASSAGE_BANKER : DREAM_MENTOR_BANKER;
-                            var bankTile = Rs2GameObject.findGameObjectByLocation(bankTileLoc);
+                            TileObject bankTile = Rs2GameObject.getGameObject(bankTileLoc);
                             Rs2Walker.walkFastCanvas(LUNAR_ISLE_BANK_WORLD_POINT);
                             if( bankTile != null && !Rs2Bank.isOpen() ) {
                                 Rs2Bank.openBank(bankTile);
@@ -193,18 +194,8 @@ public class AstralRunesScript extends Script {
                             return;
                         }
 
-                        var hasEmptySlots = Rs2Inventory.getEmptySlots() > 0;
-                        if( hasEmptySlots && Rs2Inventory.hasItem(runeItemId) ) {
-                            Rs2Bank.depositAll(runeItemId);
-                        }
-
-                        if( Rs2Inventory.hasItem(ItemID.VIAL_EMPTY) ) {
-                            Rs2Bank.depositAll(ItemID.VIAL_EMPTY);
-                        }
-
-                        if( Rs2Inventory.hasItem(foodItemId) ) {
-                            Rs2Bank.depositAll(foodItemId);
-                        }
+                        var hasEmptySlots = Rs2Inventory.emptySlotCount() > 0;
+                        Rs2Bank.depositAllExcept("Colossal pouch", "Rune pouch", "Pure essence");
 
                         if( !Rs2Bank.hasItem(ItemID.BLANKRUNE_HIGH) ) {
                             Microbot.showMessage("No pure essence found in bank");
@@ -224,15 +215,14 @@ public class AstralRunesScript extends Script {
                             Rs2Bank.withdrawOne("Stamina Potion", 1);
                             Rs2Inventory.waitForInventoryChanges(600);
                         }
-
                         if( foodNeeded ) {
                             if( !Rs2Bank.hasItem(foodItemId) ) {
                                 Microbot.showMessage("No food found in bank (Item ID: " + foodItemId + ")");
                                 shutdown();
                                 return;
                             }
-                            Rs2Bank.withdrawOne(foodItemId);
-                            Rs2Inventory.waitForInventoryChanges(400);
+                            Rs2Bank.withdrawX(foodItemId, 3);
+                            Rs2Inventory.waitForInventoryChanges(800);
                         }
 
                         if( staminaPotNeeded ) {
@@ -242,23 +232,18 @@ public class AstralRunesScript extends Script {
                         }
 
                         if( foodNeeded ) {
-                            Rs2Player.useFood();
-                            Rs2Inventory.waitForInventoryChanges(400);
-                            if( Rs2Inventory.hasItem(foodItemId) ) {
+                            while(Rs2Player.getHealthPercentage() < 70 && Rs2Inventory.hasItem(foodItemId)) {
                                 Rs2Player.useFood();
-                                Rs2Inventory.waitForInventoryChanges(400);
+                                Rs2Inventory.waitForInventoryChanges(800);
+                                if(!Rs2Inventory.hasItem(foodItemId) && Rs2Player.getHealthPercentage() < 70) {
+                                    Rs2Bank.withdrawX(foodItemId, 3);
+                                    Rs2Inventory.waitForInventoryChanges(800);
+                                }
                             }
                         }
 
-                        if( staminaPotNeeded ) {
-                            Rs2Bank.depositAll("Stamina Potion");
-                            Rs2Inventory.waitForInventoryChanges(600);
-                            if( Rs2Inventory.hasItem(ItemID.VIAL_EMPTY) ) {
-                                Rs2Bank.depositAll(ItemID.VIAL_EMPTY);
-                            }
-                            Rs2Bank.depositAll("Stamina Potion");
-                            Rs2Inventory.waitForInventoryChanges(600);
-                        }
+                        if( staminaPotNeeded || foodNeeded )
+                            Rs2Bank.depositAllExcept("Colossal pouch", "Rune pouch", "Pure essence");
 
                         var colossalPouch = Rs2Inventory.get(ItemID.RCU_POUCH_COLOSSAL);
                         if( hasEmptySlots && Rs2Bank.hasItem(ItemID.BLANKRUNE_HIGH) ) {
@@ -271,7 +256,7 @@ public class AstralRunesScript extends Script {
 
                         MXUtil.handlePouchOutOfSync(hasEmptySlots, colossalPouch);
 
-                        if( !Rs2Inventory.hasDegradedPouch() && Rs2Inventory.allPouchesFull() && Rs2Inventory.getEmptySlots() < 1 ) {
+                        if( !Rs2Inventory.hasDegradedPouch() && Rs2Inventory.allPouchesFull() && Rs2Inventory.emptySlotCount() < 1 ) {
                             state = State.CRAFTING;
                         }
 
@@ -409,7 +394,7 @@ public class AstralRunesScript extends Script {
 
     private static boolean openLunarBank() {
         var bankTileLoc = !(Rs2Player.getQuestState(Quest.DREAM_MENTOR) == QuestState.FINISHED) ? SEAL_OF_PASSAGE_BANKER : DREAM_MENTOR_BANKER;
-        var bankTile = Rs2GameObject.findGameObjectByLocation(bankTileLoc);
+        TileObject bankTile = Rs2GameObject.getGameObject(bankTileLoc);
         Rs2Bank.openBank(bankTile);
         sleepUntil(Rs2Bank::isOpen);
         return Rs2Bank.isOpen();
@@ -440,7 +425,7 @@ public class AstralRunesScript extends Script {
     }
 
     private static void doAltarCraft() {
-        var altarTile = Rs2GameObject.findGameObjectByLocation(ASTRAL_ALTAR_WORLD_POINT);
+        TileObject altarTile = Rs2GameObject.getGameObject(ASTRAL_ALTAR_WORLD_POINT);
         if( altarTile != null && Rs2Player.getWorldLocation().distanceTo(ASTRAL_ALTAR_WORLD_POINT) < 5) {
             if( Rs2Inventory.hasItem(ItemID.BLANKRUNE_HIGH) ) {
                 Rs2GameObject.interact(altarTile);
