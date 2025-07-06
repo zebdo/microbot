@@ -12,7 +12,6 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
@@ -76,7 +75,7 @@ public class TeleAlchScript extends Script {
 
                         Rs2Magic.alch(alchItem, 100, 150);
 
-                        Rs2Magic.cast(plugin.getTeleportSpell().getRs2Spell().getAction());
+                        Rs2Magic.cast(plugin.getTeleportSpell().getRs2Spell().getMagicAction());
 
                         sleep(900, 950);
 

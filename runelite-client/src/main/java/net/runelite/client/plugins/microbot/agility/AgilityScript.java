@@ -249,7 +249,7 @@ public class AgilityScript extends Script
 		{
 			return false;
 		}
-		if (Rs2Player.getBoostedSkillLevel(Skill.AGILITY) >= plugin.getCourseHandler().getRequiredLevel())
+		if (Rs2Player.getBoostedSkillLevel(Skill.AGILITY) > plugin.getCourseHandler().getRequiredLevel())
 		{
 			return false;
 		}
