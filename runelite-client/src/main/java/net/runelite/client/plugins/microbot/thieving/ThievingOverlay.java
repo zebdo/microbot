@@ -30,7 +30,7 @@ public class ThievingOverlay extends OverlayPanel {
 
             panelComponent.getChildren().add(
                     TitleComponent.builder()
-                            .text("Micro Thieving V" + ThievingPlugin.version)
+                            .text("Micro Thieving V" + plugin.version)
                             .color(Color.ORANGE)
                             .build()
             );

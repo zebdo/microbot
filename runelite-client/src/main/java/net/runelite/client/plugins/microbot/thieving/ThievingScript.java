@@ -62,6 +62,7 @@ public class ThievingScript extends Script {
             new WorldPoint(3607, 3336, 0),
             new WorldPoint(3612, 3336, 0)
         }
+        // add more...
     );
 
     public boolean run(ThievingConfig config) {
@@ -101,39 +102,23 @@ public class ThievingScript extends Script {
         return true;
     }
 
-    private static boolean isPointInPolygon(WorldPoint[] polygon, WorldPoint point) {
-        // thanks Ducky for u snippet<3
+    private boolean isPointInPolygon(WorldPoint[] polygon, WorldPoint point) {
+        // thank'u duck
         int n = polygon.length;
-        if (n < 3)
-        {
-            return false;
-        }
+        if (n < 3) return false;
 
         int plane = polygon[0].getPlane();
-        if (point.getPlane() != plane)
-        {
-            return false;
-        }
+        if (point.getPlane() != plane) return false;
 
         boolean inside = false;
-        int px = point.getX();
-        int py = point.getY();
-
-        for (int i = 0, j = n - 1; i < n; j = i++)
-        {
-            int xi = polygon[i].getX();
-            int yi = polygon[i].getY();
-            int xj = polygon[j].getX();
-            int yj = polygon[j].getY();
-
+        int px = point.getX(), py = point.getY();
+        
+        for (int i = 0, j = n - 1; i < n; j = i++) {
+            int xi = polygon[i].getX(), yi = polygon[i].getY();
+            int xj = polygon[j].getX(), yj = polygon[j].getY();
             boolean intersect = ((yi > py) != (yj > py)) && (px < (double)(xj - xi) * (py - yi) / (yj - yi) + xi);
-
-            if (intersect)
-            {
-                inside = !inside;
-            }
+            if (intersect) inside = !inside;
         }
-
         return inside;
     }
 
@@ -218,7 +203,7 @@ public class ThievingScript extends Script {
 
     private void pickpocketVyre() {
         Set<String> vyres = new HashSet<>(Arrays.asList(
-            "Natalidae Shadum", "Misdrievus Shadum", "Vallessia von Pitt"
+            "Natalidae Shadum", "Misdrievus Shadum", "Vallessia von Pitt" // add more...
         ));
         Rs2NpcModel vyre = Rs2Npc.getNpcs().filter(x -> vyres.contains(x.getName())).findFirst().orElse(null);
         if (vyre == null) {
@@ -257,10 +242,7 @@ public class ThievingScript extends Script {
             .filter(x -> x != null && x.isInteracting() && x.getInteracting() != null)
             .findFirst().orElse(null);
         if (npc != null && !Rs2Player.isAnimating(3000)) {
-            if (config.shadowVeil()) castShadowVeil();
-            if (Rs2Npc.pickpocket(npc)) {
-                sleep(250, 450);
-            }
+            pickpocketDefault(npc);
         }
     }
 
@@ -280,7 +262,9 @@ public class ThievingScript extends Script {
     }
 
     private void equipSet(Map<String, EquipmentInventorySlot> set) {
-        set.forEach((item, slot) -> {
+        for (Map.Entry<String, EquipmentInventorySlot> entry : set.entrySet()) {
+            String item = entry.getKey();
+            EquipmentInventorySlot slot = entry.getValue();
             if (!Rs2Equipment.isEquipped(item, slot)) {
                 if (Rs2Inventory.contains(item)) {
                     Rs2Inventory.wear(item);
@@ -288,14 +272,13 @@ public class ThievingScript extends Script {
                 } else if (Rs2Bank.hasBankItem(item)) {
                     if (Rs2Player.getWorldLocation().getRegionID() == DARKMEYER_REGION) {
                         Rs2Bank.withdrawItem(item);
-                        Rs2Inventory.waitForInventoryChanges(3000);
                     } else {
                         Rs2Bank.withdrawAndEquip(item);
-                        Rs2Inventory.waitForInventoryChanges(3000);
                     }
+                    Rs2Inventory.waitForInventoryChanges(3000);
                 }
             }
-        });
+        }
     }
 
     private void bankAndEquip() {
@@ -341,7 +324,7 @@ public class ThievingScript extends Script {
         if (config.DoNotDropItemList() != null && !config.DoNotDropItemList().isEmpty())
             keep.addAll(Arrays.asList(config.DoNotDropItemList().split(",")));
         Rs2Inventory.getInventoryFood().forEach(food -> keep.add(food.getName()));
-        keep.add("dodgy necklace"); keep.add("coins"); keep.add("book of the dead");
+        keep.add("dodgy necklace"); keep.add("coins"); keep.add("book of the dead"); keep.add("drakan's medallion");
         if (config.shadowVeil()) Collections.addAll(keep, "Fire rune", "Earth rune", "Cosmic rune");
         keep.addAll(VYRE_SET.keySet()); keep.addAll(ROGUE_SET.keySet());
         Rs2Inventory.dropAllExcept(config.keepItemsAboveValue(), keep.toArray(new String[0]));

@@ -1,17 +1,21 @@
 package net.runelite.client.plugins.microbot.thieving;
 
-import net.runelite.client.config.Config;
-import net.runelite.client.config.ConfigGroup;
-import net.runelite.client.config.ConfigItem;
-import net.runelite.client.config.ConfigSection;
-import net.runelite.client.config.Range;
+import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.thieving.enums.ThievingNpc;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 
 @ConfigGroup("Thieving")
+@ConfigInformation(
+        "Thieving plugin.<br/>" +
+        "<b>NOTES:</b><br/>" +
+        "- If the npc is not in the list, select “None” and mark the npc with RL “Npc Indicators” plugin.<br/><br/>" +
+        "- The plugin takes the player's starting position, not the npc's. Get close to the npc to steal before starting the plugin.<br/><br/>" +
+        "<b>EXPERIMENTAL:</b> Vyre mode is still in testing, by default it only supports stealing from: Natalidae Shadum, Misdrievus Shadum and Vallessia von Pitt.<br/><br/>" +
+        "<b>EQUIPMENT:</b><br/>" +
+        "- Equip as usual your rogue set. In case you are in Darkmeyer, have your vyre noble outfit in your inventory.<br/><br/>" +
+        "- Equip food, dodgy necklace, and if you want to cast the “Shadow Veil” spell, equip a Lava battlestaff and Cosmic rune (if you don't have lava battlestaff, it is assumed that you have Earth and Fire rune in your bank).<br/>"
+)
 public interface ThievingConfig extends Config {
-
-    // ===== GENERAL SECTION =====
     @ConfigSection(
             name = "General",
             description = "General settings for the Thieving script.",
@@ -41,7 +45,6 @@ public interface ThievingConfig extends Config {
         return false;
     }
 
-    // ===== BUFFS SECTION =====
     @ConfigSection(
             name = "Buffs",
             description = "Buffs and spell-casting options.",
@@ -60,7 +63,6 @@ public interface ThievingConfig extends Config {
         return false;
     }
 
-    // ===== FOOD SECTION =====
     @ConfigSection(
             name = "Food",
             description = "Food and eating settings.",
@@ -112,7 +114,6 @@ public interface ThievingConfig extends Config {
         return 5;
     }
 
-    // ===== COIN POUCH & ITEMS SECTION =====
     @ConfigSection(
             name = "Coin Pouch & Items",
             description = "Settings for coin pouch handling and inventory management.",
