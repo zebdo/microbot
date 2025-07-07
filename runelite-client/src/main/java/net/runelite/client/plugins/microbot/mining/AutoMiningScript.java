@@ -1,7 +1,8 @@
 package net.runelite.client.plugins.microbot.mining;
 
 import net.runelite.api.GameObject;
-import net.runelite.api.NpcID;
+import net.runelite.api.WorldView;
+import net.runelite.api.gameval.NpcID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
@@ -17,11 +18,9 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
-import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
-import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.Arrays;
 import java.util.List;
@@ -66,20 +65,19 @@ public class AutoMiningScript extends Script {
 
                 //code to change worlds if there are too many players in the distance to stray tiles
                 int maxPlayers = config.maxPlayersInArea();
-                if (maxPlayers > 0) {
+                if (maxPlayers > 0)
+                {
                     WorldPoint localLocation = Rs2Player.getWorldLocation();
+                    WorldView worldView = Microbot.getClient().getTopLevelWorldView();
+                    if (worldView == null) return;
 
-                    long nearbyPlayers = Microbot.getClient().getPlayers().stream()
+                    long nearbyPlayers = worldView.players().stream()
                             .filter(p -> p != null && p != Microbot.getClient().getLocalPlayer())
                             .filter(p -> {
-                                if (config.distanceToStray() == 0) {
-                                    // Only count players standing on the same exact tile
+                                if (config.distanceToStray() == 0)
                                     return p.getWorldLocation().equals(localLocation);
-                                }
-                                // Count players within distanceToStray
                                 return p.getWorldLocation().distanceTo(localLocation) <= config.distanceToStray();
                             })
-                            //filter if players are using mining animation
                             .filter(p -> p.getAnimation() != -1)
                             .count();
 
@@ -104,7 +102,7 @@ public class AutoMiningScript extends Script {
                             return;
                         }
 
-                        GameObject rock = Rs2GameObject.findReachableObject(config.ORE().getName(), true, config.distanceToStray(), initialPlayerLocation);
+                        GameObject rock = Rs2GameObject.getGameObject(config.ORE().getName(), true, initialPlayerLocation, config.distanceToStray());
 
                         if (rock != null) {
                             if (Rs2GameObject.interact(rock)) {
@@ -131,7 +129,7 @@ public class AutoMiningScript extends Script {
                             }
                             else if (Rocks.BASALT == config.ORE() && BASALT_MINE == Rs2Player.getWorldLocation().getRegionID()) {
                                 if (Rs2Walker.walkTo(2872,3935,0)){
-                                    Rs2Inventory.useItemOnNpc(ItemID.BASALT, NpcID.SNOWFLAKE);
+                                    Rs2Inventory.useItemOnNpc(ItemID.BASALT, NpcID.MY2ARM_SNOWFLAKE);
                                     Rs2Walker.walkTo(2841,10339,0);
                                 }
                             } else {

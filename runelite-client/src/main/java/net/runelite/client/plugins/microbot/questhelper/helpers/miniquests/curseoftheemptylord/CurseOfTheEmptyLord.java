@@ -25,8 +25,8 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.miniquests.curseoftheemptylord;
 
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.NpcID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.NpcID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.QuestState;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.VarbitChanged;
@@ -48,7 +48,7 @@ import net.runelite.client.plugins.microbot.questhelper.rewards.UnlockReward;
 import java.util.*;
 
 public class CurseOfTheEmptyLord extends BasicQuestHelper {
-    private final int PATH_VARBIT = 815;
+    private static final int PATH_VARBIT = 815;
     //Items Required
     ItemRequirement ringOfVis, ghostspeakItems, ghostspeak, knife;
     Requirement talkedToValdez, talkedToRennard, talkedToKharrim, talkedToLennissa, talkedToDhalak, talkedToViggora, inRoguesCastle, inEdgevilleDungeon, inSlayerTower,
@@ -106,11 +106,11 @@ public class CurseOfTheEmptyLord extends BasicQuestHelper {
 
     @Override
     protected void setupRequirements() {
-        ringOfVis = new ItemRequirement("Ring of visibility", ItemID.RING_OF_VISIBILITY, 1, true).isNotConsumed();
-        ghostspeak = new ItemRequirement("Ghostspeak amulet", ItemID.GHOSTSPEAK_AMULET, 1, true).isNotConsumed();
-        ghostspeakItems = new ItemRequirement("Ghostspeak amulet or Morytania legs 2 or better", ItemID.GHOSTSPEAK_AMULET,
+        ringOfVis = new ItemRequirement("Ring of visibility", ItemID.FD_RING_VISIBILITY, 1, true).isNotConsumed();
+        ghostspeak = new ItemRequirement("Ghostspeak amulet", ItemID.AMULET_OF_GHOSTSPEAK, 1, true).isNotConsumed();
+        ghostspeakItems = new ItemRequirement("Ghostspeak amulet or Morytania legs 2 or better", ItemID.AMULET_OF_GHOSTSPEAK,
                 1, true).isNotConsumed();
-        ghostspeakItems.addAlternates(ItemID.MORYTANIA_LEGS_2, ItemID.MORYTANIA_LEGS_3, ItemID.MORYTANIA_LEGS_4);
+        ghostspeakItems.addAlternates(ItemID.MORYTANIA_LEGS_MEDIUM, ItemID.MORYTANIA_LEGS_HARD, ItemID.MORYTANIA_LEGS_ELITE);
         knife = new ItemRequirement("Knife", ItemID.KNIFE).showConditioned(new VarbitRequirement(PATH_VARBIT, 3)).isNotConsumed();
     }
 
@@ -144,34 +144,34 @@ public class CurseOfTheEmptyLord extends BasicQuestHelper {
     public void setupSteps() {
         int pathID = client.getVarbitValue(PATH_VARBIT);
 
-        talkToValdez = new NpcStep(this, NpcID.MYSTERIOUS_GHOST_3452, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost outside Glarial's Tomb.", ghostspeakItems, ringOfVis);
+        talkToValdez = new NpcStep(this, NpcID.SECRET_GHOST_EXPLORER, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost outside Glarial's Tomb.", ghostspeakItems, ringOfVis);
         talkToValdez.addDialogStep("Tell me your story");
 
-        talkToRennard = new NpcStep(this, NpcID.MYSTERIOUS_GHOST, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost Rennard.", ghostspeakItems, ringOfVis);
+        talkToRennard = new NpcStep(this, NpcID.SECRET_GHOST_THIEF, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost Rennard.", ghostspeakItems, ringOfVis);
         talkToRennard.addDialogStep("Tell me your story");
 
-        talkToKharrim = new NpcStep(this, NpcID.MYSTERIOUS_GHOST_3453, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost Kharrim.", ghostspeakItems, ringOfVis);
+        talkToKharrim = new NpcStep(this, NpcID.SECRET_GHOST_MESSENGER, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost Kharrim.", ghostspeakItems, ringOfVis);
         talkToKharrim.addDialogStep("Tell me your story");
 
-        talkToLennissa = new NpcStep(this, NpcID.MYSTERIOUS_GHOST_3454, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost Lennissa.", ghostspeakItems, ringOfVis);
+        talkToLennissa = new NpcStep(this, NpcID.SECRET_GHOST_SPY, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost Lennissa.", ghostspeakItems, ringOfVis);
         talkToLennissa.addDialogStep("Tell me your story");
 
-        talkToDhalak = new NpcStep(this, NpcID.MYSTERIOUS_GHOST_3451, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost Dhalak.", ghostspeakItems, ringOfVis);
+        talkToDhalak = new NpcStep(this, NpcID.SECRET_GHOST_MAGE, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost Dhalak.", ghostspeakItems, ringOfVis);
         talkToDhalak.addDialogStep("Tell me your story");
 
-        talkToViggora = new NpcStep(this, NpcID.MYSTERIOUS_GHOST_3455, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost Viggora.", ghostspeakItems, ringOfVis);
+        talkToViggora = new NpcStep(this, NpcID.SECRET_GHOST_SWORDSMAN, new WorldPoint(2556, 3445, 0), "Talk to the Mysterious Ghost Viggora.", ghostspeakItems, ringOfVis);
         talkToViggora.addDialogStep("Tell me your story");
 
-        goUpstairsMonastery = new ObjectStep(this, ObjectID.LADDER_2641, new WorldPoint(3057, 3483, 0), "Talk to the Mysterious Ghost upstairs in the Edgeville Monastery.");
+        goUpstairsMonastery = new ObjectStep(this, ObjectID.MONASTERYLADDER, new WorldPoint(3057, 3483, 0), "Talk to the Mysterious Ghost upstairs in the Edgeville Monastery.");
 
-        goUpstairsSlayerTower = new ObjectStep(this, ObjectID.STAIRCASE, new WorldPoint(3436, 3538, 0), "Talk to the Mysterious Ghost upstairs in the Slayer Tower, near the Infernal Mages.");
+        goUpstairsSlayerTower = new ObjectStep(this, ObjectID.SLAYER_STAIRS_LV1, new WorldPoint(3436, 3538, 0), "Talk to the Mysterious Ghost upstairs in the Slayer Tower, near the Infernal Mages.");
 
-        goDownIntoEdgevilleDungeon = new ObjectStep(this, ObjectID.TRAPDOOR_1579, new WorldPoint(3097, 3468, 0), "Talk to the Mysterious Ghost in the Edgeville Wilderness Dungeon, near the Earth Warriors.");
-        goDownIntoEdgevilleDungeon.addAlternateObjects(ObjectID.TRAPDOOR_1581);
+        goDownIntoEdgevilleDungeon = new ObjectStep(this, ObjectID.TRAPDOOR, new WorldPoint(3097, 3468, 0), "Talk to the Mysterious Ghost in the Edgeville Wilderness Dungeon, near the Earth Warriors.");
+        goDownIntoEdgevilleDungeon.addAlternateObjects(ObjectID.TRAPDOOR_OPEN);
 
-        goUpstairsRoguesCastle = new ObjectStep(this, ObjectID.STAIRCASE_14735, new WorldPoint(3281, 3937, 0), "Talk to the Mysterious Ghost Viggora upstairs in the Rogues' Castle in 54 Wilderness.");
+        goUpstairsRoguesCastle = new ObjectStep(this, ObjectID.WILD6_SPIRALSTAIRS, new WorldPoint(3281, 3937, 0), "Talk to the Mysterious Ghost Viggora upstairs in the Rogues' Castle in 54 Wilderness.");
 
-        goUpstairsPartyRoom = new ObjectStep(this, ObjectID.STAIRCASE_24249, new WorldPoint(3054, 3384, 0), "Talk to the Mysterious Ghost upstairs in the Falador Party Room.");
+        goUpstairsPartyRoom = new ObjectStep(this, ObjectID.FAI_FALADOR_PARTY_ROOM_SPIRALSTAIRS_MIRROR, new WorldPoint(3054, 3384, 0), "Talk to the Mysterious Ghost upstairs in the Falador Party Room.");
 
         updateSteps(pathID);
     }
@@ -240,7 +240,7 @@ public class CurseOfTheEmptyLord extends BasicQuestHelper {
 
     @Override
     public List<ItemReward> getItemRewards() {
-        return Collections.singletonList(new ItemReward("10,000 Experience Lamp (Any skill over level 50).", ItemID.ANTIQUE_LAMP, 1)); //4447 is used as placeholder
+        return Collections.singletonList(new ItemReward("10,000 Experience Lamp (Any skill over level 50).", ItemID.THOSF_REWARD_LAMP, 1)); //4447 is used as placeholder
     }
 
     @Override

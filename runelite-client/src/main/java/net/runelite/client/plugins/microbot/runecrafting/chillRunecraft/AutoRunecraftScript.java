@@ -21,16 +21,18 @@ import java.util.concurrent.TimeUnit;
 public class AutoRunecraftScript extends Script
 {
     private States state;
-    private Altars altar;
-    private boolean initialise;
-    public static int runsCompleted = 0;
-    public static int initialRunecraftLevel;
-    public static int runecraftLevel;
-    public static int initialRunecraftXp;
-    public static int runecraftXp;
+    
+    
+    int runsCompleted = 0;
+    int initialRunecraftLevel;
+    int runecraftLevel;
+    int initialRunecraftXp;
+    int runecraftXp;
 
     public boolean run(AutoRunecraftConfig config)
     {
+        boolean initialise;
+        Altars altar;
         Microbot.enableAutoRunOn = true;
         Rs2Antiban.resetAntibanSettings();
         Rs2Antiban.antibanSetupTemplates.applyRunecraftingSetup();

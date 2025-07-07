@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.scurrius;
 
 import com.google.inject.Inject;
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
@@ -231,7 +231,7 @@ public class ScurriusScript extends Script {
 
                         Rs2Walker.walkTo(bossLocation);
                         String interactionType = config.bossRoomEntryType().getInteractionText();
-                        Rs2GameObject.interact(ObjectID.BROKEN_BARS, interactionType);
+                        Rs2GameObject.interact(ObjectID.RAT_BOSS_ENTRANCE, interactionType);
                         sleepUntil(this::isInFightRoom);
                         break;
 

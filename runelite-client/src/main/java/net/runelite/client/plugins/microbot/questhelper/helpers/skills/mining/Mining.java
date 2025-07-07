@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.skills.mining;
 
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.Skill;
 import net.runelite.api.SpriteID;
 import net.runelite.api.coords.WorldPoint;
@@ -152,19 +152,19 @@ public class Mining extends ComplexStateQuestHelper {
         ironStep.addTileMarker(IRON_POINT, SpriteID.SKILL_MINING);
 
 
-        mineCopper = new ObjectStep(this, ObjectID.TIN_ROCKS_11360, COPPER_POINT,
+        mineCopper = new ObjectStep(this, ObjectID.TINROCK1, COPPER_POINT,
                 "Mine Copper- and Tin ore at South-east Varrock mine until 15 Mining. You can choose to drop " +
                         "the ores as you go or bank them in the eastern Varrock bank.", true,
                 ironPickaxe, steelPickaxe, blackPickaxe
         );
-        mineCopper.addAlternateObjects(ObjectID.TIN_ROCKS_11360, ObjectID.COPPER_ROCKS_11161, ObjectID.COPPER_ROCKS_10943);
+        mineCopper.addAlternateObjects(ObjectID.TINROCK1, ObjectID.COPPERROCK2, ObjectID.COPPERROCK1);
 
-        mineIron = new ObjectStep(this, ObjectID.IRON_ROCKS, IRON_POINT,
+        mineIron = new ObjectStep(this, ObjectID.IRONROCK1, IRON_POINT,
                 "Mine Iron ore at Al Kharid Mine until 99 Mining. You can choose to drop the ores as you go," +
                         " smelt them on the way to the Al Kharid bank or bank the ores as they are.", true,
                 steelPickaxe, blackPickaxe, mithrilPickaxe, adamantPickaxe, runePickaxe
         );
-        mineIron.addAlternateObjects(ObjectID.IRON_ROCKS_11365);
+        mineIron.addAlternateObjects(ObjectID.IRONROCK2);
     }
 
     @Override
