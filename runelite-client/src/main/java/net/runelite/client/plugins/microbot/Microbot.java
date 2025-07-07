@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -34,7 +35,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.annotations.Component;
 import net.runelite.api.events.ItemContainerChanged;
@@ -66,6 +66,8 @@ import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchScr
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntilNotNull;
+import static net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject.get;
+
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -81,7 +83,6 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.WorldUtil;
 import net.runelite.http.api.worlds.World;
 import org.slf4j.event.Level;
-
 @Slf4j
 @NoArgsConstructor
 public class Microbot {
@@ -418,11 +419,10 @@ public class Microbot {
 
 	@SneakyThrows
 	private static boolean togglePlugin(Plugin plugin, boolean enable) {
-		if (plugin == null) return !enable;
-
-		final AtomicBoolean success = new AtomicBoolean(false);
-		SwingUtilities.invokeAndWait(() -> {
-			try {
+		if (plugin == null) return !enable; // we should always be returning false, e.g - if enable is false and plugin is null - !enable, would return true
+		final AtomicBoolean success = new AtomicBoolean(false);        
+		Callable<Boolean> callable = () -> {        
+        	try {
 				getPluginManager().setPluginEnabled(plugin, enable);
 				if (enable) {
 					success.set(getPluginManager().startPlugin(plugin));
@@ -431,10 +431,13 @@ public class Microbot {
 					success.set(getPluginManager().stopPlugin(plugin));
 				}
 			} catch (PluginInstantiationException e) {
+				log.error("Error toggling plugin ({}): {}", plugin.getClass().getSimpleName(), e.getMessage(), e);
 				e.printStackTrace();
 			}
-		});
-		return success.get();
+			return success.get();
+		};
+		// When not on client thread, use client thread to execute
+		return getClientThread().runOnClientThreadOptional(callable).orElse(false);	
 	}
 
 	/**
