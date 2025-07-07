@@ -34,14 +34,19 @@ public class AerialFishingOverlay extends OverlayPanel {
 
             panelComponent.getChildren().add(LineComponent.builder().build());
             // check if player is in the correct region(10038)
-            String region = Rs2Player.getWorldLocation() != null ? Rs2Player.getWorldLocation().getRegionID() == 5432 ? "In Region" : "Not in Region" : "Not in Region";
+            String region;
+            if (Rs2Player.getWorldLocation() != null) {
+                region = Rs2Player.getWorldLocation().getRegionID() == 5432 ? "In Region" : "Not in Region";
+            } else {
+                region = "Not in Region";
+            }
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Region: " + region)
                     .build());
             panelComponent.getChildren().add(LineComponent.builder().build());
 
             panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Cormorant's glove: " + ((Rs2Equipment.isWearing(ItemID.CORMORANTS_GLOVE) || Rs2Equipment.isWearing(ItemID.CORMORANTS_GLOVE_22817)) ? "Present" : "Not Present"))
+                    .left("Cormorant's glove: " + ((Rs2Equipment.isWearing(ItemID.AERIAL_FISHING_GLOVES_NO_BIRD) || Rs2Equipment.isWearing(ItemID.AERIAL_FISHING_GLOVES_BIRD)) ? "Present" : "Not Present"))
                     .build());
 
             panelComponent.getChildren().add(LineComponent.builder()

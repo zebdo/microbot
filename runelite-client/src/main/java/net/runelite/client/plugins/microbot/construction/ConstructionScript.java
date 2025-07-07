@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.construction;
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.NPC;
 import net.runelite.api.SpriteID;
 import net.runelite.api.TileObject;
@@ -14,6 +15,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
@@ -25,14 +27,14 @@ public class ConstructionScript extends Script {
     ConstructionState state = ConstructionState.Idle;
     
     public TileObject getOakLarderSpace() {
-        return Rs2GameObject.findObjectById(15403);
+        return Rs2GameObject.getTileObject(ObjectID.POH_KITCHEN_5);
     }
 
     public TileObject getOakLarder() {
-        return Rs2GameObject.findObjectById(13566);
+        return Rs2GameObject.getTileObject(ObjectID.POH_LARDER_2);
     }
 
-    public NPC getButler() {
+    public Rs2NpcModel getButler() {
         return Rs2Npc.getNpc("Demon butler");
     }
 
@@ -71,14 +73,14 @@ public class ConstructionScript extends Script {
         TileObject oakLarderSpace = getOakLarderSpace();
         TileObject oakLarder = getOakLarder();
         NPC butler = getButler();
-        boolean hasRequiredPlanks = Rs2Inventory.hasItemAmount(ItemID.OAK_PLANK, Rs2Random.between(8, 16));
+        boolean hasRequiredPlanks = Rs2Inventory.hasItemAmount(ItemID.PLANK_OAK, Rs2Random.between(8, 16));
         if (oakLarderSpace == null && oakLarder != null) {
             state = ConstructionState.Remove;
         } else if (oakLarderSpace != null && oakLarder == null && hasRequiredPlanks) {
             state = ConstructionState.Build;
         } else if (oakLarderSpace != null && oakLarder == null && butler != null) {
             state = ConstructionState.Butler;
-        } else if (oakLarderSpace == null && oakLarder == null) {
+        } else {
             state = ConstructionState.Idle;
             Microbot.getNotifier().notify("Looks like we are no longer in our house.");
             shutdown();
@@ -89,7 +91,7 @@ public class ConstructionScript extends Script {
         TileObject oakLarderSpace = getOakLarderSpace();
         if (oakLarderSpace == null) return;
         if (Rs2GameObject.interact(oakLarderSpace, "Build")) {
-            sleepUntilOnClientThread(() -> hasFurnitureInterfaceOpen(), 5000);
+            sleepUntilOnClientThread(this::hasFurnitureInterfaceOpen, 5000);
             Rs2Keyboard.keyPress('2');
             sleepUntilOnClientThread(() -> getOakLarder() != null, 5000);
         }
@@ -106,7 +108,7 @@ public class ConstructionScript extends Script {
     }
 
     private void butler() {
-        NPC butler = getButler();
+        Rs2NpcModel butler = getButler();
         boolean butlerIsToFar;
         if (butler == null) return;
         butlerIsToFar = Microbot.getClientThread().runOnClientThreadOptional(() -> {

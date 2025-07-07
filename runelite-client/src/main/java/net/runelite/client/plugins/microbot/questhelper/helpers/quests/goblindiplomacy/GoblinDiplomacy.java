@@ -25,8 +25,8 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.goblindiplomacy;
 
 
-import net.runelite.api.NpcID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.NpcID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.panel.PanelDetails;

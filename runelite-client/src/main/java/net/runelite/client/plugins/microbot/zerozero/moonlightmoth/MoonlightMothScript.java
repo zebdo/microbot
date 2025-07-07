@@ -1,6 +1,6 @@
 package net.runelite.client.plugins.microbot.zerozero.moonlightmoth;
 
-import net.runelite.api.NpcID;
+import net.runelite.api.gameval.NpcID;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -10,6 +10,7 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -20,6 +21,10 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
 
 public class MoonlightMothScript extends Script {
 
+    private static final String STAMINA_POTION = "stamina potion";
+    private static final String MOONLIGHT_MOTH = "Moonlight moth";
+    private static final String BUTTERFLY_JAR = "Butterfly jar";
+    private static final String BUTTERFLY_NET = "Butterfly net";
     String lastChatMessage = "";
 
     private enum State {
@@ -74,15 +79,15 @@ public class MoonlightMothScript extends Script {
         }
 
         // Check if Moonlight Moth is in the inventory
-        if (Rs2Inventory.hasItem("Moonlight moth")) {
+        if (Rs2Inventory.hasItem(MOONLIGHT_MOTH)) {
             logOnceToChat("Moonlight Moths found in inventory. Proceeding to BANKING.", false);
             currentState = State.BANKING;
             return;
         }
 
         boolean hasCoins = config.actionPreference().equals(MoonlightMothConfig.ActionPreference.SHOP) && Rs2Inventory.contains("Coins");
-        boolean hasButterflyJars = Rs2Inventory.contains("Butterfly jar");
-        boolean hasButterflyNetEquipped = Rs2Equipment.isWearing("Butterfly net");
+        boolean hasButterflyJars = Rs2Inventory.contains(BUTTERFLY_JAR);
+        boolean hasButterflyNetEquipped = Rs2Equipment.isWearing(BUTTERFLY_NET);
 
         logOnceToChat("Inventory contains Butterfly jar: " + hasButterflyJars, true);
         logOnceToChat("Wearing Butterfly net: " + hasButterflyNetEquipped, true);
@@ -115,8 +120,8 @@ public class MoonlightMothScript extends Script {
             return;
         }
 
-        if (Rs2Inventory.hasItem("Moonlight moth")) {
-            Rs2Bank.depositAll("Moonlight moth");
+        if (Rs2Inventory.hasItem(MOONLIGHT_MOTH)) {
+            Rs2Bank.depositAll(MOONLIGHT_MOTH);
         }
 
         if (config.useStamina()) {
@@ -127,14 +132,14 @@ public class MoonlightMothScript extends Script {
             equipGraceful(config);
         }
 
-        if (!Rs2Equipment.isWearing("Butterfly net")) {
-            Rs2Bank.withdrawAndEquip("Butterfly net");
+        if (!Rs2Equipment.isWearing(BUTTERFLY_NET)) {
+            Rs2Bank.withdrawAndEquip(BUTTERFLY_NET);
         }
 
         if (config.actionPreference().equals(MoonlightMothConfig.ActionPreference.BANK)) {
-            int emptySlots = Rs2Inventory.getEmptySlots();
+            int emptySlots = Rs2Inventory.emptySlotCount();
             if (emptySlots > 0) {
-                Rs2Bank.withdrawX("Butterfly jar", emptySlots);
+                Rs2Bank.withdrawX(BUTTERFLY_JAR, emptySlots);
                 logOnceToChat("Withdrew " + emptySlots + " Butterfly jars.", true);
             }
         }
@@ -179,7 +184,7 @@ public class MoonlightMothScript extends Script {
             return;
         }
 
-        int emptySlots = Rs2Inventory.getEmptySlots();
+        int emptySlots = Rs2Inventory.emptySlotCount();
 
         if (emptySlots == 0) {
             logOnceToChat("No inventory space available to buy Butterfly jars.", true);
@@ -187,7 +192,7 @@ public class MoonlightMothScript extends Script {
             return;
         }
 
-        if (!Rs2Shop.hasMinimumStock("Butterfly jar", emptySlots)) {
+        if (!Rs2Shop.hasMinimumStock(BUTTERFLY_JAR, emptySlots)) {
             logOnceToChat("Shop stock is insufficient for our needs. Hopping to a new world...", false);
 
             Rs2Shop.closeShop();
@@ -199,7 +204,7 @@ public class MoonlightMothScript extends Script {
             return;
         }
 
-        boolean success = Rs2Shop.buyItem("Butterfly jar", "50");
+        boolean success = Rs2Shop.buyItem(BUTTERFLY_JAR, "50");
         logOnceToChat(success ? "Successfully bought Butterfly jars." : "Failed to buy Butterfly jars.", true);
 
         Rs2Shop.closeShop();
@@ -227,7 +232,7 @@ public class MoonlightMothScript extends Script {
     private void handleCatching(MoonlightMothConfig config) {
         Microbot.status = "Catching Moonlight Moths...";
 
-        if (!Rs2Inventory.hasItem("Butterfly jar")) {
+        if (!Rs2Inventory.hasItem(BUTTERFLY_JAR)) {
             logOnceToChat("No Butterfly jars left. Switching to BANKING state.", true);
             currentState = State.BANKING;
             return;
@@ -240,8 +245,8 @@ public class MoonlightMothScript extends Script {
 
         WorldArea excludedArea = new WorldArea(1550, 9426, 21, 8, 0);
 
-        Rs2Npc.getNpcs(NpcID.MOONLIGHT_MOTH).filter(moth -> {
-            WorldPoint location = Rs2Npc.getWorldLocation(moth);
+        Rs2Npc.getNpcs(NpcID.MOTH_MOONLIGHT).filter(moth -> {
+            WorldPoint location = new Rs2NpcModel(moth).getWorldLocation();
             return location != null && !excludedArea.contains(location);
         }).findFirst().ifPresent(moth -> {
             if (!Rs2Player.isAnimating() && !Rs2Player.isInteracting()) {
@@ -282,18 +287,18 @@ public class MoonlightMothScript extends Script {
     }
 
     private void useStaminaPotionIfNeeded(int staminaThreshold) {
-        if (Rs2Inventory.hasItem("stamina potion")) {
+        if (Rs2Inventory.hasItem(STAMINA_POTION)) {
             // Check if the player needs to drink the stamina potion
             if (!Rs2Player.hasStaminaActive() && Rs2Player.getRunEnergy() < staminaThreshold) {
-                Rs2Inventory.interact("stamina potion", "drink");
+                Rs2Inventory.interact(STAMINA_POTION, "drink");
                 sleepGaussian(600, 150);
                 logOnceToChat("Drank stamina potion.", true);
             }
         } else if (Rs2Bank.isOpen() || Rs2Bank.openBank()) {
             // Withdraw stamina potion if none are left in the inventory
-            if (Rs2Bank.hasItem("stamina potion")) {
-                Rs2Bank.withdrawOne("stamina potion");
-                sleepUntil(() -> Rs2Inventory.hasItem("stamina potion"), 5000);
+            if (Rs2Bank.hasItem(STAMINA_POTION)) {
+                Rs2Bank.withdrawOne(STAMINA_POTION);
+                sleepUntil(() -> Rs2Inventory.hasItem(STAMINA_POTION), 5000);
                 logOnceToChat("Withdrew stamina potion from the bank.", true);
             } else {
                 logOnceToChat("No stamina potions available in the bank. Continuing without stamina.", true);

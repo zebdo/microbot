@@ -26,8 +26,8 @@ package net.runelite.client.plugins.microbot.questhelper.helpers.quests.princeal
 
 
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.NpcID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.NpcID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.collections.ItemCollections;
 import net.runelite.client.plugins.microbot.questhelper.panel.PanelDetails;
@@ -180,35 +180,35 @@ public class PrinceAliRescue extends BasicQuestHelper {
     }
 
     public void setupSteps() {
-        talkToHassan = new NpcStep(this, NpcID.CHANCELLOR_HASSAN, new WorldPoint(3298, 3163, 0), "Talk to Hassan in the Al Kharid Palace.");
+        talkToHassan = new NpcStep(this, NpcID.HASSAN, new WorldPoint(3298, 3163, 0), "Talk to Hassan in the Al Kharid Palace.");
         talkToHassan.addDialogSteps("Is there anything I can help you with?", "Yes.");
-        talkToOsman = new NpcStep(this, NpcID.OSMAN_4286, new WorldPoint(3286, 3180, 0), "Talk to Osman north of the Al Kharid Palace.");
+        talkToOsman = new NpcStep(this, NpcID.OSMAN, new WorldPoint(3286, 3180, 0), "Talk to Osman north of the Al Kharid Palace.");
 
         talkToNed = new NpcStep(this, NpcID.NED, new WorldPoint(3097, 3257, 0), "Have Ned in Draynor Village make you a wig from 3 balls of wool. He can also sell you a rope for 15 coins or 4 balls of wool.", ballsOfWool3);
         talkToNed.addDialogStep("Could you make other things apart from rope?");
         talkToNed.addDialogStep("How about some sort of wig?");
         talkToNed.addDialogStep("I have them here. Please make me a wig.");
         dyeWig = new DetailedQuestStep(this, "Dye the wig with yellow dye. Buy a yellow dye with two onions and 5 coins if you still need it from Aggie in Draynor Village.", yellowDye, wig);
-        talkToAggie = new NpcStep(this, NpcID.AGGIE, new WorldPoint(3086, 3257, 0), "Talk to Aggie in Draynor Village to get some paste.", redberries, ashes, potOfFlour, bucketOfWater);
+        talkToAggie = new NpcStep(this, NpcID.AGGIE_1OP, new WorldPoint(3086, 3257, 0), "Talk to Aggie in Draynor Village to get some paste.", redberries, ashes, potOfFlour, bucketOfWater);
         talkToAggie.addDialogStep("Can you make skin paste?");
         talkToAggie.addDialogStep("Yes please. Mix me some skin paste.");
-        talkToKeli = new NpcStep(this, NpcID.LADY_KELI, new WorldPoint(3127, 3244, 0), "Talk to Keli in the jail east of Draynor Village. If you've already made the key mould, open the quest journal to re-sync.", softClay);
+        talkToKeli = new NpcStep(this, NpcID.LADY_KELI_VIS, new WorldPoint(3127, 3244, 0), "Talk to Keli in the jail east of Draynor Village. If you've already made the key mould, open the quest journal to re-sync.", softClay);
         talkToKeli.addDialogStep("Heard of you? You're famous in Gielinor!");
         talkToKeli.addDialogStep("What's your latest plan then?");
         talkToKeli.addDialogStep("How do you know someone won't try to free him?");
         talkToKeli.addDialogStep("Could I see the key please?");
         talkToKeli.addDialogStep("Could I touch the key for a moment please?");
-        bringImprintToOsman = new NpcStep(this, NpcID.OSMAN_4286, new WorldPoint(3285, 3179, 0), "Bring the key print to Osman north of the Al Kharid Palace. If you already have, open the quest journal to re-sync.", keyMould, bronzeBar);
+        bringImprintToOsman = new NpcStep(this, NpcID.OSMAN, new WorldPoint(3285, 3179, 0), "Bring the key print to Osman north of the Al Kharid Palace. If you already have, open the quest journal to re-sync.", keyMould, bronzeBar);
         talkToLeela = new NpcStep(this, NpcID.LEELA, new WorldPoint(3113, 3262, 0), "Talk to Leela east of Draynor Village.", beers3, dyedWig, paste, rope, pinkSkirt);
-        talkToJoe = new NpcStep(this, NpcID.JOE_11577, new WorldPoint(3124, 3245, 0), "Bring everything to the jail and give Joe there three beers.", beers3, key, dyedWig, paste, rope, pinkSkirt);
+        talkToJoe = new NpcStep(this, NpcID.JOE_VIS, new WorldPoint(3124, 3245, 0), "Bring everything to the jail and give Joe there three beers.", beers3, key, dyedWig, paste, rope, pinkSkirt);
         talkToJoe.addDialogStep("I have some beer here. Fancy one?");
-        useRopeOnKeli = new NpcStep(this, NpcID.LADY_KELI, new WorldPoint(3127, 3244, 0), "Use rope on Keli.", ropeHighlighted);
+        useRopeOnKeli = new NpcStep(this, NpcID.LADY_KELI_VIS, new WorldPoint(3127, 3244, 0), "Use rope on Keli.", ropeHighlighted);
         useRopeOnKeli.addIcon(ItemID.ROPE);
-        useKeyOnDoor = new ObjectStep(this, ObjectID.PRISON_GATE_2881, new WorldPoint(3123, 3243, 0), "Use the key on the prison door. If Lady Keli respawned you'll need to tie her up again.", keyHighlighted, dyedWig, paste, pinkSkirt);
+        useKeyOnDoor = new ObjectStep(this, ObjectID.ALIDOOR, new WorldPoint(3123, 3243, 0), "Use the key on the prison door. If Lady Keli respawned you'll need to tie her up again.", keyHighlighted, dyedWig, paste, pinkSkirt);
         useKeyOnDoor.addIcon(ItemID.PRINCESKEY);
-        talkToAli = new NpcStep(this, NpcID.PRINCE_ALI, new WorldPoint(3123, 3240, 0), "Talk to Prince Ali and free him.", key, dyedWig, paste, pinkSkirt);
+        talkToAli = new NpcStep(this, NpcID.PRINCE_ALI_VIS_BLACKEYE, new WorldPoint(3123, 3240, 0), "Talk to Prince Ali and free him.", key, dyedWig, paste, pinkSkirt);
 
-        returnToHassan = new NpcStep(this, NpcID.CHANCELLOR_HASSAN, new WorldPoint(3298, 3163, 0), "Return to Hassan in the Al Kharid Palace to complete the quest.");
+        returnToHassan = new NpcStep(this, NpcID.HASSAN, new WorldPoint(3298, 3163, 0), "Return to Hassan in the Al Kharid Palace to complete the quest.");
     }
 
     @Override

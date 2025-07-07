@@ -2,9 +2,8 @@ package net.runelite.client.plugins.microbot.aiofighter.constants;
 
 import com.google.common.collect.ImmutableSet;
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.NpcID;
-import net.runelite.api.NullObjectID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.NpcID;
+import net.runelite.api.gameval.ObjectID;
 
 import java.util.Set;
 
@@ -25,19 +24,19 @@ public class Constants {
     );
 
     public static final Set<Integer> DIGSITE_PENDANT_IDS = ImmutableSet.of(
-            ItemID.DIGSITE_PENDANT_1,
-            ItemID.DIGSITE_PENDANT_2,
-            ItemID.DIGSITE_PENDANT_3,
-            ItemID.DIGSITE_PENDANT_4,
-            ItemID.DIGSITE_PENDANT_5
+            ItemID.NECKLACE_OF_DIGSITE_1,
+            ItemID.NECKLACE_OF_DIGSITE_2,
+            ItemID.NECKLACE_OF_DIGSITE_3,
+            ItemID.NECKLACE_OF_DIGSITE_4,
+            ItemID.NECKLACE_OF_DIGSITE_5
     );
 
-    public static final int BIRD_HOUSE_EMPTY_SPACE = ObjectID.SPACE;
+    public static final int BIRD_HOUSE_EMPTY_SPACE = ObjectID.BIRDHOUSE_NOT_BUILT;
 
-    public static final int MEADOW_NORTH_SPACE = NullObjectID.NULL_30565;
-    public static final int MEADOW_SOUTH_SPACE = NullObjectID.NULL_30566;
-    public static final int VERDANT_NORTH_SPACE = NullObjectID.NULL_30567;
-    public static final int VERDANT_SOUTH_SPACE = NullObjectID.NULL_30568;
+    public static final int MEADOW_NORTH_SPACE = ObjectID.BIRDHOUSE_1;
+    public static final int MEADOW_SOUTH_SPACE = ObjectID.BIRDHOUSE_2;
+    public static final int VERDANT_NORTH_SPACE = ObjectID.BIRDHOUSE_3;
+    public static final int VERDANT_SOUTH_SPACE = ObjectID.BIRDHOUSE_4;
 
     public static final Set<Integer> BIRD_HOUSE_SPACES = ImmutableSet.of(
             MEADOW_NORTH_SPACE,
@@ -47,355 +46,255 @@ public class Constants {
     );
 
     public static final Set<Integer> BIRD_HOUSE_IDS = ImmutableSet.of(
-            ObjectID.BIRDHOUSE,
-            ObjectID.BIRDHOUSE_30555,
-            ObjectID.OAK_BIRDHOUSE,
-            ObjectID.OAK_BIRDHOUSE_30558,
-            ObjectID.WILLOW_BIRDHOUSE,
-            ObjectID.WILLOW_BIRDHOUSE_30561,
-            ObjectID.TEAK_BIRDHOUSE,
-            ObjectID.TEAK_BIRDHOUSE_30564,
-            ObjectID.MAPLE_BIRDHOUSE,
-            ObjectID.MAPLE_BIRDHOUSE_31829,
-            ObjectID.MAHOGANY_BIRDHOUSE,
-            ObjectID.MAHOGANY_BIRDHOUSE_31832,
-            ObjectID.YEW_BIRDHOUSE,
-            ObjectID.YEW_BIRDHOUSE_31835,
-            ObjectID.MAGIC_BIRDHOUSE,
-            ObjectID.MAGIC_BIRDHOUSE_31838,
-            ObjectID.REDWOOD_BIRDHOUSE,
-            ObjectID.REDWOOD_BIRDHOUSE_31841
+            ObjectID.BIRDHOUSE_NORMAL_BUILT,
+            ObjectID.BIRDHOUSE_NORMAL_BIRD,
+            ObjectID.BIRDHOUSE_OAK_BUILT,
+            ObjectID.BIRDHOUSE_OAK_BIRD,
+            ObjectID.BIRDHOUSE_WILLOW_BUILT,
+            ObjectID.BIRDHOUSE_WILLOW_BIRD,
+            ObjectID.BIRDHOUSE_TEAK_BUILT,
+            ObjectID.BIRDHOUSE_TEAK_BIRD,
+            ObjectID.BIRDHOUSE_MAPLE_BUILT,
+            ObjectID.BIRDHOUSE_MAPLE_BIRD,
+            ObjectID.BIRDHOUSE_MAHOGANY_BUILT,
+            ObjectID.BIRDHOUSE_MAHOGANY_BIRD,
+            ObjectID.BIRDHOUSE_YEW_BUILT,
+            ObjectID.BIRDHOUSE_YEW_BIRD,
+            ObjectID.BIRDHOUSE_MAGIC_BUILT,
+            ObjectID.BIRDHOUSE_MAGIC_BIRD,
+            ObjectID.BIRDHOUSE_REDWOOD_BUILT,
+            ObjectID.BIRDHOUSE_REDWOOD_BIRD
     );
 
     public static final Set<Integer> BIRD_HOUSE_EMPTY_IDS = ImmutableSet.of(
-            ObjectID.BIRDHOUSE_EMPTY,
-            ObjectID.OAK_BIRDHOUSE_EMPTY,
-            ObjectID.WILLOW_BIRDHOUSE_EMPTY,
-            ObjectID.TEAK_BIRDHOUSE_EMPTY,
-            ObjectID.MAPLE_BIRDHOUSE_EMPTY,
-            ObjectID.MAHOGANY_BIRDHOUSE_EMPTY,
-            ObjectID.YEW_BIRDHOUSE_EMPTY,
-            ObjectID.MAGIC_BIRDHOUSE_EMPTY,
-            ObjectID.REDWOOD_BIRDHOUSE_EMPTY
+            ObjectID.BIRDHOUSE_NORMAL_FULL,
+            ObjectID.BIRDHOUSE_OAK_FULL,
+            ObjectID.BIRDHOUSE_WILLOW_FULL,
+            ObjectID.BIRDHOUSE_TEAK_FULL,
+            ObjectID.BIRDHOUSE_MAPLE_FULL,
+            ObjectID.BIRDHOUSE_MAHOGANY_FULL,
+            ObjectID.BIRDHOUSE_YEW_FULL,
+            ObjectID.BIRDHOUSE_MAGIC_FULL,
+            ObjectID.BIRDHOUSE_REDWOOD_FULL
     );
 
     public static final Set<Integer> BIRD_HOUSE_ITEM_IDS = ImmutableSet.of(
-            ItemID.BIRD_HOUSE,
-            ItemID.OAK_BIRD_HOUSE,
-            ItemID.WILLOW_BIRD_HOUSE,
-            ItemID.TEAK_BIRD_HOUSE,
-            ItemID.MAPLE_BIRD_HOUSE,
-            ItemID.MAHOGANY_BIRD_HOUSE,
-            ItemID.YEW_BIRD_HOUSE,
-            ItemID.MAGIC_BIRD_HOUSE,
-            ItemID.REDWOOD_BIRD_HOUSE
+            ItemID.BIRDHOUSE_NORMAL,
+            ItemID.BIRDHOUSE_OAK,
+            ItemID.BIRDHOUSE_WILLOW,
+            ItemID.BIRDHOUSE_TEAK,
+            ItemID.BIRDHOUSE_MAPLE,
+            ItemID.BIRDHOUSE_MAHOGANY,
+            ItemID.BIRDHOUSE_YEW,
+            ItemID.BIRDHOUSE_MAGIC,
+            ItemID.BIRDHOUSE_REDWOOD
     );
 
     public static final Set<Integer> BIRD_HOUSE_SEED_IDS = ImmutableSet.of(
             ItemID.BARLEY_SEED,
-            ItemID.HAMMERSTONE_SEED,
-            ItemID.ASGARNIAN_SEED,
+            ItemID.HAMMERSTONE_HOP_SEED,
+            ItemID.ASGARNIAN_HOP_SEED,
             ItemID.JUTE_SEED,
-            ItemID.YANILLIAN_SEED,
-            ItemID.KRANDORIAN_SEED
+            ItemID.YANILLIAN_HOP_SEED,
+            ItemID.KRANDORIAN_HOP_SEED
     );
 
     public static final Set<Integer> BIRD_NEST_IDS = ImmutableSet.of(
-            ItemID.BIRD_NEST,
-            ItemID.BIRD_NEST_5071,
-            ItemID.BIRD_NEST_5072,
-            ItemID.BIRD_NEST_5073,
-            ItemID.BIRD_NEST_5074,
-            ItemID.BIRD_NEST_5075,
-            ItemID.BIRD_NEST_7413,
-            ItemID.BIRD_NEST_13653,
-            ItemID.BIRD_NEST_22798,
-            ItemID.BIRD_NEST_22800,
-            ItemID.CLUE_NEST_EASY,
-            ItemID.CLUE_NEST_MEDIUM,
-            ItemID.CLUE_NEST_HARD,
-            ItemID.CLUE_NEST_ELITE
+            ItemID.BIRD_NEST_EMPTY,
+            ItemID.BIRD_NEST_EGG_GREEN,
+            ItemID.BIRD_NEST_EGG_BLUE,
+            ItemID.BIRD_NEST_SEEDS,
+            ItemID.BIRD_NEST_RING,
+            ItemID.BIRD_NEST_EMPTY,
+            ItemID.BIRD_NEST_CHEAPSEEDS,
+            ItemID.BIRD_NEST_DECENTSEEDS,
+            ItemID.BIRD_NEST_SEEDS_JAN2019,
+            ItemID.BIRD_NEST_DECENTSEEDS_JAN2019,
+            ItemID.WC_CLUE_NEST_EASY,
+            ItemID.WC_CLUE_NEST_MEDIUM,
+            ItemID.WC_CLUE_NEST_HARD,
+            ItemID.WC_CLUE_NEST_ELITE
     );
 
     public static final Set<Integer> MAGIC_MUSHTREE_IDS = ImmutableSet.of(
-            ObjectID.MAGIC_MUSHTREE,
-            ObjectID.MAGIC_MUSHTREE_30922,
-            ObjectID.MAGIC_MUSHTREE_30924
+            ObjectID.FOSSIL_MAGIC_MUSHTREE_TRUNK1,
+            ObjectID.FOSSIL_MAGIC_MUSHTREE_TRUNK2,
+            ObjectID.FOSSIL_MAGIC_MUSHTREE_TRUNK3
     );
 
     public static final Set<Integer> ESSENCE_IDS = ImmutableSet.of(
-            ItemID.RUNE_ESSENCE,
-            ItemID.PURE_ESSENCE,
-            ItemID.DAEYALT_ESSENCE
+            ItemID.BLANKRUNE,
+            ItemID.BLANKRUNE_HIGH,
+            ItemID.BLANKRUNE_DAEYALT
     );
 
     public static final Set<Integer> RUNE_IDS = ImmutableSet.of(
-            ItemID.AIR_RUNE,
-            ItemID.MIND_RUNE,
-            ItemID.WATER_RUNE,
-            ItemID.EARTH_RUNE,
-            ItemID.FIRE_RUNE,
-            ItemID.BODY_RUNE,
-            ItemID.COSMIC_RUNE,
-            ItemID.CHAOS_RUNE,
-            ItemID.NATURE_RUNE,
-            ItemID.LAW_RUNE,
-            ItemID.DEATH_RUNE,
-            ItemID.ASTRAL_RUNE,
-            ItemID.BLOOD_RUNE,
-            ItemID.SOUL_RUNE,
-            ItemID.WRATH_RUNE
+            ItemID.AIRRUNE,
+            ItemID.MINDRUNE,
+            ItemID.WATERRUNE,
+            ItemID.EARTHRUNE,
+            ItemID.FIRERUNE,
+            ItemID.BODYRUNE,
+            ItemID.COSMICRUNE,
+            ItemID.CHAOSRUNE,
+            ItemID.NATURERUNE,
+            ItemID.LAWRUNE,
+            ItemID.DEATHRUNE,
+            ItemID.ASTRALRUNE,
+            ItemID.BLOODRUNE,
+            ItemID.SOULRUNE,
+            ItemID.WRATHRUNE
     );
 
     public static final Set<Integer> ANVIL_IDS = ImmutableSet.of(
             ObjectID.ANVIL,
-            ObjectID.ANVIL_2097,
-            ObjectID.AN_EXPERIMENTAL_ANVIL,
-            ObjectID.ANVIL_4306,
-            ObjectID.ANVIL_6150,
-            ObjectID.ANVIL_22725,
-            ObjectID.BARBARIAN_ANVIL,
-            ObjectID.ANVIL_28563,
-            ObjectID.ORNAMENTAL_ANVIL,
-            ObjectID.ORNAMENTAL_ANVIL_29310,
-            ObjectID.GIANT_ANVIL,
-            ObjectID.ANVIL_31623,
-            ObjectID.ANVIL_32215,
-            ObjectID.ANVIL_32216,
-            ObjectID.ANVIL_39242,
-            ObjectID.RUSTED_ANVIL,
-            ObjectID.GIANT_ANVIL_39724,
-            ObjectID.ANVIL_40725,
-            ObjectID.ANVIL_42825,
-            ObjectID.ANVIL_42860
+            ObjectID.EXPERIMENTAL_ANVIL,
+            ObjectID.VIKING_ANVIL,
+            ObjectID.DWARF_KELDAGRIM_ANVIL,
+            ObjectID.DORGESH_BLACKSMITH_ANVIL,
+            ObjectID.BRUT_ANVIL,
+            ObjectID.LOVAKENGJ_ANVIL,
+            ObjectID.LOVAKENGJ_ANVIL_ONLOG,
+            ObjectID.WINT_ANVIL,
+            ObjectID.RAIDS_TEKTON_ANVIL,
+            ObjectID.DS2_GUILD_BLACKSMITH_ANVIL
     );
 
     public static final Set<Integer> STAMINA_POTION_IDS = ImmutableSet.of(
-            ItemID.STAMINA_POTION1,
-            ItemID.STAMINA_POTION2,
-            ItemID.STAMINA_POTION3,
-            ItemID.STAMINA_POTION4
+            ItemID._4DOSESTAMINA,
+            ItemID._3DOSESTAMINA,
+            ItemID._2DOSESTAMINA,
+            ItemID._1DOSESTAMINA
     );
 
     public static final Set<Integer> BREW_POTION_IDS = ImmutableSet.of(
-            ItemID.SARADOMIN_BREW1,
-            ItemID.SARADOMIN_BREW2,
-            ItemID.SARADOMIN_BREW3,
-            ItemID.SARADOMIN_BREW4,
-            ItemID.XERICS_AID_1,
-            ItemID.XERICS_AID_2,
-            ItemID.XERICS_AID_3,
-            ItemID.XERICS_AID_4,
-            ItemID.XERICS_AID_1_20977,
-            ItemID.XERICS_AID_2_20978,
-            ItemID.XERICS_AID_3_20979,
-            ItemID.XERICS_AID_4_20980,
-            ItemID.XERICS_AID_1_20981,
-            ItemID.XERICS_AID_2_20982,
-            ItemID.XERICS_AID_3_20983,
-            ItemID.XERICS_AID_4_20984
+            ItemID._4DOSEPOTIONOFSARADOMIN,
+            ItemID._3DOSEPOTIONOFSARADOMIN,
+            ItemID._2DOSEPOTIONOFSARADOMIN,
+            ItemID._1DOSEPOTIONOFSARADOMIN,
+            ItemID.RAIDS_VIAL_XERICAID_WEAK_1,
+            ItemID.RAIDS_VIAL_XERICAID_WEAK_2,
+            ItemID.RAIDS_VIAL_XERICAID_WEAK_3,
+            ItemID.RAIDS_VIAL_XERICAID_WEAK_4,
+            ItemID.RAIDS_VIAL_XERICAID_1,
+            ItemID.RAIDS_VIAL_XERICAID_2,
+            ItemID.RAIDS_VIAL_XERICAID_3,
+            ItemID.RAIDS_VIAL_XERICAID_4,
+            ItemID.RAIDS_VIAL_XERICAID_STRONG_1,
+            ItemID.RAIDS_VIAL_XERICAID_STRONG_2,
+            ItemID.RAIDS_VIAL_XERICAID_STRONG_3,
+            ItemID.RAIDS_VIAL_XERICAID_STRONG_4
     );
 
     public static final Set<Integer> RESTORE_POTION_IDS = ImmutableSet.of(
-            ItemID.RESTORE_POTION1,
-            ItemID.RESTORE_POTION2,
-            ItemID.RESTORE_POTION3,
-            ItemID.RESTORE_POTION4,
-            ItemID.SUPER_RESTORE1,
-            ItemID.SUPER_RESTORE2,
-            ItemID.SUPER_RESTORE3,
-            ItemID.SUPER_RESTORE4
+            ItemID._4DOSESTATRESTORE,
+            ItemID._3DOSESTATRESTORE,
+            ItemID._2DOSESTATRESTORE,
+            ItemID._1DOSESTATRESTORE
     );
 
     public static final Set<Integer> ANTI_POISON_POTION_IDS = ImmutableSet.of(
-            ItemID.ANTIPOISON1,
-            ItemID.ANTIPOISON2,
-            ItemID.ANTIPOISON3,
-            ItemID.ANTIPOISON4,
-            ItemID.SUPERANTIPOISON1,
-            ItemID.SUPERANTIPOISON2,
-            ItemID.SUPERANTIPOISON3,
-            ItemID.SUPERANTIPOISON4,
-            ItemID.ANTIDOTE1,
-            ItemID.ANTIDOTE2,
-            ItemID.ANTIDOTE3,
-            ItemID.ANTIDOTE4,
-            ItemID.ANTIDOTE1_5958,
-            ItemID.ANTIDOTE2_5956,
-            ItemID.ANTIDOTE3_5954,
-            ItemID.ANTIDOTE4_5952,
-            ItemID.ANTIVENOM1,
-            ItemID.ANTIVENOM2,
-            ItemID.ANTIVENOM3,
-            ItemID.ANTIVENOM4,
-            ItemID.ANTIVENOM4_12913,
-            ItemID.ANTIVENOM3_12915,
-            ItemID.ANTIVENOM2_12917,
-            ItemID.ANTIVENOM1_12919
+            ItemID._4DOSEANTIPOISON,
+            ItemID._3DOSEANTIPOISON,
+            ItemID._2DOSEANTIPOISON,
+            ItemID._1DOSEANTIPOISON,
+            ItemID._4DOSE2ANTIPOISON,
+            ItemID._3DOSE2ANTIPOISON,
+            ItemID._2DOSE2ANTIPOISON,
+            ItemID._1DOSE2ANTIPOISON,
+            ItemID.ANTIDOTE_4,
+            ItemID.ANTIDOTE_3,
+            ItemID.ANTIDOTE_2,
+            ItemID.ANTIDOTE_1,
+            ItemID.ANTIDOTE__4,
+            ItemID.ANTIDOTE__3,
+            ItemID.ANTIDOTE__2,
+            ItemID.ANTIDOTE__1
     );
 
     public static final Set<Integer> ANTI_FIRE_POTION_IDS = ImmutableSet.of(
-            ItemID.ANTIFIRE_POTION1,
-            ItemID.ANTIFIRE_POTION2,
-            ItemID.ANTIFIRE_POTION3,
-            ItemID.ANTIFIRE_POTION4,
-            ItemID.EXTENDED_ANTIFIRE1,
-            ItemID.EXTENDED_ANTIFIRE2,
-            ItemID.EXTENDED_ANTIFIRE3,
-            ItemID.EXTENDED_ANTIFIRE4,
-            ItemID.SUPER_ANTIFIRE_POTION1,
-            ItemID.SUPER_ANTIFIRE_POTION2,
-            ItemID.SUPER_ANTIFIRE_POTION3,
-            ItemID.SUPER_ANTIFIRE_POTION4,
-            ItemID.EXTENDED_SUPER_ANTIFIRE1,
-            ItemID.EXTENDED_SUPER_ANTIFIRE2,
-            ItemID.EXTENDED_SUPER_ANTIFIRE3,
-            ItemID.EXTENDED_SUPER_ANTIFIRE4
+            ItemID._4DOSE1ANTIDRAGON,
+            ItemID._3DOSE1ANTIDRAGON,
+            ItemID._2DOSE1ANTIDRAGON,
+            ItemID._1DOSE1ANTIDRAGON,
+            ItemID._4DOSE2ANTIDRAGON,
+            ItemID._3DOSE2ANTIDRAGON,
+            ItemID._2DOSE2ANTIDRAGON,
+            ItemID._1DOSE2ANTIDRAGON,
+            ItemID._4DOSE3ANTIDRAGON,
+            ItemID._3DOSE3ANTIDRAGON,
+            ItemID._2DOSE3ANTIDRAGON,
+            ItemID._1DOSE3ANTIDRAGON
     );
 
     public static final Set<Integer> PRAYER_RESTORE_POTION_IDS = ImmutableSet.of(
-            ItemID.SUPER_RESTORE1,
-            ItemID.SUPER_RESTORE2,
-            ItemID.SUPER_RESTORE3,
-            ItemID.SUPER_RESTORE4,
-            ItemID.PRAYER_POTION1,
-            ItemID.PRAYER_POTION2,
-            ItemID.PRAYER_POTION3,
-            ItemID.PRAYER_POTION4
+            ItemID._4DOSEPRAYERRESTORE,
+            ItemID._3DOSEPRAYERRESTORE,
+            ItemID._2DOSEPRAYERRESTORE,
+            ItemID._1DOSEPRAYERRESTORE
     );
 
     public static final Set<Integer> STRENGTH_POTION_IDS = ImmutableSet.of(
-            ItemID.STRENGTH_POTION1,
-            ItemID.STRENGTH_POTION2,
-            ItemID.STRENGTH_POTION3,
-            ItemID.STRENGTH_POTION4,
-            ItemID.SUPER_STRENGTH1,
-            ItemID.SUPER_STRENGTH2,
-            ItemID.SUPER_STRENGTH3,
-            ItemID.SUPER_STRENGTH4,
-            ItemID.DIVINE_SUPER_STRENGTH_POTION1,
-            ItemID.DIVINE_SUPER_STRENGTH_POTION2,
-            ItemID.DIVINE_SUPER_STRENGTH_POTION3,
-            ItemID.DIVINE_SUPER_STRENGTH_POTION4,
-            ItemID.DIVINE_SUPER_COMBAT_POTION1,
-            ItemID.DIVINE_SUPER_COMBAT_POTION2,
-            ItemID.DIVINE_SUPER_COMBAT_POTION3,
-            ItemID.DIVINE_SUPER_COMBAT_POTION4,
-            ItemID.COMBAT_POTION1,
-            ItemID.COMBAT_POTION2,
-            ItemID.COMBAT_POTION3,
-            ItemID.COMBAT_POTION4,
-            ItemID.SUPER_COMBAT_POTION1,
-            ItemID.SUPER_COMBAT_POTION2,
-            ItemID.SUPER_COMBAT_POTION3,
-            ItemID.SUPER_COMBAT_POTION4
+            ItemID.STRENGTH4,
+            ItemID._3DOSE1STRENGTH,
+            ItemID._2DOSE1STRENGTH,
+            ItemID._1DOSE1STRENGTH
+    );
+
+    public static final Set<Integer> SUPER_STRENGTH_POTION_IDS = ImmutableSet.of(
+            ItemID._4DOSE2STRENGTH,
+            ItemID._3DOSE2STRENGTH,
+            ItemID._2DOSE2STRENGTH,
+            ItemID._1DOSE2STRENGTH
     );
 
     public static final Set<Integer> ATTACK_POTION_IDS = ImmutableSet.of(
-            ItemID.ATTACK_POTION1,
-            ItemID.ATTACK_POTION2,
-            ItemID.ATTACK_POTION3,
-            ItemID.ATTACK_POTION4,
-            ItemID.SUPER_ATTACK1,
-            ItemID.SUPER_ATTACK2,
-            ItemID.SUPER_ATTACK3,
-            ItemID.SUPER_ATTACK4,
-            ItemID.DIVINE_SUPER_ATTACK_POTION1,
-            ItemID.DIVINE_SUPER_ATTACK_POTION2,
-            ItemID.DIVINE_SUPER_ATTACK_POTION3,
-            ItemID.DIVINE_SUPER_ATTACK_POTION4,
-            ItemID.DIVINE_SUPER_COMBAT_POTION1,
-            ItemID.DIVINE_SUPER_COMBAT_POTION2,
-            ItemID.DIVINE_SUPER_COMBAT_POTION3,
-            ItemID.DIVINE_SUPER_COMBAT_POTION4,
-            ItemID.COMBAT_POTION1,
-            ItemID.COMBAT_POTION2,
-            ItemID.COMBAT_POTION3,
-            ItemID.COMBAT_POTION4,
-            ItemID.SUPER_COMBAT_POTION1,
-            ItemID.SUPER_COMBAT_POTION2,
-            ItemID.SUPER_COMBAT_POTION3,
-            ItemID.SUPER_COMBAT_POTION4
+            ItemID._4DOSE1ATTACK,
+            ItemID._3DOSE1ATTACK,
+            ItemID._2DOSE1ATTACK,
+            ItemID._1DOSE1ATTACK
+    );
+
+    public static final Set<Integer> SUPER_ATTACK_POTION_IDS = ImmutableSet.of(
+            ItemID._4DOSE2ATTACK,
+            ItemID._3DOSE2ATTACK,
+            ItemID._2DOSE2ATTACK,
+            ItemID._1DOSE2ATTACK
     );
 
     public static final Set<Integer> DEFENCE_POTION_IDS = ImmutableSet.of(
-            ItemID.DEFENCE_POTION1,
-            ItemID.DEFENCE_POTION2,
-            ItemID.DEFENCE_POTION3,
-            ItemID.DEFENCE_POTION4,
-            ItemID.SUPER_DEFENCE1,
-            ItemID.SUPER_DEFENCE2,
-            ItemID.SUPER_DEFENCE3,
-            ItemID.SUPER_DEFENCE4,
-            ItemID.DIVINE_SUPER_DEFENCE_POTION1,
-            ItemID.DIVINE_SUPER_DEFENCE_POTION2,
-            ItemID.DIVINE_SUPER_DEFENCE_POTION3,
-            ItemID.DIVINE_SUPER_DEFENCE_POTION4,
-            ItemID.DIVINE_SUPER_COMBAT_POTION1,
-            ItemID.DIVINE_SUPER_COMBAT_POTION2,
-            ItemID.DIVINE_SUPER_COMBAT_POTION3,
-            ItemID.DIVINE_SUPER_COMBAT_POTION4,
-            ItemID.SUPER_COMBAT_POTION1,
-            ItemID.SUPER_COMBAT_POTION2,
-            ItemID.SUPER_COMBAT_POTION3,
-            ItemID.SUPER_COMBAT_POTION4
+            ItemID._4DOSE1DEFENSE,
+            ItemID._3DOSE1DEFENSE,
+            ItemID._2DOSE1DEFENSE,
+            ItemID._1DOSE1DEFENSE
+    );
+
+    public static final Set<Integer> SUPER_DEFENCE_POTION_IDS = ImmutableSet.of(
+            ItemID._4DOSE2DEFENSE,
+            ItemID._3DOSE2DEFENSE,
+            ItemID._2DOSE2DEFENSE,
+            ItemID._1DOSE2DEFENSE
     );
 
     public static final Set<Integer> RANGED_POTION_IDS = ImmutableSet.of(
-            ItemID.RANGING_POTION1,
-            ItemID.RANGING_POTION2,
-            ItemID.RANGING_POTION3,
-            ItemID.RANGING_POTION4,
-            ItemID.BASTION_POTION1,
-            ItemID.BASTION_POTION2,
-            ItemID.BASTION_POTION3,
-            ItemID.BASTION_POTION4,
-            ItemID.DIVINE_RANGING_POTION1,
-            ItemID.DIVINE_RANGING_POTION2,
-            ItemID.DIVINE_RANGING_POTION3,
-            ItemID.DIVINE_RANGING_POTION4,
-            ItemID.DIVINE_BASTION_POTION1,
-            ItemID.DIVINE_BASTION_POTION2,
-            ItemID.DIVINE_BASTION_POTION3,
-            ItemID.DIVINE_BASTION_POTION4,
-            ItemID.SUPER_RANGING_1,
-            ItemID.SUPER_RANGING_2,
-            ItemID.SUPER_RANGING_3,
-            ItemID.SUPER_RANGING_4
+            ItemID._4DOSERANGERSPOTION,
+            ItemID._3DOSERANGERSPOTION,
+            ItemID._2DOSERANGERSPOTION,
+            ItemID._1DOSERANGERSPOTION
     );
 
     public static final Set<Integer> MAGIC_POTION_IDS = ImmutableSet.of(
-            ItemID.MAGIC_POTION1,
-            ItemID.MAGIC_POTION2,
-            ItemID.MAGIC_POTION3,
-            ItemID.MAGIC_POTION4,
-            ItemID.BATTLEMAGE_POTION1,
-            ItemID.BATTLEMAGE_POTION2,
-            ItemID.BATTLEMAGE_POTION3,
-            ItemID.BATTLEMAGE_POTION4,
-            ItemID.DIVINE_MAGIC_POTION1,
-            ItemID.DIVINE_MAGIC_POTION2,
-            ItemID.DIVINE_MAGIC_POTION3,
-            ItemID.DIVINE_MAGIC_POTION4,
-            ItemID.DIVINE_BATTLEMAGE_POTION1,
-            ItemID.DIVINE_BATTLEMAGE_POTION2,
-            ItemID.DIVINE_BATTLEMAGE_POTION3,
-            ItemID.DIVINE_BATTLEMAGE_POTION4
+            ItemID._4DOSE1MAGIC,
+            ItemID._3DOSE1MAGIC,
+            ItemID._2DOSE1MAGIC,
+            ItemID._1DOSE1MAGIC
     );
 
     public static final Set<Integer> ENERGY_POTION_IDS = ImmutableSet.of(
-            ItemID.ENERGY_POTION1,
-            ItemID.ENERGY_POTION2,
-            ItemID.ENERGY_POTION3,
-            ItemID.ENERGY_POTION4,
-            ItemID.ENERGY_MIX1,
-            ItemID.ENERGY_MIX2,
-            ItemID.SUPER_ENERGY_MIX1,
-            ItemID.SUPER_ENERGY_MIX2,
-            ItemID.SUPER_ENERGY1,
-            ItemID.SUPER_ENERGY2,
-            ItemID.SUPER_ENERGY3,
-            ItemID.SUPER_ENERGY4
+            ItemID._4DOSE1ENERGY,
+            ItemID._3DOSE1ENERGY,
+            ItemID._2DOSE1ENERGY,
+            ItemID._1DOSE1ENERGY
     );
 
     public static final Set<Integer> MINEABLE_GEM_IDS = ImmutableSet.of(
@@ -406,82 +305,82 @@ public class Constants {
     );
 
     public static final Set<Integer> ESSENCE_POUCH_IDS = ImmutableSet.of(
-            ItemID.COLOSSAL_POUCH,
-            ItemID.COLOSSAL_POUCH_26786,
-            ItemID.GIANT_POUCH,
-            ItemID.GIANT_POUCH_5515,
-            ItemID.LARGE_POUCH,
-            ItemID.LARGE_POUCH_5513,
-            ItemID.MEDIUM_POUCH,
-            ItemID.MEDIUM_POUCH_5511,
-            ItemID.SMALL_POUCH
+            ItemID.RCU_POUCH_COLOSSAL,
+            ItemID.RCU_POUCH_COLOSSAL_DEGRADE,
+            ItemID.RCU_POUCH_GIANT,
+            ItemID.RCU_POUCH_GIANT_DEGRADE,
+            ItemID.RCU_POUCH_LARGE,
+            ItemID.RCU_POUCH_LARGE_DEGRADE,
+            ItemID.RCU_POUCH_MEDIUM,
+            ItemID.RCU_POUCH_MEDIUM_DEGRADE,
+            ItemID.RCU_POUCH_SMALL
     );
 
     public static final Set<Integer> DEGRADED_ESSENCE_POUCH_IDS = ImmutableSet.of(
-            ItemID.COLOSSAL_POUCH_26786,
-            ItemID.GIANT_POUCH_5515,
-            ItemID.LARGE_POUCH_5513,
-            ItemID.MEDIUM_POUCH_5511
+            ItemID.RCU_POUCH_COLOSSAL_DEGRADE,
+            ItemID.RCU_POUCH_GIANT_DEGRADE,
+            ItemID.RCU_POUCH_LARGE_DEGRADE,
+            ItemID.RCU_POUCH_MEDIUM_DEGRADE
     );
 
     public static final Set<Integer> ARDOUGNE_CLOAK_IDS = ImmutableSet.of(
-            ItemID.ARDOUGNE_CLOAK_1,
-            ItemID.ARDOUGNE_CLOAK_2,
-            ItemID.ARDOUGNE_CLOAK_3,
-            ItemID.ARDOUGNE_CLOAK_4,
-            ItemID.ARDOUGNE_CLOAK,
-            ItemID.ARDOUGNE_MAX_CAPE
+            ItemID.ARDY_CAPE_EASY,
+            ItemID.ARDY_CAPE_MEDIUM,
+            ItemID.ARDY_CAPE_HARD,
+            ItemID.ARDY_CAPE_ELITE,
+            ItemID.CERT_ARRAVCERTIFICATE,
+            ItemID.SKILLCAPE_MAX_ARDY
     );
 
     public static final Set<Integer> DUELING_RING_IDS = ImmutableSet.of(
-            ItemID.RING_OF_DUELING1,
-            ItemID.RING_OF_DUELING2,
-            ItemID.RING_OF_DUELING3,
-            ItemID.RING_OF_DUELING4,
-            ItemID.RING_OF_DUELING5,
-            ItemID.RING_OF_DUELING6,
-            ItemID.RING_OF_DUELING7,
-            ItemID.RING_OF_DUELING8
+            ItemID.RING_OF_DUELING_1,
+            ItemID.RING_OF_DUELING_2,
+            ItemID.RING_OF_DUELING_3,
+            ItemID.RING_OF_DUELING_4,
+            ItemID.RING_OF_DUELING_5,
+            ItemID.RING_OF_DUELING_6,
+            ItemID.RING_OF_DUELING_7,
+            ItemID.RING_OF_DUELING_8
     );
 
     public static final Set<Integer> EXPLORERS_RING_IDS = ImmutableSet.of(
-            ItemID.EXPLORERS_RING_2,
-            ItemID.EXPLORERS_RING_3,
-            ItemID.EXPLORERS_RING_4
+            ItemID.LUMBRIDGE_RING_MEDIUM,
+            ItemID.LUMBRIDGE_RING_HARD,
+            ItemID.LUMBRIDGE_RING_ELITE
     );
 
     public static final Set<Integer> AMULET_OF_GLORY_IDS = ImmutableSet.of(
-            ItemID.AMULET_OF_GLORY1,
-            ItemID.AMULET_OF_GLORY2,
-            ItemID.AMULET_OF_GLORY3,
-            ItemID.AMULET_OF_GLORY4,
-            ItemID.AMULET_OF_GLORY5,
-            ItemID.AMULET_OF_GLORY6,
-            ItemID.AMULET_OF_GLORY_T1,
-            ItemID.AMULET_OF_GLORY_T2,
-            ItemID.AMULET_OF_GLORY_T3,
-            ItemID.AMULET_OF_GLORY_T4,
-            ItemID.AMULET_OF_GLORY_T5,
-            ItemID.AMULET_OF_GLORY_T6,
-            ItemID.AMULET_OF_ETERNAL_GLORY
+            ItemID.AMULET_OF_GLORY_1,
+            ItemID.AMULET_OF_GLORY_2,
+            ItemID.AMULET_OF_GLORY_3,
+            ItemID.AMULET_OF_GLORY_4,
+            ItemID.AMULET_OF_GLORY_5,
+            ItemID.AMULET_OF_GLORY_6,
+            ItemID.TRAIL_AMULET_OF_GLORY_1,
+            ItemID.TRAIL_AMULET_OF_GLORY_2,
+            ItemID.TRAIL_AMULET_OF_GLORY_3,
+            ItemID.TRAIL_AMULET_OF_GLORY_4,
+            ItemID.TRAIL_AMULET_OF_GLORY_5,
+            ItemID.TRAIL_AMULET_OF_GLORY_6,
+            ItemID.AMULET_OF_GLORY_INF
     );
 
     public static final Set<Integer> SKILL_NECKLACE_IDS = ImmutableSet.of(
-            ItemID.SKILLS_NECKLACE1,
-            ItemID.SKILLS_NECKLACE2,
-            ItemID.SKILLS_NECKLACE3,
-            ItemID.SKILLS_NECKLACE4,
-            ItemID.SKILLS_NECKLACE5,
-            ItemID.SKILLS_NECKLACE6
+            ItemID.JEWL_NECKLACE_OF_SKILLS_1,
+            ItemID.JEWL_NECKLACE_OF_SKILLS_2,
+            ItemID.JEWL_NECKLACE_OF_SKILLS_3,
+            ItemID.JEWL_NECKLACE_OF_SKILLS_4,
+            ItemID.JEWL_NECKLACE_OF_SKILLS_5,
+            ItemID.JEWL_NECKLACE_OF_SKILLS_6
     );
 
     public static final Set<Integer> COMPOST_BIN_IDS = ImmutableSet.of(
-            NullObjectID.NULL_7836,
-            NullObjectID.NULL_7837,
-            NullObjectID.NULL_7838,
-            NullObjectID.NULL_7839,
-            NullObjectID.NULL_27112,
-            NullObjectID.NULL_34631
+            ObjectID.FARMING_COMPOST_BIN_1,
+            ObjectID.FARMING_COMPOST_BIN_2,
+            ObjectID.FARMING_COMPOST_BIN_3,
+            ObjectID.FARMING_COMPOST_BIN_4,
+            ObjectID.FARMING_COMPOST_BIN_5,
+            ObjectID.FARMING_COMPOST_BIN_6
     );
 
     public static final Set<Integer> NOTABLE_PRODUCE_IDS = ImmutableSet.of(
@@ -492,26 +391,26 @@ public class Constants {
             ItemID.STRAWBERRY,
             ItemID.WATERMELON,
             ItemID.SNAPE_GRASS,
-            ItemID.MARIGOLDS,
+            ItemID.MARIGOLD,
             ItemID.ROSEMARY,
-            ItemID.NASTURTIUMS,
-            ItemID.WOAD_LEAF,
+            ItemID.NASTURTIUM,
+            ItemID.WOADLEAF,
             ItemID.LIMPWURT_ROOT,
-            ItemID.WHITE_LILY,
-            ItemID.GRIMY_GUAM_LEAF,
-            ItemID.GRIMY_MARRENTILL,
-            ItemID.GRIMY_TARROMIN,
-            ItemID.GRIMY_HARRALANDER,
-            ItemID.GRIMY_RANARR_WEED,
-            ItemID.GRIMY_TOADFLAX,
-            ItemID.GRIMY_IRIT_LEAF,
-            ItemID.GRIMY_AVANTOE,
-            ItemID.GRIMY_KWUARM,
-            ItemID.GRIMY_SNAPDRAGON,
-            ItemID.GRIMY_CADANTINE,
-            ItemID.GRIMY_LANTADYME,
-            ItemID.GRIMY_DWARF_WEED,
-            ItemID.GRIMY_TORSTOL,
+            ItemID.WHITELILLY,
+            ItemID.UNIDENTIFIED_GUAM,
+            ItemID.UNIDENTIFIED_MARENTILL,
+            ItemID.UNIDENTIFIED_TARROMIN,
+            ItemID.UNIDENTIFIED_HARRALANDER,
+            ItemID.UNIDENTIFIED_RANARR,
+            ItemID.UNIDENTIFIED_TOADFLAX,
+            ItemID.UNIDENTIFIED_IRIT,
+            ItemID.UNIDENTIFIED_AVANTOE,
+            ItemID.UNIDENTIFIED_KWUARM,
+            ItemID.UNIDENTIFIED_SNAPDRAGON,
+            ItemID.UNIDENTIFIED_CADANTINE,
+            ItemID.UNIDENTIFIED_LANTADYME,
+            ItemID.UNIDENTIFIED_DWARF_WEED,
+            ItemID.UNIDENTIFIED_TORSTOL,
             ItemID.BARLEY,
             ItemID.HAMMERSTONE_HOPS,
             ItemID.ASGARNIAN_HOPS,
@@ -520,104 +419,91 @@ public class Constants {
             ItemID.KRANDORIAN_HOPS,
             ItemID.WILDBLOOD_HOPS,
             ItemID.REDBERRIES,
-            ItemID.CADAVA_BERRIES,
+            ItemID.CADAVABERRIES,
             ItemID.DWELLBERRIES,
             ItemID.JANGERBERRIES,
             ItemID.WHITE_BERRIES,
-            ItemID.POISON_IVY_BERRIES,
+            ItemID.POISONIVY_BERRIES,
             ItemID.COOKING_APPLE,
             ItemID.BANANA,
             ItemID.ORANGE,
             ItemID.CURRY_LEAF,
             ItemID.PINEAPPLE,
-            ItemID.PAPAYA_FRUIT,
+            ItemID.PAPAYA,
             ItemID.COCONUT,
             ItemID.DRAGONFRUIT,
             ItemID.GIANT_SEAWEED,
             ItemID.GRAPES,
-            ItemID.MUSHROOM,
+            ItemID.BITTERCAP_MUSHROOM,
             ItemID.CACTUS_SPINE,
-            ItemID.POTATO_CACTUS
+            ItemID.CACTUS_POTATO
     );
 
     public static final Set<Integer> TOOL_LEPRECHAUN_IDS = ImmutableSet.of(
-            NpcID.TOOL_LEPRECHAUN,
-            NpcID.TOOL_LEPRECHAUN_757,
-            NpcID.TOOL_LEPRECHAUN_7757,
-            NpcID.TOOL_LEPRECHAUN_12109,
-            NpcID.TOOL_LEPRECHAUN_12765
+            NpcID.FARMING_TOOLS_LEPRECHAUN,
+            NpcID.MYARM_LEPRECHAUN,
+            NpcID.FOSSIL_LEPRECHAUN_UNDERWATER,
+            NpcID.FARMING_TOOLS_LEPRECHAUN_DRAYNOR,
+            NpcID.FARMING_TOOLS_LEPRECHAUN_VARLAMORE
     );
 
     public static final Set<Integer> ALLOTMENT_PATCH_IDS = ImmutableSet.of(
-            NullObjectID.NULL_8550,
-            NullObjectID.NULL_8551,
-            NullObjectID.NULL_8552,
-            NullObjectID.NULL_8553,
-            NullObjectID.NULL_8554,
-            NullObjectID.NULL_8555,
-            NullObjectID.NULL_8556,
-            NullObjectID.NULL_8557,
-            NullObjectID.NULL_21950,
-            NullObjectID.NULL_27113,
-            NullObjectID.NULL_27114,
-            NullObjectID.NULL_33693,
-            NullObjectID.NULL_33694
+            ObjectID.FARMING_VEG_PATCH_1,
+            ObjectID.FARMING_VEG_PATCH_2,
+            ObjectID.FARMING_VEG_PATCH_3,
+            ObjectID.FARMING_VEG_PATCH_4,
+            ObjectID.FARMING_VEG_PATCH_5
     );
 
     public static final Set<Integer> FLOWER_PATCH_IDS = ImmutableSet.of(
-            NullObjectID.NULL_7847,
-            NullObjectID.NULL_7848,
-            NullObjectID.NULL_7849,
-            NullObjectID.NULL_7850,
-            NullObjectID.NULL_27111,
-            NullObjectID.NULL_33649
+            ObjectID.FARMING_FLOWER_PATCH_1,
+            ObjectID.FARMING_FLOWER_PATCH_2,
+            ObjectID.FARMING_FLOWER_PATCH_3,
+            ObjectID.FARMING_FLOWER_PATCH_4,
+            ObjectID.FARMING_FLOWER_PATCH_5
+            // ObjectID.NULL_33649 // No equivalent found, commented out
     );
 
     public static final Set<Integer> HERB_PATCH_IDS = ImmutableSet.of(
-            NullObjectID.NULL_8150,
-            NullObjectID.NULL_8151,
-            NullObjectID.NULL_8152,
-            NullObjectID.NULL_8153,
-            NullObjectID.NULL_9372,
-            NullObjectID.NULL_18816,
-            NullObjectID.NULL_27115,
-            NullObjectID.NULL_33176,
-            NullObjectID.NULL_33979
+            ObjectID.FARMING_HERB_PATCH_1,
+            ObjectID.FARMING_HERB_PATCH_2,
+            ObjectID.FARMING_HERB_PATCH_3,
+            ObjectID.FARMING_HERB_PATCH_4
     );
 
     public static final Set<Integer> HOPS_PATCH_IDS = ImmutableSet.of();
 
-    public static final Set<Integer> BUSH_PATCH_IDS = ImmutableSet.of(NullObjectID.NULL_34006);
+    public static final Set<Integer> BUSH_PATCH_IDS = ImmutableSet.of(34006);
 
     public static final Set<Integer> TREE_PATCH_IDS = ImmutableSet.of(
-            NullObjectID.NULL_8388,
-            NullObjectID.NULL_8389,
-            NullObjectID.NULL_8390,
-            NullObjectID.NULL_8391,
-            NullObjectID.NULL_19147,
-            NullObjectID.NULL_33732
+            ObjectID.FARMING_TREE_PATCH_1,
+            ObjectID.FARMING_TREE_PATCH_2,
+            ObjectID.FARMING_TREE_PATCH_3,
+            ObjectID.FARMING_TREE_PATCH_4,
+            ObjectID.FARMING_TREE_PATCH_5,
+            33732
     );
 
     public static final Set<Integer> FRUIT_TREE_PATCH_IDS = ImmutableSet.of(
-            NullObjectID.NULL_7962,
-            NullObjectID.NULL_7963,
-            NullObjectID.NULL_7964,
-            NullObjectID.NULL_7965,
-            NullObjectID.NULL_26579,
-            NullObjectID.NULL_34007
+            ObjectID.FARMING_FRUIT_TREE_PATCH_1,
+            ObjectID.FARMING_FRUIT_TREE_PATCH_2,
+            ObjectID.FARMING_FRUIT_TREE_PATCH_3,
+            ObjectID.FARMING_FRUIT_TREE_PATCH_4,
+            ObjectID.FARMING_FRUIT_TREE_PATCH_5,
+            34007
     );
 
     public static final Set<Integer> HARDWOOD_TREE_PATCH_IDS = ImmutableSet.of(
-            NullObjectID.NULL_30480,
-            NullObjectID.NULL_30481,
-            NullObjectID.NULL_30482
+            ObjectID.FARMING_HARDWOOD_TREE_PATCH_2,
+            ObjectID.FARMING_HARDWOOD_TREE_PATCH_3,
+            ObjectID.FARMING_HARDWOOD_TREE_PATCH_1
     );
 
-    public static final Set<Integer> SPIRIT_TREE_PATCH_IDS = ImmutableSet.of(NullObjectID.NULL_33733);
+    public static final Set<Integer> SPIRIT_TREE_PATCH_IDS = ImmutableSet.of(33733);
 
     public static final Set<Integer> SEAWEED_PATCH_IDS = ImmutableSet.of();
 
-    public static final Set<Integer> CACTUS_PATCH_IDS = ImmutableSet.of(NullObjectID.NULL_33761);
+    public static final Set<Integer> CACTUS_PATCH_IDS = ImmutableSet.of(33761);
 
     public static final Set<Integer> GRAPE_PATCH_IDS = ImmutableSet.of();
 
@@ -625,19 +511,19 @@ public class Constants {
 
     public static final Set<Integer> BELLADONNA_PATCH_IDS = ImmutableSet.of();
 
-    public static final Set<Integer> HESPORI_PATCH_IDS = ImmutableSet.of(NullObjectID.NULL_34630);
+    public static final Set<Integer> HESPORI_PATCH_IDS = ImmutableSet.of(34630);
 
-    public static final Set<Integer> ANIMA_PATCH_IDS = ImmutableSet.of(NullObjectID.NULL_33998);
+    public static final Set<Integer> ANIMA_PATCH_IDS = ImmutableSet.of(33998);
 
     public static final Set<Integer> CALQUAT_PATCH_IDS = ImmutableSet.of(
-            NullObjectID.NULL_7807
+            ObjectID.FARMING_CALQUAT_TREE_PATCH
     );
 
     public static final Set<Integer> CRYSTAL_PATCH_IDS = ImmutableSet.of();
 
-    public static final Set<Integer> CELASTRUS_PATCH_IDS = ImmutableSet.of(NullObjectID.NULL_34629);
+    public static final Set<Integer> CELASTRUS_PATCH_IDS = ImmutableSet.of(34629);
 
-    public static final Set<Integer> REDWOOD_PATCH_IDS = ImmutableSet.of(NullObjectID.NULL_34055);
+    public static final Set<Integer> REDWOOD_PATCH_IDS = ImmutableSet.of(34055);
 
     public static final Set<Integer> ALLOTMENT_SEED_IDS = ImmutableSet.of(
             ItemID.POTATO_SEED,
@@ -678,21 +564,21 @@ public class Constants {
 
     public static final Set<Integer> HOPS_SEED_IDS = ImmutableSet.of(
             ItemID.BARLEY_SEED,
-            ItemID.HAMMERSTONE_SEED,
-            ItemID.ASGARNIAN_SEED,
+            ItemID.HAMMERSTONE_HOP_SEED,
+            ItemID.ASGARNIAN_HOP_SEED,
             ItemID.JUTE_SEED,
-            ItemID.YANILLIAN_SEED,
-            ItemID.KRANDORIAN_SEED,
-            ItemID.WILDBLOOD_SEED
+            ItemID.YANILLIAN_HOP_SEED,
+            ItemID.KRANDORIAN_HOP_SEED,
+            ItemID.WILDBLOOD_HOP_SEED
     );
 
     public static final Set<Integer> BUSH_SEED_IDS = ImmutableSet.of(
-            ItemID.REDBERRY_SEED,
-            ItemID.CADAVABERRY_SEED,
-            ItemID.DWELLBERRY_SEED,
-            ItemID.JANGERBERRY_SEED,
-            ItemID.WHITEBERRY_SEED,
-            ItemID.POISON_IVY_SEED
+            ItemID.REDBERRY_BUSH_SEED,
+            ItemID.CADAVABERRY_BUSH_SEED,
+            ItemID.DWELLBERRY_BUSH_SEED,
+            ItemID.JANGERBERRY_BUSH_SEED,
+            ItemID.WHITEBERRY_BUSH_SEED,
+            ItemID.POISONIVY_BUSH_SEED
     );
 
     public static final Set<Integer> TREE_SEED_IDS = ImmutableSet.of(
@@ -700,64 +586,45 @@ public class Constants {
             ItemID.WILLOW_SEED,
             ItemID.MAPLE_SEED,
             ItemID.YEW_SEED,
-            ItemID.MAGIC_SEED,
+            ItemID.MAGIC_TREE_SEED,
             ItemID.APPLE_TREE_SEED,
             ItemID.BANANA_TREE_SEED,
             ItemID.ORANGE_TREE_SEED,
             ItemID.CURRY_TREE_SEED,
-            ItemID.PINEAPPLE_SEED,
+            ItemID.PINEAPPLE_TREE_SEED,
             ItemID.PAPAYA_TREE_SEED,
             ItemID.PALM_TREE_SEED,
             ItemID.DRAGONFRUIT_TREE_SEED,
             ItemID.TEAK_SEED,
             ItemID.MAHOGANY_SEED,
             ItemID.CALQUAT_TREE_SEED,
-            ItemID.CRYSTAL_SEED,
-            ItemID.SPIRIT_SEED,
-            ItemID.CELASTRUS_SEED,
+            ItemID.SOTE_CRYSTAL_SEED_DEAD,
+            ItemID.SPIRIT_TREE_SEED,
+            ItemID.CELASTRUS_TREE_SEED,
             ItemID.REDWOOD_TREE_SEED
     );
 
     public static final Set<Integer> TREE_SEEDLING_IDS = ImmutableSet.of(
-            ItemID.OAK_SEEDLING,
-            ItemID.WILLOW_SEEDLING,
-            ItemID.MAPLE_SEEDLING,
-            ItemID.YEW_SEEDLING,
-            ItemID.MAGIC_SEEDLING,
-            ItemID.APPLE_SEEDLING,
-            ItemID.BANANA_SEEDLING,
-            ItemID.ORANGE_SEEDLING,
-            ItemID.CURRY_SEEDLING,
-            ItemID.PINEAPPLE_SEEDLING,
-            ItemID.PAPAYA_SEEDLING,
-            ItemID.PALM_SEEDLING,
-            ItemID.DRAGONFRUIT_SEEDLING,
-            ItemID.TEAK_SEEDLING,
-            ItemID.MAHOGANY_SEEDLING,
-            ItemID.CALQUAT_SEEDLING,
-            ItemID.CRYSTAL_SEEDLING,
-            ItemID.SPIRIT_SEEDLING,
-            ItemID.CELASTRUS_SEEDLING,
-            ItemID.REDWOOD_SEEDLING
+            ItemID.PLANTPOT_ACORN,
+            ItemID.PLANTPOT_WILLOW_SEED,
+            ItemID.PLANTPOT_MAPLE_SEED,
+            ItemID.PLANTPOT_YEW_SEED
     );
 
     public static final Set<Integer> TREE_SAPLING_IDS = ImmutableSet.of(
-            ItemID.OAK_SAPLING,
-            ItemID.WILLOW_SAPLING,
-            ItemID.MAPLE_SAPLING,
-            ItemID.YEW_SAPLING,
-            ItemID.MAGIC_SAPLING
+            ItemID.PLANTPOT_OAK_SAPLING,
+            ItemID.PLANTPOT_WILLOW_SAPLING,
+            ItemID.PLANTPOT_MAPLE_SAPLING,
+            ItemID.PLANTPOT_YEW_SAPLING,
+            5374 // MAGIC_SAPLING
     );
 
     public static final Set<Integer> FRUIT_TREE_SAPLING_IDS = ImmutableSet.of(
-            ItemID.APPLE_SAPLING,
-            ItemID.BANANA_SAPLING,
-            ItemID.ORANGE_SAPLING,
-            ItemID.CURRY_SAPLING,
-            ItemID.PINEAPPLE_SAPLING,
-            ItemID.PAPAYA_SAPLING,
-            ItemID.PALM_SAPLING,
-            ItemID.DRAGONFRUIT_SAPLING
+            ItemID.PLANTPOT_APPLE_SAPLING,
+            ItemID.PLANTPOT_BANANA_SAPLING,
+            ItemID.PLANTPOT_ORANGE_SAPLING,
+            ItemID.PLANTPOT_CURRY_SAPLING,
+            ItemID.PLANTPOT_PINEAPPLE_SAPLING
     );
 
     public static final Set<Integer> HARDWOOD_TREE_SAPLING_IDS = ImmutableSet.of(
@@ -1310,7 +1177,7 @@ public class Constants {
                     ObjectID.BANK_BOOTH_10527,
                     ObjectID.BANK_BOOTH_10583,
                     ObjectID.BANK_BOOTH_10584,
-                    NullObjectID.NULL_10777,
+                    ObjectID.NULL_10777,
                     ObjectID.BANK_BOOTH_11338,
                     ObjectID.BANK_BOOTH_12798,
                     ObjectID.BANK_BOOTH_12799,
@@ -1349,7 +1216,7 @@ public class Constants {
                     ObjectID.BANK_BOOTH_28548,
                     ObjectID.BANK_BOOTH_28549,
                     ObjectID.BANK_BOOTH_32666,
-                    NullObjectID.NULL_34810,
+                    ObjectID.NULL_34810,
                     ObjectID.BANK_BOOTH_36559,
                     ObjectID.BANK_BOOTH_37959,
                     ObjectID.BANK_BOOTH_39238,
@@ -1380,7 +1247,7 @@ public class Constants {
                     ObjectID.BANK_CHEST_41315,
                     ObjectID.BANK_CHEST_41493,
                     ObjectID.BANK_CHEST_43697,
-                    NullObjectID.NULL_12308,
+                    ObjectID.NULL_12308,
                     ObjectID.BANK_CHEST_44630,
                     ObjectID.GRAND_EXCHANGE_BOOTH,
                     ObjectID.GRAND_EXCHANGE_BOOTH_10061,

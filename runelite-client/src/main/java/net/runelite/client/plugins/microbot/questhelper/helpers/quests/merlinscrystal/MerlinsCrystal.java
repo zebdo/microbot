@@ -26,8 +26,8 @@ package net.runelite.client.plugins.microbot.questhelper.helpers.quests.merlinsc
 
 
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.NpcID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.NpcID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.BasicQuestHelper;
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicType;
@@ -139,20 +139,20 @@ public class MerlinsCrystal extends BasicQuestHelper {
     protected void setupRequirements() {
         bread = new ItemRequirement("Bread", ItemID.BREAD);
         tinderbox = new ItemRequirement("Tinderbox", ItemID.TINDERBOX).isNotConsumed();
-        bucketOfWaxOptional = new ItemRequirement("Bucket of wax", ItemID.BUCKET_OF_WAX);
+        bucketOfWaxOptional = new ItemRequirement("Bucket of wax", ItemID.BUCKET_WAX);
         bucketOfWaxOptional.canBeObtainedDuringQuest();
-        bucketOfWax = new ItemRequirement("Bucket of wax", ItemID.BUCKET_OF_WAX);
+        bucketOfWax = new ItemRequirement("Bucket of wax", ItemID.BUCKET_WAX);
         batBones = new ItemRequirement("Bat bones", ItemID.BAT_BONES);
         batBonesOptional = new ItemRequirement("Bat bones", ItemID.BAT_BONES);
         batBonesOptional.canBeObtainedDuringQuest();
-        varrockTeleport = new ItemRequirement("Teleport to Varrock", ItemID.VARROCK_TELEPORT);
-        camelotTeleport = new ItemRequirement("Teleport to Camelot", ItemID.CAMELOT_TELEPORT);
-        twoFaladorTeleports = new ItemRequirement("Teleports to Falador", ItemID.FALADOR_TELEPORT, 2);
+        varrockTeleport = new ItemRequirement("Teleport to Varrock", ItemID.POH_TABLET_VARROCKTELEPORT);
+        camelotTeleport = new ItemRequirement("Teleport to Camelot", ItemID.POH_TABLET_CAMELOTTELEPORT);
+        twoFaladorTeleports = new ItemRequirement("Teleports to Falador", ItemID.POH_TABLET_FALADORTELEPORT, 2);
         combatGear = new ItemRequirement("Combat gear + food for Sir Mordred (level 39)", -1, -1).isNotConsumed();
         combatGear.setDisplayItemId(BankSlotIcons.getCombatGear());
-        bucket = new ItemRequirement("Bucket", ItemID.BUCKET);
+        bucket = new ItemRequirement("Bucket", ItemID.BUCKET_EMPTY);
         repellent = new ItemRequirement("Insect repellent", ItemID.INSECT_REPELLENT).isNotConsumed();
-        blackCandle = new ItemRequirement("Black candle", ItemID.BLACK_CANDLE);
+        blackCandle = new ItemRequirement("Black candle", ItemID.UNLIT_BLACK_CANDLE);
         litBlackCandle = new ItemRequirement("Lit black candle", ItemID.LIT_BLACK_CANDLE);
         excalibur = new ItemRequirement("Excalibur", ItemID.EXCALIBUR).isNotConsumed();
         equippedExcalibur = excalibur.equipped();
@@ -182,13 +182,13 @@ public class MerlinsCrystal extends BasicQuestHelper {
         inCamelot1 = new ZoneRequirement(camelot1);
         inCamelot2 = new ZoneRequirement(camelot2);
         morganNearby = new NpcCondition(NpcID.MORGAN_LE_FAYE);
-        clearedHive = new ObjectCondition(ObjectID.BEEHIVE_305);
+        clearedHive = new ObjectCondition(ObjectID.BEEHIVE);
         hasAnyBlackCandle = new Conditions(LogicType.OR, blackCandle, litBlackCandle);
-        beggarNearby = new NpcCondition(NpcID.BEGGAR);
+        beggarNearby = new NpcCondition(NpcID.LAKE_BEGGAR);
         talkedToLady = new Conditions(true, new DialogRequirement(questHelperPlugin.getPlayerStateManager().getPlayerName(), "Ok. That seems easy enough.", false));
         hasReadSpell = new Conditions(true, LogicType.AND, new WidgetTextRequirement(229, 1, "You find a small inscription"));
         inStar = new ZoneRequirement(star);
-        thrantaxNearby = new NpcCondition(NpcID.THRANTAX_THE_MIGHTY);
+        thrantaxNearby = new NpcCondition(NpcID.THRANTAX);
         inCamelotTower1 = new ZoneRequirement(camelotTower1);
         inCamelotTower2 = new ZoneRequirement(camelotTower2);
     }
@@ -200,20 +200,20 @@ public class MerlinsCrystal extends BasicQuestHelper {
         talkToGawain = new NpcStep(this, NpcID.SIR_GAWAIN, new WorldPoint(2758, 3504, 0), "Talk to Sir Gawain about how Merlin got trapped.");
         talkToGawain.addDialogStep("Do you know how Merlin got trapped?");
 
-        goUpstairsInCamelot = new ObjectStep(this, ObjectID.STAIRCASE_26106, new WorldPoint(2751, 3511, 0), "Go upstairs to talk to Lancelot.");
+        goUpstairsInCamelot = new ObjectStep(this, ObjectID.KR_CAM_WOODENSTAIRS, new WorldPoint(2751, 3511, 0), "Go upstairs to talk to Lancelot.");
 
         talkToLancelot = new NpcStep(this, NpcID.SIR_LANCELOT, new WorldPoint(2760, 3511, 1), "Talk to Sir Lancelot about getting into Morgan Le Faye's stronghold.");
         talkToLancelot.addDialogStep("Any ideas on how to get into Morgan Le Faye's stronghold?");
         talkToLancelot.addDialogStep("Thank you for the information.");
 
-        goBackDownStairsCamelot = new ObjectStep(this, ObjectID.STAIRCASE_25604, new WorldPoint(2751, 3512, 1), "Hide in Arhein's crate behind the Candle Maker's shop in Catherby.");
+        goBackDownStairsCamelot = new ObjectStep(this, ObjectID.KR_CAM_WOODENSTAIRSTOP, new WorldPoint(2751, 3512, 1), "Hide in Arhein's crate behind the Candle Maker's shop in Catherby.");
 
-        hideInArheinCrate = new ObjectStep(this, ObjectID.CRATE_63, new WorldPoint(2801, 3442, 0), "Hide in Arhein's crate behind the Candle Maker's shop in Catherby.");
+        hideInArheinCrate = new ObjectStep(this, ObjectID.MERLINCRATE_EMPTY, new WorldPoint(2801, 3442, 0), "Hide in Arhein's crate behind the Candle Maker's shop in Catherby.");
         hideInArheinCrate.addSubSteps(goBackDownStairsCamelot);
         hideInArheinCrate.addDialogStep("Yes.");
 
-        goToFirstFloor = new ObjectStep(this, ObjectID.STAIRCASE_15645, new WorldPoint(2770, 3405, 0), "Go up the stairs in the fortress.");
-        goToSecondFloor = new ObjectStep(this, ObjectID.STAIRCASE_15645, new WorldPoint(2770, 3399, 1), "Go up another floor.");
+        goToFirstFloor = new ObjectStep(this, ObjectID.STAIRS, new WorldPoint(2770, 3405, 0), "Go up the stairs in the fortress.");
+        goToSecondFloor = new ObjectStep(this, ObjectID.STAIRS, new WorldPoint(2770, 3399, 1), "Go up another floor.");
         attackMordred = new NpcStep(this, NpcID.SIR_MORDRED, new WorldPoint(2770, 3403, 2), "Attack Sir Mordred down to 0hp to cause Morgan Le Faye to spawn.");
         attackMordred.addDialogStep("Tell me how to untrap Merlin and I might.");
         attackMordred.addDialogStep("Ok I will do all that.");
@@ -229,20 +229,20 @@ public class MerlinsCrystal extends BasicQuestHelper {
         talkToCandleMaker = new NpcStep(this, NpcID.CANDLE_MAKER, new WorldPoint(2797, 3440, 0), "Talk to the Candle Maker in Catherby twice until he gives you a black candle.", bucketOfWax);
         talkToCandleMaker.addDialogStep("Have you got any black candles?");
 
-        talkToLadyOfLake = new NpcStep(this, NpcID.THE_LADY_OF_THE_LAKE, new WorldPoint(2924, 3404, 0), "Talk to the Lady of the Lake in Taverley.");
+        talkToLadyOfLake = new NpcStep(this, NpcID.LADYOFTHELAKE, new WorldPoint(2924, 3404, 0), "Talk to the Lady of the Lake in Taverley.");
         talkToLadyOfLake.addDialogStep("I seek the sword Excalibur.");
         talkToLadyOfLake.setLockingCondition(talkedToLady);
 
-        enterSarimShopAndTalk = new ObjectStep(this, ObjectID.DOOR_59, new WorldPoint(3016, 3246, 0), "Attempt to enter the jewelery store in Port Sarim.", bread);
+        enterSarimShopAndTalk = new ObjectStep(this, ObjectID.JEWELLERSDOOR, new WorldPoint(3016, 3246, 0), "Attempt to enter the jewelery store in Port Sarim.", bread);
         enterSarimShopAndTalk.addDialogStep("Yes certainly.");
-        talkToBeggar = new ObjectStep(this, ObjectID.DOOR_59, new WorldPoint(3016, 3246, 0), "Talk to the beggar who appears and give him some bread.", bread);
+        talkToBeggar = new ObjectStep(this, ObjectID.JEWELLERSDOOR, new WorldPoint(3016, 3246, 0), "Talk to the beggar who appears and give him some bread.", bread);
         talkToBeggar.addDialogStep("Yes certainly.");
 
         goReadMagicWords = new ObjectStep(this, ObjectID.CHAOS_ALTAR, new WorldPoint(3260, 3381, 0), "Check the altar in the Zamorak Temple in south east Varrock. If you've already learnt the spell, just mark this step complete in the Quest Helper sidebar.");
         goReadMagicWords.setLockingCondition(hasReadSpell);
 
-        returnToCamelot = new ObjectStep(this, ObjectID.GATE_26082, new WorldPoint(2758, 3482, 0), "Return to Camelot", excalibur, blackCandle, batBones, tinderbox);
-        returnToCamelotLit = new ObjectStep(this, ObjectID.GATE_26082, new WorldPoint(2758, 3482, 0), "Return to Camelot", excalibur, litBlackCandle, batBones);
+        returnToCamelot = new ObjectStep(this, ObjectID.KR_CAMELOT_METALGATECLOSEDR, new WorldPoint(2758, 3482, 0), "Return to Camelot", excalibur, blackCandle, batBones, tinderbox);
+        returnToCamelotLit = new ObjectStep(this, ObjectID.KR_CAMELOT_METALGATECLOSEDR, new WorldPoint(2758, 3482, 0), "Return to Camelot", excalibur, litBlackCandle, batBones);
 
         goStandInStar = new DetailedQuestStep(this, new WorldPoint(2780, 3515, 0), "Go stand in the star symbol north east of Camelot Castle.");
         goStandInStar.addDialogStep("Snarthon Candtrick Termanto");
@@ -253,13 +253,13 @@ public class MerlinsCrystal extends BasicQuestHelper {
         sayWords = new DetailedQuestStep(this, "Say the spell 'Snarthon Candtrick Termanto'. Be careful not to click the wrong option or you'll have to get another Black Candle.", excalibur);
         sayWords.addDialogStep("Snarthon Candtrick Termanto");
 
-        goUpLadder1Camelot = new ObjectStep(this, ObjectID.LADDER_26107, new WorldPoint(2769, 3493, 0), "Go up the ladder in the south east of Camelot castle.", equippedExcalibur);
-        goUpLadder2Camelot = new ObjectStep(this, ObjectID.LADDER_26107, new WorldPoint(2767, 3491, 1), "Go up the next ladder.", equippedExcalibur);
+        goUpLadder1Camelot = new ObjectStep(this, ObjectID.KR_CAM_LADDER, new WorldPoint(2769, 3493, 0), "Go up the ladder in the south east of Camelot castle.", equippedExcalibur);
+        goUpLadder2Camelot = new ObjectStep(this, ObjectID.KR_CAM_LADDER, new WorldPoint(2767, 3491, 1), "Go up the next ladder.", equippedExcalibur);
 
-        smashCrystal = new ObjectStep(this, ObjectID.GIANT_CRYSTAL, new WorldPoint(2768, 3494, 2), "Smash the Giant Crystal with Excalibur equipped.", equippedExcalibur);
+        smashCrystal = new ObjectStep(this, ObjectID.MERLINS_CRYSTAL, new WorldPoint(2768, 3494, 2), "Smash the Giant Crystal with Excalibur equipped.", equippedExcalibur);
 
-        goDownLadder1Camelot = new ObjectStep(this, ObjectID.LADDER_25606, new WorldPoint(2769, 3493, 1), "Tell King Arthur you've freed Merlin.");
-        goDownLadder2Camelot = new ObjectStep(this, ObjectID.LADDER_25606, new WorldPoint(2767, 3491, 2), "Tell King Arthur you've freed Merlin.");
+        goDownLadder1Camelot = new ObjectStep(this, ObjectID.KR_CAM_LADDERTOP, new WorldPoint(2769, 3493, 1), "Tell King Arthur you've freed Merlin.");
+        goDownLadder2Camelot = new ObjectStep(this, ObjectID.KR_CAM_LADDERTOP, new WorldPoint(2767, 3491, 2), "Tell King Arthur you've freed Merlin.");
 
         finishQuest = new NpcStep(this, NpcID.KING_ARTHUR, new WorldPoint(2763, 3513, 0), "Tell King Arthur you've freed Merlin.");
         finishQuest.addSubSteps(goDownLadder1Camelot, goDownLadder2Camelot);

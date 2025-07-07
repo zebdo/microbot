@@ -9,8 +9,8 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 @Getter
 @RequiredArgsConstructor
 public enum HardTreeEnums {
-    TEAK("Teak sapling", ItemID.TEAK_SAPLING, ItemID.LIMPWURT_ROOT, 15,75),
-    MAHOGANY("Mahogany sapling", ItemID.MAHOGANY_SAPLING, ItemID.LIMPWURT_ROOT, 15,75);
+    TEAK("Teak sapling", ItemID.PLANTPOT_TEAK_SAPLING, ItemID.LIMPWURT_ROOT, 15,75),
+    MAHOGANY("Mahogany sapling", ItemID.PLANTPOT_MAHOGANY_SAPLING, ItemID.LIMPWURT_ROOT, 15,75);
 
 
     private final String name;

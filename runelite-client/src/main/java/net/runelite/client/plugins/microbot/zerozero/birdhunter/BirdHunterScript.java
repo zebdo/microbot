@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.zerozero.birdhunter;
 
 import lombok.Getter;
 import net.runelite.api.GameObject;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.LocalPoint;
