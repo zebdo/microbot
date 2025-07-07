@@ -8,6 +8,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.ConditionType;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.enums.RepeatCycle;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.ui.TimeConditionPanelUtil;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 
 import java.time.Duration;
@@ -56,8 +57,8 @@ public class TimeWindowCondition extends TimeCondition {
     private transient LocalDateTime currentEndDateTime;
    
     // Randomization
-    private transient boolean useRandomization = false;
-    private transient int randomizerValue = 0; // Randomization value, depends on the repeat cycle
+    private boolean useRandomization = false;
+    private int randomizerValue = 0; // Randomization value, depends on the repeat cycle
     // randomizerValueUnit is now automatically determined based on repeatCycle - no longer stored as field
     // Cached timezone for computation - not serialized
     private transient ZoneId zoneId;
@@ -131,7 +132,8 @@ public class TimeWindowCondition extends TimeCondition {
             LocalDate endDate,
             RepeatCycle repeatCycle,
             int repeatIntervalUnit,
-            long maximumNumberOfRepeats) {
+            long maximumNumberOfRepeats
+            ) {
         super(maximumNumberOfRepeats);
                 
         this.startTime = startTime;
@@ -144,7 +146,7 @@ public class TimeWindowCondition extends TimeCondition {
         this.lastValidResetTime = LocalDateTime.now();
         transientNumberOfResetsWithinDailyInterval = 0;
         this.randomizerValue = 0;
-        this.useRandomization = true;
+        this.useRandomization = false;
         
         // Initialize next window times based on repeat cycle
         calculateNextWindow(getNow().toLocalDateTime());
@@ -356,6 +358,7 @@ public class TimeWindowCondition extends TimeCondition {
                 nextStartTime = referenceTime;
                 break;
         }
+        log.info("Base next start time calculated: \n\t{}\n\t{}", nextStartTime);
         
         // Apply user-configured randomization if enabled
         if (useRandomization && randomizerValue > 0) {
@@ -389,11 +392,11 @@ public class TimeWindowCondition extends TimeCondition {
                     break;
             }
             
-            log.debug("Applied randomization: {} {} offset to next trigger time. Base: {}, Final: {} (capped from {} to {})", 
+            log.info("Applied randomization: {} {} offset to next trigger time. Base: {}, Final: {} (capped from {} to {})", 
                 randomOffset, randomUnit, baseTime, nextStartTime, 
                 randomizerValue, cappedRandomizerValue);
         }
-        
+        log.info("Next start time after randomization: {}", nextStartTime);
         return nextStartTime;
     }
     
@@ -406,45 +409,8 @@ public class TimeWindowCondition extends TimeCondition {
     private int calculateMaxAllowedRandomization() {
         // Convert interval to the same unit as randomization for comparison
         RepeatCycle randomUnit = getAutomaticRandomizerValueUnit();
-        
+        return TimeConditionPanelUtil.calculateMaxAllowedRandomization(getRepeatCycle(), getRepeatIntervalUnit());
         // Calculate total interval in the randomization unit
-        long totalIntervalInRandomUnit;
-        switch (repeatCycle) {
-            case MINUTES:
-                totalIntervalInRandomUnit = convertToRandomizationUnit(repeatIntervalUnit, RepeatCycle.MINUTES, randomUnit);
-                break;
-            case HOURS:
-                totalIntervalInRandomUnit = convertToRandomizationUnit(repeatIntervalUnit, RepeatCycle.HOURS, randomUnit);
-                break;
-            case DAYS:
-                totalIntervalInRandomUnit = convertToRandomizationUnit(repeatIntervalUnit, RepeatCycle.DAYS, randomUnit);
-                break;
-            case WEEKS:
-                totalIntervalInRandomUnit = convertToRandomizationUnit(repeatIntervalUnit, RepeatCycle.WEEKS, randomUnit);
-                break;
-            case ONE_TIME:
-                // For one-time, allow up to 1 hour of randomization
-                return randomUnit == RepeatCycle.HOURS ? 1 : 
-                       randomUnit == RepeatCycle.MINUTES ? 60 : 
-                       randomUnit == RepeatCycle.SECONDS ? 3600 : 15;
-            default:
-                return 15; // Default fallback
-        }
-        
-        // Allow randomization up to 40% of the total interval, but apply sensible caps
-        int maxRandomization = (int) Math.min(totalIntervalInRandomUnit * 0.4, totalIntervalInRandomUnit / 2);
-        
-        // Apply caps based on randomization unit to prevent excessive randomization
-        switch (randomUnit) {
-            case SECONDS:
-                return Math.min(maxRandomization, 3600); // Max 1 hour in seconds
-            case MINUTES:
-                return Math.min(maxRandomization, 720); // Max 12 hours in minutes
-            case HOURS:
-                return Math.min(maxRandomization, 48); // Max 2 days in hours
-            default:
-                return Math.min(maxRandomization, 60); // Default to 1 hour equivalent
-        }
     }
     
     /**
@@ -455,7 +421,7 @@ public class TimeWindowCondition extends TimeCondition {
      * @param toUnit The target unit
      * @return The converted value
      */
-    private long convertToRandomizationUnit(int value, RepeatCycle fromUnit, RepeatCycle toUnit) {
+    public static long convertToRandomizationUnit(int value, RepeatCycle fromUnit, RepeatCycle toUnit) {
         // Convert to seconds first, then to target unit
         long totalSeconds;
         switch (fromUnit) {
@@ -928,23 +894,25 @@ public class TimeWindowCondition extends TimeCondition {
         sb.append("  ├─ Randomization ────────────────────────────\n");
         sb.append("  │ Randomization: ").append(useRandomization ? "Enabled" : "Disabled").append("\n");
         if (useRandomization) {
-            sb.append("  │ Random Range: ±").append(randomizerValue);
-            switch (repeatCycle) {
-                case MINUTES:
-                    sb.append(" millisec\n");
-                    break;
-                case HOURS:
-                    sb.append(" seconds\n");
-                    break;
-                case DAYS:
-                    sb.append(" minutes\n");
-                    break;         
-                case WEEKS:
-                    sb.append(" hours\n");
-                    break;   
-                default:
-                    break;
+            RepeatCycle randomUnit = getAutomaticRandomizerValueUnit();
+            int maxAllowedRandomization = calculateMaxAllowedRandomization();
+            int cappedRandomizerValue = Math.min(randomizerValue, maxAllowedRandomization);
+            
+            // Original configured value
+            sb.append("  │ Random Range: ±").append(randomizerValue).append(" ").append(randomUnit.toString().toLowerCase()).append("\n");
+            
+            // Actual capped value used in calculations
+            if (cappedRandomizerValue != randomizerValue) {
+                sb.append("  │ Capped Range: ±").append(cappedRandomizerValue).append(" ").append(randomUnit.toString().toLowerCase())
+                  .append(" (limited from ").append(randomizerValue).append(")\n");
             }
+            
+            // Maximum allowed randomization for this interval
+            sb.append("  │ Max Allowed: ±").append(maxAllowedRandomization).append(" ").append(randomUnit.toString().toLowerCase()).append("\n");
+            
+            // Show the automatic unit determination
+            sb.append("  │ Random Unit: ").append(randomUnit.toString().toLowerCase())
+              .append(" (auto-determined from ").append(repeatCycle.toString().toLowerCase()).append(" cycle)\n");
         }
         
         // Tracking info
@@ -989,7 +957,7 @@ public class TimeWindowCondition extends TimeCondition {
         DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
         
         // Basic description
-        sb.append("Time Window Condition: Active from ").append(startTime.format(timeFormatter))
+        sb.append("\nTime Window Condition:\ntActive from ").append(startTime.format(timeFormatter))
           .append(" to ").append(endTime.format(timeFormatter)).append("\n");
         
         // Repeat cycle

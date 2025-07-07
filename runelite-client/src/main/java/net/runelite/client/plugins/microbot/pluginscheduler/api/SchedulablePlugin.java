@@ -102,24 +102,7 @@ public interface SchedulablePlugin {
     
     public void onPluginScheduleEntrySoftStopEvent(PluginScheduleEntrySoftStopEvent event);
     
-    /**
-     * Handles the {@link PluginScheduleEntryFinishedEvent} posted when a plugin self-reports completion.
-     * <p>
-     * This event handler is automatically called when a plugin posts a PluginScheduleEntryFinishedEvent
-     * to indicate it has completed its task and should be stopped. The default implementation
-     * allows the scheduler to know when to stop the plugin even when stop conditions aren't met.
-     * <p>
-     * Plugin developers should generally not override this method unless they need
-     * custom finished behavior.
-     * <p>
-     * Note: This is an EventBus subscriber method and requires the implementing
-     * plugin to be registered with the EventBus for it to be called.
-     *
-     * @param event The finished event containing the plugin reference and reason information
-     */
-    default public void onPluginScheduleEntryFinishedEvent(PluginScheduleEntryFinishedEvent event) {
-        // Default implementation does nothing - handled by scheduler
-    }
+    
     
     /**
      * Allows a plugin to report that it has finished its task and is ready to be stopped.
@@ -188,9 +171,9 @@ public interface SchedulablePlugin {
             return;
         }else{
             if (success) {
-                Microbot.log("\nPlugin [" + this.getClass().getSimpleName() + "] finished: " + reasonExt, Level.INFO);
+                Microbot.log(reasonExt, Level.INFO);
             } else {
-                Microbot.log("\nPlugin [" + this.getClass().getSimpleName() + "] finished with error: " + reasonExt, Level.ERROR);
+                Microbot.log(reasonExt, Level.ERROR);
             }            
             Microbot.getEventBus().post(new PluginScheduleEntryFinishedEvent(
                 (Plugin) this, // "this" will be the plugin instance
@@ -211,7 +194,7 @@ public interface SchedulablePlugin {
      * 
      * @return true if this plugin supports being forcibly terminated, false otherwise
      */
-    default public boolean isHardStoppable(){
+    default public boolean allowHardStop(){
         return false;
     }
 

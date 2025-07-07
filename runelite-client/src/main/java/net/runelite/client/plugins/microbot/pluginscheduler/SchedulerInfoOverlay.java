@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.pluginscheduler;
 
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
@@ -11,6 +12,7 @@ import net.runelite.client.ui.overlay.components.TitleComponent;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
+import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import javax.inject.Inject;
 import java.awt.*;
@@ -24,7 +26,7 @@ public class SchedulerInfoOverlay extends OverlayPanel {
     SchedulerInfoOverlay(SchedulerPlugin plugin, SchedulerConfig config) {
         super(plugin);
         this.plugin = plugin;
-        setPosition(OverlayPosition.TOP_CENTER);
+        setPosition(OverlayPosition.TOP_LEFT);
         setNaughty();
     }
 
@@ -148,7 +150,8 @@ public class SchedulerInfoOverlay extends OverlayPanel {
      */
     private boolean shouldHideOverlay() {
         try {
-            return Rs2Bank.isOpen() || Rs2Shop.isOpen() || Rs2GrandExchange.isOpen();
+            return Rs2Bank.isOpen() || Rs2Shop.isOpen() || Rs2GrandExchange.isOpen()|| Rs2Widget.isDepositBoxWidgetOpen() || !Rs2Widget.isHidden(InterfaceID.BankpinKeypad.UNIVERSE);
+                   
         } catch (Exception e) {
             // Fallback - don't hide if there's an issue checking
             return false;

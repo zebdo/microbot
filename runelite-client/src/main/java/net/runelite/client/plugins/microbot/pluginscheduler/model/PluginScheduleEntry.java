@@ -137,7 +137,7 @@ public class PluginScheduleEntry implements AutoCloseable {
     private ZonedDateTime stopInitiatedTime; // When the first stop was attempted
     private ZonedDateTime lastStopAttemptTime; // When the last stop attempt was made
     private Duration softStopRetryInterval = Duration.ofSeconds(30); // Default 30 seconds between retries
-    private Duration hardStopTimeout = Duration.ofMinutes(4); // Default 2 Minutes before hard stop
+    private Duration hardStopTimeout = Duration.ofMinutes(4); // Default 4 Minutes before hard stop
 
     
     private transient Thread stopMonitorThread;
@@ -534,27 +534,27 @@ public class PluginScheduleEntry implements AutoCloseable {
             startConditionManager.registerEvents();            
             stopConditionManager.unregisterEvents();
             
-            Microbot.getClientThread().runOnSeperateThread(() -> {
+            Microbot.getClientThread().runOnClientThreadOptional(() -> {
                 ZonedDateTime current_time = ZonedDateTime.now(ZoneId.systemDefault());
                 Microbot.getEventBus().post(new PluginScheduleEntrySoftStopEvent(plugin, current_time));
-                return false;                
+                return true;                
             });
-            
-            stopInitiated = true;
-            stopInitiatedTime = ZonedDateTime.now();
-            
+            if(!stopInitiated){
+                this.stopInitiated = true;
+                this.stopInitiatedTime = ZonedDateTime.now();
+            }            
             // If no custom stop reason was set, use the default reason from the enum
             if (lastStopReason == null && lastStopReasonType != null) {
                 lastStopReason = lastStopReasonType.getDescription();
             }
-            lastStopAttemptTime = ZonedDateTime.now();
-            lastRunDuration = Duration.between(lastRunStartTime, ZonedDateTime.now());
-            lastRunEndTime = ZonedDateTime.now();
+            this.lastStopAttemptTime = ZonedDateTime.now();
+            this.lastRunDuration = Duration.between(lastRunStartTime, ZonedDateTime.now());
+            this.lastRunEndTime = ZonedDateTime.now();
             // Start monitoring for successful stop
             startStopMonitoringThread(successfulRun);            
 
             if (getPlugin() instanceof SchedulablePlugin) {
-                log.info("Unregistering stopping conditions for plugin '{}'", name);
+                log.info("soft stopping  for plugin '{}'", name);
             }
             return;
         } catch (Exception e) {
@@ -586,21 +586,20 @@ public class PluginScheduleEntry implements AutoCloseable {
                 Microbot.stopPlugin(stopPlugin);
                 return false;
             });
-            stopInitiated = true;
-            stopInitiatedTime = ZonedDateTime.now();
-            lastStopAttemptTime = ZonedDateTime.now();
-            
+            if(!stopInitiated){
+                stopInitiated = true;
+                stopInitiatedTime = ZonedDateTime.now();
+            }
+            lastStopAttemptTime = ZonedDateTime.now();            
             // Set these fields to match what softStop does
             lastRunDuration = Duration.between(lastRunStartTime, ZonedDateTime.now());
-            lastRunEndTime = ZonedDateTime.now();
-            
+            lastRunEndTime = ZonedDateTime.now();            
             // Also set a descriptive stop reason if one isn't already set
             if (lastStopReason == null) {
                 lastStopReason = lastStopReasonType != null && lastStopReasonType == StopReason.HARD_STOP 
                     ? lastStopReasonType.getDescription() 
                     : "Plugin was forcibly stopped after not responding to soft stop";
-            }
-            
+            }            
             // Start monitoring for successful stop
             startStopMonitoringThread(successfulRun);
             
@@ -634,7 +633,7 @@ public class PluginScheduleEntry implements AutoCloseable {
         
         stopMonitorThread = new Thread(() -> {
             StringBuilder logMsg = new StringBuilder();
-            logMsg.append("\n\tStop monitoring thread started for plugin '").append(getCleanName()).append("'");
+            logMsg.append("\n\tMonitoring thread started for stopping the plugin '").append(getCleanName()).append("' ");
             log.info(logMsg.toString());
             
             try {
@@ -652,43 +651,54 @@ public class PluginScheduleEntry implements AutoCloseable {
                             logMsg.append("\n unset \"scheduleMode\" - flag in the config. of the plugin '").append(getCleanName()).append("'");
                         }
                         
-                        // Update lastRunTime and start conditions for next run
-                        if (successfulRun) {
-                            resetStartConditions();                            
-                        } else {
-                            setEnabled(false); // disable the plugin if it was not successful?
-                        }
-                        log.info(logMsg.toString());
-                        logStopConditionsWithDetails();
                         
-                        // Reset stop state
-                        stopInitiated = false;
-                        hasStarted = false;
-                        stopInitiatedTime = null;
-                        lastStopAttemptTime = null;
-                        
-                        // Invoke the stop completion callback if one is registered
-                        if (stopCompletionCallback != null) {
-                            try {
-                                stopCompletionCallback.onStopCompleted(PluginScheduleEntry.this, successfulRun);
-                                log.debug("Stop completion callback executed for plugin '{}'", name);
-                            } catch (Exception e) {
-                                log.error("Error executing stop completion callback for plugin '{}'", name, e);
-                            }
-                        }
                         
                         break;
                     }
+                    else {
+                        // Plugin is still running, log the status
+                        if (stopInitiatedTime != null && Duration.between(stopInitiatedTime, ZonedDateTime.now()).getSeconds()% 60==0) {
+                            logMsg = new StringBuilder();
+                            logMsg.append("\nPlugin '").append(getCleanName()).append("' is still running");
+                            logMsg.append("\n- stop initiated at: ").append(stopInitiatedTime.format(DATE_TIME_FORMATTER))
+                                  .append("\n- current time: ").append(ZonedDateTime.now().format(DATE_TIME_FORMATTER));
+                            logMsg.append("\n- elapsed time: ").append(Duration.between(stopInitiatedTime, ZonedDateTime.now()).toSeconds())
+                                  .append(" sec - successfulRun ").append(successfulRun);
+                            log.info(logMsg.toString());
+                        }
+                        stop(successfulRun); // Call the stop method to handle any additional logic
+                    }
                     
-                    // Check every 300ms to be responsive but not wasteful
-                    Thread.sleep(300);
+                    // Check every 600ms to be responsive but not wasteful
+                    Thread.sleep(600);
                 }
             } catch (InterruptedException e) {
                 // Thread was interrupted, just exit
-                log.debug("Stop monitoring thread for '" + name + "' was interrupted");
-            } finally {
-                isMonitoringStop = false;
-                log.debug("Stop monitoring thread exited for plugin '" + name + "'");
+                log.info("\n\tStop monitoring thread for '" + name + "' was interrupted");
+            } finally {                
+                // Update lastRunTime and start conditions for next run
+                if (successfulRun) {
+                    resetStartConditions();                            
+                } else {
+                    setEnabled(false); // disable the plugin if it was not successful?
+                }
+                log.info(logMsg.toString());
+                logStopConditionsWithDetails();                
+                // Reset stop state
+                stopInitiated = false;
+                hasStarted = false;
+                stopInitiatedTime = null;
+                lastStopAttemptTime = null;                
+                // Invoke the stop completion callback if one is registered
+                if (stopCompletionCallback != null) {
+                    try {
+                        stopCompletionCallback.onStopCompleted(PluginScheduleEntry.this, successfulRun);
+                        log.debug("Stop completion callback executed for plugin '{}'", name);
+                    } catch (Exception e) {
+                        log.error("Error executing stop completion callback for plugin '{}'", name, e);
+                    }
+                }               
+                log.info("Stop monitoring thread exited for plugin '" + name + "'");
             }
         });
         
@@ -696,6 +706,17 @@ public class PluginScheduleEntry implements AutoCloseable {
         stopMonitorThread.setDaemon(true); // Use daemon thread to not prevent JVM exit
         stopMonitorThread.start();
         
+    }
+    public void cancelStop(){  
+        log.info ("Cancelling stop for plugin '{}'", name);
+        if (isMonitoringStop && stopMonitorThread != null) {
+            stopMonitorThread.interrupt(); // Interrupt the monitoring thread
+            stopMonitorThread = null; // Clear the reference
+        }
+        
+        stopInitiated = false;        
+        stopInitiatedTime = null;
+        lastStopAttemptTime = null;
     }
 
     /**
@@ -1866,94 +1887,97 @@ public class PluginScheduleEntry implements AutoCloseable {
                 this.onLastStopPluginConditionsSatisfied = arePluginStopConditionsMet();
                 this.onLastStopUserConditionsSatisfied = areUserDefinedStopConditionsMet();
             }
-            if (!stopInitiated  && reason != StopReason.HARD_STOP) {
-                
-                StringBuilder logMsg = new StringBuilder();
-                logMsg.append("\n\tPlugin ").append(name).append(" is soft stopping. ");
-                String blockingStartMsg = startConditionManager.getBlockingExplanation();
-                String blockingStopMsg = stopConditionManager.getBlockingExplanation();           
-                if (reason != null) {
-                    logMsg.append("\n\t -stop reason: ").append("\n\t\t"+reason.toString()).append("\n\t\t  -").append(this.lastStopReason);
+            StringBuilder logMsg = new StringBuilder();
+            logMsg.append("\n\tStopping the plugin \"").append(getCleanName()+"\"");
+            String blockingStartMsg = startConditionManager.getBlockingExplanation();
+            String blockingStopMsg = stopConditionManager.getBlockingExplanation();           
+            if (reason != null) {
+                logMsg.append("\n\t---current stop reason:").append("\n\t\t"+reason.toString());
+                if (this.lastStopReason != null && !this.lastStopReason.isEmpty()) {
+                    logMsg.append("\n\t---last stop reason:\n********\n").append(this.lastStopReason+ "\n********");
                 }
-                logMsg.append("\n\t -is running: ").append(isRunning());
-                logMsg.append("\n\t -plugin stop conditions satisfied: ").append(arePluginStopConditionsMet());
-                logMsg.append("\n\t -user stop conditions satisfied: ").append(areUserDefinedStopConditionsMet());                
-                log.info(logMsg.toString());
-                
-                logStopConditionsWithDetails();
+            }
+            logMsg.append("\n\t---is running: ").append(isRunning());
+            logMsg.append("\n\t---plugin stop conditions satisfied: ").append(arePluginStopConditionsMet());
+            logMsg.append("\n\t---user stop conditions satisfied: ").append(areUserDefinedStopConditionsMet());   
+            log.info(logMsg.toString());
+            logStopConditionsWithDetails();
+            if (!stopInitiated  && reason != StopReason.HARD_STOP) {                                                                                            
                 this.softStop(successfulRun); // This will start the monitoring thread
-            }
-            // Plugin didn't stop after previous attempts
-            else if (isRunning()) {            
-                Duration timeSinceFirstAttempt = Duration.between(stopInitiatedTime, now);
-                Duration timeSinceLastAttempt = Duration.between(lastStopAttemptTime, now);                
-                // Force hard stop if we've waited too long
-                if ( (hardStopTimeout.compareTo(Duration.ZERO) > 0 && timeSinceFirstAttempt.compareTo(hardStopTimeout) > 0) 
-                    && (getPlugin() instanceof SchedulablePlugin)
-                    && ((SchedulablePlugin) getPlugin()).isHardStoppable()) {
-                    log.warn("Plugin {} failed to respond to soft stop after {} seconds - forcing hard stop", 
-                            name, timeSinceFirstAttempt.toSeconds());
-                    
-                    // Stop current monitoring and start new one for hard stop
-                    stopMonitoringThread();
-                    this.setLastStopReasonType(StopReason.HARD_STOP);
-                    this.hardStop(true);
-                }else if(reason == StopReason.HARD_STOP){ // Stop current monitoring and start new one for hard stop
-                    log.warn("Plugin {} user requested hard stop after {} seconds - forcing hard stop", 
-                            name, timeSinceFirstAttempt.toSeconds());
-                    stopMonitoringThread();
-                    this.setLastStopReasonType(StopReason.HARD_STOP);
-                    this.hardStop(true);
-                }
-
-                // Retry soft stop at configured intervals
-                else if (timeSinceLastAttempt.compareTo(softStopRetryInterval) > 0) {
-                    log.info("Plugin {} still running after soft stop - retrying (attempt time: {} seconds)", 
-                            name, timeSinceFirstAttempt.toSeconds());
-                    lastStopAttemptTime = now;
-                    this.setLastStopReasonType(reason);
-                    this.softStop(true);
-                }else if (hardStopTimeout.compareTo(Duration.ZERO) > 0  && timeSinceLastAttempt.compareTo(hardStopTimeout.multipliedBy(2)) > 0) {                    
-                    log.error("Forcibly shutting down the client due to unresponsive plugin: {}", name);
-
-                    // Schedule client shutdown on the client thread to ensure it happens safely
-                    Microbot.getClientThread().invoke(() -> {
-                        try {
-                            // Log that we're shutting down
-                            log.warn("Initiating emergency client shutdown due to plugin: {} cant be stopped", name);
-                            
-                            // Give a short delay for logging to complete
-                            Thread.sleep(1000);
-                            
-                            // Forcibly exit the JVM with a non-zero status code to indicate abnormal termination
-                            System.exit(1);
-                        } catch (Exception e) {
-                            log.error("Failed to shut down client", e);
-                            // Ultimate fallback
-                            Runtime.getRuntime().halt(1);
-                        }
-                        return true;
-                    });  
-                }
-            }
+            }else if (reason == StopReason.HARD_STOP) {
+                // If we are already stopping and the reason is hard stop, just log it                
+                this.hardStop(successfulRun); // frist try soft stop, then hard stop if needed
+            }          
         }else{
             StringBuilder logMsg = new StringBuilder();
             logMsg.append("\n\tPlugin ").append(name).append(" is not allowed to stop. ");
             String blockingStartMsg = startConditionManager.getBlockingExplanation();
             String blockingStopMsg = stopConditionManager.getBlockingExplanation();
             if (blockingStopMsg != null) {
-                logMsg.append("\n\t  -Blocking reason: ").append(blockingStopMsg);
+                logMsg.append("\n\t -Blocking reason: ").append(blockingStopMsg);
             }            
             if (reason != null) {
-                logMsg.append("\n\t  -Current stop reason: ").append(reason.toString()).append(" -- ").append(this.lastStopReason);
+                logMsg.append("\n\t -Current stop reason: ").append(reason.toString()).append(" -- ").append(this.lastStopReason);
             }
-            logMsg.append("\n\t  -is running: ").append(isRunning());
+            logMsg.append("\n\t -is running: ").append(isRunning());
             logMsg.append("\n\t -plugin stop conditions: ").append(arePluginStopConditionsMet());
             logMsg.append("\n\t -user stop conditions: ").append(areUserDefinedStopConditionsMet());
             log.info(logMsg.toString());
         }
-        log.info("Plugin {} stop initiated: {}", name, stopInitiated);
+        log.info("\n\tPlugin {} stop initiated: {}", name, stopInitiated);
         return this.stopInitiated;
+    }
+    private void stop(boolean successfulRun) {
+        ZonedDateTime now = ZonedDateTime.now();
+      // Plugin didn't stop after previous attempts
+        if (isRunning()) {            
+            Duration timeSinceFirstAttempt = Duration.between(this.stopInitiatedTime, now);
+            Duration timeSinceLastAttempt = Duration.between(this.lastStopAttemptTime, now);                
+            // Force hard stop if we've waited too long
+            if ( (hardStopTimeout.compareTo(Duration.ZERO) > 0 && timeSinceFirstAttempt.compareTo(hardStopTimeout) > 0) 
+                && (getPlugin() instanceof SchedulablePlugin)
+                && ((SchedulablePlugin) getPlugin()).allowHardStop()) {
+                log.warn("Plugin {} failed to respond to soft stop after {} seconds - forcing hard stop", 
+                        name, timeSinceFirstAttempt.toSeconds());
+                
+                // Stop current monitoring and start new one for hard stop
+                stopMonitoringThread();
+                this.setLastStopReasonType(StopReason.HARD_STOP);
+                this.hardStop(successfulRun);
+            }else if(getLastStopReasonType() == StopReason.HARD_STOP){ // Stop current monitoring and start new one for hard stop
+                log.warn("Plugin {} user requested hard stop after {} seconds - forcing hard stop", 
+                        name, timeSinceFirstAttempt.toSeconds());
+                stopMonitoringThread();
+                this.setLastStopReasonType(StopReason.HARD_STOP);
+                this.hardStop(successfulRun);
+            }
+            // Retry soft stop at configured intervals
+            else if (timeSinceLastAttempt.compareTo(softStopRetryInterval) > 0) {
+                log.info("Plugin {} still running after soft stop - retrying (attempt time: {} seconds)", 
+                        name, timeSinceFirstAttempt.toSeconds());
+                lastStopAttemptTime = now;
+                this.setLastStopReasonType(getLastStopReasonType());                
+                this.softStop(successfulRun);
+            }else if (hardStopTimeout.compareTo(Duration.ZERO) > 0  && timeSinceFirstAttempt.compareTo(hardStopTimeout.multipliedBy(3)) > 0) {                    
+                log.error("Forcibly shutting down the client due to unresponsive plugin: {}", name);
+                // Schedule client shutdown on the client thread to ensure it happens safely
+                Microbot.getClientThread().invoke(() -> {
+                    try {
+                        // Log that we're shutting down
+                        log.warn("Initiating emergency client shutdown due to plugin: {} cant be stopped", name);                        
+                        // Give a short delay for logging to complete
+                        Thread.sleep(1000);                        
+                        // Forcibly exit the JVM with a non-zero status code to indicate abnormal termination
+                        System.exit(1);
+                    } catch (Exception e) {
+                        log.error("Failed to shut down client", e);
+                        // Ultimate fallback
+                        Runtime.getRuntime().halt(1);
+                    }
+                    return true;
+                });  
+            }
+        }
     }
     
     /**
@@ -2023,7 +2047,7 @@ public class PluginScheduleEntry implements AutoCloseable {
         }
         
         // Basic condition count and logic
-        sb.append(conditionList.size()).append(" \n\t\tcondition(s) using ")
+        sb.append(" \n\t\t"+conditionList.size()+" condition(s) using ")
           .append(stopConditionManager.requiresAll() ? "AND" : "OR").append(" logic\n\t\t");
         
         if (!includeDetails) {

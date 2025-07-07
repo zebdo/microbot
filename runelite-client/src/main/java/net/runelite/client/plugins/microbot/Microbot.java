@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -34,7 +35,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.annotations.Component;
 import net.runelite.api.events.ItemContainerChanged;
@@ -419,13 +419,9 @@ public class Microbot {
 
 	@SneakyThrows
 	private static boolean togglePlugin(Plugin plugin, boolean enable) {
-		if (plugin == null) return !enable;
-		final AtomicBoolean success = new AtomicBoolean(false);
-        // Check if we're currently on the client thread for logging purposes
-        boolean isOnClientThread = getClient().isClientThread();                
-        // This makes the method non-blocking regardless of which thread it's called from		
-        if(isOnClientThread) {
-        	// If already on client thread, execute directly to avoid nested invokeAndWait
+		if (plugin == null) return !enable; // we should always be returning false, e.g - if enable is false and plugin is null - !enable, would return true
+		final AtomicBoolean success = new AtomicBoolean(false);        
+		Callable<Boolean> callable = () -> {        
         	try {
 				getPluginManager().setPluginEnabled(plugin, enable);
 				if (enable) {
@@ -435,29 +431,13 @@ public class Microbot {
 					success.set(getPluginManager().stopPlugin(plugin));
 				}
 			} catch (PluginInstantiationException e) {
+				log.error("Error toggling plugin ({}): {}", plugin.getClass().getSimpleName(), e.getMessage(), e);
 				e.printStackTrace();
 			}
 			return success.get();
-		}else{
-			// When not on client thread, use client thread to execute
-			return getClientThread().runOnClientThreadOptional(() -> {
-				try {
-					getPluginManager().setPluginEnabled(plugin, enable);
-					if (enable) {
-						boolean startResult = getPluginManager().startPlugin(plugin);
-						getPluginManager().startPlugins();
-						return startResult;
-					} else {
-						return getPluginManager().stopPlugin(plugin);
-					}
-				} catch (PluginInstantiationException e) {
-					e.printStackTrace();
-					return false;
-				}
-			}).orElse(false);
-		}
-
-		
+		};
+		// When not on client thread, use client thread to execute
+		return getClientThread().runOnClientThreadOptional(callable).orElse(false);	
 	}
 
 	/**
@@ -515,35 +495,6 @@ public class Microbot {
 	public static boolean stopPlugin(String className) {
 		return stopPlugin(getPlugin(className));
 	}
-    /**
-     * Stops the specified plugin using the plugin manager.
-     * If the plugin is non-null, this method attempts to stop it and handles any instantiation exceptions.
-     *
-     * @param plugin the plugin to be stopped.
-     */
-    public static void stopPluginV(Plugin plugin) {
-        if (plugin == null) return;
-        
-        // Check if we're currently on the client thread for logging purposes
-        boolean isOnClientThread = getClient().isClientThread();
-        log("Stopping plugin: " + plugin.getClass().getSimpleName() + ", on client thread: " + isOnClientThread);
-        
-        // Always use invokeLater to avoid InterruptedException in all thread contexts
-        // This makes the method non-blocking regardless of which thread it's called from
-        Runnable pluginDisabler = () -> {
-            try {
-                getPluginManager().setPluginEnabled(plugin, false);
-                getPluginManager().stopPlugin(plugin);
-                //getPluginManager().startPlugins();
-            } catch (PluginInstantiationException e) {
-                log("Error in plugin disabler: " + e.getMessage(), Level.ERROR);
-                e.printStackTrace();
-            }
-        };
-        
-        // Use invokeLater in all cases to avoid InterruptedException
-        SwingUtilities.invokeLater(pluginDisabler);
-    }
 
 	public static void doInvoke(NewMenuEntry entry, Rectangle rectangle)
 	{

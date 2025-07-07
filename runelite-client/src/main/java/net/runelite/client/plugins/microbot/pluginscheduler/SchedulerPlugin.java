@@ -1988,7 +1988,7 @@ public class SchedulerPlugin extends Plugin {
      * @return Duration until next break
      */
     public Duration getTimeUntilNextBreak() {
-        if (SchedulerPluginUtil.isBreakHandlerEnabled() && BreakHandlerScript.breakIn > 0) {
+        if (SchedulerPluginUtil.isBreakHandlerEnabled() && BreakHandlerScript.breakIn >= 0) {
             return Duration.ofSeconds(BreakHandlerScript.breakIn);
         }
         return timeUntilNextBreak;
@@ -2576,7 +2576,7 @@ public class SchedulerPlugin extends Plugin {
                     currentPlugin.setEnabled(false);
 
                     // Set state to error
-                    setState(SchedulerState.SCHEDULING);
+                    
                 } else if (currentState == SchedulerState.SOFT_STOPPING_PLUGIN) {                    
                     // If we were soft stopping and it completed, make sure stop reason is set
                     if (currentPlugin.getLastStopReasonType() == PluginScheduleEntry.StopReason.NONE) {
@@ -2598,16 +2598,19 @@ public class SchedulerPlugin extends Plugin {
                   
                 // Return to scheduling state regardless of stop reason
                 if (currentState != SchedulerState.HOLD) {
-                    log.info("Plugin '{}' stopped - returning to scheduling state with reason: {}",
+                    log.info("Plugin '{}' stopped \n\t- returning to scheduling state with reason: \n\t\t\"{}\"",
                             currentPlugin.getCleanName(),
                             currentPlugin.getLastStopReason());
+                   
                     setState(SchedulerState.SCHEDULING);
                 }
+                currentPlugin.cancelStop();
+                setCurrentPlugin(null);
                // Microbot.getClientThread().invokeLater(() -> {
                     // Check if the plugin is still stopping
                  //   checkIfStopFinished();
                 //});
-                setCurrentPlugin(null);
+               
 
             } else if (isRunningNow && wasStartedByScheduler && currentState == SchedulerState.SCHEDULING) {
                 // Plugin was started by scheduler and is now running - this is expected

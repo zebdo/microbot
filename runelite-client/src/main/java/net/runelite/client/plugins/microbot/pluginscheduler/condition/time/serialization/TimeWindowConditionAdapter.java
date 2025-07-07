@@ -209,6 +209,7 @@ public class TimeWindowConditionAdapter implements JsonSerializer<TimeWindowCond
             boolean useRandomization = dataObj.get("useRandomization").getAsBoolean();
             int randomizerValue = dataObj.get("randomizerValue").getAsInt();
             condition.setRandomization(useRandomization);
+            condition.setRandomizerValue(randomizerValue);
         }                        
         return condition;
        

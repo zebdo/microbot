@@ -57,7 +57,7 @@ public class BreakHandlerScript extends Script {
     
     public static AtomicBoolean lockState = new AtomicBoolean(false);
     public static void setLockState(boolean state) {
-        log .info("Setting lock state to: " + state+"current state: " + BreakHandlerScript.lockState.get());
+        log .info("\n\t-Setting lock state to: " + state+"\n\t-current state: " + BreakHandlerScript.lockState.get());
         BreakHandlerScript.lockState.set(state);
     }
     private String title = "";

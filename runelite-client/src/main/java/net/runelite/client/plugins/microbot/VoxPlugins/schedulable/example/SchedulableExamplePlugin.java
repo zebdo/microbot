@@ -91,7 +91,7 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
             String reason = config.finishReason() + " (success)";
             boolean success = true;
             log.info("Manually triggering plugin finish: reason='{}', success={}", reason, success);
-            reportFinished(reason, success);
+            Microbot.getClientThread().invokeLater( () ->  {reportFinished(reason, success); return true;});
         }
     };
      // HotkeyListener for testing PluginScheduleEntryFinishedEvent
@@ -101,7 +101,7 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
             String reason = config.finishReason()+ " (not success)";
             boolean success = false;
             log.info("Manually triggering plugin finish: reason='{}', success={}", reason, success);
-            reportFinished(reason, success);
+            Microbot.getClientThread().invokeLater( () ->  {reportFinished(reason, success); return true;});
         }
     };
     
@@ -668,17 +668,17 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
                 return;
             }
             Microbot.getConfigManager().setConfiguration("SchedulableExample", "lastLocation", currentLocation);
-            log.info("Scheduling stop for plugin: {}", event.getPlugin().getClass().getSimpleName());
-            
+            log.info("onPluginScheduleEntrySoftStopEvent - Scheduling stop for plugin: {}", event.getPlugin().getClass().getSimpleName());
+            Microbot.stopPlugin(this);
             // Schedule the stop operation on the client thread
-            Microbot.getClientThread().invokeLater(() -> {
-                try {                    
-                    Microbot.getPluginManager().setPluginEnabled(this, false);
-                    Microbot.getPluginManager().stopPlugin(this);
-                } catch (Exception e) {
-                    log.error("Error stopping plugin", e);
-                }
-            });
+            // Microbot.getClientThread().invokeLater(() -> {
+            //     try {                    
+            //         Microbot.getPluginManager().setPluginEnabled(this, false);
+            //         Microbot.getPluginManager().stopPlugin(this);
+            //     } catch (Exception e) {
+            //         log.error("Error stopping plugin", e);
+            //     }
+            // });
         }
     }
     

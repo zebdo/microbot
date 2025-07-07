@@ -26,7 +26,7 @@ public interface SchedulablePlugin {
     // Optional methods with default implementations
     void onStopConditionCheck();
     void reportFinished(String reason, boolean success);
-    boolean isHardStoppable();
+    boolean allowHardStop();
     ConfigDescriptor getConfigDescriptor();
     // Lock-related methods
     boolean isLocked(Condition stopConditions);
@@ -43,7 +43,7 @@ Each method plays a specific role in how your plugin interacts with the schedule
 3. **onPluginScheduleEntrySoftStopEvent()**: Handles graceful shutdown requests from the scheduler.
 4. **onStopConditionCheck()**: Hook for updating condition state before evaluation.
 5. **reportFinished()**: Allows the plugin to self-report task completion.
-6. **isHardStoppable()**: Indicates if the plugin can be forcibly terminated.
+6. **allowHardStop()**: Indicates if the plugin can be forcibly terminated.
 7. **Lock methods**: Prevent the plugin from being stopped during critical operations.
 8. **getConfigDescriptor()**: Provides the scheduler with configuration information.
 
