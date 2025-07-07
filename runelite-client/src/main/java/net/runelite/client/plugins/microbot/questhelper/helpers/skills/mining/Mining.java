@@ -133,6 +133,7 @@ public class Mining extends ComplexStateQuestHelper {
         inIronZone = new ZoneRequirement(ironZone);
     }
 
+    @Override
     public void setupZones() {
         copperZone = new Zone(COPPER_POINT);
         ironZone = new Zone(IRON_POINT);

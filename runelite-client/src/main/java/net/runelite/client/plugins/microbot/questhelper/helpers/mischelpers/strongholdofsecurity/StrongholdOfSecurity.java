@@ -304,6 +304,7 @@ public class StrongholdOfSecurity extends BasicQuestHelper {
         return Collections.singletonList(new UnlockReward("Flap, Slap Head, Idea and Stamp emotes."));
     }
 
+    @Override
     public List<ItemReward> getItemRewards() {
         return Arrays.asList(
                 new ItemReward("Coins", ItemID.COINS, 10000),
