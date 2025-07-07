@@ -674,23 +674,6 @@ public class Microbot {
 				log.info(message);
 				break;
 		}
-
-		if (Microbot.isLoggedIn())
-		{
-			if (level == Level.DEBUG && !isDebug())
-			{
-				return;
-			}
-
-			final String _message = ex == null ? message : ex.getMessage();
-
-			LocalTime currentTime = LocalTime.now();
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-			String formattedTime = currentTime.format(formatter);
-			Microbot.getClientThread().runOnClientThreadOptional(() ->
-				Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "[" + formattedTime + "]: " + _message, "", false)
-			);
-		}
 	}
 
 	/**

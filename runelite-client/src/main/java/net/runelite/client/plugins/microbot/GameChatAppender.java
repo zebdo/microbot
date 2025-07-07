@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.PatternLayout;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.AppenderBase;
@@ -15,8 +16,7 @@ public class GameChatAppender extends AppenderBase<ILoggingEvent> {
     private final PatternLayout layout = new PatternLayout();
 
     public GameChatAppender(String pattern) {
-        // don't duplicate Microbot.log(...) chat messages - TODO: remove
-        addFilter(new NoMicrobotLoggingFilter());
+        addFilter(new DebugFilter());
         // filter for log messages from the microbot folder
         // addFilter(new OnlyMicrobotLoggingFilter());
         layout.setPattern(pattern);
@@ -62,10 +62,10 @@ public class GameChatAppender extends AppenderBase<ILoggingEvent> {
         );
     }
 
-    private static class NoMicrobotLoggingFilter extends Filter<ILoggingEvent> {
+    private static class DebugFilter extends Filter<ILoggingEvent> {
         @Override
         public FilterReply decide(ILoggingEvent event) {
-            return event.getLoggerName().startsWith("net.runelite.client.plugins.microbot.Microbot") ? FilterReply.DENY : FilterReply.ACCEPT;
+            return event.getLevel() == Level.DEBUG && !Microbot.isDebug() ? FilterReply.DENY : FilterReply.ACCEPT;
         }
     }
 
