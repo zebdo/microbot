@@ -3,7 +3,9 @@ package net.runelite.client.plugins.microbot.mixology;
 import net.runelite.api.DynamicObject;
 import net.runelite.api.GameObject;
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.ObjectID;
+
+
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -20,14 +22,13 @@ import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-import static net.runelite.api.NullObjectID.*;
 import static net.runelite.client.plugins.microbot.mixology.AlchemyObject.MIXING_VESSEL;
-import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
 
 
 public class MixologyScript extends Script {
 
     public final static String version = "1.0.2-beta";
+    private static final Integer DIGWEED = ItemID.MM_LAB_SPECIAL_HERB;
 
     public java.util.List<PotionOrder> potionOrders = Collections.emptyList();
 
@@ -82,7 +83,7 @@ public class MixologyScript extends Script {
                         startLyePoints = getLyePoints();
                     }
 
-                    if (digweed != null && !Rs2Player.isAnimating() && !Rs2Inventory.hasItem("digweed")
+                    if (digweed != null && !Rs2Player.isAnimating() && !Rs2Inventory.hasItem(DIGWEED)
                             && config.pickDigWeed()) {
                         Rs2GameObject.interact(digweed.coordinate());
                         Rs2Player.waitForWalking();
@@ -90,14 +91,14 @@ public class MixologyScript extends Script {
                         return;
                     }
 
-                    if (Rs2Inventory.hasItem("digweed") && !Rs2Player.isAnimating()) {
+                    if (Rs2Inventory.hasItem(DIGWEED) && !Rs2Player.isAnimating()) {
                         Optional<Integer> potionItemId = potionOrders
                                 .stream()
                                 .filter(x -> !x.fulfilled() && Rs2Inventory.hasItem(x.potionType().itemId()))
                                 .map(x -> x.potionType().itemId())
                                 .findFirst();
                         if (potionItemId.isPresent()) {
-                            Rs2Inventory.interact("digweed", "use");
+                            Rs2Inventory.interact(DIGWEED, "use");
                             Rs2Inventory.interact(potionItemId.get(), "use");
                             Rs2Player.waitForAnimation();
                             return;
@@ -151,7 +152,7 @@ public class MixologyScript extends Script {
                         }
 
                         if (Rs2Inventory.hasItem(config.agaHerb().toString()) || Rs2Inventory.hasItem(config.lyeHerb().toString()) || Rs2Inventory.hasItem(config.moxHerb().toString())) {
-                            Rs2GameObject.interact(ObjectID.REFINER);
+                            Rs2GameObject.interact(ObjectID.MM_LAB_MILL);
                             Rs2Player.waitForAnimation();
                             sleepGaussian(450, 150);
                             if (!config.useQuickActionRefiner()) {
@@ -192,7 +193,7 @@ public class MixologyScript extends Script {
                         }
                         break;
                     case DEPOSIT_HOPPER:
-                        if (Rs2GameObject.interact(ObjectID.HOPPER_54903)) {
+                        if (Rs2GameObject.interact(ObjectID.MM_LAB_HOPPER)) {
                             Rs2Player.waitForWalking();
                             Rs2Inventory.waitForInventoryChanges(10000);
                             mixologyState = MixologyState.MIX_POTION_STAGE_1;
@@ -250,7 +251,7 @@ public class MixologyScript extends Script {
                         List<PotionOrder> nonFulfilledPotions = potionOrders
                                 .stream()
                                 .filter(x -> !x.fulfilled())
-                                .sorted(Comparator.comparingInt(customOrder::indexOf))
+                                .sorted(Comparator.comparingInt(order -> customOrder.indexOf(order.potionModifier())))
                                 .collect(Collectors.toList());
 
                         if (nonFulfilledPotions.isEmpty()) {
@@ -343,7 +344,7 @@ public class MixologyScript extends Script {
     private static void processPotion(PotionOrder nonFulfilledPotion) {
         switch (nonFulfilledPotion.potionModifier()) {
             case HOMOGENOUS:
-                GameObject agitator = (GameObject) Rs2GameObject.findObjectById(AlchemyObject.AGITATOR.objectId());
+                GameObject agitator = Rs2GameObject.getGameObject(AlchemyObject.AGITATOR.objectId());
                 if (agitator != null && (((DynamicObject) agitator.getRenderable()).getAnimation().getId() == 11633 || ((DynamicObject) agitator.getRenderable()).getAnimation().getId() == 11632)) {
                     Rs2GameObject.interact(AlchemyObject.AGITATOR.objectId());
                 } else {
@@ -351,7 +352,7 @@ public class MixologyScript extends Script {
                 }
                 break;
             case CONCENTRATED:
-                GameObject retort = (GameObject) Rs2GameObject.findObjectById(AlchemyObject.RETORT.objectId());
+                GameObject retort = Rs2GameObject.getGameObject(AlchemyObject.RETORT.objectId());
                 if (retort != null && (((DynamicObject) retort.getRenderable()).getAnimation().getId() == 11643 || ((DynamicObject) retort.getRenderable()).getAnimation().getId() == 11642)) {
                     Rs2GameObject.interact(AlchemyObject.RETORT.objectId());
                 } else {
@@ -359,7 +360,7 @@ public class MixologyScript extends Script {
                 }
                 break;
             case CRYSTALISED:
-                GameObject alembic = (GameObject) Rs2GameObject.findObjectById(AlchemyObject.ALEMBIC.objectId());
+                GameObject alembic = Rs2GameObject.getGameObject(AlchemyObject.ALEMBIC.objectId());
                 if (alembic != null && (((DynamicObject) alembic.getRenderable()).getAnimation().getId() == 11638 || ((DynamicObject) alembic.getRenderable()).getAnimation().getId() == 11637)) {
                     Rs2GameObject.interact(AlchemyObject.ALEMBIC.objectId());
                 } else {
@@ -407,9 +408,9 @@ public class MixologyScript extends Script {
     private boolean canCreatePotion(PotionOrder potionOrder) {
         // Get the mixer game objects
         GameObject[] mixers = {
-                (GameObject) Rs2GameObject.findObjectById(NULL_55394), // mixer3
-                (GameObject) Rs2GameObject.findObjectById(NULL_55393), // mixer2
-                (GameObject) Rs2GameObject.findObjectById(NULL_55392)  // mixer1
+                Rs2GameObject.getGameObject(ObjectID.MM_LAB_MIXER_03), // mixer3
+                Rs2GameObject.getGameObject(ObjectID.MM_LAB_MIXER_02), // mixer2
+                Rs2GameObject.getGameObject(ObjectID.MM_LAB_MIXER_01)  // mixer1
         };
 
         // Check if any mixers are missing

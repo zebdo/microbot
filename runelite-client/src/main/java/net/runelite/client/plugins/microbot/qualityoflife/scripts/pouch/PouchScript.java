@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch;
 
 import com.google.common.collect.ImmutableMap;
 import net.runelite.api.ChatMessageType;
-import net.runelite.api.InventoryID;
+import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.Item;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.events.ChatMessage;
@@ -144,7 +144,7 @@ public class PouchScript extends Script {
         if (!isRunning)
             return;
 
-        if (InventoryID.INVENTORY.getId() != event.getContainerId()) {
+        if (InventoryID.INV != event.getContainerId()) {
             return;
         }
 

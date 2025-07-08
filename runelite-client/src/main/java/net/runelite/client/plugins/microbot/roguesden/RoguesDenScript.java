@@ -2,8 +2,8 @@ package net.runelite.client.plugins.microbot.roguesden;
 
 import lombok.Getter;
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.NpcID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.NpcID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.IntStream;
 
 import static net.runelite.client.plugins.microbot.roguesden.Obstacles.OBSTACLES;
-import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
 
 public class RoguesDenScript extends Script {
 
@@ -231,7 +230,7 @@ public class RoguesDenScript extends Script {
     private boolean useFlashPowder() {
         if (Rs2Inventory.hasItem(ItemID.ROGUESDEN_FLASH_POWDER) && Rs2Player.getWorldLocation().getX() < 3026) {
             Microbot.log("Stunning guard");
-            if (Rs2Inventory.useItemOnNpc(ItemID.ROGUESDEN_FLASH_POWDER, NpcID.ROGUE_GUARD_3191)) {
+            if (Rs2Inventory.useItemOnNpc(ItemID.ROGUESDEN_FLASH_POWDER, NpcID.ROGUESDEN_GUARD2)) {
                 if (Rs2Inventory.waitForInventoryChanges(5000)) {
                     handleObstacle(OBSTACLES[OBSTACLES.length - 3]);
                 }
@@ -255,7 +254,7 @@ public class RoguesDenScript extends Script {
 
     private static boolean storeAllItemsInBank() {
         sleep(150,300); // some time it does not detect the inventory is empty or naked
-        while (!Rs2Inventory.isEmpty() || !Rs2Equipment.isNaked())
+        while (!Rs2Inventory.isEmpty() || Rs2Equipment.isWearing())
         {
             if (Rs2Bank.walkToBankAndUseBank())
             {
@@ -263,7 +262,7 @@ public class RoguesDenScript extends Script {
                 {
                     Rs2Bank.depositAll();
                 }
-                if (!Rs2Equipment.isNaked())
+                if (Rs2Equipment.isWearing())
                 {
                     Rs2Bank.depositEquipment();
                 }
@@ -324,7 +323,7 @@ public class RoguesDenScript extends Script {
     private void enterMinigame() {
         WalkerState state = Rs2Walker.walkWithState(new WorldPoint(3056, 4991, 1));
         if (state == WalkerState.ARRIVED) {
-            Rs2GameObject.interact(ObjectID.DOORWAY_7256);
+            Rs2GameObject.interact(ObjectID.ROGUESDEN_MAZEENTRANCE);
             sleepUntil(() -> Rs2Inventory.hasItem(ItemID.ROGUESDEN_GEM));
         }
     }
@@ -352,10 +351,10 @@ public class RoguesDenScript extends Script {
             Rs2Player.waitForWalking();
 
         } else if (obstacle.getHint().equalsIgnoreCase("take") && !Rs2Inventory.hasItem(ItemID.ROGUESDEN_FLASH_POWDER)) {
-            Rs2GroundItem.loot(obstacle.getTile(), ItemID.ROGUESDEN_FLASH_POWDER);
+            Rs2GroundItem.lootItemsBasedOnLocation(obstacle.getTile(), ItemID.ROGUESDEN_FLASH_POWDER);
             sleepUntil(() -> Rs2Inventory.hasItem(ItemID.ROGUESDEN_FLASH_POWDER));
         } else if (obstacle.getHint().equalsIgnoreCase("tile") && !Rs2Inventory.hasItem(ItemID.ROGUESDEN_PUZZLE_MOSAIC_TILE1)) {
-            Rs2GroundItem.loot(obstacle.getTile(), ItemID.ROGUESDEN_PUZZLE_MOSAIC_TILE1);
+            Rs2GroundItem.lootItemsBasedOnLocation(obstacle.getTile(), ItemID.ROGUESDEN_PUZZLE_MOSAIC_TILE1);
             sleepUntil(() -> Rs2Inventory.hasItem(ItemID.ROGUESDEN_PUZZLE_MOSAIC_TILE1));
         } else {
             if (!Rs2Walker.walkFastCanvas(obstacle.getTile())) {

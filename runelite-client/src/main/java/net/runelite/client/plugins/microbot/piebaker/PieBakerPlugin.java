@@ -31,9 +31,14 @@ import java.util.Map;
 )
 @Slf4j
 public class PieBakerPlugin extends Plugin {
-    private final OverlayManager overlayManager;
-    private final PieBakerOverlay pieBakerOverlay;
-    private final PieBakerConfig config;
+    @Inject
+    private OverlayManager overlayManager;
+
+    @Inject
+    private PieBakerOverlay pieBakerOverlay;
+
+    @Inject
+    private PieBakerConfig config;
 
     private static final Map<String, Integer> RAW_PIES = new HashMap<>();
 
@@ -55,12 +60,6 @@ public class PieBakerPlugin extends Plugin {
     private Instant startTime;
     private int startMagicXP;
     private int startCookingXP;
-
-    public PieBakerPlugin(OverlayManager overlayManager, PieBakerOverlay pieBakerOverlay, PieBakerConfig config) {
-        this.overlayManager = overlayManager;
-        this.pieBakerOverlay = pieBakerOverlay;
-        this.config = config;
-    }
 
     @Provides
     PieBakerConfig provideConfig(ConfigManager configManager) {

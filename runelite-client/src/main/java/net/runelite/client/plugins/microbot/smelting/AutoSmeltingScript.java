@@ -3,7 +3,6 @@ package net.runelite.client.plugins.microbot.smelting;
 import net.runelite.api.GameObject;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.Skill;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.smelting.enums.Ores;

@@ -1,10 +1,9 @@
 package net.runelite.client.plugins.microbot.qualityoflife.scripts.wintertodt;
 
-import lombok.Getter;
 import net.runelite.api.GameObject;
 import net.runelite.api.NPC;
-import net.runelite.api.ObjectID;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
@@ -21,6 +20,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
@@ -35,7 +35,7 @@ public class WintertodtScript extends Script {
     public static GameObject unlitBrazier;
     public static GameObject brokenBrazier;
     public static NPC pyromancer;
-    public static NPC incapitatedPyromancer;
+    public static Rs2NpcModel incapitatedPyromancer;
     public static boolean helpedIncapitatedPyromancer = false;
     public static boolean isWintertodtAlive = false;
     public static int wintertodtHp = -1;
@@ -62,8 +62,8 @@ public class WintertodtScript extends Script {
                 } else {
                     wintertodtHp = -1;
                 }
-                brokenBrazier = Rs2GameObject.getGameObject(obj -> obj.getId() == ObjectID.BRAZIER_29313, 5);
-                unlitBrazier = Rs2GameObject.getGameObject(obj -> obj.getId() == ObjectID.BRAZIER_29312, 5);
+                brokenBrazier = Rs2GameObject.getGameObject(obj -> obj.getId() == ObjectID.WINT_BRAZIER_BROKEN, 5);
+                unlitBrazier = Rs2GameObject.getGameObject(obj -> obj.getId() == ObjectID.WINT_BRAZIER, 5);
 
                 shouldEat();
 
@@ -72,7 +72,7 @@ public class WintertodtScript extends Script {
 
                 NewMenuEntry actionToResume = config.wintertodtActions().getMenuEntry();
                 if (config.wintertodtActions().equals(WintertodtActions.FEED)) {
-                    GameObject fireBrazier = Rs2GameObject.getGameObject(ObjectID.BURNING_BRAZIER_29314);
+                    GameObject fireBrazier = Rs2GameObject.getGameObject(ObjectID.WINT_BRAZIER_LIT);
                     if (fireBrazier != null && fireBrazier.getWorldLocation().distanceTo2D(Rs2Player.getWorldLocation()) < 5) {
                         if (!Rs2Inventory.contains(ItemID.WINT_BRUMA_ROOT) && !Rs2Inventory.contains(ItemID.WINT_BRUMA_KINDLING)) {
                             qolPlugin.updateLastWinthertodtAction(WintertodtActions.NONE);
@@ -112,7 +112,7 @@ public class WintertodtScript extends Script {
 
     public void onNpcChanged(NpcChanged event) {
         if (event.getNpc().getId() == 7372) {
-            incapitatedPyromancer = event.getNpc();
+            incapitatedPyromancer = (Rs2NpcModel) event.getNpc();
 
         }
         if (event.getNpc().getId() == 7371) {
@@ -120,7 +120,7 @@ public class WintertodtScript extends Script {
             incapitatedPyromancer = null;
             if (helpedIncapitatedPyromancer) {
                 if (config.lightUnlitBrazier()) {
-                    if (Rs2Equipment.hasEquipped(ItemID.WINT_TORCH) || Rs2Equipment.hasEquipped(ItemID.WINT_TORCH_OFFHAND) || Rs2Inventory.hasItem(ItemID.TINDERBOX)) {
+                    if (Rs2Equipment.isWearing(ItemID.WINT_TORCH) || Rs2Equipment.isWearing(ItemID.WINT_TORCH_OFFHAND) || Rs2Inventory.hasItem(ItemID.TINDERBOX)) {
                         scheduledFuture = scheduledExecutorService.schedule(() -> Rs2GameObject.interact(unlitBrazier, "Light"), 300, TimeUnit.MILLISECONDS);
                     }
                 }
@@ -133,11 +133,11 @@ public class WintertodtScript extends Script {
         if (event.getNpc().getId() == 7372) {
             if (incapitatedPyromancer != null) {
                 if (incapitatedPyromancer.getWorldLocation().distanceTo2D(Rs2Player.getWorldLocation()) > event.getNpc().getWorldLocation().distanceTo2D(Rs2Player.getWorldLocation())) {
-                    incapitatedPyromancer = event.getNpc();
+                    incapitatedPyromancer = (Rs2NpcModel) event.getNpc();
                     return;
                 }
             }
-            incapitatedPyromancer = event.getNpc();
+            incapitatedPyromancer = (Rs2NpcModel) event.getNpc();
         }
         if (event.getNpc().getId() == 7371) {
             if (pyromancer != null) {
@@ -176,7 +176,7 @@ public class WintertodtScript extends Script {
                 helpedIncapitatedPyromancer = true;
             } else {
                 if (config.lightUnlitBrazier()) {
-                    if (Rs2Equipment.hasEquipped(ItemID.WINT_TORCH) || Rs2Equipment.hasEquipped(ItemID.WINT_TORCH_OFFHAND) || Rs2Inventory.hasItem(ItemID.TINDERBOX)) {
+                    if (Rs2Equipment.isWearing(ItemID.WINT_TORCH) || Rs2Equipment.isWearing(ItemID.WINT_TORCH_OFFHAND) || Rs2Inventory.hasItem(ItemID.TINDERBOX)) {
                         scheduledFuture = scheduledExecutorService.schedule(() -> Rs2GameObject.interact(unlitBrazier, "Light"), 300, TimeUnit.MILLISECONDS);
                     }
                 }
@@ -191,7 +191,7 @@ public class WintertodtScript extends Script {
                 helpedIncapitatedPyromancer = true;
             } else {
                 if (config.lightUnlitBrazier()) {
-                    if (Rs2Equipment.hasEquipped(ItemID.WINT_TORCH) || Rs2Equipment.hasEquipped(ItemID.WINT_TORCH_OFFHAND) || Rs2Inventory.hasItem(ItemID.TINDERBOX)) {
+                    if (Rs2Equipment.isWearing(ItemID.WINT_TORCH) || Rs2Equipment.isWearing(ItemID.WINT_TORCH_OFFHAND) || Rs2Inventory.hasItem(ItemID.TINDERBOX)) {
                         scheduledFuture = scheduledExecutorService.schedule(() -> Rs2GameObject.interact(unlitBrazier, "Light"), 300, TimeUnit.MILLISECONDS);
                     }
                 }

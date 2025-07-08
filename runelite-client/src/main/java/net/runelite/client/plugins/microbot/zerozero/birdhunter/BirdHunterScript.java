@@ -2,8 +2,9 @@ package net.runelite.client.plugins.microbot.zerozero.birdhunter;
 
 import lombok.Getter;
 import net.runelite.api.GameObject;
-import net.runelite.api.gameval.ObjectID;
+
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
@@ -74,7 +75,7 @@ public class BirdHunterScript extends Script {
                     return;
                 }
 
-                handleTraps(config);
+                handleTraps();
                 checkForBonesAndHandleInventory(config);
 
             } catch (Exception ex) {
@@ -121,26 +122,26 @@ public class BirdHunterScript extends Script {
         }
     }
 
-    private void handleTraps(BirdHunterConfig config) {
+    private void handleTraps() {
         List<GameObject> successfulTraps = new ArrayList<>();
-        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9349));
-        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9347));
-        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9377));
-        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9379));
-        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9375));
-        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9373));
-        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9348));
+        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_TRAPPING_JUNGLE));
+        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_TRAPPING_COLOURED));
+        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_FULL_DESERT));
+        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_FULL_WOODLAND));
+        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_FULL_POLAR));
+        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_FULL_JUNGLE));
+        successfulTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_FULL_COLOURED));
 
         List<GameObject> catchingTraps = new ArrayList<>();
-        catchingTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9348));
-        catchingTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9376));
-        catchingTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9378));
-        catchingTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9374));
-        catchingTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9373));
+        catchingTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_FULL_COLOURED));
+        catchingTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_TRAPPING_DESERT));
+        catchingTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_TRAPPING_WOODLAND));
+        catchingTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_TRAPPING_POLAR));
+        catchingTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_FULL_JUNGLE));
 
-        List<GameObject> failedTraps = Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE);
-        List<GameObject> idleTraps = Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9345);
-        idleTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.BIRD_SNARE_9346));
+        List<GameObject> failedTraps = Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_BROKEN);
+        List<GameObject> idleTraps = Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP);
+        idleTraps.addAll(Rs2GameObject.getGameObjects(obj -> obj.getId() == ObjectID.HUNTING_OJIBWAY_TRAP_FAILING));
 
         int availableTraps = getAvailableTraps(Rs2Player.getRealSkillLevel(Skill.HUNTER));
         int totalTraps = successfulTraps.size() + failedTraps.size() + idleTraps.size() + catchingTraps.size();
@@ -151,14 +152,14 @@ public class BirdHunterScript extends Script {
         }
 
         if (totalTraps < availableTraps) {
-            setTrap(config);
+            setTrap();
             return;
         }
 
         if (!successfulTraps.isEmpty()) {
             for (GameObject successfulTrap : successfulTraps) {
                 if (interactWithTrap(successfulTrap)) {
-                    setTrap(config);
+                    setTrap();
                     return;
                 }
             }
@@ -167,7 +168,7 @@ public class BirdHunterScript extends Script {
         if (!failedTraps.isEmpty()) {
             for (GameObject failedTrap : failedTraps) {
                 if (interactWithTrap(failedTrap)) {
-                    setTrap(config);
+                    setTrap();
                     return;
                 }
             }
@@ -175,7 +176,7 @@ public class BirdHunterScript extends Script {
     }
 
 
-    private void setTrap(BirdHunterConfig config) {
+    private void setTrap() {
         if (!Rs2Inventory.contains(ItemID.HUNTING_OJIBWAY_BIRD_SNARE)) return;
 
         if (Rs2Player.isStandingOnGameObject()) {
@@ -199,7 +200,7 @@ public class BirdHunterScript extends Script {
     }
 
     private boolean isGameObjectAt(WorldPoint point) {
-        return Rs2GameObject.findObjectByLocation(point) != null;
+        return Rs2GameObject.getTileObject(point) != null;
     }
 
 
@@ -300,7 +301,7 @@ public class BirdHunterScript extends Script {
 
     private void dropItems(BirdHunterConfig config) {
         String keepItemsConfig = config.keepItemNames();
-        List<String> keepItemNames = List.of(keepItemsConfig.split("\\s*,\\s*"));
+        List<String> keepItemNames = new ArrayList<>(List.of(keepItemsConfig.split("\\s*,\\s*")));
 
         if (!keepItemNames.contains("Bird snare")) {
             keepItemNames.add("Bird snare");

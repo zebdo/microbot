@@ -1,8 +1,8 @@
 package net.runelite.client.plugins.microbot.util.item;
 
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.Varbits;
-import net.runelite.api.widgets.ComponentID;
+import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.itemcharges.ItemChargeConfig;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -20,7 +20,7 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 public class Rs2ExplorersRing {
 
     // Array of Explorer's Rings (1-4) item IDs
-    private static int[] explorerRings = new int[]{
+    private static final int[] explorerRings = new int[]{
             ItemID.LUMBRIDGE_RING_EASY,
             ItemID.LUMBRIDGE_RING_MEDIUM,
             ItemID.LUMBRIDGE_RING_HARD,
@@ -31,20 +31,19 @@ public class Rs2ExplorersRing {
      * Retrieves the total number of charges for the Explorer's Ring from the configuration.
      * If the configuration exists, it is migrated to the RSProfile configuration.
      *
-     * @param key The configuration key for the Explorer's Ring charges.
      * @return The total charges available or -1 if not found.
      */
-    private static int getTotalChargesExplorersRing(String key) {
-        Integer charges = Microbot.getConfigManager().getConfiguration(ItemChargeConfig.GROUP, key, Integer.class);
+    private static int getTotalChargesExplorersRing() {
+        Integer charges = Microbot.getConfigManager().getConfiguration(ItemChargeConfig.GROUP, ItemChargeConfig.KEY_EXPLORERS_RING, Integer.class);
         if (charges != null) {
             // Migrate configuration to RSProfile
-            Microbot.getConfigManager().unsetConfiguration(ItemChargeConfig.GROUP, key);
-            Microbot.getConfigManager().setRSProfileConfiguration(ItemChargeConfig.GROUP, key, charges);
+            Microbot.getConfigManager().unsetConfiguration(ItemChargeConfig.GROUP, ItemChargeConfig.KEY_EXPLORERS_RING);
+            Microbot.getConfigManager().setRSProfileConfiguration(ItemChargeConfig.GROUP, ItemChargeConfig.KEY_EXPLORERS_RING, charges);
             return charges;
         }
 
         // Retrieve charges from RSProfile configuration
-        charges = Microbot.getConfigManager().getRSProfileConfiguration(ItemChargeConfig.GROUP, key, Integer.class);
+        charges = Microbot.getConfigManager().getRSProfileConfiguration(ItemChargeConfig.GROUP, ItemChargeConfig.KEY_EXPLORERS_RING, Integer.class);
         return charges == null ? -1 : charges;
     }
 
@@ -52,72 +51,60 @@ public class Rs2ExplorersRing {
      * Interacts with a specific item in the Explorer's Ring inventory.
      *
      * @param item The item to interact with.
-     * @return True if the interaction was successful, false otherwise.
      */
-    private static boolean interact(Rs2ItemModel item) {
-        boolean didInteract = false;
+    private static void interact(Rs2ItemModel item) {
+        if (getTotalChargesExplorersRing() <= 0) return;
 
-        // Retrieve total charges for the Explorer's Ring
-        int totalCharges = getTotalChargesExplorersRing(ItemChargeConfig.KEY_EXPLORERS_RING);
-        if (totalCharges > 0) {
-            // Ensure the Alchemy function is active
-            if (!isExplorersRingInventoryVisible()) {
-                Rs2Inventory.interact(explorerRings, "Functions");
-                sleepUntil(Rs2Dialogue::isInDialogue);
-                Rs2Keyboard.keyPress('2');
-                sleepUntil(Rs2ExplorersRing::isExplorersRingInventoryVisible);
-            }
+        if (!isExplorersRingInventoryVisible()) {
+            Rs2Inventory.interact(explorerRings, "Functions");
+            sleepUntil(Rs2Dialogue::isInDialogue);
+            Rs2Keyboard.keyPress('2');
+            sleepUntil(Rs2ExplorersRing::isExplorersRingInventoryVisible);
+        }
 
-            // Locate the item in the Explorer's Ring inventory and interact with it
-            Widget explorersRingInventory = Rs2Widget.getWidget(ComponentID.EXPLORERS_RING_INVENTORY);
-            if (explorersRingInventory == null) return false;
-            for (Widget explorersRingInventoryItem : explorersRingInventory.getDynamicChildren()) {
-                if (explorersRingInventoryItem == null) continue;
-                if (explorersRingInventoryItem.getItemId() == item.getId()) {
-                    didInteract = true;
-                    Rs2Widget.clickWidget(explorersRingInventoryItem);
-                    if (item.getHaPrice() > Rs2Settings.getMinimumItemValueAlchemyWarning()) {
-                        sleepUntil(() -> Rs2Widget.hasWidget("Proceed to cast High Alchemy on it"));
-                        if (Rs2Widget.hasWidget("Proceed to cast High Alchemy on it")) {
-                            Rs2Keyboard.keyPress('1');
-                        }
-                    }
-                    Rs2Player.waitForAnimation();
+        Widget inventory = Rs2Widget.getWidget(InterfaceID.LumbridgeAlchemy.ITEMS);
+        if (inventory == null) return;
+
+        for (Widget child : inventory.getDynamicChildren()) {
+            if (child == null || child.getItemId() != item.getId()) continue;
+
+            Rs2Widget.clickWidget(child);
+
+            if (item.getHaPrice() > Rs2Settings.getMinimumItemValueAlchemyWarning()) {
+                sleepUntil(() -> Rs2Widget.hasWidget("Proceed to cast High Alchemy on it"));
+                if (Rs2Widget.hasWidget("Proceed to cast High Alchemy on it")) {
+                    Rs2Keyboard.keyPress('1');
                 }
             }
+
+            Rs2Player.waitForAnimation();
+            break;
         }
-        return didInteract;
     }
+
 
     /**
      * Performs the High Alchemy action using the Explorer's Ring.
      *
      * @param item The item to be alchemized.
-     * @return True if the High Alchemy action was successful, false otherwise.
      */
-    public static boolean highAlch(Rs2ItemModel item) {
-        // Check if any Explorer's Ring is in the inventory
-        if ((Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_EASY) ||
-                Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_MEDIUM) ||
-                Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_HARD) ||
-                Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_ELITE))) {
+    public static void highAlch(Rs2ItemModel item) {
+        boolean hasRingInInv = Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_EASY)
+                || Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_MEDIUM)
+                || Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_HARD)
+                || Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_ELITE);
 
-            // Retrieve total charges and ensure Alchemy is enabled
-            int totalCharges = getTotalChargesExplorersRing(ItemChargeConfig.KEY_EXPLORERS_RING);
-            if (totalCharges <= 0) return false;
+        boolean hasRingEquipped = Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_EASY)
+                || Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_MEDIUM)
+                || Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_HARD)
+                || Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_ELITE);
 
-            return interact(item);
-        }
+        if (!hasRingInInv && !hasRingEquipped) return;
+        if (hasRingInInv && getTotalChargesExplorersRing() <= 0) return;
 
-        // Check if any Explorer's Ring is equipped
-        if ((Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_EASY) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_MEDIUM) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_HARD) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_ELITE))) {
-            return interact(item);
-        }
-        return false;
+        interact(item);
     }
+
 
     /**
      * Checks if the inventory is visible
@@ -125,18 +112,16 @@ public class Rs2ExplorersRing {
      * @return true if visible
      */
     public static boolean isExplorersRingInventoryVisible() {
-        return Rs2Widget.getWidget(ComponentID.EXPLORERS_RING_INVENTORY) != null && Rs2Widget.isWidgetVisible((ComponentID.EXPLORERS_RING_INVENTORY));
+        return Rs2Widget.getWidget(InterfaceID.LumbridgeAlchemy.ITEMS) != null && Rs2Widget.isWidgetVisible((InterfaceID.LumbridgeAlchemy.ITEMS));
     }
 
     /**
      * Close the inventory widget for the explorers ring
-     *
-     * @return true if closed succesfully
      */
-    public static boolean closeInterface() {
-        if (Microbot.getVarbitValue(Varbits.EXPLORER_RING_ALCHTYPE) == 0) return true;
+    public static void closeInterface() {
+        if (Microbot.getVarbitValue(VarbitID.LUMBRIDGE_ALCHEMY_HIGH) == 0) return;
 
-        return Rs2Widget.clickWidget(31653892);
+        Rs2Widget.clickWidget(31653892);
     }
 
     /**
@@ -148,10 +133,10 @@ public class Rs2ExplorersRing {
                 Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_MEDIUM) ||
                 Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_HARD) ||
                 Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_ELITE) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_EASY) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_MEDIUM) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_HARD) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_ELITE);
+                Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_EASY) ||
+                Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_MEDIUM) ||
+                Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_HARD) ||
+                Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_ELITE);
     }
 
     /**
@@ -159,7 +144,7 @@ public class Rs2ExplorersRing {
      * @return true if more than one charge
      */
     public static boolean hasCharges() {
-        int totalCharges = getTotalChargesExplorersRing(ItemChargeConfig.KEY_EXPLORERS_RING);
+        int totalCharges = getTotalChargesExplorersRing();
         return totalCharges > 0;
     }
 }

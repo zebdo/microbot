@@ -2,7 +2,6 @@ package net.runelite.client.plugins.microbot.crafting.scripts;
 
 import net.runelite.api.GameObject;
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.crafting.CraftingConfig;
@@ -10,18 +9,16 @@ import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.math.Random;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.awt.event.KeyEvent;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
-import static net.runelite.client.plugins.microbot.util.Global.sleepUntilTrue;
 
 enum State {
     SPINNING,
@@ -70,9 +67,9 @@ public class FlaxSpinScript extends Script {
                         if (!isBankOpen || !Rs2Bank.isOpen()) return;
 
                         Rs2Bank.depositAll(ItemID.BOW_STRING);
-                        sleep(Random.random(600, 800));
+                        sleep(Rs2Random.randomGaussian(600, 800));
                         Rs2Bank.withdrawAll(ItemID.FLAX);
-                        sleep(Random.random(600, 800));
+                        sleep(Rs2Random.randomGaussian(600, 800));
                         Rs2Bank.closeBank();
                         state = State.WALKING;
                         break;

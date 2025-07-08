@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.tithefarm;
 
 import net.runelite.api.*;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -14,7 +15,7 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.math.Random;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -65,7 +66,7 @@ public class TitheFarmingScript extends Script {
         TitheFarmLanes lane = config.Lanes();
 
         if (lane == TitheFarmLanes.Randomize) {
-            lane = TitheFarmLanes.values()[Random.random(0, TitheFarmLanes.values().length - 1)];
+            lane = TitheFarmLanes.values()[Rs2Random.randomGaussian(0, TitheFarmLanes.values().length - 1)];
         }
 
         switch (lane) {
@@ -304,16 +305,19 @@ public class TitheFarmingScript extends Script {
 
         final TitheFarmPlant finalPlant = plant;
 
-        if (plant.getGameObject().getWorldLocation().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) > DISTANCE_TRESHHOLD_MINIMAP_WALK) {
-            //Important to know that there are two world locations when you are in an instance
-            //thats why we use the world location of the getLocalPlayer instead of Rs2Player.getWorldLocation
-            //because Rs2Player.getWorldLocation will give us the world location in the instance and we do not want that
-            WorldPoint w = WorldPoint.fromRegion(Microbot.getClient().getLocalPlayer().getWorldLocation().getRegionID(),
-                    plant.regionX,
-                    plant.regionY,
-                    Microbot.getClient().getPlane());
-            Rs2Walker.walkMiniMap(w, 1);
-            return;
+        if (plant.getGameObject().getWorldLocation()
+                .distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) > DISTANCE_TRESHHOLD_MINIMAP_WALK)
+        {
+            // Important to know that there are two world locations when you are in an instance
+            // that's why we use the world location of getLocalPlayer instead of Rs2Player.getWorldLocation
+            // because Rs2Player.getWorldLocation will give us the world location in the instance and we do not want that
+
+            WorldPoint wp = WorldPoint.fromLocalInstance(
+                    Microbot.getClient(),
+                    plant.getGameObject().getLocalLocation()
+            );
+
+            Rs2Walker.walkMiniMap(wp, 1);
         }
 
         if (plant.isEmptyPatch()) { //start planting seeds
@@ -368,33 +372,28 @@ public class TitheFarmingScript extends Script {
         }
 
         private boolean validateSeedsAndPatches() {
-            if (!Rs2Inventory.hasItem(TitheFarmMaterial.getSeedForLevel().getName())) {
-                return true;
-            }
-            return false;
+            return !Rs2Inventory.hasItem(TitheFarmMaterial.getSeedForLevel().getName());
         }
 
 
 
     private static void clickPatch(TitheFarmPlant plant) {
-        WorldPoint worldPoint = WorldPoint.fromRegion(Microbot.getClient().getLocalPlayer().getWorldLocation().getRegionID(),
-                plant.regionX,
-                plant.regionY,
-                Microbot.getClient().getPlane());
-
-        Rs2GameObject.interact(worldPoint);
+        WorldPoint wp = WorldPoint.fromLocalInstance(
+                Microbot.getClient(),
+                plant.getGameObject().getLocalLocation()
+        );
+        Rs2GameObject.interact(wp);
 
         //Point point = Calculations.worldToCanvas(worldPoint.getX(), worldPoint.getY());
         //Microbot.getMouse().click(point);
     }
 
     private static void clickPatch(TitheFarmPlant plant, String action) {
-        WorldPoint worldPoint = WorldPoint.fromRegion(Microbot.getClient().getLocalPlayer().getWorldLocation().getRegionID(),
-                plant.regionX,
-                plant.regionY,
-                Microbot.getClient().getPlane());
-
-        Rs2GameObject.interact(worldPoint, action);
+        WorldPoint wp = WorldPoint.fromLocalInstance(
+                Microbot.getClient(),
+                plant.getGameObject().getLocalLocation()
+        );
+        Rs2GameObject.interact(wp, action);
     }
 
     private static void DropFertiliser() {
@@ -418,7 +417,7 @@ public class TitheFarmingScript extends Script {
         } else if (TitheFarmMaterial.hasWateringCanToBeFilled()) {
             walkToBarrel();
             Rs2Inventory.interact(TitheFarmMaterial.getWateringCanToBeFilled(), "Use");
-            Rs2GameObject.interact(ObjectID.WATER_BARREL, "Use");
+            Rs2GameObject.interact(ObjectID.FARM_WATER_BARREL1, "Use");
             sleepUntil(() -> Rs2Inventory.hasItemAmount(ItemID.WATERING_CAN_8, WATERING_CANS_AMOUNT), 60000);
         } else {
             state = PLANTING_SEEDS;
@@ -426,7 +425,7 @@ public class TitheFarmingScript extends Script {
     }
 
     private void walkToBarrel() {
-        final TileObject gameObject = Rs2GameObject.findObjectById(ObjectID.WATER_BARREL);
+        final TileObject gameObject = Rs2GameObject.getTileObject(ObjectID.FARM_WATER_BARREL1);
         if (gameObject.getWorldLocation().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) > DISTANCE_TRESHHOLD_MINIMAP_WALK) {
             Rs2Walker.walkMiniMap(gameObject.getWorldLocation(), 1);
             sleepUntil(Rs2Player::isMoving);
@@ -444,12 +443,12 @@ public class TitheFarmingScript extends Script {
             Rs2Inventory.drop(TitheFarmMaterial.getSeedForLevel().getName());
             sleep(400, 600);
         }
-        Rs2GameObject.interact(ObjectID.SEED_TABLE);
+        Rs2GameObject.interact(ObjectID.TITHE_PLANT_SEED_TABLE);
         boolean result = Rs2Widget.sleepUntilHasWidget(TitheFarmMaterial.getSeedForLevel().getName());
         if (!result) return;
-        keyPress(TitheFarmMaterial.getSeedForLevel().getOption());
+        Rs2Keyboard.keyPress(TitheFarmMaterial.getSeedForLevel().getOption());
         sleep(1000);
-        Rs2Keyboard.typeString(String.valueOf(Random.random(1000, 10000)));
+        Rs2Keyboard.typeString(String.valueOf(Rs2Random.randomGaussian(1000, 10000)));
         sleep(600);
         Rs2Keyboard.enter();
         sleepUntil(() -> Rs2Inventory.hasItem(TitheFarmMaterial.getSeedForLevel().getName()));
@@ -464,7 +463,7 @@ public class TitheFarmingScript extends Script {
     private boolean depositSack() {
         if (Rs2Inventory.hasItem(TitheFarmMaterial.getSeedForLevel().getFruitId())) {
             Microbot.log("Storing fruits into sack for experience...");
-            Rs2GameObject.interact(ObjectID.SACK_27431);
+            Rs2GameObject.interact(ObjectID.TITHE_SACK_OF_FRUIT_EMPTY);
             Rs2Player.waitForWalking();
             Rs2Player.waitForAnimation();
             return true;

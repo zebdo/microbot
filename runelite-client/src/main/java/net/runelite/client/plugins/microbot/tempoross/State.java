@@ -42,9 +42,10 @@ public enum State {
     }
 
     public static int getTotalAvailableFishSlots() {
-        return Rs2Inventory.getEmptySlots() + getAllFish();
+        return Rs2Inventory.emptySlotCount() + getAllFish();
     }
 
+    @Override
     public String toString() {
         return name().toLowerCase().replace("_", " ");
     }

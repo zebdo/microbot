@@ -79,6 +79,10 @@ public class BarbarianFishingScript extends Script {
         return true;
     }
 
+    public void onGameTick() {
+
+    }
+
     private Rs2NpcModel findFishingSpot() {
         for (int fishingSpotId : FishingSpot.BARB_FISH.getIds()) {
             Rs2NpcModel fishingSpot = Rs2Npc.getNpc(fishingSpotId);
