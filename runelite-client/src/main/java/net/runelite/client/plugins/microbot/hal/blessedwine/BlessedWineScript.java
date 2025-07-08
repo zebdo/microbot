@@ -27,7 +27,7 @@ public class BlessedWineScript extends Script {
     private static final WorldPoint EXPOSED_ALTAR = new WorldPoint(1437, 3143, 0);
     private static final WorldPoint LIBATION_BOWL = new WorldPoint(1457, 3188, 0);
     private static final WorldPoint SHRINE_OF_RALOS = new WorldPoint(1449, 3172, 0);
-    private static final WorldPoint CAM_TORUM_BANK = new WorldPoint(1453, 9568, 1);
+    private static final WorldPoint CAM_TORUM_BANK = new WorldPoint(1454, 9568, 1);
     private static final WorldArea ALTAR_TOP = new WorldArea(1427, 3137, 16, 16, 0);
     private static final WorldArea LIBATION_ROOM = new WorldArea(1449, 3186, 16, 16, 0);
     private static final WorldArea TEMPLE = new WorldArea(1445, 3170, 10, 10, 0);
