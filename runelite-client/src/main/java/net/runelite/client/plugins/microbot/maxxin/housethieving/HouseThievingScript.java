@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.maxxin.housethieving;
 
+import net.runelite.api.GameState;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.TileObject;
@@ -15,6 +16,7 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import org.jetbrains.annotations.Nullable;
@@ -112,7 +114,7 @@ public class HouseThievingScript extends Script {
             Microbot.log("Have enough house keys, thieving houses", Level.INFO);
             state = State.FINDING_HOUSE;
             return;
-        } else if(!hasMaxHouseKeys(config) && (!hasFood || (!hasDodgyNecklaceInv && !hasDodgyNecklaceEquipped))) {
+        } else if(!hasMaxHouseKeys(config) && (!hasFood || (!hasDodgyNecklaceInv && !hasDodgyNecklaceEquipped && config.useDodgyNecklace())) && !config.worldHopForDistractedCitizens()) {
             Microbot.log("Need food or dodgy necklace to keep pickpocketing, withdrawing from bank", Level.INFO);
             state = State.BANKING;
             return;
@@ -151,6 +153,16 @@ public class HouseThievingScript extends Script {
                 var closestWealthyCitizen = nearbyWealthyCitizens.min(Comparator.comparingInt(a -> a.getWorldLocation().distanceTo(aureliaLocation)));
                 closestWealthyCitizen.ifPresent(rs2NpcModel -> pickpocketNpc = rs2NpcModel);
             }
+            if(config.worldHopForDistractedCitizens()) {
+                Microbot.log(String.format("Waiting %s seconds for Aurelia pickpocket", config.worldHopWaitTime()), Level.INFO);
+                var waitForPickpocket = sleepUntil(() -> aureliaNpc.getAnimation() == 866 || aureliaNpc.getAnimation() == 860, config.worldHopWaitTime() * 1000);
+                Microbot.log(String.format("Finished waiting %s seconds for Aurelia pickpocket", config.worldHopWaitTime()), Level.INFO);
+                if( !waitForPickpocket ) {
+                    doWorldHop();
+                    return;
+                } else
+                    distractedWealthyCitizen = getDistractedWealthyCitizen(aureliaNpc);
+            }
         }
 
         var targetWealthyCitizen = distractedWealthyCitizen != null ? distractedWealthyCitizen : pickpocketNpc;
@@ -177,6 +189,22 @@ public class HouseThievingScript extends Script {
                 Rs2Random.waitEx(600.0, 200.0);
             }
         }
+
+        if(distractedWealthyCitizen != null && config.worldHopForDistractedCitizens()) {
+            if(distractedWealthyCitizen.getOverheadText().contains("strange")) {
+                doWorldHop();
+            }
+        }
+    }
+
+    private void doWorldHop() {
+        Microbot.log("World hopping to check for distracted citizen event", Level.INFO);
+        boolean hoppedWorlds = Microbot.hopToWorld(Login.getRandomWorld(Rs2Player.isMember()));
+        if( hoppedWorlds ) {
+            sleepUntil(() -> Microbot.getClient().getGameState() == GameState.HOPPING);
+            sleepUntil(() -> Microbot.getClient().getGameState() == GameState.LOGGED_IN);
+            pickpocketNpc = null;
+        }
     }
 
     @Nullable
@@ -189,7 +217,7 @@ public class HouseThievingScript extends Script {
     }
 
     private void handleFindingHouse(HouseThievingConfig config, Rs2NpcModel houseNpc) {
-        if( Rs2Inventory.getEmptySlots() < 5 ) {
+        if( Rs2Inventory.emptySlotCount() < 5 ) {
             state = State.BANKING;
             return;
         }
@@ -294,10 +322,10 @@ public class HouseThievingScript extends Script {
             if( currentThievingObject == null ) {
                 var tileObject = Rs2Tile.getTile(currentThievingHouse.initialThievingChest.getX(), currentThievingHouse.initialThievingChest.getY());
                 if( tileObject != null ) {
-                    currentThievingObject = Rs2GameObject.findGameObjectByLocation(currentThievingHouse.initialThievingChest);
+                    currentThievingObject = Rs2GameObject.getGameObject(currentThievingHouse.initialThievingChest);
                     Rs2GameObject.interact(currentThievingObject, "Search");
                 }
-                currentThievingObject = Rs2GameObject.findGameObjectByLocation(currentThievingHouse.initialThievingChest);
+                currentThievingObject = Rs2GameObject.getGameObject(currentThievingHouse.initialThievingChest);
             }
 
             if( currentThievingObject != null && ( lastThievingSearch == null || (elapsedTime != null && elapsedTime > 50000) ) ) {
@@ -306,7 +334,7 @@ public class HouseThievingScript extends Script {
                 Rs2Random.waitEx(1000.0, 200.0);
             }
         } else {
-            currentThievingObject = Rs2GameObject.findGameObjectByLocation(hintArrow);
+            currentThievingObject = Rs2GameObject.getGameObject(hintArrow);
             if( !Rs2Player.isInteracting() || lastThievingSearch == null || (elapsedTime != null && elapsedTime > 50000) ) {
                 Rs2GameObject.interact(currentThievingObject, "Search");
                 lastThievingSearch = System.currentTimeMillis();
@@ -346,7 +374,7 @@ public class HouseThievingScript extends Script {
             return;
         }
 
-        if( !hasMaxHouseKeys(config) && hasFood && dodgyNecklaceReqsMet) {
+        if( !hasMaxHouseKeys(config) && ((hasFood && dodgyNecklaceReqsMet) || config.worldHopForDistractedCitizens())) {
             state = State.PICKPOCKETING;
             return;
         }
@@ -372,7 +400,7 @@ public class HouseThievingScript extends Script {
             Rs2Inventory.waitForInventoryChanges(600);
 
             if(!hasMaxHouseKeys(config)) {
-                if(!hasFood) {
+                if(!hasFood && !config.worldHopForDistractedCitizens()) {
                     if(!Rs2Bank.hasItem(config.foodSelection().getId())) {
                         Microbot.showMessage("No food found in bank!");
                         shutdown();
@@ -381,7 +409,7 @@ public class HouseThievingScript extends Script {
                     Rs2Bank.withdrawX(config.foodSelection().getId(), config.pickpocketFoodAmount());
                     Rs2Inventory.waitForInventoryChanges(600);
                 }
-                if(config.useDodgyNecklace()) {
+                if(config.useDodgyNecklace() && !config.worldHopForDistractedCitizens()) {
                     if(!Rs2Bank.hasItem(DODGY_NECKLACE)) {
                         Microbot.showMessage("No dodgy necklace found in bank!");
                         shutdown();
