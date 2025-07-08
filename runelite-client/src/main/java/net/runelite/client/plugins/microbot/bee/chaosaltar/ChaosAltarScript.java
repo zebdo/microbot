@@ -40,8 +40,9 @@ public class ChaosAltarScript extends Script {
 
     private State currentState = State.UNKNOWN;
 
-    public static boolean test = false;
-    public boolean run(ChaosAltarConfig config) {
+    public static boolean didWeDie = false;
+
+    public boolean run(ChaosAltarConfig config, ChaosAltarPlugin plugin) {
         Microbot.enableAutoRunOn = false;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -60,6 +61,7 @@ public class ChaosAltarScript extends Script {
                 // Execute state action
                 switch (currentState) {
                     case BANK:
+                        plugin.lockCondition.lock();
                         handleBanking();
                         break;
                     case TELEPORT_TO_WILDERNESS:
@@ -74,6 +76,7 @@ public class ChaosAltarScript extends Script {
                         break;
                     case DIE_TO_NPC:
                         dieToNpc();
+                        plugin.lockCondition.unlock();
                         handleBanking();
                         break;
                     default:
@@ -228,7 +231,7 @@ public class ChaosAltarScript extends Script {
     }
 
     public boolean hasBurningAmulet() {
-        return Rs2Inventory.contains(x-> x != null && x.getName().contains("Burning amulet")) || Rs2Equipment.isWearing("burning amulet");
+        return Rs2Inventory.contains(x-> x != null && x.getName().contains("Burning amulet")) || Rs2Equipment.isWearing("Burning amulet", false);
     }
 
     private State determineState() {
@@ -237,6 +240,11 @@ public class ChaosAltarScript extends Script {
         boolean hasAnyBones = Rs2Inventory.contains(DRAGON_BONES);
         boolean atAltar = isAtChaosAltar();
 
+        if(didWeDie){
+            didWeDie = false;
+            Microbot.log("We died! Going to the bank...");
+            return State.BANK;
+        }
         if (!inWilderness && !hasBones) {
             return State.BANK;
         }
