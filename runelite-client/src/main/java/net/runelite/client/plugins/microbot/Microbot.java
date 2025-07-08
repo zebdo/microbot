@@ -347,14 +347,20 @@ public class Microbot {
 	{
 		try
 		{
-			SwingUtilities.invokeAndWait(() ->
+			Runnable messageRunnable = () ->
 			{
 				JOptionPane.showConfirmDialog(null, message, "Message",
 					JOptionPane.DEFAULT_OPTION);
-			});
+			};
+			if (SwingUtilities.isEventDispatchThread()) {
+				messageRunnable.run();
+			} else {
+				SwingUtilities.invokeAndWait(messageRunnable);
+			}
 		}
 		catch (Exception ex)
 		{
+			log.error("Error displaying message {}: {}", message, ex.getMessage(), ex);
 			ex.printStackTrace();
 		}
 	}
@@ -363,31 +369,29 @@ public class Microbot {
 	{
 		try
 		{
-			SwingUtilities.invokeAndWait(() -> {
-				final JOptionPane optionPane = new JOptionPane(
-					message,
-					JOptionPane.INFORMATION_MESSAGE,
-					JOptionPane.DEFAULT_OPTION
-				);
-
-				final JDialog dialog = optionPane.createDialog("Message");
-
-				// Set up timer to close the dialog after 10 seconds
-				Timer timer = new Timer(disposeTime, e -> {
-					dialog.dispose();
-				});
+			Runnable messageRunnable = () ->
+			{
+				JOptionPane pane = new JOptionPane(message, JOptionPane.INFORMATION_MESSAGE);
+				JDialog dialog = pane.createDialog("Message");
+				dialog.setModal(false);
+				dialog.setVisible(true);
+				Timer timer = new Timer(disposeTime, e -> dialog.dispose());
 				timer.setRepeats(false);
 				timer.start();
-				dialog.setVisible(true);
-				timer.stop();
-			});
+
+			};
+			if (SwingUtilities.isEventDispatchThread()) {
+				messageRunnable.run();
+			} else {
+				SwingUtilities.invokeAndWait(messageRunnable);
+			}
 		}
 		catch (Exception ex)
 		{
+			log.error("Error displaying message {}: {}", message, ex.getMessage(), ex);
 			ex.printStackTrace();
 		}
 	}
-
 
 	public static List<Rs2ItemModel> updateItemContainer(int id, ItemContainerChanged e)
 	{
@@ -419,8 +423,8 @@ public class Microbot {
 
 	@SneakyThrows
 	private static boolean togglePlugin(Plugin plugin, boolean enable) {
-		if (plugin == null) return !enable; // we should always be returning false, e.g - if enable is false and plugin is null - !enable, would return true
-		final AtomicBoolean success = new AtomicBoolean(false);        
+		if (plugin == null) return false;
+		final AtomicBoolean success = new AtomicBoolean(false);
 		Callable<Boolean> callable = () -> {        
         	try {
 				getPluginManager().setPluginEnabled(plugin, enable);
@@ -431,7 +435,7 @@ public class Microbot {
 					success.set(getPluginManager().stopPlugin(plugin));
 				}
 			} catch (PluginInstantiationException e) {
-				log.error("Error toggling plugin ({}): {}", plugin.getClass().getSimpleName(), e.getMessage(), e);
+				log.error("Error toggling plugin {} ({}): {}", success.get() ? "on" : "off", plugin.getClass().getSimpleName(), e.getMessage(), e);
 				e.printStackTrace();
 			}
 			return success.get();
