@@ -34,12 +34,7 @@ public class AerialFishingOverlay extends OverlayPanel {
 
             panelComponent.getChildren().add(LineComponent.builder().build());
             // check if player is in the correct region(10038)
-            String region;
-            if (Rs2Player.getWorldLocation() != null) {
-                region = Rs2Player.getWorldLocation().getRegionID() == 5432 ? "In Region" : "Not in Region";
-            } else {
-                region = "Not in Region";
-            }
+            String region = Rs2Player.getWorldLocation() != null ? Rs2Player.getWorldLocation().getRegionID() == 5432 ? "In Region" : "Not in Region" : "Not in Region";
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Region: " + region)
                     .build());

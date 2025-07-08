@@ -106,10 +106,15 @@ public class Constants {
             ItemID.BIRD_NEST_SEEDS,
             ItemID.BIRD_NEST_RING,
             ItemID.BIRD_NEST_EMPTY,
+            ItemID.CRUSHED_BIRD_NEST,
             ItemID.BIRD_NEST_CHEAPSEEDS,
             ItemID.BIRD_NEST_DECENTSEEDS,
             ItemID.BIRD_NEST_SEEDS_JAN2019,
-            ItemID.BIRD_NEST_DECENTSEEDS_JAN2019
+            ItemID.BIRD_NEST_DECENTSEEDS_JAN2019,
+            ItemID.WC_CLUE_NEST_EASY,
+            ItemID.WC_CLUE_NEST_MEDIUM,
+            ItemID.WC_CLUE_NEST_HARD,
+            ItemID.WC_CLUE_NEST_ELITE
     );
 
     public static final Set<Integer> MAGIC_MUSHTREE_IDS = ImmutableSet.of(
@@ -330,10 +335,6 @@ public class Constants {
             ItemID._2DOSEDIVINECOMBAT,
             ItemID._3DOSEDIVINECOMBAT,
             ItemID._4DOSEDIVINECOMBAT,
-            ItemID._1DOSECOMBAT,
-            ItemID._2DOSECOMBAT,
-            ItemID._3DOSECOMBAT,
-            ItemID._4DOSECOMBAT,
             ItemID._1DOSE2COMBAT,
             ItemID._2DOSE2COMBAT,
             ItemID._3DOSE2COMBAT,
@@ -428,7 +429,8 @@ public class Constants {
             ItemID.ARDY_CAPE_MEDIUM,
             ItemID.ARDY_CAPE_HARD,
             ItemID.ARDY_CAPE_ELITE,
-            ItemID.SKILLCAPE_MAX_ARDY
+            ItemID.SKILLCAPE_MAX_ARDY,
+            ItemID.CERT_ARRAVCERTIFICATE
     );
 
     public static final Set<Integer> DUELING_RING_IDS = ImmutableSet.of(
@@ -458,7 +460,11 @@ public class Constants {
             ItemID.TRAIL_AMULET_OF_GLORY_1,
             ItemID.TRAIL_AMULET_OF_GLORY_2,
             ItemID.TRAIL_AMULET_OF_GLORY_3,
-            ItemID.TRAIL_AMULET_OF_GLORY_4
+            ItemID.TRAIL_AMULET_OF_GLORY_4,
+            ItemID.TRAIL_AMULET_OF_GLORY_5,
+            ItemID.TRAIL_AMULET_OF_GLORY_6,
+            ItemID.AMULET_OF_GLORY_INF,
+            ItemID.BR_AMULET_OF_GLORY
     );
 
     public static final Set<Integer> SKILL_NECKLACE_IDS = ImmutableSet.of(
@@ -741,7 +747,7 @@ public class Constants {
             ItemID.PLANTPOT_TEAK_SAPLING,
             ItemID.PLANTPOT_MAHOGANY_SAPLING,
             ItemID.PLANTPOT_CALQUAT_SAPLING,
-            ItemID.PRIF_TOOL_SEED, // 23954 - CRYSTAL_SEEDLING
+            ItemID.PLANTPOT_CRYSTAL_TREE_SAPLING,
             ItemID.PLANTPOT_SPIRIT_TREE_SEED,
             ItemID.PLANTPOT_CELASTRUS_TREE_SEED,
             ItemID.PLANTPOT_REDWOOD_TREE_SEED
@@ -885,38 +891,47 @@ public class Constants {
             ItemID.DRAGON_AXE,
             ItemID.TRAILBLAZER_AXE_NO_INFERNAL,
             ItemID.INFERNAL_AXE,
+            ItemID.INFERNAL_AXE_EMPTY,
             ItemID.TRAILBLAZER_AXE,
             ItemID.TRAILBLAZER_AXE_EMPTY,
-            ItemID.TRAILBLAZER_AXE_EMPTY,
+            ItemID.TRAILBLAZER_RELOADED_AXE,
+            ItemID.TRAILBLAZER_RELOADED_AXE_EMPTY,
             ItemID.CRYSTAL_AXE,
-            ItemID.GAUNTLET_AXE,
             ItemID.CRYSTAL_AXE_INACTIVE,
+            ItemID.GAUNTLET_AXE,
+            ItemID.GAUNTLET_AXE_HM,
             ItemID._3A_AXE
     );
 
     public static final Set<Integer> SPECIAL_PICKAXE_IDS = ImmutableSet.of(
             ItemID.DRAGON_PICKAXE,
-            ItemID.TRAILBLAZER_AXE_NO_INFERNAL,
+            ItemID.TRAILBLAZER_PICKAXE_NO_INFERNAL,
             ItemID.INFERNAL_PICKAXE,
-            ItemID.TRAILBLAZER_AXE,
+            ItemID.INFERNAL_PICKAXE_EMPTY,
+            ItemID.TRAILBLAZER_PICKAXE,
             ItemID.TRAILBLAZER_PICKAXE_EMPTY,
-            ItemID.TRAILBLAZER_PICKAXE_EMPTY,
+            ItemID.TRAILBLAZER_RELOADED_PICKAXE,
+            ItemID.TRAILBLAZER_RELOADED_PICKAXE_EMPTY,
             ItemID.CRYSTAL_PICKAXE,
-            ItemID.GAUNTLET_PICKAXE,
             ItemID.CRYSTAL_PICKAXE_INACTIVE,
+            ItemID.GAUNTLET_PICKAXE,
+            ItemID.GAUNTLET_PICKAXE_HM,
             ItemID._3A_PICKAXE
     );
 
     public static final Set<Integer> SPECIAL_HARPOON_IDS = ImmutableSet.of(
             ItemID.DRAGON_HARPOON,
-            ItemID.TRAILBLAZER_AXE_NO_INFERNAL,
+            ItemID.TRAILBLAZER_HARPOON_NO_INFERNAL,
             ItemID.INFERNAL_HARPOON,
-            ItemID.TRAILBLAZER_AXE,
+            ItemID.INFERNAL_HARPOON_EMPTY,
+            ItemID.TRAILBLAZER_HARPOON,
             ItemID.TRAILBLAZER_HARPOON_EMPTY,
-            ItemID.TRAILBLAZER_HARPOON_EMPTY,
+            ItemID.TRAILBLAZER_RELOADED_HARPOON,
+            ItemID.TRAILBLAZER_RELOADED_HARPOON_EMPTY,
             ItemID.CRYSTAL_HARPOON,
+            ItemID.CRYSTAL_HARPOON_INACTIVE,
             ItemID.GAUNTLET_HARPOON,
-            ItemID.CRYSTAL_HARPOON_INACTIVE
+            ItemID.GAUNTLET_HARPOON_HM
     );
 
     public static final Set<Integer> PHARAOHS_SCEPTRE_IDS = ImmutableSet.of(
@@ -980,99 +995,89 @@ public class Constants {
     );
 
     public static final Set<Integer> TELEPORT_IDS = ImmutableSet.of(
-            ItemID.TABLET_ANNAKARL,
-            ItemID.TABLET_CARRALLANGAR,
-            ItemID.TABLET_DAREEYAK,
-            ItemID.TABLET_GHORROCK,
-            ItemID.TABLET_KHARYLL,
-            ItemID.TABLET_LASSAR,
-            ItemID.TABLET_PADDEWA,
-            ItemID.TABLET_SENNTISTEN,
-            ItemID.BH_IMBUE_RINGOFWEALTH,
-            ItemID.RING_OF_WEALTH_I,
-            ItemID.BH_IMBUE_MAGICSHORTBOW,
-            ItemID.MAGIC_SHORTBOW_I,
-            ItemID.BH_CLUE_BOX,
-            ItemID.BH_RUNE_POUCH,
-            ItemID.NEST_BOX_EMPTY,
-            ItemID.NEST_BOX_CHEAPSEEDS,
-            ItemID.NEST_BOX_RING,
-            ItemID.STEAM_BATTLESTAFF_PRETTY,
-            ItemID.MYSTIC_STEAM_BATTLESTAFF_PRETTY,
-            ItemID.DRAGON_PICKAXE_PRETTY,
-            ItemID.STEAM_STAFF_UPGRADE_KIT,
-            ItemID.DRAGON_PICKAXE_UPGRADE_KIT,
-            ItemID.WARD_UPGRADE_KIT,
-            ItemID.TEAR_OF_SARADOMIN,
-            ItemID.MALEDICTION_WARD_PRETTY,
-            ItemID.ODIUM_WARD_PRETTY,
-            ItemID.BLESSED_SARADOMIN_SWORD,
-            ItemID.BLESSED_SARADOMIN_SWORD_DEGRADED,
-            ItemID.IRONMAN_HELM,
-            ItemID.IRONMAN_PLATEBODY,
-            ItemID.IRONMAN_PLATELEGS,
-            ItemID.ULTIMATE_IRONMAN_HELM,
-            ItemID.ULTIMATE_IRONMAN_PLATEBODY,
-            ItemID.ULTIMATE_IRONMAN_PLATELEGS,
-            ItemID.COREPET,
-            ItemID.ELYSIAN,
-            ItemID.ELYSIAN_SIGIL,
-            ItemID.SPECTRAL,
-            ItemID.SPECTRAL_SIGIL,
-            ItemID.ARCANE,
-            ItemID.ARCANE_SIGIL,
-            ItemID.SPIRIT_SHIELD,
-            ItemID.BLESSED_SPIRIT_SHIELD,
-            ItemID.HOLY_ELIXIR,
-            ItemID.COMMUNITY_HWEEN,
-            ItemID.HW07_DIARY,
-            ItemID.HW07_BLACKROBETOP,
-            ItemID.HW07_WILL,
-            ItemID.HW07_BONES,
-            ItemID.HW07_SERVANT_SKULL,
-            ItemID.HW07_HOURGLASS,
-            ItemID.HW07_WHETSTONE,
-            ItemID.HW07_EYEBALL,
-            ItemID.HW07_VOICE_POTION,
-            ItemID.HW07_GRIM_HOOD,
-            ItemID.BOUNTY_TELEPORT_SCROLL,
-            ItemID.GRANITE_MAUL_PRETTY,
-            ItemID.GRANITE_CLAMP,
-            ItemID.DAMNED_AMULET,
-            ItemID.DAMNED_AMULET_DEGRADED,
-            ItemID.FLAMTAER_BAG,
-            ItemID.BOUNTY_HAT_HUNTER,
-            ItemID.BOUNTY_HAT_ROGUE,
-            ItemID.PACK_OLIVE_OIL,
-            ItemID.PACK_EYE_NEWT,
-            ItemID.TG14_MEAL,
-            ItemID.CERT_TG14_MEAL,
-            ItemID.SET_CANNON,
-            ItemID.SET_DHIDE_GREEN,
-            ItemID.SET_DHIDE_BLUE,
-            ItemID.SET_DHIDE_RED,
-            ItemID.SET_DHIDE_BLACK,
-            ItemID.SET_BARROWS_GUTHAN,
-            ItemID.SET_BARROWS_VERAC,
-            ItemID.SET_BARROWS_DHAROK,
-            ItemID.SET_BARROWS_TORAG,
-            ItemID.SET_BARROWS_AHRIM,
-            ItemID.SET_BARROWS_KARIL,
-            ItemID.JAR_OF_SAND,
-            ItemID.SANTA_MASK,
-            ItemID.SANTA_JACKET,
-            ItemID.SANTA_PANTS,
-            ItemID.SANTA_GLOVES,
-            ItemID.SANTA_BOOTS,
-            ItemID.ANTISANTA_MASK,
-            ItemID.ANTISANTA_JACKET,
-            ItemID.ANTISANTA_PANTS,
-            ItemID.ANTISANTA_GLOVES,
-            ItemID.ANTISANTA_BOOTS,
-            ItemID.ANTISANTA_COALBOX_EMPTY,
-            ItemID.ANTISANTA_COALBOX_FULL,
-            ItemID.TOXIC_TOTS_CHARGED,
-            ItemID.TOXIC_TOTS_UNCHARGED
+            ItemID.TABLET_ANNAKARL, // 12775
+            ItemID.TELETAB_APE, // 19631
+            ItemID.TELETAB_LUMBRIDGE, // 8008
+            ItemID.POH_TABLET_ARDOUGNETELEPORT, // 8011
+            ItemID.LUNAR_TABLET_BARBARIAN_TELEPORT, // 24955
+            ItemID.TELETAB_BARROWS, // 19629
+            ItemID.TELETAB_BATTLEFRONT, // 22949
+            ItemID.BLIGHTED_SACK_TELEBLOCK, // 24615
+            ItemID.NZONE_TELETAB_BRIMHAVEN, // 11745
+            ItemID.POH_TABLET_CAMELOTTELEPORT, // 8010
+            ItemID.TABLET_CARRALLANGAR, // 12776
+            ItemID.LUNAR_TABLET_CATHERBY_TELEPORT, // 24961
+            ItemID.TELETAB_CEMETERY, // 19627
+            ItemID.GAUNTLET_TELEPORT_CRYSTAL_HM, // 23858
+            ItemID.ELF_CRYSTAL_TINY, // 6103
+            ItemID.TABLET_DAREEYAK, // 12777
+            ItemID.DEADMAN_TOURNAMENT_TELETAB, // 13666
+            ItemID.TELEPORTSCROLL_DIGSITE, // 12403
+            ItemID.TELETAB_DRAYNOR, // 19615
+            ItemID.PRIF_TELEPORT_SEED, // 23959
+            ItemID.PRIF_TELEPORT_CRYSTAL, // 23946
+            ItemID.POH_TABLET_FALADORTELEPORT, // 8009
+            ItemID.TELEPORTSCROLL_FELDIP, // 12404
+            ItemID.TELETAB_FENK, // 19621
+            ItemID.LUNAR_TABLET_FISHING_GUILD_TELEPORT, // 24959
+            ItemID.TABLET_GHORROCK, // 12778
+            ItemID.TELETAB_HARMONY, // 19625
+            ItemID.NZONE_TELETAB_KOUREND, // 19651
+            ItemID.LUNAR_TABLET_ICE_PLATEAU_TELEPORT, // 24963
+            ItemID.TELEPORTSCROLL_ELF, // 12410
+            ItemID.TELEPORTSCROLL_CERBERUS, // 13249
+            ItemID.TABLET_KHARYLL, // 12779
+            ItemID.LUNAR_TABLET_KHAZARD_TELEPORT, // 24957
+            ItemID.POH_TABLET_KOURENDTELEPORT, // 28790
+            ItemID.TABLET_LASSAR, // 12780
+            ItemID.TELEPORTSCROLL_LUMBERYARD, // 12642
+            ItemID.POH_TABLET_LUMBRIDGETELEPORT, // 8008
+            ItemID.TELEPORTSCROLL_LUNARISLE, // 12405
+            ItemID.TELETAB_MIND_ALTAR, // 19617
+            ItemID.LUNAR_TABLET_MOONCLAN_TELEPORT, // 24949
+            ItemID.TELEPORTSCROLL_MORTTON, // 12406
+            ItemID.TELEPORTSCROLL_MOSLES, // 12411
+            ItemID.TELEPORTSCROLL_NARDAH, // 12402
+            ItemID.LUNAR_TABLET_OURANIA_TELEPORT, // 24951
+            ItemID.TABLET_PADDEWA, // 12781
+            ItemID.TELEPORTSCROLL_PESTCONTROL, // 12407
+            ItemID.TELEPORTSCROLL_PISCATORIS, // 12408
+            ItemID.NZONE_TELETAB_POLLNIVNEACH, // 11743
+            ItemID.NZONE_TELETAB_PRIFDDINAS, // 23771
+            ItemID.NZONE_TELETAB_RELLEKKA, // 11744
+            ItemID.TELEPORTSCROLL_REVENANTS, // 21802
+            ItemID.NZONE_TELETAB_RIMMINGTON, // 11741
+            ItemID.TELETAB_SALVE, // 19619
+            ItemID.XMAS19_TABLET_SCAPE_RUNE, // 24441
+            ItemID.TABLET_SENNTISTEN, // 12782
+            ItemID.LEAGUE_3_HOME_TELEPORT_SCROLL, // 26500
+            ItemID.SPEEDY_TELEPORT_SCROLL, // 27416
+            ItemID.TELEPORTSCROLL_TAIBWO, // 12409
+            ItemID.TABLET_TARGET, // 24336
+            ItemID.TWISTED_HOME_TELEPORT_SCROLL, // 24460
+            ItemID.NZONE_TELETAB_TAVERLEY, // 11742
+            ItemID.CHRONICLE_TELE_CARD, // 13658
+            ItemID.GAUNTLET_TELEPORT_CRYSTAL, // 23904
+            ItemID.MOURNING_TELEPORT_CRYSTAL_1, // 6102
+            ItemID.MOURNING_TELEPORT_CRYSTAL_2, // 6101
+            ItemID.MOURNING_TELEPORT_CRYSTAL_3, // 6100
+            ItemID.MOURNING_TELEPORT_CRYSTAL_4, // 6099
+            ItemID.MOURNING_TELEPORT_CRYSTAL_5, // 13102
+            ItemID.POH_TABLET_TELEPORTTOHOUSE, // 8013
+            ItemID.POH_TELEPORT_TRAP, // 8147
+            ItemID.LEAGUE_4_HOME_TELEPORT_SCROLL, // 28705
+            ItemID.NZONE_TELETAB_TROLLHEIM, // 11747
+            ItemID.TRAILBLAZER_HOME_TELEPORT_SCROLL, // 25087
+            ItemID.POH_TABLET_VARROCKTELEPORT, // 8007
+            ItemID.FOSSIL_TABLET_VOLCANOTELEPORT, // 21541
+            ItemID.POH_TABLET_WATCHTOWERTELEPORT, // 8012
+            ItemID.LUNAR_TABLET_WATERBIRTH_TELEPORT, // 24953
+            ItemID.TELEPORTSCROLL_WATSON, // 23387
+            ItemID.TELETAB_WESTARDY, // 19623
+            ItemID.TABLET_WILDYCRABS, // 24251
+            ItemID.XMAS17_TELETAB, // 21863
+            ItemID.NZONE_TELETAB_YANILLE, // 11746
+            ItemID.TELEPORTSCROLL_ZULANDRA // 12938
     );
 
     public static final Set<Integer> FOOD_ITEM_IDS = ImmutableSet.of(
@@ -1086,7 +1091,7 @@ public class Constants {
             ItemID.GAUNTLET_FOOD,
             ItemID.RAIDS_FISH0_COOKED, ItemID.RAIDS_FISH1_COOKED, ItemID.RAIDS_FISH2_COOKED, ItemID.RAIDS_FISH3_COOKED, ItemID.RAIDS_FISH4_COOKED, ItemID.RAIDS_FISH5_COOKED, ItemID.RAIDS_FISH6_COOKED,
             ItemID.RAIDS_BAT0_COOKED, ItemID.RAIDS_BAT1_COOKED, ItemID.RAIDS_BAT2_COOKED, ItemID.RAIDS_BAT3_COOKED, ItemID.RAIDS_BAT4_COOKED, ItemID.RAIDS_BAT5_COOKED, ItemID.RAIDS_BAT6_COOKED,
-            ItemID.UGTHANKI_KEBAB, ItemID.UGTHANKI_KEBAB, ItemID.SUPER_KEBAB,
+            ItemID.UGTHANKI_KEBAB_BAD, ItemID.UGTHANKI_KEBAB, ItemID.SUPER_KEBAB,
             ItemID.POTATO_MUSHROOM_ONION,
             ItemID.CURRY,
             ItemID.POTATO_EGG_TOMATO,
@@ -1170,25 +1175,7 @@ public class Constants {
             ItemID.EQUA_LEAVES,
             ItemID.EDIBLE_SEAWEED,
             ItemID.DT2_SCAR_MAZE_STAMINA,
-            ItemID.DT2_GHORROCK_RATIONS,
-            ItemID.TBW_SPIDER_ON_STICK_RAW, ItemID.TBW_SPIDER_ON_STICK_COOKED, ItemID.TBW_SPIDER_ON_SHAFT_RAW, ItemID.TBW_SPIDER_ON_SHAFT_COOKED, ItemID.TBW_SPIDER_ON_SHAFT_BURNT,
-            ItemID.SNAIL_CORPSE_COOKED3,
-            ItemID.MACKEREL,
-            ItemID.GIANT_CARP,
-            ItemID.SPIT_ROASTED_BIRD_MEAT,
-            ItemID.GIANT_FROGSPAWN,
-            ItemID.COOKED_MYSTERY_MEAT,
-            ItemID.COOKED_RABBIT,
-            ItemID.BOWL_CHILLI_CARNE,
-            ItemID.BOWL_MUSHROOM_FRIED,
-            ItemID.BOWL_ONION_FRIED,
-            ItemID.BOWL_EGG_SCRAMBLED,
-            ItemID.HERRING,
-            ItemID.SNAIL_CORPSE_COOKED1, ItemID.SNAIL_CORPSE_COOKED2,
-            ItemID.BREAD,
-            ItemID.POTATO_BAKED,
-            ItemID.BOWL_ONIONTOMATO,
-            ItemID.CAKE_SLICE, ItemID.CHOCOLATE_SLICE
+            ItemID.DT2_GHORROCK_RATIONS
     );
 
     public static final Set<Integer> GRACEFUL_HOOD = ImmutableSet.of(
@@ -1335,91 +1322,136 @@ public class Constants {
             ItemID.GRACEFUL_CAPE_TRAILBLAZER_WORN
     );
 
-    public static final Set<Integer> BANK_OBJECT_IDS = ImmutableSet.of(
-        ObjectID.DWARF_KELDAGRIM_BANKBOOTH,
-        ObjectID.NEWBIEBANKBOOTH,
-        ObjectID.BANKBOOTH,
-        ObjectID.BANKBOOTH_DEADMAN,
-        ObjectID.ELID_BANKBOOTH,
-        ObjectID.BANKPRIVATEBOOTH,
-        ObjectID.FAI_VARROCK_BANKBOOTH,
-        ObjectID.FAI_VARROCK_BANKBOOTH_DEADMAN,
-        ObjectID.LOVA_BANK_BOOTH_03,
-        ObjectID.LOVA_BANK_BOOTH_04,
-        ObjectID.TOB_SURFACE_BANKBOOTH, // 32666
-        ObjectID.FAI_VARROCK_BANKBOOTH_MULTI, // 34810
-        ObjectID.PRIF_BANKBOOTH_OPEN, // 36559
-        ObjectID.TUT2_BANKBOOTH, // 37959
-        ObjectID.DARKM_BANKBOOTH, // 39238
-        ObjectID.GIM_ISLAND_BANKBOOTH, // 42837
-        ObjectID.PVPW_BANKCHEST, // 10777
-        ObjectID.FAI_VARROCK_BANK_CHEST,
-        ObjectID.CASTLEWARS_BANKCHEST,
-        ObjectID.CHAMPIONS_BANKCHEST,
-        ObjectID.PEST_BANK_CHEST,
-        ObjectID.DIARY_GUILD_BANKCHEST,
-        ObjectID.LUNAR_MOONCLAN_OPEN_CHEST,
-        ObjectID.LUNAR_MOONCLAN_BANK_CHEST,
-        ObjectID.BARBASSAULT_BANK_CHEST,
-        ObjectID.FRIS_BANK_CHEST_OPEN,
-        ObjectID.BLAST_BANK_CHEST,
-        ObjectID.FAIRY_CHEST_BANK,
-        ObjectID.LOVAKENGJ_BANK_CHEST_ORANGE,
-        ObjectID.LOVAKENGJ_BANK_CHEST_GREY,
-        ObjectID.MM_DESK_BANKCHEST,
-        ObjectID.WCGUILD_BANKCHEST,
-        ObjectID.WINT_BANKCHEST,
-        ObjectID.TOX_BANK_CHEST,
-        ObjectID.TZHAAR_BANK_CHEST,
-        ObjectID.DEADMAN_ARENA_BANK_CHEST_SPAWNING,
-        ObjectID.FOSSIL_BANK_CHEST_BUILT,
-        ObjectID.FOSSIL_VOLCANO_BANK_CHEST,
-        ObjectID.BRIMSTONE_BANKCHEST, // 34343
-        ObjectID.SOUL_WARS_BANKCHEST, // 40473
-        ObjectID.TEMPOROSS_LOBBY_BANK_CHEST, // 41315
-        ObjectID.BIM_RUINS_BANKCHEST, // 41493
-        ObjectID.GOTR_BANKCHEST, // 43697
-        ObjectID.GIANTS_FOUNDRY_CHEST // 44630
-    );
+    public static final Set<Integer> BANK_OBJECT_IDS =
+            ImmutableSet.of(
+                    ObjectID.DWARF_KELDAGRIM_BANKBOOTH, // 6084
+                    ObjectID.NEWBIEBANKBOOTH, // 10083
+                    ObjectID.BANKBOOTH, // 10355
+                    ObjectID.BANKBOOTH_DEADMAN, // 10357
+                    ObjectID.ELID_BANKBOOTH, // 10517
+                    ObjectID.BANKPRIVATEBOOTH, // 10527
+                    ObjectID.FAI_VARROCK_BANKBOOTH, // 10583
+                    ObjectID.FAI_VARROCK_BANKBOOTH_DEADMAN, // 10584
+                    ObjectID.PVPW_BANKCHEST, // 10777
+                    ObjectID.FEVER_BANKBOOTH, // 11338
+                    ObjectID.BURGH_BANKBOOTH_REPAIRED, // 12798
+                    ObjectID.BURGH_BANKBOOTH_DAMAGED, // 12799
+                    ObjectID.BURGH_BANKBOOTH_TOO_DAMAGED, // 12800
+                    ObjectID.BURGH_BANKBOOTH_TOO_DAMAGED2, // 12801
+                    ObjectID.PEST_BANKBOOTH, // 14367
+                    ObjectID.PEST_BANKBOOTH_CLOSED, // 14368
+                    ObjectID.AHOY_BANKBOOTH, // 16642
+                    ObjectID.LUNAR_MOONCLAN_BANKBOOTH, // 16700
+                    ObjectID.AIDE_BANKBOOTH, // 18491
+                    ObjectID.CONTACT_BANK_BOOTH, // 20325
+                    ObjectID.CONTACT_BANK_BOOTH_BROKEN_01, // 20326
+                    ObjectID.CONTACT_BANK_BOOTH_BROKEN_02, // 20327
+                    ObjectID.CONTACT_BANK_BOOTH_BROKEN_03, // 20328
+                    ObjectID.DORGESH_BANK_BOOTH, // 22819
+                    ObjectID.FAI_FALADOR_BANKBOOTH, // 24101
+                    ObjectID.CANAFIS_BANKBOOTH, // 24347
+                    ObjectID.KR_BANKBOOTH, // 25808
+                    ObjectID.FAI_FALADOR_BANKBOOTH_DEADMAN, // 27254
+                    ObjectID.PEST_BANKBOOTH_DEADMAN, // 27260
+                    ObjectID.CONTACT_BANK_BOOTH_DEADMAN, // 27263
+                    ObjectID.KR_BANKBOOTH_DEADMAN, // 27265
+                    ObjectID.AHOY_BANKBOOTH_DEADMAN, // 27267
+                    ObjectID.AIDE_BANKBOOTH_DEADMAN, // 27292
+                    ObjectID.PISCARILIUS_BANK_BOOTH_01, // 27718
+                    ObjectID.PISCARILIUS_BANK_BOOTH_02, // 27719
+                    ObjectID.PISCARILIUS_BANK_BOOTH_03, // 27720
+                    ObjectID.PISCARILIUS_BANK_BOOTH_04, // 27721
+                    ObjectID.ARCHEEUS_BANK_BOOTH_CLOSED, // 28429
+                    ObjectID.ARCHEEUS_BANK_BOOTH_OPEN_01, // 28430
+                    ObjectID.ARCHEEUS_BANK_BOOTH_OPEN_02, // 28431
+                    ObjectID.ARCHEEUS_BANK_BOOTH_OPEN_03, // 28432
+                    ObjectID.ARCHEEUS_BANK_BOOTH_OPEN_04, // 28433
+                    ObjectID.LOVA_BANK_BOOTH_01, // 28546
+                    ObjectID.LOVA_BANK_BOOTH_02, // 28547
+                    ObjectID.LOVA_BANK_BOOTH_03, // 28548
+                    ObjectID.LOVA_BANK_BOOTH_04, // 28549
+                    ObjectID.EXCHANGE_BANK_WALL_BANK, // 10060
+                    ObjectID.EXCHANGE_BANK_WALL_EXCHANGE, // 10061
+                    ObjectID.EXCHANGE_BANK_WALL_BANK_3OPS // 30390
+            );
 
-    public static final Set<Integer> BANK_NPC_IDS = ImmutableSet.of(
-        NpcID.MOURNING_ELF_BANKERM, // 1479
-        NpcID.MOURNING_ELF_BANKERF, // 1480
-        NpcID.BANKER1, // 1613
-        NpcID.BANKER2, // 1618
-        NpcID.BANKER1_WEST, // 1633
-        NpcID.BANKER1_EAST, // 1634
-        NpcID.WOM_BANKER1, // 2117
-        NpcID.WOM_BANKER2, // 2118
-        NpcID.WOM_BANKER3, // 2119
-        NpcID.DORGESH_FEMALE_BANKER, // 2292
-        NpcID.DORGESH_MALE_BANKER, // 2293
-        NpcID.DWARF_CITY_BANKER1, // 2368
-        NpcID.DWARF_CITY_BANKER2, // 2369
-        NpcID.WEREWOLFBANKER, // 2633
-        NpcID.BANKER1_NEW, // 2897
-        NpcID.BANKER2_NEW, // 2898
-        NpcID.BANKER2_EAST, // 3089
-        NpcID.KHARIDBANKER1, // 3090
-        NpcID.KHARIDBANKER2, // 3091
-        NpcID.FAIRY_BANKER, // 3092
-        NpcID.SHILOBANKER, // 3093
-        NpcID.FALADOR_BANKER, // 3094
-        NpcID.NOOBBANKER, // 3318
-        NpcID.CONTACT_BANKER_MALE, // 3887
-        NpcID.CONTACT_BANKER_FEMALE, // 3888
-        NpcID.FEVER_BANKER_01, // 4054
-        NpcID.FEVER_BANKER_02, // 4055
-        NpcID.ELID_BANKER, // 4762
-        NpcID.GNOMEBANKER, // 6084
-        NpcID.SHAYZIEN_BANKER_M_NORTH, // 6859
-        NpcID.SHAYZIEN_BANKER_M_EAST, // 6860
-        NpcID.SHAYZIEN_BANKER_M_WEST, // 6861
-        NpcID.SHAYZIEN_BANKER_F_NORTH, // 6862
-        NpcID.SHAYZIEN_BANKER_F_EAST, // 6863
-        NpcID.SHAYZIEN_BANKER_F_WEST // 6864
-    );
-
+    public static final Set<Integer> BANK_NPC_IDS =
+            ImmutableSet.of(
+                    NpcID.MISC_BANKER, // 766
+                    NpcID.MOURNING_ELF_BANKERM, // 1479
+                    NpcID.MOURNING_ELF_BANKERF, // 1480
+                    NpcID.BANKER1, // 1613
+                    NpcID.BANKER2, // 1618
+                    NpcID.BANKER1_WEST, // 1633
+                    NpcID.BANKER1_EAST, // 1634
+                    NpcID.WOM_BANKER1, // 2117
+                    NpcID.WOM_BANKER2, // 2118
+                    NpcID.WOM_BANKER3, // 2119
+                    NpcID.DORGESH_FEMALE_BANKER, // 2292
+                    NpcID.DORGESH_MALE_BANKER, // 2293
+                    NpcID.DWARF_CITY_BANKER1, // 2368
+                    NpcID.DWARF_CITY_BANKER2, // 2369
+                    NpcID.WEREWOLFBANKER, // 2633
+                    NpcID.BANKER1_NEW, // 2897
+                    NpcID.BANKER2_NEW, // 2898
+                    NpcID.AHOY_GHOST_BANKER, // 3003
+                    NpcID.BANKER2_EAST, // 3089
+                    NpcID.KHARIDBANKER1, // 3090
+                    NpcID.KHARIDBANKER2, // 3091
+                    NpcID.FAIRY_BANKER, // 3092
+                    NpcID.SHILOBANKER, // 3093
+                    NpcID.FALADOR_BANKER, // 3094
+                    NpcID.AIDE_TUTOR_BANKER, // 3227
+                    NpcID.NOOBBANKER, // 3318
+                    NpcID.LUNAR_MOONCLAN_MONK_MAN, // 3843
+                    NpcID.CONTACT_BANKER_MALE, // 3887
+                    NpcID.CONTACT_BANKER_FEMALE, // 3888
+                    NpcID.FEVER_BANKER_01, // 4054
+                    NpcID.FEVER_BANKER_02, // 4055
+                    NpcID.ELID_BANKER, // 4762
+                    NpcID.GNOMEBANKER, // 6084
+                    NpcID.SHAYZIEN_BANKER_M_NORTH, // 6859
+                    NpcID.SHAYZIEN_BANKER_M_EAST, // 6860
+                    NpcID.SHAYZIEN_BANKER_M_WEST, // 6861
+                    NpcID.SHAYZIEN_BANKER_F_NORTH, // 6862
+                    NpcID.SHAYZIEN_BANKER_F_EAST, // 6863
+                    NpcID.SHAYZIEN_BANKER_F_WEST, // 6864
+                    NpcID.HOSIDIUS_BANKER_M_WEST, // 6939
+                    NpcID.HOSIDIUS_BANKER_M_EAST, // 6940
+                    NpcID.HOSIDIUS_BANKER_F_WEST, // 6941
+                    NpcID.HOSIDIUS_BANKER_F_EAST, // 6942
+                    NpcID.PISCARILIUS_BANKER_1, // 6969
+                    NpcID.PISCARILIUS_BANKER_2, // 6970
+                    NpcID.ARCEUUS_BANKER_1_WEST, // 7057
+                    NpcID.ARCEUUS_BANKER_1_EAST, // 7058
+                    NpcID.ARCEUUS_BANKER_2_WEST, // 7059
+                    NpcID.ARCEUUS_BANKER_2_EAST, // 7060
+                    NpcID.LOVAKENGJ_BANKER_F_WEST, // 7077
+                    NpcID.LOVAKENGJ_BANKER_F_NORTH, // 7078
+                    NpcID.LOVAKENGJ_BANKER_F_EAST, // 7079
+                    NpcID.LOVAKENGJ_BANKER_F_SOUTH, // 7080
+                    NpcID.LOVAKENGJ_BANKER_M_EAST, // 7081
+                    NpcID.LOVAKENGJ_BANKER_M_SOUTH, // 7082
+                    NpcID.VAMPYRE_BANKER_FEMALE, // 8321
+                    NpcID.VAMPYRE_BANKER_MALE, // 8322
+                    NpcID.FARMING_GUILD_BANKER1, // 8589
+                    NpcID.FARMING_GUILD_BANKER2, // 8590
+                    NpcID.VARROCK_BANK_DOORGUARD, // 8666
+                    NpcID.PRIF_BANKERM1, // 9127
+                    NpcID.PRIF_BANKERM2, // 9128
+                    NpcID.PRIF_BANKERM3, // 9129
+                    NpcID.PRIF_BANKERM4, // 9130
+                    NpcID.PRIF_BANKERF1, // 9131
+                    NpcID.PRIF_BANKERF2, // 9132
+                    NpcID.TUT2_BANK_TUTOR, // 9484
+                    NpcID.DARKM_BANKER_FEMALE, // 9718
+                    NpcID.DARKM_BANKER_MALE, // 9719
+                    NpcID.WILDY_HUB_BANKER, // 10389
+                    NpcID.CLAN_HALL_BANKER_0, // 10734
+                    NpcID.CLAN_HALL_BANKER_1, // 10735
+                    NpcID.CLAN_HALL_BANKER_2, // 10736
+                    NpcID.CLAN_HALL_BANKER_3 // 10737
+            );
     public static final Set<Integer> PORTAL_NEXUS_IDS = ImmutableSet.of(
         ObjectID.POH_NEXUS_PORTAL_1,
         ObjectID.POH_NEXUS_PORTAL_2,

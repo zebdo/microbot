@@ -20,7 +20,6 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
-import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
@@ -35,7 +34,7 @@ public class WintertodtScript extends Script {
     public static GameObject unlitBrazier;
     public static GameObject brokenBrazier;
     public static NPC pyromancer;
-    public static Rs2NpcModel incapitatedPyromancer;
+    public static NPC incapitatedPyromancer;
     public static boolean helpedIncapitatedPyromancer = false;
     public static boolean isWintertodtAlive = false;
     public static int wintertodtHp = -1;
@@ -112,7 +111,7 @@ public class WintertodtScript extends Script {
 
     public void onNpcChanged(NpcChanged event) {
         if (event.getNpc().getId() == 7372) {
-            incapitatedPyromancer = (Rs2NpcModel) event.getNpc();
+            incapitatedPyromancer = event.getNpc();
 
         }
         if (event.getNpc().getId() == 7371) {
@@ -133,11 +132,11 @@ public class WintertodtScript extends Script {
         if (event.getNpc().getId() == 7372) {
             if (incapitatedPyromancer != null) {
                 if (incapitatedPyromancer.getWorldLocation().distanceTo2D(Rs2Player.getWorldLocation()) > event.getNpc().getWorldLocation().distanceTo2D(Rs2Player.getWorldLocation())) {
-                    incapitatedPyromancer = (Rs2NpcModel) event.getNpc();
+                    incapitatedPyromancer = event.getNpc();
                     return;
                 }
             }
-            incapitatedPyromancer = (Rs2NpcModel) event.getNpc();
+            incapitatedPyromancer = event.getNpc();
         }
         if (event.getNpc().getId() == 7371) {
             if (pyromancer != null) {

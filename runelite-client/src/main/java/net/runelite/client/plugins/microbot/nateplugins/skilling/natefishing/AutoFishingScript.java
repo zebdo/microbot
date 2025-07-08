@@ -52,10 +52,14 @@ public class AutoFishingScript extends Script {
                     initialPlayerLocation = Rs2Player.getWorldLocation();
                 }
 
-                if (config.useEchoHarpoon() && !Rs2Equipment.isWearing(ItemID.LEAGUE_TRAILBLAZER_HARPOON) && !Rs2Inventory.hasItem(ItemID.LEAGUE_TRAILBLAZER_HARPOON)) {
-                    Microbot.showMessage("Missing Echo harpoon");
-                    shutdown();
-                    return;
+                if (config.useEchoHarpoon()) {
+                    if (!Rs2Equipment.hasEquipped(ItemID.LEAGUE_TRAILBLAZER_HARPOON)) {
+                        if (!Rs2Inventory.hasItem(ItemID.LEAGUE_TRAILBLAZER_HARPOON)) {
+                            Microbot.showMessage("Missing Echo harpoon");
+                            shutdown();
+                            return;
+                        }
+                    }
                 }
 
                 if (!hasRequiredItems(fish)) {
@@ -86,8 +90,10 @@ public class AutoFishingScript extends Script {
                             validateInteractable(fishingSpot);
                         }
 
-                        if (fish.equals(Fish.KARAMBWAN) && Rs2Inventory.hasItem(ItemID.TBWT_RAW_KARAMBWANJI) && Rs2Inventory.hasItem(ItemID.TBWT_KARAMBWAN_VESSEL)) {
-                            Rs2Inventory.waitForInventoryChanges(() -> Rs2Inventory.combineClosest(ItemID.TBWT_RAW_KARAMBWANJI, ItemID.TBWT_KARAMBWAN_VESSEL), 600, 5000);
+                        if (fish.equals(Fish.KARAMBWAN) && Rs2Inventory.hasItem(ItemID.TBWT_RAW_KARAMBWANJI)) {
+                            if (Rs2Inventory.hasItem(ItemID.TBWT_KARAMBWAN_VESSEL)) {
+                                Rs2Inventory.waitForInventoryChanges(() -> Rs2Inventory.combineClosest(ItemID.TBWT_RAW_KARAMBWANJI, ItemID.TBWT_KARAMBWAN_VESSEL), 600, 5000);
+                            }
                         }
                         
                         if (Rs2Npc.interact(fishingSpot, fishAction)) {

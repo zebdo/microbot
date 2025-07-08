@@ -1,9 +1,8 @@
 package net.runelite.client.plugins.microbot.zerozero.tormenteddemons;
 
 import net.runelite.api.HeadIcon;
-import net.runelite.api.MenuAction;
-import net.runelite.api.Skill;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -15,8 +14,6 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
-import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -28,7 +25,6 @@ import net.runelite.client.plugins.microbot.zerozero.tormenteddemons.TormentedDe
 import net.runelite.client.plugins.microbot.zerozero.tormenteddemons.TormentedDemonConfig.MODE;
 import net.runelite.client.plugins.microbot.zerozero.tormenteddemons.TormentedDemonConfig.RangingPotionType;
 
-import java.awt.*;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -468,8 +464,7 @@ public class TormentedDemonScript extends Script {
                 Rs2Inventory.interact(ringId, "Wear");
                 sleep(800);
 
-                Microbot.doInvoke(new NewMenuEntry(-1, 25362456, MenuAction.CC_OP.getId(), JewelleryLocationEnum.FEROX_ENCLAVE.getIdentifier(), -1, "Equip"),
-                        new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
+                Rs2Equipment.useRingAction(JewelleryLocationEnum.FEROX_ENCLAVE);
                 logOnceToChat("Teleporting to Ferox Enclave using Ring of Dueling");
                 return;
             }

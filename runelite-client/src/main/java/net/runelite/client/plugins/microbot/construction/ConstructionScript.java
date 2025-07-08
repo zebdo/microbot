@@ -15,7 +15,6 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
-import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
@@ -27,14 +26,14 @@ public class ConstructionScript extends Script {
     ConstructionState state = ConstructionState.Idle;
     
     public TileObject getOakLarderSpace() {
-        return Rs2GameObject.getTileObject(ObjectID.POH_KITCHEN_5);
+        return Rs2GameObject.findObjectById(15403);
     }
 
     public TileObject getOakLarder() {
-        return Rs2GameObject.getTileObject(ObjectID.POH_LARDER_2);
+        return Rs2GameObject.findObjectById(13566);
     }
 
-    public Rs2NpcModel getButler() {
+    public NPC getButler() {
         return Rs2Npc.getNpc("Demon butler");
     }
 
@@ -80,7 +79,7 @@ public class ConstructionScript extends Script {
             state = ConstructionState.Build;
         } else if (oakLarderSpace != null && oakLarder == null && butler != null) {
             state = ConstructionState.Butler;
-        } else {
+        } else if (oakLarderSpace == null && oakLarder == null) {
             state = ConstructionState.Idle;
             Microbot.getNotifier().notify("Looks like we are no longer in our house.");
             shutdown();
@@ -91,7 +90,7 @@ public class ConstructionScript extends Script {
         TileObject oakLarderSpace = getOakLarderSpace();
         if (oakLarderSpace == null) return;
         if (Rs2GameObject.interact(oakLarderSpace, "Build")) {
-            sleepUntilOnClientThread(this::hasFurnitureInterfaceOpen, 5000);
+            sleepUntilOnClientThread(() -> hasFurnitureInterfaceOpen(), 5000);
             Rs2Keyboard.keyPress('2');
             sleepUntilOnClientThread(() -> getOakLarder() != null, 5000);
         }
@@ -108,7 +107,7 @@ public class ConstructionScript extends Script {
     }
 
     private void butler() {
-        Rs2NpcModel butler = getButler();
+        NPC butler = getButler();
         boolean butlerIsToFar;
         if (butler == null) return;
         butlerIsToFar = Microbot.getClientThread().runOnClientThreadOptional(() -> {

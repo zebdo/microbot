@@ -10,7 +10,7 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
-
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -178,11 +178,12 @@ public class Rs2InventorySetup {
 	}
 
     private static boolean isBarrowsItem(String lowerCaseName) {
-        return !lowerCaseName.endsWith(" 0") &&  (lowerCaseName.contains("dharok's")
+        boolean isBarrowsItem = !lowerCaseName.endsWith(" 0") &&  (lowerCaseName.contains("dharok's")
                 || lowerCaseName.contains("ahrim's")
                 || lowerCaseName.contains("guthan's")
                 || lowerCaseName.contains("torag's")
                 || lowerCaseName.contains("verac's"));
+        return isBarrowsItem;
     }
 
     /**
@@ -267,7 +268,7 @@ public class Rs2InventorySetup {
             Check if we have extra equipment already equipped before attempting to gear
             For example, player is wearing full graceful set but your desired inventory setup does not contain boots, keeping the graceful boots equipped
          */
-        boolean hasExtraGearEquipped = Rs2Equipment.isWearing(equip ->
+        boolean hasExtraGearEquipped = Rs2Equipment.contains(equip ->
                 inventorySetup.getEquipment().stream().noneMatch(setup -> setup.isFuzzy() ?
 					equip.getName().toLowerCase().contains(setup.getName().toLowerCase()) :
 					equip.getName().equalsIgnoreCase(setup.getName()))
@@ -515,8 +516,8 @@ public class Rs2InventorySetup {
      *
      * @return true if the current spellbook matches the setup, false otherwise.
      */
-    public boolean wrongSpellBook() {
-        return inventorySetup.getSpellBook() != Microbot.getVarbitValue(VarbitID.SPELLBOOK);
+    public boolean hasSpellBook() {
+        return inventorySetup.getSpellBook() == Microbot.getVarbitValue(VarbitID.SPELLBOOK);
     }
 
 	/**

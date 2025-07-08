@@ -53,7 +53,7 @@ public class AerialFishingScript extends Script {
             }
 
 
-            Rs2NpcModel fishingspot = findFishingSpot();
+            NPC fishingspot = findFishingSpot();
             if (fishingspot == null) {
                 return;
             }
@@ -65,23 +65,30 @@ public class AerialFishingScript extends Script {
                 validateInteractable(fishingspot);
             }
 
-            if (Rs2Npc.interact(fishingspot) && sleepUntil(Rs2Player::isInteracting,1200)) {
-                sleepUntil(() -> Rs2Equipment.isWearing(ItemID.AERIAL_FISHING_GLOVES_BIRD), () -> {
-                    if((Rs2Inventory.emptySlotCount() <= 1 && Rs2Equipment.isWearing(ItemID.AERIAL_FISHING_GLOVES_NO_BIRD)) || (Rs2Inventory.emptySlotCount() == 0 && Rs2Equipment.isWearing(ItemID.AERIAL_FISHING_GLOVES_BIRD))) {
-                        Microbot.log("Empty slot count:" + Rs2Inventory.emptySlotCount());
-                        Rs2ItemModel knife = Rs2Inventory.get(ItemID.KNIFE);
-                        Rs2Inventory.hover(knife);
+            if (Rs2Npc.interact(fishingspot)) {
+                if(sleepUntil(Rs2Player::isInteracting,1200)) {
+                    sleepUntil(() -> Rs2Equipment.isWearing(ItemID.AERIAL_FISHING_GLOVES_BIRD), () -> {
+                        if((Rs2Inventory.getEmptySlots() <= 1 && Rs2Equipment.isWearing(ItemID.AERIAL_FISHING_GLOVES_NO_BIRD)) || (Rs2Inventory.getEmptySlots() == 0 && Rs2Equipment.isWearing(ItemID.AERIAL_FISHING_GLOVES_BIRD))) {
+                            Microbot.log("Empty slot count:" + Rs2Inventory.getEmptySlots());
+                            Rs2ItemModel knife = Rs2Inventory.get(ItemID.KNIFE);
+                            Rs2Inventory.hover(knife);
 
-                    }
-                    else {
-                        NPC preHoverSpot = findPreHoverSpot(fishingspot);
-                        if (preHoverSpot != null && Rs2Npc.hoverOverActor(preHoverSpot) && Rs2Random.dicePercentage(20)){
-                            Microbot.getMouse().click();
                         }
-                    }
-                }, 5000, 100);
-                Rs2Antiban.actionCooldown();
-                Rs2Antiban.takeMicroBreakByChance();
+                        else {
+                            NPC preHoverSpot = findPreHoverSpot(fishingspot);
+                            if (preHoverSpot != null) {
+                               if (Rs2Npc.hoverOverActor(preHoverSpot)){
+
+                                   if(Rs2Random.dicePercentage(20)){
+                                       Microbot.getMouse().click();
+                                   }
+                               }
+                            }
+                        }
+                    }, 5000, 100);
+                    Rs2Antiban.actionCooldown();
+                    Rs2Antiban.takeMicroBreakByChance();
+                }
             }
 
         }, 0, 300, TimeUnit.MILLISECONDS);
@@ -90,7 +97,7 @@ public class AerialFishingScript extends Script {
 
 
 
-    private Rs2NpcModel findFishingSpot() {
+    private NPC findFishingSpot() {
         return Rs2Npc.getNpc(NpcID.FISHING_SPOT_AERIAL);
     }
 

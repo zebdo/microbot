@@ -1,7 +1,6 @@
 package net.runelite.client.plugins.microbot.mining;
 
 import net.runelite.api.GameObject;
-import net.runelite.api.WorldView;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
@@ -65,19 +64,20 @@ public class AutoMiningScript extends Script {
 
                 //code to change worlds if there are too many players in the distance to stray tiles
                 int maxPlayers = config.maxPlayersInArea();
-                if (maxPlayers > 0)
-                {
+                if (maxPlayers > 0) {
                     WorldPoint localLocation = Rs2Player.getWorldLocation();
-                    WorldView worldView = Microbot.getClient().getTopLevelWorldView();
-                    if (worldView == null) return;
 
-                    long nearbyPlayers = worldView.players().stream()
+                    long nearbyPlayers = Microbot.getClient().getPlayers().stream()
                             .filter(p -> p != null && p != Microbot.getClient().getLocalPlayer())
                             .filter(p -> {
-                                if (config.distanceToStray() == 0)
+                                if (config.distanceToStray() == 0) {
+                                    // Only count players standing on the same exact tile
                                     return p.getWorldLocation().equals(localLocation);
+                                }
+                                // Count players within distanceToStray
                                 return p.getWorldLocation().distanceTo(localLocation) <= config.distanceToStray();
                             })
+                            //filter if players are using mining animation
                             .filter(p -> p.getAnimation() != -1)
                             .count();
 
@@ -102,7 +102,7 @@ public class AutoMiningScript extends Script {
                             return;
                         }
 
-                        GameObject rock = Rs2GameObject.getGameObject(config.ORE().getName(), true, initialPlayerLocation, config.distanceToStray());
+                        GameObject rock = Rs2GameObject.findReachableObject(config.ORE().getName(), true, config.distanceToStray(), initialPlayerLocation);
 
                         if (rock != null) {
                             if (Rs2GameObject.interact(rock)) {

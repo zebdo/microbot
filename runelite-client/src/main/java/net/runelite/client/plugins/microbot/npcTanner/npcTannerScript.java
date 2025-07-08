@@ -140,11 +140,7 @@ public class npcTannerScript extends Script {
                 tries=0;
                 while(!Rs2Inventory.contains(whattotan) || !Rs2Inventory.contains("Coins")){
                     // We always do coin first
-                    if(Rs2Inventory.contains(product) || !Rs2Inventory.onlyContains(it-> {
-                        if (it != null && it.getName().equals("Coins")) return true;
-                        assert it != null;
-                        return it.getName().equals(whattotan);
-                    })){
+                    if(Rs2Inventory.contains(product) || !Rs2Inventory.onlyContains(it->it!=null && it.getName().equals("Coins") || it.getName().equals(whattotan))){
                         if(generateRandomNumber(0,100)<75){
                             Rs2Bank.depositAll(product);
                             sleep(500,1000);
@@ -204,7 +200,7 @@ public class npcTannerScript extends Script {
 
         // Sleep after using a potion
         if (usedPotion) {
-            sleep(161, 197);
+            this.sleep(161, 197);
         }
     }
 

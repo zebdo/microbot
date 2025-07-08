@@ -61,6 +61,12 @@ public class PieBakerPlugin extends Plugin {
     private int startMagicXP;
     private int startCookingXP;
 
+    public PieBakerPlugin(OverlayManager overlayManager, PieBakerOverlay pieBakerOverlay, PieBakerConfig config) {
+        this.overlayManager = overlayManager;
+        this.pieBakerOverlay = pieBakerOverlay;
+        this.config = config;
+    }
+
     @Provides
     PieBakerConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(PieBakerConfig.class);
@@ -81,8 +87,10 @@ public class PieBakerPlugin extends Plugin {
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
-        if (event.getContainerId() == InventoryID.BANK && Rs2Inventory.isEmpty() && shouldWithdrawPies()) {
-            withdrawPies();
+        if (event.getContainerId() == InventoryID.BANK) {
+            if (Rs2Inventory.isEmpty() && shouldWithdrawPies()) {
+                withdrawPies();
+            }
         }
     }
 

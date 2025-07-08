@@ -126,9 +126,8 @@ public class DriftNetScript extends Script {
                     return;
                 case UNSET:
                     handleUnsetNet(net);
-                    break;
                 default:
-                    break;
+
             }
         }
 
@@ -144,10 +143,16 @@ public class DriftNetScript extends Script {
         Rs2GameObject.interact(net.getNet());
 
         if (config.bankFish()) {
-            sleepUntil(() -> Rs2Widget.getWidget(39780359) != null,10000);
+
+            boolean initialWidgetLoaded = sleepUntil(
+                    () -> Rs2Widget.getWidget(39780359) != null,
+                    10000
+            );
             Rs2Widget.clickWidget(39780359);
             sleepUntil(() -> Rs2Widget.isWidgetVisible(39780365));
             Rs2Widget.clickWidget(39780365);
+
+
         }
     }
 
@@ -156,12 +161,12 @@ public class DriftNetScript extends Script {
      */
     private void handleUnsetNet(DriftNet net) {
         Rs2GameObject.interact(net.getNet());
-        sleepUntil(Rs2Player::isAnimating);
+        sleepUntil(() -> Rs2Player.isAnimating());
     }
 
     /**
      * Iterates over nearby fish (sorted by distance to player) and chases the first
-     * fish that hasn't been tagged yet.
+     * fish that hasn’t been tagged yet.
      */
     private void chaseNearbyFish(Set<Integer> fishSet) {
         // Sort the NPC indexes by distance to the player

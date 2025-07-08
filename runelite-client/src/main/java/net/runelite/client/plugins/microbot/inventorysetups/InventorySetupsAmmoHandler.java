@@ -31,9 +31,9 @@ import static net.runelite.client.plugins.microbot.inventorysetups.ui.InventoryS
 public class InventorySetupsAmmoHandler
 {
 
-	private final Map<Integer, Consumer<InventorySetup>> updateDataHandler;
+	private Map<Integer, Consumer<InventorySetup>> updateDataHandler;
 
-	private final Map<Integer, Consumer<InventorySetup>> removeDataHandler;
+	private Map<Integer, Consumer<InventorySetup>> removeDataHandler;
 
 	private final MInventorySetupsPlugin plugin;
 	private final Client client;
@@ -59,24 +59,24 @@ public class InventorySetupsAmmoHandler
 		// Handler for when an item being replaced is a rune pouch
 		for (final int itemID : InventorySetupsRunePouchPanel.RUNE_POUCH_IDS)
 		{
-			updateDataHandler.put(itemID, setup -> setup.updateRunePouch(getRunePouchData(InventorySetupsRunePouchType.NORMAL)));
-			removeDataHandler.put(itemID, setup -> setup.updateRunePouch(null));
+			updateDataHandler.put(itemID, (setup) -> setup.updateRunePouch(getRunePouchData(InventorySetupsRunePouchType.NORMAL)));
+			removeDataHandler.put(itemID, (setup) -> setup.updateRunePouch(null));
 		}
 		for (final int itemID : InventorySetupsRunePouchPanel.RUNE_POUCH_DIVINE_IDS)
 		{
-			updateDataHandler.put(itemID, setup -> setup.updateRunePouch(getRunePouchData(InventorySetupsRunePouchType.DIVINE)));
-			removeDataHandler.put(itemID, setup -> setup.updateRunePouch(null));
+			updateDataHandler.put(itemID, (setup) -> setup.updateRunePouch(getRunePouchData(InventorySetupsRunePouchType.DIVINE)));
+			removeDataHandler.put(itemID, (setup) -> setup.updateRunePouch(null));
 		}
 
 		// Handler for when an item being replaced is a bolt pouch
-		updateDataHandler.put(ItemID.XBOWS_BOLT_POUCH, setup -> setup.updateBoltPouch(getBoltPouchData()));
-		removeDataHandler.put(ItemID.XBOWS_BOLT_POUCH, setup -> setup.updateBoltPouch(null));
+		updateDataHandler.put(ItemID.XBOWS_BOLT_POUCH, (setup) -> setup.updateBoltPouch(getBoltPouchData()));
+		removeDataHandler.put(ItemID.XBOWS_BOLT_POUCH, (setup) -> setup.updateBoltPouch(null));
 
 		// Handler for when an item being replaced is a quiver
 		for (final int itemID : DIZANA_QUIVER_IDS)
 		{
-			updateDataHandler.put(itemID, setup -> setup.updateQuiver(getQuiverData()));
-			removeDataHandler.put(itemID, setup -> setup.updateQuiver(null));
+			updateDataHandler.put(itemID, (setup) -> setup.updateQuiver(getQuiverData()));
+			removeDataHandler.put(itemID, (setup) -> setup.updateQuiver(null));
 		}
 	}
 

@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.fishing.eel;
 
+import net.runelite.api.NPC;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.client.game.FishingSpot;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -12,7 +13,6 @@ import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
-import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 
 import java.util.concurrent.TimeUnit;
 
@@ -21,7 +21,6 @@ import static net.runelite.client.plugins.microbot.util.npc.Rs2Npc.validateInter
 public class EelFishingScript extends Script {
 
     public static String version = "1.1.0";
-    private static final String INFERNAL_EEL = "Infernal eel";
     private EelFishingConfig config;
 
     public static boolean hasRequiredGloves() {
@@ -40,6 +39,8 @@ public class EelFishingScript extends Script {
             if (Rs2AntibanSettings.actionCooldownActive)
                 return;
 
+//            if (Rs2Player.isInteracting())
+//                return;
 
             if (config.fishingSpot().equals(EelFishingSpot.INFERNAL_EEL) && !hasRequiredGloves()) {
                 Microbot.log("You need ice gloves to fish infernal eels.");
@@ -70,9 +71,13 @@ public class EelFishingScript extends Script {
         return true;
     }
 
-    private Rs2NpcModel findFishingSpot() {
+    public void onGameTick() {
+
+    }
+
+    private NPC findFishingSpot() {
         for (int fishingSpotId : getFishingSpotIds(config.fishingSpot())) {
-            Rs2NpcModel fishingspot = Rs2Npc.getNpc(fishingSpotId);
+            NPC fishingspot = Rs2Npc.getNpc(fishingSpotId);
             if (fishingspot != null) {
                 return fishingspot;
             }
@@ -96,13 +101,13 @@ public class EelFishingScript extends Script {
             if (Rs2Inventory.hasItem(ItemID.HAMMER)) {
                 if (config.useFastCombination()) {
                     Rs2Antiban.setActivityIntensity(ActivityIntensity.EXTREME);
-                    while (Rs2Inventory.hasItem(INFERNAL_EEL)) {
-                        Rs2Inventory.combineClosest(INFERNAL_EEL, "Hammer");
+                    while (Rs2Inventory.hasItem("Infernal eel")) {
+                        Rs2Inventory.combineClosest("Infernal eel", "Hammer");
                     }
                     return;
                 }
-                Rs2Inventory.combineClosest(INFERNAL_EEL, "Hammer");
-                sleepUntil(() -> !Rs2Inventory.hasItem(INFERNAL_EEL), 50000); // Wait until all eels are processed
+                Rs2Inventory.combineClosest("Infernal eel", "Hammer");
+                sleepUntil(() -> !Rs2Inventory.hasItem("Infernal eel"), 50000); // Wait until all eels are processed
             }
         } else if (config.fishingSpot() == EelFishingSpot.SACRED_EEL) {
             if (Rs2Inventory.hasItem(ItemID.KNIFE)) {

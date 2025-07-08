@@ -32,8 +32,6 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 @Slf4j
 public class FletchingManager
 {
-    private static final String QUICK_FLETCH_OPTION = "<col=FFA500>Quick fletch: </col>";
-    private static final String FLETCH_KINDLE_OPTION = "<col=FFA500>Fletch Kindle</col>";
     private final QoLConfig config;
 
     @Inject
@@ -48,6 +46,7 @@ public class FletchingManager
         if (!Microbot.isLoggedIn()) return;
 
         String option = event.getOption();
+        String target = event.getTarget();
 
         // Quick Fletch Kindling (Wintertodt)
         if (config.quickFletchKindling()
@@ -55,7 +54,7 @@ public class FletchingManager
                 && event.getItemId() == ItemID.KNIFE
                 && "Use".equals(event.getOption()))
         {
-            modifyMenuEntry(event, FLETCH_KINDLE_OPTION, "", this::fletchBrumaRootsOnClick);
+            modifyMenuEntry(event, "<col=FFA500>Fletch Kindle</col>", "", this::fletchBrumaRootsOnClick);
         }
 
         // Quick Fletch Items (Logs -> Bows, etc.)
@@ -64,7 +63,7 @@ public class FletchingManager
                 && event.getItemId() == ItemID.KNIFE
                 && "Use".equals(event.getOption()))
         {
-            modifyMenuEntry(event, QUICK_FLETCH_OPTION, config.fletchingItem().getName(), this::quickFletchLogsOnClick);
+            modifyMenuEntry(event, "<col=FFA500>Quick fletch: </col>", config.fletchingItem().getName(), this::quickFletchLogsOnClick);
         }
 
         // Quick Fletch Headless Arrows
@@ -72,7 +71,7 @@ public class FletchingManager
                 && event.getItemId() == ItemID.ARROW_SHAFT
                 && "Use".equals(event.getOption()))
         {
-            modifyMenuEntry(event, QUICK_FLETCH_OPTION, "Headless arrow", this::quickFletchHeadlessArrowOnClick);
+            modifyMenuEntry(event, "<col=FFA500>Quick fletch: </col>", "Headless arrow", this::quickFletchHeadlessArrowOnClick);
         }
 
         // Quick Fletch Darts
@@ -80,7 +79,7 @@ public class FletchingManager
 
             FletchingDarts dart = FletchingDarts.getDartByDartTipId(event.getItemId());
             if (dart != null && dart.meetsLevelRequirement()) {
-                modifyMenuEntry(event, QUICK_FLETCH_OPTION, dart.getDart(), e -> quickFletchDartsOnClick(e, dart));
+                modifyMenuEntry(event, "<col=FFA500>Quick fletch: </col>", dart.getDart(), e -> quickFletchDartsOnClick(e, dart));
             }
         }
 
@@ -89,7 +88,7 @@ public class FletchingManager
 
             FletchingArrow arrow = FletchingArrow.getArrowByArrowTipId(event.getItemId());
             if (arrow != null && arrow.meetsLevelRequirement()) {
-                modifyMenuEntry(event, QUICK_FLETCH_OPTION, arrow.getArrow(), e -> quickFletchArrowOnClick(e, arrow));
+                modifyMenuEntry(event, "<col=FFA500>Quick fletch: </col>", arrow.getArrow(), e -> quickFletchArrowOnClick(e, arrow));
             }
         }
 
@@ -98,7 +97,7 @@ public class FletchingManager
         {
             FletchingBolt bolt = FletchingBolt.getBoltByBoltTipId(event.getItemId());
             if (bolt != null && bolt.meetsLevelRequirement()) {
-                modifyMenuEntry(event, QUICK_FLETCH_OPTION, bolt.getBolt(), e -> quickFletchBoltOnClick(e, bolt));
+                modifyMenuEntry(event, "<col=FFA500>Quick fletch: </col>", bolt.getBolt(), e -> quickFletchBoltOnClick(e, bolt));
             }
         }
     }

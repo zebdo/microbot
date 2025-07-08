@@ -22,7 +22,6 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import javax.annotation.Nullable;
-import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 
@@ -117,13 +116,7 @@ public class PyreFoxScript extends Script
                 break;
 
             Microbot.log("Looping chopping");
-
-            var tree = Rs2GameObject.getGameObject(
-                    g -> Rs2GameObject.nameAndActionMatches("Tree", "Chop down", true).test(g) && Rs2GameObject.isReachable(g),
-                    PyreFoxConstants.PYRE_FOX_CENTER_POINT,
-                    30
-            );
-
+            var tree = Rs2GameObject.findReachableObject("Tree", true, 30, PyreFoxConstants.PYRE_FOX_CENTER_POINT, true, "Chop down");
             if (tree == null)
             {
                 _log("No tree found, waiting.");
@@ -194,7 +187,7 @@ public class PyreFoxScript extends Script
         if (!Rs2Camera.isTileOnScreen(trap))
             Rs2Camera.turnTo(trap);
 
-        int trapId = Objects.requireNonNull(_getTrapObjectAtTrapLocation()).getId();
+        int trapId = _getTrapObjectAtTrapLocation().getId();
 
         // 1. Check if a trap is active.
         // 1a. Wait until fail / success
@@ -258,7 +251,7 @@ public class PyreFoxScript extends Script
     {
         if (PyreFoxConstants.TRAP_OBJECT_POINT == null)
         {
-            var rock = Rs2GameObject.getGameObject(PyreFoxConstants.GAMEOBJECT_ROCK_NO_TRAP, 10);
+            var rock = Rs2GameObject.findObjectByIdAndDistance(PyreFoxConstants.GAMEOBJECT_ROCK_NO_TRAP, 10);
             if (rock == null)
             {
                 _log("No rock found");

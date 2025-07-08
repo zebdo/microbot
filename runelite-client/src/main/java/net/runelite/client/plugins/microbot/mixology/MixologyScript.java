@@ -251,7 +251,7 @@ public class MixologyScript extends Script {
                         List<PotionOrder> nonFulfilledPotions = potionOrders
                                 .stream()
                                 .filter(x -> !x.fulfilled())
-                                .sorted(Comparator.comparingInt(order -> customOrder.indexOf(order.potionModifier())))
+                                .sorted(Comparator.comparingInt(customOrder::indexOf))
                                 .collect(Collectors.toList());
 
                         if (nonFulfilledPotions.isEmpty()) {
@@ -344,7 +344,7 @@ public class MixologyScript extends Script {
     private static void processPotion(PotionOrder nonFulfilledPotion) {
         switch (nonFulfilledPotion.potionModifier()) {
             case HOMOGENOUS:
-                GameObject agitator = Rs2GameObject.getGameObject(AlchemyObject.AGITATOR.objectId());
+                GameObject agitator = (GameObject) Rs2GameObject.findObjectById(AlchemyObject.AGITATOR.objectId());
                 if (agitator != null && (((DynamicObject) agitator.getRenderable()).getAnimation().getId() == 11633 || ((DynamicObject) agitator.getRenderable()).getAnimation().getId() == 11632)) {
                     Rs2GameObject.interact(AlchemyObject.AGITATOR.objectId());
                 } else {
@@ -352,7 +352,7 @@ public class MixologyScript extends Script {
                 }
                 break;
             case CONCENTRATED:
-                GameObject retort = Rs2GameObject.getGameObject(AlchemyObject.RETORT.objectId());
+                GameObject retort = (GameObject) Rs2GameObject.findObjectById(AlchemyObject.RETORT.objectId());
                 if (retort != null && (((DynamicObject) retort.getRenderable()).getAnimation().getId() == 11643 || ((DynamicObject) retort.getRenderable()).getAnimation().getId() == 11642)) {
                     Rs2GameObject.interact(AlchemyObject.RETORT.objectId());
                 } else {
@@ -360,7 +360,7 @@ public class MixologyScript extends Script {
                 }
                 break;
             case CRYSTALISED:
-                GameObject alembic = Rs2GameObject.getGameObject(AlchemyObject.ALEMBIC.objectId());
+                GameObject alembic = (GameObject) Rs2GameObject.findObjectById(AlchemyObject.ALEMBIC.objectId());
                 if (alembic != null && (((DynamicObject) alembic.getRenderable()).getAnimation().getId() == 11638 || ((DynamicObject) alembic.getRenderable()).getAnimation().getId() == 11637)) {
                     Rs2GameObject.interact(AlchemyObject.ALEMBIC.objectId());
                 } else {
@@ -408,9 +408,9 @@ public class MixologyScript extends Script {
     private boolean canCreatePotion(PotionOrder potionOrder) {
         // Get the mixer game objects
         GameObject[] mixers = {
-                Rs2GameObject.getGameObject(ObjectID.MM_LAB_MIXER_03), // mixer3
-                Rs2GameObject.getGameObject(ObjectID.MM_LAB_MIXER_02), // mixer2
-                Rs2GameObject.getGameObject(ObjectID.MM_LAB_MIXER_01)  // mixer1
+                (GameObject) Rs2GameObject.findObjectById(ObjectID.MM_LAB_MIXER_03), // mixer3
+                (GameObject) Rs2GameObject.findObjectById(ObjectID.MM_LAB_MIXER_02), // mixer2
+                (GameObject) Rs2GameObject.findObjectById(ObjectID.MM_LAB_MIXER_01)  // mixer1
         };
 
         // Check if any mixers are missing

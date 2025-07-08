@@ -1,11 +1,15 @@
 package net.runelite.client.plugins.microbot.zerozero.bluedragons;
 
 import lombok.Getter;
+import net.runelite.api.NPC;
+import net.runelite.api.Player;
 import net.runelite.api.Skill;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
@@ -17,13 +21,11 @@ import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import javax.inject.Inject;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 public class BlueDragonsScript extends Script {
 
@@ -47,7 +49,7 @@ public class BlueDragonsScript extends Script {
     private boolean isInventoryFull() {
         boolean simpleFull = Rs2Inventory.isFull();
         if (!simpleFull) {
-            return Rs2Inventory.emptySlotCount() <= 0;
+            return Rs2Inventory.getEmptySlots() <= 0;
         }
         
         return true;
@@ -257,10 +259,11 @@ public class BlueDragonsScript extends Script {
         
         if (isPlayerAtSafeSpot()) {
             logOnceToChat("Reached safe spot. Transitioning to FIGHTING state.", true, config);
+            currentState = BlueDragonState.FIGHTING;
         } else {
             logOnceToChat("Still not at safe spot after multiple attempts. Will continue from current position.", true, config);
+            currentState = BlueDragonState.FIGHTING;
         }
-        currentState = BlueDragonState.FIGHTING;
     }
 
     private void handleFighting(BlueDragonsConfig config) {
@@ -294,7 +297,7 @@ public class BlueDragonsScript extends Script {
         Rs2Player.eatAt(config.eatAtHealthPercent());
 
         if (!underAttack()) {
-            Rs2NpcModel dragon = getAvailableDragon();
+            NPC dragon = getAvailableDragon();
             if (dragon != null) {
                 logOnceToChat("Found available dragon. Attacking.", true, config);
                 if (attackDragon(dragon)) {
@@ -447,8 +450,8 @@ public class BlueDragonsScript extends Script {
         }
     }
 
-    private Rs2NpcModel getAvailableDragon() {
-        Rs2NpcModel dragon = Rs2Npc.getNpc("Blue dragon");
+    private NPC getAvailableDragon() {
+        NPC dragon = Rs2Npc.getNpc("Blue dragon");
         logOnceToChat("Found dragon: " + (dragon != null ? "Yes (ID: " + dragon.getId() + ")" : "No"), true, config);
         
         if (dragon != null) {
@@ -465,7 +468,7 @@ public class BlueDragonsScript extends Script {
         return null;
     }
 
-    private boolean attackDragon(Rs2NpcModel dragon) {
+    private boolean attackDragon(NPC dragon) {
         final int dragonId = dragon.getId();
         
         if (Rs2Combat.inCombat() && dragon.getInteracting() != Microbot.getClient().getLocalPlayer()) {
@@ -528,10 +531,12 @@ public class BlueDragonsScript extends Script {
 
     private boolean hopIfPlayerAtSafeSpot() {
         boolean otherPlayersAtSafeSpot = false;
-        List<Rs2PlayerModel> players = Rs2Player.getPlayers(p -> true).collect(Collectors.toList());
+        List<Player> players = Rs2Player.getPlayers();
 
-        for (Rs2PlayerModel model : players) {
-            if (model.getPlayer().getWorldLocation().distanceTo(SAFE_SPOT) <= 1) {
+        for (Player player : players) {
+            if (player != null &&
+                !player.equals(Microbot.getClient().getLocalPlayer()) &&
+                player.getWorldLocation().distanceTo(SAFE_SPOT) <= 1) {
                 otherPlayersAtSafeSpot = true;
                 break;
             }

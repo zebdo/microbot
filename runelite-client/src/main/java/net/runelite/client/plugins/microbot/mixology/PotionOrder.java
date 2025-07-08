@@ -1,12 +1,9 @@
 package net.runelite.client.plugins.microbot.mixology;
 
-import lombok.Setter;
-
 public class PotionOrder {
     private final int idx;
     private final PotionType potionType;
     private final PotionModifier potionModifier;
-    @Setter
     private boolean fulfilled;
 
     public PotionOrder(int idx, PotionType potionType, PotionModifier potionModifier) {
@@ -25,6 +22,10 @@ public class PotionOrder {
 
     public PotionModifier potionModifier() {
         return this.potionModifier;
+    }
+
+    public void setFulfilled(boolean fulfilled) {
+        this.fulfilled = fulfilled;
     }
 
     public boolean fulfilled() {
