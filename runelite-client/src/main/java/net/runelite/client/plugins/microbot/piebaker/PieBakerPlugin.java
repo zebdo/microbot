@@ -2,7 +2,8 @@ package net.runelite.client.plugins.microbot.piebaker;
 
 import com.google.inject.Provides;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.gameval.InventoryID;
+import net.runelite.api.InventoryID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.Skill;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.ItemContainerChanged;
@@ -16,7 +17,6 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 import net.runelite.client.ui.overlay.OverlayManager;
-import net.runelite.api.gameval.ItemID;
 
 import javax.inject.Inject;
 import java.time.Instant;
@@ -61,12 +61,6 @@ public class PieBakerPlugin extends Plugin {
     private int startMagicXP;
     private int startCookingXP;
 
-    public PieBakerPlugin(OverlayManager overlayManager, PieBakerOverlay pieBakerOverlay, PieBakerConfig config) {
-        this.overlayManager = overlayManager;
-        this.pieBakerOverlay = pieBakerOverlay;
-        this.config = config;
-    }
-
     @Provides
     PieBakerConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(PieBakerConfig.class);
@@ -87,7 +81,7 @@ public class PieBakerPlugin extends Plugin {
 
     @Subscribe
     public void onItemContainerChanged(ItemContainerChanged event) {
-        if (event.getContainerId() == InventoryID.BANK) {
+        if (event.getContainerId() == InventoryID.BANK.getId()) {
             if (Rs2Inventory.isEmpty() && shouldWithdrawPies()) {
                 withdrawPies();
             }
