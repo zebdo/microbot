@@ -9,7 +9,7 @@ import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.math.Rs2Random;
+import net.runelite.client.plugins.microbot.util.math.Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -69,9 +69,9 @@ public class FlaxSpinScript extends Script {
                         if (!isBankOpen || !Rs2Bank.isOpen()) return;
 
                         Rs2Bank.depositAll(ItemID.BOW_STRING);
-                        sleep(Rs2Random.randomGaussian(600, 800));
+                        sleep(Random.random(600, 800));
                         Rs2Bank.withdrawAll(ItemID.FLAX);
-                        sleep(Rs2Random.randomGaussian(600, 800));
+                        sleep(Random.random(600, 800));
                         Rs2Bank.closeBank();
                         state = State.WALKING;
                         break;
