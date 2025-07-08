@@ -120,15 +120,15 @@ public class VorkathScript extends Script {
         }
     }
 
-    @Inject
-    public VorkathScript(VorkathConfig config)
-    {
-        this.config = config;
-    }
+	@Inject
+	public VorkathScript(VorkathConfig config)
+	{
+		this.config = config;
+	}
 
     public boolean run() {
         Microbot.enableAutoRunOn = false;
-        Microbot.pauseAllScripts.compareAndSet(true, false);
+		Microbot.pauseAllScripts.compareAndSet(true, false);
         init = true;
         state = State.BANKING;
         hasEquipment = false;
@@ -207,16 +207,16 @@ public class VorkathScript extends Script {
                         if (!isCloseToRelleka()) {
 
                             if(config.pohInRellekka()) {
-                                teleToPoh();
-                                sleepUntil(() -> Rs2GameObject.findObjectById(4525) != null);
-                                Rs2GameObject.interact(4525, "Enter");
-                                sleepUntil(this::isCloseToRelleka);
+                            teleToPoh();
+                            sleepUntil(() -> Rs2GameObject.findObjectById(4525) != null);
+                            Rs2GameObject.interact(4525, "Enter");
+                            sleepUntil(this::isCloseToRelleka);
 
                             }
                             else
                             {
-                                Rs2Inventory.interact("Rellekka teleport", "break");
-                                sleepUntil(this::isCloseToRelleka);
+                            Rs2Inventory.interact("Rellekka teleport", "break");
+                            sleepUntil(this::isCloseToRelleka);
                             }
                         }
                         if (isCloseToRelleka()) {
@@ -494,34 +494,34 @@ public class VorkathScript extends Script {
     }
 
     private void leaveVorkath() {
-        kcPerTrip = 0;
-        togglePrayer(false);
-        Rs2Player.toggleRunEnergy(true);
-        switch(config.teleportMode()) {
-            case VARROCK_TAB:
-                Rs2Inventory.interact(config.teleportMode().getItemName(), config.teleportMode().getAction());
-                break;
-            case CRAFTING_CAPE:
-                if (Rs2Equipment.isWearing("crafting cape")) {
-                    Rs2Equipment.interact("crafting cape", "teleport");
-                } else {
-                    Rs2Inventory.interact("crafting cape", "teleport");
-                }
-                break;
-            case JEWELLERY_BOX:
-                teleToPoh();
-                if(config.rejuvinationPool()){
-                    Rs2GameObject.interact(29241, "Drink");
-                    sleepUntil(() -> Rs2Player.isFullHealth());
-                }
-                Rs2GameObject.interact(29156, "Teleport Menu");
-                sleepUntil(()->Rs2Widget.hasWidget("Castle Wars"));
-                Rs2Widget.clickWidget("Castle Wars");
-                break;
-        }
-        Rs2Player.waitForAnimation();
-        sleepUntil(() -> !Microbot.getClient().isInInstancedRegion());
-        state = State.TELEPORT_AWAY;
+            kcPerTrip = 0;
+            togglePrayer(false);
+            Rs2Player.toggleRunEnergy(true);
+            switch(config.teleportMode()) {
+                case VARROCK_TAB:
+                    Rs2Inventory.interact(config.teleportMode().getItemName(), config.teleportMode().getAction());
+                    break;
+                case CRAFTING_CAPE:
+                    if (Rs2Equipment.isWearing("crafting cape")) {
+                        Rs2Equipment.interact("crafting cape", "teleport");
+                    } else {
+                        Rs2Inventory.interact("crafting cape", "teleport");
+                    }
+                    break;
+                case JEWELLERY_BOX:
+                    teleToPoh();
+                    if(config.rejuvinationPool()){
+                        Rs2GameObject.interact(29241, "Drink");
+                        sleepUntil(() -> Rs2Player.isFullHealth());
+                    }
+                    Rs2GameObject.interact(29156, "Teleport Menu");
+                    sleepUntil(()->Rs2Widget.hasWidget("Castle Wars"));
+                    Rs2Widget.clickWidget("Castle Wars");
+                    break;
+            }
+            Rs2Player.waitForAnimation();
+            sleepUntil(() -> !Microbot.getClient().isInInstancedRegion());
+            state = State.TELEPORT_AWAY;
 
     }
 
@@ -594,9 +594,9 @@ public class VorkathScript extends Script {
             Rs2Inventory.interact("Teleport to house", "break");
             sleepUntil(()->Rs2GameObject.findObjectById(4525) != null);
             return true;
-        }
-        return false;
     }
+    return false;
+}
 
     private void redBallWalk() {
         WorldPoint currentPlayerLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
