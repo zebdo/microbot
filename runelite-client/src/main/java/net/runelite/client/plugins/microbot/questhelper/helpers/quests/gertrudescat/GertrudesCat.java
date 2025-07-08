@@ -24,9 +24,10 @@
  */
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.gertrudescat;
 
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
-import net.runelite.api.gameval.ObjectID;
+
+import net.runelite.api.ItemID;
+import net.runelite.api.NpcID;
+import net.runelite.api.ObjectID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.collections.ItemCollections;
@@ -44,6 +45,7 @@ import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.questhelper.rewards.UnlockReward;
+
 
 import java.util.*;
 
@@ -97,22 +99,22 @@ public class GertrudesCat extends BasicQuestHelper {
 
     private QuestStep findFluffsKitten() {
         //Need to find to ways to hide arrow
-        searchNearbyCrates = new NpcStep(this, NpcID.GERTRUDE, new WorldPoint(3306, 3505, 0),
+        searchNearbyCrates = new NpcStep(this, NpcID.CRATE, new WorldPoint(3306, 3505, 0),
                 "Search for a kitten in the crates in the Lumberyard.", true);
         ((NpcStep) (searchNearbyCrates)).setHideWorldArrow(true);
         ObjectStep climbDownLadderStep = goDownLadderStep();
         ObjectStep climbUpLadderStep = getClimbLadder();
         ArrayList<ItemRequirement> fluffsKittenRequirement = new ArrayList<>();
-        fluffsKittenRequirement.add(new ItemRequirement("Fluffs' Kitten", ItemID.GERTRUDEKITTENS));
+        fluffsKittenRequirement.add(new ItemRequirement("Fluffs' Kitten", ItemID.FLUFFS_KITTEN));
         climbUpLadderStep.addItemRequirements(fluffsKittenRequirement);
         Conditions hasFluffsKittenUpstairs = new Conditions(hasFluffsKitten, isUpstairsLumberyard);
 
-        kittenHighlighted = new ItemRequirement("Fluffs' Kitten", ItemID.GERTRUDEKITTENS);
+        kittenHighlighted = new ItemRequirement("Fluffs' Kitten", ItemID.FLUFFS_KITTEN);
         kittenHighlighted.setHighlightInInventory(true);
 
         giveKittenToFluffy = getGertrudesCat(kittenHighlighted);
         giveKittenToFluffy.setText("Return the kitten to Gertrude's cat.");
-        giveKittenToFluffy.addIcon(ItemID.GERTRUDEKITTENS);
+        giveKittenToFluffy.addIcon(ItemID.FLUFFS_KITTEN);
 
         ConditionalStep conditionalKitten = new ConditionalStep(this, searchNearbyCrates);
         conditionalKitten.addStep(hasFluffsKittenUpstairs, giveKittenToFluffy);
@@ -126,7 +128,7 @@ public class GertrudesCat extends BasicQuestHelper {
     }
 
     private ObjectStep goDownLadderStep() {
-        return new ObjectStep(this, ObjectID.FAI_VARROCK_LADDERTOP, new WorldPoint(3310, 3509, 1),
+        return new ObjectStep(this, ObjectID.LADDER_11795, new WorldPoint(3310, 3509, 1),
                 "Climb down ladder in the Lumberyard.");
     }
 
@@ -134,7 +136,7 @@ public class GertrudesCat extends BasicQuestHelper {
         gertrudesCat2 = getGertrudesCat(seasonedSardineHighlighted);
         gertrudesCat2.addIcon(ItemID.SEASONED_SARDINE);
 
-        ObjectStep climbLadder = new ObjectStep(this, ObjectID.FAI_VARROCK_LADDER,
+        ObjectStep climbLadder = new ObjectStep(this, ObjectID.LADDER_11794,
                 new WorldPoint(3310, 3509, 0), "Climb up the ladder in the Lumberyard.", seasonedSardine);
 
         ConditionalStep lumberyard = new ConditionalStep(this, climbLadder, "Use a seasoned sardine on Gertrude's cat upstairs in the Lumberyard north east of Varrock.");
@@ -146,7 +148,7 @@ public class GertrudesCat extends BasicQuestHelper {
 
     private ConditionalStep getGiveMilkToCat() {
         gertrudesCat = getGertrudesCat(milkHighlighted);
-        gertrudesCat.addIcon(ItemID.BUCKET_MILK);
+        gertrudesCat.addIcon(ItemID.BUCKET_OF_MILK);
 
         ObjectStep climbLadder = getClimbLadder(bucketOfMilk);
 
@@ -157,12 +159,12 @@ public class GertrudesCat extends BasicQuestHelper {
     }
 
     private NpcStep getGertrudesCat(ItemRequirement... requirement) {
-        return new NpcStep(this, NpcID.GERTRUDESCAT,
+        return new NpcStep(this, NpcID.GERTRUDES_CAT_3497,
                 new WorldPoint(3308, 3511, 1), "", requirement);
     }
 
     private QuestStep getTalkToChildren() {
-        pickupDoogle = new DetailedQuestStep(this, "Pickup some Doogle Leaves south of Gertrude's house.", new ItemRequirement("Doogle Leaves", ItemID.DOOGLELEAVES), sardine);
+        pickupDoogle = new DetailedQuestStep(this, "Pickup some Doogle Leaves south of Gertrude's house.", new ItemRequirement("Doogle Leaves", ItemID.DOOGLE_LEAVES), sardine);
         makeSeasonedSardine = new DetailedQuestStep(this, "Use your Doogle Leaves on  the Sardine.", sardine, doogleLeaves);
 
         NpcStep talkToChildren = new NpcStep(this, NpcID.SHILOP,
@@ -183,8 +185,8 @@ public class GertrudesCat extends BasicQuestHelper {
 
     @Override
     protected void setupRequirements() {
-        bucketOfMilk = new ItemRequirement("Bucket of milk", ItemID.BUCKET_MILK);
-        milkHighlighted = new ItemRequirement("Bucket of milk", ItemID.BUCKET_MILK);
+        bucketOfMilk = new ItemRequirement("Bucket of milk", ItemID.BUCKET_OF_MILK);
+        milkHighlighted = new ItemRequirement("Bucket of milk", ItemID.BUCKET_OF_MILK);
         milkHighlighted.setHighlightInInventory(true);
 
         coins = new ItemRequirement("Coins", ItemCollections.COINS, 100);
@@ -198,12 +200,12 @@ public class GertrudesCat extends BasicQuestHelper {
 
         sardine = new ItemRequirement("Raw Sardine", ItemID.RAW_SARDINE);
         sardine.setHighlightInInventory(true);
-        doogleLeaves = new ItemRequirement("Doogle Leaves", ItemID.DOOGLELEAVES);
+        doogleLeaves = new ItemRequirement("Doogle Leaves", ItemID.DOOGLE_LEAVES);
         doogleLeaves.setHighlightInInventory(true);
 
         // Recommended items
-        lumberyardTeleport = new ItemRequirement("Lumberyard teleport", ItemID.POH_TABLET_VARROCKTELEPORT);
-        varrockTeleport = new ItemRequirement("Varrock teleports", ItemID.POH_TABLET_VARROCKTELEPORT, 2);
+        lumberyardTeleport = new ItemRequirement("Lumberyard teleport", ItemID.LUMBERYARD_TELEPORT);
+        varrockTeleport = new ItemRequirement("Varrock teleports", ItemID.VARROCK_TELEPORT, 2);
     }
 
     @Override
@@ -214,11 +216,11 @@ public class GertrudesCat extends BasicQuestHelper {
     }
 
     private void setupConditions() {
-        hasFluffsKitten = new ItemRequirements(new ItemRequirement("Fluffs' kitten", ItemID.GERTRUDEKITTENS));
+        hasFluffsKitten = new ItemRequirements(new ItemRequirement("Fluffs' kitten", ItemID.FLUFFS_KITTEN));
     }
 
     private ObjectStep getClimbLadder(ItemRequirement... itemRequirements) {
-        return new ObjectStep(this, ObjectID.FAI_VARROCK_LADDER,
+        return new ObjectStep(this, ObjectID.LADDER_11794,
                 new WorldPoint(3310, 3509, 0), "Climb up the ladder in the Lumberyard.", itemRequirements);
     }
 
@@ -245,7 +247,7 @@ public class GertrudesCat extends BasicQuestHelper {
     @Override
     public List<ItemReward> getItemRewards() {
         return Arrays.asList(
-                new ItemReward("A pet Kitten", ItemID.KITTENOBJECT, 1),
+                new ItemReward("A pet Kitten", ItemID.PET_KITTEN, 1),
                 new ItemReward("Chocolate Cake", ItemID.CHOCOLATE_CAKE, 1),
                 new ItemReward("Stew", ItemID.STEW, 1));
     }

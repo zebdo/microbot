@@ -43,7 +43,6 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemOnTileRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.player.SkillRequirement;
-import net.runelite.api.gameval.ItemID;
 
 
 import java.util.*;

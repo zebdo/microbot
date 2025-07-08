@@ -25,6 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.lostcity;
 
 
+import net.runelite.api.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.Skill;
@@ -43,7 +44,6 @@ import net.runelite.client.plugins.microbot.questhelper.rewards.QuestPointReward
 import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.rewards.UnlockReward;
-import net.runelite.api.gameval.ItemID;
 
 
 import java.util.*;

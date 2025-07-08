@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.miniquests.themagearenaii;
 
 
-import net.runelite.api.gameval.ItemID;
+import net.runelite.api.ItemID;
 import net.runelite.api.QuestState;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.bank.banktab.BankSlotIcons;
@@ -69,9 +69,9 @@ public class MA2Locator extends ComplexStateQuestHelper {
         saradominStaff = new ItemRequirement("Saradomin staff", ItemID.SARADOMIN_STAFF);
         saradominStaff.setTooltip("You can buy one from the Chamber Guardian in the Mage Arena Cavern for 80k");
         runesForCasts = new ItemRequirements("Runes for 50+ casts of god spells",
-                new ItemRequirement("Blood runes", ItemID.BLOODRUNE, -1),
-                new ItemRequirement("Air runes", ItemID.AIRRUNE, -1),
-                new ItemRequirement("Fire runes", ItemID.FIRERUNE, -1));
+                new ItemRequirement("Blood runes", ItemID.BLOOD_RUNE, -1),
+                new ItemRequirement("Air runes", ItemID.AIR_RUNE, -1),
+                new ItemRequirement("Fire runes", ItemID.FIRE_RUNE, -1));
         magicCombatGear = new ItemRequirement("Magic combat gear", -1, 1);
         magicCombatGear.setDisplayItemId(BankSlotIcons.getMagicCombatGear());
         knife = new ItemRequirement("Knife or sharp weapon to cut through a web", ItemID.KNIFE);
@@ -80,11 +80,11 @@ public class MA2Locator extends ComplexStateQuestHelper {
         food = new ItemRequirement("Food", ItemCollections.GOOD_EATING_FOOD, -1);
         recoils = new ItemRequirement("Rings of recoil", ItemID.RING_OF_RECOIL);
 
-        enchantedSymbol = new ItemRequirement("Enchanted symbol", ItemID.MA2_SYMBOL);
+        enchantedSymbol = new ItemRequirement("Enchanted symbol", ItemID.ENCHANTED_SYMBOL);
         enchantedSymbol.setTooltip("You can get another from Kolodion in the Mage Arena Cavern.");
-        justicarsHand = new ItemRequirement("Justicar's hand", ItemID.MA2_SARADOMIN_HEART);
-        demonsHeart = new ItemRequirement("Demon's heart", ItemID.MA2_ZAMORAK_HEART);
-        entRoots = new ItemRequirement("Ent's roots", ItemID.MA2_GUTHIX_HEART);
+        justicarsHand = new ItemRequirement("Justicar's hand", ItemID.JUSTICIARS_HAND);
+        demonsHeart = new ItemRequirement("Demon's heart", ItemID.DEMONS_HEART);
+        entRoots = new ItemRequirement("Ent's roots", ItemID.ENTS_ROOTS);
 
         godCape = new ItemRequirement("God cape", ItemID.ZAMORAK_CAPE);
         godCape.addAlternates(ItemID.GUTHIX_CAPE, ItemID.SARADOMIN_CAPE);

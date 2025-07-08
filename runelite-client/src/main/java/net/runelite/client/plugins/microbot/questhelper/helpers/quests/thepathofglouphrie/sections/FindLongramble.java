@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.thepathofglouphrie.sections;
 
 
-import net.runelite.api.gameval.ItemID;
+import net.runelite.api.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.NullObjectID;
 import net.runelite.api.ObjectID;

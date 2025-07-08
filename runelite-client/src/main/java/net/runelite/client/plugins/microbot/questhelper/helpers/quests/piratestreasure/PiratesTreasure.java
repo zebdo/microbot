@@ -25,6 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.piratestreasure;
 
 
+import net.runelite.api.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.coords.WorldPoint;
@@ -38,7 +39,6 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.zone.ZoneRe
 import net.runelite.client.plugins.microbot.questhelper.rewards.ItemReward;
 import net.runelite.client.plugins.microbot.questhelper.rewards.QuestPointReward;
 import net.runelite.client.plugins.microbot.questhelper.steps.*;
-import net.runelite.api.gameval.ItemID;
 
 
 import java.util.*;

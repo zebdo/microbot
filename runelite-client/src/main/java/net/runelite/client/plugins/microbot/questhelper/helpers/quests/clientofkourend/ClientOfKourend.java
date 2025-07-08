@@ -24,8 +24,9 @@
  */
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.clientofkourend;
 
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
+
+import net.runelite.api.ItemID;
+import net.runelite.api.NpcID;
 import net.runelite.api.QuestState;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.collections.ItemCollections;
@@ -97,16 +98,16 @@ public class ClientOfKourend extends BasicQuestHelper {
     protected void setupRequirements() {
         feather = new ItemRequirement("Feather", ItemID.FEATHER);
         feather.setTooltip("Can be purchased from Gerrant's Fishy Business in Port Sarim.");
-        feather.addAlternates(ItemID.HUNTING_POLAR_FEATHER, ItemID.HUNTING_WOODLAND_FEATHER, ItemID.HUNTING_JUNGLE_FEATHER, ItemID.HUNTING_DESERT_FEATHER,
-                ItemID.HUNTING_EAGLE_FEATHER, ItemID.HUNTING_STRIPY_BIRD_FEATHER);
+        feather.addAlternates(ItemID.BLUE_FEATHER, ItemID.ORANGE_FEATHER, ItemID.RED_FEATHER, ItemID.YELLOW_FEATHER,
+                ItemID.EAGLE_FEATHER, ItemID.STRIPY_FEATHER);
         feather.setHighlightInInventory(true);
         gamesNecklace = new ItemRequirement("Games necklace", ItemCollections.GAMES_NECKLACES);
-        enchantedScroll = new ItemRequirement("Enchanted scroll", ItemID.VEOS_SCROLL);
+        enchantedScroll = new ItemRequirement("Enchanted scroll", ItemID.ENCHANTED_SCROLL);
         enchantedScroll.setHighlightInInventory(true);
-        mysteriousOrb = new ItemRequirement("Mysterious orb", ItemID.VEOS_ORB);
+        mysteriousOrb = new ItemRequirement("Mysterious orb", ItemID.MYSTERIOUS_ORB);
         mysteriousOrb.setHighlightInInventory(true);
 
-        enchantedQuill = new ItemRequirement("Enchanted quill", ItemID.VEOS_QUILL);
+        enchantedQuill = new ItemRequirement("Enchanted quill", ItemID.ENCHANTED_QUILL);
     }
 
     public void setupConditions() {
@@ -118,7 +119,7 @@ public class ClientOfKourend extends BasicQuestHelper {
     }
 
     public void setupSteps() {
-        talkToVeos = new NpcStep(this, NpcID.VEOS_VIS_AMULET, new WorldPoint(1824, 3690, 0),
+        talkToVeos = new NpcStep(this, NpcID.VEOS_10727, new WorldPoint(1824, 3690, 0),
                 "Talk to Veos on the Port Piscarilius docks. You can travel to him by talking to Veos in Port Sarim.");
         talkToVeos.addDialogStep("Sounds interesting! How can I help?");
         talkToVeos.addDialogStep("Can you take me to Great Kourend?");
@@ -128,28 +129,28 @@ public class ClientOfKourend extends BasicQuestHelper {
 
         useFeatherOnScroll = new DetailedQuestStep(this, "Use a feather on the Enchanted Scroll.", feather, enchantedScroll);
 
-        talkToLeenz = new NpcStep(this, NpcID.PISCARILIUS_GENERALSTORE_KEEPER, new WorldPoint(1807, 3726, 0), "Talk to Leenz in Port Piscarilius general store.", enchantedQuill);
+        talkToLeenz = new NpcStep(this, NpcID.LEENZ, new WorldPoint(1807, 3726, 0), "Talk to Leenz in Port Piscarilius general store.", enchantedQuill);
         talkToLeenz.addDialogStep("Can I ask you about Port Piscarilius?");
         talkToLeenz.addDialogStep("What is there to do in Port Piscarilius?");
-        talkToHorace = new NpcStep(this, NpcID.HOSIDIUS_GENERALSTORE, new WorldPoint(1774, 3589, 0), "Talk to Horace in the Hosidius general store.", enchantedQuill);
+        talkToHorace = new NpcStep(this, NpcID.HORACE, new WorldPoint(1774, 3589, 0), "Talk to Horace in the Hosidius general store.", enchantedQuill);
         talkToHorace.addDialogStep("Can I ask you about Hosidius?");
         talkToHorace.addDialogStep("What is there to do in Hosidius?");
-        talkToJennifer = new NpcStep(this, NpcID.SHAYZIEN_GENERALSTORE, new WorldPoint(1518, 3586, 0), "Talk to Jennifer in Shayzien general store.", enchantedQuill);
+        talkToJennifer = new NpcStep(this, NpcID.JENNIFER, new WorldPoint(1518, 3586, 0), "Talk to Jennifer in Shayzien general store.", enchantedQuill);
         talkToJennifer.addDialogStep("Can I ask you about Shayzien?");
         talkToJennifer.addDialogStep("What is there to do in Shayzien?");
-        talkToMunty = new NpcStep(this, NpcID.LOVAKENGJ_GENERALSTORE, new WorldPoint(1551, 3752, 0), "Talk to Munty in Lovakengj general store.", enchantedQuill);
+        talkToMunty = new NpcStep(this, NpcID.MUNTY, new WorldPoint(1551, 3752, 0), "Talk to Munty in Lovakengj general store.", enchantedQuill);
         talkToMunty.addDialogStep("Can I ask you about Lovakengj?");
         talkToMunty.addDialogStep("What is there to do in Lovakengj?");
-        talkToRegath = new NpcStep(this, NpcID.ARCEUUS_GENERALSTORE, new WorldPoint(1720, 3724, 0), "Talk to Regath in Arceuus general store.", enchantedQuill);
+        talkToRegath = new NpcStep(this, NpcID.REGATH, new WorldPoint(1720, 3724, 0), "Talk to Regath in Arceuus general store.", enchantedQuill);
         talkToRegath.addDialogStep("Can I ask you about Arceuus?");
         talkToRegath.addDialogStep("What is there to do in Arceuus?");
 
-        returnToVeos = new NpcStep(this, NpcID.VEOS_VIS_AMULET, new WorldPoint(1824, 3690, 0), "Return to Veos on Piscarilius docks.");
+        returnToVeos = new NpcStep(this, NpcID.VEOS_10727, new WorldPoint(1824, 3690, 0), "Return to Veos on Piscarilius docks.");
         returnToVeos.addDialogStep("Let's talk about your client...");
         returnToVeos.addDialogStep("I've lost something you've given me.");
         goToAltar = new DetailedQuestStep(this, new WorldPoint(1712, 3883, 0), "Activate the mysterious orb at the Dark Altar. You can either run there through Arceuus, teleport to Wintertodt with the Games Necklace and run south, or teleport straight there on the Arceuus spellbook.", mysteriousOrb);
 
-        finishQuest = new NpcStep(this, NpcID.VEOS_VIS_AMULET, new WorldPoint(1824, 3690, 0), "Return to Veos on Piscarilius docks.");
+        finishQuest = new NpcStep(this, NpcID.VEOS_10727, new WorldPoint(1824, 3690, 0), "Return to Veos on Piscarilius docks.");
         finishQuest.addDialogStep("Let's talk about your client...");
     }
 
@@ -180,8 +181,8 @@ public class ClientOfKourend extends BasicQuestHelper {
     @Override
     public List<ItemReward> getItemRewards() {
         return Arrays.asList(
-                new ItemReward("500 Experience Lamps (Any Skill)", ItemID.THOSF_REWARD_LAMP, 2), //4447 Placeholder until confirmed.
-                new ItemReward("Kharedst's Memoirs", ItemID.VEOS_KHAREDSTS_MEMOIRS, 1));
+                new ItemReward("500 Experience Lamps (Any Skill)", ItemID.ANTIQUE_LAMP, 2), //4447 Placeholder until confirmed.
+                new ItemReward("Kharedst's Memoirs", ItemID.KHAREDSTS_MEMOIRS, 1));
     }
 
     @Override

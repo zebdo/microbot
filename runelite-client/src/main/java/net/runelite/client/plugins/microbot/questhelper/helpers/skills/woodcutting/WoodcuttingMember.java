@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.skills.woodcutting;
 
 
-import net.runelite.api.gameval.ItemID;
+import net.runelite.api.ItemID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;

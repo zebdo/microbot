@@ -25,8 +25,8 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.doricsquest;
 
 
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
+import net.runelite.api.ItemID;
+import net.runelite.api.NpcID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.rewards.ItemReward;
@@ -104,7 +104,7 @@ public class DoricsQuest extends BasicQuestHelper {
 
     @Override
     public List<ItemReward> getItemRewards() {
-        return Collections.singletonList(new ItemReward("Coins", ItemID.COINS, 180));
+        return Collections.singletonList(new ItemReward("Coins", ItemID.COINS_995, 180));
     }
 
     @Override

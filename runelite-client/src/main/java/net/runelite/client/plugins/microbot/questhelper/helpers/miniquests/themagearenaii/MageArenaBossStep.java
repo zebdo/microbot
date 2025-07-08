@@ -29,12 +29,11 @@ package net.runelite.client.plugins.microbot.questhelper.helpers.miniquests.them
 import com.google.inject.Inject;
 import lombok.NonNull;
 import net.runelite.api.ChatMessageType;
-import net.runelite.api.gameval.ItemID;
+import net.runelite.api.ItemID;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.VarbitChanged;
-import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
@@ -42,7 +41,6 @@ import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.questhelper.steps.DetailedQuestStep;
-import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.ui.overlay.OverlayUtil;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
@@ -111,7 +109,7 @@ public class MageArenaBossStep extends DetailedQuestStep {
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Possible locations:")
                     .build());
-        } else if (digLocations.isEmpty()) {
+        } else if (digLocations.size() < 1) {
             if (!foundLocation) {
                 addRequirement(staff);
                 setText(goFightTextStart + abilityDetail);
@@ -141,7 +139,7 @@ public class MageArenaBossStep extends DetailedQuestStep {
     @Override
     public void onVarbitChanged(VarbitChanged varbitChanged) {
         super.onVarbitChanged(varbitChanged);
-        int newState = client.getVarbitValue(VarbitID.MA2_TIMER_REMAINING);
+        int newState = client.getVarbitValue(BOSS_MOVING_TIMER_VARBIT);
 
         // If the position of the bosses changes, reset
         if (newState > currentVar) {
@@ -162,7 +160,7 @@ public class MageArenaBossStep extends DetailedQuestStep {
         if (mageArenaSolver != null) {
             mageArenaSolver.resetSolver(locations);
         }
-        if ((mageArenaSolver != null ? mageArenaSolver.getPossibleLocations().size() : 0) == 1) {
+        if (mageArenaSolver.getPossibleLocations().size() == 1) {
             this.setWorldPoint(mageArenaSolver.getPossibleLocations().iterator().next().getWorldPoint());
         }
     }
@@ -175,7 +173,7 @@ public class MageArenaBossStep extends DetailedQuestStep {
             return;
         }
 
-        LocalPoint localLocation = Rs2Player.getLocalLocation();
+        LocalPoint localLocation = LocalPoint.fromWorld(client, worldPoint);
 
         if (localLocation == null) {
             return;
@@ -226,7 +224,7 @@ public class MageArenaBossStep extends DetailedQuestStep {
     @Override
     public void startUp() {
         super.startUp();
-        currentVar = client.getVarbitValue(VarbitID.MA2_TIMER_REMAINING);
+        currentVar = client.getVarbitValue(BOSS_MOVING_TIMER_VARBIT);
         Set<MageArenaSpawnLocation> locations =
                 Arrays.stream(MageArenaSpawnLocation.values())
                         .collect(Collectors.toSet());
@@ -243,6 +241,6 @@ public class MageArenaBossStep extends DetailedQuestStep {
     }
 
     private BufferedImage getSymbolLocation() {
-        return itemManager.getImage(ItemID.MA2_SYMBOL);
+        return itemManager.getImage(ItemID.ENCHANTED_SYMBOL);
     }
 }

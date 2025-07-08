@@ -26,8 +26,8 @@ package net.runelite.client.plugins.microbot.questhelper.helpers.quests.dragonsl
 
 import com.google.inject.Inject;
 import net.runelite.api.Client;
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.ItemID;
+import net.runelite.api.NullObjectID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.events.WidgetLoaded;
@@ -159,13 +159,13 @@ public class CryptPuzzle extends DetailedOwnerStep {
     }
 
     private void setupItemRequirements() {
-        aivasBust = new ItemRequirement("Aivas bust", ItemID.DS2_BUST_AIVAS);
+        aivasBust = new ItemRequirement("Aivas bust", ItemID.AIVAS_BUST);
         aivasBust.setHighlightInInventory(true);
-        robertBust = new ItemRequirement("Robert bust", ItemID.DS2_BUST_ROBERT);
+        robertBust = new ItemRequirement("Robert bust", ItemID.ROBERT_BUST);
         robertBust.setHighlightInInventory(true);
-        tristanBust = new ItemRequirement("Trisan bust", ItemID.DS2_BUST_TRISTAN);
+        tristanBust = new ItemRequirement("Trisan bust", ItemID.TRISTAN_BUST);
         tristanBust.setHighlightInInventory(true);
-        camorraBust = new ItemRequirement("Camorra bust", ItemID.DS2_BUST_CAMORRA);
+        camorraBust = new ItemRequirement("Camorra bust", ItemID.CAMORRA_BUST);
         camorraBust.setHighlightInInventory(true);
     }
 
@@ -178,17 +178,17 @@ public class CryptPuzzle extends DetailedOwnerStep {
 
     @Override
     protected void setupSteps() {
-        inspectTomb = new ObjectStep(getQuestHelper(), ObjectID.DS2_TOMBSTONE_CAMORRA, new WorldPoint(1504, 9939, 1), "Inspect the tomb in the south room.");
+        inspectTomb = new ObjectStep(getQuestHelper(), NullObjectID.NULL_29901, new WorldPoint(1504, 9939, 1), "Inspect the tomb in the south room.");
 
 
-        takeTristanBust = new ObjectStep(getQuestHelper(), ObjectID.DS2_TOMB_BUST_TRISTAN, new WorldPoint(1507, 9941, 1), "Take Tristan's Bust.");
-        takeAivasBust = new ObjectStep(getQuestHelper(), ObjectID.DS2_TOMB_BUST_AIVAS, new WorldPoint(1500, 9941, 1), "Take Aivas' Bust.");
-        takeRobertBust = new ObjectStep(getQuestHelper(), ObjectID.DS2_TOMB_BUST_ROBERT, new WorldPoint(1500, 9936, 1), "Take Robert's Bust.");
-        takeCamorraBust = new ObjectStep(getQuestHelper(), ObjectID.DS2_TOMB_BUST_CAMORRA, new WorldPoint(1507, 9936, 1), "Take Camorra's Bust.");
-        placeBustNorth = new ObjectStep(getQuestHelper(), ObjectID.DS2_TOMB_PLINTH_NORTH, new WorldPoint(1504, 9941, 1), "Place the bust on the north plinth.");
-        placeBustEast = new ObjectStep(getQuestHelper(), ObjectID.DS2_TOMB_PLINTH_EAST, new WorldPoint(1506, 9939, 1), "Place the bust on the east plinth.");
-        placeBustSouth = new ObjectStep(getQuestHelper(), ObjectID.DS2_TOMB_PLINTH_SOUTH, new WorldPoint(1504, 9936, 1), "Place the bust on the south plinth.");
-        placeBustWest = new ObjectStep(getQuestHelper(), ObjectID.DS2_TOMB_PLINTH_WEST, new WorldPoint(1501, 9939, 1), "Place the bust on the west plinth.");
+        takeTristanBust = new ObjectStep(getQuestHelper(), NullObjectID.NULL_29904, new WorldPoint(1507, 9941, 1), "Take Tristan's Bust.");
+        takeAivasBust = new ObjectStep(getQuestHelper(), NullObjectID.NULL_29905, new WorldPoint(1500, 9941, 1), "Take Aivas' Bust.");
+        takeRobertBust = new ObjectStep(getQuestHelper(), NullObjectID.NULL_29902, new WorldPoint(1500, 9936, 1), "Take Robert's Bust.");
+        takeCamorraBust = new ObjectStep(getQuestHelper(), NullObjectID.NULL_29903, new WorldPoint(1507, 9936, 1), "Take Camorra's Bust.");
+        placeBustNorth = new ObjectStep(getQuestHelper(), NullObjectID.NULL_29906, new WorldPoint(1504, 9941, 1), "Place the bust on the north plinth.");
+        placeBustEast = new ObjectStep(getQuestHelper(), NullObjectID.NULL_29908, new WorldPoint(1506, 9939, 1), "Place the bust on the east plinth.");
+        placeBustSouth = new ObjectStep(getQuestHelper(), NullObjectID.NULL_29907, new WorldPoint(1504, 9936, 1), "Place the bust on the south plinth.");
+        placeBustWest = new ObjectStep(getQuestHelper(), NullObjectID.NULL_29909, new WorldPoint(1501, 9939, 1), "Place the bust on the west plinth.");
 
         setupItemRequirements();
         setupConditions();

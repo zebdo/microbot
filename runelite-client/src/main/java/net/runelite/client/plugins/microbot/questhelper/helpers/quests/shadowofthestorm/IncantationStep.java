@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.shadowofthestorm;
 
 
-import net.runelite.api.gameval.ItemID;
+import net.runelite.api.ItemID;
 import net.runelite.api.annotations.Varbit;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.events.WidgetLoaded;

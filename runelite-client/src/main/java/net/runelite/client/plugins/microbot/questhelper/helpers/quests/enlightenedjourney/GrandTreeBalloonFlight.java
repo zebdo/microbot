@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.enlightenedjourney;
 
 
-import net.runelite.api.gameval.ItemID;
+import net.runelite.api.ItemID;
 import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.questhelper.panel.PanelDetails;

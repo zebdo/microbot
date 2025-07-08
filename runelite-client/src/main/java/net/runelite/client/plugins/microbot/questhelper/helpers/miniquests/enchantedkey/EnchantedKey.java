@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.miniquests.enchantedkey;
 
 
-import net.runelite.api.gameval.ItemID;
+import net.runelite.api.ItemID;
 import net.runelite.api.QuestState;
 import net.runelite.client.plugins.microbot.questhelper.collections.KeyringCollection;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.BasicQuestHelper;
@@ -68,10 +68,10 @@ public class EnchantedKey extends BasicQuestHelper {
     protected void setupRequirements() {
         spade = new ItemRequirement("Spade", ItemID.SPADE).isNotConsumed();
         key = new KeyringRequirement("Enchanted key", configManager, KeyringCollection.ENCHANTED_KEY);
-        varrockTeleports = new ItemRequirement("Varrock teleports", ItemID.POH_TABLET_VARROCKTELEPORT);
-        ardougneTeleports = new ItemRequirement("Ardougne teleports", ItemID.POH_TABLET_ARDOUGNETELEPORT);
-        rellekkaTeleports = new ItemRequirement("Rellekka teleport", ItemID.NZONE_TELETAB_RELLEKKA);
-        lumbridgeTeleports = new ItemRequirement("Lumbridge teleports", ItemID.POH_TABLET_LUMBRIDGETELEPORT);
+        varrockTeleports = new ItemRequirement("Varrock teleports", ItemID.VARROCK_TELEPORT);
+        ardougneTeleports = new ItemRequirement("Ardougne teleports", ItemID.ARDOUGNE_TELEPORT);
+        rellekkaTeleports = new ItemRequirement("Rellekka teleport", ItemID.RELLEKKA_TELEPORT);
+        lumbridgeTeleports = new ItemRequirement("Lumbridge teleports", ItemID.LUMBRIDGE_TELEPORT);
         passage = new ItemRequirement("Necklace of passage", ItemCollections.NECKLACE_OF_PASSAGES);
     }
 
@@ -92,9 +92,9 @@ public class EnchantedKey extends BasicQuestHelper {
     @Override
     public List<ItemReward> getItemRewards() {
         return Arrays.asList(
-                new ItemReward("Saradomin Mjolnir", ItemID.MAKINGHISTORY_SARADOMIN_POLESTAFF, 1),
-                new ItemReward("Guthix Mjolnir", ItemID.MAKINGHISTORY_GUTHIX_POLESTAFF, 1),
-                new ItemReward("Zamorak Mjolnir", ItemID.MAKINGHISTORY_ZAMORAK_POLESTAFF, 1));
+                new ItemReward("Saradomin Mjolnir", ItemID.SARADOMIN_MJOLNIR, 1),
+                new ItemReward("Guthix Mjolnir", ItemID.GUTHIX_MJOLNIR, 1),
+                new ItemReward("Zamorak Mjolnir", ItemID.ZAMORAK_MJOLNIR, 1));
     }
 
     @Override

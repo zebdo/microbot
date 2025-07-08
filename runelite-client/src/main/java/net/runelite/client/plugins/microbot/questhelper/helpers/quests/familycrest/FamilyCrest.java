@@ -25,9 +25,9 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.familycrest;
 
 
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
-import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.ItemID;
+import net.runelite.api.NpcID;
+import net.runelite.api.ObjectID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.BasicQuestHelper;
@@ -135,22 +135,23 @@ public class FamilyCrest extends BasicQuestHelper {
     @Override
     protected void setupRequirements() {
         // Recommended
-        varrockTele = new ItemRequirement("Varrock Teleports", ItemID.POH_TABLET_VARROCKTELEPORT, 2);
-        faladorTele = new ItemRequirement("Falador Teleport", ItemID.POH_TABLET_FALADORTELEPORT);
-        ardyTele = new ItemRequirement("Ardougne Teleport", ItemID.POH_TABLET_ARDOUGNETELEPORT);
+        varrockTele = new ItemRequirement("Varrock Teleports", ItemID.VARROCK_TELEPORT, 2);
+        faladorTele = new ItemRequirement("Falador Teleport", ItemID.FALADOR_TELEPORT);
+        ardyTele = new ItemRequirement("Ardougne Teleport", ItemID.ARDOUGNE_TELEPORT);
         alkharidTele = new ItemRequirement("Al-Kharid Teleport", ItemCollections.RING_OF_DUELINGS, 2);
         alkharidTele.setChargedItem(true);
-        catherbyTele = new ItemRequirement("Camelot/Catherby Teleport", ItemID.POH_TABLET_CAMELOTTELEPORT);
+        catherbyTele = new ItemRequirement("Camelot/Catherby Teleport", ItemID.CATHERBY_TELEPORT);
         dwarvenMineTele = new ItemRequirement("Teleport to the Dwarven Mine (Combat Bracelet [3], Skills Necklace [2])", ItemCollections.SKILLS_NECKLACES);
         dwarvenMineTele.addAlternates(ItemCollections.COMBAT_BRACELETS);
 
+        varrockTele.addAlternates(ItemID.ACHIEVEMENT_DIARY_CAPE, ItemID.ACHIEVEMENT_DIARY_CAPE_T);
         varrockTele.addAlternates(ItemCollections.RING_OF_WEALTHS);
         ardyTele.addAlternates(ItemCollections.ARDY_CLOAKS);
         alkharidTele.addAlternates(ItemCollections.AMULET_OF_GLORIES);
-        catherbyTele.addAlternates(ItemID.POH_TABLET_CAMELOTTELEPORT);
+        catherbyTele.addAlternates(ItemID.CAMELOT_TELEPORT);
 
         // Required
-        shrimp = new ItemRequirement("Shrimps", ItemID.SHRIMP);
+        shrimp = new ItemRequirement("Shrimps", ItemID.SHRIMPS);
         salmon = new ItemRequirement("Salmon", ItemID.SALMON);
         tuna = new ItemRequirement("Tuna", ItemID.TUNA);
         bass = new ItemRequirement("Bass", ItemID.BASS);
@@ -165,22 +166,22 @@ public class FamilyCrest extends BasicQuestHelper {
         antipoison = new ItemRequirement("At least one dose of antipoison or superantipoison", ItemCollections.ANTIPOISONS);
 
         runesForBlasts = new ItemRequirement("Runes for casting each of the 4 blast spells", -1, -1);
-        runesForBlasts.setDisplayItemId(ItemID.DEATHRUNE);
+        runesForBlasts.setDisplayItemId(ItemID.DEATH_RUNE);
 
         gold = new ItemRequirement("'perfect' gold ore", ItemID.PERFECT_GOLD_ORE);
         gold2 = new ItemRequirement("'perfect' gold ore", ItemID.PERFECT_GOLD_ORE, 2);
         goldBar = new ItemRequirement("'perfect' gold bar", ItemID.PERFECT_GOLD_BAR);
         goldBar2 = new ItemRequirement("'perfect' gold bar", ItemID.PERFECT_GOLD_BAR, 2);
 
-        perfectRing = new ItemRequirement("'perfect' ring", ItemID.PERFECT_RUBY_RING);
-        perfectNecklace = new ItemRequirement("'perfect' necklace", ItemID.PERFECT_RUBY_NECKLACE);
+        perfectRing = new ItemRequirement("'perfect' ring", ItemID.PERFECT_RING);
+        perfectNecklace = new ItemRequirement("'perfect' necklace", ItemID.PERFECT_NECKLACE);
 
         crest = new ItemRequirement("Family crest", ItemID.FAMILY_CREST);
-        crestPiece1 = new ItemRequirement("Crest part", ItemID.CALEB_CREST);
+        crestPiece1 = new ItemRequirement("Crest part", ItemID.CREST_PART);
         crestPiece1.setTooltip("You can get another from Caleb in Catherby");
-        crestPiece2 = new ItemRequirement("Crest part", ItemID.AVAN_CREST);
+        crestPiece2 = new ItemRequirement("Crest part", ItemID.CREST_PART_780);
         crestPiece2.setTooltip("You can get another from Avan north of Al Kharid");
-        crestPiece3 = new ItemRequirement("Crest part", ItemID.JOHNATHON_CREST);
+        crestPiece3 = new ItemRequirement("Crest part", ItemID.CREST_PART_781);
     }
 
     @Override
@@ -194,13 +195,13 @@ public class FamilyCrest extends BasicQuestHelper {
     public void setupConditions() {
         inDwarvenMines = new ZoneRequirement(dwarvenMines);
         inHobgoblinDungeon = new ZoneRequirement(hobgoblinDungeon);
-        northWallUp = new ObjectCondition(ObjectID.LEVERG2, new WorldPoint(2722, 9710, 0));
-        southRoomUp = new ObjectCondition(ObjectID.LEVERH2, new WorldPoint(2724, 9669, 0));
-        northRoomUp = new ObjectCondition(ObjectID.LEVERI2, new WorldPoint(2722, 9718, 0));
+        northWallUp = new ObjectCondition(ObjectID.LEVER_2422, new WorldPoint(2722, 9710, 0));
+        southRoomUp = new ObjectCondition(ObjectID.LEVER_2424, new WorldPoint(2724, 9669, 0));
+        northRoomUp = new ObjectCondition(ObjectID.LEVER_2426, new WorldPoint(2722, 9718, 0));
 
-        northWallDown = new ObjectCondition(ObjectID.LEVERG, new WorldPoint(2722, 9710, 0));
-        southRoomDown = new ObjectCondition(ObjectID.LEVERH, new WorldPoint(2724, 9669, 0));
-        northRoomDown = new ObjectCondition(ObjectID.LEVERI, new WorldPoint(2722, 9718, 0));
+        northWallDown = new ObjectCondition(ObjectID.LEVER_2421, new WorldPoint(2722, 9710, 0));
+        southRoomDown = new ObjectCondition(ObjectID.LEVER_2423, new WorldPoint(2724, 9669, 0));
+        northRoomDown = new ObjectCondition(ObjectID.LEVER_2425, new WorldPoint(2722, 9718, 0));
 
         inJollyBoar = new ZoneRequirement(jollyBoar);
 
@@ -215,16 +216,16 @@ public class FamilyCrest extends BasicQuestHelper {
         talkToDimintheis.addDialogStep("So where is this crest?");
         talkToDimintheis.addDialogStep("Ok, I will help you.");
 
-        talkToCaleb = new NpcStep(this, NpcID.CALEB_FITZHARMON, new WorldPoint(2819, 3452, 0), "Talk to Caleb in Catherby.");
+        talkToCaleb = new NpcStep(this, NpcID.CALEB, new WorldPoint(2819, 3452, 0), "Talk to Caleb in Catherby.");
         talkToCaleb.addDialogStep("Are you Caleb Fitzharmon?");
         talkToCaleb.addDialogStep("So can I have your bit?");
         talkToCaleb.addDialogStep("Ok, I will get those.");
         talkToCaleb.addTeleport(catherbyTele);
-        talkToCalebWithFish = new NpcStep(this, NpcID.CALEB_FITZHARMON, new WorldPoint(2819, 3452, 0),
+        talkToCalebWithFish = new NpcStep(this, NpcID.CALEB, new WorldPoint(2819, 3452, 0),
                 "Talk to Caleb again with the required fish.", shrimp, salmon, tuna, bass, swordfish);
 
-        talkToCalebOnceMore = new NpcStep(this, NpcID.CALEB_FITZHARMON, new WorldPoint(2819, 3452, 0), "Talk to Caleb in "
-                + "Catherby once more.");
+        talkToCalebOnceMore = new NpcStep(this, NpcID.CALEB, new WorldPoint(2819, 3452, 0), "Talk to Caleb in " +
+                "Catherby once more.");
         talkToCalebOnceMore.addDialogStep("Uh.. what happened to the rest of the crest?");
 
         talkToGemTrader = new NpcStep(this, NpcID.GEM_TRADER, new WorldPoint(3286, 3211, 0), "Talk to the Gem Trader in Al Kharid.");
@@ -232,59 +233,59 @@ public class FamilyCrest extends BasicQuestHelper {
         talkToGemTrader.addTeleport(alkharidTele.quantity(1));
         talkToMan = new NpcStep(this, NpcID.MAN, new WorldPoint(3295, 3275, 0), "Talk to the man south of the Al Kharid mine.");
         talkToMan.addDialogStep("I'm looking for a man named Avan Fitzharmon.");
-        enterDwarvenMine = new ObjectStep(this, ObjectID.FAI_DWARF_TRAPDOOR_DOWN, new WorldPoint(3019, 3450, 0),
+        enterDwarvenMine = new ObjectStep(this, ObjectID.TRAPDOOR_11867, new WorldPoint(3019, 3450, 0),
                 "Talk to Boot in the south western Dwarven Mines.");
         enterDwarvenMine.addTeleport(dwarvenMineTele);
-        talkToBoot = new NpcStep(this, NpcID.BOOT_THE_DWARF, new WorldPoint(2984, 9810, 0), "Talk to Boot in the south western Dwarven Mines.");
+        talkToBoot = new NpcStep(this, NpcID.BOOT, new WorldPoint(2984, 9810, 0), "Talk to Boot in the south western Dwarven Mines.");
         talkToBoot.addDialogStep("Hello. I'm in search of very high quality gold.");
         talkToBoot.addSubSteps(enterDwarvenMine);
 
-        enterWitchavenDungeon = new ObjectStep(this, ObjectID.LEVERG2, new WorldPoint(2696, 3283, 0),
+        enterWitchavenDungeon = new ObjectStep(this, ObjectID.OLD_RUIN_ENTRANCE, new WorldPoint(2696, 3283, 0),
                 "Enter the old ruin entrance west of Witchaven.");
         enterWitchavenDungeon.addTeleport(ardyTele);
 
-        pullNorthLever = new ObjectStep(this, ObjectID.LEVERG2, new WorldPoint(2722, 9710, 0),
+        pullNorthLever = new ObjectStep(this, ObjectID.LEVER_2421, new WorldPoint(2722, 9710, 0),
                 "Follow the path around, and pull the lever on the wall in the north east corner.");
-        pullSouthRoomLever = new ObjectStep(this, ObjectID.LEVERG2, new WorldPoint(2724, 9669, 0), "Pull the lever in the south room up.");
+        pullSouthRoomLever = new ObjectStep(this, ObjectID.LEVER_2423, new WorldPoint(2724, 9669, 0), "Pull the lever in the south room up.");
 
-        pullNorthLeverAgain = new ObjectStep(this, ObjectID.LEVERG2, new WorldPoint(2722, 9710, 0), "Pull the north wall lever again.");
+        pullNorthLeverAgain = new ObjectStep(this, ObjectID.LEVER_2422, new WorldPoint(2722, 9710, 0), "Pull the north wall lever again.");
 
-        pullNorthRoomLever = new ObjectStep(this, ObjectID.LEVERG2, new WorldPoint(2722, 9718, 0), "Pull the lever in the north room up.");
+        pullNorthRoomLever = new ObjectStep(this, ObjectID.LEVER_2425, new WorldPoint(2722, 9718, 0), "Pull the lever in the north room up.");
 
-        pullNorthLever3 = new ObjectStep(this, ObjectID.LEVERG2, new WorldPoint(2722, 9710, 0), "Pull the north wall lever again.");
+        pullNorthLever3 = new ObjectStep(this, ObjectID.LEVER_2421, new WorldPoint(2722, 9710, 0), "Pull the north wall lever again.");
 
-        pullSouthRoomLever2 = new ObjectStep(this, ObjectID.LEVERG2, new WorldPoint(2724, 9669, 0), "Pull the lever in the south room down.");
+        pullSouthRoomLever2 = new ObjectStep(this, ObjectID.LEVER_2424, new WorldPoint(2724, 9669, 0), "Pull the lever in the south room down.");
 
         followPathAroundEast = new DetailedQuestStep(this, new WorldPoint(2721, 9700, 0), "Follow the dungeon around to the east.");
 
-        mineGold = new ObjectStep(this, ObjectID.LEVERG2, new WorldPoint(2732, 9680, 0),
+        mineGold = new ObjectStep(this, ObjectID.GOLD_ROCKS_11371, new WorldPoint(2732, 9680, 0),
                 "Mine 2 perfect gold in the east room.", true, pickaxe, gold2);
         ((ObjectStep) mineGold).setMaxObjectDistance(5000);
 
-        smeltGold = new ObjectStep(this, ObjectID.FURNACE, new WorldPoint(3273, 3186, 0), "Smelt the perfect gold ore into bars.", gold2.highlighted());
+        smeltGold = new ObjectStep(this, ObjectID.FURNACE_24009, new WorldPoint(3273, 3186, 0), "Smelt the perfect gold ore into bars.", gold2.highlighted());
         smeltGold.addIcon(ItemID.GOLD_ORE);
         smeltGold.addTeleport(alkharidTele.quantity(1));
 
-        makeNecklace = new ObjectStep(this, ObjectID.FURNACE, "Make a perfect ruby necklace at a furnace. Make sure to only craft one.", goldBar, ruby, necklaceMould);
-        makeRing = new ObjectStep(this, ObjectID.FURNACE, "Make a perfect ruby ring at a furnace. Make sure to only craft one.", goldBar, ruby, ringMould);
+        makeNecklace = new ObjectStep(this, ObjectID.FURNACE_24009, "Make a perfect ruby necklace at a furnace. Make sure to only craft one.", goldBar, ruby, necklaceMould);
+        makeRing = new ObjectStep(this, ObjectID.FURNACE_24009, "Make a perfect ruby ring at a furnace. Make sure to only craft one.", goldBar, ruby, ringMould);
 
-        returnToMan = new NpcStep(this, NpcID.MAN, new WorldPoint(3295, 3275, 0),
+        returnToMan = new NpcStep(this, NpcID.AVAN, new WorldPoint(3295, 3275, 0),
                 "Return to the man south of the Al Kharid mine.", perfectRing, perfectNecklace);
 
-        goUpToJohnathon = new ObjectStep(this, ObjectID.TUNNELSTAIRS, new WorldPoint(3286, 3494, 0),
+        goUpToJohnathon = new ObjectStep(this, ObjectID.STAIRCASE_11797, new WorldPoint(3286, 3494, 0),
                 "Go upstairs in the Jolly Boar Inn north east of Varrock and talk to Johnathon.", antipoison);
         goUpToJohnathon.addTeleport(varrockTele.quantity(1));
 
-        talkToJohnathon = new NpcStep(this, NpcID.JOHNATHON_FITZHARMON, new WorldPoint(3277, 3504, 1), "Talk to Johnathon.", antipoison);
-        giveJohnathonAntipoison = new NpcStep(this, NpcID.JOHNATHON_FITZHARMON, new WorldPoint(3277, 3504, 1),
+        talkToJohnathon = new NpcStep(this, NpcID.JOHNATHON, new WorldPoint(3277, 3504, 1), "Talk to Johnathon.", antipoison);
+        giveJohnathonAntipoison = new NpcStep(this, NpcID.JOHNATHON, new WorldPoint(3277, 3504, 1),
                 "Give Johnathon some antipoison.", antipoison.highlighted());
-        giveJohnathonAntipoison.addIcon(ItemID._3DOSEANTIPOISON);
+        giveJohnathonAntipoison.addIcon(ItemID.ANTIPOISON3);
 
         goUpToJohnathon.addSubSteps(talkToJohnathon);
 
-        goDownToChronizon = new ObjectStep(this, ObjectID.TRAPDOOR_OPEN, new WorldPoint(3097, 3468, 0),
+        goDownToChronizon = new ObjectStep(this, ObjectID.TRAPDOOR_1581, new WorldPoint(3097, 3468, 0),
                 "Enter the Edgeville Wilderness Dungeon, ready to kill Chronozon. Other players will be able to attack you.", runesForBlasts);
-        goDownToChronizon.addAlternateObjects(ObjectID.TRAPDOOR);
+        goDownToChronizon.addAlternateObjects(ObjectID.TRAPDOOR_1579);
 
         killChronizon = new NpcStep(this, NpcID.CHRONOZON, new WorldPoint(3087, 9936, 0),
                 "Kill Chronozon in the south west corner of the Edgeville Wilderness Dungeon. You need to hit him at least once with all 4 elemental blast spell.",
@@ -325,8 +326,8 @@ public class FamilyCrest extends BasicQuestHelper {
     @Override
     public List<String> getNotes() {
         ArrayList<String> reqs = new ArrayList<>();
-        reqs.add("The final boss of this quest is in the Edgeville WILDERNESS dungeon, where other players can kill "
-                + "you. Make sure when you go there you aren't risking anything you'd not be willing to lose.");
+        reqs.add("The final boss of this quest is in the Edgeville WILDERNESS dungeon, where other players can kill " +
+                "you. Make sure when you go there you aren't risking anything you'd not be willing to lose.");
         return reqs;
     }
 

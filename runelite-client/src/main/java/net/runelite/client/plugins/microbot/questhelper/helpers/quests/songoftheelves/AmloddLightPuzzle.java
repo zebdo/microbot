@@ -25,7 +25,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.songoftheelves;
 
 
-import net.runelite.api.gameval.ItemID;
+import net.runelite.api.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.NullObjectID;
 import net.runelite.api.ObjectID;
@@ -82,6 +82,7 @@ public class AmloddLightPuzzle extends ConditionalStep {
         addStep(new Conditions(onF0, r13), p1Pillar14);
         addStep(new Conditions(onF0, r12), p1Pillar13);
         addStep(new Conditions(onF0, r11), p1Pillar12);
+        addStep(new Conditions(onF0, r10), p1Pillar11);
         addStep(new Conditions(r10), goToF0Middle);
 
         addStep(new Conditions(onF1, r9), p1Pillar10);

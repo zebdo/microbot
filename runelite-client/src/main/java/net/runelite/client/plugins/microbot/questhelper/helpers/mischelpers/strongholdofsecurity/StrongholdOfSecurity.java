@@ -24,9 +24,10 @@
  */
 package net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.strongholdofsecurity;
 
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
-import net.runelite.api.gameval.ObjectID;
+
+import net.runelite.api.ItemID;
+import net.runelite.api.NpcID;
+import net.runelite.api.ObjectID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.BasicQuestHelper;
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicType;
@@ -42,6 +43,7 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRe
 import net.runelite.client.plugins.microbot.questhelper.requirements.player.CombatLevelRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.var.VarbitRequirement;
 import net.runelite.client.plugins.microbot.questhelper.rewards.UnlockReward;
+
 
 import java.util.*;
 
@@ -244,50 +246,50 @@ public class StrongholdOfSecurity extends BasicQuestHelper {
         talkToCountCheck.addDialogStep("Where can I learn more about security?");
         talkToCountCheck.addDialogStep("Yes");
 
-        enterStronghold = new ObjectStep(this, ObjectID.SOS_DUNG_ENT_OPEN, new WorldPoint(3081, 3420, 0),
+        enterStronghold = new ObjectStep(this, ObjectID.ENTRANCE_20790, new WorldPoint(3081, 3420, 0),
                 "Climb down the entrance to the Stronghold of Security.");
-        enterFloorFamine = new ObjectStep(this, ObjectID.SOS_WAR_LADD_DOWN, new WorldPoint(1902, 5222, 0),
+        enterFloorFamine = new ObjectStep(this, ObjectID.LADDER_20785, new WorldPoint(1902, 5222, 0),
                 "Go to the 2nd floor of the stronghold.");
         enterFloorFamine.setLinePoints(pathFromStartToChest1);
         enterFloorFamine.setHideMinimapLines(true);
         enterFloorFamine.addDialogSteps(answers);
-        enterFloorPestilence = new ObjectStep(this, ObjectID.SOS_FAM_LADD_DOWN, new WorldPoint(2026, 5218, 0),
+        enterFloorPestilence = new ObjectStep(this, ObjectID.LADDER_19004, new WorldPoint(2026, 5218, 0),
                 "Go to the 3rd floor of the stronghold.");
         enterFloorPestilence.setLinePoints(pathFromStartToChest2);
         enterFloorPestilence.setHideMinimapLines(true);
         enterFloorPestilence.addDialogSteps(answers);
-        enterFloorDeath = new ObjectStep(this, ObjectID.SOS_PEST_LADD_DOWN, new WorldPoint(2148, 5284, 0),
+        enterFloorDeath = new ObjectStep(this, ObjectID.DRIPPING_VINE_23706, new WorldPoint(2148, 5284, 0),
                 "Go to the 4th floor of the stronghold.");
         enterFloorDeath.setLinePoints(pathFromStartToChest3);
         enterFloorDeath.setHideMinimapLines(true);
         enterFloorDeath.addDialogSteps(answers);
 
-        usePortalWar = new ObjectStep(this, ObjectID.SOS_WAR_PORTAL,
+        usePortalWar = new ObjectStep(this, ObjectID.PORTAL_20786,
                 new WorldPoint(1863, 5238, 0), "Enter the portal.");
-        usePortalFamine = new ObjectStep(this, ObjectID.SOS_FAM_PORTAL,
+        usePortalFamine = new ObjectStep(this, ObjectID.PORTAL_19005,
                 new WorldPoint(2039, 5240, 0), "Enter the portal.");
-        usePortalPestilence = new ObjectStep(this, ObjectID.SOS_PEST_PORTAL,
+        usePortalPestilence = new ObjectStep(this, ObjectID.PORTAL_23707,
                 new WorldPoint(2120, 5258, 0), "Enter the portal.");
 
-        openChestWar = new ObjectStep(this, ObjectID.SOS_WAR_CHEST,
+        openChestWar = new ObjectStep(this, ObjectID.GIFT_OF_PEACE,
                 new WorldPoint(1907, 5222, 0), "Claim 2k coins and the Flap emote.");
         openChestWar.setLinePoints(pathFromStartToChest1);
         openChestWar.setHideMinimapLines(true);
         openChestWar.addDialogSteps(answers);
 
-        openChestFamine = new ObjectStep(this, ObjectID.SOS_FAM_SACK,
+        openChestFamine = new ObjectStep(this, ObjectID.GRAIN_OF_PLENTY,
                 new WorldPoint(2021, 5216, 0), "Claim 3k coins and the Slap Head emote.");
         openChestFamine.setLinePoints(pathFromStartToChest2);
         openChestFamine.setHideMinimapLines(true);
         openChestFamine.addDialogSteps(answers);
 
-        openChestPestilence = new ObjectStep(this, ObjectID.SOS_PEST_CHEST,
+        openChestPestilence = new ObjectStep(this, ObjectID.BOX_OF_HEALTH,
                 new WorldPoint(2144, 5280, 0), "Claim 5k coins and the Idea emote.");
         openChestPestilence.setLinePoints(pathFromStartToChest3);
         openChestPestilence.setHideMinimapLines(true);
         openChestPestilence.addDialogSteps(answers);
 
-        openChestDeath = new ObjectStep(this, ObjectID.SOS_DEATH_PRAM,
+        openChestDeath = new ObjectStep(this, ObjectID.CRADLE_OF_LIFE,
                 new WorldPoint(2344, 5214, 0), "Claim Fancy boots or Fighting boots, and the Stamp emote.");
         openChestDeath.setLinePoints(pathFromStartToChest4);
         openChestDeath.setHideMinimapLines(true);
@@ -304,11 +306,10 @@ public class StrongholdOfSecurity extends BasicQuestHelper {
         return Collections.singletonList(new UnlockReward("Flap, Slap Head, Idea and Stamp emotes."));
     }
 
-    @Override
     public List<ItemReward> getItemRewards() {
         return Arrays.asList(
-                new ItemReward("Coins", ItemID.COINS, 10000),
-                new ItemReward("Fancy or Fighting boots", ItemID.SOS_BOOTS, 1));
+                new ItemReward("Coins", ItemID.COINS_995, 10000),
+                new ItemReward("Fancy or Fighting boots", ItemID.FANCY_BOOTS, 1));
     }
 
     // Maybe a little unnecessary...

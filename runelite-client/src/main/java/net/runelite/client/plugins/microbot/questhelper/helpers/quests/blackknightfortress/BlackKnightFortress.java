@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.blackknightfortress;
 
 
-import net.runelite.api.gameval.ItemID;
+import net.runelite.api.ItemID;
 import net.runelite.api.NpcID;
 import net.runelite.api.ObjectID;
 import net.runelite.api.coords.WorldPoint;
@@ -154,7 +154,7 @@ public class BlackKnightFortress extends BasicQuestHelper {
         bronzeMed = new ItemRequirement("Bronze med helm", ItemID.BRONZE_MED_HELM, 1, true).isNotConsumed();
         bronzeMed.setTooltip("You can get one from the helmet shop in Barbarian Village.");
 
-        teleportFalador = new ItemRequirement("Teleport to Falador", ItemID._37_FALADOR_TELEPORT);
+        teleportFalador = new ItemRequirement("Teleport to Falador", ItemID.FALADOR_TELEPORT);
         armour = new ItemRequirement("Armour", -1, -1).isNotConsumed();
         armour.setDisplayItemId(BankSlotIcons.getArmour());
         food = new ItemRequirement("Food", ItemCollections.GOOD_EATING_FOOD, -1);
@@ -285,7 +285,7 @@ public class BlackKnightFortress extends BasicQuestHelper {
 
     @Override
     public List<ItemReward> getItemRewards() {
-        return Collections.singletonList(new ItemReward("Coins", ItemID.COINS, 2500));
+        return Collections.singletonList(new ItemReward("Coins", ItemID.COINS_995, 2500));
     }
 
     @Override

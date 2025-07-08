@@ -27,7 +27,7 @@ package net.runelite.client.plugins.microbot.questhelper.collections;
 import com.google.common.collect.ImmutableList;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
-import net.runelite.api.gameval.ItemID;
+import net.runelite.api.ItemID;
 
 import java.util.ArrayList;
 import java.util.Collections;
