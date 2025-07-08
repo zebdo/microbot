@@ -8,9 +8,9 @@ import net.runelite.api.gameval.ItemID;
 @RequiredArgsConstructor
 public enum HumidifyItem {
     
-    BOWL("bowl", ItemID.BOWL, "bowl of water", ItemID.BOWL_OF_WATER),
-    BUCKET("bucket", ItemID.BUCKET, "bucket of water", ItemID.BUCKET_OF_WATER),
-    JUG("jug", ItemID.JUG, "jug of water", ItemID.JUG_OF_WATER);
+    BOWL("bowl", ItemID.BOWL_EMPTY, "bowl of water", ItemID.BOWL_WATER),
+    BUCKET("bucket", ItemID.BUCKET_EMPTY, "bucket of water", ItemID.BUCKET_WATER),
+    JUG("jug", ItemID.JUG_EMPTY, "jug of water", ItemID.JUG_WATER);
 
     private final String itemName;
     private final int itemID;

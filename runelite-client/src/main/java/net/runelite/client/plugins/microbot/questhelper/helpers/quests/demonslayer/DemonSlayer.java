@@ -26,9 +26,9 @@ package net.runelite.client.plugins.microbot.questhelper.helpers.quests.demonsla
 
 
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.NpcID;
-import net.runelite.api.NullObjectID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.NpcID;
+
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicType;
 import net.runelite.client.plugins.microbot.questhelper.requirements.zone.Zone;
@@ -118,24 +118,24 @@ public class DemonSlayer extends BasicQuestHelper {
 
     @Override
     protected void setupRequirements() {
-        bucket = new ItemRequirement("Bucket", ItemID.BUCKET).isNotConsumed();
+        bucket = new ItemRequirement("Bucket", ItemID.BUCKET_EMPTY).isNotConsumed();
         bucket.setHighlightInInventory(true);
-        bucketOfWater = new ItemRequirement("Bucket of water", ItemID.BUCKET_OF_WATER);
+        bucketOfWater = new ItemRequirement("Bucket of water", ItemID.BUCKET_WATER);
         bucketOfWater.setHighlightInInventory(true);
-        key1 = new ItemRequirement("Silverlight key", ItemID.SILVERLIGHT_KEY_2400);
-        key2 = new ItemRequirement("Silverlight key", ItemID.SILVERLIGHT_KEY_2401);
-        key3 = new ItemRequirement("Silverlight key", ItemID.SILVERLIGHT_KEY);
+        key1 = new ItemRequirement("Silverlight key", ItemID.SILVERLIGHT_KEY_2);
+        key2 = new ItemRequirement("Silverlight key", ItemID.SILVERLIGHT_KEY_3);
+        key3 = new ItemRequirement("Silverlight key", ItemID.SILVERLIGHT_KEY_1);
         bones = new ItemRequirement("Bones (UNNOTED)", ItemID.BONES, 25);
         silverlight = new ItemRequirement("Silverlight", ItemID.SILVERLIGHT).isNotConsumed();
         silverlightEquipped = new ItemRequirement("Silverlight", ItemID.SILVERLIGHT, 1, true).isNotConsumed();
         combatGear = new ItemRequirement("Armour", -1, -1).isNotConsumed();
         combatGear.setDisplayItemId(BankSlotIcons.getArmour());
 
-        bucketOfWaterOptional = new ItemRequirement("Bucket of water", ItemID.BUCKET_OF_WATER);
+        bucketOfWaterOptional = new ItemRequirement("Bucket of water", ItemID.BUCKET_WATER);
         bucketOfWaterOptional.canBeObtainedDuringQuest();
 
-        varrockTeleport = new ItemRequirement("Varrock teleport", ItemID.VARROCK_TELEPORT);
-        wizardsTowerTeleport = new ItemRequirement("Teleport to the Wizards' Tower", ItemID.NECKLACE_OF_PASSAGE5);
+        varrockTeleport = new ItemRequirement("Varrock teleport", ItemID.POH_TABLET_VARROCKTELEPORT);
+        wizardsTowerTeleport = new ItemRequirement("Teleport to the Wizards' Tower", ItemID.NECKLACE_OF_PASSAGE_5);
         coin = new ItemRequirement("Coin", ItemCollections.COINS);
         food = new ItemRequirement("Food", ItemCollections.GOOD_EATING_FOOD, -1);
     }
@@ -150,7 +150,7 @@ public class DemonSlayer extends BasicQuestHelper {
         hasPouredWaterIntoDrain = new VarbitRequirement(2568, 1);
         obtainedSilverlight = new VarbitRequirement(2567, 1);
         delrithNearby = new NpcCondition(NpcID.DELRITH);
-        delrithWeakenedNearby = new NpcCondition(NpcID.WEAKENED_DELRITH);
+        delrithWeakenedNearby = new NpcCondition(NpcID.DELRITH_WEAKENED);
         inInstance = new VarbitRequirement(2569, 1);
     }
 
@@ -176,8 +176,8 @@ public class DemonSlayer extends BasicQuestHelper {
         talkToPrysin.addDialogStep("He's back and unfortunately I've got to deal with him.");
         talkToPrysin.addDialogStep("So give me the keys!");
         talkToPrysin.addDialogStep("Can you give me your key?");
-        goUpToRovin = new ObjectStep(this, ObjectID.STAIRCASE_11790, new WorldPoint(3203, 3498, 0), "Talk to Captain Rovin upstairs in the north west of Varrock Castle.");
-        goUpToRovin2 = new ObjectStep(this, ObjectID.STAIRCASE_11792, new WorldPoint(3203, 3498, 1), "Talk to Captain Rovin upstairs in the north west of Varrock Castle.");
+        goUpToRovin = new ObjectStep(this, ObjectID.VARROCK_SPIRALSTAIRS_TALLER, new WorldPoint(3203, 3498, 0), "Talk to Captain Rovin upstairs in the north west of Varrock Castle.");
+        goUpToRovin2 = new ObjectStep(this, ObjectID.VARROCK_SPIRALSTAIRS_MIDDLE_TALLER, new WorldPoint(3203, 3498, 1), "Talk to Captain Rovin upstairs in the north west of Varrock Castle.");
         talkToRovin = new NpcStep(this, NpcID.CAPTAIN_ROVIN, new WorldPoint(3205, 3498, 2), "Talk to Captain Rovin upstairs in the north west of Varrock Castle.");
         talkToRovin.addDialogStep("Yes I know, but this is important.");
         talkToRovin.addDialogStep("There's a demon who wants to invade this city.");
@@ -187,24 +187,24 @@ public class DemonSlayer extends BasicQuestHelper {
         talkToRovin.addDialogStep("Why did he give you one of the keys then?");
         talkToRovin.addSubSteps(goUpToRovin, goUpToRovin2);
 
-        goDownstairsFromRovin = new ObjectStep(this, ObjectID.STAIRCASE_11793, new WorldPoint(3203, 3498, 2), "Go to the Varrock Castle kitchen.");
-        goDownstairsFromRovin2 = new ObjectStep(this, ObjectID.STAIRCASE_11792, new WorldPoint(3203, 3498, 1), "Go to the Varrock Castle kitchen.");
-        goUpToBucket = new ObjectStep(this, ObjectID.STAIRCASE_11789, new WorldPoint(3219, 3497, 0), "Get a bucket from above the Varrock Castle kitchen.");
+        goDownstairsFromRovin = new ObjectStep(this, ObjectID.VARROCK_SPIRALSTAIRSTOP, new WorldPoint(3203, 3498, 2), "Go to the Varrock Castle kitchen.");
+        goDownstairsFromRovin2 = new ObjectStep(this, ObjectID.VARROCK_SPIRALSTAIRS_MIDDLE_TALLER, new WorldPoint(3203, 3498, 1), "Go to the Varrock Castle kitchen.");
+        goUpToBucket = new ObjectStep(this, ObjectID.VARROCK_SPIRALSTAIRS, new WorldPoint(3219, 3497, 0), "Get a bucket from above the Varrock Castle kitchen.");
         pickupBucket = new DetailedQuestStep(this, new WorldPoint(3221, 3497, 1), "Pick up the bucket nearby.", bucket);
-        goDownFromBucket = new ObjectStep(this, ObjectID.STAIRCASE_11793, new WorldPoint(3219, 3497, 1), "Go back down to the kitchen.");
-        fillBucket = new ObjectStep(this, ObjectID.SINK_7422, new WorldPoint(3224, 3495, 0), "Use the bucket on the sink.", bucket);
-        fillBucket.addIcon(ItemID.BUCKET);
-        useFilledBucketOnDrain = new ObjectStep(this, ObjectID.DRAIN_17424, new WorldPoint(3225, 3496, 0), "Use the bucket of water on the drain outside the kitchen.", bucketOfWater);
-        ((ObjectStep) useFilledBucketOnDrain).addAlternateObjects(ObjectID.DRAIN_17423);
-        useFilledBucketOnDrain.addIcon(ItemID.BUCKET_OF_WATER);
+        goDownFromBucket = new ObjectStep(this, ObjectID.VARROCK_SPIRALSTAIRSTOP, new WorldPoint(3219, 3497, 1), "Go back down to the kitchen.");
+        fillBucket = new ObjectStep(this, ObjectID.FAI_VARROCK_POSH_SINK, new WorldPoint(3224, 3495, 0), "Use the bucket on the sink.", bucket);
+        fillBucket.addIcon(ItemID.BUCKET_EMPTY);
+        useFilledBucketOnDrain = new ObjectStep(this, ObjectID.QIP_DS_QUESTDRAIN_KEY, new WorldPoint(3225, 3496, 0), "Use the bucket of water on the drain outside the kitchen.", bucketOfWater);
+        ((ObjectStep) useFilledBucketOnDrain).addAlternateObjects(ObjectID.QIP_DS_QUESTDRAIN_NOKEY);
+        useFilledBucketOnDrain.addIcon(ItemID.BUCKET_WATER);
         useFilledBucketOnDrain.addSubSteps(goDownstairsFromRovin, goDownstairsFromRovin2, goUpToBucket, pickupBucket, goDownFromBucket, fillBucket);
-        goDownManhole = new ObjectStep(this, ObjectID.MANHOLE_882, new WorldPoint(3237, 3458, 0), "Go down into Varrock Sewer via the Manhole south east of Varrock Castle.");
-        ((ObjectStep) goDownManhole).addAlternateObjects(ObjectID.MANHOLE);
-        pickupSecondKey = new ObjectStep(this, NullObjectID.NULL_17431, new WorldPoint(3225, 9897, 0), "Pick up the Rusty Key north of the Sewer entrance.");
+        goDownManhole = new ObjectStep(this, ObjectID.MANHOLEOPEN, new WorldPoint(3237, 3458, 0), "Go down into Varrock Sewer via the Manhole south east of Varrock Castle.");
+        ((ObjectStep) goDownManhole).addAlternateObjects(ObjectID.MANHOLEOPEN);
+        pickupSecondKey = new ObjectStep(this, ObjectID.QIP_DS_SEWER_KEY, new WorldPoint(3225, 9897, 0), "Pick up the Rusty Key north of the Sewer entrance.");
 
-        goUpManhole = new ObjectStep(this, ObjectID.LADDER_11806, new WorldPoint(3237, 9858, 0), "Bring Wizard Traiborn 25 bones in the Wizards' Tower.", bones);
-        goUpstairsWizard = new ObjectStep(this, ObjectID.STAIRCASE_12536, new WorldPoint(3104, 3160, 0), "Bring Wizard Traiborn 25 bones in the Wizards' Tower.", bones);
-        talkToTraiborn = new NpcStep(this, NpcID.WIZARD_TRAIBORN, new WorldPoint(3114, 3163, 1), "Bring Wizard Traiborn 25 bones in the Wizards' Tower. You don't need to bring them all at once.", bones);
+        goUpManhole = new ObjectStep(this, ObjectID.FAI_VARROCK_MANHOLE_LADDER, new WorldPoint(3237, 9858, 0), "Bring Wizard Traiborn 25 bones in the Wizards' Tower.", bones);
+        goUpstairsWizard = new ObjectStep(this, ObjectID.FAI_WIZTOWER_SPIRALSTAIRS, new WorldPoint(3104, 3160, 0), "Bring Wizard Traiborn 25 bones in the Wizards' Tower.", bones);
+        talkToTraiborn = new NpcStep(this, NpcID.TRAIBORN, new WorldPoint(3114, 3163, 1), "Bring Wizard Traiborn 25 bones in the Wizards' Tower. You don't need to bring them all at once.", bones);
         talkToTraiborn.addDialogStep("Talk about Demon Slayer.");
         talkToTraiborn.addDialogStep("I need to get a key given to you by Sir Prysin.");
         talkToTraiborn.addDialogStep("Well, have you got any keys knocking around?");

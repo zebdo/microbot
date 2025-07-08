@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.magic.housetab;
 
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.Point;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -10,12 +10,13 @@ import net.runelite.client.plugins.microbot.magic.housetab.enums.HOUSETABS_CONFI
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.math.Random;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -33,7 +34,6 @@ public class HouseTabScript extends Script {
 
     private final int HOUSE_TABLET_INTERFACE = 26411033;
 
-    private final HOUSETABS_CONFIG houseTabConfig;
     private final String[] playerHouses;
 
     private final ScheduledExecutorService scheduledExecutorService;
@@ -48,18 +48,17 @@ public class HouseTabScript extends Script {
     }
 
     private boolean hasLawRune() {
-        return Rs2Inventory.hasItem(ItemID.LAW_RUNE);
+        return Rs2Inventory.hasItem(ItemID.LAWRUNE);
     }
 
     public HouseTabScript(HOUSETABS_CONFIG houseTabConfig, String[] playerHouses) {
-        this.houseTabConfig = houseTabConfig;
         this.playerHouses = playerHouses;
         scheduledExecutorService = Executors.newScheduledThreadPool(1);
     }
 
     private void lookForHouseAdvertisementObject() {
         Widget houseAdvertisementPanel = Microbot.getClient().getWidget(HOUSE_ADVERTISEMENT_NAME_PARENT_INTERFACE);
-        if (!hasSoftClay() || houseAdvertisementPanel != null || Rs2GameObject.findObjectById(HOUSE_PORTAL_OBJECT) != null)
+        if (!hasSoftClay() || houseAdvertisementPanel != null || Rs2GameObject.getGameObject(HOUSE_PORTAL_OBJECT) != null)
             return;
 
 
@@ -77,7 +76,7 @@ public class HouseTabScript extends Script {
         if (houseAdvertisementNameWidget == null || houseAdvertisementNameWidget.getChildren() == null) return;
         if (!hasSoftClay())
             return;
-        if (Rs2GameObject.findObjectById(HOUSE_PORTAL_OBJECT) != null)
+        if (Rs2GameObject.getGameObject(HOUSE_PORTAL_OBJECT) != null)
             return;
 
         int enterHouseButtonHeight = 21;
@@ -98,27 +97,28 @@ public class HouseTabScript extends Script {
         Widget houseAdvertisementEnterHouseWidget = Microbot.getClient().getWidget(HOUSE_ADVERTISEMENT_ENTER_HOUSE_PARENT_INTERFACE);
         if (houseAdvertisementEnterHouseWidget == null) return;
         Widget enterHouseButton = houseAdvertisementEnterHouseWidget.getChild(houseIndexToJoin);
-        int buttonRelativeY = houseAdvertisementEnterHouseWidget.getChild(houseIndexToJoin).getRelativeY() + enterHouseButtonHeight;
+        int buttonRelativeY = Objects.requireNonNull(houseAdvertisementEnterHouseWidget.getChild(houseIndexToJoin)).getRelativeY() + enterHouseButtonHeight;
         if (buttonRelativeY > (mainWindow.getScrollY() + mainWindow.getHeight())) {
             keepExecuteUntil(() -> {
-                int x = (int) mainWindow.getBounds().getCenterX() + Random.random(-50, 50);
-                int y = (int) mainWindow.getBounds().getCenterY() + Random.random(-50, 50);
+                int x = (int) mainWindow.getBounds().getCenterX() + Rs2Random.fancyNormalSample(-50, 50);
+                int y = (int) mainWindow.getBounds().getCenterY() + Rs2Random.fancyNormalSample(-50, 50);
                 Microbot.getMouse().scrollDown(new Point(x, y));
             }, () -> buttonRelativeY <= (mainWindow.getScrollY() + mainWindow.getHeight()), 500);
         } else {
+            assert enterHouseButton != null;
             Microbot.getMouse()
                     .click(enterHouseButton.getCanvasLocation());
-            sleepUntilOnClientThread(() -> Rs2GameObject.findObjectById(HOUSE_PORTAL_OBJECT) != null);
+            sleepUntilOnClientThread(() -> Rs2GameObject.getGameObject(HOUSE_PORTAL_OBJECT) != null);
             sleep(2000, 3000);
         }
     }
 
     public void lookForLectern() {
-        if (!hasSoftClay() || Rs2GameObject.findObjectById(HOUSE_ADVERTISEMENT_OBJECT) != null || Microbot.isGainingExp)
+        if (!hasSoftClay() || Rs2GameObject.getGameObject(HOUSE_ADVERTISEMENT_OBJECT) != null || Microbot.isGainingExp)
             return;
 
         Widget houseTabInterface = Microbot.getClient().getWidget(HOUSE_TABLET_INTERFACE);
-        if (houseTabInterface != null || Rs2GameObject.findObjectById(HOUSE_PORTAL_OBJECT) == null) return;
+        if (houseTabInterface != null || Rs2GameObject.getGameObject(HOUSE_PORTAL_OBJECT) == null) return;
 
         boolean success = Rs2GameObject.interact(new int[]{13647, 37349}, "Study");
         if (success) {
@@ -129,7 +129,7 @@ public class HouseTabScript extends Script {
     public void createHouseTablet() {
         Widget houseTabInterface = Microbot.getClient().getWidget(HOUSE_TABLET_INTERFACE);
         if (houseTabInterface == null) return;
-        if (!hasSoftClay() || Rs2GameObject.findObjectById(HOUSE_PORTAL_OBJECT) == null)
+        if (!hasSoftClay() || Rs2GameObject.getGameObject(HOUSE_PORTAL_OBJECT) == null)
             return;
 
         while (Microbot.getClient().getWidget(HOUSE_TABLET_INTERFACE) != null) {
@@ -147,16 +147,16 @@ public class HouseTabScript extends Script {
     }
 
     public void leaveHouse() {
-        if (hasSoftClay() || Rs2GameObject.findObjectById(HOUSE_PORTAL_OBJECT) == null)
+        if (hasSoftClay() || Rs2GameObject.getGameObject(HOUSE_PORTAL_OBJECT) == null)
             return;
 
         boolean success = Rs2GameObject.interact(HOUSE_PORTAL_OBJECT, "Enter");
         if (success)
-            sleepUntil(() -> Rs2GameObject.findObjectById(HOUSE_PORTAL_OBJECT) == null);
+            sleepUntil(() -> Rs2GameObject.getGameObject(HOUSE_PORTAL_OBJECT) == null);
     }
 
     public void unnoteClay() {
-        if (hasSoftClay() || Rs2GameObject.findObjectById(HOUSE_ADVERTISEMENT_OBJECT) == null)
+        if (hasSoftClay() || Rs2GameObject.getGameObject(HOUSE_ADVERTISEMENT_OBJECT) == null)
             return;
         if (Microbot.getClient().getWidget(14352385) == null) {
             do {
@@ -186,12 +186,12 @@ public class HouseTabScript extends Script {
                 if (Microbot.isGainingExp) return;
 
                 Rs2Player.toggleRunEnergy(true);
-                if (Microbot.getClient().getEnergy() < 3000 && !Rs2Widget.hasWidget("Teleport to House") && Rs2GameObject.findObject(new Integer[] {ObjectID.FROZEN_ORNATE_POOL_OF_REJUVENATION, ObjectID.POOL_OF_REJUVENATION}) != null) {
-                    Rs2GameObject.interact(new int[] {ObjectID.FROZEN_ORNATE_POOL_OF_REJUVENATION, ObjectID.POOL_OF_REJUVENATION}, "drink");
+                if (Microbot.getClient().getEnergy() < 3000 && !Rs2Widget.hasWidget("Teleport to House") && Rs2GameObject.getGameObject(new Integer[] {ObjectID.XMAS20_POH_POOL_REGENERATION, ObjectID.POH_POOL_REJUVENATION}) != null) {
+                    Rs2GameObject.interact(new int[] {ObjectID.XMAS20_POH_POOL_REGENERATION, ObjectID.POH_POOL_REJUVENATION}, "drink");
                     return;
                 }
 
-                boolean isInHouse = Rs2GameObject.findObject(new Integer[] {ObjectID.LECTERN_37349}) != null;
+                boolean isInHouse = Rs2GameObject.getGameObject(new Integer[] {ObjectID.POH_LECTERN_8}) != null;
                 if (isInHouse) {
                     lookForLectern();
                     createHouseTablet();
@@ -199,12 +199,12 @@ public class HouseTabScript extends Script {
                 } else {
                     unnoteClay();
                     if (config.ownHouse()) {
-                        if (Rs2GameObject.interact(ObjectID.PORTAL_15478, "Home")) {
+                        if (Rs2GameObject.interact(ObjectID.POH_RIMMINGTON_PORTAL, "Home")) {
                             sleep(800, 1200);
                         }
                         return;
                     }
-                    if (Rs2GameObject.interact(ObjectID.PORTAL_15478, "Friend's house")) {
+                    if (Rs2GameObject.interact(ObjectID.POH_RIMMINGTON_PORTAL, "Friend's house")) {
                         sleepUntil(() -> Rs2Widget.hasWidget("Enter name"));
                         if (Rs2Widget.hasWidget(config.housePlayerName())) {
                             Rs2Widget.clickWidget(config.housePlayerName());

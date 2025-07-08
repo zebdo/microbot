@@ -33,6 +33,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
@@ -77,7 +78,7 @@ public class EnchantedKeyDigStep extends DetailedQuestStep {
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Possible locations:")
                     .build());
-        } else if (digLocations.size() < 1) {
+        } else if (digLocations.isEmpty()) {
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Unable to establish dig location")
                     .build());
@@ -107,12 +108,13 @@ public class EnchantedKeyDigStep extends DetailedQuestStep {
 
     public void resetState() {
         setWorldPoint(null);
-        int locationStates = client.getVarbitValue(1391);
+        int locationStates = client.getVarbitValue(VarbitID.MAKINGHISTORY_LOCSTATUS);
         Set<EnchantedKeyDigLocation> locations = Arrays.stream(EnchantedKeyDigLocation.values()).filter(p -> ((locationStates >> p.getBit()) & 1) == 0)
                 .collect(Collectors.toSet());
         if (enchantedKeySolver != null) {
             enchantedKeySolver.resetSolver(locations);
         }
+        assert enchantedKeySolver != null;
         if (enchantedKeySolver.getPossibleLocations().size() == 1) {
             this.setWorldPoint(enchantedKeySolver.getPossibleLocations().iterator().next().getWorldPoint());
         }

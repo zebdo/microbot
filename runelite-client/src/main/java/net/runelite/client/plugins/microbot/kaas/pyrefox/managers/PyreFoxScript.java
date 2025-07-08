@@ -1,9 +1,9 @@
 package net.runelite.client.plugins.microbot.kaas.pyrefox.managers;
 
 import net.runelite.api.GameObject;
-import net.runelite.api.gameval.ItemID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.kaas.pyrefox.PyreFoxConfig;
@@ -22,6 +22,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import javax.annotation.Nullable;
+import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
 
@@ -116,7 +117,13 @@ public class PyreFoxScript extends Script
                 break;
 
             Microbot.log("Looping chopping");
-            var tree = Rs2GameObject.findReachableObject("Tree", true, 30, PyreFoxConstants.PYRE_FOX_CENTER_POINT, true, "Chop down");
+
+            var tree = Rs2GameObject.getGameObject(
+                    g -> Rs2GameObject.nameAndActionMatches("Tree", "Chop down", true).test(g) && Rs2GameObject.isReachable(g),
+                    PyreFoxConstants.PYRE_FOX_CENTER_POINT,
+                    30
+            );
+
             if (tree == null)
             {
                 _log("No tree found, waiting.");
@@ -187,7 +194,7 @@ public class PyreFoxScript extends Script
         if (!Rs2Camera.isTileOnScreen(trap))
             Rs2Camera.turnTo(trap);
 
-        int trapId = _getTrapObjectAtTrapLocation().getId();
+        int trapId = Objects.requireNonNull(_getTrapObjectAtTrapLocation()).getId();
 
         // 1. Check if a trap is active.
         // 1a. Wait until fail / success
@@ -251,7 +258,7 @@ public class PyreFoxScript extends Script
     {
         if (PyreFoxConstants.TRAP_OBJECT_POINT == null)
         {
-            var rock = Rs2GameObject.findObjectByIdAndDistance(PyreFoxConstants.GAMEOBJECT_ROCK_NO_TRAP, 10);
+            var rock = Rs2GameObject.getGameObject(PyreFoxConstants.GAMEOBJECT_ROCK_NO_TRAP, 10);
             if (rock == null)
             {
                 _log("No rock found");

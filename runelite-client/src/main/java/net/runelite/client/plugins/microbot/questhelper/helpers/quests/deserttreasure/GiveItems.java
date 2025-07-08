@@ -2,7 +2,6 @@ package net.runelite.client.plugins.microbot.questhelper.helpers.quests.deserttr
 
 
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.NullItemID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.plugins.microbot.questhelper.steps.NpcStep;
@@ -24,14 +23,11 @@ public class GiveItems extends NpcStep {
     public GiveItems(QuestHelper questHelper, int npcID, WorldPoint worldPoint, String text, ItemRequirement... itemRequirements) {
         super(questHelper, npcID, worldPoint, text, itemRequirements);
         magicLogs = new ItemRequirement("Magic logs", ItemID.MAGIC_LOGS, 12);
-        magicLogs.addAlternates(NullItemID.NULL_1514);
         steelBars = new ItemRequirement("Steel bar", ItemID.STEEL_BAR, 6);
-        steelBars.addAlternates(NullItemID.NULL_2354);
         moltenGlass = new ItemRequirement("Molten glass", ItemID.MOLTEN_GLASS, 6);
-        moltenGlass.addAlternates(NullItemID.NULL_1776);
         ashes = new ItemRequirement("Ashes", ItemID.ASHES);
         charcoal = new ItemRequirement("Charcoal", ItemID.CHARCOAL);
-        bloodRune = new ItemRequirement("Blood rune", ItemID.BLOOD_RUNE);
+        bloodRune = new ItemRequirement("Blood rune", ItemID.BLOODRUNE);
         bones = new ItemRequirement("Bones", ItemID.BONES);
     }
 

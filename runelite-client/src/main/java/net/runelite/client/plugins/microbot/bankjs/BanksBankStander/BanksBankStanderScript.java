@@ -231,7 +231,7 @@ public class BanksBankStanderScript extends Script {
             isWaitingForPrompt = false; // Ensure prompt flag is reset
             if (secondItemId != null) {
                 if(config.amuletOfChemistry()){
-                    sleepUntil(() -> !Rs2Inventory.hasItem(secondItemId) || (!Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY) && !Rs2Equipment.isWearing(ItemID.ALCHEMISTS_AMULET_29990)), 40000);
+                    sleepUntil(() -> !Rs2Inventory.hasItem(secondItemId) || (!Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY) && !Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY_IMBUED_CHARGED)), 40000);
                     sleep(calculateSleepDuration(1));
                     checkForAmulet();
 //                    if(Rs2Bank.isOpen()) {
@@ -290,14 +290,14 @@ public class BanksBankStanderScript extends Script {
             sleep(200, 600);
         }
 
-        if (firstItemId != null && ((Rs2Bank.bankItems().stream().filter(item -> item.getId() == firstItemId).mapToInt(item -> item.getQuantity()).sum() + Rs2Inventory.count(firstItemId))) < config.firstItemQuantity()) {
+        if (firstItemId != null && ((Rs2Bank.bankItems().stream().filter(item -> item.getId() == firstItemId).mapToInt(Rs2ItemModel::getQuantity).sum() + Rs2Inventory.count(firstItemId))) < config.firstItemQuantity()) {
             return firstItemId.toString();
         } else if (firstItemId == null && (Rs2Bank.count(config.firstItemIdentifier()) + Rs2Inventory.count(config.firstItemIdentifier())) < config.firstItemQuantity()) {
             return config.firstItemIdentifier();
         }
 
         if (config.secondItemQuantity() > 0 && !config.secondItemIdentifier().isEmpty()) {
-            if (secondItemId != null && ((Rs2Bank.bankItems().stream().filter(item -> item.getId() == secondItemId).mapToInt(item -> item.getQuantity()).sum() + Rs2Inventory.count(secondItemId))) < config.secondItemQuantity()) {
+            if (secondItemId != null && ((Rs2Bank.bankItems().stream().filter(item -> item.getId() == secondItemId).mapToInt(Rs2ItemModel::getQuantity).sum() + Rs2Inventory.count(secondItemId))) < config.secondItemQuantity()) {
                 return secondItemId.toString();
             } else if (secondItemId == null && (Rs2Bank.count(config.secondItemIdentifier()) + Rs2Inventory.count(config.secondItemIdentifier())) < config.secondItemQuantity()) {
                 return config.secondItemIdentifier();
@@ -305,7 +305,7 @@ public class BanksBankStanderScript extends Script {
         }
         if (config.thirdItemQuantity() > 0 && !config.thirdItemIdentifier().isEmpty()) {
 
-            if (thirdItemId != null && ((Rs2Bank.bankItems().stream().filter(item -> item.getId() == thirdItemId).mapToInt(item -> item.getQuantity()).sum() + Rs2Inventory.count(thirdItemId))) < config.thirdItemQuantity()) {
+            if (thirdItemId != null && ((Rs2Bank.bankItems().stream().filter(item -> item.getId() == thirdItemId).mapToInt(Rs2ItemModel::getQuantity).sum() + Rs2Inventory.count(thirdItemId))) < config.thirdItemQuantity()) {
                 return thirdItemId.toString();
             } else if (thirdItemId == null && (Rs2Bank.count(config.thirdItemIdentifier()) + Rs2Inventory.count(config.thirdItemIdentifier())) < config.thirdItemQuantity()) {
                 return config.thirdItemIdentifier();
@@ -313,7 +313,7 @@ public class BanksBankStanderScript extends Script {
         }
         if (config.fourthItemQuantity() > 0 && !config.fourthItemIdentifier().isEmpty()) {
 
-            if (fourthItemId != null && ((Rs2Bank.bankItems().stream().filter(item -> item.getId() == fourthItemId).mapToInt(item -> item.getQuantity()).sum() + Rs2Inventory.count(fourthItemId))) < config.fourthItemQuantity()) {
+            if (fourthItemId != null && ((Rs2Bank.bankItems().stream().filter(item -> item.getId() == fourthItemId).mapToInt(Rs2ItemModel::getQuantity).sum() + Rs2Inventory.count(fourthItemId))) < config.fourthItemQuantity()) {
                 return fourthItemId.toString();
             } else if (fourthItemId == null && (Rs2Bank.count(config.fourthItemIdentifier()) + Rs2Inventory.count(config.fourthItemIdentifier())) < config.fourthItemQuantity()) {
                 return config.fourthItemIdentifier();
@@ -367,10 +367,10 @@ public class BanksBankStanderScript extends Script {
 
     private void depositUnwantedItems(Integer itemId, int quantityMax){
         if (itemId == null) return;
-        if (config.depositAll() && Rs2Inventory.getEmptySlots() < 28) {
+        if (config.depositAll() && Rs2Inventory.emptySlotCount() < 28) {
             timeValue = System.currentTimeMillis();
             Rs2Bank.depositAll();
-            sleepUntilTrue(() -> Rs2Inventory.getEmptySlots() == 28,40, 1800);
+            sleepUntilTrue(() -> Rs2Inventory.emptySlotCount() == 28,40, 1800);
             randomNum = calculateSleepDuration(1);
             if (System.currentTimeMillis() - timeValue < randomNum) {
                 sleep((int) (randomNum - (System.currentTimeMillis() - timeValue)));
@@ -379,14 +379,14 @@ public class BanksBankStanderScript extends Script {
             }
             // we check that the inventory changes in case the player's bank is full so that we don't cause an unintentional loop.
             // also since we're using the method "logout()", we'll also use "this.isRunning()" so people can avoid the logout by turning the plugin off.
-            if (this.isRunning() && Rs2Inventory.getEmptySlots() < 28) {
+            if (this.isRunning() && Rs2Inventory.emptySlotCount() < 28) {
                 Microbot.showMessage("Bank is full, unable to deposit items.");
                 long start = System.currentTimeMillis();
-                while (this.isRunning() && ((System.currentTimeMillis()-start) < 120000) && Rs2Inventory.getEmptySlots() < 28) {
-                    sleepUntilTrue(() -> Rs2Inventory.getEmptySlots() == 28,1800, 3600);
-                    if (Rs2Inventory.getEmptySlots() == 28) sleep(10000);
+                while (this.isRunning() && ((System.currentTimeMillis()-start) < 120000) && Rs2Inventory.emptySlotCount() < 28) {
+                    sleepUntilTrue(() -> Rs2Inventory.emptySlotCount() == 28,1800, 3600);
+                    if (Rs2Inventory.emptySlotCount() == 28) sleep(10000);
                 }
-                if (this.isRunning() && Rs2Inventory.getEmptySlots() < 28) {
+                if (this.isRunning() && Rs2Inventory.emptySlotCount() < 28) {
                     sleep(calculateSleepDuration(1));
                     Rs2Player.logout();
                     sleep(calculateSleepDuration(1));
@@ -404,7 +404,7 @@ public class BanksBankStanderScript extends Script {
         if (config.thirdItemQuantity() > 0) { if (thirdItemId != null) { if (Rs2Inventory.hasItem(thirdItemId)) { bankExcept.add(thirdItemId); } } else { if (Rs2Inventory.hasItem(config.thirdItemIdentifier())) { bankExcept.add(Rs2Inventory.get(config.thirdItemIdentifier()).getId()); } } }
         if (config.secondItemQuantity() > 0) { if (secondItemId != null) { if (Rs2Inventory.hasItem(secondItemId)) { bankExcept.add(secondItemId); } } else { if (Rs2Inventory.hasItem(config.secondItemIdentifier())) { bankExcept.add(Rs2Inventory.get(config.secondItemIdentifier()).getId()); } } }
         if (config.firstItemQuantity() > 0) { if (firstItemId != null) { if (Rs2Inventory.hasItem(firstItemId)) { bankExcept.add(firstItemId); } } else { if (Rs2Inventory.hasItem(config.firstItemIdentifier())) { bankExcept.add(Rs2Inventory.get(config.firstItemIdentifier()).getId()); } } }
-        if (Rs2Inventory.getEmptySlots() < 28) {
+        if (Rs2Inventory.emptySlotCount() < 28) {
             if (!bankExcept.isEmpty()) {
                 Rs2Bank.depositAllExcept(bankExcept.toArray(new Integer[0]));
             } else {
@@ -424,14 +424,14 @@ public class BanksBankStanderScript extends Script {
         }
     }
     private void checkForAmulet(){
-        if (!Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY) && !Rs2Equipment.isWearing(ItemID.ALCHEMISTS_AMULET_29990)){
+        if (!Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY) && !Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY_IMBUED_CHARGED)){
             Rs2ItemModel currentAmulet = Rs2Equipment.get(EquipmentInventorySlot.AMULET);
             if (!Rs2Bank.isOpen()) {
                 Rs2Bank.openBank();
                 sleepUntil(Rs2Bank::isOpen);
             }
-            if (Rs2Bank.isOpen() && Rs2Bank.hasItem(ItemID.ALCHEMISTS_AMULET_29990)){
-                Rs2Bank.withdrawAndEquip(ItemID.ALCHEMISTS_AMULET_29990);
+            if (Rs2Bank.isOpen() && Rs2Bank.hasItem(ItemID.AMULET_OF_CHEMISTRY_IMBUED_CHARGED)){
+                Rs2Bank.withdrawAndEquip(ItemID.AMULET_OF_CHEMISTRY_IMBUED_CHARGED);
             } else if (Rs2Bank.isOpen() && Rs2Bank.hasItem(ItemID.AMULET_OF_CHEMISTRY)) {
                 Rs2Bank.withdrawAndEquip(ItemID.AMULET_OF_CHEMISTRY);
             } else {

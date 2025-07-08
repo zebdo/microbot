@@ -67,9 +67,9 @@ public class PyreFoxStateManager extends Script
 
 	private void _handleDroppingItems()
 	{
-		if (Rs2Inventory.hasItem(ItemID.FOX_FUR))
+		if (Rs2Inventory.hasItem(ItemID.HUNTING_FENNECFOX_FUR))
 		{
-			Rs2Inventory.drop(ItemID.FOX_FUR);
+			Rs2Inventory.drop(ItemID.HUNTING_FENNECFOX_FUR);
 			sleep(200, 400);
 		}
 		if (Rs2Inventory.hasItem(ItemID.BONES))
@@ -112,7 +112,7 @@ public class PyreFoxStateManager extends Script
 
 
 		// Handles banking.
-		boolean shouldBank = (_config.ForceBank() || Rs2Inventory.getEmptySlots() <= 2);
+		boolean shouldBank = (_config.ForceBank() || Rs2Inventory.emptySlotCount() <= 2);
 		if (shouldBank && !Rs2Bank.isOpen())
 			return WALK_TO_BANK;
 

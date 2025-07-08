@@ -135,13 +135,13 @@ public class AttackNpcScript extends Script {
         List<String> lizardVariants = new ArrayList<>(Arrays.asList("Lizard", "Desert Lizard", "Small Lizard"));
         if (npc == null) return;
         if (lizardVariants.contains(npc.getName()) && npc.getHealthRatio() < 5) {
-            Rs2Inventory.useItemOnNpc(ItemID.ICE_COOLER, npc);
+            Rs2Inventory.useItemOnNpc(ItemID.SLAYER_BAG_OF_SALT, npc);
             Rs2Player.waitForAnimation();
         } else if (npc.getName().equalsIgnoreCase("rockslug") && npc.getHealthRatio() < 5) {
-            Rs2Inventory.useItemOnNpc(ItemID.BAG_OF_SALT, npc);
+            Rs2Inventory.useItemOnNpc(ItemID.SLAYER_ICY_WATER, npc);
             Rs2Player.waitForAnimation();
         } else if (npc.getName().equalsIgnoreCase("gargoyle") && npc.getHealthRatio() < 3) {
-            Rs2Inventory.useItemOnNpc(ItemID.ROCK_HAMMER, npc);
+            Rs2Inventory.useItemOnNpc(ItemID.SLAYER_ROCK_HAMMER, npc);
             Rs2Player.waitForAnimation();
         }
     }

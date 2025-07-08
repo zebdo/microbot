@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.npcTanner;
 
-import net.runelite.api.gameval.ItemID;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -140,7 +140,11 @@ public class npcTannerScript extends Script {
                 tries=0;
                 while(!Rs2Inventory.contains(whattotan) || !Rs2Inventory.contains("Coins")){
                     // We always do coin first
-                    if(Rs2Inventory.contains(product) || !Rs2Inventory.onlyContains(it->it!=null && it.getName().equals("Coins") || it.getName().equals(whattotan))){
+                    if(Rs2Inventory.contains(product) || !Rs2Inventory.onlyContains(it-> {
+                        if (it != null && it.getName().equals("Coins")) return true;
+                        assert it != null;
+                        return it.getName().equals(whattotan);
+                    })){
                         if(generateRandomNumber(0,100)<75){
                             Rs2Bank.depositAll(product);
                             sleep(500,1000);
@@ -200,7 +204,7 @@ public class npcTannerScript extends Script {
 
         // Sleep after using a potion
         if (usedPotion) {
-            this.sleep(161, 197);
+            sleep(161, 197);
         }
     }
 
@@ -236,8 +240,8 @@ public class npcTannerScript extends Script {
         if (Rs2Inventory.hasItem(potionName)) {
             Rs2Bank.depositOne(potionName);
         }
-        if (Rs2Inventory.hasItem(ItemID.VIAL)) {
-            Rs2Bank.depositOne(ItemID.VIAL);
+        if (Rs2Inventory.hasItem(ItemID.VIAL_EMPTY)) {
+            Rs2Bank.depositOne(ItemID.VIAL_EMPTY);
         }
     }
 

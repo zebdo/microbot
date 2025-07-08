@@ -47,7 +47,7 @@ public class InventorySetupsIconPanel extends InventorySetupsPanel
 			itemIDForImage = invSetup.getEquipment().get(EquipmentInventorySlot.WEAPON.getSlotIdx()).getId();
 			if (itemIDForImage <= 0)
 			{
-				itemIDForImage = ItemID.CAKE_OF_GUIDANCE;
+				itemIDForImage = ItemID._100GUIDE_GUIDECAKE;
 			}
 		}
 

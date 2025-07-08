@@ -52,14 +52,10 @@ public class AutoFishingScript extends Script {
                     initialPlayerLocation = Rs2Player.getWorldLocation();
                 }
 
-                if (config.useEchoHarpoon()) {
-                    if (!Rs2Equipment.hasEquipped(ItemID.ECHO_HARPOON)) {
-                        if (!Rs2Inventory.hasItem(ItemID.ECHO_HARPOON)) {
-                            Microbot.showMessage("Missing Echo harpoon");
-                            shutdown();
-                            return;
-                        }
-                    }
+                if (config.useEchoHarpoon() && !Rs2Equipment.isWearing(ItemID.LEAGUE_TRAILBLAZER_HARPOON) && !Rs2Inventory.hasItem(ItemID.LEAGUE_TRAILBLAZER_HARPOON)) {
+                    Microbot.showMessage("Missing Echo harpoon");
+                    shutdown();
+                    return;
                 }
 
                 if (!hasRequiredItems(fish)) {
@@ -90,10 +86,8 @@ public class AutoFishingScript extends Script {
                             validateInteractable(fishingSpot);
                         }
 
-                        if (fish.equals(Fish.KARAMBWAN) && Rs2Inventory.hasItem(ItemID.RAW_KARAMBWANJI)) {
-                            if (Rs2Inventory.hasItem(ItemID.KARAMBWAN_VESSEL)) {
-                                Rs2Inventory.waitForInventoryChanges(() -> Rs2Inventory.combineClosest(ItemID.RAW_KARAMBWANJI, ItemID.KARAMBWAN_VESSEL), 600, 5000);
-                            }
+                        if (fish.equals(Fish.KARAMBWAN) && Rs2Inventory.hasItem(ItemID.TBWT_RAW_KARAMBWANJI) && Rs2Inventory.hasItem(ItemID.TBWT_KARAMBWAN_VESSEL)) {
+                            Rs2Inventory.waitForInventoryChanges(() -> Rs2Inventory.combineClosest(ItemID.TBWT_RAW_KARAMBWANJI, ItemID.TBWT_KARAMBWAN_VESSEL), 600, 5000);
                         }
                         
                         if (Rs2Npc.interact(fishingSpot, fishAction)) {
@@ -179,7 +173,7 @@ public class AutoFishingScript extends Script {
             case ANGLERFISH:
                 return Rs2Inventory.hasItem("fishing rod") && Rs2Inventory.hasItem("sandworms");
             case KARAMBWAN:
-                return (Rs2Inventory.hasItem(ItemID.KARAMBWAN_VESSEL) || Rs2Inventory.hasItem(ItemID.KARAMBWAN_VESSEL_3159) && Rs2Inventory.hasItem(ItemID.RAW_KARAMBWANJI));
+                return (Rs2Inventory.hasItem(ItemID.TBWT_KARAMBWAN_VESSEL) || Rs2Inventory.hasItem(ItemID.TBWT_KARAMBWAN_VESSEL_LOADED_WITH_KARAMBWANJI) && Rs2Inventory.hasItem(ItemID.TBWT_RAW_KARAMBWANJI));
             default:
                 return false;
         }
