@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.GirdyScripts.cannonballsmelter;
 
 
 import net.runelite.api.Client;
+import net.runelite.api.GameObject;
 import net.runelite.api.TileObject;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.ObjectID;
@@ -97,7 +98,7 @@ public class CannonballSmelterScript extends Script {
     }
 
     public void smelt() {
-        TileObject furnace = Rs2GameObject.getTileObject(ObjectID.VARROCK_DIARY_FURNACE);
+        GameObject furnace = Rs2GameObject.getGameObject(ObjectID.VARROCK_DIARY_FURNACE);
         if (furnace != null) {
             Rs2GameObject.interact(furnace, "Smelt");
             Microbot.status = "Moving to furnace...";

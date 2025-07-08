@@ -4,6 +4,7 @@ import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -34,7 +35,7 @@ public class CraftingManager {
         String option = event.getOption();
         int itemId = event.getItemId();
 
-        if (itemId == net.runelite.api.gameval.ItemID.NEEDLE && "Use".equals(option) && config.quickCraftItems()) {
+        if (itemId == ItemID.NEEDLE && "Use".equals(option) && config.quickCraftItems()) {
             modifyMenuEntry(event, "<col=FFA500>Quick craft: </col>", config.craftingItem().getName(), this::craftHideOnClick);
         }
     }
