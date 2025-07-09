@@ -4,12 +4,12 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.GameObjects;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
-import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -64,6 +64,7 @@ public class BlueMoonHandler implements BaseHandler {
     @Override
     public State execute() {
         if (!Rs2Widget.isWidgetVisible(bossHealthBarWidgetID)) {
+            BreakHandlerScript.setLockState(true);
             boss.walkToBoss(equipmentNormal, bossName, bossLobbyLocation);
             boss.fightPreparation(equipmentNormal);
             boss.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
@@ -86,6 +87,8 @@ public class BlueMoonHandler implements BaseHandler {
         Rs2Prayer.disableAllPrayers();
         sleep(2400);
         Rs2Prayer.disableAllPrayers();
+        BossHandler.rechargeRunEnergy();
+        BreakHandlerScript.setLockState(false);
         return State.IDLE;
     }
 
