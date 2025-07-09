@@ -4,6 +4,7 @@ import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -38,10 +39,12 @@ public class ResupplyHandler implements BaseHandler {
 
     @Override
     public State execute() {
+        BreakHandlerScript.setLockState(true);
         walkToSupplies();
         makeMoonlightPotions(potionBatchSize);
         obtainBream();
         rechargeRunEnergy();
+        BreakHandlerScript.setLockState(false);
         return State.IDLE;
     }
 

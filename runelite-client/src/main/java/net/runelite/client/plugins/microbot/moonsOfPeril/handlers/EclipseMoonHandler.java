@@ -4,6 +4,7 @@ import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.GameObjects;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
@@ -65,6 +66,7 @@ public class EclipseMoonHandler implements BaseHandler {
     @Override
     public State execute() {
         if (!Rs2Widget.isWidgetVisible(bossHealthBarWidgetID)) {
+            BreakHandlerScript.setLockState(true);
             boss.walkToBoss(equipmentNormal, bossName, bossLobbyLocation);
             boss.fightPreparation(equipmentNormal);
             boss.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
@@ -86,6 +88,7 @@ public class EclipseMoonHandler implements BaseHandler {
         if (debugLogging) {Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");}
         Rs2Prayer.disableAllPrayers();
         sleep(2400);
+        BreakHandlerScript.setLockState(false);
         return State.IDLE;
     }
 
