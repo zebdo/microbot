@@ -238,6 +238,10 @@ public class revKillerScript extends Script {
 
         Rs2Walker.setTarget(null);
 
+        if(shouldFlee){
+            return;
+        }
+
         if(Rs2Player.getWorldLocation().equals(fifthTile)){
             if(weAreInCombat()) {
                 Microbot.log("We've all ready jammed the knight");
