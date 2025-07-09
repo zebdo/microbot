@@ -88,6 +88,7 @@ public class EclipseMoonHandler implements BaseHandler {
         if (debugLogging) {Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");}
         Rs2Prayer.disableAllPrayers();
         sleep(2400);
+        BossHandler.rechargeRunEnergy();
         BreakHandlerScript.setLockState(false);
         return State.IDLE;
     }

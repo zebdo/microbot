@@ -89,6 +89,7 @@ public class BloodMoonHandler implements BaseHandler {
         Rs2Prayer.disableAllPrayers();
         sleep(2400);
         Rs2Prayer.disableAllPrayers();
+        BossHandler.rechargeRunEnergy();
         BreakHandlerScript.setLockState(false);
         return State.IDLE;
     }

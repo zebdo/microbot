@@ -43,7 +43,7 @@ public class ResupplyHandler implements BaseHandler {
         walkToSupplies();
         makeMoonlightPotions(potionBatchSize);
         obtainBream();
-        rechargeRunEnergy();
+        BossHandler.rechargeRunEnergy();
         BreakHandlerScript.setLockState(false);
         return State.IDLE;
     }
@@ -157,11 +157,6 @@ public class ResupplyHandler implements BaseHandler {
             sleep(900, 1200);
         }
         if (debugLogging) {Microbot.log("Finished cooking bream.");}
-    }
-
-    private void rechargeRunEnergy() {
-        Rs2GameObject.interact(ObjectID.PMOON_RANGE, "Make-cuppa");
-        sleep(600);
     }
 
     /**
