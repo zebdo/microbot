@@ -10,7 +10,6 @@ import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
-import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
