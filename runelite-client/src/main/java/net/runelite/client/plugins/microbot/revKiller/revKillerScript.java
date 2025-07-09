@@ -1103,7 +1103,7 @@ public class revKillerScript extends Script {
                                     if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES)!=null){
                                         //we need to unequip our braclet.
                                         Rs2Equipment.unEquip(EquipmentInventorySlot.GLOVES);
-                                        sleepUntil(()-> !Rs2Equipment.contains(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM_UNCHARGED), Rs2Random.between(2000,4000));
+                                        sleepUntil(()-> !Rs2Equipment.isWearing(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM_UNCHARGED), Rs2Random.between(2000,4000));
                                     }
                                     if(Rs2Inventory.contains("Revenant ether") && (Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM) || Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM_UNCHARGED))){
                                         Rs2Inventory.interact("Revenant ether", "use");
@@ -1112,7 +1112,7 @@ public class revKillerScript extends Script {
                                     }
                                     if(!Rs2Inventory.contains("Revenant ether") && (Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM))){
                                         Rs2Inventory.interact(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM, "Wear");
-                                        sleepUntil(()-> Rs2Equipment.contains(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM), Rs2Random.between(2000,4000));
+                                        sleepUntil(()-> Rs2Equipment.isWearing(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM), Rs2Random.between(2000,4000));
                                     }
                                 }
                             }
