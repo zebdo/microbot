@@ -27,12 +27,13 @@ public class BlessedWineScript extends Script {
     private static final WorldPoint EXPOSED_ALTAR = new WorldPoint(1437, 3143, 0);
     private static final WorldPoint LIBATION_BOWL = new WorldPoint(1457, 3188, 0);
     private static final WorldPoint SHRINE_OF_RALOS = new WorldPoint(1449, 3172, 0);
-    private static final WorldPoint CAM_TORUM_BANK = new WorldPoint(1451, 9568, 1);
+    private static final WorldPoint CAM_TORUM_BANK = new WorldPoint(1454, 9568, 1);
     private static final WorldArea ALTAR_TOP = new WorldArea(1427, 3137, 16, 16, 0);
     private static final WorldArea LIBATION_ROOM = new WorldArea(1449, 3186, 16, 16, 0);
     private static final WorldArea TEMPLE = new WorldArea(1445, 3170, 10, 10, 0);
+    private static final WorldArea BANK = new WorldArea(1448, 9564, 8, 8, 1);
 
-    // === Item IDs === (assumed constants, substitute with actual ItemID if needed)
+    // === Item IDs ===
     private static final List<Integer> CALCIFIED_MOTH = Arrays.asList(
             ItemID.VARLAMORE_MINING_TELEPORT,
             ItemID.VARLAMORE_MINING_TELEPORT_1,
@@ -89,7 +90,7 @@ public class BlessedWineScript extends Script {
                     if (currentPrayerPoints < 2 && !Rs2Player.isAnimating()) {
                         state = BlessedWineState.WALK_TO_SHRINE;
                     }
-                    if (!Rs2Inventory.hasItem(BLESSED_WINE)) {
+                    if (!Rs2Inventory.hasItem(BLESSED_WINE) || !Rs2Inventory.hasItem(BLESSED_BONE_SHARD)) {
                         state = BlessedWineState.TELEPORT_TO_BANK;
                     }
                     break;
@@ -116,7 +117,7 @@ public class BlessedWineScript extends Script {
 
                 case TELEPORT_TO_BANK:
                     BlessedWinePlugin.status = "Teleporting back to Cam Torum Bank...";
-                    if (Rs2Player.getWorldLocation().getPlane() != 2) {
+                    if (Rs2Player.getWorldLocation().getPlane() != 1) {
                         for (int id : CALCIFIED_MOTH) {
                             if (!isRunning()) break;
                             if (Rs2Inventory.hasItem(id)) {
@@ -129,7 +130,7 @@ public class BlessedWineScript extends Script {
                         Rs2Walker.walkTo(CAM_TORUM_BANK);
                         Rs2Player.waitForWalking();
                     }
-                    if (!Rs2Player.getWorldLocation().equals(CAM_TORUM_BANK)) return;
+                    if (!BANK.contains(Rs2Player.getWorldLocation())) return;
                     if (!Rs2Bank.isOpen()) {
                         Rs2Bank.openBank();
                         sleepUntil(Rs2Bank::isOpen, 20000);
