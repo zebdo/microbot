@@ -946,6 +946,10 @@ public class AnagramClue extends ClueScroll implements NpcClueScroll, ObjectClue
 	{
 		return answerProvider == null ? null : answerProvider.apply(plugin);
 	}
+	public String getNpcName(ClueScrollPlugin plugin)
+	{
+		return npcProvider == null ? null : npcProvider.apply(plugin);
+	}
 
 	@Override
 	public void makeOverlayHint(PanelComponent panelComponent, ClueScrollPlugin plugin)
