@@ -29,8 +29,9 @@ package net.runelite.client.plugins.devtools;
 import com.google.inject.Inject;
 import com.google.inject.Provider;
 import com.google.inject.Singleton;
-
-import java.awt.*;
+import java.awt.BorderLayout;
+import java.awt.Color;
+import java.awt.Dimension;
 import java.lang.reflect.Field;
 import java.util.Comparator;
 import java.util.Enumeration;
@@ -39,7 +40,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Stack;
 import java.util.stream.Stream;
-import javax.swing.*;
+import javax.swing.JButton;
+import javax.swing.JCheckBox;
+import javax.swing.JPanel;
+import javax.swing.JScrollPane;
+import javax.swing.JSplitPane;
+import javax.swing.JTable;
+import javax.swing.JTree;
+import javax.swing.SwingUtilities;
 import javax.swing.tree.DefaultMutableTreeNode;
 import javax.swing.tree.DefaultTreeModel;
 import javax.swing.tree.TreePath;
@@ -48,10 +56,10 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.MenuAction;
 import net.runelite.api.MenuEntry;
-import net.runelite.api.SpriteID;
 import net.runelite.api.events.MenuEntryAdded;
 import net.runelite.api.events.MenuOptionClicked;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.SpriteID;
 import net.runelite.api.widgets.JavaScriptCallback;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetConfig;
@@ -124,12 +132,13 @@ class WidgetInspector extends DevToolsFrame
 
 		eventBus.register(this);
 
-		setTitle("Widget Inspector");
+		setTitle("RuneLite Widget Inspector");
+
 		setLayout(new BorderLayout());
 
 		JPanel searchPanel = new JPanel();
 		searchPanel.setLayout(new BorderLayout());
-		
+
 		JPanel searchInputPanel = new JPanel(new BorderLayout());
 		JTextField searchBar = new JTextField();
 		searchBar.setToolTipText("Search widgets by text content");
@@ -175,25 +184,28 @@ class WidgetInspector extends DevToolsFrame
 		add(searchPanel, BorderLayout.NORTH);
 
 		widgetTree = new JTree(new DefaultMutableTreeNode());
-			widgetTree.setRootVisible(false);
-			widgetTree.setShowsRootHandles(true);
-			widgetTree.getSelectionModel().addTreeSelectionListener(e ->
+		widgetTree.setRootVisible(false);
+		widgetTree.setShowsRootHandles(true);
+		widgetTree.getSelectionModel().addTreeSelectionListener(e ->
+		{
+			Object selected = widgetTree.getLastSelectedPathComponent();
+			if (selected instanceof WidgetTreeNode)
 			{
-				Object selected = widgetTree.getLastSelectedPathComponent();
-				if (selected instanceof WidgetTreeNode)
-				{
-					WidgetTreeNode node = (WidgetTreeNode) selected;
-					Widget widget = node.getWidget();
-					setSelectedWidget(widget, false);
-				}
-			});
+				WidgetTreeNode node = (WidgetTreeNode) selected;
+				Widget widget = node.getWidget();
+				setSelectedWidget(widget, false);
+			}
+		});
 
 		final JScrollPane treeScrollPane = new JScrollPane(widgetTree);
 		treeScrollPane.setPreferredSize(new Dimension(400, 800));
 
+
 		final JTable widgetInfo = new JTable(infoTableModel);
+
 		final JScrollPane infoScrollPane = new JScrollPane(widgetInfo);
 		infoScrollPane.setPreferredSize(new Dimension(600, 800));
+
 
 		final JPanel bottomPanel = new JPanel();
 		add(bottomPanel, BorderLayout.SOUTH);
@@ -219,6 +231,7 @@ class WidgetInspector extends DevToolsFrame
 			{
 				return;
 			}
+
 			selectedWidget.revalidate();
 		}));
 		bottomPanel.add(revalidateWidget);
@@ -453,7 +466,7 @@ class WidgetInspector extends DevToolsFrame
 					.reversed())
 				.findFirst();
 
-			if (!parentWidget.isPresent())
+			if (parentWidget.isEmpty())
 			{
 				return;
 			}
@@ -464,7 +477,10 @@ class WidgetInspector extends DevToolsFrame
 		}
 
 		picker = parent.createChild(-1, WidgetType.GRAPHIC);
-		picker.setSpriteId(SpriteID.MOBILE_FINGER_ON_INTERFACE);
+
+		log.info("Picker is {}.{} [{}]", WidgetUtil.componentToInterface(picker.getId()), WidgetUtil.componentToId(picker.getId()), picker.getIndex());
+
+		picker.setSpriteId(SpriteID.OptionsIcons.MOBILE_FINGER_ON_INTERFACE);
 		picker.setOriginalWidth(15);
 		picker.setOriginalHeight(17);
 		picker.setOriginalX(x);
@@ -616,7 +632,7 @@ class WidgetInspector extends DevToolsFrame
 					}
 					refreshWidgets();
 					final Stack<Widget> finalPath = path;
-					SwingUtilities.invokeLater(() -> 
+					SwingUtilities.invokeLater(() ->
 					{
 						setSelectedWidget(widget, true);
 						expandTreeToWidget(finalPath);
