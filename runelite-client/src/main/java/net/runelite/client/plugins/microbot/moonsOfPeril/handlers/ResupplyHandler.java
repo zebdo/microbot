@@ -179,7 +179,7 @@ public class ResupplyHandler implements BaseHandler {
 
         int requiredSlots = desired * 2 + 1;                // 2 per potion + 1 mortar
         if (debugLogging) {Microbot.log("Required free inventory slots: " + requiredSlots);}
-        int freeSlots     = Rs2Inventory.getEmptySlots();
+        int freeSlots     = Rs2Inventory.emptySlotCount();
         if (debugLogging) {Microbot.log("Current free inventory slots: " + freeSlots);}
 
         /* --------- Free inventory space by dropping fish ---------------- */
