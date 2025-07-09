@@ -28,7 +28,9 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 public class AstralRunesScript extends Script {
@@ -195,7 +197,7 @@ public class AstralRunesScript extends Script {
                         }
 
                         var hasEmptySlots = Rs2Inventory.emptySlotCount() > 0;
-                        Rs2Bank.depositAllExcept("Colossal pouch", "Rune pouch", "Pure essence");
+                        depositAllExceptPouchEssence();
 
                         if( !Rs2Bank.hasItem(ItemID.BLANKRUNE_HIGH) ) {
                             Microbot.showMessage("No pure essence found in bank");
@@ -243,7 +245,7 @@ public class AstralRunesScript extends Script {
                         }
 
                         if( staminaPotNeeded || foodNeeded )
-                            Rs2Bank.depositAllExcept("Colossal pouch", "Rune pouch", "Pure essence");
+                            depositAllExceptPouchEssence();
 
                         var colossalPouch = Rs2Inventory.get(ItemID.RCU_POUCH_COLOSSAL);
                         if( hasEmptySlots && Rs2Bank.hasItem(ItemID.BLANKRUNE_HIGH) ) {
@@ -436,6 +438,16 @@ public class AstralRunesScript extends Script {
                 Rs2Inventory.waitForInventoryChanges(800);
             }
         }
+    }
+
+    private static final Set<Integer> exceptIds = new HashSet<>(Arrays.asList(
+            ItemID.BH_RUNE_POUCH, ItemID.BH_RUNE_POUCH_TROUVER, ItemID.DIVINE_RUNE_POUCH, ItemID.DIVINE_RUNE_POUCH_TROUVER,
+            ItemID.RCU_POUCH_COLOSSAL, ItemID.RCU_POUCH_COLOSSAL_DEGRADE, ItemID.RCU_POUCH_GIANT, ItemID.RCU_POUCH_GIANT_DEGRADE,
+            ItemID.RCU_POUCH_MEDIUM, ItemID.RCU_POUCH_MEDIUM_DEGRADE, ItemID.RCU_POUCH_SMALL, ItemID.BLANKRUNE_HIGH
+    ));
+
+    private static void depositAllExceptPouchEssence() {
+        Rs2Bank.depositAll(x -> exceptIds.stream().noneMatch(id -> id == x.getId()));
     }
 
     private Integer initialRuneCount = null;
