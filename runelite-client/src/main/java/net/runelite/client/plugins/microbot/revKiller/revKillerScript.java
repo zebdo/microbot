@@ -791,12 +791,12 @@ public class revKillerScript extends Script {
     public void futurePKCheck(){
         try {
             if(!selectedRev.contains("Knight")) {
-                if (isPkerAround()) {
+                if (isPkerAround() && !shouldFlee) {
                     shouldFlee = true;
                     getAwayFromPker();
                 }
             } else {
-                if (isPkerAround()) {
+                if (isPkerAround() && !shouldFlee) {
                     shouldFlee = true;
                     getAwayFromPkerKnight();
                 }
