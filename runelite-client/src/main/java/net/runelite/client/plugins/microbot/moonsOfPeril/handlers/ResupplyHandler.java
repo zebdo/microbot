@@ -112,6 +112,8 @@ public class ResupplyHandler implements BaseHandler {
             sleep(600);
             while (Rs2Inventory.contains(ItemID.VIAL_WATER))Rs2Inventory.drop(ItemID.VIAL_WATER);
             sleep(600);
+            while (Rs2Inventory.contains(ItemID.VIAL_EMPTY))Rs2Inventory.drop(ItemID.VIAL_EMPTY);
+            sleep(600);
         }
     }
 
