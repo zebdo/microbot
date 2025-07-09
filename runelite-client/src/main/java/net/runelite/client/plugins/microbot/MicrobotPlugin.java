@@ -1,41 +1,27 @@
 package net.runelite.client.plugins.microbot;
 
+import ch.qos.logback.classic.LoggerContext;
 import com.google.inject.Provides;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.Objects;
 import javax.inject.Provider;
 import javax.inject.Singleton;
-import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.*;
 import net.runelite.api.events.*;
-import net.runelite.client.Notifier;
-import net.runelite.client.callback.ClientThread;
-import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.config.ProfileManager;
-import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.events.RuneScapeProfileChanged;
-import net.runelite.client.game.ItemManager;
-import net.runelite.client.game.NPCManager;
-import net.runelite.client.game.SpriteManager;
-import net.runelite.client.game.WorldService;
-import net.runelite.client.input.MouseManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.PluginInstantiationException;
-import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchOverlay;
-import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchScript;
 import net.runelite.client.plugins.microbot.ui.MicrobotPluginConfigurationDescriptor;
 import net.runelite.client.plugins.microbot.ui.MicrobotPluginListPanel;
 import net.runelite.client.plugins.microbot.ui.MicrobotTopLevelConfigPanel;
@@ -44,23 +30,15 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
-import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
-import net.runelite.client.plugins.microbot.util.mouse.VirtualMouse;
-import net.runelite.client.plugins.microbot.util.mouse.naturalmouse.NaturalMouse;
 import net.runelite.client.plugins.microbot.util.overlay.GembagOverlay;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
-import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.OverlayMenuEntry;
-import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
-import net.runelite.client.ui.overlay.tooltip.TooltipManager;
-import net.runelite.client.ui.overlay.worldmap.WorldMapOverlay;
-import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 
 import javax.inject.Inject;
 import javax.swing.*;
@@ -69,6 +47,8 @@ import java.util.List;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Instant;
 import net.runelite.client.util.ImageUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @PluginDescriptor(
 	name = PluginDescriptor.Default + "Microbot",
@@ -116,10 +96,21 @@ public class MicrobotPlugin extends Plugin
 	private GembagOverlay gembagOverlay;
 	@Inject
 	private PouchOverlay pouchOverlay;
+	private GameChatAppender gameChatAppender;
 
 	@Override
 	protected void startUp() throws AWTException
 	{
+		gameChatAppender = new GameChatAppender();
+		gameChatAppender.setName("GAME_CHAT");
+		gameChatAppender.setPattern(microbotConfig.getLogType() == LogType.DETAILED ? GameChatAppender.DETAILED_PATTERN : GameChatAppender.SIMPLE_PATTERN);
+
+		final LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+		gameChatAppender.setContext(context);
+		context.getLogger(Logger.ROOT_LOGGER_NAME).addAppender(gameChatAppender);
+
+		if (microbotConfig.getLogType() != LogType.DISABLED) gameChatAppender.start();
+
 		Microbot.pauseAllScripts.set(false);
 
 		MicrobotPluginListPanel pluginListPanel = pluginListPanelProvider.get();
@@ -161,6 +152,7 @@ public class MicrobotPlugin extends Plugin
 		overlayManager.remove(gembagOverlay);
 		overlayManager.remove(pouchOverlay);
 		clientToolbar.removeNavigation(navButton);
+		if (gameChatAppender.isStarted()) gameChatAppender.stop();
 	}
 
 
@@ -201,23 +193,32 @@ public class MicrobotPlugin extends Plugin
 
 	/**
 	 * Retrieves all container IDs from {@link net.runelite.api.gameval.InventoryID}
-	 * that contain the word "shop" in their field names.
-	 * <p>
-	 * This method uses reflection to scan fields in the {@code InventoryID} class
-	 * and collects the integer values of those whose names include "shop" (case-insensitive).
-	 * It returns the result as an array of primitive integers.
+	 * whose field names suggest they are shop-related.
 	 *
-	 * @return an array of container IDs related to shop inventories
+	 * <p>This includes fields containing any of the following keywords
+	 * (case-insensitive): {@code "shop"}, {@code "store"}, {@code "merchant"},
+	 * {@code "bazaar"}, {@code "stall"}, {@code "trader"}, or {@code "supplies"}.
+	 *
+	 * <p>The method reflects over the public static integer fields in the
+	 * {@code InventoryID} class and collects those whose names match
+	 * one or more of the defined keywords.
+	 *
+	 * @return an array of container IDs potentially associated with shop-like inventories
 	 */
 	private int[] getShopContainerIds()
 	{
 		Field[] fields = net.runelite.api.gameval.InventoryID.class.getFields();
 		List<Integer> shopContainerIds = new ArrayList<>();
+		String[] keywords = { "shop", "store", "merchant", "bazaar", "stall", "trader", "supplies" };
+
 		for (Field field : fields)
 		{
-			if (field.getType() != int.class) continue;
+			if (field.getType() != int.class)
+				continue;
 
-			if (field.getName().toLowerCase().contains("shop"))
+			String fieldName = field.getName().toLowerCase();
+
+			if (Arrays.stream(keywords).anyMatch(fieldName::contains))
 			{
 				try
 				{
@@ -329,6 +330,17 @@ public class MicrobotPlugin extends Plugin
 	@Subscribe
 	public void onConfigChanged(ConfigChanged ev)
 	{
+		if (ev.getGroup().equals(MicrobotConfig.configGroup)) {
+			if (!ev.getKey().equals(MicrobotConfig.keyLogType)) return;
+
+			final boolean shouldBeStarted = microbotConfig.getLogType() != LogType.DISABLED;
+			if (shouldBeStarted) {
+				gameChatAppender.setPattern(microbotConfig.getLogType() == LogType.DETAILED ? GameChatAppender.DETAILED_PATTERN : GameChatAppender.SIMPLE_PATTERN);
+				if (!gameChatAppender.isStarted()) gameChatAppender.start();
+			} else if (gameChatAppender.isStarted()) {
+				gameChatAppender.stop();
+			}
+		}
 		if (ev.getKey().equals("displayPouchCounter"))
 		{
 			if (Objects.equals(ev.getNewValue(), "true"))

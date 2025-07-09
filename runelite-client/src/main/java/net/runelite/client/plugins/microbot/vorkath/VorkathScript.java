@@ -4,6 +4,7 @@
 
 package net.runelite.client.plugins.microbot.vorkath;
 
+import javax.inject.Inject;
 import lombok.Getter;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
@@ -26,6 +27,7 @@ import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
@@ -58,7 +60,7 @@ enum State {
 
 public class VorkathScript extends Script {
     public static String version = "1.3.9";
-    public static VorkathConfig config;
+    private final VorkathConfig config;
     @Getter
     public final int acidProjectileId = 1483;
     final String ZOMBIFIED_SPAWN = "Zombified Spawn";
@@ -71,7 +73,7 @@ public class VorkathScript extends Script {
     public int tempVorkathKills = 0;
     public int kcPerTrip = 0;
     State state = State.ZOMBIE_SPAWN;
-    NPC vorkath;
+    Rs2NpcModel vorkath;
     boolean hasEquipment = false;
     boolean hasInventory = false;
     boolean init = true;
@@ -112,14 +114,19 @@ public class VorkathScript extends Script {
         }
     }
 
-    public boolean run(VorkathConfig config) {
+	@Inject
+	public VorkathScript(VorkathConfig config)
+	{
+		this.config = config;
+	}
+
+    public boolean run() {
         Microbot.enableAutoRunOn = false;
 		Microbot.pauseAllScripts.compareAndSet(true, false);
         init = true;
         state = State.BANKING;
         hasEquipment = false;
         hasInventory = false;
-        VorkathScript.config = config;
         tempVorkathKills = config.SellItemsAtXKills();
         Microbot.getSpecialAttackConfigs().setSpecialAttack(true);
 
@@ -213,7 +220,7 @@ public class VorkathScript extends Script {
                     case WALK_TO_VORKATH_ISLAND:
                         Rs2Player.toggleRunEnergy(true);
                         Rs2Walker.walkTo(new WorldPoint(2640, 3693, 0));
-                        net.runelite.api.NPC torfin = Rs2Npc.getNpc(NpcID.TORFINN_10405);
+                        var torfin = Rs2Npc.getNpc(NpcID.TORFINN_10405);
                         if (torfin != null) {
                             Rs2Npc.interact(torfin, "Ungael");
                             sleepUntil(() -> Rs2Npc.getNpc(NpcID.TORFINN_10406) != null);
@@ -399,16 +406,16 @@ public class VorkathScript extends Script {
                                     leaveVorkath();
                                     return;
                                 }
-                                final int invSize = Rs2Inventory.size();
+                                final int invSize = Rs2Inventory.count();
                                 Rs2Widget.clickWidget(39452678);
                                 sleep(600);
                                 Rs2Widget.clickWidget(39452678);
-                                sleepUntil(() -> Rs2Inventory.size() != invSize);
+                                sleepUntil(() -> Rs2Inventory.count() != invSize);
                                 boolean isWearingOriginalEquipment = rs2InventorySetup.wearEquipment();
                                 if (!isWearingOriginalEquipment) {
-                                    int finalInvSize = Rs2Inventory.size();
+                                    int finalInvSize = Rs2Inventory.count();
                                     Rs2Widget.clickWidget(39452678);
-                                    sleepUntil(() -> Rs2Inventory.size() != finalInvSize);
+                                    sleepUntil(() -> Rs2Inventory.count() != finalInvSize);
                                     rs2InventorySetup.wearEquipment();
                                 }
                             }

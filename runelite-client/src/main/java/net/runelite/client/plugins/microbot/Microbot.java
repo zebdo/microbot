@@ -18,6 +18,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Objects;
 import java.util.Scanner;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -34,7 +35,6 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.annotations.Component;
 import net.runelite.api.events.ItemContainerChanged;
@@ -66,6 +66,8 @@ import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchScr
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntilNotNull;
+import static net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject.get;
+
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -81,7 +83,6 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.WorldUtil;
 import net.runelite.http.api.worlds.World;
 import org.slf4j.event.Level;
-
 @Slf4j
 @NoArgsConstructor
 public class Microbot {
@@ -346,14 +347,20 @@ public class Microbot {
 	{
 		try
 		{
-			SwingUtilities.invokeAndWait(() ->
+			Runnable messageRunnable = () ->
 			{
 				JOptionPane.showConfirmDialog(null, message, "Message",
 					JOptionPane.DEFAULT_OPTION);
-			});
+			};
+			if (SwingUtilities.isEventDispatchThread()) {
+				messageRunnable.run();
+			} else {
+				SwingUtilities.invokeAndWait(messageRunnable);
+			}
 		}
 		catch (Exception ex)
 		{
+			log.error("Error displaying message {}: {}", message, ex.getMessage(), ex);
 			ex.printStackTrace();
 		}
 	}
@@ -362,31 +369,29 @@ public class Microbot {
 	{
 		try
 		{
-			SwingUtilities.invokeAndWait(() -> {
-				final JOptionPane optionPane = new JOptionPane(
-					message,
-					JOptionPane.INFORMATION_MESSAGE,
-					JOptionPane.DEFAULT_OPTION
-				);
-
-				final JDialog dialog = optionPane.createDialog("Message");
-
-				// Set up timer to close the dialog after 10 seconds
-				Timer timer = new Timer(disposeTime, e -> {
-					dialog.dispose();
-				});
+			Runnable messageRunnable = () ->
+			{
+				JOptionPane pane = new JOptionPane(message, JOptionPane.INFORMATION_MESSAGE);
+				JDialog dialog = pane.createDialog("Message");
+				dialog.setModal(false);
+				dialog.setVisible(true);
+				Timer timer = new Timer(disposeTime, e -> dialog.dispose());
 				timer.setRepeats(false);
 				timer.start();
-				dialog.setVisible(true);
-				timer.stop();
-			});
+
+			};
+			if (SwingUtilities.isEventDispatchThread()) {
+				messageRunnable.run();
+			} else {
+				SwingUtilities.invokeAndWait(messageRunnable);
+			}
 		}
 		catch (Exception ex)
 		{
+			log.error("Error displaying message {}: {}", message, ex.getMessage(), ex);
 			ex.printStackTrace();
 		}
 	}
-
 
 	public static List<Rs2ItemModel> updateItemContainer(int id, ItemContainerChanged e)
 	{
@@ -418,11 +423,10 @@ public class Microbot {
 
 	@SneakyThrows
 	private static boolean togglePlugin(Plugin plugin, boolean enable) {
-		if (plugin == null) return !enable;
-
+		if (plugin == null) return false;
 		final AtomicBoolean success = new AtomicBoolean(false);
-		SwingUtilities.invokeAndWait(() -> {
-			try {
+		Callable<Boolean> callable = () -> {        
+        	try {
 				getPluginManager().setPluginEnabled(plugin, enable);
 				if (enable) {
 					success.set(getPluginManager().startPlugin(plugin));
@@ -431,10 +435,13 @@ public class Microbot {
 					success.set(getPluginManager().stopPlugin(plugin));
 				}
 			} catch (PluginInstantiationException e) {
+				log.error("Error toggling plugin {} ({}): {}", success.get() ? "on" : "off", plugin.getClass().getSimpleName(), e.getMessage(), e);
 				e.printStackTrace();
 			}
-		});
-		return success.get();
+			return success.get();
+		};
+		// When not on client thread, use client thread to execute
+		return getClientThread().runOnClientThreadOptional(callable).orElse(false);	
 	}
 
 	/**
@@ -673,23 +680,6 @@ public class Microbot {
 			default:
 				log.info(message);
 				break;
-		}
-
-		if (Microbot.isLoggedIn())
-		{
-			if (level == Level.DEBUG && !isDebug())
-			{
-				return;
-			}
-
-			final String _message = ex == null ? message : ex.getMessage();
-
-			LocalTime currentTime = LocalTime.now();
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-			String formattedTime = currentTime.format(formatter);
-			Microbot.getClientThread().runOnClientThreadOptional(() ->
-				Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "[" + formattedTime + "]: " + _message, "", false)
-			);
 		}
 	}
 
