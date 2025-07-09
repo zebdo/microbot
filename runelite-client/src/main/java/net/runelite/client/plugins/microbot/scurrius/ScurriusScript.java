@@ -24,6 +24,7 @@ import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import org.apache.commons.lang3.tuple.Pair;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -160,10 +161,7 @@ public class ScurriusScript extends Script {
 
                     case FIGHTING:
                         handlePrayerLogic();
-                        List<WorldPoint> dangerousWorldPoints = Rs2Tile.getDangerousGraphicsObjectTiles()
-                                .stream()
-                                .map(Pair::getKey)
-                                .collect(Collectors.toList());
+                        List<WorldPoint> dangerousWorldPoints = new ArrayList<>(Rs2Tile.getDangerousGraphicsObjectTiles().keySet());
 
                         if (!dangerousWorldPoints.isEmpty()) {
                             for (WorldPoint worldPoint : dangerousWorldPoints) {
