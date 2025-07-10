@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.woodcutting;
+package net.runelite.client.plugins.microbot.woodcutting.Forestry;
 
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;

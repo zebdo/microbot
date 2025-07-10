@@ -2,8 +2,6 @@ package net.runelite.client.plugins.microbot.woodcutting;
 
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.NpcDespawned;
-import net.runelite.api.events.NpcSpawned;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
@@ -22,8 +20,8 @@ import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.woodcutting.Rs2Woodcutting;
+import net.runelite.client.plugins.microbot.woodcutting.Forestry.PruningAction;
 import net.runelite.client.plugins.microbot.woodcutting.enums.*;
-import net.runelite.api.*;
 
 import java.awt.event.KeyEvent;
 import java.util.*;
@@ -51,7 +49,7 @@ public class AutoWoodcuttingScript extends Script {
     private static final Integer[] FIRE_IDS = {26185, 49927};
     private static final int RITUAL_CIRCLE_GREEN = 12527;
     private static final int RITUAL_CIRCLE_RED = 12535;
-    private static final int FORESTRY_DISTANCE = 15;
+    public static final int FORESTRY_DISTANCE = 15;
     public static String version = "1.7.0";
     private static WorldPoint returnPoint;
     public volatile boolean cannotLightFire = false;
@@ -230,71 +228,7 @@ public class AutoWoodcuttingScript extends Script {
 
     private void handleStrugglingSapling() {
         currentForestryEvent = ForestryEvents.STRUGGLING_SAPLING;
-        breakPlayersAnimation();
 
-        // Find the struggling sapling
-        var sapling = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("Struggling sapling", false))
-                .stream()
-                .filter(obj ->
-                        Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(obj), "Add-mulch") &&
-                                obj.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
-                )
-                .findFirst()
-                .orElse(null);
-
-        if (sapling == null) {
-            currentForestryEvent = ForestryEvents.NONE;
-            return;
-        }
-
-        // Find all available leaf ingredients
-        var ingredients = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("leaves", false))
-                .stream()
-                .filter(obj -> Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(obj), "Collect"))
-                .collect(Collectors.toList());
-
-        if (ingredients.isEmpty()) {
-            currentForestryEvent = ForestryEvents.NONE;
-            return;
-        }
-
-        // If we have leaves in inventory, add them to the sapling
-        if (Rs2Inventory.contains("leaves")) {
-            Rs2GameObject.interact(sapling, "Add-mulch");
-            Rs2Player.waitForAnimation();
-            sleep(1000, 2000);
-            return;
-        }
-
-        // Check if we have knowledge of correct ingredients from previous attempts
-        for (int i = 0; i < 3; i++) {
-            GameObject correctIngredient = saplingOrder[i];
-            if (correctIngredient != null) {
-                // Look for matching ingredient in our available ingredients
-                for (TileObject ingredient : ingredients) {
-                    if (ingredient.getId() == correctIngredient.getId()) {
-                        // Collect this ingredient as it's known to be correct
-                        Rs2GameObject.interact(ingredient, "Collect");
-                        Rs2Player.waitForAnimation();
-                        sleep(800, 1500);
-                        return;
-                    }
-                }
-            }
-        }
-
-        // If we don't know the correct order yet or the correct ingredients aren't available,
-        // collect the closest ingredient to try it
-        TileObject closestIngredient = ingredients.stream()
-                .min(Comparator.comparingInt(i ->
-                        i.getWorldLocation().distanceTo(Rs2Player.getWorldLocation())))
-                .orElse(null);
-
-        if (closestIngredient != null) {
-            Rs2GameObject.interact(closestIngredient, "Collect");
-            Rs2Player.waitForAnimation();
-            sleep(800, 1500);
-        }
     }
 
     private boolean CheckForStrugglingSapling() {
