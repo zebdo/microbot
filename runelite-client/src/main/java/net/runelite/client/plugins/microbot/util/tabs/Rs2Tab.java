@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.util.tabs;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.VarClientInt;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.VarcIntValues;
@@ -61,6 +62,9 @@ public class Rs2Tab {
 
     public static boolean switchTo(InterfaceTab tab) {
         if (isCurrentTab(tab)) return true;
+
+        if (tab == InterfaceTab.NOTHING_SELECTED && Microbot.getVarbitValue(VarbitID.RESIZABLE_STONE_ARRANGEMENT) == 0)
+            return false;
 
         Microbot.getClientThread().invokeLater(() -> Microbot.getClient().runScript(TAB_SWITCH_SCRIPT, tab.getIndex()));
         return sleepUntil(() -> isCurrentTab(tab));
