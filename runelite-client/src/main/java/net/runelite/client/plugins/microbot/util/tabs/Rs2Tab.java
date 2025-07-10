@@ -1,20 +1,22 @@
 package net.runelite.client.plugins.microbot.util.tabs;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.VarClientInt;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.VarcIntValues;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
-import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.Arrays;
 import java.util.Objects;
 
-import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
+@Slf4j
 public class Rs2Tab {
+    private static final int TAB_SWITCH_SCRIPT = 915;
+
     public static InterfaceTab getCurrentTab() {
         final int varcIntValue = Microbot.getClient().getVarcIntValue(VarClientInt.INVENTORY_TAB);
         switch (VarcIntValues.valueOf(varcIntValue)) {
@@ -58,26 +60,9 @@ public class Rs2Tab {
     }
 
     public static boolean switchTo(InterfaceTab tab) {
-        if (tab == InterfaceTab.LOGOUT) return switchToLogout();
-        final InterfaceTab currentTab = getCurrentTab();
-        if (currentTab == tab) return true;
+        if (isCurrentTab(tab)) return true;
 
-        final int hotkey;
-        if (tab == InterfaceTab.NOTHING_SELECTED) {
-            hotkey = currentTab.getHotkey();
-        } else {
-            hotkey = tab.getHotkey();
-        }
-
-        if (hotkey == -1) {
-            if (Microbot.isLoggedIn()) {
-                Microbot.showMessage("Keybinding not found for tab " + tab.getName() + ". Please fill in the keybinding in your settings");
-                sleep(5000);
-            }
-            return false;
-        }
-
-        Rs2Keyboard.keyPress(hotkey);
+        Microbot.getClientThread().invokeLater(() -> Microbot.getClient().runScript(TAB_SWITCH_SCRIPT, tab.getIndex()));
         return sleepUntil(() -> isCurrentTab(tab));
     }
 
@@ -146,23 +131,9 @@ public class Rs2Tab {
         return switchTo(InterfaceTab.MUSIC);
     }
 
-    // TODO: make private and/or incorporate widget finding for all switchTo?
     @Deprecated(since = "Use switchTo")
     public static boolean switchToLogout() {
-        if (getCurrentTab() == InterfaceTab.LOGOUT) return true;
-        
-        // Logout is not configured by default, but we should prefer it if it is configured as it is faster than clicking the widget
-        final int hotkey = InterfaceTab.LOGOUT.getHotkey();
-        if (hotkey == -1) {
-            final Widget tab = getLogoutWidget();
-            if (tab == null) return false;
-
-            if (!Rs2Widget.clickWidget(tab)) return false;
-        } else {
-            Rs2Keyboard.keyPress(hotkey);
-        }
-
-        return sleepUntil(() -> isCurrentTab(InterfaceTab.LOGOUT));
+        return switchTo(InterfaceTab.LOGOUT);
     }
 
     private final static int[] LOGOUT_WIDGET_ID_VARIATIONS = {
