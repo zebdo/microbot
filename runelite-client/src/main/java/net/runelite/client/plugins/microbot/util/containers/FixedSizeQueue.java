@@ -1,9 +1,8 @@
 package net.runelite.client.plugins.microbot.util.containers;
 import java.util.LinkedList;
 
-public class FixedSizeQueue<E> {
+public class FixedSizeQueue<E> extends LinkedList<E> {
     private final int maxSize;
-    private final LinkedList<E> list = new LinkedList<>();
 
     public FixedSizeQueue(int maxSize) {
         if (maxSize <= 0) {
@@ -12,35 +11,16 @@ public class FixedSizeQueue<E> {
         this.maxSize = maxSize;
     }
 
-    public void add(E element) {
-        if (list.size() == maxSize) {
-            list.removeFirst();
-        }
-        list.addLast(element);
-    }
-
-    public LinkedList<E> getAll() {
-        return list;
-    }
-
-    public E get(int index) {
-        return list.get(index);
-    }
-
-    public int size() {
-        return list.size();
-    }
-
-    public boolean isEmpty() {
-        return list.isEmpty();
-    }
-
-    public boolean contains(E element) {
-        return list.contains(element);
-    }
-
     @Override
-    public String toString() {
-        return list.toString();
+    public boolean add(E element) {
+        if (super.size() == maxSize) {
+            super.removeFirst();
+        }
+        return super.add(element);
+    }
+
+    @Deprecated
+    public LinkedList<E> getAll() {
+        return this;
     }
 }
