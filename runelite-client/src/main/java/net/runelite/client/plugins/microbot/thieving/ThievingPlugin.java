@@ -37,7 +37,14 @@ public class ThievingPlugin extends Plugin {
     private ThievingOverlay thievingOverlay;
 
     @Inject
+<<<<<<< HEAD
     private ThievingScript thievingScript;
+=======
+    @Getter
+    ThievingScript thievingScript;
+    @Getter
+    public Instant startTime;
+>>>>>>> 88dab5c0c6 (rework: add states machine and troubleshooting)
 
     public static String version = "1.6.6";
     private int startXp = 0;

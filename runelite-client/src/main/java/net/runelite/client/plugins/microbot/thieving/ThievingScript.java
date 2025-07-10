@@ -28,19 +28,21 @@ public class ThievingScript extends Script {
     private final ThievingConfig config;
 	private final ThievingPlugin plugin;
     private static final int DARKMEYER_REGION = 14388;
+    private enum State {IDLE, BANK, PICKPOCKET}
+    public State currentState = State.IDLE;
 
-    private static final Map<String, EquipmentInventorySlot> VYRE_SET = Map.of(
-        "Vyre noble shoes", EquipmentInventorySlot.BOOTS,
-        "Vyre noble legs", EquipmentInventorySlot.LEGS,
-        "Vyre noble top", EquipmentInventorySlot.BODY
+    private static final Set<String> VYRE_SET = Set.of(
+        "Vyre noble shoes",
+        "Vyre noble legs",
+        "Vyre noble top"
     );
-    private static final Map<String, EquipmentInventorySlot> ROGUE_SET = Map.of(
-        "Rogue mask", EquipmentInventorySlot.HEAD,
-        "Rogue top", EquipmentInventorySlot.BODY,
-        "Rogue trousers", EquipmentInventorySlot.LEGS,
-        "Rogue boots", EquipmentInventorySlot.BOOTS,
-        "Rogue gloves", EquipmentInventorySlot.GLOVES,
-        "Thieving cape(t)", EquipmentInventorySlot.CAPE
+    private static final Set<String> ROGUE_SET = Set.of(
+        "Rogue mask",
+        "Rogue top",
+        "Rogue trousers",
+        "Rogue boots",
+        "Rogue gloves"
+        //"Thieving cape(t)"
     );
 
     private static final Map<String, WorldPoint[]> VYRE_HOUSES = Map.of(
@@ -80,34 +82,67 @@ public class ThievingScript extends Script {
             try {
                 if (!Microbot.isLoggedIn() || !super.run()) return;
                 if (initialPlayerLocation == null) initialPlayerLocation = Rs2Player.getWorldLocation();
-                if (Rs2Player.isStunned()) return;
-                if (!autoEatAndDrop()) return;
-                openCoinPouches();
-                wearIfNot("dodgy necklace");
+                switch(currentState) {
+                    case IDLE:
+                        if (!hasReqs()) {
+                            currentState = State.BANK;
+                            return;
+                        }
+                        currentState = State.PICKPOCKET;
+                        break;
+                    case BANK:
+                        bankAndEquip();
+                        currentState = State.IDLE;
+                        break;
+                    case PICKPOCKET:
+                        if (Rs2Player.isStunned()) return;
+                        wearIfNot("dodgy necklace");
+                        openCoinPouches();
 
-                switch (config.THIEVING_NPC()) {
-                    case WEALTHY_CITIZEN:
-                        pickpocketWealthyCitizen();
-                        break;
-                    case ELVES:
-                        pickpocketElves();
-                        break;
-                    case VYRES:
-                        pickpocketVyre();
-                        break;
-                    case ARDOUGNE_KNIGHT:
-                        pickpocketArdougneKnight();
+                        if (!autoEatAndDrop()) {
+                            currentState = State.IDLE;
+                            return;
+                        }
+
+                        switch (config.THIEVING_NPC()) {
+                            case WEALTHY_CITIZEN:
+                                pickpocketWealthyCitizen();
+                                break;
+                            case ELVES:
+                                pickpocketElves();
+                                break;
+                            case VYRES:
+                                pickpocketVyre();
+                                break;
+                            case ARDOUGNE_KNIGHT:
+                                pickpocketArdougneKnight();
+                                break;
+                            default:
+                                Rs2NpcModel npc = Rs2Npc.getNpc(config.THIEVING_NPC().getName());
+                                pickpocketDefault(npc);
+                                break;
+                        }
                         break;
                     default:
-                        Rs2NpcModel npc = Rs2Npc.getNpc(config.THIEVING_NPC().getName());
-                        pickpocketDefault(npc);
+                        // idk
                         break;
                 }
             } catch (Exception ex) {
                 Microbot.logStackTrace(getClass().getSimpleName(), ex);
             }
-        }, 0, 600, TimeUnit.MILLISECONDS);
+        }, 0, 300, TimeUnit.MILLISECONDS);
         return true;
+    }
+
+    private boolean hasReqs() {
+        boolean hasFood = Rs2Inventory.getInventoryFood().size() >= config.foodAmount();
+        boolean hasDodgy = Rs2Inventory.hasItem("Dodgy necklace");
+        boolean hasCosmic = Rs2Inventory.hasItem("Cosmic rune");
+        boolean hasStaff = Rs2Equipment.isWearing("Lava battlestaff");
+        boolean hasRunes = hasStaff || Rs2Inventory.hasItem("Earth rune", "Fire rune");
+        //boolean hasShadowReq = hasStaff || hasRunes;
+
+        return hasFood && hasDodgy && hasCosmic && hasStaff && hasRunes;
     }
 
     private boolean isPointInPolygon(WorldPoint[] polygon, WorldPoint point) {
@@ -134,7 +169,7 @@ public class ThievingScript extends Script {
         if (config.useFood()) {
             if (Rs2Inventory.getInventoryFood().isEmpty()) {
                 openCoinPouches();
-                bankAndEquip();
+                //bankAndEquip();
                 return false;
             }
             Rs2Player.eatAt(config.hitpoints());
@@ -269,11 +304,9 @@ public class ThievingScript extends Script {
         });
     }
 
-    private void equipSet(Map<String, EquipmentInventorySlot> set) {
-        for (Map.Entry<String, EquipmentInventorySlot> entry : set.entrySet()) {
-            String item = entry.getKey();
-            EquipmentInventorySlot slot = entry.getValue();
-            if (!Rs2Equipment.isEquipped(item, slot)) {
+    private void equipSet(Set<String> set) {
+        for (String item : set) {
+            if (!Rs2Equipment.isWearing(item)) {
                 if (Rs2Inventory.contains(item)) {
                     Rs2Inventory.wear(item);
                     Rs2Inventory.waitForInventoryChanges(3000);
@@ -290,39 +323,66 @@ public class ThievingScript extends Script {
     }
 
     private void bankAndEquip() {
-        Microbot.status = "BANKING";
         BankLocation bank = Rs2Bank.getNearestBank();
         if (bank == BankLocation.DARKMEYER) equipSet(VYRE_SET);
         boolean opened = Rs2Bank.isNearBank(bank, 8) ? Rs2Bank.openBank() : Rs2Bank.walkToBankAndUseBank(bank);
         if (!opened || !Rs2Bank.isOpen()) return;
         Rs2Bank.depositAll();
-        equipSet(ROGUE_SET);
+
+        boolean successDodgy = Rs2Bank.withdrawDeficit("Dodgy necklace", config.dodgyNecklaceAmount());
+        Rs2Inventory.waitForInventoryChanges(3000);
+
+        if (!successDodgy) {
+            Microbot.showMessage("No Dodgy necklace found in bank.");
+            shutdown();
+            return;
+        }
+
+        boolean successfullyWithdrawFood = Rs2Bank.withdrawX(true, config.food().getName(), config.foodAmount(), true);
+        Rs2Inventory.waitForInventoryChanges(3000);
+
+        if (!successfullyWithdrawFood) {
+            Microbot.showMessage("No " + config.food().getName() + " found in bank.");
+            shutdown();
+            return;
+        }
+
         if (config.shadowVeil()) {
-            if (!Rs2Equipment.isEquipped("Lava battlestaff", EquipmentInventorySlot.WEAPON)) {
-                if (Rs2Bank.hasBankItem("Lava battlestaff")) {
-                    Rs2Bank.withdrawItem("Lava battlestaff");
-                    Rs2Inventory.waitForInventoryChanges(3000);
-                    if (Rs2Inventory.contains("Lava battlestaff")) {
-                        Rs2Inventory.wear("Lava battlestaff");
-                        Rs2Inventory.waitForInventoryChanges(3000);
-                    }
-                } else {
-                    Rs2Bank.withdrawAll(true, "Fire rune", true);
-                    Rs2Inventory.waitForInventoryChanges(3000);
-                    Rs2Bank.withdrawAll(true, "Earth rune", true);
+            List<String> runesShadowVeil = Arrays.asList("Earth rune", "Fire rune"); 
+            boolean banklavaStaff = !Rs2Equipment.isWearing("Lava battlestaff") && !Rs2Inventory.contains("Lava battlestaff") && Rs2Bank.hasItem("Lava battlestaff");
+            boolean bankrunes = banklavaStaff || Rs2Bank.hasItem(runesShadowVeil); 
+            boolean bankcosmicRune = Rs2Bank.hasItem("Cosmic rune");
+
+            if (!banklavaStaff || !bankrunes) {
+                Microbot.showMessage("No Lava battlestaff or runes (Earth, Fire) found in bank.");
+                shutdown();
+                return;
+            }
+
+            if (!bankcosmicRune) {
+                Microbot.showMessage("No Cosmic rune found in bank.");
+                shutdown();
+                return;
+            }
+
+            if (banklavaStaff) {
+                Rs2Bank.withdrawItem("Lava battlestaff");
+                Rs2Inventory.waitForInventoryChanges(3000);
+                if (Rs2Inventory.contains("Lava battlestaff")) {
+                    Rs2Inventory.wear("Lava battlestaff");
                     Rs2Inventory.waitForInventoryChanges(3000);
                 }
+            } else {
+                Rs2Bank.withdrawAll(true, "Fire rune", true);
+                Rs2Inventory.waitForInventoryChanges(3000);
+                Rs2Bank.withdrawAll(true, "Earth rune", true);
+                Rs2Inventory.waitForInventoryChanges(3000);
             }
             Rs2Bank.withdrawAll(true, "Cosmic rune", true);
             Rs2Inventory.waitForInventoryChanges(3000);
         }
-        boolean successfullyWithdrawFood = Rs2Bank.withdrawX(true, config.food().getName(), config.foodAmount(), true);
-        if (!successfullyWithdrawFood) {
-            Microbot.showMessage(config.food().getName() + " not found in bank. Shutting down");
-            shutdown();
-        }
-        Rs2Inventory.waitForInventoryChanges(3000);
-        Rs2Bank.withdrawDeficit("dodgy necklace", config.dodgyNecklaceAmount());
+
+        equipSet(ROGUE_SET);
         Rs2Bank.closeBank();
         sleepUntil(() -> !Rs2Bank.isOpen());
     }
@@ -334,12 +394,11 @@ public class ThievingScript extends Script {
         Rs2Inventory.getInventoryFood().forEach(food -> keep.add(food.getName()));
         keep.add("dodgy necklace"); keep.add("coins"); keep.add("book of the dead"); keep.add("drakan's medallion");
         if (config.shadowVeil()) Collections.addAll(keep, "Fire rune", "Earth rune", "Cosmic rune");
-        keep.addAll(VYRE_SET.keySet()); keep.addAll(ROGUE_SET.keySet());
+        keep.addAll(VYRE_SET); keep.addAll(ROGUE_SET);
         Rs2Inventory.dropAllExcept(config.keepItemsAboveValue(), keep.toArray(new String[0]));
     }
 
     private boolean waitUntilBothInPolygon(WorldPoint[] polygon, Rs2NpcModel npc, long timeoutMs) {
-        Microbot.status = "NPC NOT IN AREA.";
         long start = System.currentTimeMillis();
         while (System.currentTimeMillis() - start < timeoutMs) {
             if (!Microbot.isLoggedIn()) return false;
