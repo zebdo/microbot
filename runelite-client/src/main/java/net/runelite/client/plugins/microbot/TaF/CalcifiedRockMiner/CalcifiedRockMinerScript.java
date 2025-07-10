@@ -180,7 +180,12 @@ public class CalcifiedRockMinerScript extends Script {
                 sleep(200,400);
                 Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
                 sleep(200,400);
-                sleepUntil(() -> !Rs2Player.isAnimating(), 16000);
+                while (Rs2Inventory.hasItem(29088)) {
+                    if (!this.isRunning()) {
+                        break;
+                    }
+                    sleep(1200,1600);
+                }
                 BOT_STATUS = CalcifiedRockMinerState.BANKING;
             }
             else {
