@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.zerozero.tormenteddemons;
 
 import net.runelite.api.HeadIcon;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -14,16 +14,13 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
-import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
-import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.zerozero.tormenteddemons.TormentedDemonConfig.CombatPotionType;
 import net.runelite.client.plugins.microbot.zerozero.tormenteddemons.TormentedDemonConfig.MODE;
 import net.runelite.client.plugins.microbot.zerozero.tormenteddemons.TormentedDemonConfig.RangingPotionType;
@@ -213,11 +210,11 @@ public class TormentedDemonScript extends Script {
             disableAllPrayers();
 
             if (!lootAttempted) {
-                Microbot.pauseAllScripts = true;
+				Microbot.pauseAllScripts.compareAndSet(false, true);
                 sleep(5000);
                 attemptLooting(config);
                 lootAttempted = true;
-                Microbot.pauseAllScripts = false;
+				Microbot.pauseAllScripts.compareAndSet(true, false);
                 killCount++;
             }
 
@@ -244,10 +241,10 @@ public class TormentedDemonScript extends Script {
         if (config.mode() == MODE.FULL_AUTO && shouldRetreat(config)) {
             currentTarget = null;
             currentOverheadIcon = null;
-            Microbot.pauseAllScripts = true;
+            Microbot.pauseAllScripts.set(true);
             teleportToFeroxEnclave();
             sleepUntil(() -> Microbot.getClient().getLocalPlayer().getWorldLocation().equals(SAFE_LOCATION), 5000);
-            Microbot.pauseAllScripts = false;
+            Microbot.pauseAllScripts.set(false);
             BOT_STATUS = State.BANKING;
             return;
         }
@@ -409,7 +406,7 @@ public class TormentedDemonScript extends Script {
         int currentHealth = Microbot.getClient().getBoostedSkillLevel(Skill.HITPOINTS);
         int currentPrayer = Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER);
         boolean noFood = Rs2Inventory.getInventoryFood().isEmpty();
-        boolean noPrayerPotions = Rs2Inventory.items().stream()
+        boolean noPrayerPotions = Rs2Inventory.items()
                 .noneMatch(item -> item != null && item.getName() != null && item.getName().toLowerCase().contains("prayer potion"));
 
         return (noFood || currentHealth <= config.healthThreshold()) || (noPrayerPotions && currentPrayer < 10);
@@ -452,14 +449,14 @@ public class TormentedDemonScript extends Script {
 
     private void teleportToFeroxEnclave() {
         int[] duelingRingIds = {
-                ItemID.RING_OF_DUELING1,
-                ItemID.RING_OF_DUELING2,
-                ItemID.RING_OF_DUELING3,
-                ItemID.RING_OF_DUELING4,
-                ItemID.RING_OF_DUELING5,
-                ItemID.RING_OF_DUELING6,
-                ItemID.RING_OF_DUELING7,
-                ItemID.RING_OF_DUELING8
+                ItemID.RING_OF_DUELING_1,
+                ItemID.RING_OF_DUELING_2,
+                ItemID.RING_OF_DUELING_3,
+                ItemID.RING_OF_DUELING_4,
+                ItemID.RING_OF_DUELING_5,
+                ItemID.RING_OF_DUELING_6,
+                ItemID.RING_OF_DUELING_7,
+                ItemID.RING_OF_DUELING_8
         };
         for (int ringId : duelingRingIds) {
             if (Rs2Inventory.hasItem(ringId)) {

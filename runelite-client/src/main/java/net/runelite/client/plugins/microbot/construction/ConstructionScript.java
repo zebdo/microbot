@@ -1,5 +1,8 @@
 package net.runelite.client.plugins.microbot.construction;
 
+import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.NPC;
 import net.runelite.api.SpriteID;
 import net.runelite.api.TileObject;
 import net.runelite.api.gameval.ItemID;
@@ -95,7 +98,6 @@ public class ConstructionScript extends Script {
             Microbot.log("Insufficient coins to pay butler!");
             return;
         }
-
         if (oakLarderSpace == null && oakLarder != null) {
             state = ConstructionState.Remove;
         } else if (oakLarderSpace != null && oakLarder == null) {

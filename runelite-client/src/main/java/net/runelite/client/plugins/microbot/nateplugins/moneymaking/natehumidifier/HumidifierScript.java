@@ -1,6 +1,6 @@
 package net.runelite.client.plugins.microbot.nateplugins.moneymaking.natehumidifier;
 
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
@@ -9,6 +9,7 @@ import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 import net.runelite.client.util.QuantityFormatter;
 
 import java.util.concurrent.TimeUnit;
@@ -33,16 +34,15 @@ public class HumidifierScript extends Script {
         profit = processedItemPrice - unprocessedItemPrice;
         itemsProcessedMessage = config.ITEM().getFinished() + " processed: " + itemsProcessed;
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            if (!super.run()) return;
-            if (!Microbot.isLoggedIn()) return;
-            if (Rs2AntibanSettings.actionCooldownActive) return;
             try {
-                boolean hasAstralRunesInInventory = Rs2Inventory.hasItem(ItemID.ASTRAL_RUNE);
-                if (Microbot.pauseAllScripts) return;
+				if (!super.run()) return;
+				if (!Microbot.isLoggedIn()) return;
+				if (Rs2AntibanSettings.actionCooldownActive) return;
+                boolean hasAstralRunesInInventory = Rs2Inventory.hasItem(ItemID.ASTRALRUNE);
                 if (Rs2Inventory.hasItem(config.ITEM().getName(), true)
                         && hasAstralRunesInInventory) {
                     if (!Rs2Bank.isOpen())
-                        Rs2Magic.humidify();
+                        Rs2Magic.cast(MagicAction.HUMIDIFY);
                     sleepUntilOnClientThread(() -> Rs2Inventory.hasItem(config.ITEM().getFinished()));
                     Rs2Antiban.actionCooldown();
                     Rs2Antiban.takeMicroBreakByChance();
@@ -68,7 +68,7 @@ public class HumidifierScript extends Script {
             Rs2Bank.depositAll(config.ITEM().getFinished());
             itemsProcessed += Rs2Inventory.count(config.ITEM().getName());
             sleepUntil(() -> !Rs2Inventory.hasItem(config.ITEM().getFinished()));
-            if (!hasAstralRunes && !Rs2Bank.hasItem(ItemID.ASTRAL_RUNE)) {
+            if (!hasAstralRunes && !Rs2Bank.hasItem(ItemID.ASTRALRUNE)) {
                 Microbot.showMessage("You have no astral runes left");
                 shutdown();
                 return;
@@ -81,7 +81,7 @@ public class HumidifierScript extends Script {
 
             if (!hasAstralRunes) {
                 Rs2Bank.withdrawAll(true, "astral rune");
-                sleepUntil(() -> Rs2Inventory.hasItem(ItemID.ASTRAL_RUNE));
+                sleepUntil(() -> Rs2Inventory.hasItem(ItemID.ASTRALRUNE));
             }
 
             Rs2Bank.withdrawAll(true, config.ITEM().getName(), true);

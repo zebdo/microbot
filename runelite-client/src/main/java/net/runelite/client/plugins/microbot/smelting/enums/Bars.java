@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.smelting.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 
 import java.util.Map;
@@ -34,5 +34,37 @@ public enum Bars {
     public int maxBarsForFullInventory() {
         int amountForOneBar = requiredMaterials.values().stream().reduce(0, Integer::sum);
         return Rs2Inventory.capacity() / amountForOneBar;
+    }
+
+    public Map<Ores, Integer> getWithdrawalsWithCoalBag(int totalInventorySlots) {
+        Map<Ores, Integer> result = new java.util.HashMap<>();
+
+        if (!requiredMaterials.containsKey(Ores.COAL)) {
+            return requiredMaterials.entrySet().stream()
+                    .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, e -> e.getValue()));
+        }
+        int invSlots = totalInventorySlots - 1;
+        int coalPerBar = requiredMaterials.get(Ores.COAL);
+        int totalMatsPerBar = requiredMaterials.values().stream().mapToInt(Integer::intValue).sum();
+        for (int bars = invSlots; bars > 0; bars--) {
+            int totalCoal = coalPerBar * bars;
+            int coalInInv = Math.max(0, totalCoal - 27);
+            int nonCoalMats = bars * totalMatsPerBar - totalCoal;
+            int totalUsed = coalInInv + nonCoalMats + 1;
+            if (totalUsed <= totalInventorySlots) {
+                for (Map.Entry<Ores, Integer> entry : requiredMaterials.entrySet()) {
+                    Ores ore = entry.getKey();
+                    int totalAmount = entry.getValue() * bars;
+
+                    if (ore == Ores.COAL) {
+                        result.put(ore, coalInInv); // only inv coal needed
+                    } else {
+                        result.put(ore, totalAmount);
+                    }
+                }
+                break;
+            }
+        }
+        return result;
     }
 }
