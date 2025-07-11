@@ -125,9 +125,9 @@ public class ConstructionScript extends Script {
         TileObject oakLarderSpace = getOakLarderSpace();
         if (oakLarderSpace == null) return;
         if (Rs2GameObject.interact(oakLarderSpace, "Build")) {
-            sleepUntilOnClientThread(this::hasFurnitureInterfaceOpen, 1200);
+            sleepUntil(this::hasFurnitureInterfaceOpen, 1200);
             Rs2Keyboard.keyPress('2');
-            sleepUntilOnClientThread(() -> getOakLarder() != null, 1200);
+            sleepUntil(() -> getOakLarder() != null, 1200);
             if (getOakLarder() != null)
             {
                 lardersBuilt++;
@@ -149,7 +149,7 @@ public class ConstructionScript extends Script {
             }
             Rs2Dialogue.sleepUntilHasDialogueOption("Yes");
             Rs2Dialogue.keyPressForDialogueOption(1);
-            sleepUntilOnClientThread(() -> getOakLarderSpace() != null, 1800);
+            sleepUntil(() -> getOakLarderSpace() != null, 1800);
         }
     }
 
