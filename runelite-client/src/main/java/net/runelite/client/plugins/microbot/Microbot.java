@@ -445,7 +445,7 @@ public class Microbot {
 		} else {
 			// Ensure the runnable is executed on the Event Dispatch Thread
 			// This is necessary for Swing components and plugin management
-			SwingUtilities.invokeAndWait(runnable);
+			SwingUtilities.invokeLater(runnable);
 		}
 
 		return success.get();
