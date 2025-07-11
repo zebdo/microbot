@@ -141,6 +141,23 @@ public class Rs2GrandExchange
 		return false;
 	}
 
+	/**
+	 * Processes a Grand Exchange offer request based on the action specified in the {@link GrandExchangeRequest}.
+	 * <p>
+	 * This method supports three types of actions:
+	 * <ul>
+	 *   <li>{@code COLLECT} - Attempts to collect an offer from a specific slot or all offers if no slot is provided.</li>
+	 *   <li>{@code BUY} - Initiates a buy offer for a specified item, with optional price and quantity customization.</li>
+	 *   <li>{@code SELL} - Initiates a sell offer for an item in the player's inventory, with optional price and quantity customization.</li>
+	 * </ul>
+	 * The method validates the request and ensures the Grand Exchange interface is usable before attempting to execute
+	 * the request. If the offer is successfully processed and the request indicates the interface should be closed, it
+	 * closes the Grand Exchange afterwards.
+	 *
+	 * @param request the {@link GrandExchangeRequest} containing the action type, item name, slot, price, quantity,
+	 *                and other flags like exact name matching and whether to bank collected items.
+	 * @return {@code true} if the offer was successfully processed, otherwise {@code false}
+	 */
 	public static boolean processOffer(GrandExchangeRequest request) {
 		if (!isValidRequest(request) || !useGrandExchange()) {
 			return false;
@@ -237,6 +254,21 @@ public class Rs2GrandExchange
 	}
 
 
+	/**
+	 * Validates a {@link GrandExchangeRequest} based on its action type and required fields.
+	 * <p>
+	 * This method ensures that the request is not null, has a defined action, and meets specific criteria
+	 * depending on the action:
+	 * <ul>
+	 *   <li>{@code BUY} - Must have a non-blank item name and a quantity greater than 0.</li>
+	 *   <li>{@code SELL} - Must meet the {@code BUY} requirements, and also have a price greater than 0.</li>
+	 *   <li>{@code COLLECT} - Always considered valid.</li>
+	 *   <li>Other or unknown actions - Considered invalid.</li>
+	 * </ul>
+	 *
+	 * @param request the {@link GrandExchangeRequest} to validate
+	 * @return {@code true} if the request is valid for the specified action; otherwise, {@code false}
+	 */
 	private static boolean isValidRequest(GrandExchangeRequest request)
 	{
 		if (request == null || request.getAction() == null)
@@ -261,6 +293,14 @@ public class Rs2GrandExchange
 		}
 	}
 
+	/**
+	 * Sends a menu action to view a specific Grand Exchange offer by interacting with the given widget.
+	 * <p>
+	 * This simulates a "View offer" menu entry click on the widget, typically representing a Grand Exchange slot.
+	 * If the widget is {@code null}, the method exits early without performing any action.
+	 *
+	 * @param widget the {@link Widget} representing the Grand Exchange offer slot to view
+	 */
 	private static void viewOffer(Widget widget)
 	{
 		if (widget == null)
@@ -274,6 +314,22 @@ public class Rs2GrandExchange
 	}
 
 
+	/**
+	 * Collects items or coins from a Grand Exchange offer currently being viewed.
+	 * <p>
+	 * This method interacts with the appropriate "Collect", "Collect-items", "Collect-notes", or "Bank" buttons
+	 * on the offer screen, based on the provided {@code toBank} flag and the number of available actions on each
+	 * widget. It assumes the Grand Exchange offer screen is open and will assert if it is not.
+	 * <p>
+	 * If {@code toBank} is {@code true}, the method attempts to send items directly to the bank using the "Bank" option.
+	 * Otherwise, it uses "Collect", "Collect-items", or "Collect-notes" based on the item quantity.
+	 * <p>
+	 * The method waits until the offer screen is closed after collecting to confirm success.
+	 *
+	 * @param toBank {@code true} to collect the offer into the bank, {@code false} to collect into the inventory
+	 * @return {@code true} if the collection was successful (offer screen closed after collection); {@code false} otherwise
+	 * @throws AssertionError if the offer screen is not open when the method is called
+	 */
 	private static boolean collectOffer(boolean toBank)
 	{
 
@@ -326,6 +382,20 @@ public class Rs2GrandExchange
 		return sleepUntil(() -> !isOfferScreenOpen());
 	}
 
+	/**
+	 * Adjusts the Grand Exchange offer price by a specified percentage.
+	 * <p>
+	 * This method uses either the predefined +5% / -5% buttons or the customizable +X% / -X% button to increase
+	 * or decrease the offer price by the given percentage. It supports percentages that are both divisible by 5
+	 * and custom percentages (e.g., 7%).
+	 * <p>
+	 * If a custom percentage is required, the method simulates interaction with the "Customise" option, sets the
+	 * desired value, and then applies it. After adjusting, it waits until the offer price reflects the change
+	 * before continuing.
+	 *
+	 * @param percent the percentage by which to adjust the offer price; positive to increase, negative to decrease,
+	 *                and {@code 0} will result in no action
+	 */
 	private static void adjustPriceByPercent(int percent)
 	{
 		if (percent == 0)
@@ -402,10 +472,15 @@ public class Rs2GrandExchange
 
 
 	/**
-	 * @param itemName
-	 * @param price
-	 * @param quantity
-	 * @return true if item has been bought succesfully
+	 * Creates and processes a {@link GrandExchangeRequest} to buy an item on the Grand Exchange.
+	 * <p>
+	 * This method constructs a {@code BUY} type request using the specified item name, price, and quantity,
+	 * and delegates the logic to {@link #processOffer(GrandExchangeRequest)} to execute the buy action.
+	 *
+	 * @param itemName the name of the item to buy
+	 * @param price the price per item in coins
+	 * @param quantity the number of items to buy
+	 * @return {@code true} if the buy offer was successfully placed; {@code false} otherwise
 	 */
 	public static boolean buyItem(String itemName, int price, int quantity)
 	{
@@ -418,9 +493,16 @@ public class Rs2GrandExchange
 		return processOffer(request);
 	}
 
+	/**
+	 * Confirms the current Grand Exchange offer.
+	 * <p>
+	 * This method clicks the confirm button and checks if a warning prompt appears,
+	 * such as "Your offer is much higher". If such a prompt is detected, it will automatically
+	 * click "Yes" to proceed with the offer.
+	 */
 	private static void confirm()
 	{
-		Microbot.getMouse().click(GrandExchangeWidget.getConfirm().getBounds());
+		Rs2Widget.clickWidget(GrandExchangeWidget.getConfirm());
 		sleepUntil(() -> Rs2Widget.hasWidget("Your offer is much higher"), 2000);
 		if (Rs2Widget.hasWidget("Your offer is much higher"))
 		{
@@ -428,6 +510,15 @@ public class Rs2GrandExchange
 		}
 	}
 
+	/**
+	 * Sets the quantity for the current Grand Exchange offer.
+	 * <p>
+	 * If the desired quantity differs from the currently selected offer quantity, this method simulates a click
+	 * on the "Quantity: X" button, waits for the quantity input prompt, enters the new quantity via the chatbox,
+	 * and confirms it by pressing Enter.
+	 *
+	 * @param quantity the number of items to set for the offer
+	 */
 	private static void setQuantity(int quantity)
 	{
 		if (quantity != getOfferQuantity())
@@ -443,6 +534,15 @@ public class Rs2GrandExchange
 		}
 	}
 
+	/**
+	 * Sets the price per item for the current Grand Exchange offer.
+	 * <p>
+	 * If the specified price differs from the currently set offer price, this method clicks on the
+	 * "Price per item: X" button, waits for the price input prompt to appear, enters the new price
+	 * using the chatbox, and confirms it by pressing Enter.
+	 *
+	 * @param price the price per item to set for the offer
+	 */
 	private static void setPrice(int price)
 	{
 		if (price != getOfferPrice())
@@ -456,21 +556,31 @@ public class Rs2GrandExchange
 			Rs2Keyboard.enter();
 			sleep(1000);
 		}
-
 	}
 
+	/**
+	 * Ensures that the Grand Exchange interface is usable.
+	 * <p>
+	 * This method checks if the Grand Exchange is already open via {@link #isOpen()},
+	 * attempts to open it with {@link #openExchange()}, or walks to it using {@link #walkToGrandExchange()}.
+	 *
+	 * @return {@code true} if the Grand Exchange is open or successfully made accessible; {@code false} otherwise
+	 */
 	private static boolean useGrandExchange()
 	{
 		return isOpen() || openExchange() || walkToGrandExchange();
 	}
 
 	/**
-	 * Sell item to the grand exchange
+	 * Creates and processes a {@link GrandExchangeRequest} to sell an item on the Grand Exchange.
+	 * <p>
+	 * Constructs a {@code SELL} type request with the specified item name, quantity, and price,
+	 * then delegates to {@link #processOffer(GrandExchangeRequest)} to execute the sell action.
 	 *
-	 * @param itemName name of the item to sell
-	 * @param quantity quantity of the item to sell
-	 * @param price    price of the item to sell
-	 * @return
+	 * @param itemName the name of the item to sell
+	 * @param quantity the number of items to sell
+	 * @param price the price per item in coins
+	 * @return {@code true} if the sell offer was successfully placed; {@code false} otherwise
 	 */
 	public static boolean sellItem(String itemName, int quantity, int price)
 	{
@@ -484,10 +594,15 @@ public class Rs2GrandExchange
 	}
 
 	/**
-	 * Collect all the grand exchange slots to the bank or inventory
+	 * Collects all completed Grand Exchange offers either into the bank or inventory.
+	 * <p>
+	 * This method first checks if all Grand Exchange slots are empty; if so, it returns {@code true} immediately.
+	 * If the inventory is full, it attempts to open the bank and deposit all items before continuing.
+	 * Then, it ensures the Grand Exchange interface is open, locates the "Collect all" button,
+	 * and invokes the appropriate menu action to collect all items either to the bank or inventory.
 	 *
-	 * @param collectToBank
-	 * @return
+	 * @param collectToBank {@code true} to collect items directly to the bank, {@code false} to collect into inventory
+	 * @return {@code true} if the collect action was successfully initiated; {@code false} if the collect button was not found
 	 */
 	public static boolean collectAll(boolean collectToBank)
 	{
@@ -522,15 +637,26 @@ public class Rs2GrandExchange
 		return true;
 	}
 
+	/**
+	 * Collects all completed Grand Exchange offers into the inventory.
+	 * <p>
+	 * This is a convenience method that calls {@link #collectAll(boolean)} with {@code false}
+	 * to specify collection to inventory instead of the bank.
+	 *
+	 * @return {@code true} if the collect action was successfully initiated; {@code false} otherwise
+	 */
 	public static boolean collectAllToInventory()
 	{
 		return collectAll(false);
 	}
 
 	/**
-	 * Collect all the grand exchange items to your bank
+	 * Collects all completed Grand Exchange offers directly into the bank.
+	 * <p>
+	 * This is a convenience method that calls {@link #collectAll(boolean)} with {@code true}
+	 * to specify collection to the bank instead of the inventory.
 	 *
-	 * @return
+	 * @return {@code true} if the collect action was successfully initiated; {@code false} otherwise
 	 */
 	public static boolean collectAllToBank()
 	{
@@ -558,9 +684,17 @@ public class Rs2GrandExchange
 	}
 
 	/**
-	 * Sells all the tradeable items in your inventory
+	 * Attempts to sell all tradeable items currently in the player's inventory on the Grand Exchange.
+	 * <p>
+	 * For each tradeable item, this method:
+	 * <ul>
+	 *   <li>Checks if there is an available Grand Exchange slot; if not, collects all completed offers to the bank.</li>
+	 *   <li>Creates a sell request at 5% below the current market offer price for the item.</li>
+	 *   <li>Processes the sell offer through {@link #processOffer(GrandExchangeRequest)}.</li>
+	 * </ul>
+	 * The method returns {@code true} if the inventory is empty after attempting to sell all items.
 	 *
-	 * @return
+	 * @return {@code true} if the inventory is empty after selling attempts; {@code false} otherwise
 	 */
 	public static boolean sellInventory()
 	{
@@ -589,11 +723,18 @@ public class Rs2GrandExchange
 	}
 
 	/**
-	 * Aborts the offer
+	 * Aborts an active Grand Exchange offer for the specified item name.
+	 * <p>
+	 * This method attempts to locate a non-available Grand Exchange slot containing an offer
+	 * matching the given item name (case-insensitive). If found, it sends an "Abort offer" action
+	 * on that slot's widget.
+	 * <p>
+	 * After aborting the offer, it collects all items from the Grand Exchange, either to the bank
+	 * or inventory based on the {@code collectToBank} flag.
 	 *
-	 * @param name          name of the item to abort offer on
-	 * @param collectToBank collect the item to the bank
-	 * @return true if the offer has been aborted
+	 * @param name the name of the item whose offer should be aborted
+	 * @param collectToBank {@code true} to collect aborted items to the bank; {@code false} to collect to inventory
+	 * @return {@code true} if the offer was successfully aborted and collection was initiated; {@code false} otherwise
 	 */
 	public static boolean abortOffer(String name, boolean collectToBank)
 	{
@@ -630,10 +771,13 @@ public class Rs2GrandExchange
 	}
 
 	/**
-	 * Aborts all offers
+	 * Aborts all active Grand Exchange offers.
+	 * <p>
+	 * Iterates through all Grand Exchange slots and attempts to abort any active offers.
+	 * After aborting, collects all items from the Grand Exchange interface.
 	 *
-	 * @param collectToBank collect the items to the bank
-	 * @return true if all offers were aborted successfully
+	 * @param collectToBank if {@code true}, collects items to the bank; otherwise collects to inventory
+	 * @return {@code true} if all offers were aborted and collection was initiated successfully; {@code false} otherwise
 	 */
 	public static boolean abortAllOffers(boolean collectToBank)
 	{
@@ -665,6 +809,21 @@ public class Rs2GrandExchange
 		return isAllSlotsEmpty();
 	}
 
+	/**
+	 * Searches the Grand Exchange item search results widget for an entry matching the specified search text.
+	 * <p>
+	 * This method looks inside the chatbox scrollable widget that lists search results, then finds the first child
+	 * widget whose text matches the search string exactly or partially (case-insensitive) depending on the {@code exact} flag.
+	 * <p>
+	 * If a matching widget is found, it returns a {@link Pair} containing the widget immediately before the matching
+	 * widget in the list (often the clickable widget for selection) and its index.
+	 * <p>
+	 * Returns {@code null} if no matching widget is found or if the search results widget is not available.
+	 *
+	 * @param search the item name to search for
+	 * @param exact if {@code true}, matches the item name exactly (case-insensitive); if {@code false}, matches partial containment
+	 * @return a {@link Pair} of the clickable widget preceding the matching widget and its index, or {@code null} if not found
+	 */
 	public static Pair<Widget, Integer> getSearchResultWidget(String search, boolean exact)
 	{
 		Widget parent = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getWidget(InterfaceID.Chatbox.MES_LAYER_SCROLLCONTENTS)).orElse(null);
@@ -691,7 +850,15 @@ public class Rs2GrandExchange
 		return null;
 	}
 
-
+	/**
+	 * Checks if a specified Grand Exchange slot is available for a new offer.
+	 * <p>
+	 * A slot is considered available if its corresponding widget exists and the child widget
+	 * at index 2 is hidden (indicating the slot is free).
+	 *
+	 * @param slot the {@link GrandExchangeSlots} slot to check
+	 * @return {@code true} if the slot is available; {@code false} if the slot is occupied or the widget is missing
+	 */
 	public static boolean isSlotAvailable(GrandExchangeSlots slot)
 	{
 		Widget parent = GrandExchangeWidget.getSlot(slot);
@@ -719,6 +886,14 @@ public class Rs2GrandExchange
 			.toArray(GrandExchangeSlots[]::new);
 	}
 
+	/**
+	 * Checks if all Grand Exchange slots are currently empty (available).
+	 * <p>
+	 * This method counts the number of available slots and compares it to the maximum number of slots.
+	 * If all slots are available, it returns {@code true}.
+	 *
+	 * @return {@code true} if all Grand Exchange slots are empty; {@code false} otherwise
+	 */
 	public static boolean isAllSlotsEmpty()
 	{
 		return Arrays.stream(getAvailableSlots()).count() == getMaxSlots();
@@ -921,12 +1096,26 @@ public class Rs2GrandExchange
 
 	}
 
+	/**
+	 * Retrieves the first available Grand Exchange slot.
+	 * <p>
+	 * Returns {@code null} if no slots are available.
+	 *
+	 * @return the first available {@link GrandExchangeSlots} slot, or {@code null} if none are available
+	 */
 	public static GrandExchangeSlots getAvailableSlot()
 	{
 		GrandExchangeSlots[] result = getAvailableSlots();
 		return Arrays.stream(result).findFirst().orElse(null);
 	}
 
+	/**
+	 * Retrieves all currently available Grand Exchange slots.
+	 * <p>
+	 * Limits the search to the maximum number of slots as defined by {@link #getMaxSlots()}.
+	 *
+	 * @return an array of available {@link GrandExchangeSlots}
+	 */
 	public static GrandExchangeSlots[] getAvailableSlots()
 	{
 		int maxSlots = getMaxSlots();
