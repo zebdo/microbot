@@ -209,7 +209,7 @@ public class MicrobotPlugin extends Plugin
 	{
 		Field[] fields = net.runelite.api.gameval.InventoryID.class.getFields();
 		List<Integer> shopContainerIds = new ArrayList<>();
-		String[] keywords = { "shop", "store", "merchant", "bazaar", "stall", "trader", "supplies" };
+		String[] keywords = { "shop", "store", "merchant", "bazaar", "stall", "trader", "supplies", "seller" };
 
 		for (Field field : fields)
 		{
