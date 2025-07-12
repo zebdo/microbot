@@ -151,8 +151,8 @@ public class MicrobotMouseOverlay extends Overlay {
 			var pointArray = points.toArray(new Point[0]);
 			if (pointArray.length > 1)
 			{
-				Point firstPoint = points.peekFirst();
-				Point lastPoint = points.peekLast();
+				Point firstPoint = pointArray[0];
+				Point lastPoint = pointArray[pointArray.length - 1];
 
 				if (firstPoint != null && lastPoint != null)
 				{
