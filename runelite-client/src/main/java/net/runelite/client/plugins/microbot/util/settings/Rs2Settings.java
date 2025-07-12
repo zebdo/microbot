@@ -62,7 +62,10 @@ public class Rs2Settings
 			return false;
 		}
 
-		switchToSettingsTab("Controls");
+		if (!switchToSettingsTab("Controls"))
+		{
+			return false;
+		}
 		sleepGaussian(800, 100);
 		Widget widget = Rs2Widget.getWidget(SETTINGS_CLICKABLE);
 		if (widget == null)
@@ -104,7 +107,10 @@ public class Rs2Settings
 			return false;
 		}
 
-		switchToSettingsTab("Display");
+		if (!switchToSettingsTab("Display"))
+		{
+			return false;
+		}
 		sleepGaussian(800, 100);
 		Widget widget = Rs2Widget.getWidget(SETTINGS_CLICKABLE);
 		if (widget == null)
@@ -145,7 +151,10 @@ public class Rs2Settings
 		{
 			return false;
 		}
-		switchToSettingsTab("Interfaces");
+		if (!switchToSettingsTab("Interfaces"))
+		{
+			return false;
+		}
 		sleepGaussian(800, 100);
 		Widget widget = Rs2Widget.getWidget(SETTINGS_CLICKABLE);
 		if (widget == null)
@@ -241,12 +250,12 @@ public class Rs2Settings
 		return sleepUntil(() -> !Rs2Widget.isWidgetVisible(SETTINGS_INTERFACE));
 	}
 
-	private static void switchToSettingsTab(String tabName)
+	private static boolean switchToSettingsTab(String tabName)
 	{
 		Widget widget = Rs2Widget.getWidget(SETTINGS_CATEGORIES);
 		if (widget == null)
 		{
-			return;
+			return false;
 		}
 
 		Map<String, Integer> tabIndices = Map.of(
@@ -263,11 +272,12 @@ public class Rs2Settings
 		Integer index = tabIndices.get(tabName);
 		if (index == null)
 		{
-			return;
+			return false;
 		}
 
 		NewMenuEntry menuEntry = new NewMenuEntry("Select <col=ff981f> " + tabName, "", 1, MenuAction.CC_OP, index, widget.getId(), false);
 
 		Microbot.doInvoke(menuEntry, Rs2UiHelper.getDefaultRectangle());
+		return true;
 	}
 }
