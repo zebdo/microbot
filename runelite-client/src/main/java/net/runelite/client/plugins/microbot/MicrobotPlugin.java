@@ -197,7 +197,7 @@ public class MicrobotPlugin extends Plugin
 	 *
 	 * <p>This includes fields containing any of the following keywords
 	 * (case-insensitive): {@code "shop"}, {@code "store"}, {@code "merchant"},
-	 * {@code "bazaar"}, {@code "stall"}, {@code "trader"}, or {@code "supplies"}.
+	 * {@code "bazaar"}, {@code "stall"}, {@code "trader"}, {@code "supplies"}, or {@code "seller"}.
 	 *
 	 * <p>The method reflects over the public static integer fields in the
 	 * {@code InventoryID} class and collects those whose names match
