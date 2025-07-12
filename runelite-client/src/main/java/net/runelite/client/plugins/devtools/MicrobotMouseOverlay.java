@@ -147,7 +147,9 @@ public class MicrobotMouseOverlay extends Overlay {
             g.setStroke(new BasicStroke(3));
             //g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
             var points = Microbot.getMouse().getPoints();
-			if (points.size() > 1)
+			// create a snapshot of the points to avoid concurrent modification
+			var pointArray = points.toArray(new Point[0]);
+			if (pointArray.length > 1)
 			{
 				Point firstPoint = points.peekFirst();
 				Point lastPoint = points.peekLast();
@@ -158,8 +160,6 @@ public class MicrobotMouseOverlay extends Overlay {
 					Path2D path = new Path2D.Double();
 					path.moveTo(firstPoint.getX(), firstPoint.getY());
 
-					// create a snapshot of the points to avoid concurrent modification
-					Point[] pointArray = points.toArray(new Point[0]);
 					// For each intermediate pair of points, use a midpoint-based quadTo
 					for (int i = 1; i < pointArray.length - 2; i++)
 					{
@@ -199,4 +199,3 @@ public class MicrobotMouseOverlay extends Overlay {
         return null;
     }
 }
-
