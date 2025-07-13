@@ -44,7 +44,7 @@ public class WerewolfCourse implements AgilityCourseHandler {
                 new AgilityObstacleModel(ObjectID.WEREWOLF_HURDLE_MID, 3540, 9899, Operation.EQUAL, Operation.LESS),
                 new AgilityObstacleModel(ObjectID.WAA_PIPE, 3540, 9905, Operation.EQUAL, Operation.LESS),
                 new AgilityObstacleModel(ObjectID.WEREWOLF_SKULL_CLIMB_1, 3532, 9909, Operation.GREATER, Operation.GREATER),
-                new AgilityObstacleModel(ObjectID.WEREWOLF_SLIDE_CENTER, 3530, 9909, Operation.EQUAL, Operation.GREATER_EQUAL),
+                new AgilityObstacleModel(ObjectID.WEREWOLF_SLIDE_CENTER, 3528, 9909, Operation.GREATER_EQUAL, Operation.GREATER_EQUAL),
                 new AgilityObstacleModel(ObjectID.WEREWOLF_SLIDE_CENTER, 3538, 9898, Operation.LESS, Operation.LESS) // Helper step when we fail slide
         );
     }
@@ -114,7 +114,9 @@ public class WerewolfCourse implements AgilityCourseHandler {
                 if(Rs2Walker.walkTo(RESET_WORLD_POINT, 1))
                     return true;
                 else { // Login edge case where we end up in not defined walker area?
-                    var agilityBoss = Rs2Npc.getNpc(NpcID.WEREWOLF_TRAINER_START);
+                    if(Rs2Walker.walkTo(RESET_WORLD_POINT, 1)) // Try one more time
+                        return true;
+                    var agilityBoss = Rs2Npc.getNpc(NpcID.WEREWOLF_TRAINER_START); // Try clicking on NPC to move to right area?
                     if(agilityBoss != null) {
                         Rs2Npc.interact(agilityBoss);
                         return true;
@@ -141,7 +143,7 @@ public class WerewolfCourse implements AgilityCourseHandler {
     }
 
     public boolean handleSlide() {
-        if(matchingObject instanceof GameObject && matchingObject.getId() == ObjectID.WEREWOLF_SLIDE_CENTER) {
+        if(matchingObject instanceof GroundObject && matchingObject.getId() == ObjectID.WEREWOLF_SKULL_CLIMB_1) {
             if (Rs2Equipment.isWearing(EquipmentInventorySlot.HEAD)) {
                 var item = Rs2Equipment.get(EquipmentInventorySlot.HEAD);
                 if (item == null) return false;
@@ -161,7 +163,7 @@ public class WerewolfCourse implements AgilityCourseHandler {
             var slideFailed = matchingObject == null && matchingObstacle != null && matchingObstacle.getObjectID() == ObjectID.WEREWOLF_SLIDE_CENTER;
             if(obstacleCheck && (slideSuccess || slideFailed)) {
                 returnStick(playerWorldLocation);
-                Rs2Walker.walkTo(RESET_WORLD_POINT, 2);
+                Rs2Walker.walkTo(RESET_WORLD_POINT, 1);
                 return true;
             }
         }
