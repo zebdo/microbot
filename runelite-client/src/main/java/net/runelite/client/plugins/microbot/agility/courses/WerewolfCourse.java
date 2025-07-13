@@ -13,6 +13,7 @@ import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.misc.Operation;
+import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -111,10 +112,10 @@ public class WerewolfCourse implements AgilityCourseHandler {
                 if(playerWorldLocation.distanceTo(RESET_WORLD_POINT) <= 5)
                     return false;
                 // Try to walk in front of first stepping stone
-                if(Rs2Walker.walkTo(RESET_WORLD_POINT, 1))
+                if(Rs2Walker.walkTo(RESET_WORLD_POINT, 5))
                     return true;
                 else { // Login edge case where we end up in not defined walker area?
-                    if(Rs2Walker.walkTo(RESET_WORLD_POINT, 1)) // Try one more time
+                    if(Rs2Walker.walkTo(RESET_WORLD_POINT, 5)) // Try one more time
                         return true;
                     var agilityBoss = Rs2Npc.getNpc(NpcID.WEREWOLF_TRAINER_START); // Try clicking on NPC to move to right area?
                     if(agilityBoss != null) {
@@ -144,6 +145,9 @@ public class WerewolfCourse implements AgilityCourseHandler {
 
     public boolean handleSlide() {
         if(matchingObject instanceof GroundObject && matchingObject.getId() == ObjectID.WEREWOLF_SKULL_CLIMB_1) {
+            if(Rs2Player.getHealthPercentage() < 20 && Rs2Inventory.getInventoryFood().isEmpty()) {
+                Microbot.log("Using zipline may kill player at this point", Level.WARN);
+            }
             if (Rs2Equipment.isWearing(EquipmentInventorySlot.HEAD)) {
                 var item = Rs2Equipment.get(EquipmentInventorySlot.HEAD);
                 if (item == null) return false;
@@ -163,7 +167,11 @@ public class WerewolfCourse implements AgilityCourseHandler {
             var slideFailed = matchingObject == null && matchingObstacle != null && matchingObstacle.getObjectID() == ObjectID.WEREWOLF_SLIDE_CENTER;
             if(obstacleCheck && (slideSuccess || slideFailed)) {
                 returnStick(playerWorldLocation);
-                Rs2Walker.walkTo(RESET_WORLD_POINT, 1);
+                Rs2Walker.walkTo(RESET_WORLD_POINT, 5);
+                if(playerWorldLocation.getX() < RESET_WORLD_POINT.getX()) {
+                    Rs2Walker.walkFastCanvas(RESET_WORLD_POINT);
+                    Rs2Player.waitForWalking();
+                }
                 return true;
             }
         }
