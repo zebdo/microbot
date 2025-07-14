@@ -35,16 +35,8 @@ public class ThievingPlugin extends Plugin {
     private OverlayManager overlayManager;
     @Inject
     private ThievingOverlay thievingOverlay;
-
     @Inject
-<<<<<<< HEAD
     private ThievingScript thievingScript;
-=======
-    @Getter
-    ThievingScript thievingScript;
-    @Getter
-    public Instant startTime;
->>>>>>> 88dab5c0c6 (rework: add states machine and troubleshooting)
 
     public static String version = "1.6.6";
     private int startXp = 0;
@@ -84,8 +76,11 @@ public class ThievingPlugin extends Plugin {
 		}
 	}
 
-	public Duration getRunTime()
-	{
+	public Duration getRunTime() {
 		return thievingScript.getRunTime();
 	}
+
+    public String getState() {
+        return String.valueOf(thievingScript.currentState);
+    }
 }

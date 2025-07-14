@@ -1,8 +1,6 @@
 package net.runelite.client.plugins.microbot.thieving;
 
 import com.google.inject.Inject;
-import net.runelite.api.EquipmentInventorySlot;
-import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.ObjectComposition;

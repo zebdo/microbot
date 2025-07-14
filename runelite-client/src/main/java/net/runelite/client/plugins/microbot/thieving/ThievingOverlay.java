@@ -46,19 +46,14 @@ public class ThievingOverlay extends OverlayPanel {
             panelComponent.getChildren().add(
                     LineComponent.builder()
                             .left("STATE:")
-                            .right(String.valueOf(plugin.getThievingScript().currentState))
+                            .right(plugin.getState())
                             .build()
             );
 
             panelComponent.getChildren().add(
                     LineComponent.builder()
-<<<<<<< HEAD
-                            .left("RUNTIME")
-                            .right(getFormattedDuration(plugin.getRunTime()))
-=======
                             .left("RUNTIME:")
-                            .right(TimeUtils.getFormattedDurationBetween(plugin.getStartTime(), Instant.now()))
->>>>>>> 88dab5c0c6 (rework: add states machine and troubleshooting)
+                            .right(getFormattedDuration(plugin.getRunTime()))
                             .build()
             );
         } catch (Exception ex) {
