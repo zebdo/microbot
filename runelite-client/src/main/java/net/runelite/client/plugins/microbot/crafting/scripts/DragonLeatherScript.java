@@ -160,6 +160,11 @@ public class DragonLeatherScript extends Script implements ICraftingScript {
         DragonLeatherArmour armour = config.dragonLeatherType();
         Microbot.status = "Crafting " + armour.getName();
 
+        if (Rs2Bank.isOpen()) {
+            Rs2Bank.closeBank();
+            sleepUntil(() -> !Rs2Bank.isOpen(), 5000);
+        }
+
         if (lastCraftingXp <= 0) {
             lastCraftingXp = Microbot.getClient().getSkillExperience(Skill.CRAFTING);
         }
