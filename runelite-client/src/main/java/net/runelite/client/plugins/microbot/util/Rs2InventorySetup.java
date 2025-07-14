@@ -302,6 +302,11 @@ public class Rs2InventorySetup {
                     continue;
                 }
 
+				if (!Rs2Bank.hasItem(inventorySetupsItem.getName()) && !Rs2Inventory.hasItem(inventorySetupsItem.getName())){
+					Microbot.log("Missing "+inventorySetupsItem.getName() +"in the bank and inventory. Shutting down");
+					Microbot.pauseAllScripts.compareAndSet(false, true);
+				}
+
                 if (inventorySetupsItem.getQuantity() > 1) {
                     Rs2Bank.withdrawAllAndEquip(inventorySetupsItem.getName());
                 } else {
