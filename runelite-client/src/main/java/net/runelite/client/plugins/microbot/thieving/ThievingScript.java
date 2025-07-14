@@ -140,7 +140,6 @@ public class ThievingScript extends Script {
         boolean hasCosmic = Rs2Inventory.hasItem("Cosmic rune");
         boolean hasStaff = Rs2Equipment.isWearing("Lava battlestaff");
         boolean hasRunes = hasStaff || Rs2Inventory.hasItem("Earth rune", "Fire rune");
-        //boolean hasShadowReq = hasStaff || hasRunes;
 
         return hasFood && hasDodgy && hasCosmic && hasStaff && hasRunes;
     }
@@ -169,7 +168,6 @@ public class ThievingScript extends Script {
         if (config.useFood()) {
             if (Rs2Inventory.getInventoryFood().isEmpty()) {
                 openCoinPouches();
-                //bankAndEquip();
                 return false;
             }
             Rs2Player.eatAt(config.hitpoints());
@@ -329,15 +327,6 @@ public class ThievingScript extends Script {
         if (!opened || !Rs2Bank.isOpen()) return;
         Rs2Bank.depositAll();
 
-        boolean successDodgy = Rs2Bank.withdrawDeficit("Dodgy necklace", config.dodgyNecklaceAmount());
-        Rs2Inventory.waitForInventoryChanges(3000);
-
-        if (!successDodgy) {
-            Microbot.showMessage("No Dodgy necklace found in bank.");
-            shutdown();
-            return;
-        }
-
         boolean successfullyWithdrawFood = Rs2Bank.withdrawX(true, config.food().getName(), config.foodAmount(), true);
         Rs2Inventory.waitForInventoryChanges(3000);
 
@@ -347,9 +336,39 @@ public class ThievingScript extends Script {
             return;
         }
 
+        boolean foodWasEat = false;
+        if (config.eatFullHpBank()) {
+            while (!Rs2Player.isFullHealth() && Rs2Player.useFood()) {
+                Rs2Player.waitForAnimation();
+                foodWasEat = true;
+            }
+
+            if (foodWasEat) {
+                Set<String> keep = new HashSet<>();
+                Rs2Inventory.getInventoryFood().forEach(food -> keep.add(food.getName()));
+                Rs2Bank.depositAll(x -> !keep.contains(x.getName()));
+
+                int foodActual = Rs2Inventory.getInventoryFood().size();
+                int foodMiss = config.foodAmount() - foodActual;
+                if (foodMiss > 0) {
+                    Rs2Bank.withdrawX(false, config.food().getName(), foodMiss, true);
+                    Rs2Inventory.waitForInventoryChanges(3000);
+                }
+            }
+        }
+
+        boolean successDodgy = Rs2Bank.withdrawDeficit("Dodgy necklace", config.dodgyNecklaceAmount());
+        Rs2Inventory.waitForInventoryChanges(3000);
+
+        if (!successDodgy) {
+            Microbot.showMessage("No Dodgy necklace found in bank.");
+            shutdown();
+            return;
+        }
+
         if (config.shadowVeil()) {
             List<String> runesShadowVeil = Arrays.asList("Earth rune", "Fire rune"); 
-            boolean banklavaStaff = !Rs2Equipment.isWearing("Lava battlestaff") && !Rs2Inventory.contains("Lava battlestaff") && Rs2Bank.hasItem("Lava battlestaff");
+            boolean banklavaStaff = Rs2Equipment.isWearing("Lava battlestaff") || Rs2Inventory.contains("Lava battlestaff") || Rs2Bank.hasItem("Lava battlestaff");
             boolean bankrunes = banklavaStaff || Rs2Bank.hasItem(runesShadowVeil); 
             boolean bankcosmicRune = Rs2Bank.hasItem("Cosmic rune");
 
@@ -392,7 +411,7 @@ public class ThievingScript extends Script {
         if (config.DoNotDropItemList() != null && !config.DoNotDropItemList().isEmpty())
             keep.addAll(Arrays.asList(config.DoNotDropItemList().split(",")));
         Rs2Inventory.getInventoryFood().forEach(food -> keep.add(food.getName()));
-        keep.add("dodgy necklace"); keep.add("coins"); keep.add("book of the dead"); keep.add("drakan's medallion");
+        keep.add("dodgy necklace"); keep.add("coins"); keep.add("coin pouch"); keep.add("book of the dead"); keep.add("drakan's medallion");
         if (config.shadowVeil()) Collections.addAll(keep, "Fire rune", "Earth rune", "Cosmic rune");
         keep.addAll(VYRE_SET); keep.addAll(ROGUE_SET);
         Rs2Inventory.dropAllExcept(config.keepItemsAboveValue(), keep.toArray(new String[0]));
