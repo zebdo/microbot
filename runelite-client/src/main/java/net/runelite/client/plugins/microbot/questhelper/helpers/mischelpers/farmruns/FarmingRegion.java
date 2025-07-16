@@ -22,35 +22,46 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.herbrun;
+package net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns;
 
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
 @Getter
-public class FarmingRegion {
-    private final String name;
-    private final int regionID;
-    private final boolean definite;
-    private final FarmingPatch[] patches;
+public class FarmingRegion
+{
+	private final String name;
+	private final int regionID;
+	private final boolean definite;
+	private final FarmingPatch[] patches;
 
-    FarmingRegion(String name, int regionID, boolean definite, FarmingPatch... patches) {
-        this.name = name;
-        this.regionID = regionID;
-        this.definite = definite;
-        this.patches = patches;
-        for (FarmingPatch p : patches) {
-            p.setRegion(this);
-        }
-    }
+	FarmingRegion(String name, int regionID, boolean definite, FarmingPatch... patches)
+	{
+		this.name = name;
+		this.regionID = regionID;
+		this.definite = definite;
+		this.patches = patches;
+		for (FarmingPatch p : patches)
+		{
+			p.setRegion(this);
+		}
+	}
 
-    public boolean isInBounds(WorldPoint loc) {
-        return true;
-    }
+	/**
+	 * Check if the given WorldPoint is within this farming region
+	 * Primarily checks if the point is in the same region ID
+	 *
+	 * @param loc The WorldPoint to check
+	 * @return true if the point is within this farming region
+	 */
+	public boolean isInBounds(WorldPoint loc)
+	{
+		return loc.getRegionID() == regionID;
+	}
 
-    @Override
-    public String toString() {
-        return name;
-    }
+	@Override
+	public String toString()
+	{
+		return name;
+	}
 }
-

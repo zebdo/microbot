@@ -22,48 +22,21 @@
  *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.herbrun;
+package net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns;
 
-import lombok.AccessLevel;
 import lombok.Getter;
-import lombok.Setter;
-import lombok.ToString;
-import net.runelite.api.annotations.Varbit;
+import lombok.RequiredArgsConstructor;
 
+@RequiredArgsConstructor
 @Getter
-public class FarmingPatch {
-    @ToString.Include
-    private final String name;
-    @Getter(onMethod_ = {@Varbit})
-    private final int varbit;
-    @ToString.Include
-    private final PatchImplementation implementation;
-    private final int patchNumber;
-    @Setter(AccessLevel.PACKAGE)
-    @ToString.Include
-    private FarmingRegion region;
-    private int farmer = -1;
-
-    FarmingPatch(String name, @Varbit int varbit, PatchImplementation implementation) {
-        this(name, varbit, implementation, -1);
-    }
-
-
-    FarmingPatch(String name, @Varbit int varbit, PatchImplementation implementation, int farmer) {
-        this(name, varbit, implementation, farmer, -1);
-    }
-
-
-    FarmingPatch(String name, @Varbit int varbit, PatchImplementation implementation, int farmer, int patchNumber) {
-        this.name = name;
-        this.varbit = varbit;
-        this.implementation = implementation;
-        this.farmer = farmer;
-        this.patchNumber = patchNumber;
-    }
-
-    String configKey() {
-        return region.getRegionID() + "." + varbit;
-    }
+public enum CropState
+{
+	HARVESTABLE(), // Ready for checking
+	UNCHECKED(),
+	STUMP(), // Cut down
+	GROWING(),
+	DISEASED(),
+	DEAD(),
+	EMPTY(),
+	FILLING();
 }
-
