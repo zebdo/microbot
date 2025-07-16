@@ -6,6 +6,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.qualityoflife.QoLPlugin;
 import net.runelite.client.plugins.microbot.qualityoflife.QoLScript;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
@@ -73,7 +74,6 @@ public class DemonicGorillaScript extends Script {
     private Rs2InventorySetup rangeGear = null;
     private Rs2InventorySetup magicGear = null;
     private Rs2InventorySetup meleeGear = null;
-    private boolean isQoLEnabled = false;
 
     {
         Microbot.enableAutoRunOn = false;
@@ -146,7 +146,11 @@ public class DemonicGorillaScript extends Script {
         rangeGear = new Rs2InventorySetup(config.rangeGear(), mainScheduledFuture);
         magicGear = new Rs2InventorySetup(config.magicGear(), mainScheduledFuture);
         meleeGear = new Rs2InventorySetup(config.meleeGear(), mainScheduledFuture);
-        isQoLEnabled = Microbot.getActiveScripts().stream().anyMatch(x -> x instanceof QoLScript);
+        var isQoLEnabled = Microbot.getActiveScripts().stream().anyMatch(x -> x instanceof QoLScript);
+        if (isQoLEnabled) {
+            Microbot.log("QoL script interferes with banking when using inventory setups, disabling QoL.");
+            Microbot.stopPlugin(QoLPlugin.class);
+        }
     }
 
     private void handleTravel(DemonicGorillaConfig config) {
@@ -181,26 +185,24 @@ public class DemonicGorillaScript extends Script {
                 boolean inventoryLoaded = inventorySetup.loadInventory();
 
                 if (equipmentLoaded && inventoryLoaded) {
-                    if (!isQoLEnabled) {
-                        var ate = false;
-                        boolean ateFood = false;
-                        boolean drankPrayerPot = false;
-                        while (Rs2Player.getHealthPercentage() < 70 || ateFood || drankPrayerPot) {
-                            ateFood = Rs2Player.eatAt(80);
-                            drankPrayerPot = Rs2Player.drinkPrayerPotionAt(config.minEatPercent());
-                            ate = true;
-                            sleep(1200);
-                            if (!isRunning || !this.isRunning()) {
-                                break;
-                            }
-                            Microbot.log("Eating food or drinking prayer potion before going to gorillas.");
-                            if (Rs2Player.getHealthPercentage() > 70) {
-                                break;
-                            }
+                    var ate = false;
+                    boolean ateFood = false;
+                    boolean drankPrayerPot = false;
+                    while (Rs2Player.getHealthPercentage() < 70 || ateFood || drankPrayerPot) {
+                        ateFood = Rs2Player.eatAt(80);
+                        drankPrayerPot = Rs2Player.drinkPrayerPotionAt(config.minEatPercent());
+                        ate = true;
+                        sleep(1200);
+                        if (!isRunning || !this.isRunning()) {
+                            break;
                         }
-                        if (ate) {
-                            inventorySetup.loadInventory();
+                        Microbot.log("Eating food or drinking prayer potion before going to gorillas.");
+                        if (Rs2Player.getHealthPercentage() > 70) {
+                            break;
                         }
+                    }
+                    if (ate) {
+                        inventorySetup.loadInventory();
                     }
                     Rs2Bank.closeBank();
                     bankingStep = BankingStep.BANK;
