@@ -61,7 +61,7 @@ public class Rs2Inventory {
     private static final int COLUMNS = 4;
     private static final int ROWS = 7;
     private static final int CAPACITY = COLUMNS * ROWS;
-    private static final Object[] EMPTY_ARRAY = new Object[0];
+    private static final String[] EMPTY_ARRAY = new String[0];
 
     private static List<Rs2ItemModel> inventoryItems = Collections.emptyList();
 
@@ -562,7 +562,7 @@ public class Rs2Inventory {
      * @return
      */
     public static boolean dropAllExcept(int gpValue) {
-        return dropAllExcept(gpValue, (String[]) EMPTY_ARRAY);
+        return dropAllExcept(gpValue, EMPTY_ARRAY);
     }
 
     /**
@@ -691,7 +691,7 @@ public class Rs2Inventory {
      * @return The item with one of the specified names, or null if not found.
      */
     public static Rs2ItemModel get(String... names) {
-        return get(item -> Arrays.stream(names).anyMatch(n -> n.equalsIgnoreCase(item.getName())));
+        return get(names, false);
     }
 
     /**
@@ -703,11 +703,8 @@ public class Rs2Inventory {
      * @return The item with one of the specified names, or null if not found.
      */
     public static Rs2ItemModel get(String[] names, boolean exact) {
-        if (exact) {
-            return get(item -> Arrays.stream(names).anyMatch(n -> n.equalsIgnoreCase(item.getName())));
-        } else {
-            return get(item -> Arrays.stream(names).anyMatch(n -> n.toLowerCase().contains(item.getName().split("\\(")[0].toLowerCase())));
-        }
+        return get(exact ? item -> Arrays.stream(names).anyMatch(name -> name.equalsIgnoreCase(item.getName())) :
+                item -> Arrays.stream(names).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase())));
     }
 
     /**
@@ -853,6 +850,10 @@ public class Rs2Inventory {
         return get(names) != null;
     }
 
+    public static boolean hasItem(String[] names, boolean exact) {
+        return get(names, exact) != null;
+    }
+
     /**
      * @param name
      *
@@ -872,7 +873,7 @@ public class Rs2Inventory {
     public static String[] getActionsForSlot(int slot) {
         return items(x -> x.getSlot() == slot)
                 .map(Rs2ItemModel::getInventoryActions)
-                .findFirst().orElse((String[]) EMPTY_ARRAY);
+                .findFirst().orElse(EMPTY_ARRAY);
     }
 
 	/**

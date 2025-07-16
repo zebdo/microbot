@@ -4,17 +4,15 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Varbits;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
@@ -184,7 +182,8 @@ public class Rs2InventorySetup {
                 || lowerCaseName.contains("ahrim's")
                 || lowerCaseName.contains("guthan's")
                 || lowerCaseName.contains("torag's")
-                || lowerCaseName.contains("verac's"));
+                || lowerCaseName.contains("verac's")
+				|| lowerCaseName.contains("karil's"));
         return isBarrowsItem;
     }
 
@@ -270,7 +269,7 @@ public class Rs2InventorySetup {
             Check if we have extra equipment already equipped before attempting to gear
             For example, player is wearing full graceful set but your desired inventory setup does not contain boots, keeping the graceful boots equipped
          */
-        boolean hasExtraGearEquipped = Rs2Equipment.contains(equip ->
+        boolean hasExtraGearEquipped = Rs2Equipment.isWearing(equip ->
                 inventorySetup.getEquipment().stream().noneMatch(setup -> setup.isFuzzy() ?
 					equip.getName().toLowerCase().contains(setup.getName().toLowerCase()) :
 					equip.getName().equalsIgnoreCase(setup.getName()))
@@ -303,6 +302,11 @@ public class Rs2InventorySetup {
                     continue;
                 }
 
+				if (!Rs2Bank.hasItem(inventorySetupsItem.getName()) && !Rs2Inventory.hasItem(inventorySetupsItem.getName())){
+					Microbot.log("Missing "+inventorySetupsItem.getName() +"in the bank and inventory. Shutting down");
+					Microbot.pauseAllScripts.compareAndSet(false, true);
+				}
+
                 if (inventorySetupsItem.getQuantity() > 1) {
                     Rs2Bank.withdrawAllAndEquip(inventorySetupsItem.getName());
                 } else {
@@ -311,8 +315,10 @@ public class Rs2InventorySetup {
 
 				sleepUntil(() -> Rs2Equipment.isWearing(inventorySetupsItem.getName()));
             } else {
-                if (!Rs2Bank.hasItem(inventorySetupsItem.getName()) && !Rs2Inventory.hasItem(inventorySetupsItem.getName()))
-                    continue;
+                if (!Rs2Bank.hasItem(inventorySetupsItem.getName()) && !Rs2Inventory.hasItem(inventorySetupsItem.getName())){
+					Microbot.log("Missing "+inventorySetupsItem.getName() +"in the bank and inventory. Shutting down");
+					Microbot.pauseAllScripts.compareAndSet(false, true);
+				}
 
                 if (Rs2Inventory.hasItem(inventorySetupsItem.getName())) {
                     Rs2Bank.wearItem(inventorySetupsItem.getName());
@@ -449,16 +455,16 @@ public class Rs2InventorySetup {
         }
         for (InventorySetupsItem inventorySetupsItem : inventorySetup.getEquipment()) {
             if (inventorySetupsItem.getId() == -1) continue;
-            if (inventorySetupsItem.isFuzzy()) {
+            if (inventorySetupsItem.isFuzzy() || isBarrowsItem(inventorySetupsItem.getName())) {
                 if (!Rs2Equipment.isWearing(inventorySetupsItem.getName(), false)) {
                     Microbot.log("Missing item " + inventorySetupsItem.getName(), Level.WARN);
                     return false;
                 }
             } else {
-                if (!Rs2Equipment.isWearing(inventorySetupsItem.getName(), true)) {
-                    Microbot.log("Missing item " + inventorySetupsItem.getName(), Level.WARN);
-                    return false;
-                }
+				if (!Rs2Equipment.isWearing(inventorySetupsItem.getName(), true)) {
+					Microbot.log("Missing item " + inventorySetupsItem.getName(), Level.WARN);
+					return false;
+				}
             }
         }
         return true;
@@ -519,7 +525,7 @@ public class Rs2InventorySetup {
      * @return true if the current spellbook matches the setup, false otherwise.
      */
     public boolean hasSpellBook() {
-        return inventorySetup.getSpellBook() == Microbot.getVarbitValue(Varbits.SPELLBOOK);
+        return inventorySetup.getSpellBook() == Microbot.getVarbitValue(VarbitID.SPELLBOOK);
     }
 
 	/**

@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -30,13 +28,16 @@ import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
 import javax.swing.Timer;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.annotations.Component;
+import net.runelite.api.annotations.Varbit;
+import net.runelite.api.annotations.Varp;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetModalMode;
 import net.runelite.client.Notifier;
@@ -65,6 +66,7 @@ import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchScr
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntilNotNull;
+
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -80,16 +82,9 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.WorldUtil;
 import net.runelite.http.api.worlds.World;
 import org.slf4j.event.Level;
-
 @Slf4j
-public class Microbot
-{
-
-	public Microbot()
-	{
-		// Empty Constructor for static class
-	}
-
+@NoArgsConstructor
+public class Microbot {
 	//Version path used to load the client faster when developing by checking version number
 	//If the version is the same as the current version we do not download the latest .jar
 	//Resulting in a faster startup
@@ -170,7 +165,7 @@ public class Microbot
 	private static ScheduledFuture<?> xpSchedulorFuture;
 	private static net.runelite.api.World quickHopTargetWorld;
 	/**
-	 * Pouchscript is injected in the main MicrobotPlugin as it's being used in multiple scripts
+	 * PouchScript is injected in the main MicrobotPlugin as it's being used in multiple scripts
 	 */
 	@Getter
 	@Inject
@@ -198,7 +193,7 @@ public class Microbot
 	/**
 	 * Get the total runtime of the script
 	 *
-	 * @return
+	 * @return the {@link Duration} the account has been logged in
 	 */
 	public static Duration getLoginTime()
 	{
@@ -224,14 +219,14 @@ public class Microbot
 			getInputArguments().toString().contains("-agentlib:jdwp");
 	}
 
-	public static int getVarbitValue(int varbit)
+	public static int getVarbitValue(@Varbit int varbit)
 	{
 		return getClientThread().runOnClientThreadOptional(() -> getClient().getVarbitValue(varbit)).orElse(0);
 	}
 
-	public static int getVarbitPlayerValue(int varbit)
+	public static int getVarbitPlayerValue(@Varp int varpId)
 	{
-		return getClientThread().runOnClientThreadOptional(() -> getClient().getVarpValue(varbit)).orElse(0);
+		return getClientThread().runOnClientThreadOptional(() -> getClient().getVarpValue(varpId)).orElse(0);
 	}
 
 	public static EnumComposition getEnum(int id)
@@ -321,6 +316,8 @@ public class Microbot
 				return false;
 			}
 			final net.runelite.api.World rsWorld = Microbot.getClient().createWorld();
+			if (rsWorld == null) return false;
+
 			quickHopTargetWorld = rsWorld;
 			rsWorld.setActivity(newWorld.getActivity());
 			rsWorld.setAddress(newWorld.getAddress());
@@ -328,10 +325,7 @@ public class Microbot
 			rsWorld.setPlayerCount(newWorld.getPlayers());
 			rsWorld.setLocation(newWorld.getLocation());
 			rsWorld.setTypes(WorldUtil.toWorldTypes(newWorld.getTypes()));
-			if (rsWorld == null)
-			{
-				return false;
-			}
+
 			Microbot.getClient().openWorldHopper();
 			Microbot.getClient().hopToWorld(rsWorld);
 			quickHopTargetWorld = null;
@@ -352,15 +346,20 @@ public class Microbot
 	{
 		try
 		{
-			SwingUtilities.invokeAndWait(() ->
+			Runnable messageRunnable = () ->
 			{
 				JOptionPane.showConfirmDialog(null, message, "Message",
 					JOptionPane.DEFAULT_OPTION);
-			});
+			};
+			if (SwingUtilities.isEventDispatchThread()) {
+				messageRunnable.run();
+			} else {
+				SwingUtilities.invokeAndWait(messageRunnable);
+			}
 		}
 		catch (Exception ex)
 		{
-			ex.printStackTrace();
+			log.error("Error displaying message {}:", message, ex);
 		}
 	}
 
@@ -368,31 +367,28 @@ public class Microbot
 	{
 		try
 		{
-			SwingUtilities.invokeAndWait(() -> {
-				final JOptionPane optionPane = new JOptionPane(
-					message,
-					JOptionPane.INFORMATION_MESSAGE,
-					JOptionPane.DEFAULT_OPTION
-				);
-
-				final JDialog dialog = optionPane.createDialog("Message");
-
-				// Set up timer to close the dialog after 10 seconds
-				Timer timer = new Timer(disposeTime, e -> {
-					dialog.dispose();
-				});
+			Runnable messageRunnable = () ->
+			{
+				JOptionPane pane = new JOptionPane(message, JOptionPane.INFORMATION_MESSAGE);
+				JDialog dialog = pane.createDialog("Message");
+				dialog.setModal(false);
+				dialog.setVisible(true);
+				Timer timer = new Timer(disposeTime, e -> dialog.dispose());
 				timer.setRepeats(false);
 				timer.start();
-				dialog.setVisible(true);
-				timer.stop();
-			});
+
+			};
+			if (SwingUtilities.isEventDispatchThread()) {
+				messageRunnable.run();
+			} else {
+				SwingUtilities.invokeAndWait(messageRunnable);
+			}
 		}
 		catch (Exception ex)
 		{
-			ex.printStackTrace();
+			log.error("Error displaying message {}:", message, ex);
 		}
 	}
-
 
 	public static List<Rs2ItemModel> updateItemContainer(int id, ItemContainerChanged e)
 	{
@@ -422,32 +418,52 @@ public class Microbot
 		return null;
 	}
 
+	@SneakyThrows
+	@SuppressWarnings("SpellCheckingInspection")
+	private static boolean togglePlugin(Plugin plugin, boolean enable) {
+		if (plugin == null) return false;
+		final AtomicBoolean success = new AtomicBoolean(false);
+		Runnable runnable = () -> {
+        	try {
+				getPluginManager().setPluginEnabled(plugin, enable);
+				if (enable) {
+					success.set(getPluginManager().startPlugin(plugin));
+					getPluginManager().startPlugins();
+				} else {
+					success.set(getPluginManager().stopPlugin(plugin));
+				}
+			} catch (PluginInstantiationException ex) {
+				log.error("Error {}abling plugin ({}):", enable ? "en" : "dis", plugin.getClass().getSimpleName(), ex);
+			}
+		};
+
+		if (SwingUtilities.isEventDispatchThread()) {
+			runnable.run();
+		} else {
+			// Ensure the runnable is executed on the Event Dispatch Thread
+			// This is necessary for Swing components and plugin management
+			SwingUtilities.invokeLater(runnable);
+		}
+
+		return success.get();
+	}
+
 	/**
 	 * Starts the specified plugin by enabling it and starting all plugins in the plugin manager.
 	 * This method checks if the provided plugin is non-null before proceeding.
 	 *
 	 * @param plugin the plugin to be started.
 	 */
-	@SneakyThrows
-	public static void startPlugin(Plugin plugin)
-	{
-		if (plugin == null)
-		{
-			return;
-		}
-		SwingUtilities.invokeAndWait(() ->
-		{
-			try
-			{
-				getPluginManager().setPluginEnabled(plugin, true);
-				getPluginManager().startPlugin(plugin);
-				getPluginManager().startPlugins();
-			}
-			catch (Exception e)
-			{
-				e.printStackTrace();
-			}
-		});
+	public static boolean startPlugin(Plugin plugin) {
+		return togglePlugin(plugin, true);
+	}
+
+	public static boolean startPlugin(Class<? extends Plugin> clazz) {
+		return startPlugin(getPlugin(clazz));
+	}
+
+	public static boolean startPlugin(String className) {
+		return startPlugin(getPlugin(className));
 	}
 
 	/**
@@ -458,12 +474,16 @@ public class Microbot
 	 *                  For example: {@code BreakHandlerPlugin.getClass().getName()}.
 	 * @return the plugin instance matching the specified class name, or {@code null} if no such plugin is found.
 	 */
-	public static Plugin getPlugin(String className)
-	{
+	public static Plugin getPlugin(String className) {
 		return getPluginManager().getPlugins().stream()
 			.filter(plugin -> plugin.getClass().getName().equals(className))
-			.findFirst()
-			.orElse(null);
+			.findFirst().orElse(null);
+	}
+
+	public static <T extends Plugin> T getPlugin(Class<T> clazz) {
+		return getPluginManager().getPlugins().stream()
+				.filter(plugin -> plugin.getClass() == clazz)
+				.map(clazz::cast).findFirst().orElse(null);
 	}
 
 	/**
@@ -472,26 +492,16 @@ public class Microbot
 	 *
 	 * @param plugin the plugin to be stopped.
 	 */
-	@SneakyThrows
-	public static void stopPlugin(Plugin plugin)
-	{
-		if (plugin == null)
-		{
-			return;
-		}
-		SwingUtilities.invokeAndWait(() ->
-		{
-			try
-			{
-				getPluginManager().setPluginEnabled(plugin, false);
-				getPluginManager().stopPlugin(plugin);
-				//getPluginManager().startPlugins();
-			}
-			catch (PluginInstantiationException e)
-			{
-				e.printStackTrace();
-			}
-		});
+	public static boolean stopPlugin(Plugin plugin) {
+		return togglePlugin(plugin, false);
+	}
+
+	public static boolean stopPlugin(Class<? extends Plugin> clazz) {
+		return stopPlugin(getPlugin(clazz));
+	}
+
+	public static boolean stopPlugin(String className) {
+		return stopPlugin(getPlugin(className));
 	}
 
 	public static void doInvoke(NewMenuEntry entry, Rectangle rectangle)
@@ -507,9 +517,9 @@ public class Microbot
 				click(new Rectangle(1, 1), entry);
 			}
 		}
-		catch (ArrayIndexOutOfBoundsException e)
+		catch (ArrayIndexOutOfBoundsException ex)
 		{
-			e.printStackTrace();
+			log.error("Error during doInvoke", ex);
 			// Handle the error as needed
 		}
 	}
@@ -614,12 +624,12 @@ public class Microbot
 	/**
 	 * Logs the stack trace of an exception to the console and chat.
 	 *
-	 * @param scriptName
-	 * @param e
+	 * @param scriptName the name of the script where the exception occurred
+	 * @param ex the exception
 	 */
-	public static void logStackTrace(String scriptName, Exception e)
+	public static void logStackTrace(String scriptName, Exception ex)
 	{
-		log(scriptName, Level.ERROR, e);
+		log(scriptName, Level.ERROR, ex);
 	}
 
 	public static void log(String message)
@@ -675,23 +685,6 @@ public class Microbot
 				log.info(message);
 				break;
 		}
-
-		if (Microbot.isLoggedIn())
-		{
-			if (level == Level.DEBUG && !isDebug())
-			{
-				return;
-			}
-
-			final String _message = ex == null ? message : ex.getMessage();
-
-			LocalTime currentTime = LocalTime.now();
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-			String formattedTime = currentTime.format(formatter);
-			Microbot.getClientThread().runOnClientThreadOptional(() ->
-				Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "[" + formattedTime + "]: " + _message, "", false)
-			);
-		}
 	}
 
 	/**
@@ -728,7 +721,7 @@ public class Microbot
 
 			// Schedule a task to check the widget's state and close the interface if necessary
 			getClientThread().invokeLater(() -> {
-				Widget w = getClient().getWidget(660, 1);
+				Widget w = getClient().getWidget(InterfaceID.NOTIFICATION_DISPLAY, 1);
 				if (w == null || w.getWidth() > 0)
 				{
 					return false; // Exit if the widget is null or already displayed
@@ -741,24 +734,16 @@ public class Microbot
 		});
 	}
 
-	private static boolean isPluginEnabled(String name)
-	{
-		Plugin dashboard = Microbot.getPluginManager().getPlugins().stream()
-			.filter(x -> x.getClass().getName().equals(name))
-			.findFirst()
-			.orElse(null);
-
-		if (dashboard == null)
-		{
-			return false;
-		}
-
-		return Microbot.getPluginManager().isPluginEnabled(dashboard);
+	public static boolean isPluginEnabled(Plugin plugin) {
+		return plugin != null && Microbot.getPluginManager().isPluginEnabled(plugin);
 	}
 
-	public static boolean isPluginEnabled(Class<?> c)
-	{
-		return isPluginEnabled(c.getName());
+	public static boolean isPluginEnabled(Class<? extends Plugin> clazz) {
+		return isPluginEnabled(getPlugin(clazz));
+	}
+
+	private static boolean isPluginEnabled(String name) {
+		return isPluginEnabled(getPlugin(name));
 	}
 
 	@Deprecated(since = "1.6.2 - Use Rs2Player variant")
@@ -819,8 +804,7 @@ public class Microbot
 			}
 			catch (Exception ex)
 			{
-				ex.printStackTrace();
-				System.out.println(ex.getMessage());
+				log.error("Error while checking should download vanilla client:", ex);
 			}
 		}
 		return false;
@@ -891,9 +875,9 @@ public class Microbot
 						{
 							return (Script) field.get(x); // Map the field to a Script instance
 						}
-						catch (IllegalAccessException e)
+						catch (IllegalAccessException ex)
 						{
-							e.printStackTrace();
+							log.error("Error getting active scripts", ex);
 							return null; // Handle exception if field cannot be accessed
 						}
 					});

@@ -107,17 +107,12 @@ public class revKillerScript extends Script {
                 if(shouldFlee){
                     if(weDied){
                         shouldFlee = false;
+                        Rs2Walker.setTarget(null);
                     }
                     return;
                 }
 
-                if(!Rs2InventorySetup.isInventorySetup("Revs")){
-                    Microbot.showMessage("Please create an inventory setup named Revs");
-                    shutdown();
-                    return;
-                }
-
-                var inventorySetup = new Rs2InventorySetup("Revs", mainScheduledFuture);
+                var inventorySetup = new Rs2InventorySetup(config.inventorySetup().getName(), mainScheduledFuture);
 
                 if(firstRun || weDied) {
                     if (!inventorySetup.doesEquipmentMatch()) {
@@ -236,6 +231,10 @@ public class revKillerScript extends Script {
         WorldPoint jammedTile = new WorldPoint(3244,10224,0);
 
         Rs2Walker.setTarget(null);
+
+        if(shouldFlee){
+            return;
+        }
 
         if(Rs2Player.getWorldLocation().equals(fifthTile)){
             if(weAreInCombat()) {
@@ -572,10 +571,17 @@ public class revKillerScript extends Script {
             return;
         }
 
-        if(Rs2Combat.inCombat() && Microbot.isLoggedIn()) {
-            getAwayFromPker();
+        if(Rs2Player.isInCombat()) {
+            if (isPkerAround() && Microbot.isLoggedIn()) {
+                getAwayFromPker();
+                shouldFlee = false;
+                return;
+            }
         }
+
+
         shouldFlee = false;
+        Rs2Walker.setTarget(null);
     }
 
     public void logBackIn(){
@@ -611,6 +617,9 @@ public class revKillerScript extends Script {
                     if (!super.isRunning()) {
                         break;
                     }
+                    if(!shouldFlee){
+                        break;
+                    }
                     Microbot.log("Walking to below");
                     WorldPoint safe1 = (new WorldPoint(3199, 10071, 0));
                     WorldPoint safe2 = (new WorldPoint(3226, 10067, 0));
@@ -632,6 +641,9 @@ public class revKillerScript extends Script {
                 while (Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) >= 20 && Rs2Pvp.getWildernessLevelFrom(Rs2Player.getWorldLocation()) <= 30) {
                     Microbot.log("Attempting to teleport via glory");
                     if (!super.isRunning()) {
+                        break;
+                    }
+                    if(!shouldFlee){
                         break;
                     }
                     if (Rs2Equipment.interact(EquipmentInventorySlot.AMULET, "Edgeville")) {
@@ -661,6 +673,9 @@ public class revKillerScript extends Script {
                     if (!super.isRunning()) {
                         break;
                     }
+                    if(!shouldFlee){
+                        break;
+                    }
                     if (Rs2Equipment.interact(EquipmentInventorySlot.RING, "Ferox Enclave")) {
                         sleepUntil(()-> TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(250,500));
                         sleepUntil(()-> !TeleTimerIsThere() || Rs2Player.getAnimation() == 714,generateRandomNumber(1300,1500));
@@ -687,6 +702,7 @@ public class revKillerScript extends Script {
             Rs2Walker.walkTo(BankLocation.FEROX_ENCLAVE.getWorldPoint());
             Rs2Prayer.disableAllPrayers();
             shouldFlee = false;
+            Rs2Walker.setTarget(null);
         }
     }
 
@@ -787,12 +803,12 @@ public class revKillerScript extends Script {
     public void futurePKCheck(){
         try {
             if(!selectedRev.contains("Knight")) {
-                if (isPkerAround()) {
+                if (isPkerAround() && !shouldFlee) {
                     shouldFlee = true;
                     getAwayFromPker();
                 }
             } else {
-                if (isPkerAround()) {
+                if (isPkerAround() && !shouldFlee) {
                     shouldFlee = true;
                     getAwayFromPkerKnight();
                 }
@@ -1099,7 +1115,7 @@ public class revKillerScript extends Script {
                                     if(Rs2Equipment.get(EquipmentInventorySlot.GLOVES)!=null){
                                         //we need to unequip our braclet.
                                         Rs2Equipment.unEquip(EquipmentInventorySlot.GLOVES);
-                                        sleepUntil(()-> !Rs2Equipment.contains(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM_UNCHARGED), Rs2Random.between(2000,4000));
+                                        sleepUntil(()-> !Rs2Equipment.isWearing(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM_UNCHARGED), Rs2Random.between(2000,4000));
                                     }
                                     if(Rs2Inventory.contains("Revenant ether") && (Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM) || Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM_UNCHARGED))){
                                         Rs2Inventory.interact("Revenant ether", "use");
@@ -1108,7 +1124,7 @@ public class revKillerScript extends Script {
                                     }
                                     if(!Rs2Inventory.contains("Revenant ether") && (Rs2Inventory.contains(ItemID.BRACELET_OF_ETHEREUM))){
                                         Rs2Inventory.interact(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM, "Wear");
-                                        sleepUntil(()-> Rs2Equipment.contains(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM), Rs2Random.between(2000,4000));
+                                        sleepUntil(()-> Rs2Equipment.isWearing(it->it!=null&&it.getId() == ItemID.BRACELET_OF_ETHEREUM), Rs2Random.between(2000,4000));
                                     }
                                 }
                             }
@@ -1119,10 +1135,11 @@ public class revKillerScript extends Script {
 
             howtobank = generateRandomNumber(0,100);
             //equip arrows
-            if(howtobank <= 40){
+            if(howtobank <= 60){
+                Microbot.log("Grabbing ammo");
                 if(Rs2Equipment.get(EquipmentInventorySlot.AMMO) == null || Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity() < LowOnArrowsCount){
                     if(Rs2Bank.count(selectedArrow)>100){
-                        if(!Rs2Inventory.contains(selectedArrow)||Rs2Equipment.get(EquipmentInventorySlot.AMMO) == null || Rs2Inventory.get(selectedArrow).getQuantity() < LowOnArrowsCount){
+                        if(!Rs2Inventory.contains(selectedArrow)){
                             int min = 250;
                             int max = 300;
                             if(selectedArrow == ItemID.BOLT_RACK){
@@ -1133,10 +1150,7 @@ public class revKillerScript extends Script {
                                     super.shutdown();
                                 }
                             }
-                            int amt = (generateRandomNumber(min,max)-Rs2Equipment.get(EquipmentInventorySlot.AMMO).getQuantity());
-                            if(amt <= 0){
-                                amt=generateRandomNumber(min,max);
-                            }
+                            int amt = (generateRandomNumber(min,max));
                             if(Rs2Bank.withdrawX(selectedArrow, amt)){
                                 sleepUntil(()-> Rs2Inventory.contains(selectedArrow), generateRandomNumber(5000,15000));
                             }
