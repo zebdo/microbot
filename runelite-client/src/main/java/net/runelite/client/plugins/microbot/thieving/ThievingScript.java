@@ -24,7 +24,7 @@ import java.util.concurrent.TimeUnit;
 
 public class ThievingScript extends Script {
     private final ThievingConfig config;
-	private final ThievingPlugin plugin;
+    private final ThievingPlugin plugin;
     private static final int DARKMEYER_REGION = 14388;
     private enum State {IDLE, BANK, PICKPOCKET}
     public State currentState = State.IDLE;
@@ -67,12 +67,12 @@ public class ThievingScript extends Script {
         // add more...
     );
 
-	@Inject
-	public ThievingScript(final ThievingConfig config, final ThievingPlugin plugin)
-	{
-		this.config = config;
-		this.plugin = plugin;
-	}
+    @Inject
+    public ThievingScript(final ThievingConfig config, final ThievingPlugin plugin)
+    {
+        this.config = config;
+        this.plugin = plugin;
+    }
 
     public boolean run() {
         Microbot.isCantReachTargetDetectionEnabled = true;
@@ -135,11 +135,15 @@ public class ThievingScript extends Script {
     private boolean hasReqs() {
         boolean hasFood = Rs2Inventory.getInventoryFood().size() >= config.foodAmount();
         boolean hasDodgy = Rs2Inventory.hasItem("Dodgy necklace");
-        boolean hasCosmic = Rs2Inventory.hasItem("Cosmic rune");
-        boolean hasStaff = Rs2Equipment.isWearing("Lava battlestaff");
-        boolean hasRunes = hasStaff || Rs2Inventory.hasItem("Earth rune", "Fire rune");
 
-        return hasFood && hasDodgy && hasCosmic && hasStaff && hasRunes;
+        if (config.shadowVeil()) {
+            boolean hasCosmic = Rs2Inventory.hasItem("Cosmic rune");
+            boolean hasStaff = Rs2Equipment.isWearing("Lava battlestaff");
+            boolean hasRunes = hasStaff || Rs2Inventory.hasItem("Earth rune", "Fire rune");
+            return hasFood && hasDodgy && hasCosmic && hasRunes;
+        }
+
+        return hasFood && hasDodgy;
     }
 
     private boolean isPointInPolygon(WorldPoint[] polygon, WorldPoint point) {
@@ -367,11 +371,11 @@ public class ThievingScript extends Script {
         if (config.shadowVeil()) {
             List<String> runesShadowVeil = Arrays.asList("Earth rune", "Fire rune"); 
             boolean banklavaStaff = Rs2Equipment.isWearing("Lava battlestaff") || Rs2Inventory.contains("Lava battlestaff") || Rs2Bank.hasItem("Lava battlestaff");
-            boolean bankrunes = banklavaStaff || Rs2Bank.hasItem(runesShadowVeil); 
+            boolean bankrunes = Rs2Bank.hasItem(runesShadowVeil); 
             boolean bankcosmicRune = Rs2Bank.hasItem("Cosmic rune");
 
-            if (!banklavaStaff || !bankrunes) {
-                Microbot.showMessage("No Lava battlestaff or runes (Earth, Fire) found in bank.");
+            if (!banklavaStaff && !bankrunes) {
+                Microbot.showMessage("No Lava battlestaff and runes (Earth, Fire) found in bank.");
                 shutdown();
                 return;
             }
