@@ -20,7 +20,7 @@ public class DemonicGorillaLooterScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (DemonicGorillaScript.BOT_STATUS.equals(DemonicGorillaScript.State.BANKING) || DemonicGorillaScript.BOT_STATUS.equals(DemonicGorillaScript.State.TRAVEL_TO_GORILLAS)) {
-                    Microbot.pauseAllScripts.set(false);
+                    Microbot.pauseAllScripts.compareAndSet(true,  false);
                     return;
                 }
                 if (!super.run()) return;
