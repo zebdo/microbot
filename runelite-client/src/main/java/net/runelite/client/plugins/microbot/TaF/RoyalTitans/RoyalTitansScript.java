@@ -360,7 +360,18 @@ public class RoyalTitansScript extends Script {
                 Rs2Walker.walkFastCanvas(enrageTile.getWorldLocation());
             }
             equipArmor(rangedInventorySetup);
-
+            // Handle focus properly based on config
+            if (config.royalTitanToFocus() == RoyalTitansConfig.RoyalTitan.FIRE_TITAN && fireTitan != null && fireTitan.isDead()) {
+                Rs2Npc.attack(fireTitan);
+                handleSpecialAttacks(config, fireTitan);
+                return;
+            }
+            if (config.royalTitanToFocus() == RoyalTitansConfig.RoyalTitan.ICE_TITAN && iceTitan != null && iceTitan.isDead()) {
+                Rs2Npc.attack(iceTitan);
+                handleSpecialAttacks(config, iceTitan);
+                return;
+            }
+            // Fallback if focused titan is dead
             if (fireTitan != null && !fireTitan.isDead()) {
                 Rs2Npc.attack(fireTitan);
                 handleSpecialAttacks(config, fireTitan);
