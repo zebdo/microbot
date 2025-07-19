@@ -134,7 +134,7 @@ public class ThievingScript extends Script {
 
     private boolean hasReqs() {
         boolean hasFood = Rs2Inventory.getInventoryFood().size() >= config.foodAmount();
-        boolean hasDodgy = Rs2Inventory.hasItem("Dodgy necklace");
+        boolean hasDodgy = Rs2Inventory.hasItem("Dodgy necklace") || config.dodgyNecklaceAmount() == 0;
 
         if (config.shadowVeil()) {
             boolean hasCosmic = Rs2Inventory.hasItem("Cosmic rune");
