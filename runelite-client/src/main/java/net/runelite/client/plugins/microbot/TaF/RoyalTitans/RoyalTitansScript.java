@@ -664,14 +664,16 @@ public class RoyalTitansScript extends Script {
                     return;
                 }
                 subState = "Walking to bank";
-                var isAtBank = Rs2Bank.walkToBank();
+                Rs2Bank.walkToBank();
+                var isAtBank = Rs2Bank.isNearBank(5);
                 if (isAtBank) {
                     state = RoyalTitansBotStatus.BANKING;
                 }
                 break;
             case TO_TITANS:
                 subState = "Walking to titans";
-                var gotToTitans = Rs2Walker.walkTo(BOSS_LOCATION, 1);
+                Rs2Walker.walkTo(BOSS_LOCATION, 1);
+                var gotToTitans = Rs2Player.distanceTo(BOSS_LOCATION) < 3;
                 if (gotToTitans) {
                     state = RoyalTitansBotStatus.WAITING;
                     travelStatus = RoyalTitansTravelStatus.TO_BANK;

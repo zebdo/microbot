@@ -2,8 +2,10 @@ package net.runelite.client.plugins.microbot.TaF.RoyalTitans;
 
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -53,7 +55,7 @@ public class RoyalTitansLooterScript extends Script {
                     lootUntradeableItems(config);
                 }
                 if (LootedTitanLastIteration) {
-                    if (lastLootTime.plusSeconds(30).isBefore(Instant.now())) {
+                    if (lastLootTime.plusSeconds(15).isBefore(Instant.now())) {
                         // If 30 seconds have passed, reset the flag and try looting again
                         LootedTitanLastIteration = false;
                         Microbot.log("30 seconds passed since last loot - trying again");
@@ -94,7 +96,7 @@ public class RoyalTitansLooterScript extends Script {
                         break;
                 }
                 if (looted && !LootedTitanLastIteration) {
-                    Rs2Player.waitForAnimation(2400);
+                    Rs2Inventory.waitForInventoryChanges(2400);
                     royalTitansScript.kills++;
                     LootedTitanLastIteration = true;
                     lastLootTime = Instant.now();
