@@ -120,7 +120,7 @@ public class MicrobotPlugin extends Plugin
 		// Initialize the cached configuration in GameChatAppender
 		GameChatAppender.updateConfiguration(
 			microbotConfig.enableGameChatLogging(),
-			microbotConfig.getGameChatLogLevel().toLogbackLevel(),
+			microbotConfig.getGameChatLogLevel().getLevel(),
 			microbotConfig.onlyMicrobotLogging()
 		);
 
@@ -322,7 +322,7 @@ public class MicrobotPlugin extends Plugin
 		Microbot.getPouchScript().onMenuOptionClicked(event);
 		Rs2Gembag.onMenuOptionClicked(event);
 		Microbot.targetMenu = null;
-		System.out.println(event.getMenuEntry());
+		if (microbotConfig.enableMenuEntryLogging()) log.info(event.getMenuEntry().toString());
 	}
 
 	@Subscribe
@@ -344,31 +344,35 @@ public class MicrobotPlugin extends Plugin
 	public void onConfigChanged(ConfigChanged ev)
 	{
 		if (ev.getGroup().equals(MicrobotConfig.configGroup)) {
-			// Handle any logging-related configuration changes
-			String key = ev.getKey();
-			if (key.equals("enableGameChatLogging") || key.equals("gameChatLogLevel") || 
-				key.equals("gameChatLogPattern") || key.equals("onlyMicrobotLogging")) {
-				
-				final boolean shouldBeStarted = microbotConfig.enableGameChatLogging();
-				
-				// Update the cached configuration in GameChatAppender
-				GameChatAppender.updateConfiguration(
-					microbotConfig.enableGameChatLogging(),
-					microbotConfig.getGameChatLogLevel().toLogbackLevel(),
-					microbotConfig.onlyMicrobotLogging()
-				);
-				
-				if (shouldBeStarted) {
-					// Update pattern if needed
-					String pattern = microbotConfig.getGameChatLogPattern().getPattern();
-					gameChatAppender.setPattern(pattern);
-					
-					if (!gameChatAppender.isStarted()) {
-						gameChatAppender.start();
+			switch (ev.getKey()) {
+				case MicrobotConfig.keyEnableGameChatLogging:
+				case MicrobotConfig.keyGameChatLogPattern:
+				case MicrobotConfig.keyGameChatLogLevel:
+				case MicrobotConfig.keyOnlyMicrobotLogging:
+					// Handle any logging-related configuration changes
+					final boolean shouldBeStarted = microbotConfig.enableGameChatLogging();
+
+					// Update the cached configuration in GameChatAppender
+					GameChatAppender.updateConfiguration(
+							microbotConfig.enableGameChatLogging(),
+							microbotConfig.getGameChatLogLevel().getLevel(),
+							microbotConfig.onlyMicrobotLogging()
+					);
+
+					if (shouldBeStarted) {
+						// Update pattern if needed
+						String pattern = microbotConfig.getGameChatLogPattern().getPattern();
+						gameChatAppender.setPattern(pattern);
+
+						if (!gameChatAppender.isStarted()) {
+							gameChatAppender.start();
+						}
+					} else if (gameChatAppender.isStarted()) {
+						gameChatAppender.stop();
 					}
-				} else if (gameChatAppender.isStarted()) {
-					gameChatAppender.stop();
-				}
+					break;
+				default:
+					break;
 			}
 		}
 		if (ev.getKey().equals("displayPouchCounter"))

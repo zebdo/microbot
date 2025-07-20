@@ -1,6 +1,8 @@
 package net.runelite.client.plugins.microbot;
 
 import ch.qos.logback.classic.Level;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
@@ -25,8 +27,9 @@ public interface MicrobotConfig extends Config
 	)
 	String loggingSection = "loggingSection";
 
+	String keyEnableGameChatLogging = "enableGameChatLogging";
 	@ConfigItem(
-		keyName = "enableGameChatLogging",
+		keyName = keyEnableGameChatLogging,
 		name = "Enable Game Chat Logging",
 		description = "Enable or disable logging to game chat",
 		position = 0,
@@ -36,8 +39,9 @@ public interface MicrobotConfig extends Config
 		return true;
 	}
 
+	String keyGameChatLogLevel = "gameChatLogLevel";
 	@ConfigItem(
-		keyName = "gameChatLogLevel",
+		keyName = keyGameChatLogLevel,
 		name = "Log Level",
 		description = "Minimum log level to show in game chat:<br>" +
 				"• ERROR: Only error messages<br>" +
@@ -51,8 +55,9 @@ public interface MicrobotConfig extends Config
 		return GameChatLogLevel.WARN;
 	}
 
+	String keyGameChatLogPattern = "gameChatLogPattern";
 	@ConfigItem(
-		keyName = "gameChatLogPattern",
+		keyName = keyGameChatLogPattern,
 		name = "Log Pattern",
 		description = "Format of log messages in game chat",
 		position = 2,
@@ -62,8 +67,9 @@ public interface MicrobotConfig extends Config
 		return GameChatLogPattern.SIMPLE;
 	}
 
+	String keyOnlyMicrobotLogging = "onlyMicrobotLogging";
 	@ConfigItem(
-		keyName = "onlyMicrobotLogging",
+		keyName = keyOnlyMicrobotLogging,
 		name = "Only Microbot Logs",
 		description = "Show only Microbot plugin logs in game chat (filters out other RuneLite logs)",
 		position = 3,
@@ -73,36 +79,32 @@ public interface MicrobotConfig extends Config
 		return false;
 	}
 
+	String keyEnableMenuEntryLogging = "enableMenuEntryLogging";
+	@ConfigItem(
+			keyName = keyEnableMenuEntryLogging,
+			name = "Enable Menu Entry Logging",
+			description = "Enable or disable logging menu entry clicked",
+			position = 4,
+			section = loggingSection
+	)
+	default boolean enableMenuEntryLogging() {
+		return false;
+	}
+
+	@AllArgsConstructor
 	enum GameChatLogLevel {
-		ERROR("Error"),
-		WARN("Warning"),
-		INFO("Info"),
-		DEBUG("Debug");
+		ERROR("Error", Level.ERROR),
+		WARN("Warning", Level.WARN),
+		INFO("Info", Level.INFO),
+		DEBUG("Debug", Level.DEBUG);
 
 		private final String displayName;
-
-		GameChatLogLevel(String displayName) {
-			this.displayName = displayName;
-		}
+		@Getter
+		private final Level level;
 
 		@Override
 		public String toString() {
 			return displayName;
-		}
-
-		public Level toLogbackLevel() {
-			switch (this) {
-				case ERROR:
-					return Level.ERROR;
-				case WARN:
-					return Level.WARN;
-				case INFO:
-					return Level.INFO;
-				case DEBUG:
-					return Level.DEBUG;
-				default:
-					return Level.WARN;
-			}
 		}
 	}
 
@@ -111,7 +113,8 @@ public interface MicrobotConfig extends Config
 		DETAILED("Detailed", "%d{HH:mm:ss} [%thread] %-5level %logger{36} - %msg%ex{0}%n");
 
 		private final String displayName;
-		private final String pattern;
+		@Getter
+        private final String pattern;
 
 		GameChatLogPattern(String displayName, String pattern) {
 			this.displayName = displayName;
@@ -122,9 +125,5 @@ public interface MicrobotConfig extends Config
 		public String toString() {
 			return displayName;
 		}
-
-		public String getPattern() {
-			return pattern;
-		}
-	}
+    }
 }
