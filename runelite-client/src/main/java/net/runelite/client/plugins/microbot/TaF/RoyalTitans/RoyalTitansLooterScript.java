@@ -9,6 +9,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 
 import javax.inject.Inject;
 import java.time.Instant;
@@ -46,6 +47,8 @@ public class RoyalTitansLooterScript extends Script {
                 if (iceTitan != null && !iceTitan.isDead() || fireTitan != null && !fireTitan.isDead()) {
                     return;
                 }
+                // Both titans are dead, ensure prayer is off
+                Rs2Prayer.disableAllPrayers();
                 // Both titans are dead and we have looted - Check ground for items
                 if (fireTitanDead != null && iceTitanDead != null) {
                     royalTitansScript.subState = "Looting ground items";
