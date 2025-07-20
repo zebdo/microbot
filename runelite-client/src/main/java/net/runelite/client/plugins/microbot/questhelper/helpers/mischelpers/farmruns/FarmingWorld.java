@@ -60,7 +60,7 @@ public class FarmingWorld
 	{
 		// Some of these patches get updated in multiple regions.
 		// It may be worth it to add a specialization for these patches
-		add(new FarmingRegion("Al Kharid", 13106, false,
+		add(new FarmingRegion("Al Kharid", 13106, false, Set.of(13105, 13362),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.CACTUS, new WorldPoint(3317, 3203, 0),
 				new Polygon(
 					new int[]{3315, 3315, 3316, 3316},
@@ -68,9 +68,9 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_CACTUS)
-		), 13362, 13105);
+		));
 
-		add(new FarmingRegion("Aldarin", 5421, false,
+		add(new FarmingRegion("Aldarin", 5421, false, Set.of(5165, 5166, 5422, 5677, 5678),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.HOPS, new WorldPoint(1366, 2941, 0),
 				new Polygon(
 					new int[]{1363, 1363, 1366, 1366},
@@ -78,9 +78,9 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_HOPS_5)
-		), 5165, 5166, 5422, 5677, 5678);
+		));
 
-		add(new FarmingRegion("Ardougne", 10290, false,
+		add(new FarmingRegion("Ardougne", 10290, false, Set.of(10546),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.BUSH, new WorldPoint(2616, 3226, 0),
 				new Polygon(
 					new int[]{2617, 2617, 2618, 2618},
@@ -88,7 +88,7 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_BUSH_4)
-		), 10546);
+		));
 		add(new FarmingRegion("Ardougne", 10548, false,
 			new FarmingPatch("North", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.ALLOTMENT, new WorldPoint(2672, 3379, 0),
 				new Polygon(
@@ -119,7 +119,7 @@ public class FarmingWorld
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_E, PatchImplementation.COMPOST, new WorldPoint(2662, 3375, 0))
 		));
 
-		add(new FarmingRegion("Avium Savannah", 6702, true,
+		add(new FarmingRegion("Avium Savannah", 6702, true, Set.of(6446),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.HARDWOOD_TREE, new WorldPoint(1685, 2971, 0),
 				new Polygon(
 					new int[]{1686, 1686, 1688, 1688},
@@ -127,9 +127,9 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FROG_QUEST_MARCELLUS)
-		), 6446);
+		));
 
-		add(new FarmingRegion("Brimhaven", 11058, false,
+		add(new FarmingRegion("Brimhaven", 11058, false, Set.of(11057),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.FRUIT_TREE, new WorldPoint(2766, 3213, 0),
 				new Polygon(
 					new int[]{2764, 2764, 2765, 2765},
@@ -144,9 +144,9 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_SPIRIT_TREE_3)
-		), 11057);
+		));
 
-		add(new FarmingRegion("Catherby", 11062, false,
+		add(new FarmingRegion("Catherby", 11062, false, Set.of(11061, 11318, 11317),
 			new FarmingPatch("North", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.ALLOTMENT, new WorldPoint(2814, 3466, 0),
 				new Polygon(
 					new int[]{2805, 2805, 2814, 2814, 2806, 2806},
@@ -186,7 +186,7 @@ public class FarmingWorld
 				}
 				return true;
 			}
-		}, 11061, 11318, 11317);
+		});
 		add(new FarmingRegion("Catherby", 11317, false,
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.FRUIT_TREE, new WorldPoint(2860, 3432, 0),
 				new Polygon(
@@ -205,7 +205,7 @@ public class FarmingWorld
 			}
 		});
 
-		add(new FarmingRegion("Civitas illa Fortis", 6192, false,
+		add(new FarmingRegion("Civitas illa Fortis", 6192, false, Set.of(6447, 6448, 6449, 6191, 6193),
 			new FarmingPatch("North", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.ALLOTMENT, new WorldPoint(1586, 3102, 0),
 				new Polygon(
 					new int[]{1581, 1581, 1585, 1585, 1582, 1582},
@@ -233,7 +233,7 @@ public class FarmingWorld
 					4
 				)),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_E, PatchImplementation.COMPOST, new WorldPoint(1587, 3103, 0))
-		), 6447, 6448, 6449, 6191, 6193);
+		));
 
 		add(new FarmingRegion("Champions' Guild", 12596, true,
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.BUSH, new WorldPoint(3181, 3356, 0),
@@ -254,7 +254,7 @@ public class FarmingWorld
 				))
 		));
 
-		add(new FarmingRegion("Entrana", 11060, false,
+		add(new FarmingRegion("Entrana", 11060, false, Set.of(11316),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.HOPS, new WorldPoint(2812, 3334, 0),
 				new Polygon(
 					new int[]{2809, 2809, 2812, 2812},
@@ -262,7 +262,7 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FRANCIS)
-		), 11316);
+		));
 
 		add(new FarmingRegion("Etceteria", 10300, false,
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.BUSH, new WorldPoint(2592, 3862, 0),
@@ -281,7 +281,7 @@ public class FarmingWorld
 				NpcID.FARMING_GARDENER_SPIRIT_TREE_2)
 		));
 
-		add(new FarmingRegion("Falador", 11828, false,
+		add(new FarmingRegion("Falador", 11828, false, Set.of(12084),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.TREE, new WorldPoint(3004, 3371, 0),
 				new Polygon(
 					new int[]{3003, 3003, 3005, 3005},
@@ -289,7 +289,7 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_TREE_2)
-		), 12084);
+		));
 		add(new FarmingRegion("Falador", 12083, false,
 			new FarmingPatch("North West", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.ALLOTMENT, new WorldPoint(3052, 3307, 0),
 				new Polygon(
@@ -328,7 +328,7 @@ public class FarmingWorld
 			}
 		});
 
-		add(new FarmingRegion("Fossil Island", 14651, false,
+		add(new FarmingRegion("Fossil Island", 14651, false, Set.of(14907, 14908, 15164, 14652, 14906, 14650, 15162, 15163),
 			new FarmingPatch("East", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.HARDWOOD_TREE, new WorldPoint(3713, 3835, 0),
 				new Polygon(
 					new int[]{3714, 3714, 3716, 3716},
@@ -373,7 +373,7 @@ public class FarmingWorld
 
 				return loc.getPlane() == 0;
 			}
-		}, 14907, 14908, 15164, 14652, 14906, 14650, 15162, 15163);
+		});
 		add(new FarmingRegion("Seaweed", 15008, false,
 			new FarmingPatch("North", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.SEAWEED, new WorldPoint(3733, 10272, 1),
 				new Polygon(
@@ -391,7 +391,7 @@ public class FarmingWorld
 				NpcID.FOSSIL_GARDENER_UNDERWATER, 1)
 		));
 
-		add(new FarmingRegion("Gnome Stronghold", 9781, true,
+		add(new FarmingRegion("Gnome Stronghold", 9781, true, Set.of(9782, 9526, 9525),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.TREE, new WorldPoint(2437, 3417, 0),
 				new Polygon(
 					new int[]{2437, 2437, 2435, 2435},
@@ -406,7 +406,7 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_FRUIT_1)
-		), 9782, 9526, 9525);
+		));
 
 		add(new FarmingRegion("Harmony", 15148, false,
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.ALLOTMENT, new WorldPoint(3795, 2838, 0),
@@ -423,7 +423,7 @@ public class FarmingWorld
 				))
 		));
 
-		add(new FarmingRegion("Kourend", 6967, false,
+		add(new FarmingRegion("Kourend", 6967, false, Set.of(6711),
 			new FarmingPatch("North East", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.ALLOTMENT, new WorldPoint(1739, 3553, 0),
 				new Polygon(
 					new int[]{1733, 1733, 1739, 1739, 1738, 1738},
@@ -458,7 +458,7 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_SPIRIT_TREE_4)
-		), 6711);
+		));
 
 		/*
 			Not implemented
@@ -478,7 +478,7 @@ public class FarmingWorld
 			new FarmingPatch("West 6", VarbitID.FARMING_TRANSMIT_F2, PatchImplementation.GRAPES, new WorldPoint(-1, -1, 0))
 		));
 
-		add(new FarmingRegion("Lletya", 9265, false,
+		add(new FarmingRegion("Lletya", 9265, false, Set.of(11103),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.FRUIT_TREE, new WorldPoint(2345, 3162, 0),
 				new Polygon(
 					new int[]{2346, 2346, 2347, 2347},
@@ -486,7 +486,7 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_FRUIT_TREE_5)
-		), 11103);
+		));
 
 		add(new FarmingRegion("Lumbridge", 12851, false,
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.HOPS, new WorldPoint(3232, 3317, 0),
@@ -497,7 +497,7 @@ public class FarmingWorld
 				),
 				NpcID.FARMING_GARDENER_HOPS_3)
 		));
-		add(new FarmingRegion("Lumbridge", 12594, false,
+		add(new FarmingRegion("Lumbridge", 12594, false, Set.of(12850),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.TREE, new WorldPoint(3195, 3230, 0),
 				new Polygon(
 					new int[]{3192, 3192, 3194, 3194},
@@ -505,17 +505,17 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_TREE_4)
-		), 12850);
+		));
 
-		add(new FarmingRegion("Morytania", 13622, false,
+		add(new FarmingRegion("Morytania", 13622, false, Set.of(13878),
 			new FarmingPatch("Mushroom", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.MUSHROOM, new WorldPoint(3451, 3474, 0),
 				new Polygon(
 					new int[]{3451, 3451, 3452, 3452},
 					new int[]{3472, 3473, 3473, 3472},
 					4
 				))
-		), 13878);
-		add(new FarmingRegion("Morytania", 14391, false,
+		));
+		add(new FarmingRegion("Morytania", 14391, false, Set.of(14390),
 			new FarmingPatch("North West", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.ALLOTMENT, new WorldPoint(3597, 3524, 0),
 				new Polygon(
 					new int[]{3597, 3597, 3601, 3601, 3598, 3598},
@@ -544,9 +544,9 @@ public class FarmingWorld
 					4
 				)),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_E, PatchImplementation.COMPOST, new WorldPoint(3609, 3522, 0))
-		), 14390);
+		));
 
-		add(new FarmingRegion("Port Sarim", 12082, false,
+		add(new FarmingRegion("Port Sarim", 12082, false, Set.of(12083),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.SPIRIT_TREE, new WorldPoint(3059, 3257, 0),
 				new Polygon(
 					new int[]{3059, 3059, 3061, 3061},
@@ -561,9 +561,9 @@ public class FarmingWorld
 			{
 				return loc.getY() < 3272;
 			}
-		}, 12083);
+		});
 
-		add(new FarmingRegion("Rimmington", 11570, false,
+		add(new FarmingRegion("Rimmington", 11570, false, Set.of(11826),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.BUSH, new WorldPoint(2940, 3223, 0),
 				new Polygon(
 					new int[]{2940, 2940, 2941, 2941},
@@ -571,9 +571,9 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_BUSH_2)
-		), 11826);
+		));
 
-		add(new FarmingRegion("Seers' Village", 10551, false,
+		add(new FarmingRegion("Seers' Village", 10551, false, Set.of(10550),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.HOPS, new WorldPoint(2669, 3522, 0),
 				new Polygon(
 					new int[]{2664, 2664, 2669, 2669},
@@ -581,7 +581,7 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_HOPS_4)
-		), 10550);
+		));
 
 		add(new FarmingRegion("Tai Bwo Wannai", 11056, false,
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.CALQUAT, new WorldPoint(2796, 3103, 0),
@@ -593,7 +593,7 @@ public class FarmingWorld
 				NpcID.FARMING_GARDENER_CALQUAT)
 		));
 
-		add(new FarmingRegion("Taverley", 11573, false,
+		add(new FarmingRegion("Taverley", 11573, false, Set.of(11829),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.TREE, new WorldPoint(2936, 3440, 0),
 				new Polygon(
 					new int[]{2935, 2935, 2937, 2937},
@@ -601,9 +601,9 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_TREE_1)
-		), 11829);
+		));
 
-		add(new FarmingRegion("Tree Gnome Village", 9777, true,
+		add(new FarmingRegion("Tree Gnome Village", 9777, true, Set.of(10033),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.FRUIT_TREE, new WorldPoint(2488, 3180, 0),
 				new Polygon(
 					new int[]{2489, 2489, 2490, 2490},
@@ -611,7 +611,7 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_FRUIT_2)
-		), 10033);
+		));
 
 		add(new FarmingRegion("Troll Stronghold", 11321, true,
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.HERB, new WorldPoint(2827, 3693, 0),
@@ -622,7 +622,7 @@ public class FarmingWorld
 				))
 		));
 
-		add(new FarmingRegion("Varrock", 12854, false,
+		add(new FarmingRegion("Varrock", 12854, false, Set.of(12853),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.TREE, new WorldPoint(3229, 3457, 0),
 				new Polygon(
 					new int[]{3228, 3228, 3230, 3230},
@@ -630,7 +630,7 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_TREE_3_02)
-		), 12853);
+		));
 
 		add(new FarmingRegion("Yanille", 10288, false,
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.HOPS, new WorldPoint(2573, 3106, 0),
@@ -661,7 +661,7 @@ public class FarmingWorld
 		));
 
 		//Full 3x3 region area centered on farming guild
-		add(farmingGuildRegion = new FarmingRegion("Farming Guild", 4922, true,
+		add(farmingGuildRegion = new FarmingRegion("Farming Guild", 4922, true, Set.of(5177, 5178, 5179, 4921, 4923, 4665, 4666, 4667),
 			new FarmingPatch("", VarbitID.FARMING_TRANSMIT_G, PatchImplementation.TREE, new WorldPoint(1233, 3734, 0),
 				new Polygon(
 					new int[]{1231, 1231, 1233, 1233},
@@ -744,10 +744,10 @@ public class FarmingWorld
 					4
 				),
 				NpcID.FARMING_GARDENER_FARMGUILD_REDWOOD)
-		), 5177, 5178, 5179, 4921, 4923, 4665, 4666, 4667);
+		));
 
 		//All of Prifddinas, and all of Prifddinas Underground
-		add(new FarmingRegion("Prifddinas", 13151, false,
+		add(new FarmingRegion("Prifddinas", 13151, false, Set.of(12895, 12894, 13150, 12994, 12993, 12737, 12738, 12126, 12127, 13250),
 				new FarmingPatch("North", VarbitID.FARMING_TRANSMIT_A, PatchImplementation.ALLOTMENT, new WorldPoint(3293, 6105, 0),
 					new Polygon(
 						new int[]{3288, 3288, 3293, 3293, 3289, 3289},
@@ -775,8 +775,7 @@ public class FarmingWorld
 						4
 					)),
 				new FarmingPatch("", VarbitID.FARMING_TRANSMIT_D, PatchImplementation.COMPOST, new WorldPoint(3288, 6100, 0))
-			), 12895, 12894, 13150,
-			/* Underground */ 12994, 12993, 12737, 12738, 12126, 12127, 13250);
+			));
 
 		// Finalize
 		this.regions = Multimaps.unmodifiableMultimap(this.regions);
@@ -788,10 +787,10 @@ public class FarmingWorld
 		this.tabs = Collections.unmodifiableMap(umtabs);
 	}
 
-	private void add(FarmingRegion r, int... extraRegions)
+	private void add(FarmingRegion r)
 	{
 		regions.put(r.getRegionID(), r);
-		for (int er : extraRegions)
+		for (int er : r.getRegionIDs())
 		{
 			regions.put(er, r);
 		}

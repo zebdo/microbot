@@ -24,16 +24,22 @@
  */
 package net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns;
 
+import java.util.Collections;
+import java.util.HashSet;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 
+import java.util.Set;
+import org.jetbrains.annotations.NotNull;
+
 @Getter
-public class FarmingRegion
+public class FarmingRegion implements Comparable<FarmingRegion>
 {
 	private final String name;
 	private final int regionID;
 	private final boolean definite;
 	private final FarmingPatch[] patches;
+	private final Set<Integer> regionIDs;
 
 	FarmingRegion(String name, int regionID, boolean definite, FarmingPatch... patches)
 	{
@@ -41,6 +47,24 @@ public class FarmingRegion
 		this.regionID = regionID;
 		this.definite = definite;
 		this.patches = patches;
+		this.regionIDs = Set.of(regionID);
+		for (FarmingPatch p : patches)
+		{
+			p.setRegion(this);
+		}
+	}
+
+	FarmingRegion(String name, int regionID, boolean definite, Set<Integer> regionIDs, FarmingPatch... patches)
+	{
+		this.name = name;
+		this.regionID = regionID;
+		this.definite = definite;
+		this.patches = patches;
+
+		Set<Integer> allRegionIds = new HashSet<>(regionIDs);
+		allRegionIds.add(regionID);
+		this.regionIDs = Collections.unmodifiableSet(allRegionIds);
+
 		for (FarmingPatch p : patches)
 		{
 			p.setRegion(this);
@@ -49,19 +73,30 @@ public class FarmingRegion
 
 	/**
 	 * Check if the given WorldPoint is within this farming region
-	 * Primarily checks if the point is in the same region ID
+	 * Checks if the point's regionID is in this region's regionIDs set
 	 *
 	 * @param loc The WorldPoint to check
 	 * @return true if the point is within this farming region
 	 */
 	public boolean isInBounds(WorldPoint loc)
 	{
-		return loc.getRegionID() == regionID;
+		return regionIDs.contains(loc.getRegionID());
 	}
 
 	@Override
 	public String toString()
 	{
-		return name;
+		String sb = "FarmingRegion{name='" + name + '\'' +
+			", regionID=" + regionID +
+			", definite=" + definite +
+			", patches=" + patches.length +
+			'}';
+		return sb;
+	}
+
+	@Override
+	public int compareTo(@NotNull FarmingRegion o)
+	{
+		return Integer.compare(regionID, o.getRegionID());
 	}
 }
