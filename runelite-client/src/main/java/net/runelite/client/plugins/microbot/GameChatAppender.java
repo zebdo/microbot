@@ -99,11 +99,11 @@ public class GameChatAppender extends AppenderBase<ILoggingEvent> {
         public FilterReply decide(ILoggingEvent event) {
             // If only microbot logging is disabled, accept all logs
             if (!onlyMicrobotLogging) {
-                return FilterReply.ACCEPT;
+                return FilterReply.NEUTRAL;
             }
             
             // Otherwise, only accept microbot logs
-            return event.getLoggerName().startsWith("net.runelite.client.plugins.microbot") ? FilterReply.ACCEPT : FilterReply.DENY;
+            return event.getLoggerName().startsWith("net.runelite.client.plugins.microbot") ? FilterReply.NEUTRAL : FilterReply.DENY;
         }
     }
 }
