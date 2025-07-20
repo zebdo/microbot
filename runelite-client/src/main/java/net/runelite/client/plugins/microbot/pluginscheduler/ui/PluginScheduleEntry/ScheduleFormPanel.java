@@ -2,9 +2,6 @@ package net.runelite.client.plugins.microbot.pluginscheduler.ui.PluginScheduleEn
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.plugins.microbot.pluginscheduler.ui.SchedulerWindow;
-import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerConfig;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.DayOfWeekCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
@@ -24,7 +21,6 @@ import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.event.ItemEvent;
-import java.awt.event.ItemListener;
 import java.time.Duration;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
