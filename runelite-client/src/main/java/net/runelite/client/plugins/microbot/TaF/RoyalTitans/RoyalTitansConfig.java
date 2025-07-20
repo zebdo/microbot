@@ -93,11 +93,22 @@ public interface RoyalTitansConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "soloMode",
+            name = "Enable solo mode?",
+            description = "If enabled, the bot will fight the boss alone - Requires you to have the Twinflame staff",
+            section = generalSection,
+            position = 3
+    )
+    default boolean soloMode() {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "waitingTimeForTeammate",
             name = "The amount of time (in seconds) to wait for your teammate at the entrance",
             description = "The amount of time (in seconds) to wait for your teammate before shutting down the script.",
             section = generalSection,
-            position = 3
+            position = 4
     )
     default int waitingTimeForTeammate() {
         return 600;
@@ -329,7 +340,7 @@ public interface RoyalTitansConfig extends Config {
 
     enum RoyalTitan {ICE_TITAN, FIRE_TITAN}
 
-    enum Minions {ICE_MINIONS, FIRE_MINIONS}
+    enum Minions {ICE_MINIONS, FIRE_MINIONS, NONE}
 
     enum LootingTitan {ICE_TITAN, FIRE_TITAN, ALTERNATE, RANDOM}
 }

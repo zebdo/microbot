@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.TaF.RoyalTitans;
 
+import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -20,6 +21,15 @@ public class RoyalTitansShared {
 
         if (!isCombatPotionActive(threshold)) {
             consumePotion(Rs2Potion.getCombatPotionsVariants());
+            if (Rs2Player.drinkCombatPotionAt(Skill.STRENGTH)) {
+                Rs2Player.waitForAnimation();
+            }
+            if (Rs2Player.drinkCombatPotionAt(Skill.ATTACK)) {
+                Rs2Player.waitForAnimation();
+            }
+            if (Rs2Player.drinkCombatPotionAt(Skill.DEFENCE)) {
+                Rs2Player.waitForAnimation();
+            }
         }
 
         if (!isRangingPotionActive(threshold)) {
