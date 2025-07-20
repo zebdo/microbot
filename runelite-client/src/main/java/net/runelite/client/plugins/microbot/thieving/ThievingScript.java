@@ -93,9 +93,12 @@ public class ThievingScript extends Script {
                         currentState = State.IDLE;
                         break;
                     case PICKPOCKET:
-                        if (Rs2Player.isStunned()) return;
+                        if (Rs2Player.isStunned()) {
+                            sleepUntil(() -> !Rs2Player.isStunned());
+                            return;
+                        }
                         wearIfNot("dodgy necklace");
-                        openCoinPouches();
+                        //openCoinPouches();
 
                         if (!autoEatAndDrop()) {
                             currentState = State.IDLE;
@@ -128,7 +131,7 @@ public class ThievingScript extends Script {
             } catch (Exception ex) {
                 Microbot.logStackTrace(getClass().getSimpleName(), ex);
             }
-        }, 0, 300, TimeUnit.MILLISECONDS);
+        }, 0, 600, TimeUnit.MILLISECONDS);
         return true;
     }
 
@@ -208,10 +211,14 @@ public class ThievingScript extends Script {
                 Rs2Player.waitForWalking();
             } else {
                 equipSet(ROGUE_SET);
-                if (config.shadowVeil()) castShadowVeil();
-                if (Rs2Npc.pickpocket(npc)) {
-                    Rs2Walker.setTarget(null);
-                    sleep(50, 200);
+                while (!Rs2Player.isStunned() & Microbot.isLoggedIn()) {
+                    openCoinPouches();
+                    if (config.shadowVeil()) castShadowVeil();
+                    if (Rs2Npc.pickpocket(npc)) {
+                        sleep(30);
+                        //Rs2Walker.setTarget(null);
+                        //sleep(50, 200);
+                    }
                 }
             }
         }
@@ -227,7 +234,7 @@ public class ThievingScript extends Script {
         if (highlighted.isEmpty()) return false;
         if (config.shadowVeil()) castShadowVeil();
         if (Rs2Npc.pickpocket(highlighted)) {
-            sleep(50, 200);
+            //sleep(50, 200);
             return true;
         }
         return false;
