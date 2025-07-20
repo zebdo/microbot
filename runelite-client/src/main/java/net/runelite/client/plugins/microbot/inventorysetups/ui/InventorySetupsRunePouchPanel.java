@@ -46,7 +46,7 @@ import net.runelite.client.ui.ColorScheme;
 public class InventorySetupsRunePouchPanel extends InventorySetupsAmmunitionPanel
 {
 	// 23650 is what shows up when selecting a RunePouch from ChatBoxItemSearch, 27086 is likely lms
-	public static final List<Integer> RUNE_POUCH_IDS = Arrays.asList(ItemID.CASTLEWARS_RUNE_REPLACEMENT, ItemID.PVPA_RUNE_REPLACEMENT, ItemID.BH_RUNE_POUCH_TROUVER, ItemID.BR_RUNE_REPLACEMENT);
+	public static final List<Integer> RUNE_POUCH_IDS = Arrays.asList(ItemID.BH_RUNE_POUCH, ItemID.BH_RUNE_POUCH_TROUVER, ItemID.BR_RUNE_REPLACEMENT, ItemID.PVPA_RUNE_REPLACEMENT);
 
 	public static final Set<Integer> RUNE_POUCH_IDS_SET = new HashSet<>(RUNE_POUCH_IDS);
 
