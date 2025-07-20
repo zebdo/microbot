@@ -340,6 +340,7 @@ public class RoyalTitansScript extends Script {
         if (meleeInventorySetup.doesEquipmentMatch() && config.specialAttackWeaponStyle() == RoyalTitansConfig.SpecialAttackWeaponStyle.MELEE) {
             specialAttackInventorySetup.wearEquipment();
             Rs2Combat.setSpecState(true, config.specEnergyConsumed() * 10);
+            sleepUntil(Rs2Combat::getSpecState);
             Rs2Npc.attack(titan);
             Rs2Player.waitForAnimation(600);
             return;
@@ -347,6 +348,7 @@ public class RoyalTitansScript extends Script {
         if ((magicInventorySetup.doesEquipmentMatch() || rangedInventorySetup.doesEquipmentMatch()) && config.specialAttackWeaponStyle() == RoyalTitansConfig.SpecialAttackWeaponStyle.RANGED) {
             specialAttackInventorySetup.wearEquipment();
             Rs2Combat.setSpecState(true, config.specEnergyConsumed() * 10);
+            sleepUntil(Rs2Combat::getSpecState);
             Rs2Npc.attack(titan);
             Rs2Player.waitForAnimation(600);
         }
@@ -744,11 +746,13 @@ public class RoyalTitansScript extends Script {
                 inventorySetup.loadInventory();
             }
 			if (!inventorySetup.getAdditionalItems().isEmpty()) {
+                Microbot.log("Pre-potting with additional items");
 				inventorySetup.prePot();
 			}
             Rs2Bank.closeBank();
             travelStatus = RoyalTitansTravelStatus.TO_TITANS;
             state = RoyalTitansBotStatus.TRAVELLING;
+            subState = "Walking to titans";
         } else {
             var items = inventorySetup.getEquipmentItems();
             var inventory = inventorySetup.getInventoryItems();
