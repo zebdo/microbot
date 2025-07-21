@@ -40,7 +40,6 @@ public class ThievingScript extends Script {
         "Rogue trousers",
         "Rogue boots",
         "Rogue gloves"
-        //"Thieving cape(t)"
     );
 
     private static final Map<String, WorldPoint[]> VYRE_HOUSES = Map.of(
@@ -93,9 +92,11 @@ public class ThievingScript extends Script {
                         currentState = State.IDLE;
                         break;
                     case PICKPOCKET:
-                        if (Rs2Player.isStunned()) return;
+                        if (Rs2Player.isStunned()) {
+                            sleepUntil(() -> !Rs2Player.isStunned(), 8000);
+                            return;
+                        }
                         wearIfNot("dodgy necklace");
-                        openCoinPouches();
 
                         if (!autoEatAndDrop()) {
                             currentState = State.IDLE;
@@ -128,7 +129,7 @@ public class ThievingScript extends Script {
             } catch (Exception ex) {
                 Microbot.logStackTrace(getClass().getSimpleName(), ex);
             }
-        }, 0, 300, TimeUnit.MILLISECONDS);
+        }, 0, 600, TimeUnit.MILLISECONDS);
         return true;
     }
 
@@ -185,6 +186,7 @@ public class ThievingScript extends Script {
     private void castShadowVeil() {
         if (!Rs2Magic.isShadowVeilActive() && Rs2Magic.canCast(MagicAction.SHADOW_VEIL)) {
             Rs2Magic.cast(MagicAction.SHADOW_VEIL);
+            sleep(600);
         }
     }
 
@@ -208,10 +210,11 @@ public class ThievingScript extends Script {
                 Rs2Player.waitForWalking();
             } else {
                 equipSet(ROGUE_SET);
-                if (config.shadowVeil()) castShadowVeil();
-                if (Rs2Npc.pickpocket(npc)) {
-                    Rs2Walker.setTarget(null);
-                    sleep(50, 200);
+                while (!Rs2Player.isStunned() & Microbot.isLoggedIn()) {
+                    openCoinPouches();
+                    if (config.shadowVeil()) castShadowVeil();
+                    if (!Rs2Npc.pickpocket(npc)) continue;
+                    sleep(200, 300);
                 }
             }
         }
@@ -225,12 +228,14 @@ public class ThievingScript extends Script {
     private boolean pickpocketHighlighted() {
         var highlighted = net.runelite.client.plugins.npchighlight.NpcIndicatorsPlugin.getHighlightedNpcs();
         if (highlighted.isEmpty()) return false;
-        if (config.shadowVeil()) castShadowVeil();
-        if (Rs2Npc.pickpocket(highlighted)) {
-            sleep(50, 200);
-            return true;
+        equipSet(ROGUE_SET);
+        while (!Rs2Player.isStunned() && Microbot.isLoggedIn()) {
+            openCoinPouches();
+            if (config.shadowVeil()) castShadowVeil();
+            if (!Rs2Npc.pickpocket(highlighted)) continue;
+            sleep(200, 300);
         }
-        return false;
+        return true;
     }
 
     private void pickpocketElves() {
