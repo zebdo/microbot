@@ -210,7 +210,8 @@ public class ThievingScript extends Script {
                 Rs2Player.waitForWalking();
             } else {
                 equipSet(ROGUE_SET);
-                while (!Rs2Player.isStunned() & Microbot.isLoggedIn()) {
+                while (!Rs2Player.isStunned() & isRunning()) {
+					if (!Microbot.isLoggedIn()) break;
                     openCoinPouches();
                     if (config.shadowVeil()) castShadowVeil();
                     if (!Rs2Npc.pickpocket(npc)) continue;
