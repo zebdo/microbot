@@ -254,7 +254,7 @@ public class RoguesDenScript extends Script {
 
     private static boolean storeAllItemsInBank() {
         sleep(150,300); // some time it does not detect the inventory is empty or naked
-        while (!Rs2Inventory.isEmpty() || !Rs2Equipment.isNaked())
+        while (!Rs2Inventory.isEmpty() || Rs2Equipment.isWearing())
         {
             if (Rs2Bank.walkToBankAndUseBank())
             {
@@ -262,7 +262,7 @@ public class RoguesDenScript extends Script {
                 {
                     Rs2Bank.depositAll();
                 }
-                if (!Rs2Equipment.isNaked())
+                if (Rs2Equipment.isWearing())
                 {
                     Rs2Bank.depositEquipment();
                 }
@@ -332,7 +332,7 @@ public class RoguesDenScript extends Script {
         if (obstacle.getHint().equalsIgnoreCase("Crack"))
             mazeRunsCompleted++;
 
-        if ((obstacle.getHint().equalsIgnoreCase("run") || obstacle.getHint().equalsIgnoreCase("take")) && Rs2Player.getRunEnergy() < 10) {
+        if ((obstacle != OBSTACLES[OBSTACLES.length - 3]) && (obstacle.getHint().equalsIgnoreCase("run") || obstacle.getHint().equalsIgnoreCase("take")) && Rs2Player.getRunEnergy() < 10) {
             Microbot.log("Restoring run energy...");
             sleep(60_000, 120_000);
             return;
@@ -351,10 +351,10 @@ public class RoguesDenScript extends Script {
             Rs2Player.waitForWalking();
 
         } else if (obstacle.getHint().equalsIgnoreCase("take") && !Rs2Inventory.hasItem(ItemID.ROGUESDEN_FLASH_POWDER)) {
-            Rs2GroundItem.loot(obstacle.getTile(), ItemID.ROGUESDEN_FLASH_POWDER);
+            Rs2GroundItem.lootItemsBasedOnLocation(obstacle.getTile(), ItemID.ROGUESDEN_FLASH_POWDER);
             sleepUntil(() -> Rs2Inventory.hasItem(ItemID.ROGUESDEN_FLASH_POWDER));
         } else if (obstacle.getHint().equalsIgnoreCase("tile") && !Rs2Inventory.hasItem(ItemID.ROGUESDEN_PUZZLE_MOSAIC_TILE1)) {
-            Rs2GroundItem.loot(obstacle.getTile(), ItemID.ROGUESDEN_PUZZLE_MOSAIC_TILE1);
+            Rs2GroundItem.lootItemsBasedOnLocation(obstacle.getTile(), ItemID.ROGUESDEN_PUZZLE_MOSAIC_TILE1);
             sleepUntil(() -> Rs2Inventory.hasItem(ItemID.ROGUESDEN_PUZZLE_MOSAIC_TILE1));
         } else {
             if (!Rs2Walker.walkFastCanvas(obstacle.getTile())) {
