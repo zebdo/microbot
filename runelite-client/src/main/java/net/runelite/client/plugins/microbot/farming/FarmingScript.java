@@ -26,6 +26,8 @@ package net.runelite.client.plugins.microbot.farming;
 
 import com.google.inject.Inject;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import lombok.Getter;
@@ -33,7 +35,9 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameObject;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns.CropState;
 import net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns.FarmingPatch;
+import net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns.FarmingRegion;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
@@ -45,6 +49,9 @@ public class FarmingScript extends Script
 	private final FarmingPlugin plugin;
 	private final FarmingConfig config;
 	private Rs2InventorySetup farmingInventorySetup;
+	private boolean doesEquipmentMatch;
+	private boolean doesInventoryMatch;
+	private FarmingRegion currentFarmingRegion;
 	private FarmingPatch currentFarmingPatch;
 
 	@Getter
@@ -63,6 +70,16 @@ public class FarmingScript extends Script
 				if (!super.run()) return;
 				if (!Microbot.isLoggedIn()) return;
 				preFlightChecks();
+
+				if (plugin.getStopCondition().isSatisfied())
+				{
+					Rs2Bank.walkToBank();
+					plugin.reportFinished("Stop condition satisfied, stopping script.", true);
+					return;
+				}
+
+				if (state == null) return;
+
 				switch (state) {
 					case START:
 						if (!canWeFarm()) return;
@@ -78,6 +95,9 @@ public class FarmingScript extends Script
 						break;
 
 					case FARM:
+						updatePatchAndRegion();
+						if (currentFarmingPatch == null || currentFarmingRegion == null) return;
+
 						farmCurrentPatch();
 						break;
 				}
@@ -86,7 +106,7 @@ public class FarmingScript extends Script
 			} catch (Exception e) {
 				log.error("Error in {}:", getClass().getSimpleName(), e);
 			}
-		}, 0, 100, TimeUnit.MILLISECONDS);
+		}, 0, 600, TimeUnit.MILLISECONDS);
 		return true;
 	}
 
@@ -98,7 +118,17 @@ public class FarmingScript extends Script
 			return;
 		}
 		log.debug("Found patch object: {}", currentFarmingPatch.getName());
-		var currentPatchState = currentFarmingPatch.getImplementation();
+		var currentPatchState = plugin.getPatchStateMap().get(currentFarmingPatch);
+
+		switch (currentPatchState) {
+			case EMPTY:
+			case GROWING:
+			case DEAD:
+			case UNCHECKED:
+			case HARVESTABLE:
+			case FILLING:
+			case DISEASED:
+		}
 	}
 
 	private boolean canWeFarm() {
@@ -107,14 +137,17 @@ public class FarmingScript extends Script
 			// TODO handle seed vault logic
 		} else {
 			Rs2Bank.walkToBank();
-			Rs2Bank.openBank();
-			sleepUntil(Rs2Bank::isOpen,2500);
-			var loadedEquipment = farmingInventorySetup.loadEquipment();
-			var loadedInventory = farmingInventorySetup.loadInventory();
-			if (!loadedEquipment || !loadedInventory) {
-				log.error("Failed to load inventory or equipment setup. Please check your configuration.");
-				shutdown();
-				return false;
+			if (!farmingInventorySetup.doesInventoryMatch() || !farmingInventorySetup.doesEquipmentMatch()) {
+				var loadedEquipment = farmingInventorySetup.loadEquipment();
+				var loadedInventory = farmingInventorySetup.loadInventory();
+
+				if (!loadedEquipment || !loadedInventory) {
+					plugin.reportFinished("Failed to load inventory or equipment setup. Please check your configuration.", false);
+					return false;
+				}
+
+				doesEquipmentMatch = farmingInventorySetup.doesEquipmentMatch();
+				doesInventoryMatch = farmingInventorySetup.doesInventoryMatch();
 			}
 		}
 		return true;
@@ -128,8 +161,8 @@ public class FarmingScript extends Script
 	private void preFlightChecks() {
 		// Inventory setup check
 		if (config.inventorySetup() == null) {
-			log.error("InventorySetup is null. Please ensure that you have configured your inventory setup in the plugin settings. If a value is set, try to reselect it.");
-			shutdown(); //TODO: Stop the script gracefully
+			plugin.reportFinished("InventorySetup is null. Please ensure that you have configured your inventory setup in the plugin settings. If a value is set, try to reselect it", false);
+			//TODO: Stop the script gracefully
 			return;
 		}
 		farmingInventorySetup = new Rs2InventorySetup(config.inventorySetup(), mainScheduledFuture);
@@ -139,8 +172,7 @@ public class FarmingScript extends Script
 		plugin.update();
 		var patchesToVisit = plugin.getPatchesNeedingAttention();
 		if (patchesToVisit.isEmpty()) {
-			log.error("No farming patches available for farming.");
-			shutdown(); //TODO: Stop the script gracefully
+			plugin.reportFinished("No farming patches available for farming.", false);
 			return;
 		}
 		log.debug("Found {} farming patches needing attention.", patchesToVisit.size());
@@ -174,5 +206,89 @@ public class FarmingScript extends Script
 			log.warn("No objects found in the specified area.");
 			return null;
 		}
+	}
+
+	/**
+     * Updates the current farming region and patch based on the state of patches needing attention.
+     * <p>
+     * Logic:
+     * <ul>
+     *   <li>If no patches need attention, clears the current region and patch.</li>
+     *   <li>If no region is set, initializes the region and patch to the first needing attention.</li>
+     *   <li>If all patches in the current region are growing, clears the current region and patch.</li>
+     *   <li>If the current patch no longer needs attention, switches to the next patch in the region needing attention.</li>
+     *   <li>Otherwise, keeps the current patch as is.</li>
+     * </ul>
+     * This method should be called regularly to ensure the script targets the correct region and patch.
+     */
+    private void updatePatchAndRegion() {
+		Map<FarmingPatch, CropState> patchesNeedingAttention = plugin.getPatchesNeedingAttention();
+		if (patchesNeedingAttention.isEmpty()) {
+			log.debug("No patches need attention.");
+			clearCurrentRegionAndPatch();
+			return;
+		}
+
+		if (currentFarmingRegion == null) {
+			initializeRegionAndPatch(patchesNeedingAttention);
+			return;
+		}
+
+		if (areAllPatchesGrowing(currentFarmingRegion, patchesNeedingAttention)) {
+			log.debug("All patches in current region are growing. Clearing current region and patch.");
+			clearCurrentRegionAndPatch();
+			return;
+		}
+
+		if (shouldSwitchPatch(patchesNeedingAttention)) {
+			switchToNextPatch(patchesNeedingAttention);
+		} else {
+			log.debug("Current patch still needs attention, not switching.");
+		}
+	}
+
+	private void initializeRegionAndPatch(Map<FarmingPatch, CropState> patchesNeedingAttention) {
+		for (FarmingPatch patch : patchesNeedingAttention.keySet()) {
+			currentFarmingRegion = patch.getRegion();
+			currentFarmingPatch = patch;
+			log.debug("Initialized farming region: {} and patch: {}", currentFarmingRegion.getName(), currentFarmingPatch.getName());
+			break;
+		}
+	}
+
+	private boolean areAllPatchesGrowing(FarmingRegion region, Map<FarmingPatch, CropState> patchesNeedingAttention) {
+		return plugin.getPatchStateMap().keySet().stream()
+			.filter(patch -> Objects.equals(patch.getRegion(), region))
+			.noneMatch(patchesNeedingAttention::containsKey);
+	}
+
+	private boolean shouldSwitchPatch(Map<FarmingPatch, CropState> patchesNeedingAttention) {
+		return currentFarmingPatch == null || !patchesNeedingAttention.containsKey(currentFarmingPatch);
+	}
+
+	private void switchToNextPatch(Map<FarmingPatch, CropState> patchesNeedingAttention) {
+		Optional<FarmingRegion> nextRegion = patchesNeedingAttention.keySet().stream()
+			.map(FarmingPatch::getRegion)
+			.filter(Objects::nonNull)
+			.filter(region -> patchesNeedingAttention.keySet().stream().anyMatch(patch -> Objects.equals(patch.getRegion(), region)))
+			.findFirst();
+
+		if (nextRegion.isPresent()) {
+			currentFarmingRegion = nextRegion.get();
+			currentFarmingPatch = patchesNeedingAttention.keySet().stream()
+				.filter(patch -> Objects.equals(patch.getRegion(), currentFarmingRegion))
+				.findFirst().orElse(null);
+			log.debug("Switched to region: {} and patch: {} needing attention.",
+				currentFarmingRegion.getName(),
+				currentFarmingPatch != null ? currentFarmingPatch.getName() : "none");
+		} else {
+			clearCurrentRegionAndPatch();
+			log.debug("No region or patch needing attention found.");
+		}
+	}
+
+	private void clearCurrentRegionAndPatch() {
+		currentFarmingRegion = null;
+		currentFarmingPatch = null;
 	}
 }

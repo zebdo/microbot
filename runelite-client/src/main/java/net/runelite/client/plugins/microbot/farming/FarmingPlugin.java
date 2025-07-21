@@ -110,6 +110,10 @@ public class FarmingPlugin extends Plugin implements SchedulablePlugin
 	@Inject
 	private FarmingScript farmingScript;
 
+	private LogicalCondition startCondition;
+
+	private LogicalCondition stopCondition;
+
 	@Getter
 	private Map<FarmingPatch, CropState> patchStateMap = new LinkedHashMap<>();
 
@@ -187,13 +191,13 @@ public class FarmingPlugin extends Plugin implements SchedulablePlugin
 	{
 		if (Arrays.stream(patchVarbits).anyMatch(varbit -> varbit == ev.getVarbitId()))
 		{
-			List<FarmingPatch> patches = getPatchesForRegion();
+			Map<FarmingPatch, CropState> patches = getPatchesForRegion();
 			if (!patches.isEmpty())
 			{
-				for (FarmingPatch patch : patches)
+				for (Map.Entry<FarmingPatch, CropState> entry : patches.entrySet())
 				{
-					CropState cropState = getFarmingHandler().predictPatch(patch);
-					patchStateMap.put(patch, cropState);
+					CropState cropState = getFarmingHandler().predictPatch(entry.getKey());
+					patchStateMap.put(entry.getKey(), cropState);
 				}
 			}
 		}
@@ -211,47 +215,45 @@ public class FarmingPlugin extends Plugin implements SchedulablePlugin
 	@Override
 	public LogicalCondition getStartCondition()
 	{
-		LogicalCondition startCondition = new AndCondition();
-		/*
-			We use fetchPatchStateMap() to ensure we have the latest patch states before checking conditions.
-		 */
-		Map<FarmingPatch, CropState> _patchStateMap = Microbot.getClientThread().runOnClientThreadOptional(this::fetchPatchStateMap).orElse(new LinkedHashMap<>());
-		if (_patchStateMap.isEmpty())
-		{
-			log.debug("Patch state map is empty, no patches to check for attention");
-			return startCondition;
+		if (startCondition == null) {
+			LogicalCondition _startCondition = new AndCondition();
+			/*
+				We use fetchPatchStateMap() to ensure we have the latest patch states before checking conditions.
+			 */
+			Supplier<Map<FarmingPatch, CropState>> patchStateMapSupplier = () -> Microbot.getClientThread().runOnClientThreadOptional(this::fetchPatchStateMap).orElse(new LinkedHashMap<>());
+
+			Predicate<Map<FarmingPatch, CropState>> allExceptTrees = psm -> psm.entrySet().stream()
+				.filter(entry -> {
+					PatchImplementation type = entry.getKey().getImplementation();
+					return type != PatchImplementation.TREE && type != PatchImplementation.FRUIT_TREE;
+				})
+				.allMatch(entry -> {
+					CropState state = entry.getValue();
+					return patchStateFilter.test(state);
+				});
+
+			Predicate<Map<FarmingPatch, CropState>> allExceptFruitTrees = psm -> psm.entrySet().stream()
+				.filter(entry -> {
+					PatchImplementation type = entry.getKey().getImplementation();
+					return type != PatchImplementation.FRUIT_TREE;
+				})
+				.allMatch(entry -> {
+					CropState state = entry.getValue();
+					return patchStateFilter.test(state);
+				});
+
+			Predicate<Map<FarmingPatch, CropState>> combinedPredicate = allExceptTrees.or(allExceptFruitTrees);
+
+			PredicateCondition<Map<FarmingPatch, CropState>> patchesNeedAttention = new PredicateCondition<>(
+				"Patches require attention",
+				combinedPredicate,
+				patchStateMapSupplier,
+				"All configured patches except tree patches require attention"
+			);
+
+			_startCondition.addCondition(patchesNeedAttention);
+			startCondition = _startCondition;
 		}
-
-		Predicate<Map<FarmingPatch, CropState>> allExceptTrees = psm -> psm.entrySet().stream()
-			.filter(entry -> {
-				PatchImplementation type = entry.getKey().getImplementation();
-				return type != PatchImplementation.TREE && type != PatchImplementation.FRUIT_TREE;
-			})
-			.allMatch(entry -> {
-				CropState state = entry.getValue();
-				return patchStateFilter.test(state);
-			});
-
-		Predicate<Map<FarmingPatch, CropState>> allExceptFruitTrees = psm -> psm.entrySet().stream()
-			.filter(entry -> {
-				PatchImplementation type = entry.getKey().getImplementation();
-				return type != PatchImplementation.FRUIT_TREE;
-			})
-			.allMatch(entry -> {
-				CropState state = entry.getValue();
-				return patchStateFilter.test(state);
-			});
-
-		Predicate<Map<FarmingPatch, CropState>> combinedPredicate = allExceptTrees.or(allExceptFruitTrees);
-
-		PredicateCondition<Map<FarmingPatch, CropState>> patchesNeedAttention = new PredicateCondition<>(
-			"Patches require attention",
-			combinedPredicate,
-			() -> _patchStateMap,
-			"All configured patches except tree patches require attention"
-		);
-
-		startCondition.addCondition(patchesNeedAttention);
 
 		return startCondition;
 	}
@@ -259,26 +261,25 @@ public class FarmingPlugin extends Plugin implements SchedulablePlugin
 	@Override
 	public LogicalCondition getStopCondition()
 	{
-		LogicalCondition stopCondition = new AndCondition();
-		/*
-			We use fetchPatchStateMap() to ensure we have the latest patch states before checking conditions.
-		 */
-		Map<FarmingPatch, CropState> _patchStateMap = Microbot.getClientThread().runOnClientThreadOptional(this::fetchPatchStateMap).orElse(new LinkedHashMap<>());
-		if (_patchStateMap.isEmpty())
-		{
-			log.debug("Patch state map is empty, no patches to check for attention");
-			return stopCondition;
+		if (stopCondition == null) {
+			LogicalCondition _stopCondition = new AndCondition();
+			/*
+				We use fetchPatchStateMap() to ensure we have the latest patch states before checking conditions.
+		 	*/
+			Supplier<Collection<CropState>> cropStateSupplier = () -> Microbot.getClientThread().runOnClientThreadOptional(this::fetchPatchStateMap).orElse(new LinkedHashMap<>()).values();
+
+			Predicate<Collection<CropState>> noPatchesNeedAttentionPredicate = cs -> cs.stream().noneMatch(patchStateFilter);
+
+			PredicateCondition<Collection<CropState>> noPatchesNeedAttention = new PredicateCondition<>(
+				"No patches need attention",
+				noPatchesNeedAttentionPredicate,
+				cropStateSupplier,
+				"No patches in an attention-worthy state"
+			);
+
+			_stopCondition.addCondition(noPatchesNeedAttention);
+			stopCondition = _stopCondition;
 		}
-		Predicate<Collection<CropState>> noPatchesNeedAttentionPredicate = cs -> cs.stream().noneMatch(patchStateFilter);
-
-		PredicateCondition<Collection<CropState>> noPatchesNeedAttention = new PredicateCondition<>(
-			"No patches need attention",
-			noPatchesNeedAttentionPredicate,
-			_patchStateMap::values,
-			"No patches in an attention-worthy state"
-		);
-
-		stopCondition.addCondition(noPatchesNeedAttention);
 
 		return stopCondition;
 	}
@@ -354,42 +355,44 @@ public class FarmingPlugin extends Plugin implements SchedulablePlugin
 	}
 
 	/**
-	 * Returns a list of enabled farming patches that are located in the same region as the player.
+	 * Returns a map of enabled farming patches and their crop states that are located in the same region as the player.
+	 * <p>
+	 * This method uses the player's current {@link WorldPoint} to filter patches whose region contains the player.
+	 * If no patches are found in the current region, an empty map is returned.
 	 *
-	 * @return list of farming patches in the player's current region
+	 * @return a map of {@link FarmingPatch} to {@link CropState} for patches in the player's current region
 	 */
-	public List<FarmingPatch> getPatchesForRegion()
+	public Map<FarmingPatch, CropState> getPatchesForRegion()
 	{
 		final WorldPoint playerLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
 		if (patchStateMap.isEmpty())
 		{
 			log.debug("No patches found in current region");
-			return Collections.emptyList();
+			return Collections.emptyMap();
 		}
-		return patchStateMap.keySet().stream()
-			.filter(patch -> patch.getRegion().isInBounds(playerLocation))
-			.collect(Collectors.toList());
+		return patchStateMap.entrySet().stream()
+			.filter(entry -> entry.getKey().getRegion().isInBounds(playerLocation))
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	/**
-	 * Gets all patches that need attention (empty, harvestable, diseased, dead).
+	 * Returns a map of all enabled farming patches that require attention, along with their crop states.
+	 * <p>
+	 * A patch requires attention if its {@link CropState} is one of: EMPTY, HARVESTABLE, DISEASED, DEAD, or UNCHECKED.
+	 * The returned map preserves the order of patches as in {@code patchStateMap}.
 	 *
-	 * @return List of patches that need attention
+	 * @return a map of {@link FarmingPatch} to {@link CropState} for patches needing attention
 	 */
-	public List<FarmingPatch> getPatchesNeedingAttention()
+	public Map<FarmingPatch, CropState> getPatchesNeedingAttention()
 	{
-		List<FarmingPatch> result = new ArrayList<>();
-
-		for (Map.Entry<FarmingPatch, CropState> entry : patchStateMap.entrySet())
-		{
-			CropState state = entry.getValue();
-			if (patchStateFilter.test(state))
-			{
-				result.add(entry.getKey());
-			}
-		}
-
-		return result;
+		return patchStateMap.entrySet().stream()
+			.filter(entry -> patchStateFilter.test(entry.getValue()))
+			.collect(Collectors.toMap(
+				Map.Entry::getKey,
+				Map.Entry::getValue,
+				(e1, e2) -> e1,
+				LinkedHashMap::new
+			));
 	}
 
 	/**
@@ -582,3 +585,4 @@ public class FarmingPlugin extends Plugin implements SchedulablePlugin
 		patchStateMap.putAll(sortedMap);
 	}
 }
+
