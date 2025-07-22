@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.woodcutting;
 
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
@@ -46,9 +47,7 @@ public class AutoWoodcuttingScript extends Script {
             FORESTRY_CAMPFIRE_BURNING_YEW_LOGS,
             HUMAN_CREATEFIRE
     );
-    private static final Integer[] FIRE_IDS = {26185, 49927};
-    private static final int RITUAL_CIRCLE_GREEN = 12527;
-    private static final int RITUAL_CIRCLE_RED = 12535;
+
     public static final int FORESTRY_DISTANCE = 15;
     public static String version = "1.7.0";
     private static WorldPoint returnPoint;
@@ -112,8 +111,10 @@ public class AutoWoodcuttingScript extends Script {
                         woodcuttingScriptState = WoodcuttingScriptState.RESETTING;
                         break;
                     case RESETTING:
-                        resetInventory(config);
-                        break;
+                        if (!handleForestryEvents(config)) {
+                            resetInventory(config);
+                            break;
+                        }
                 }
             } catch (Exception ex) {
                 Microbot.log(ex.getMessage());
@@ -179,7 +180,7 @@ public class AutoWoodcuttingScript extends Script {
             return true;
         }
 
-        if (checkForBeeHive() && Rs2Inventory.contains("logs")) {
+        if (checkForBeeHive() && Rs2Inventory.contains(config.TREE().getLogID())) {
             if (debugForestry) {
                 Microbot.log("Bee hive found");
             }
@@ -228,7 +229,6 @@ public class AutoWoodcuttingScript extends Script {
 
     private void handleStrugglingSapling() {
         currentForestryEvent = ForestryEvents.STRUGGLING_SAPLING;
-
     }
 
     private boolean CheckForStrugglingSapling() {
@@ -351,7 +351,7 @@ public class AutoWoodcuttingScript extends Script {
         if (rainbows != null && !rainbows.isEmpty()) {
             TileObject rainbow = rainbows.get(0);
             if (!Rs2Player.getWorldLocation().equals(rainbow.getWorldLocation())) {
-                Rs2Walker.walkTo(rainbow.getWorldLocation());
+                Rs2Walker.walkTo(rainbow.getWorldLocation(),0);
                 sleepUntil(() -> Rs2Player.getWorldLocation().equals(rainbow.getWorldLocation()) || !checkForRainbow(), 10000);
             }
         }
@@ -363,7 +363,7 @@ public class AutoWoodcuttingScript extends Script {
 
         if (Rs2Widget.findWidget("How many logs would you like to add", null, false) != null) {
             Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
-            sleep(1000, 2000);
+            sleepUntil(() -> !Rs2Player.isAnimating());
             return;
         }
 
@@ -399,12 +399,11 @@ public class AutoWoodcuttingScript extends Script {
                             npc.getName().toLowerCase().contains("freaky forester")
             );
 
-            if (!foresters.findAny().isPresent()) {
+            var forester = foresters.findFirst().orElse(null);
+            if (forester == null) {
                 currentForestryEvent = ForestryEvents.NONE;
                 return;
             }
-
-            var forester = foresters.findFirst().get();
             Rs2Npc.interact(forester, "Talk-to");
             sleepUntil(() -> Rs2Widget.findWidget("Freaky Forester", null, false) != null, 5000);
             return;
@@ -438,11 +437,12 @@ public class AutoWoodcuttingScript extends Script {
         if (targetCircle != null) {
             WorldPoint targetLocation = targetCircle.getWorldLocation();
             if (!Rs2Player.getWorldLocation().equals(targetLocation)) {
-                Rs2Walker.walkTo(targetLocation);
+                Rs2Walker.walkTo(targetLocation,0);
                 sleepUntil(() -> Rs2Player.getWorldLocation().equals(targetLocation) || !checkForRitualCircles(), 10000);
             }
         } else {
             currentForestryEvent = ForestryEvents.NONE;
+            Microbot.log("Unable to solve ritual circles, not enough circles or invalid configuration.");
         }
     }
 
@@ -453,7 +453,7 @@ public class AutoWoodcuttingScript extends Script {
 
         int s = 0;
         for (NPC npc : ritualCircles) {
-            int off = npc.getId() - RITUAL_CIRCLE_GREEN;
+            int off = npc.getId() - NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_A_1;
             int shape = off / 4;
             int color = off % 4;
             int id = (16 << shape) | (1 << color);
@@ -461,7 +461,7 @@ public class AutoWoodcuttingScript extends Script {
         }
 
         for (NPC npc : ritualCircles) {
-            int off = npc.getId() - RITUAL_CIRCLE_GREEN;
+            int off = npc.getId() - NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_A_1;
             int shape = off / 4;
             int color = off % 4;
             int id = (16 << shape) | (1 << color);
@@ -522,7 +522,7 @@ public class AutoWoodcuttingScript extends Script {
         return null;
     }
 
-    private boolean breakPlayersAnimation() {
+    public boolean breakPlayersAnimation() {
         if (Rs2Player.isMoving() || Rs2Player.isAnimating()) {
             if (Rs2Inventory.contains("logs")) {
                 Rs2Inventory.interact(item -> item.getName().toLowerCase().contains("logs"), "Drop");
@@ -586,8 +586,10 @@ public class AutoWoodcuttingScript extends Script {
             }
         }
 
-        if (woodcuttingScriptState != WoodcuttingScriptState.RESETTING && (Rs2Player.isMoving() || Rs2Player.isAnimating()))
+        if (woodcuttingScriptState != WoodcuttingScriptState.RESETTING &&
+                (Rs2Player.isMoving() || (Rs2Player.isAnimating() && !BURNING_ANIMATION_IDS.contains(Rs2Player.getLastAnimationID())))) {
             return true;
+        }
 
         return Rs2AntibanSettings.actionCooldownActive;
     }
@@ -631,12 +633,16 @@ public class AutoWoodcuttingScript extends Script {
     private void burnLog(AutoWoodcuttingConfig config) {
         WorldPoint fireSpot;
         boolean useCampfire = false;
-        GameObject fire = Rs2GameObject.getGameObject(FIRE_IDS, 6);
+
+        // prioritize campfire if available
+        GameObject fire = Rs2GameObject.getGameObject(49927, 6); // Forester's campfire
+        if (fire == null) {
+            fire = Rs2GameObject.getGameObject(26185, 6); // Regular fire
+        }
         if (config.resetOptions() == WoodcuttingResetOptions.CAMPFIRE_FIREMAKE) {
 
             if (fire != null) {
                 useCampfire = true;
-
             }
         }
         if ((Rs2Player.isStandingOnGameObject() || cannotLightFire) && !Rs2Player.isAnimating() && !useCampfire) {
@@ -655,6 +661,9 @@ public class AutoWoodcuttingScript extends Script {
             sleepUntil(() -> (!Rs2Player.isMoving() && Rs2Widget.findWidget("How many would you like to burn?", null, false) != null), 5000);
             Rs2Random.waitEx(400, 200);
             Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
+            sleepUntil(() -> !Rs2Inventory.contains(config.TREE().getLog()) || !Rs2Player.isAnimating(), 40000);
+
+            return;
         }
         sleepUntil(() -> !isFiremake());
         if (!isFiremake()) {

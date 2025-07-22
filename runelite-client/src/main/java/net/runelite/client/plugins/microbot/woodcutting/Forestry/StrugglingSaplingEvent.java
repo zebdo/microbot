@@ -14,6 +14,8 @@ import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
+import static net.runelite.client.plugins.microbot.util.Global.*;
+
 public class StrugglingSaplingEvent implements BlockingEvent {
     private final AutoWoodcuttingPlugin plugin;
 
@@ -34,21 +36,21 @@ public class StrugglingSaplingEvent implements BlockingEvent {
 
     @Override
     public boolean execute() {
-        breakPlayersAnimation();
+        plugin.autoWoodcuttingScript.breakPlayersAnimation();
 
         // Find the struggling sapling
         var sapling = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("Struggling sapling", false))
                 .stream()
                 .filter(obj ->
                         Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(obj), "Add-mulch") &&
-                                obj.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
+                                obj.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= AutoWoodcuttingScript.FORESTRY_DISTANCE
                 )
                 .findFirst()
                 .orElse(null);
 
         if (sapling == null) {
-            currentForestryEvent = ForestryEvents.NONE;
-            return;
+            plugin.autoWoodcuttingScript.currentForestryEvent = ForestryEvents.NONE;
+            return true;
         }
 
         // Find all available leaf ingredients
@@ -58,8 +60,8 @@ public class StrugglingSaplingEvent implements BlockingEvent {
                 .collect(Collectors.toList());
 
         if (ingredients.isEmpty()) {
-            currentForestryEvent = ForestryEvents.NONE;
-            return;
+            plugin.autoWoodcuttingScript.currentForestryEvent = ForestryEvents.NONE;
+            return true;
         }
 
         // If we have leaves in inventory, add them to the sapling
@@ -67,12 +69,12 @@ public class StrugglingSaplingEvent implements BlockingEvent {
             Rs2GameObject.interact(sapling, "Add-mulch");
             Rs2Player.waitForAnimation();
             sleep(1000, 2000);
-            return;
+            return true;
         }
 
         // Check if we have knowledge of correct ingredients from previous attempts
         for (int i = 0; i < 3; i++) {
-            GameObject correctIngredient = saplingOrder[i];
+            GameObject correctIngredient = plugin.autoWoodcuttingScript.saplingOrder[i];
             if (correctIngredient != null) {
                 // Look for matching ingredient in our available ingredients
                 for (TileObject ingredient : ingredients) {
@@ -81,7 +83,7 @@ public class StrugglingSaplingEvent implements BlockingEvent {
                         Rs2GameObject.interact(ingredient, "Collect");
                         Rs2Player.waitForAnimation();
                         sleep(800, 1500);
-                        return;
+                        return true;
                     }
                 }
             }
@@ -99,6 +101,7 @@ public class StrugglingSaplingEvent implements BlockingEvent {
             Rs2Player.waitForAnimation();
             sleep(800, 1500);
         }
+        return true;
     }
 
     @Override

@@ -7,12 +7,14 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.api.events.StatChanged;
+import net.runelite.api.gameval.NpcID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.woodcutting.Forestry.StrugglingSaplingEvent;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
@@ -28,7 +30,7 @@ import java.util.regex.Pattern;
 @Slf4j
 public class AutoWoodcuttingPlugin extends Plugin {
     @Inject
-    AutoWoodcuttingScript autoWoodcuttingScript;
+    public AutoWoodcuttingScript autoWoodcuttingScript;
     @Inject
     private AutoWoodcuttingConfig config;
     @Inject
@@ -47,6 +49,7 @@ public class AutoWoodcuttingPlugin extends Plugin {
         if (overlayManager != null) {
             overlayManager.add(woodcuttingOverlay);
         }
+        Microbot.blockingEventManager.add(new StrugglingSaplingEvent(this));
         autoWoodcuttingScript.run(config);
     }
 
@@ -90,13 +93,11 @@ public class AutoWoodcuttingPlugin extends Plugin {
         }
     }
 
-    private static final int RITUAL_CIRCLE_GREEN = 12527;
-    private static final int RITUAL_CIRCLE_RED = 12535;
     @Subscribe
     public void onNpcSpawned(NpcSpawned event) {
         NPC npc = event.getNpc();
         int id = npc.getId();
-        if (id >= RITUAL_CIRCLE_GREEN && id <= RITUAL_CIRCLE_RED) {
+        if (id >= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_A_1 && id <= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_D_4) {
             autoWoodcuttingScript.ritualCircles.add(npc);
         }
     }
@@ -105,7 +106,7 @@ public class AutoWoodcuttingPlugin extends Plugin {
     public void onNpcDespawned(NpcDespawned event) {
         NPC npc = event.getNpc();
         int id = npc.getId();
-        if (id >= RITUAL_CIRCLE_GREEN && id <= RITUAL_CIRCLE_RED) {
+        if (id >= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_A_1 && id <= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_D_4) {
             autoWoodcuttingScript.ritualCircles.remove(npc);
         }
     }
