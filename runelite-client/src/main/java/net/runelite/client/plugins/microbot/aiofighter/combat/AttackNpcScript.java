@@ -101,6 +101,23 @@ public class AttackNpcScript extends Script {
                 }
                 messageShown = false;
 
+                // Check if we should wait for loot
+                if (config.toggleWaitForLoot() && AIOFighterPlugin.isWaitingForLoot()) {
+                    long timeSinceKill = System.currentTimeMillis() - AIOFighterPlugin.getLastNpcKilledTime();
+                    
+                    if (timeSinceKill >= AIOFighterPlugin.LOOT_WAIT_TIMEOUT) {
+                        // Timeout reached - stop waiting and resume combat
+                        AIOFighterPlugin.setWaitingForLoot(false);
+                        AIOFighterPlugin.setLastNpcKilledTime(0);
+                        Microbot.log("Loot wait timeout reached, resuming combat");
+                    } else {
+                        // Still waiting - don't attack
+                        int secondsLeft = (int)((AIOFighterPlugin.LOOT_WAIT_TIMEOUT - timeSinceKill) / 1000);
+                        Microbot.status = "Waiting for loot (" + secondsLeft + "s)";
+                        return;
+                    }
+                }
+
                 if (AIOFighterPlugin.getCooldown() > 0 || Rs2Combat.inCombat()) {
                     AIOFighterPlugin.setState(State.COMBAT);
                     handleItemOnNpcToKill();

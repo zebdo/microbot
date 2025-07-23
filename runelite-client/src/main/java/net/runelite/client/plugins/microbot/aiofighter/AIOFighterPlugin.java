@@ -66,6 +66,17 @@ public class AIOFighterPlugin extends Plugin {
     @Getter
     @Setter
     public static int cooldown = 0;
+    
+    @Getter
+    @Setter
+    private static long lastNpcKilledTime = 0;
+    
+    @Getter
+    @Setter
+    private static boolean waitingForLoot = false;
+    
+    public static final int LOOT_WAIT_TIMEOUT = 6000; // 6 seconds in milliseconds
+    
     private final CannonScript cannonScript = new CannonScript();
     private final AttackNpcScript attackNpc = new AttackNpcScript();
 
@@ -107,6 +118,8 @@ public class AIOFighterPlugin extends Plugin {
     protected void startUp() throws AWTException {
 		Microbot.pauseAllScripts.compareAndSet(true, false);
         cooldown = 0;
+        lastNpcKilledTime = 0;
+        waitingForLoot = false;
         //initialize any data on startup
         ScheduledExecutorService executor = Executors.newSingleThreadScheduledExecutor();
         AtomicReference<ScheduledFuture<?>> futureRef = new AtomicReference<>();
@@ -294,6 +307,23 @@ public class AIOFighterPlugin extends Plugin {
     public void onNpcDespawned(NpcDespawned npcDespawned) {
         if(config.togglePrayer())
             flickerScript.onNpcDespawned(npcDespawned);
+    }
+    
+    @Subscribe
+    public void onActorDeath(ActorDeath event) {
+        if (!config.toggleWaitForLoot()) return;
+        
+        if (event.getActor() instanceof NPC) {
+            NPC npc = (NPC) event.getActor();
+            
+            // Check if we were fighting this NPC
+            Player localPlayer = Microbot.getClient().getLocalPlayer();
+            if (localPlayer != null && localPlayer.getInteracting() == npc) {
+                waitingForLoot = true;
+                lastNpcKilledTime = System.currentTimeMillis();
+                Microbot.log("NPC died, waiting for loot...");
+            }
+        }
     }
 
     @Subscribe
