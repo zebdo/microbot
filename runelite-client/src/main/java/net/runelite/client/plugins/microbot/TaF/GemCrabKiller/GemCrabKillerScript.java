@@ -46,6 +46,7 @@ public class GemCrabKillerScript extends Script {
                         break;
                     case FIGHTING:
                         handlePotions(config);
+                        handleSafety();
                         handleFighting(config);
                         break;
                     case BANKING:
@@ -62,6 +63,14 @@ public class GemCrabKillerScript extends Script {
             }
         }, 0, 1000, TimeUnit.MILLISECONDS);
         return true;
+    }
+
+    private void handleSafety() {
+        var hasFood = !Rs2Inventory.getInventoryFood().isEmpty();
+        var healthPercentage = Rs2Player.getHealthPercentage();
+        if (!hasFood && healthPercentage < 25d) {
+            gemCrabKillerState = GemCrabKillerState.BANKING;
+        }
     }
 
     private void handlePotions(GemCrabKillerConfig config) {
