@@ -3,8 +3,10 @@ package net.runelite.client.plugins.microbot.TaF.GemCrabKiller;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
+import net.runelite.client.ui.overlay.components.ComponentOrientation;
 import net.runelite.client.ui.overlay.components.ImageComponent;
 import net.runelite.client.ui.overlay.components.LineComponent;
+import net.runelite.client.ui.overlay.components.SplitComponent;
 import net.runelite.client.ui.overlay.components.TitleComponent;
 import net.runelite.client.util.ImageUtil;
 
@@ -31,10 +33,10 @@ public class GemCrabKillerOverlay extends OverlayPanel {
         this.plugin = plugin;
     }
 
-    private static BufferedImage getCrabImageFromResources() {
+    private BufferedImage getCrabImageFromResources() {
         try {
-            Class<?> clazz = Class.forName("net.runelite.client.plugins.microbot.TaF.GemCrabKiller");
-            return ImageUtil.loadImageResource(clazz, "GemStoneCrab.png");
+            var img = ImageUtil.loadImageResource(GemCrabKillerPlugin.class, "/net/runelite/client/plugins/microbot/GemCrabKiller/GemStoneCrab.png");
+            return ImageUtil.resizeImage(img, 24, 24, true);
         } catch (Exception e) {
             e.printStackTrace();
             return null;
@@ -44,15 +46,21 @@ public class GemCrabKillerOverlay extends OverlayPanel {
     @Override
     public Dimension render(Graphics2D graphics) {
         try {
-            panelComponent.setPreferredSize(new Dimension(220, 300));
+            panelComponent.setPreferredSize(new Dimension(175, 300));
             panelComponent.setBackgroundColor(BACKGROUND_COLOR);
-
-            // Title section
-            panelComponent.getChildren().add(TitleComponent.builder()
-                    .text("TaF's Gem Crab Killer")
-                    .color(TITLE_COLOR)
-                    .build());
-            panelComponent.getChildren().add(image);
+            // Title
+            final ImageComponent imageComponent = new ImageComponent(getCrabImageFromResources());
+            final LineComponent title = LineComponent.builder()
+                    .left("  TaF's Gem Crab Killer")
+                    .leftColor(Color.white)
+                    .build();
+            final SplitComponent iconTitleSplit = SplitComponent.builder()
+                    .first(imageComponent)
+                    .second(title)
+                    .orientation(ComponentOrientation.HORIZONTAL)
+                    .gap(new Point(2, 0))
+                    .build();
+            panelComponent.getChildren().add(iconTitleSplit);
             // Script running time
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Runtime:")
@@ -63,11 +71,12 @@ public class GemCrabKillerOverlay extends OverlayPanel {
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("State:")
                     .right(plugin.gemCrabKillerScript.gemCrabKillerState.name())
-                    .rightColor(Color.WHITE)
+                    .rightColor(getStateColor(plugin.gemCrabKillerScript.gemCrabKillerState))
                     .build());
             var xpGained = plugin.getXpGained();
             var xpPerHour = plugin.getXpPerHour();
 
+            // XP information
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("XP Gained:")
                     .right(formatNumber(xpGained))
@@ -81,7 +90,6 @@ public class GemCrabKillerOverlay extends OverlayPanel {
                     .build());
 
             // Footer with version
-            panelComponent.getChildren().add(LineComponent.builder().build()); // Spacer
             panelComponent.getChildren().add(LineComponent.builder()
                     .right("v" + GemCrabKillerScript.version)
                     .rightColor(new Color(160, 160, 160))
@@ -95,5 +103,20 @@ public class GemCrabKillerOverlay extends OverlayPanel {
 
     private String formatNumber(long number) {
         return String.format("%,d", number);
+    }
+
+    private Color getStateColor(GemCrabKillerState state) {
+        if (state == null) return NORMAL_COLOR;
+
+        switch (state) {
+            case FIGHTING:
+                return DANGER_COLOR;
+            case WALKING:
+                return WARNING_COLOR;
+            case BANKING:
+                return NORMAL_COLOR;
+            default:
+                return NORMAL_COLOR;
+        }
     }
 }

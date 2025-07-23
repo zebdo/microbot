@@ -1,17 +1,20 @@
 package net.runelite.client.plugins.microbot.TaF.GemCrabKiller;
 
+import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
+import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
+import java.time.Instant;
 import java.util.concurrent.TimeUnit;
 
 public class GemCrabKillerScript extends Script {
@@ -23,6 +26,7 @@ public class GemCrabKillerScript extends Script {
     public GemCrabKillerState gemCrabKillerState = GemCrabKillerState.WALKING;
     private Rs2InventorySetup inventorySetup = null;
     private boolean hasLooted = false;
+    private Instant waitingTimeStart = null;
 
     public boolean run(GemCrabKillerConfig config) {
         if (config.useInventorySetup() && config.inventorySetup() == null) {
@@ -45,10 +49,14 @@ public class GemCrabKillerScript extends Script {
                         if (handleWalking()) return;
                         break;
                     case FIGHTING:
+                        handlePotions(config);
                         if (handleFighting(config)) return;
                         break;
                     case BANKING:
                         handleBanking(config);
+                        break;
+                    case WAITING:
+                        handleWaiting(config);
                         break;
                 }
 
@@ -58,6 +66,42 @@ public class GemCrabKillerScript extends Script {
             }
         }, 0, 1000, TimeUnit.MILLISECONDS);
         return true;
+    }
+
+    private void handlePotions(GemCrabKillerConfig config) {
+        if (config.useOffensivePotions() && Rs2Combat.inCombat()) {
+            if (Rs2Player.drinkCombatPotionAt(Skill.RANGED, false)) {
+                Rs2Player.waitForAnimation();
+            }
+            if (Rs2Player.drinkCombatPotionAt(Skill.MAGIC, false)) {
+                Rs2Player.waitForAnimation();
+            }
+            if (Rs2Player.drinkCombatPotionAt(Skill.STRENGTH)) {
+                Rs2Player.waitForAnimation();
+            }
+            if (Rs2Player.drinkCombatPotionAt(Skill.ATTACK)) {
+                Rs2Player.waitForAnimation();
+            }
+            if (Rs2Player.drinkCombatPotionAt(Skill.DEFENCE)) {
+                Rs2Player.waitForAnimation();
+            }
+        }
+    }
+
+    private void handleWaiting(GemCrabKillerConfig config) {
+        if (waitingTimeStart == null) {
+            waitingTimeStart = Instant.now();
+        }
+        if (Rs2Npc.getNpc(CRAB_NPC_ID) != null) {
+            gemCrabKillerState = GemCrabKillerState.FIGHTING;
+            waitingTimeStart = null;
+            return;
+        }
+        if (Instant.now().isAfter(waitingTimeStart.plusSeconds(10))) {
+            waitingTimeStart = null;
+            gemCrabKillerState = GemCrabKillerState.WALKING;
+            return;
+        }
     }
 
     private void handleBanking(GemCrabKillerConfig config) {
@@ -89,6 +133,7 @@ public class GemCrabKillerScript extends Script {
                 }
             }
             Rs2GameObject.interact(CAVE_ENTRANCE_ID, "Crawl-through");
+            gemCrabKillerState = GemCrabKillerState.WAITING;
             return true;
         } else {
             hasLooted = false;
@@ -99,6 +144,8 @@ public class GemCrabKillerScript extends Script {
         }
         if (!Rs2Player.isInCombat()) {
             Rs2Npc.attack(npc);
+        } else {
+            waitingTimeStart = null;
         }
         return false;
     }
