@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.bankjs.BanksBankStander;
 
 import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.Item;
-import net.runelite.api.ItemID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -231,7 +231,7 @@ public class BanksBankStanderScript extends Script {
             isWaitingForPrompt = false; // Ensure prompt flag is reset
             if (secondItemId != null) {
                 if(config.amuletOfChemistry()){
-                    sleepUntil(() -> !Rs2Inventory.hasItem(secondItemId) || (!Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY) && !Rs2Equipment.isWearing(ItemID.ALCHEMISTS_AMULET_29990)), 40000);
+                    sleepUntil(() -> !Rs2Inventory.hasItem(secondItemId) || (!Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY) && !Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY_IMBUED_CHARGED)), 40000);
                     sleep(calculateSleepDuration(1));
                     checkForAmulet();
 //                    if(Rs2Bank.isOpen()) {
@@ -337,9 +337,9 @@ public class BanksBankStanderScript extends Script {
                 // watching our time immediately before attempting to withdraw an item, so we can keep our sleep timer within an expected range when not our last item.
                 timeValue = System.currentTimeMillis();
                 if (id != null) {
-                    Rs2Bank.withdrawX(true, id, missingQuantity);
+                    Rs2Bank.withdrawX(id, missingQuantity);
                 } else {
-                    Rs2Bank.withdrawX(true, item, missingQuantity);
+                    Rs2Bank.withdrawX(item, missingQuantity);
                 }
                 // code here is checking that we've withdrawn our last item from the bank before we wait for it to be in our inventory before we attempt to close the bank.
                 int lastItem = (config.fourthItemQuantity() > 0) ? 4 : (config.thirdItemQuantity() > 0) ? 3 : (config.secondItemQuantity() > 0) ? 2 : 1;
@@ -424,14 +424,14 @@ public class BanksBankStanderScript extends Script {
         }
     }
     private void checkForAmulet(){
-        if (!Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY) && !Rs2Equipment.isWearing(ItemID.ALCHEMISTS_AMULET_29990)){
+        if (!Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY) && !Rs2Equipment.isWearing(ItemID.AMULET_OF_CHEMISTRY_IMBUED_CHARGED)){
             Rs2ItemModel currentAmulet = Rs2Equipment.get(EquipmentInventorySlot.AMULET);
             if (!Rs2Bank.isOpen()) {
                 Rs2Bank.openBank();
                 sleepUntil(Rs2Bank::isOpen);
             }
-            if (Rs2Bank.isOpen() && Rs2Bank.hasItem(ItemID.ALCHEMISTS_AMULET_29990)){
-                Rs2Bank.withdrawAndEquip(ItemID.ALCHEMISTS_AMULET_29990);
+            if (Rs2Bank.isOpen() && Rs2Bank.hasItem(ItemID.AMULET_OF_CHEMISTRY_IMBUED_CHARGED)){
+                Rs2Bank.withdrawAndEquip(ItemID.AMULET_OF_CHEMISTRY_IMBUED_CHARGED);
             } else if (Rs2Bank.isOpen() && Rs2Bank.hasItem(ItemID.AMULET_OF_CHEMISTRY)) {
                 Rs2Bank.withdrawAndEquip(ItemID.AMULET_OF_CHEMISTRY);
             } else {

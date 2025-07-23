@@ -4,15 +4,14 @@ import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.GameObjects;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
-import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.coords.Rs2LocalPoint;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -65,6 +64,7 @@ public class EclipseMoonHandler implements BaseHandler {
     @Override
     public State execute() {
         if (!Rs2Widget.isWidgetVisible(bossHealthBarWidgetID)) {
+            BreakHandlerScript.setLockState(true);
             boss.walkToBoss(equipmentNormal, bossName, bossLobbyLocation);
             boss.fightPreparation(equipmentNormal);
             boss.enterBossArena(bossName, bossStatueObjectID, bossLobbyLocation);
@@ -86,6 +86,8 @@ public class EclipseMoonHandler implements BaseHandler {
         if (debugLogging) {Microbot.log("The " + bossName + "boss health bar widget is no longer visible, the fight must have ended.");}
         Rs2Prayer.disableAllPrayers();
         sleep(2400);
+        BossHandler.rechargeRunEnergy();
+        BreakHandlerScript.setLockState(false);
         return State.IDLE;
     }
 

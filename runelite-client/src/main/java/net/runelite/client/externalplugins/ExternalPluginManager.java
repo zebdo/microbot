@@ -127,13 +127,10 @@ public class ExternalPluginManager
 		}
 	}
 
-	@Subscribe(
-		// run before PluginManager to avoid it starting plugins which we are about to uninstall
-		priority = 1
-	)
+	@Subscribe
 	public void onProfileChanged(ProfileChanged profileChanged)
 	{
-		refreshPlugins();
+		executor.submit(this::refreshPlugins);
 	}
 
 	private void refreshPlugins()
@@ -201,6 +198,11 @@ public class ExternalPluginManager
 					PluginHubManifest.JarData jarData = manifests.get(name);
 					if (jarData != null)
 					{
+						if (jarData.getInternalName().equalsIgnoreCase("inventory-setups") || jarData.getInternalName().equalsIgnoreCase("quest-helper") || jarData.getInternalName().equalsIgnoreCase("shortest-path"))
+						{
+							log.warn("Skipping loading external plugin \"{}\" as it is a builtin external", jarData.getInternalName());
+							continue;
+						}
 						externalPlugins.add(jarData);
 
 						jarData.getJarFile().setLastModified(now.toEpochMilli());

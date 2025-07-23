@@ -130,6 +130,11 @@ public class ConditionTreeCellRenderer extends DefaultTreeCellRenderer {
             if (conditionsAreRelevant) {
                 text = "⚡ " + text;
             }
+
+            // Handle newlines in text by replacing them with spaces for tree display
+            text = text.replace('\n', ' ').replace('\r', ' ');
+            // Collapse multiple spaces into single spaces
+            text = text.replaceAll("\\s+", " ").trim();
             
             setText(text);
             
@@ -150,6 +155,12 @@ public class ConditionTreeCellRenderer extends DefaultTreeCellRenderer {
             if (conditionsAreRelevant) {
                 text = "⚡ " + text;
             }
+            
+            // Handle newlines in text by replacing them with spaces for tree display
+            text = text.replace('\n', ' ').replace('\r', ' ');
+            // Collapse multiple spaces into single spaces
+            text = text.replaceAll("\\s+", " ").trim();
+            
             setText(text);
         } else if (userObject instanceof Condition) {
             Condition condition = (Condition) userObject;
@@ -185,6 +196,11 @@ public class ConditionTreeCellRenderer extends DefaultTreeCellRenderer {
             if (conditionsAreRelevant) {
                 text = "⚡ " + text;
             }
+
+            // Handle newlines in text by replacing them with spaces for tree display
+            text = text.replace('\n', ' ').replace('\r', ' ');
+            // Collapse multiple spaces into single spaces
+            text = text.replaceAll("\\s+", " ").trim();
             
             setText(text);
             

@@ -4,6 +4,7 @@ import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -38,10 +39,12 @@ public class ResupplyHandler implements BaseHandler {
 
     @Override
     public State execute() {
+        BreakHandlerScript.setLockState(true);
         walkToSupplies();
         makeMoonlightPotions(potionBatchSize);
         obtainBream();
-        rechargeRunEnergy();
+        BossHandler.rechargeRunEnergy();
+        BreakHandlerScript.setLockState(false);
         return State.IDLE;
     }
 
@@ -109,6 +112,8 @@ public class ResupplyHandler implements BaseHandler {
             sleep(600);
             while (Rs2Inventory.contains(ItemID.VIAL_WATER))Rs2Inventory.drop(ItemID.VIAL_WATER);
             sleep(600);
+            while (Rs2Inventory.contains(ItemID.VIAL_EMPTY))Rs2Inventory.drop(ItemID.VIAL_EMPTY);
+            sleep(600);
         }
     }
 
@@ -154,11 +159,6 @@ public class ResupplyHandler implements BaseHandler {
         if (debugLogging) {Microbot.log("Finished cooking bream.");}
     }
 
-    private void rechargeRunEnergy() {
-        Rs2GameObject.interact(ObjectID.PMOON_RANGE, "Make-cuppa");
-        sleep(600);
-    }
-
     /**
      * Return int: the total number of Moonlight Potions currently in inventory
      */
@@ -179,7 +179,7 @@ public class ResupplyHandler implements BaseHandler {
 
         int requiredSlots = desired * 2 + 1;                // 2 per potion + 1 mortar
         if (debugLogging) {Microbot.log("Required free inventory slots: " + requiredSlots);}
-        int freeSlots     = Rs2Inventory.getEmptySlots();
+        int freeSlots     = Rs2Inventory.emptySlotCount();
         if (debugLogging) {Microbot.log("Current free inventory slots: " + freeSlots);}
 
         /* --------- Free inventory space by dropping fish ---------------- */

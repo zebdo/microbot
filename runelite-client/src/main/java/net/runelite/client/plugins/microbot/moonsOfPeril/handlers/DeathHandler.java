@@ -4,6 +4,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilScript;
@@ -56,6 +57,7 @@ public class DeathHandler implements BaseHandler {
      * Travels to nearest bank and retrieves runes required for Civitas illa Fortis teleport.
      */
     private boolean retrieveTravelItems() {
+        BreakHandlerScript.setLockState(true);
         Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 1);
         sleep(600);
         if (Rs2Bank.openBank()) {
@@ -67,8 +69,10 @@ public class DeathHandler implements BaseHandler {
             Rs2Bank.withdrawX(ItemID.LAWRUNE, 2);
             sleep(600);
             Rs2Bank.closeBank();
+            BreakHandlerScript.setLockState(false);
             return true;
         }
+        BreakHandlerScript.setLockState(false);
         return false;
     }
 

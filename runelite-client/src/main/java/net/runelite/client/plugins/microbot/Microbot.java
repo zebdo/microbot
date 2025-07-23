@@ -9,8 +9,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalTime;
-import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,10 +32,12 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.annotations.Component;
+import net.runelite.api.annotations.Varbit;
+import net.runelite.api.annotations.Varp;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetModalMode;
 import net.runelite.client.Notifier;
@@ -66,6 +66,7 @@ import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchScr
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntilNotNull;
+
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -81,7 +82,6 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.WorldUtil;
 import net.runelite.http.api.worlds.World;
 import org.slf4j.event.Level;
-
 @Slf4j
 @NoArgsConstructor
 public class Microbot {
@@ -165,7 +165,7 @@ public class Microbot {
 	private static ScheduledFuture<?> xpSchedulorFuture;
 	private static net.runelite.api.World quickHopTargetWorld;
 	/**
-	 * Pouchscript is injected in the main MicrobotPlugin as it's being used in multiple scripts
+	 * PouchScript is injected in the main MicrobotPlugin as it's being used in multiple scripts
 	 */
 	@Getter
 	@Inject
@@ -193,7 +193,7 @@ public class Microbot {
 	/**
 	 * Get the total runtime of the script
 	 *
-	 * @return
+	 * @return the {@link Duration} the account has been logged in
 	 */
 	public static Duration getLoginTime()
 	{
@@ -219,12 +219,12 @@ public class Microbot {
 			getInputArguments().toString().contains("-agentlib:jdwp");
 	}
 
-	public static int getVarbitValue(int varbit)
+	public static int getVarbitValue(@Varbit int varbit)
 	{
 		return getClientThread().runOnClientThreadOptional(() -> getClient().getVarbitValue(varbit)).orElse(0);
 	}
 
-	public static int getVarbitPlayerValue(int varpId)
+	public static int getVarbitPlayerValue(@Varp int varpId)
 	{
 		return getClientThread().runOnClientThreadOptional(() -> getClient().getVarpValue(varpId)).orElse(0);
 	}
@@ -346,15 +346,20 @@ public class Microbot {
 	{
 		try
 		{
-			SwingUtilities.invokeAndWait(() ->
+			Runnable messageRunnable = () ->
 			{
 				JOptionPane.showConfirmDialog(null, message, "Message",
 					JOptionPane.DEFAULT_OPTION);
-			});
+			};
+			if (SwingUtilities.isEventDispatchThread()) {
+				messageRunnable.run();
+			} else {
+				SwingUtilities.invokeAndWait(messageRunnable);
+			}
 		}
 		catch (Exception ex)
 		{
-			ex.printStackTrace();
+			log.error("Error displaying message {}:", message, ex);
 		}
 	}
 
@@ -362,31 +367,28 @@ public class Microbot {
 	{
 		try
 		{
-			SwingUtilities.invokeAndWait(() -> {
-				final JOptionPane optionPane = new JOptionPane(
-					message,
-					JOptionPane.INFORMATION_MESSAGE,
-					JOptionPane.DEFAULT_OPTION
-				);
-
-				final JDialog dialog = optionPane.createDialog("Message");
-
-				// Set up timer to close the dialog after 10 seconds
-				Timer timer = new Timer(disposeTime, e -> {
-					dialog.dispose();
-				});
+			Runnable messageRunnable = () ->
+			{
+				JOptionPane pane = new JOptionPane(message, JOptionPane.INFORMATION_MESSAGE);
+				JDialog dialog = pane.createDialog("Message");
+				dialog.setModal(false);
+				dialog.setVisible(true);
+				Timer timer = new Timer(disposeTime, e -> dialog.dispose());
 				timer.setRepeats(false);
 				timer.start();
-				dialog.setVisible(true);
-				timer.stop();
-			});
+
+			};
+			if (SwingUtilities.isEventDispatchThread()) {
+				messageRunnable.run();
+			} else {
+				SwingUtilities.invokeAndWait(messageRunnable);
+			}
 		}
 		catch (Exception ex)
 		{
-			ex.printStackTrace();
+			log.error("Error displaying message {}:", message, ex);
 		}
 	}
-
 
 	public static List<Rs2ItemModel> updateItemContainer(int id, ItemContainerChanged e)
 	{
@@ -417,12 +419,12 @@ public class Microbot {
 	}
 
 	@SneakyThrows
+	@SuppressWarnings("SpellCheckingInspection")
 	private static boolean togglePlugin(Plugin plugin, boolean enable) {
-		if (plugin == null) return !enable;
-
+		if (plugin == null) return false;
 		final AtomicBoolean success = new AtomicBoolean(false);
-		SwingUtilities.invokeAndWait(() -> {
-			try {
+		Runnable runnable = () -> {
+        	try {
 				getPluginManager().setPluginEnabled(plugin, enable);
 				if (enable) {
 					success.set(getPluginManager().startPlugin(plugin));
@@ -430,10 +432,19 @@ public class Microbot {
 				} else {
 					success.set(getPluginManager().stopPlugin(plugin));
 				}
-			} catch (PluginInstantiationException e) {
-				e.printStackTrace();
+			} catch (PluginInstantiationException ex) {
+				log.error("Error {}abling plugin ({}):", enable ? "en" : "dis", plugin.getClass().getSimpleName(), ex);
 			}
-		});
+		};
+
+		if (SwingUtilities.isEventDispatchThread()) {
+			runnable.run();
+		} else {
+			// Ensure the runnable is executed on the Event Dispatch Thread
+			// This is necessary for Swing components and plugin management
+			SwingUtilities.invokeLater(runnable);
+		}
+
 		return success.get();
 	}
 
@@ -506,9 +517,9 @@ public class Microbot {
 				click(new Rectangle(1, 1), entry);
 			}
 		}
-		catch (ArrayIndexOutOfBoundsException e)
+		catch (ArrayIndexOutOfBoundsException ex)
 		{
-			e.printStackTrace();
+			log.error("Error during doInvoke", ex);
 			// Handle the error as needed
 		}
 	}
@@ -613,12 +624,12 @@ public class Microbot {
 	/**
 	 * Logs the stack trace of an exception to the console and chat.
 	 *
-	 * @param scriptName
-	 * @param e
+	 * @param scriptName the name of the script where the exception occurred
+	 * @param ex the exception
 	 */
-	public static void logStackTrace(String scriptName, Exception e)
+	public static void logStackTrace(String scriptName, Exception ex)
 	{
-		log(scriptName, Level.ERROR, e);
+		log(scriptName, Level.ERROR, ex);
 	}
 
 	public static void log(String message)
@@ -674,23 +685,6 @@ public class Microbot {
 				log.info(message);
 				break;
 		}
-
-		if (Microbot.isLoggedIn())
-		{
-			if (level == Level.DEBUG && !isDebug())
-			{
-				return;
-			}
-
-			final String _message = ex == null ? message : ex.getMessage();
-
-			LocalTime currentTime = LocalTime.now();
-			DateTimeFormatter formatter = DateTimeFormatter.ofPattern("HH:mm:ss");
-			String formattedTime = currentTime.format(formatter);
-			Microbot.getClientThread().runOnClientThreadOptional(() ->
-				Microbot.getClient().addChatMessage(ChatMessageType.ENGINE, "", "[" + formattedTime + "]: " + _message, "", false)
-			);
-		}
 	}
 
 	/**
@@ -727,7 +721,7 @@ public class Microbot {
 
 			// Schedule a task to check the widget's state and close the interface if necessary
 			getClientThread().invokeLater(() -> {
-				Widget w = getClient().getWidget(660, 1);
+				Widget w = getClient().getWidget(InterfaceID.NOTIFICATION_DISPLAY, 1);
 				if (w == null || w.getWidth() > 0)
 				{
 					return false; // Exit if the widget is null or already displayed
@@ -810,8 +804,7 @@ public class Microbot {
 			}
 			catch (Exception ex)
 			{
-				ex.printStackTrace();
-				System.out.println(ex.getMessage());
+				log.error("Error while checking should download vanilla client:", ex);
 			}
 		}
 		return false;
@@ -882,9 +875,9 @@ public class Microbot {
 						{
 							return (Script) field.get(x); // Map the field to a Script instance
 						}
-						catch (IllegalAccessException e)
+						catch (IllegalAccessException ex)
 						{
-							e.printStackTrace();
+							log.error("Error getting active scripts", ex);
 							return null; // Handle exception if field cannot be accessed
 						}
 					});

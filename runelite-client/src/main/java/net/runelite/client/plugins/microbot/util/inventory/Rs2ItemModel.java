@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.util.inventory;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.Item;
 import net.runelite.api.ItemComposition;
 import net.runelite.api.gameval.ItemID;
@@ -12,6 +13,10 @@ import net.runelite.client.plugins.microbot.Microbot;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
+import java.util.function.BiPredicate;
+import java.util.function.Predicate;
+
 @Slf4j
 public class Rs2ItemModel {
     @Getter
@@ -311,5 +316,22 @@ public class Rs2ItemModel {
         
         sb.append("}");
         return sb.toString();
+    }
+
+    private static <T> Predicate<Rs2ItemModel> matches(T[] values, BiPredicate<Rs2ItemModel, T> biPredicate) {
+        return item -> Arrays.stream(values).filter(Objects::nonNull).anyMatch(value -> biPredicate.test(item, value));
+    }
+
+    public static Predicate<Rs2ItemModel> matches(boolean exact, String... names) {
+        return matches(names, exact ? (item, name) -> item.getName().equalsIgnoreCase(name) :
+                (item, name) -> item.getName().toLowerCase().contains(name.toLowerCase()));
+    }
+
+    public static Predicate<Rs2ItemModel> matches(int... ids) {
+        return item -> Arrays.stream(ids).anyMatch(id -> item.getId() == id);
+    }
+
+    public static Predicate<Rs2ItemModel> matches(EquipmentInventorySlot... slots) {
+        return matches(slots, (item, slot) -> item.getSlot() == slot.getSlotIdx());
     }
 }

@@ -178,18 +178,21 @@ public class LocationConditionUtil {
         JTabbedPane tabbedPane = (JTabbedPane) configPanel.getClientProperty("locationTabbedPane");
         
         if (tabbedPane == null) {
-            throw new IllegalStateException("Location condition panel not properly configured");
+            throw new IllegalStateException("Location condition panel not properly configured - locationTabbedPane not found");
         }
         
         int selectedIndex = tabbedPane.getSelectedIndex();
         
+        // Get the specific tab panel that contains the components for the selected condition type
+        JPanel activeTabPanel = (JPanel) tabbedPane.getComponentAt(selectedIndex);
+        
         switch (selectedIndex) {
             case 0: // Position
-                return createPositionCondition(configPanel);
+                return createPositionCondition(activeTabPanel);
             case 1: // Area
-                return createAreaCondition(configPanel);
+                return createAreaCondition(activeTabPanel);
             case 2: // Region
-                return createRegionCondition(configPanel);
+                return createRegionCondition(activeTabPanel);
             default:
                 throw new IllegalStateException("Unknown location condition type");
         }
@@ -620,7 +623,7 @@ public class LocationConditionUtil {
         JTextField nameField = (JTextField) configPanel.getClientProperty("positionNameField");
         
         if (xSpinner == null || ySpinner == null || planeSpinner == null || distanceSpinner == null) {
-            throw new IllegalStateException("Position condition panel not properly configured");
+            throw new IllegalStateException("Position condition panel not properly configured - missing spinner components");
         }
         
         int x = (Integer) xSpinner.getValue();
@@ -649,7 +652,7 @@ public class LocationConditionUtil {
         JTextField nameField = (JTextField) configPanel.getClientProperty("areaNameField");
         
         if (x1Spinner == null || y1Spinner == null || x2Spinner == null || y2Spinner == null || planeSpinner == null) {
-            throw new IllegalStateException("Area condition panel not properly configured");
+            throw new IllegalStateException("Area condition panel not properly configured - missing spinner components");
         }
         
         int x1 = (Integer) x1Spinner.getValue();
@@ -673,7 +676,7 @@ public class LocationConditionUtil {
         JTextField nameField = (JTextField) configPanel.getClientProperty("regionNameField");
         
         if (regionIdsField == null) {
-            throw new IllegalStateException("Region condition panel not properly configured");
+            throw new IllegalStateException("Region condition panel not properly configured - missing regionIdsField");
         }
         
         String regionIdsText = regionIdsField.getText().trim();

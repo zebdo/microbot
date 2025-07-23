@@ -2,10 +2,12 @@ package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
+import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -36,7 +38,9 @@ public final class BossHandler {
 
     /** Walks to the chosen boss lobby. */
     public void walkToBoss(Rs2InventorySetup inventorySetup, String bossName, WorldPoint bossWorldPoint) {
-        equipInventorySetup(inventorySetup);
+        if (inventorySetup != null) {
+            equipInventorySetup(inventorySetup);
+        }
         if (debugLogging) {Microbot.log("Walking to " + bossName + " lobby");}
         Rs2Walker.walkWithState(bossWorldPoint, 0);
         sleep(600);
@@ -83,6 +87,8 @@ public final class BossHandler {
         drinkIfNeeded();
         sleep(600);
         Rs2Player.toggleRunEnergy(true);
+        Rs2Camera.resetPitch();
+        Rs2Camera.resetZoom();
     }
 
     /**
@@ -194,13 +200,7 @@ public final class BossHandler {
 
     /** True if the WorldPoint param is located on a dangerous tile*/
     public static boolean inDanger(WorldPoint location) {
-        if (Rs2Tile.dangerousGraphicsObjectTiles.stream()
-                .filter(p -> p.getValue() > 0)
-                .map(p -> p.getKey())
-                .anyMatch(pt -> pt.equals(location))) {
-            return true;
-        }
-        return false;
+        return Rs2Tile.getDangerousGraphicsObjectTiles().containsKey(location);
     }
 
     /** Runs the player out of the arena */
@@ -220,5 +220,13 @@ public final class BossHandler {
             sleep(600);
         }
         if (debugLogging) {Microbot.log("Timeout: Failed to bail out of the boss arena after 10 seconds.");}
+    }
+
+    /** If current run energy is less than 80%, recharges run energy at a campfire located on the world canvas */
+    public static void rechargeRunEnergy() {
+        if (Rs2GameObject.getGameObject(ObjectID.PMOON_RANGE) != null && Rs2Player.getRunEnergy() <=80) {
+            Rs2GameObject.interact(ObjectID.PMOON_RANGE, "Make-cuppa");
+            sleep(600);
+        }
     }
 }

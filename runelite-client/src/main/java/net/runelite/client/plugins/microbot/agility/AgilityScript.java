@@ -16,6 +16,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.agility.courses.GnomeStrongholdCourse;
 import net.runelite.client.plugins.microbot.agility.courses.PrifddinasCourse;
+import net.runelite.client.plugins.microbot.agility.courses.WerewolfCourse;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
@@ -126,6 +127,26 @@ public class AgilityScript extends Script
 						return;
 					}
 				}
+				else if(plugin.getCourseHandler() instanceof WerewolfCourse)
+				{
+					WerewolfCourse course = (WerewolfCourse) plugin.getCourseHandler();
+					if(course.handleFirstSteppingStone(playerWorldLocation))
+					{
+						return;
+					}
+					if(course.handleStickPickup(playerWorldLocation))
+					{
+						return;
+					}
+					else if(course.handleSlide())
+					{
+						return;
+					}
+					else if(course.handleStickReturn(playerWorldLocation))
+					{
+						return;
+					}
+				}
 				else if (!(plugin.getCourseHandler() instanceof GnomeStrongholdCourse))
 				{
 					if (plugin.getCourseHandler().handleWalkToStart(playerWorldLocation))
@@ -199,6 +220,7 @@ public class AgilityScript extends Script
 	private boolean lootMarksOfGrace()
 	{
 		final List<RS2Item> marksOfGrace = AgilityPlugin.getMarksOfGrace();
+		final int lootDistance = plugin.getCourseHandler().getLootDistance();
 		if (!marksOfGrace.isEmpty() && !Rs2Inventory.isFull())
 		{
 			for (RS2Item markOfGraceTile : marksOfGrace)
@@ -207,7 +229,7 @@ public class AgilityScript extends Script
 				{
 					continue;
 				}
-				if (!Rs2GameObject.canReach(markOfGraceTile.getTile().getWorldLocation(), 1, 1, 1, 1))
+				if (!Rs2GameObject.canReach(markOfGraceTile.getTile().getWorldLocation(), lootDistance, lootDistance, lootDistance, lootDistance))
 				{
 					continue;
 				}
@@ -249,7 +271,7 @@ public class AgilityScript extends Script
 		{
 			return false;
 		}
-		if (Rs2Player.getBoostedSkillLevel(Skill.AGILITY) >= plugin.getCourseHandler().getRequiredLevel())
+		if (Rs2Player.getBoostedSkillLevel(Skill.AGILITY) > plugin.getCourseHandler().getRequiredLevel())
 		{
 			return false;
 		}

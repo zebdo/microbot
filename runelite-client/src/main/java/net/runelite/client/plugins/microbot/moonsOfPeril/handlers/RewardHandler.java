@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
@@ -48,6 +49,7 @@ public class RewardHandler implements BaseHandler {
 
     @Override
     public State execute() {
+        BreakHandlerScript.setLockState(true);
         boss.walkToBoss(null, "Rewards Chest", rewardChestLocation);
         if (Rs2GameObject.interact(lunarChestGameObjectID, "Claim")) {
             if (debugLogging) {Microbot.log("Successfully claimed rewards from Lunar Chest");}
@@ -58,6 +60,7 @@ public class RewardHandler implements BaseHandler {
             if (debugLogging) {Microbot.log("Successfully banked all rewards");}
             sleep(1_200);
         }
+        BreakHandlerScript.setLockState(false);
         return State.IDLE;
     }
 }
