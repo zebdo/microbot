@@ -201,10 +201,15 @@ public class Rs2GrandExchange
 				Rs2Widget.clickWidgetFast(buyOffer);
 				sleepUntil(GrandExchangeWidget::isOfferTextVisible);
 
+
 				Rs2Widget.sleepUntilHasWidgetText("Start typing the name of an item to search for it", 162, 51, false, 5000);
+				String searchName = request.getItemName();
+				if (searchName.length() >= 26) {
+					searchName = searchName.substring(0, 25); // Grand Exchange item names are limited to 25 characters.
+				}
 				Rs2Keyboard.typeString(request.getItemName());
 
-				if (!Rs2Widget.sleepUntilHasWidgetText(request.getItemName(), 162, 43, request.isExact(), 5000)) break;
+				if (!Rs2Widget.sleepUntilHasWidgetText(searchName, 162, 43, request.isExact(), 5000)) break;
 
 				sleep(1800); // TODO: make this conditional.
 

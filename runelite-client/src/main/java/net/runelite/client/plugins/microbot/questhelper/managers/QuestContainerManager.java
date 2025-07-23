@@ -101,11 +101,12 @@ public class QuestContainerManager
         if (result)
         {
             Item[] runesInPouch = QuestContainerManager.getRunePouchData().getItems();
-            assert runesInPouch != null;
-            for (Item runePouchItem : runesInPouch)
-            {
-                inventoryMap.computeIfPresent(runePouchItem.getId(), (currentVal, existingItem) -> new Item(currentVal, existingItem.getQuantity() + runePouchItem.getQuantity()));
-                inventoryMap.putIfAbsent(runePouchItem.getId(), runePouchItem);
+            if(runesInPouch != null) {
+                for (Item runePouchItem : runesInPouch)
+                {
+                    inventoryMap.computeIfPresent(runePouchItem.getId(), (currentVal, existingItem) -> new Item(currentVal, existingItem.getQuantity() + runePouchItem.getQuantity()));
+                    inventoryMap.putIfAbsent(runePouchItem.getId(), runePouchItem);
+                }
             }
         }
         QuestContainerManager.getInventoryData().update(client.getTickCount(), inventoryMap.values().toArray(new Item[0]));

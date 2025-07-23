@@ -381,6 +381,17 @@ public interface QoLConfig extends Config {
         return SpecialAttackWeaponEnum.DRAGON_DAGGER;
     }
 
+	@ConfigItem(
+		keyName = "autoRun",
+		name = "Auto Run",
+		description = "Auto Run",
+		position = 7,
+		section = upkeepSection
+	)
+	default boolean autoRun() {
+		return false;
+	}
+
     // boolean to auto use stamina potion
     @ConfigItem(
             keyName = "autoStamina",

@@ -170,6 +170,13 @@ public class RoyalTitansScript extends Script {
     }
 
     private void handleWaiting(RoyalTitansConfig config) {
+        if (config.soloMode() && config.teammateName().isEmpty()) {
+            state = RoyalTitansBotStatus.TRAVELLING;
+            travelStatus = RoyalTitansTravelStatus.TO_INSTANCE;
+            evaluateAndConsumePotions(config);
+            sleep(1200, 2400);
+            return;
+        }
         var teammate = Rs2Player.getPlayers(x -> Objects.equals(x.getName(), config.teammateName())).findFirst().orElse(null);
         if (waitingTimeStart == null && teammate == null && !waitedLastIteration) {
             waitingTimeStart = Instant.now();
@@ -249,6 +256,7 @@ public class RoyalTitansScript extends Script {
             } else {
                 enrageTile = null;
                 Rs2GameObject.interact(TUNNEL_ID_ESCAPE, "Quick-escape");
+                Rs2Bank.walkToBank();
             }
             state = RoyalTitansBotStatus.TRAVELLING;
             travelStatus = RoyalTitansTravelStatus.TO_BANK;
@@ -309,6 +317,9 @@ public class RoyalTitansScript extends Script {
     }
 
     private void handleSpecialAttacks(RoyalTitansConfig config, Rs2NpcModel titan) {
+        if (!config.useSpecialAttacks()) {
+            return;
+        }
         var specEnergy = Rs2Combat.getSpecEnergy() / 10;
         if (specEnergy < config.specEnergyConsumed()) {
             return;
@@ -329,6 +340,7 @@ public class RoyalTitansScript extends Script {
         if (meleeInventorySetup.doesEquipmentMatch() && config.specialAttackWeaponStyle() == RoyalTitansConfig.SpecialAttackWeaponStyle.MELEE) {
             specialAttackInventorySetup.wearEquipment();
             Rs2Combat.setSpecState(true, config.specEnergyConsumed() * 10);
+            sleepUntil(Rs2Combat::getSpecState);
             Rs2Npc.attack(titan);
             Rs2Player.waitForAnimation(600);
             return;
@@ -336,21 +348,32 @@ public class RoyalTitansScript extends Script {
         if ((magicInventorySetup.doesEquipmentMatch() || rangedInventorySetup.doesEquipmentMatch()) && config.specialAttackWeaponStyle() == RoyalTitansConfig.SpecialAttackWeaponStyle.RANGED) {
             specialAttackInventorySetup.wearEquipment();
             Rs2Combat.setSpecState(true, config.specEnergyConsumed() * 10);
+            sleepUntil(Rs2Combat::getSpecState);
             Rs2Npc.attack(titan);
             Rs2Player.waitForAnimation(600);
         }
     }
 
     private void handleBossFocus(RoyalTitansConfig config, Rs2NpcModel iceTitan, Rs2NpcModel fireTitan) {
+        // Handle enrage tile first
         if (enrageTile != null) {
             subState = "Handling enrage tile";
-            if (Rs2Player.getWorldLocation().equals(enrageTile.getWorldLocation())) {
-                equipArmor(rangedInventorySetup);
-            } else {
+            if (!Rs2Player.getWorldLocation().equals(enrageTile.getWorldLocation())) {
                 Rs2Walker.walkFastCanvas(enrageTile.getWorldLocation());
-                equipArmor(rangedInventorySetup);
             }
-
+            equipArmor(rangedInventorySetup);
+            // Handle focus properly based on config
+            if (config.royalTitanToFocus() == RoyalTitansConfig.RoyalTitan.FIRE_TITAN && fireTitan != null && fireTitan.isDead()) {
+                Rs2Npc.attack(fireTitan);
+                handleSpecialAttacks(config, fireTitan);
+                return;
+            }
+            if (config.royalTitanToFocus() == RoyalTitansConfig.RoyalTitan.ICE_TITAN && iceTitan != null && iceTitan.isDead()) {
+                Rs2Npc.attack(iceTitan);
+                handleSpecialAttacks(config, iceTitan);
+                return;
+            }
+            // Fallback if focused titan is dead
             if (fireTitan != null && !fireTitan.isDead()) {
                 Rs2Npc.attack(fireTitan);
                 handleSpecialAttacks(config, fireTitan);
@@ -361,6 +384,48 @@ public class RoyalTitansScript extends Script {
                 return;
             }
         }
+
+        // Solo mode - balance titan health
+        if (config.soloMode()) {
+            subState = "Solo mode - balancing titan health";
+            Rs2NpcModel targetTitan = selectTitanForSoloMode(iceTitan, fireTitan);
+            if (targetTitan != null && !targetTitan.isDead()) {
+                int titanX = targetTitan.getWorldLocation().getRegionX();
+
+                // Select appropriate gear based on titan position
+                if (enrageTile == null && (
+                        (targetTitan.getId() == FIRE_TITAN_ID && titanX == MELEE_TITAN_FIRE_REGION_X) ||
+                                (targetTitan.getId() == ICE_TITAN_ID && titanX == MELEE_TITAN_ICE_REGION_X) ||
+                                (titanX > MELEE_TITAN_FIRE_REGION_X && titanX < MELEE_TITAN_ICE_REGION_X))) {
+                    equipArmor(meleeInventorySetup);
+                } else {
+                    equipArmor(rangedInventorySetup);
+                }
+
+                // Don't try to attack a Titan if enragetile is active and we are wearing melee armor
+                if (!(enrageTile != null && meleeInventorySetup.doesEquipmentMatch())) {
+                    Rs2Npc.attack(targetTitan);
+                    handleSpecialAttacks(config, targetTitan);
+                }
+            }
+            return;
+        }
+
+        // Both bosses alive - Handle focus
+        if (config.royalTitanToFocus() == RoyalTitansConfig.RoyalTitan.FIRE_TITAN && fireTitan != null && !fireTitan.isDead()) {
+            subState = "Attacking fire titan";
+            int fireX = fireTitan.getWorldLocation().getRegionX();
+            if (enrageTile == null && (fireX == MELEE_TITAN_FIRE_REGION_X ||
+                    (fireX > MELEE_TITAN_FIRE_REGION_X && fireX < MELEE_TITAN_ICE_REGION_X))) {
+                equipArmor(meleeInventorySetup);
+            } else {
+                equipArmor(rangedInventorySetup);
+            }
+            Rs2Npc.attack(fireTitan);
+            handleSpecialAttacks(config, fireTitan);
+            return;
+        }
+
         // Both bosses alive - Handle focus
         if (config.royalTitanToFocus() == RoyalTitansConfig.RoyalTitan.FIRE_TITAN && fireTitan != null && !fireTitan.isDead()) {
             subState = "Attacking fire titan";
@@ -420,18 +485,33 @@ public class RoyalTitansScript extends Script {
     }
 
     private boolean handleWalls(RoyalTitansConfig config) {
+        if (config.minionResponsibility() == RoyalTitansConfig.Minions.NONE) {
+            return false;
+        }
         subState = "Handling walls";
-        var walls = Rs2Npc.getNpcs(config.minionResponsibility() == RoyalTitansConfig.Minions.FIRE_MINIONS ? FIRE_WALL : ICE_WALL).collect(Collectors.toList());
-        if (walls.isEmpty()) {
+
+        // For solo mode, handle both types of walls
+        List<Rs2NpcModel> walls;
+        if (config.soloMode()) {
+            List<Rs2NpcModel> fireWalls = Rs2Npc.getNpcs(FIRE_WALL).collect(Collectors.toList());
+            List<Rs2NpcModel> iceWalls = Rs2Npc.getNpcs(ICE_WALL).collect(Collectors.toList());
+            walls = new ArrayList<>();
+            walls.addAll(fireWalls);
+            walls.addAll(iceWalls);
+        } else {
+            walls = Rs2Npc.getNpcs(config.minionResponsibility() == RoyalTitansConfig.Minions.FIRE_MINIONS ? FIRE_WALL : ICE_WALL)
+                    .collect(Collectors.toList());
+        }
+
+        if (walls.isEmpty() || walls.size() < 8) {
             return false;
         }
-        if (walls.size() < 8) {
-            return false;
-        }
+
         equipArmor(magicInventorySetup);
         for (var wall : walls) {
             if (wall != null && wall.getId() != -1 && !wall.isDead()) {
-                Rs2Npc.interact(wall, config.minionResponsibility() == RoyalTitansConfig.Minions.FIRE_MINIONS ? "Douse" : "Melt");
+                String action = wall.getId() == FIRE_WALL ? "Douse" : "Melt";
+                Rs2Npc.interact(wall, action);
             }
         }
 
@@ -439,18 +519,64 @@ public class RoyalTitansScript extends Script {
     }
 
     private boolean handleMinions(RoyalTitansConfig config) {
+        if (config.minionResponsibility() == RoyalTitansConfig.Minions.NONE) {
+            return false;
+        }
         subState = "Handling minions";
-        var minions = Rs2Npc.getNpcs(config.minionResponsibility() == RoyalTitansConfig.Minions.FIRE_MINIONS ? FIRE_MINION_ID : ICE_MINION_ID).collect(Collectors.toList());
+
+        // For solo mode, handle both types of minions
+        List<Rs2NpcModel> minions;
+        if (config.soloMode()) {
+            List<Rs2NpcModel> fireMinions = Rs2Npc.getNpcs(FIRE_MINION_ID).collect(Collectors.toList());
+            List<Rs2NpcModel> iceMinions = Rs2Npc.getNpcs(ICE_MINION_ID).collect(Collectors.toList());
+            minions = new ArrayList<>();
+            minions.addAll(fireMinions);
+            minions.addAll(iceMinions);
+        } else {
+            minions = Rs2Npc.getNpcs(config.minionResponsibility() == RoyalTitansConfig.Minions.FIRE_MINIONS ? FIRE_MINION_ID : ICE_MINION_ID)
+                    .collect(Collectors.toList());
+        }
+
         if (minions.isEmpty()) {
             return false;
         }
+
         equipArmor(magicInventorySetup);
         for (var minion : minions) {
             if (minion != null && !minion.isDead()) {
                 Rs2Npc.attack(minion);
             }
         }
+
         return true;
+    }
+
+    private Rs2NpcModel selectTitanForSoloMode(Rs2NpcModel iceTitan, Rs2NpcModel fireTitan) {
+        if (iceTitan == null || iceTitan.isDead()) return fireTitan;
+        if (fireTitan == null || fireTitan.isDead()) return iceTitan;
+
+        // Get health ratios
+        double iceHealthRatio = iceTitan.getHealthRatio();
+        double fireHealthRatio = fireTitan.getHealthRatio();
+
+        // If one titan has significantly more health, attack that one
+        // Using a 20% threshold to prevent frequent switching
+        if (iceHealthRatio > fireHealthRatio + 20) {
+            return iceTitan;
+        } else if (fireHealthRatio > iceHealthRatio + 20) {
+            return fireTitan;
+        }
+
+        // If we're already in combat, don't switch targets
+        if (Rs2Player.isInCombat()) {
+            var interacting = Microbot.getClient().getLocalPlayer().getInteracting();
+
+            if (interacting == iceTitan) return iceTitan;
+            if (interacting == fireTitan) return fireTitan;
+        }
+
+        // Default: attack the one with slightly higher health
+        return iceHealthRatio >= fireHealthRatio ? iceTitan : fireTitan;
     }
 
     private void handleDangerousTiles() {
@@ -540,14 +666,16 @@ public class RoyalTitansScript extends Script {
                     return;
                 }
                 subState = "Walking to bank";
-                var isAtBank = Rs2Bank.walkToBank();
+                Rs2Bank.walkToBank();
+                var isAtBank = Rs2Bank.isNearBank(5);
                 if (isAtBank) {
                     state = RoyalTitansBotStatus.BANKING;
                 }
                 break;
             case TO_TITANS:
                 subState = "Walking to titans";
-                var gotToTitans = Rs2Walker.walkTo(BOSS_LOCATION, 1);
+                Rs2Walker.walkTo(BOSS_LOCATION, 1);
+                var gotToTitans = Rs2Player.distanceTo(BOSS_LOCATION) < 3;
                 if (gotToTitans) {
                     state = RoyalTitansBotStatus.WAITING;
                     travelStatus = RoyalTitansTravelStatus.TO_BANK;
@@ -618,11 +746,13 @@ public class RoyalTitansScript extends Script {
                 inventorySetup.loadInventory();
             }
 			if (!inventorySetup.getAdditionalItems().isEmpty()) {
+                Microbot.log("Pre-potting with additional items");
 				inventorySetup.prePot();
 			}
             Rs2Bank.closeBank();
             travelStatus = RoyalTitansTravelStatus.TO_TITANS;
             state = RoyalTitansBotStatus.TRAVELLING;
+            subState = "Walking to titans";
         } else {
             var items = inventorySetup.getEquipmentItems();
             var inventory = inventorySetup.getInventoryItems();
