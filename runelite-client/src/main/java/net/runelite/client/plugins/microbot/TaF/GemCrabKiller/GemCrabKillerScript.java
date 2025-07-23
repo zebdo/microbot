@@ -15,11 +15,12 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import java.util.concurrent.TimeUnit;
 
 public class GemCrabKillerScript extends Script {
-    private GemCrabKillerState gemCrabKillerState = GemCrabKillerState.WALKING;
+    public static String version = "1.0";
     private final int CAVE_ENTRANCE_ID = 57631;
     private final int CRAB_NPC_ID = 14779;
     private final int CRAB_NPC_DEAD_ID = 14780;
     private final WorldPoint CLOSEST_CRAB_LOCATION_TO_BANK = new WorldPoint(1274, 3168, 0);
+    public GemCrabKillerState gemCrabKillerState = GemCrabKillerState.WALKING;
     private Rs2InventorySetup inventorySetup = null;
     private boolean hasLooted = false;
 
@@ -28,6 +29,9 @@ public class GemCrabKillerScript extends Script {
             Microbot.showMessage("Please select an inventory setup in the plugin settings. If you've already done so, please reselect the inventory setup in the plugin settings.");
             shutdown();
             return false;
+        }
+        if (config.overrideState()) {
+            gemCrabKillerState = config.startState();
         }
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {

@@ -1,4 +1,4 @@
-﻿package net.runelite.client.plugins.microbot.TaF.GemCrabKiller;
+package net.runelite.client.plugins.microbot.TaF.GemCrabKiller;
 
 public enum GemCrabKillerState {
     FIGHTING,

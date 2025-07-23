@@ -16,6 +16,7 @@ public interface GemCrabKillerConfig extends Config {
     default boolean useInventorySetup() {
         return false;
     }
+
     @ConfigItem(
             keyName = "inventorySetup",
             name = "Inventory Setup",
@@ -25,6 +26,7 @@ public interface GemCrabKillerConfig extends Config {
     default InventorySetup inventorySetup() {
         return null;
     }
+
     @ConfigItem(
             keyName = "useOffensivePotions",
             name = "Use Offensive Potions?",
@@ -34,6 +36,7 @@ public interface GemCrabKillerConfig extends Config {
     default boolean useOffensivePotions() {
         return false;
     }
+
     @ConfigItem(
             keyName = "lootCrab",
             name = "Mine and loot the Gem Crab?",
@@ -42,5 +45,25 @@ public interface GemCrabKillerConfig extends Config {
     )
     default boolean lootCrab() {
         return false;
+    }
+
+    @ConfigItem(
+            keyName = "overrideState",
+            name = "Override state?",
+            description = "Enable to override script starting state",
+            position = 5
+    )
+    default boolean overrideState() {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "startState",
+            name = "Starting state",
+            description = "The starting state of the bot. This is only used if override state is enabled.",
+            position = 6
+    )
+    default GemCrabKillerState startState() {
+        return GemCrabKillerState.FIGHTING;
     }
 }

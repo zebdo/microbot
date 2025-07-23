@@ -22,20 +22,20 @@ import java.time.Instant;
 @Slf4j
 public class GemCrabKillerPlugin extends Plugin {
     @Inject
+    GemCrabKillerScript gemCrabKillerScript;
+    @Inject
     private GemCrabKillerConfig config;
-    @Provides
-    GemCrabKillerConfig provideConfig(ConfigManager configManager) {
-        return configManager.getConfig(GemCrabKillerConfig.class);
-    }
     @Inject
     private OverlayManager overlayManager;
     @Inject
     private GemCrabKillerOverlay gemCrabKillerOverlay;
-    @Inject
-    GemCrabKillerScript gemCrabKillerScript;
-
     private Instant scriptStartTime;
     private long startTotalExp;
+
+    @Provides
+    GemCrabKillerConfig provideConfig(ConfigManager configManager) {
+        return configManager.getConfig(GemCrabKillerConfig.class);
+    }
 
     @Override
     protected void startUp() throws AWTException {
