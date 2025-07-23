@@ -129,7 +129,6 @@ public class GemCrabKillerScript extends Script {
                 }
                 if (equipmentMatches && inventoryMatches) {
                     Rs2Bank.closeBank();
-                    // After this, it *never* runs the script loop again
                     gemCrabKillerState = GemCrabKillerState.WALKING;
                     return;
                 } else {
