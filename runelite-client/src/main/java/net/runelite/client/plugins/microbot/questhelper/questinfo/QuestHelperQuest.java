@@ -91,6 +91,7 @@ import net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.stro
 import net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns.HerbRun;
 import net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns.TreeRun;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.akingdomdivided.AKingdomDivided;
+import net.runelite.client.plugins.microbot.questhelper.helpers.quests.anexistentialcrisis.AnExistentialCrisis;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.anightatthetheatre.ANightAtTheTheatre;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.animalmagnetism.AnimalMagnetism;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.anothersliceofham.AnotherSliceOfHam;
@@ -158,6 +159,7 @@ import net.runelite.client.plugins.microbot.questhelper.helpers.quests.holygrail
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.horrorfromthedeep.HorrorFromTheDeep;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.icthlarinslittlehelper.IcthlarinsLittleHelper;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.impcatcher.ImpCatcher;
+import net.runelite.client.plugins.microbot.questhelper.helpers.quests.impendingchaos.ImpendingChaos;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.inaidofthemyreque.InAidOfTheMyreque;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.insearchofknowledge.InSearchOfKnowledge;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.insearchofthemyreque.InSearchOfTheMyreque;
@@ -201,10 +203,12 @@ import net.runelite.client.plugins.microbot.questhelper.helpers.quests.royaltrou
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.rumdeal.RumDeal;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.runemysteries.RuneMysteries;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.scorpioncatcher.ScorpionCatcher;
+import net.runelite.client.plugins.microbot.questhelper.helpers.quests.scrambled.Scrambled;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.seaslug.SeaSlug;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.secretsofthenorth.SecretsOfTheNorth;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.shadesofmortton.ShadesOfMortton;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.shadowofthestorm.ShadowOfTheStorm;
+import net.runelite.client.plugins.microbot.questhelper.helpers.quests.shadowsofcustodia.ShadowsOfCustodia;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.sheepherder.SheepHerder;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.sheepshearer.SheepShearer;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.shieldofarrav.ShieldOfArravBlackArmGang;
@@ -227,6 +231,7 @@ import net.runelite.client.plugins.microbot.questhelper.helpers.quests.thedepths
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.thedigsite.TheDigSite;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.theeyesofglouphrie.TheEyesOfGlouphrie;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.thefeud.TheFeud;
+import net.runelite.client.plugins.microbot.questhelper.helpers.quests.thefinaldawn.TheFinalDawn;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.theforsakentower.TheForsakenTower;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.thefremennikexiles.TheFremennikExiles;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.thefremennikisles.TheFremennikIsles;
@@ -254,6 +259,7 @@ import net.runelite.client.plugins.microbot.questhelper.helpers.quests.trollroma
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.trollstronghold.TrollStronghold;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.twilightspromise.TwilightsPromise;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.undergroundpass.UndergroundPass;
+import net.runelite.client.plugins.microbot.questhelper.helpers.quests.valetotems.ValeTotems;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.vampyreslayer.VampyreSlayer;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.wanted.Wanted;
 import net.runelite.client.plugins.microbot.questhelper.helpers.quests.watchtower.Watchtower;
@@ -467,6 +473,12 @@ public enum QuestHelperQuest
 	MEAT_AND_GREET(new MeatAndGreet(), Quest.MEAT_AND_GREET, QuestVarbits.QUEST_MEAT_AND_GREET, QuestDetails.Type.P2P, QuestDetails.Difficulty.EXPERIENCED),
 	THE_HEART_OF_DARKNESS(new TheHeartOfDarkness(), Quest.THE_HEART_OF_DARKNESS, QuestVarbits.QUEST_THE_HEART_OF_DARKNESS, QuestDetails.Type.P2P, QuestDetails.Difficulty.EXPERIENCED),
 	THE_CURSE_OF_ARRAV(new TheCurseOfArrav(), Quest.THE_CURSE_OF_ARRAV, QuestVarbits.QUEST_THE_CURSE_OF_ARRAV, QuestDetails.Type.P2P, QuestDetails.Difficulty.MASTER),
+	THE_FINAL_DAWN(new TheFinalDawn(), Quest.THE_FINAL_DAWN, QuestVarbits.QUEST_THE_FINAL_DAWN, QuestDetails.Type.P2P, QuestDetails.Difficulty.MASTER),
+	SHADOWS_OF_CUSTODIA(new ShadowsOfCustodia(), Quest.SHADOWS_OF_CUSTODIA, QuestVarbits.QUEST_SHADOWS_OF_CUSTODIA, QuestDetails.Type.P2P, QuestDetails.Difficulty.MASTER /* TODO: CONFIRM DIFFICULTY */),
+	SCRAMBLED(new Scrambled(), Quest.SCRAMBLED, QuestVarbits.QUEST_SCRAMBLED, QuestDetails.Type.P2P, QuestDetails.Difficulty.MASTER /* TODO: CONFIRM DIFFICULTY */),
+	AN_EXISTENTIAL_CRISIS(new AnExistentialCrisis(), Quest.AN_EXISTENTIAL_CRISIS, QuestVarbits.QUEST_AN_EXISTENTIAL_CRISIS, QuestDetails.Type.P2P, QuestDetails.Difficulty.MASTER /* TODO: CONFIRM DIFFICULTY */),
+	IMPENDING_CHAOS(new ImpendingChaos(), Quest.IMPENDING_CHAOS, QuestVarbits.QUEST_IMPENDING_CHAOS, QuestDetails.Type.P2P, QuestDetails.Difficulty.MASTER /* TODO: CONFIRM DIFFICULTY */),
+	VALE_TOTEMS(new ValeTotems(), Quest.VALE_TOTEMS, QuestVarbits.QUEST_VALE_TOTEMS, QuestDetails.Type.P2P, QuestDetails.Difficulty.MASTER /* TODO: CONFIRM DIFFICULTY */),
 
 	//Miniquests
 	ENTER_THE_ABYSS(new EnterTheAbyss(), Quest.ENTER_THE_ABYSS, QuestVarPlayer.QUEST_ENTER_THE_ABYSS, QuestDetails.Type.MINIQUEST, QuestDetails.Difficulty.MINIQUEST),
