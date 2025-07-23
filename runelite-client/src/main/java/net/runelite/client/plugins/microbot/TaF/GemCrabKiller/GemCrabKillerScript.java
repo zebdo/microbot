@@ -30,11 +30,6 @@ public class GemCrabKillerScript extends Script {
     private Instant waitingTimeStart = null;
 
     public boolean run(GemCrabKillerConfig config) {
-        if (config.useInventorySetup() && config.inventorySetup() == null) {
-            Microbot.showMessage("Please select an inventory setup in the plugin settings. If you've already done so, please reselect the inventory setup in the plugin settings.");
-            shutdown();
-            return false;
-        }
         if (config.overrideState()) {
             gemCrabKillerState = config.startState();
         }
@@ -110,13 +105,27 @@ public class GemCrabKillerScript extends Script {
         sleepUntil(Rs2Bank::isOpen, 2000);
         if (Rs2Bank.isOpen()) {
             if (config.useInventorySetup()) {
-                var equipmentMatches = inventorySetup.loadEquipment();
-                var inventoryMatches = inventorySetup.loadInventory();
+                if (config.useInventorySetup() && config.inventorySetup() == null) {
+                    Microbot.showMessage("Please select an inventory setup in the plugin settings. If you've already done so, please reselect the inventory setup in the plugin settings.");
+                    shutdown();
+                    return;
+                }
+                var equipmentMatches = inventorySetup.doesEquipmentMatch();
+                var inventoryMatches = inventorySetup.doesInventoryMatch();
+                if (!equipmentMatches) {
+                    equipmentMatches = inventorySetup.loadEquipment();
+                }
+                if (!inventoryMatches) {
+                    inventoryMatches = inventorySetup.loadInventory();
+                }
                 if (equipmentMatches && inventoryMatches) {
                     Rs2Bank.closeBank();
                     // After this, it *never* runs the script loop again
                     gemCrabKillerState = GemCrabKillerState.WALKING;
                     return;
+                } else {
+                    Microbot.showMessage("Unable to load inventory setup. Shutting down.");
+                    shutdown();
                 }
             } else {
                 Rs2Bank.depositAllExcept(false, " pickaxe");
@@ -167,7 +176,7 @@ public class GemCrabKillerScript extends Script {
             gemCrabKillerState = GemCrabKillerState.FIGHTING;
             return;
         }
-        if (Rs2Player.isNearArea(CLOSEST_CRAB_LOCATION_TO_BANK, 10) && npc == null) {
+        if (Rs2Player.isNearArea(CLOSEST_CRAB_LOCATION_TO_BANK, 20) && npc == null) {
             Rs2GameObject.interact(CAVE_ENTRANCE_ID, "Crawl-through");
             return;
         }
