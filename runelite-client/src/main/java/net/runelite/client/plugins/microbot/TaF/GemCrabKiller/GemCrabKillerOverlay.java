@@ -51,7 +51,7 @@ public class GemCrabKillerOverlay extends OverlayPanel {
             // Title
             final ImageComponent imageComponent = new ImageComponent(getCrabImageFromResources());
             final LineComponent title = LineComponent.builder()
-                    .left("  TaF's Gem Crab Killer")
+                    .left("TaF's Gemstone Crab Killer")
                     .leftColor(Color.white)
                     .build();
             final SplitComponent iconTitleSplit = SplitComponent.builder()

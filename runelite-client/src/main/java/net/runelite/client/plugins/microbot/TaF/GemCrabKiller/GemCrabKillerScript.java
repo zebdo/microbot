@@ -126,6 +126,7 @@ public class GemCrabKillerScript extends Script {
             if (config.lootCrab() && Rs2Inventory.hasItem(" pickaxe", false) && !hasLooted) {
                 Rs2Npc.interact(deadNpc, "Mine");
                 Rs2Inventory.waitForInventoryChanges(2400);
+                sleep(3000,5000);
                 hasLooted = true;
                 if (Rs2Inventory.isFull()) {
                     gemCrabKillerState = GemCrabKillerState.BANKING;
