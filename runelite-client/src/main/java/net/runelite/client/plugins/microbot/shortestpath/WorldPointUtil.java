@@ -115,19 +115,23 @@ public class WorldPointUtil {
                 current.getX(), current.getY(), current.getPlane(), diagonal);
     }
 
-    // Matches WorldArea.distanceTo
-    public static int distanceToArea(int packedPoint, WorldArea area) {
-        final int plane = unpackWorldPlane(packedPoint);
-        if (area.getPlane() != plane) {
-            return Integer.MAX_VALUE;
-        }
+	public static int distanceToArea(int packedPoint, WorldArea area) {
+		final int plane = unpackWorldPlane(packedPoint);
+		if (area.getPlane() != plane) {
+			return Integer.MAX_VALUE;
+		}
+		return distanceToArea2D(packedPoint, area);
+	}
 
-        final int y = unpackWorldY(packedPoint);
-        final int x = unpackWorldX(packedPoint);
-        final int areaMaxX = area.getX() + area.getWidth() - 1;
-        final int areaMaxY = area.getY() + area.getHeight() - 1;
-        final int dx = Math.max(Math.max(area.getX() - x, 0), x - areaMaxX);
-        final int dy = Math.max(Math.max(area.getY() - y, 0), y - areaMaxY);
+    // Matches WorldArea.distanceTo
+    public static int distanceToArea2D(int packedPoint, WorldArea area)
+	{
+		final int y = unpackWorldY(packedPoint);
+		final int x = unpackWorldX(packedPoint);
+		final int areaMaxX = area.getX() + area.getWidth() - 1;
+		final int areaMaxY = area.getY() + area.getHeight() - 1;
+		final int dx = Math.max(Math.max(area.getX() - x, 0), x - areaMaxX);
+		final int dy = Math.max(Math.max(area.getY() - y, 0), y - areaMaxY);
 
         return Math.max(dx, dy);
     }
