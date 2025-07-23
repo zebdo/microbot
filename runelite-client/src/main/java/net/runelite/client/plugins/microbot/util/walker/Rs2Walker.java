@@ -2273,10 +2273,11 @@ public class Rs2Walker {
                 lowerCaseItemName.contains("slayer ring") ||
 				lowerCaseItemName.contains("construct. cape")) {
             return 4;
-        } else if (lowerCaseItemName.contains("kharedst's memoirs") ||
+        } else if (lowerCaseItemName.contains("book of the dead") ||
                    lowerCaseItemName.contains("giantsoul amulet")) {
             return 3;
-        } else if (lowerCaseItemName.contains("enchanted lyre")) {
+        } else if (lowerCaseItemName.contains("kharedst's memoirs") ||
+			       lowerCaseItemName.contains("enchanted lyre")) {
             return 2;
         } else {
             return 4; // Default offset if no match is found
