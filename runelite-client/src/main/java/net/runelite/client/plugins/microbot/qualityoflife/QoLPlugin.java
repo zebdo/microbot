@@ -183,6 +183,9 @@ public class QoLPlugin extends Plugin {
             Microbot.getSpecialAttackConfigs().setSpecialAttackWeapon(config.specWeapon());
             Microbot.getSpecialAttackConfigs().setMinimumSpecEnergy(config.specWeapon().getEnergyRequired());
         }
+		if (config.autoRun()) {
+			Microbot.enableAutoRunOn = true;
+		}
         if (config.autoStamina()) {
             Microbot.useStaminaPotsIfNeeded = true;
             Microbot.runEnergyThreshold = config.staminaThreshold() * 100;
@@ -547,6 +550,10 @@ public class QoLPlugin extends Plugin {
                 Microbot.getSpecialAttackConfigs().reset();
             }
         }
+
+		if (ev.getKey().equals("autoRun")) {
+			Microbot.enableAutoRunOn = config.autoRun();
+		}
 
         if (ev.getKey().equals("autoStamina")) {
             Microbot.useStaminaPotsIfNeeded = config.autoStamina();
