@@ -24,6 +24,7 @@ public class GemCrabKillerScript extends Script {
     private final int CRAB_NPC_DEAD_ID = 14780;
     private final WorldPoint CLOSEST_CRAB_LOCATION_TO_BANK = new WorldPoint(1274, 3168, 0);
     public GemCrabKillerState gemCrabKillerState = GemCrabKillerState.WALKING;
+    public int totalCrabKills = 0;
     private Rs2InventorySetup inventorySetup = null;
     private boolean hasLooted = false;
     private Instant waitingTimeStart = null;
@@ -46,11 +47,11 @@ public class GemCrabKillerScript extends Script {
                 }
                 switch (gemCrabKillerState) {
                     case WALKING:
-                        if (handleWalking()) return;
+                        handleWalking();
                         break;
                     case FIGHTING:
                         handlePotions(config);
-                        if (handleFighting(config)) return;
+                        handleFighting(config);
                         break;
                     case BANKING:
                         handleBanking(config);
@@ -100,66 +101,75 @@ public class GemCrabKillerScript extends Script {
         if (Instant.now().isAfter(waitingTimeStart.plusSeconds(10))) {
             waitingTimeStart = null;
             gemCrabKillerState = GemCrabKillerState.WALKING;
-            return;
         }
     }
 
     private void handleBanking(GemCrabKillerConfig config) {
         Rs2Bank.walkToBank(BankLocation.TAL_TEKLAN);
         Rs2Bank.openBank();
+        sleepUntil(Rs2Bank::isOpen, 2000);
         if (Rs2Bank.isOpen()) {
             if (config.useInventorySetup()) {
-                inventorySetup.loadEquipment();
-                inventorySetup.loadInventory();
-                gemCrabKillerState = GemCrabKillerState.WALKING;
+                var equipmentMatches = inventorySetup.loadEquipment();
+                var inventoryMatches = inventorySetup.loadInventory();
+                if (equipmentMatches && inventoryMatches) {
+                    Rs2Bank.closeBank();
+                    // After this, it *never* runs the script loop again
+                    gemCrabKillerState = GemCrabKillerState.WALKING;
+                    return;
+                }
             } else {
                 Rs2Bank.depositAllExcept(false, " pickaxe");
                 gemCrabKillerState = GemCrabKillerState.WALKING;
             }
         }
+        Rs2Bank.closeBank();
     }
 
-    private boolean handleFighting(GemCrabKillerConfig config) {
+    private void handleFighting(GemCrabKillerConfig config) {
         var npc = Rs2Npc.getNpc(CRAB_NPC_ID);
         var deadNpc = Rs2Npc.getNpc(CRAB_NPC_DEAD_ID);
         if (deadNpc != null) {
+            totalCrabKills++;
             if (config.lootCrab() && Rs2Inventory.hasItem(" pickaxe", false) && !hasLooted) {
                 Rs2Npc.interact(deadNpc, "Mine");
                 Rs2Inventory.waitForInventoryChanges(2400);
-                sleep(3000,5000);
+                sleep(3000, 5000);
                 hasLooted = true;
                 if (Rs2Inventory.isFull()) {
                     gemCrabKillerState = GemCrabKillerState.BANKING;
-                    return true;
+                    return;
                 }
             }
             Rs2GameObject.interact(CAVE_ENTRANCE_ID, "Crawl-through");
             gemCrabKillerState = GemCrabKillerState.WAITING;
-            return true;
+            return;
         } else {
             hasLooted = false;
         }
         if (npc == null) {
             gemCrabKillerState = GemCrabKillerState.WALKING;
-            return true;
+            return;
         }
         if (!Rs2Player.isInCombat()) {
             Rs2Npc.attack(npc);
         } else {
             waitingTimeStart = null;
         }
-        return false;
     }
 
-    private boolean handleWalking() {
+    private void handleWalking() {
+        if (Rs2Bank.isOpen()) {
+            Rs2Bank.closeBank();
+        }
         var npc = Rs2Npc.getNpc(CRAB_NPC_ID);
         if (Rs2Player.isNearArea(CLOSEST_CRAB_LOCATION_TO_BANK, 10) && npc != null) {
             gemCrabKillerState = GemCrabKillerState.FIGHTING;
-            return true;
+            return;
         }
         if (Rs2Player.isNearArea(CLOSEST_CRAB_LOCATION_TO_BANK, 10) && npc == null) {
             Rs2GameObject.interact(CAVE_ENTRANCE_ID, "Crawl-through");
-            return true;
+            return;
         }
         if (npc == null) {
             Rs2Walker.walkTo(CLOSEST_CRAB_LOCATION_TO_BANK);
@@ -167,7 +177,6 @@ public class GemCrabKillerScript extends Script {
         if (npc != null) {
             gemCrabKillerState = GemCrabKillerState.FIGHTING;
         }
-        return false;
     }
 
     @Override

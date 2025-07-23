@@ -52,6 +52,7 @@ public class GemCrabKillerPlugin extends Plugin {
         overlayManager.remove(gemCrabKillerOverlay);
         scriptStartTime = null;
         startTotalExp = 0;
+        gemCrabKillerScript.totalCrabKills = 0;
     }
 
     protected String getTimeRunning() {

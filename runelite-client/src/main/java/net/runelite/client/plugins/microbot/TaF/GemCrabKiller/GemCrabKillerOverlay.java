@@ -7,7 +7,6 @@ import net.runelite.client.ui.overlay.components.ComponentOrientation;
 import net.runelite.client.ui.overlay.components.ImageComponent;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.SplitComponent;
-import net.runelite.client.ui.overlay.components.TitleComponent;
 import net.runelite.client.util.ImageUtil;
 
 import javax.inject.Inject;
@@ -46,12 +45,12 @@ public class GemCrabKillerOverlay extends OverlayPanel {
     @Override
     public Dimension render(Graphics2D graphics) {
         try {
-            panelComponent.setPreferredSize(new Dimension(175, 300));
+            panelComponent.setPreferredSize(new Dimension(190, 300));
             panelComponent.setBackgroundColor(BACKGROUND_COLOR);
             // Title
             final ImageComponent imageComponent = new ImageComponent(getCrabImageFromResources());
             final LineComponent title = LineComponent.builder()
-                    .left("TaF's Gemstone Crab Killer")
+                    .left(" TaF's Gemstone Crab Killer")
                     .leftColor(Color.white)
                     .build();
             final SplitComponent iconTitleSplit = SplitComponent.builder()
@@ -73,10 +72,16 @@ public class GemCrabKillerOverlay extends OverlayPanel {
                     .right(plugin.gemCrabKillerScript.gemCrabKillerState.name())
                     .rightColor(getStateColor(plugin.gemCrabKillerScript.gemCrabKillerState))
                     .build());
-            var xpGained = plugin.getXpGained();
-            var xpPerHour = plugin.getXpPerHour();
+            // Total kills
+            panelComponent.getChildren().add(LineComponent.builder()
+                    .left("Total Kills:")
+                    .right(String.valueOf(plugin.gemCrabKillerScript.totalCrabKills))
+                    .rightColor(NORMAL_COLOR)
+                    .build());
 
             // XP information
+            var xpGained = plugin.getXpGained();
+            var xpPerHour = plugin.getXpPerHour();
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("XP Gained:")
                     .right(formatNumber(xpGained))
