@@ -165,7 +165,7 @@ public class MageTrainingArenaScript extends Script {
                     }
                 }
 
-                //sleepGaussian(600, 150);
+                sleepGaussian(600, 150);
             } catch (Exception ex) {
                 if (ex instanceof InterruptedException)
                     return;
@@ -282,19 +282,14 @@ public class MageTrainingArenaScript extends Script {
             return;
         }
 
-        boolean successFullLoot = Rs2Inventory.waitForInventoryChanges(() -> {
-            Rs2GroundItem.loot(ItemID.MAGICTRAINING_DRAGONSTONE, 12);
-            sleepUntil(() -> !Rs2Player.isMoving() && Rs2Inventory.waitForInventoryChanges(5000));
-        });
+        boolean successFullLoot = Rs2GroundItem.loot(ItemID.MAGICTRAINING_DRAGONSTONE, 12) && Rs2Inventory.waitForInventoryChanges(5000);
 
         if (successFullLoot && Rs2Inventory.emptySlotCount() > 0)
             return;
 
         var bonusShape = getBonusShape();
         if (bonusShape == null) return;
-
         var object = Rs2GameObject.getGameObject(obj -> (obj.getId() == bonusShape.getObjectId()) && Rs2Camera.isTileOnScreen(obj));
-
         if (object == null) {
             var index = Rs2Random.between(0, 4);
             Rs2Walker.walkTo(new WorldPoint[]{
@@ -306,13 +301,11 @@ public class MageTrainingArenaScript extends Script {
             Rs2Player.waitForWalking();
             return;
         }
-
         int itemId;
         if (Rs2Inventory.contains(ItemID.MAGICTRAINING_DRAGONSTONE))
             itemId = ItemID.MAGICTRAINING_DRAGONSTONE;
         else
             itemId = bonusShape.getItemId();
-
         if (Rs2Inventory.contains(ItemID.MAGICTRAINING_DRAGONSTONE) || Rs2Inventory.count(itemId) >= shapesToPick) {
             shapesToPick = Rs2Random.between(2, 4);
 
@@ -323,7 +316,7 @@ public class MageTrainingArenaScript extends Script {
 
             sleepUntil(() -> !Rs2Inventory.contains(itemId) || itemId != ItemID.MAGICTRAINING_DRAGONSTONE && bonusShape != getBonusShape(), 20000);
         } else if (Rs2GameObject.interact(object, "Take-from")) {
-            //Rs2Inventory.waitForInventoryChanges(1000);
+            Rs2Inventory.waitForInventoryChanges(1000);
         } else if (Rs2Player.getWorldLocation().distanceTo(object.getWorldLocation()) > 10){
             Rs2Walker.walkFastCanvas(object.getWorldLocation());
         }
