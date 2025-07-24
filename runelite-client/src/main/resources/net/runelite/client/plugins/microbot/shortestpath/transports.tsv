@@ -4955,6 +4955,10 @@
 1241 3096 0	1241 3096 2	Climb-up;Ladder;57357
 1241 3096 2	1241 3096 0	Climb-down;Ladder;57358
 
+# Tlati Rainforest
+1289 3136 0	1245 9527 0	Enter;Cave;57591
+1245 9527 0	1289 3136 0	Enter;Cave;57592
+
 # Kastori
 1378 3053 0	1378 9453 0	Climb-down;Ladder;56469
 1378 9453 0	1378 3053 0	Climb-up;Ladder;56468
