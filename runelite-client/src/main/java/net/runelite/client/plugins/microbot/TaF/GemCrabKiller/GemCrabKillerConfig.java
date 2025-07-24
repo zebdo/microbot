@@ -2,10 +2,12 @@ package net.runelite.client.plugins.microbot.TaF.GemCrabKiller;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigInformation;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 
-@ConfigGroup("This plugin kills the Gem Crab boss. if inventory setups is enabled, the bot will handle the full banking and restocking loop, otherwise, it will kill the crab till out of supplies or the inventory is full with loot.")
+@ConfigGroup("GemCrabKiller")
+@ConfigInformation("This plugin kills the Gem Crab boss. if inventory setups is enabled, the bot will handle the full banking and restocking loop, otherwise, it will kill the crab till out of supplies or the inventory is full with loot.")
 public interface GemCrabKillerConfig extends Config {
     @ConfigItem(
             keyName = "useInventorySetup",
