@@ -39,7 +39,7 @@
 2740 2738 0				Monkey Madness I	5
 2682 3081 0					5
 3037 4763 0					5
-2027 5700 0		75 Construction;83 Farming			5
+# 2027 5700 0		75 Construction;83 Farming			5
 3038 5348 0					5
 3108 3149 0					5
 2658 3230 0					5
@@ -50,6 +50,9 @@
 3423 3016 0					5
 2213 3099 0					5
 3447 9824 0				In Search of the Myreque	5
+1651 3010 0				Children of the Sun	5
+1359 2941 0				Children of the Sun	5
+1429 3324 0				Children of the Sun	5
 	2996 3114 0				5	AIQ
 	2700 3247 0				5	AIR
 	2328 4426 0				5	AIR DLR DJQ AJS
@@ -90,7 +93,7 @@
 	2740 2738 0			Monkey Madness I	5	CLR
 	2682 3081 0				5	CLS
 	3037 4763 0				5	DIP
-	2027 5700 0	75 Construction;83 Farming			5	DIQ
+#	2027 5700 0	75 Construction;83 Farming			5	DIQ
 	3038 5348 0				5	DIR
 	3108 3149 0				5	DIS
 	2658 3230 0				5	DJP
@@ -101,7 +104,6 @@
 	3423 3016 0				5	DLQ
 	2213 3099 0				5	DLR
 	3447 9824 0			In Search of the Myreque	5	DLS
-1651 3010 0				Children of the Sun	5	
-1359 2941 0				Children of the Sun	5	
 	1651 3010 0			Children of the Sun	5	AJP
 	1359 2941 0			Children of the Sun	5	CKQ
+	1429 3324 0			Children of the Sun	5	AIS
