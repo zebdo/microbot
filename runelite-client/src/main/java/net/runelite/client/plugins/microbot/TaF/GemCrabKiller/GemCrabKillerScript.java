@@ -102,7 +102,7 @@ public class GemCrabKillerScript extends Script {
             waitingTimeStart = null;
             return;
         }
-        if (Instant.now().isAfter(waitingTimeStart.plusSeconds(10))) {
+        if (Instant.now().isAfter(waitingTimeStart.plusSeconds(15))) {
             waitingTimeStart = null;
             gemCrabKillerState = GemCrabKillerState.WALKING;
         }
