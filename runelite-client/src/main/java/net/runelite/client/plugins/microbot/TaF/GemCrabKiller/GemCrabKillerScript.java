@@ -66,6 +66,7 @@ public class GemCrabKillerScript extends Script {
     }
 
     private void handleSafety() {
+        Rs2Player.eatAt(50);
         var hasFood = !Rs2Inventory.getInventoryFood().isEmpty();
         var healthPercentage = Rs2Player.getHealthPercentage();
         if (!hasFood && healthPercentage < 25d) {
