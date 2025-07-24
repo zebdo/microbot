@@ -118,10 +118,10 @@
 3221 3218 0		8008				Y	T	19	4	Lumbridge tablet
 2757 3478 0		8010				Y	T	19	4	Camelot tablet
 2661 3302 0		8011	Plague City		165=30	Y	T	19	4	Ardougne tablet
-2549 3112 0		8012	Watchtower			Y	T	19	4	Watchtower tablet
+2549 3112 0		8012	Watchtower		212=14	Y	T	19	4	Watchtower tablet
 										
 # Varbit 4460 is DIARY_ARDOUGNE_HARD										
-2584 3097 0		8012	Watchtower	4460=1		Y	T	19	4	Watchtower tablet: Yanille
+2584 3097 0		8012	Watchtower	4460=1	212=14	Y	T	19	4	Watchtower tablet: Yanille
 2953 3224 0		11741				Y	T	19	4	Rimmington tablet
 2893 3465 0		11742				Y	T	19	4	Taverley tablet
 3340 3004 0		11743				Y	T	19	4	Pollnivneach tablet

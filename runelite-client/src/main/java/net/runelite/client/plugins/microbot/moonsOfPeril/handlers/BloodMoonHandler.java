@@ -2,7 +2,6 @@ package net.runelite.client.plugins.microbot.moonsOfPeril.handlers;
 
 import net.runelite.api.GameObject;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -12,6 +11,7 @@ import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Locations;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.State;
 import net.runelite.client.plugins.microbot.moonsOfPeril.enums.Widgets;
 import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilConfig;
+import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilPlugin;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -20,7 +20,6 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
-import net.runelite.client.plugins.microbot.moonsOfPeril.moonsOfPerilPlugin;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -194,7 +193,7 @@ public class BloodMoonHandler implements BaseHandler {
 
         while (isSpecialAttack1Sequence() && System.currentTimeMillis() - startMs < TIMEOUT_MS) {
             int bloodPoolTick = moonsOfPerilPlugin.bloodPoolTick;
-            if (targetJaguar.getAnimation() == AnimationID.NPC_LYNX_COMBAT_DEATH_BLOOD_JAGUAR) {
+            if (targetJaguar.getAnimation() == 10960) {
                 sleep(600);
                 break;
             }
