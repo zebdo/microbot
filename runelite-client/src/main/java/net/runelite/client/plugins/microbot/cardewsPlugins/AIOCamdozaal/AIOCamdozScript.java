@@ -455,6 +455,11 @@ public class AIOCamdozScript extends Script {
                 break;
 
             case FISHING:
+                if (!Rs2Inventory.hasItem(netToUse))
+                {
+                    state = State.WALKING_TO_BANK;
+                    break;
+                }
                 if (!Rs2Walker.isInArea(fishingLocation, 5))
                 {
                     state = State.WALKING_TO_FISH;
