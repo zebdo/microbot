@@ -1,6 +1,9 @@
 package net.runelite.client.plugins.microbot.cardewsPlugins.AIOCamdozaal;
 
 import net.runelite.api.*;
+import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -54,7 +57,7 @@ public class AIOCamdozScript extends Script {
     int pickaxeToUse;
     int netToUse;
 
-    int lastInteractedBarroniteID = ObjectID.BARRONITE_ROCKS_41548;
+    int lastInteractedBarroniteID = 41548;
     int targetMiningAnimationID = 0;
 
     int targetFishingAnimationID = 0;
@@ -78,7 +81,6 @@ public class AIOCamdozScript extends Script {
                 if (Microbot.pauseAllScripts.get()) return;
                 if (Microbot.bankPinBeingHandled) return;
                 if (Rs2AntibanSettings.microBreakActive) return;
-                if (Microbot.handlingRandomEvent) return;
                 long startTime = System.currentTimeMillis();
 
                 switch (config.CurrentActivity())
@@ -122,8 +124,8 @@ public class AIOCamdozScript extends Script {
         WorldPoint barroniteLocation = new WorldPoint(2938, 5810, 0);
         int tileDistance = 5;
 
-        int[] miningObjectIDs = { ObjectID.BARRONITE_ROCKS, ObjectID.BARRONITE_ROCKS_41548 };
-        int[] miningObjectIDsReverse = { ObjectID.BARRONITE_ROCKS_41548, ObjectID.BARRONITE_ROCKS };
+        int[] miningObjectIDs = { 41547, 41548 };
+        int[] miningObjectIDsReverse = { 41548, 41547 };
         List<WorldPoint> barroniteLocations = new ArrayList<>();
         barroniteLocations.add(new WorldPoint(2936, 5806, 0));
         barroniteLocations.add(new WorldPoint(2937, 5806, 0));
@@ -131,19 +133,19 @@ public class AIOCamdozScript extends Script {
         barroniteLocations.add(new WorldPoint(2941, 5810, 0));
 
         WorldPoint barroniteCrusherLocation = new WorldPoint(2957, 5807, 0);
-        int crusherID = ObjectID.BARRONITE_CRUSHER;
-        int smithingAnimationID = AnimationID.SMITHING_ANVIL;
+        int crusherID = ObjectID.CAMDOZAAL_ANVIL;
+        int smithingAnimationID = 898;
 
-        int bankObjectID = ObjectID.BANK_CHEST_41493;
+        int bankObjectID = 41493;
 
         int[] possibleBarroniteDepositLoots = {
-                ItemID.BARRONITE_HEAD,
+                ItemID.BARRONITE_MACE_1,
                 ItemID.IMCANDO_HAMMER_BROKEN,
-                ItemID.ANCIENT_ASTROSCOPE,
-                ItemID.ANCIENT_CARCANET,
-                ItemID.ANCIENT_GLOBE,
-                ItemID.ANCIENT_LEDGER,
-                ItemID.ANCIENT_TREATISE
+                ItemID.CAMDOZAAL_RELIC_3,
+                ItemID.CAMDOZAAL_RELIC_5,
+                ItemID.CAMDOZAAL_RELIC_1,
+                ItemID.CAMDOZAAL_RELIC_2,
+                ItemID.CAMDOZAAL_RELIC_4
         };
 
         switch(state)
@@ -155,7 +157,7 @@ public class AIOCamdozScript extends Script {
                 }
                 if (Rs2Inventory.isFull())
                 {
-                    if (Rs2Inventory.hasItem(ItemID.BARRONITE_DEPOSIT))
+                    if (Rs2Inventory.hasItem(ItemID.CAMDOZAAL_BARRONITE_DEPOSIT))
                     {
                         state = State.WALKING_TO_ANVIL;
                     }
@@ -185,7 +187,7 @@ public class AIOCamdozScript extends Script {
                 // If inventory full, go and smith
                 if (Rs2Inventory.isFull())
                 {
-                    if (Rs2Inventory.hasItem(ItemID.BARRONITE_DEPOSIT))
+                    if (Rs2Inventory.hasItem(ItemID.CAMDOZAAL_BARRONITE_DEPOSIT))
                     {
                         state = State.WALKING_TO_ANVIL;
                     }
@@ -218,22 +220,22 @@ public class AIOCamdozScript extends Script {
                         if (sleepUntil(() -> Rs2Player.getAnimation() != targetMiningAnimationID, sleepBetween)) {
                             // Mine the available rocks
                             mineableRocks.clear();
-                            if (lastInteractedBarroniteID == ObjectID.BARRONITE_ROCKS) {
+                            if (lastInteractedBarroniteID == 41547) {
                                 //System.out.println(("Last Interacted Rock: LEFT Barronite Vein"));
                                 for (int miningObjectID : miningObjectIDsReverse) {
                                     //for (int j = 0; j < barroniteLocations.size(); ++j)
                                     //{
                                     //mineableRocks.addAll(Rs2GameObject.getWallObjects(miningObjectID));
-                                    mineableRocks.addAll(Rs2GameObject.getWallObjects(object -> object != null && (object.getId() == ObjectID.BARRONITE_ROCKS_41548)));
+                                    mineableRocks.addAll(Rs2GameObject.getWallObjects(object -> object != null && (object.getId() == 41548)));
                                     //}
                                 }
-                            } else if (lastInteractedBarroniteID == ObjectID.BARRONITE_ROCKS_41548) {
+                            } else if (lastInteractedBarroniteID == 41548) {
                                 //System.out.println(("Last Interacted Rock: RIGHT Barronite Vein"));
                                 for (int miningObjectID : miningObjectIDs) {
                                     //for (int j = 0; j < barroniteLocations.size(); ++j)
                                     //{
                                     //mineableRocks.addAll(Rs2GameObject.getWallObjects(miningObjectID));
-                                    mineableRocks.addAll(Rs2GameObject.getWallObjects(object -> object != null && (object.getId() == ObjectID.BARRONITE_ROCKS)));
+                                    mineableRocks.addAll(Rs2GameObject.getWallObjects(object -> object != null && (object.getId() == 41547)));
                                     //}
                                 }
                             }
@@ -273,7 +275,7 @@ public class AIOCamdozScript extends Script {
                 // "Barronite shards" ItemID = 25676
                 if (Rs2Player.getAnimation() != smithingAnimationID)
                 {
-                    if (Rs2Inventory.hasItem(ItemID.BARRONITE_DEPOSIT))
+                    if (Rs2Inventory.hasItem(ItemID.CAMDOZAAL_BARRONITE_DEPOSIT))
                     {
                         //int sleepBetween = 10000 + (int)(Math.random() * (20000 - 10000));
                         //if (sleepUntil(() -> Rs2Player.getAnimation() != smithingAnimationID, sleepBetween)) {
@@ -302,7 +304,7 @@ public class AIOCamdozScript extends Script {
                 if (!Rs2Inventory.contains(possibleBarroniteDepositLoots))
                 {
                     if (Rs2Inventory.hasItem(ItemID.HAMMER) || Rs2Inventory.hasItem(ItemID.IMCANDO_HAMMER) || Rs2Inventory.hasItem(ItemID.IMCANDO_HAMMER_OFFHAND)
-                    || Rs2Equipment.isWearing(ItemID.IMCANDO_HAMMER) || Rs2Equipment.isWearing(ItemID.IMCANDO_HAMMER_OFFHAND))
+                            || Rs2Equipment.isWearing(ItemID.IMCANDO_HAMMER) || Rs2Equipment.isWearing(ItemID.IMCANDO_HAMMER_OFFHAND))
                     {
                         // We have some form of hammer
                         if (Rs2Inventory.hasItem(pickaxeToUse) || Rs2Equipment.isWearing(pickaxeToUse))
@@ -329,7 +331,7 @@ public class AIOCamdozScript extends Script {
                 // Bank objectID = 41493
                 // "Bank chest"
                 if (Rs2Inventory.hasItem(ItemID.HAMMER) || Rs2Inventory.hasItem(ItemID.IMCANDO_HAMMER)
-                        || Rs2Inventory.hasItem(ItemID.IMCANDO_HAMMER_OFFHAND) || Rs2Equipment.hasEquipped(ItemID.IMCANDO_HAMMER)
+                        || Rs2Inventory.hasItem(ItemID.IMCANDO_HAMMER_OFFHAND) || Rs2Equipment.isWearing(ItemID.IMCANDO_HAMMER)
                         || Rs2Equipment.isWearing(ItemID.IMCANDO_HAMMER_OFFHAND))
                 {
                     hasHammer = true;
@@ -369,7 +371,7 @@ public class AIOCamdozScript extends Script {
                 }
                 else
                 {
-                    Rs2Bank.depositAllExcept(ItemID.HAMMER, ItemID.BARRONITE_SHARDS);
+                    Rs2Bank.depositAllExcept(ItemID.HAMMER, ItemID.CAMDOZAAL_BARRONITE_SHARD);
                     if (!hasHammer)
                     {
                         if (Rs2Bank.hasItem(ItemID.IMCANDO_HAMMER))
@@ -464,13 +466,13 @@ public class AIOCamdozScript extends Script {
                 }
                 if (!Rs2Player.isInteracting() && !Rs2Player.isMoving())
                 {
-                    if (netToUse == ItemID.SMALL_FISHING_NET)
+                    if (netToUse == 303)
                     {
-                        Rs2Npc.interact(ObjectID.FISHING_SPOT_CAMDOZAAL, "Small Net");
+                        Rs2Npc.interact(10686, "Small Net");
                     }
-                    else if (netToUse == ItemID.BIG_FISHING_NET)
+                    else if (netToUse == 305)
                     {
-                        Rs2Npc.interact(ObjectID.FISHING_SPOT_CAMDOZAAL, "Big Net");
+                        Rs2Npc.interact(10686, "Big Net");
 
                     }
                 }
@@ -485,7 +487,7 @@ public class AIOCamdozScript extends Script {
                 else
                 {
                     if (!processTwice) {
-                        if (Rs2Player.getAnimation() != AnimationID.COOKING_RANGE) {
+                        if (Rs2Player.getAnimation() != AnimationID.HUMAN_COOKING) {
                             if (Rs2Inventory.hasItem(ItemID.RAW_GUPPY) || Rs2Inventory.hasItem(ItemID.RAW_CAVEFISH)
                                     || Rs2Inventory.hasItem(ItemID.RAW_TETRA) || Rs2Inventory.hasItem(ItemID.RAW_CATFISH)) {
                                 if (Rs2Widget.isProductionWidgetOpen()) {
@@ -493,7 +495,7 @@ public class AIOCamdozScript extends Script {
                                     Rs2Player.waitForXpDrop(Skill.COOKING, 3000);
                                 }
                                 else if (!Rs2Player.isMoving()) {
-                                    Rs2GameObject.interact(ObjectID.PREPARATION_TABLE, "Prepare-fish");
+                                    Rs2GameObject.interact(41545, "Prepare-fish");
 
                                 }
                             }
@@ -505,7 +507,7 @@ public class AIOCamdozScript extends Script {
                     }
                     else
                     {
-                        if (Rs2Player.getAnimation() != AnimationID.USING_GILDED_ALTAR)
+                        if (Rs2Player.getAnimation() != AnimationID.HUMAN_BONE_SACRIFICE)
                         {
                             if (Rs2Inventory.hasItem(ItemID.RUINED_GUPPY) || Rs2Inventory.hasItem(ItemID.RUINED_CAVEFISH)
                                     || Rs2Inventory.hasItem(ItemID.RUINED_TETRA) || Rs2Inventory.hasItem(ItemID.RUINED_CATFISH))
@@ -522,13 +524,12 @@ public class AIOCamdozScript extends Script {
                                 }
                                 else if (!Rs2Player.isMoving())
                                 {
-                                    Rs2GameObject.interact(ObjectID.ALTAR_41546, "Offer-fish");
-
+                                    Rs2GameObject.interact(41546, "Offer-fish");
                                 }
                             }
                             else
                             {
-                                if (Rs2Inventory.hasItem(ItemID.BARRONITE_HANDLE)) {
+                                if (Rs2Inventory.hasItem(ItemID.BARRONITE_MACE_2)) {
                                     state = State.WALKING_TO_BANK;
                                 } else {
                                     state = State.WALKING_TO_FISH;
@@ -542,7 +543,7 @@ public class AIOCamdozScript extends Script {
                 break;
 
             case WALKING_TO_BANK:
-                if (Rs2Inventory.hasItem(netToUse) && Rs2Inventory.hasItem(ItemID.KNIFE) && !Rs2Inventory.hasItem(ItemID.BARRONITE_HANDLE))
+                if (Rs2Inventory.hasItem(netToUse) && Rs2Inventory.hasItem(ItemID.KNIFE) && !Rs2Inventory.hasItem(ItemID.BARRONITE_MACE_2))
                 {
                     state = State.WALKING_TO_FISH;
                     break;
@@ -569,7 +570,7 @@ public class AIOCamdozScript extends Script {
                 {
                     hasKnife = true;
                 }
-                if (!Rs2Inventory.hasItem(ItemID.BARRONITE_HANDLE) && !Rs2Inventory.isFull() && hasNet && hasKnife)
+                if (!Rs2Inventory.hasItem(ItemID.BARRONITE_MACE_2) && !Rs2Inventory.isFull() && hasNet && hasKnife)
                 {
                     state = State.WALKING_TO_FISH;
                     break;
@@ -581,7 +582,7 @@ public class AIOCamdozScript extends Script {
                 }
                 else
                 {
-                    Rs2Bank.depositAllExcept(netToUse, ItemID.KNIFE, ItemID.BARRONITE_SHARDS);
+                    Rs2Bank.depositAllExcept(netToUse, ItemID.KNIFE, ItemID.CAMDOZAAL_BARRONITE_SHARD);
                     if (!hasNet)
                     {
                         Rs2Bank.withdrawOne(netToUse);
@@ -672,7 +673,7 @@ public class AIOCamdozScript extends Script {
             case WALKING_TO_GOLEM:
                 //if (BreakHandlerScript.lockState)
                 //{
-                    //BreakHandlerScript.lockState = false;
+                //BreakHandlerScript.lockState = false;
                 //}
 
                 // Walk to _golemLocation
@@ -690,7 +691,7 @@ public class AIOCamdozScript extends Script {
                 // FIGHTING
                 //if (!BreakHandlerScript.lockState)
                 //{
-                    //BreakHandlerScript.lockState = true;
+                //BreakHandlerScript.lockState = true;
                 //}
 
                 if (!Rs2Inventory.isFull())
@@ -770,7 +771,7 @@ public class AIOCamdozScript extends Script {
             case WALKING_TO_BANK:
                 //if (BreakHandlerScript.lockState)
                 //{
-                    //BreakHandlerScript.lockState = false;
+                //BreakHandlerScript.lockState = false;
                 //}
 
                 if (!Rs2Walker.isInArea(bankLocation, 5))
@@ -888,59 +889,55 @@ public class AIOCamdozScript extends Script {
         {
             case BRONZE:
                 pickaxeToUse = ItemID.BRONZE_PICKAXE;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_BRONZE;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_BRONZE_PICKAXE_WALL;
                 break;
             case IRON:
                 pickaxeToUse = ItemID.IRON_PICKAXE;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_IRON;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_IRON_PICKAXE_WALL;
                 break;
             case STEEL:
                 pickaxeToUse = ItemID.STEEL_PICKAXE;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_STEEL;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_STEEL_PICKAXE_WALL;
                 break;
             case BLACK:
                 pickaxeToUse = ItemID.BLACK_PICKAXE;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_BLACK;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_BLACK_PICKAXE_WALL;
                 break;
             case MITHRIL:
                 pickaxeToUse = ItemID.MITHRIL_PICKAXE;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_MITHRIL;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_MITHRIL_PICKAXE_WALL;
                 break;
             case ADAMANT:
                 pickaxeToUse = ItemID.ADAMANT_PICKAXE;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_ADAMANT;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_ADAMANT_PICKAXE_WALL;
                 break;
             case RUNE:
                 pickaxeToUse = ItemID.RUNE_PICKAXE;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_RUNE;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_RUNE_PICKAXE_WALL;
                 break;
             case GILDED_PICKAXE:
-                pickaxeToUse = ItemID.GILDED_PICKAXE;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_GILDED;
+                pickaxeToUse = ItemID.TRAIL_GILDED_PICKAXE;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_GILDED_PICKAXE_WALL;
                 break;
             case DRAGON_PICKAXE:
                 pickaxeToUse = ItemID.DRAGON_PICKAXE;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_DRAGON;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_DRAGON_PICKAXE_WALL;
                 break;
             case DRAGON_PICKAXE_OR:
-                pickaxeToUse = ItemID.DRAGON_PICKAXE_OR;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_DRAGON_OR;
+                pickaxeToUse = ItemID.DRAGON_PICKAXE_PRETTY;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_DRAGON_PICKAXE_PRETTY_WALL;
                 break;
             case INFERNAL_PICKAXE:
                 pickaxeToUse = ItemID.INFERNAL_PICKAXE;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_INFERNAL;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_INFERNAL_PICKAXE_WALL;
                 break;
             case INFERNAL_PICKAXE_OR:
-                pickaxeToUse = ItemID.INFERNAL_PICKAXE_OR;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_INFERNAL;
+                pickaxeToUse = ItemID.TRAILBLAZER_PICKAXE;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_TRAILBLAZER_PICKAXE_WALL;
                 break;
             case CRYSTAL_PICKAXE:
                 pickaxeToUse = ItemID.CRYSTAL_PICKAXE;
-                targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_CRYSTAL;
-                break;
-            case TRAILBLAZER_PICKAXE:
-                //pickaxeToUse = ItemID.TRAILBLAZER_PICKAXE;
-                //targetMiningAnimationID = AnimationID.MINING_MOTHERLODE_TRAILBLAZER;
+                targetMiningAnimationID = AnimationID.HUMAN_MINING_CRYSTAL_PICKAXE_WALL;
                 break;
         }
     }
@@ -950,12 +947,12 @@ public class AIOCamdozScript extends Script {
         switch (config.SelectedNet())
         {
             case SMALL_NET:
-                netToUse = ItemID.SMALL_FISHING_NET;
-                targetFishingAnimationID = AnimationID.FISHING_NET;
+                netToUse = ItemID.NET;
+                targetFishingAnimationID = AnimationID.HUMAN_SMALLNET;
                 break;
             case BIG_NET:
-                netToUse = ItemID.BIG_FISHING_NET;
-                targetFishingAnimationID = AnimationID.FISHING_BIG_NET;
+                netToUse = ItemID.BIG_NET;
+                targetFishingAnimationID = AnimationID.HUMAN_LARGENET;
                 break;
         }
     }
