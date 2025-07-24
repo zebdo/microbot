@@ -214,7 +214,7 @@ public class MicrobotPlugin extends Plugin
 		)
 		{
 			log.warn("Received RuneScape profile change event from '{}' to '{}'", oldProfile, newProfile);
-			// Handle profile changes for all cache systems through Rs2CacheManager
+			// Handle profile changes for all cache systems through .tmpFiles/Rs2Cache/MicrobotOverlay.java
 			Rs2CacheManager.setUnknownInitialCacheState();
 			Rs2CacheManager.loadCacheStateFromConfig(newProfile);
 			return;

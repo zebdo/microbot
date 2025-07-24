@@ -407,14 +407,15 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
     public String getStatisticsString() {
         CacheStatistics stats = getStatistics();
         return String.format(
-            "Cache: %s | Size: %d | Hits: %d | Misses: %d | Hit Rate: %.2f%% | Mode: %s | Invalidations: %d",
+            "Cache: %s | Size: %d | Hits: %d | Misses: %d | Hit Rate: %.2f%% | Mode: %s | Invalidations: %d | Memory: %s",
             stats.cacheName,
             stats.currentSize,
             stats.cacheHits,
             stats.cacheMisses,
             stats.getHitRate() * 100,
             stats.cacheMode.toString(),
-            stats.totalInvalidations
+            stats.totalInvalidations,
+            stats.getFormattedMemorySize()
         );
     }
 
@@ -750,7 +751,116 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
     }
     
     /**
-     * Gets cache statistics for monitoring.
+     * Calculates the estimated memory size of this cache in bytes.
+     * Includes keys, values, timestamps, and internal data structures.
+     * 
+     * @return Estimated memory usage in bytes
+     */
+    public long getEstimatedMemorySize() {
+        if (cache.isEmpty()) {
+            return getEmptyCacheMemorySize();
+        }
+        
+        long totalSize = 0;
+        
+        // Base cache object overhead
+        totalSize += getBaseCacheMemorySize();
+        
+        // Calculate size of stored entries
+        long keySize = 0;
+        long valueSize = 0;
+        long timestampSize = 0;
+        
+        // Sample a few entries to estimate average sizes
+        int sampleSize = Math.min(5, cache.size());
+        int sampledEntries = 0;
+        
+        for (Map.Entry<K, Object> entry : cache.entrySet()) {
+            if (sampledEntries >= sampleSize) break;
+            
+            keySize += MemorySizeCalculator.calculateKeySize(entry.getKey());
+            valueSize += MemorySizeCalculator.calculateValueSize(entry.getValue());
+            timestampSize += Long.BYTES; // Long timestamp
+            
+            sampledEntries++;
+        }
+        
+        if (sampledEntries > 0) {
+            // Calculate average sizes and multiply by total entry count
+            long avgKeySize = keySize / sampledEntries;
+            long avgValueSize = valueSize / sampledEntries;
+            long avgTimestampSize = timestampSize / sampledEntries;
+            
+            totalSize += (avgKeySize + avgValueSize + avgTimestampSize) * cache.size();
+            
+            // Add ConcurrentHashMap overhead per entry (Node objects, buckets)
+            totalSize += cache.size() * 64; // Estimated overhead per map entry
+        }
+        
+        return totalSize;
+    }
+    
+    /**
+     * Gets the base memory size of an empty cache.
+     */
+    private long getEmptyCacheMemorySize() {
+        long size = 0;
+        
+        // Object header + all instance fields
+        size += 12; // Object header (64-bit JVM with compressed OOPs)
+        size += 4 * 8; // 8 reference fields (String, CacheMode, 2 ConcurrentHashMaps, 4 AtomicLong, AtomicBoolean)
+        size += 8 * 4; // 4 long fields
+        size += 4 * 2; // 2 int fields (if any)
+        size += 4 * 2; // 2 CopyOnWriteArrayList references
+        size += 4; // ValueWrapper reference
+        
+        // Empty ConcurrentHashMap overhead (x2 for cache and timestamps)
+        size += 2 * (12 + 4 + 4*3 + 16 + 16*4); // Object + fields + empty bucket array
+        
+        // AtomicLong objects (6 total)
+        size += 6 * (12 + 8); // Object header + long value
+        
+        // AtomicBoolean object
+        size += 12 + 1; // Object header + boolean value
+        
+        // CopyOnWriteArrayList objects (2 total)
+        size += 2 * (12 + 4*3 + 16); // Object + fields + empty array
+        
+        // String objects (cacheName)
+        if (cacheName != null) {
+            size += 12 + 4 + 16 + (cacheName.length() * 2); // String + char array
+        }
+        
+        return size;
+    }
+    
+    /**
+     * Gets the base memory size of cache infrastructure.
+     */
+    private long getBaseCacheMemorySize() {
+        long size = getEmptyCacheMemorySize();
+        
+        // Add strategy collections overhead
+        size += updateStrategies.size() * 4; // Reference per strategy
+        size += queryStrategies.size() * 4; // Reference per strategy
+        
+        // Add minimal strategy object overhead (strategies are typically small)
+        size += (updateStrategies.size() + queryStrategies.size()) * 32; // Estimated per strategy
+        
+        return size;
+    }
+    
+    /**
+     * Returns memory usage information as a formatted string.
+     */
+    public String getMemoryUsageString() {
+        long memoryBytes = getEstimatedMemorySize();
+        return String.format("Memory: %s (%d bytes)", 
+                MemorySizeCalculator.formatMemorySize(memoryBytes), memoryBytes);
+    }
+    
+    /**
+     * Gets cache statistics for monitoring, including memory usage.
      */
     public CacheStatistics getStatistics() {
         return new CacheStatistics(
@@ -762,7 +872,8 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
                 totalInvalidations.get(),
                 System.currentTimeMillis() - creationTime,
                 ttlMillis,
-                globalInvalidationInterval
+                globalInvalidationInterval,
+                getEstimatedMemorySize()
         );
     }
     
@@ -779,10 +890,12 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         public final long uptime;
         public final long ttlMillis;
         public final long globalInvalidationInterval;
+        public final long estimatedMemoryBytes;
         
         public CacheStatistics(String cacheName, CacheMode cacheMode, int currentSize, 
                              long cacheHits, long cacheMisses, long totalInvalidations,
-                             long uptime, long ttlMillis, long globalInvalidationInterval) {
+                             long uptime, long ttlMillis, long globalInvalidationInterval,
+                             long estimatedMemoryBytes) {
             this.cacheName = cacheName;
             this.cacheMode = cacheMode;
             this.currentSize = currentSize;
@@ -792,11 +905,16 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
             this.uptime = uptime;
             this.ttlMillis = ttlMillis;
             this.globalInvalidationInterval = globalInvalidationInterval;
+            this.estimatedMemoryBytes = estimatedMemoryBytes;
         }
         
         public double getHitRate() {
             long total = cacheHits + cacheMisses;
             return total == 0 ? 0.0 : (double) cacheHits / total;
+        }
+        
+        public String getFormattedMemorySize() {
+            return MemorySizeCalculator.formatMemorySize(estimatedMemoryBytes);
         }
     }
     

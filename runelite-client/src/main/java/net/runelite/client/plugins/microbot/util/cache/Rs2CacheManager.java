@@ -199,6 +199,27 @@ public class Rs2CacheManager implements AutoCloseable {
     }
     
     /**
+     * Gets the total estimated memory usage across all unified caches.
+     * 
+     * @return The total estimated memory usage in bytes
+     */
+    public long getTotalMemoryUsage() {
+        try {
+            return Rs2NpcCache.getInstance().getEstimatedMemorySize() +
+                   Rs2GroundItemCache.getInstance().getEstimatedMemorySize() +
+                   Rs2ObjectCache.getInstance().getEstimatedMemorySize() +
+                   Rs2VarbitCache.getInstance().getEstimatedMemorySize() +
+                   Rs2VarPlayerCache.getInstance().getEstimatedMemorySize() +
+                   Rs2SkillCache.getInstance().getEstimatedMemorySize() +
+                   Rs2QuestCache.getInstance().getEstimatedMemorySize() +
+                   Rs2SpiritTreeCache.getInstance().getEstimatedMemorySize();
+        } catch (Exception e) {
+            log.error("Error calculating total memory usage: {}", e.getMessage(), e);
+            return 0;
+        }
+    }
+    
+    /**
      * Provides unified cache statistics for debugging.
      * 
      * @return A string containing cache statistics
@@ -599,33 +620,94 @@ public class Rs2CacheManager implements AutoCloseable {
     }
     
     /**
-     * Gets statistics for all unified caches as a formatted string.
-     * @return Formatted string containing statistics for all caches
+     * Gets statistics for all unified caches as a formatted string with memory usage.
+     * @return Formatted string containing statistics for all caches including memory usage
      */
     public static String getAllCacheStatisticsString() {
         StringBuilder sb = new StringBuilder();
         try {
-            sb.append("NPC: Size=").append(Rs2NpcCache.getInstance().size())
-              .append(" | Hits=").append(Rs2NpcCache.getInstance().getStatistics().cacheHits).append("\n");
-            sb.append("GroundItems: Size=").append(Rs2GroundItemCache.getInstance().size())
-              .append(" | Hits=").append(Rs2GroundItemCache.getInstance().getStatistics().cacheHits).append("\n");
-            sb.append("Objects: Size=").append(Rs2ObjectCache.getInstance().size())
-              .append(" | Hits=").append(Rs2ObjectCache.getInstance().getStatistics().cacheHits).append("\n");
-            sb.append("Varbits: Size=").append(Rs2VarbitCache.getInstance().size())
-              .append(" | Hits=").append(Rs2VarbitCache.getInstance().getStatistics().cacheHits).append("\n");
-            sb.append("VarPlayers: Size=").append(Rs2VarPlayerCache.getInstance().size())
-              .append(" | Hits=").append(Rs2VarPlayerCache.getInstance().getStatistics().cacheHits).append("\n");
-            sb.append("Skills: Size=").append(Rs2SkillCache.getInstance().size())
-              .append(" | Hits=").append(Rs2SkillCache.getInstance().getStatistics().cacheHits).append("\n");
-            sb.append("Quests: Size=").append(Rs2QuestCache.getInstance().size())
-              .append(" | Hits=").append(Rs2QuestCache.getInstance().getStatistics().cacheHits).append("\n");
-            sb.append("\nSpiritTrees: Size=").append(Rs2SpiritTreeCache.getInstance().size())
-              .append(" | Hits=").append(Rs2SpiritTreeCache.getInstance().getStatistics().cacheHits).append("\n");
-            sb.append("Total Cache Size: ").append(getInstance().getTotalCacheSize()).append("\n");            
+            sb.append("=== MICROBOT CACHE STATISTICS ===\n");
+            
+            // Individual cache statistics with memory usage
+            appendCacheStats(sb, "NPC", Rs2NpcCache.getInstance());
+            appendCacheStats(sb, "GroundItems", Rs2GroundItemCache.getInstance());
+            appendCacheStats(sb, "Objects", Rs2ObjectCache.getInstance());
+            appendCacheStats(sb, "Varbits", Rs2VarbitCache.getInstance());
+            appendCacheStats(sb, "VarPlayers", Rs2VarPlayerCache.getInstance());
+            appendCacheStats(sb, "Skills", Rs2SkillCache.getInstance());
+            appendCacheStats(sb, "Quests", Rs2QuestCache.getInstance());
+            appendCacheStats(sb, "SpiritTrees", Rs2SpiritTreeCache.getInstance());
+            
+            sb.append("\n=== SUMMARY ===\n");
+            
+            // Calculate totals
+            int totalEntries = getInstance().getTotalCacheSize();
+            long totalMemoryBytes = getInstance().getTotalMemoryUsage();
+            String formattedMemory = MemorySizeCalculator.formatMemorySize(totalMemoryBytes);
+            
+            sb.append("Total Cache Entries: ").append(totalEntries).append("\n");
+            sb.append("Total Memory Usage: ").append(formattedMemory)
+              .append(" (").append(totalMemoryBytes).append(" bytes)\n");
+            
+            // Memory breakdown by cache type
+            sb.append("\n=== MEMORY BREAKDOWN ===\n");
+            appendMemoryBreakdown(sb);
+            
         } catch (Exception e) {
             log.error("Error getting cache statistics: {}", e.getMessage(), e);
-            return "Error retrieving cache statistics";
+            return "Error retrieving cache statistics: " + e.getMessage();
         }
         return sb.toString();
+    }
+    
+    /**
+     * Appends formatted cache statistics for a single cache.
+     */
+    private static void appendCacheStats(StringBuilder sb, String cacheName, Rs2Cache<?, ?> cache) {
+        try {
+            Rs2Cache.CacheStatistics stats = cache.getStatistics();
+            sb.append(String.format("%-12s: Size=%-4d | Hits=%-6d | Hit Rate=%5.1f%% | Memory=%s\n",
+                    cacheName,
+                    stats.currentSize,
+                    stats.cacheHits,
+                    stats.getHitRate() * 100,
+                    stats.getFormattedMemorySize()));
+        } catch (Exception e) {
+            sb.append(String.format("%-12s: ERROR - %s\n", cacheName, e.getMessage()));
+        }
+    }
+    
+    /**
+     * Appends memory usage breakdown by cache type.
+     */
+    private static void appendMemoryBreakdown(StringBuilder sb) {
+        try {
+            // Entity caches (volatile)
+            long entityMemory = Rs2NpcCache.getInstance().getEstimatedMemorySize() +
+                               Rs2ObjectCache.getInstance().getEstimatedMemorySize() +
+                               Rs2GroundItemCache.getInstance().getEstimatedMemorySize();
+            
+            // Player caches (persistent)  
+            long playerMemory = Rs2VarbitCache.getInstance().getEstimatedMemorySize() +
+                               Rs2VarPlayerCache.getInstance().getEstimatedMemorySize() +
+                               Rs2SkillCache.getInstance().getEstimatedMemorySize() +
+                               Rs2QuestCache.getInstance().getEstimatedMemorySize() +
+                               Rs2SpiritTreeCache.getInstance().getEstimatedMemorySize();
+            
+            sb.append("Entity Caches (Volatile): ").append(MemorySizeCalculator.formatMemorySize(entityMemory)).append("\n");
+            sb.append("Player Caches (Persistent): ").append(MemorySizeCalculator.formatMemorySize(playerMemory)).append("\n");
+            
+            // Memory efficiency metrics
+            long totalMemory = entityMemory + playerMemory;
+            int totalEntries = getInstance().getTotalCacheSize();
+            
+            if (totalEntries > 0) {
+                long avgMemoryPerEntry = totalMemory / totalEntries;
+                sb.append("Average Memory per Entry: ").append(MemorySizeCalculator.formatMemorySize(avgMemoryPerEntry)).append("\n");
+            }
+            
+        } catch (Exception e) {
+            sb.append("Memory breakdown calculation failed: ").append(e.getMessage()).append("\n");
+        }
     }
 }
