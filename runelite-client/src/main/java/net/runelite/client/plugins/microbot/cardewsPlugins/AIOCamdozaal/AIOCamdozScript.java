@@ -72,14 +72,13 @@ public class AIOCamdozScript extends Script {
     public boolean run(AIOCamdozConfig config) {
         Microbot.enableAutoRunOn = false;
         CUtil.SetMyAntiban(0.08);
-        State state = State.WALKING_TO_BANK;
+        state = State.WALKING_TO_BANK;
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
                 if (Microbot.pauseAllScripts.get()) return;
-                if (Microbot.bankPinBeingHandled) return;
                 if (Rs2AntibanSettings.microBreakActive) return;
                 long startTime = System.currentTimeMillis();
 
