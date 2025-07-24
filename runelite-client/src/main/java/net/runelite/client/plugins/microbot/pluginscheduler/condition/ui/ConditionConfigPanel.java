@@ -43,6 +43,7 @@ import javax.swing.JScrollPane;
 import javax.swing.JSeparator;
 
 import javax.swing.JSplitPane;
+import javax.swing.JTabbedPane;
 
 import javax.swing.JTree;
 import javax.swing.ListSelectionModel;
@@ -1069,6 +1070,49 @@ public class ConditionConfigPanel extends JPanel {
         if ("Location".equals(selectedCategory)) {
             // Use LocationConditionUtil for location-based conditions
             LocationConditionUtil.createLocationConditionPanel(panel, gbc);
+            
+            // After creating the location panel, copy the location-specific client properties from the inner panel to configPanel for later access
+            JTabbedPane locationTabbedPane = (JTabbedPane) panel.getClientProperty("locationTabbedPane");
+            if (locationTabbedPane != null) {
+                configPanel.putClientProperty("locationTabbedPane", locationTabbedPane);
+                
+                // Auto-select the appropriate tab based on the selected condition type
+                switch (selectedType) {
+                    case "Position":
+                        locationTabbedPane.setSelectedIndex(0); // Position tab
+                        break;
+                    case "Area":
+                        locationTabbedPane.setSelectedIndex(1); // Area tab
+                        break;
+                    case "Region":
+                        locationTabbedPane.setSelectedIndex(2); // Region tab
+                        break;
+                }
+                // Copy all location-related properties from the tabbed pane panels
+                for (int i = 0; i < locationTabbedPane.getTabCount(); i++) {
+                    JPanel tabPanel = (JPanel) locationTabbedPane.getComponentAt(i);
+                    // Copy client properties from tab panels to configPanel for universal access
+                    if (tabPanel.getClientProperty("positionXSpinner") != null) {
+                        configPanel.putClientProperty("positionXSpinner", tabPanel.getClientProperty("positionXSpinner"));
+                        configPanel.putClientProperty("positionYSpinner", tabPanel.getClientProperty("positionYSpinner"));
+                        configPanel.putClientProperty("positionPlaneSpinner", tabPanel.getClientProperty("positionPlaneSpinner"));
+                        configPanel.putClientProperty("positionDistanceSpinner", tabPanel.getClientProperty("positionDistanceSpinner"));
+                        configPanel.putClientProperty("positionNameField", tabPanel.getClientProperty("positionNameField"));
+                    }
+                    if (tabPanel.getClientProperty("areaX1Spinner") != null) {
+                        configPanel.putClientProperty("areaX1Spinner", tabPanel.getClientProperty("areaX1Spinner"));
+                        configPanel.putClientProperty("areaY1Spinner", tabPanel.getClientProperty("areaY1Spinner"));
+                        configPanel.putClientProperty("areaX2Spinner", tabPanel.getClientProperty("areaX2Spinner"));
+                        configPanel.putClientProperty("areaY2Spinner", tabPanel.getClientProperty("areaY2Spinner"));
+                        configPanel.putClientProperty("areaPlaneSpinner", tabPanel.getClientProperty("areaPlaneSpinner"));
+                        configPanel.putClientProperty("areaNameField", tabPanel.getClientProperty("areaNameField"));
+                    }
+                    if (tabPanel.getClientProperty("regionIdsField") != null) {
+                        configPanel.putClientProperty("regionIdsField", tabPanel.getClientProperty("regionIdsField"));
+                        configPanel.putClientProperty("regionNameField", tabPanel.getClientProperty("regionNameField"));
+                    }
+                }
+            }
         } else if ("Varbit".equals(selectedCategory)) {
             // Use VarbitConditionPanelUtil for varbit-based conditions
             switch (selectedType) {

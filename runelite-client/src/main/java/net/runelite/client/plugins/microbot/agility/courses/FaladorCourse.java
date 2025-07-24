@@ -1,10 +1,14 @@
 package net.runelite.client.plugins.microbot.agility.courses;
 
 import java.util.List;
+import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ObjectID;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.agility.models.AgilityObstacleModel;
+import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.misc.Operation;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 public class FaladorCourse implements AgilityCourseHandler
 {
@@ -38,5 +42,19 @@ public class FaladorCourse implements AgilityCourseHandler
 	public Integer getRequiredLevel()
 	{
 		return 50;
+	}
+
+	@Override
+	public boolean waitForCompletion(final int agilityExp, final int plane)
+	{
+		double initialHealth = Rs2Player.getHealthPercentage();
+		int timeoutMs = 15000;
+
+		Global.sleepUntil(() -> Microbot.getClient().getSkillExperience(Skill.AGILITY) != agilityExp || Rs2Player.getHealthPercentage() < initialHealth, timeoutMs);
+
+		boolean gainedExp = Microbot.getClient().getSkillExperience(Skill.AGILITY) != agilityExp;
+		boolean lostHealth = Rs2Player.getHealthPercentage() < initialHealth;
+
+		return gainedExp || lostHealth;
 	}
 }

@@ -134,26 +134,26 @@ public class PathfinderConfig {
 
     public void refresh() {
         calculationCutoffMillis = config.calculationCutoff() * Constants.GAME_TICK_LENGTH;
-        avoidWilderness = config.avoidWilderness();
-        useAgilityShortcuts = config.useAgilityShortcuts();
-        useGrappleShortcuts = config.useGrappleShortcuts();
-        useBoats = config.useBoats();
-        useCanoes = config.useCanoes();
-        useCharterShips = config.useCharterShips();
-        useShips = config.useShips();
-        useFairyRings = config.useFairyRings();
-        useGnomeGliders = config.useGnomeGliders();
-        useMinecarts = config.useMinecarts();
-        useQuetzals = config.useQuetzals();
-        useSpiritTrees = config.useSpiritTrees();
-        useTeleportationItems = config.useTeleportationItems();
-        useTeleportationMinigames = config.useTeleportationMinigames();
-        useTeleportationLevers = config.useTeleportationLevers();
-        useTeleportationPortals = config.useTeleportationPortals();
-        useTeleportationSpells = config.useTeleportationSpells();
-        useWildernessObelisks = config.useWildernessObelisks();
-        useMagicCarpets = config.useMagicCarpets();
-        distanceBeforeUsingTeleport = config.distanceBeforeUsingTeleport();
+        avoidWilderness = ShortestPathPlugin.override("avoidWilderness", config.avoidWilderness());
+        useAgilityShortcuts = ShortestPathPlugin.override("useAgilityShortcuts", config.useAgilityShortcuts());
+        useGrappleShortcuts = ShortestPathPlugin.override("useGrappleShortcuts", config.useGrappleShortcuts());
+        useBoats = ShortestPathPlugin.override("useBoats", config.useBoats());
+        useCanoes = ShortestPathPlugin.override("useCanoes", config.useCanoes());
+        useCharterShips = ShortestPathPlugin.override("useCharterShips", config.useCharterShips());
+        useShips = ShortestPathPlugin.override("useShips", config.useShips());
+        useFairyRings = ShortestPathPlugin.override("useFairyRings", config.useFairyRings());
+        useGnomeGliders = ShortestPathPlugin.override("useGnomeGliders", config.useGnomeGliders());
+        useMinecarts = ShortestPathPlugin.override("useMinecarts", config.useMinecarts());
+        useQuetzals = ShortestPathPlugin.override("useQuetzals", config.useQuetzals());
+        useSpiritTrees = ShortestPathPlugin.override("useSpiritTrees", config.useSpiritTrees());
+        useTeleportationItems = ShortestPathPlugin.override("useTeleportationItems", config.useTeleportationItems());
+        useTeleportationMinigames = ShortestPathPlugin.override("useTeleportationMinigames",config.useTeleportationMinigames());
+        useTeleportationLevers = ShortestPathPlugin.override("useTeleportationLevers", config.useTeleportationLevers());
+        useTeleportationPortals = ShortestPathPlugin.override("useTeleportationPortals", config.useTeleportationPortals());
+        useTeleportationSpells = ShortestPathPlugin.override("useTeleportationSpells", config.useTeleportationSpells());
+        useWildernessObelisks = ShortestPathPlugin.override("useWildernessObelisks", config.useWildernessObelisks());
+        useMagicCarpets = ShortestPathPlugin.override("useMagicCarpets", config.useMagicCarpets());
+        distanceBeforeUsingTeleport = ShortestPathPlugin.override("distanceBeforeUsingTeleports", config.distanceBeforeUsingTeleport());
 
         //START microbot variables
         useNpcs = config.useNpcs();
@@ -395,31 +395,31 @@ public class PathfinderConfig {
     }
 
     public static boolean isInWilderness(WorldPoint p) {
-        return WILDERNESS_ABOVE_GROUND.distanceTo(p) == 0
-                && FEROX_ENCLAVE_1.distanceTo(p) != 0
-                && FEROX_ENCLAVE_2.distanceTo(p) != 0
-                && FEROX_ENCLAVE_3.distanceTo(p) != 0
-                && FEROX_ENCLAVE_4.distanceTo(p) != 0
-                && FEROX_ENCLAVE_5.distanceTo(p) != 0
-                && NOT_WILDERNESS_1.distanceTo(p) != 0
-                && NOT_WILDERNESS_2.distanceTo(p) != 0
-                && NOT_WILDERNESS_3.distanceTo(p) != 0
-                && NOT_WILDERNESS_4.distanceTo(p) != 0
-                || WILDERNESS_UNDERGROUND.distanceTo(p) == 0;
+        return WILDERNESS_ABOVE_GROUND.distanceTo2D(p) == 0
+                && FEROX_ENCLAVE_1.distanceTo2D(p) != 0
+                && FEROX_ENCLAVE_2.distanceTo2D(p) != 0
+                && FEROX_ENCLAVE_3.distanceTo2D(p) != 0
+                && FEROX_ENCLAVE_4.distanceTo2D(p) != 0
+                && FEROX_ENCLAVE_5.distanceTo2D(p) != 0
+                && NOT_WILDERNESS_1.distanceTo2D(p) != 0
+                && NOT_WILDERNESS_2.distanceTo2D(p) != 0
+                && NOT_WILDERNESS_3.distanceTo2D(p) != 0
+                && NOT_WILDERNESS_4.distanceTo2D(p) != 0
+                || WILDERNESS_UNDERGROUND.distanceTo2D(p) == 0;
     }
 
     public static boolean isInWilderness(int packedPoint) {
-        return WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_ABOVE_GROUND) == 0
-                && WorldPointUtil.distanceToArea(packedPoint, FEROX_ENCLAVE_1) != 0
-                && WorldPointUtil.distanceToArea(packedPoint, FEROX_ENCLAVE_2) != 0
-                && WorldPointUtil.distanceToArea(packedPoint, FEROX_ENCLAVE_3) != 0
-                && WorldPointUtil.distanceToArea(packedPoint, FEROX_ENCLAVE_4) != 0
-                && WorldPointUtil.distanceToArea(packedPoint, FEROX_ENCLAVE_5) != 0
-                && WorldPointUtil.distanceToArea(packedPoint, NOT_WILDERNESS_1) != 0
-                && WorldPointUtil.distanceToArea(packedPoint, NOT_WILDERNESS_2) != 0
-                && WorldPointUtil.distanceToArea(packedPoint, NOT_WILDERNESS_3) != 0
-                && WorldPointUtil.distanceToArea(packedPoint, NOT_WILDERNESS_4) != 0
-                || WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_UNDERGROUND) == 0;
+        return WorldPointUtil.distanceToArea2D(packedPoint, WILDERNESS_ABOVE_GROUND) == 0
+                && WorldPointUtil.distanceToArea2D(packedPoint, FEROX_ENCLAVE_1) != 0
+                && WorldPointUtil.distanceToArea2D(packedPoint, FEROX_ENCLAVE_2) != 0
+                && WorldPointUtil.distanceToArea2D(packedPoint, FEROX_ENCLAVE_3) != 0
+                && WorldPointUtil.distanceToArea2D(packedPoint, FEROX_ENCLAVE_4) != 0
+                && WorldPointUtil.distanceToArea2D(packedPoint, FEROX_ENCLAVE_5) != 0
+                && WorldPointUtil.distanceToArea2D(packedPoint, NOT_WILDERNESS_1) != 0
+                && WorldPointUtil.distanceToArea2D(packedPoint, NOT_WILDERNESS_2) != 0
+                && WorldPointUtil.distanceToArea2D(packedPoint, NOT_WILDERNESS_3) != 0
+                && WorldPointUtil.distanceToArea2D(packedPoint, NOT_WILDERNESS_4) != 0
+                || WorldPointUtil.distanceToArea2D(packedPoint, WILDERNESS_UNDERGROUND) == 0;
     }
 
     public static boolean isInWilderness(Set<WorldPoint> worldPoints) {

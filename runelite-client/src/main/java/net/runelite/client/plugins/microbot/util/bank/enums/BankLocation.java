@@ -2,8 +2,13 @@ package net.runelite.client.plugins.microbot.util.bank.enums;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.runelite.api.*;
+import net.runelite.api.Quest;
+import net.runelite.api.QuestState;
+import net.runelite.api.Skill;
+import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -16,6 +21,7 @@ public enum BankLocation {
     ARCEUUS(new WorldPoint(1624, 3745, 0), true),
     ARDOUGNE_NORTH(new WorldPoint(2616, 3332, 0), true),
     ARDOUGNE_SOUTH(new WorldPoint(2655, 3283, 0), true),
+	AUBURNVALE(new WorldPoint(1416, 3350, 0), true),
     BARBARIAN_OUTPOST(new WorldPoint(2536, 3574, 0), true),
     BLAST_FURNACE_BANK(new WorldPoint(1948, 4957, 0), true),
     BLAST_MINE(new WorldPoint(1502, 3856, 0), true),
@@ -30,6 +36,7 @@ public enum BankLocation {
     COOKS_GUILD(new WorldPoint(3147,3450,0), true),
     CORSAIR_COVE(new WorldPoint(2570, 2864, 0), false),
     CRAFTING_GUILD(new WorldPoint(2936, 3281, 0), true),
+	DARKFROST(new WorldPoint(1527, 3292, 0), true),
     DARKMEYER(new WorldPoint(3604, 3366, 0), true),
     DORGESH_KAAN_BANK(new WorldPoint(2702, 5350, 0), true),
     DRAYNOR_VILLAGE(new WorldPoint(3093, 3245, 0), false),
@@ -72,6 +79,7 @@ public enum BankLocation {
     MOUNT_KARUULM(new WorldPoint(1324, 3824, 0), true),
     MYTHS_GUILD(new WorldPoint(2463, 2847, 1), true),
     NARDAH(new WorldPoint(3428, 2892, 0), true),
+	NEMUS_RETREAT(new WorldPoint(1386, 3309, 0), true),
     NEITIZNOT(new WorldPoint(2337, 3807, 0), true),
     PEST_CONTROL(new WorldPoint(2667, 2653, 0), true),
     PISCARILIUS(new WorldPoint(1803, 3790, 0), true),
@@ -89,6 +97,7 @@ public enum BankLocation {
     SHILO_VILLAGE(new WorldPoint(2852, 2954, 0), true),
     SOPHANEM(new WorldPoint(2799, 5169, 0), true),
     SULPHUR_MINE(new WorldPoint(1453, 3858, 0), true),
+	TAL_TEKLAN(new WorldPoint(1243, 3121, 0), true),
     TREE_GNOME_STRONGHOLD_NIEVE(new WorldPoint(2445, 3424, 1), true),
     TZHAAR(new WorldPoint(2446, 5178, 0), true),
     VARLAMORE_EAST(new WorldPoint(1780, 3094, 0), true),
@@ -113,7 +122,7 @@ public enum BankLocation {
         }
         switch (this) {
             case CRAFTING_GUILD:
-                boolean hasFaladorHardDiary = Microbot.getVarbitValue(Varbits.DIARY_FALADOR_HARD) == 1;
+                boolean hasFaladorHardDiary = Microbot.getVarbitValue(VarbitID.FALADOR_DIARY_HARD_COMPLETE) == 1;
                 boolean hasMaxedCrafting = Rs2Player.getSkillRequirement(Skill.CRAFTING, 99, false);
                 boolean isWearingCraftingGuild = (Rs2Equipment.isWearing("brown apron") || Rs2Equipment.isWearing("golden apron")) ||
                         (Rs2Equipment.isWearing("max cape") || Rs2Equipment.isWearing("max hood")) ||
@@ -122,7 +131,7 @@ public enum BankLocation {
             case LUMBRIDGE_BASEMENT:
                 return Rs2Player.getQuestState(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST) == QuestState.FINISHED;
             case COOKS_GUILD:
-                boolean hasVarrockHardDiary = Microbot.getVarbitValue(Varbits.DIARY_VARROCK_HARD) == 1;
+                boolean hasVarrockHardDiary = Microbot.getVarbitValue(VarbitID.VARROCK_DIARY_HARD_COMPLETE) == 1;
                 boolean hasMaxedCooking = Rs2Player.getSkillRequirement(Skill.COOKING, 99, false);
                 boolean isWearingCooksGuild = Rs2Equipment.isWearing("chef's hat") ||
                         (Rs2Equipment.isWearing("cooking cape") || Rs2Equipment.isWearing("cooking hood")) ||
@@ -162,7 +171,7 @@ public enum BankLocation {
             case LUNAR_ISLE:
                 // Requires Lunar Diplomacy & Seal of passage OR Dream Mentor
                 if (Rs2Player.getQuestState(Quest.DREAM_MENTOR) != QuestState.FINISHED) {
-                    return Rs2Player.getQuestState(Quest.LUNAR_DIPLOMACY) == QuestState.FINISHED && Rs2Equipment.hasEquipped(ItemID.SEAL_OF_PASSAGE);
+                    return Rs2Player.getQuestState(Quest.LUNAR_DIPLOMACY) == QuestState.FINISHED && Rs2Equipment.isWearing(ItemID.LUNAR_SEAL_OF_PASSAGE);
                 } else {
                     return Rs2Player.getQuestState(Quest.DREAM_MENTOR) == QuestState.FINISHED;
                 }
@@ -191,6 +200,10 @@ public enum BankLocation {
                 // Requires Bone Voyage
                 return Rs2Player.getQuestState(Quest.BONE_VOYAGE) == QuestState.FINISHED;
             case ALDARIN:
+			case AUBURNVALE:
+			case DARKFROST:
+			case NEMUS_RETREAT:
+			case TAL_TEKLAN:
             case VARLAMORE_EAST:
             case VARLAMORE_WEST:
                 // Requires Children of the Sun

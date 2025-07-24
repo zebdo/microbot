@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.thieving;
 
+import java.time.Duration;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.misc.TimeUtils;
 import net.runelite.client.ui.overlay.OverlayPanel;
@@ -37,22 +38,22 @@ public class ThievingOverlay extends OverlayPanel {
 
             panelComponent.getChildren().add(
                     LineComponent.builder()
-                            .left("XP")
+                            .left("XP:")
                             .right(String.valueOf(plugin.xpGained()))
                             .build()
             );
 
             panelComponent.getChildren().add(
                     LineComponent.builder()
-                            .left("STATE")
-                            .right(Microbot.status)
+                            .left("STATE:")
+                            .right(plugin.getState())
                             .build()
             );
-            
+
             panelComponent.getChildren().add(
                     LineComponent.builder()
-                            .left("RUNTIME")
-                            .right(TimeUtils.getFormattedDurationBetween(plugin.getStartTime(), Instant.now()))
+                            .left("RUNTIME:")
+                            .right(getFormattedDuration(plugin.getRunTime()))
                             .build()
             );
         } catch (Exception ex) {
@@ -60,4 +61,12 @@ public class ThievingOverlay extends OverlayPanel {
         }
         return super.render(graphics);
     }
+
+	private String getFormattedDuration(Duration duration)
+	{
+		long hours = duration.toHours();
+		long minutes = duration.toMinutes() % 60;
+		long seconds = duration.getSeconds() % 60;
+		return String.format("%02d:%02d:%02d", hours, minutes, seconds);
+	}
 }
