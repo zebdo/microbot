@@ -24,6 +24,7 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups;
 
+import java.util.Objects;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -79,17 +80,34 @@ public class InventorySetupsItem
 	}
 
 	public String getName() {
+		String itemName = name;
+
 		if (isFuzzy()) {
-			String[] splitItemName = name.split("\\(\\d+\\)$");
-			String itemName = "";
-			if (splitItemName.length == 0) {
-				itemName = name;
-			} else {
-				itemName = splitItemName[0];
-			}
-			return itemName;
+			String[] splitItemName = itemName.split("\\(\\d+\\)$");
+			itemName = (splitItemName.length == 0) ? itemName : splitItemName[0];
 		}
-		return name;
+
+		String lowerCaseName = itemName.toLowerCase();
+
+		if (isBarrowsItem(lowerCaseName)) {
+			itemName = itemName.replaceAll("\\s+[1-9]\\d*$", "");
+		}
+
+		return itemName;
 	}
 
+	public boolean matches(InventorySetupsItem item) {
+		return isFuzzy() ? this.getName().toLowerCase().contains(item.getName().toLowerCase()) : Objects.equals(this.getId(), item.getId());
+	}
+
+	public static boolean isBarrowsItem(String lowerCaseName) {
+		return !lowerCaseName.endsWith(" 0") && (
+				lowerCaseName.contains("dharok's") ||
+				lowerCaseName.contains("ahrim's") ||
+				lowerCaseName.contains("guthan's") ||
+				lowerCaseName.contains("torag's") ||
+				lowerCaseName.contains("verac's") ||
+				lowerCaseName.contains("karil's")
+		);
+	}
 }

@@ -21,6 +21,7 @@ import net.runelite.api.annotations.Component;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
@@ -2140,28 +2141,30 @@ public class Rs2Walker {
     }
     
     private static boolean handleQuetzal(Transport transport) {
-        int varlamoreMapParentID = 874;
+		@Component
+        int VARLAMORE_QUETZAL_MAP = InterfaceID.QuetzalMenu.CONTENTS;
+		@Component
+		int VARLAMORE_QUETZAL_OPTIONS = InterfaceID.QuetzalMenu.ICONS;
         String displayInfo = transport.getDisplayInfo();
         if (displayInfo == null || displayInfo.isEmpty()) return false;
 
         Rs2NpcModel renu = Rs2Npc.getNpc(NpcID.QUETZAL_CHILD_GREEN);
 
-        if (Rs2Npc.canWalkTo(renu, 20) && Rs2Npc.interact(renu, "travel")) {
+        if (Rs2Tile.isTileReachable(transport.getOrigin()) && Rs2Npc.interact(renu, "travel")) {
             Rs2Player.waitForWalking();
-            boolean isVarlamoreMapVisible = sleepUntilTrue(() -> Rs2Widget.isWidgetVisible(varlamoreMapParentID, 2), 100, 10000);
+            boolean isVarlamoreMapVisible = sleepUntilTrue(() -> Rs2Widget.isWidgetVisible(VARLAMORE_QUETZAL_MAP), 100, 10000);
             
             if (!isVarlamoreMapVisible) {
                 Microbot.log("Varlamore Map Widget not visable within timeout");
                 return false;
             }
-            
-            List<Widget> dynamicWidgetChildren = Arrays.stream(Rs2Widget.getWidget(varlamoreMapParentID, 15).getDynamicChildren())
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            Widget actionWidget = dynamicWidgetChildren.stream()
-                    .filter(w -> Arrays.stream(Objects.requireNonNull(w.getActions())).anyMatch(act -> act.toLowerCase().contains(displayInfo.toLowerCase())))
-                    .findFirst()
-                    .orElse(null);
+
+			Widget quetzalMapWidget = Rs2Widget.getWidget(VARLAMORE_QUETZAL_OPTIONS);
+			List<Widget> quetzalMapChildren = Arrays.stream(quetzalMapWidget.getDynamicChildren())
+					.filter(Objects::nonNull)
+					.collect(Collectors.toList());
+
+			Widget actionWidget = Rs2Widget.findWidget(displayInfo, quetzalMapChildren, false);
             if (actionWidget != null) {
                 Rs2Widget.clickWidget(actionWidget);
                 Microbot.log("Traveling to " + transport.getDisplayInfo());
@@ -2271,7 +2274,8 @@ public class Rs2Walker {
             return 6;
         } else if (lowerCaseItemName.contains("xeric's talisman") ||
                 lowerCaseItemName.contains("slayer ring") ||
-				lowerCaseItemName.contains("construct. cape")) {
+				lowerCaseItemName.contains("construct. cape") ||
+				lowerCaseItemName.contains("pendant of ates")) {
             return 4;
         } else if (lowerCaseItemName.contains("book of the dead") ||
                    lowerCaseItemName.contains("giantsoul amulet")) {
