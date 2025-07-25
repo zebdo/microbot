@@ -1212,79 +1212,106 @@ public class Rs2Player {
         return usePotion(Rs2Potion.getPrayerPotionsVariants().toArray(new String[0]));
     }
 
-    /**
-     * Drinks a combat-related potion for the specified skill.
-     *
-     * <p>This method defaults to allowing super combat potions when applicable.</p>
-     *
-     * @param skill The {@link Skill} for which a potion should be consumed.
-     * @return {@code true} if a potion was successfully consumed, {@code false} otherwise.
-     */
+	/**
+	 * Attempts to drink a combat-related potion to boost the specified skill.
+	 *
+	 * <p>This method defaults to allowing super combat potions when applicable,
+	 * and uses a default boost threshold of 20% of the maximum possible boost.</p>
+	 *
+	 * @param skill The {@link Skill} to be boosted using a potion.
+	 * @return {@code true} if a potion was successfully consumed, {@code false} otherwise.
+	 * @see #drinkCombatPotionAt(Skill, boolean, double)
+	 */
     public static boolean drinkCombatPotionAt(Skill skill) {
         return drinkCombatPotionAt(skill, true);
     }
 
-    /**
-     * Drinks a combat-related potion to boost the specified skill.
-     *
-     * <p><b>Priority Order:</b></p>
-     * <ul>
-     *     <li>If the current boosted level is already 5 or more above the real level, no potion is consumed.</li>
-     *     <li>If {@code superCombat} is {@code true} and the skill is Attack, Strength, or Defence,
-     *         a super combat potion is prioritized.</li>
-     *     <li>If a super combat potion is not available, the method falls back to a skill-specific potion.</li>
-     * </ul>
-     *
-     * @param skill       The {@link Skill} for which a potion should be consumed.
-     * @param superCombat If {@code true}, prioritizes using a super combat potion for melee skills.
-     * @return {@code true} if a potion was successfully consumed, {@code false} otherwise.
-     */
+	/**
+	 * Attempts to drink a combat-related potion to boost the specified skill.
+	 *
+	 * <p>If the skill is Attack, Strength, or Defence, and {@code superCombat} is {@code true},
+	 * a super combat potion is prioritized (excluding regular combat potions for Defence).
+	 * If unavailable, a skill-specific potion will be used as a fallback.</p>
+	 *
+	 * <p>Uses a default threshold of 20% of the maximum possible boost to determine
+	 * whether a potion is needed. If the current boost exceeds this threshold, no potion is consumed.</p>
+	 *
+	 * @param skill        The {@link Skill} to be boosted using a potion.
+	 * @param superCombat  If {@code true}, prioritizes super combat potions for melee skills.
+	 * @return {@code true} if a potion was successfully consumed, {@code false} otherwise.
+	 * @see #drinkCombatPotionAt(Skill, boolean, double)
+	 */
     public static boolean drinkCombatPotionAt(Skill skill, boolean superCombat) {
-        int real = Microbot.getClient().getRealSkillLevel(skill);
-        int boosted = Microbot.getClient().getBoostedSkillLevel(skill);
-
-        // max boost per wiki: RealLevel * (15/100) + 5
-        double maxBoost = real * 0.15 + 5;
-
-        // threshold is 20% of that max
-        double threshold = maxBoost * 0.20;
-
-        if ((boosted - real) > threshold) {
-            return false;
-        }
-
-        // If superCombat is specified and the skill is Attack, Strength, or Defence, try super combat potions first
-        if (superCombat && (skill == Skill.ATTACK || skill == Skill.STRENGTH || skill == Skill.DEFENCE)) {
-            // for Defence, exclude the basic "combat potion"
-            List<String> combatVariants = new ArrayList<>(Rs2Potion.getCombatPotionsVariants());
-            if (skill == Skill.DEFENCE) {
-                combatVariants.remove("combat potion");
-            }
-            if (usePotion(combatVariants.toArray(new String[0]))) {
-                return true;
-            }
-        }
-
-        // Then fall back to skill-specific potions based on which skill is requested
-        switch (skill) {
-            case ATTACK:
-                return usePotion(Rs2Potion.getAttackPotionsVariants().toArray(new String[0]));
-
-            case STRENGTH:
-                return usePotion(Rs2Potion.getStrengthPotionsVariants().toArray(new String[0]));
-
-            case DEFENCE:
-                return usePotion(Rs2Potion.getDefencePotionsVariants().toArray(new String[0]));
-
-            case RANGED:
-                return usePotion(Rs2Potion.getRangePotionsVariants().toArray(new String[0]));
-
-            case MAGIC:
-                return usePotion(Rs2Potion.getMagicPotionsVariants().toArray(new String[0]));
-            default:
-                return false; // If the skill is not covered, return false
-        }
+		return drinkCombatPotionAt(skill, superCombat, 0.2);
     }
+
+	/**
+	 * Attempts to drink a combat-related potion to boost the specified skill,
+	 * only if the current boost is below a calculated threshold.
+	 *
+	 * <p>The method calculates the maximum possible boost as: {@code realLevel * 0.15 + 5}.
+	 * A potion is consumed only if the current boosted level is below a threshold of
+	 * {@code maxBoost * min(0.8, percentage)}.</p>
+	 *
+	 * <p><b>Priority:</b></p>
+	 * <ul>
+	 *   <li>If {@code superCombat} is {@code true} and the skill is Attack, Strength, or Defence,
+	 *       a super combat potion is attempted first (excluding basic combat potion for Defence).</li>
+	 *   <li>If no super combat potion is available or the skill is not melee,
+	 *       the method falls back to using a potion specific to the skill (e.g., magic, ranged).</li>
+	 * </ul>
+	 *
+	 * @param skill        The {@link Skill} to be boosted using a potion.
+	 * @param superCombat  Whether to prioritize super combat potions for melee skills.
+	 * @param percentage   The percentage of the maximum boost at which a potion should be consumed.
+	 *                     Values above 0.8 are capped to 0.8 internally.
+	 * @return {@code true} if a potion was successfully consumed, {@code false} otherwise.
+	 */
+	public static boolean drinkCombatPotionAt(Skill skill, boolean superCombat, double percentage) {
+		int real = Microbot.getClient().getRealSkillLevel(skill);
+		int boosted = Microbot.getClient().getBoostedSkillLevel(skill);
+
+		// max boost per wiki: RealLevel * (15/100) + 5
+		double maxBoost = real * 0.15 + 5;
+
+		double threshold = maxBoost * Math.min(0.8, percentage);
+
+		if ((boosted - real) > threshold) {
+			return false;
+		}
+
+		// If superCombat is specified and the skill is Attack, Strength, or Defence, try super combat potions first
+		if (superCombat && (skill == Skill.ATTACK || skill == Skill.STRENGTH || skill == Skill.DEFENCE)) {
+			// for Defence, exclude the basic "combat potion"
+			List<String> combatVariants = new ArrayList<>(Rs2Potion.getCombatPotionsVariants());
+			if (skill == Skill.DEFENCE) {
+				combatVariants.remove("combat potion");
+			}
+			if (usePotion(combatVariants.toArray(new String[0]))) {
+				return true;
+			}
+		}
+
+		// Then fall back to skill-specific potions based on which skill is requested
+		switch (skill) {
+			case ATTACK:
+				return usePotion(Rs2Potion.getAttackPotionsVariants().toArray(new String[0]));
+
+			case STRENGTH:
+				return usePotion(Rs2Potion.getStrengthPotionsVariants().toArray(new String[0]));
+
+			case DEFENCE:
+				return usePotion(Rs2Potion.getDefencePotionsVariants().toArray(new String[0]));
+
+			case RANGED:
+				return usePotion(Rs2Potion.getRangePotionsVariants().toArray(new String[0]));
+
+			case MAGIC:
+				return usePotion(Rs2Potion.getMagicPotionsVariants().toArray(new String[0]));
+			default:
+				return false; // If the skill is not covered, return false
+		}
+	}
 
     /**
      * Drinks an anti-poison potion if the player does not have an active anti-poison effect.
