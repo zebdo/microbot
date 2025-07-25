@@ -591,8 +591,20 @@ public class Rs2Walker {
         pathfinder.run();        
         List<WorldPoint> path = pathfinder.getPath();       
         if (path.isEmpty() || path.get(path.size() - 1).getPlane() != destination.getPlane()) return Integer.MAX_VALUE;
-        WorldArea pathArea = new WorldArea(path.get(path.size() - 1), 2, 2);
-        WorldArea objectArea = new WorldArea(destination, 2, 2);
+        // Create a WorldArea centered on the worldPoint by calculating the south-west corner
+        WorldPoint pathPoint_SW = new WorldPoint(
+            path.get(path.size() - 1).getX() - 2, 
+            path.get(path.size() - 1).getY() - 2, 
+            path.get(path.size() - 1).getPlane()
+        );
+        // Create a WorldArea centered on the worldPoint by calculating the south-west corner
+        WorldPoint objectPoint_SW = new WorldPoint(
+            destination.getX() - 2, 
+            destination.getY() - 2, 
+            destination.getPlane()
+        ); 
+        WorldArea pathArea = new WorldArea(pathPoint_SW, 5, 5);
+        WorldArea objectArea = new WorldArea(objectPoint_SW, 5, 5);
         if (!pathArea.intersectsWith2D(objectArea)) {
             return Integer.MAX_VALUE;
         }
@@ -612,8 +624,23 @@ public class Rs2Walker {
      */
     public static int getTotalTilesFromPath(List<WorldPoint> path, WorldPoint destination) {
         if (path.isEmpty() || path.get(path.size() - 1).getPlane() != destination.getPlane()) return Integer.MAX_VALUE;
-        WorldArea pathArea = new WorldArea(path.get(path.size() - 1), 8, 8);
-        WorldArea objectArea = new WorldArea(destination, 8, 8);
+        
+        // Create centered WorldAreas instead of corner-based
+        WorldPoint pathEndpoint = path.get(path.size() - 1);
+        WorldPoint pathSouthWest = new WorldPoint(
+            pathEndpoint.getX() - 4, 
+            pathEndpoint.getY() - 4, 
+            pathEndpoint.getPlane()
+        );
+        WorldArea pathArea = new WorldArea(pathSouthWest, 8, 8);
+        
+        WorldPoint destSouthWest = new WorldPoint(
+            destination.getX() - 4, 
+            destination.getY() - 4, 
+            destination.getPlane()
+        );
+        WorldArea objectArea = new WorldArea(destSouthWest, 8, 8);
+        
         if (!pathArea.intersectsWith2D(objectArea)) {
             return Integer.MAX_VALUE;
         }
@@ -634,7 +661,15 @@ public class Rs2Walker {
     public static boolean canReach(WorldPoint worldPoint, int sizeX, int sizeY, int pathSizeX, int pathSizeY,boolean useBankedItems) {
         boolean originalUseBankItems = ShortestPathPlugin.getPathfinderConfig().isUseBankItems();
         WorldArea pathArea = null;
-        WorldArea objectArea = new WorldArea(worldPoint, sizeX + 2, sizeY + 2);
+        
+        // Create centered WorldArea for the object instead of corner-based
+        WorldPoint objectSouthWest = new WorldPoint(
+            worldPoint.getX() - (sizeX + 2) / 2, 
+            worldPoint.getY() - (sizeY + 2) / 2, 
+            worldPoint.getPlane()
+        );
+        WorldArea objectArea = new WorldArea(objectSouthWest, sizeX + 2, sizeY + 2);
+        
         try {                            
             ShortestPathPlugin.getPathfinderConfig().setUseBankItems(useBankedItems);
             ShortestPathPlugin.getPathfinderConfig().refresh(worldPoint);
@@ -643,7 +678,15 @@ public class Rs2Walker {
             }
             Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), Rs2Player.getWorldLocation(), worldPoint);
             pathfinder.run();            
-            pathArea = new WorldArea(pathfinder.getPath().get(pathfinder.getPath().size() - 1), pathSizeX, pathSizeY);                       
+            
+            // Create centered WorldArea for the path endpoint instead of corner-based
+            WorldPoint pathEndpoint = pathfinder.getPath().get(pathfinder.getPath().size() - 1);
+            WorldPoint pathSouthWest = new WorldPoint(
+                pathEndpoint.getX() - pathSizeX / 2, 
+                pathEndpoint.getY() - pathSizeY / 2, 
+                pathEndpoint.getPlane()
+            );
+            pathArea = new WorldArea(pathSouthWest, pathSizeX, pathSizeY);                       
         } catch (Exception e) {
             Microbot.logStackTrace("Rs2Walker", e);
             return false;
@@ -651,8 +694,7 @@ public class Rs2Walker {
             ShortestPathPlugin.getPathfinderConfig().setUseBankItems(originalUseBankItems);
             ShortestPathPlugin.getPathfinderConfig().refresh(worldPoint);
         }
-        return pathArea != null ? pathArea
-                .intersectsWith2D(objectArea): false;
+        return pathArea != null ? pathArea.intersectsWith2D(objectArea) : false;
     }
     public static boolean canReach(WorldPoint worldPoint, int sizeX, int sizeY, int pathSizeX, int pathSizeY) {
         return canReach(worldPoint, sizeX, sizeY, pathSizeX, pathSizeY, false);
