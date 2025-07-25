@@ -39,7 +39,7 @@ public class PotionManagerScript extends Script {
                 }
 
                 // Always attempt to drink magic potion
-                if (Rs2Player.drinkCombatPotionAt(Skill.MAGIC, false)) {
+                if (Rs2Player.drinkCombatPotionAt(Skill.MAGIC, false, 0.4)) {
                     Rs2Player.waitForAnimation();
                 }
 
