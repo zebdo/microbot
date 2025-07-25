@@ -2150,7 +2150,7 @@ public class Rs2Walker {
 
         Rs2NpcModel renu = Rs2Npc.getNpc(NpcID.QUETZAL_CHILD_GREEN);
 
-        if (Rs2Npc.canWalkTo(renu, 20) && Rs2Npc.interact(renu, "travel")) {
+        if (Rs2Tile.isTileReachable(transport.getOrigin()) && Rs2Npc.interact(renu, "travel")) {
             Rs2Player.waitForWalking();
             boolean isVarlamoreMapVisible = sleepUntilTrue(() -> Rs2Widget.isWidgetVisible(VARLAMORE_QUETZAL_MAP), 100, 10000);
             
@@ -2274,7 +2274,8 @@ public class Rs2Walker {
             return 6;
         } else if (lowerCaseItemName.contains("xeric's talisman") ||
                 lowerCaseItemName.contains("slayer ring") ||
-				lowerCaseItemName.contains("construct. cape")) {
+				lowerCaseItemName.contains("construct. cape") ||
+				lowerCaseItemName.contains("pendant of ates")) {
             return 4;
         } else if (lowerCaseItemName.contains("book of the dead") ||
                    lowerCaseItemName.contains("giantsoul amulet")) {
