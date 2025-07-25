@@ -45,7 +45,7 @@ public class Rs2Dialogue {
     public static boolean hasContinue() {
         return hasNPCContinue() || hasPlayerContinue() || hasDeathContinue() ||
                 hasSpriteContinue() || hasTutContinue() || hasItemContinue() ||
-                hasSpellFilterContinue();
+                hasBarrowsContinue() || hasSpellFilterContinue();
     }
 
     /**
@@ -107,6 +107,15 @@ public class Rs2Dialogue {
      */
     private static boolean hasItemContinue() {
         return Rs2Widget.isWidgetVisible(InterfaceID.DIALOG_SPRITE, 0);
+    }
+
+    /**
+     * Checks if there is a "click here to continue" option for the Barrows sarcophagus.
+     *
+     * @return true if the "Continue" option is visible in the item dialogue, false otherwise.
+     */
+    private static boolean hasBarrowsContinue() {
+        return Rs2Widget.isWidgetVisible(229, 4);
     }
 
     /**
@@ -486,9 +495,27 @@ public class Rs2Dialogue {
         if (!isInDialogue()) return null;
 
         if (Rs2Widget.isWidgetVisible(229, 1)) {
-            return Rs2UiHelper.stripColTags(Rs2Widget.getWidget(229, 1).getText());
-        } else if (Rs2Widget.isWidgetVisible(231, 6)) {
-            return Rs2UiHelper.stripColTags(Rs2Widget.getWidget(231, 6).getText());
+            if (Rs2Widget.getWidget(229, 1).getText() != null) {
+                if (!Rs2Widget.getWidget(229, 1).getText().isEmpty()) {
+                    return Rs2UiHelper.stripColTags(Rs2Widget.getWidget(229, 1).getText());
+                }
+            }
+        }
+
+        if (Rs2Widget.isWidgetVisible(229, 3)) {
+            if (Rs2Widget.getWidget(229, 3).getText() != null) {
+                if (!Rs2Widget.getWidget(229, 3).getText().isEmpty()) {
+                    return Rs2UiHelper.stripColTags(Rs2Widget.getWidget(229, 3).getText());
+                }
+            }
+        }
+
+        if (Rs2Widget.isWidgetVisible(231, 6)) {
+            if (Rs2Widget.getWidget(231, 6).getText() != null) {
+                if (!Rs2Widget.getWidget(231, 6).getText().isEmpty()) {
+                    return Rs2UiHelper.stripColTags(Rs2Widget.getWidget(231, 6).getText());
+                }
+            }
         }
 
         return null;
