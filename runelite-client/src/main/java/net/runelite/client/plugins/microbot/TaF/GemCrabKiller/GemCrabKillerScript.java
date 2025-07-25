@@ -79,7 +79,7 @@ public class GemCrabKillerScript extends Script {
             if (Rs2Player.drinkCombatPotionAt(Skill.RANGED, false)) {
                 Rs2Player.waitForAnimation();
             }
-            if (Rs2Player.drinkCombatPotionAt(Skill.MAGIC, false, 0.4)) {
+            if (Rs2Player.drinkCombatPotionAt(Skill.MAGIC, false)) {
                 Rs2Player.waitForAnimation();
             }
             if (Rs2Player.drinkCombatPotionAt(Skill.STRENGTH)) {
