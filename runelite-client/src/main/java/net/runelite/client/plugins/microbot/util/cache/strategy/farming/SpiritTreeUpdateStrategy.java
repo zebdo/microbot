@@ -120,6 +120,7 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
         // Check if this is a spirit tree farming transmit varbit
         if (SPIRIT_TREE_VARBIT_IDS.contains(varbitId)) {
             log.debug("Spirit tree farming varbit {} changed to value {}, updating spirit tree farming states", varbitId, event.getValue());            
+            log.debug("Spirit tree farming varbit {} changed to value {}, updating spirit tree farming states", varbitId, event.getValue());            
             // Update farming states for all farmable spirit tree patches
             updateFarmingStatesFromVarbits(cache);
         }
