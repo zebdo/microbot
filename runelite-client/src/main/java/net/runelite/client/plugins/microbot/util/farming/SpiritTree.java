@@ -13,6 +13,7 @@ import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns.CropState;
 import net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns.FarmingPatch;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
@@ -224,16 +225,15 @@ public enum SpiritTree {
 
         // Get the corresponding farming patch
         Optional<FarmingPatch> patch = Rs2Farming.getSpiritTreePatches().stream()
-                .filter(p -> p.getLocation().equals(this.location))
+                .filter(p -> p.getLocation().distanceTo(this.location)<10)
                 .findFirst();
 
         if (patch.isEmpty()) {
             return false;
         }
-
         // Check the predicted state
         CropState state = Rs2Farming.predictPatchState(patch.get());
-        return state == CropState.HARVESTABLE || state == CropState.UNCHECKED;
+        return state == CropState.HARVESTABLE;
     }
 
     /**
@@ -398,7 +398,7 @@ public enum SpiritTree {
      */
     public static Optional<SpiritTree> findByAdventureLogName(String displayName) {
         return Arrays.stream(values())
-                .filter(tree -> tree.getAdventureLogDisplayName().equalsIgnoreCase(displayName))
+                .filter(tree -> displayName.toLowerCase().contains(tree.getName().toLowerCase()))
                 .findFirst();
     }
 
@@ -451,7 +451,7 @@ public enum SpiritTree {
      * @return List of available spirit tree destinations
      */
     public static List<SpiritTree> extractAvailableFromWidget() {
-        if (!Rs2Widget.hasWidgetText(SPIRIT_TREE_WIDGET_TITLE, ADVENTURE_LOG_CONTAINER_CHILD_OPTIONS, ADVENTURE_LOG_CONTAINER_CHILD, false)) {
+        if (!Rs2Widget.hasWidgetText(SPIRIT_TREE_WIDGET_TITLE, ADVENTURE_LOG_GROUP_ID, ADVENTURE_LOG_CONTAINER_CHILD, false)) {
             log.info("Adventure log widget does not contain spirit tree information.");
             return List.of();
         }
@@ -478,13 +478,13 @@ public enum SpiritTree {
                         && !child.getText().contains("<col=5f5f5f>") 
                         && !child.getText().toLowerCase().contains("cancel")) { // if the color is not greyed out
                         log.debug("Found child widget text: {}", child.getText());
-                        widgetTexts.add(child.getText());
+                        widgetTexts.add(Rs2UiHelper.stripColTags(child.getText()).trim());
                     }
                 }
             }
 
             return widgetTexts.stream()
-                    .map(text -> findByAdventureLogName(text.trim()))
+                    .map(text -> findByAdventureLogName(text))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .collect(Collectors.toList());

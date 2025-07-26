@@ -9,6 +9,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.GameState;
+import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
@@ -21,6 +23,7 @@ import net.runelite.client.plugins.microbot.util.cache.model.SpiritTreeData;
 import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializable;
 import net.runelite.client.plugins.microbot.util.cache.strategy.farming.SpiritTreeUpdateStrategy;
 import net.runelite.client.plugins.microbot.util.farming.SpiritTree;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 /**
  * Thread-safe cache for spirit tree farming states and travel availability using the unified cache architecture.
@@ -348,9 +351,13 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
                     log.warn("Failed to update spirit tree data for spiritTree {}: {}", spiritTree.name(), e.getMessage());
                 }
             }
-            
-            log.debug("Static spirit tree cache update completed: {} new, {} updated, {} preserved entries",
-                newEntriesCount, updatedCount, preservedCount);
+            List<SpiritTreeData> farambleTrees = getFarmableTreeStates();
+            int availabilityFramableTrees = (int) farambleTrees.stream()
+                .filter(data -> data.isAvailableForTravel())
+                .count();
+            log.debug(getFarmingStatusSummary());
+            log.debug("Static spirit tree cache update completed: \n\t{} new entries, {} updated, {} preserved entries, {} farmable trees {} (available for travel: {})",
+                newEntriesCount, updatedCount, preservedCount, farambleTrees.size(),availabilityFramableTrees);
             
         } catch (Exception e) {
             log.error("Failed to update spirit tree cache from FarmingHandler: {}", e.getMessage(), e);
@@ -388,30 +395,35 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
             }
             
             // For farmable trees, use FarmingHandler to predict state
-            else if (spiritTree.getType() == SpiritTree.SpiritTreeType.FARMABLE) {
+            else if (spiritTree.getType() == SpiritTree.SpiritTreeType.FARMABLE ) {
                 CropState predictedState = spiritTree.getPatchState(); // Uses Rs2Farming.predictPatchState internally
-                
-                if (predictedState != null) {
-                    // Determine travel availability based on crop state
-                    boolean availableForTravel = ((predictedState == CropState.HARVESTABLE || 
-                                                predictedState == CropState.UNCHECKED)) && spiritTree.hasQuestRequirements();
-                    
-                    // If we have existing data that was recently updated dynamically, be careful about overriding
-                    if ((existingData != null && 
-                        (existingData.isDetectedViaWidget() || existingData.isDetectedViaGameObject())||availableForTravel))
-                        {
-                        
-                        // Use the more specific information: dynamic detection for travel, farming handler for crop state
+                CropState lastCropState = existingData != null ? existingData.getCropState() : null;
+                if (predictedState != null && !predictedState.equals(lastCropState)) {
+                    // Determine travel availability based on crop state 
+                    boolean detectedViaWidget = existingData != null && existingData.isDetectedViaWidget();
+                    boolean detectedViaGameObject = existingData != null && existingData.isDetectedViaGameObject();                    
+                    boolean availableForTravelLast  = existingData != null && existingData.isAvailableForTravel();
+                    boolean availableForTravel = spiritTree.isAvailableForTravel();
+                    if ((availableForTravel != availableForTravelLast) && 
+                        (lastCropState!=null && (lastCropState == CropState.UNCHECKED || lastCropState == CropState.GROWING))) {
+                        log.info("Spirit tree {} is now available, last available for travel was false, and tree was predicted updating to true", spiritTree.name());
+                         // Use the more specific information: dynamic detection for travel, farming handler for crop state
                         return new SpiritTreeData(
                             spiritTree,
                             predictedState, // Always update with latest farming prediction
-                            availableForTravel, // Preserve recent dynamic travel detection
+                            availableForTravel &&  farmingLevel >= 83, // Preserve recent dynamic travel detection
                             playerLocation,
-                            existingData !=null ?existingData.isDetectedViaWidget():false, // Preserve detection context
-                            existingData !=null ?existingData.isDetectedViaGameObject():false, // Preserve detection context
+                            false, 
+                            false, 
                             farmingLevel
                         );
-                    } 
+                   
+                    } else {                        
+                        log.info("Spirit tree {} not updated, farm state: {}, available for travel last: {}, detected via widget: {}, detected via game object: {}, last farming state: {}", 
+                            spiritTree.name(), predictedState, availableForTravelLast, detectedViaWidget, detectedViaGameObject, lastCropState);
+                        
+                    }                                                               
+                   
                     
                 } else {
                     // If FarmingHandler can't predict the state, preserve existing data if available
@@ -629,13 +641,16 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
             .filter(data -> data.getCropState() == CropState.HARVESTABLE || 
                            data.getCropState() == CropState.UNCHECKED)
             .count();
+        long readyForHarvest = farmableStates.stream()
+            .filter(data -> data.getCropState() == CropState.HARVESTABLE)
+            .count();
         long needsAttention = farmableStates.stream()
             .filter(data -> data.getCropState() == CropState.DISEASED || 
                            data.getCropState() == CropState.DEAD)
             .count();
         
-        return String.format("Spirit Trees: %d/%d planted, %d grown, %d need attention",
-            planted, farmableStates.size(), grown, needsAttention);
+        return String.format("Spirit Trees: %d/%d planted, %d grown (%d harvest ready), %d need attention",
+            planted, farmableStates.size(), grown, readyForHarvest, needsAttention);
     }
     
     // ============================================
@@ -648,9 +663,9 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
     private static WorldPoint getPlayerLocationSafely() {
         try {
             if (Microbot.getClient() != null && 
-                Microbot.getClient().getGameState() == net.runelite.api.GameState.LOGGED_IN &&
+                Microbot.getClient().getGameState() == GameState.LOGGED_IN &&
                 Microbot.getClient().getLocalPlayer() != null) {
-                return Microbot.getClient().getLocalPlayer().getWorldLocation();
+                return Rs2Player.getWorldLocation();
             }
         } catch (Exception e) {
             log.trace("Could not get player location: {}", e.getMessage());
@@ -664,8 +679,8 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
     private static Integer getFarmingLevelSafely() {
         try {
             if (Microbot.getClient() != null && 
-                Microbot.getClient().getGameState() == net.runelite.api.GameState.LOGGED_IN) {
-                return Microbot.getClient().getRealSkillLevel(net.runelite.api.Skill.FARMING);
+                Microbot.getClient().getGameState() == GameState.LOGGED_IN) {
+                return Rs2Player.getRealSkillLevel(Skill.FARMING);
             }
         } catch (Exception e) {
             log.trace("Could not get farming level: {}", e.getMessage());
