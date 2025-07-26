@@ -21,6 +21,7 @@ import java.util.Comparator;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.Set;
 
 public class PlankRunnerScript extends Script {
 
@@ -131,10 +132,10 @@ public class PlankRunnerScript extends Script {
                             return;
                         }
 
-                        var sawmillOperator = Rs2Npc.getNpc(NpcID.POH_SAWMILL_OPP);
-                        if (sawmillOperator == null) {
-                            sawmillOperator = Rs2Npc.getNpc(NpcID.AUBURN_SAWMILL_OPERATOR);
-                        }
+                        Set<Integer> sawmillNpcs = Set.of(NpcID.POH_SAWMILL_OPP, NpcID.AUBURN_SAWMILL_OPERATOR);
+                        var sawmillOperator = Rs2Npc.getNpcs(n -> sawmillNpcs.contains(n.getId()))
+                                .findFirst()
+                                .orElse(null);
 
                         if (sawmillOperator == null) {
                             Microbot.showMessage("Unable to find Sawmill Operator!");
