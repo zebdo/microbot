@@ -209,7 +209,7 @@ public class Rs2GrandExchange
 				}
 				Rs2Keyboard.typeString(request.getItemName());
 
-				if (!Rs2Widget.hasWidgetText(searchName, 162, 43, false)) break;
+				if (!Rs2Widget.sleepUntilHasWidgetText(searchName, 162, 43, false, 5000)) break;
 
 				sleepUntil(() -> {
 					Widget widget = Rs2Widget.getWidget(162, 51);
