@@ -71,7 +71,7 @@ public class AIOCamdozScript extends Script {
 
     public boolean run(AIOCamdozConfig config) {
         Microbot.enableAutoRunOn = false;
-        CUtil.SetMyAntiban(0.08);
+        CUtil.SetMyAntiban(0.08, 2, 15, 0.6);
         state = State.WALKING_TO_BANK;
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
