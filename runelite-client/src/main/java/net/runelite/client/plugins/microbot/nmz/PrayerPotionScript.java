@@ -1,10 +1,8 @@
-package net.runelite.client.plugins.microbot.aiofighter.combat;
+package net.runelite.client.plugins.microbot.nmz;
 
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
-import net.runelite.client.plugins.microbot.aiofighter.AIOFighterConfig;
-import net.runelite.client.plugins.microbot.nmz.NmzConfig;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -13,7 +11,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class PrayerPotionScript extends Script {
-    public boolean run(AIOFighterConfig config) {
+    public boolean run() {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
