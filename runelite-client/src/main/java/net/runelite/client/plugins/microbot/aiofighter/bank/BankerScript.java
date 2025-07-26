@@ -79,6 +79,7 @@ public class BankerScript extends Script {
                             shouldWalk = handleTeleports(missingIds);
                             Microbot.log("Should walk(Slayer Mode): " + shouldWalk);
                         }
+                        else shouldWalk = true;
                     }
                     else {
                         shouldWalk = true;
@@ -261,13 +262,37 @@ public class BankerScript extends Script {
 
 
     public boolean hasProtectiveSlayerEquipment() {
-        boolean result = Objects.equals(Rs2Slayer.getSlayerTaskProtectiveEquipment(), "None")
-                || Rs2Equipment.isWearing(Rs2Slayer.getSlayerTaskProtectiveEquipment());
+        String needed = Rs2Slayer.getSlayerTaskProtectiveEquipment();
+
+        if ("None".equals(needed)) {
+            return true;
+        }
+
+        if (isBypassedBySlayerHelmet(needed)
+                && Rs2Equipment.isWearing("Slayer helmet")) {
+            return true;
+        }
+
+        boolean result = Rs2Equipment.isWearing(needed);
         if (!result) {
-            Microbot.log("hasProtectiveSlayerEquipment(): Protective equipment not worn: " + Rs2Slayer.getSlayerTaskProtectiveEquipment());
+            Microbot.log("hasProtectiveSlayerEquipment(): Missing " + needed);
         }
         return result;
     }
+
+    private boolean isBypassedBySlayerHelmet(String item) {
+        switch (item) {
+            case "Earmuffs":
+            case "Facemask":
+            case "Nose peg":
+            case "Spiny helmet":
+            case "Reinforced goggles":
+                return true;
+            default:
+                return false;
+        }
+    }
+
 
     public boolean needDesertProtection() {
         boolean result = config.slayerLocation().contains("Desert")
