@@ -2,62 +2,34 @@ package net.runelite.client.plugins.microbot.mess;
 
 import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigInformation;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.plugins.microbot.mess.TheMessScript.Dish;
 
 @ConfigGroup("the_mess")
+@ConfigInformation("<b>-- ABOUT THE MESS PLUGIN --</b><br /><br />" +
+        "<b>Wiki:</b> https://oldschool.runescape.wiki/w/Mess<br /><br />" +
+        "• It's basically Overcooked on OSRS<br />" +
+        "• Perfect for ironman to bump cook level as there are no items needed to get good cooking xp/h.<br />" +
+        "• There are no rewards other than XP in this.<br /><br />" +
+        "<b>-- REQUIREMENTS --</b><br />" +
+        "• Servery Meat Pie (20 Cooking)<br />" +
+        "• Servery Stew (25 Cooking)<br />" +
+        "• Servery Pineapple Pizza (65 Cooking)<br /><br />" +
+        "<b>FLOW OF THE PLUGIN:</b><br /><br />" +
+        "• If you are not in the zone, it will travel to the Mess Hall.<br />" +
+        "• When reaching there, if inventory is not empty, it will bank it nearby.<br />" +
+        "• If everything is in order it will loop into making dishes and turning them in.<br />" +
+        "• Whenever it sees the appreciation for the selected dish below the set threshold, it will hop worlds till it's over.<br />" +
+        "(beware that threshold over 33 may cause hop loop.)")
 public interface TheMessConfig extends Config {
-    @ConfigSection(
-            name = "",
-            description = "General information about the activity and requirements.",
-            position = 0
-    )
-    String aboutSection = "about";
-
     @ConfigSection(
             name = "Settings",
             description = "Settings for the script itself.",
-            position = 1
+            position = 0
     )
     String settingsSection = "settings";
-
-    @ConfigItem(
-            keyName = "info_box",
-            name = "-- ABOUT THE MESS PLUGIN --",
-            description = "Some information about the usage and requirements for the script",
-            position = 0,
-            section = aboutSection
-    )
-    default String info_box() {
-        return "• Wiki:\n" +
-                "https://oldschool.runescape.wiki/w/Mess \n" +
-                "• It's basically Overcooked on OSRS\n" +
-                "• Perfect for ironman to bump cook level as" +
-                "there are no items needed to get good cooking xp/h.\n" +
-                "• There are no rewards other than XP in this.\n\n" +
-                "FLOW OF THE PLUGIN:\n\n" +
-                "• If are not in the zone, it gonna travel to the Mess Hall.\n" +
-                "• When reaching there, if inv not empty, it gonna bank it nearby.\n" +
-                "• If everything is in order it will loop into making dishes" +
-                "and turning them in.\n" +
-                "• Whenever it sees the appreciation for the selected dish" +
-                "below the set threshold, it will hop worlds till it's over." +
-                "(beware that threshold over 33 may cause hop loop.)\n";
-    }
-
-    @ConfigItem(
-            keyName = "requirements",
-            name = "-- REQUIREMENTS --",
-            description = "Requirements for the selected dish",
-            position = 0,
-            section = aboutSection
-    )
-    default String requirements() {
-        return "• Servery Meat Pie (20 Cooking)\n" +
-                "• Servery Stew (25 Cooking)\n" +
-                "• Servery Pineapple Pizza (65 Cooking)\n";
-    }
 
     @ConfigItem(
             keyName = "dish",
