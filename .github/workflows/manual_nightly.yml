@@ -38,3 +38,32 @@ jobs:
           title: "Nightly Build"
           files: |
             /home/runner/work/Microbot/Microbot/runelite-client/target/microbot-*.jar
+            
+
+      - name: Upload Jar to Hetzner
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.PROD_HOST }}
+          username: root
+          key: ${{ secrets.PROD_SSH_KEY }}
+          source: runelite-client/target/microbot-*.jar
+          target: /var/www/files/releases/microbot/nightly/
+          strip_components: 2
+
+      - name: Set up Maven settings
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOL
+          <settings>
+          <servers>
+           <server>
+             <id>microbot-release</id>
+             <username>${{ secrets.NEXUS_USER }}</username>
+             <password>${{ secrets.NEXUS_PASSWORD }}</password>
+           </server>
+          </servers>
+          </settings>
+          EOL
+
+      - name: Deploy to Nexus
+        run: mvn clean deploy -B -U

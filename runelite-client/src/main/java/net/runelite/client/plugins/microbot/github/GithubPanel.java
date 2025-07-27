@@ -16,10 +16,8 @@ import javax.swing.*;
 import java.awt.*;
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Collections;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
 import java.util.stream.Collectors;
 
 import static javax.swing.JOptionPane.showMessageDialog;
@@ -273,7 +271,7 @@ public class GithubPanel extends PluginPanel {
 
         worker.execute();
         progressDialog.setVisible(true); // blocks until worker finishes
-        microbotPluginManager.loadSideLoadPlugins();
+        microbotPluginManager.loadSideLoadPlugins(new ArrayList<>());
 
     }
 
