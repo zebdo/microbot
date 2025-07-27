@@ -37,7 +37,7 @@ public class AstralRunesScript extends Script {
     public static String version = "0.0.2";
     private final AstralRunesPlugin plugin;
 
-    private final static List<Integer> LUNAR_ISLE_REGION_IDS = List.of(8509, 8508, 8253);
+    private final static List<Integer> LUNAR_ISLE_REGION_IDS = List.of(8509, 8508, 8253, 8252);
     private final static WorldPoint SEAL_OF_PASSAGE_BANKER = new WorldPoint(2098, 3920, 0);
     private final static WorldPoint DREAM_MENTOR_BANKER = new WorldPoint(2099, 3920, 0);
     private final static WorldPoint LUNAR_ISLE_BANK_WORLD_POINT = new WorldPoint(2099, 3918, 0);
@@ -69,7 +69,7 @@ public class AstralRunesScript extends Script {
     }
 
     public boolean run(AstralRunesConfig config) {
-		Microbot.pauseAllScripts.compareAndSet(true, false);;
+		Microbot.pauseAllScripts.compareAndSet(true, false);
         Microbot.enableAutoRunOn = false;
         Rs2Antiban.resetAntibanSettings();
         Rs2AntibanSettings.naturalMouse = true;
@@ -214,7 +214,7 @@ public class AstralRunesScript extends Script {
                                 shutdown();
                                 return;
                             }
-                            Rs2Bank.withdrawOne("Stamina Potion", 1);
+                            Rs2Bank.withdrawOne("Stamina Potion");
                             Rs2Inventory.waitForInventoryChanges(600);
                         }
                         if( foodNeeded ) {

@@ -262,3 +262,25 @@
 2616 9506 0	2616 9571 0	Climb-down;Pile of rubble;23564	67 Agility				3
 2616 9571 0	2615 9506 0	Climb-up;Pile of rubble;23563	67 Agility				3
 2617 9571 0	2615 9506 0	Climb-up;Pile of rubble;23563	67 Agility				3
+1274 3002 0	1270 3002 0	Climb;Rocks;57605	43 Agility				3
+1270 3002 0	1274 3002 0	Climb;Rocks;57604	43 Agility				3
+1283 3138 0	1283 3147 0	Walk-across;Log balance;57593	40 Agility				3
+1283 3147 0	1283 3138 0	Walk-across;Log balance;57593	40 Agility				3
+1453 3329 0	1453 3336 0	Walk-across;Log balance;56991	45 Agility				3
+1453 3336 0	1453 3329 0	Walk-across;Log balance;56991	45 Agility				3
+1368 3327 0	1368 3323 0	Climb-into;Tunnel;56989	33 Agility				3
+1368 3323 0	1368 3327 0	Climb-into;Tunnel;56989	33 Agility				3
+1369 3296 0	1369 3294 0	Climb-over;Broken wall;56996	24 Agility				3
+1369 3294 0	1369 3296 0	Climb-over;Broken wall;56996	24 Agility				3
+1387 3303 0	1387 3301 0	Climb-over;Broken wall;56996	24 Agility				3
+1387 3301 0	1387 3303 0	Climb-over;Broken wall;56996	24 Agility				3
+1389 3309 0	1391 3309 0	Climb-over;Broken wall;56996	24 Agility				3
+1391 3309 0	1389 3309 0	Climb-over;Broken wall;56996	24 Agility				3
+1393 3309 0	1399 3309 0	Cross;Stepping stone;56988	36 Agility				3
+1399 3309 0	1393 3309 0	Cross;Stepping stone;56988	36 Agility				3
+1391 3323 0	1396 3323 0	Climb;Rocks;56994	41 Agility				3
+1396 3323 0	1391 3323 0	Climb;Rocks;56994	41 Agility				3
+1401 3291 0	1401 3283 0	Walk-across;Log balance;56990	45 Agility				3
+1401 3283 0	1401 3291 0	Walk-across;Log balance;56990	45 Agility				3
+1477 3309 0	1477 3305 0	Climb;Rocks;56986	76 Agility				3
+1477 3305 0	1477 3309 0	Climb;Rocks;56985	76 Agility				3

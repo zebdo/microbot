@@ -93,7 +93,14 @@ public enum Fish
             FishingSpot.KARAMBWAN.getIds(),
             List.of("fish"),
             List.of("raw karambwan")
+    ),
+    BARB_FISH(
+            "Barbarian Fishing",
+            FishingSpot.BARB_FISH.getIds(),
+            List.of("use-rod"),
+            List.of("leaping trout", "leaping salmon", "leaping sturgeon")
     );
+
 
     private final String name;
     private final int[] fishingSpot;
