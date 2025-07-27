@@ -3,7 +3,9 @@ package net.runelite.client.plugins.microbot.util.cache;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -126,9 +128,9 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
      */
     public static Set<WorldPoint> getAvailableOrigins() {
         return getInstance().stream()
-            .filter(data -> data.isAvailableForTravel())
+            .filter(SpiritTreeData::isAvailableForTravel)
             .map(data -> data.getPatch().getLocation())
-            .filter(location -> location != null)
+            .filter(Objects::nonNull)
             .collect(Collectors.toSet());
     }
     
@@ -150,7 +152,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
      */
     public static List<SpiritTree> getAvailableSpiritTrees() {
         return getInstance().stream()
-            .filter(data -> data.isAvailableForTravel())
+            .filter(SpiritTreeData::isAvailableForTravel)
             .map(SpiritTreeData::getPatch)
             .collect(Collectors.toList());
     }
@@ -212,9 +214,9 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
         WorldArea queryArea = new WorldArea(origin, 3, 3); // 3x3 area around query point
         
         return getInstance().stream()
-            .filter(data -> data.isAvailableForTravel())
+            .filter(SpiritTreeData::isAvailableForTravel)
             .map(data -> data.getPatch().getLocation())
-            .filter(location -> location != null)
+            .filter(Objects::nonNull)
             .anyMatch(location -> {
                 // Create an area around each spirit tree location (accounting for multi-tile objects)
                 WorldArea spiritTreeArea = new WorldArea(location, 3, 3); // 3x3 area around spirit tree
@@ -234,15 +236,15 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
     public static boolean isDestinationAvailable(WorldPoint destination) {
         return isOriginAvailable(destination);
     }
-    
-    /**
-     * Checks if a spirit tree transport is available for pathfinding.
-     * This method is specifically designed for pathfinder integration.
-     * Validates that the origin location (where the player would start) has an available spirit tree.
-     * 
-     * @param transport The transport object to check
-     * @return true if the spirit tree at the origin is available for travel
-     */
+
+	/**
+	 * Checks if a spirit tree transport is available for pathfinding.
+	 * This method is specifically designed for pathfinder integration.
+	 * Validates that the transport is of type SPIRIT_TREE and that both the origin and destination are available.
+	 *
+	 * @param transport The transport object to check
+	 * @return true if the transport is a valid spirit tree and both ends are available for travel
+	 */
     public static boolean isSpiritTreeTransportAvailable(Transport transport) {
         if (transport == null) {
             return false;
@@ -253,12 +255,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
             return false;
         }
         
-        if (transport.getOrigin() == null) {
-            log.debug("Spirit tree transport has null origin, cannot check availability");
-            return false;
-        }
-        
-        return isOriginAvailable(transport.getOrigin());
+        return isOriginAvailable(transport.getOrigin()) & isDestinationAvailable(transport.getDestination());
     }
     
     /**
@@ -378,8 +375,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
             if (spiritTree.getType() == SpiritTree.SpiritTreeType.BUILT_IN) {
                 boolean accessible = spiritTree.hasQuestRequirements();                                               
                 // If we have existing data and it's recent, preserve travel availability info
-                if ((existingData != null && existingData.isAvailableForTravel() != accessible) ||
-                    (existingData == null)) {
+                if (existingData == null || existingData.isAvailableForTravel() != accessible) {
                     
                     // Update with quest accessibility but preserve recent travel information
                     return new SpiritTreeData(
@@ -513,7 +509,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
         log.info("=== Spirit Tree Cache States ===");
         
         getInstance().stream()
-            .sorted((data1, data2) -> data1.getPatch().name().compareTo(data2.getPatch().name()))
+            .sorted(Comparator.comparing(data -> data.getPatch().name()))
             .forEach(data -> {
                 String patchType = data.getPatch().getType().name();
                 String cropState = data.getCropState() != null ? data.getCropState().name() : "N/A";

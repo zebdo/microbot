@@ -39,6 +39,7 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
     
     // Spirit tree object IDs for game object detection
     private static final List<Integer> SPIRIT_TREE_OBJECT_IDS = Arrays.asList(
+		ObjectID.FARMING_SPIRIT_TREE_PATCH_5, // Object ID found in farming guild fully grown spirit tree patch
         ObjectID.SPIRIT_TREE_FULLYGROWN,  // Standard spirit spiritTree id when fully grown  and available for travel -> healty )         
         ObjectID.SPIRITTREE_PRIF, // Prifddinas spirit tree  
         ObjectID.POG_SPIRIT_TREE_ALIVE_STATIC,  // Poison Waste spirit tree
@@ -201,9 +202,10 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
                 return; // Can't determine player location
             }
             
-            // Only update if player is near a spirit tree (within 10 tiles)
-            boolean nearSpiritTree = SpiritTree.getFarmableSpirtTrees().stream()
-                .anyMatch(spiritTree -> playerLocation.distanceTo(spiritTree.getLocation()) <= 10);
+            // Only update if player is near a spirit tree (within region)
+			boolean nearSpiritTree = SpiritTree.getFarmableSpirtTrees().stream()
+				.anyMatch(spiritTree -> Arrays.stream(spiritTree.getRegionIds())
+					.anyMatch(regionId -> regionId != -1 && regionId == playerLocation.getRegionID()));
             
             if (!nearSpiritTree) {
                 log.trace("Player not near any spirit tree patches, skipping varbit update");

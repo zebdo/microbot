@@ -41,6 +41,7 @@ public enum SpiritTree {
             0,
             -1,
             ObjectID.ENT, // Spirit Tree object ID i dont know why but it the id for "ENT" in tree gnome village
+			new int[] { -1 },
             "1: Tree Gnome Village"
     ),
 
@@ -52,6 +53,7 @@ public enum SpiritTree {
             0,
             -1,
             ObjectID.STRONGHOLD_ENT, // Spirit Tree object ID
+			new int[] { -1 },
             "2: Gnome Stronghold"
     ),
 
@@ -62,7 +64,8 @@ public enum SpiritTree {
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
             0,
             -1,
-            ObjectID.SPIRITTREE_SMALL, // Spirit Tree object ID  
+            ObjectID.SPIRITTREE_SMALL, // Spirit Tree object ID
+			new int[] { -1 },
             "3: Battlefield of Khazard"
     ),
 
@@ -74,6 +77,7 @@ public enum SpiritTree {
             0,
             -1,
             ObjectID.SPIRITTREE_SMALL, // Spirit Tree object ID
+			new int[] { -1 },
             "4: Grand Exchange"
     ),
 
@@ -85,6 +89,7 @@ public enum SpiritTree {
             0,
             -1,
             ObjectID.SPIRITTREE_SMALL, // Spirit Tree object ID
+			new int[] { -1 },
             "5: Feldip Hills"
     ),
 
@@ -96,6 +101,7 @@ public enum SpiritTree {
             0,
             -1,
             ObjectID.SPIRITTREE_PRIF, // Prifddinas spirit tree
+			new int[] { -1 },
             "6: Prifddinas"
     ),
 
@@ -107,6 +113,7 @@ public enum SpiritTree {
             0,
             -1,
             ObjectID.POG_SPIRIT_TREE_ALIVE_STATIC, // Poison Waste spirit tree
+			new int[] { -1 },
             "D: Poison Waste"
     ),
 
@@ -119,6 +126,7 @@ public enum SpiritTree {
             83,
             VarbitID.FARMING_TRANSMIT_A, // Port Sarim uses varbit 4771
             ObjectID.SPIRIT_TREE_FULLYGROWN, // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
+			new int[] {12082, 12083},
             "7: Port Sarim"
     ),
 
@@ -130,6 +138,7 @@ public enum SpiritTree {
             83,
             VarbitID.FARMING_TRANSMIT_B, // Etceteria uses varbit 4772
             ObjectID.SPIRIT_TREE_FULLYGROWN, // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
+			new int[] {10300},
             "8: Etceteria"
     ),
 
@@ -141,6 +150,7 @@ public enum SpiritTree {
             83,
             VarbitID.FARMING_TRANSMIT_B, // Brimhaven spirit tree patch
             ObjectID.SPIRIT_TREE_FULLYGROWN, // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
+			new int[] {11058, 11057},
             "9: Brimhaven"
     ),
 
@@ -152,6 +162,7 @@ public enum SpiritTree {
             83,
             VarbitID.FARMING_TRANSMIT_F, // Hosidius spirit tree patch
             ObjectID.SPIRIT_TREE_FULLYGROWN, // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
+			new int[] {6967, 6711},
             "A: Hosidius"
     ),
 
@@ -163,6 +174,7 @@ public enum SpiritTree {
             85, // Requires 85 Farming for the Farming Guild
             VarbitID.FARMING_TRANSMIT_A, // Farming Guild spirit tree patch
             ObjectID.SPIRIT_TREE_FULLYGROWN, // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
+			new int[] {4922, 5177, 5178, 5179, 4921, 4923, 4665, 4666, 4667},
             "B: Farming Guild"
     );
       /**
@@ -184,6 +196,7 @@ public enum SpiritTree {
     private final int requiredFarmingLevel;
     private final int varbitId; // -1 for built-in trees
     private final int objectId;
+	private final int[] regionIds; // -1 for built-in trees
     private final String adventureLogDisplayName;
 
     /**
