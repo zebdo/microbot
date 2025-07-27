@@ -203,6 +203,7 @@ public enum BankLocation {
             case ALDARIN:
 			case AUBURNVALE:
 			case DARKFROST:
+            case MOUNT_QUIDAMORTEM:
 			case NEMUS_RETREAT:
 			case TAL_TEKLAN:
             case VARLAMORE_EAST:
