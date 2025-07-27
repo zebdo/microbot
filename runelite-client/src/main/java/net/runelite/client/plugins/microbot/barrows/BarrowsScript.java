@@ -439,27 +439,12 @@ public class BarrowsScript extends Script {
                     solvePuzzle();
                     checkForBrother(config);
 
-                    if(Rs2Player.getWorldLocation().distanceTo(Chest)==5){
-                        //too close for the walker to engage but too far to want to click the chest.
+                    if(Rs2GameObject.findObjectById(20973) != null && Rs2GameObject.hasLineOfSight(Rs2GameObject.findObjectById(20973))){
+                        //chest ID: 20973
                         stopFutureWalker();
 
                         TileObject chest = Rs2GameObject.findObjectById(20973);
 
-                        if(!Rs2UiHelper.isRectangleWithinCanvas(chest.getClickbox().getBounds())){
-                            rotateToObject(chest);
-                        }
-
-                        //stop the walker and future
-                        Microbot.log("Walking on screen to the chest");
-                        Rs2Walker.walkCanvas(Chest);
-                        sleepUntil(()-> !Rs2Player.isMoving() || Chest.distanceTo(Rs2Player.getWorldLocation())<=4, Rs2Random.between(2000,5000));
-                    }
-
-                    if(Rs2Player.getWorldLocation().distanceTo(Chest)<=4){
-                        //we need to get the chest ID: 20973
-                        stopFutureWalker();
-                        //stop the walker and future
-                        TileObject chest = Rs2GameObject.findObjectById(20973);
                         if(Rs2GameObject.interact(chest, "Open")){
                             sleepUntil(()-> Microbot.getClient().getHintArrowNpc()!=null && Microbot.getClient().getHintArrowNpc().getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= 5, Rs2Random.between(4000,6000));
                         }
