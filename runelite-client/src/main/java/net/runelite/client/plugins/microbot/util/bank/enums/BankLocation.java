@@ -77,6 +77,7 @@ public enum BankLocation {
     MOR_UL_REK(new WorldPoint(2541, 5140, 0), true),
     MOTHERLOAD(new WorldPoint(3760, 5666, 0), true),
     MOUNT_KARUULM(new WorldPoint(1324, 3824, 0), true),
+    MOUNT_QUIDAMORTEM (new WorldPoint(1254,3571,0),true),
     MYTHS_GUILD(new WorldPoint(2463, 2847, 1), true),
     NARDAH(new WorldPoint(3428, 2892, 0), true),
 	NEMUS_RETREAT(new WorldPoint(1386, 3309, 0), true),
