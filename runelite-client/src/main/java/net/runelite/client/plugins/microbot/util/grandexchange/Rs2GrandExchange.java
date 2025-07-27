@@ -209,9 +209,9 @@ public class Rs2GrandExchange
 				}
 				Rs2Keyboard.typeString(request.getItemName());
 
-				if (!Rs2Widget.sleepUntilHasWidgetText(searchName, 162, 43, request.isExact(), 5000)) break;
+				if (!Rs2Widget.sleepUntilHasWidgetText(searchName, 162, 43, false, 5000)) break;
 
-				sleep(1800); // TODO: make this conditional.
+				sleepUntil(() -> getSearchResultWidget(request.getItemName(), request.isExact()) != null, 2200);
 
 				Pair<Widget, Integer> itemResult = getSearchResultWidget(request.getItemName(), request.isExact());
 				if (itemResult == null) break;
