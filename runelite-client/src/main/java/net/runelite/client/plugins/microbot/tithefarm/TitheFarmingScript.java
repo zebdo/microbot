@@ -240,6 +240,7 @@ public class TitheFarmingScript extends Script {
                     case REFILL_WATERCANS:
                         refillWaterCans(config);
                         BreakHandlerScript.setLockState(false);
+                        sleepGaussian(800, 200);
                         break;
                     case PLANTING_SEEDS:
                     case HARVEST:
