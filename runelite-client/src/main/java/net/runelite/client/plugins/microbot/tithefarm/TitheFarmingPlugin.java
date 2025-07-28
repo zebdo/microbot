@@ -18,6 +18,9 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.tithefarm.enums.TitheFarmMaterial;
 import net.runelite.client.plugins.microbot.tithefarm.enums.TitheFarmState;
 import net.runelite.client.plugins.microbot.tithefarm.models.TitheFarmPlant;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
+import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
+import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.mouse.VirtualMouse;
 import net.runelite.client.ui.overlay.OverlayManager;
 
@@ -54,6 +57,13 @@ public class TitheFarmingPlugin extends Plugin {
     @Override
     protected void startUp() throws AWTException {
 		Microbot.pauseAllScripts.compareAndSet(true, false);
+
+        if (config.enableAntiban()){
+            Rs2AntibanSettings.naturalMouse = true;
+            Rs2Antiban.antibanSetupTemplates.applyFarmingSetup();
+            Rs2Antiban.setActivity(Activity.GENERAL_FARMING);
+            Rs2Antiban.activateAntiban();
+        }
 
         if (overlayManager != null) {
             overlayManager.add(titheFarmOverlay);
