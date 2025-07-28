@@ -1,5 +1,12 @@
 package net.runelite.client.plugins.microbot.flipper;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Objects;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.coords.WorldArea;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -12,10 +19,8 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
-import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.api.MenuAction;
-import net.runelite.api.coords.WorldPoint;
 import java.awt.Rectangle;
 import net.runelite.api.widgets.Widget;
 
@@ -30,72 +35,64 @@ enum State {
     MONITORING_COPILOT
 }
 
+@Slf4j
 public class FlipperScript extends Script {
-    private double version = 1.0;
-    
-    private static final WorldPoint GE_AREA = new WorldPoint(3165, 3485, 0);
+    private double version = 1.1;
+
+	private final WorldArea grandExchangeArea = new WorldArea(3136, 3465, 61, 54, 0);
     State state = State.GOING_TO_GE;
-    
-    private Plugin flippingCopilot = null;
-    private Object highlightController = null;
+
+    private Plugin flippingCopilot;
+	private Object suggestionManager;
+    private Object highlightController;
     private long lastActionTime = 0;
     private static final long ACTION_COOLDOWN = 1500; // 1.5 second cooldown between actions
-    
+
+	private int[] grandExchangeSlotIds = new int[] {
+		InterfaceID.GeOffers.INDEX_0,
+		InterfaceID.GeOffers.INDEX_1,
+		InterfaceID.GeOffers.INDEX_2,
+		InterfaceID.GeOffers.INDEX_3,
+		InterfaceID.GeOffers.INDEX_4,
+		InterfaceID.GeOffers.INDEX_5,
+		InterfaceID.GeOffers.INDEX_6,
+		InterfaceID.GeOffers.INDEX_7
+	};
+
     public boolean run() {
         Rs2AntibanSettings.naturalMouse = true;
         Rs2Antiban.setActivityIntensity(ActivityIntensity.LOW);
             mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
+				if (!super.run()) return;
                 if (!Microbot.isLoggedIn()) return;
-                if (!super.run()) return;
-                
-                // Find FlippingCopilot plugin
-                if(flippingCopilot == null){
-                    flippingCopilot = Microbot.getPluginManager()
-                            .getPlugins()
-                            .stream()
-                            .filter(x -> x.getClass()
-                                        .getSimpleName()
-                                        .equalsIgnoreCase("FlippingCopilotPlugin"))
-                                        .findFirst()
-                                        .orElse(null);
-                    
-                    // Also get the HighlightController
-                    if (flippingCopilot != null) {
-                        highlightController = getHighlightController(flippingCopilot);
-                    }
-                }
-                
-                if (flippingCopilot == null) {
-                    Microbot.log("FlippingCopilot plugin not found. Please install it from the plugin hub.");
-                    return;
-                }
+
+                if (!initialize()) {
+					log.warn("FlipperScript initialization failed. Ensure Flipping Copilot is installed and enabled.");
+					return;
+				}
 
                 switch (state) {
                     case GOING_TO_GE:
-                        if(Rs2GrandExchange.isOpen()){
+                        if (Rs2GrandExchange.isOpen() && Rs2Inventory.onlyContains(ItemID.COINS)) {
                              state = State.MONITORING_COPILOT;
                              return;
                         }
-                        if (Microbot.getClient()
-                                    .getLocalPlayer()
-                                    .getWorldLocation()
-                                    .distanceTo(GE_AREA) > 15) {
-                            Rs2Walker.walkTo(GE_AREA);
+                        if (!grandExchangeArea.contains(Microbot.getClient().getLocalPlayer().getWorldLocation())) {
+                            Rs2GrandExchange.walkToGrandExchange();
                         }
                         state = State.GETTING_COINS;
                         break;
-
                     case GETTING_COINS:
-                        if(Rs2Inventory.onlyContains(995)){
+                        if (Rs2Inventory.onlyContains(ItemID.COINS)) {
                             state = State.MONITORING_COPILOT;
                             return;
                         }
                         if (Rs2Bank.openBank()) {
                             Rs2Bank.depositAll();
-                            sleepUntil(() -> Rs2Inventory.isEmpty());
-                            Rs2Bank.withdrawAll(995);
-                            sleepUntil(() -> Rs2Inventory.onlyContains(995));
+                            sleepUntil(Rs2Inventory::isEmpty);
+                            Rs2Bank.withdrawAll(ItemID.COINS);
+                            Rs2Inventory.waitForInventoryChanges(5000);
                             Rs2Bank.closeBank();
                             sleepUntil(() -> !Rs2Bank.isOpen());
                             state = State.MONITORING_COPILOT;
@@ -107,10 +104,10 @@ public class FlipperScript extends Script {
                             Rs2GrandExchange.openExchange();
                             return;
                         }
-                        
-                        // First check if we need to abort using reflection
+
+                        // Check if we need to abort any offers
                         if (checkAndAbortIfNeeded()) return;
-                        
+
                         // Check for Copilot price/quantity messages in chat
                         if (checkAndPressCopilotKeybind()) return;
 
@@ -119,191 +116,257 @@ public class FlipperScript extends Script {
                         break;
                 }
             } catch (Exception ex) {
-                Microbot.log("FlipperScript error: " + ex.getMessage());
+                log.error("Error in FlipperScript: {} - ", ex.getMessage(), ex);
             }
         }, 0, 600, TimeUnit.MILLISECONDS);
-        
+
         return true;
     }
 
-    private Object getHighlightController(Plugin flippingCopilot) {
-        try {
-            Field highlightControllerField = flippingCopilot.getClass().getDeclaredField("highlightController");
-            highlightControllerField.setAccessible(true);
-            return highlightControllerField.get(flippingCopilot);
-        } catch (Exception e) {
-            Microbot.log("Could not access HighlightController: " + e.getMessage());
-            return null;
-        }
-    }
-    
-private boolean checkAndAbortIfNeeded() {
-    if (flippingCopilot == null) return false;
-    
-    try {
-        Field suggestionManagerField = flippingCopilot.getClass().getDeclaredField("suggestionManager");
-        suggestionManagerField.setAccessible(true);
-        Object suggestionManagerObj = suggestionManagerField.get(flippingCopilot);
-        
-        if (suggestionManagerObj == null) return false;
-        
-        Field suggestionField = suggestionManagerObj.getClass().getDeclaredField("suggestion");
-        suggestionField.setAccessible(true);
-        Object currentSuggestion = suggestionField.get(suggestionManagerObj);
-        
-        if (currentSuggestion == null) return false;
-        
-        Field typeField = currentSuggestion.getClass().getDeclaredField("type");
-        typeField.setAccessible(true);
-        String suggestionType = (String) typeField.get(currentSuggestion);
-        
-        if (!"abort".equals(suggestionType)) {
-            return false;
-        }
-        
-        Microbot.log("Abort suggestion detected");
-        
-        if (highlightController != null) {
-            try {
-                // Get the list of highlighted overlays from FlippingCopilot
-                Field highlightOverlaysField = highlightController.getClass().getDeclaredField("highlightOverlays");
-                highlightOverlaysField.setAccessible(true);
-                @SuppressWarnings("unchecked")
-                List<Object> highlightOverlays = (List<Object>) highlightOverlaysField.get(highlightController);
-                
-                if (highlightOverlays != null && !highlightOverlays.isEmpty()) {
-                    // Look for highlighted GE slot widgets
-                    for (Object overlay : highlightOverlays) {
-                        Widget highlightedWidget = getWidgetFromOverlay(overlay);
-                        if (highlightedWidget != null && isGrandExchangeSlotWidget(highlightedWidget)) {
-                            Microbot.log("Found highlighted GE slot for abort, performing abort action");
-                            
-                            // Perform abort using the highlighted widget directly
-                            NewMenuEntry menuEntry = new NewMenuEntry("Abort offer", "", 2, MenuAction.CC_OP, 2, highlightedWidget.getId(), false);
-                            Rectangle bounds = highlightedWidget.getBounds() != null && Rs2UiHelper.isRectangleWithinCanvas(highlightedWidget.getBounds())
-                                ? highlightedWidget.getBounds()
-                                : Rs2UiHelper.getDefaultRectangle();
-                            Microbot.doInvoke(menuEntry, bounds);
-                            
-                            lastActionTime = System.currentTimeMillis();
-                            return true;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                Microbot.log("Error using highlight-based abort: " + e.getMessage());
-            }
-        }
-        
-        // Fallback to existing name-matching approach
-        // Get the item name to abort
-        Field nameField = currentSuggestion.getClass().getDeclaredField("name");
-        nameField.setAccessible(true);
-        String itemName = (String) nameField.get(currentSuggestion);
-        
-        Microbot.log("Using fallback abort method for item: " + itemName);
-        
-        // Abort only the specific item, not all offers
-        boolean success = Rs2GrandExchange.abortOffer(itemName, false);
-        if (success) {
-            Microbot.log("Successfully aborted offer for: " + itemName);
-        } else {
-            Microbot.log("Failed to abort offer for: " + itemName);
-        }
-        return true;
-        
-    } catch (Exception e) {
-        Microbot.log("Error checking FlippingCopilot suggestion: " + e.getMessage());
-    }
-    
-    return false;
-}
+	@Override
+	public void shutdown()
+	{
+		flippingCopilot = null;
+		suggestionManager = null;
+		highlightController = null;
+		lastActionTime = 0;
+		super.shutdown();
+	}
 
-// Add this small helper method
-private boolean isGrandExchangeSlotWidget(Widget widget) {
-    // GE slot widgets are in interface 465, children 7-14 (representing slots 0-7)
-    return widget.getId() >= 30474247 && widget.getId() <= 30474254; // 465 << 16 | (7-14)
-}
-    
+	private boolean initialize()
+	{
+		if (flippingCopilot != null && suggestionManager != null && highlightController != null) return true;
+
+		Plugin _flippingCopilot = getFlippingCopilot();
+		Object _suggestionManager = getSuggestionManager(_flippingCopilot);
+		Object _highlightController = getHighlightController(_flippingCopilot);
+
+		return _flippingCopilot != null && _suggestionManager != null && _highlightController != null;
+	}
+
+	private Plugin getFlippingCopilot()
+	{
+		if (flippingCopilot == null)
+		{
+			flippingCopilot = Microbot.getPluginManager()
+				.getPlugins()
+				.stream()
+				.filter(plugin -> plugin.getClass().getSimpleName().equalsIgnoreCase("FlippingCopilotPlugin"))
+				.findFirst()
+				.orElse(null);
+		}
+		return flippingCopilot;
+	}
+
+	private Object getHighlightController(Plugin flippingCopilot)
+	{
+		if (flippingCopilot == null) return null;
+		if (highlightController == null)
+		{
+			try
+			{
+				Field highlightControllerField = flippingCopilot.getClass().getDeclaredField("highlightController");
+				highlightControllerField.setAccessible(true);
+				highlightController = highlightControllerField.get(flippingCopilot);
+			}
+			catch (Exception e)
+			{
+				log.error("Could not access HighlightController: {} - ", e.getMessage(), e);
+			}
+		}
+		return highlightController;
+	}
+
+	private Object getSuggestionManager(Plugin flippingCopilot)
+	{
+		if (flippingCopilot == null) return null;
+		if (suggestionManager == null)
+		{
+			try
+			{
+				Field suggestionManagerField = flippingCopilot.getClass().getDeclaredField("suggestionManager");
+				suggestionManagerField.setAccessible(true);
+				suggestionManager = suggestionManagerField.get(flippingCopilot);
+			}
+			catch (Exception e)
+			{
+				log.error("Could not access SuggestionManager: {} - ", e.getMessage(), e);
+			}
+		}
+		return suggestionManager;
+	}
+
+	private Object getSuggestion(Object suggestionManager)
+	{
+		if (suggestionManager == null) return null;
+		try
+		{
+			Field suggestionField = suggestionManager.getClass().getDeclaredField("suggestion");
+			suggestionField.setAccessible(true);
+			return suggestionField.get(suggestionManager);
+		}
+		catch (Exception e)
+		{
+			log.error("Could not access Suggestion: {} ", e.getMessage(), e);
+			return null;
+		}
+	}
+
+	private String getSuggestionType(Object suggestion)
+	{
+		if (suggestion == null) return null;
+		try
+		{
+			Field typeField = suggestion.getClass().getDeclaredField("type");
+			typeField.setAccessible(true);
+			return (String) typeField.get(suggestion);
+		}
+		catch (Exception e)
+		{
+			log.error("Could not access suggestion type: {} - ", e.getMessage(), e);
+			return null;
+		}
+	}
+
+	private List<Object> getHighlightOverlays(Object highlightController)
+	{
+		if (highlightController == null) return null;
+		try
+		{
+			Field highlightOverlaysField = highlightController.getClass().getDeclaredField("highlightOverlays");
+			highlightOverlaysField.setAccessible(true);
+			@SuppressWarnings("unchecked")
+			List<Object> highlightOverlays = (List<Object>) highlightOverlaysField.get(highlightController);
+			return highlightOverlays;
+		}
+		catch (Exception e)
+		{
+			log.error("Could not access highlight overlays: {} - ", e.getMessage(), e);
+			return null;
+		}
+	}
+
+	private List<Widget> getHighlightWidgets(Object highlightController)
+	{
+		final List<Widget> highlightWidgets = new ArrayList<>();
+		if (highlightController == null)
+		{
+			return highlightWidgets;
+		}
+
+		List<Object> highlightOverlays = getHighlightOverlays(highlightController);
+
+		for (Object highlightOverlay : highlightOverlays)
+		{
+			try
+			{
+				Field widgetField = highlightOverlay.getClass().getDeclaredField("widget");
+				widgetField.setAccessible(true);
+				highlightWidgets.add((Widget) widgetField.get(highlightOverlay));
+			}
+			catch (Exception e)
+			{
+				log.error("Could not get widget from overlay: {} - ", e.getMessage(), e);
+				return highlightWidgets;
+			}
+		}
+
+		return highlightWidgets;
+	}
+
+	private Widget getWidgetFromOverlay(Object highlightController, String suggestionType)
+	{
+		List<Object> highlightOverlays = getHighlightOverlays(highlightController);
+		if (highlightOverlays == null || highlightOverlays.isEmpty())
+		{
+			return null;
+		}
+
+		if (Objects.equals(suggestionType, "abort"))
+		{
+			return getHighlightWidgets(highlightController).stream()
+				.filter(Objects::nonNull)
+				// Filter to "home" grand exchange slot widgets
+				.filter(widget -> Arrays.stream(grandExchangeSlotIds).anyMatch(id -> id == widget.getId()))
+				.findFirst()
+				.orElse(null);
+		}
+		else
+		{
+			// For other suggestion types, we can return the first highlighted widget
+			return getHighlightWidgets(highlightController).stream()
+				.filter(Objects::nonNull)
+				.findFirst()
+				.orElse(null);
+		}
+	}
+
+	private boolean checkAndAbortIfNeeded()
+	{
+		if (flippingCopilot == null || highlightController == null || suggestionManager == null) return false;
+
+		try
+		{
+			Object currentSuggestion = getSuggestion(suggestionManager);
+			if (currentSuggestion == null) return false;
+
+			String suggestionType = getSuggestionType(currentSuggestion);
+
+			if (!Objects.equals(suggestionType, "abort")) return false;
+
+			log.info("Found suggestion type '{}'.", suggestionType);
+
+			Widget abortWidget = getWidgetFromOverlay(highlightController, suggestionType);
+			if (abortWidget != null)
+			{
+				NewMenuEntry menuEntry = new NewMenuEntry("Abort offer", "", 2, MenuAction.CC_OP, 2, abortWidget.getId(), false);
+				Rectangle bounds = abortWidget.getBounds() != null && Rs2UiHelper.isRectangleWithinCanvas(abortWidget.getBounds())
+					? abortWidget.getBounds()
+					: Rs2UiHelper.getDefaultRectangle();
+				Microbot.doInvoke(menuEntry, bounds);
+				lastActionTime = System.currentTimeMillis();
+				return true;
+			}
+		}
+		catch (Exception e)
+		{
+			log.error("Could not process suggestion: {} - ", e.getMessage(), e);
+		}
+		return false;
+	}
+
     private boolean checkAndPressCopilotKeybind() {
-        // Execute on client thread to access widgets safely
-        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
-            try {
-                // Check if the price/quantity input widget is open
-                Widget inputWidget = Rs2Widget.getWidget(10616870);
-                if (inputWidget != null && !inputWidget.isHidden()) {
-                    Microbot.log("Found price/quantity input widget, pressing 'e' then Enter");
-                    
-                    // Press 'e' to trigger FlippingCopilot's keybind
-                    Rs2Keyboard.keyPress(KeyEvent.VK_E);
-                    sleep(250); // Small delay
-                    
-                    // Press Enter to confirm
-                    Rs2Keyboard.keyPress(KeyEvent.VK_ENTER);
-                    
-                    lastActionTime = System.currentTimeMillis();
-                    return true;
-                }
-                
-                return false;
-            } catch (Exception e) {
-                Microbot.log("Error checking for input widget: " + e.getMessage());
-                return false;
-            }
-        }).orElse(false);
+		boolean isChatboxInputOpen = Rs2Widget.isWidgetVisible(InterfaceID.Chatbox.MES_LAYER);
+		if (!isChatboxInputOpen) return false;
+		log.info("Found chatbox input open, pressing 'e' then Enter");
+		// Press 'e' to trigger FlippingCopilot's keybind
+		Rs2Keyboard.keyPress(KeyEvent.VK_E);
+		sleep(250, 400);
+		Rs2Keyboard.keyPress(KeyEvent.VK_ENTER);
+
+		lastActionTime = System.currentTimeMillis();
+		return true;
     }
 
-    private void checkAndClickHighlightedWidgets() {
-        // Prevent spam clicking with cooldown
-        long currentTime = System.currentTimeMillis();
-        if (currentTime - lastActionTime < ACTION_COOLDOWN) {
-            return;
-        }
+    private void checkAndClickHighlightedWidgets()
+	{
+		if (flippingCopilot == null || highlightController == null) return;
+		long currentTime = System.currentTimeMillis();
+		if (currentTime - lastActionTime < ACTION_COOLDOWN) return;
 
-        if (highlightController == null) {
-            return;
-        }
+		try {
+			Widget highlightedWidget = getWidgetFromOverlay(highlightController, "");
+			boolean isHighlightedVisible = highlightedWidget != null && Rs2Widget.isWidgetVisible(highlightedWidget.getId());
 
-        // Execute widget checks on client thread
-        Microbot.getClientThread().invokeLater(() -> {
-            try {
-                // Get the list of highlighted overlays from FlippingCopilot
-                Field highlightOverlaysField = highlightController.getClass().getDeclaredField("highlightOverlays");
-                highlightOverlaysField.setAccessible(true);
-                @SuppressWarnings("unchecked")
-                List<Object> highlightOverlays = (List<Object>) highlightOverlaysField.get(highlightController);
-                
-                if (highlightOverlays == null || highlightOverlays.isEmpty()) {
-                    // No highlights active
-                    return;
-                }
-
-                // Click the first highlighted widget
-                Object firstOverlay = highlightOverlays.get(0);
-                Widget highlightedWidget = getWidgetFromOverlay(firstOverlay);
-                
-                if (highlightedWidget != null && !highlightedWidget.isHidden()) {
-                    Microbot.log("Clicking highlighted widget: " + highlightedWidget.getId());
-                    Rs2Widget.clickWidget(highlightedWidget);
-                    lastActionTime = System.currentTimeMillis();
-                }
-
-            } catch (Exception e) {
-                Microbot.log("Error checking highlighted widgets: " + e.getMessage());
-            }
-        });
-    }
-    
-
-    private Widget getWidgetFromOverlay(Object overlay) {
-        try {
-            Field widgetField = overlay.getClass().getDeclaredField("widget");
-            widgetField.setAccessible(true);
-            return (Widget) widgetField.get(overlay);
-        } catch (Exception e) {
-            Microbot.log("Could not get widget from overlay: " + e.getMessage());
-            return null;
-        }
-    }
-
+			if (isHighlightedVisible) {
+				log.info("Clicking highlighted widget: {}", highlightedWidget.getId());
+				Rs2Widget.clickWidget(highlightedWidget);
+				lastActionTime = currentTime;
+			}
+		}
+		catch (Exception e)
+		{
+			log.error("Could not process highlight widgets: {} - ", e.getMessage(), e);
+		}
+	}
 }
