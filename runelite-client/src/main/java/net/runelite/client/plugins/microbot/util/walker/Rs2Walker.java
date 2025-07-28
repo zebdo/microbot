@@ -1415,13 +1415,7 @@ public class Rs2Walker {
                             if (Rs2Npc.canWalkTo(npc, 20) && Rs2Npc.interact(npc, transport.getAction())) {
                                 Rs2Player.waitForWalking();
                                 sleepUntil(Rs2Dialogue::isInDialogue,600*2);
-                                if (Rs2Dialogue.hasDialogueText("will cost you")){
-                                    Rs2Dialogue.clickContinue();
-                                    sleepUntil(Rs2Dialogue::hasSelectAnOption,600*3);
-                                    Rs2Dialogue.clickOption("Yes please.");
-                                    sleepUntil(Rs2Dialogue::hasContinue,600*3);
-                                    Rs2Dialogue.clickContinue();
-                                } else if (Rs2Dialogue.clickOption("I'm just going to Pirates' cove")){
+								if (Rs2Dialogue.clickOption("I'm just going to Pirates' cove")){
 									sleep(600 * 2);
 									Rs2Dialogue.clickContinue();
                                 } else if (Objects.equals(transport.getName(), "Mountain Guide")) {
