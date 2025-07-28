@@ -110,6 +110,7 @@ public class AutoFishingScript extends Script {
                             Rs2Inventory.waitForInventoryChanges(1800);
                             if (config.shouldBankClueBottles()) {
                                 Rs2Bank.depositAll("clue bottle");
+                                Rs2Bank.depositAll("scroll box");
                                 Rs2Inventory.waitForInventoryChanges(1800);
                             }
                             if (config.shouldBankCaskets()) {
@@ -129,6 +130,7 @@ public class AutoFishingScript extends Script {
                                 Rs2Inventory.waitForInventoryChanges(1800);
                                 if (config.shouldBankClueBottles()) {
                                     Rs2DepositBox.depositAll("clue bottle");
+                                    Rs2Bank.depositAll("scroll box");
                                     Rs2Inventory.waitForInventoryChanges(1800);
                                 }
                                 if (config.shouldBankCaskets()) {
