@@ -78,10 +78,10 @@
 	</issueManagement>
 
 	<distributionManagement>
-		<snapshotRepository>
+		<repository>
 			<id>microbot-release</id>
 			<url>http://138.201.81.246:8081/repository/microbot-release/</url>
-		</snapshotRepository>
+		</repository>
 	</distributionManagement>
 
 	<repositories>
