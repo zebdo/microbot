@@ -89,22 +89,22 @@ public class NaturalMouse {
 
     public MouseMotionFactory getFactory() {
         if (Rs2Antiban.getActivityIntensity() == ActivityIntensity.VERY_LOW) {
-            log.info("Creating average computer user motion factory");
+            log.debug("Creating average computer user motion factory");
             return FactoryTemplates.createAverageComputerUserMotionFactory(nature);
         } else if (Rs2Antiban.getActivityIntensity() == ActivityIntensity.LOW) {
-            log.info("Creating normal gamer motion factory");
+            log.debug("Creating normal gamer motion factory");
             return FactoryTemplates.createNormalGamerMotionFactory(nature);
         } else if (Rs2Antiban.getActivityIntensity() == ActivityIntensity.MODERATE) {
-            log.info("Creating fast gamer motion factory");
+            log.debug("Creating fast gamer motion factory");
             return FactoryTemplates.createFastGamerMotionFactory(nature);
         } else if (Rs2Antiban.getActivityIntensity() == ActivityIntensity.HIGH) {
-            log.info("Creating fast gamer motion factory");
+            log.debug("Creating fast gamer motion factory");
             return FactoryTemplates.createFastGamerMotionFactory(nature);
         } else if (Rs2Antiban.getActivityIntensity() == ActivityIntensity.EXTREME) {
-            log.info("Creating super fast gamer motion factory");
+            log.debug("Creating super fast gamer motion factory");
             return FactoryTemplates.createSuperFastGamerMotionFactory(nature);
         } else {
-            log.info("Default: Creating super fast gamer motion factory");
+            log.debug("Default: Creating super fast gamer motion factory");
             return FactoryTemplates.createSuperFastGamerMotionFactory(nature);
         }
 
