@@ -2308,15 +2308,15 @@ public class Rs2Walker {
                 lowerCaseItemName.contains("digsite pendant") ||
                 lowerCaseItemName.contains("necklace of passage") ||
                 lowerCaseItemName.contains("camulet") ||
-                lowerCaseItemName.contains("burning amulet")) {
+                lowerCaseItemName.contains("burning amulet") ||
+				lowerCaseItemName.contains("giantsoul amulet")) {
             return 6;
         } else if (lowerCaseItemName.contains("xeric's talisman") ||
                 lowerCaseItemName.contains("slayer ring") ||
 				lowerCaseItemName.contains("construct. cape") ||
 				lowerCaseItemName.contains("pendant of ates")) {
             return 4;
-        } else if (lowerCaseItemName.contains("book of the dead") ||
-                   lowerCaseItemName.contains("giantsoul amulet")) {
+        } else if (lowerCaseItemName.contains("book of the dead")) {
             return 3;
         } else if (lowerCaseItemName.contains("kharedst's memoirs") ||
 			       lowerCaseItemName.contains("enchanted lyre")) {
