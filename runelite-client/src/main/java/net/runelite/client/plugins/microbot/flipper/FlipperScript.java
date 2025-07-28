@@ -13,6 +13,7 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
@@ -46,7 +47,7 @@ public class FlipperScript extends Script {
 	private Object suggestionManager;
     private Object highlightController;
     private long lastActionTime = 0;
-    private static final long ACTION_COOLDOWN = 1500; // 1.5 second cooldown between actions
+    private long actionCooldown = 1500; // randomized cooldown between actions
 
 	private int[] grandExchangeSlotIds = new int[] {
 		InterfaceID.GeOffers.INDEX_0,
@@ -105,11 +106,11 @@ public class FlipperScript extends Script {
                             return;
                         }
 
+						// Check for Copilot price/quantity messages in chat
+						if (checkAndPressCopilotKeybind()) return;
+
                         // Check if we need to abort any offers
                         if (checkAndAbortIfNeeded()) return;
-
-                        // Check for Copilot price/quantity messages in chat
-                        if (checkAndPressCopilotKeybind()) return;
 
                         // Check for highlighted widgets
                         checkAndClickHighlightedWidgets();
@@ -130,6 +131,7 @@ public class FlipperScript extends Script {
 		suggestionManager = null;
 		highlightController = null;
 		lastActionTime = 0;
+		actionCooldown = 1500;
 		super.shutdown();
 	}
 
@@ -303,8 +305,10 @@ public class FlipperScript extends Script {
 
 	private boolean checkAndAbortIfNeeded()
 	{
-		if (flippingCopilot == null || highlightController == null || suggestionManager == null) return false;
+		long currentTime = System.currentTimeMillis();
+		if (currentTime - lastActionTime < actionCooldown) return true;
 
+		if (flippingCopilot == null || highlightController == null || suggestionManager == null) return false;
 		try
 		{
 			Object currentSuggestion = getSuggestion(suggestionManager);
@@ -325,6 +329,7 @@ public class FlipperScript extends Script {
 					: Rs2UiHelper.getDefaultRectangle();
 				Microbot.doInvoke(menuEntry, bounds);
 				lastActionTime = System.currentTimeMillis();
+				actionCooldown = Rs2Random.randomGaussian(1200, 300);
 				return true;
 			}
 		}
@@ -350,9 +355,10 @@ public class FlipperScript extends Script {
 
     private void checkAndClickHighlightedWidgets()
 	{
-		if (flippingCopilot == null || highlightController == null) return;
 		long currentTime = System.currentTimeMillis();
-		if (currentTime - lastActionTime < ACTION_COOLDOWN) return;
+		if (currentTime - lastActionTime < actionCooldown) return;
+
+		if (flippingCopilot == null || highlightController == null) return;
 
 		try {
 			Widget highlightedWidget = getWidgetFromOverlay(highlightController, "");
@@ -362,6 +368,7 @@ public class FlipperScript extends Script {
 				log.info("Clicking highlighted widget: {}", highlightedWidget.getId());
 				Rs2Widget.clickWidget(highlightedWidget);
 				lastActionTime = currentTime;
+                actionCooldown = Rs2Random.randomGaussian(1800, 300);
 			}
 		}
 		catch (Exception e)
