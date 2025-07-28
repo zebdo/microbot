@@ -97,8 +97,6 @@ public class AIOCamdozScript extends Script {
                         break;
                 }
 
-                //Microbot.log("State: " + state);
-
                 long endTime = System.currentTimeMillis();
                 long totalTime = endTime - startTime;
                 //System.out.println("Total time for loop " + totalTime);
@@ -115,8 +113,6 @@ public class AIOCamdozScript extends Script {
         super.shutdown();
     }
 
-    ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
-
     private void MineAndSmith()
     {
         boolean hasPickaxe, hasHammer;
@@ -125,17 +121,10 @@ public class AIOCamdozScript extends Script {
 
         int[] miningObjectIDs = { 41547, 41548 };
         int[] miningObjectIDsReverse = { 41548, 41547 };
-        List<WorldPoint> barroniteLocations = new ArrayList<>();
-        barroniteLocations.add(new WorldPoint(2936, 5806, 0));
-        barroniteLocations.add(new WorldPoint(2937, 5806, 0));
-        barroniteLocations.add(new WorldPoint(2941, 5809, 0));
-        barroniteLocations.add(new WorldPoint(2941, 5810, 0));
 
         WorldPoint barroniteCrusherLocation = new WorldPoint(2957, 5807, 0);
         int crusherID = ObjectID.CAMDOZAAL_ANVIL;
         int smithingAnimationID = 898;
-
-        int bankObjectID = 41493;
 
         int[] possibleBarroniteDepositLoots = {
                 ItemID.BARRONITE_MACE_1,
@@ -206,9 +195,6 @@ public class AIOCamdozScript extends Script {
                     {
                         Rs2Camera.adjustPitch(0.75f);
                     }
-                    //Rs2Camera.tu
-                    //}
-                    //System.out.println(("Rolled chance: " + chanceRoll));
                 }
 
                 if (!Rs2Player.isMoving()) {
@@ -222,31 +208,21 @@ public class AIOCamdozScript extends Script {
                             if (lastInteractedBarroniteID == 41547) {
                                 //System.out.println(("Last Interacted Rock: LEFT Barronite Vein"));
                                 for (int miningObjectID : miningObjectIDsReverse) {
-                                    //for (int j = 0; j < barroniteLocations.size(); ++j)
-                                    //{
-                                    //mineableRocks.addAll(Rs2GameObject.getWallObjects(miningObjectID));
                                     mineableRocks.addAll(Rs2GameObject.getWallObjects(object -> object != null && (object.getId() == 41548)));
-                                    //}
                                 }
                             } else if (lastInteractedBarroniteID == 41548) {
                                 //System.out.println(("Last Interacted Rock: RIGHT Barronite Vein"));
                                 for (int miningObjectID : miningObjectIDs) {
-                                    //for (int j = 0; j < barroniteLocations.size(); ++j)
-                                    //{
-                                    //mineableRocks.addAll(Rs2GameObject.getWallObjects(miningObjectID));
                                     mineableRocks.addAll(Rs2GameObject.getWallObjects(object -> object != null && (object.getId() == 41547)));
-                                    //}
                                 }
                             }
 
-                            //System.out.println("Trying to interact with rocks!");
                             if (!mineableRocks.isEmpty()) {
                                 Rs2GameObject.interact(mineableRocks.get(0), "Mine");
                                 lastInteractedBarroniteID = mineableRocks.get(0).getId();
                                 Microbot.status = "Mining Barronite rocks";
                             }
                         }
-                        //System.out.println(("RockList: " + mineableRocks));
                     }
                 }
 
@@ -276,18 +252,11 @@ public class AIOCamdozScript extends Script {
                 {
                     if (Rs2Inventory.hasItem(ItemID.CAMDOZAAL_BARRONITE_DEPOSIT))
                     {
-                        //int sleepBetween = 10000 + (int)(Math.random() * (20000 - 10000));
-                        //if (sleepUntil(() -> Rs2Player.getAnimation() != smithingAnimationID, sleepBetween)) {
-                        //if (Rs2Player.waitForXpDrop(Skill.SMITHING, 20000))
-                        //{
                         if (!sleepUntil(() -> Rs2Player.waitForXpDrop(Skill.SMITHING), 3000))
                         {
                             Rs2GameObject.interact(crusherID, "Smith");
                             Microbot.status = "Smithing Barronite deposits";
                         }
-                        //}
-                        //}
-
                     }
                     else
                     {
@@ -640,7 +609,6 @@ public class AIOCamdozScript extends Script {
             // If no, run away to bank
             List<Rs2ItemModel> foods = Rs2Inventory.getInventoryFood();
             double healthPercent = (double) Rs2Player.getBoostedSkillLevel(Skill.HITPOINTS) / Rs2Player.getRealSkillLevel(Skill.HITPOINTS) * 100;
-            //Microbot.log("[AIO Camdozaal] HP Percent: " + healthPercent);
             if (foods.isEmpty() && (state != State.WALKING_TO_BANK && state != State.BANKING) && healthPercent < 50)
             {
                 state = State.WALKING_TO_BANK;
@@ -675,11 +643,6 @@ public class AIOCamdozScript extends Script {
         switch (state)
         {
             case WALKING_TO_GOLEM:
-                //if (BreakHandlerScript.lockState)
-                //{
-                //BreakHandlerScript.lockState = false;
-                //}
-
                 // Walk to _golemLocation
                 if (!Rs2Walker.isInArea(_golemLocation, 10))
                 {
@@ -693,10 +656,6 @@ public class AIOCamdozScript extends Script {
 
             case PROCESSING:
                 // FIGHTING
-                //if (!BreakHandlerScript.lockState)
-                //{
-                //BreakHandlerScript.lockState = true;
-                //}
 
                 if (!Rs2Inventory.isFull())
                 {
@@ -714,8 +673,6 @@ public class AIOCamdozScript extends Script {
                     // Not in combat
                     if (!golemsAttackingPlayer.isEmpty())
                     {
-                        Microbot.log("Not in combat. golemsAttackingPlayer list is NOT empty.");
-                        Microbot.log("List: " + golemsAttackingPlayer);
                         // Filter by things with an Attack option
                         Rs2NpcModel targetGolem = golemsAttackingPlayer.stream()
                                 .filter(npc -> npc.getComposition() != null &&
@@ -739,7 +696,6 @@ public class AIOCamdozScript extends Script {
                     golems = Rs2Npc.getNpcs(_golemID).collect(Collectors.toList());
                     rubbles = Rs2Npc.getNpcs(_rubbleID).collect(Collectors.toList());
 
-                    //Microbot.log("Golem List: " + golems.toString());
                     if (!golems.isEmpty())
                     {
                         Rs2NpcModel golem = golems.stream().findFirst().orElse(null);
@@ -773,11 +729,6 @@ public class AIOCamdozScript extends Script {
                 break;
 
             case WALKING_TO_BANK:
-                //if (BreakHandlerScript.lockState)
-                //{
-                //BreakHandlerScript.lockState = false;
-                //}
-
                 if (!Rs2Walker.isInArea(bankLocation, 5))
                 {
                     Rs2Walker.walkTo(bankLocation);
