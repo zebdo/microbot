@@ -39,7 +39,10 @@ public enum CookingItem
 
 	// Pizza
 	UNCOOKED_PIZZA("uncooked pizza", ItemID.UNCOOKED_PIZZA, 35, "plain pizza", ItemID.PLAIN_PIZZA, "burnt pizza", ItemID.BURNT_PIZZA, CookingAreaType.RANGE),
-	;
+
+	// Other
+	POTATO("potato", ItemID.POTATO, 7, "baked potato", ItemID.POTATO_BAKED, "burnt potato", ItemID.POTATO_BURNT, CookingAreaType.RANGE),
+	SWEETCORN("sweetcorn", ItemID.SWEETCORN, 28, "cooked sweetcorn", ItemID.SWEETCORN_COOKED, "burnt sweetcorn", ItemID.SWEETCORN_BURNT, CookingAreaType.BOTH);
 
 	private final String rawItemName;
 	private final int rawItemID;
