@@ -63,4 +63,4 @@ jobs:
             EOL
 
       - name: Deploy to Nexus
-        run: mvn clean deploy -B -U
+        run: mvn deploy:deploy-file -DgroupId=com.microbot -DartifactId=client -Dversion=1.9.6.1 -Dpackaging=jar -Dfile=runelite-client/target/microbot-1.9.6.1.jar -DrepositoryId=microbot-release -Durl=http://138.201.81.246:8081/repository/microbot-release/

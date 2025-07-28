@@ -77,13 +77,6 @@
 		<url>https://github.com/runelite/runelite/issues</url>
 	</issueManagement>
 
-	<distributionManagement>
-		<snapshotRepository>
-			<id>microbot-release</id>
-			<url>http://138.201.81.246:8081/repository/microbot-snapshot/</url>
-		</snapshotRepository>
-	</distributionManagement>
-
 	<repositories>
 		<repository>
 			<id>central</id>
