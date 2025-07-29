@@ -1566,7 +1566,7 @@ public class Rs2Bank {
             }
         }
 
-        // Measure accessible banks filtering performance, expensive operation takes up to 2500 ms
+        // Measure accessible banks filtering performance, now down to 0.4ms to 1ms, proper usage of the cache in hasRequirements
         long accessibleBanksStart = System.nanoTime();
         Set<BankLocation> accessibleBanks = allBanks.stream()
                 .filter(BankLocation::hasRequirements)
@@ -1775,12 +1775,13 @@ public class Rs2Bank {
      */
     public static void updateLocalBank(ItemContainerChanged e) {
         synchronized (lock) {
+            log.info("start updating bank data from client thread");
             List<Rs2ItemModel> list = updateItemContainer(InventoryID.BANK.getId(), e);
             if (list != null) {
                 // Update the centralized bank data (Rs2BankData.set() is already synchronized)
                 rs2BankData.set(list);
                 vaildLoadedCache = true;
-                log.debug("Bank data updated with {} items from client thread", list.size());
+                log.info("Bank data updated with {} items from client thread", list.size());
             } else {
                 log.debug("Bank data update skipped - no items received");
             }
@@ -1817,7 +1818,7 @@ public class Rs2Bank {
                 Player localPlayer = Microbot.getClient().getLocalPlayer();
                 if (localPlayer != null && localPlayer.getName() != null) {                
                     loadCache(newRsProfileKey);
-                    log.info("-load bank cache, bank items size: {}", rs2BankData.size());
+                    log.debug("-load bank cache, bank items size: {}", rs2BankData.size());
                     vaildLoadedCache = Microbot.loggedIn;
                 }
             }
@@ -1865,18 +1866,21 @@ public class Rs2Bank {
         }
         Rs2Bank.rsProfileKey = rsProfileKey;
         worldType = RuneScapeProfileType.getCurrent(Microbot.getClient());
+        log.debug("Loading bank data for profile: {}, world type: {}", rsProfileKey, worldType);
         String json =Microbot.getConfigManager().getConfiguration(CONFIG_GROUP, rsProfileKey, BANK_KEY);
         //String json = Microbot.getConfigManager().getRSProfileConfiguration(CONFIG_GROUP, BANK_KEY);
         try {
             if (json != null && !json.isEmpty()) {
                 int[] data = gson.fromJson(json, int[].class);
+                log.debug("Loaded {} bank items from config", data.length);
                 rs2BankData.setIdQuantityAndSlot(data);
-                
+                log.debug("finished loading bank data, size: {}", rs2BankData.size());
                 // Load cached items if no live bank data
                 if (rs2BankData.getBankItems().isEmpty()) {
                     // Cache is already loaded via setIdQuantityAndSlot
-                    log.info("Loaded {} cached bank items from config", rs2BankData.size());
+                    log.debug("Loaded {} cached bank items from config", rs2BankData.size());
                 }
+                log.debug("build data should now be valid, size: {}", rs2BankData.size());
             } else {
                 rs2BankData.setEmpty();
                 log.debug("No cached bank data found in config");

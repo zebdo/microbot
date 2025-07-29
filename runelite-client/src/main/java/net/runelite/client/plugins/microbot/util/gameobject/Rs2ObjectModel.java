@@ -67,13 +67,14 @@ public class Rs2ObjectModel {
                 return TILE_OBJECT;
             }
         }
-    }
-    
+    }    
     private final TileObject tileObject; // The actual game object (GameObject, GroundObject, etc.)
     private final Tile tile;
     private final int sizeX; // Width in tiles (1 for single-tile objects)
-    private final int sizeY; // Height in tiles (1 for single-tile objects)    
-    
+    private final int sizeY; // Height in tiles (1 for single-tile objects)        
+    private final long creationTime;
+    private final int creationTick;
+    ObjectComposition objectComposition =null; // Cached object composition for performance
     public ObjectType getObjectType(){
         return ObjectType.fromTileObject(tileObject);
     }
@@ -103,10 +104,6 @@ public class Rs2ObjectModel {
         return sizeY;
     }
     
-    private final String name;
-    private final long creationTime;
-    private final int creationTick;
-    ObjectComposition objectComposition; // Cached object composition for performance
     /**
      * Creates a new Rs2ObjectModel from a TileObject, automatically determining the object type.
      * This is the preferred constructor as it handles type detection automatically.
@@ -129,11 +126,9 @@ public class Rs2ObjectModel {
             this.sizeX = 1;
             this.sizeY = 1;            
         }
-        
-        this.name = getObjectName(tileObject.getId());
+                
         this.creationTime = System.currentTimeMillis();
-        this.creationTick = Microbot.getClientThread().runOnClientThreadOptional(() ->
-            Microbot.getClient().getTickCount()).orElse(0);
+        this.creationTick = Microbot.getClient().getTickCount();
     }
     
     /**
@@ -190,16 +185,16 @@ public class Rs2ObjectModel {
     
     /**
      * Gets the object name from the game's object definitions.
-     * 
-     * @param objectId The object ID
+     *      
      * @return The object name or "Unknown Object" if not found
      */
-    private String getObjectName(int objectId) {
+    public String getName() {
+        if (this.objectComposition != null) {
+            return this.objectComposition.getName();
+        }
         try {
-            return Microbot.getClientThread().runOnClientThreadOptional(() -> {
-                ObjectComposition composition = getObjectComposition();
-                return composition != null ? composition.getName() : "Unknown Object";
-            }).orElse("Unknown Object");
+            ObjectComposition composition = getObjectComposition();
+            return composition != null ? composition.getName() : "Unknown Object";            
         } catch (Exception e) {
             return "Unknown Object";
         }

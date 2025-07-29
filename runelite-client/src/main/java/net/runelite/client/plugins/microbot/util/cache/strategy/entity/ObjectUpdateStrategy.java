@@ -26,21 +26,17 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
      */
     public static String generateCacheIdForObject(TileObject object, Tile tile) {
         if (object instanceof GameObject) {
-            // Use canonical location logic for GameObjects
-            ObjectUpdateStrategy strategy = new ObjectUpdateStrategy();
-            return strategy.generateCacheIdForGameObject((GameObject) object, tile);
+            // Use canonical location logic for GameObjects            
+            return ObjectUpdateStrategy.generateCacheIdForGameObject((GameObject) object, tile);
         } else if (object instanceof WallObject) {
-            WallObject wallObject = (WallObject) object;
-            ObjectUpdateStrategy strategy = new ObjectUpdateStrategy();
-            return strategy.generateCacheId("WallObject", wallObject.getId(), wallObject.getWorldLocation());
+            WallObject wallObject = (WallObject) object;            
+            return ObjectUpdateStrategy.generateCacheId("WallObject", wallObject.getId(), wallObject.getWorldLocation());
         } else if (object instanceof GroundObject) {
             GroundObject groundObject = (GroundObject) object;
-            ObjectUpdateStrategy strategy = new ObjectUpdateStrategy();
-            return strategy.generateCacheId("GroundObject", groundObject.getId(), groundObject.getWorldLocation());
+            return ObjectUpdateStrategy.generateCacheId("GroundObject", groundObject.getId(), groundObject.getWorldLocation());
         } else if (object instanceof DecorativeObject) {
             DecorativeObject decorativeObject = (DecorativeObject) object;
-            ObjectUpdateStrategy strategy = new ObjectUpdateStrategy();
-            return strategy.generateCacheId("DecorativeObject", decorativeObject.getId(), decorativeObject.getWorldLocation());
+            return ObjectUpdateStrategy.generateCacheId("DecorativeObject", decorativeObject.getId(), decorativeObject.getWorldLocation());
         }
         // Fallback: use type name and world location if available
         String type = object != null ? object.getClass().getSimpleName() : "Unknown";
@@ -53,28 +49,34 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
     private static final long MIN_SCAN_INTERVAL_MS = 2000; // Minimum 2 seconds between scans
     
     @Override
-    public void handleEvent(Object event, CacheOperations<String, Rs2ObjectModel> cache) {
-        if (event instanceof GameObjectSpawned) {
-            handleGameObjectSpawned((GameObjectSpawned) event, cache);
-        } else if (event instanceof GameObjectDespawned) {
-            handleGameObjectDespawned((GameObjectDespawned) event, cache);
-        } else if (event instanceof GroundObjectSpawned) {
-            handleGroundObjectSpawned((GroundObjectSpawned) event, cache);
-        } else if (event instanceof GroundObjectDespawned) {
-            handleGroundObjectDespawned((GroundObjectDespawned) event, cache);
-        } else if (event instanceof WallObjectSpawned) {
-            handleWallObjectSpawned((WallObjectSpawned) event, cache);
-        } else if (event instanceof WallObjectDespawned) {
-            handleWallObjectDespawned((WallObjectDespawned) event, cache);
-        } else if (event instanceof DecorativeObjectSpawned) {
-            handleDecorativeObjectSpawned((DecorativeObjectSpawned) event, cache);
-        } else if (event instanceof DecorativeObjectDespawned) {
-            handleDecorativeObjectDespawned((DecorativeObjectDespawned) event, cache);
-        } else if (event instanceof GameStateChanged) {
-            handleGameStateChanged((GameStateChanged) event, cache);
-        } else if (event instanceof GameTick) {
-            handleGameTick((GameTick) event, cache);
-        }
+    public void handleEvent(final Object event, final CacheOperations<String, Rs2ObjectModel> cache) {
+        Microbot.getClientThread().invokeLater(()->{
+             try {       
+                if (event instanceof GameObjectSpawned) {
+                    handleGameObjectSpawned((GameObjectSpawned) event, cache);
+                } else if (event instanceof GameObjectDespawned) {
+                    handleGameObjectDespawned((GameObjectDespawned) event, cache);
+                } else if (event instanceof GroundObjectSpawned) {
+                    handleGroundObjectSpawned((GroundObjectSpawned) event, cache);
+                } else if (event instanceof GroundObjectDespawned) {
+                    handleGroundObjectDespawned((GroundObjectDespawned) event, cache);
+                } else if (event instanceof WallObjectSpawned) {
+                    handleWallObjectSpawned((WallObjectSpawned) event, cache);
+                } else if (event instanceof WallObjectDespawned) {
+                    handleWallObjectDespawned((WallObjectDespawned) event, cache);
+                } else if (event instanceof DecorativeObjectSpawned) {
+                    handleDecorativeObjectSpawned((DecorativeObjectSpawned) event, cache);
+                } else if (event instanceof DecorativeObjectDespawned) {
+                    handleDecorativeObjectDespawned((DecorativeObjectDespawned) event, cache);
+                } else if (event instanceof GameStateChanged) {
+                    //handleGameStateChanged((GameStateChanged) event, cache);
+                } else if (event instanceof GameTick) {
+                    //handleGameTick((GameTick) event, cache);
+                }
+                } catch (Exception e) {
+                    log.error("Error handling event: {}", event.getClass().getSimpleName(), e);
+                }        
+            });
     }
     
     /**
@@ -87,36 +89,36 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
     public void performSceneScan(CacheOperations<String, Rs2ObjectModel> cache, boolean force) {
         long currentTime = System.currentTimeMillis();
         if (!Microbot.loggedIn || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
-            log.debug("Cannot perform scene scan - not logged in");
+            log.info("Cannot perform scene scan - not logged in");
             return;
         }
         // Respect minimum scan interval unless forced
         if (!force && (currentTime - lastSceneScan) < MIN_SCAN_INTERVAL_MS) {
-            log.trace("Skipping scene scan due to minimum interval not reached");
+            log.info("Skipping scene scan due to minimum interval not reached");
             return;
         }
         
         // Only scan if really needed or forced
         if (!force && !needsSceneScan && cache.size() > 10) {
-            log.trace("Skipping scene scan - cache is populated and no scan requested");
+            log.info("Skipping scene scan - cache is populated and no scan requested");
             return;
         }
         
         Player player = Microbot.getClient().getLocalPlayer();
         if (player == null) {
-            log.debug("Cannot perform scene scan - no player");
+            log.info("Cannot perform scene scan - no player");
             return;
         }
         
         Scene scene = player.getWorldView().getScene();
         if (scene == null) {
-            log.debug("Cannot perform scene scan - no scene");
+            log.info("Cannot perform scene scan - no scene");
             return;
         }
         
         Tile[][][] tiles = scene.getTiles();
         if (tiles == null) {
-            log.debug("Cannot perform scene scan - no tiles");
+            log.info("Cannot perform scene scan - no tiles");
             return;
         }
         
@@ -124,7 +126,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
         java.util.Map<String, Rs2ObjectModel> objectsToAdd = new java.util.HashMap<>();
         int z = player.getWorldView().getPlane();
         
-        log.debug("Starting intelligent scene scan (cache size: {}, forced: {})", cache.size(), force);
+        log.info("Starting intelligent scene scan (cache size: {}, forced: {})", cache.size(), force);
         
         for (int x = 0; x < Constants.SCENE_SIZE; x++) {
             for (int y = 0; y < Constants.SCENE_SIZE; y++) {
@@ -197,10 +199,10 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
         needsSceneScan = false;
         
         if (addedObjects > 0) {
-            log.debug("Intelligent scene scan completed - added {} objects (total cache size: {})", 
+            log.info("Intelligent scene scan completed - added {} objects (total cache size: {})", 
                      addedObjects, cache.size());
         } else {
-            log.trace("Scene scan completed - no new objects added");
+            log.info("Scene scan completed - no new objects added");
         }
     }
     
@@ -340,13 +342,6 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
         }
     }
     
-    private void handleGameTick(GameTick event, CacheOperations<String, Rs2ObjectModel> cache) {
-        // Perform scene scan if requested and conditions are met
-        if (shouldPerformSceneScan(cache)) {
-            performSceneScan(cache, false);
-        }
-    }
-    
     /**
      * Gets the canonical world location for a GameObject.
      * For multi-tile objects, this returns the southwest tile location.
@@ -355,7 +350,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
      * @param tile The tile from the event
      * @return The canonical world location
      */
-    private WorldPoint getCanonicalLocation(GameObject gameObject, Tile tile) {
+    private static WorldPoint getCanonicalLocation(GameObject gameObject, Tile tile) {
         // For multi-tile objects, we need to ensure we use the southwest tile consistently
         Point sceneMinLocation = gameObject.getSceneMinLocation();
         Point currentSceneLocation = tile.getSceneLocation();
@@ -399,7 +394,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
      * Generates a unique object ID for tracking.
      * For GameObjects, uses the canonical (southwest) location to ensure consistent caching.
      */
-    private String generateCacheId(String type, int objectID, net.runelite.api.coords.WorldPoint location) {
+    private static String generateCacheId(String type, int objectID, net.runelite.api.coords.WorldPoint location) {
         return String.format("%s_%d_%d_%d_%d", type, objectID, location.getX(), location.getY(), location.getPlane());
     }
     
@@ -407,7 +402,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
      * Generates a unique object ID for tracking GameObjects using their canonical location.
      * This ensures that multi-tile GameObjects have consistent cache keys.
      */
-    private String generateCacheIdForGameObject(GameObject gameObject, Tile tile) {
+    private static String generateCacheIdForGameObject(GameObject gameObject, Tile tile) {
         WorldPoint canonicalLocation = getCanonicalLocation(gameObject, tile);
         return generateCacheId("GameObject", gameObject.getId(), canonicalLocation);
     }

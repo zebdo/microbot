@@ -213,10 +213,12 @@ public class MicrobotPlugin extends Plugin
 			(oldProfile == null || oldProfile.isEmpty() || !newProfile.equals(oldProfile))
 		)
 		{
-			log.warn("Received RuneScape profile change event from '{}' to '{}'", oldProfile, newProfile);
+			log.info("\nReceived RuneScape profile change event from '{}' to '{}'", oldProfile, newProfile);
 			// Handle profile changes for all cache systems through .tmpFiles/Rs2Cache/MicrobotOverlay.java
+			Rs2CacheManager.savePersistentCaches(oldProfile);
 			Rs2CacheManager.setUnknownInitialCacheState();
 			Rs2CacheManager.loadCacheStateFromConfig(newProfile);
+			
 			return;
 		}
 		
@@ -302,11 +304,11 @@ public class MicrobotPlugin extends Plugin
 				boolean wasLoggedIn = Microbot.loggedIn;
 				if (!wasLoggedIn) {
 					Microbot.setLoginTime(Instant.now());
-					Rs2RunePouch.fullUpdate();
-					log.info("Logged in to RuneScape, initializing caches...");
+					Rs2RunePouch.fullUpdate();					
 					// Load all cache states from config when logging in through Rs2CacheManager
-					Rs2CacheManager.setUnknownInitialCacheState();
-					Rs2CacheManager.loadInitialCacheStateFromConfig();
+					// should be detected by onRuneScapeProfileChanged event
+					//Rs2CacheManager.setUnknownInitialCacheState();
+					//Rs2CacheManager.loadInitialCacheStateFromConfig();
 				}
 				if (currentRegions != null) {
 					Microbot.setLastKnownRegions(currentRegions.clone());
@@ -316,10 +318,11 @@ public class MicrobotPlugin extends Plugin
 	   }
 	   if (gameStateChanged.getGameState() == GameState.HOPPING || gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.CONNECTION_LOST)
 	   {
-		   // Clear all cache states when logging out through Rs2CacheManager		   
-		   Rs2CacheManager.emptyCacheState();
+		   // Clear all cache states when logging out through Rs2CacheManager		   		   
+		   //Rs2CacheManager.emptyCacheState(); // should not be nessary here, handled in ClientShutdown event, 
+		   // and we also handle correct cache loading in onRuneScapeProfileChanged event
 		   Microbot.loggedIn = false;
-		   Microbot.setLastKnownRegions(null);
+		   Microbot.setLastKnownRegions(null);		   
 	   }
 	}
 
@@ -521,7 +524,7 @@ public class MicrobotPlugin extends Plugin
 		if(!Rs2CacheManager.isCacheDataVaild() && Microbot.getClient().getGameState() == GameState.LOGGED_IN)
 		{
 			// Cache loading is now handled properly during login/profile changes
-			Rs2CacheManager.loadInitialCacheStateFromConfig();			
+			//Rs2CacheManager.loadInitialCacheStateFromConfig();			
 		}
 		// Cache loading is now handled properly during login/profile changes
 		// No need to call loadInitialCacheFromCurrentConfig on every tick

@@ -20,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @Slf4j
 public class Rs2CacheManager implements AutoCloseable {
-    
+    private static AtomicBoolean isEventRegistered = new AtomicBoolean (false); // Flag to track if event handlers are registered
     private static Rs2CacheManager instance;
     private static EventBus eventBus;
     
@@ -31,6 +31,12 @@ public class Rs2CacheManager implements AutoCloseable {
     private static String rsProfileKey = null;
     private static RuneScapeProfileType worldType;
     private static AtomicBoolean loggedInCacheStateKnown = new AtomicBoolean(false);
+    
+    // Cache loading retry configuration
+    private static final int MAX_CACHE_LOAD_ATTEMPTS = 10; // Configurable max retry attempts
+    private static final long CACHE_LOAD_RETRY_DELAY_MS = 1000; // 1 second between retries
+    private static final AtomicBoolean cacheLoadingInProgress = new AtomicBoolean(false);
+    
     public static boolean isCacheDataVaild() {
         return loggedInCacheStateKnown.get();
     }
@@ -94,7 +100,7 @@ public class Rs2CacheManager implements AutoCloseable {
      * Registers all cache event handlers with the EventBus.
      */
     private static void registerEventHandlers() {
-        if (eventBus == null) {
+        if (eventBus == null || isEventRegistered.get()) {
             log.warn("EventBus is null, cannot register cache event handlers");
             return;
         }
@@ -124,7 +130,7 @@ public class Rs2CacheManager implements AutoCloseable {
             
             // Register SpiritTree cache events
             eventBus.register(Rs2SpiritTreeCache.getInstance());
-            
+            Rs2CacheManager.isEventRegistered.set(true); // Set registration flag
             log.info("All cache event handlers registered with EventBus");
         } catch (Exception e) {
             log.error("Failed to register cache event handlers", e);
@@ -134,8 +140,8 @@ public class Rs2CacheManager implements AutoCloseable {
     /**
      * Unregisters all cache event handlers from the EventBus.
      */
-    private static void unregisterEventHandlers() {
-        if (eventBus == null) {
+    public static void unregisterEventHandlers() {
+        if (eventBus == null || !Rs2CacheManager.isEventRegistered.get()) {
             return;
         }
         
@@ -148,7 +154,7 @@ public class Rs2CacheManager implements AutoCloseable {
             eventBus.unregister(Rs2SkillCache.getInstance());
             eventBus.unregister(Rs2QuestCache.getInstance());
             eventBus.unregister(Rs2SpiritTreeCache.getInstance());
-            
+            Rs2CacheManager.isEventRegistered.set(false); // Reset registration flag 
             log.debug("All cache event handlers unregistered from EventBus");
         } catch (Exception e) {
             log.error("Failed to unregister cache event handlers", e);
@@ -160,18 +166,17 @@ public class Rs2CacheManager implements AutoCloseable {
      */
     public static void invalidateAllCaches(boolean savePersistentCaches) {
         try {
-            //Rs2NpcCache.getInstance().invalidateAll();
-            //Rs2GroundItemCache.getInstance().invalidateAll();
-            Rs2ObjectCache.invalidateAllObjectsAndScanScene();
+            if (savePersistentCaches) {
+                savePersistentCaches(Microbot.getConfigManager().getRSProfileKey());
+            }
+            Rs2NpcCache.getInstance().invalidateAll();
+            Rs2GroundItemCache.getInstance().invalidateAll();
+            Rs2ObjectCache.getInstance().invalidateAll();            
             Rs2VarbitCache.getInstance().invalidateAll();
             Rs2VarPlayerCache.getInstance().invalidateAll();
             Rs2SkillCache.getInstance().invalidateAll();
             Rs2QuestCache.getInstance().invalidateAll();
-            Rs2SpiritTreeCache.getInstance().invalidateAll();
-            if (savePersistentCaches) {
-                savePersistentCaches(Microbot.getConfigManager().getRSProfileKey());
-            }
-            log.debug("Invalidated all unified caches");
+            Rs2SpiritTreeCache.getInstance().invalidateAll();            
         } catch (Exception e) {
             log.error("Error invalidating caches: {}", e.getMessage(), e);
         }
@@ -309,14 +314,13 @@ public class Rs2CacheManager implements AutoCloseable {
     @Override
     public void close() {
         if (isShutdown.compareAndSet(false, true)) {
-            log.info("Shutting down Rs2CacheManager (Unified)");
+            log.info("Shutting down Rs2CacheManager");
             
             // Save persistent caches before shutdown
             savePersistentCaches();
-            
+            emptyCacheState();
             // Unregister event handlers first
-            unregisterEventHandlers();
-            
+            unregisterEventHandlers();            
             // Shutdown executor
             cleanupExecutor.shutdown();
             try {
@@ -328,7 +332,7 @@ public class Rs2CacheManager implements AutoCloseable {
                 Thread.currentThread().interrupt();
             }
             
-            log.debug("Rs2CacheManager (Unified) shutdown complete");
+            log.debug("Rs2CacheManager shutdown complete");
         }
     }
     
@@ -377,29 +381,30 @@ public class Rs2CacheManager implements AutoCloseable {
             // Load Skills cache
             if (Rs2SkillCache.getCache().isPersistenceEnabled()) {
                 CacheSerializationManager.loadCache(Rs2SkillCache.getCache(), Rs2SkillCache.getCache().getConfigKey(), profileKey);
-                log.info("Loaded Skills cache from configuration, new cache size: {}", 
+                log.debug("Loaded Skills cache from configuration, new cache size: {}", 
                           Rs2SkillCache.getCache().size());
             }
             
             // Load Quest cache  
             if (Rs2QuestCache.getCache().isPersistenceEnabled()) {
                 CacheSerializationManager.loadCache(Rs2QuestCache.getCache(), Rs2QuestCache.getCache().getConfigKey(), profileKey);
-                Rs2QuestCache.getInstance().update();
-                log.info ("Loaded Quest cache from configuration, new cache size: {}", 
+                // Schedule an async update to populate quest states from client without blocking initialization
+                //Rs2QuestCache.updateAllFromClientAsync();
+                log.debug ("Loaded Quest cache from configuration, new cache size: {}", 
                           Rs2QuestCache.getCache().size());
             }
             
             // Load Varbit cache
             if (Rs2VarbitCache.getCache().isPersistenceEnabled()) {
                 CacheSerializationManager.loadCache(Rs2VarbitCache.getCache(), Rs2VarbitCache.getCache().getConfigKey(), profileKey);
-                log.info ("Loaded Varbit cache from configuration, new cache size: {}", 
+                log.debug ("Loaded Varbit cache from configuration, new cache size: {}", 
                           Rs2VarbitCache.getCache().size());
             }
             
             // Load VarPlayer cache
             if (Rs2VarPlayerCache.getCache().isPersistenceEnabled()) {
                 CacheSerializationManager.loadCache(Rs2VarPlayerCache.getCache(), Rs2VarPlayerCache.getCache().getConfigKey(), profileKey);
-                log.info ("Loaded VarPlayer cache from configuration, new cache size: {}", 
+                log.debug ("Loaded VarPlayer cache from configuration, new cache size: {}", 
                           Rs2VarPlayerCache.getCache().size());
             }
             if (Rs2SpiritTreeCache.getCache().isPersistenceEnabled()) {
@@ -407,12 +412,12 @@ public class Rs2CacheManager implements AutoCloseable {
                  // Update spirit tree cache with current farming handler data after initial load
                 try {
                     Rs2SpiritTreeCache.getInstance().update();
-                    Rs2SpiritTreeCache.logAllTreeStates();
+                    if(Microbot.isDebug()) Rs2SpiritTreeCache.logAllTreeStates();
                     log.debug("Spirit tree cache updated from FarmingHandler after initial load");
                 } catch (Exception e) {
                     log.warn("Failed to update spirit tree cache from FarmingHandler after initial load: {}", e.getMessage());
                 }
-                log.info ("Loaded SpiritTree cache from configuration, new cache size: {}", 
+                log.debug ("Loaded SpiritTree cache from configuration, new cache size: {}", 
                           Rs2SpiritTreeCache.getCache().size());
             }
             
@@ -438,16 +443,59 @@ public class Rs2CacheManager implements AutoCloseable {
      * Loads the initial cache state from config. Should be called when a player logs in.
      * Similar to Rs2Bank.loadCacheFromConfig().
      * This method handles both Rs2Bank and other cache systems.
+     * Implements retry logic to ensure player is valid before loading.
      */
     public static void loadCacheStateFromConfig(String newRsProfileKey) {
         if (!isCacheDataVaild()) {
-            Player localPlayer = Microbot.getClient().getLocalPlayer();
-            if (localPlayer != null && localPlayer.getName() != null) {
-                log.info("Loading cache state for player: {}", localPlayer.getName());                
-                loadCaches(newRsProfileKey);
-                
-               
+            // Start retry task if not already in progress
+            if (cacheLoadingInProgress.compareAndSet(false, true)) {
+                // Schedule retry task in background thread
+                getInstance().cleanupExecutor.schedule(() -> {
+                    retryLoadCacheWithValidation(newRsProfileKey, 0);
+                }, 0, TimeUnit.MILLISECONDS);
+            } else {
+                log.debug("Cache loading already in progress, skipping duplicate request");
             }
+        }
+    }
+    
+    /**
+     * Retries loading cache with player validation up to MAX_CACHE_LOAD_ATTEMPTS times.
+     * 
+     * @param newRsProfileKey The profile key to load cache for
+     * @param attemptCount Current attempt number (0-based)
+     */
+    private static void retryLoadCacheWithValidation(String newRsProfileKey, int attemptCount) {
+        try {
+            // Check if player is valid
+            Player localPlayer = Microbot.getClient() != null ? Microbot.getClient().getLocalPlayer() : null;
+            String playerName = localPlayer != null ? localPlayer.getName() : null;
+            
+            if (localPlayer != null && playerName != null && !playerName.trim().isEmpty()) {
+                log.info("Player validation successful on attempt {}, loading cache state for player: {}", 
+                        attemptCount + 1, playerName);
+                loadCaches(newRsProfileKey);
+                cacheLoadingInProgress.set(false); // Reset flag on success
+                return;
+            }
+            
+            // Player not valid yet, check if we should retry
+            if (attemptCount < MAX_CACHE_LOAD_ATTEMPTS - 1) {
+                log.debug("Player not valid on attempt {} (player: {}), retrying in {}ms", 
+                        attemptCount + 1, localPlayer != null ? "not null but no name" : "null", CACHE_LOAD_RETRY_DELAY_MS);
+                
+                // Schedule next retry
+                getInstance().cleanupExecutor.schedule(() -> {
+                    retryLoadCacheWithValidation(newRsProfileKey, attemptCount + 1);
+                }, CACHE_LOAD_RETRY_DELAY_MS, TimeUnit.MILLISECONDS);
+            } else {
+                log.warn("Failed to load cache after {} attempts - player validation failed", MAX_CACHE_LOAD_ATTEMPTS);
+                cacheLoadingInProgress.set(false); // Reset flag on failure
+            }
+            
+        } catch (Exception e) {
+            log.error("Error during cache loading retry attempt {}: {}", attemptCount + 1, e.getMessage(), e);
+            cacheLoadingInProgress.set(false); // Reset flag on error
         }
     }
 
@@ -481,15 +529,11 @@ public class Rs2CacheManager implements AutoCloseable {
             if (rsProfileKey != null && isCacheDataVaild()) {
                 log.info("Saving current cache state before loading new profile: {}, we have valid cache", rsProfileKey);
                 savePersistentCaches(rsProfileKey);
-            }
-            
+            }            
             // Load persistent caches
-            loadPersistentCaches(newRsProfileKey);            
-            // Also handle Rs2Bank cache loading
-            Rs2Bank.loadCacheFromConfig(newRsProfileKey);
-            
-         
-            
+            loadPersistentCaches(newRsProfileKey);                        
+            // Also handle Rs2Bank cache loading                
+            Rs2Bank.loadCacheFromConfig(newRsProfileKey);            
             loggedInCacheStateKnown.set(true);
         }
     }
@@ -518,17 +562,15 @@ public class Rs2CacheManager implements AutoCloseable {
         // Save current state before clearing
         if (rsProfileKey != null && isCacheDataVaild()) {
             savePersistentCaches(rsProfileKey);
-        }
-        
-        // Clear Rs2Bank state
+        }        
+        // Clear Rs2Bank state        
         Rs2Bank.emptyCacheState();
-        
         // Clear cache manager state
         rsProfileKey = null;
         worldType = null;
         loggedInCacheStateKnown.set(false);
         Rs2CacheManager.invalidateAllCaches(false);
-        log.debug("Emptied all cache states");
+        log.info("Emptied all cache states");
     }
     
     /**

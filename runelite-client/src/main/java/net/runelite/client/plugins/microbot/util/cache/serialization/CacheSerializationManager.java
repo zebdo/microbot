@@ -234,11 +234,18 @@ public class CacheSerializationManager {
         Map<Skill, SkillData> data = gson.fromJson(json, type);
         if (data != null) {
             int entriesLoaded = 0;
+            int entriesSkipped = 0;
             for (Map.Entry<Skill, SkillData> entry : data.entrySet()) {
-                cache.put(entry.getKey(), entry.getValue());
-                entriesLoaded++;
+                // Only load entries that are not already present in cache (cache entries are newer)
+                if (!cache.containsKey(entry.getKey())) {
+                    cache.put(entry.getKey(), entry.getValue());
+                    entriesLoaded++;
+                } else {
+                    entriesSkipped++;
+                    log.debug("Skipped loading skill {} - already present in cache with newer data", entry.getKey());
+                }
             }
-            log.debug("Deserialized {} skill entries into cache", entriesLoaded);
+            log.debug("Deserialized {} skill entries into cache, skipped {} existing entries", entriesLoaded, entriesSkipped);
         } else {
             log.warn("Skill cache data was null after JSON parsing");
         }
@@ -263,11 +270,18 @@ public class CacheSerializationManager {
         Map<Quest, QuestState> data = gson.fromJson(json, type);
         if (data != null) {
             int entriesLoaded = 0;
+            int entriesSkipped = 0;
             for (Map.Entry<Quest, QuestState> entry : data.entrySet()) {
-                cache.put(entry.getKey(), entry.getValue());
-                entriesLoaded++;
+                // Only load entries that are not already present in cache (cache entries are newer)
+                if (!cache.containsKey(entry.getKey())) {
+                    cache.put(entry.getKey(), entry.getValue());
+                    entriesLoaded++;
+                } else {
+                    entriesSkipped++;
+                    log.debug("Skipped loading quest {} - already present in cache with newer data", entry.getKey());
+                }
             }
-            log.debug("Deserialized {} quest entries into cache", entriesLoaded);
+            log.debug("Deserialized {} quest entries into cache, skipped {} existing entries", entriesLoaded, entriesSkipped);
         } else {
             log.warn("Quest cache data was null after JSON parsing");
         }
@@ -292,12 +306,19 @@ public class CacheSerializationManager {
         Map<Integer, VarbitData> data = gson.fromJson(json, type);
         if (data != null) {
             int entriesLoaded = 0;
+            int entriesSkipped = 0;
             for (Map.Entry<Integer, VarbitData> entry : data.entrySet()) {
-                cache.put(entry.getKey(), entry.getValue());
-                entriesLoaded++;
+                // Only load entries that are not already present in cache (cache entries are newer)
+                if (!cache.containsKey(entry.getKey())) {
+                    cache.put(entry.getKey(), entry.getValue());
+                    entriesLoaded++;
+                } else {
+                    entriesSkipped++;
+                    log.debug("Skipped loading varbit {} - already present in cache with newer data", entry.getKey());
+                }
             }
         
-            log.debug("Deserialized {} varbit entries into cache", entriesLoaded);
+            log.debug("Deserialized {} varbit entries into cache, skipped {} existing entries", entriesLoaded, entriesSkipped);
         } else {
             log.warn("Varbit cache data was null after JSON parsing");
         }
@@ -322,12 +343,19 @@ public class CacheSerializationManager {
         Map<Integer, VarbitData> data = gson.fromJson(json, type);
         if (data != null) {
             int entriesLoaded = 0;
+            int entriesSkipped = 0;
             for (Map.Entry<Integer, VarbitData> entry : data.entrySet()) {
-                cache.put(entry.getKey(), entry.getValue());
-                entriesLoaded++;
+                // Only load entries that are not already present in cache (cache entries are newer)
+                if (!cache.containsKey(entry.getKey())) {
+                    cache.put(entry.getKey(), entry.getValue());
+                    entriesLoaded++;
+                } else {
+                    entriesSkipped++;
+                    log.debug("Skipped loading varplayer {} - already present in cache with newer data", entry.getKey());
+                }
             }
         
-            log.debug("Deserialized {} varplayer entries into cache", entriesLoaded);
+            log.debug("Deserialized {} varplayer entries into cache, skipped {} existing entries", entriesLoaded, entriesSkipped);
         } else {
             log.warn("VarPlayer cache data was null after JSON parsing");
         }
@@ -345,11 +373,20 @@ public class CacheSerializationManager {
         Map<SpiritTree, SpiritTreeData> data = gson.fromJson(json, type);
         if (data != null) {
             int entriesLoaded = 0;
+            int entriesSkipped = 0;
             for (Map.Entry<SpiritTree, SpiritTreeData> entry : data.entrySet()) {
-                cache.put(entry.getKey(), entry.getValue());
-                entriesLoaded++;
+                // Only load entries that are not already present in cache (cache entries are newer)
+                if (!cache.containsKey(entry.getKey())) {
+                    cache.put(entry.getKey(), entry.getValue());
+                    entriesLoaded++;
+                } else {
+                    entriesSkipped++;
+                    log.debug("Skipped loading spirit tree {} - already present in cache with newer data", entry.getKey());
+                }
             }
-            log.debug("Deserialized {} spirit tree entries into cache", entriesLoaded);
+            log.debug("Deserialized {} spirit tree entries into cache, skipped {} existing entries", entriesLoaded, entriesSkipped);
+        } else {
+            log.warn("Spirit tree cache data was null after JSON parsing");
         }
     }
 }

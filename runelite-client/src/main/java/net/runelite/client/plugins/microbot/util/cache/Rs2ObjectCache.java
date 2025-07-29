@@ -36,6 +36,10 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
     // Track current regions to detect changes and clear stale objects
     private static int[] lastKnownRegions = null;
     
+    // Track game ticks to prevent multiple region checks per tick
+    private static int currentGameTick = 0;
+    private static int lastRegionCheckTick = -1;
+    
     // Reference to the update strategy for scene scanning
     private ObjectUpdateStrategy updateStrategy;
     
@@ -116,7 +120,7 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
      */
     @Deprecated
     public static void updateCacheFromSceneScan() {
-        log.debug("Legacy updateCacheFromSceneScan called - using scene scan");
+        log.info("Legacy updateCacheFromSceneScan called - using scene scan");
         forceSceneScan();
     }
     
@@ -507,35 +511,59 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
     /**
      * Checks for region changes and clears cache if regions have changed.
      * This handles the issue where RuneLite doesn't fire despawn events on region changes.
+     * Optimized to only check once per game tick to prevent redundant checks during burst spawn events.
      */
     private static void checkAndHandleRegionChange() {
+        // Only check once per game tick to avoid redundant checks during burst spawn events
+        if (lastRegionCheckTick == currentGameTick) {
+            log.debug("Region check already performed this tick ({}), skipping", currentGameTick);
+            return;
+        }
+        
+        if (getInstance().size() == 0) {
+            log.debug("Object cache is empty, no region change check needed");
+            lastRegionCheckTick = currentGameTick;
+            return;
+        }
+        
+        log.debug("Checking for region changes in object cache (tick: {})", currentGameTick);
         Client client = Microbot.getClient();
-        if (client == null) return;
+        if (client == null) {
+            lastRegionCheckTick = currentGameTick;
+            return;
+        }
         
         @SuppressWarnings("deprecation")
         int[] currentRegions = client.getMapRegions();
-        if (currentRegions == null) return;
+        if (currentRegions == null) {
+            lastRegionCheckTick = currentGameTick;
+            return;
+        }
         
         // Check if regions have changed
         if (lastKnownRegions == null || !Arrays.equals(lastKnownRegions, currentRegions)) {
             if (lastKnownRegions != null) {
-                log.debug("Region change detected - clearing object cache. Old regions: {}, New regions: {}", 
+                log.info("Region change detected - clearing object cache. Old regions: {}, New regions: {}", 
                     Arrays.toString(lastKnownRegions), Arrays.toString(currentRegions));
                 getInstance().invalidateAll();
             }
             lastKnownRegions = currentRegions.clone();
         }
+        
+        // Mark that we've checked regions this tick
+        lastRegionCheckTick = currentGameTick;
     }
     
     /**
      * Event handler registration for the unified cache.
      * The unified cache handles events through its strategy automatically.
-     * These handlers now focus on region change detection and strategy coordination.
+     * Region change detection is now handled primarily in onGameTick() to prevent
+     * redundant checks during burst spawn events.
      */
 
-    @Subscribe
+    @Subscribe(priority = 50)
     public void onGameObjectSpawned(final GameObjectSpawned event) {
-        checkAndHandleRegionChange();
+        // Region change check now handled in onGameStateChanged() to prevent redundant checks
         getInstance().handleEvent(event);
     }
     
@@ -544,9 +572,9 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         getInstance().handleEvent(event);
     }
     
-    @Subscribe
+    @Subscribe(priority = 50)
     public void onGroundObjectSpawned(final GroundObjectSpawned event) {
-        checkAndHandleRegionChange();
+        // Region change check now handled in onGameStateChanged() to prevent redundant checks
         getInstance().handleEvent(event);
     }
     
@@ -555,9 +583,9 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         getInstance().handleEvent(event);
     }
     
-    @Subscribe
+    @Subscribe(priority = 50)
     public void onWallObjectSpawned(final WallObjectSpawned event) {
-        checkAndHandleRegionChange();
+        // Region change check now handled in onGameStateChanged() to prevent redundant checks
         getInstance().handleEvent(event);
     }
     
@@ -566,22 +594,22 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         getInstance().handleEvent(event);
     }
     
-    @Subscribe
+    @Subscribe(priority = 50)
     public void onDecorativeObjectSpawned(final DecorativeObjectSpawned event) {
-        checkAndHandleRegionChange();
+        // Region change check now handled in onGameStateChanged() to prevent redundant checks
         getInstance().handleEvent(event);
     }
     
     @Subscribe
     public void onDecorativeObjectDespawned(final DecorativeObjectDespawned event) {
         getInstance().handleEvent(event);
-    }
-    
-    @Subscribe
+    }   
+    @Subscribe(priority = 100)
     public void onGameStateChanged(final GameStateChanged event) {
         switch (event.getGameState()) {
             case LOGGED_IN:
                 // Check for region change when logging in or transitioning areas
+                // This is important for initial login detection
                 checkAndHandleRegionChange();
                 break;
             case LOGIN_SCREEN:
@@ -590,6 +618,8 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
                 log.debug("Player logging out, clearing object cache");
                 invalidateAll();
                 lastKnownRegions = null;
+                lastRegionCheckTick = -1; // Reset tick tracking
+                currentGameTick = 0; // Reset tick counter
                 break;
             default:
                 break;
@@ -599,13 +629,19 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         getInstance().handleEvent(event);
     }
     
-    @Subscribe
+    @Subscribe(priority = 110)
     public void onGameTick(final GameTick event) {
-        // Periodically check for region changes to catch any missed transitions
-        checkAndHandleRegionChange();
+        // Increment the game tick counter
+        currentGameTick = Microbot.getClient().getTickCount();
+        
+        // Check for region changes at the start of each game tick
+        // This ensures we detect region changes before processing spawn events
+//        if (Microbot.getClient() != null && Microbot.getClient().getGameState() == GameState.LOGGED_IN) {
+  //          checkAndHandleRegionChange();
+   //     }
         
         // Let the strategy handle intelligent scanning
-        getInstance().handleEvent(event);
+     //   getInstance().handleEvent(event);
     }
     
     /**
@@ -616,6 +652,8 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
             instance.invalidateAll();
             instance = null;
             lastKnownRegions = null;
+            lastRegionCheckTick = -1;
+            currentGameTick = 0;
             log.debug("Rs2ObjectCache instance reset");
         }
     }
@@ -658,8 +696,6 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         int tileObjectCount = 0;
         
         for (Rs2ObjectModel objectModel : cache.values()) {
-            if (objectModel == null) continue;
-            
             switch (objectModel.getObjectType()) {
                 case GAME_OBJECT:
                     gameObjectCount++;
@@ -679,11 +715,28 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
             }
         }
         
-        return String.format("GO: %d, WO: %d, DO: %d, GRO: %d, TO: %d", 
-            gameObjectCount, wallObjectCount, decorativeObjectCount, groundObjectCount, tileObjectCount);
+        return String.format("Objects by type - Game: %d, Wall: %d, Decorative: %d, Ground: %d, Tile: %d (Total: %d) | Tick: %d, LastCheck: %d",
+            gameObjectCount, wallObjectCount, decorativeObjectCount, groundObjectCount, tileObjectCount, 
+            cache.size(), currentGameTick, lastRegionCheckTick);
     }
-
+    
     /**
+     * Gets the current game tick counter for debugging purposes.
+     * 
+     * @return Current game tick number
+     */
+    public static int getCurrentGameTick() {
+        return currentGameTick;
+    }
+    
+    /**
+     * Gets the last tick when region check was performed for debugging purposes.
+     * 
+     * @return Last region check tick number
+     */
+    public static int getLastRegionCheckTick() {
+        return lastRegionCheckTick;
+    }    /**
      * Implementation of abstract update method from Rs2Cache.
      * Clears the cache and performs a complete scene scan to reload all objects from the scene.
      * This ensures the cache is fully refreshed with current scene data.

@@ -159,6 +159,7 @@ public class Rs2BankData {
             needsRebuild = false;
             return;
         }        
+        log.debug("Rebuilding bank items list from cached data, size: {}", idQuantityAndSlot.length / 3);
         // Process items in triplets: [id, quantity, slot]
         for (int i = 0; i < idQuantityAndSlot.length - 2; i += 3) {
             int id = idQuantityAndSlot[i];
@@ -167,7 +168,8 @@ public class Rs2BankData {
             
             // Create Rs2ItemModel from cached data
             try {               
-                Rs2ItemModel item  = new Rs2ItemModel(id, quantity, slot); // lazy loading with Rs2ItemModel.createFromCache(id, quantity, slot);                                       
+                //back to use lazy loading with Rs2ItemModel.createFromCache(id, quantity, slot)...
+                Rs2ItemModel item  =  Rs2ItemModel.createFromCache(id, quantity, slot);// new Rs2ItemModel(id, quantity, slot); // lazy loading with Rs2ItemModel.createFromCache(id, quantity, slot);                                       
                 bankItems.add(item);
             } catch (Exception e) {
                 log.warn("Failed to recreate bank item from cache: id={}, qty={}, slot={}", id, quantity, slot, e);
@@ -176,7 +178,7 @@ public class Rs2BankData {
             }
         }
         needsRebuild = false;
-        log.trace("Rebuilt bank items list with {} items", bankItems.size());
+        log.debug("finished Rebuilt bank items list with {} items", bankItems.size());
     }
 
     /**
