@@ -178,11 +178,7 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
 
 				cache.put(spiritTree, newData);
 
-				if (isAvailable) {
-					log.info("Updated spirit tree cache for via widget (available for travel)\n\t{}", spiritTree.name());
-				} else {
-					log.info("Updated spirit tree {} to unavailable (not found in widget), is available for travel: {}", spiritTree.name(), availableForTravel);
-				}
+				log.info("Updated spirit tree cache for via widget ({} for travel)\n\t{}", isAvailable ? "available" : "not available", spiritTree.name());
 			}
 
 		} catch (Exception e) {
