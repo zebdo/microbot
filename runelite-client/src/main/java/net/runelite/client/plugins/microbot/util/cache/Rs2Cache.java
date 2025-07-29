@@ -744,7 +744,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastGlobalInvalidation.get() > globalInvalidationInterval) {
             if (lastGlobalInvalidation.compareAndSet(lastGlobalInvalidation.get(), currentTime)) {
-                log.debug("Performing global invalidation for cache {}", cacheName);
+                log.info("Performing global invalidation for cache {}", cacheName);
                 invalidateAll();
             }
         }
