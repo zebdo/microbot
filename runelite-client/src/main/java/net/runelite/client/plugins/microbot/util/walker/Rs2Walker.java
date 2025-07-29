@@ -70,14 +70,10 @@ import javax.inject.Named;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static net.runelite.client.plugins.microbot.util.Global.*;
 
@@ -260,7 +256,6 @@ public class Rs2Walker {
 
             // Edgeville/ardy wilderness lever warning
             if (Rs2Widget.isWidgetVisible(229, 1)) {
-                if (Rs2Dialogue.getDialogueText() == null) return WalkerState.MOVING;
                 if (Rs2Dialogue.getDialogueText().equalsIgnoreCase("Warning! The lever will teleport you deep into the Wilderness.")) {
                     Microbot.log("Detected Wilderness lever warning, interacting...");
                     Rs2Dialogue.clickContinue();
@@ -1123,13 +1118,11 @@ public class Rs2Walker {
         if (!isInDialogue) return true;
 
         // Skip over first door dialogue & don't forget to set up two-factor warning
-        if (Rs2Dialogue.getDialogueText() != null) {
-            if (Rs2Dialogue.getDialogueText().contains("two-factor authentication options") || Rs2Dialogue.getDialogueText().contains("Hopefully you will learn<br>much from us.")) {
-                Rs2Dialogue.sleepUntilHasContinue();
-                sleepUntil(() -> !Rs2Dialogue.hasContinue() || Rs2Dialogue.getDialogueText().contains("To pass you must answer me"), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
-                if (!Rs2Dialogue.isInDialogue()) return true;
-            }
-        }
+		if (Rs2Dialogue.getDialogueText().toLowerCase().contains("two-factor authentication options") || Rs2Dialogue.getDialogueText().toLowerCase().contains("hopefully you will learn<br>much from us.")) {
+			Rs2Dialogue.sleepUntilHasContinue();
+			sleepUntil(() -> !Rs2Dialogue.hasContinue() || Rs2Dialogue.getDialogueText().toLowerCase().contains("to pass you must answer me"), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+			if (!Rs2Dialogue.isInDialogue()) return true;
+		}
 
         String dialogueAnswer = null;
         int attempts = 0;
@@ -1602,8 +1595,7 @@ public class Rs2Walker {
         // Handle Ferox Encalve Barrier
         if (tileObject.getId() == ObjectID.WILDY_HUB_ENTRY_BARRIER || tileObject.getId() == ObjectID.WILDY_HUB_ENTRY_BARRIER_M) {
             if (Rs2Dialogue.isInDialogue()) {
-                if (Rs2Dialogue.getDialogueText() == null) return false;
-                if (Rs2Dialogue.getDialogueText().contains("When returning to the Enclave")) {
+                if (Rs2Dialogue.getDialogueText().toLowerCase().contains("when returning to the enclave")) {
                     Rs2Dialogue.clickContinue();
                     Rs2Dialogue.sleepUntilSelectAnOption();
                     Rs2Dialogue.keyPressForDialogueOption("Yes, and don't ask again.");

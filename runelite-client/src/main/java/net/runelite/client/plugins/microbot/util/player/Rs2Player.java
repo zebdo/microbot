@@ -1572,7 +1572,7 @@ public class Rs2Player {
      * @return The animation ID of the player's current action, or {@code -1} if the player is null.
      */
     public static int getAnimation() {
-        if (Microbot.getClient().getLocalPlayer() == null) return -1;
+        if (Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) return -1;
         return Microbot.getClient().getLocalPlayer().getAnimation();
     }
 
