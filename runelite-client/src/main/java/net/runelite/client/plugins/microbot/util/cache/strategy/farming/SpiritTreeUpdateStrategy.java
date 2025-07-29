@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.util.cache.strategy.farming;
 
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameState;
 
@@ -60,7 +61,6 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
         try {
             
             if (event instanceof WidgetLoaded) {
-                
                 handleWidgetLoaded((WidgetLoaded) event, cache);
             } else if (event instanceof VarbitChanged) {
                 handleVarbitChanged((VarbitChanged) event, cache);
@@ -98,10 +98,7 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
                         return;
                     }
                     log.info("Adventure log widget loaded (group {}), checking for spirit tree locations", event.getGroupId());
-                    boolean hasRightTitle= Rs2Widget.hasWidgetText(SPIRIT_TREE_WIDGET_TITLE,
-                                                            ADVENTURE_LOG_GROUP_ID,
-                                                                    ADVENTURE_LOG_CONTAINER_CHILD,
-                                                                     false);                    
+                    boolean hasRightTitle = Rs2Widget.hasWidgetText(SPIRIT_TREE_WIDGET_TITLE, ADVENTURE_LOG_GROUP_ID, ADVENTURE_LOG_CONTAINER_CHILD, false);
                             
                     if (hasRightTitle) {
                         log.info("Spirit tree locations widget detected, updating cache from widget data");
@@ -124,6 +121,7 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
         if (SPIRIT_TREE_VARBIT_IDS.contains(varbitId)) {
             log.debug("Spirit tree farming varbit {} changed to value {}, updating spirit tree farming states", varbitId, event.getValue());            
             // Update farming states for all farmable spirit tree patches
+			System.out.println("break");
             updateFarmingStatesFromVarbits(cache);
         }
     }
@@ -152,43 +150,46 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
     /**
      * Update cache from spirit tree widget data
      */
-    private void updateCacheFromWidget(CacheOperations<SpiritTree, SpiritTreeData> cache) {
-        try {
-            // Extract available destinations from the widget
-            List<SpiritTree> availableSpiritTrees = SpiritTree.extractAvailableFromWidget();
-            
-            WorldPoint playerLocation = getPlayerLocation();
-            Integer farmingLevel = getFarmingLevel();
-            
-            log.info("Widget extraction found {} available spirit tree destinations", availableSpiritTrees.size());
-            
-            // Update cache for all available destinations
-            for (SpiritTree spiritTree : availableSpiritTrees) {
-                SpiritTreeData existingData = cache.get(spiritTree);
-                
-                // Create new data with widget detection
-                SpiritTreeData newData = new SpiritTreeData(
-                    spiritTree,
-                    existingData != null ? existingData.getCropState() : null, // Preserve crop state
-                    true && spiritTree.hasQuestRequirements(), // Available for travel (detected in widget)
-                    playerLocation,
-                    true,  // Detected via widget
-                    false, // Not detected via game object
-                    farmingLevel
-                );
-                
-                cache.put(spiritTree, newData);
+	private void updateCacheFromWidget(CacheOperations<SpiritTree, SpiritTreeData> cache) {
+		try {
+			// Extract available destinations from the widget
+			List<SpiritTree> availableSpiritTrees = SpiritTree.extractAvailableFromWidget();
 
-                log.info("Updated spirit tree cache for via widget (available for travel)\n\t{}", spiritTree.toString());
-            }
-            
-            // Check for patches that might no longer be available
-            updateUnavailableSpiritTreesFromWidget(cache, availableSpiritTrees, playerLocation, farmingLevel);
-            
-        } catch (Exception e) {
-            log.error("Error updating cache from spirit tree widget: {}", e.getMessage(), e);
-        }
-    }
+			WorldPoint playerLocation = getPlayerLocation();
+			Integer farmingLevel = getFarmingLevel();
+
+			log.info("Widget extraction found {} available spirit tree destinations", availableSpiritTrees.size());
+
+			for (SpiritTree spiritTree : SpiritTree.values()) {
+				boolean isAvailable = availableSpiritTrees.contains(spiritTree);
+				boolean availableForTravel = spiritTree.hasQuestRequirements();
+
+				SpiritTreeData existingData = cache.get(spiritTree);
+
+				// Create new data with widget detection
+				SpiritTreeData newData = new SpiritTreeData(
+					spiritTree,
+					existingData != null ? existingData.getCropState() : null, // Preserve existing crop state if available
+					isAvailable && availableForTravel,
+					playerLocation,
+					isAvailable, // Detected via widget
+					false,       // Not detected via game object
+					farmingLevel
+				);
+
+				cache.put(spiritTree, newData);
+
+				if (isAvailable) {
+					log.info("Updated spirit tree cache for via widget (available for travel)\n\t{}", spiritTree.name());
+				} else {
+					log.info("Updated spirit tree {} to unavailable (not found in widget), is available for travel: {}", spiritTree.name(), availableForTravel);
+				}
+			}
+
+		} catch (Exception e) {
+			log.error("Error updating cache from spirit tree widget: {}", e.getMessage(), e);
+		}
+	}
     
     /**
      * Update farming states from varbit changes - only when near spirit tree patches
@@ -267,14 +268,7 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
             boolean hasTravel = false;
             try {
                 String[] actions = Microbot.getClient().getObjectDefinition(gameObject.getId()).getActions();
-                if (actions != null) {
-                    for (String action : actions) {
-                        if ("Travel".equals(action)) {
-                            hasTravel = true;
-                            break;
-                        }
-                    }
-                }
+                hasTravel = Arrays.stream(actions).filter(Objects::nonNull).anyMatch(action -> action.equalsIgnoreCase("Travel"));
             } catch (Exception e) {
                 log.debug("Could not get actions for spirit tree object {}: {}", gameObject.getId(), e.getMessage());
             }
@@ -298,49 +292,6 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
             
         } catch (Exception e) {
             log.error("Error updating spiritTree from game object: {}", e.getMessage(), e);
-        }
-    }
-    
-    /**
-     * Update patches that are no longer available based on widget data
-     */
-    private void updateUnavailableSpiritTreesFromWidget(CacheOperations<SpiritTree, SpiritTreeData> cache,
-                                                   List<SpiritTree> detectedAvailableWidgetSpiritTrees,
-                                                   WorldPoint playerLocation, Integer farmingLevel) {
-        // Check all patches to see if any are missing from the widget but were previously available
-        for (SpiritTree spiritTree : SpiritTree.values()) {
-            CropState currentState = spiritTree.getPatchState();
-            boolean availableForTravel = spiritTree.isAvailableForTravel();
-            SpiritTreeData existingData = cache.get(spiritTree);
-            if (!detectedAvailableWidgetSpiritTrees.contains(spiritTree)) {                                                                                 
-                // If we had this as available before, mark it as unavailable
-                SpiritTreeData newData = new SpiritTreeData(
-                            spiritTree,
-                            currentState,
-                            false, // Not available for travel anymore
-                            playerLocation,
-                            false, // Not detected via widget
-                            false, // Not detected via game object
-                            farmingLevel
-                    );            
-                cache.put(spiritTree, newData); 
-                log.info("Updated spirit tree {} to unavailable (not found in widget), is available for travel: {}, crop state: {}", 
-                          spiritTree.name(), availableForTravel, currentState);
-            }else{
-                SpiritTreeData newData  = new SpiritTreeData(
-                            spiritTree,
-                            currentState,
-                            true && spiritTree.hasQuestRequirements(), 
-                            playerLocation,
-                            false, // Not detected via widget
-                            false, // Not detected via game object
-                            farmingLevel
-                    );            
-            
-                cache.put(spiritTree, newData);
-                log.info("Updated spirit tree {} to available (found in widget), is available for travel: {}, crop state: {}", 
-                          spiritTree.name(), availableForTravel, currentState);           
-            }
         }
     }
     

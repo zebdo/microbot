@@ -349,12 +349,12 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
                 }
             }
             List<SpiritTreeData> farambleTrees = getFarmableTreeStates();
-            int availabilityFramableTrees = (int) farambleTrees.stream()
-                .filter(data -> data.isAvailableForTravel())
+            int availabilityFarmableTrees = (int) farambleTrees.stream()
+                .filter(SpiritTreeData::isAvailableForTravel)
                 .count();
             log.debug(getFarmingStatusSummary());
-            log.debug("Static spirit tree cache update completed: \n\t{} new entries, {} updated, {} preserved entries, {} farmable trees {} (available for travel: {})",
-                newEntriesCount, updatedCount, preservedCount, farambleTrees.size(),availabilityFramableTrees);
+            log.debug("Static spirit tree cache update completed: \n\t{} new entries, {} updated, {} preserved entries, {} farmable trees (available for travel: {})",
+                newEntriesCount, updatedCount, preservedCount, farambleTrees.size(), availabilityFarmableTrees);
             
         } catch (Exception e) {
             log.error("Failed to update spirit tree cache from FarmingHandler: {}", e.getMessage(), e);

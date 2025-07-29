@@ -168,12 +168,12 @@ public enum SpiritTree {
 
     FARMING_GUILD(
             "Farming Guild",
-            new WorldPoint(1251, 3750, 0),
+			new WorldPoint(1251, 3749, 0),
             SpiritTreeType.FARMABLE,
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
             85, // Requires 85 Farming for the Farming Guild
             VarbitID.FARMING_TRANSMIT_A, // Farming Guild spirit tree patch
-            ObjectID.SPIRIT_TREE_FULLYGROWN, // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
+            ObjectID.FARMING_SPIRIT_TREE_PATCH_5, // Spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
 			new int[] {4922, 5177, 5178, 5179, 4921, 4923, 4665, 4666, 4667},
             "B: Farming Guild"
     );
