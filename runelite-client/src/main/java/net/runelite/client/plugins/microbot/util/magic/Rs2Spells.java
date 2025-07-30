@@ -565,51 +565,6 @@ public enum Rs2Spells implements Spell {
             Runes.BLOOD, 1,
             Runes.SOUL, 3
     ), Rs2Spellbook.ARCEUUS),
-    RESURRECT_LESSER_GHOST(MagicAction.RESURRECT_LESSER_GHOST, Map.of(
-            Runes.AIR, 10,
-            Runes.COSMIC, 1,
-            Runes.MIND, 5
-    ), Rs2Spellbook.ARCEUUS),
-    RESURRECT_LESSER_SKELETON(MagicAction.RESURRECT_LESSER_SKELETON, Map.of(
-            Runes.AIR, 10,
-            Runes.COSMIC, 1,
-            Runes.MIND, 5
-    ), Rs2Spellbook.ARCEUUS),
-    RESURRECT_LESSER_ZOMBIE(MagicAction.RESURRECT_LESSER_ZOMBIE, Map.of(
-            Runes.AIR, 10,
-            Runes.COSMIC, 1,
-            Runes.MIND, 5
-    ), Rs2Spellbook.ARCEUUS),
-    RESURRECT_SUPERIOR_GHOST(MagicAction.RESURRECT_SUPERIOR_GHOST, Map.of(
-            Runes.EARTH, 10,
-            Runes.COSMIC, 1,
-            Runes.DEATH, 5
-    ), Rs2Spellbook.ARCEUUS),
-    RESURRECT_SUPERIOR_SKELETON(MagicAction.RESURRECT_SUPERIOR_SKELETON, Map.of(
-            Runes.EARTH, 10,
-            Runes.COSMIC, 1,
-            Runes.DEATH, 5
-    ), Rs2Spellbook.ARCEUUS),
-    RESURRECT_SUPERIOR_ZOMBIE(MagicAction.RESURRECT_SUPERIOR_ZOMBIE, Map.of(
-            Runes.EARTH, 10,
-            Runes.COSMIC, 1,
-            Runes.DEATH, 5
-    ), Rs2Spellbook.ARCEUUS),
-    RESURRECT_GREATER_GHOST(MagicAction.RESURRECT_GREATER_GHOST, Map.of(
-            Runes.FIRE, 10,
-            Runes.COSMIC, 1,
-            Runes.BLOOD, 5
-    ), Rs2Spellbook.ARCEUUS),
-    RESURRECT_GREATER_SKELETON(MagicAction.RESURRECT_GREATER_SKELETON, Map.of(
-            Runes.FIRE, 10,
-            Runes.COSMIC, 1,
-            Runes.BLOOD, 5
-    ), Rs2Spellbook.ARCEUUS),
-    RESURRECT_GREATER_ZOMBIE(MagicAction.RESURRECT_GREATER_ZOMBIE, Map.of(
-            Runes.FIRE, 10,
-            Runes.COSMIC, 1,
-            Runes.BLOOD, 5
-    ), Rs2Spellbook.ARCEUUS),
     DARK_LURE(MagicAction.DARK_LURE, Map.of(
             Runes.DEATH, 1,
             Runes.NATURE, 1
@@ -680,18 +635,6 @@ public enum Rs2Spells implements Spell {
     private final Map<Runes, Integer> requiredRunes;
     private final Rs2Spellbook spellbook;
     private final int requiredLevel;
-    
-    public boolean hasRequiredLevel() {
-        return Rs2Player.getSkillRequirement(Skill.MAGIC, getRequiredLevel());
-    }
-    
-    public boolean hasRequiredSpellbook() {
-        return Rs2Magic.isSpellbook(getSpellbook());
-    }
-    
-    public boolean hasRequirements() {
-        return hasRequiredLevel() && hasRequiredSpellbook();
-    }
 
     Rs2Spells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
         this.magicAction = magicAction;
