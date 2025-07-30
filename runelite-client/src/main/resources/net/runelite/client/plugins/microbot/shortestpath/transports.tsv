@@ -3459,13 +3459,13 @@
 3354 2959 1	3353 2961 0	Climb-down;Staircase;6243								1	
 											
 # Smoke Dungeon											
-3310 2961 0	3206 9379 0	Climb-down;Smokey well;6279									
+3310 2961 0	3206 9379 0	Climb-down;Smokey well;6279				Desert Treasure I
 3206 9379 0	3310 2961 0	Climb-up;Rope;6439									
-3309 2962 0	3206 9379 0	Climb-down;Smokey well;6279									
+3309 2962 0	3206 9379 0	Climb-down;Smokey well;6279				Desert Treasure I
 3205 9380 0	3310 2961 0	Climb-up;Rope;6439									
-3311 2962 0	3206 9379 0	Climb-down;Smokey well;6279									
+3311 2962 0	3206 9379 0	Climb-down;Smokey well;6279				Desert Treasure I
 3204 9379 0	3310 2961 0	Climb-up;Rope;6439									
-3310 2963 0	3206 9379 0	Climb-down;Smokey well;6279									
+3310 2963 0	3206 9379 0	Climb-down;Smokey well;6279				Desert Treasure I
 3205 9378 0	3310 2961 0	Climb-up;Rope;6439									
 3304 9376 0	3305 9376 0	Open;Gate;6452									
 3305 9376 0	3304 9376 0	Open;Gate;6452									
@@ -4299,22 +4299,22 @@
 2880 3593 0	2880 3596 0	Climb;Rocks;3723									
 2881 3596 0	2881 3593 0	Climb;Rocks;3722									
 2881 3593 0	2881 3596 0	Climb;Rocks;3723									
-2857 3611 0	2857 3613 0	Climb;Rocks;3748									
-2857 3613 0	2857 3611 0	Climb;Rocks;3748									
-2856 3611 0	2856 3613 0	Climb;Rocks;3748									
-2856 3613 0	2856 3611 0	Climb;Rocks;3748									
-2858 3627 0	2861 3627 0	Climb;Rocks;3790									
-2861 3627 0	2858 3627 0	Climb;Rocks;3791									
-2858 3626 0	2861 3626 0	Climb;Rocks;3790									
-2861 3626 0	2858 3626 0	Climb;Rocks;3791									
-2877 3623 0	2880 3623 0	Climb;Rocks;3791									
-2880 3623 0	2877 3623 0	Climb;Rocks;3790									
-2877 3622 0	2880 3622 0	Climb;Rocks;3791									
-2880 3622 0	2877 3622 0	Climb;Rocks;3790									
-2896 3619 0	2897 3619 0	Open;Arena Entrance;3783									
-2897 3619 0	2896 3619 0	Open;Arena Entrance;3783									
-2896 3618 0	2897 3618 0	Open;Arena Entrance;3782									
-2897 3618 0	2896 3618 0	Open;Arena Entrance;3782									
+2857 3611 0	2857 3613 0	Climb;Rocks;3748	15 Agility	3105
+2857 3613 0	2857 3611 0	Climb;Rocks;3748	15 Agility
+2856 3611 0	2856 3613 0	Climb;Rocks;3748	15 Agility	3105
+2856 3613 0	2856 3611 0	Climb;Rocks;3748	15 Agility
+2858 3627 0	2861 3627 0	Climb;Rocks;3790	15 Agility			Troll Stronghold
+2861 3627 0	2858 3627 0	Climb;Rocks;3791	15 Agility			Troll Stronghold
+2858 3626 0	2861 3626 0	Climb;Rocks;3790	15 Agility			Troll Stronghold
+2861 3626 0	2858 3626 0	Climb;Rocks;3791	15 Agility			Troll Stronghold
+2877 3623 0	2880 3623 0	Climb;Rocks;3791	15 Agility			Troll Stronghold
+2880 3623 0	2877 3623 0	Climb;Rocks;3790	15 Agility			Troll Stronghold
+2877 3622 0	2880 3622 0	Climb;Rocks;3791	15 Agility			Troll Stronghold
+2880 3622 0	2877 3622 0	Climb;Rocks;3790	15 Agility			Troll Stronghold
+2896 3619 0	2897 3619 0	Open;Arena Entrance;3783
+2897 3619 0	2896 3619 0	Open;Arena Entrance;3783
+2896 3618 0	2897 3618 0	Open;Arena Entrance;3782
+2897 3618 0	2896 3618 0	Open;Arena Entrance;3782
 2917 3628 0	2917 3629 0	Open;Arena Exit;3786									
 2917 3629 0	2917 3628 0	Open;Arena Exit;3786									
 2916 3628 0	2916 3629 0	Open;Arena Exit;3785									
