@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.shortestpath;
 
 import lombok.Getter;
 import net.runelite.api.Quest;
+import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 
 import java.io.IOException;
@@ -50,7 +51,7 @@ public class Restriction {
     /**
      * The quests required to lift the restriction
      */
-    private List<Quest> quests = new ArrayList<>();
+    private Map<Quest, QuestState> quests = new HashMap<>();
 
 
     public Restriction(int x, int y, int z) {
@@ -72,7 +73,7 @@ public class Restriction {
         }
 
         if ((value = fieldMap.get("Quests")) != null) {
-            this.quests = findQuests(value);
+            this.quests = parseQuestStates(value);
         }
 
         if ((value = fieldMap.get("Skills")) != null) {
@@ -176,19 +177,42 @@ public class Restriction {
         }
     }
 
-    private static List<Quest> findQuests(String questNamesCombined) {
-        String[] questNames = questNamesCombined.split(";");
-        List<Quest> quests = new ArrayList<>();
-        for (String questName : questNames) {
-            for (Quest quest : Quest.values()) {
-                if (quest.getName().equals(questName)) {
-                    quests.add(quest);
-                    break;
-                }
-            }
-        }
-        return quests;
-    }
+	private static Map<Quest, QuestState> parseQuestStates(String questStatesCombined)
+	{
+		Map<Quest, QuestState> questStateMap = new HashMap<>();
+		String[] entries = questStatesCombined.split(";");
+		for (String entry : entries)
+		{
+			String questName;
+			String stateStr;
+			if (entry.contains("=")) {
+				String[] parts = entry.split("=");
+				if (parts.length != 2) continue;
+				questName = parts[0].trim();
+				stateStr = parts[1].trim();
+			} else {
+				questName = entry.trim();
+				stateStr = QuestState.FINISHED.name();
+			}
+			for (Quest quest : Quest.values())
+			{
+				if (quest.getName().equalsIgnoreCase(questName))
+				{
+					try
+					{
+						QuestState state = QuestState.valueOf(stateStr);
+						questStateMap.put(quest, state);
+					}
+					catch (IllegalArgumentException e)
+					{
+						// Invalid state string, skip
+					}
+					break;
+				}
+			}
+		}
+		return questStateMap;
+	}
 
     public static List<Restriction> loadAllFromResources() {
         List<Restriction> restrictions = new ArrayList<>();

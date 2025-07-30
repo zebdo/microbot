@@ -13,6 +13,8 @@ import net.runelite.api.ObjectComposition;
 import net.runelite.api.Perspective;
 import net.runelite.api.Player;
 import net.runelite.api.Point;
+import net.runelite.api.Quest;
+import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.api.Tile;
 import net.runelite.api.TileObject;
@@ -1404,10 +1406,27 @@ public class Rs2Walker {
 
                     if (path.get(i).equals(origin)) {
                         if (transport.getType() == TransportType.SHIP || transport.getType() == TransportType.NPC || transport.getType() == TransportType.BOAT) {
-                            Rs2NpcModel npc = Rs2Npc.getNpc(transport.getName());
+
+							Rs2NpcModel npc = Rs2Npc.getNpc(transport.getName());
+
                             if (Rs2Npc.canWalkTo(npc, 20) && Rs2Npc.interact(npc, transport.getAction())) {
                                 Rs2Player.waitForWalking();
                                 sleepUntil(Rs2Dialogue::isInDialogue,600*2);
+
+								if (Objects.equals(transport.getName(), "Veos") && Objects.equals(transport.getAction(), "Talk-to")) {
+									sleepUntil(() -> !Rs2Dialogue.hasContinue(), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+									Rs2Dialogue.clickOption("Can you take me somewhere?");
+									sleepUntil(() -> !Rs2Dialogue.hasContinue() && !Rs2Dialogue.hasSelectAnOption(), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+									Rs2Dialogue.clickOption(transport.getDisplayInfo());
+									sleepUntil(() -> !Rs2Dialogue.hasContinue() && !Rs2Dialogue.hasSelectAnOption(), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+								}
+
+								if (Objects.equals(transport.getName(), "Captain Magoro") && Objects.equals(transport.getAction(), "Talk-to")) {
+									sleepUntil(() -> !Rs2Dialogue.hasContinue(), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+									Rs2Dialogue.clickOption(transport.getDisplayInfo());
+									sleepUntil(() -> !Rs2Dialogue.hasContinue() && !Rs2Dialogue.hasSelectAnOption(), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+								}
+
 								if (Rs2Dialogue.clickOption("I'm just going to Pirates' cove")){
 									sleep(600 * 2);
 									Rs2Dialogue.clickContinue();

@@ -39,4 +39,14 @@ public class TransportVarPlayer {
         GREATER_THAN,
         LESS_THAN
     }
+
+	@Override
+	public String toString()
+	{
+		return "TransportVarPlayer{" +
+				"varplayerId=" + varplayerId +
+				", value=" + value +
+				", operator=" + operator +
+				'}';
+	}
 }
