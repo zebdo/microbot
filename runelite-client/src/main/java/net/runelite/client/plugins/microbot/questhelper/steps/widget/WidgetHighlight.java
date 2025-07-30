@@ -168,6 +168,11 @@ public class WidgetHighlight extends AbstractWidgetHighlight
 		super.highlightWidget(graphics, questHelper, widgetToHighlight);
 	}
 
+	public WidgetHighlight withModelRequirement(int modelIdRequirement)
+	{
+		this.modelIdRequirement = modelIdRequirement;
+		return this;
+	}
 
 	private boolean itemCheckPasses(Widget widgetToHighlight)
 	{
