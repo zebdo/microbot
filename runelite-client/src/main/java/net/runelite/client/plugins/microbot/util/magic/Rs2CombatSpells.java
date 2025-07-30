@@ -206,18 +206,6 @@ public enum Rs2CombatSpells implements Spell {
     private final Rs2Spellbook spellbook;
     private final int requiredLevel;
 
-    public boolean hasRequiredLevel() {
-        return Rs2Player.getSkillRequirement(Skill.MAGIC, this.requiredLevel);
-    }
-
-    public boolean hasRequiredSpellbook() {
-        return Rs2Magic.isSpellbook(getSpellbook());
-    }
-
-    private boolean hasRequirements() {
-        return hasRequiredLevel() && hasRequiredSpellbook();
-    }
-
     Rs2CombatSpells(MagicAction magicAction, Map<Runes, Integer> requiredRunes, Rs2Spellbook spellbook) {
         this.magicAction = magicAction;
         this.requiredRunes = requiredRunes;
