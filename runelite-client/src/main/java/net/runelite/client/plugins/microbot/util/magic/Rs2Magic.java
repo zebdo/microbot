@@ -184,7 +184,7 @@ public class Rs2Magic {
         return false;
     }
 
-	public boolean castOn(Spell spell, Actor actor) {
+	public static boolean castOn(Spell spell, Actor actor) {
 		return castOn(spell.getMagicAction(), actor);
 	}
 
