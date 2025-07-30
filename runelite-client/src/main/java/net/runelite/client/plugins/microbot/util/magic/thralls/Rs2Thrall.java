@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.util.magic.thralls;
 
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Map;
 import lombok.Getter;
 import net.runelite.api.gameval.ItemID;
@@ -153,5 +154,10 @@ public enum Rs2Thrall implements Spell
 	public static Rs2Thrall getBestThrall(ThrallType type)
 	{
 		return Arrays.stream(Rs2Thrall.values()).filter(rs2Thrall -> rs2Thrall.getThrallType() == type).filter(Rs2Thrall::canCast).findFirst().orElse(null);
+	}
+
+	@Override
+	public HashMap<Runes, Integer> getRequiredRunes() {
+		return new HashMap<>(requiredRunes);
 	}
 }
