@@ -197,6 +197,12 @@ public class ShootingStarTableRow extends JPanel
 		return panel;
 	}
 
+	public void updateTier()
+	{
+		tierLabel.setText(Integer.toString(starData.getTier()));
+		updateTierColor();
+	}
+
 	public void updateTime()
 	{
 		String endTime;

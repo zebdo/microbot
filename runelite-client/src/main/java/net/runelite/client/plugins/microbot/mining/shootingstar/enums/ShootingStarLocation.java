@@ -5,6 +5,7 @@ import lombok.RequiredArgsConstructor;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -189,8 +190,8 @@ public enum ShootingStarLocation
 			case MISTROCK_MINE:
 			case SALVAGER_OVERLOOK_MINE:
 			case CUSTODIA_MOUNTAINS:
-				// Requires Children of the Sun
-				return Rs2Player.getQuestState(Quest.CHILDREN_OF_THE_SUN) == QuestState.FINISHED;
+				// Requires Visiting Varlamore for the first time
+				return Microbot.getVarbitValue(VarbitID.VARLAMORE_VISITED) == 1;
 			case CORSAIR_COVE:
 				// Requires The Corsair Curse if not Member
 				if (!Rs2Player.isMember())

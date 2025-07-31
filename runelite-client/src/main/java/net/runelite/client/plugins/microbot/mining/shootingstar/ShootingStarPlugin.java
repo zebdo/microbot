@@ -102,6 +102,11 @@ public class ShootingStarPlugin extends Plugin
 
 	private Set<String> blacklistedLocations = new HashSet<>();
 
+	/*
+	 * TODO:
+	 *  - Create Star interface in-order to create multiple concrete models & support multiple star api providers
+	 *  - Configurable API provider 07gg or osrsportal
+	 */
 	@Override
 	protected void startUp() throws AWTException
 	{
@@ -210,6 +215,7 @@ public class ShootingStarPlugin extends Plugin
 	public void fetchStars()
 	{
 		List<Star> latestStars = shootingStarApiClient.getStarData();
+		boolean fullUpdate = false;
 
 		for (Star star : latestStars) {
 			// Find oldStar inside starList
@@ -230,27 +236,28 @@ public class ShootingStarPlugin extends Plugin
 
 			// If oldStar not found, add new star into the list
 			starList.add(star);
+			fullUpdate = true;
 		}
 
-		updateHiddenStars();
-		updatePanelList(true);
+		if (fullUpdate) {
+			updateHiddenStars();
+		}
+
+		updatePanelList(fullUpdate);
 	}
 
 	private void checkDepletedStars()
 	{
-		List<Star> stars = new ArrayList<>(starList);
 		ZonedDateTime now = ZonedDateTime.now(utcZoneId);
-		boolean fullUpdate = false;
+		long threshold = now.minusMinutes(UPDATE_INTERVAL).toInstant().toEpochMilli();
 
-		for (Star star : stars)
-		{
-			if (star.getEndsAt() < now.minusMinutes(UPDATE_INTERVAL).toInstant().toEpochMilli())
-			{
-				removeStar(star);
-				fullUpdate = true;
-			}
-		}
+		List<Star> depletedStars = starList.stream()
+			.filter(star -> star.getEndsAt() < threshold)
+			.collect(Collectors.toList());
 
+		depletedStars.forEach(this::removeStar);
+
+		boolean fullUpdate = !depletedStars.isEmpty();
 		updatePanelList(fullUpdate);
 	}
 

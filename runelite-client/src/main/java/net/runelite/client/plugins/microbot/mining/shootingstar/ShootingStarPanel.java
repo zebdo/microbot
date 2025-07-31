@@ -191,6 +191,7 @@ public class ShootingStarPanel extends PluginPanel
 			r.updateTime();
 			r.updateSelectedBorder();
 			r.updateLocationColor();
+			r.updateTier();
 			r.updateTierColor();
 		}
 
