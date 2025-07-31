@@ -239,7 +239,7 @@ public class ShootingStarPlugin extends Plugin
 				oldStar.setTier(star.getTier());
 				oldStar.setObjectID(oldStar.getObjectIDBasedOnTier());
 				oldStar.setMiningLevel(oldStar.getRequiredMiningLevel());
-				return;
+				continue;
 			}
 
 			// If oldStar not found, add new star into the list
