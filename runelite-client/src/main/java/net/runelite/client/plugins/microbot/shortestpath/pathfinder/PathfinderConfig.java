@@ -259,39 +259,8 @@ public class PathfinderConfig {
         transportsPacked.clear();
         usableTeleports.clear();
          // Check spirit tree farming states for farmable spirit trees
-
-        Rs2SpiritTreeCache.getInstance().update();
-        
-        Microbot.getClientThread().runOnClientThreadOptional(() -> {
-            for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
-                for (Transport transport : entry.getValue()) {
-                    for (Quest quest : transport.getQuests()) {
-                        try {
-                            QuestState currentState = questStates.get(quest);
-                            QuestState newState = Rs2Player.getQuestState(quest);
-
-                            // Only update if the new state is more progressed
-                            if (currentState == null || isMoreProgressed(newState, currentState)) {
-                                questStates.put(quest, newState);
-                            }
-                        } catch (NullPointerException ignored) {
-                            System.out.println(ignored.getMessage());
-                        }
-                    }
-                    for (TransportVarbit varbitCheck : transport.getVarbits()) {
-                        varbitValues.put(varbitCheck.getVarbitId(), Microbot.getVarbitValue(varbitCheck.getVarbitId()));
-                    }
-                    
-                    for (TransportVarPlayer varplayerCheck : transport.getVarplayers()) {
-                        varplayerValues.put(varplayerCheck.getVarplayerId(), Microbot.getVarbitPlayerValue(varplayerCheck.getVarplayerId()));
-                    }
-                    
-                   
-                }
-            }
-            return true;
-        });
-
+        Rs2SpiritTreeCache.getInstance().update();       
+        //Rs2SpiritTreeCache.logAllTreeStates();                     
         for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
             WorldPoint point = entry.getKey();
             Set<Transport> usableTransports = new HashSet<>(entry.getValue().size());

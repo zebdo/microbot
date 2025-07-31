@@ -44,7 +44,7 @@ public class SpiritTreeDataAdapter implements JsonSerializer<SpiritTreeData>, Js
         
         try {
             // Store patch as enum name for safe serialization
-            json.addProperty("patch", src.getPatch().name());
+            json.addProperty("patch", src.getSpiritTree().name());
             
             // Store crop state as enum name (nullable)
             if (src.getCropState() != null) {
@@ -65,19 +65,16 @@ public class SpiritTreeDataAdapter implements JsonSerializer<SpiritTreeData>, Js
             
             // Store detection method flags
             json.addProperty("detectedViaWidget", src.isDetectedViaWidget());
-            json.addProperty("detectedViaGameObject", src.isDetectedViaGameObject());
+            json.addProperty("detectedViaNearBy", src.isDetectedViaNearBy());
             
-            // Store farming level (nullable)
-            if (src.getFarmingLevel() != null) {
-                json.addProperty("farmingLevel", src.getFarmingLevel());
-            }
+            // Remove farming level storage as it's no longer used
             
             // Store nearby entity IDs (optional, for debugging purposes only)
             // Note: We don't serialize these as they're not persistent across sessions
             
         } catch (Exception e) {
             // Create minimal fallback serialization
-            json.addProperty("patch", src.getPatch().name());
+            json.addProperty("patch", src.getSpiritTree().name());
             json.addProperty("availableForTravel", src.isAvailableForTravel());
             json.addProperty("lastUpdated", src.getLastUpdated());
         }
@@ -117,13 +114,20 @@ public class SpiritTreeDataAdapter implements JsonSerializer<SpiritTreeData>, Js
             
             boolean detectedViaWidget = jsonObject.has("detectedViaWidget") ? 
                 jsonObject.get("detectedViaWidget").getAsBoolean() : false;
-            boolean detectedViaGameObject = jsonObject.has("detectedViaGameObject") ? 
-                jsonObject.get("detectedViaGameObject").getAsBoolean() : false;
             
-            Integer farmingLevel = null;
-            if (jsonObject.has("farmingLevel") && !jsonObject.get("farmingLevel").isJsonNull()) {
-                farmingLevel = jsonObject.get("farmingLevel").getAsInt();
+            // Handle backward compatibility: check for old field names first, then new field name
+            boolean detectedViaNearBy = false;
+            if (jsonObject.has("detectedViaNearBy")) {
+                detectedViaNearBy = jsonObject.get("detectedViaNearBy").getAsBoolean();
+            } else if (jsonObject.has("detectedViaNearPatch")) {
+                // Backward compatibility: migrate old field to new field
+                detectedViaNearBy = jsonObject.get("detectedViaNearPatch").getAsBoolean();
+            } else if (jsonObject.has("detectedViaGameObject")) {
+                // Backward compatibility: migrate old field to new field
+                detectedViaNearBy = jsonObject.get("detectedViaGameObject").getAsBoolean();
             }
+            
+            // Ignore farmingLevel as it's no longer used
             
             // Create SpiritTreeData with preserved timestamp and available fields
             return new SpiritTreeData(
@@ -133,8 +137,7 @@ public class SpiritTreeDataAdapter implements JsonSerializer<SpiritTreeData>, Js
                 lastUpdated,
                 playerLocation,
                 detectedViaWidget,
-                detectedViaGameObject,
-                farmingLevel
+                detectedViaNearBy
             );
             
         } catch (Exception e) {

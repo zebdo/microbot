@@ -87,7 +87,7 @@ public class SpiritTreeHelper {
         }
 
         return Rs2SpiritTreeCache.getClosestAvailableTree(playerLocation)
-                .map(SpiritTreeData::getPatch);
+                .map(SpiritTreeData::getSpiritTree);
     }
 
     /**
@@ -98,7 +98,7 @@ public class SpiritTreeHelper {
      */
     public static List<SpiritTree> getPatchesRequiringAttention() {
         return Rs2SpiritTreeCache.getPatchesRequiringAttention().stream()
-                .map(SpiritTreeData::getPatch)
+                .map(SpiritTreeData::getSpiritTree)
                 .collect(Collectors.toList());
     }
 
@@ -110,12 +110,12 @@ public class SpiritTreeHelper {
      */
     public static List<SpiritTree> getPriorityPlantingPatches() {
         return Rs2SpiritTreeCache.getEmptyPatches().stream()
-                .map(SpiritTreeData::getPatch)
-                .filter(SpiritTree::hasFarmingLevelRequirement)
+                .map(SpiritTreeData::getSpiritTree)
+                .filter(SpiritTree::hasLevelRequirement)
                 .filter(SpiritTree::hasQuestRequirements)
                 .sorted((patch1, patch2) -> {
                     // Sort by strategic value: lower farming requirement first, then by convenience
-                    int levelDiff = Integer.compare(patch1.getRequiredFarmingLevel(), patch2.getRequiredFarmingLevel());
+                    int levelDiff = Integer.compare(patch1.getRequiredSkillLevel(), patch2.getRequiredSkillLevel());
                     if (levelDiff != 0) {
                         return levelDiff;
                     }
@@ -218,12 +218,13 @@ public class SpiritTreeHelper {
         List<SpiritTreeData> needsAttention = Rs2SpiritTreeCache.getPatchesRequiringAttention();
         if (!needsAttention.isEmpty()) {
             SpiritTreeData data = needsAttention.get(0);
-            SpiritTree patch = data.getPatch();
+            SpiritTree patch = data.getSpiritTree();
             CropState state = data.getCropState();
             
             if (state != null) {
                 switch (state) {
                     case HARVESTABLE:
+                        return "Harvest " + patch.getName() + " spirit tree";
                     case UNCHECKED:
                         return "Check health of " + patch.getName() + " spirit tree";
                     case DISEASED:
@@ -239,7 +240,7 @@ public class SpiritTreeHelper {
         List<SpiritTree> empty = getPriorityPlantingPatches();
         if (!empty.isEmpty()) {
             SpiritTree patch = empty.get(0);
-            return "Plant spirit tree at " + patch.getName() + " (requires level " + patch.getRequiredFarmingLevel() + ")";
+            return "Plant spirit tree at " + patch.getName() + " (requires level " + patch.getRequiredSkillLevel() + ")";
         }
 
         return "All spirit tree patches are being maintained";

@@ -727,7 +727,7 @@ public class Rs2QuestCache extends Rs2Cache<Quest, QuestState> implements CacheS
      */
     public static synchronized void resetInstance() {
         if (instance != null) {
-            instance.close();
+            instance.invalidateAll();
             instance = null;
         }
     }

@@ -428,7 +428,7 @@ public class Rs2SkillCache extends Rs2Cache<Skill, SkillData> implements CacheSe
      */
     public static synchronized void resetInstance() {
         if (instance != null) {
-            instance.close();
+            instance.invalidateAll();
             instance = null;
         }
     }

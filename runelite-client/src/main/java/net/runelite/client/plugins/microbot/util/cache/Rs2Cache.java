@@ -2,10 +2,13 @@ package net.runelite.client.plugins.microbot.util.cache;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Client;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.strategy.*;
+import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import java.time.Instant;
-
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
@@ -38,7 +41,30 @@ import java.util.stream.Stream;
 @Slf4j
 public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K, V> {
     
-    @Getter
+    // ============================================
+    // POH Region Constants
+    // ============================================
+    
+    /** POH region ID */
+    private static final int POH_REGION_RIMMINGTON_1 = 7513;
+    private static final int POH_REGION_RIMMINGTON_2 = 7514;    
+    private static final int POH_REGION_UNKNOWN__1 = 8025;
+    private static final int POH_REGION_ADVERTISEMENT_2 = 8026;
+    private static final int POH_REGION_ADVERTISEMENT_3 = 7769;
+    private static final int POH_REGION_ADVERTISEMENT_4 = 7770;
+    
+    /** All POH region IDs for easy checking (immutable list) */
+    private static final List<Integer> POH_REGIONS = Collections.unmodifiableList(Arrays.asList(
+        POH_REGION_RIMMINGTON_1,
+        POH_REGION_RIMMINGTON_2,
+        POH_REGION_UNKNOWN__1,
+        POH_REGION_ADVERTISEMENT_2,
+        POH_REGION_ADVERTISEMENT_3,
+        POH_REGION_ADVERTISEMENT_4
+    ));
+    
+ 
+    
     private final String cacheName;
     
     @Getter
@@ -66,6 +92,137 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
     
     // Optional scheduled cleanup task
     private ScheduledFuture<?> cleanupTask;
+    
+    // ============================================
+    // Region Change Detection - Unified Support
+    // ============================================
+    
+    // Track current regions to detect changes across all cache types
+    private static volatile int[] lastKnownRegions = null;
+    private static volatile int lastRegionCheckTick = -1;
+    
+    // Thread-safe flag to prevent multiple region checks per tick
+    private static final AtomicBoolean regionCheckInProgress = new AtomicBoolean(false);
+    
+    /**
+     * Checks for region changes and clears cache if regions have changed.
+     * This handles the issue where RuneLite doesn't fire despawn events on region changes.
+     * Optimized to only check once per game tick across all cache instances.
+     */
+    public static boolean checkAndHandleRegionChange(CacheOperations<?, ?> cache) {
+        return checkAndHandleRegionChange(cache, false,false);
+    }
+    
+    /**
+     * Checks for region changes and clears cache if regions have changed.
+     * 
+     * @param cache The cache to potentially clear on region change
+     * @param force Whether to force a region check regardless of tick optimization
+     * @return true if region changed and cache was cleared, false otherwise
+     */
+    public static boolean checkAndHandleRegionChange(CacheOperations<?, ?> cache, boolean force, boolean withInvalidation) {
+        // Get current game tick from client
+        Client client = Microbot.getClient();
+        if (client == null) {
+            return false;
+        }
+        
+        int currentGameTick = client.getTickCount();
+        
+        // Only check once per game tick to avoid redundant checks during burst events
+        if (!force && lastRegionCheckTick == currentGameTick) {
+            return false;
+        }
+        
+        // Prevent multiple concurrent region checks
+        if (!regionCheckInProgress.compareAndSet(false, true)) {
+            return false;
+        }
+        
+        try {
+            // Skip if cache is empty and we're not forcing
+            if (!force && cache.size() == 0) {
+                lastRegionCheckTick = currentGameTick;
+                return false;
+            }
+            
+            @SuppressWarnings("deprecation")
+            int[] currentRegions = client.getMapRegions();
+            if (currentRegions == null) {
+                lastRegionCheckTick = currentGameTick;
+                return false;
+            }
+            
+            // Check if regions have changed
+            if (lastKnownRegions == null || !Arrays.equals(lastKnownRegions, currentRegions)) {
+                if (lastKnownRegions != null) {
+                    log.debug("Region change detected for cache {} - clearing cache. Old regions: {}, New regions: {}", 
+                        cache.getCacheName(), Arrays.toString(lastKnownRegions), Arrays.toString(currentRegions));
+                    if(withInvalidation) cache.invalidateAll();
+                    lastKnownRegions = currentRegions.clone();
+                    lastRegionCheckTick = currentGameTick;
+                    return true;
+                } else {
+                    // First time initialization
+                    lastKnownRegions = currentRegions.clone();
+                }
+            }
+            
+            // Mark that we've checked regions this tick
+            lastRegionCheckTick = currentGameTick;
+            return false;
+            
+        } finally {
+            regionCheckInProgress.set(false);
+        }
+    }
+    
+   
+    
+    /**
+     * Checks if player is currently in a Player-Owned House (POH).
+     * Uses instance detection, portal presence, and region-based detection for reliable POH detection.
+     * 
+     * @return true if player is in POH, false otherwise
+     */
+    public static boolean isInPOH() {
+        try {
+            // Check if player is in instance and portal object exists
+            boolean instanceAndPortal = Rs2Player.IsInInstance() && Rs2GameObject.getTileObject(4525) != null;            
+            // Check if current region is standard POH region
+            int[] currentRegions = getCurrentRegions();
+            boolean inStandardPoh = currentRegions != null && 
+                Arrays.stream(currentRegions).anyMatch(region -> POH_REGIONS.contains(region));                                    
+            // Return true if any detection method confirms POH
+            return inStandardPoh;
+            
+        } catch (Exception e) {
+            log.warn("Error checking POH status: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Gets the current player's regions if available.
+     * 
+     * @return Array of current regions, or null if not available
+     */
+    public static int[] getCurrentRegions() {
+        try {
+            Client client = Microbot.getClient();
+            if (client == null) {
+                return null;
+            }
+            
+            @SuppressWarnings("deprecation")
+            int[] regions = client.getMapRegions();
+            return regions != null ? regions.clone() : null;
+            
+        } catch (Exception e) {
+            log.warn("Error getting current regions: {}", e.getMessage());
+            return null;
+        }
+    }
     
     // ============================================
     // Serialization Support
@@ -257,7 +414,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
      */
     public V get(K key, Supplier<V> valueLoader) {
         if (isShutdown.get()) {
-            log.warn("Cache {} is shut down, loading value directly", cacheName);
+            log.warn("Cache \"{}\" is shut down, loading value directly", cacheName);
             return valueLoader.get();
         }
         
@@ -458,6 +615,11 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
     @Override
     public int size() {
         return cache.size();
+    }
+    
+    @Override
+    public String getCacheName() {
+        return cacheName;
     }
     
     // ============================================
@@ -744,7 +906,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         long currentTime = System.currentTimeMillis();
         if (currentTime - lastGlobalInvalidation.get() > globalInvalidationInterval) {
             if (lastGlobalInvalidation.compareAndSet(lastGlobalInvalidation.get(), currentTime)) {
-                log.info("Performing global invalidation for cache {}", cacheName);
+                log.debug("Performing global invalidation for cache {}", cacheName);
                 invalidateAll();
             }
         }
@@ -936,12 +1098,13 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
                 cleanupTask.cancel(true);
             }
             
-            // Detach all strategies
+            // Detach and close all strategies
             for (CacheUpdateStrategy<K, V> strategy : updateStrategies) {
                 try {
                     strategy.onDetach(this);
+                    strategy.close(); // Close the strategy to release resources
                 } catch (Exception e) {
-                    log.warn("Error detaching strategy {} from cache {}: {}", 
+                    log.warn("Error detaching/closing strategy {} from cache {}: {}", 
                             strategy.getClass().getSimpleName(), cacheName, e.getMessage());
                 }
             }

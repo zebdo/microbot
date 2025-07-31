@@ -1,11 +1,13 @@
 package net.runelite.client.plugins.microbot.util.cache;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Constants;
 import net.runelite.api.TileItem;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ItemDespawned;
 import net.runelite.api.events.ItemSpawned;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.strategy.entity.GroundItemUpdateStrategy;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItemModel;
 
@@ -27,12 +29,16 @@ public class Rs2GroundItemCache extends Rs2Cache<String, Rs2GroundItemModel> {
     
     private static Rs2GroundItemCache instance;
     
+    // Reference to the update strategy for scene scanning
+    private GroundItemUpdateStrategy updateStrategy;
+    
     /**
      * Private constructor for singleton pattern.
      */
     private Rs2GroundItemCache() {
         super("GroundItemCache", CacheMode.EVENT_DRIVEN_ONLY);
-        this.withUpdateStrategy(new GroundItemUpdateStrategy());
+        this.updateStrategy = new GroundItemUpdateStrategy();
+        this.withUpdateStrategy(this.updateStrategy);
     }
     
     /**
@@ -45,6 +51,63 @@ public class Rs2GroundItemCache extends Rs2Cache<String, Rs2GroundItemModel> {
             instance = new Rs2GroundItemCache();
         }
         return instance;
+    }
+    
+    /**
+     * Requests a scene scan to be performed when appropriate.
+     * This is more efficient than immediate scanning.
+     */
+    public static void requestSceneScan() {
+        getInstance().updateStrategy.requestSceneScan(getInstance());
+    }
+    
+    /**
+     * Starts periodic scene scanning to keep the cache fresh.
+     * This is useful for long-running scripts that need up-to-date ground item data.
+     * 
+     * @param intervalSeconds How often to scan the scene in seconds
+     */
+    public static void startPeriodicSceneScan(long intervalSeconds) {
+        getInstance().updateStrategy.schedulePeriodicSceneScan(getInstance(), intervalSeconds);
+    }
+    
+    /**
+     * Stops periodic scene scanning.
+     */
+    public static void stopPeriodicSceneScan() {
+        getInstance().updateStrategy.stopPeriodicSceneScan();
+    }
+    
+    /**
+     * Overrides the get method to provide fallback scene scanning when cache is empty or key not found.
+     * This ensures that even if events are missed, we can still retrieve ground items from the scene.
+     * 
+     * @param key The unique String key for the ground item
+     * @return The ground item model if found in cache or scene, null otherwise
+     */
+    @Override
+    public Rs2GroundItemModel get(String key) {
+        // First try the regular cache lookup
+        Rs2GroundItemModel cachedResult = super.get(key);
+        if (cachedResult != null) {
+            return cachedResult;
+        }
+        
+        if (Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
+            log.warn("Client or local player is null, cannot perform scene scan");
+            return null;
+        }
+        
+        // If not in cache and cache is very small, request and perform scene scan
+        if (updateStrategy.requestSceneScan(this)) {
+            log.debug("Cache miss for ground item key '{}' (size: {}), performing scene scan", key, this.size());            
+            // Try again after scene scan
+            return super.get(key);
+        }else {
+            log.debug("Cache miss for ground item key '{}' but scene scan not successful (size: {})", key, this.size());
+        }
+        
+        return null;
     }
     
     /**
@@ -263,6 +326,15 @@ public class Rs2GroundItemCache extends Rs2Cache<String, Rs2GroundItemModel> {
     }
     
     /**
+     * Invalidates all ground item cache entries and performs a fresh scene scan.
+     */
+    public static void invalidateAllItemsAndScanScene() {
+        getInstance().invalidateAll();
+        requestSceneScan();
+        log.debug("Invalidated all ground item cache entries and triggered scene scan");
+    }
+    
+    /**
      * Generates a unique key for ground items based on item ID, quantity, and location.
      * 
      * @param item The tile item
@@ -300,7 +372,8 @@ public class Rs2GroundItemCache extends Rs2Cache<String, Rs2GroundItemModel> {
      */
     public static synchronized void resetInstance() {
         if (instance != null) {
-            instance.close();
+            instance.invalidateAll();
+            
             instance = null;
         }
     }
@@ -388,10 +461,21 @@ public class Rs2GroundItemCache extends Rs2Cache<String, Rs2GroundItemModel> {
                 .min((a, b) -> Integer.compare(a.getDistanceFromPlayer(), b.getDistanceFromPlayer()));
     }
     @Override
-    public void update() {
-        // This method can be used to trigger a manual update if needed
-        // For example, to refresh the cache after a game state change
-        log.debug("Updating ground item cache");
-        // we can implement logic for like a scene scane  we do in Rs2GroundItems ?  an or like we do  in the object cache ?
+    public void update(){
+         update(Constants.CLIENT_TICK_LENGTH*2);
+    }
+    
+    public void update(long delay) {
+        log.debug("Starting ground item cache update - clearing cache and performing scene scan, delay: {}ms", delay);
+        int sizeBefore = this.size();
+        
+        // Clear the entire cache
+        this.invalidateAll();
+        
+        // Perform a complete scene scan to repopulate the cache
+        updateStrategy.performSceneScan(this, delay);
+        
+        int sizeAfter = this.size();
+        log.debug("Ground item cache update completed - items before: {}, after: {}", sizeBefore, sizeAfter);
     }
 }

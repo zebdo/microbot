@@ -58,8 +58,7 @@ public class Rs2VarbitCache extends Rs2Cache<Integer, VarbitData> implements Cac
     }
     
     public synchronized void close() {
-        if (instance != null) {
-            instance.close();
+        if (instance != null) {            
             instance = null;
         }
     }
@@ -271,7 +270,7 @@ public class Rs2VarbitCache extends Rs2Cache<Integer, VarbitData> implements Cac
      */
     public static synchronized void resetInstance() {
         if (instance != null) {
-            instance.close();
+            invalidateAllVarbits();
             instance = null;
         }
     }

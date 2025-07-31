@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.util.cache;
 
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
+import net.runelite.api.Constants;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.eventbus.Subscribe;
@@ -33,13 +33,6 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
     
     private static Rs2ObjectCache instance;
     
-    // Track current regions to detect changes and clear stale objects
-    private static int[] lastKnownRegions = null;
-    
-    // Track game ticks to prevent multiple region checks per tick
-    private static int currentGameTick = 0;
-    private static int lastRegionCheckTick = -1;
-    
     // Reference to the update strategy for scene scanning
     private ObjectUpdateStrategy updateStrategy;
     
@@ -70,17 +63,30 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
      * Requests an scene scan to be performed when appropriate.
      * This is more efficient than immediate scanning.
      */
-    public static void requestSceneScan() {
-        getInstance().updateStrategy.requestSceneScan();
+    public static boolean requestSceneScan() {
+        return getInstance().updateStrategy.requestSceneScan(getInstance());
+    }
+       
+    
+    /**
+     * Starts periodic scene scanning to keep the cache fresh.
+     * This is useful for long-running scripts that need up-to-date object data.
+     * 
+     * @param intervalSeconds How often to scan the scene in seconds
+     */
+    public static void startPeriodicSceneScan(long intervalSeconds) {
+        getInstance().updateStrategy.schedulePeriodicSceneScan(getInstance(), intervalSeconds);
     }
     
     /**
-     * Forces an immediate scene scan to populate the cache.
-     * Use this when you need to ensure the cache is fully populated.
+     * Stops periodic scene scanning.
      */
-    public static void forceSceneScan() {
-        getInstance().updateStrategy.performSceneScan(getInstance(), true);
+    public static void stopPeriodicSceneScan() {
+        getInstance().updateStrategy.stopPeriodicSceneScan();
     }
+    
+ 
+
     
     /**
      * Overrides the get method to provide fallback scene scanning when cache is empty or key not found.
@@ -101,93 +107,16 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
             return null;
         }
         // If not in cache and cache is very small, request and perform scene scan
-        if (updateStrategy.shouldPerformSceneScan(this)) {
-            log.info("Cache miss for key '{}' and cache is small (size: {}), performing scene scan", key, this.size());
-            //updateStrategy.performSceneScan(this, false);
-            
+        if (updateStrategy.requestSceneScan(this)) {
+            log.debug("Cache miss for key '{}' (size: {}), performing scene scan", key, this.size());
+            //updateStrategy.performSceneScan(this, false);            
             // Try again after scene scan
             return super.get(key);
+        }else {
+            log.debug("Cache miss for key '{}' (size: {}), but scene scan not requested not successful", key, this.size());
         }
         
         return null;
-    }
-    
-    /**
-     * Updates the cache by scanning the entire scene for all tile objects.
-     * This is used as a fallback when events are missed or on cache initialization.
-     * 
-     * @deprecated Use {@link #forceSceneScan()} instead for better performance
-     */
-    @Deprecated
-    public static void updateCacheFromSceneScan() {
-        log.info("Legacy updateCacheFromSceneScan called - using scene scan");
-        forceSceneScan();
-    }
-    
-    /**
-     * Retrieves all tile objects from the scene and returns them as Rs2ObjectModel objects.
-     * This method scans the entire scene and returns all objects without adding them to the cache.
-     * 
-     * @return List of all objects currently in the scene
-     */
-    public static List<Rs2ObjectModel> getAllObjectsFromScene() {
-        Player player = Microbot.getClient().getLocalPlayer();
-        if (player == null) {
-            return Collections.emptyList();
-        }
-        
-        Scene scene = player.getWorldView().getScene();
-        if (scene == null) {
-            return Collections.emptyList();
-        }
-        
-        Tile[][][] tiles = scene.getTiles();
-        if (tiles == null) {
-            return Collections.emptyList();
-        }
-        
-        List<Rs2ObjectModel> allObjects = new ArrayList<>();
-        int z = player.getWorldView().getPlane();
-        
-        for (int x = 0; x < Constants.SCENE_SIZE; x++) {
-            for (int y = 0; y < Constants.SCENE_SIZE; y++) {
-                Tile tile = tiles[z][x][y];
-                if (tile == null) continue;
-                
-                // Check GameObjects
-                GameObject[] gameObjects = tile.getGameObjects();
-                if (gameObjects != null) {
-                    for (GameObject gameObject : gameObjects) {
-                        if (gameObject == null) continue;
-                        
-                        // Only add if it's the primary location for multi-tile objects
-                        if (gameObject.getSceneMinLocation().equals(tile.getSceneLocation())) {
-                            allObjects.add(new Rs2ObjectModel(gameObject, tile));
-                        }
-                    }
-                }
-                
-                // Check GroundObject
-                GroundObject groundObject = tile.getGroundObject();
-                if (groundObject != null) {
-                    allObjects.add(new Rs2ObjectModel(groundObject, tile));
-                }
-                
-                // Check WallObject
-                WallObject wallObject = tile.getWallObject();
-                if (wallObject != null) {
-                    allObjects.add(new Rs2ObjectModel(wallObject, tile));
-                }
-                
-                // Check DecorativeObject
-                DecorativeObject decorativeObject = tile.getDecorativeObject();
-                if (decorativeObject != null) {
-                    allObjects.add(new Rs2ObjectModel(decorativeObject, tile));
-                }
-            }
-        }
-        
-        return allObjects;
     }
     
     /**
@@ -408,151 +337,18 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         return getObjectsByType(objectType).count();
     }
     
-   
+
     
     /**
-     * Forces a cache refresh by performing a scene scan.
-     * This is useful when you suspect the cache is out of sync with the actual scene.
-     */
-    public static void forceRefresh() {
-        log.debug("Forcing cache refresh via scene scan");
-        forceSceneScan();
-    }
-    
-    /**
-     * Manually adds a GameObject to the cache.
-     * 
-     * @param gameObject The game object to add
-     * @param tile The tile containing the object
-     */
-    private static void addGameObject(GameObject gameObject, Tile tile) {
-        if (gameObject != null && tile != null) {
-            String key = ObjectUpdateStrategy.generateCacheIdForObject(gameObject, tile);
-            Rs2ObjectModel objectModel = new Rs2ObjectModel(gameObject, tile);
-            getInstance().put(key, objectModel);
-            log.debug("Manually added GameObject: {} at {} (key: {})", gameObject.getId(), gameObject.getWorldLocation(), key);
-        }
-    }
-    
-    /**
-     * Manually adds a GroundObject to the cache.
-     * 
-     * @param groundObject The ground object to add
-     * @param tile The tile containing the object
-     */
-    private static void addGroundObject(GroundObject groundObject, Tile tile) {
-        if (groundObject != null && tile != null) {
-            String key = ObjectUpdateStrategy.generateCacheIdForObject(groundObject, tile);
-            Rs2ObjectModel objectModel = new Rs2ObjectModel(groundObject, tile);
-            getInstance().put(key, objectModel);
-            log.debug("Manually added GroundObject: {} at {} (key: {})", groundObject.getId(), groundObject.getWorldLocation(), key);
-        }
-    }
-    
-    /**
-     * Manually adds a WallObject to the cache.
-     * 
-     * @param wallObject The wall object to add
-     * @param tile The tile containing the object
-     */
-    private static void addWallObject(WallObject wallObject, Tile tile) {
-        if (wallObject != null && tile != null) {
-            String key = ObjectUpdateStrategy.generateCacheIdForObject(wallObject, tile);
-            Rs2ObjectModel objectModel = new Rs2ObjectModel(wallObject, tile);
-            getInstance().put(key, objectModel);
-            log.debug("Manually added WallObject: {} at {} (key: {})", wallObject.getId(), wallObject.getWorldLocation(), key);
-        }
-    }
-    
-    /**
-     * Manually adds a DecorativeObject to the cache.
-     * 
-     * @param decorativeObject The decorative object to add
-     * @param tile The tile containing the object
-     */
-    private static void addDecorativeObject(DecorativeObject decorativeObject, Tile tile) {
-        if (decorativeObject != null && tile != null) {
-            String key = ObjectUpdateStrategy.generateCacheIdForObject(decorativeObject, tile);
-            Rs2ObjectModel objectModel = new Rs2ObjectModel(decorativeObject, tile);
-            getInstance().put(key, objectModel);
-            log.debug("Manually added DecorativeObject: {} at {} (key: {})", decorativeObject.getId(), decorativeObject.getWorldLocation(), key);
-        }
-    }
-    
-    /**
-     * Manually removes an object from the cache.
-     * 
-     * @param objectModel The object model to remove
-     */
-    private static void removeObject(Rs2ObjectModel objectModel) {
-        if (objectModel == null) {
-            log.warn("Attempted to remove null object from cache");
-            return;
-        }
-        
-        // Generate the key based on object properties
-        String key = ObjectUpdateStrategy.generateCacheIdForObject(objectModel.getTileObject(),objectModel.getTile());
-        
-        getInstance().remove(key);
-        log.debug("Manually removed object with key: {}", key);
-    }
-    
-    /**
-     * Invalidates all object cache entries.
+     * Invalidates all object cache entries and performs a fresh scene scan.
      */
     public static void invalidateAllObjectsAndScanScene() {
         getInstance().invalidateAll();
-        forceSceneScan();
-        log.debug("Invalidated all object cache entries");
+        requestSceneScan();
+        log.debug("Invalidated all object cache entries and triggered scene scan");
     }
     
   
-    
-    /**
-     * Checks for region changes and clears cache if regions have changed.
-     * This handles the issue where RuneLite doesn't fire despawn events on region changes.
-     * Optimized to only check once per game tick to prevent redundant checks during burst spawn events.
-     */
-    private static void checkAndHandleRegionChange() {
-        // Only check once per game tick to avoid redundant checks during burst spawn events
-        if (lastRegionCheckTick == currentGameTick) {
-            log.debug("Region check already performed this tick ({}), skipping", currentGameTick);
-            return;
-        }
-        
-        if (getInstance().size() == 0) {
-            log.debug("Object cache is empty, no region change check needed");
-            lastRegionCheckTick = currentGameTick;
-            return;
-        }
-        
-        log.debug("Checking for region changes in object cache (tick: {})", currentGameTick);
-        Client client = Microbot.getClient();
-        if (client == null) {
-            lastRegionCheckTick = currentGameTick;
-            return;
-        }
-        
-        @SuppressWarnings("deprecation")
-        int[] currentRegions = client.getMapRegions();
-        if (currentRegions == null) {
-            lastRegionCheckTick = currentGameTick;
-            return;
-        }
-        
-        // Check if regions have changed
-        if (lastKnownRegions == null || !Arrays.equals(lastKnownRegions, currentRegions)) {
-            if (lastKnownRegions != null) {
-                log.info("Region change detected - clearing object cache. Old regions: {}, New regions: {}", 
-                    Arrays.toString(lastKnownRegions), Arrays.toString(currentRegions));
-                getInstance().invalidateAll();
-            }
-            lastKnownRegions = currentRegions.clone();
-        }
-        
-        // Mark that we've checked regions this tick
-        lastRegionCheckTick = currentGameTick;
-    }
     
     /**
      * Event handler registration for the unified cache.
@@ -606,42 +402,15 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
     }   
     @Subscribe(priority = 100)
     public void onGameStateChanged(final GameStateChanged event) {
-        switch (event.getGameState()) {
-            case LOGGED_IN:
-                // Check for region change when logging in or transitioning areas
-                // This is important for initial login detection
-                checkAndHandleRegionChange();
-                break;
-            case LOGIN_SCREEN:
-            case CONNECTION_LOST:
-                // Clear cache when logging out
-                log.debug("Player logging out, clearing object cache");
-                invalidateAll();
-                lastKnownRegions = null;
-                lastRegionCheckTick = -1; // Reset tick tracking
-                currentGameTick = 0; // Reset tick counter
-                break;
-            default:
-                break;
-        }
-        
+        // Removed old region detection - now handled by unified Rs2Cache system
         // Also let the strategy handle the event
         getInstance().handleEvent(event);
     }
     
     @Subscribe(priority = 110)
     public void onGameTick(final GameTick event) {
-        // Increment the game tick counter
-        currentGameTick = Microbot.getClient().getTickCount();
-        
-        // Check for region changes at the start of each game tick
-        // This ensures we detect region changes before processing spawn events
-//        if (Microbot.getClient() != null && Microbot.getClient().getGameState() == GameState.LOGGED_IN) {
-  //          checkAndHandleRegionChange();
-   //     }
-        
-        // Let the strategy handle intelligent scanning
-     //   getInstance().handleEvent(event);
+        // Let the strategy handle scanning
+        getInstance().handleEvent(event);
     }
     
     /**
@@ -651,9 +420,6 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         if (instance != null) {
             instance.invalidateAll();
             instance = null;
-            lastKnownRegions = null;
-            lastRegionCheckTick = -1;
-            currentGameTick = 0;
             log.debug("Rs2ObjectCache instance reset");
         }
     }
@@ -677,7 +443,7 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         return String.format("ObjectCache Stats - Size: %d, Mode: %s, Regions: %s", 
             cache.size(), 
             cache.getCacheMode(),
-            lastKnownRegions != null ? Arrays.toString(lastKnownRegions) : "null");
+            Arrays.toString(Rs2Cache.getCurrentRegions()));
     }
     
     /**
@@ -715,27 +481,9 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
             }
         }
         
-        return String.format("Objects by type - Game: %d, Wall: %d, Decorative: %d, Ground: %d, Tile: %d (Total: %d) | Tick: %d, LastCheck: %d",
+        return String.format("Objects by type - Game: %d, Wall: %d, Decorative: %d, Ground: %d, Tile: %d (Total: %d)",
             gameObjectCount, wallObjectCount, decorativeObjectCount, groundObjectCount, tileObjectCount, 
-            cache.size(), currentGameTick, lastRegionCheckTick);
-    }
-    
-    /**
-     * Gets the current game tick counter for debugging purposes.
-     * 
-     * @return Current game tick number
-     */
-    public static int getCurrentGameTick() {
-        return currentGameTick;
-    }
-    
-    /**
-     * Gets the last tick when region check was performed for debugging purposes.
-     * 
-     * @return Last region check tick number
-     */
-    public static int getLastRegionCheckTick() {
-        return lastRegionCheckTick;
+            cache.size());
     }    /**
      * Implementation of abstract update method from Rs2Cache.
      * Clears the cache and performs a complete scene scan to reload all objects from the scene.
@@ -743,16 +491,21 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
      */
     @Override
     public void update() {
-        log.info("Starting object cache update - clearing cache and performing scene scan");
-        int sizeBefore = this.size();
-        
+        // Call the update method with a default delay of 0
+        update(Constants.CLIENT_TICK_LENGTH /2);
+    }
+    /**
+     * Updates the object cache by clearing it and performing a scene scan.
+     * This is useful for refreshing the cache after significant game state changes.
+     * 
+     * @param delayMs Optional delay in milliseconds before performing the update
+     */
+    public void update(long delayMs) {
+        log.debug("Starting object cache update - clearing cache and performing scene scan after delay: {}ms", delayMs);            
         // Clear the entire cache
-        this.invalidateAll();
-        
+        this.invalidateAll();    
         // Perform a complete scene scan to repopulate the cache
-        updateStrategy.performSceneScan(this, true);
-        
-        int sizeAfter = this.size();
-        log.info("Object cache update completed - objects before: {}, after: {}", sizeBefore, sizeAfter);
+        updateStrategy.performSceneScan(this, delayMs );                
+
     }
 }
