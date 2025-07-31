@@ -40,13 +40,21 @@ public class ShootingStarApiClient
 	private final ZoneId utcZoneId = ZoneId.of("UTC");
 
 	@Inject
-	public ShootingStarApiClient(Client client, WorldService worldService) {
+	public ShootingStarApiClient(Client client, WorldService worldService)
+	{
 		this.client = client;
 		this.worldService = worldService;
 		this.endpoint = loadFromProperties();
 	}
 
-	String fetch() {
+	String fetch()
+	{
+		if (endpoint == null || endpoint.isEmpty())
+		{
+			log.warn("Shooting star API endpoint is not configured or is empty");
+			return "";
+		}
+
 		Request httpRequest = new Request.Builder()
 			.url(endpoint)
 			.get()
@@ -54,18 +62,23 @@ public class ShootingStarApiClient
 
 		String jsonResponse;
 
-		try (Response response = okHttpClient.newCall(httpRequest).execute()) {
-			if (!response.isSuccessful()) {
+		try (Response response = okHttpClient.newCall(httpRequest).execute())
+		{
+			if (!response.isSuccessful())
+			{
 				log.warn("Failed to fetch shooting star data: {}", response.message());
 				return "";
 			}
 			jsonResponse = response.body() != null ? response.body().string() : null;
-		} catch (Exception e) {
+		}
+		catch (Exception e)
+		{
 			log.trace("Error fetching shooting star data", e);
 			return "";
 		}
 
-		if (jsonResponse == null || jsonResponse.isEmpty()) {
+		if (jsonResponse == null || jsonResponse.isEmpty())
+		{
 			log.warn("Received empty response from shooting star API endpoint");
 			return "";
 		}
@@ -120,7 +133,8 @@ public class ShootingStarApiClient
 			if (toRemove)
 			{
 				log.debug("No matching ShootingStarLocation found for key: {} and raw location: {}", s.getLocationKey(), s.getRawLocation());
-			} else
+			}
+			else
 			{
 				s.setShootingStarLocation(location);
 			}
@@ -142,7 +156,8 @@ public class ShootingStarApiClient
 		return starData;
 	}
 
-	private ShootingStarLocation findLocation(String locationKey, String rawLocation) {
+	private ShootingStarLocation findLocation(String locationKey, String rawLocation)
+	{
 		return Arrays.stream(ShootingStarLocation.values())
 			.filter(location -> locationKey.equalsIgnoreCase(location.name())
 				|| rawLocation.equalsIgnoreCase(location.getRawLocationName())
@@ -151,20 +166,28 @@ public class ShootingStarApiClient
 			.orElse(null);
 	}
 
-	private String loadFromProperties() {
+	private String loadFromProperties()
+	{
 		Properties properties = new Properties();
-		try(InputStream input = ShootingStarPlugin.class.getResourceAsStream("shootingstar.properties")) {
-			if (input == null) {
-				throw new RuntimeException("Unable to find shootingstar.properties");
+		try (InputStream input = ShootingStarPlugin.class.getResourceAsStream("shootingstar.properties"))
+		{
+			if (input == null)
+			{
+				log.warn("shootingstar.properties not found");
+				return "";
 			}
 			properties.load(input);
 			return properties.getProperty("microbot.shootingstar.http");
-		} catch (Exception e) {
-			throw new RuntimeException("Failed to load shootingstar.properties", e);
+		}
+		catch (Exception e)
+		{
+			log.trace("Unable to parse shootingstar.properties", e);
+			return "";
 		}
 	}
 
-	private World getWorld(int worldId) {
+	private World getWorld(int worldId)
+	{
 		assert worldService.getWorlds() != null : "World Result should not be null";
 
 		WorldResult worldResult = worldService.getWorlds();
