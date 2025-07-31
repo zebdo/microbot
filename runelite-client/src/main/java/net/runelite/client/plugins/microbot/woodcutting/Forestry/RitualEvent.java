@@ -38,7 +38,7 @@ public class RitualEvent implements BlockingEvent {
                 continue; // If no target circle is found, we cannot proceed with the event
             }
 
-            if (Rs2Player.getWorldLocation() == targetCircle.getWorldLocation()) {
+            if (Rs2Player.getWorldLocation().equals(targetCircle.getWorldLocation())) {
                 // Microbot.log("RitualEvent: Already at the target circle, performing the ritual.", Level.INFO);
                 continue; // TODO find some condition to wait for here
             }

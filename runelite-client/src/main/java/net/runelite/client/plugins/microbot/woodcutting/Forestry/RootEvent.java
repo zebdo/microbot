@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.woodcutting.Forestry;
 
+import net.runelite.api.Actor;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.BlockingEvent;
 import net.runelite.client.plugins.microbot.BlockingEventPriority;
@@ -41,6 +42,14 @@ public class RootEvent implements BlockingEvent {
 
             // If special root is present
             if (specialRoot != null) {
+
+                // Check if the player is already interacting with the special root
+                if (Rs2Player.isInteracting() && Rs2Player.getInteracting() != null) {
+                    Actor interactingNpc = Microbot.getClient().getLocalPlayer().getInteracting();
+                    if (interactingNpc.getWorldLocation().equals(specialRoot.getWorldLocation())) {
+                        continue;
+                    }
+                }
                 // Interact with the special root
                 Microbot.log("RootEvent: Interacting with special root at " + specialRoot.getWorldLocation());
                 Rs2GameObject.interact(specialRoot.getTileObject(), "Chop down");
@@ -48,6 +57,14 @@ public class RootEvent implements BlockingEvent {
             }
             // If regular root is present
             else if (root != null) {
+
+                // Check if the player is already interacting with the root
+                if (Rs2Player.isInteracting() && Rs2Player.getInteracting() != null) {
+                    Actor interactingNpc = Microbot.getClient().getLocalPlayer().getInteracting();
+                    if (interactingNpc.getWorldLocation().equals(root.getWorldLocation())) {
+                        continue;
+                    }
+                }
                 // Interact with the regular root
                 Microbot.log("RootEvent: Interacting with regular root at " + root.getWorldLocation());
                 Rs2GameObject.interact(root.getTileObject(), "Chop down");

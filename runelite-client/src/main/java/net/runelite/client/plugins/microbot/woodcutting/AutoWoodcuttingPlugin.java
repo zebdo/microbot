@@ -10,6 +10,7 @@ import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -168,6 +169,8 @@ public class AutoWoodcuttingPlugin extends Plugin {
     }
 
     private void addEvents() {
+        var eventManager = Microbot.getBlockingEventManager();
+
         eggEvent = new EggEvent();
         entlingsEvent = new EntlingsEvent();
         flowersEvent = new FlowersEvent();
@@ -179,42 +182,60 @@ public class AutoWoodcuttingPlugin extends Plugin {
         saplingEvent = new StrugglingSaplingEvent(this);
 
         if (config.eggEvent()) {
-        Microbot.getBlockingEventManager().add(eggEvent);
+            eventManager.add(eggEvent);
         }
         if (config.entlingsEvent()) {
-        Microbot.getBlockingEventManager().add(entlingsEvent);
+            eventManager.add(entlingsEvent);
         }
         if (config.flowersEvent()) {
-        Microbot.getBlockingEventManager().add(flowersEvent);
+            eventManager.add(flowersEvent);
         }
         if (config.foxEvent()) {
-        Microbot.getBlockingEventManager().add(foxEvent);
+            eventManager.add(foxEvent);
         }
         if (config.hivesEvent()) {
-        Microbot.getBlockingEventManager().add(hivesEvent);
+            eventManager.add(hivesEvent);
         }
         if (config.leprechaunEvent()) {
-        Microbot.getBlockingEventManager().add(leprechaunEvent);
+            eventManager.add(leprechaunEvent);
         }
         if (config.ritualEvent()) {
-        Microbot.getBlockingEventManager().add(ritualEvent);
+            eventManager.add(ritualEvent);
         }
         if (config.rootEvent()) {
-        Microbot.getBlockingEventManager().add(rootEvent);
+            eventManager.add(rootEvent);
         }
         if (config.saplingEvent()) {
-        Microbot.getBlockingEventManager().add(saplingEvent);
+            eventManager.add(saplingEvent);
     }
     }
     private void removeEvents() {
-        Microbot.getBlockingEventManager().remove(eggEvent);
-        Microbot.getBlockingEventManager().remove(entlingsEvent);
-        Microbot.getBlockingEventManager().remove(flowersEvent);
-        Microbot.getBlockingEventManager().remove(foxEvent);
-        Microbot.getBlockingEventManager().remove(hivesEvent);
-        Microbot.getBlockingEventManager().remove(leprechaunEvent);
-        Microbot.getBlockingEventManager().remove(ritualEvent);
-        Microbot.getBlockingEventManager().remove(rootEvent);
-        Microbot.getBlockingEventManager().remove(saplingEvent);
+        var eventManager = Microbot.getBlockingEventManager();
+        eventManager.remove(eggEvent);
+        eventManager.remove(entlingsEvent);
+        eventManager.remove(flowersEvent);
+        eventManager.remove(foxEvent);
+        eventManager.remove(hivesEvent);
+        eventManager.remove(leprechaunEvent);
+        eventManager.remove(ritualEvent);
+        eventManager.remove(rootEvent);
+        eventManager.remove(saplingEvent);
+    }
+
+    @Subscribe
+    public void onConfigChanged(ConfigChanged ev) {
+        if (ev.getGroup().equals(AutoWoodcuttingConfig.configGroup)) {
+            if (ev.getKey().equals("enableForestry")) {
+                if (config.enableForestry()) {
+                    this.addEvents();
+                } else {
+                    this.removeEvents();
+                }
+            } else {
+                // If any other config changes, we need to re-add the events
+                this.removeEvents();
+                this.addEvents();
+            }
+        }
     }
 }

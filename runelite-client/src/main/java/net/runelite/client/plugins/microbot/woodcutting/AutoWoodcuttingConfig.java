@@ -6,14 +6,15 @@ import net.runelite.client.plugins.microbot.woodcutting.enums.WoodcuttingResetOp
 import net.runelite.client.plugins.microbot.woodcutting.enums.WoodcuttingTree;
 import net.runelite.client.plugins.microbot.woodcutting.enums.WoodcuttingWalkBack;
 
-@ConfigGroup("Woodcutting")
+@ConfigGroup(AutoWoodcuttingConfig.configGroup)
 @ConfigInformation(
         "<html>" +
                 "<p>This script automatically cuts trees and handles the logs based on your settings.</p>" +
-                "<p>Forestry support implemented by TaF</p>" +
+                "<p>Forestry support implemented by Yuof and TaF</p>" +
                 "<p>If forestry is enabled, remember to use one of the forestry worlds for best results</p>" +
                 "</html>")
 public interface AutoWoodcuttingConfig extends Config {
+    String configGroup = "Woodcutting";
     @ConfigSection(
             name = "General",
             description = "General",
