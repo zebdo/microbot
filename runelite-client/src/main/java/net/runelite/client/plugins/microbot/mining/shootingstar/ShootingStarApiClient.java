@@ -169,7 +169,7 @@ public class ShootingStarApiClient
 	private String loadFromProperties()
 	{
 		Properties properties = new Properties();
-		try (InputStream input = ShootingStarPlugin.class.getResourceAsStream("shootingstar.properties"))
+		try (InputStream input = ShootingStarApiClient.class.getResourceAsStream("shootingstar.properties"))
 		{
 			if (input == null)
 			{
