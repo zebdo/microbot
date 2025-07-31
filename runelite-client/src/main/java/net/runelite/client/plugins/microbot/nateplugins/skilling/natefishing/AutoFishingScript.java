@@ -110,6 +110,7 @@ public class AutoFishingScript extends Script {
                             Rs2Inventory.waitForInventoryChanges(1800);
                             if (config.shouldBankClueBottles()) {
                                 Rs2Bank.depositAll("clue bottle");
+                                Rs2Bank.depositAll("scroll box");
                                 Rs2Inventory.waitForInventoryChanges(1800);
                             }
                             if (config.shouldBankCaskets()) {
@@ -129,6 +130,7 @@ public class AutoFishingScript extends Script {
                                 Rs2Inventory.waitForInventoryChanges(1800);
                                 if (config.shouldBankClueBottles()) {
                                     Rs2DepositBox.depositAll("clue bottle");
+                                    Rs2Bank.depositAll("scroll box");
                                     Rs2Inventory.waitForInventoryChanges(1800);
                                 }
                                 if (config.shouldBankCaskets()) {
@@ -180,6 +182,8 @@ public class AutoFishingScript extends Script {
                 return Rs2Inventory.hasItem("fishing rod") && Rs2Inventory.hasItem("sandworms");
             case KARAMBWAN:
                 return (Rs2Inventory.hasItem(ItemID.TBWT_KARAMBWAN_VESSEL) || Rs2Inventory.hasItem(ItemID.TBWT_KARAMBWAN_VESSEL_LOADED_WITH_KARAMBWANJI) && Rs2Inventory.hasItem(ItemID.TBWT_RAW_KARAMBWANJI));
+            case BARB_FISH:
+                return Rs2Inventory.hasItem(ItemID.BRUT_FISHING_ROD) && (Rs2Inventory.hasItem(ItemID.FISHING_BAIT) || Rs2Inventory.hasItem(ItemID.FEATHER) || Rs2Inventory.hasItem(ItemID.BRUT_FISH_CUTS));
             default:
                 return false;
         }

@@ -45,7 +45,7 @@ public class Rs2Dialogue {
     public static boolean hasContinue() {
         return hasNPCContinue() || hasPlayerContinue() || hasDeathContinue() ||
                 hasSpriteContinue() || hasTutContinue() || hasItemContinue() ||
-                hasSpellFilterContinue();
+                hasBarrowsContinue() || hasSpellFilterContinue();
     }
 
     /**
@@ -107,6 +107,15 @@ public class Rs2Dialogue {
      */
     private static boolean hasItemContinue() {
         return Rs2Widget.isWidgetVisible(InterfaceID.DIALOG_SPRITE, 0);
+    }
+
+    /**
+     * Checks if there is a "click here to continue" option for the Barrows sarcophagus.
+     *
+     * @return true if the "Continue" option is visible in the item dialogue, false otherwise.
+     */
+    private static boolean hasBarrowsContinue() {
+        return Rs2Widget.isWidgetVisible(229, 4);
     }
 
     /**
@@ -482,17 +491,27 @@ public class Rs2Dialogue {
      *
      * @return the text content of the dialogue, or {@code null} if no dialogue is active.
      */
-    public static String getDialogueText() {
-        if (!isInDialogue()) return null;
+	public static String getDialogueText() {
+		if (!isInDialogue()) return "";
 
-        if (Rs2Widget.isWidgetVisible(229, 1)) {
-            return Rs2UiHelper.stripColTags(Rs2Widget.getWidget(229, 1).getText());
-        } else if (Rs2Widget.isWidgetVisible(231, 6)) {
-            return Rs2UiHelper.stripColTags(Rs2Widget.getWidget(231, 6).getText());
-        }
+		/*
+			Widget Group & Child Ids associated with dialogue text.
+		 */
+		int[][] widgetIds = {
+			{229, 1},
+			{229, 3},
+			{231, 6}
+		};
 
-        return null;
-    }
+		for (int[] widgetId : widgetIds) {
+			String text = getStrippedWidgetText(widgetId[0], widgetId[1]);
+			if (!text.isEmpty()) {
+				return text;
+			}
+		}
+
+		return "";
+	}
 
     /**
      * Checks if the current dialogue contains the specified text.
@@ -503,7 +522,7 @@ public class Rs2Dialogue {
      */
     public static boolean hasDialogueText(String text, boolean exact) {
         String dialogueText = getDialogueText();
-        if (dialogueText == null) return false;
+        if (dialogueText.isEmpty()) return false;
         return exact ? dialogueText.equalsIgnoreCase(text) : dialogueText.toLowerCase().contains(text.toLowerCase());
     }
 
@@ -659,6 +678,26 @@ public class Rs2Dialogue {
         }
         return false;
     }
+
+	/**
+	 * Retrieves and strips the color tags from the text of a visible widget.
+	 *
+	 * @param groupId  the group ID of the widget
+	 * @param childId  the child ID of the widget
+	 * @return the widget text without color tags, or an empty string if not visible or empty
+	 */
+	private static String getStrippedWidgetText(int groupId, int childId) {
+		if (!Rs2Widget.isWidgetVisible(groupId, childId)) {
+			return "";
+		}
+
+		Widget widget = Rs2Widget.getWidget(groupId, childId);
+		if (widget == null || widget.getText() == null || widget.getText().isEmpty()) {
+			return "";
+		}
+
+		return Rs2UiHelper.stripColTags(widget.getText());
+	}
 
     /**
      * Waits for a cutscene to start and end using default polling and timeout values.

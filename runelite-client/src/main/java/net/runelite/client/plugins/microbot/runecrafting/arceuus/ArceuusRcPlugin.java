@@ -29,6 +29,7 @@ public class ArceuusRcPlugin extends Plugin {
     private OverlayManager overlayManager;
     @Inject
     private ArceuusRcOverlay arceuusRcOverlay;
+    @Getter
     @Inject
     ArceuusRcScript arceuusRcScript;
 

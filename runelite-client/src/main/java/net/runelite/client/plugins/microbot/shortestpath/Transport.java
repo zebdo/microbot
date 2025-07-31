@@ -1,8 +1,10 @@
 package net.runelite.client.plugins.microbot.shortestpath;
 
+import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
 import net.runelite.api.Quest;
+import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -17,6 +19,7 @@ import java.util.*;
 public class Transport {
     //START microbot variables
     @Getter
+	@Setter
     private String action;
     @Getter
     private int objectId;
@@ -51,7 +54,7 @@ public class Transport {
      * The quests required to use this transport
      */
     @Getter
-    private Set<Quest> quests = new HashSet<>();
+    private Map<Quest, QuestState> quests = new HashMap<>();
 
     /**
      * The ids of items required to use this transport.
@@ -130,8 +133,8 @@ public class Transport {
                     destination.skillLevels[i]);
         }
 
-        this.quests.addAll(origin.quests);
-        this.quests.addAll(destination.quests);
+        this.quests.putAll(origin.quests);
+        this.quests.putAll(destination.quests);
 
         this.itemIdRequirements.addAll(origin.itemIdRequirements);
         this.itemIdRequirements.addAll(destination.itemIdRequirements);
@@ -261,7 +264,7 @@ public class Transport {
         }
 
         if ((value = fieldMap.get("Quests")) != null && !value.trim().isEmpty()) {
-            this.quests = findQuests(value);
+            this.quests = parseQuestStates(value);
         }
 
         if ((value = fieldMap.get("Duration")) != null && !value.trim().isEmpty()) {
@@ -371,19 +374,42 @@ public class Transport {
         return !quests.isEmpty();
     }
 
-    private static Set<Quest> findQuests(String questNamesCombined) {
-        String[] questNames = questNamesCombined.split(";");
-        Set<Quest> quests = new HashSet<>();
-        for (String questName : questNames) {
-            for (Quest quest : Quest.values()) {
-                if (quest.getName().equalsIgnoreCase(questName.trim())) {
-                    quests.add(quest);
-                    break;
-                }
-            }
-        }
-        return quests;
-    }
+	private static Map<Quest, QuestState> parseQuestStates(String questStatesCombined)
+	{
+		Map<Quest, QuestState> questStateMap = new HashMap<>();
+		String[] entries = questStatesCombined.split(";");
+		for (String entry : entries)
+		{
+			String questName;
+			String stateStr;
+			if (entry.contains("=")) {
+				String[] parts = entry.split("=");
+				if (parts.length != 2) continue;
+				questName = parts[0].trim();
+				stateStr = parts[1].trim();
+			} else {
+				questName = entry.trim();
+				stateStr = QuestState.FINISHED.name();
+			}
+			for (Quest quest : Quest.values())
+			{
+				if (quest.getName().equalsIgnoreCase(questName))
+				{
+					try
+					{
+						QuestState state = QuestState.valueOf(stateStr);
+						questStateMap.put(quest, state);
+					}
+					catch (IllegalArgumentException e)
+					{
+						// Invalid state string, skip
+					}
+					break;
+				}
+			}
+		}
+		return questStateMap;
+	}
 
     private static void addTransports(Map<WorldPoint, Set<Transport>> transports, String path, TransportType transportType) {
         addTransports(transports, path, transportType, 0);

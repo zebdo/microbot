@@ -13,6 +13,8 @@ import net.runelite.api.ObjectComposition;
 import net.runelite.api.Perspective;
 import net.runelite.api.Player;
 import net.runelite.api.Point;
+import net.runelite.api.Quest;
+import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.api.Tile;
 import net.runelite.api.TileObject;
@@ -21,6 +23,7 @@ import net.runelite.api.annotations.Component;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
@@ -36,6 +39,7 @@ import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
 import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
+import net.runelite.client.plugins.microbot.shortestpath.pathfinder.PathfinderConfig;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
@@ -68,14 +72,10 @@ import javax.inject.Named;
 import java.awt.*;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static net.runelite.client.plugins.microbot.util.Global.*;
 
@@ -118,7 +118,14 @@ public class Rs2Walker {
     public static boolean walkTo(WorldPoint target, int distance) {
         return walkWithState(target, distance) == WalkerState.ARRIVED;
     }
-
+    public static WalkerState walkWithState(WorldPoint target, int distance) {
+        boolean walkWithBankedTransports = config.walkWithBankedTransports();
+        if (walkWithBankedTransports){
+            return walkWithBankedTransportsAndState(target, distance,false);
+        }else {
+            return walkWithStateInternal(target, distance);
+        }
+    }
     /**
      * Replaces the walkTo method
      *
@@ -126,7 +133,7 @@ public class Rs2Walker {
      * @param distance
      * @return
      */
-    public static WalkerState walkWithState(WorldPoint target, int distance) {
+    private static WalkerState walkWithStateInternal(WorldPoint target, int distance) {
         if (Rs2Tile.getReachableTilesFromTile(Rs2Player.getWorldLocation(), distance).containsKey(target)
                 || !Rs2Tile.isWalkable(LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), target)) && Rs2Player.getWorldLocation().distanceTo(target) <= distance) {
             return WalkerState.ARRIVED;
@@ -251,7 +258,6 @@ public class Rs2Walker {
 
             // Edgeville/ardy wilderness lever warning
             if (Rs2Widget.isWidgetVisible(229, 1)) {
-                if (Rs2Dialogue.getDialogueText() == null) return WalkerState.MOVING;
                 if (Rs2Dialogue.getDialogueText().equalsIgnoreCase("Warning! The lever will teleport you deep into the Wilderness.")) {
                     Microbot.log("Detected Wilderness lever warning, interacting...");
                     Rs2Dialogue.clickContinue();
@@ -579,12 +585,23 @@ public class Rs2Walker {
             ShortestPathPlugin.getPathfinderConfig().refresh();
         }      
         Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, destination);
-        pathfinder.run();
-
+        pathfinder.run();        
         List<WorldPoint> path = pathfinder.getPath();       
         if (path.isEmpty() || path.get(path.size() - 1).getPlane() != destination.getPlane()) return Integer.MAX_VALUE;
-        WorldArea pathArea = new WorldArea(path.get(path.size() - 1), 2, 2);
-        WorldArea objectArea = new WorldArea(destination, 2, 2);
+        // Create a WorldArea centered on the worldPoint by calculating the south-west corner
+        WorldPoint pathPoint_SW = new WorldPoint(
+            path.get(path.size() - 1).getX() - 2, 
+            path.get(path.size() - 1).getY() - 2, 
+            path.get(path.size() - 1).getPlane()
+        );
+        // Create a WorldArea centered on the worldPoint by calculating the south-west corner
+        WorldPoint objectPoint_SW = new WorldPoint(
+            destination.getX() - 2, 
+            destination.getY() - 2, 
+            destination.getPlane()
+        ); 
+        WorldArea pathArea = new WorldArea(pathPoint_SW, 5, 5);
+        WorldArea objectArea = new WorldArea(objectPoint_SW, 5, 5);
         if (!pathArea.intersectsWith2D(objectArea)) {
             return Integer.MAX_VALUE;
         }
@@ -604,8 +621,23 @@ public class Rs2Walker {
      */
     public static int getTotalTilesFromPath(List<WorldPoint> path, WorldPoint destination) {
         if (path.isEmpty() || path.get(path.size() - 1).getPlane() != destination.getPlane()) return Integer.MAX_VALUE;
-        WorldArea pathArea = new WorldArea(path.get(path.size() - 1), 8, 8);
-        WorldArea objectArea = new WorldArea(destination, 8, 8);
+        
+        // Create centered WorldAreas instead of corner-based
+        WorldPoint pathEndpoint = path.get(path.size() - 1);
+        WorldPoint pathSouthWest = new WorldPoint(
+            pathEndpoint.getX() - 4, 
+            pathEndpoint.getY() - 4, 
+            pathEndpoint.getPlane()
+        );
+        WorldArea pathArea = new WorldArea(pathSouthWest, 8, 8);
+        
+        WorldPoint destSouthWest = new WorldPoint(
+            destination.getX() - 4, 
+            destination.getY() - 4, 
+            destination.getPlane()
+        );
+        WorldArea objectArea = new WorldArea(destSouthWest, 8, 8);
+        
         if (!pathArea.intersectsWith2D(objectArea)) {
             return Integer.MAX_VALUE;
         }
@@ -624,27 +656,42 @@ public class Rs2Walker {
     // takes an avg 200-300 ms
     // Used mainly for agility, might have to tweak this for other stuff
     public static boolean canReach(WorldPoint worldPoint, int sizeX, int sizeY, int pathSizeX, int pathSizeY,boolean useBankedItems) {
-		boolean originalUseBankItems = ShortestPathPlugin.getPathfinderConfig().isUseBankItems();
+        boolean originalUseBankItems = ShortestPathPlugin.getPathfinderConfig().isUseBankItems();
         WorldArea pathArea = null;
-        WorldArea objectArea = new WorldArea(worldPoint, sizeX + 2, sizeY + 2);
+        
+        // Create centered WorldArea for the object instead of corner-based
+        WorldPoint objectSouthWest = new WorldPoint(
+            worldPoint.getX() - (sizeX + 2) / 2, 
+            worldPoint.getY() - (sizeY + 2) / 2, 
+            worldPoint.getPlane()
+        );
+        WorldArea objectArea = new WorldArea(objectSouthWest, sizeX + 2, sizeY + 2);
+        
         try {                            
             ShortestPathPlugin.getPathfinderConfig().setUseBankItems(useBankedItems);
-            ShortestPathPlugin.getPathfinderConfig().refresh();
+            ShortestPathPlugin.getPathfinderConfig().refresh(worldPoint);
             if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
-                ShortestPathPlugin.getPathfinderConfig().refresh();
+                ShortestPathPlugin.getPathfinderConfig().refresh(worldPoint);
             }
             Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), Rs2Player.getWorldLocation(), worldPoint);
-            pathfinder.run();
-            pathArea = new WorldArea(pathfinder.getPath().get(pathfinder.getPath().size() - 1), pathSizeX, pathSizeY);                       
+            pathfinder.run();            
+            
+            // Create centered WorldArea for the path endpoint instead of corner-based
+            WorldPoint pathEndpoint = pathfinder.getPath().get(pathfinder.getPath().size() - 1);
+            WorldPoint pathSouthWest = new WorldPoint(
+                pathEndpoint.getX() - pathSizeX / 2, 
+                pathEndpoint.getY() - pathSizeY / 2, 
+                pathEndpoint.getPlane()
+            );
+            pathArea = new WorldArea(pathSouthWest, pathSizeX, pathSizeY);                       
         } catch (Exception e) {
             Microbot.logStackTrace("Rs2Walker", e);
             return false;
         } finally {
             ShortestPathPlugin.getPathfinderConfig().setUseBankItems(originalUseBankItems);
-            ShortestPathPlugin.getPathfinderConfig().refresh();
+            ShortestPathPlugin.getPathfinderConfig().refresh(worldPoint);
         }
-        return pathArea != null ? pathArea
-                .intersectsWith2D(objectArea): false;
+        return pathArea != null ? pathArea.intersectsWith2D(objectArea) : false;
     }
     public static boolean canReach(WorldPoint worldPoint, int sizeX, int sizeY, int pathSizeX, int pathSizeY) {
         return canReach(worldPoint, sizeX, sizeY, pathSizeX, pathSizeY, false);
@@ -683,19 +730,13 @@ public class Rs2Walker {
      * @return A list of `WorldPoint` objects representing the path from the player's current location to the target.
      */
     public static List<WorldPoint> getWalkPath(WorldPoint start, WorldPoint target) {
-        long startTime = System.nanoTime();
-        
-        if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty()) {
-            ShortestPathPlugin.getPathfinderConfig().refresh();
-        }
-        ShortestPathPlugin.getPathfinderConfig().refresh();
-        
+        long startTime = System.nanoTime();        
+        ShortestPathPlugin.getPathfinderConfig().refresh(target);                       
         long pathfinderStartTime = System.nanoTime();
-        Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, target);
-        pathfinder.run();
-        List<WorldPoint> path = pathfinder.getPath();
-        long pathfinderEndTime = System.nanoTime();
-        
+        Pathfinder pathfinderLocal = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, target);        
+        pathfinderLocal.run();                     
+        List<WorldPoint> path = pathfinderLocal.getPath();        
+        long pathfinderEndTime = System.nanoTime();        
         long totalEndTime = System.nanoTime();
         double configTimeMs = (pathfinderStartTime - startTime) / 1_000_000.0;
         double pathfinderTimeMs = (pathfinderEndTime - pathfinderStartTime) / 1_000_000.0;
@@ -1079,13 +1120,11 @@ public class Rs2Walker {
         if (!isInDialogue) return true;
 
         // Skip over first door dialogue & don't forget to set up two-factor warning
-        if (Rs2Dialogue.getDialogueText() != null) {
-            if (Rs2Dialogue.getDialogueText().contains("two-factor authentication options") || Rs2Dialogue.getDialogueText().contains("Hopefully you will learn<br>much from us.")) {
-                Rs2Dialogue.sleepUntilHasContinue();
-                sleepUntil(() -> !Rs2Dialogue.hasContinue() || Rs2Dialogue.getDialogueText().contains("To pass you must answer me"), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
-                if (!Rs2Dialogue.isInDialogue()) return true;
-            }
-        }
+		if (Rs2Dialogue.getDialogueText().toLowerCase().contains("two-factor authentication options") || Rs2Dialogue.getDialogueText().toLowerCase().contains("hopefully you will learn<br>much from us.")) {
+			Rs2Dialogue.sleepUntilHasContinue();
+			sleepUntil(() -> !Rs2Dialogue.hasContinue() || Rs2Dialogue.getDialogueText().toLowerCase().contains("to pass you must answer me"), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+			if (!Rs2Dialogue.isInDialogue()) return true;
+		}
 
         String dialogueAnswer = null;
         int attempts = 0;
@@ -1285,7 +1324,7 @@ public class Rs2Walker {
         ShortestPathPlugin.getPathfinderConfig().refresh();
         if (Rs2Player.isInCave()) {
             Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, ends);
-            pathfinder.run();
+            pathfinder.run();            
             ShortestPathPlugin.getPathfinderConfig().setIgnoreTeleportAndItems(true);
             Pathfinder pathfinderWithoutTeleports = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, ends);
             pathfinderWithoutTeleports.run();
@@ -1367,17 +1406,28 @@ public class Rs2Walker {
 
                     if (path.get(i).equals(origin)) {
                         if (transport.getType() == TransportType.SHIP || transport.getType() == TransportType.NPC || transport.getType() == TransportType.BOAT) {
-                            Rs2NpcModel npc = Rs2Npc.getNpc(transport.getName());
+
+							Rs2NpcModel npc = Rs2Npc.getNpc(transport.getName());
+
                             if (Rs2Npc.canWalkTo(npc, 20) && Rs2Npc.interact(npc, transport.getAction())) {
                                 Rs2Player.waitForWalking();
                                 sleepUntil(Rs2Dialogue::isInDialogue,600*2);
-                                if (Rs2Dialogue.hasDialogueText("will cost you")){
-                                    Rs2Dialogue.clickContinue();
-                                    sleepUntil(Rs2Dialogue::hasSelectAnOption,600*3);
-                                    Rs2Dialogue.clickOption("Yes please.");
-                                    sleepUntil(Rs2Dialogue::hasContinue,600*3);
-                                    Rs2Dialogue.clickContinue();
-                                } else if (Rs2Dialogue.clickOption("I'm just going to Pirates' cove")){
+
+								if (Objects.equals(transport.getName(), "Veos") && Objects.equals(transport.getAction(), "Talk-to")) {
+									sleepUntil(() -> !Rs2Dialogue.hasContinue(), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+									Rs2Dialogue.clickOption("Can you take me somewhere?");
+									sleepUntil(() -> !Rs2Dialogue.hasContinue() && !Rs2Dialogue.hasSelectAnOption(), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+									Rs2Dialogue.clickOption(transport.getDisplayInfo());
+									sleepUntil(() -> !Rs2Dialogue.hasContinue() && !Rs2Dialogue.hasSelectAnOption(), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+								}
+
+								if (Objects.equals(transport.getName(), "Captain Magoro") && Objects.equals(transport.getAction(), "Talk-to")) {
+									sleepUntil(() -> !Rs2Dialogue.hasContinue(), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+									Rs2Dialogue.clickOption(transport.getDisplayInfo());
+									sleepUntil(() -> !Rs2Dialogue.hasContinue() && !Rs2Dialogue.hasSelectAnOption(), Rs2Dialogue::clickContinue, 5000, Rs2Random.between(600, 800));
+								}
+
+								if (Rs2Dialogue.clickOption("I'm just going to Pirates' cove")){
 									sleep(600 * 2);
 									Rs2Dialogue.clickContinue();
                                 } else if (Objects.equals(transport.getName(), "Mountain Guide")) {
@@ -1564,8 +1614,7 @@ public class Rs2Walker {
         // Handle Ferox Encalve Barrier
         if (tileObject.getId() == ObjectID.WILDY_HUB_ENTRY_BARRIER || tileObject.getId() == ObjectID.WILDY_HUB_ENTRY_BARRIER_M) {
             if (Rs2Dialogue.isInDialogue()) {
-                if (Rs2Dialogue.getDialogueText() == null) return false;
-                if (Rs2Dialogue.getDialogueText().contains("When returning to the Enclave")) {
+                if (Rs2Dialogue.getDialogueText().toLowerCase().contains("when returning to the enclave")) {
                     Rs2Dialogue.clickContinue();
                     Rs2Dialogue.sleepUntilSelectAnOption();
                     Rs2Dialogue.keyPressForDialogueOption("Yes, and don't ask again.");
@@ -1948,7 +1997,8 @@ public class Rs2Walker {
      * @return distance
      */
     public static int getDistanceBetween(WorldPoint startpoint, WorldPoint endpoint) {
-        Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), startpoint, endpoint);
+        Set<WorldPoint> ends = Set.of(endpoint);
+        Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), startpoint, ends);
         pathfinder.run();
         return pathfinder.getPath().size();
     }
@@ -2140,28 +2190,30 @@ public class Rs2Walker {
     }
     
     private static boolean handleQuetzal(Transport transport) {
-        int varlamoreMapParentID = 874;
+		@Component
+        int VARLAMORE_QUETZAL_MAP = InterfaceID.QuetzalMenu.CONTENTS;
+		@Component
+		int VARLAMORE_QUETZAL_OPTIONS = InterfaceID.QuetzalMenu.ICONS;
         String displayInfo = transport.getDisplayInfo();
         if (displayInfo == null || displayInfo.isEmpty()) return false;
 
         Rs2NpcModel renu = Rs2Npc.getNpc(NpcID.QUETZAL_CHILD_GREEN);
 
-        if (Rs2Npc.canWalkTo(renu, 20) && Rs2Npc.interact(renu, "travel")) {
+        if (Rs2Tile.isTileReachable(transport.getOrigin()) && Rs2Npc.interact(renu, "travel")) {
             Rs2Player.waitForWalking();
-            boolean isVarlamoreMapVisible = sleepUntilTrue(() -> Rs2Widget.isWidgetVisible(varlamoreMapParentID, 2), 100, 10000);
+            boolean isVarlamoreMapVisible = sleepUntilTrue(() -> Rs2Widget.isWidgetVisible(VARLAMORE_QUETZAL_MAP), 100, 10000);
             
             if (!isVarlamoreMapVisible) {
                 Microbot.log("Varlamore Map Widget not visable within timeout");
                 return false;
             }
-            
-            List<Widget> dynamicWidgetChildren = Arrays.stream(Rs2Widget.getWidget(varlamoreMapParentID, 15).getDynamicChildren())
-                    .filter(Objects::nonNull)
-                    .collect(Collectors.toList());
-            Widget actionWidget = dynamicWidgetChildren.stream()
-                    .filter(w -> Arrays.stream(Objects.requireNonNull(w.getActions())).anyMatch(act -> act.toLowerCase().contains(displayInfo.toLowerCase())))
-                    .findFirst()
-                    .orElse(null);
+
+			Widget quetzalMapWidget = Rs2Widget.getWidget(VARLAMORE_QUETZAL_OPTIONS);
+			List<Widget> quetzalMapChildren = Arrays.stream(quetzalMapWidget.getDynamicChildren())
+					.filter(Objects::nonNull)
+					.collect(Collectors.toList());
+
+			Widget actionWidget = Rs2Widget.findWidget(displayInfo, quetzalMapChildren, false);
             if (actionWidget != null) {
                 Rs2Widget.clickWidget(actionWidget);
                 Microbot.log("Traveling to " + transport.getDisplayInfo());
@@ -2267,16 +2319,18 @@ public class Rs2Walker {
                 lowerCaseItemName.contains("digsite pendant") ||
                 lowerCaseItemName.contains("necklace of passage") ||
                 lowerCaseItemName.contains("camulet") ||
-                lowerCaseItemName.contains("burning amulet")) {
+                lowerCaseItemName.contains("burning amulet") ||
+				lowerCaseItemName.contains("giantsoul amulet")) {
             return 6;
         } else if (lowerCaseItemName.contains("xeric's talisman") ||
                 lowerCaseItemName.contains("slayer ring") ||
-				lowerCaseItemName.contains("construct. cape")) {
+				lowerCaseItemName.contains("construct. cape") ||
+				lowerCaseItemName.contains("pendant of ates")) {
             return 4;
-        } else if (lowerCaseItemName.contains("kharedst's memoirs") ||
-                   lowerCaseItemName.contains("giantsoul amulet")) {
+        } else if (lowerCaseItemName.contains("book of the dead")) {
             return 3;
-        } else if (lowerCaseItemName.contains("enchanted lyre")) {
+        } else if (lowerCaseItemName.contains("kharedst's memoirs") ||
+			       lowerCaseItemName.contains("enchanted lyre")) {
             return 2;
         } else {
             return 4; // Default offset if no match is found
@@ -2642,7 +2696,7 @@ public class Rs2Walker {
         try {
             // Store and configure pathfinder settings
             ShortestPathPlugin.getPathfinderConfig().setUseBankItems(useBankItems);
-            ShortestPathPlugin.getPathfinderConfig().refresh();
+            ShortestPathPlugin.getPathfinderConfig().refresh(destination); // Use target-based refresh
             List<WorldPoint> path = getWalkPath(destination);
             
             // Get path and extract relevant transports with filtering applied
@@ -2704,7 +2758,7 @@ public class Rs2Walker {
                 String displayInfo = hasMultipleDestination
                     ? transport.getDisplayInfo().split(":")[0].trim().toLowerCase()
                     : transport.getDisplayInfo();
-                log.info("Looking for spell rune requirements for: '{}' - display info {}", spellName, displayInfo);
+                log.debug("Looking for spell rune requirements for: '{}' - display info {}", spellName, displayInfo);
                 Rs2Spells rs2Spell = Rs2Magic.getRs2Spell(displayInfo);
                 return Rs2Magic.hasRequiredRunes(rs2Spell);
             }
@@ -2868,19 +2922,19 @@ public class Rs2Walker {
             String displayInfo = hasMultipleDestination
                 ? transport.getDisplayInfo().split(":")[0].trim().toLowerCase()
                 : transport.getDisplayInfo();
-            log.info("Looking for spell rune requirements for: '{}' - display info {}", spellName, displayInfo);
+            log.debug("Looking for spell rune requirements for: '{}' - display info {}", spellName, displayInfo);
             Rs2Spells rs2Spell = Rs2Magic.getRs2Spell(displayInfo);
             if (rs2Spell == null) return runeRequirements;            
             // Get rune requirements and check for elemental runes that might be provided by staves
             Map<Runes, Integer> requiredRunes = Rs2Magic.getRequiredRunes(rs2Spell,1,true);
             List<Runes> elementalRunes = rs2Spell.getElementalRunes();            
-            log.info("Spell '{}' requires {} runes, including {} elemental runes", 
+            log.debug("Spell '{}' requires {} runes, including {} elemental runes", 
                 spellName, requiredRunes.size(), elementalRunes.size());           
             // Convert rune requirements to item IDs with quantities
             requiredRunes.forEach((rune, quantity) -> {
                     int runeItemId = rune.getItemId();
                     runeRequirements.put(runeItemId, quantity);                
-                    log.info("Spell '{}' requires {} x {} (ID: {})", 
+                    log.debug("Spell '{}' requires {} x {} (ID: {})", 
                     spellName, quantity, rune.name(), runeItemId);
             });
             
@@ -2953,8 +3007,7 @@ public class Rs2Walker {
     public static TransportRouteAnalysis compareRoutes(WorldPoint startPoint,WorldPoint target) {
         long totalStartTime = System.nanoTime();
         StringBuilder performanceLog = new StringBuilder();
-        performanceLog.append("\n=== compareRoutes Performance Analysis ===\n");
-        
+        performanceLog.append("\n\t=== compareRoutes Performance Analysis ===\n");        
         if (target == null) {
             return new TransportRouteAnalysis(new ArrayList<>(), null, null,new ArrayList<>(),new ArrayList<>(), "Target location is null");
         }
@@ -2969,15 +3022,14 @@ public class Rs2Walker {
         
         try {
             // Get direct path distance with timing
-            performanceLog.append("Start Point: ").append(startPoint).append(", Target: ").append(target).append("\n");
-            
+            performanceLog.append("\tStart Point: ").append(startPoint).append(", Target: ").append(target).append("\n");            
             long directPathStartTime = System.nanoTime();
             List<WorldPoint> directPath = getWalkPath(startPoint, target);
             long directPathEndTime = System.nanoTime();
             double directPathTimeMs = (directPathEndTime - directPathStartTime) / 1_000_000.0;
             
             int directDistance = getTotalTilesFromPath(directPath, target);
-            performanceLog.append("Direct path calculation: ").append(String.format("%.2f ms", directPathTimeMs))
+            performanceLog.append("\t-Direct path calculation: ").append(String.format("%.2f ms", directPathTimeMs))
                     .append(" (").append(directPath.size()).append(" waypoints, ").append(directDistance).append(" tiles)\n");
             
             // Find nearest bank and calculate banking route distance
@@ -2994,7 +3046,7 @@ public class Rs2Walker {
                 boolean originalUseBankItems = ShortestPathPlugin.getPathfinderConfig().isUseBankItems();
                 try {                            
                     ShortestPathPlugin.getPathfinderConfig().setUseBankItems(true);
-                    ShortestPathPlugin.getPathfinderConfig().refresh();
+                    ShortestPathPlugin.getPathfinderConfig().refresh(target);
                     
                     performanceLog.append("\t-Bank items available: ").append(Rs2Bank.bankItems().size()).append("\n");
                     
@@ -3012,7 +3064,7 @@ public class Rs2Walker {
 
                 } finally {
                     // Always restore original configuration
-                    ShortestPathPlugin.getPathfinderConfig().setUseBankItems(originalUseBankItems);
+                    ShortestPathPlugin.getPathfinderConfig().setUseBankItems(false);
                     ShortestPathPlugin.getPathfinderConfig().refresh();                        
                 }
                 if (bankingRouteDistance<directDistance){
@@ -3061,7 +3113,7 @@ public class Rs2Walker {
                 String.format("\tDirect route is faster (%d vs %d tiles)", directDistance, bankingRouteDistance) :
                 String.format("\tBanking route is faster (%d vs %d tiles)", bankingRouteDistance, directDistance);
             
-            performanceLog.append("Result: ").append(recommendation).append("\n");
+            performanceLog.append("\tResult:\n\t\t ").append(recommendation).append("\n");
             log.info(performanceLog.toString());
             
             return new TransportRouteAnalysis(directPath, 
@@ -3126,53 +3178,59 @@ public class Rs2Walker {
         }
         if (ShortestPathPlugin.getPathfinder() != null && !ShortestPathPlugin.getPathfinder().isDone())
             return WalkerState.MOVING;
-        if ((currentTarget != null && currentTarget.equals(target)) && ShortestPathPlugin.getMarker() != null)
-            return WalkerState.MOVING;
-        setTarget(target);
+        if ((currentTarget != null && currentTarget.equals(target)) && ShortestPathPlugin.getMarker() != null){            
+            return WalkerState.MOVING;        
+        }
+        Rs2Walker.currentTarget =  null;        
         // Check what transport items are needed
-        TransportRouteAnalysis comparison = compareRoutes(target);        
-        List<Transport> missingTransports = getMissingTransports(getTransportsForDestination(target, true));
-        log.info("\n\tFound {} missing req. for transports to destination in the bank: {}", 
-                missingTransports.size(), target);
-        Map<Integer, Integer> missingItemsWithQuantities = getMissingTransportItemIdsWithQuantities(missingTransports);
+        TransportRouteAnalysis comparison = compareRoutes(target);
+        List<Transport> missingTransports = getMissingTransports(getTransportsForDestination(target, true, TransportType.TELEPORTATION_SPELL));
         
-        log.info("\n\tFor Found {} missing transports we found the {} missing items for destination: {}", 
-                missingTransports.size(), missingItemsWithQuantities.size(), target);
-        setTarget(null); 
+        Map<Integer, Integer> missingItemsWithQuantities = getMissingTransportItemIdsWithQuantities(missingTransports);
+        if(!missingTransports.isEmpty()){            
+            log.info("\n\tFor {} transports to destination in the bank to target {} we found {} missing items", 
+                missingTransports.size(), target, missingItemsWithQuantities.size());                    
+        }
         // If no missing transport items, go directly
         if (missingItemsWithQuantities.isEmpty() && !forceBanking) {
-            log.info("\n\tNo missing transport items, traveling directly to: \n\t" + target);            
-            WalkerState state = walkWithState(target, distance);
+            log.info("\n\tNo missing transport items, traveling directly to: \n\t" + target);
+            setTarget(null); // Clear target to avoid conflicts
+            WalkerState state = walkWithStateInternal(target, distance);
             if (state == WalkerState.ARRIVED) {
                 log.info("\n\tArrived directly at target: " + target);
             } else {
                 log.warn("\n\tFailed to arrive directly at target: " + target + ", state: " + state);
+                setTarget(null);
+                return state;
+                
             }
             return state;
-        }else{        
+        } else {
             // Compare routes if we have missing items that could be obtained from bank
-            log.info("\n\tRoute comparison: \n\t\t" + comparison.getAnalysis());            
-            // If forced banking or banking route is more efficient, go via bank
-            if (forceBanking || !comparison.isDirectIsFaster()) {
+            // Use config for minimum bank route savings
+            int minBankRouteSavings = config != null ? config.minBankRouteSavings() : 0;
+            int tileSavings = comparison.getTileSavings();
+            boolean bankRouteIsBetter = !comparison.isDirectIsFaster() && tileSavings >= minBankRouteSavings;
+            // If forced banking or banking route is more efficient (with min savings), go via bank
+            if (forceBanking || bankRouteIsBetter) {
                 if (comparison.getNearestBank() != null) {
-                    log.info("\n\tUsing banking route: \n\t\t{} -> {} -> {}", 
+                    log.info("\n\tUsing banking route: \n\t\tStart: {} -> Bank: {} -> Target: {}", 
                             Rs2Player.getWorldLocation(), comparison.getBankLocation(), target);
-                    
                     // Handle the complete banking workflow using legacy walkTo approach
-                    return walkWithBankingState(comparison.getBankLocation(), missingItemsWithQuantities, target,distance);
+                    return walkWithBankingState(comparison.getBankLocation(), missingItemsWithQuantities, target, distance);
                 } else {
                     log.warn("\n\tBanking route requested but no accessible bank found, trying direct route");
-                    return walkWithState(target, distance);
+                    setTarget(null); // Clear target to avoid conflicts
+                    return walkWithStateInternal(target, distance);
                 }
             } else {
-                log.info("\n\tDirect route is more efficient despite missing items, traveling directly");
-                return walkWithState(target, distance);
+                log.info("\n\tDirect route is more efficient despite missing items or does not meet min savings, traveling directly");
+                setTarget(null); // Clear target to avoid conflicts
+                return walkWithStateInternal(target, distance);
             }
         }
         
-        // Fallback to direct travel
-        //log.info("\n\tFallback: traveling directly to " + target);
-        //return walkWithState(target, distance);
+    
     }
     
     
@@ -3208,17 +3266,14 @@ public class Rs2Walker {
                 log.warn("Cannot perform banking workflow with null locations");
                 return WalkerState.EXIT;
             }
-            // Step 1: Walk to bank
-            setTarget(null);                        
-            WalkerState bankWalkResult = walkWithState(bankLocation);
+            // Step 1: Walk to bank       
+            setTarget(null); // Clear current target to avoid conflicts           
+            WalkerState bankWalkResult = walkWithStateInternal(bankLocation, distance);
             if (bankWalkResult != WalkerState.ARRIVED) {
                 log.warn("Failed to arrive at bank at: " + bankLocation + ", state: " + bankWalkResult);
                 return bankWalkResult;
             }
-            
-            // Wait for arrival at bank
-            Rs2Player.waitForWalking();
-            
+            log.info("Arrived at bank location: " + bankLocation);                                    
             // Step 2: Open bank
             if (!Rs2Bank.openBank()) {
                 log.warn("Failed to open bank at: " + bankLocation);
@@ -3265,9 +3320,12 @@ public class Rs2Walker {
                 log.warn("Failed to close bank after withdrawals");
                 return WalkerState.EXIT;
             }
+            ShortestPathPlugin.getPathfinderConfig().setUseBankItems(false);
+            ShortestPathPlugin.getPathfinderConfig().refresh(finalTarget);
             // Step 5: Continue to final target
             log.debug("Banking complete, continuing to final target: " + finalTarget);
-            return walkWithState(finalTarget,distance);
+            setTarget(null); // Clear current target to avoid conflicts           
+            return walkWithStateInternal(finalTarget, distance);
             
         } catch (Exception e) {
             log.error("Error in banking workflow: " + e.getMessage(), e);

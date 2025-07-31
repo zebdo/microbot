@@ -157,7 +157,7 @@ public class ThievingScript extends Script {
 
         boolean inside = false;
         int px = point.getX(), py = point.getY();
-        
+
         for (int i = 0, j = n - 1; i < n; j = i++) {
             int xi = polygon[i].getX(), yi = polygon[i].getY();
             int xj = polygon[j].getX(), yj = polygon[j].getY();
@@ -230,7 +230,8 @@ public class ThievingScript extends Script {
         var highlighted = net.runelite.client.plugins.npchighlight.NpcIndicatorsPlugin.getHighlightedNpcs();
         if (highlighted.isEmpty()) return false;
         equipSet(ROGUE_SET);
-        while (!Rs2Player.isStunned() && Microbot.isLoggedIn()) {
+        while (!Rs2Player.isStunned() & isRunning()) {
+			if (!Microbot.isLoggedIn()) break;
             openCoinPouches();
             if (config.shadowVeil()) castShadowVeil();
             if (!Rs2Npc.pickpocket(highlighted)) continue;
@@ -375,9 +376,9 @@ public class ThievingScript extends Script {
         }
 
         if (config.shadowVeil()) {
-            List<String> runesShadowVeil = Arrays.asList("Earth rune", "Fire rune"); 
+            List<String> runesShadowVeil = Arrays.asList("Earth rune", "Fire rune");
             boolean banklavaStaff = Rs2Equipment.isWearing("Lava battlestaff") || Rs2Inventory.contains("Lava battlestaff") || Rs2Bank.hasItem("Lava battlestaff");
-            boolean bankrunes = Rs2Bank.hasItem(runesShadowVeil); 
+            boolean bankrunes = Rs2Bank.hasItem(runesShadowVeil);
             boolean bankcosmicRune = Rs2Bank.hasItem("Cosmic rune");
 
             if (!banklavaStaff && !bankrunes) {

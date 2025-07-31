@@ -316,6 +316,9 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
             return;
         }
 
+		// Reset config in Rs2Walker when changed
+		Rs2Walker.setConfig(config);
+
         if ("drawDebugPanel".equals(event.getKey())) {
             if (config.drawDebugPanel()) {
                 overlayManager.add(debugOverlayPanel);

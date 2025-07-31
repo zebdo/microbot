@@ -39,4 +39,14 @@ public class TransportVarbit {
         GREATER_THAN,
         LESS_THAN
     }
+
+	@Override
+	public String toString()
+	{
+		return "TransportVarbit{" +
+				"varbitId=" + varbitId +
+				", value=" + value +
+				", operator=" + operator +
+				'}';
+	}
 }

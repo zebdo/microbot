@@ -189,7 +189,7 @@ public class Rs2Inventory {
                 if (primaryItem == secondaryItem) continue;
 
                 int slotDifference = calculateSlotDifference(primaryItem.getSlot(), secondaryItem.getSlot());
-                if (slotDifference < minSlotDifference) {
+                if (slotDifference <= minSlotDifference) {
                     minSlotDifference = slotDifference;
                     closestPrimaryItem = primaryItem;
                     closestSecondaryItem = secondaryItem;
