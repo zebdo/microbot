@@ -376,6 +376,14 @@ public class Rs2Bank {
     /**
      * Query count of item inside of bank
      */
+    public static int count(Predicate<Rs2ItemModel> predicate) {
+        final Rs2ItemModel bankItem = get(predicate);
+        return bankItem == null ? 0 : bankItem.getQuantity();
+    }
+
+    /**
+     * Query count of item inside of bank
+     */
     public static int count(int id) {
         Rs2ItemModel bankItem = findBankItem(id);
         if (bankItem == null) return 0;
@@ -421,7 +429,7 @@ public class Rs2Bank {
         if (!Rs2Inventory.hasItem(rs2Item.getId())) return false;
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
-        if (Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 0) {
+        if (Microbot.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 0) {
             invokeMenu(2, rs2Item);
         } else {
             invokeMenu(3, rs2Item);
@@ -469,7 +477,7 @@ public class Rs2Bank {
         if (rs2Item == null) return false;
         if (!isOpen()) return false;
         if (!Rs2Inventory.hasItem(rs2Item.getId())) return false;
-        container = BANK_INVENTORY_ITEM_CONTAINER;
+        container = ComponentID.BANK_INVENTORY_ITEM_CONTAINER;
 
         return handleAmount(rs2Item, amount);
     }
@@ -504,8 +512,8 @@ public class Rs2Bank {
     private static boolean handleAmount(Rs2ItemModel rs2Item, int amount, boolean safe) {
         
         if (amount <= 0) return true;
-        int selected = Microbot.getVarbitValue(SELECTED_OPTION_VARBIT);
-        int configuredX = Microbot.getVarbitValue(X_AMOUNT_VARBIT);
+        int selected = Microbot.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE);
+        int configuredX = Microbot.getVarbitValue(VarbitID.BANK_REQUESTEDQUANTITY);
         boolean hasX = configuredX > 0;        
         boolean isInventory = (container == BANK_INVENTORY_ITEM_CONTAINER);
         int xSetOffset = -1;
@@ -606,7 +614,7 @@ public class Rs2Bank {
         if (!Rs2Inventory.hasItem(rs2Item.getId())) return false;
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
-        if (Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 4) {
+        if (Microbot.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 4) {
             invokeMenu(2, rs2Item);
         } else {
             invokeMenu(8, rs2Item);
@@ -685,6 +693,10 @@ public class Rs2Bank {
         return Rs2Inventory.waitForInventoryChanges(10_000);
     }
 
+    public static boolean depositAllExcept(Predicate<Rs2ItemModel> predicate) {
+        return depositAll(predicate.negate());
+    }
+
     /**
      * Deposits all items in the player's inventory into the bank, except for the items with the specified IDs.
      * This method uses a lambda function to filter out the items with the specified IDs from the deposit operation.
@@ -706,7 +718,7 @@ public class Rs2Bank {
      * @return true if any items were deposited, false otherwise.
      */
     public static boolean depositAllExcept(String... names) {
-        return depositAll(x -> Arrays.stream(names).noneMatch(name -> name.equalsIgnoreCase(x.getName())));
+        return depositAllExcept(Rs2ItemModel.matches(false, names));
     }
 
     /**
@@ -718,7 +730,7 @@ public class Rs2Bank {
      * @return true if any items were deposited, false otherwise.
      */
     public static boolean depositAllExcept(List<String> names) {
-        return depositAll(x -> names.stream().noneMatch(name -> name.equalsIgnoreCase(x.getName())));
+        return depositAllExcept(names.toArray(String[]::new));
     }
 
     /**
@@ -749,10 +761,7 @@ public class Rs2Bank {
      * @return true if any items were deposited, false otherwise.
      */
     public static boolean depositAllExcept(boolean exact, String... names) {
-        if (!exact)
-            return depositAll(x -> Arrays.stream(names).noneMatch(name -> x.getName().toLowerCase().contains(name.toLowerCase())));
-        else
-            return depositAll(x -> Arrays.stream(names).noneMatch(name -> name.equalsIgnoreCase(x.getName())));
+        return depositAllExcept(Rs2ItemModel.matches(exact, names));
     }
 
     /**
@@ -766,7 +775,7 @@ public class Rs2Bank {
         if (Rs2Inventory.isFull()) return false;
         container = BANK_ITEM_CONTAINER;
 
-        final int entryIndex = Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 0 ? 1 : 2;
+        final int entryIndex = Microbot.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 0 ? 1 : 2;
         invokeMenu(entryIndex, rs2Item);
         return true;
     }
@@ -1010,7 +1019,7 @@ public class Rs2Bank {
         if (Rs2Inventory.isFull()) return false;
         container = BANK_ITEM_CONTAINER;
 
-        if (Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 4) {
+        if (Microbot.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 4) {
             invokeMenu(1, rs2Item);
         } else {
             invokeMenu(6, rs2Item);
@@ -1461,10 +1470,10 @@ public class Rs2Bank {
      */
     private static Rs2ItemModel findBankItem(String name, boolean exact, int amount) {
     final String lowerCaseName = name.toLowerCase();
-    return getAll()
+    final Stream<Rs2ItemModel> items = getAll()
             .filter(x -> exact ? x.getName().equalsIgnoreCase(lowerCaseName) : x.getName().toLowerCase().contains(lowerCaseName))
-            .filter(x -> x.getQuantity() >= amount)
-            .findAny().orElse(null);
+            .filter(x -> x.getQuantity() >= amount);
+    return exact ? items.findAny().orElse(null) : items.min(Comparator.comparingInt(item -> item.getName().length())).orElse(null);
 }
 
     /**
