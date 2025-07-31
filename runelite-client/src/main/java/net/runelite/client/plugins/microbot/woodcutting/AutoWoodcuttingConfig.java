@@ -27,6 +27,14 @@ public interface AutoWoodcuttingConfig extends Config {
     )
     String resetSection = "reset";
 
+    @ConfigSection(
+            name = "Forestry",
+            description = "Forestry events",
+            position = 2,
+            closedByDefault = true
+    )
+    String forestrySection = "forestry";
+
     @ConfigItem(
             keyName = "Tree",
             name = "Tree",
@@ -57,17 +65,6 @@ public interface AutoWoodcuttingConfig extends Config {
             section = generalSection
     )
     default boolean hopWhenPlayerDetected() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "enableForestry",
-            name = "Enable forestry",
-            description = "Enable forestry features",
-            position = 3,
-            section = generalSection
-    )
-    default boolean enableForestry() {
         return false;
     }
 
@@ -136,4 +133,115 @@ public interface AutoWoodcuttingConfig extends Config {
     default WoodcuttingWalkBack walkBack() {
         return WoodcuttingWalkBack.LAST_LOCATION;
     }
+
+    @ConfigItem(
+            keyName = "enableForestry",
+            name = "Enable forestry",
+            description = "Enable forestry features",
+            position = 0,
+            section = forestrySection
+    )
+    default boolean enableForestry() {
+        return false;
+    }
+
+     @ConfigItem(
+             keyName = "eggEvent",
+             name = "Enable Egg Event",
+             description = "Enable the Egg forestry event",
+             position = 1,
+             section = forestrySection
+     )
+     default boolean eggEvent() {
+         return true;
+     }
+
+     @ConfigItem(
+             keyName = "entlingsEvent",
+             name = "Enable Entlings Event",
+             description = "Enable the Entlings forestry event",
+             position = 2,
+             section = forestrySection
+     )
+     default boolean entlingsEvent() {
+         return true;
+     }
+
+     @ConfigItem(
+             keyName = "flowersEvent",
+             name = "Enable Flowers Event",
+             description = "Enable the Flowers forestry event",
+             position = 3,
+             section = forestrySection,
+             hidden = true //TODO: Remove this when the event is implemented
+     )
+     default boolean flowersEvent() {
+         return false;
+     }
+
+     @ConfigItem(
+             keyName = "foxEvent",
+             name = "Enable Fox Event",
+             description = "Enable the Fox forestry event",
+             position = 4,
+             section = forestrySection
+     )
+     default boolean foxEvent() {
+         return true;
+     }
+
+     @ConfigItem(
+             keyName = "hivesEvent",
+             name = "Enable Hives Event",
+             description = "Enable the Hives forestry event",
+             position = 5,
+             section = forestrySection
+     )
+     default boolean hivesEvent() {
+         return true;
+     }
+
+     @ConfigItem(
+             keyName = "leprechaunEvent",
+             name = "Enable Leprechaun Event",
+             description = "Enable the Leprechaun forestry event",
+             position = 6,
+             section = forestrySection
+     )
+     default boolean leprechaunEvent() {
+         return true;
+     }
+
+     @ConfigItem(
+             keyName = "ritualEvent",
+             name = "Enable Ritual Event",
+             description = "Enable the Ritual forestry event",
+             position = 7,
+             section = forestrySection
+     )
+     default boolean ritualEvent() {
+         return true;
+     }
+
+     @ConfigItem(
+             keyName = "rootEvent",
+             name = "Enable Root Event",
+             description = "Enable the Root forestry event",
+             position = 8,
+             section = forestrySection
+     )
+     default boolean rootEvent() {
+         return true;
+     }
+
+     @ConfigItem(
+             keyName = "saplingEvent",
+             name = "Enable Struggling Sapling Event",
+             description = "Enable the Struggling Sapling forestry event",
+             position = 9,
+             section = forestrySection
+     )
+     default boolean saplingEvent() {
+         return true;
+     }
 }

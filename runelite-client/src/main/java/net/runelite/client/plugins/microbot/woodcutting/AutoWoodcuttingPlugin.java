@@ -1,20 +1,20 @@
 package net.runelite.client.plugins.microbot.woodcutting;
 
 import com.google.inject.Provides;
+import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
-import net.runelite.api.events.ChatMessage;
-import net.runelite.api.events.NpcDespawned;
-import net.runelite.api.events.NpcSpawned;
-import net.runelite.api.events.StatChanged;
+import net.runelite.api.events.*;
 import net.runelite.api.gameval.NpcID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
-import net.runelite.client.plugins.microbot.woodcutting.Forestry.StrugglingSaplingEvent;
+import net.runelite.client.plugins.microbot.woodcutting.Forestry.*;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
@@ -30,13 +30,25 @@ import java.util.regex.Pattern;
 @Slf4j
 public class AutoWoodcuttingPlugin extends Plugin {
     @Inject
+    @Getter(AccessLevel.PACKAGE)
     public AutoWoodcuttingScript autoWoodcuttingScript;
     @Inject
+    @Getter(AccessLevel.PACKAGE)
     private AutoWoodcuttingConfig config;
     @Inject
     private OverlayManager overlayManager;
     @Inject
     private AutoWoodcuttingOverlay woodcuttingOverlay;
+
+    private EggEvent eggEvent;
+    private EntlingsEvent entlingsEvent;
+    private FlowersEvent flowersEvent;
+    private FoxEvent foxEvent;
+    private HivesEvent hivesEvent;
+    private LeprechaunEvent leprechaunEvent;
+    private RitualEvent ritualEvent;
+    private RootEvent rootEvent;
+    private StrugglingSaplingEvent saplingEvent;
 
     private static final Pattern WOOD_CUT_PATTERN = Pattern.compile("You get (?:some|an)[\\w ]+(?:logs?|mushrooms)\\.");
     @Provides
@@ -49,12 +61,14 @@ public class AutoWoodcuttingPlugin extends Plugin {
         if (overlayManager != null) {
             overlayManager.add(woodcuttingOverlay);
         }
-        Microbot.blockingEventManager.add(new StrugglingSaplingEvent(this));
+        if (config.enableForestry())
+            this.addEvents();
         autoWoodcuttingScript.run(config);
     }
 
     protected void shutDown() {
         autoWoodcuttingScript.shutdown();
+        this.removeEvents();
         overlayManager.remove(woodcuttingOverlay);
     }
 
@@ -75,21 +89,29 @@ public class AutoWoodcuttingPlugin extends Plugin {
             autoWoodcuttingScript.cannotLightFire = true;
         }
 
-        if (msg.startsWith("The sapling seems to love")) {
-            int ingredientNum = msg.contains("first") ? 0 : (msg.contains("second") ? 1 : (msg.contains("third") ? 2 : -1));
-            if (ingredientNum == -1) {
+        if (msg.startsWith("The sapling seems to love"))
+        {
+            int ingredientNum = msg.contains("first") ? 1 : (msg.contains("second") ? 2 : (msg.contains("third") ? 3 : -1));
+            if (ingredientNum == -1)
+            {
+                log.debug("unable to find ingredient index from message: {}", msg);
                 return;
             }
 
-            // Find which ingredient this message refers to
-            for (TileObject ingredient : Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("leaves", false))) {
-                var ingredientName = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getObjectDefinition(ingredient.getId()).getName()).orElse(null);
-
-                if (msg.contains(ingredientName)) {
-                    autoWoodcuttingScript.saplingOrder[ingredientNum] = (GameObject) ingredient;
-                    break;
-                }
+            GameObject ingredientObj = autoWoodcuttingScript.getSaplingIngredients().stream()
+                    .filter(obj -> {
+                        String compositionName = Rs2GameObject.getCompositionName(obj).orElse(null);
+                        return compositionName != null && msg.contains(compositionName.toLowerCase());
+                    })
+                    .findAny()
+                    .orElse(null);
+            if (ingredientObj == null)
+            {
+                log.debug("unable to find ingredient from message: {}", msg);
+                return;
             }
+
+            autoWoodcuttingScript.saplingOrder[ingredientNum - 1] = ingredientObj;
         }
     }
 
@@ -109,5 +131,90 @@ public class AutoWoodcuttingPlugin extends Plugin {
         if (id >= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_A_1 && id <= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_D_4) {
             autoWoodcuttingScript.ritualCircles.remove(npc);
         }
+    }
+
+    @Subscribe
+    public void onGameObjectSpawned(final GameObjectSpawned event) {
+        GameObject gameObject = event.getGameObject();
+        switch (gameObject.getId())
+        {
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_1:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_2:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_3:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_4A:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_4B:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_4C:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_5:
+                autoWoodcuttingScript.getSaplingIngredients().add(gameObject);
+                break;
+        }
+    }
+
+    @Subscribe
+    public void onGameObjectDespawned(final GameObjectDespawned event) {
+        final GameObject object = event.getGameObject();
+
+        switch (object.getId()) {
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_1:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_2:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_3:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_4A:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_4B:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_4C:
+            case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_5:
+                autoWoodcuttingScript.getSaplingIngredients().remove(object);
+                break;
+        }
+    }
+
+    private void addEvents() {
+        eggEvent = new EggEvent();
+        entlingsEvent = new EntlingsEvent();
+        flowersEvent = new FlowersEvent();
+        foxEvent = new FoxEvent();
+        hivesEvent = new HivesEvent(config);
+        leprechaunEvent = new LeprechaunEvent();
+        ritualEvent = new RitualEvent(autoWoodcuttingScript);
+        rootEvent = new RootEvent();
+        saplingEvent = new StrugglingSaplingEvent(this);
+
+        if (config.eggEvent()) {
+        Microbot.getBlockingEventManager().add(eggEvent);
+        }
+        if (config.entlingsEvent()) {
+        Microbot.getBlockingEventManager().add(entlingsEvent);
+        }
+        if (config.flowersEvent()) {
+        Microbot.getBlockingEventManager().add(flowersEvent);
+        }
+        if (config.foxEvent()) {
+        Microbot.getBlockingEventManager().add(foxEvent);
+        }
+        if (config.hivesEvent()) {
+        Microbot.getBlockingEventManager().add(hivesEvent);
+        }
+        if (config.leprechaunEvent()) {
+        Microbot.getBlockingEventManager().add(leprechaunEvent);
+        }
+        if (config.ritualEvent()) {
+        Microbot.getBlockingEventManager().add(ritualEvent);
+        }
+        if (config.rootEvent()) {
+        Microbot.getBlockingEventManager().add(rootEvent);
+        }
+        if (config.saplingEvent()) {
+        Microbot.getBlockingEventManager().add(saplingEvent);
+    }
+    }
+    private void removeEvents() {
+        Microbot.getBlockingEventManager().remove(eggEvent);
+        Microbot.getBlockingEventManager().remove(entlingsEvent);
+        Microbot.getBlockingEventManager().remove(flowersEvent);
+        Microbot.getBlockingEventManager().remove(foxEvent);
+        Microbot.getBlockingEventManager().remove(hivesEvent);
+        Microbot.getBlockingEventManager().remove(leprechaunEvent);
+        Microbot.getBlockingEventManager().remove(ritualEvent);
+        Microbot.getBlockingEventManager().remove(rootEvent);
+        Microbot.getBlockingEventManager().remove(saplingEvent);
     }
 }

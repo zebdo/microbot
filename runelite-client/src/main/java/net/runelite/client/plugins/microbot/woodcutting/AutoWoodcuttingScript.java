@@ -1,8 +1,9 @@
 package net.runelite.client.plugins.microbot.woodcutting;
 
+import lombok.AccessLevel;
+import lombok.Getter;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
@@ -14,14 +15,11 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
-import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
-import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.woodcutting.Rs2Woodcutting;
-import net.runelite.client.plugins.microbot.woodcutting.Forestry.PruningAction;
 import net.runelite.client.plugins.microbot.woodcutting.enums.*;
 
 import java.awt.event.KeyEvent;
@@ -34,6 +32,9 @@ import static net.runelite.api.gameval.ItemID.TINDERBOX;
 
 
 public class AutoWoodcuttingScript extends Script {
+
+    @Getter(AccessLevel.PACKAGE)
+    private final List<GameObject> saplingIngredients = new ArrayList<>(5);
 
     public static final List<Integer> BURNING_ANIMATION_IDS = List.of(
             FORESTRY_CAMPFIRE_BURNING_LOGS,
@@ -58,7 +59,6 @@ public class AutoWoodcuttingScript extends Script {
     public final List<NPC> ritualCircles = new ArrayList<>();
     public ForestryEvents currentForestryEvent = ForestryEvents.NONE;
     public final GameObject[] saplingOrder = new GameObject[3];
-    public boolean debugForestry = true;
 
     private static void handleFiremaking(AutoWoodcuttingConfig config) {
         if (!Rs2Inventory.hasItem(TINDERBOX)) {
@@ -96,14 +96,15 @@ public class AutoWoodcuttingScript extends Script {
         }
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
+                if (Microbot.getBlockingEventManager().IsEventPending()){
+                    sleep(300);
+                    return;
+                }
                 if (preFlightChecks(config)) return;
                 switch (woodcuttingScriptState) {
                     case WOODCUTTING:
                         if (beforeCuttingTreesChecks(config)) return;
-                        // Only handle woodcutting normally if the forestry event logic permits you
-                        if (!handleForestryEvents(config)) {
-                            handleWoodcutting(config);
-                        }
+                        handleWoodcutting(config);
                         break;
                     case FIREMAKING:
                         handleFiremaking(config);
@@ -111,10 +112,7 @@ public class AutoWoodcuttingScript extends Script {
                         woodcuttingScriptState = WoodcuttingScriptState.RESETTING;
                         break;
                     case RESETTING:
-                        if (!handleForestryEvents(config)) {
-                            resetInventory(config);
-                            break;
-                        }
+                        resetInventory(config);
                 }
             } catch (Exception ex) {
                 Microbot.log(ex.getMessage());
@@ -144,392 +142,6 @@ public class AutoWoodcuttingScript extends Script {
                 }
             }
         }
-    }
-
-    private boolean handleForestryEvents(AutoWoodcuttingConfig config) {
-        if (!config.enableForestry()) return false;
-
-        if (CheckForStrugglingSapling()) {
-            if (debugForestry) {
-                Microbot.log("Struggling sapling found");
-            }
-            handleStrugglingSapling();
-        }
-
-        if (checkForTreeRoot()) {
-            if (debugForestry) {
-                Microbot.log("Infused tree root found");
-            }
-            handleTreeRoot();
-            return true;
-        }
-
-        if (checkForFoxTrap()) {
-            if (debugForestry) {
-                Microbot.log("Fox trap found");
-            }
-            handleFoxTrap();
-            return true;
-        }
-
-        if (checkForRainbow()) {
-            if (debugForestry) {
-                Microbot.log("Rainbow found");
-            }
-            handleRainbow();
-            return true;
-        }
-
-        if (checkForBeeHive() && Rs2Inventory.contains(config.TREE().getLogID())) {
-            if (debugForestry) {
-                Microbot.log("Bee hive found");
-            }
-            handleBeeHive();
-            return true;
-        }
-
-        if (checkForPheasant()) {
-            if (debugForestry) {
-                Microbot.log("Pheasant nest found");
-            }
-            handlePheasant();
-            return true;
-        }
-
-        if (checkForRitualCircles()) {
-            if (debugForestry) {
-                Microbot.log("Ritual circles found");
-            }
-            handleRitualCircles();
-            return true;
-        }
-
-        PruningAction pruningAction = findEntlingToPrune();
-        if (pruningAction != null) {
-            if (debugForestry) {
-                Microbot.log("Entling found: " + pruningAction.getEntling().getName() + " with action: " + pruningAction.getAction());
-            }
-            handleEntling(pruningAction);
-            return true;
-        }
-
-        if (checkForFoxPoacher()) {
-            if (debugForestry) {
-                Microbot.log("Fox poacher found");
-            }
-            handleFoxTrap();
-            return true;
-        }
-        // If no forestry events are active, reset the current event state
-        if (currentForestryEvent != ForestryEvents.NONE) {
-            currentForestryEvent = ForestryEvents.NONE;
-        }
-        return false;
-    }
-
-    private void handleStrugglingSapling() {
-        currentForestryEvent = ForestryEvents.STRUGGLING_SAPLING;
-    }
-
-    private boolean CheckForStrugglingSapling() {
-        var strugglingSaplings = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("Struggling sapling", false));
-        if (strugglingSaplings == null) return false;
-        if (strugglingSaplings.isEmpty()) return false;
-        return strugglingSaplings.stream().anyMatch(obj ->
-                Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(obj), "Add-mulch") &&
-                        obj.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
-        );
-    }
-
-    // Event detection methods
-    private boolean checkForTreeRoot() {
-        var roots = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("infused tree root", false));
-        if (roots == null) return false;
-        if (roots.isEmpty()) return false;
-        return roots.stream().anyMatch(obj ->
-                Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(obj), "Chop down") &&
-                        obj.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
-        );
-    }
-
-    private boolean checkForFoxTrap() {
-        var foxTraps = Rs2Npc.getNpcs("fox trap");
-        if (foxTraps == null) return false;
-        return foxTraps.findAny().isPresent();
-    }
-
-    private boolean checkForRainbow() {
-        var rainbows = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("ainbow", false));
-        if (rainbows == null) return false;
-        if (rainbows.isEmpty()) return false;
-        return rainbows.stream().anyMatch(obj ->
-                obj.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
-        );
-    }
-
-    private boolean checkForBeeHive() {
-        var beehives = Rs2Npc.getNpcs(x -> x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_1 || x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_2);
-        return beehives.findAny().isPresent();
-    }
-
-    private boolean checkForSturdyBeeHive() {
-        var sturdyBeehives = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("sturdy beehive", false));
-        if (sturdyBeehives == null) return false;
-        return !sturdyBeehives.isEmpty();
-    }
-
-    private boolean checkForPheasant() {
-        var pheasantNests = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("pheasant nest", false));
-        if (pheasantNests == null) return false;
-        if (pheasantNests.isEmpty()) return false;
-        return pheasantNests.stream().anyMatch(obj ->
-                Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(obj), "Retrieve-egg") &&
-                        obj.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
-        );
-    }
-
-    private boolean checkForRitualCircles() {
-        return !ritualCircles.isEmpty();
-    }
-
-    private boolean checkForFoxPoacher() {
-        var poachers = Rs2Npc.getNpcs("poacher");
-        if (poachers == null) return false;
-        return poachers.findAny().isPresent();
-    }
-
-    // Event handling methods
-    private void handleTreeRoot() {
-        currentForestryEvent = ForestryEvents.TREE_ROOT;
-        breakPlayersAnimation();
-
-        // Use special attack if available
-        if (Rs2Woodcutting.isWearingAxeWithSpecialAttack())
-            Rs2Combat.setSpecState(true, 1000);
-
-        var roots = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("infused tree root", false)).stream().filter(
-                x -> x != null &&
-                        Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(x), "Chop down") &&
-                        x.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
-        ).collect(Collectors.toList());
-
-        if (roots != null && !roots.isEmpty()) {
-            Rs2GameObject.interact(roots.get(0), "Chop down");
-            Rs2Player.waitForAnimation();
-        }
-    }
-
-    private void handleFoxTrap() {
-        currentForestryEvent = ForestryEvents.FOX_TRAP;
-        breakPlayersAnimation();
-
-        var foxTraps = Rs2Npc.getNpcs(npc ->
-                npc.getName() != null &&
-                        npc.getName().toLowerCase().contains("fox trap") &&
-                        Rs2Npc.hasAction(npc.getId(), "Disarm")
-        );
-
-        var foxtrapOpt = foxTraps.findFirst();
-        if (foxtrapOpt.isPresent()) {
-            var foxTrap = foxtrapOpt.get();
-            Rs2Npc.interact(foxTrap, "Disarm");
-            Rs2Player.waitForAnimation();
-        } else if (!checkForFoxPoacher()) {
-            currentForestryEvent = ForestryEvents.NONE;
-        }
-    }
-
-    private void handleRainbow() {
-        currentForestryEvent = ForestryEvents.RAINBOW;
-        breakPlayersAnimation();
-
-        var rainbows = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("ainbow", false)).stream().filter(
-                x -> x != null &&
-                        x.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE
-        ).collect(Collectors.toList());
-
-        if (rainbows != null && !rainbows.isEmpty()) {
-            TileObject rainbow = rainbows.get(0);
-            if (!Rs2Player.getWorldLocation().equals(rainbow.getWorldLocation())) {
-                Rs2Walker.walkTo(rainbow.getWorldLocation(),0);
-                sleepUntil(() -> Rs2Player.getWorldLocation().equals(rainbow.getWorldLocation()) || !checkForRainbow(), 10000);
-            }
-        }
-    }
-
-    private void handleBeeHive() {
-        currentForestryEvent = ForestryEvents.BEE_HIVE;
-        breakPlayersAnimation();
-
-        if (Rs2Widget.findWidget("How many logs would you like to add", null, false) != null) {
-            Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
-            sleepUntil(() -> !Rs2Player.isAnimating());
-            return;
-        }
-
-        var beehives = Rs2Npc.getNpcs(x -> x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_1 || x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_2);
-        var beehiveOpt = beehives.findFirst();
-        if (beehiveOpt.isPresent()) {
-            var beehive = beehiveOpt.get();
-            Rs2Npc.interact(beehive, "Build");
-            Rs2Player.waitForAnimation();
-        } else if (checkForSturdyBeeHive()) {
-            var sturdyBeehives = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("sturdy beehive", false)).stream().filter(
-                    x -> x != null &&
-                            x.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE &&
-                            Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(x), "Take")
-            ).collect(Collectors.toList());
-
-            if (sturdyBeehives != null && !sturdyBeehives.isEmpty()) {
-                Rs2GameObject.interact(sturdyBeehives.get(0), "Take");
-                Rs2Player.waitForAnimation();
-            }
-        } else {
-            currentForestryEvent = ForestryEvents.NONE;
-        }
-    }
-
-    private void handlePheasant() {
-        currentForestryEvent = ForestryEvents.PHEASANT;
-        breakPlayersAnimation();
-
-        if (Rs2Inventory.contains("Pheasant egg")) {
-            var foresters = Rs2Npc.getNpcs(npc ->
-                    npc.getName() != null &&
-                            npc.getName().toLowerCase().contains("freaky forester")
-            );
-
-            var forester = foresters.findFirst().orElse(null);
-            if (forester == null) {
-                currentForestryEvent = ForestryEvents.NONE;
-                return;
-            }
-            Rs2Npc.interact(forester, "Talk-to");
-            sleepUntil(() -> Rs2Widget.findWidget("Freaky Forester", null, false) != null, 5000);
-            return;
-        }
-
-        List<WorldPoint> pheasantLocations = Rs2Npc.getNpcs(npc ->
-                npc.getName() != null &&
-                        npc.getName().toLowerCase().contains("pheasant")
-        ).map(npc -> npc.getWorldLocation()).collect(Collectors.toList());
-
-        var pheasantNests = Rs2GameObject.getTileObjects(Rs2GameObject.nameMatches("pheasant nest", false)).stream().filter(
-                x -> x != null &&
-                        x.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= FORESTRY_DISTANCE &&
-                        Rs2GameObject.hasAction(Rs2GameObject.convertToObjectComposition(x), "Retrieve-egg") &&
-                        !pheasantLocations.contains(x.getWorldLocation())
-        ).collect(Collectors.toList());
-
-        if (pheasantNests != null && !pheasantNests.isEmpty()) {
-            Rs2GameObject.interact(pheasantNests.get(0), "Retrieve-egg");
-            Rs2Player.waitForAnimation();
-        } else {
-            currentForestryEvent = ForestryEvents.NONE;
-        }
-    }
-
-    private void handleRitualCircles() {
-        currentForestryEvent = ForestryEvents.RITUAL_CIRCLES;
-        breakPlayersAnimation();
-
-        NPC targetCircle = solveCircles();
-        if (targetCircle != null) {
-            WorldPoint targetLocation = targetCircle.getWorldLocation();
-            if (!Rs2Player.getWorldLocation().equals(targetLocation)) {
-                Rs2Walker.walkTo(targetLocation,0);
-                sleepUntil(() -> Rs2Player.getWorldLocation().equals(targetLocation) || !checkForRitualCircles(), 10000);
-            }
-        } else {
-            currentForestryEvent = ForestryEvents.NONE;
-            Microbot.log("Unable to solve ritual circles, not enough circles or invalid configuration.");
-        }
-    }
-
-    private NPC solveCircles() {
-        if (ritualCircles.size() != 5) {
-            return null;
-        }
-
-        int s = 0;
-        for (NPC npc : ritualCircles) {
-            int off = npc.getId() - NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_A_1;
-            int shape = off / 4;
-            int color = off % 4;
-            int id = (16 << shape) | (1 << color);
-            s = s ^ id; // XOR operation
-        }
-
-        for (NPC npc : ritualCircles) {
-            int off = npc.getId() - NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_A_1;
-            int shape = off / 4;
-            int color = off % 4;
-            int id = (16 << shape) | (1 << color);
-            if ((id & s) == id) { // Bitwise AND
-                return npc;
-            }
-        }
-
-        return null;
-    }
-
-    private void handleEntling(PruningAction pruningAction) {
-        currentForestryEvent = ForestryEvents.ENTLING;
-        breakPlayersAnimation();
-
-        if (pruningAction != null) {
-            pruningAction.execute();
-            Rs2Player.waitForAnimation();
-        } else {
-            currentForestryEvent = ForestryEvents.NONE;
-        }
-    }
-
-    private PruningAction findEntlingToPrune() {
-        var entlings = Rs2Npc.getNpcs(npc ->
-                npc.getName() != null &&
-                        npc.getName().toLowerCase().contains("entling") &&
-                        npc.getOverheadText() != null
-        ).collect(Collectors.toList());
-
-        entlings.sort(Comparator.comparingInt(e ->
-                e.getWorldLocation().distanceTo(Rs2Player.getWorldLocation())
-        ));
-
-        for (Rs2NpcModel entling : entlings) {
-            String request = entling.getOverheadText();
-            if (request == null || request.isEmpty()) {
-                return null;
-            }
-            String action = null;
-
-            switch (request) {
-                case "Breezy at the back!":
-                case "Short back and sides!":
-                    action = "Prune-back";
-                    break;
-                case "A leafy mullet!":
-                case "Short on top!":
-                    action = "Prune-top";
-                    break;
-                default:
-                    continue;
-            }
-
-            return new PruningAction(entling, action);
-        }
-
-        return null;
-    }
-
-    public boolean breakPlayersAnimation() {
-        if (Rs2Player.isMoving() || Rs2Player.isAnimating()) {
-            if (Rs2Inventory.contains("logs")) {
-                Rs2Inventory.interact(item -> item.getName().toLowerCase().contains("logs"), "Drop");
-                return true;
-            }
-        }
-        return false;
     }
 
     private boolean beforeCuttingTreesChecks(AutoWoodcuttingConfig config) {
@@ -597,7 +209,7 @@ public class AutoWoodcuttingScript extends Script {
     private void resetInventory(AutoWoodcuttingConfig config) {
         switch (config.resetOptions()) {
             case DROP:
-                Rs2Inventory.dropAllExcept(false, config.interactOrder(), "axe", "tinderbox");
+                Rs2Inventory.dropAllExcept(false, config.interactOrder(), "axe", "tinderbox", "crystal shard");
                 woodcuttingScriptState = WoodcuttingScriptState.WOODCUTTING;
                 break;
             case BANK:
