@@ -44,6 +44,13 @@
 		<microbot.version>1.9.6.1</microbot.version>
 	</properties>
 
+	<distributionManagement>
+		<snapshotRepository>
+			<id>microbot-release</id>
+			<url>http://138.201.81.246:8081/repository/microbot-snapshot/</url>
+		</snapshotRepository>
+	</distributionManagement>
+
 	<dependencies>
 		<dependency>
 			<groupId>org.json</groupId>
@@ -471,35 +478,6 @@
 									</excludes>
 								</filter>
 							</filters>
-						</configuration>
-					</execution>
-				</executions>
-			</plugin>
-			<plugin>
-				<groupId>org.apache.maven.plugins</groupId>
-				<artifactId>maven-jar-plugin</artifactId>
-				<version>3.2.0</version>
-				<executions>
-					<execution>
-						<id>build-plugin-jar</id>
-						<phase>package</phase>
-						<goals>
-							<goal>jar</goal>
-						</goals>
-						<configuration>
-							<classesDirectory>${project.build.outputDirectory}</classesDirectory>
-							<includes>
-								<include>net/runelite/client/plugins/microbot/example/**</include>
-							</includes>
-							<finalName>example</finalName>
-							<archive>
-								<manifest>
-									<addClasspath>true</addClasspath>
-									<classpathPrefix>lib/</classpathPrefix>
-									<mainClass>net.runelite.client.RuneLite</mainClass>
-								</manifest>
-							</archive>
-							<classifier>plugin</classifier>
 						</configuration>
 					</execution>
 				</executions>

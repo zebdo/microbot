@@ -3,12 +3,13 @@ package net.runelite.client.plugins.microbot.util.cache;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.VarbitChanged;
-import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.strategy.simple.VarbitUpdateStrategy;
 import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializable;
 import net.runelite.client.plugins.microbot.util.cache.model.VarbitData;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
+import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -58,8 +59,7 @@ public class Rs2VarbitCache extends Rs2Cache<Integer, VarbitData> implements Cac
     }
     
     public synchronized void close() {
-        if (instance != null) {
-            instance.close();
+        if (instance != null) {            
             instance = null;
         }
     }
@@ -271,7 +271,7 @@ public class Rs2VarbitCache extends Rs2Cache<Integer, VarbitData> implements Cac
      */
     public static synchronized void resetInstance() {
         if (instance != null) {
-            instance.close();
+            invalidateAllVarbits();
             instance = null;
         }
     }
@@ -418,7 +418,6 @@ public class Rs2VarbitCache extends Rs2Cache<Integer, VarbitData> implements Cac
         cache.values().stream()
                 .filter(data -> data != null && data.hasValueChanged())
                 .sorted((data1, data2) -> Long.compare(data2.getLastUpdated(), data1.getLastUpdated()))
-                .limit(5) // Show only last 5 changes
                 .forEach(data -> {
                     String timeStr = formatter.format(Instant.ofEpochMilli(data.getLastUpdated()));
                     sb.append(String.format("│ Varbit changed: %d → %d (%s) %-18s │\n",
@@ -436,5 +435,73 @@ public class Rs2VarbitCache extends Rs2Cache<Integer, VarbitData> implements Cac
         return sb.toString();
     }
     
+    /**
+     * Logs the current state of all cached varbits for debugging.
+     * 
+     * @param dumpToFile Whether to also dump the information to a file
+     */
+    public static void logState(LogOutputMode mode) {
+        var cache = getInstance();
+        var stats = cache.getStatistics();
+        
+        // Create the log content
+        StringBuilder logContent = new StringBuilder();
+        
+        String header = String.format("=== Varbit Cache State (%d entries) ===", cache.size());
+        logContent.append(header).append("\n");
+        
+        String statsInfo = Rs2CacheLoggingUtils.formatCacheStatistics(
+            stats.getHitRate(), stats.cacheHits, stats.cacheMisses, stats.cacheMode.toString());
+        logContent.append(statsInfo).append("\n\n");
+        
+        if (cache.size() == 0) {
+            String emptyMsg = "Cache is empty";
+            logContent.append(emptyMsg).append("\n");
+        } else {
+            final int MAXNAME_LENGTH = 45; // Maximum length for names
+            // Table format for varbits with VarbitID names where available
+            String[] headers = {"Varbit ID", "Name", "Value", "Previous", "Changed", "Last Updated"};
+            int[] columnWidths = {10, MAXNAME_LENGTH, 8, 8, 8, 30};
+            
+            String tableHeader = Rs2CacheLoggingUtils.formatTableHeader(headers, columnWidths);            
+            logContent.append("\n").append(tableHeader);
+            
+            // Sort varbits by recent changes (most recent first)
+            cache.entryStream()
+                .sorted((a, b) -> Long.compare(b.getValue().getLastUpdated(), a.getValue().getLastUpdated()))
+                .forEach(entry -> {
+                    Integer varbitId = entry.getKey();
+                    VarbitData varbitData = entry.getValue();
+                    
+                    String varbitName = Rs2CacheLoggingUtils.getVarbitFieldName(varbitId);
+                    String[] values = {
+                        String.valueOf(varbitId),
+                        Rs2CacheLoggingUtils.truncate(varbitName, MAXNAME_LENGTH),
+                        String.valueOf(varbitData.getValue()),
+                        varbitData.getPreviousValue() != null ? String.valueOf(varbitData.getPreviousValue()) : "null",
+                        varbitData.hasValueChanged() ? "Yes" : "No",
+                        Rs2CacheLoggingUtils.formatTimestamp(varbitData.getLastUpdated())
+                    };
+                    
+                    String row = Rs2CacheLoggingUtils.formatTableRow(values, columnWidths);
+                    logContent.append(row);
+                });
+            
+            String tableFooter = Rs2CacheLoggingUtils.formatTableFooter(columnWidths);            
+            logContent.append(tableFooter);
+            
+            String limitMsg = Rs2CacheLoggingUtils.formatLimitMessage(cache.size(), 50);
+            if (!limitMsg.isEmpty()) {                
+                logContent.append(limitMsg).append("\n");
+            }
+        }
+        
+        String footer = "=== End Varbit Cache State ===";        
+        logContent.append(footer).append("\n");                
+        Rs2CacheLoggingUtils.outputCacheLog("varbit", logContent.toString(), mode);
+    }
+    
+  
+
     // ============================================
 }

@@ -1,7 +1,5 @@
 package net.runelite.client.plugins.microbot.util.magic;
 
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
 import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.gameval.ItemID;
@@ -18,6 +16,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
+import net.runelite.client.plugins.microbot.util.magic.thralls.Rs2Thrall;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
@@ -38,7 +37,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static net.runelite.api.Varbits.*;
 import static net.runelite.client.plugins.microbot.Microbot.log;
 import static net.runelite.client.plugins.microbot.util.Global.*;
 
@@ -59,6 +57,10 @@ public class Rs2Magic {
         checkedSpellBook = true;
         return true;
     }
+
+	public static boolean canCast(Spell spell) {
+		return canCast(spell.getMagicAction());
+	}
 
     /**
      * Checks if a specific spell can be cast
@@ -99,6 +101,10 @@ public class Rs2Magic {
         return widget != null;
     }
 
+	public static boolean quickCanCast(Spell spell) {
+		return quickCanCast(spell.getMagicAction());
+	}
+
     /**
      * Checks if a specific spell can be cast without checking settings first
      * This method is more performant than the canCast, use this one if you are sure
@@ -124,6 +130,14 @@ public class Rs2Magic {
     public static boolean quickCanCast(String spellName) {
         return quickCanCast(MagicAction.fromString(spellName));
     }
+
+	public static boolean cast(Spell spell) {
+		return cast(spell, "cast", 1);
+	}
+
+	public static boolean cast(Spell spell, String option, int identifier) {
+		return cast(spell.getMagicAction(), option, identifier);
+	}
     
     public static boolean cast(MagicAction magicSpell) {
         return cast(magicSpell, "cast", 1);
@@ -154,6 +168,10 @@ public class Rs2Magic {
         return true;
     }
 
+	public static boolean quickCast(Spell spell) {
+		return quickCast(spell.getMagicAction());
+	}
+
     public static boolean quickCast(MagicAction magicSpell) {
         Microbot.status = "Casting " + magicSpell.getName();
 
@@ -165,6 +183,10 @@ public class Rs2Magic {
         log("Unable to cast " + magicSpell.getName());
         return false;
     }
+
+	public static boolean castOn(Spell spell, Actor actor) {
+		return castOn(spell.getMagicAction(), actor);
+	}
 
     public static boolean castOn(MagicAction magicSpell, Actor actor) {
         if (actor == null) return false;
@@ -356,12 +378,12 @@ public class Rs2Magic {
     }
 
     public static boolean isShadowVeilActive() {
-        return Microbot.getVarbitValue(SHADOW_VEIL) == 1;
+        return Microbot.getVarbitValue(VarbitID.ARCEUUS_SHADOW_VEIL_ACTIVE) == 1;
     }
 
 	@Deprecated(since = "1.9.2", forRemoval = true)
     public static boolean isThrallActive() {
-        return (Microbot.getVarbitValue(RESURRECT_THRALL) == 1 || Microbot.getVarbitValue(RESURRECT_THRALL_COOLDOWN) == 1);
+        return Rs2Thrall.isActive();
     }
 
     private static final int ANCIENT_VARBIT_OFFSET = 10;

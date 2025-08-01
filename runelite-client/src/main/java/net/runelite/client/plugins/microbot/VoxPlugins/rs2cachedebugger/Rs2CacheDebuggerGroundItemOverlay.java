@@ -59,7 +59,7 @@ public class Rs2CacheDebuggerGroundItemOverlay extends Rs2GroundItemCacheOverlay
         
         // Advanced rendering features from Rs2GroundItemCacheOverlay
         setRenderQuantity(config.groundItemShowQuantity());
-        setRenderValue(config.groundItemShowValues());
+        //setRenderValue(config.groundItemShowValues());
         setRenderDespawnTimer(config.groundItemShowDespawnTimer());
         setRenderOwnershipIndicator(config.groundItemShowOwnership());
         

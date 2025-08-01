@@ -8,6 +8,8 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.model.VarbitData;
 import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializable;
 import net.runelite.client.plugins.microbot.util.cache.strategy.simple.VarPlayerUpdateStrategy;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
+import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
 
 import java.util.Map;
 import java.util.Optional;
@@ -322,4 +324,100 @@ public class Rs2VarPlayerCache extends Rs2Cache<Integer, VarbitData> implements 
             log.error("Error handling GameStateChanged event: {}", e.getMessage(), e);
         }
     }
+    
+    /**
+     * Logs the current state of all cached varplayers for debugging.
+     * 
+     * @param dumpToFile Whether to also dump the information to a file
+     */
+    public static void logState(LogOutputMode mode) {
+        var cache = getInstance();
+        var stats = cache.getStatistics();
+        
+        // Create the log content
+        StringBuilder logContent = new StringBuilder();
+        
+        String header = String.format("=== VarPlayer Cache State (%d entries) ===", cache.size());
+        logContent.append(header).append("\n");
+        
+        String statsInfo = Rs2CacheLoggingUtils.formatCacheStatistics(
+            stats.getHitRate(), stats.cacheHits, stats.cacheMisses, stats.cacheMode.toString());        
+        logContent.append(statsInfo).append("\n\n");
+        
+        if (cache.size() == 0) {
+            String emptyMsg = "Cache is empty";
+            logContent.append(emptyMsg).append("\n");
+        } else {
+            final int MAXNAME_LENGTH = 45; // Maximum length for names
+            // Table format for varplayers with VarPlayerID names where available
+            String[] headers = {"VarPlayer ID", "Name", "Value", "Previous", "Changed", "Last Updated", "Cache Timestamp"};
+            int[] columnWidths = {12, MAXNAME_LENGTH, 8, 8, 8, 30, 22};
+            
+            String tableHeader = Rs2CacheLoggingUtils.formatTableHeader(headers, columnWidths);
+            
+            logContent.append("\n").append(tableHeader);
+            
+            // Sort varplayers by recent changes (most recent first)
+            cache.entryStream()
+                .sorted((a, b) -> {
+                    try {
+                        // Handle null entries
+                        if (a == null && b == null) return 0;
+                        if (a == null) return 1;
+                        if (b == null) return -1;
+                        if (a.getValue() == null && b.getValue() == null) return 0;
+                        if (a.getValue() == null) return 1;
+                        if (b.getValue() == null) return -1;
+                        
+                        return Long.compare(b.getValue().getLastUpdated(), a.getValue().getLastUpdated());
+                    } catch (Exception e) {
+                        // Fallback to key comparison if anything goes wrong
+                        try {
+                            return Integer.compare(
+                                a != null && a.getKey() != null ? a.getKey() : Integer.MAX_VALUE,
+                                b != null && b.getKey() != null ? b.getKey() : Integer.MAX_VALUE
+                            );
+                        } catch (Exception e2) {
+                            return 0; // Last resort - consider equal
+                        }
+                    }
+                })
+                .forEach(entry -> {
+                    Integer varPlayerId = entry.getKey();
+                    VarbitData varPlayerData = entry.getValue();
+                    
+                    // Get cache timestamp for this varPlayer
+                    Long cacheTimestamp = cache.getCacheTimestamp(varPlayerId);
+                    String cacheTimestampStr = cacheTimestamp != null ? 
+                        Rs2Cache.formatUtcTimestamp(cacheTimestamp) : "N/A";
+                    
+                    String varPlayerName = Rs2CacheLoggingUtils.getVarPlayerFieldName(varPlayerId);
+                    String[] values = {
+                        String.valueOf(varPlayerId),
+                        Rs2CacheLoggingUtils.truncate(varPlayerName, MAXNAME_LENGTH),
+                        String.valueOf(varPlayerData.getValue()),
+                        varPlayerData.getPreviousValue() != null ? String.valueOf(varPlayerData.getPreviousValue()) : "null",
+                        varPlayerData.hasValueChanged() ? "Yes" : "No",
+                        Rs2CacheLoggingUtils.formatTimestamp(varPlayerData.getLastUpdated()),
+                        Rs2CacheLoggingUtils.truncate(cacheTimestampStr, 21)
+                    };
+                    
+                    String row = Rs2CacheLoggingUtils.formatTableRow(values, columnWidths);
+                    logContent.append(row);
+                });
+            
+            String tableFooter = Rs2CacheLoggingUtils.formatTableFooter(columnWidths);
+            logContent.append(tableFooter);
+            
+            String limitMsg = Rs2CacheLoggingUtils.formatLimitMessage(cache.size(), 50);
+            if (!limitMsg.isEmpty()) {
+                logContent.append(limitMsg).append("\n");
+            }
+        }
+        
+        String footer = "=== End VarPlayer Cache State ===";
+        logContent.append(footer).append("\n");
+        Rs2CacheLoggingUtils.outputCacheLog(getInstance().getCacheName(), logContent.toString(), mode);         
+        
+    }    
 }

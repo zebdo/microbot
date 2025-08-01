@@ -8,9 +8,14 @@ import net.runelite.client.plugins.microbot.util.cache.Rs2GroundItemCache;
 import net.runelite.client.plugins.microbot.util.cache.util.Rs2GroundItemCacheUtils;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItemModel;
 import net.runelite.client.ui.overlay.outline.ModelOutlineRenderer;
+import net.runelite.client.util.QuantityFormatter;
 
 import java.awt.*;
+import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Overlay for rendering cached ground items with various highlight options.
@@ -21,9 +26,35 @@ import java.util.function.Predicate;
  */
 public class Rs2GroundItemCacheOverlay extends Rs2BaseCacheOverlay {
     
+    /**
+     * Price calculation modes for value display.
+     */
+    public enum PriceMode {
+        OFF("Off"),
+        GE("Grand Exchange"),
+        HA("High Alchemy"),
+        STORE("Store Price"),
+        BOTH("Both GE & HA");
+        
+        private final String displayName;
+        
+        PriceMode(String displayName) {
+            this.displayName = displayName;
+        }
+        
+        @Override
+        public String toString() {
+            return displayName;
+        }
+    }
+    
     // Ground item-specific colors (Green theme)
     private static final Color GROUND_ITEM_BORDER_COLOR = Color.GREEN;
     private static final Color GROUND_ITEM_FILL_COLOR = new Color(0, 255, 0, 50); // Green with alpha
+    
+    // Text rendering constants
+    private static final int TEXT_OFFSET_Z = 20;
+    private static final int STRING_GAP = 15; // Gap between multiple items on same tile
     
     // Rendering options
     private boolean renderTile = true;
@@ -31,21 +62,21 @@ public class Rs2GroundItemCacheOverlay extends Rs2BaseCacheOverlay {
     private boolean renderItemInfo = true; // Show item ID
     private boolean renderWorldCoordinates = false; // Show world coordinates
     private boolean onlyShowTextOnHover = true; // Only show text when mouse is hovering
-    private Predicate<Rs2GroundItemModel> renderFilter;
+    private Predicate<Rs2GroundItemModel> renderFilter = groundItem -> true; // Default to no filter
     
     // Advanced rendering options
     private boolean renderQuantity = true; // Show quantity for stackable items
-    private boolean renderValue = false; // Show item values
+    private PriceMode priceMode = PriceMode.OFF; // Price display mode
     private boolean renderDespawnTimer = false; // Show despawn countdown
     private boolean renderOwnershipIndicator = false; // Show ownership status
-    
-    // Text rendering offset to avoid overlapping ground items
-    private static final int TEXT_OFFSET_Z = 20;
     
     // Value thresholds for color coding
     private int lowValueThreshold = 1000;
     private int mediumValueThreshold = 10000;
     private int highValueThreshold = 100000;
+    
+    // Map to track text offset for multiple items on same tile
+    private final Map<WorldPoint, Integer> offsetMap = new HashMap<>();
     
     public Rs2GroundItemCacheOverlay(Client client, ModelOutlineRenderer modelOutlineRenderer) {
         super(client, modelOutlineRenderer);
@@ -67,17 +98,128 @@ public class Rs2GroundItemCacheOverlay extends Rs2BaseCacheOverlay {
             return null;
         }
         
-        // Render all visible ground items from cache
-        Rs2GroundItemCache.getInstance().stream()
+        // Clear offset map for new frame
+        offsetMap.clear();
+        
+        // Group ground items by tile location to handle multiple items on same tile
+        Map<WorldPoint, List<Rs2GroundItemModel>> itemsByLocation = Rs2GroundItemCache.getInstance().stream()
                 .filter(item -> renderFilter == null || renderFilter.test(item))
                 .filter(Rs2GroundItemCacheUtils::isVisibleInViewport)
-                .forEach(item -> renderGroundItemOverlay(graphics, item));
+                .collect(Collectors.groupingBy(Rs2GroundItemModel::getLocation));
+        
+        // Render each tile
+        for (Map.Entry<WorldPoint, List<Rs2GroundItemModel>> entry : itemsByLocation.entrySet()) {
+            WorldPoint location = entry.getKey();
+            List<Rs2GroundItemModel> itemsAtLocation = entry.getValue();
+            
+            renderItemsAtTile(graphics, location, itemsAtLocation);
+        }
         
         return null;
     }
     
     /**
-     * Renders a single ground item with the configured options.
+     * Renders all ground items at a specific tile location.
+     * Handles multiple items by spacing them vertically.
+     * 
+     * @param graphics The graphics context
+     * @param location The tile location
+     * @param itemsAtLocation List of items at this location
+     */
+    private void renderItemsAtTile(Graphics2D graphics, WorldPoint location, List<Rs2GroundItemModel> itemsAtLocation) {
+        if (itemsAtLocation.isEmpty()) {
+            return;
+        }
+        
+        // Check if we should only show text on hover for this tile
+        LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), location);
+        if (localPoint == null) {
+            return;
+        }
+        
+        boolean shouldShowText = !onlyShowTextOnHover || isMouseHoveringOver(localPoint);
+        
+        // Sort items by value (highest first) for better display order
+        itemsAtLocation.sort((a, b) -> Integer.compare(getItemDisplayValue(b), getItemDisplayValue(a)));
+        
+        // Render tile highlight if any item should be highlighted
+        if (renderTile) {
+            for (Rs2GroundItemModel item : itemsAtLocation) {
+                Color borderColor = getBorderColorForItem(item);
+                Color fillColor = getFillColorForItem(item);
+                renderItemTile(graphics, item, borderColor, fillColor, DEFAULT_BORDER_WIDTH);
+                break; // Only render tile once per location
+            }
+        }
+        
+        // Render text for each item with vertical offset
+        if (shouldShowText && (renderText || renderItemInfo || renderWorldCoordinates || 
+            renderQuantity || priceMode != PriceMode.OFF || renderDespawnTimer || renderOwnershipIndicator)) {
+            
+            for (int i = 0; i < itemsAtLocation.size(); i++) {
+                Rs2GroundItemModel item = itemsAtLocation.get(i);
+                renderItemTextWithOffset(graphics, item, i);
+            }
+        }
+    }
+    
+    /**
+     * Gets the display value for an item based on the current price mode.
+     * 
+     * @param item The ground item model
+     * @return The display value for sorting and comparison
+     */
+    private int getItemDisplayValue(Rs2GroundItemModel item) {
+        switch (priceMode) {
+            case GE:
+                return item.getTotalGeValue();
+            case HA:
+                return item.getTotalHaValue();
+            case STORE:
+                return item.getTotalValue();
+            case BOTH:
+                return Math.max(item.getTotalGeValue(), item.getTotalHaValue());
+            case OFF:
+            default:
+                return item.getTotalValue(); // Default to store value
+        }
+    }
+    
+    /**
+     * Renders text for a ground item with vertical offset for multiple items.
+     * 
+     * @param graphics The graphics context
+     * @param itemModel The ground item model
+     * @param offset The vertical offset index (0-based)
+     */
+    private void renderItemTextWithOffset(Graphics2D graphics, Rs2GroundItemModel itemModel, int offset) {
+        LocalPoint localPoint = LocalPoint.fromWorld(client.getTopLevelWorldView(), itemModel.getLocation());
+        if (localPoint == null) {
+            return;
+        }
+        
+        // Build text information for this item
+        String itemText = buildItemText(itemModel);
+        if (itemText.isEmpty()) {
+            return;
+        }
+        
+        // Get canvas point with Z offset for text
+        net.runelite.api.Point canvasPoint = Perspective.localToCanvas(client, localPoint, 
+                client.getTopLevelWorldView().getPlane(), TEXT_OFFSET_Z);
+        
+        if (canvasPoint != null) {
+            // Apply vertical offset for multiple items on same tile
+            int adjustedY = canvasPoint.getY() - (STRING_GAP * offset);
+            net.runelite.api.Point adjustedPoint = new net.runelite.api.Point(canvasPoint.getX(), adjustedY);
+            
+            Color textColor = getBorderColorForItem(itemModel);
+            renderTextWithBackground(graphics, itemText, adjustedPoint, textColor);
+        }
+    }
+
+    /**
+     * Renders a single ground item with the configured options (Legacy method for compatibility).
      * 
      * @param graphics The graphics context
      * @param itemModel The ground item model to render
@@ -95,7 +237,7 @@ public class Rs2GroundItemCacheOverlay extends Rs2BaseCacheOverlay {
             
             // Render text information if enabled
             if (renderText || renderItemInfo || renderWorldCoordinates || 
-                renderQuantity || renderValue || renderDespawnTimer || renderOwnershipIndicator) {
+                renderQuantity || priceMode != PriceMode.OFF || renderDespawnTimer || renderOwnershipIndicator) {
                 renderItemText(graphics, itemModel, borderColor);
             }
             
@@ -180,11 +322,34 @@ public class Rs2GroundItemCacheOverlay extends Rs2BaseCacheOverlay {
             infoText.append("x").append(itemModel.getQuantity());
         }
         
-        if (renderValue) {
+        if (priceMode != PriceMode.OFF) {
             if (infoText.length() > 0) {
                 infoText.append(" ");
             }
-            infoText.append(formatValue(itemModel.getTotalValue()));
+            
+            switch (priceMode) {
+                case GE:
+                    infoText.append("(GE: ").append(QuantityFormatter.quantityToStackSize(itemModel.getTotalGeValue())).append(" gp)");
+                    break;
+                case HA:
+                    infoText.append("(HA: ").append(QuantityFormatter.quantityToStackSize(itemModel.getTotalHaValue())).append(" gp)");
+                    break;
+                case STORE:
+                    infoText.append("(Store: ").append(QuantityFormatter.quantityToStackSize(itemModel.getTotalValue())).append(" gp)");
+                    break;
+                case BOTH:
+                    if (itemModel.getTotalGeValue() > 0) {
+                        infoText.append("(GE: ").append(QuantityFormatter.quantityToStackSize(itemModel.getTotalGeValue())).append(" gp)");
+                    }
+                    if (itemModel.getTotalHaValue() > 0) {
+                        infoText.append(" (HA: ").append(QuantityFormatter.quantityToStackSize(itemModel.getTotalHaValue())).append(" gp)");
+                    }
+                    break;
+                case OFF:
+                default:
+                    // No price display
+                    break;
+            }
         }
         
         if (renderDespawnTimer && !itemModel.isDespawned()) {
@@ -266,10 +431,98 @@ public class Rs2GroundItemCacheOverlay extends Rs2BaseCacheOverlay {
     private String buildItemText(Rs2GroundItemModel itemModel) {
         StringBuilder text = new StringBuilder();
         
-        text.append(itemModel.getName());
+        // Main item name
+        if (renderText) {
+            text.append(itemModel.getName());
+        }
         
-        if (itemModel.getQuantity() > 1) {
-            text.append(" (").append(itemModel.getQuantity()).append(")");
+        // Add quantity if more than 1
+        if (renderQuantity && itemModel.getQuantity() > 1) {
+            if (text.length() > 0) {
+                text.append(" ");
+            }
+            text.append("(").append(QuantityFormatter.quantityToStackSize(itemModel.getQuantity())).append(")");
+        }
+        
+        // Add item ID and coordinates if enabled
+        if (renderItemInfo || renderWorldCoordinates) {
+            if (text.length() > 0) {
+                text.append(" | ");
+            }
+            
+            if (renderItemInfo) {
+                text.append("ID:").append(itemModel.getId());
+            }
+            
+            if (renderWorldCoordinates) {
+                if (renderItemInfo) {
+                    text.append(" ");
+                }
+                WorldPoint wp = itemModel.getLocation();
+                text.append("(").append(wp.getX()).append(",").append(wp.getY()).append(")");
+            }
+        }
+        
+        // Add price information based on price mode
+        if (priceMode != PriceMode.OFF) {
+            if (text.length() > 0) {
+                text.append(" ");
+            }
+            
+            switch (priceMode) {
+                case GE:
+                    if (itemModel.getTotalGeValue() > 0) {
+                        text.append("[GE: ").append(QuantityFormatter.quantityToStackSize(itemModel.getTotalGeValue())).append(" gp]");
+                    }
+                    break;
+                case HA:
+                    if (itemModel.getTotalHaValue() > 0) {
+                        text.append("[HA: ").append(QuantityFormatter.quantityToStackSize(itemModel.getTotalHaValue())).append(" gp]");
+                    }
+                    break;
+                case STORE:
+                    if (itemModel.getTotalValue() > 0) {
+                        text.append("[Store: ").append(QuantityFormatter.quantityToStackSize(itemModel.getTotalValue())).append(" gp]");
+                    }
+                    break;
+                case BOTH:
+                    boolean hasGe = itemModel.getTotalGeValue() > 0;
+                    boolean hasHa = itemModel.getTotalHaValue() > 0;
+                    if (hasGe || hasHa) {
+                        text.append("[");
+                        if (hasGe) {
+                            text.append("GE: ").append(QuantityFormatter.quantityToStackSize(itemModel.getTotalGeValue()));
+                        }
+                        if (hasGe && hasHa) {
+                            text.append(" | ");
+                        }
+                        if (hasHa) {
+                            text.append("HA: ").append(QuantityFormatter.quantityToStackSize(itemModel.getTotalHaValue()));
+                        }
+                        text.append(" gp]");
+                    }
+                    break;
+                case OFF:
+                default:
+                    // No price display
+                    break;
+            }
+        }
+        
+        // Add despawn timer if enabled
+        if (renderDespawnTimer && !itemModel.isDespawned()) {
+            if (text.length() > 0) {
+                text.append(" ");
+            }
+            text.append("⏰").append(formatDespawnTime(itemModel.getSecondsUntilDespawn()));
+        }
+        
+        // Add ownership indicator if enabled
+        if (renderOwnershipIndicator) {
+            if (text.length() > 0) {
+                text.append(" ");
+            }
+            text.append(itemModel.isOwned() ? "👤" : "🌐");
         }
         
         return text.toString();
@@ -345,8 +598,8 @@ public class Rs2GroundItemCacheOverlay extends Rs2BaseCacheOverlay {
         this.renderQuantity = renderQuantity;
     }
     
-    public void setRenderValue(boolean renderValue) {
-        this.renderValue = renderValue;
+    public void setPriceMode(PriceMode priceMode) {
+        this.priceMode = priceMode;
     }
     
     public void setRenderDespawnTimer(boolean renderDespawnTimer) {

@@ -1,7 +1,19 @@
 package net.runelite.client.plugins.microbot.util.player;
 
 import lombok.Getter;
-import net.runelite.api.*;
+import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.Actor;
+import net.runelite.api.AnimationID;
+import net.runelite.api.GraphicID;
+import net.runelite.api.MenuAction;
+import net.runelite.api.NPC;
+import net.runelite.api.Player;
+import net.runelite.api.Quest;
+import net.runelite.api.QuestState;
+import net.runelite.api.Skill;
+import net.runelite.api.VarPlayer;
+import net.runelite.api.Varbits;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
@@ -13,8 +25,11 @@ import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.VarbitValues;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
+import net.runelite.client.plugins.microbot.util.cache.Rs2Cache;
 import net.runelite.client.plugins.microbot.util.cache.Rs2QuestCache;
 import net.runelite.client.plugins.microbot.util.cache.Rs2SkillCache;
+import net.runelite.client.plugins.microbot.util.cache.Rs2VarPlayerCache;
+import net.runelite.client.plugins.microbot.util.cache.Rs2VarbitCache;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -69,7 +84,7 @@ public class Rs2Player {
     public static int lastAnimationID = AnimationID.IDLE;
 
     public static boolean hasPrayerRegenerationActive() {
-        return Microbot.getVarbitValue(Varbits.BUFF_PRAYER_REGENERATION) > 0;
+        return (Rs2VarbitCache.getVarbitValue(VarbitID.PRAYER_REGENERATION_POTION_TIMER) > 0);
     }
 
     public static boolean hasAntiFireActive() {
@@ -85,7 +100,7 @@ public class Rs2Player {
     }
 
     public static boolean hasRangingPotionActive(int threshold) {
-        return Microbot.getClient().getBoostedSkillLevel(Skill.RANGED) - threshold > Microbot.getClient().getRealSkillLevel(Skill.RANGED);
+        return getBoostedSkillLevel(Skill.RANGED) - threshold > getRealSkillLevel(Skill.RANGED);
     }
 
     public static boolean hasDivineBastionActive() {
@@ -105,19 +120,19 @@ public class Rs2Player {
     }
 
     public static boolean hasAttackActive(int threshold) {
-        return Microbot.getClient().getBoostedSkillLevel(Skill.ATTACK) - threshold > Microbot.getClient().getRealSkillLevel(Skill.ATTACK);
+        return getBoostedSkillLevel(Skill.ATTACK) - threshold > getRealSkillLevel(Skill.ATTACK);
     }
 
     public static boolean hasStrengthActive(int threshold) {
-        return Microbot.getClient().getBoostedSkillLevel(Skill.STRENGTH) - threshold > Microbot.getClient().getRealSkillLevel(Skill.STRENGTH);
+        return getBoostedSkillLevel(Skill.STRENGTH) - threshold > getRealSkillLevel(Skill.STRENGTH);
     }
 
     public static boolean hasDefenseActive(int threshold) {
-        return Microbot.getClient().getBoostedSkillLevel(Skill.DEFENCE) - threshold > Microbot.getClient().getRealSkillLevel(Skill.DEFENCE);
+        return getBoostedSkillLevel(Skill.DEFENCE) - threshold > getRealSkillLevel(Skill.DEFENCE);
     }
 
     public static boolean hasMagicActive(int threshold) {
-        return Microbot.getClient().getBoostedSkillLevel(Skill.MAGIC) - threshold > Microbot.getClient().getRealSkillLevel(Skill.MAGIC);
+        return getBoostedSkillLevel(Skill.MAGIC) - threshold > getRealSkillLevel(Skill.MAGIC);
     }
 
     public static boolean hasAntiVenomActive() {
@@ -386,9 +401,7 @@ public class Rs2Player {
      * @return {@code true} if the player is a member (has remaining membership days), {@code false} otherwise.
      */
     public static boolean isMember() {
-        return Microbot.getClientThread().runOnClientThreadOptional(() ->
-                Microbot.getClient().getVarpValue(VarPlayer.MEMBERSHIP_DAYS) > 0
-        ).orElse(false);
+        return Rs2VarPlayerCache.getVarPlayerValue(VarPlayerID.ACCOUNT_CREDIT) > 0;
     }
 
     /**
@@ -671,7 +684,7 @@ public class Rs2Player {
      *         150.0 if boosted, 80.0 if drained, or 100.0 if unchanged.
      */
     public static double getHealthPercentage() {
-        return (double) (Microbot.getClient().getBoostedSkillLevel(Skill.HITPOINTS) * 100) / Microbot.getClient().getRealSkillLevel(Skill.HITPOINTS);
+        return (double) (getBoostedSkillLevel(Skill.HITPOINTS) * 100) / getRealSkillLevel(Skill.HITPOINTS);
     }
 
     /**
@@ -1244,8 +1257,8 @@ public class Rs2Player {
      *         {@code false} otherwise.
      */
     public static boolean isFullHealth() {
-        return Microbot.getClient().getBoostedSkillLevel(Skill.HITPOINTS)
-                >= Microbot.getClient().getRealSkillLevel(Skill.HITPOINTS);
+        return getBoostedSkillLevel(Skill.HITPOINTS)
+                >= getRealSkillLevel(Skill.HITPOINTS);
     }
 
     /**
@@ -1345,8 +1358,8 @@ public class Rs2Player {
      * @return {@code true} if a potion was successfully consumed, {@code false} otherwise.
      */
     public static boolean drinkCombatPotionAt(Skill skill, boolean superCombat) {
-        int real = Microbot.getClient().getRealSkillLevel(skill);
-        int boosted = Microbot.getClient().getBoostedSkillLevel(skill);
+        int real = getRealSkillLevel(skill);
+        int boosted = getBoostedSkillLevel(skill);
 
         // max boost per wiki: RealLevel * (15/100) + 5
         double maxBoost = real * 0.15 + 5;
@@ -1518,7 +1531,7 @@ public class Rs2Player {
      * @return {@code true} if the player's boosted prayer level is greater than zero, {@code false} otherwise.
      */
     public static boolean hasPrayerPoints() {
-        return Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER) > 0;
+        return getBoostedSkillLevel(Skill.PRAYER) > 0;
     }
 
     /**
@@ -1527,8 +1540,8 @@ public class Rs2Player {
      * @return a value between 0 and 100 representing the percentage of prayer remaining.
      */
     public static int getPrayerPercentage() {
-        int current = Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER);
-        int base = Microbot.getClient().getRealSkillLevel(Skill.PRAYER);
+        int current = getBoostedSkillLevel(Skill.PRAYER);
+        int base = getRealSkillLevel(Skill.PRAYER);
 
         return (int) ((current / (double) base) * 100);
     }
@@ -1559,7 +1572,7 @@ public class Rs2Player {
      * @return The animation ID of the player's current action, or {@code -1} if the player is null.
      */
     public static int getAnimation() {
-        if (Microbot.getClient().getLocalPlayer() == null) return -1;
+        if (Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) return -1;
         return Microbot.getClient().getLocalPlayer().getAnimation();
     }
 

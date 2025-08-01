@@ -376,6 +376,14 @@ public class Rs2Bank {
     /**
      * Query count of item inside of bank
      */
+    public static int count(Predicate<Rs2ItemModel> predicate) {
+        final Rs2ItemModel bankItem = get(predicate);
+        return bankItem == null ? 0 : bankItem.getQuantity();
+    }
+
+    /**
+     * Query count of item inside of bank
+     */
     public static int count(int id) {
         Rs2ItemModel bankItem = findBankItem(id);
         if (bankItem == null) return 0;
@@ -421,7 +429,7 @@ public class Rs2Bank {
         if (!Rs2Inventory.hasItem(rs2Item.getId())) return false;
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
-        if (Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 0) {
+        if (Microbot.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 0) {
             invokeMenu(2, rs2Item);
         } else {
             invokeMenu(3, rs2Item);
@@ -469,7 +477,7 @@ public class Rs2Bank {
         if (rs2Item == null) return false;
         if (!isOpen()) return false;
         if (!Rs2Inventory.hasItem(rs2Item.getId())) return false;
-        container = BANK_INVENTORY_ITEM_CONTAINER;
+        container = ComponentID.BANK_INVENTORY_ITEM_CONTAINER;
 
         return handleAmount(rs2Item, amount);
     }
@@ -504,9 +512,9 @@ public class Rs2Bank {
     private static boolean handleAmount(Rs2ItemModel rs2Item, int amount, boolean safe) {
 
         if (amount <= 0) return true;
-        int selected = Microbot.getVarbitValue(SELECTED_OPTION_VARBIT);
-        int configuredX = Microbot.getVarbitValue(X_AMOUNT_VARBIT);
-        boolean hasX = configuredX > 0;
+        int selected = Microbot.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE);
+        int configuredX = Microbot.getVarbitValue(VarbitID.BANK_REQUESTEDQUANTITY);
+        boolean hasX = configuredX > 0;        
         boolean isInventory = (container == BANK_INVENTORY_ITEM_CONTAINER);
         int xSetOffset = -1;
         int xPromptOffset = -1;
@@ -606,7 +614,7 @@ public class Rs2Bank {
         if (!Rs2Inventory.hasItem(rs2Item.getId())) return false;
         container = BANK_INVENTORY_ITEM_CONTAINER;
 
-        if (Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 4) {
+        if (Microbot.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 4) {
             invokeMenu(2, rs2Item);
         } else {
             invokeMenu(8, rs2Item);
@@ -685,6 +693,10 @@ public class Rs2Bank {
         return Rs2Inventory.waitForInventoryChanges(10_000);
     }
 
+    public static boolean depositAllExcept(Predicate<Rs2ItemModel> predicate) {
+        return depositAll(predicate.negate());
+    }
+
     /**
      * Deposits all items in the player's inventory into the bank, except for the items with the specified IDs.
      * This method uses a lambda function to filter out the items with the specified IDs from the deposit operation.
@@ -706,7 +718,7 @@ public class Rs2Bank {
      * @return true if any items were deposited, false otherwise.
      */
     public static boolean depositAllExcept(String... names) {
-        return depositAll(x -> Arrays.stream(names).noneMatch(name -> name.equalsIgnoreCase(x.getName())));
+        return depositAllExcept(Rs2ItemModel.matches(false, names));
     }
 
     /**
@@ -718,7 +730,7 @@ public class Rs2Bank {
      * @return true if any items were deposited, false otherwise.
      */
     public static boolean depositAllExcept(List<String> names) {
-        return depositAll(x -> names.stream().noneMatch(name -> name.equalsIgnoreCase(x.getName())));
+        return depositAllExcept(names.toArray(String[]::new));
     }
 
     /**
@@ -749,10 +761,7 @@ public class Rs2Bank {
      * @return true if any items were deposited, false otherwise.
      */
     public static boolean depositAllExcept(boolean exact, String... names) {
-        if (!exact)
-            return depositAll(x -> Arrays.stream(names).noneMatch(name -> x.getName().toLowerCase().contains(name.toLowerCase())));
-        else
-            return depositAll(x -> Arrays.stream(names).noneMatch(name -> name.equalsIgnoreCase(x.getName())));
+        return depositAllExcept(Rs2ItemModel.matches(exact, names));
     }
 
     /**
@@ -766,7 +775,7 @@ public class Rs2Bank {
         if (Rs2Inventory.isFull()) return false;
         container = BANK_ITEM_CONTAINER;
 
-        final int entryIndex = Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 0 ? 1 : 2;
+        final int entryIndex = Microbot.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 0 ? 1 : 2;
         invokeMenu(entryIndex, rs2Item);
         return true;
     }
@@ -1010,7 +1019,7 @@ public class Rs2Bank {
         if (Rs2Inventory.isFull()) return false;
         container = BANK_ITEM_CONTAINER;
 
-        if (Microbot.getVarbitValue(SELECTED_OPTION_VARBIT) == 4) {
+        if (Microbot.getVarbitValue(VarbitID.BANK_QUANTITY_TYPE) == 4) {
             invokeMenu(1, rs2Item);
         } else {
             invokeMenu(6, rs2Item);
@@ -1461,10 +1470,10 @@ public class Rs2Bank {
      */
     private static Rs2ItemModel findBankItem(String name, boolean exact, int amount) {
     final String lowerCaseName = name.toLowerCase();
-    return getAll()
+    final Stream<Rs2ItemModel> items = getAll()
             .filter(x -> exact ? x.getName().equalsIgnoreCase(lowerCaseName) : x.getName().toLowerCase().contains(lowerCaseName))
-            .filter(x -> x.getQuantity() >= amount)
-            .findAny().orElse(null);
+            .filter(x -> x.getQuantity() >= amount);
+    return exact ? items.findAny().orElse(null) : items.min(Comparator.comparingInt(item -> item.getName().length())).orElse(null);
 }
 
     /**
@@ -1566,7 +1575,7 @@ public class Rs2Bank {
             }
         }
 
-        // Measure accessible banks filtering performance, expensive operation takes up to 2500 ms
+        // Measure accessible banks filtering performance, now down to 0.4ms to 1ms, proper usage of the cache in hasRequirements
         long accessibleBanksStart = System.nanoTime();
         Set<BankLocation> accessibleBanks = allBanks.stream()
                 .filter(BankLocation::hasRequirements)
@@ -1774,13 +1783,11 @@ public class Rs2Bank {
      * @param e The event containing the latest bank items.
      */
     public static void updateLocalBank(ItemContainerChanged e) {
-        synchronized (lock) {
+        synchronized (lock) {            
             List<Rs2ItemModel> list = updateItemContainer(InventoryID.BANK.getId(), e);
             if (list != null) {
-                // Update the centralized bank data (Rs2BankData.set() is already synchronized)
-                rs2BankData.set(list);
-                vaildLoadedCache = true;
-                log.debug("Bank data updated with {} items from client thread", list.size());
+                // Update the centralized bank data (Rs2BankData.set() is already synchronized)                
+                updateCache(list);
             } else {
                 log.debug("Bank data update skipped - no items received");
             }
@@ -1817,7 +1824,7 @@ public class Rs2Bank {
                 Player localPlayer = Microbot.getClient().getLocalPlayer();
                 if (localPlayer != null && localPlayer.getName() != null) {
                     loadCache(newRsProfileKey);
-                    log.info("-load bank cache, bank items size: {}", rs2BankData.size());
+                    log.debug("-load bank cache, bank items size: {}", rs2BankData.size());
                     vaildLoadedCache = Microbot.loggedIn;
                 }
             }
@@ -1865,18 +1872,22 @@ public class Rs2Bank {
         }
         Rs2Bank.rsProfileKey = rsProfileKey;
         worldType = RuneScapeProfileType.getCurrent(Microbot.getClient());
+        log.debug("Loading bank data for profile: {}, world type: {}", rsProfileKey, worldType);
         String json =Microbot.getConfigManager().getConfiguration(CONFIG_GROUP, rsProfileKey, BANK_KEY);
         //String json = Microbot.getConfigManager().getRSProfileConfiguration(CONFIG_GROUP, BANK_KEY);
         try {
             if (json != null && !json.isEmpty()) {
                 int[] data = gson.fromJson(json, int[].class);
+                log.debug("Loaded {} bank items from config", data.length);
                 rs2BankData.setIdQuantityAndSlot(data);
+                log.debug("finished loading bank data, size: {}", rs2BankData.size());
 
                 // Load cached items if no live bank data
                 if (rs2BankData.getBankItems().isEmpty()) {
                     // Cache is already loaded via setIdQuantityAndSlot
-                    log.info("Loaded {} cached bank items from config", rs2BankData.size());
+                    log.debug("Loaded {} cached bank items from config", rs2BankData.size());
                 }
+                log.debug("build data should now be valid, size: {}", rs2BankData.size());
             } else {
                 rs2BankData.setEmpty();
                 log.debug("No cached bank data found in config");
