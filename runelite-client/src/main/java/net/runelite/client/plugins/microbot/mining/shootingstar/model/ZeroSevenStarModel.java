@@ -2,12 +2,10 @@ package net.runelite.client.plugins.microbot.mining.shootingstar.model;
 
 import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarLocation;
 import net.runelite.http.api.worlds.World;
 
-@RequiredArgsConstructor
 public class ZeroSevenStarModel implements Star
 {
 	@Getter

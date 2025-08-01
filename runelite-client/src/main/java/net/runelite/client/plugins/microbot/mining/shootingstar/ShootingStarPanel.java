@@ -206,7 +206,7 @@ public class ShootingStarPanel extends PluginPanel
 		JMenuItem hopEntryOption = new JMenuItem();
 		hopEntryOption.setText("Hop to");
 		hopEntryOption.setFont(FontManager.getRunescapeSmallFont());
-		hopEntryOption.addActionListener(e -> Microbot.hopToWorld(star.getWorldObject().getId()));
+		hopEntryOption.addActionListener(e -> Microbot.hopToWorld(star.getWorld()));
 		popupMenu.add(hopEntryOption);
 
 		JMenuItem selectedEntryOption = new JMenuItem();

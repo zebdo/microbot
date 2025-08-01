@@ -13,8 +13,6 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
@@ -22,7 +20,6 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.WorldType;
 import net.runelite.client.game.WorldService;
-import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarLocation;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarProvider;
 import net.runelite.client.plugins.microbot.mining.shootingstar.model.OSRSVaultStarModel;
@@ -106,7 +103,11 @@ public class ShootingStarApiClient
 		List<ZeroSevenStarModel> deserializedStarData = Collections.emptyList();
 		try
 		{
-			deserializedStarData = gson.fromJson(jsonResponse, listType);
+			List<ZeroSevenStarModel> result = gson.fromJson(jsonResponse, listType);
+			if (result != null)
+			{
+				deserializedStarData = result;
+			}
 		}
 		catch (JsonSyntaxException e)
 		{
@@ -123,7 +124,11 @@ public class ShootingStarApiClient
 		List<OSRSVaultStarModel> deserializedStarData = Collections.emptyList();
 		try
 		{
-			deserializedStarData = gson.fromJson(jsonResponse, listType);
+			List<OSRSVaultStarModel> result = gson.fromJson(jsonResponse, listType);
+			if (result != null)
+			{
+				deserializedStarData = result;
+			}
 		}
 		catch (JsonSyntaxException e)
 		{
@@ -158,7 +163,7 @@ public class ShootingStarApiClient
 			new ArrayList<>(fromZeroSeven(response)) :
 			new ArrayList<>(fromOSRSVault(response));
 
-		boolean inSeasonalWorld = Microbot.getClient().getWorldType().contains(WorldType.SEASONAL);
+		boolean inSeasonalWorld = client.getWorldType().contains(WorldType.SEASONAL);
 
 		// Remove stars that are older than 3 minutes
 		starData.removeIf(s -> s.getEndsAt() < now.minusMinutes(3).toInstant().toEpochMilli());

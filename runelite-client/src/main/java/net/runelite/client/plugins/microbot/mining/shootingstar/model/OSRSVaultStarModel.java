@@ -3,12 +3,10 @@ package net.runelite.client.plugins.microbot.mining.shootingstar.model;
 import com.google.gson.annotations.SerializedName;
 import java.time.Instant;
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarLocation;
 import net.runelite.http.api.worlds.World;
 
-@RequiredArgsConstructor
 public class OSRSVaultStarModel implements Star
 {
 	@SerializedName("called_at")

@@ -148,9 +148,9 @@ public class ShootingStarScript extends Script
 					case WALKING:
 						toggleLockState(true);
 
-						if (Rs2Player.getWorld() != currentStar.getWorldObject().getId())
+						if (Rs2Player.getWorld() != currentStar.getWorld())
 						{
-							Microbot.hopToWorld(currentStar.getWorldObject().getId());
+							Microbot.hopToWorld(currentStar.getWorld());
 							sleepUntil(() -> Microbot.getClient().getGameState() == GameState.LOGGED_IN);
 							return;
 						}
