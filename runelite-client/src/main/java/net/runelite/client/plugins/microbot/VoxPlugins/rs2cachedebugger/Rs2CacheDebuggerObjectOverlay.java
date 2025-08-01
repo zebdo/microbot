@@ -22,7 +22,6 @@ import lombok.extern.slf4j.Slf4j;
 public class Rs2CacheDebuggerObjectOverlay extends Rs2ObjectCacheOverlay {
     
     private Rs2CacheDebuggerConfig config;
-    private Predicate<Rs2ObjectModel> renderFilter;
     @Inject
     public Rs2CacheDebuggerObjectOverlay(Client client, ModelOutlineRenderer modelOutlineRenderer) {
         super(client, modelOutlineRenderer);
@@ -40,7 +39,8 @@ public class Rs2CacheDebuggerObjectOverlay extends Rs2ObjectCacheOverlay {
      * Set the render filter for Objects
      */
     public Rs2CacheDebuggerObjectOverlay setRenderFilter(Predicate<Rs2ObjectModel> filter) {
-        this.renderFilter = filter;
+        // Apply the filter to the parent class
+        super.setRenderFilter(filter);
         return this;
     }
     
@@ -222,10 +222,6 @@ public class Rs2CacheDebuggerObjectOverlay extends Rs2ObjectCacheOverlay {
             // Update configuration
             updateRenderingOptions();
         
-            // Apply filter if set
-            if (renderFilter != null) {
-                setRenderFilter(renderFilter);
-            }        
             return super.render(graphics);
         } catch (Exception e) {
             log.error("Error rendering Rs2CacheDebuggerObjectOverlay: {}", e.getMessage(), e);

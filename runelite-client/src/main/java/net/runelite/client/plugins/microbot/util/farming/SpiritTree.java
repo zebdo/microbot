@@ -11,9 +11,13 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns.CropState;
 import net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns.FarmingPatch;
+import net.runelite.client.plugins.microbot.util.cache.Rs2SpiritTreeCache;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.ArrayList;
@@ -39,8 +43,9 @@ public enum SpiritTree {
             List.of(Quest.TREE_GNOME_VILLAGE),
             0,
             -1,
-            ObjectID.ENT, // Spirit Tree object ID i dont know why but it the id for "ENT" in tree gnome village
-            "1: Tree Gnome Village"
+            List.of(ObjectID.ENT), // Spirit Tree object ID i dont know why but it the id for "ENT" in tree gnome village
+			new int[] { -1 },
+            "Tree Gnome Village"
     ),
 
     GNOME_STRONGHOLD(
@@ -50,8 +55,9 @@ public enum SpiritTree {
             List.of(Quest.THE_GRAND_TREE),
             0,
             -1,
-            ObjectID.STRONGHOLD_ENT, // Spirit Tree object ID
-            "2: Gnome Stronghold"
+            List.of(ObjectID.STRONGHOLD_ENT), // Spirit Tree object ID
+			new int[] { -1 },
+            "Gnome Stronghold"
     ),
 
     BATTLEFIELD_KHAZARD(
@@ -61,8 +67,9 @@ public enum SpiritTree {
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
             0,
             -1,
-            ObjectID.SPIRITTREE_SMALL, // Spirit Tree object ID  
-            "3: Battlefield of Khazard"
+            List.of(ObjectID.SPIRITTREE_SMALL), // Spirit Tree object ID
+			new int[] { -1 },
+            "Battlefield of Khazard"
     ),
 
     GRAND_EXCHANGE(
@@ -72,8 +79,9 @@ public enum SpiritTree {
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
             0,
             -1,
-            ObjectID.SPIRITTREE_SMALL, // Spirit Tree object ID
-            "4: Grand Exchange"
+            List.of(ObjectID.SPIRITTREE_SMALL), // Spirit Tree object ID
+			new int[] { -1 },
+            "Grand Exchange"
     ),
 
     FELDIP_HILLS(
@@ -83,8 +91,9 @@ public enum SpiritTree {
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
             0,
             -1,
-            ObjectID.SPIRITTREE_SMALL, // Spirit Tree object ID
-            "5: Feldip Hills"
+            List.of(ObjectID.SPIRITTREE_SMALL), // Spirit Tree object ID
+			new int[] { -1 },
+            "Feldip Hills"
     ),
 
     PRIFDDINAS(
@@ -94,8 +103,9 @@ public enum SpiritTree {
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE, Quest.SONG_OF_THE_ELVES),
             0,
             -1,
-            ObjectID.SPIRITTREE_PRIF, // Prifddinas spirit tree
-            "6: Prifddinas"
+            List.of(ObjectID.SPIRITTREE_PRIF), // Prifddinas spirit tree
+			new int[] { -1 },
+            "Prifddinas"
     ),
 
     POISON_WASTE(
@@ -105,8 +115,9 @@ public enum SpiritTree {
             List.of(Quest.THE_PATH_OF_GLOUPHRIE),
             0,
             -1,
-            ObjectID.POG_SPIRIT_TREE_ALIVE_STATIC, // Poison Waste spirit tree
-            "D: Poison Waste"
+            List.of(ObjectID.POG_SPIRIT_TREE_ALIVE_STATIC), // Poison Waste spirit tree
+			new int[] { -1 },
+            "Poison Waste"
     ),
 
     // Farmable spirit tree patches
@@ -117,8 +128,9 @@ public enum SpiritTree {
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
             83,
             VarbitID.FARMING_TRANSMIT_A, // Port Sarim uses varbit 4771
-            ObjectID.SPIRIT_TREE_FULLYGROWN, // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
-            "7: Port Sarim"
+            List.of(ObjectID.SPIRIT_TREE_FULLYGROWN), // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
+			new int[] {12082, 12083},
+            "Port Sarim"
     ),
 
     ETCETERIA(
@@ -128,8 +140,9 @@ public enum SpiritTree {
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
             83,
             VarbitID.FARMING_TRANSMIT_B, // Etceteria uses varbit 4772
-            ObjectID.SPIRIT_TREE_FULLYGROWN, // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
-            "8: Etceteria"
+            List.of(ObjectID.SPIRIT_TREE_FULLYGROWN), // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
+			new int[] {10300},
+            "Etceteria"
     ),
 
     BRIMHAVEN(
@@ -139,8 +152,9 @@ public enum SpiritTree {
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
             83,
             VarbitID.FARMING_TRANSMIT_B, // Brimhaven spirit tree patch
-            ObjectID.SPIRIT_TREE_FULLYGROWN, // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
-            "9: Brimhaven"
+            List.of(ObjectID.SPIRIT_TREE_FULLYGROWN), // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
+			new int[] {11058, 11057},
+            "Brimhaven"
     ),
 
     HOSIDIUS(
@@ -150,26 +164,54 @@ public enum SpiritTree {
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
             83,
             VarbitID.FARMING_TRANSMIT_F, // Hosidius spirit tree patch
-            ObjectID.SPIRIT_TREE_FULLYGROWN, // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
-            "A: Hosidius"
+            List.of(ObjectID.SPIRIT_TREE_FULLYGROWN), // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
+			new int[] {6967, 6711},
+            "Hosidius"
     ),
 
     FARMING_GUILD(
             "Farming Guild",
-            new WorldPoint(1251, 3750, 0),
+			new WorldPoint(1251, 3749, 0),
             SpiritTreeType.FARMABLE,
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
             85, // Requires 85 Farming for the Farming Guild
             VarbitID.FARMING_TRANSMIT_A, // Farming Guild spirit tree patch
-            ObjectID.SPIRIT_TREE_FULLYGROWN, // Standard spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
-            "B: Farming Guild"
+            List.of(ObjectID.FARMING_SPIRIT_TREE_PATCH_5), // Spirit patch id when fully grown  and available for travel -> healty , for states between there are other ids
+			new int[] {4922, 5177, 5178, 5179, 4921, 4923, 4665, 4666, 4667},
+            "Farming Guild"
+    ),
+
+    // Player-owned house spirit trees
+    POH_SPIRIT_TREE(
+            "Spirit Tree (POH)", //TODO must be checked
+            null, // Location is dynamic based on player's house
+            SpiritTreeType.POH,
+            List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
+            75, // Requires 75 Construction
+            VarbitID.POH_SPIRIT_TREE_UPROOTED, //TODO Must be checked if correct POH Spirit Tree varbit
+            List.of(ObjectID.POH_SPIRIT_TREE), // TODO Must be checked if correct - POH Spirit Tree object ID // we must update it. here are also variations for it.. leauge skins, christmas skins (), etc
+            new int[] {-1}, // Region must be player's own house
+            "Your house"
+    ),
+
+    POH_SPIRIT_RING(
+            "Spiritual Fairy Tree",
+            null, // Location is dynamic based on player's house
+            SpiritTreeType.POH,
+            List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE, Quest.FAIRYTALE_II__CURE_A_QUEEN),
+            75, // Requires 75 Construction
+            VarbitID.POH_SPIRIT_TREE_UPROOTED, // TODO Must be checkedPOH Spirit Tree varbit (combined tree/ring uses same varbit)
+            List.of(ObjectID.POH_SPIRIT_RING), // TODO Must be checked Spirit Ring object ID // we must update it. here are also variations for it.. leauge skins
+            new int[] {-1}, // Region must be player's own house 
+            "Your house"
     );
       /**
-     * Enum to differentiate between built-in and farmable spirit trees
+     * Enum to differentiate between built-in, farmable, and POH spirit trees
      */
     public enum SpiritTreeType {
         BUILT_IN,    // Pre-existing spirit trees unlocked by quests
-        FARMABLE     // Player-grown spirit trees requiring farming
+        FARMABLE,    // Player-grown spirit trees requiring farming
+        POH          // Player-owned house spirit trees requiring construction
     }
     // Widget constants for spirit tree detection
     private static final int ADVENTURE_LOG_GROUP_ID = 187;
@@ -180,9 +222,10 @@ public enum SpiritTree {
     private final WorldPoint location;
     private final SpiritTreeType type;
     private final List<Quest> requiredQuests;
-    private final int requiredFarmingLevel;
+    private final int requiredSkillLevel; // Farming level for FARMABLE, Construction level for POH
     private final int varbitId; // -1 for built-in trees
-    private final int objectId;
+    private final List<Integer> objectId;
+	private final int[] regionIds; // -1 for built-in trees
     private final String adventureLogDisplayName;
 
     /**
@@ -192,20 +235,28 @@ public enum SpiritTree {
      */
     public boolean isAvailableForTravel() {
         // Check quest requirements
-        for (Quest quest : requiredQuests) {
-            if (Rs2Player.getQuestState(quest) != QuestState.FINISHED) {
-                return false;
-            }
+        if (!requiredQuests.stream().allMatch(q -> Rs2Player.getQuestState(q) == QuestState.FINISHED)) {
+            return false;
         }
 
-        // Check farming level for farmable trees
+        // Check skill level for farmable trees
         if (type == SpiritTreeType.FARMABLE) {
-            if (!Rs2Farming.hasRequiredFarmingLevel(requiredFarmingLevel)) {
+            if (!Rs2Farming.hasRequiredFarmingLevel(requiredSkillLevel)) {
                 return false;
             }
 
             // For farmable trees, check if they are planted and healthy
             return isPatchHealthyAndGrown();
+        }
+
+        // Check construction level for POH trees
+        if (type == SpiritTreeType.POH) {
+            if (Rs2Player.getRealSkillLevel(Skill.CONSTRUCTION) < requiredSkillLevel || !Rs2Farming.hasRequiredFarmingLevel(75)) {
+                return false;
+            }
+
+            // For POH trees, check if they are built and player is in their house
+            return isPOHTreeAvailable();
         }
 
         // Built-in trees are always available if quest requirements are met
@@ -224,16 +275,15 @@ public enum SpiritTree {
 
         // Get the corresponding farming patch
         Optional<FarmingPatch> patch = Rs2Farming.getSpiritTreePatches().stream()
-                .filter(p -> p.getLocation().equals(this.location))
+                .filter(p -> p.getLocation().distanceTo(this.location)<10)
                 .findFirst();
 
         if (patch.isEmpty()) {
             return false;
         }
-
         // Check the predicted state
         CropState state = Rs2Farming.predictPatchState(patch.get());
-        return state == CropState.HARVESTABLE || state == CropState.UNCHECKED;
+        return state == CropState.HARVESTABLE;
     }
 
     /**
@@ -255,7 +305,37 @@ public enum SpiritTree {
         }
 
         CropState state = Rs2Farming.predictPatchState(patch.get());
-        return state != CropState.EMPTY;
+        return state!=null && state != CropState.EMPTY;
+    }
+
+    /**
+     * Check if a POH spirit tree is built and accessible
+     *
+     * @return true if the POH tree is built and player is in their house
+     */
+    public boolean isPOHTreeAvailable() {
+        if (type != SpiritTreeType.POH) {
+            return false;
+        }
+        // Check if we are in the player's house
+        // Check if player is in their own house (POH)
+        if (!PohTeleports.isInHouse()) {
+            // Check if this POH spirit tree is present in the spirit tree cache
+            if (Rs2SpiritTreeCache.getInstance().containsKey(this)) {
+                return Rs2SpiritTreeCache.getInstance().get(this).isAvailableForTravel();
+            }
+            return false;
+        }
+        
+        // Check if the POH spirit tree is built (varbit > 0 means not uprooted)
+        int treeState = Microbot.getVarbitValue(VarbitID.POH_SPIRIT_TREE_UPROOTED);
+        if (treeState == 0) {
+            return false; // Tree is uprooted or not built
+        }
+
+        // TODO: Add house region validation - ensure player is in their own house
+        // This would require checking if current region is the player's POH and not a friend's house
+        return true;
     }
 
     /**
@@ -280,8 +360,13 @@ public enum SpiritTree {
      *
      * @return true if farming level requirement is met
      */
-    public boolean hasFarmingLevelRequirement() {
-        return Rs2Player.getRealSkillLevel(Skill.FARMING) >= requiredFarmingLevel;
+    public boolean hasLevelRequirement() {
+        if (this.type == SpiritTreeType.FARMABLE){
+            return Rs2Player.getRealSkillLevel(Skill.FARMING) >= requiredSkillLevel;
+        }else if (this.type == SpiritTreeType.POH) {
+            return Rs2Player.getRealSkillLevel(Skill.CONSTRUCTION) >= requiredSkillLevel && Rs2Player.getRealSkillLevel(Skill.FARMING) >= 75;
+        }
+        return true; // Built-in trees don't have a level requirement        
     }
 
     /**
@@ -398,7 +483,7 @@ public enum SpiritTree {
      */
     public static Optional<SpiritTree> findByAdventureLogName(String displayName) {
         return Arrays.stream(values())
-                .filter(tree -> tree.getAdventureLogDisplayName().equalsIgnoreCase(displayName))
+                .filter(tree -> displayName.toLowerCase().contains(tree.getAdventureLogDisplayName().toLowerCase()))
                 .findFirst();
     }
 
@@ -451,7 +536,7 @@ public enum SpiritTree {
      * @return List of available spirit tree destinations
      */
     public static List<SpiritTree> extractAvailableFromWidget() {
-        if (!Rs2Widget.hasWidgetText(SPIRIT_TREE_WIDGET_TITLE, ADVENTURE_LOG_CONTAINER_CHILD_OPTIONS, ADVENTURE_LOG_CONTAINER_CHILD, false)) {
+        if (!Rs2Widget.hasWidgetText(SPIRIT_TREE_WIDGET_TITLE, ADVENTURE_LOG_GROUP_ID, ADVENTURE_LOG_CONTAINER_CHILD, false)) {
             log.info("Adventure log widget does not contain spirit tree information.");
             return List.of();
         }
@@ -478,13 +563,13 @@ public enum SpiritTree {
                         && !child.getText().contains("<col=5f5f5f>") 
                         && !child.getText().toLowerCase().contains("cancel")) { // if the color is not greyed out
                         log.debug("Found child widget text: {}", child.getText());
-                        widgetTexts.add(child.getText());
+                        widgetTexts.add(Rs2UiHelper.stripColTags(child.getText()).trim());
                     }
                 }
             }
 
             return widgetTexts.stream()
-                    .map(text -> findByAdventureLogName(text.trim()))
+                    .map(text -> findByAdventureLogName(text))
                     .filter(Optional::isPresent)
                     .map(Optional::get)
                     .collect(Collectors.toList());
@@ -513,7 +598,7 @@ public enum SpiritTree {
             }
             
             log.info("{} - {} - Level Req: {} - Available: {}", 
-                    patch.getName(), status, patch.getRequiredFarmingLevel(), patch.isAvailableForTravel());
+                    patch.getName(), status, patch.getRequiredSkillLevel(), patch.isAvailableForTravel());
         }
         log.info("===============================");
     }

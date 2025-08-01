@@ -563,7 +563,7 @@ public interface ShortestPathConfig extends Config {
     )
     @Range(min = 0)
     default int minBankRouteSavings() {
-        return 20;
+        return 80;
     }
 
     @ConfigItem(

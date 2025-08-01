@@ -259,10 +259,8 @@ public class PathfinderConfig {
         transportsPacked.clear();
         usableTeleports.clear();
          // Check spirit tree farming states for farmable spirit trees
-
         Rs2SpiritTreeCache.getInstance().update();       
-        //Rs2SpiritTreeCache.logAllTreeStates();             
-        //log.info("useSpiritTrees: {}", useSpiritTrees);
+        //Rs2SpiritTreeCache.logAllTreeStates();                     
         for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
             WorldPoint point = entry.getKey();
             Set<Transport> usableTransports = new HashSet<>(entry.getValue().size());

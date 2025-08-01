@@ -1,23 +1,22 @@
 package net.runelite.client.plugins.microbot.util.cache;
 
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
+
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
-
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ChatMessageType;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
-import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
-import net.runelite.client.plugins.microbot.questhelper.questinfo.QuestHelperQuest;
 import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializable;
 import net.runelite.client.plugins.microbot.util.cache.strategy.simple.QuestUpdateStrategy;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
+import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
 
 /**
  * Thread-safe cache for quest states using the unified cache architecture.
@@ -36,11 +35,7 @@ import net.runelite.client.plugins.microbot.util.cache.strategy.simple.QuestUpda
  */
 @Slf4j
 public class Rs2QuestCache extends Rs2Cache<Quest, QuestState> implements CacheSerializable {
-    
-    private static Rs2QuestCache instance;
-    
-    private static Quest trackedQuest = null; // Currently tracked quest, if any
-    
+    private static Rs2QuestCache instance;    
     // Async update tracking
     private static final AtomicInteger pendingAsyncUpdates = new java.util.concurrent.atomic.AtomicInteger(0);
     private static final Set<Consumer<Boolean>> updateCompletionCallbacks = java.util.concurrent.ConcurrentHashMap.newKeySet();
@@ -155,116 +150,11 @@ public class Rs2QuestCache extends Rs2Cache<Quest, QuestState> implements CacheS
         });
     }
     
-    /**
-     * Checks if QuestHelperPlugin is available and enabled using Microbot utilities.
-     * 
-     * @return true if QuestHelperPlugin is available for integration
-     */
-    private static boolean isQuestHelperAvailable() {
-        try {
-            return Microbot.getPluginManager() != null && 
-                   Microbot.getPluginManager().getPlugins().stream()
-                           .anyMatch(plugin -> plugin instanceof QuestHelperPlugin && 
-                                               Microbot.getPluginManager().isPluginEnabled(plugin));
-        } catch (Exception e) {
-            log.debug("QuestHelperPlugin not available: {}", e.getMessage());
-            return false;
-        }
-    }
+
     
-    /**
-     * Gets the QuestHelperPlugin instance using Microbot utilities.
-     * 
-     * @return The QuestHelperPlugin instance, or null if not available
-     */
-    private static QuestHelperPlugin getQuestHelperPlugin() {
-        try {
-            if (!isQuestHelperAvailable()) {
-                return null;
-            }
-            
-            return (QuestHelperPlugin) Microbot.getPluginManager().getPlugins().stream()
-                    .filter(plugin -> plugin instanceof QuestHelperPlugin)
-                    .findFirst()
-                    .orElse(null);
-        } catch (Exception e) {
-            log.debug("Error getting QuestHelperPlugin: {}", e.getMessage());
-            return null;
-        }
-    }
+  
     
-    /**
-     * Gets the currently selected quest from QuestHelperPlugin if available.
-     * 
-     * @return The currently selected QuestHelper, or null if none selected or plugin unavailable
-     */
-    private static QuestHelper getSelectedQuestHelper() {
-        QuestHelperPlugin questHelperPlugin = getQuestHelperPlugin();
-        if (questHelperPlugin != null) {
-            return questHelperPlugin.getSelectedQuest();
-        }
-        return null;
-    }
     
-    /**
-     * Gets the currently active RuneLite Quest from QuestHelperPlugin.
-     * Maps QuestHelper to RuneLite Quest objects using QuestHelperQuest info.
-     * Also attempts to detect active quests from client state when QuestHelper is unavailable.
-     * 
-     * @return The currently active Quest, or null if none selected or not mappable
-     */
-    private static Quest getCurrentlyActiveQuest() {
-        // First try using QuestHelper plugin if available
-        QuestHelper selectedQuestHelper = getSelectedQuestHelper();
-        if (selectedQuestHelper != null) {
-            try {
-                // Get the QuestHelperQuest from the selected QuestHelper
-                QuestHelperQuest questHelperQuest = 
-                    selectedQuestHelper.getQuest();
-                
-                if (questHelperQuest == null) {
-                    log.debug("QuestHelper active but no QuestHelperQuest available: {}", 
-                        selectedQuestHelper.getClass().getSimpleName());
-                } else {
-                    // Get the display name of the quest
-                    String questName = questHelperQuest.getName();
-                    log.debug("QuestHelper active: {} ({})", selectedQuestHelper.getClass().getSimpleName(), questName);
-                    
-                    // Try to find matching RuneLite Quest enum by name
-                    for (Quest quest : Quest.values()) {
-                        if (quest.getName().equalsIgnoreCase(questName) || 
-                            quest.getName().replaceAll("_", " ").equalsIgnoreCase(questName)) {
-                            log.debug("Mapped QuestHelper {} to RuneLite Quest {}", questName, quest.getName());
-                            // Track this quest for updates
-                            trackedQuest = quest;
-                            return quest;
-                        }
-                    }
-                    
-                    log.debug("Could not map QuestHelper {} to any RuneLite Quest", questName);
-                }
-            } catch (Exception e) {
-                log.debug("Error getting active quest from QuestHelper: {}", e.getMessage(), e);
-            }
-        }
-        
-        // If QuestHelper doesn't have a selected quest or we couldn't map it,
-        // use the trackedQuest if we have one from previous detection
-        if (trackedQuest != null && selectedQuestHelper == null) {
-            // Check if the quest is still in progress asynchronously
-            loadQuestStateFromClientAsync(trackedQuest, state -> {
-                if (state == QuestState.IN_PROGRESS) {
-                    log.debug("Using previously tracked quest: {}", trackedQuest.getName());
-                } else if (state == QuestState.FINISHED) {
-                    log.info("Previously tracked quest is now completed: {}", trackedQuest.getName());
-                    // Clear tracked quest as it's now complete
-                    trackedQuest = null;
-                }
-            });
-            return trackedQuest; // Return immediately, let async update handle state changes
-        }                     
-        return null;
-    }
     
     /**
      * Asynchronously loads quest state using invokeLater for deferred execution.
@@ -400,16 +290,22 @@ public class Rs2QuestCache extends Rs2Cache<Quest, QuestState> implements CacheS
      */
     public static QuestState getQuestState(Quest quest) {
         // Use the base cache get method directly
-        QuestState cachedState = getInstance().get(quest);        
-        if (cachedState != null) {
+        QuestState cachedState = getInstance().get(quest);           
+        if (cachedState != null ) {
             return cachedState;
         }
+        if ( isUpdateInProgress(quest)) {
+            //log.info("Quest update in progress for {}, returning NOT_STARTED", quest.getName());
+            return QuestState.NOT_STARTED; // Return NOT_STARTED if update is in progress
+        }
         
-        // Not cached - trigger async loading but don't wait (prevents deadlocks)
-        updateQuestStateAsync(quest);
+        // Trigger async loading if not cached
+        updateQuestStateAsync(quest);        
+        return getCache().get(quest); // Default state if not cached 
+    
+                  
         
-        // Return NOT_STARTED immediately
-        return QuestState.NOT_STARTED;
+
     }
     
     /**
@@ -445,7 +341,7 @@ public class Rs2QuestCache extends Rs2Cache<Quest, QuestState> implements CacheS
      * 
      * @param callback Callback to be called with true when all updates are complete
      */
-    public static void onAllAsyncUpdatesComplete(java.util.function.Consumer<Boolean> callback) {
+    public static void onAllAsyncUpdatesComplete(Consumer<Boolean> callback) {
         if (callback != null) {
             updateCompletionCallbacks.add(callback);
             // If no updates are pending, call immediately
@@ -533,15 +429,15 @@ public class Rs2QuestCache extends Rs2Cache<Quest, QuestState> implements CacheS
      * don't block current event processing, even when already on the client thread.
      */
     public static void updateAllFromClientAsync() {
-        Microbot.getClientThread().invokeLater(() -> {
-            try {
-                log.debug("Starting asynchronous quest cache update...");
-                getInstance().update();
-                log.debug("Completed asynchronous quest cache update");
-            } catch (Exception e) {
-                log.error("Error during asynchronous quest cache update: {}", e.getMessage(), e);
-            }
-        });
+        
+        try {
+            log.debug("Starting asynchronous quest cache update...");
+            getInstance().update();
+            log.debug("Completed asynchronous quest cache update");
+        } catch (Exception e) {
+            log.error("Error during asynchronous quest cache update: {}", e.getMessage(), e);
+        }
+        
     }
     
     /**
@@ -594,132 +490,21 @@ public class Rs2QuestCache extends Rs2Cache<Quest, QuestState> implements CacheS
      */    
         
     @Subscribe
-    public void onVarbitChanged(VarbitChanged event) {
+    public void onVarbitChanged(final VarbitChanged event) {
         try {
-            getInstance().handleEvent(event);            
-            // Check for quest progression using tracked quest or find one
-            Quest questToCheck = trackedQuest != null ? trackedQuest : getCurrentlyActiveQuest();
-            if (questToCheck != null) {
-                // Use clientThread to check and update state
-                Microbot.getClientThread().invokeLater(() -> {
-                    try {
-                        if (Microbot.getClient() == null) {
-                            return;
-                        }
-                        
-                        QuestState oldState = getQuestState(questToCheck);
-                        QuestState newState = questToCheck.getState(Microbot.getClient());
-                        
-                        if (oldState != newState) {
-                            log.info("VarbitChanged - Quest state changed for {}: {} to {}", 
-                                    questToCheck.getName(), oldState, newState);
-                            updateQuestState(questToCheck, newState);
-                            
-                            // If quest is now complete, clear it from tracked quest
-                            if (newState == QuestState.FINISHED && trackedQuest == questToCheck) {
-                                log.info("VarbitChanged - Quest completed: {}", questToCheck.getName());
-                                trackedQuest = null;
-                            }
-                        }
-                    } catch (Exception e) {
-                        log.error("Error checking quest state in VarbitChanged: {}", e.getMessage());
-                    }
-                });                                           
-            }
+            getInstance().handleEvent(event);                       
         } catch (Exception e) {
             log.error("Error handling VarbitChanged event: {}", e.getMessage(), e);
         }
     }
     
     @Subscribe
-    public void onChatMessage(ChatMessage chatMessage) {
+    public void onChatMessage(final ChatMessage chatMessage) {
         try {
-            if (chatMessage.getType() != ChatMessageType.GAMEMESSAGE) {
-                return;
-            }
-            
-            String message = chatMessage.getMessage();
-            
-            // Quest completion detection
-            if (message.contains("Congratulations! Quest complete!") || 
-                message.contains("you've completed a quest")) {
-                log.info("Quest completion detected!");
-                
-                // If we have a tracked quest, check if it's complete
-                if (trackedQuest != null) {
-                    Microbot.getClientThread().invokeLater(() -> {
-                        try {
-                            loadQuestStateFromClientAsync(trackedQuest, state -> {
-                                if (state == QuestState.FINISHED) {
-                                    log.info("Tracked quest completed: {}", trackedQuest.getName());
-                                    updateQuestState(trackedQuest, QuestState.FINISHED);
-                                    trackedQuest = null;
-                                }
-                            });
-                        } catch (Exception e) {
-                            log.error("Error checking tracked quest completion: {}", e.getMessage());
-                        }
-                    });
-                } else {
-                    // If no tracked quest, update all from client to capture the completed one
-                    log.info("No tracked quest when completion detected, updating all");
-                    update();
-                }
-            } 
-            // Quest start detection
-            else if (message.contains("You've started a new quest")) {
-                log.info("Quest start detected!");
-                
-                try {
-                    // Extract quest name from formatted message
-                    final String questName = message.substring(message.indexOf(">") + 1)
-                                                  .substring(0, message.substring(message.indexOf(">") + 1).indexOf("<"));
-                    log.info("Started quest: {}", questName);
-                    
-                    // Find matching quest by name
-                    for (Quest quest : Quest.values()) {
-                        if (quest.getName().equalsIgnoreCase(questName) || 
-                            quest.getName().replaceAll("_", " ").equalsIgnoreCase(questName)) {
-                            
-                            // Update state and set as tracked quest
-                            Microbot.getClientThread().invokeLater(() -> {
-                                try {
-                                    loadQuestStateFromClientAsync(quest, state -> {
-                                        if (state == QuestState.IN_PROGRESS) {
-                                            log.info("Confirmed quest started: {}", quest.getName());
-                                            updateQuestState(quest, QuestState.IN_PROGRESS);
-                                            trackedQuest = quest;
-                                        }
-                                    });
-                                } catch (Exception e) {
-                                    log.error("Error updating started quest: {}", e.getMessage());
-                                }
-                            });
-                            
-                            break;
-                        }
-                    }
-                } catch (Exception e) {
-                    log.error("Error extracting quest name: {}", e.getMessage());
-                }
-            }
+            getInstance().handleEvent(chatMessage);            
         } catch (Exception e) {
             log.error("Error handling ChatMessage event: {}", e.getMessage(), e);
         }
-    }
-    
-    
-    // ============================================
-    // Legacy API Compatibility Methods
-    // ============================================
-    
-    /**
-     * Invalidates quest cache entry - Legacy compatibility method.
-     * 
-     * @param quest The quest to invalidate
-     */
-    public static void invalidateQuest(Quest quest) {
-        getInstance().remove(quest);
     }
     
     /**
@@ -727,7 +512,7 @@ public class Rs2QuestCache extends Rs2Cache<Quest, QuestState> implements CacheS
      */
     public static synchronized void resetInstance() {
         if (instance != null) {
-            instance.close();
+            instance.invalidateAll();
             instance = null;
         }
     }
@@ -750,4 +535,135 @@ public class Rs2QuestCache extends Rs2Cache<Quest, QuestState> implements CacheS
     public boolean shouldPersist() {
         return true; // Quest states should be persisted for progress tracking
     }
+    
+    /**
+     * Logs the current state of all cached quests for debugging.
+     * 
+     * @param dumpToFile Whether to also dump the information to a file
+     */
+    public static void logState(LogOutputMode mode) {
+        var cache = getInstance();
+        var stats = cache.getStatistics();
+        
+        // Create the log content
+        StringBuilder logContent = new StringBuilder();
+        
+        String header = String.format("=== Quest Cache State (%d entries) ===", cache.size());
+        logContent.append(header).append("\n");
+        
+        String statsInfo = Rs2CacheLoggingUtils.formatCacheStatistics(
+            stats.getHitRate(), stats.cacheHits, stats.cacheMisses, stats.cacheMode.toString());        
+        logContent.append(statsInfo).append("\n\n");
+        
+        if (cache.size() == 0) {
+            String emptyMsg = "Cache is empty";            
+            logContent.append(emptyMsg).append("\n");
+        } else {
+            // Table format for quests
+            String[] headers = {"Quest", "State", "ID", "Cache Timestamp", "Varbit ID", "VarPlayer ID"};
+            int[] columnWidths = {40, 15, 8, 22, 10, 12};
+            
+            String tableHeader = Rs2CacheLoggingUtils.formatTableHeader(headers, columnWidths);            
+            logContent.append("\n").append(tableHeader);
+            
+            // Sort quests by state (completed first, then in progress, then not started)
+            cache.entryStream()
+                .sorted((a, b) -> {
+                    try {
+                        // Handle null entries
+                        if (a == null && b == null) return 0;
+                        if (a == null) return 1;
+                        if (b == null) return -1;
+                        if (a.getKey() == null && b.getKey() == null) return 0;
+                        if (a.getKey() == null) return 1;
+                        if (b.getKey() == null) return -1;
+                        if (a.getValue() == null && b.getValue() == null) return 0;
+                        if (a.getValue() == null) return 1;
+                        if (b.getValue() == null) return -1;
+                        
+                        // Sort by state priority: FINISHED > IN_PROGRESS > NOT_STARTED
+                        int aOrder = getQuestStateOrder(a.getValue());
+                        int bOrder = getQuestStateOrder(b.getValue());
+                        if (aOrder != bOrder) {
+                            return Integer.compare(aOrder, bOrder);
+                        }
+                        // Then sort alphabetically by quest name
+                        String nameA = a.getKey().getName();
+                        String nameB = b.getKey().getName();
+                        if (nameA == null && nameB == null) return 0;
+                        if (nameA == null) return 1;
+                        if (nameB == null) return -1;
+                        return nameA.compareTo(nameB);
+                    } catch (Exception e) {
+                        // Fallback to ID comparison if anything goes wrong
+                        try {
+                            return Integer.compare(
+                                a != null && a.getKey() != null ? a.getKey().getId() : Integer.MAX_VALUE,
+                                b != null && b.getKey() != null ? b.getKey().getId() : Integer.MAX_VALUE
+                            );
+                        } catch (Exception e2) {
+                            return 0; // Last resort - consider equal
+                        }
+                    }
+                })                
+                .forEach(entry -> {
+                    Quest quest = entry.getKey();
+                    QuestState questState = entry.getValue();
+                    
+                    // Get cache timestamp for this quest
+                    Long cacheTimestamp = cache.getCacheTimestamp(quest);
+                    String cacheTimestampStr = cacheTimestamp != null ? 
+                        Rs2Cache.formatUtcTimestamp(cacheTimestamp) : "N/A";
+                    
+                    // Get varbit/varPlayer IDs for this quest
+                    Integer varbitId = QuestUpdateStrategy.getVarbitIdByQuest(quest);
+                    Integer varPlayerId = QuestUpdateStrategy.getVarPlayerIdByQuest(quest);
+                    
+                    String[] values = {
+                        Rs2CacheLoggingUtils.truncate(quest.getName(), 39),
+                        questState.toString(),
+                        String.valueOf(quest.getId()),
+                        Rs2CacheLoggingUtils.truncate(cacheTimestampStr, 21),
+                        varbitId != null ? String.valueOf(varbitId) : "N/A",
+                        varPlayerId != null ? String.valueOf(varPlayerId) : "N/A"
+                    };
+                    
+                    String row = Rs2CacheLoggingUtils.formatTableRow(values, columnWidths);
+                    logContent.append(row);
+                });
+            
+            String tableFooter = Rs2CacheLoggingUtils.formatTableFooter(columnWidths);            
+            logContent.append(tableFooter);
+            
+            // Summary statistics
+            long completedCount = cache.entryStream().filter(e -> e.getValue() == QuestState.FINISHED).count();
+            long inProgressCount = cache.entryStream().filter(e -> e.getValue() == QuestState.IN_PROGRESS).count();
+            long notStartedCount = cache.entryStream().filter(e -> e.getValue() == QuestState.NOT_STARTED).count();
+            
+            String summaryMsg = String.format("Quest Summary: %d Completed, %d In Progress, %d Not Started", 
+                completedCount, inProgressCount, notStartedCount);
+            logContent.append(summaryMsg).append("\n");
+        }
+        
+        String footer = "=== End Quest Cache State ===";        
+        logContent.append(footer).append("\n");                
+        Rs2CacheLoggingUtils.outputCacheLog(getInstance().getCacheName(), logContent.toString(), mode);                 
+    }
+    
+    /**
+     * Helper method to define quest state sorting order.
+     */
+    private static int getQuestStateOrder(QuestState state) {
+        switch (state) {
+            case FINISHED:
+                return 0; // Highest priority
+            case IN_PROGRESS:
+                return 1; // Medium priority
+            case NOT_STARTED:
+            default:
+                return 2; // Lowest priority
+        }
+    }
+    
+  
 }

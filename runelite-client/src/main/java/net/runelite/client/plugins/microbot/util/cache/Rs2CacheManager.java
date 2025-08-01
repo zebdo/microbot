@@ -7,6 +7,7 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializationManager;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -78,28 +79,13 @@ public class Rs2CacheManager implements AutoCloseable {
     public static void setEventBus(EventBus eventBus) {
         Rs2CacheManager.eventBus = eventBus;
         
-        // Unregister existing handlers if any
-        unregisterEventHandlers();
         
-        // Create and register new event handlers
-        registerEventHandlers();
     }
-    
-    /**
-     * Initializes cache system with EventBus and loads persistent caches.
-     * This method should be called during plugin startup.
-     * 
-     * @param eventBus The RuneLite EventBus instance
-     */
-    public static void initialize(EventBus eventBus) {
-        setEventBus(eventBus);
-    }
-   
     
     /**
      * Registers all cache event handlers with the EventBus.
      */
-    private static void registerEventHandlers() {
+    public static void registerEventHandlers() {
         if (eventBus == null || isEventRegistered.get()) {
             log.warn("EventBus is null, cannot register cache event handlers");
             return;
@@ -109,13 +95,13 @@ public class Rs2CacheManager implements AutoCloseable {
             // Register NPC cache events
         
             eventBus.register(Rs2NpcCache.getInstance());
-            
+            //Rs2NpcCache.getInstance().update();
             // Register Object cache events
             eventBus.register(Rs2ObjectCache.getInstance());
-            
+            Rs2ObjectCache.getInstance().update(600*10);
             // Register GroundItem cache events            
             eventBus.register(Rs2GroundItemCache.getInstance());
-            
+            //Rs2GroundItemCache.getInstance().update();
             // Register Varbit cache events            
             eventBus.register(Rs2VarbitCache.getInstance());
             
@@ -309,18 +295,23 @@ public class Rs2CacheManager implements AutoCloseable {
     }
     
     /**
-     * Shuts down the cache manager.
+     * Shuts down the cache manager and all managed caches.
      */
     @Override
     public void close() {
         if (isShutdown.compareAndSet(false, true)) {
             log.info("Shutting down Rs2CacheManager");
             
-            // Save persistent caches before shutdown
-            savePersistentCaches();
-            emptyCacheState();
+            // 
+            // Empty cache state and Save persistent caches before shutdown
+            emptyCacheState();            
             // Unregister event handlers first
             unregisterEventHandlers();            
+            // Close all cache instances to ensure proper resource cleanup
+            closeAllCaches();
+            
+            
+            
             // Shutdown executor
             cleanupExecutor.shutdown();
             try {
@@ -333,6 +324,32 @@ public class Rs2CacheManager implements AutoCloseable {
             }
             
             log.debug("Rs2CacheManager shutdown complete");
+        }
+    }
+    
+    /**
+     * Closes all cache instances to ensure proper resource cleanup.
+     * This includes shutting down any schedulers or background tasks.
+     */
+    private void closeAllCaches() {
+        try {
+            log.debug("Closing all cache instances");
+            
+            // Close object cache (includes ObjectUpdateStrategy shutdown)
+            Rs2ObjectCache.getInstance().close();
+            
+            // Close other caches
+            Rs2NpcCache.getInstance().close();
+            Rs2GroundItemCache.getInstance().close();
+            Rs2VarbitCache.getInstance().close();
+            Rs2VarPlayerCache.getInstance().close();
+            Rs2SkillCache.getInstance().close();
+            Rs2QuestCache.getInstance().close();
+            Rs2SpiritTreeCache.getInstance().close();
+            
+            log.debug("All cache instances closed successfully");
+        } catch (Exception e) {
+            log.error("Error closing cache instances", e);
         }
     }
     
@@ -380,14 +397,14 @@ public class Rs2CacheManager implements AutoCloseable {
             
             // Load Skills cache
             if (Rs2SkillCache.getCache().isPersistenceEnabled()) {
-                CacheSerializationManager.loadCache(Rs2SkillCache.getCache(), Rs2SkillCache.getCache().getConfigKey(), profileKey);
-                log.debug("Loaded Skills cache from configuration, new cache size: {}", 
+                CacheSerializationManager.loadCache(Rs2SkillCache.getCache(), Rs2SkillCache.getCache().getConfigKey(), profileKey,false);
+                log.info("Loaded Skills cache from configuration, new cache size: {}", 
                           Rs2SkillCache.getCache().size());
             }
             
             // Load Quest cache  
             if (Rs2QuestCache.getCache().isPersistenceEnabled()) {
-                CacheSerializationManager.loadCache(Rs2QuestCache.getCache(), Rs2QuestCache.getCache().getConfigKey(), profileKey);
+                CacheSerializationManager.loadCache(Rs2QuestCache.getCache(), Rs2QuestCache.getCache().getConfigKey(), profileKey,false);
                 // Schedule an async update to populate quest states from client without blocking initialization
                 //Rs2QuestCache.updateAllFromClientAsync();
                 log.debug ("Loaded Quest cache from configuration, new cache size: {}", 
@@ -396,23 +413,23 @@ public class Rs2CacheManager implements AutoCloseable {
             
             // Load Varbit cache
             if (Rs2VarbitCache.getCache().isPersistenceEnabled()) {
-                CacheSerializationManager.loadCache(Rs2VarbitCache.getCache(), Rs2VarbitCache.getCache().getConfigKey(), profileKey);
+                CacheSerializationManager.loadCache(Rs2VarbitCache.getCache(), Rs2VarbitCache.getCache().getConfigKey(), profileKey,false);
                 log.debug ("Loaded Varbit cache from configuration, new cache size: {}", 
                           Rs2VarbitCache.getCache().size());
             }
             
             // Load VarPlayer cache
             if (Rs2VarPlayerCache.getCache().isPersistenceEnabled()) {
-                CacheSerializationManager.loadCache(Rs2VarPlayerCache.getCache(), Rs2VarPlayerCache.getCache().getConfigKey(), profileKey);
+                CacheSerializationManager.loadCache(Rs2VarPlayerCache.getCache(), Rs2VarPlayerCache.getCache().getConfigKey(), profileKey, false);
                 log.debug ("Loaded VarPlayer cache from configuration, new cache size: {}", 
                           Rs2VarPlayerCache.getCache().size());
             }
             if (Rs2SpiritTreeCache.getCache().isPersistenceEnabled()) {
-                CacheSerializationManager.loadCache(Rs2SpiritTreeCache.getCache(), Rs2SpiritTreeCache.getCache().getConfigKey(), profileKey);
+                CacheSerializationManager.loadCache(Rs2SpiritTreeCache.getCache(), Rs2SpiritTreeCache.getCache().getConfigKey(), profileKey,false);
                  // Update spirit tree cache with current farming handler data after initial load
                 try {
                     Rs2SpiritTreeCache.getInstance().update();
-                    if(Microbot.isDebug()) Rs2SpiritTreeCache.logAllTreeStates();
+                    if(Microbot.isDebug()) Rs2SpiritTreeCache.logState(LogOutputMode.CONSOLE_ONLY);
                     log.debug("Spirit tree cache updated from FarmingHandler after initial load");
                 } catch (Exception e) {
                     log.warn("Failed to update spirit tree cache from FarmingHandler after initial load: {}", e.getMessage());
@@ -433,7 +450,7 @@ public class Rs2CacheManager implements AutoCloseable {
      * Similar to Rs2Bank.loadInitialCacheFromCurrentConfig().
      * This method handles both Rs2Bank and other cache systems.
      */
-    public static void loadInitialCacheStateFromConfig() {        
+    public static void loadCacheStateFromCurrentProfile() {        
         String rsProfileKey = Microbot.getConfigManager().getRSProfileKey();
         loadCacheStateFromConfig(rsProfileKey);
         
@@ -453,6 +470,7 @@ public class Rs2CacheManager implements AutoCloseable {
                 getInstance().cleanupExecutor.schedule(() -> {
                     retryLoadCacheWithValidation(newRsProfileKey, 0);
                 }, 0, TimeUnit.MILLISECONDS);
+                log.info("Starting cache loading with player validation for profile: {}", newRsProfileKey);
             } else {
                 log.debug("Cache loading already in progress, skipping duplicate request");
             }
@@ -546,9 +564,9 @@ public class Rs2CacheManager implements AutoCloseable {
     public static void handleProfileChange(String newRsProfileKey, String prvProfile) {
         // Save current cache state before loading new profile
         savePersistentCaches(prvProfile);
+        setUnknownInitialCacheState();
         // Load cache state for new profile
-        loadPersistentCaches(newRsProfileKey);
-        
+        loadCacheStateFromConfig(newRsProfileKey);        
         // Update spirit tree cache with current farming handler data after profile change
        
     }
@@ -595,6 +613,10 @@ public class Rs2CacheManager implements AutoCloseable {
      */
     public static void savePersistentCaches(String profileKey) {
         try {
+            if (!isCacheDataVaild() ) {
+                log.warn("Cache data is not valid, cannot save persistent caches");
+                return;
+            }
             if (profileKey == null) {
                 log.warn("Cannot save persistent caches: profile key is null");
                 return;

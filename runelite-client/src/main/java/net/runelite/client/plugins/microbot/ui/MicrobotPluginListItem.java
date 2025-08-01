@@ -155,10 +155,7 @@ class MicrobotPluginListItem extends JPanel implements SearchablePlugin
 		if (pluginConfig.getPlugin() != null)
 		{
 			PluginDescriptor pluginDescriptor = pluginConfig.getPlugin().getClass().getAnnotation(PluginDescriptor.class);
-			if (pluginDescriptor.alwaysOn()) {
-				onOffToggle.setEnabled(false);
-				onOffToggle.setSelected(true);
-			}
+
 			onOffToggle.addActionListener(i ->
 			{
 				if (onOffToggle.isSelected())
@@ -170,6 +167,21 @@ class MicrobotPluginListItem extends JPanel implements SearchablePlugin
 					pluginListPanel.stopPlugin(pluginConfig.getPlugin());
 				}
 			});
+			
+			if (pluginDescriptor.alwaysOn()) {
+				onOffToggle.setEnabled(false);
+				onOffToggle.setSelected(true);
+				pluginListPanel.startPlugin(pluginConfig.getPlugin());
+			}
+			if (pluginDescriptor.disableOnStartUp()) {				
+				onOffToggle.setSelected(false);						
+				pluginListPanel.stopPlugin(pluginConfig.getPlugin());						
+			}
+			if (pluginDescriptor.disable()) {
+				onOffToggle.setEnabled(false);
+				onOffToggle.setSelected(false);
+				pluginListPanel.stopPlugin(pluginConfig.getPlugin());						
+			}			
 		}
 		else
 		{

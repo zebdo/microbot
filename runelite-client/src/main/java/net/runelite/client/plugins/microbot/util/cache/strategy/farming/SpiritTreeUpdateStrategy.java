@@ -1,11 +1,12 @@
 package net.runelite.client.plugins.microbot.util.cache.strategy.farming;
 
+import java.util.Objects;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameState;
-
+import net.runelite.api.GameObject;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.events.GameObjectSpawned;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.events.WidgetLoaded;
 import net.runelite.api.gameval.ObjectID;
@@ -13,16 +14,19 @@ import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.questhelper.helpers.mischelpers.farmruns.CropState;
+import net.runelite.client.plugins.microbot.util.cache.Rs2Cache;
+import net.runelite.client.plugins.microbot.util.cache.Rs2ObjectCache;
 import net.runelite.client.plugins.microbot.util.cache.model.SpiritTreeData;
 import net.runelite.client.plugins.microbot.util.cache.strategy.CacheOperations;
 import net.runelite.client.plugins.microbot.util.cache.strategy.CacheUpdateStrategy;
-import net.runelite.client.plugins.microbot.util.cache.util.Rs2ObjectCacheUtils;
 import net.runelite.client.plugins.microbot.util.farming.SpiritTree;
-import net.runelite.client.plugins.microbot.util.gameobject.Rs2ObjectModel;
+import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Cache update strategy for spirit tree farming data.
@@ -39,12 +43,14 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
     
     // Spirit tree object IDs for game object detection
     private static final List<Integer> SPIRIT_TREE_OBJECT_IDS = Arrays.asList(
+		ObjectID.FARMING_SPIRIT_TREE_PATCH_5, // Object ID found in farming guild fully grown spirit tree patch
         ObjectID.SPIRIT_TREE_FULLYGROWN,  // Standard spirit spiritTree id when fully grown  and available for travel -> healty )         
         ObjectID.SPIRITTREE_PRIF, // Prifddinas spirit tree  
         ObjectID.POG_SPIRIT_TREE_ALIVE_STATIC,  // Poison Waste spirit tree
         ObjectID.SPIRITTREE_SMALL, // Small spirit tree in  grand Exchange 1295
         ObjectID.ENT, // for the "great" trees in tree gnome village 1293
-        ObjectID.STRONGHOLD_ENT // nd tree gnome stronghold 1294
+        ObjectID.STRONGHOLD_ENT, // nd tree gnome stronghold 1294
+        ObjectID.POH_SPIRIT_TREE // Player-owned house spirit tree object ID
     );
     
     // Spirit tree specific farming transmit varbits
@@ -59,12 +65,11 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
         try {
             
             if (event instanceof WidgetLoaded) {
-                
                 handleWidgetLoaded((WidgetLoaded) event, cache);
             } else if (event instanceof VarbitChanged) {
                 handleVarbitChanged((VarbitChanged) event, cache);
-            } else if (event instanceof GameObjectSpawned) {
-                handleGameObjectSpawned((GameObjectSpawned) event, cache);
+            } else if (event instanceof GameStateChanged) {
+                handleGameStateChanged((GameStateChanged) event, cache);
             }
         } catch (Exception e) {
             log.error("Error handling event in SpiritTreeUpdateStrategy: {}", e.getMessage(), e);
@@ -73,15 +78,12 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
     
     @Override
     public Class<?>[] getHandledEventTypes() {
-        return new Class<?>[]{WidgetLoaded.class, VarbitChanged.class, GameObjectSpawned.class};
-    }
-    
+        return new Class<?>[]{WidgetLoaded.class, VarbitChanged.class, GameStateChanged.class};
+    }    
     /**
      * Handle widget loaded events to detect spirit tree widget opening
      */
-    private void handleWidgetLoaded(WidgetLoaded event, CacheOperations<SpiritTree, SpiritTreeData> cache) {
-        
-
+    private void handleWidgetLoaded(WidgetLoaded event, CacheOperations<SpiritTree, SpiritTreeData> cache) {        
         // Check if this is the adventure log widget with spirit tree locations
         if (event.getGroupId() == ADVENTURE_LOG_GROUP_ID) {            
             // Small delay to ensure widget is fully loaded
@@ -97,14 +99,12 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
                         return;
                     }
                     log.info("Adventure log widget loaded (group {}), checking for spirit tree locations", event.getGroupId());
-                    boolean hasRightTitle= Rs2Widget.hasWidgetText(SPIRIT_TREE_WIDGET_TITLE,
-                                                            ADVENTURE_LOG_GROUP_ID,
-                                                                    ADVENTURE_LOG_CONTAINER_CHILD,
-                                                                     false);                    
+                    boolean hasRightTitle = Rs2Widget.hasWidgetText(SPIRIT_TREE_WIDGET_TITLE, ADVENTURE_LOG_GROUP_ID, ADVENTURE_LOG_CONTAINER_CHILD, false);
                             
                     if (hasRightTitle) {
                         log.info("Spirit tree locations widget detected, updating cache from widget data");
                         updateCacheFromWidget(cache);
+                        
                     }
                 } catch (Exception e) {
                     log.debug("Error checking spirit tree widget: {}", e.getMessage());
@@ -117,94 +117,134 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
      * Handle varbit changed events for spirit tree farming transmit varbits
      */
     private void handleVarbitChanged(VarbitChanged event, CacheOperations<SpiritTree, SpiritTreeData> cache) {
-        int varbitId = event.getVarbitId();
-        
+        int varbitId = event.getVarbitId();        
         // Check if this is a spirit tree farming transmit varbit
         if (SPIRIT_TREE_VARBIT_IDS.contains(varbitId)) {
-            log.debug("Spirit tree farming varbit {} changed to value {}, updating spirit tree farming states", varbitId, event.getValue());
-            
+            log.debug("Spirit tree farming varbit {} changed to value {}, updating spirit tree farming states", varbitId, event.getValue());                        
             // Update farming states for all farmable spirit tree patches
             updateFarmingStatesFromVarbits(cache);
+        }
+        if(varbitId == VarbitID.POH_SPIRIT_TREE_UPROOTED){
+            log.debug("TODO update cache for POH spirit tree uprooted varbit change,currently in POH? {} ",PohTeleports.isInHouse());
+        }
+        if (Rs2Cache.isInPOH()) {
+            log.debug("Player in POH, checking for spirit tree objects,changed varbit {}", varbitId);
+            updatePOHSpiritTreeCache(cache);
+        }
+       
+    }
+    
+    /**
+     * Handle GameStateChanged events to detect POH region changes and validate spirit tree presence
+     */
+    private void handleGameStateChanged(GameStateChanged event, CacheOperations<SpiritTree, SpiritTreeData> cache) {
+        GameState gameState = event.getGameState();
+        
+        // Only process when entering game or loading regions
+        if (gameState != GameState.LOGGED_IN && gameState != GameState.LOADING) {
+            return;
+        }
+        
+        try {
+            // Use unified region detection from Rs2Cache
+            Rs2Cache.checkAndHandleRegionChange(cache);
+            
+            // Check if we're in POH and validate spirit tree presence
+            if (Rs2Cache.isInPOH()) {
+                log.debug("Player in POH, checking for spirit tree objects");
+                updatePOHSpiritTreeCache(cache);
+            }
+        } catch (Exception e) {
+            log.error("Error handling GameStateChanged in SpiritTreeUpdateStrategy: {}", e.getMessage(), e);
         }
     }
     
     /**
-     * Handle game object spawned events for spirit tree objects
+     * Update cache for POH spirit tree based on object detection
      */
-    private void handleGameObjectSpawned(GameObjectSpawned event, CacheOperations<SpiritTree, SpiritTreeData> cache) {
-        int objectId = event.getGameObject().getId();
-        
-        // Check if this is a spirit tree object
-        if (SPIRIT_TREE_OBJECT_IDS.contains(objectId)) {
-            WorldPoint objectLocation = event.getGameObject().getWorldLocation();
-            log.info("Spirit tree object {} spawned at {}", objectId, objectLocation);
-            
-            // Find the corresponding spirit tree
-            SpiritTree matchingPatch = findPatchByLocation(objectLocation);
-            if (matchingPatch != null && matchingPatch.getType() == SpiritTree.SpiritTreeType.FARMABLE) {
-                updatePatchFromGameObject(cache, matchingPatch, event.getGameObject());
-            }else if (matchingPatch != null) {
-                log.debug("Spirit tree object {} spawned but not farmable, skipping update", matchingPatch.name());
+    private void updatePOHSpiritTreeCache(CacheOperations<SpiritTree, SpiritTreeData> cache) {
+        try {
+            WorldPoint playerLocation = getPlayerLocation();
+            if (playerLocation == null|| !Rs2Cache.isInPOH()) {
+                log.warn("Cannot determine player location for POH spirit tree detection");
+                return;
             }
+            // Stream over all SpiritTree values, filter for POH type, and update cache for each
+            Arrays.stream(SpiritTree.values())
+                .filter(tree -> tree.getType() == SpiritTree.SpiritTreeType.POH)
+                .forEach(tree -> {
+                    // Check for POH spirit tree object nearby using the objectId defined in the enum
+                    boolean pohSpiritTreePresent = Rs2ObjectCache.getGameObjects()
+                        .anyMatch(obj -> tree.getObjectId().contains(obj.getId()) &&                                        
+                                         obj.getWorldLocation().distanceTo(playerLocation) <= 40);
+
+                    SpiritTreeData newData = new SpiritTreeData(
+                        tree,
+                        pohSpiritTreePresent ? CropState.HARVESTABLE : CropState.DEAD,
+                        pohSpiritTreePresent,
+                        playerLocation,
+                        false, // Not detected via widget
+                        pohSpiritTreePresent // Detected via nearby tree if present
+                    );
+
+                    cache.put(tree, newData);
+                    log.info("Updated POH spirit tree cache for {} - {}", tree.name(), pohSpiritTreePresent ? "tree present and available" : "no tree present");
+                });
+        } catch (Exception e) {
+            log.error("Error updating POH spirit tree cache: {}", e.getMessage(), e);
         }
     }
     
     /**
      * Update cache from spirit tree widget data
      */
-    private void updateCacheFromWidget(CacheOperations<SpiritTree, SpiritTreeData> cache) {
-        try {
-            // Extract available destinations from the widget
-            List<SpiritTree> availableSpiritTrees = SpiritTree.extractAvailableFromWidget();
-            
-            WorldPoint playerLocation = getPlayerLocation();
-            Integer farmingLevel = getFarmingLevel();
-            
-            log.debug("Widget extraction found {} available spirit tree destinations", availableSpiritTrees.size());
-            
-            // Update cache for all available destinations
-            for (SpiritTree spiritTree : availableSpiritTrees) {
-                SpiritTreeData existingData = cache.get(spiritTree);
-                
-                // Create new data with widget detection
-                SpiritTreeData newData = new SpiritTreeData(
-                    spiritTree,
-                    existingData != null ? existingData.getCropState() : null, // Preserve crop state
-                    true && spiritTree.hasQuestRequirements(), // Available for travel (detected in widget)
-                    playerLocation,
-                    true,  // Detected via widget
-                    false, // Not detected via game object
-                    farmingLevel
-                );
-                
-                cache.put(spiritTree, newData);
+	private void updateCacheFromWidget(CacheOperations<SpiritTree, SpiritTreeData> cache) {
+		try {
+			// Extract available destinations from the widget
+			List<SpiritTree> availableSpiritTrees = SpiritTree.extractAvailableFromWidget();
+			WorldPoint playerLocation = getPlayerLocation();
+			log.info("Widget extraction found {} available spirit tree destinations", availableSpiritTrees.size());
+			for (SpiritTree spiritTree : SpiritTree.values()) {
+				boolean isAvailable = availableSpiritTrees.contains(spiritTree);
+				boolean availableForTravel = spiritTree.hasQuestRequirements();
 
-                log.info("Updated spirit tree cache for via widget (available for travel)\n\t{}", spiritTree.toString());
-            }
-            
-            // Check for patches that might no longer be available
-            updateUnavailableSpiritTreesFromWidget(cache, availableSpiritTrees, playerLocation, farmingLevel);
-            
-        } catch (Exception e) {
-            log.error("Error updating cache from spirit tree widget: {}", e.getMessage(), e);
-        }
-    }
+				SpiritTreeData existingData = cache.get(spiritTree);
+
+				// Create new data with widget detection
+				SpiritTreeData newData = new SpiritTreeData(
+					spiritTree,
+					existingData != null ? existingData.getCropState() : null, // Preserve existing crop state if available
+					isAvailable && availableForTravel,
+					playerLocation,
+					isAvailable, // Detected via widget
+					false       // Not detected via near tree
+				);
+
+				cache.put(spiritTree, newData);
+
+				log.debug("Updated spirit tree cache for via widget ({} for travel)\n\t{}", isAvailable ? "available" : "not available", spiritTree.name());
+			}
+
+		} catch (Exception e) {
+			log.error("Error updating cache from spirit tree widget: {}", e.getMessage(), e);
+		}
+	}
     
     /**
-     * Update farming states from varbit changes - only when near spirit tree patches
+     * Update farming states from varbit changes with object detection - only when near spirit tree patches
      */
     private void updateFarmingStatesFromVarbits(CacheOperations<SpiritTree, SpiritTreeData> cache) {
         try {
             WorldPoint playerLocation = getPlayerLocation();
-            Integer farmingLevel = getFarmingLevel();
             
             if (playerLocation == null) {
                 return; // Can't determine player location
             }
             
-            // Only update if player is near a spirit tree (within 10 tiles)
+            // Only update if player is near a spirit tree (within region)
             boolean nearSpiritTree = SpiritTree.getFarmableSpirtTrees().stream()
-                .anyMatch(spiritTree -> playerLocation.distanceTo(spiritTree.getLocation()) <= 10);
+                .anyMatch(spiritTree -> Arrays.stream(spiritTree.getRegionIds())
+                    .anyMatch(regionId -> regionId != -1 && regionId == playerLocation.getRegionID()));
             
             if (!nearSpiritTree) {
                 log.trace("Player not near any spirit tree patches, skipping varbit update");
@@ -216,6 +256,15 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
                 try {
                     CropState currentState = spiritTree.getPatchState();
                     boolean availableForTravel = spiritTree.isAvailableForTravel();
+                    
+                    // Enhanced: Check for nearby spirit tree objects to verify travel availability
+                    boolean hasNearbyTravelObject = checkForNearbyTree(spiritTree, playerLocation);
+                    
+                    // Use object detection to override travel availability if object is found
+                    if (hasNearbyTravelObject) {
+                        availableForTravel = true;
+                        log.debug("Found nearby travel object for {}, setting available=true", spiritTree.name());
+                    }
                     
                     SpiritTreeData existingData = cache.get(spiritTree);
                     
@@ -230,13 +279,12 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
                             availableForTravel,
                             playerLocation,
                             false, // Not detected via widget
-                            false, // Not detected via game object
-                            farmingLevel
+                            true  // Detected via varbit when near patch
                         );
                         
                         cache.put(spiritTree, newData);
-                        log.debug("Updated spirit tree cache for {} via varbit (state: {}, available: {})", 
-                                spiritTree.name(), currentState, availableForTravel);
+                        log.debug("Updated spirit tree cache for {} via varbit (state: {}, available: {}, hasObject: {})", 
+                                spiritTree.name(), currentState, availableForTravel, hasNearbyTravelObject);
                     }
                 } catch (Exception e) {
                     log.debug("Error updating farming state for spiritTree {}: {}", spiritTree.name(), e.getMessage());
@@ -248,92 +296,61 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
     }
     
     /**
-     * Update spiritTree data from game object interaction using Rs2ObjectModel utilities
+     * Check for nearby spirit tree objects that have travel actions.
+     * This integrates the object detection logic from the former GameObjectSpawned handler.
+     * 
+     * @param spiritTree The spirit tree patch to check for
+     * @param playerLocation Current player location
+     * @return true if a nearby object with travel action is found
      */
-    private void updatePatchFromGameObject(CacheOperations<SpiritTree, SpiritTreeData> cache, 
-                                          SpiritTree spiritTree, net.runelite.api.GameObject gameObject) {
+    private boolean checkForNearbyTree(SpiritTree spiritTree, WorldPoint playerLocation) {
         try {
-            WorldPoint playerLocation = getPlayerLocation();
-            Integer farmingLevel = getFarmingLevel();
+            // Get all game objects near the spirit tree patch location
+            Optional<GameObject> nearbyObject = Rs2GameObject.getGameObjects()
+                .stream()
+                .filter(obj -> SPIRIT_TREE_OBJECT_IDS.contains(obj.getId()))
+                .filter(obj -> spiritTree.getLocation().distanceTo(obj.getWorldLocation()) <= 5)
+                .findFirst();
             
-            // Find the Rs2ObjectModel for this game object
-            Rs2ObjectModel objectModel = Rs2ObjectCacheUtils.getByGameId(gameObject.getId())
-                .filter(model -> model.getLocation().equals(gameObject.getWorldLocation()))
-                .findFirst()
-                .orElse(null);
-            
-            // Check if the game object has "Travel" action (indicates it's usable)
-            boolean hasTravel = false;
-            try {
-                String[] actions = Microbot.getClient().getObjectDefinition(gameObject.getId()).getActions();
-                if (actions != null) {
-                    for (String action : actions) {
-                        if ("Travel".equals(action)) {
-                            hasTravel = true;
-                            break;
-                        }
-                    }
-                }
-            } catch (Exception e) {
-                log.debug("Could not get actions for spirit tree object {}: {}", gameObject.getId(), e.getMessage());
-            }
-            
-            CropState currentCropState = spiritTree.getType() == SpiritTree.SpiritTreeType.FARMABLE ? 
-                                       spiritTree.getPatchState() : null;
-            
-            SpiritTreeData newData = new SpiritTreeData(
-                spiritTree,
-                currentCropState,
-                hasTravel, // Available based on "Travel" action presence
-                playerLocation,
-                false, // Not detected via widget
-                true,  // Detected via game object
-                farmingLevel
-            );
-            
-            cache.put(spiritTree, newData);
-            log.debug("Updated spirit tree cache for {} via game object (travel available: {}, object model: {})", 
-                    spiritTree.name(), hasTravel, objectModel != null ? "found" : "not found");
-            
-        } catch (Exception e) {
-            log.error("Error updating spiritTree from game object: {}", e.getMessage(), e);
-        }
-    }
-    
-    /**
-     * Update patches that are no longer available based on widget data
-     */
-    private void updateUnavailableSpiritTreesFromWidget(CacheOperations<SpiritTree, SpiritTreeData> cache,
-                                                   List<SpiritTree> availableSpiritTrees,
-                                                   WorldPoint playerLocation, Integer farmingLevel) {
-        // Check all patches to see if any are missing from the widget but were previously available
-        for (SpiritTree spiritTree : SpiritTree.values()) {
-            if (!availableSpiritTrees.contains(spiritTree)) {
-                SpiritTreeData existingData = cache.get(spiritTree);
+            if (nearbyObject.isPresent()) {
+                GameObject gameObject = nearbyObject.get();
                 
-                // If we had this as available before, mark it as unavailable
-                if (existingData != null && existingData.isAvailableForTravel()) {
-                    SpiritTreeData updatedData = existingData.withUpdatedAvailability(
-                        false, true, false, playerLocation, farmingLevel);
+                // Check if the game object has "Travel" action (indicates it's usable)
+                try {
+                    String[] actions = Microbot.getClient().getObjectDefinition(gameObject.getId()).getActions();
+                    boolean hasTravel = Arrays.stream(actions)
+                        .filter(Objects::nonNull)
+                        .anyMatch(action -> action.equalsIgnoreCase("Travel"));
                     
-                    cache.put(spiritTree, updatedData);
-                    log.debug("Marked spirit tree {} as unavailable (not found in widget)", spiritTree.name());
+                    if (hasTravel) {
+                        log.debug("Found spirit tree object {} with Travel action at {} for patch {}", 
+                                gameObject.getId(), gameObject.getWorldLocation(), spiritTree.name());
+                        return true;
+                    }
+                } catch (Exception e) {
+                    log.debug("Could not get actions for spirit tree object {}: {}", gameObject.getId(), e.getMessage());
                 }
             }
+            
+            return false;
+        } catch (Exception e) {
+            log.debug("Error checking for nearby travel object for {}: {}", spiritTree.name(), e.getMessage());
+            return false;
         }
     }
     
     /**
+
      * Find spirit tree spiritTree by object location
      */
-    private SpiritTree findPatchByLocation(WorldPoint objectLocation) {
+    private SpiritTree findSpiritTreeByLocation(WorldPoint objectLocation) {
         if (objectLocation == null) {
             return null;
         }
         
         for (SpiritTree spiritTree : SpiritTree.values()) {
-            WorldPoint patchLocation = spiritTree.getLocation();
-            if (patchLocation != null && patchLocation.distanceTo(objectLocation) <= 3) {
+            WorldPoint spiritTreeLocation = spiritTree.getLocation();
+            if (spiritTreeLocation != null && spiritTreeLocation.distanceTo(objectLocation) <= 5) {
                 return spiritTree;
             }
         }

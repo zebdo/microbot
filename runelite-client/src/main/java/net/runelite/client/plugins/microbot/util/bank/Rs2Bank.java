@@ -1783,14 +1783,11 @@ public class Rs2Bank {
      * @param e The event containing the latest bank items.
      */
     public static void updateLocalBank(ItemContainerChanged e) {
-        synchronized (lock) {
-            log.info("start updating bank data from client thread");
+        synchronized (lock) {            
             List<Rs2ItemModel> list = updateItemContainer(InventoryID.BANK.getId(), e);
             if (list != null) {
-                // Update the centralized bank data (Rs2BankData.set() is already synchronized)
-                rs2BankData.set(list);
-                vaildLoadedCache = true;
-                log.info("Bank data updated with {} items from client thread", list.size());
+                // Update the centralized bank data (Rs2BankData.set() is already synchronized)                
+                updateCache(list);
             } else {
                 log.debug("Bank data update skipped - no items received");
             }

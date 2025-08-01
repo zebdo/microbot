@@ -17,81 +17,77 @@ import java.time.format.DateTimeFormatter;
 @Data
 public class SpiritTreeData {
     
-    private final SpiritTree patch;
+    private final SpiritTree spiritTree;
     private final CropState cropState;
     private final boolean availableForTravel;
     private final long lastUpdated; // UTC timestamp when this state was last detected
     private final WorldPoint playerLocation; // Player location when the state was detected
     private final boolean detectedViaWidget; // Whether this state was detected via spirit tree widget
-    private final boolean detectedViaGameObject; // Whether this state was detected via game object interaction
-    private final Integer farmingLevel; // Player's farming level when this was detected
+    private final boolean detectedViaNearBy; // Whether this state was detected via varbit when near by
     
     /**
      * Creates a new SpiritTreeData instance with current timestamp and minimal context.
      * 
-     * @param patch The spirit tree patch
+     * @param spiritTree The spirit tree patch
      * @param cropState The current crop state (null for built-in trees)
      * @param availableForTravel Whether the tree is available for travel
      */
-    public SpiritTreeData(SpiritTree patch, CropState cropState, boolean availableForTravel) {
-        this(patch, cropState, availableForTravel, System.currentTimeMillis(), null, 
-             false, false, null);
+    public SpiritTreeData(SpiritTree spiritTree, CropState cropState, boolean availableForTravel) {
+        this(spiritTree, cropState, availableForTravel, System.currentTimeMillis(), null, 
+             false, false);
     }
     
     /**
      * Creates a new SpiritTreeData instance with detection method tracking.
      * 
-     * @param patch The spirit tree patch
+     * @param spiritTree The spirit tree patch
      * @param cropState The current crop state (null for built-in trees)
      * @param availableForTravel Whether the tree is available for travel
      * @param detectedViaWidget Whether detected via spirit tree widget
-     * @param detectedViaGameObject Whether detected via game object interaction
+     * @param detectedViaNearBy Whether detected via varbit when near by
      */
-    public SpiritTreeData(SpiritTree patch, CropState cropState, boolean availableForTravel,
-                         boolean detectedViaWidget, boolean detectedViaGameObject) {
-        this(patch, cropState, availableForTravel, System.currentTimeMillis(), null,
-             detectedViaWidget, detectedViaGameObject, null);
+    public SpiritTreeData(SpiritTree spiritTree, CropState cropState, boolean availableForTravel,
+                         boolean detectedViaWidget, boolean detectedViaNearBy) {
+        this(spiritTree, cropState, availableForTravel, System.currentTimeMillis(), null,
+             detectedViaWidget, detectedViaNearBy);
     }
     
     /**
      * Creates a new SpiritTreeData instance with contextual information.
      * 
-     * @param patch The spirit tree patch
+     * @param spiritTree The spirit tree patch
      * @param cropState The current crop state (null for built-in trees)
      * @param availableForTravel Whether the tree is available for travel
      * @param playerLocation The player's world location when detected
      * @param detectedViaWidget Whether detected via spirit tree widget
-     * @param detectedViaGameObject Whether detected via game object interaction
-     * @param farmingLevel Player's farming level when detected
+     * @param detectedViaNearBy Whether detected via varbit when near by
      */
-    public SpiritTreeData(SpiritTree patch, CropState cropState, boolean availableForTravel,
-                         WorldPoint playerLocation, boolean detectedViaWidget, boolean detectedViaGameObject, Integer farmingLevel) {
-        this(patch, cropState, availableForTravel, System.currentTimeMillis(), playerLocation,
-             detectedViaWidget, detectedViaGameObject, farmingLevel);
+    public SpiritTreeData(SpiritTree spiritTree, CropState cropState, boolean availableForTravel,
+                         WorldPoint playerLocation, boolean detectedViaWidget, boolean detectedViaNearBy) {
+        this(spiritTree, cropState, availableForTravel, System.currentTimeMillis(), playerLocation,
+             detectedViaWidget, detectedViaNearBy);
     }
     
     /**
      * Creates a new SpiritTreeData instance with full temporal and contextual tracking.
      * 
-     * @param patch The spirit tree patch
+     * @param spiritTree The spirit tree patch
      * @param cropState The current crop state (null for built-in trees)
      * @param availableForTravel Whether the tree is available for travel
      * @param lastUpdated UTC timestamp when this data was created/updated
      * @param playerLocation The player's world location when detected
      * @param detectedViaWidget Whether detected via spirit tree widget
-     * @param detectedViaGameObject Whether detected via game object interaction
-     * @param farmingLevel Player's farming level when detected
+     * @param detectedViaNearBy Whether detected via varbit when near by
      */
-    public SpiritTreeData(SpiritTree patch, CropState cropState, boolean availableForTravel, long lastUpdated,
-                         WorldPoint playerLocation, boolean detectedViaWidget, boolean detectedViaGameObject, Integer farmingLevel) {
-        this.patch = patch;
+    public SpiritTreeData(SpiritTree spiritTree, CropState cropState, boolean availableForTravel, long lastUpdated,
+                         WorldPoint playerLocation, boolean detectedViaWidget, boolean detectedViaNearBy) {
+        this.spiritTree = spiritTree;
         this.cropState = cropState;
         this.availableForTravel = availableForTravel;
         this.lastUpdated = lastUpdated;
         this.playerLocation = playerLocation;
         this.detectedViaWidget = detectedViaWidget;
-        this.detectedViaGameObject = detectedViaGameObject;
-        this.farmingLevel = farmingLevel;
+        this.detectedViaNearBy = detectedViaNearBy;
     }
     
     /**
@@ -99,15 +95,14 @@ public class SpiritTreeData {
      * 
      * @param newAvailability The new travel availability status
      * @param detectedViaWidget Whether detected via widget
-     * @param detectedViaGameObject Whether detected via game object
+     * @param detectedViaNearBy Whether detected via varbit when near by
      * @param playerLocation Current player location
-     * @param farmingLevel Current farming level
      * @return A new SpiritTreeData instance with updated availability
      */
     public SpiritTreeData withUpdatedAvailability(boolean newAvailability, boolean detectedViaWidget, 
-                                                 boolean detectedViaGameObject, WorldPoint playerLocation, Integer farmingLevel) {
-        return new SpiritTreeData(this.patch, this.cropState, newAvailability, playerLocation,
-                                detectedViaWidget, detectedViaGameObject, farmingLevel);
+                                                 boolean detectedViaNearBy, WorldPoint playerLocation) {
+        return new SpiritTreeData(this.spiritTree, this.cropState, newAvailability, playerLocation,
+                                detectedViaWidget, detectedViaNearBy);
     }
     
     /**
@@ -115,16 +110,14 @@ public class SpiritTreeData {
      * 
      * @param newCropState The new crop state
      * @param playerLocation Current player location
-     * @param farmingLevel Current farming level
      * @return A new SpiritTreeData instance with updated crop state
      */
-    public SpiritTreeData withUpdatedCropState(CropState newCropState, WorldPoint playerLocation, 
-                                              Integer farmingLevel) {
+    public SpiritTreeData withUpdatedCropState(CropState newCropState, WorldPoint playerLocation) {
         // Update availability based on new crop state
         boolean newAvailability = isAvailableBasedOnCropState(newCropState);
         
-        return new SpiritTreeData(this.patch, newCropState, newAvailability, playerLocation,
-                                false, true, farmingLevel);
+        return new SpiritTreeData(this.spiritTree, newCropState, newAvailability, playerLocation,
+                                false, true);
     }
     
     /**
@@ -223,11 +216,11 @@ public class SpiritTreeData {
      * @return Summary string containing key information
      */
     public String getSummary() {
-        return String.format("SpiritTreeData{patch=%s, state=%s, available=%s, age=%dms, via=%s}",
-                patch.name(), 
+        return String.format("SpiritTreeData{spiritTree=%s, state=%s, available=%s, age=%dms, via=%s}",
+                spiritTree.name(), 
                 cropState != null ? cropState.name() : "BUILT_IN",
                 availableForTravel,
                 getAgeMillis(),
-                detectedViaWidget ? "WIDGET" : (detectedViaGameObject ? "OBJECT" : "UNKNOWN"));
+                detectedViaWidget ? "WIDGET" : (detectedViaNearBy ? "NEAR_BY" : "UNKNOWN"));
     }
 }

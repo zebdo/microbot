@@ -2239,7 +2239,7 @@ public class Rs2Walker {
         String npcName = transport.getName();
 
         Rs2NpcModel npc = Rs2Npc.getNpc(npcName);
-
+        log.info("Charter Ship NPC: " + npcName + " - " + (npc != null ? npc.getId() : "not found"));
         if (Rs2Npc.canWalkTo(npc, 20) && Rs2Npc.interact(npc, transport.getAction())) {
             Rs2Player.waitForWalking();
             sleepUntil(() -> Rs2Widget.isWidgetVisible(885, 4));

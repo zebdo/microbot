@@ -6,6 +6,8 @@ import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.util.cache.Rs2CacheManager;
+import net.runelite.client.plugins.microbot.util.cache.Rs2ObjectCache;
+import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.ui.FontManager;
@@ -25,6 +27,7 @@ public class MicrobotOverlay extends OverlayPanel {
     MicrobotPlugin plugin;
     MicrobotConfig config;
     public final ButtonComponent cacheButton;
+    public final ButtonComponent logCacheButton;
 
     @Inject
     MicrobotOverlay(MicrobotPlugin plugin, MicrobotConfig config) {
@@ -39,8 +42,33 @@ public class MicrobotOverlay extends OverlayPanel {
         cacheButton.setParentOverlay(this);
         cacheButton.setFont(FontManager.getRunescapeBoldFont());
         cacheButton.setOnClick(() -> {
-            Rs2CacheManager.invalidateAllCaches(true);
-            Microbot.openPopUp("Cache Manager", String.format("Cleared Cache:<br><br><col=ffffff>%s</col>", "All caches have been invalidated!"));
+            try {
+                Rs2CacheManager.invalidateAllCaches(false);
+                //Microbot.getClientThread().runOnClientThreadOptional(
+                  //  ()-> {Microbot.openPopUp("Cache Manager", String.format("Cleared Cache:<br><br><col=ffffff>%s</col>", "All caches have been invalidated!"));
+                    //    return true;}
+                    //); // causes Exception java.lang.IllegalStateException: component does not exist
+            } catch (Exception e) {
+                Microbot.log("Cache Manager: All caches have been invalidated!");
+            }
+        });
+        
+        // Initialize cache logging button
+        logCacheButton = new ButtonComponent("Log to Files");
+        logCacheButton.setPreferredSize(new Dimension(60, 25));
+        logCacheButton.setParentOverlay(this);
+        logCacheButton.setFont(FontManager.getRunescapeBoldFont());
+        logCacheButton.setOnClick(() -> {
+            // Run on separate thread to avoid blocking UI
+            new Thread(() -> {
+                try {
+                    Rs2CacheLoggingUtils.logAllCachesToFiles();
+                    //Microbot.openPopUp("Cache Logger", String.format("Cache Logging:<br><br><col=ffffff>%s</col>", "All cache states dumped to files successfully!"));// causes Exception 
+                } catch (Exception e) {                  
+                    // Fallback to console if popup fails
+                    Microbot.log(" \"All cache states dumped to files successfully!\"" + e.getMessage());                    
+                }
+            }).start();
         });
     }
 
@@ -74,16 +102,25 @@ public class MicrobotOverlay extends OverlayPanel {
             panelComponent.getChildren().add(LineComponent.builder().build());
 
             panelComponent.getChildren().add(cacheButton);
-            // Only hook mouse listener if visible
+            panelComponent.getChildren().add(logCacheButton);
+            
+            // Only hook mouse listeners if visible
             cacheButton.hookMouseListener();
+            logCacheButton.hookMouseListener();
 
-            // Render cache statistics tooltip when hovering over the button
+            // Render cache statistics tooltip when hovering over the clear cache button
             if (cacheButton.isHovered()) {
                 renderCacheStatsTooltip(graphics);
             }
+            
+            // Render logging info tooltip when hovering over the log cache button
+            if (logCacheButton.isHovered()) {
+                renderLogCacheTooltip(graphics);
+            }
         } else {
-            // Unhook mouse listener if not visible
+            // Unhook mouse listeners if not visible
             cacheButton.unhookMouseListener();
+            logCacheButton.unhookMouseListener();
         }
         
         return super.render(graphics);
@@ -109,7 +146,7 @@ public class MicrobotOverlay extends OverlayPanel {
                 // Estimate cache info panel size based on typical components
                 // Title: ~150x20, Button: ~120x25, spacing: ~5-10px
                 int estimatedWidth = 200;  // panelComponent preferred width
-                int estimatedHeight = 60; // Title + separator + button + padding
+                int estimatedHeight = 85; // Title + separator + 2 buttons + padding
                 
                 return new Rectangle(preferredLocation.x, preferredLocation.y, 
                                    estimatedWidth, estimatedHeight);
@@ -145,7 +182,7 @@ public class MicrobotOverlay extends OverlayPanel {
             // Get object type statistics
             String objectTypeStats = "";
             try {
-                objectTypeStats = net.runelite.client.plugins.microbot.util.cache.Rs2ObjectCache.getObjectTypeStatistics();
+                objectTypeStats = Rs2ObjectCache.getObjectTypeStatistics();
             } catch (Exception e) {
                 objectTypeStats = "Object stats unavailable";
             }
@@ -195,6 +232,82 @@ public class MicrobotOverlay extends OverlayPanel {
                 if (!line.trim().isEmpty()) {
                     graphics.drawString(line.trim(), tooltipX + padding, lineY);
                     lineY += metrics.getHeight();
+                }
+            }
+            
+            // Restore original font
+            graphics.setFont(originalFont);
+            
+        } catch (Exception e) {
+            // Silent fail for overlay rendering
+        }
+    }
+
+    /**
+     * Renders logging information as a tooltip box when hovering over the log cache button
+     */
+    private void renderLogCacheTooltip(Graphics2D graphics) {
+        try {
+            // Set smaller font for tooltip
+            Font originalFont = graphics.getFont();
+            Font tooltipFont = new Font(Font.SANS_SERIF, Font.PLAIN, 10);
+            graphics.setFont(tooltipFont);
+            
+            // Define tooltip content
+            String[] lines = {
+                "Log Cache States to Files",
+                "",
+                "• Saves all cache data to log files",
+                "• Files saved in ~/.runelite/microbot-plugins/cache/",
+                "• Includes: NPCs, Objects, Ground Items,", 
+                "  Skills, Varbits, VarPlayers, Quests",
+                "• No console output (file only)",
+                "• Useful for analysis and debugging"
+            };
+            
+            // Calculate tooltip position (next to the button)
+            Rectangle buttonBounds = logCacheButton.getBounds();
+            int tooltipX = buttonBounds.x + buttonBounds.width + 10;
+            int tooltipY = buttonBounds.y;
+            
+            // Calculate tooltip dimensions
+            FontMetrics metrics = graphics.getFontMetrics();
+            int maxWidth = 0;
+            int totalHeight = 0;
+            
+            for (String line : lines) {
+                if (!line.trim().isEmpty()) {
+                    int lineWidth = metrics.stringWidth(line.trim());
+                    maxWidth = Math.max(maxWidth, lineWidth);
+                    totalHeight += metrics.getHeight();
+                } else {
+                    totalHeight += metrics.getHeight() / 2; // Half height for empty lines
+                }
+            }
+            
+            int padding = 6;
+            int backgroundWidth = maxWidth + (padding * 2);
+            int backgroundHeight = totalHeight + (padding * 2);
+            
+            // Draw semi-transparent background
+            Color backgroundColor = new Color(0, 0, 0, 180);
+            graphics.setColor(backgroundColor);
+            graphics.fillRect(tooltipX, tooltipY, backgroundWidth, backgroundHeight);
+            
+            // Draw border
+            graphics.setColor(Color.GREEN);
+            graphics.drawRect(tooltipX, tooltipY, backgroundWidth, backgroundHeight);
+            
+            // Render tooltip text
+            graphics.setColor(Color.WHITE);
+            int lineY = tooltipY + metrics.getAscent() + padding;
+            
+            for (String line : lines) {
+                if (!line.trim().isEmpty()) {
+                    graphics.drawString(line.trim(), tooltipX + padding, lineY);
+                    lineY += metrics.getHeight();
+                } else {
+                    lineY += metrics.getHeight() / 2; // Half height for empty lines
                 }
             }
             

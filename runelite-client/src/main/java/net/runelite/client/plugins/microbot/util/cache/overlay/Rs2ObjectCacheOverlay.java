@@ -106,8 +106,7 @@ public class Rs2ObjectCacheOverlay extends Rs2BaseCacheOverlay {
         for (Rs2ObjectModel obj : allObjects) {
             Rs2ObjectModel.ObjectType type = obj.getObjectType();
             totalByType.put(type, totalByType.get(type) + 1);
-        }
-        
+        }        
         // Apply filters and count at each stage
         List<Rs2ObjectModel> afterRenderFilter = allObjects.stream()
                 .filter(obj -> renderFilter == null || renderFilter.test(obj))
@@ -378,11 +377,10 @@ public class Rs2ObjectCacheOverlay extends Rs2BaseCacheOverlay {
     private void renderObjectInfo(Graphics2D graphics, Rs2ObjectModel objectModel, TileObject tileObject) {
         try {
             // Check if we should only show text on hover
-            boolean isHovering = isMouseHoveringOver(tileObject);
+            boolean isHovering = isMouseHoveringOver(tileObject);            
             if (onlyShowTextOnHover && !isHovering) {
                 return;
-            }
-            
+            }            
             // Build information lines (always build them when renderObjectInfo is called)
             java.util.List<String> infoLines = new java.util.ArrayList<>();
                 
@@ -503,9 +501,14 @@ public class Rs2ObjectCacheOverlay extends Rs2BaseCacheOverlay {
                     if (displayLocation != null) {
                         HoverInfoContainer.HoverInfo hoverInfo = new HoverInfoContainer.HoverInfo(
                             infoLines, displayLocation, borderColor, entityType);
-                        HoverInfoContainer.setHoverInfo(hoverInfo);
+                        ///HoverInfoContainer.setHoverInfo(hoverInfo);
+                        renderDetailedInfoBox(graphics, infoLines, 
+                            displayLocation, 
+                        borderColor);
                     }
+                    
                 }
+             
         } catch (Exception e) {
             log.debug("Failed to render object info for object {}: {}", objectModel.getId(), e.getMessage());
         }

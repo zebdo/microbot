@@ -20,7 +20,6 @@ import javax.inject.Inject;
 public class Rs2CacheDebuggerNpcOverlay extends Rs2NpcCacheOverlay {
     
     private Rs2CacheDebuggerConfig config;
-    private Predicate<Rs2NpcModel> renderFilter;
     @Inject
     public Rs2CacheDebuggerNpcOverlay(Client client, ModelOutlineRenderer modelOutlineRenderer) {
         super(client, modelOutlineRenderer);
@@ -38,7 +37,8 @@ public class Rs2CacheDebuggerNpcOverlay extends Rs2NpcCacheOverlay {
      * Set the render filter for NPCs
      */
     public Rs2CacheDebuggerNpcOverlay setRenderFilter(Predicate<Rs2NpcModel> filter) {
-        this.renderFilter = filter;
+        // Apply the filter to the parent class
+        super.setRenderFilter(filter);
         return this;
     }
     
@@ -162,11 +162,6 @@ public class Rs2CacheDebuggerNpcOverlay extends Rs2NpcCacheOverlay {
         
         // Update configuration
         updateRenderingOptions();
-        
-        // Apply filter if set
-        if (renderFilter != null) {
-            setRenderFilter(renderFilter);
-        }
         
         return super.render(graphics);
     }

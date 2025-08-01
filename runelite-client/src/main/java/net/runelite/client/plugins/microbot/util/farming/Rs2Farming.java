@@ -129,7 +129,7 @@ public class Rs2Farming {
         
         return Microbot.getClientThread().runOnClientThreadOptional(() -> {
             return farmingHandler.predictPatch(patch);
-        }).orElse(CropState.EMPTY);
+        }).orElse(null);
     }
 
     /**
