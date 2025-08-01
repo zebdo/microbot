@@ -26,6 +26,8 @@ import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.util.cache.model.SpiritTreeData;
 import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializable;
 import net.runelite.client.plugins.microbot.util.cache.strategy.farming.SpiritTreeUpdateStrategy;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
+import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
 import net.runelite.client.plugins.microbot.util.farming.SpiritTree;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
@@ -503,31 +505,40 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
     /**
      * Logs the current state of all cached spirit trees for debugging.
      */
-    public static void logAllTreeStates() {
-        log.info("=== Spirit Tree Cache States ===");
-        
+    public static void logState(LogOutputMode mode) {
+        StringBuilder logContent = new StringBuilder();
+        logContent.append("=== Spirit Tree Cache States ===\n");
+        logContent.append(String.format("%-20s %-12s %-12s %-10s %-10s %-8s\n",
+            "Name", "Type", "CropState", "Available", "Updated", "Via"));
+
         getInstance().stream()
             .sorted(Comparator.comparing(data -> data.getSpiritTree().name()))
             .forEach(data -> {
-                String spiritTreeType = data.getSpiritTree().getType().name();
-                String cropState = data.getCropState() != null ? data.getCropState().name() : "N/A";
-                String lastUpdated = Instant.ofEpochMilli(data.getLastUpdated())
-                    .atZone(ZoneId.systemDefault())
-                    .format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-                String detection = data.isDetectedViaWidget() ? "WIDGET" : 
-                                 (data.isDetectedViaNearBy() ? "NEARBY" : "INIT");
-                
-                log.info("  {}: {} | {} | Available: {} | Updated: {} | Via: {}",
-                    data.getSpiritTree().name(),
-                    spiritTreeType,
-                    cropState,
-                    data.isAvailableForTravel(),
-                    lastUpdated,
-                    detection
-                );
+            String spiritTreeType = data.getSpiritTree().getType().name();
+            String cropState = data.getCropState() != null ? data.getCropState().name() : "N/A";
+            String lastUpdated = Instant.ofEpochMilli(data.getLastUpdated())
+                .atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+            String detection = data.isDetectedViaWidget() ? "WIDGET" : 
+                     (data.isDetectedViaNearBy() ? "NEARBY" : "INIT");
+
+            logContent.append(String.format("%-20s %-12s %-12s %-10s %-10s %-8s\n",
+                data.getSpiritTree().name(),
+                spiritTreeType,
+                cropState,
+                data.isAvailableForTravel(),
+                lastUpdated,
+                detection
+            ));
             });
-        
-        log.info("=== End Spirit Tree Cache States ===");
+
+        logContent.append("=== End Spirit Tree Cache States ===\n");
+
+        Rs2CacheLoggingUtils.outputCacheLog(
+            "spirit_tree",
+            logContent.toString(),
+            mode
+        );
     }
     
     // ============================================

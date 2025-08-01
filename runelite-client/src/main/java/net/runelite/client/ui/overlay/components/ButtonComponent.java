@@ -49,7 +49,7 @@ public class ButtonComponent implements LayoutableRenderableEntity
                     {
                         if (isHovered && isEnabled)
                         {
-                            log.info("Button clicked at: " + mouseEvent.getPoint());
+                            log.debug("Button clicked at: " + mouseEvent.getPoint());
                             if (onClick != null)
                             {
                                 onClick.run();

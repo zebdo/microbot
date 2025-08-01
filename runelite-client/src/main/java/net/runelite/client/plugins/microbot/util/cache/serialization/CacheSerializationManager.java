@@ -17,6 +17,8 @@ import net.runelite.client.plugins.microbot.util.farming.SpiritTree;
 
 import java.lang.reflect.Type;
 import java.time.Instant;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 import java.util.UUID;
 
@@ -46,21 +48,34 @@ public class CacheSerializationManager {
      * Metadata class to track cache freshness and validity
      */
     private static class CacheMetadata {
-        private final String  version;
+        private final String version;
         private final String sessionId;
-        private final long saveTimestamp;
+        private final String saveTimestampUtc; // UTC timestamp in ISO 8601 format
         private final boolean stale;
         
-        public CacheMetadata(String version, String sessionId, long saveTimestamp, boolean stale) {
+        // UTC formatter for consistent timestamp handling
+        private static final DateTimeFormatter UTC_FORMATTER = DateTimeFormatter.ISO_INSTANT;
+        
+        public CacheMetadata(String version, String sessionId, String saveTimestampUtc, boolean stale) {
             this.version = version;
             this.sessionId = sessionId;
-            this.saveTimestamp = saveTimestamp;
+            this.saveTimestampUtc = saveTimestampUtc;
             this.stale = stale;
         }
+        
+        /**
+         * Create CacheMetadata with current UTC timestamp
+         */
+        public static CacheMetadata createWithCurrentUtcTime(String version, String sessionId, boolean stale) {
+            String utcTimestamp = Instant.now().atOffset(ZoneOffset.UTC).format(UTC_FORMATTER);
+            return new CacheMetadata(version, sessionId, utcTimestamp, stale);
+        }
+        
         public boolean isNewVersion(String currentVersion){
             // Check if the current version is different from the saved version
             return !this.version.equals(currentVersion);
         }
+        
         /**
          * Checks if this metadata indicates fresh cache data that was properly saved after loading.
          * 
@@ -79,7 +94,7 @@ public class CacheSerializationManager {
             }
             
             // Otherwise check if it's within the time limit
-            long age = getAge();
+            long age = getAgeMs();
             return age <= maxAgeMs;
         }
         
@@ -87,12 +102,41 @@ public class CacheSerializationManager {
             return SESSION_ID.equals(sessionId);
         }
         
-        public long getAge() {
-            return Instant.now().toEpochMilli() - saveTimestamp;
+        /**
+         * Get age in milliseconds from the UTC timestamp
+         */
+        public long getAgeMs() {
+            try {
+                Instant saveTime = Instant.parse(saveTimestampUtc);
+                return Instant.now().toEpochMilli() - saveTime.toEpochMilli();
+            } catch (Exception e) {
+                log.warn("Failed to parse UTC timestamp '{}', treating as very old", saveTimestampUtc);
+                return Long.MAX_VALUE; // Treat as very old if parsing fails
+            }
+        }
+        
+        /**
+         * Get the save timestamp as human-readable string
+         */
+        public String getSaveTimeFormatted() {
+            try {
+                Instant saveTime = Instant.parse(saveTimestampUtc);
+                return saveTime.atOffset(ZoneOffset.UTC).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME) + " UTC";
+            } catch (Exception e) {
+                return saveTimestampUtc; // Return raw if parsing fails
+            }
         }
         
         public boolean isStale() {
             return stale;
+        }
+        
+        /**
+         * @deprecated Use getAgeMs() instead
+         */
+        @Deprecated
+        public long getAge() {
+            return getAgeMs();
         }
     }
     
@@ -133,12 +177,12 @@ public class CacheSerializationManager {
                 Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, rsProfileKey, configKey, json);
                 
                 // Store metadata to track cache freshness
-                // Mark as stale=true since we're actively saving cache data
-                CacheMetadata metadata = new CacheMetadata(VERSION,SESSION_ID, Instant.now().toEpochMilli(), false);
+                // Mark as stale=false since we're actively saving cache data
+                CacheMetadata metadata = CacheMetadata.createWithCurrentUtcTime(VERSION, SESSION_ID, false);
                 String metadataJson = gson.toJson(metadata, CacheMetadata.class);
                 String metadataKey = configKey + METADATA_SUFFIX;
                 Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, rsProfileKey, metadataKey, metadataJson);                
-                log.info("Saved cache \"{}\" with updated metadata for session {}", configKey, SESSION_ID);
+                log.info("Saved cache \"{}\" with updated metadata for session {} at {}", configKey, SESSION_ID, metadata.getSaveTimeFormatted());
             } else {
                 log.warn("No data to save for cache {}", configKey);
             }
@@ -157,8 +201,8 @@ public class CacheSerializationManager {
      * @param <K> The key type
      * @param <V> The value type
      */
-    public static <K, V> void loadCache(Rs2Cache<K, V> cache, String configKey, String rsProfileKey) {
-        loadCache(cache, configKey, rsProfileKey, 0); // Default: ignore time, only check if saved after load
+    public static <K, V> void loadCache(Rs2Cache<K, V> cache, String configKey, String rsProfileKey, boolean forceInvalidate) {
+        loadCache(cache, configKey, rsProfileKey, 0,forceInvalidate); // Default: ignore time, only check if saved after load
     }
     
     /**
@@ -172,7 +216,7 @@ public class CacheSerializationManager {
      * @param <K> The key type
      * @param <V> The value type
      */
-    public static <K, V> void loadCache(Rs2Cache<K, V> cache, String configKey, String rsProfileKey, long maxAgeMs) {
+    public static <K, V> void loadCache(Rs2Cache<K, V> cache, String configKey, String rsProfileKey, long maxAgeMs, boolean forceInvalidate) {
         try {
             if (Microbot.getConfigManager() == null) {
                 log.warn("Cannot load cache {}: config manager not available", configKey);
@@ -198,8 +242,8 @@ public class CacheSerializationManager {
                         if (useLoadCacheData) {
                             shouldLoadFromConfig = true;
                             log.info("\nCache \"{}\" the metadata indicated vailid cache data in config proceeding with load from config \n" + //
-                                                                 "  -stale: {}\n" + //
-                                                                "  -age: {}ms -isfresh? {} -max {} ms\n" + //
+                                                                "  -stale: {}\n" + //
+                                                                "  -age: {}ms -isfresh? {} -max Age {}ms\n" + //
                                                                 "  -from current session: {}\n" + //
                                                                 "  -current version {} - last version {}- is new version? {}", 
                                     configKey, stale, age,  metadata.isFresh(maxAgeMs), maxAgeMs, fromCurrentSession, VERSION, oldVersion, metadata.isNewVersion(VERSION));                                    
@@ -221,8 +265,7 @@ public class CacheSerializationManager {
             
             if (!shouldLoadFromConfig) {
                 // Invalidate cache and start fresh instead of loading potentially stale data
-                cache.invalidateAll();
-                
+                if (forceInvalidate) cache.invalidateAll();                                
             }else{            
                 // Proceed with loading since metadata indicates fresh data
                 String json = Microbot.getConfigManager().getConfiguration(CONFIG_GROUP, rsProfileKey, configKey);
@@ -234,7 +277,7 @@ public class CacheSerializationManager {
                 }
             }
              // Mark metadata as loaded but not yet saved to distinguish from fresh saves
-            CacheMetadata loadedMetadata = new CacheMetadata(VERSION,SESSION_ID, Instant.now().toEpochMilli(), true);
+            CacheMetadata loadedMetadata = CacheMetadata.createWithCurrentUtcTime(VERSION, SESSION_ID, true);
             String loadedMetadataJson = gson.toJson(loadedMetadata,CacheMetadata.class);
             Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, rsProfileKey, metadataKey, loadedMetadataJson);         
             Microbot.getConfigManager().sendConfig(); // must be called to ensure config changes are saved immediately to the cloud and/or disk

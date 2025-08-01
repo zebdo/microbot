@@ -10,6 +10,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -40,6 +41,34 @@ import java.util.stream.Stream;
  */
 @Slf4j
 public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K, V> {
+    
+    // ============================================
+    // UTC Timestamp Constants
+    // ============================================
+    
+    /** UTC timestamp formatter for cache logging */
+    private static final DateTimeFormatter UTC_TIMESTAMP_FORMATTER = 
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS 'UTC'")
+                         .withZone(ZoneOffset.UTC);
+    
+    /**
+     * Gets the current UTC timestamp in milliseconds since epoch.
+     * 
+     * @return Current UTC timestamp in milliseconds
+     */
+    private static long getCurrentUtcTimestamp() {
+        return Instant.now().toEpochMilli();
+    }
+    
+    /**
+     * Formats a timestamp (in milliseconds since epoch) to a human-readable UTC string.
+     * 
+     * @param timestampMillis The timestamp in milliseconds since epoch
+     * @return Formatted UTC timestamp string
+     */
+    public static String formatUtcTimestamp(long timestampMillis) {
+        return UTC_TIMESTAMP_FORMATTER.format(Instant.ofEpochMilli(timestampMillis));
+    }
     
     // ============================================
     // POH Region Constants
@@ -81,6 +110,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
     
     // Cache configuration
     private final long ttlMillis;
+    private volatile boolean enableCustomTTLInvalidation = false;
     private final long globalInvalidationInterval;
     private final long creationTime;
     
@@ -262,7 +292,16 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
     public boolean isPersistenceEnabled() {
         return persistenceEnabled;
     }
-    
+    // ============================================
+    // custom invalidation  Support
+    // ============================================
+    protected void setEnableCustomTTLInvalidation() {
+        this.enableCustomTTLInvalidation = true;
+        log.debug("Enabled custom TTL invalidation for cache {}", cacheName);
+    }
+    protected boolean isEnableCustomTTLInvalidation() {
+        return enableCustomTTLInvalidation;
+    }
 
     
     /**
@@ -297,11 +336,11 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         this.cacheMode = cacheMode;
         this.ttlMillis = ttlMillis;
         this.globalInvalidationInterval = globalInvalidationInterval;
-        this.creationTime = System.currentTimeMillis();
+        this.creationTime = getCurrentUtcTimestamp();
         
         this.cache = new ConcurrentHashMap<>();
         this.cacheTimestamps = new ConcurrentHashMap<>();
-        this.lastGlobalInvalidation = new AtomicLong(System.currentTimeMillis());
+        this.lastGlobalInvalidation = new AtomicLong(getCurrentUtcTimestamp());
         this.isShutdown = new AtomicBoolean(false);
         this.cacheHits = new AtomicLong(0);
         this.cacheMisses = new AtomicLong(0);
@@ -445,6 +484,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
      */
     @Override
     public void put(K key, V value) {
+
         if (isShutdown.get() || value == null) {
             return;
         }
@@ -458,7 +498,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         }
         
         cache.put(key, valueToStore);
-        cacheTimestamps.put(key, System.currentTimeMillis());
+        cacheTimestamps.put(key, getCurrentUtcTimestamp());
         
         log.trace("Put value for key {} in cache {}", key, cacheName);
     }
@@ -476,18 +516,27 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
     }
     
     /**
-     * Invalidates all cached data.
+     * Invalidates all cached data in a thread-safe manner.
+     * Uses synchronization to ensure atomicity of cache and timestamp clearing.
      */
     @Override
-    public void invalidateAll() {
-
+    public synchronized void invalidateAll() {
         int sizeBefore = cache.size();
         cache.clear();
         cacheTimestamps.clear();
-        lastGlobalInvalidation.set(System.currentTimeMillis());
+        lastGlobalInvalidation.set(getCurrentUtcTimestamp());
         totalInvalidations.incrementAndGet();
-        
-        log.debug("Invalidated all {} entries in cache {}", sizeBefore, cacheName);
+        log.debug("Invalidated all {} entries in cache {}", sizeBefore, cacheName);    
+    }
+
+    /**
+     * Gets the cache timestamp for a specific key.
+     * 
+     * @param key The key to get the timestamp for
+     * @return The timestamp when the key was cached, or null if not found
+     */
+    public Long getCacheTimestamp(K key) {
+        return cacheTimestamps.get(key);
     }
     
     // ============================================
@@ -500,7 +549,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
      * @param criteria The query criteria
      * @return Stream of matching values
      */
-    public Stream<V> query(QueryCriteria criteria) {
+    public synchronized Stream<V> query(QueryCriteria criteria) {
         for (QueryStrategy<K, V> strategy : queryStrategies) {
             for (Class<? extends QueryCriteria> supportedType : strategy.getSupportedQueryTypes()) {
                 if (supportedType.isInstance(criteria)) {
@@ -520,7 +569,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
      * @return Collection of cached values
      */
     @SuppressWarnings("unchecked")
-    public Collection<V> values() {
+    public synchronized Collection<V> values() {        
         if (isShutdown.get()) {
             return Collections.emptyList();
         }
@@ -542,6 +591,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
                     }
                 })
                 .collect(Collectors.toList());
+    
     }
     
     // ============================================
@@ -554,10 +604,35 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
      * 
      * @return Stream of all cached values
      */
-    public Stream<V> stream() {
-        return values().stream();
+
+    public synchronized Stream<V> stream() {
+        if (isShutdown.get()) {
+            return Stream.empty();
+        }
+        if (cacheMode == CacheMode.AUTOMATIC_INVALIDATION) {
+            checkGlobalInvalidation();
+        }
+        // Defensive copy for strong consistency, but less efficient:
+        List<Map.Entry<K, Object>> entries = new ArrayList<>(cache.entrySet());
+        return entries.stream()
+            .filter(entry -> {
+            Long timestamp = cacheTimestamps.get(entry.getKey());
+            return timestamp != null && !isExpired(timestamp);
+            })
+            .map(entry -> {
+            if (valueWrapper != null) {
+                @SuppressWarnings("unchecked")
+                V unwrapped = (V) valueWrapper.unwrap(entry.getValue());
+                return unwrapped;
+            } else {
+                @SuppressWarnings("unchecked")
+                V value = (V) entry.getValue();
+                return value;
+            }
+            })
+            .filter(Objects::nonNull);
     }
-    
+
     /**
      * Returns statistics as a formatted string for legacy compatibility.
      */
@@ -645,7 +720,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         sb.append(String.format("Cache Name: %s\n", cacheName));
         sb.append(String.format("Cache Mode: %s\n", cacheMode));
         sb.append(String.format("Created: %s\n", formatter.format(Instant.ofEpochMilli(creationTime))));
-        sb.append(String.format("Uptime: %d ms\n", System.currentTimeMillis() - creationTime));
+        sb.append(String.format("Uptime: %d ms\n", getCurrentUtcTimestamp() - creationTime));
         sb.append(String.format("Is Shutdown: %s\n", isShutdown.get()));
         sb.append("\n");
         
@@ -757,7 +832,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
                 persistenceEnabled ? "Enabled" : "Disabled"));
         
         // Uptime
-        long uptimeMs = System.currentTimeMillis() - creationTime;
+        long uptimeMs = getCurrentUtcTimestamp() - creationTime;
         String uptimeStr;
         if (uptimeMs < 60000) {
             uptimeStr = String.format("%ds", uptimeMs / 1000);
@@ -882,7 +957,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         }
         
         // EVENT_DRIVEN_ONLY mode: entries never expire by time
-        if (cacheMode == CacheMode.EVENT_DRIVEN_ONLY) {
+        if (cacheMode == CacheMode.EVENT_DRIVEN_ONLY && !enableCustomTTLInvalidation) {
             return false;
         }
         
@@ -892,7 +967,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         }
         
         // AUTOMATIC_INVALIDATION mode: check TTL
-        return System.currentTimeMillis() - timestamp > ttlMillis;
+        return getCurrentUtcTimestamp() - timestamp > ttlMillis;
     }
     
     /**
@@ -903,7 +978,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
             return;
         }
         
-        long currentTime = System.currentTimeMillis();
+        long currentTime = getCurrentUtcTimestamp();
         if (currentTime - lastGlobalInvalidation.get() > globalInvalidationInterval) {
             if (lastGlobalInvalidation.compareAndSet(lastGlobalInvalidation.get(), currentTime)) {
                 log.debug("Performing global invalidation for cache {}", cacheName);
@@ -1032,7 +1107,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
                 cacheHits.get(),
                 cacheMisses.get(),
                 totalInvalidations.get(),
-                System.currentTimeMillis() - creationTime,
+                getCurrentUtcTimestamp() - creationTime,
                 ttlMillis,
                 globalInvalidationInterval,
                 getEstimatedMemorySize()

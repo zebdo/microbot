@@ -1786,9 +1786,8 @@ public class Rs2Bank {
         synchronized (lock) {            
             List<Rs2ItemModel> list = updateItemContainer(InventoryID.BANK.getId(), e);
             if (list != null) {
-                // Update the centralized bank data (Rs2BankData.set() is already synchronized)
-                rs2BankData.set(list);
-                vaildLoadedCache = true;
+                // Update the centralized bank data (Rs2BankData.set() is already synchronized)                
+                updateCache(list);
             } else {
                 log.debug("Bank data update skipped - no items received");
             }

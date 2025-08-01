@@ -8,6 +8,8 @@ import net.runelite.api.events.NpcSpawned;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.strategy.entity.NpcUpdateStrategy;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
+import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 
 import java.util.Optional;
@@ -306,12 +308,12 @@ public class Rs2NpcCache extends Rs2Cache<Integer, Rs2NpcModel> {
      */
     
         
-    @Subscribe
+    @Subscribe(priority = 10) // High priority to ensure we capture all NPC events
     public void onNpcSpawned(final NpcSpawned event) {        
         getInstance().handleEvent(event);
     }
     
-    @Subscribe
+    @Subscribe(priority = 20) // first handle despawn events to ensure NPCs are removed before any other processing
     public void onNpcDespawned(final NpcDespawned event) {        
         getInstance().handleEvent(event);
     }
@@ -372,5 +374,124 @@ public class Rs2NpcCache extends Rs2Cache<Integer, Rs2NpcModel> {
         
         int sizeAfter = this.size();
         log.debug("NPC cache update completed - NPCs before: {}, after: {}", sizeBefore, sizeAfter);
+    }
+    
+    /**
+     * Logs the current state of all cached NPCs for debugging.
+     * 
+     * @param outputMode Where to direct the output (CONSOLE_ONLY, FILE_ONLY, or BOTH)
+     */
+    public static void logState(LogOutputMode outputMode) {
+        var cache = getInstance();
+        var stats = cache.getStatistics();        
+        // Create the log content
+        StringBuilder logContent = new StringBuilder();        
+        String header = String.format("=== NPC Cache State (%d entries) ===", cache.size());      
+        logContent.append(header).append("\n");
+        
+        String statsInfo = Rs2CacheLoggingUtils.formatCacheStatistics(
+            stats.getHitRate(), stats.cacheHits, stats.cacheMisses, stats.cacheMode.toString());
+     
+        logContent.append(statsInfo).append("\n\n");
+        
+        if (cache.size() == 0) {
+            String emptyMsg = "Cache is empty";
+            
+            logContent.append(emptyMsg).append("\n");
+        } else {
+            // Table format for NPCs
+            String[] headers = {"Name", "ID", "Combat Level", "Distance", "Location", "Health", "Cache Timestamp"};
+            int[] columnWidths = {25, 8, 12, 8, 18, 8, 22};
+            
+            String tableHeader = Rs2CacheLoggingUtils.formatTableHeader(headers, columnWidths);
+          
+            logContent.append("\n").append(tableHeader);
+            
+            // Sort NPCs by distance (closest first)
+            cache.stream()
+                .filter(npc -> {
+                    try {
+                        // Filter out NPCs with invalid distance calculations
+                        return npc != null && npc.getDistanceFromPlayer() < Integer.MAX_VALUE;
+                    } catch (Exception e) {
+                        return false; // Exclude NPCs that cause exceptions
+                    }
+                })
+                .sorted((a, b) -> {
+                    try {
+                        // Ensure both NPCs have valid distance data
+                        if (a == null && b == null) return 0;
+                        if (a == null) return 1;
+                        if (b == null) return -1;
+                        
+                        int distanceA = a.getDistanceFromPlayer();
+                        int distanceB = b.getDistanceFromPlayer();
+                        
+                        // Handle negative distances (invalid) by treating them as maximum distance
+                        if (distanceA < 0) distanceA = Integer.MAX_VALUE;
+                        if (distanceB < 0) distanceB = Integer.MAX_VALUE;
+                        
+                        return Integer.compare(distanceA, distanceB);
+                    } catch (Exception e) {
+                        // If comparison fails, use index as fallback to maintain consistency
+                        return Integer.compare(
+                            a != null ? a.getIndex() : Integer.MAX_VALUE,
+                            b != null ? b.getIndex() : Integer.MAX_VALUE
+                        );
+                    }
+                })
+                .forEach(npc -> {
+                    // Get cache timestamp for this NPC
+                    Long cacheTimestamp = cache.getCacheTimestamp(Integer.valueOf(npc.getIndex()));
+                    String cacheTimestampStr = cacheTimestamp != null ? 
+                        Rs2Cache.formatUtcTimestamp(cacheTimestamp) : "N/A";
+                    
+                    String[] values = {
+                        Rs2CacheLoggingUtils.truncate(npc.getName(), 24),
+                        String.valueOf(npc.getId()),
+                        String.valueOf(npc.getCombatLevel()),
+                        String.valueOf(npc.getDistanceFromPlayer()),
+                        Rs2CacheLoggingUtils.formatLocation(npc.getWorldLocation()),
+                        npc.getHealthRatio() != -1 ? String.valueOf(npc.getHealthRatio()) : "N/A",
+                        Rs2CacheLoggingUtils.truncate(cacheTimestampStr, 21)
+                    };
+                    
+                    String row = Rs2CacheLoggingUtils.formatTableRow(values, columnWidths);
+                  
+                    logContent.append(row);
+                });
+            
+            String tableFooter = Rs2CacheLoggingUtils.formatTableFooter(columnWidths);
+        
+            logContent.append(tableFooter);
+            
+            String limitMsg = Rs2CacheLoggingUtils.formatLimitMessage(cache.size(), 50);
+            if (!limitMsg.isEmpty()) {
+               
+                logContent.append(limitMsg).append("\n");
+            }
+        }
+        
+        String footer = "=== End NPC Cache State ===";      
+        logContent.append(footer).append("\n");        
+        // Use the new output mode utility
+        Rs2CacheLoggingUtils.outputCacheLog("npc", logContent.toString(), outputMode);
+    }
+
+    /**
+     * Logs the current state of all cached NPCs for debugging.
+     * 
+     * @param dumpToFile Whether to also dump the information to a file
+     */
+    public static void logState(boolean dumpToFile) {
+        net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode outputMode = 
+            dumpToFile ? net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode.BOTH 
+                      : net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode.CONSOLE_ONLY;
+        logState(outputMode);
+    }    /**
+     * Logs the current state of all cached NPCs for debugging (console only).
+     */
+    public static void logState() {
+        logState(false);
     }
 }

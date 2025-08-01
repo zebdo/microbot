@@ -222,7 +222,7 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
 
 				cache.put(spiritTree, newData);
 
-				log.info("Updated spirit tree cache for via widget ({} for travel)\n\t{}", isAvailable ? "available" : "not available", spiritTree.name());
+				log.debug("Updated spirit tree cache for via widget ({} for travel)\n\t{}", isAvailable ? "available" : "not available", spiritTree.name());
 			}
 
 		} catch (Exception e) {
@@ -283,7 +283,7 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
                         );
                         
                         cache.put(spiritTree, newData);
-                        log.info("Updated spirit tree cache for {} via varbit (state: {}, available: {}, hasObject: {})", 
+                        log.debug("Updated spirit tree cache for {} via varbit (state: {}, available: {}, hasObject: {})", 
                                 spiritTree.name(), currentState, availableForTravel, hasNearbyTravelObject);
                     }
                 } catch (Exception e) {

@@ -7,6 +7,8 @@ import net.runelite.api.events.*;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.strategy.entity.ObjectUpdateStrategy;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
+import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2ObjectModel;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2ObjectModel.ObjectType;
 
@@ -363,7 +365,7 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         getInstance().handleEvent(event);
     }
     
-    @Subscribe
+    @Subscribe(priority = 60)
     public void onGameObjectDespawned(final GameObjectDespawned event) {
         getInstance().handleEvent(event);
     }
@@ -374,7 +376,7 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         getInstance().handleEvent(event);
     }
     
-    @Subscribe
+    @Subscribe(priority = 60)
     public void onGroundObjectDespawned(final GroundObjectDespawned event) {
         getInstance().handleEvent(event);
     }
@@ -385,7 +387,7 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         getInstance().handleEvent(event);
     }
     
-    @Subscribe
+    @Subscribe(priority = 60)
     public void onWallObjectDespawned(final WallObjectDespawned event) {
         getInstance().handleEvent(event);
     }
@@ -396,11 +398,11 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         getInstance().handleEvent(event);
     }
     
-    @Subscribe
+    @Subscribe(priority = 60)
     public void onDecorativeObjectDespawned(final DecorativeObjectDespawned event) {
         getInstance().handleEvent(event);
     }   
-    @Subscribe(priority = 100)
+    @Subscribe(priority = 40)
     public void onGameStateChanged(final GameStateChanged event) {
         // Removed old region detection - now handled by unified Rs2Cache system
         // Also let the strategy handle the event
@@ -423,29 +425,7 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
             log.debug("Rs2ObjectCache instance reset");
         }
     }
-    
-    /**
-     * Gets cache mode - Legacy compatibility method.
-     * 
-     * @return The cache mode
-     */
-    public static CacheMode getObjectCacheMode() {
-        return getInstance().getCacheMode();
-    }
-    
-    /**
-     * Gets cache statistics - Legacy compatibility method.
-     * 
-     * @return Statistics string for debugging
-     */
-    public static String getObjectCacheStatistics() {
-        Rs2ObjectCache cache = getInstance();
-        return String.format("ObjectCache Stats - Size: %d, Mode: %s, Regions: %s", 
-            cache.size(), 
-            cache.getCacheMode(),
-            Arrays.toString(Rs2Cache.getCurrentRegions()));
-    }
-    
+      
     /**
      * Gets object type statistics for display in overlays.
      * 
@@ -484,7 +464,121 @@ public class Rs2ObjectCache extends Rs2Cache<String, Rs2ObjectModel> {
         return String.format("Objects by type - Game: %d, Wall: %d, Decorative: %d, Ground: %d, Tile: %d (Total: %d)",
             gameObjectCount, wallObjectCount, decorativeObjectCount, groundObjectCount, tileObjectCount, 
             cache.size());
-    }    /**
+    }
+    
+    /**
+     * Logs the current state of all cached objects for debugging.
+     * 
+     * @param dumpToFile Whether to also dump the information to a file
+     */
+    public static void logState(LogOutputMode mode) {
+        var cache = getInstance();
+        var stats = cache.getStatistics();
+        
+        // Create the log content
+        StringBuilder logContent = new StringBuilder();
+        
+        String header = String.format("=== Object Cache State (%d entries) ===", cache.size());
+        logContent.append(header).append("\n");
+        
+        String statsInfo = Rs2CacheLoggingUtils.formatCacheStatistics(
+            stats.getHitRate(), stats.cacheHits, stats.cacheMisses, stats.cacheMode.toString());        
+        logContent.append(statsInfo).append("\n\n");
+        
+        if (cache.size() == 0) {
+            logContent.append("Cache is empty\n");
+        } else {
+            // Table format for objects
+            final String[] headers = {"Name", "Type", "ID", "Location", "Distance", "Actions"};
+            final int[] columnWidths = {25, 12, 8, 18, 8, 30};
+            logContent.append("\n").append(Rs2CacheLoggingUtils.formatTableHeader(headers, columnWidths));
+
+            // Get player location once for distance calculations
+            WorldPoint playerLocation = null;
+            try {
+            if (Microbot.getClient() != null && Microbot.getClient().getLocalPlayer() != null) {
+                playerLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
+            }
+            } catch (Exception e) {
+            log.debug("Could not get player location for distance calculations: {}", e.getMessage());
+            }
+            final WorldPoint finalPlayerLocation = playerLocation;
+
+            // Use a fixed-size buffer to avoid excessive StringBuilder growth
+            int maxRows = 50;
+            int rowCount = 0;
+
+            // Precompute distances and actions in parallel for performance
+            class ObjectLogInfo {
+                Rs2ObjectModel obj;
+                int distance;
+                String actionsStr;
+                ObjectLogInfo(Rs2ObjectModel obj, int distance, String actionsStr) {
+                    this.obj = obj;
+                    this.distance = distance;
+                    this.actionsStr = actionsStr;
+                }
+            }
+
+            List<ObjectLogInfo> objects = cache.values().parallelStream().limit(50)
+                .map(obj -> {
+                    int distance = Integer.MAX_VALUE;
+                    if (finalPlayerLocation != null && obj.getLocation() != null) {
+                        try {
+                            distance = obj.getLocation().distanceTo(finalPlayerLocation);
+                        } catch (Exception ignored) {}
+                    }
+                    String actionsStr = "";
+                    try {
+                        String[] actions = obj.getActions();
+                        if (actions != null && actions.length > 0) {
+                            actionsStr = Arrays.stream(actions)
+                                .filter(Objects::nonNull)
+                                .filter(action -> !action.trim().isEmpty())
+                                .collect(Collectors.joining(","));
+                        }
+                    } catch (Exception ignored) {}
+                    return new ObjectLogInfo(obj, distance, actionsStr);
+                })
+                .collect(Collectors.toList());
+
+            // Sort by distance (single-threaded, but fast on precomputed values)
+            if (finalPlayerLocation != null) {
+                objects.sort(Comparator.comparingInt(info -> info.distance));
+            }
+
+            for (ObjectLogInfo info : objects) {
+                if (rowCount++ >= maxRows) break;
+                try {
+                    String[] values = {
+                        Rs2CacheLoggingUtils.truncate(info.obj.getName() != null ? info.obj.getName() : "Unknown", 24),
+                        info.obj.getObjectType() != null ? info.obj.getObjectType().name() : "Unknown",
+                        String.valueOf(info.obj.getId()),
+                        Rs2CacheLoggingUtils.formatLocation(info.obj.getLocation()),
+                        info.distance == Integer.MAX_VALUE ? "N/A" : String.valueOf(info.distance),
+                        Rs2CacheLoggingUtils.truncate(info.actionsStr, 29)
+                    };
+                    logContent.append(Rs2CacheLoggingUtils.formatTableRow(values, columnWidths));
+                } catch (Exception e) {
+                    log.debug("Error processing object for logging: {}", e.getMessage());
+                }
+            }
+
+            logContent.append(Rs2CacheLoggingUtils.formatTableFooter(columnWidths));
+            String limitMsg = Rs2CacheLoggingUtils.formatLimitMessage(cache.size(), maxRows);
+            if (!limitMsg.isEmpty()) {
+            logContent.append(limitMsg).append("\n");
+            }
+        }
+        
+        String footer = "=== End Object Cache State ===";
+        logContent.append(footer).append("\n");        
+        Rs2CacheLoggingUtils.outputCacheLog(getInstance().getCacheName(), logContent.toString(), mode);         
+    }
+    
+   
+    
+    /**
      * Implementation of abstract update method from Rs2Cache.
      * Clears the cache and performs a complete scene scan to reload all objects from the scene.
      * This ensures the cache is fully refreshed with current scene data.

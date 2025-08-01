@@ -7,6 +7,7 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializationManager;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
 
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -396,14 +397,14 @@ public class Rs2CacheManager implements AutoCloseable {
             
             // Load Skills cache
             if (Rs2SkillCache.getCache().isPersistenceEnabled()) {
-                CacheSerializationManager.loadCache(Rs2SkillCache.getCache(), Rs2SkillCache.getCache().getConfigKey(), profileKey);
-                log.debug("Loaded Skills cache from configuration, new cache size: {}", 
+                CacheSerializationManager.loadCache(Rs2SkillCache.getCache(), Rs2SkillCache.getCache().getConfigKey(), profileKey,false);
+                log.info("Loaded Skills cache from configuration, new cache size: {}", 
                           Rs2SkillCache.getCache().size());
             }
             
             // Load Quest cache  
             if (Rs2QuestCache.getCache().isPersistenceEnabled()) {
-                CacheSerializationManager.loadCache(Rs2QuestCache.getCache(), Rs2QuestCache.getCache().getConfigKey(), profileKey);
+                CacheSerializationManager.loadCache(Rs2QuestCache.getCache(), Rs2QuestCache.getCache().getConfigKey(), profileKey,false);
                 // Schedule an async update to populate quest states from client without blocking initialization
                 //Rs2QuestCache.updateAllFromClientAsync();
                 log.debug ("Loaded Quest cache from configuration, new cache size: {}", 
@@ -412,23 +413,23 @@ public class Rs2CacheManager implements AutoCloseable {
             
             // Load Varbit cache
             if (Rs2VarbitCache.getCache().isPersistenceEnabled()) {
-                CacheSerializationManager.loadCache(Rs2VarbitCache.getCache(), Rs2VarbitCache.getCache().getConfigKey(), profileKey);
+                CacheSerializationManager.loadCache(Rs2VarbitCache.getCache(), Rs2VarbitCache.getCache().getConfigKey(), profileKey,false);
                 log.debug ("Loaded Varbit cache from configuration, new cache size: {}", 
                           Rs2VarbitCache.getCache().size());
             }
             
             // Load VarPlayer cache
             if (Rs2VarPlayerCache.getCache().isPersistenceEnabled()) {
-                CacheSerializationManager.loadCache(Rs2VarPlayerCache.getCache(), Rs2VarPlayerCache.getCache().getConfigKey(), profileKey);
+                CacheSerializationManager.loadCache(Rs2VarPlayerCache.getCache(), Rs2VarPlayerCache.getCache().getConfigKey(), profileKey, false);
                 log.debug ("Loaded VarPlayer cache from configuration, new cache size: {}", 
                           Rs2VarPlayerCache.getCache().size());
             }
             if (Rs2SpiritTreeCache.getCache().isPersistenceEnabled()) {
-                CacheSerializationManager.loadCache(Rs2SpiritTreeCache.getCache(), Rs2SpiritTreeCache.getCache().getConfigKey(), profileKey);
+                CacheSerializationManager.loadCache(Rs2SpiritTreeCache.getCache(), Rs2SpiritTreeCache.getCache().getConfigKey(), profileKey,false);
                  // Update spirit tree cache with current farming handler data after initial load
                 try {
                     Rs2SpiritTreeCache.getInstance().update();
-                    if(Microbot.isDebug()) Rs2SpiritTreeCache.logAllTreeStates();
+                    if(Microbot.isDebug()) Rs2SpiritTreeCache.logState(LogOutputMode.CONSOLE_ONLY);
                     log.debug("Spirit tree cache updated from FarmingHandler after initial load");
                 } catch (Exception e) {
                     log.warn("Failed to update spirit tree cache from FarmingHandler after initial load: {}", e.getMessage());

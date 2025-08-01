@@ -370,7 +370,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
             // Only add multi-tile objects from their primary (southwest) tile to prevent duplicates
             String cacheId = generateCacheIdForGameObject(gameObject, tile);
             if (cache.containsKey(cacheId)) {
-                log.warn("GameObject {} already in cache, skipping spawn event", gameObject.getId());
+                log.debug("GameObject {} already in cache, skipping spawn event", gameObject.getId());
                 return; // Already cached, skip
             }
             if (isPrimaryTile(gameObject, tile)) {                
@@ -481,10 +481,11 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                 if (Rs2Cache.checkAndHandleRegionChange(cache)) {
                     log.debug("Region change detected on login - performing scene scan");
                     cache.invalidateAll(); // Clear cache on region change
-                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 5);
+                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 2);
                 } else if (lastGameState != null && lastGameState != GameState.LOGGED_IN) {
+                    cache.invalidateAll(); // Clear cache on region change
                     // Request scene scan when logging in - might have missed spawn events
-                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 10); // Perform scan after 10 game ticks to allow scene to stabilize
+                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 3); // Perform scan after 10 game ticks to allow scene to stabilize
                 }
                 
                 lastGameState = GameState.LOGGED_IN;
@@ -495,12 +496,13 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                 if (Rs2Cache.checkAndHandleRegionChange(cache)) {
                     log.debug("Region change detected during loading - performing scene scan");
                     cache.invalidateAll(); // Clear cache on region change
-                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 3);
+                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 2);
                 } else {
-                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 10);
+                    cache.invalidateAll(); // Clear cache on region change
+                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 3);
                 }
                 lastGameState = GameState.LOADING;
-                log.info("Game loading - checking regions and requesting scene scan");
+                log.debug("Game loading - checking regions and requesting scene scan");
                 break;
             case LOGIN_SCREEN:
             case LOGGING_IN:

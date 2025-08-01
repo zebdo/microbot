@@ -9,6 +9,8 @@ import net.runelite.api.events.ItemSpawned;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.strategy.entity.GroundItemUpdateStrategy;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
+import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItemModel;
 
 import java.util.List;
@@ -218,8 +220,30 @@ public class Rs2GroundItemCache extends Rs2Cache<String, Rs2GroundItemModel> {
      * @return Optional containing the closest ground item
      */
     public static Optional<Rs2GroundItemModel> getClosestGroundItemById(int itemId) {
+        WorldPoint playerLocation = null;
+        try {
+            if (Microbot.getClient() != null && Microbot.getClient().getLocalPlayer() != null) {
+                playerLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
+            }
+        } catch (Exception e) {
+            log.debug("Could not get player location for distance calculation: {}", e.getMessage());
+        }
+        
+        if (playerLocation == null) {
+            return getGroundItemsById(itemId).findFirst();
+        }
+        
+        final WorldPoint finalPlayerLocation = playerLocation;
         return getGroundItemsById(itemId)
-                .min((a, b) -> Integer.compare(a.getDistanceFromPlayer(), b.getDistanceFromPlayer()));
+                .min((a, b) -> {
+                    try {
+                        int distA = a.getLocation() != null ? a.getLocation().distanceTo(finalPlayerLocation) : Integer.MAX_VALUE;
+                        int distB = b.getLocation() != null ? b.getLocation().distanceTo(finalPlayerLocation) : Integer.MAX_VALUE;
+                        return Integer.compare(distA, distB);
+                    } catch (Exception e) {
+                        return 0;
+                    }
+                });
     }
     
     /**
@@ -229,8 +253,30 @@ public class Rs2GroundItemCache extends Rs2Cache<String, Rs2GroundItemModel> {
      * @return Optional containing the closest ground item
      */
     public static Optional<Rs2GroundItemModel> getClosestGroundItemByName(String name) {
+        WorldPoint playerLocation = null;
+        try {
+            if (Microbot.getClient() != null && Microbot.getClient().getLocalPlayer() != null) {
+                playerLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
+            }
+        } catch (Exception e) {
+            log.debug("Could not get player location for distance calculation: {}", e.getMessage());
+        }
+        
+        if (playerLocation == null) {
+            return getGroundItemsByName(name).findFirst();
+        }
+        
+        final WorldPoint finalPlayerLocation = playerLocation;
         return getGroundItemsByName(name)
-                .min((a, b) -> Integer.compare(a.getDistanceFromPlayer(), b.getDistanceFromPlayer()));
+                .min((a, b) -> {
+                    try {
+                        int distA = a.getLocation() != null ? a.getLocation().distanceTo(finalPlayerLocation) : Integer.MAX_VALUE;
+                        int distB = b.getLocation() != null ? b.getLocation().distanceTo(finalPlayerLocation) : Integer.MAX_VALUE;
+                        return Integer.compare(distA, distB);
+                    } catch (Exception e) {
+                        return 0;
+                    }
+                });
     }
     
     /**
@@ -356,12 +402,12 @@ public class Rs2GroundItemCache extends Rs2Cache<String, Rs2GroundItemModel> {
      */
     
         
-    @Subscribe
+    @Subscribe(priority = 10) 
     public void onItemSpawned(ItemSpawned event) {
         getInstance().handleEvent(event);
     }
     
-    @Subscribe
+    @Subscribe(priority = 20) // Ensure despawn events are handled first
     public void onItemDespawned(ItemDespawned event) {
         getInstance().handleEvent(event);
     }
@@ -410,8 +456,30 @@ public class Rs2GroundItemCache extends Rs2Cache<String, Rs2GroundItemModel> {
      * @return Optional containing the closest ground item
      */
     public static Optional<Rs2GroundItemModel> getClosestItemByGameId(int itemId) {
+        WorldPoint playerLocation = null;
+        try {
+            if (Microbot.getClient() != null && Microbot.getClient().getLocalPlayer() != null) {
+                playerLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
+            }
+        } catch (Exception e) {
+            log.debug("Could not get player location for distance calculation: {}", e.getMessage());
+        }
+        
+        if (playerLocation == null) {
+            return getItemsByGameId(itemId).findFirst();
+        }
+        
+        final WorldPoint finalPlayerLocation = playerLocation;
         return getItemsByGameId(itemId)
-                .min((a, b) -> Integer.compare(a.getDistanceFromPlayer(), b.getDistanceFromPlayer()));
+                .min((a, b) -> {
+                    try {
+                        int distA = a.getLocation() != null ? a.getLocation().distanceTo(finalPlayerLocation) : Integer.MAX_VALUE;
+                        int distB = b.getLocation() != null ? b.getLocation().distanceTo(finalPlayerLocation) : Integer.MAX_VALUE;
+                        return Integer.compare(distA, distB);
+                    } catch (Exception e) {
+                        return 0;
+                    }
+                });
     }
     
     /**
@@ -457,8 +525,30 @@ public class Rs2GroundItemCache extends Rs2Cache<String, Rs2GroundItemModel> {
      * @return Optional containing the closest ground item
      */
     public static Optional<Rs2GroundItemModel> getClosestItemByName(String itemName) {
+        WorldPoint playerLocation = null;
+        try {
+            if (Microbot.getClient() != null && Microbot.getClient().getLocalPlayer() != null) {
+                playerLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
+            }
+        } catch (Exception e) {
+            log.debug("Could not get player location for distance calculation: {}", e.getMessage());
+        }
+        
+        if (playerLocation == null) {
+            return getGroundItemsByName(itemName).findFirst();
+        }
+        
+        final WorldPoint finalPlayerLocation = playerLocation;
         return getGroundItemsByName(itemName)
-                .min((a, b) -> Integer.compare(a.getDistanceFromPlayer(), b.getDistanceFromPlayer()));
+                .min((a, b) -> {
+                    try {
+                        int distA = a.getLocation() != null ? a.getLocation().distanceTo(finalPlayerLocation) : Integer.MAX_VALUE;
+                        int distB = b.getLocation() != null ? b.getLocation().distanceTo(finalPlayerLocation) : Integer.MAX_VALUE;
+                        return Integer.compare(distA, distB);
+                    } catch (Exception e) {
+                        return 0;
+                    }
+                });
     }
     @Override
     public void update(){
@@ -478,4 +568,143 @@ public class Rs2GroundItemCache extends Rs2Cache<String, Rs2GroundItemModel> {
         int sizeAfter = this.size();
         log.debug("Ground item cache update completed - items before: {}, after: {}", sizeBefore, sizeAfter);
     }
+    
+    /**
+     * Logs the current state of all cached ground items for debugging.
+     * 
+     * @param dumpToFile Whether to also dump the information to a file
+     */
+    public static void logState(LogOutputMode mode) {
+        var cache = getInstance();
+        var stats = cache.getStatistics();
+        
+        // Create the log content
+        StringBuilder logContent = new StringBuilder();
+        
+        String header = String.format("=== Ground Item Cache State (%d entries) ===", cache.size());
+        logContent.append(header).append("\n");
+        
+        String statsInfo = Rs2CacheLoggingUtils.formatCacheStatistics(
+            stats.getHitRate(), stats.cacheHits, stats.cacheMisses, stats.cacheMode.toString());
+        logContent.append(statsInfo).append("\n\n");
+        
+        if (cache.size() == 0) {
+            String emptyMsg = "Cache is empty";            
+            logContent.append(emptyMsg).append("\n");
+        } else {
+            // Table format for ground items
+            String[] headers = {"Name", "Quantity", "ID", "Location", "Distance", "GE Price", "HA Price", "Owned", "Cache Timestamp"};
+            int[] columnWidths = {20, 8, 8, 18, 8, 10, 10, 6, 22};
+            
+            String tableHeader = Rs2CacheLoggingUtils.formatTableHeader(headers, columnWidths);
+            logContent.append("\n").append(tableHeader);
+            
+            // Get player location once for distance calculations
+            WorldPoint playerLocation = null;
+            try {
+                if (Microbot.getClient() != null && Microbot.getClient().getLocalPlayer() != null) {
+                    playerLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
+                }
+            } catch (Exception e) {
+                log.debug("Could not get player location for distance calculations: {}", e.getMessage());
+            }
+            
+            final WorldPoint finalPlayerLocation = playerLocation;
+            
+            // Convert to list and sort by total value (highest first)
+            List<Rs2GroundItemModel> items = cache.stream()
+                .limit(50) // Limit early to avoid processing too many items
+                .collect(Collectors.toList());
+            
+            // Sort by total value with safe calculation
+            items.sort((a, b) -> {
+                try {
+                    int valueA = a.getTotalGeValue();
+                    int valueB = b.getTotalGeValue();
+                    return Integer.compare(valueB, valueA); // Highest first
+                } catch (Exception e) {
+                    return 0; // If value calculation fails, consider them equal
+                }
+            });
+            
+            // Process each item safely
+            for (Rs2GroundItemModel item : items) {
+                try {
+                    // Calculate distance safely
+                    String distanceStr = "N/A";
+                    if (finalPlayerLocation != null && item.getLocation() != null) {
+                        try {
+                            int distance = item.getLocation().distanceTo(finalPlayerLocation);
+                            distanceStr = String.valueOf(distance);
+                        } catch (Exception e) {
+                            distanceStr = "Error";
+                        }
+                    }
+                    
+                    // Get values safely
+                    String geValueStr = "N/A";
+                    String haValueStr = "N/A";
+                    try {
+                        geValueStr = String.valueOf(item.getTotalGeValue());
+                        haValueStr = String.valueOf(item.getTotalHaValue());
+                    } catch (Exception e) {
+                        log.debug("Error getting item values: {}", e.getMessage());
+                    }
+                    
+                    // Get cache timestamp for this ground item
+                    String cacheTimestampStr = "N/A";
+                    try {
+                        // Generate key manually using the same format as generateKey method
+                        String itemKey = String.format("%d_%d_%d_%d_%d", 
+                            item.getId(), 
+                            item.getQuantity(), 
+                            item.getLocation().getX(), 
+                            item.getLocation().getY(), 
+                            item.getLocation().getPlane());
+                        Long cacheTimestamp = cache.getCacheTimestamp(itemKey);
+                        if (cacheTimestamp != null) {
+                            cacheTimestampStr = Rs2Cache.formatUtcTimestamp(cacheTimestamp);
+                        }
+                    } catch (Exception e) {
+                        log.debug("Error getting cache timestamp: {}", e.getMessage());
+                    }
+                    
+                    String[] values = {
+                        Rs2CacheLoggingUtils.truncate(item.getName() != null ? item.getName() : "Unknown", 19),
+                        String.valueOf(item.getQuantity()),
+                        String.valueOf(item.getId()),
+                        Rs2CacheLoggingUtils.formatLocation(item.getLocation()),
+                        distanceStr,
+                        geValueStr,
+                        haValueStr,
+                        item.isOwned() ? "Yes" : "No",
+                        Rs2CacheLoggingUtils.truncate(cacheTimestampStr, 21)
+                    };
+                    
+                    String row = Rs2CacheLoggingUtils.formatTableRow(values, columnWidths);
+                    logContent.append(row);
+                } catch (Exception e) {
+                    log.debug("Error processing ground item for logging: {}", e.getMessage());
+                    // Skip this item and continue with the next one
+                }
+            }
+            
+            String tableFooter = Rs2CacheLoggingUtils.formatTableFooter(columnWidths);            
+            logContent.append(tableFooter);
+            
+            String limitMsg = Rs2CacheLoggingUtils.formatLimitMessage(cache.size(), 50);
+            if (!limitMsg.isEmpty()) {                
+                logContent.append(limitMsg).append("\n");
+            }
+        }
+        
+        String footer = "=== End Ground Item Cache State ===";
+        logContent.append(footer).append("\n");
+        
+        // Dump to file if requested
+        Rs2CacheLoggingUtils.outputCacheLog(getInstance().getCacheName(), logContent.toString(), mode);         
+        
+    }
+    
+   
 }
