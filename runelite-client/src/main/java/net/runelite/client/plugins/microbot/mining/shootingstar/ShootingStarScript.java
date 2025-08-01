@@ -192,7 +192,7 @@ public class ShootingStarScript extends Script
 							Rs2Combat.setSpecState(true, 1000);
 						}
 
-						TileObject starObject = Rs2GameObject.getGameObject(currentStar.getObjectID());
+						TileObject starObject = Rs2GameObject.getGameObject(currentStar.getObjectId());
 
 						if (starObject != null)
 						{
@@ -435,9 +435,9 @@ public class ShootingStarScript extends Script
 				return ShootingStarState.WAITING_FOR_STAR;
 			}
 
-			currentStar.setObjectID(starObject.getId());
-			plugin.updateSelectedStar(currentStar);
-			plugin.updatePanelList(true);
+			int _newTier = currentStar.getTierBasedOnObjectId(starObject.getId());
+			currentStar.setTier(_newTier);
+			plugin.updatePanelList(false);
 			currentStar = selectedStar;
 		}
 		return ShootingStarState.MINING;
@@ -483,7 +483,7 @@ public class ShootingStarScript extends Script
 		}
 
 		// If the GameObject has updated to a new tier
-		return currentStar.getObjectID() != starObject.getId();
+		return currentStar.getObjectId() != starObject.getId();
 	}
 
 	private Pickaxe getBestPickaxe(List<Rs2ItemModel> items)

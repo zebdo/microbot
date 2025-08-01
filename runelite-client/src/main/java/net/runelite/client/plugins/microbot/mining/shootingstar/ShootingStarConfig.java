@@ -6,6 +6,7 @@ import net.runelite.client.config.ConfigInformation;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
+import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarProvider;
 
 @ConfigGroup(ShootingStarConfig.configGroup)
 @ConfigInformation(
@@ -26,6 +27,7 @@ public interface ShootingStarConfig extends Config
 	String hideOverlay = "hideOverlay";
 	String hideDevOverlay = "hideDevOverlay";
 	String blacklistedLocations = "blacklistedLocations";
+	String providerName = "providerName";
 
 	@ConfigSection(
 		name = "General Settings",
@@ -90,10 +92,21 @@ public interface ShootingStarConfig extends Config
 	String panelSection = "panel";
 
 	@ConfigItem(
+		keyName = providerName,
+		name = "Provider",
+		description = "Select the provider for shooting star data",
+		position = 0,
+		section = panelSection
+	)
+	default ShootingStarProvider getProvider() {
+		return ShootingStarProvider.ZERO_SEVEN;
+	}
+
+	@ConfigItem(
 		keyName = hideWildernessLocations,
 		name = "Hide Wilderness Locations",
 		description = "Hide Wilderness locations inside of the panel",
-		position = 0,
+		position = 1,
 		section = panelSection
 	)
 	default boolean isHideWildernessLocations()
@@ -105,7 +118,7 @@ public interface ShootingStarConfig extends Config
 		keyName = displayAsMinutes,
 		name = "Display as Minutes",
 		description = "Shows time left as minutes",
-		position = 1,
+		position = 2,
 		section = panelSection
 	)
 	default boolean isDisplayAsMinutes()

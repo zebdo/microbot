@@ -160,6 +160,14 @@ public class ShootingStarPlugin extends Plugin
 			updatePanelList(true);
 		}
 
+		if (event.getKey().equals(ShootingStarConfig.providerName)) {
+			log.info("Provider changed to: {}", config.getProvider());
+			final int beforeSize = starList.size();
+			starList.clear();
+			fetchStars();
+			log.info("Stars fetched: {} (before: {})", starList.size(), beforeSize);
+		}
+
 		if (event.getKey().equals(ShootingStarConfig.hideOverlay))
 		{
 			toggleOverlay(config.isHideOverlay());
@@ -214,7 +222,7 @@ public class ShootingStarPlugin extends Plugin
 
 	public void fetchStars()
 	{
-		List<Star> latestStars = shootingStarApiClient.getStarData();
+		List<Star> latestStars = shootingStarApiClient.getStarData(config.getProvider());
 		boolean fullUpdate = false;
 
 		for (Star star : latestStars) {
@@ -229,8 +237,6 @@ public class ShootingStarPlugin extends Plugin
 			{
 				oldStar.setEndsAt(star.getEndsAt());
 				oldStar.setTier(star.getTier());
-				oldStar.setObjectID(oldStar.getObjectIDBasedOnTier());
-				oldStar.setMiningLevel(oldStar.getRequiredMiningLevel());
 				continue;
 			}
 
@@ -276,17 +282,12 @@ public class ShootingStarPlugin extends Plugin
 		if (oldStar == null)
 		{
 			star.setSelected(!star.isSelected());
-			return;
 		}
 		else if (!oldStar.equals(star))
 		{
 			oldStar.setSelected(false);
 			star.setSelected(!star.isSelected());
-			return;
 		}
-
-		oldStar.setTier(star.getTierBasedOnObjectID());
-		oldStar.setMiningLevel(star.getRequiredMiningLevel());
 	}
 
 	public void updateHiddenStars()

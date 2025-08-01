@@ -7,10 +7,14 @@ import java.io.InputStream;
 import java.lang.reflect.Type;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Properties;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
@@ -20,7 +24,10 @@ import net.runelite.api.WorldType;
 import net.runelite.client.game.WorldService;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarLocation;
+import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarProvider;
+import net.runelite.client.plugins.microbot.mining.shootingstar.model.OSRSVaultStarModel;
 import net.runelite.client.plugins.microbot.mining.shootingstar.model.Star;
+import net.runelite.client.plugins.microbot.mining.shootingstar.model.ZeroSevenStarModel;
 import net.runelite.http.api.worlds.World;
 import net.runelite.http.api.worlds.WorldResult;
 import okhttp3.OkHttpClient;
@@ -35,7 +42,8 @@ public class ShootingStarApiClient
 
 	private final Client client;
 	private final WorldService worldService;
-	private final String endpoint;
+	private final String zeroSevenEndpoint;
+	private final String osrsVaultEndpoint;
 
 	private final ZoneId utcZoneId = ZoneId.of("UTC");
 
@@ -44,11 +52,15 @@ public class ShootingStarApiClient
 	{
 		this.client = client;
 		this.worldService = worldService;
-		this.endpoint = loadFromProperties();
+		Properties properties = loadProperties();
+		this.zeroSevenEndpoint = properties.getProperty("microbot.shootingstar.zeroseven");
+		this.osrsVaultEndpoint = properties.getProperty("microbot.shootingstar.osrsvault");
 	}
 
-	String fetch()
+	String fetch(ShootingStarProvider provider)
 	{
+		String endpoint = getEndpoint(provider);
+
 		if (endpoint == null || endpoint.isEmpty())
 		{
 			log.warn("Shooting star API endpoint is not configured or is empty");
@@ -86,7 +98,41 @@ public class ShootingStarApiClient
 		return jsonResponse;
 	}
 
-	public List<Star> getStarData()
+	List<ZeroSevenStarModel> fromZeroSeven(String jsonResponse)
+	{
+		Gson gson = new Gson();
+		Type listType = new TypeToken<List<ZeroSevenStarModel>>() {}.getType();
+
+		List<ZeroSevenStarModel> deserializedStarData = Collections.emptyList();
+		try
+		{
+			deserializedStarData = gson.fromJson(jsonResponse, listType);
+		}
+		catch (JsonSyntaxException e)
+		{
+			log.trace("Failed to parse response: {}", jsonResponse, e);
+		}
+		return deserializedStarData;
+	}
+
+	List<OSRSVaultStarModel> fromOSRSVault(String jsonResponse)
+	{
+		Gson gson = new Gson();
+		Type listType = new TypeToken<List<OSRSVaultStarModel>>() {}.getType();
+
+		List<OSRSVaultStarModel> deserializedStarData = Collections.emptyList();
+		try
+		{
+			deserializedStarData = gson.fromJson(jsonResponse, listType);
+		}
+		catch (JsonSyntaxException e)
+		{
+			log.trace("Failed to parse response: {}", jsonResponse, e);
+		}
+		return deserializedStarData;
+	}
+
+	public List<Star> getStarData(ShootingStarProvider provider)
 	{
 		if (client.getGameState() != GameState.LOGGED_IN)
 		{
@@ -102,24 +148,15 @@ public class ShootingStarApiClient
 
 		ZonedDateTime now = ZonedDateTime.now(utcZoneId);
 
-		String response = fetch();
+		String response = fetch(provider);
 		if (response.isEmpty() || response.equals("[]"))
 		{
 			return Collections.emptyList();
 		}
 
-		Gson gson = new Gson();
-		Type listType = new TypeToken<List<Star>>() {}.getType();
-
-		List<Star> starData = Collections.emptyList();
-		try
-		{
-			starData = gson.fromJson(response, listType);
-		}
-		catch (JsonSyntaxException e)
-		{
-			log.trace("Failed to parse response: {}", response, e);
-		}
+		List<Star> starData = (Objects.equals(provider, ShootingStarProvider.ZERO_SEVEN)) ?
+			new ArrayList<>(fromZeroSeven(response)) :
+			new ArrayList<>(fromOSRSVault(response));
 
 		boolean inSeasonalWorld = Microbot.getClient().getWorldType().contains(WorldType.SEASONAL);
 
@@ -128,7 +165,7 @@ public class ShootingStarApiClient
 
 		// Log & remove stars that have no matching location key or raw location
 		starData.removeIf(s -> {
-			ShootingStarLocation location = findLocation(s.getLocationKey().toString(), s.getRawLocation());
+			ShootingStarLocation location = findLocation(s.getLocationKey() != null ? s.getLocationKey().toString() : "", s.getRawLocation());
 			boolean toRemove = location == null;
 			if (toRemove)
 			{
@@ -143,8 +180,6 @@ public class ShootingStarApiClient
 
 		// Populate other fields for each star
 		starData.forEach(s -> {
-			s.setObjectID(s.getObjectIDBasedOnTier());
-			s.setMiningLevel(s.getRequiredMiningLevel());
 			s.setWorldObject(getWorld(s.getWorld()));
 		});
 
@@ -159,31 +194,12 @@ public class ShootingStarApiClient
 	private ShootingStarLocation findLocation(String locationKey, String rawLocation)
 	{
 		return Arrays.stream(ShootingStarLocation.values())
-			.filter(location -> locationKey.equalsIgnoreCase(location.name())
-				|| rawLocation.equalsIgnoreCase(location.getRawLocationName())
-				|| locationKey.equalsIgnoreCase(location.getShortLocationName()))
+			.filter(location ->
+				locationKey.equalsIgnoreCase(location.name()) ||
+					rawLocation.equalsIgnoreCase(location.getRawLocationName()) ||
+					locationKey.equalsIgnoreCase(location.getShortLocationName()))
 			.findFirst()
 			.orElse(null);
-	}
-
-	private String loadFromProperties()
-	{
-		Properties properties = new Properties();
-		try (InputStream input = ShootingStarApiClient.class.getResourceAsStream("shootingstar.properties"))
-		{
-			if (input == null)
-			{
-				log.warn("shootingstar.properties not found");
-				return "";
-			}
-			properties.load(input);
-			return properties.getProperty("microbot.shootingstar.http");
-		}
-		catch (Exception e)
-		{
-			log.trace("Unable to parse shootingstar.properties", e);
-			return "";
-		}
 	}
 
 	private World getWorld(int worldId)
@@ -192,5 +208,35 @@ public class ShootingStarApiClient
 
 		WorldResult worldResult = worldService.getWorlds();
 		return worldResult.findWorld(worldId);
+	}
+
+	private String getEndpoint(ShootingStarProvider provider)
+	{
+		if (provider == ShootingStarProvider.ZERO_SEVEN)
+		{
+			return zeroSevenEndpoint;
+		}
+		else if (provider == ShootingStarProvider.OSRS_VAULT)
+		{
+			return osrsVaultEndpoint;
+		}
+		return "";
+	}
+
+	private Properties loadProperties()
+	{
+		Properties properties = new Properties();
+		try (InputStream input = ShootingStarApiClient.class.getResourceAsStream("shootingstar.properties"))
+		{
+			if (input != null)
+			{
+				properties.load(input);
+			}
+		}
+		catch (Exception e)
+		{
+			log.trace("Unable to parse shootingstar.properties", e);
+		}
+		return properties;
 	}
 }

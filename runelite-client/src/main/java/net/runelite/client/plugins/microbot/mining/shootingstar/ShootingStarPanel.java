@@ -146,7 +146,7 @@ public class ShootingStarPanel extends PluginPanel
 				switch (orderIndex)
 				{
 					case WORLD:
-						return getCompareValue(r1, r2, star -> star.getWorldObject().getId());
+						return getCompareValue(r1, r2, Star::getWorld);
 					case LOCATION:
 						return getCompareValue(r1, r2, Star::getShootingStarLocation);
 					case TIER:
