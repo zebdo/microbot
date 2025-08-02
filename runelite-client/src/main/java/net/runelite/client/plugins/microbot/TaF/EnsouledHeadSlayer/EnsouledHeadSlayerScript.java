@@ -119,6 +119,11 @@ public class EnsouledHeadSlayerScript extends Script {
         Rs2Combat.enableAutoRetialiate();
         var ensouledHead = Rs2Inventory.count("ensouled");
         if (ensouledHead == 0 && !Rs2Combat.inCombat() && Rs2Player.getInteracting() == null) {
+            // Reanimated monsters have a delayed attack animation, so we wait and check if we're still not in combat before trying to bank
+            sleep(1600, 2400);
+            if (Rs2Combat.inCombat()) {
+                return;
+            }
             Microbot.log("No ensouled heads found in inventory, banking...");
             BOT_STATE = EnsouledHeadSlayerStatus.BANKING;
             return;
@@ -323,6 +328,7 @@ public class EnsouledHeadSlayerScript extends Script {
                 attempts = 0;
                 Microbot.log("Loaded inventory setup successfully.");
             }
+            Rs2Bank.closeBank();
         }
         return true;
     }
