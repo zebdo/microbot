@@ -26,9 +26,6 @@ public class PrayerScript extends Script {
         }
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                if (!Microbot.isLoggedIn()) return;
-				if (!super.run()) return;
-
                 handlePrayer(config);
             } catch (Exception ex) {
                 Microbot.logStackTrace(this.getClass().getSimpleName(), ex);
@@ -46,10 +43,16 @@ public class PrayerScript extends Script {
                 Rs2Prayer.disableAllPrayers();
                 return;
             }
+            if ((Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_MELEE) || Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_MAGIC) || Rs2Prayer.isPrayerActive(Rs2PrayerEnum.PROTECT_RANGE) || Rs2Prayer.isQuickPrayerEnabled())) {
+                return;
+            }
 
-            Rs2NpcModel npc = Rs2Npc.getNpcsForPlayer(n -> !n.isDead() && n.getCombatLevel() > 1).findAny().orElse(null);
+            Rs2NpcModel npc = Rs2Npc.getNpcsForPlayer(n -> !n.isDead() && n.getCombatLevel() > 1).findFirst().orElse(null);
+            if (npc == null) {
+                return;
+            }
             if (!config.toggleQuickPray()) {
-                assert npc != null;
+
                 AttackStyle attackStyle = AttackStyleMapper
                         .mapToAttackStyle(Rs2NpcManager.getAttackStyle(npc.getId()));
                 if (attackStyle != null) {
