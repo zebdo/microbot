@@ -13,10 +13,7 @@ import javax.inject.Inject;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 
-import static net.runelite.client.plugins.microbot.TaF.AmmoniteCrabs.enums.AmmoniteCrabState.FIGHT;
-
 public class AmmoniteCrabOverlay extends OverlayPanel {
-    private final AmmoniteCrabPlugin plugin;
     private static final Color TITLE_COLOR = Color.decode("#a4ffff");
     private static final Color BACKGROUND_COLOR = new Color(0, 0, 0, 150);
     private static final Color NORMAL_COLOR = Color.WHITE;
@@ -24,6 +21,7 @@ public class AmmoniteCrabOverlay extends OverlayPanel {
     private static final Color DANGER_COLOR = Color.RED;
     private static final Color SUCCESS_COLOR = Color.GREEN;
     private static final int MAX_AFK_TIMER = 10;
+    private final AmmoniteCrabPlugin plugin;
 
     @Inject
     AmmoniteCrabOverlay(AmmoniteCrabPlugin plugin) {
@@ -152,6 +150,7 @@ public class AmmoniteCrabOverlay extends OverlayPanel {
     private String formatNumber(long number) {
         return String.format("%,d", number);
     }
+
     private Color getAfkTimerColor(int timer) {
         if (timer >= MAX_AFK_TIMER) return DANGER_COLOR;
         if (timer >= MAX_AFK_TIMER * 0.7) return WARNING_COLOR;

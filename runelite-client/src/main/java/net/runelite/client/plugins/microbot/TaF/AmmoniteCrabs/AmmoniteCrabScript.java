@@ -18,7 +18,6 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.security.Login;
-import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
@@ -108,7 +107,7 @@ public class AmmoniteCrabScript extends Script {
                         Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
                         sleepUntil(() -> Microbot.getClient().getGameState() == GameState.HOPPING);
                         sleepUntil(() -> Microbot.getClient().getGameState() == GameState.LOGGED_IN);
-                        sleep(1200,2000);
+                        sleep(1200, 2000);
                         // After successful hop, reset counters and scan the area
                         hijackTimer = 0;
                         ammoniteCrabState = AmmoniteCrabState.SCANNING_WORLD;
@@ -178,30 +177,24 @@ public class AmmoniteCrabScript extends Script {
     }
 
     private void scanAmmoniteCrabLocation(AmmoniteCrabConfig config) {
-        // We most likely already round a world, try to fight
         if (Rs2Player.isInCombat()) {
             ammoniteCrabState = AmmoniteCrabState.FIGHT;
             return;
         }
-        // First check if we need to walk to the scanning location
         if (config.crabLocation().getWorldhopLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) > 2) {
             Rs2Walker.walkTo(config.crabLocation().getWorldhopLocation());
-            return; // Exit and continue scanning on next tick when closer
+            return;
         }
 
-        // Now check if our fighting spot is occupied
         if (otherPlayerDetected(config.crabLocation().getFightLocation())) {
             ammoniteCrabState = AmmoniteCrabState.HOP_WORLD;
             return;
         } else {
-            // Location is clear, walk to fighting spot
             Rs2Walker.walkTo(config.crabLocation().getFightLocation(), 0);
             if (Rs2Player.getWorldLocation().distanceTo(config.crabLocation().getFightLocation()) <= 3) {
-                // We're close enough to fight spot, transition to fighting
                 resetAfkTimer();
                 ammoniteCrabState = AmmoniteCrabState.FIGHT;
             } else {
-                // Keep trying to get to the fight location
                 Rs2Walker.walkFastCanvas(config.crabLocation().getFightLocation());
             }
         }
@@ -232,7 +225,7 @@ public class AmmoniteCrabScript extends Script {
             if (ammoniteCrab != null && !ammoniteCrab.isDead()) {
                 Rs2Npc.attack(ammoniteCrab);
                 Rs2Player.waitForAnimation(1600);
-                sleep(1600,2400);
+                sleep(1600, 2400);
             }
         }
     }
