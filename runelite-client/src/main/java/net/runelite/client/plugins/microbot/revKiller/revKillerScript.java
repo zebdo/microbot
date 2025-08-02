@@ -1193,10 +1193,11 @@ public class revKillerScript extends Script {
             if(howtobank <= 40){
                 Microbot.log("Withdrawing Stamina potion");
                 if(!Rs2Inventory.contains(it->it!=null&&it.getName().contains("Stamina"))){
-                    if(Rs2Bank.count("Stamina potion(4)") > 0){
+                    if(Rs2Bank.count("Stamina potion(4)") > 0 || Rs2Bank.count("Stamina potion(3)") > 0 || Rs2Bank.count("Stamina potion(2)") > 0){
                         if(!Rs2Inventory.contains(it->it!=null&&it.getName().contains("Stamina"))){
-                            Rs2Bank.withdrawOne("Stamina potion(4)");
-                            sleepUntil(()-> Rs2Inventory.contains(it->it!=null&&it.getName().contains("Stamina")), generateRandomNumber(5000,15000));
+                            if(Rs2Bank.withdrawX(it->it!=null && it.getName().contains("Stamina potion") && !it.getName().contains("(1)") , 1)){
+                                sleepUntil(()-> Rs2Inventory.contains(it->it!=null&&it.getName().contains("Stamina")), generateRandomNumber(5000,15000));
+                            }
                         }
                     } else {
                         Microbot.log("Out of stamina potions");
