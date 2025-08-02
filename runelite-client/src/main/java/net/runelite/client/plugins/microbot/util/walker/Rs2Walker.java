@@ -13,8 +13,6 @@ import net.runelite.api.ObjectComposition;
 import net.runelite.api.Perspective;
 import net.runelite.api.Player;
 import net.runelite.api.Point;
-import net.runelite.api.Quest;
-import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.api.Tile;
 import net.runelite.api.TileObject;
@@ -39,7 +37,6 @@ import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
 import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
-import net.runelite.client.plugins.microbot.shortestpath.pathfinder.PathfinderConfig;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
@@ -150,6 +147,11 @@ public class Rs2Walker {
             Microbot.log("Please do not call the walker from the main thread");
             return WalkerState.EXIT;
         }
+
+		/*
+			Close worldmap if it's open, this can happen when the walker is called from the panel or worldmap set target
+		 */
+		closeWorldMap();
         /**
          * When running the walkTo method from scripts
          * the code will run on the script thread
@@ -1249,8 +1251,8 @@ public class Rs2Walker {
      * Force the walker to recalculate path
      */
     public static void recalculatePath() {
+		WorldPoint _currentTarget = currentTarget;
         Rs2Walker.setTarget(null);
-        WorldPoint _currentTarget = currentTarget;
         Rs2Walker.setTarget(_currentTarget);
     }
 
@@ -3332,4 +3334,15 @@ public class Rs2Walker {
             return WalkerState.EXIT;
         }
     }
+
+	public static boolean closeWorldMap() {
+		if (!Rs2Widget.isWidgetVisible(InterfaceID.Worldmap.CLOSE)) return false;
+		Widget closeButton = Rs2Widget.getWidget(InterfaceID.Worldmap.CLOSE);
+		if (closeButton != null) {
+			Rectangle closeButtonBounds = closeButton.getBounds();
+			NewMenuEntry closeEntry = new NewMenuEntry("Close", "", 1, MenuAction.CC_OP, -1, InterfaceID.Worldmap.CLOSE, false);
+			Microbot.doInvoke(closeEntry, closeButtonBounds != null && Rs2UiHelper.isRectangleWithinCanvas(closeButtonBounds) ? closeButtonBounds : Rs2UiHelper.getDefaultRectangle());
+		}
+		return sleepUntil(() -> !Rs2Widget.isWidgetVisible(InterfaceID.Worldmap.CLOSE), 3000);
+	}
 }
