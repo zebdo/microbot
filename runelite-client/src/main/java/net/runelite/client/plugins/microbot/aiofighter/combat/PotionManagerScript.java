@@ -5,6 +5,8 @@ import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterConfig;
+import net.runelite.client.plugins.microbot.aiofighter.AIOFighterPlugin;
+import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
@@ -16,6 +18,7 @@ public class PotionManagerScript extends Script {
             try {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
+                if(AIOFighterPlugin.getState() == State.GETTING_TASK) return;
 
                 // Always attempt to drink anti-poison
                 if (Rs2Player.drinkAntiPoisonPotion()) {
