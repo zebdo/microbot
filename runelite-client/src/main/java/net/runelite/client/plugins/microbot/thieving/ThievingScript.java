@@ -213,6 +213,7 @@ public class ThievingScript extends Script {
                 while (!Rs2Player.isStunned() & isRunning()) {
 					if (!Microbot.isLoggedIn()) break;
                     openCoinPouches();
+                    if (!autoEatAndDrop()) break;
                     if (config.shadowVeil()) castShadowVeil();
                     if (!Rs2Npc.pickpocket(npc)) continue;
                     sleep(200, 300);
@@ -233,6 +234,7 @@ public class ThievingScript extends Script {
         while (!Rs2Player.isStunned() & isRunning()) {
 			if (!Microbot.isLoggedIn()) break;
             openCoinPouches();
+            if (!autoEatAndDrop()) break;
             if (config.shadowVeil()) castShadowVeil();
             if (!Rs2Npc.pickpocket(highlighted)) continue;
             sleep(200, 300);
