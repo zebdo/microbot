@@ -252,6 +252,7 @@ public class AIOFighterPlugin extends Plugin {
     }
     // Set currentInventorySetup
     public static void setCurrentSlayerInventorySetup(InventorySetup currentInventorySetup) {
+        Microbot.log("Setting current inventory setup to: " + currentInventorySetup.getName());
         Microbot.getConfigManager().setConfiguration(
                 AIOFighterConfig.GROUP,
                 "currentInventorySetup",
@@ -413,7 +414,7 @@ public class AIOFighterPlugin extends Plugin {
             if (event.getActor() != Microbot.getClient().getLocalPlayer()) return;
             final Hitsplat hitsplat = event.getHitsplat();
 
-            if ((hitsplat.isMine()) && event.getActor().getInteracting() instanceof NPC && config.togglePrayer() && (config.prayerStyle() == PrayerStyle.LAZY_FLICK) || (config.prayerStyle() == PrayerStyle.PERFECT_LAZY_FLICK)) {
+            if ((hitsplat.isMine()) && event.getActor().getInteracting() instanceof NPC && config.togglePrayer() && (config.prayerStyle() == PrayerStyle.LAZY_FLICK) || (config.prayerStyle() == PrayerStyle.PERFECT_LAZY_FLICK) || (config.prayerStyle() == PrayerStyle.MIXED_LAZY_FLICK)) {
                 flickerScript.resetLastAttack(true);
                 Rs2Prayer.disableAllPrayers();
                 if (config.toggleQuickPray())
