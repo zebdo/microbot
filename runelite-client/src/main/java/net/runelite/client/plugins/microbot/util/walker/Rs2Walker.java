@@ -3341,7 +3341,7 @@ public class Rs2Walker {
 		if (closeButton != null) {
 			Rectangle closeButtonBounds = closeButton.getBounds();
 			NewMenuEntry closeEntry = new NewMenuEntry("Close", "", 1, MenuAction.CC_OP, -1, InterfaceID.Worldmap.CLOSE, false);
-			Microbot.doInvoke(closeEntry, closeButtonBounds != null ? closeButtonBounds : Rs2UiHelper.getDefaultRectangle());
+			Microbot.doInvoke(closeEntry, closeButtonBounds != null && Rs2UiHelper.isRectangleWithinCanvas(closeButtonBounds) ? closeButtonBounds : Rs2UiHelper.getDefaultRectangle());
 		}
 		return sleepUntil(() -> !Rs2Widget.isWidgetVisible(InterfaceID.Worldmap.CLOSE), 3000);
 	}
