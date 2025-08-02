@@ -23,7 +23,7 @@ import java.awt.geom.Area;
 import java.awt.geom.GeneralPath;
 
 import static net.runelite.client.plugins.microbot.aiofighter.combat.AttackNpcScript.filteredAttackableNpcs;
-import static net.runelite.client.plugins.microbot.aiofighter.combat.FlickerScript.currentMonstersAttackingUs;
+import static net.runelite.client.plugins.microbot.aiofighter.combat.FlickerScript.currentMonstersAttackingUsRef;
 import static net.runelite.client.ui.overlay.OverlayUtil.renderPolygon;
 
 public class AIOFighterOverlay extends OverlayPanel {
@@ -96,7 +96,7 @@ public class AIOFighterOverlay extends OverlayPanel {
             }
         }
 
-        for (Monster currentMonster : currentMonstersAttackingUs) {
+        for (Monster currentMonster : currentMonstersAttackingUsRef.get()) {
             if (currentMonster != null && currentMonster.npc != null && currentMonster.npc.getCanvasTilePoly() != null) {
                 try {
                     graphics.setColor(Color.CYAN);
