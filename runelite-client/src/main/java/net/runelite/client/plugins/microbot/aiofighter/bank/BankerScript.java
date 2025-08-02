@@ -28,10 +28,7 @@ import net.runelite.client.plugins.microbot.util.slayer.Rs2Slayer;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import javax.inject.Inject;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 
@@ -72,8 +69,8 @@ public class BankerScript extends Script {
                     boolean shouldWalk = false;
 
                     if (config.slayerMode()) {
-                        List<Integer> missingIds = Rs2Slayer.getMissingItemIds(
-                                Rs2Slayer.prepareItemTransports(config.centerLocation()));
+                        Map<Integer,Integer> missingIds = Rs2Walker.getMissingTransportItemIdsWithQuantities(
+                                Rs2Walker.getTransportsForDestination(config.centerLocation(),true));
                         if (!missingIds.isEmpty()) {
                             Microbot.log("Missing items: " + missingIds);
                             shouldWalk = handleTeleports(missingIds);
@@ -129,6 +126,7 @@ public class BankerScript extends Script {
         if (Rs2Inventory.isFull()) {
             Microbot.log("Inventory is full, triggering banking.");
             bankingTriggered = true;
+            Rs2Inventory.waitForInventoryChanges(2000);
             return true;
         }
 
@@ -271,6 +269,16 @@ public class BankerScript extends Script {
         if (isBypassedBySlayerHelmet(needed)
                 && Rs2Equipment.isWearing("Slayer helmet")) {
             return true;
+        }
+
+        // check if the needed item is "Rock hammer" or "Rock thrownhammer", if so, check if the player has it in inventory
+        if (needed.equals("Rock hammer") || needed.equals("Rock thrownhammer")) {
+            if (Rs2Inventory.contains(needed)) {
+                return true;
+            } else {
+                Microbot.log("hasProtectiveSlayerEquipment(): Missing " + needed + " in inventory.");
+                return false;
+            }
         }
 
         boolean result = Rs2Equipment.isWearing(needed);
@@ -425,19 +433,23 @@ public class BankerScript extends Script {
         }
         return !needBanking();
     }
-    public boolean handleTeleports(List<Integer> ids) {
+    public boolean handleTeleports(Map<Integer,Integer> ids_quantity) {
          AIOFighterPlugin.setState(State.BANKING);
         Rs2Prayer.disableAllPrayers();
         if (Rs2Bank.walkToBankAndUseBank()) {
-            for (int id : ids) {
+            for (Map.Entry<Integer, Integer> entry : ids_quantity.entrySet()) {
+                int id = entry.getKey();
+                int quantity = entry.getValue();
                 if (Rs2Bank.hasItem(id)) {
-                    Rs2Bank.withdrawOne(id);
+                    Rs2Bank.withdrawX(true, id, quantity);
                     Rs2Inventory.waitForInventoryChanges(2000);
                     Rs2Random.waitEx(1200, 600);
                 }
             }
         }
-        int[] idArray = ids.stream().mapToInt(Integer::intValue).toArray();
+        int[] idArray = ids_quantity.keySet().stream()
+                .mapToInt(Integer::intValue)
+                .toArray();
         return Rs2Inventory.contains(idArray);
     }
 
