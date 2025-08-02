@@ -2,14 +2,14 @@ package net.runelite.client.plugins.microbot.aiofighter.combat;
 
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.EnumID;
-import net.runelite.api.VarPlayer;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterConfig;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterPlugin;
+import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.aiofighter.model.InventorySetupUtil;
+import net.runelite.client.plugins.microbot.util.npc.MonsterLocation;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcManager;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -21,8 +21,6 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 public class SlayerScript extends Script {
 
-    public static boolean test = false;
-    boolean runOnce = false;
     static WorldPoint cachedMonsterLocation = null;
     static String cachedMonsterLocationName = null;
     AIOFighterConfig config;
@@ -37,9 +35,6 @@ public class SlayerScript extends Script {
                 if (!super.run()) return;
                 if (!config.slayerMode()) return;
 
-                if(runOnce) {
-                    return;
-                }
 
                 handleSlayerTask();
 
@@ -51,18 +46,6 @@ public class SlayerScript extends Script {
         return true;
     }
 
-
-
-    public void walkToCurrentSlayerTask() {
-        int taskId = Microbot.getVarbitPlayerValue(VarPlayer.SLAYER_TASK_CREATURE);
-        String taskName = Microbot.getEnum(EnumID.SLAYER_TASK_CREATURE)
-                .getStringValue(taskId);
-        Microbot.log("taskName: " + taskName);
-        List<String> npcNames = Rs2NpcManager.getSlayerMonstersByCategory(taskName);
-        Microbot.log("Monster names: " + npcNames);
-        Rs2Npc.walkToNearestMonster(npcNames.get(0),3, true);
-        runOnce = true;
-    }
 
     // set attackableNpcs
     public void setAttackableNpcs() {
@@ -90,7 +73,7 @@ public class SlayerScript extends Script {
                  AIOFighterPlugin.setSlayerTaskWeaknessThreshold(0);
             }
             if (cachedMonsterLocation == null) {
-                var monsterLocation = Rs2Slayer.getSlayerTaskLocation(3, true);
+                MonsterLocation monsterLocation = Rs2Slayer.getSlayerTaskLocation(3, true);
                 assert monsterLocation != null;
                 WorldPoint slayerTaskLocation = monsterLocation.getBestClusterCenter();
                 log.info("Monster location: " + slayerTaskLocation);
@@ -109,6 +92,7 @@ public class SlayerScript extends Script {
         else {
             Microbot.log("No slayer task");
             reset();
+            AIOFighterPlugin.setState(State.GETTING_TASK);
             if(Rs2Slayer.walkToSlayerMaster(config.slayerMaster())) {
                 Rs2NpcModel npc = Rs2Npc.getNpc(config.slayerMaster().getName());
                 if(npc != null) {
@@ -135,7 +119,6 @@ public class SlayerScript extends Script {
 
     @Override
     public void shutdown() {
-        runOnce = false;
         cachedMonsterLocation = null;
         super.shutdown();
     }
