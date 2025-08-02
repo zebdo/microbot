@@ -55,7 +55,7 @@ public class FlickerScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn() || !config.togglePrayer()) return;
-                if (config.prayerStyle() != PrayerStyle.LAZY_FLICK && config.prayerStyle() != PrayerStyle.PERFECT_LAZY_FLICK)
+                if (config.prayerStyle() != PrayerStyle.LAZY_FLICK && config.prayerStyle() != PrayerStyle.PERFECT_LAZY_FLICK && config.prayerStyle() != PrayerStyle.MIXED_LAZY_FLICK)
                     return;
                 if (config.prayerStyle() == PrayerStyle.LAZY_FLICK) {
                     tickToFlick = 1;
