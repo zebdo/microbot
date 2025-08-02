@@ -105,6 +105,12 @@ public class AIOFighterOverlay extends OverlayPanel {
                     graphics.drawString("" + currentMonster.lastAttack,
                             (int) currentMonster.npc.getCanvasTilePoly().getBounds().getCenterX(),
                             (int) currentMonster.npc.getCanvasTilePoly().getBounds().getCenterY());
+                    // draw the attack style
+                    if (currentMonster.attackStyle != null) {
+                        graphics.drawString(currentMonster.attackStyle.name(),
+                                (int) currentMonster.npc.getCanvasTilePoly().getBounds().getCenterX(),
+                                (int) currentMonster.npc.getCanvasTilePoly().getBounds().getCenterY() + 15);
+                    }
                 } catch(Exception ex) {
                     System.out.println(ex.getMessage());
                 }
