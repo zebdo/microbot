@@ -26,6 +26,9 @@ public interface BlueDragonsConfig extends Config {
     @ConfigItem(keyName = "lootEnsouledHead", name = "Loot Ensouled heads", description = "LootEnsouled heads dropped by the dragon", section = lootSection)
     default boolean lootEnsouledHead() { return true; }
 
+    @ConfigItem(keyName = "lootMiscItems", name = "Loot items over 3.5k?", description = "Should we loot items worth more than 3.5k?", section = lootSection)
+    default boolean lootMiscItems() { return true; }
+
     @ConfigSection(name = "Food Options", description = "Settings for selecting food and health threshold", position = 2)
     String foodSection = "foodSection";
 
