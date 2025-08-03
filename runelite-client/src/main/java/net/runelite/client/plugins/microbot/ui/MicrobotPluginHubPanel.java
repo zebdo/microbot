@@ -260,8 +260,8 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                 }
 
                 if (search != null) {
-                    final String javaIsABadLanguage = search;
-                    configure.addActionListener(l -> topLevelConfigPanel.openWithFilter(javaIsABadLanguage));
+                    final String _search = search;
+                    configure.addActionListener(l -> topLevelConfigPanel.openWithFilter(_search));
                 }
             } else {
                 configure.setVisible(false);
