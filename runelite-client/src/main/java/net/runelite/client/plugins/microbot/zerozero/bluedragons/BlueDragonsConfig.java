@@ -11,7 +11,7 @@ import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
         "1. Equip your <b>RANGED</b> gear <br />" +
         "2. <b style='color: red;'>MUST</b> have Falador teleport (runes/teletab) <br />" +
         "3. Correct food amount from config <br /> <br />" +
-        "4. Start with your the dusty key in your inventory or have 70 agility <br /> <br />" +
+        "4. Start with your dusty key in your inventory or have 70 agility <br /> <br />" +
         "<center>Press <b style='color: green;'>START</b> and enjoy :)</center>")
 public interface BlueDragonsConfig extends Config {
     @ConfigItem(keyName = "startPlugin", name = "Start/Stop the Plugin", description = "This is start or stop the plugin on a toggle")
