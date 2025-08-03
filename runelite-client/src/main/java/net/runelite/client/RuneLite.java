@@ -43,7 +43,7 @@ import net.runelite.client.discord.DiscordService;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 import net.runelite.client.plugins.PluginManager;
-import net.runelite.client.plugins.microbot.sideloading.MicrobotPluginManager;
+import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
 import net.runelite.client.rs.ClientLoader;
 import net.runelite.client.ui.ClientUI;
 import net.runelite.client.ui.FatalErrorDialog;

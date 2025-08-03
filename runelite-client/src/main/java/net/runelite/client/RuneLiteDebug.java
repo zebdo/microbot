@@ -43,7 +43,7 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.microbot.MicrobotClientLoader;
-import net.runelite.client.plugins.microbot.sideloading.MicrobotPluginManager;
+import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
 import net.runelite.client.ui.ClientUI;
 import net.runelite.client.ui.FatalErrorDialog;
 import net.runelite.client.ui.SplashScreen;
