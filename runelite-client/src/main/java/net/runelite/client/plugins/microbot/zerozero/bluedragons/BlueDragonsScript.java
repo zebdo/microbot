@@ -26,6 +26,7 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import javax.inject.Inject;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class BlueDragonsScript extends Script {
 
@@ -297,7 +298,7 @@ public class BlueDragonsScript extends Script {
         Rs2Player.eatAt(config.eatAtHealthPercent());
 
         if (!underAttack()) {
-            NPC dragon = getAvailableDragon();
+            Rs2NpcModel dragon = getAvailableDragon();
             if (dragon != null) {
                 logOnceToChat("Found available dragon. Attacking.", true, config);
                 if (attackDragon(dragon)) {
@@ -450,8 +451,8 @@ public class BlueDragonsScript extends Script {
         }
     }
 
-    private NPC getAvailableDragon() {
-        NPC dragon = Rs2Npc.getNpc("Blue dragon");
+    private Rs2NpcModel getAvailableDragon() {
+        Rs2NpcModel dragon = Rs2Npc.getNpc("Blue dragon");
         logOnceToChat("Found dragon: " + (dragon != null ? "Yes (ID: " + dragon.getId() + ")" : "No"), true, config);
         
         if (dragon != null) {
@@ -468,7 +469,7 @@ public class BlueDragonsScript extends Script {
         return null;
     }
 
-    private boolean attackDragon(NPC dragon) {
+    private boolean attackDragon(Rs2NpcModel dragon) {
         final int dragonId = dragon.getId();
         
         if (Rs2Combat.inCombat() && dragon.getInteracting() != Microbot.getClient().getLocalPlayer()) {
@@ -531,7 +532,7 @@ public class BlueDragonsScript extends Script {
 
     private boolean hopIfPlayerAtSafeSpot() {
         boolean otherPlayersAtSafeSpot = false;
-        List<Player> players = Rs2Player.getPlayers();
+        List<Player> players = Rs2Player.getPlayers(it->it!=null).collect(Collectors.toList());
 
         for (Player player : players) {
             if (player != null &&
