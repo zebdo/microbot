@@ -10,7 +10,7 @@ import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
         "<hr style='width: 75%; border-top: 1px solid #000;'/> </center> <br />" +
         "1. Equip your <b>RANGED</b> gear <br />" +
         "2. <b style='color: red;'>MUST</b> have Falador teleport (runes/teletab) <br />" +
-        "3. Correct food amount from config <br /> <br />" +
+        "3. Correct food amount from config <br />" +
         "4. Start with your dusty key in your inventory or have 70 agility <br /> <br />" +
         "<center>Press <b style='color: green;'>START</b> and enjoy :)</center>")
 public interface BlueDragonsConfig extends Config {
