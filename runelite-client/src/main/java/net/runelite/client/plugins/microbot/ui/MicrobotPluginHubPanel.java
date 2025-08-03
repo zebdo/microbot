@@ -241,7 +241,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             help.setBorder(null);
             help.setToolTipText("Open help");
             if (manifest.getSupportUrl() != null) {
-                help.addActionListener(ev -> LinkBrowser.browse(manifest.getSupportUrl()));
+                help.addActionListener(ev -> LinkBrowser.browse("https://chsami.github.io/Microbot-Hub/" + manifest.getInternalName()));
             } else {
                 help.setVisible(false);
             }
