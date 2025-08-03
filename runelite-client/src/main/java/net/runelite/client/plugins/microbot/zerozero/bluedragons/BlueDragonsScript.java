@@ -606,6 +606,6 @@ public class BlueDragonsScript extends Script {
     }
 
     private boolean underAttack() {
-        return Rs2Player.isAnimating(3000);
+        return Rs2Player.isAnimating(5000);
     }
 }
