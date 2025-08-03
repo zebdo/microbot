@@ -17,6 +17,7 @@ import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -605,6 +606,6 @@ public class BlueDragonsScript extends Script {
     }
 
     private boolean underAttack() {
-        return Rs2Combat.inCombat();
+        return Rs2Player.isAnimating(3000);
     }
 }
