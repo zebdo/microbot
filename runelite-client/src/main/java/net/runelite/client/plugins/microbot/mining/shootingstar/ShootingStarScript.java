@@ -114,6 +114,11 @@ public class ShootingStarScript extends Script
 						{
 							if (!hasSelectedStar())
 							{
+								if (plugin.getStarList().isEmpty()) {
+									log.debug("No stars found, waiting for api data");
+									return;
+								}
+
 								currentStar = plugin.getClosestHighestTierStar();
 
 								if (currentStar == null)
@@ -162,6 +167,7 @@ public class ShootingStarScript extends Script
 							WalkerState walkerState = Rs2Walker.walkWithState(currentStar.getShootingStarLocation().getWorldPoint(), 6);
 							if (walkerState == WalkerState.UNREACHABLE)
 							{
+								log.debug("Walker State is {}, removing star from list", walkerState);
 								plugin.removeStar(plugin.getSelectedStar());
 								plugin.updatePanelList(true);
 								state = ShootingStarState.WAITING_FOR_STAR;

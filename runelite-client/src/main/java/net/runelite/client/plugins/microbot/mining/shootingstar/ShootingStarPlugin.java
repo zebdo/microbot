@@ -423,6 +423,11 @@ public class ShootingStarPlugin extends Plugin
 			return null; // No accessible stars found
 		}
 
+		if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty())
+		{
+			ShortestPathPlugin.getPathfinderConfig().refresh();
+		}
+
 		Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), Microbot.getClient().getLocalPlayer().getWorldLocation(), accessibleStarPoints);
 		pathfinder.run();
 		List<WorldPoint> path = pathfinder.getPath();

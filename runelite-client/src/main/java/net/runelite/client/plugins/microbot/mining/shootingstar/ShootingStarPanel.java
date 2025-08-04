@@ -49,8 +49,8 @@ public class ShootingStarPanel extends PluginPanel
 	private ShootingStarTableHeader locationHeader;
 	private ShootingStarTableHeader tierHeader;
 	private ShootingStarTableHeader timeLeftHeader;
-	private Order orderIndex = Order.TIME_LEFT;
-	private boolean ascendingOrder = false;
+	private Order orderIndex = Order.TIER;
+	private boolean ascendingOrder = true;
 
 	public ShootingStarPanel(ShootingStarPlugin plugin)
 	{
