@@ -34,6 +34,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -42,7 +43,6 @@ import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
-import net.runelite.api.WorldType;
 import net.runelite.client.game.WorldService;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarLocation;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarProvider;
@@ -51,6 +51,7 @@ import net.runelite.client.plugins.microbot.mining.shootingstar.model.Star;
 import net.runelite.client.plugins.microbot.mining.shootingstar.model.ZeroSevenStarModel;
 import net.runelite.http.api.worlds.World;
 import net.runelite.http.api.worlds.WorldResult;
+import net.runelite.http.api.worlds.WorldType;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
@@ -119,7 +120,7 @@ public class ShootingStarApiClient
 		return jsonResponse;
 	}
 
-	private List<ZeroSevenStarModel> fetchZeroSeven(String jsonResponse)
+	private List<Star> fetchZeroSeven(String jsonResponse)
 	{
 		Gson gson = new Gson();
 		Type listType = new TypeToken<List<ZeroSevenStarModel>>() {}.getType();
@@ -137,10 +138,10 @@ public class ShootingStarApiClient
 		{
 			log.trace("Failed to parse response: {}", jsonResponse, e);
 		}
-		return deserializedStarData;
+		return new ArrayList<>(deserializedStarData);
 	}
 
-	private List<OSRSVaultStarModel> fetchOSRSVault(String jsonResponse)
+	private List<Star> fetchOSRSVault(String jsonResponse)
 	{
 		Gson gson = new Gson();
 		Type listType = new TypeToken<List<OSRSVaultStarModel>>() {}.getType();
@@ -158,7 +159,7 @@ public class ShootingStarApiClient
 		{
 			log.trace("Failed to parse response: {}", jsonResponse, e);
 		}
-		return deserializedStarData;
+		return new ArrayList<>(deserializedStarData);
 	}
 
 	public List<Star> getStarData(ShootingStarProvider provider)
@@ -177,15 +178,35 @@ public class ShootingStarApiClient
 
 		ZonedDateTime now = ZonedDateTime.now(utcZoneId);
 
+		List<Star> starData = tryProvider(provider, now);
+
+		ShootingStarProvider _alternativeProvider = provider != ShootingStarProvider.OSRS_VAULT ? ShootingStarProvider.ZERO_SEVEN : ShootingStarProvider.OSRS_VAULT;
+		if (starData.isEmpty())
+		{
+			log.info("Primary provider {} returned no data, falling back to {}", provider.getProviderName(), _alternativeProvider.getProviderName());
+			starData = tryProvider(_alternativeProvider, now);
+		}
+
+		return starData;
+	}
+
+	private List<Star> tryProvider(ShootingStarProvider provider, ZonedDateTime now)
+	{
 		String response = getData(provider);
 		if (response.isEmpty() || response.equals("[]"))
 		{
+			log.debug("Provider {} returned empty or null response", provider);
 			return Collections.emptyList();
 		}
 
 		List<Star> starData = (Objects.equals(provider, ShootingStarProvider.ZERO_SEVEN)) ?
-			new ArrayList<>(fetchZeroSeven(response)) :
-			new ArrayList<>(fetchOSRSVault(response));
+			fetchZeroSeven(response) : fetchOSRSVault(response);
+
+		if (starData.isEmpty())
+		{
+			log.debug("Provider {} returned empty star data after parsing", provider);
+			return Collections.emptyList();
+		}
 
 		boolean inSeasonalWorld = client.getWorldType().contains(WorldType.SEASONAL);
 
@@ -207,17 +228,50 @@ public class ShootingStarApiClient
 			return toRemove;
 		});
 
-		// Populate other fields for each star
 		starData.forEach(s -> {
-			s.setWorldObject(getWorld(s.getWorld()));
+			World world = getWorld(s.getWorld());
+			if (world == null)
+			{
+				log.debug("No matching world found for ID: {}", s.getWorld());
+				return;
+			}
+
+			s.setGameModeWorld(world.getTypes().stream().anyMatch(wt -> getGameModeWorldTypes().contains(wt)));
+			s.setSeasonalWorld(world.getTypes().contains(WorldType.SEASONAL));
+			s.setMemberWorld(world.getTypes().contains(WorldType.MEMBERS));
 		});
 
-		// Remove stars based on seasonal world filtering
-		starData.removeIf(s ->
-			s.isGameModeWorld() || (inSeasonalWorld && !s.isInSeasonalWorld()) || (!inSeasonalWorld && s.isInSeasonalWorld())
-		);
+		// Filter out unwanted stars based on world type compatibility
+		starData.removeIf(star -> shouldFilterStar(star, inSeasonalWorld));
 
 		return starData;
+	}
+
+
+	private boolean shouldFilterStar(Star star, boolean inSeasonalWorld)
+	{
+		if (star.isGameModeWorld())
+		{
+			return true;
+		}
+
+		return inSeasonalWorld != star.isSeasonalWorld();
+	}
+
+	private EnumSet<WorldType> getGameModeWorldTypes() {
+		return EnumSet.of(
+			WorldType.PVP,
+			WorldType.HIGH_RISK,
+			WorldType.BOUNTY,
+			WorldType.SKILL_TOTAL,
+			WorldType.LAST_MAN_STANDING,
+			WorldType.QUEST_SPEEDRUNNING,
+			WorldType.BETA_WORLD,
+			WorldType.DEADMAN,
+			WorldType.PVP_ARENA,
+			WorldType.TOURNAMENT,
+			WorldType.FRESH_START_WORLD
+		);
 	}
 
 	private ShootingStarLocation findLocation(String locationKey, String rawLocation)

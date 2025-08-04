@@ -19,10 +19,6 @@ public interface Star
 
 	int getWorld();
 
-	World getWorldObject();
-
-	void setWorldObject(World worldObject);
-
 	Object getLocationKey();
 
 	String getRawLocation();
@@ -40,6 +36,18 @@ public interface Star
 	void setSelected(boolean selected);
 
 	boolean isHidden();
+
+	boolean isGameModeWorld();
+
+	void setGameModeWorld(boolean gameModeWorld);
+
+	boolean isSeasonalWorld();
+
+	void setSeasonalWorld(boolean seasonalWorld);
+
+	boolean isMemberWorld();
+
+	void setMemberWorld(boolean memberWorld);
 
 	void setHidden(boolean hidden);
 
@@ -138,39 +146,5 @@ public interface Star
 			default:
 				return -1;
 		}
-	}
-
-	default boolean isGameModeWorld()
-	{
-		EnumSet<WorldType> gameModes = EnumSet.of(
-			WorldType.PVP,
-			WorldType.HIGH_RISK,
-			WorldType.BOUNTY,
-			WorldType.SKILL_TOTAL,
-			WorldType.LAST_MAN_STANDING,
-			WorldType.QUEST_SPEEDRUNNING,
-			WorldType.BETA_WORLD,
-			WorldType.DEADMAN,
-			WorldType.PVP_ARENA,
-			WorldType.TOURNAMENT,
-			WorldType.FRESH_START_WORLD
-		);
-
-		return getWorldObject().getTypes().stream().anyMatch(gameModes::contains);
-	}
-
-	default boolean isMemberWorld()
-	{
-		return !isGameModeWorld() && getWorldObject().getTypes().contains(WorldType.MEMBERS);
-	}
-
-	default boolean isF2PWorld()
-	{
-		return !isGameModeWorld() && !getWorldObject().getTypes().contains(WorldType.MEMBERS);
-	}
-
-	default boolean isInSeasonalWorld()
-	{
-		return getWorldObject().getTypes().contains(WorldType.SEASONAL);
 	}
 }

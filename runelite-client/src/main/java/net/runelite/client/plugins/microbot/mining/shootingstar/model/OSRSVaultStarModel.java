@@ -16,9 +16,6 @@ public class OSRSVaultStarModel implements Star
 	@Getter
 	private int world;
 	@Getter
-	@Setter
-	private World worldObject;
-	@Getter
 	private Object locationKey;
 	@Getter
 	@SerializedName("called_location")
@@ -35,6 +32,15 @@ public class OSRSVaultStarModel implements Star
 	@Getter
 	@Setter
 	private transient boolean hidden;
+	@Getter
+	@Setter
+	private boolean memberWorld;
+	@Getter
+	@Setter
+	private boolean gameModeWorld;
+	@Getter
+	@Setter
+	private boolean seasonalWorld;
 
 	public long getCalledAt()
 	{

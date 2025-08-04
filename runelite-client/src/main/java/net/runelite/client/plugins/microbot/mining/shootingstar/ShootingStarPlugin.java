@@ -311,7 +311,7 @@ public class ShootingStarPlugin extends Plugin
 	{
 		starList.forEach(star -> {
 			boolean hide = hideMembersWorlds && star.isMemberWorld()
-				|| (hideF2PWorlds && star.isF2PWorld())
+				|| (hideF2PWorlds && !star.isMemberWorld())
 				|| (config.isHideWildernessLocations() && star.isInWilderness())
 				|| blacklistedLocations.contains(star.getShootingStarLocation().getLocationName());
 			star.setHidden(hide);

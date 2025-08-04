@@ -17,9 +17,6 @@ public class ZeroSevenStarModel implements Star
 	@Getter
 	private int world;
 	@Getter
-	@Setter
-	private World worldObject;
-	@Getter
 	private Object locationKey;
 	@Getter
 	private String rawLocation;
@@ -35,6 +32,15 @@ public class ZeroSevenStarModel implements Star
 	@Getter
 	@Setter
 	private transient boolean hidden;
+	@Getter
+	@Setter
+	private boolean memberWorld;
+	@Getter
+	@Setter
+	private boolean gameModeWorld;
+	@Getter
+	@Setter
+	private boolean seasonalWorld;
 
 	@Override
 	public boolean equals(Object obj)

@@ -118,8 +118,7 @@ public class ShootingStarOverlay extends OverlayPanel
 						.right(Integer.toString(plugin.getSelectedStar().getWorld()))
 						.build());
 
-					String worldType = plugin.getSelectedStar().isMemberWorld() ? "Member" :
-						plugin.getSelectedStar().isF2PWorld() ? "F2P" : "Unknown";
+					String worldType = plugin.getSelectedStar().isMemberWorld() ? "Member" : "F2P";
 
 					panelComponent.getChildren().add(LineComponent.builder()
 						.left("World Type:")
