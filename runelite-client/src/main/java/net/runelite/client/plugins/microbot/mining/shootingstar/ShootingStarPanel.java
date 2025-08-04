@@ -1,12 +1,14 @@
 package net.runelite.client.plugins.microbot.mining.shootingstar;
 
 import com.google.common.collect.Ordering;
-import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Desktop;
 import java.awt.Dimension;
+import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
+import java.net.URI;
 import java.util.List;
 import java.util.function.Function;
 import javax.swing.Box;
@@ -18,16 +20,17 @@ import javax.swing.JPanel;
 import javax.swing.JPopupMenu;
 import javax.swing.SwingUtilities;
 import javax.swing.border.EmptyBorder;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.mining.shootingstar.model.ShootingStarTableHeader;
 import net.runelite.client.plugins.microbot.mining.shootingstar.model.ShootingStarTableRow;
 import net.runelite.client.plugins.microbot.mining.shootingstar.model.Star;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.ui.PluginPanel;
 
+@Slf4j
 public class ShootingStarPanel extends PluginPanel
 {
 	public static final int WORLD_WIDTH = 35;
@@ -46,69 +49,134 @@ public class ShootingStarPanel extends PluginPanel
 	private ShootingStarTableHeader locationHeader;
 	private ShootingStarTableHeader tierHeader;
 	private ShootingStarTableHeader timeLeftHeader;
-	private Order orderIndex = Order.TIME_LEFT;
-	private boolean ascendingOrder = false;
+	private Order orderIndex = Order.TIER;
+	private boolean ascendingOrder = true;
 
 	public ShootingStarPanel(ShootingStarPlugin plugin)
 	{
 		this.plugin = plugin;
 		setBorder(null);
 
-		setLayout(new DynamicGridLayout(0, 1));
+		setLayout(new BoxLayout(this, BoxLayout.Y_AXIS));
+
 		JPanel header = buildHeader();
-		add(header, BorderLayout.NORTH);
+		add(header);
 
 		listContainer.setLayout(new BoxLayout(listContainer, BoxLayout.Y_AXIS));
-		add(listContainer, BorderLayout.CENTER);
+		add(listContainer);
 
-		JPanel buttons = new JPanel();
-		buttons.setBorder(new EmptyBorder(5, 5, 5, 5));
-		buttons.setLayout(new BoxLayout(buttons, BoxLayout.X_AXIS));
-		buttons.add(Box.createHorizontalGlue());
+		add(Box.createVerticalGlue());
 
-		// Add clear blacklist button
-		JButton clearBlacklistButton = new JButton("Clear Blacklist");
-		clearBlacklistButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-		clearBlacklistButton.setFont(FontManager.getRunescapeBoldFont());
-		clearBlacklistButton.setBackground(ColorScheme.BRAND_ORANGE);
-		clearBlacklistButton.setForeground(Color.WHITE);
-		clearBlacklistButton.setFocusPainted(false);
-		clearBlacklistButton.setBorder(new EmptyBorder(4, 8, 4, 8));
-		clearBlacklistButton.setPreferredSize(new Dimension(240, 28));
-		clearBlacklistButton.addActionListener(e -> plugin.clearBlacklistedLocations());
-		buttons.add(clearBlacklistButton);
-		buttons.add(Box.createHorizontalGlue());
+		JPanel buttonPanel = createButtonPanel();
+		add(buttonPanel);
+	}
 
-		add(Box.createRigidArea(new Dimension(0, 10)));
-		add(buttons);
+	private JPanel createButtonPanel()
+	{
+		JPanel buttonContainer = new JPanel();
+		buttonContainer.setBorder(new EmptyBorder(5, 5, 5, 5));
+		buttonContainer.setLayout(new BoxLayout(buttonContainer, BoxLayout.Y_AXIS));
+
+		JPanel topButtonRow = new JPanel();
+		topButtonRow.setLayout(new GridLayout(1, 2, 5, 0));
+
+		JButton importButton = new JButton("Import");
+		importButton.setFont(FontManager.getRunescapeBoldFont());
+		importButton.setBackground(ColorScheme.BRAND_ORANGE);
+		importButton.setForeground(Color.WHITE);
+		importButton.setFocusPainted(false);
+		importButton.setBorder(new EmptyBorder(4, 8, 4, 8));
+		importButton.setToolTipText("Import blacklisted locations");
+		importButton.addActionListener(e -> plugin.importBlacklistedLocations());
+
+		JButton exportButton = new JButton("Export");
+		exportButton.setFont(FontManager.getRunescapeBoldFont());
+		exportButton.setBackground(ColorScheme.BRAND_ORANGE);
+		exportButton.setForeground(Color.WHITE);
+		exportButton.setFocusPainted(false);
+		exportButton.setBorder(new EmptyBorder(4, 8, 4, 8));
+		exportButton.setToolTipText("Export blacklisted locations");
+		exportButton.addActionListener(e -> plugin.exportBlacklistedLocations());
+
+		topButtonRow.add(importButton);
+		topButtonRow.add(exportButton);
+
+		JPanel bottomButtonRow = new JPanel();
+		bottomButtonRow.setLayout(new BoxLayout(bottomButtonRow, BoxLayout.X_AXIS));
+		bottomButtonRow.add(Box.createHorizontalGlue());
+
+		JButton resetButton = new JButton("Reset");
+		resetButton.setFont(FontManager.getRunescapeBoldFont());
+		resetButton.setBackground(new Color(255, 55, 40));
+		resetButton.setForeground(Color.WHITE);
+		resetButton.setFocusPainted(false);
+		resetButton.setBorder(new EmptyBorder(4, 8, 4, 8));
+		resetButton.setPreferredSize(new Dimension(120, 28));
+		resetButton.setToolTipText("Reset configured blacklisted locations");
+		resetButton.addActionListener(e -> plugin.clearBlacklistedLocations());
+
+		JButton supportButton = new JButton("Support");
+		supportButton.setFont(FontManager.getRunescapeBoldFont());
+		supportButton.setBackground(new Color(76, 175, 80)); // Light green color
+		supportButton.setForeground(Color.WHITE);
+		supportButton.setFocusPainted(false);
+		supportButton.setBorder(new EmptyBorder(4, 8, 4, 8));
+		supportButton.setPreferredSize(new Dimension(120, 28));
+		supportButton.setToolTipText("Show support to the creator");
+		supportButton.addActionListener(e -> {
+			try {
+				Desktop.getDesktop().browse(URI.create("https://g-mason0.github.io/"));
+			} catch (Exception ex) {
+				log.error("ShootingStarPanel: Failed to open support link", ex);
+			}
+		});
+
+		bottomButtonRow.add(resetButton);
+		bottomButtonRow.add(Box.createRigidArea(new Dimension(5, 0)));
+		bottomButtonRow.add(supportButton);
+		bottomButtonRow.add(Box.createHorizontalGlue());
+
+		buttonContainer.add(topButtonRow);
+		buttonContainer.add(Box.createRigidArea(new Dimension(0, 5)));
+		buttonContainer.add(bottomButtonRow);
+
+		return buttonContainer;
 	}
 
 	private JPanel buildHeader()
 	{
 		JPanel header = new JPanel();
 		header.setLayout(new BoxLayout(header, BoxLayout.X_AXIS));
+		header.setMaximumSize(new Dimension(Integer.MAX_VALUE, 20)); // Allow full width stretching
 
 		worldHeader = new ShootingStarTableHeader("W");
 		worldHeader.setPreferredSize(new Dimension(WORLD_WIDTH, 20));
+		worldHeader.setMaximumSize(new Dimension(WORLD_WIDTH, 20));
 		worldHeader.addMouseListener(createHeaderMouseOptions(Order.WORLD));
 
 		tierHeader = new ShootingStarTableHeader("T");
 		tierHeader.setPreferredSize(new Dimension(TIER_WIDTH, 20));
+		tierHeader.setMaximumSize(new Dimension(TIER_WIDTH, 20));
 		tierHeader.addMouseListener(createHeaderMouseOptions(Order.TIER));
 		tierHeader.highlight(true, ascendingOrder);
 
 		locationHeader = new ShootingStarTableHeader("Location");
 		locationHeader.setPreferredSize(new Dimension(LOCATION_WIDTH, 20));
+		locationHeader.setMaximumSize(new Dimension(LOCATION_WIDTH, 20));
 		locationHeader.addMouseListener(createHeaderMouseOptions(Order.LOCATION));
 
 		timeLeftHeader = new ShootingStarTableHeader("Time Left");
 		timeLeftHeader.setPreferredSize(new Dimension(TIME_WIDTH, 20));
+		timeLeftHeader.setMaximumSize(new Dimension(TIME_WIDTH, 20));
 		timeLeftHeader.addMouseListener(createHeaderMouseOptions(Order.TIME_LEFT));
 
 		header.add(worldHeader);
 		header.add(tierHeader);
 		header.add(locationHeader);
 		header.add(timeLeftHeader);
+
+		header.add(Box.createHorizontalGlue());
+
 		return header;
 	}
 
@@ -137,6 +205,8 @@ public class ShootingStarPanel extends PluginPanel
 			JLabel noStarsLabel = new JLabel("Please wait for data to be fetched");
 			noStarsLabel.setFont(FontManager.getRunescapeSmallFont());
 			noStarsLabel.setBorder(new EmptyBorder(5, 5, 5, 5));
+			noStarsLabel.setHorizontalAlignment(JLabel.CENTER);
+			noStarsLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
 			listContainer.add(noStarsLabel);
 		}
 		else
@@ -146,7 +216,7 @@ public class ShootingStarPanel extends PluginPanel
 				switch (orderIndex)
 				{
 					case WORLD:
-						return getCompareValue(r1, r2, star -> star.getWorldObject().getId());
+						return getCompareValue(r1, r2, Star::getWorld);
 					case LOCATION:
 						return getCompareValue(r1, r2, Star::getShootingStarLocation);
 					case TIER:
@@ -191,6 +261,7 @@ public class ShootingStarPanel extends PluginPanel
 			r.updateTime();
 			r.updateSelectedBorder();
 			r.updateLocationColor();
+			r.updateTier();
 			r.updateTierColor();
 		}
 
@@ -205,7 +276,7 @@ public class ShootingStarPanel extends PluginPanel
 		JMenuItem hopEntryOption = new JMenuItem();
 		hopEntryOption.setText("Hop to");
 		hopEntryOption.setFont(FontManager.getRunescapeSmallFont());
-		hopEntryOption.addActionListener(e -> Microbot.hopToWorld(star.getWorldObject().getId()));
+		hopEntryOption.addActionListener(e -> Microbot.hopToWorld(star.getWorld()));
 		popupMenu.add(hopEntryOption);
 
 		JMenuItem selectedEntryOption = new JMenuItem();
@@ -270,10 +341,12 @@ public class ShootingStarPanel extends PluginPanel
 
 	private void orderBy(Order order)
 	{
-		worldHeader.highlight(false, ascendingOrder);
-		locationHeader.highlight(false, ascendingOrder);
-		tierHeader.highlight(false, ascendingOrder);
-		timeLeftHeader.highlight(false, ascendingOrder);
+		// Reset all headers to not highlighted
+		worldHeader.highlight(false, false);
+		locationHeader.highlight(false, false);
+		tierHeader.highlight(false, false);
+		timeLeftHeader.highlight(false, false);
+
 		switch (order)
 		{
 			case WORLD:
