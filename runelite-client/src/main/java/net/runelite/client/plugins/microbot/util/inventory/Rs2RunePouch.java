@@ -475,7 +475,7 @@ public class Rs2RunePouch
 	public static Map<Runes, Integer> getRunes() {
 		return slots.stream()
 			.filter(s -> s.getRune() != null && s.getQuantity() > 0)
-			.collect(Collectors.toMap(PouchSlot::getRune, PouchSlot::getQuantity));
+			.collect(Collectors.toMap(PouchSlot::getRune, PouchSlot::getQuantity, Integer::sum));
 	}
 
 	/**
