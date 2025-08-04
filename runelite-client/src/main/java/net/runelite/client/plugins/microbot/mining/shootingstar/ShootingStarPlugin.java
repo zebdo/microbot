@@ -70,7 +70,7 @@ public class ShootingStarPlugin extends Plugin
 	public static String version = "1.4.0";
 
 	@Getter
-	public List<Star> starList = new ArrayList<>();
+	private List<Star> starList = new ArrayList<>();
 
 	@Inject
 	private ShootingStarScript shootingStarScript;
@@ -463,10 +463,7 @@ public class ShootingStarPlugin extends Plugin
 
 	private void enableBreakHandler()
 	{
-		Plugin breakHandlerPlugin = Microbot.getPluginManager().getPlugins().stream()
-			.filter(x -> x.getClass().getName().equals(BreakHandlerPlugin.class.getName()))
-			.findFirst()
-			.orElse(null);
+		Plugin breakHandlerPlugin = Microbot.getPlugin(BreakHandlerPlugin.class);
 
 		Microbot.startPlugin(breakHandlerPlugin);
 	}
