@@ -4,6 +4,12 @@ package net.runelite.client.plugins.microbot.mining.shootingstar;
 import com.google.inject.Provides;
 import java.awt.AWTException;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -20,13 +26,18 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.GameState;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
@@ -39,6 +50,7 @@ import net.runelite.client.plugins.microbot.mining.shootingstar.model.Star;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.task.Schedule;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
@@ -102,11 +114,6 @@ public class ShootingStarPlugin extends Plugin
 
 	private Set<String> blacklistedLocations = new HashSet<>();
 
-	/*
-	 * TODO:
-	 *  - Create Star interface in-order to create multiple concrete models & support multiple star api providers
-	 *  - Configurable API provider 07gg or osrsportal
-	 */
 	@Override
 	protected void startUp() throws AWTException
 	{
@@ -217,6 +224,16 @@ public class ShootingStarPlugin extends Plugin
 					updatePanelList(true);
 				}
 			}
+		}
+	}
+
+	@Subscribe
+	public void onChatMessage(ChatMessage event) {
+		if (event.getType() != ChatMessageType.GAMEMESSAGE) return;
+
+		if (event.getMessage().equalsIgnoreCase("oh dear, you are dead!") && config.shutdownOnDeath()) {
+			Rs2Walker.setTarget(null);
+			shutDown();
 		}
 	}
 
@@ -493,5 +510,84 @@ public class ShootingStarPlugin extends Plugin
 		Microbot.getConfigManager().setConfiguration(ShootingStarConfig.configGroup, ShootingStarConfig.blacklistedLocations, "");
 		updateHiddenStars();
 		updatePanelList(true);
+	}
+
+	public void exportBlacklistedLocations()
+	{
+		StringBuilder sb = new StringBuilder();
+		blacklistedLocations.forEach(location -> sb.append(location).append(System.lineSeparator()));
+
+		try {
+			File file = chooseFileToSave("Export Blacklisted Locations", "txt");
+			if (file != null) {
+				try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+					writer.write(sb.toString());
+					JOptionPane.showMessageDialog(null, "Blacklisted locations exported successfully: " + file.getAbsolutePath());
+				}
+			}
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(null, "Error exporting blacklisted locations: " + e.getMessage());
+			log.error("Error exporting blacklisted locations", e);
+		}
+	}
+
+	public void importBlacklistedLocations()
+	{
+		try {
+			File file = chooseFileToOpen("Import Blacklisted Locations", "txt");
+			if (file != null) {
+				try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+					Set<String> importedLocations = new HashSet<>();
+					String line;
+					while ((line = reader.readLine()) != null) {
+						String location = line.trim();
+						if (!location.isEmpty()) {
+							importedLocations.add(location);
+						}
+					}
+
+					blacklistedLocations = importedLocations;
+					String joined = String.join(",", blacklistedLocations);
+					Microbot.getConfigManager().setConfiguration(ShootingStarConfig.configGroup, ShootingStarConfig.blacklistedLocations, joined);
+
+					updateHiddenStars();
+					updatePanelList(true);
+
+					JOptionPane.showMessageDialog(null, "Blacklisted locations imported successfully: " + file.getAbsolutePath());
+				}
+			}
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(null, "Error importing blacklisted locations: " + e.getMessage());
+			log.error("Error importing blacklisted locations", e);
+		}
+	}
+
+	private File chooseFileToSave(String dialogTitle, String fileExtension) {
+		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setDialogTitle(dialogTitle);
+		fileChooser.setFileFilter(new FileNameExtensionFilter("*." + fileExtension, fileExtension));
+
+		int userSelection = fileChooser.showSaveDialog(null);
+		if (userSelection == JFileChooser.APPROVE_OPTION) {
+			File fileToSave = fileChooser.getSelectedFile();
+			// Add file extension if not already present
+			if (!fileToSave.getName().toLowerCase().endsWith("." + fileExtension)) {
+				fileToSave = new File(fileToSave.getAbsolutePath() + "." + fileExtension);
+			}
+			return fileToSave;
+		}
+		return null;
+	}
+
+	private File chooseFileToOpen(String dialogTitle, String fileExtension) {
+		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setDialogTitle(dialogTitle);
+		fileChooser.setFileFilter(new FileNameExtensionFilter("*." + fileExtension, fileExtension));
+
+		int userSelection = fileChooser.showOpenDialog(null);
+		if (userSelection == JFileChooser.APPROVE_OPTION) {
+			return fileChooser.getSelectedFile();
+		}
+		return null;
 	}
 }

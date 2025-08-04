@@ -5,6 +5,7 @@ import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
+import java.awt.GridLayout;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.util.List;
@@ -61,26 +62,54 @@ public class ShootingStarPanel extends PluginPanel
 		listContainer.setLayout(new BoxLayout(listContainer, BoxLayout.Y_AXIS));
 		add(listContainer, BorderLayout.CENTER);
 
-		JPanel buttons = new JPanel();
-		buttons.setBorder(new EmptyBorder(5, 5, 5, 5));
-		buttons.setLayout(new BoxLayout(buttons, BoxLayout.X_AXIS));
-		buttons.add(Box.createHorizontalGlue());
+		JPanel buttonContainer = new JPanel();
+		buttonContainer.setBorder(new EmptyBorder(5, 5, 5, 5));
+		buttonContainer.setLayout(new BoxLayout(buttonContainer, BoxLayout.Y_AXIS));
 
-		// Add clear blacklist button
-		JButton clearBlacklistButton = new JButton("Clear Blacklist");
-		clearBlacklistButton.setAlignmentX(Component.CENTER_ALIGNMENT);
-		clearBlacklistButton.setFont(FontManager.getRunescapeBoldFont());
-		clearBlacklistButton.setBackground(ColorScheme.BRAND_ORANGE);
-		clearBlacklistButton.setForeground(Color.WHITE);
-		clearBlacklistButton.setFocusPainted(false);
-		clearBlacklistButton.setBorder(new EmptyBorder(4, 8, 4, 8));
-		clearBlacklistButton.setPreferredSize(new Dimension(240, 28));
-		clearBlacklistButton.addActionListener(e -> plugin.clearBlacklistedLocations());
-		buttons.add(clearBlacklistButton);
-		buttons.add(Box.createHorizontalGlue());
+		JPanel topButtonRow = new JPanel();
+		topButtonRow.setLayout(new GridLayout(1, 2, 5, 0));
+
+		JButton importButton = new JButton("Import");
+		importButton.setFont(FontManager.getRunescapeBoldFont());
+		importButton.setBackground(ColorScheme.BRAND_ORANGE);
+		importButton.setForeground(Color.WHITE);
+		importButton.setFocusPainted(false);
+		importButton.setBorder(new EmptyBorder(4, 8, 4, 8));
+		importButton.addActionListener(e -> plugin.importBlacklistedLocations());
+
+		JButton exportButton = new JButton("Export");
+		exportButton.setFont(FontManager.getRunescapeBoldFont());
+		exportButton.setBackground(ColorScheme.BRAND_ORANGE);
+		exportButton.setForeground(Color.WHITE);
+		exportButton.setFocusPainted(false);
+		exportButton.setBorder(new EmptyBorder(4, 8, 4, 8));
+		exportButton.addActionListener(e -> plugin.exportBlacklistedLocations());
+
+		topButtonRow.add(importButton);
+		topButtonRow.add(exportButton);
+
+		JPanel bottomButtonRow = new JPanel();
+		bottomButtonRow.setLayout(new BoxLayout(bottomButtonRow, BoxLayout.X_AXIS));
+		bottomButtonRow.add(Box.createHorizontalGlue());
+
+		JButton resetButton = new JButton("Reset");
+		resetButton.setFont(FontManager.getRunescapeBoldFont());
+		resetButton.setBackground(new Color(255, 55, 40));
+		resetButton.setForeground(Color.WHITE);
+		resetButton.setFocusPainted(false);
+		resetButton.setBorder(new EmptyBorder(4, 8, 4, 8));
+		resetButton.setPreferredSize(new Dimension(120, 28));
+		resetButton.addActionListener(e -> plugin.clearBlacklistedLocations());
+
+		bottomButtonRow.add(resetButton);
+		bottomButtonRow.add(Box.createHorizontalGlue());
+
+		buttonContainer.add(topButtonRow);
+		buttonContainer.add(Box.createRigidArea(new Dimension(0, 5)));
+		buttonContainer.add(bottomButtonRow);
 
 		add(Box.createRigidArea(new Dimension(0, 10)));
-		add(buttons);
+		add(buttonContainer);
 	}
 
 	private JPanel buildHeader()

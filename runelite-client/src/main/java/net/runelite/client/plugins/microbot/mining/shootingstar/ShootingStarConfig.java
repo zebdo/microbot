@@ -28,6 +28,7 @@ public interface ShootingStarConfig extends Config
 	String hideDevOverlay = "hideDevOverlay";
 	String blacklistedLocations = "blacklistedLocations";
 	String providerName = "providerName";
+	String shutDownOnDeath = "shutDownOnDeath";
 
 	@ConfigSection(
 		name = "General Settings",
@@ -80,6 +81,18 @@ public interface ShootingStarConfig extends Config
 		section = generalSection
 	)
 	default boolean useBreakAtBank()
+	{
+		return false;
+	}
+
+	@ConfigItem(
+		keyName = shutDownOnDeath,
+		name = "Shutdown on Death",
+		description = "Toggles shutdown on death - when enabled script will shutdown if the player dies",
+		position = 4,
+		section = generalSection
+	)
+	default boolean shutdownOnDeath()
 	{
 		return false;
 	}
