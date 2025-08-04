@@ -1110,6 +1110,18 @@ public class Rs2Bank {
     }
 
     /**
+     * withdraw all and equip item identified by its name.
+     *
+     * @param name item name
+     */
+    public static boolean withdrawXAndEquip(String name, int amount) {
+        if (Rs2Equipment.isWearing(name)) return true;
+        withdrawX(name, amount);
+        if (!sleepUntil(() -> Rs2Inventory.hasItem(name))) return false;
+        return wearItem(name);
+    }
+
+    /**
      * withdraw all and equip item identified by its id.
      *
      * @param name item name
