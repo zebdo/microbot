@@ -34,7 +34,6 @@ import net.runelite.client.plugins.mta.telekinetic.TelekineticRoom;
 import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import java.awt.event.KeyEvent;
-import java.time.Instant;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Predicate;
@@ -69,6 +68,7 @@ public class MageTrainingArenaScript extends Script {
 
     public boolean run(MageTrainingArenaConfig config) {
         this.config = config;
+        Microbot.log(String.format("repeatRoom: %s", config.repeatRoom()));
         Microbot.enableAutoRunOn = true;
         bought = 0;
         buyable = 0;
@@ -145,10 +145,9 @@ public class MageTrainingArenaScript extends Script {
                         sleep(500);
                         shutdown();
                     }
-                } else if (!currentRoom.getRequirements().getAsBoolean()
-                        || currentPoints.get(currentRoom.getPoints()) >= getRequiredPoints().get(currentRoom.getPoints()) * (config.buyRewards() ? 1 : (buyable + 1))) {
-                    leaveRoom();
-            } else {
+            } else if (config.repeatRoom()) {
+                if (currentRoom != null) {
+                    Microbot.log("Repeating room: " + currentRoom.name());
                     switch (currentRoom) {
                         case ALCHEMIST:
                             handleAlchemistRoom();
@@ -164,6 +163,25 @@ public class MageTrainingArenaScript extends Script {
                             break;
                     }
                 }
+            } else if (!currentRoom.getRequirements().getAsBoolean()
+                    || currentPoints.get(currentRoom.getPoints()) >= getRequiredPoints().get(currentRoom.getPoints()) * (config.buyRewards() ? 1 : (buyable + 1))) {
+                leaveRoom();
+            } else {
+                switch (currentRoom) {
+                    case ALCHEMIST:
+                        handleAlchemistRoom();
+                        break;
+                    case GRAVEYARD:
+                        handleGraveyardRoom();
+                        break;
+                    case ENCHANTMENT:
+                        handleEnchantmentRoom();
+                        break;
+                    case TELEKINETIC:
+                        handleTelekineticRoom();
+                        break;
+                }
+            }
 
                 sleepGaussian(600, 150);
             } catch (Exception ex) {
@@ -271,7 +289,12 @@ public class MageTrainingArenaScript extends Script {
             enchant = MagicAction.ENCHANT_SAPPHIRE_JEWELLERY;
         }
 
-        if (areRoomRequirementsInvalid()) return;
+        if (areRoomRequirementsInvalid()) {
+            if (!config.repeatRoom()) {
+                leaveRoom();
+            }
+            return;
+        }
 
         if (Rs2Inventory.isFull()) {
             if (!Rs2Walker.walkTo(new WorldPoint(3363, 9640, 0)))
@@ -331,7 +354,12 @@ public class MageTrainingArenaScript extends Script {
     }
 
     private void handleTelekineticRoom() {
-        if (areRoomRequirementsInvalid()) return;
+        if (areRoomRequirementsInvalid()) {
+            if (!config.repeatRoom()) {
+                leaveRoom();
+            }
+            return;
+        }
 
         var room = mtaPlugin.getTelekineticRoom();
         var teleRoom = Arrays.stream(TelekineticRooms.values())
@@ -401,7 +429,9 @@ public class MageTrainingArenaScript extends Script {
 
     private void handleGraveyardRoom() {
         if (areRoomRequirementsInvalid()) {
-            leaveRoom();
+            if (!config.repeatRoom()) {
+                leaveRoom();
+            }
             return;
         }
 
@@ -454,7 +484,12 @@ public class MageTrainingArenaScript extends Script {
     }
 
     private void handleAlchemistRoom() {
-        if (areRoomRequirementsInvalid()) return;
+        if (areRoomRequirementsInvalid()) {
+            if (!config.repeatRoom()) {
+                leaveRoom();
+            }
+            return;
+        }
 
         var room = mtaPlugin.getAlchemyRoom();
         var best = room.getBest();
@@ -491,7 +526,9 @@ public class MageTrainingArenaScript extends Script {
     private boolean areRoomRequirementsInvalid() {
         if (!currentRoom.getRequirements().getAsBoolean()) {
             Microbot.log("You're missing room requirements. Please restock or fix your staves settings.");
-            sleep(5000);
+            if (!config.repeatRoom()) {
+                sleep(5000);
+            }
             return true;
         }
         return false;
