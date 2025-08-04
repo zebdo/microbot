@@ -1,3 +1,27 @@
+/*
+ * Copyright (c) 2025, George M <https://github.com/g-mason0>
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ *  1. Redistributions of source code must retain the above copyright notice, this
+ *     list of conditions and the following disclaimer.
+ *  2. Redistributions in binary form must reproduce the above copyright notice,
+ *     this list of conditions and the following disclaimer in the documentation
+ *     and/or other materials provided with the distribution.
+ *
+ *  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ *  ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ *  WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ *  DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ *  ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ *  (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ *  LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ *  ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ *  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ *  SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
 package net.runelite.client.plugins.microbot.mining.shootingstar;
 
 import com.google.gson.Gson;
@@ -54,7 +78,7 @@ public class ShootingStarApiClient
 		this.osrsVaultEndpoint = properties.getProperty("microbot.shootingstar.osrsvault");
 	}
 
-	String fetch(ShootingStarProvider provider)
+	private String getData(ShootingStarProvider provider)
 	{
 		String endpoint = getEndpoint(provider);
 
@@ -95,7 +119,7 @@ public class ShootingStarApiClient
 		return jsonResponse;
 	}
 
-	List<ZeroSevenStarModel> fromZeroSeven(String jsonResponse)
+	private List<ZeroSevenStarModel> fetchZeroSeven(String jsonResponse)
 	{
 		Gson gson = new Gson();
 		Type listType = new TypeToken<List<ZeroSevenStarModel>>() {}.getType();
@@ -116,7 +140,7 @@ public class ShootingStarApiClient
 		return deserializedStarData;
 	}
 
-	List<OSRSVaultStarModel> fromOSRSVault(String jsonResponse)
+	private List<OSRSVaultStarModel> fetchOSRSVault(String jsonResponse)
 	{
 		Gson gson = new Gson();
 		Type listType = new TypeToken<List<OSRSVaultStarModel>>() {}.getType();
@@ -153,15 +177,15 @@ public class ShootingStarApiClient
 
 		ZonedDateTime now = ZonedDateTime.now(utcZoneId);
 
-		String response = fetch(provider);
+		String response = getData(provider);
 		if (response.isEmpty() || response.equals("[]"))
 		{
 			return Collections.emptyList();
 		}
 
 		List<Star> starData = (Objects.equals(provider, ShootingStarProvider.ZERO_SEVEN)) ?
-			new ArrayList<>(fromZeroSeven(response)) :
-			new ArrayList<>(fromOSRSVault(response));
+			new ArrayList<>(fetchZeroSeven(response)) :
+			new ArrayList<>(fetchOSRSVault(response));
 
 		boolean inSeasonalWorld = client.getWorldType().contains(WorldType.SEASONAL);
 
