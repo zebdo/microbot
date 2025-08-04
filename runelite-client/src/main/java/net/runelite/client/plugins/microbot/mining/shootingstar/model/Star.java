@@ -5,7 +5,6 @@ import net.runelite.api.Skill;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarLocation;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.http.api.worlds.World;
 import net.runelite.http.api.worlds.WorldType;
 
 public interface Star
@@ -146,5 +145,22 @@ public interface Star
 			default:
 				return -1;
 		}
+	}
+
+	default EnumSet<WorldType> getGameModeWorldTypes()
+	{
+		return EnumSet.of(
+			WorldType.PVP,
+			WorldType.HIGH_RISK,
+			WorldType.BOUNTY,
+			WorldType.SKILL_TOTAL,
+			WorldType.LAST_MAN_STANDING,
+			WorldType.QUEST_SPEEDRUNNING,
+			WorldType.BETA_WORLD,
+			WorldType.DEADMAN,
+			WorldType.PVP_ARENA,
+			WorldType.TOURNAMENT,
+			WorldType.FRESH_START_WORLD
+		);
 	}
 }

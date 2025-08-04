@@ -34,7 +34,6 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -236,7 +235,7 @@ public class ShootingStarApiClient
 				return;
 			}
 
-			s.setGameModeWorld(world.getTypes().stream().anyMatch(wt -> getGameModeWorldTypes().contains(wt)));
+			s.setGameModeWorld(world.getTypes().stream().anyMatch(wt -> s.getGameModeWorldTypes().contains(wt)));
 			s.setSeasonalWorld(world.getTypes().contains(WorldType.SEASONAL));
 			s.setMemberWorld(world.getTypes().contains(WorldType.MEMBERS));
 		});
@@ -256,22 +255,6 @@ public class ShootingStarApiClient
 		}
 
 		return inSeasonalWorld != star.isSeasonalWorld();
-	}
-
-	private EnumSet<WorldType> getGameModeWorldTypes() {
-		return EnumSet.of(
-			WorldType.PVP,
-			WorldType.HIGH_RISK,
-			WorldType.BOUNTY,
-			WorldType.SKILL_TOTAL,
-			WorldType.LAST_MAN_STANDING,
-			WorldType.QUEST_SPEEDRUNNING,
-			WorldType.BETA_WORLD,
-			WorldType.DEADMAN,
-			WorldType.PVP_ARENA,
-			WorldType.TOURNAMENT,
-			WorldType.FRESH_START_WORLD
-		);
 	}
 
 	private ShootingStarLocation findLocation(String locationKey, String rawLocation)

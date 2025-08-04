@@ -4,7 +4,6 @@ import com.google.gson.annotations.SerializedName;
 import lombok.Getter;
 import lombok.Setter;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarLocation;
-import net.runelite.http.api.worlds.World;
 
 public class ZeroSevenStarModel implements Star
 {

@@ -5,7 +5,6 @@ import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarLocation;
-import net.runelite.http.api.worlds.World;
 
 public class OSRSVaultStarModel implements Star
 {
