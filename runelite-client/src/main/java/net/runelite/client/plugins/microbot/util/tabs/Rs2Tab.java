@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.util.tabs;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.VarClientInt;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -152,4 +153,17 @@ public class Rs2Tab {
                     return null;
                 });
     }
+
+	public static Widget getSpellBookTab()
+	{
+		if (Microbot.getClient().isResized())
+		{
+			if (Microbot.getVarbitValue(VarbitID.RESIZABLE_STONE_ARRANGEMENT) == 1)
+			{
+				return Rs2Widget.getWidget(InterfaceID.ToplevelPreEoc.STONE6);
+			}
+			return Rs2Widget.getWidget(InterfaceID.ToplevelOsrsStretch.STONE6);
+		}
+		return Rs2Widget.getWidget(InterfaceID.Toplevel.STONE6);
+	}
 }
