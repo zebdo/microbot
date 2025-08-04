@@ -297,12 +297,7 @@ public class Rs2RunePouch
 	 */
 	public static boolean contains(Map<Runes, Integer> requiredRunes, boolean allowCombinationRunes)
 	{
-		Map<Runes, Integer> availableRunes = slots.stream()
-			.filter(s -> s.getRune() != null && s.getQuantity() > 0)
-			.collect(Collectors.toMap(
-				PouchSlot::getRune,
-				PouchSlot::getQuantity
-			));
+		Map<Runes, Integer> availableRunes = getRunes();
 
 		return contains(requiredRunes, availableRunes, allowCombinationRunes ? COMBO_SUPPORT : STRICT_ONLY);
 	}
