@@ -1110,7 +1110,7 @@ public class Rs2Bank {
     }
 
     /**
-     * withdraw all and equip item identified by its name.
+     * withdraw X and equip item identified by its name.
      *
      * @param name item name
      */
