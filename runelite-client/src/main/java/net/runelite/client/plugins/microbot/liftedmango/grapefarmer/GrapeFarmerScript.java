@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.liftedmango.grapefarmer;
 
 import net.runelite.api.*;
+import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -55,41 +56,45 @@ public class GrapeFarmerScript extends Script {
                 if (config.GEARING()) {
                     if (!this.isRunning()) return;
                     if (!Rs2Inventory.contains(ItemID.GARDENING_TROWEL)) {
-                        Rs2Bank.useBank();
+                        Rs2Bank.openBank();
                         Rs2Bank.depositAll();
-                        if (Rs2Bank.hasItem(ItemID.FARMING_CAPE) || Rs2Bank.hasItem(ItemID.FARMING_CAPET)) {
-                            Rs2Bank.withdrawAndEquip(Rs2Bank.hasItem(ItemID.FARMING_CAPE) ? ItemID.FARMING_CAPE : ItemID.FARMING_CAPET);
+                        if (Rs2Bank.hasItem(ItemID.SKILLCAPE_FARMING) || Rs2Bank.hasItem(ItemID.SKILLCAPE_FARMING_TRIMMED)) {
+                            Rs2Bank.withdrawAndEquip(Rs2Bank.hasItem(ItemID.SKILLCAPE_FARMING) ? ItemID.SKILLCAPE_FARMING : ItemID.SKILLCAPE_FARMING_TRIMMED);
                         }
                         Rs2Bank.withdrawAllButOne(ItemID.GRAPE_SEED);
                         Rs2Bank.withdrawOne(ItemID.GARDENING_TROWEL);
-                        Rs2Bank.withdrawOne(ItemID.SEED_DIBBER);
+                        Rs2Bank.withdrawOne(ItemID.DIBBER);
                         Rs2Bank.withdrawOne(ItemID.SPADE);
-                        Rs2Bank.withdrawAllButOne(ItemID.BOLOGAS_BLESSING);
-                        Rs2Bank.withdrawX(ItemID.SALTPETRE, 12);
+                        Rs2Bank.withdrawAllButOne(ItemID.GRAPE_BLESSING);
+                        Rs2Bank.withdrawX(ItemID.HOSIDIUS_SALTPETRE, 12);
                         if (config.FARMING_OUTFIT()) {
                             Rs2Bank.depositEquipment();
-                            Rs2Bank.withdrawAndEquip(ItemID.FARMERS_STRAWHAT_13647);
-                            Rs2Bank.withdrawAndEquip(ItemID.FARMERS_SHIRT);
-                            Rs2Bank.withdrawAndEquip(ItemID.FARMERS_BORO_TROUSERS_13641);
-                            Rs2Bank.withdrawAndEquip(ItemID.FARMERS_BOOTS_13645);
-                            if (Rs2Bank.hasItem(ItemID.GRACEFUL_CAPE)) {
-                                Rs2Bank.withdrawAndEquip(ItemID.GRACEFUL_CAPE);
+                            Rs2Bank.withdrawAndEquip(ItemID.TITHE_REWARD_HAT_MALE);
+                            Rs2Bank.withdrawAndEquip(ItemID.TITHE_REWARD_HAT_FEMALE);
+                            Rs2Bank.withdrawAndEquip(ItemID.TITHE_REWARD_TORSO_MALE);
+                            Rs2Bank.withdrawAndEquip(ItemID.TITHE_REWARD_TORSO_FEMALE);
+                            Rs2Bank.withdrawAndEquip(ItemID.TITHE_REWARD_LEGS_MALE);
+                            Rs2Bank.withdrawAndEquip(ItemID.TITHE_REWARD_LEGS_FEMALE);
+                            Rs2Bank.withdrawAndEquip(ItemID.TITHE_REWARD_FEET_MALE);
+                            Rs2Bank.withdrawAndEquip(ItemID.TITHE_REWARD_FEET_FEMALE);
+                            if (Rs2Bank.hasItem("Graceful cape")) {
+                                Rs2Bank.withdrawAndEquip("Graceful cape");
                             }
-                            if (Rs2Bank.hasItem(ItemID.GRACEFUL_GLOVES)) {
-                                Rs2Bank.withdrawAndEquip(ItemID.GRACEFUL_GLOVES);
+                            if (Rs2Bank.hasItem("Graceful gloves")) {
+                                Rs2Bank.withdrawAndEquip("Graceful gloves");
                             }
                         }
-                        if (Rs2Bank.hasItem(ItemID.MAGIC_SECATEURS)) {
-                            Rs2Bank.withdrawAndEquip(ItemID.MAGIC_SECATEURS);
+                        if (Rs2Bank.hasItem(ItemID.FAIRY_ENCHANTED_SECATEURS)) {
+                            Rs2Bank.withdrawAndEquip(ItemID.FAIRY_ENCHANTED_SECATEURS);
                         }
                         Rs2Bank.closeBank();
                         sleep(300);
                     }
-                    if (Rs2Inventory.contains(ItemID.GARDENING_TROWEL)  && Rs2Inventory.count(ItemID.SALTPETRE) < 1) {
-                        Rs2Bank.useBank();
-                        Rs2Bank.depositAll(ItemID.ZAMORAKS_GRAPES);
+                    if (Rs2Inventory.contains(ItemID.GARDENING_TROWEL)  && Rs2Inventory.count(ItemID.HOSIDIUS_SALTPETRE) < 1) {
+                        Rs2Bank.openBank();
+                        Rs2Bank.depositAll(ItemID.ZAMORAK_GRAPES);
                         Rs2Bank.depositAll(ItemID.GRAPES);
-                        Rs2Bank.withdrawX(ItemID.SALTPETRE, 12);
+                        Rs2Bank.withdrawX(ItemID.HOSIDIUS_SALTPETRE, 12);
                         Rs2Bank.closeBank();
                     }
                 }
@@ -194,9 +199,8 @@ public class GrapeFarmerScript extends Script {
         Rs2NpcModel leprechaun = Rs2Npc.getNpc(0);
         if (leprechaun != null) {
             if (Rs2Inventory.isFull()) {
-                Rs2Inventory.use(ItemID.ZAMORAKS_GRAPES);
-                Rs2Npc.interact(leprechaun);
-                sleepUntil(() -> !Rs2Inventory.contains(ItemID.ZAMORAKS_GRAPES), 5000);
+                Rs2Inventory.useItemOnNpc(ItemID.ZAMORAK_GRAPES, leprechaun);
+                sleepUntil(() -> !Rs2Inventory.contains(ItemID.ZAMORAK_GRAPES), 5000);
                 sleep(100,600);
                 if (Rs2Inventory.contains(ItemID.GRAPES)) {
                     Rs2Inventory.use(ItemID.GRAPES);
