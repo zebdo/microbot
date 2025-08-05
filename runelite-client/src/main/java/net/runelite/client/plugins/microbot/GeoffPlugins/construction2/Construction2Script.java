@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.GeoffPlugins.construction2;
 
 import net.runelite.api.*;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -12,47 +13,40 @@ import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.math.Random;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.awt.event.KeyEvent;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 public class Construction2Script extends Script {
 
     private static final int DEFAULT_DELAY = 600;
     private Construction2State state = Construction2State.Idle;
+    private WorldPoint workingTile = null;
 
-    public TileObject getOakDungeonDoorSpace() {
-        return Rs2GameObject.findObjectById(15328); // ID for oak dungeon door space
-    }
+    // NOTE: For the arrays below, the first ID is the BUILD OBJECT ID, the second is the EMPTY OBJECT ID
+    private static final List<Integer> OAK_DUNGEON_DOOR = List.of(13344, 15328);
+    private static final List<Integer> OAK_LARDER = List.of(13566, 15403);
+    private static final List<Integer> MAHOGANY_TABLE = List.of(13298, 15298);
+    private static final List<Integer> MYTHICAL_CAPE_MOUNT = List.of(15394, 31986);
 
-    public TileObject getOakDungeonDoor() {
-        return Rs2GameObject.findObjectById(13344); // ID for oak dungeon door
-    }
-
-    public TileObject getOakLarderSpace() {
-        return Rs2GameObject.findObjectById(15403); // ID for oak larder space
-    }
-
-    public TileObject getOakLarder() {
-        return Rs2GameObject.findObjectById(13566); // ID for oak larder
-    }
-
-    public TileObject getMahoganyTableSpace() {
-        return Rs2GameObject.findObjectById(15298); // ID for mahogany table space
-    }
-
-    public TileObject getMahoganyTable() {
-        return Rs2GameObject.findObjectById(13298); // ID for mahogany table
-    }
-
-    public TileObject getGuildTrophySpace() {
-        return Rs2GameObject.findObjectById(31986); // ID for guild trophy space (Mythical Cape Mount space)
-    }
-
-    public TileObject getMythicalCapeMount() {
-        return Rs2GameObject.findObjectById(15394); // ID for mythical cape mount
+    public TileObject getClosestTile(List<Integer> objIDs) {
+        List<TileObject> objects = Rs2GameObject.getTileObjects();
+        TileObject closest = null;
+        WorldPoint playerLocation = Rs2Player.getWorldLocation();
+        
+        for (TileObject obj : objects) {
+            if (objIDs.contains(obj.getId())) {
+                if (closest == null || Rs2Walker.getDistanceBetween(playerLocation, obj.getWorldLocation()) < Rs2Walker.getDistanceBetween(playerLocation, closest.getWorldLocation())) {
+                    closest = obj;
+                }
+            }
+        }
+        return closest;
     }
 
     public Rs2NpcModel getButler() {
@@ -108,10 +102,10 @@ public class Construction2Script extends Script {
                 calculateState(config);
                 switch (state) {
                     case Build:
-                        build(config, actionDelay);
+                        buildSpace(config, actionDelay);
                         break;
                     case Remove:
-                        remove(config, actionDelay);
+                        removeSpace(config, actionDelay);
                         break;
                     case Butler:
                         butler(config, actionDelay);
@@ -133,64 +127,62 @@ public class Construction2Script extends Script {
 
     private void calculateState(Construction2Config config) {
         boolean hasRequiredPlanks = Rs2Inventory.hasItemAmount(config.selectedMode().getPlankItemId(), Random.random(8, 16));
-
-        TileObject space = null;
-        TileObject builtObject = null;
-
+        NPC butler = getButler();
+        List<Integer> objectIDs = List.of(0);
         switch (config.selectedMode()) {
             case OAK_DUNGEON_DOOR:
-                space = getOakDungeonDoorSpace();
-                builtObject = getOakDungeonDoor();
+                objectIDs = OAK_DUNGEON_DOOR;
                 break;
             case OAK_LARDER:
-                space = getOakLarderSpace();
-                builtObject = getOakLarder();
+                objectIDs = OAK_LARDER;
                 break;
             case MAHOGANY_TABLE:
-                space = getMahoganyTableSpace();
-                builtObject = getMahoganyTable();
+                objectIDs = MAHOGANY_TABLE;
                 break;
-            // case MYTHICAL_CAPE:
-            //     space = getGuildTrophySpace();
-            //     builtObject = getMythicalCapeMount();
-            //     break;
             default:
                 return;
         }
 
-        NPC butler = getButler();
-        if (space == null && builtObject != null) {
+        if (workingTile == null) {
+            workingTile = getClosestTile(objectIDs).getWorldLocation();
+        }
+
+        TileObject objOnWorkingTile = Rs2GameObject.getTileObject(workingTile);
+        if (objOnWorkingTile == null || !objectIDs.contains(objOnWorkingTile.getId())) {
+            // Find new working tile
+            workingTile = getClosestTile(objectIDs).getWorldLocation();
+            objOnWorkingTile = Rs2GameObject.getTileObject(workingTile);
+        }
+
+        if (objOnWorkingTile.getId() == objectIDs.get(0)) {
             state = Construction2State.Remove;
-        } else if (space != null && builtObject == null && hasRequiredPlanks) {
+        } else if (objOnWorkingTile.getId() == objectIDs.get(1) && hasRequiredPlanks) {
             state = Construction2State.Build;
-        } else if (space != null && builtObject == null && butler != null) {
+        } else if (objOnWorkingTile.getId() == objectIDs.get(1) && butler != null) {
             state = Construction2State.Butler;
-        } else if (space == null && builtObject == null) {
+        } else if (!objectIDs.contains(objOnWorkingTile.getId())) {
             state = Construction2State.Idle;
             Microbot.getNotifier().notify("Looks like we are no longer in our house.");
             shutdown();
         }
     }
 
-    private void build(Construction2Config config, int actionDelay) {
-        TileObject space = null;
+    private void buildSpace(Construction2Config config, int actionDelay) {
+        TileObject space = Rs2GameObject.getTileObject(workingTile);
+        int spaceId = space != null ? space.getId() : -1;
         char buildKey = '1';
 
         switch (config.selectedMode()) {
             case OAK_DUNGEON_DOOR:
-                space = getOakDungeonDoorSpace();
                 buildKey = '1';
                 break;
             case OAK_LARDER:
-                space = getOakLarderSpace();
                 buildKey = '2';
                 break;
             case MAHOGANY_TABLE:
-                space = getMahoganyTableSpace();
                 buildKey = '6';
                 break;
             // case MYTHICAL_CAPE:
-            //     space = getGuildTrophySpace();
             //     buildKey = '4';
             //     break;
             default:
@@ -203,39 +195,23 @@ public class Construction2Script extends Script {
             sleepUntilOnClientThread(this::hasFurnitureInterfaceOpen, 2500);
             System.out.println("Pressing key: " + buildKey);
             Rs2Keyboard.keyPress(buildKey); // Ensure this is the correct key for the selected build option
-            sleepUntilOnClientThread(() -> getBuiltObject(config) != null, 2500);
+            sleepUntilOnClientThread(() -> spaceId != space.getId(), 2500);
             System.out.println("Built object: " + config.selectedMode());
         } else {
             System.out.println("Failed to interact with build space: " + space.getId());
         }
     }
 
-    private void remove(Construction2Config config, int actionDelay) {
-        TileObject builtObject = null;
-
-        switch (config.selectedMode()) {
-            case OAK_DUNGEON_DOOR:
-                builtObject = getOakDungeonDoor();
-                break;
-            case OAK_LARDER:
-                builtObject = getOakLarder();
-                break;
-            case MAHOGANY_TABLE:
-                builtObject = getMahoganyTable();
-                break;
-            // case MYTHICAL_CAPE:
-            //     builtObject = getMythicalCapeMount();
-            //     break;
-            default:
-                return;
-        }
+    private void removeSpace(Construction2Config config, int actionDelay) {
+        TileObject builtObject = Rs2GameObject.getTileObject(workingTile);
+        int spaceId = builtObject != null ? builtObject.getId() : -1;
 
         if (builtObject == null) return;
         if (Rs2GameObject.interact(builtObject, "Remove")) {
             System.out.println("Interacted with remove option: " + builtObject.getId());
             sleepUntilOnClientThread(() -> hasRemoveInterfaceOpen(config), 2500);
             Rs2Keyboard.keyPress('1');
-            sleepUntilOnClientThread(() -> getBuildSpace(config) != null, 2500);
+            sleepUntilOnClientThread(() -> spaceId != builtObject.getId(), 2500);
             System.out.println("Removed object: " + config.selectedMode());
         } else {
             System.out.println("Failed to interact with remove option: " + builtObject.getId());
@@ -296,36 +272,6 @@ public class Construction2Script extends Script {
             // return hasRemoveCapeMountInterfaceOpen();
             default:
                 return false;
-        }
-    }
-
-    private TileObject getBuiltObject(Construction2Config config) {
-        switch (config.selectedMode()) {
-            case OAK_DUNGEON_DOOR:
-                return getOakDungeonDoor();
-            case OAK_LARDER:
-                return getOakLarder();
-            case MAHOGANY_TABLE:
-                return getMahoganyTable();
-            // case MYTHICAL_CAPE:
-            // return getMythicalCapeMount();
-            default:
-                return null;
-        }
-    }
-
-    private TileObject getBuildSpace(Construction2Config config) {
-        switch (config.selectedMode()) {
-            case OAK_DUNGEON_DOOR:
-                return getOakDungeonDoorSpace();
-            case OAK_LARDER:
-                return getOakLarderSpace();
-            case MAHOGANY_TABLE:
-                return getMahoganyTableSpace();
-            // case MYTHICAL_CAPE:
-            // return getGuildTrophySpace();
-            default:
-                return null;
         }
     }
 
