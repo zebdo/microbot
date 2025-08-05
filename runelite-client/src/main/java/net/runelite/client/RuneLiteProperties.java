@@ -50,6 +50,7 @@ public class RuneLiteProperties
 	private static final String RUNELITE_CONFIG = "runelite.config";
 	private static final String OSRS_TWITTER_LINK = "runelite.osrstwitter.link";
 	private static final String MICROBOT_VERSION = "microbot.version";
+	private static final String MICROBOT_COMMIT = "microbot.commit";
 
 
 	@Getter(AccessLevel.PACKAGE)
@@ -142,9 +143,14 @@ public class RuneLiteProperties
 	{
 		return properties.getProperty(OSRS_TWITTER_LINK);
 	}
+
 	public static String getMicrobotVersion()
 	{
 		return properties.getProperty(MICROBOT_VERSION);
 	}
 
+	public static String getMicrobotCommit()
+	{
+		return properties.getProperty(MICROBOT_COMMIT);
+	}
 }

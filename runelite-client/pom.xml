@@ -42,6 +42,7 @@
 		<git.dirty>false</git.dirty>
 		<shade.skip>false</shade.skip>
 		<microbot.version>1.9.6.1</microbot.version>
+		<microbot.commit.sha>nogit</microbot.commit.sha>
 	</properties>
 
 	<distributionManagement>

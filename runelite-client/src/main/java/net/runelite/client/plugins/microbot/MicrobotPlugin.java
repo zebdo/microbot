@@ -122,7 +122,7 @@ public class MicrobotPlugin extends Plugin
 	@Override
 	protected void startUp() throws AWTException
 	{
-		log.info("Microbot: {}", RuneLiteProperties.getMicrobotVersion());
+		log.info("Microbot: {} - {}", RuneLiteProperties.getMicrobotVersion(), RuneLiteProperties.getMicrobotCommit());
 		log.info("JVM: {} {}", System.getProperty("java.vendor"), System.getProperty("java.runtime.version"));
 
 		gameChatAppender = new GameChatAppender();
