@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.blastoisefurnace;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.Plugin;
@@ -34,6 +35,7 @@ import static net.runelite.api.gameval.ItemID.*;
 import static net.runelite.api.gameval.ObjectID.*;
 import static net.runelite.api.gameval.VarbitID.*;
 
+@Slf4j
 public class BlastoiseFurnaceScript extends Script {
     static final int coalBag = 12019;
     private static final int MAX_ORE_PER_INTERACTION = 27;
@@ -459,30 +461,43 @@ public class BlastoiseFurnaceScript extends Script {
         }
     }
 
-    private void depositOre() {
-        Rs2GameObject.interact(BLAST_FURNACE_CONVEYER_BELT_CLICKABLE, "Put-ore-on");
-        Rs2Player.waitForWalking();
-        sleepUntil(() ->(Rs2Dialogue.isInDialogue() || Rs2Inventory.waitForInventoryChanges(5000)), 5000);
-        if (Rs2Widget.hasWidget("foreman")) {
-            Microbot.log("Need to pay the noob tax");
-            handleTax();
-            Rs2GameObject.interact(BLAST_FURNACE_CONVEYER_BELT_CLICKABLE, "Put-ore-on");
-            Rs2Inventory.waitForInventoryChanges(10000);
+    private int getInventoryOreCount() {
+        return Rs2Inventory.count("ore") + Rs2Inventory.count("coal");
+    }
+
+    private boolean putOreOnConveyorBelt() {
+        final int oreCount = getInventoryOreCount();
+        if (oreCount <= 0) {
+            log.error("No ore in Inventory");
+            return false;
         }
+        if (!Rs2GameObject.interact(BLAST_FURNACE_CONVEYER_BELT_CLICKABLE, "Put-ore-on")) {
+            log.error("Failed to interact with conveyor belt");
+            return false;
+        }
+        sleepUntil(() -> Rs2Dialogue.isInDialogue() || getInventoryOreCount() < oreCount, 10_000);
+        if (Rs2Widget.hasWidget("foreman")) {
+            log.info("Need to pay the noob tax");
+            handleTax();
+            return putOreOnConveyorBelt();
+        }
+        return true;
+    }
+
+    private void depositOre() {
+        putOreOnConveyorBelt();
         if (this.config.getBars().isRequiresCoalBag()) {
-            Rs2Inventory.interact(coalBag, "Empty");
-            Rs2Inventory.waitForInventoryChanges(3000);
-            Rs2GameObject.interact(BLAST_FURNACE_CONVEYER_BELT_CLICKABLE, "Put-ore-on");
-            Rs2Inventory.waitForInventoryChanges(3000);
+            if (Rs2Inventory.interact(coalBag, "Empty")) Rs2Inventory.waitForInventoryChanges(3_000);
+            else log.error("Failed to empty coal bag 1");
+            putOreOnConveyorBelt();
         }
         if (this.config.getBars().isRequiresCoalBag() &&
                 (Rs2Inventory.hasItem(SMITHING_UNIFORM_GLOVES_ICE)
                         || Rs2Inventory.hasItem(GAUNTLETS_OF_GOLDSMITHING)
                         || Rs2Inventory.hasItem(ICE_GLOVES))) {
-            Rs2Inventory.interact(coalBag, "Empty");
-            Rs2Inventory.waitForInventoryChanges(3000);
-            Rs2GameObject.interact(BLAST_FURNACE_CONVEYER_BELT_CLICKABLE, "Put-ore-on");
-            Rs2Inventory.waitForInventoryChanges(3000);
+            if (Rs2Inventory.interact(coalBag, "Empty")) Rs2Inventory.waitForInventoryChanges(3_000);
+            else log.error("Failed to empty coal bag 2");
+            putOreOnConveyorBelt();
         }
     }
 
