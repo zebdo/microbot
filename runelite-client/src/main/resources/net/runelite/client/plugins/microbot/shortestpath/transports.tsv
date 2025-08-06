@@ -69,20 +69,29 @@
 3138 3078 1	3138 3078 0	Climb-down;Ladder;16679								2	
 											
 # Lumbridge											
-3205 3228 0	3206 3229 1	Climb-up;Staircase;56230								1	
-3206 3229 1	3205 3228 0	Climb-down;Staircase;16672								1	
-3206 3229 0	3206 3229 1	Climb-up;Staircase;56230								1	
-3205 3228 1	3205 3228 0	Climb-down;Staircase;16672								1	
-3206 3229 1	3206 3229 2	Climb-up;Staircase;16672								1	
-3206 3229 2	3205 3228 1	Climb-down;Staircase;56231								1	
-3205 3228 1	3206 3229 2	Climb-up;Staircase;16672								1	
-3205 3209 1	3206 3208 0	Climb-down;Staircase;16672								1	
-3206 3208 0	3205 3209 1	Climb-up;Staircase;56230								1	
-3206 3208 1	3206 3208 0	Climb-down;Staircase;16672								1	
-3205 3209 0	3205 3209 1	Climb-up;Staircase;56230								1	
-3205 3209 1	3205 3209 2	Climb-up;Staircase;16672								1	
-3205 3209 2	3206 3208 1	Climb-down;Staircase;56231								1	
-3206 3208 1	3205 3209 2	Climb-up;Staircase;16672								1	
+# North Staircase
+3205 3228 0	3206 3229 1	Climb-up;Staircase;56230								1
+3206 3229 0	3206 3229 1	Climb-up;Staircase;56230								1
+3206 3229 1	3205 3228 0	Climb-down;Staircase;16672								1
+3205 3228 1	3205 3228 0	Climb-down;Staircase;16672								1
+3206 3229 1	3206 3229 2	Climb-up;Staircase;16672								1
+3205 3228 1	3206 3229 2	Climb-up;Staircase;16672								1
+3206 3229 2	3205 3228 1	Climb-down;Staircase;56231								1
+3205 3228 0	3205 3228 2	Top-floor;Staircase;56230								1
+3206 3229 0	3206 3229 2	Top-floor;Staircase;56230								1
+3205 3228 2	3205 3228 0	Bottom-floor;Staircase;56231								1
+# South Staircase
+3206 3208 0	3205 3209 1	Climb-up;Staircase;56230								1
+3205 3209 0	3205 3209 1	Climb-up;Staircase;56230								1
+3206 3208 1	3206 3208 0	Climb-down;Staircase;16672								1
+3205 3209 1	3205 3209 0	Climb-down;Staircase;16672								1
+3205 3209 1	3205 3209 2	Climb-up;Staircase;16672								1
+3205 3209 2	3206 3208 1	Climb-down;Staircase;56231								1
+3206 3208 1	3205 3209 2	Climb-up;Staircase;16672								1
+3206 3208 0	3205 3209 2	Top-floor;Staircase;56230								1
+3205 3209 0	3205 3209 2	Top-floor;Staircase;56230								1
+3205 3209 2	3205 3209 0	Bottom-floor;Staircase;56231								1
+
 3210 3216 0	3210 9616 0	Climb-down;Trapdoor;14880									
 3210 9616 0	3210 3216 0	Climb-up;Ladder;17385								2	
 3209 9617 0	3209 3217 0	Climb-up;Ladder;17385								2	
@@ -330,8 +339,8 @@
 2908 3336 2	2908 3336 1	Climb-down;Staircase;11890								1	
 											
 # Killerwatt Plane											
-3110 3363 2	2677 5214 2	Enter;Interdimensional rift;11355				Ernest the Chicken				1	
-3111 3363 2	2677 5214 2	Enter;Interdimensional rift;11355				Ernest the Chicken				1	
+3110 3363 2	2677 5214 2	Enter;Interdimensional rift;11355				Ernest the Chicken				1
+3111 3363 2	2677 5214 2	Enter;Interdimensional rift;11355				Ernest the Chicken				1
 											
 # Ferox Enclave											
 3140 3637 0	3137 3637 1	Climb;Stairs;39643								1	
@@ -1008,11 +1017,7 @@
 3097 3432 1	3097 3432 2	Climb-up;Ladder;17026									
 3097 3432 2	3097 3432 1	Climb-down;Ladder;16685									
 											
-# Al Kharid											
-3267 3228 0	3268 3228 0	Pay-toll(10gp);Gate;44599								1	
-3268 3228 0	3267 3228 0	Pay-toll(10gp);Gate;44599								1	
-3267 3227 0	3268 3227 0	Pay-toll(10gp);Gate;44598								1	
-3268 3227 0	3267 3227 0	Pay-toll(10gp);Gate;44598								1	
+# Al Kharid
 3298 3124 0	3297 3124 0	Open;Prison door;2692									
 3297 3124 0	3298 3124 0	Open;Prison door;2692									
 3303 3117 0	3304 3115 0	Go-through;Shantay pass;4031		1854						2	
@@ -1235,14 +1240,14 @@
 2899 3469 0	2901 9867 0	Enter;Manhole;24842									
 2899 3470 0	2901 9867 0	Enter;Manhole;24842									
 2899 3468 0	2901 9867 0	Enter;Manhole;24842									
-2877 3482 0	2876 9878 0	Climb-down;Stairs;57				Fishing Contest					
-2876 9879 0	2877 3482 0	Climb-up;Stairs;56				Fishing Contest					
-2876 3482 0	2876 9878 0	Climb-down;Stairs;57				Fishing Contest					
-2877 9879 0	2877 3482 0	Climb-up;Stairs;56				Fishing Contest					
-2821 9882 0	2820 3486 0	Climb-up;Stairs;54				Fishing Contest					
-2820 3486 0	2820 9882 0	Climb-down;Stairs;55				Fishing Contest					
-2820 9882 0	2820 3486 0	Climb-up;Stairs;54				Fishing Contest					
-2821 3486 0	2820 9882 0	Climb-down;Stairs;55				Fishing Contest					
+2877 3482 0	2876 9878 0	Climb-down;Stairs;57				Fishing Contest
+2876 9879 0	2877 3482 0	Climb-up;Stairs;56				Fishing Contest
+2876 3482 0	2876 9878 0	Climb-down;Stairs;57				Fishing Contest
+2877 9879 0	2877 3482 0	Climb-up;Stairs;56				Fishing Contest
+2821 9882 0	2820 3486 0	Climb-up;Stairs;54				Fishing Contest
+2820 3486 0	2820 9882 0	Climb-down;Stairs;55				Fishing Contest
+2820 9882 0	2820 3486 0	Climb-up;Stairs;54				Fishing Contest
+2821 3486 0	2820 9882 0	Climb-down;Stairs;55				Fishing Contest
 											
 # Catherby											
 2792 3414 0	2792 3417 1	Cross;Gangplank;17394								3	
@@ -1367,7 +1372,7 @@
 2511 3463 0	2527 3413 0	Get in;Barrel;2022									
 2512 3466 0	2527 3413 0	Climb;Dead Tree;2020									
 2512 3476 0	2527 3413 0	Swim to;Rock;1996									
-2511 3463 0	2575 9861 0	Open;Door;2010		295		Waterfall Quest					
+2511 3463 0	2575 9861 0	Open;Door;2010		295		Waterfall Quest
 2575 9861 0	2511 3463 0	Open;Door;2000									
 2568 9893 0	2568 9894 0	Open;Door;2002									
 2568 9894 0	2568 9893 0	Open;Door;2002									
@@ -1384,13 +1389,13 @@
 2533 9556 0	2533 3156 0	Climb-up;Ladder;17387									
 											
 # Tree Gnome Village Dungeon (after Waterfall quest)											
-2533 3156 0	2597 4436 0	Climb-down;Ladder;5250				Waterfall Quest					
-2532 3155 0	2596 4435 0	Climb-down;Ladder;5250				Waterfall Quest					
-2534 3155 0	2598 4435 0	Climb-down;Ladder;5250				Waterfall Quest					
-2597 4436 0	2533 3156 0	Climb-up;Ladder;5251				Waterfall Quest					
-2596 4435 0	2533 3156 0	Climb-up;Ladder;5251				Waterfall Quest					
-2598 4435 0	2533 3156 0	Climb-up;Ladder;5251				Waterfall Quest					
-2597 4434 0	2533 3156 0	Climb-up;Ladder;5251				Waterfall Quest					
+2533 3156 0	2597 4436 0	Climb-down;Ladder;5250				Waterfall Quest
+2532 3155 0	2596 4435 0	Climb-down;Ladder;5250				Waterfall Quest
+2534 3155 0	2598 4435 0	Climb-down;Ladder;5250				Waterfall Quest
+2597 4436 0	2533 3156 0	Climb-up;Ladder;5251				Waterfall Quest
+2596 4435 0	2533 3156 0	Climb-up;Ladder;5251				Waterfall Quest
+2598 4435 0	2533 3156 0	Climb-up;Ladder;5251				Waterfall Quest
+2597 4434 0	2533 3156 0	Climb-up;Ladder;5251				Waterfall Quest
 											
 # Lithkren											
 3555 4002 0	3549 10448 0	Climb-down;Staircase;32080									
@@ -1936,12 +1941,12 @@
 1507 3592 2	1511 3592 1	Climb;Stairs;27200									
 											
 # Meyerditch											
-3649 3220 0	3631 3219 0	Enter;Door;32660				Darkness of Hallowvale					
-3631 3219 0	3649 3219 0	Enter;Door;32659				Darkness of Hallowvale					
-3649 3219 0	3631 3219 0	Enter;Door;32660				Darkness of Hallowvale					
-3631 3220 0	3649 3219 0	Enter;Door;32659				Darkness of Hallowvale					
-3649 3218 0	3631 3219 0	Enter;Door;32660				Darkness of Hallowvale					
-3631 3218 0	3649 3219 0	Enter;Door;32659				Darkness of Hallowvale					
+3649 3220 0	3631 3219 0	Enter;Door;32660				Darkness of Hallowvale
+3631 3219 0	3649 3219 0	Enter;Door;32659				Darkness of Hallowvale
+3649 3219 0	3631 3219 0	Enter;Door;32660				Darkness of Hallowvale
+3631 3220 0	3649 3219 0	Enter;Door;32659				Darkness of Hallowvale
+3649 3218 0	3631 3219 0	Enter;Door;32660				Darkness of Hallowvale
+3631 3218 0	3649 3219 0	Enter;Door;32659				Darkness of Hallowvale
 3632 3205 0	3632 3202 1	Climb-up;Stairs up;17976									
 3632 3202 1	3632 3205 0	Climb-down;Stairs down;17978									
 3604 3202 0	3602 3202 1	Climb-up;Ladder;17974									
@@ -3459,13 +3464,13 @@
 3354 2959 1	3353 2961 0	Climb-down;Staircase;6243								1	
 											
 # Smoke Dungeon											
-3310 2961 0	3206 9379 0	Climb-down;Smokey well;6279									
+3310 2961 0	3206 9379 0	Climb-down;Smokey well;6279				Desert Treasure I=IN_PROGRESS
 3206 9379 0	3310 2961 0	Climb-up;Rope;6439									
-3309 2962 0	3206 9379 0	Climb-down;Smokey well;6279									
+3309 2962 0	3206 9379 0	Climb-down;Smokey well;6279				Desert Treasure I=IN_PROGRESS
 3205 9380 0	3310 2961 0	Climb-up;Rope;6439									
-3311 2962 0	3206 9379 0	Climb-down;Smokey well;6279									
+3311 2962 0	3206 9379 0	Climb-down;Smokey well;6279				Desert Treasure I=IN_PROGRESS
 3204 9379 0	3310 2961 0	Climb-up;Rope;6439									
-3310 2963 0	3206 9379 0	Climb-down;Smokey well;6279									
+3310 2963 0	3206 9379 0	Climb-down;Smokey well;6279				Desert Treasure I=IN_PROGRESS
 3205 9378 0	3310 2961 0	Climb-up;Rope;6439									
 3304 9376 0	3305 9376 0	Open;Gate;6452									
 3305 9376 0	3304 9376 0	Open;Gate;6452									
@@ -3573,8 +3578,8 @@
 3485 3243 0	3485 3244 0	Open;Gate;12816									
 3513 3237 0	3513 3239 2	Climb-up;Ladder;12780								2	
 3513 3239 2	3513 3237 0	Climb-down;Ladder;12781								2	
-3474 3221 0	3473 3221 0	Jump-over;Low fence;12776				In Aid of the Myreque				5	
-3473 3221 0	3475 3221 0	Jump-over;Low fence;12776				In Aid of the Myreque				5	
+3474 3221 0	3473 3221 0	Jump-over;Low fence;12776				In Aid of the Myreque				5
+3473 3221 0	3475 3221 0	Jump-over;Low fence;12776				In Aid of the Myreque				5
 3491 3230 0	3491 3231 0	Climb-over;Broken wall;12737								3	
 3491 3231 0	3491 3230 0	Climb-over;Broken wall;12737								3	
 3490 3232 0	3490 9631 0	Climb-down;Trapdoor;12743								2	
@@ -4112,9 +4117,9 @@
 2420 10279 1	2319 3892 0	Climb-up;Stone ladder;21592									
 2316 3893 0	2420 10279 1	Open;Cave;21585									
 2315 3894 0	2420 10279 1	Open;Cave;21585									
-2400 3889 0	2394 10300 1	Open;Cave;21584				The Fremennik Isles					
-2401 3888 0	2394 10300 1	Open;Cave;21584				The Fremennik Isles					
-2403 3889 0	2394 10300 1	Open;Cave;21584				The Fremennik Isles					
+2400 3889 0	2394 10300 1	Open;Cave;21584				The Fremennik Isles
+2401 3888 0	2394 10300 1	Open;Cave;21584				The Fremennik Isles
+2403 3889 0	2394 10300 1	Open;Cave;21584				The Fremennik Isles
 2398 10258 1	2393 10258 1	Walk-across;Rope bridge;21318									
 2393 10258 1	2398 10258 1	Walk-across;Rope bridge;21319									
 2385 10259 1	2385 10264 1	Walk-across;Rope bridge;21317									
@@ -4299,22 +4304,22 @@
 2880 3593 0	2880 3596 0	Climb;Rocks;3723									
 2881 3596 0	2881 3593 0	Climb;Rocks;3722									
 2881 3593 0	2881 3596 0	Climb;Rocks;3723									
-2857 3611 0	2857 3613 0	Climb;Rocks;3748									
-2857 3613 0	2857 3611 0	Climb;Rocks;3748									
-2856 3611 0	2856 3613 0	Climb;Rocks;3748									
-2856 3613 0	2856 3611 0	Climb;Rocks;3748									
-2858 3627 0	2861 3627 0	Climb;Rocks;3790									
-2861 3627 0	2858 3627 0	Climb;Rocks;3791									
-2858 3626 0	2861 3626 0	Climb;Rocks;3790									
-2861 3626 0	2858 3626 0	Climb;Rocks;3791									
-2877 3623 0	2880 3623 0	Climb;Rocks;3791									
-2880 3623 0	2877 3623 0	Climb;Rocks;3790									
-2877 3622 0	2880 3622 0	Climb;Rocks;3791									
-2880 3622 0	2877 3622 0	Climb;Rocks;3790									
-2896 3619 0	2897 3619 0	Open;Arena Entrance;3783									
-2897 3619 0	2896 3619 0	Open;Arena Entrance;3783									
-2896 3618 0	2897 3618 0	Open;Arena Entrance;3782									
-2897 3618 0	2896 3618 0	Open;Arena Entrance;3782									
+2857 3611 0	2857 3613 0	Climb;Rocks;3748	15 Agility	3105
+2857 3613 0	2857 3611 0	Climb;Rocks;3748	15 Agility
+2856 3611 0	2856 3613 0	Climb;Rocks;3748	15 Agility	3105
+2856 3613 0	2856 3611 0	Climb;Rocks;3748	15 Agility
+2858 3627 0	2861 3627 0	Climb;Rocks;3790	15 Agility			Troll Stronghold
+2861 3627 0	2858 3627 0	Climb;Rocks;3791	15 Agility			Troll Stronghold
+2858 3626 0	2861 3626 0	Climb;Rocks;3790	15 Agility			Troll Stronghold
+2861 3626 0	2858 3626 0	Climb;Rocks;3791	15 Agility			Troll Stronghold
+2877 3623 0	2880 3623 0	Climb;Rocks;3791	15 Agility			Troll Stronghold
+2880 3623 0	2877 3623 0	Climb;Rocks;3790	15 Agility			Troll Stronghold
+2877 3622 0	2880 3622 0	Climb;Rocks;3791	15 Agility			Troll Stronghold
+2880 3622 0	2877 3622 0	Climb;Rocks;3790	15 Agility			Troll Stronghold
+2896 3619 0	2897 3619 0	Open;Arena Entrance;3783
+2897 3619 0	2896 3619 0	Open;Arena Entrance;3783
+2896 3618 0	2897 3618 0	Open;Arena Entrance;3782
+2897 3618 0	2896 3618 0	Open;Arena Entrance;3782
 2917 3628 0	2917 3629 0	Open;Arena Exit;3786									
 2917 3629 0	2917 3628 0	Open;Arena Exit;3786									
 2916 3628 0	2916 3629 0	Open;Arena Exit;3785									
@@ -4519,16 +4524,16 @@
 2876 2952 0	2880 2952 0	Climb over;Broken cart;2216								2
 2876 2951 0	2880 2952 0	Climb over;Broken cart;2216								2
 2877 2950 0	2880 2952 0	Climb over;Broken cart;2216								2
-2777 3214 0	2834 2951 0	Board;Travel cart;2230			10 Coins			116>14		5
-2778 3214 0	2834 2951 0	Board;Travel cart;2230			10 Coins			116>14		5
-2776 3213 0	2834 2951 0	Board;Travel cart;2230			10 Coins			116>14		5
-2776 3212 0	2834 2951 0	Board;Travel cart;2230			10 Coins			116>14		5
-2776 3211 0	2834 2951 0	Board;Travel cart;2230			10 Coins			116>14		5
-2779 3213 0	2834 2951 0	Board;Travel cart;2230			10 Coins			116>14		5
-2779 3212 0	2834 2951 0	Board;Travel cart;2230			10 Coins			116>14		5
-2779 3211 0	2834 2951 0	Board;Travel cart;2230			10 Coins			116>14		5
-2777 3210 0	2834 2951 0	Board;Travel cart;2230			10 Coins			116>14		5
-2778 3210 0	2834 2951 0	Board;Travel cart;2230			10 Coins			116>14		5
+2777 3214 0	2834 2951 0	Pay-fare;Travel cart;2230			200 Coins			116>14		5
+2778 3214 0	2834 2951 0	Pay-fare;Travel cart;2230			200 Coins			116>14		5
+2776 3213 0	2834 2951 0	Pay-fare;Travel cart;2230			200 Coins			116>14		5
+2776 3212 0	2834 2951 0	Pay-fare;Travel cart;2230			200 Coins			116>14		5
+2776 3211 0	2834 2951 0	Pay-fare;Travel cart;2230			200 Coins			116>14		5
+2779 3213 0	2834 2951 0	Pay-fare;Travel cart;2230			200 Coins			116>14		5
+2779 3212 0	2834 2951 0	Pay-fare;Travel cart;2230			200 Coins			116>14		5
+2779 3211 0	2834 2951 0	Pay-fare;Travel cart;2230			200 Coins			116>14		5
+2777 3210 0	2834 2951 0	Pay-fare;Travel cart;2230			200 Coins			116>14		5
+2778 3210 0	2834 2951 0	Pay-fare;Travel cart;2230			200 Coins			116>14		5
 2830 2953 0	2776 3214 0	Pay-fare;Travel cart;2265			200 Coins			116>14		5
 2830 2952 0	2776 3214 0	Pay-fare;Travel cart;2265			200 Coins			116>14		5
 2831 2954 0	2776 3214 0	Pay-fare;Travel cart;2265			200 Coins			116>14		5
@@ -4587,8 +4592,8 @@
 1630 3963 0	1630 3968 0	Enter;Doors of dinh;29322								1	
 											
 # Camdozaal											
-2998 3494 0	2952 5762 0	Enter;Ruins Entrance;41357				Below Ice Mountain					
-2952 5762 0	2998 3494 0	Exit;Ruins Exit;41446				Below Ice Mountain					
+2998 3494 0	2952 5762 0	Enter;Ruins Entrance;41357				Below Ice Mountain
+2952 5762 0	2998 3494 0	Exit;Ruins Exit;41446				Below Ice Mountain
 											
 # Magic guild											
 2590 3088 0	2590 3092 1	Climb-up;Staircase;15645									
@@ -4626,8 +4631,8 @@
 2736 3580 0	2736 3580 1	Climb-up;Staircase;25682									
 											
 # Lumbridge basement / cavern											
-3219 9618 0	3221 9618 0	Squeeze-through;Hole;6898				The Lost Tribe					
-3221 9618 0	3219 9618 0	Squeeze-through;Hole;6899				The Lost Tribe					
+3219 9618 0	3221 9618 0	Squeeze-through;Hole;6898				The Lost Tribe
+3221 9618 0	3219 9618 0	Squeeze-through;Hole;6899				The Lost Tribe
 3224 9604 0	3224 9600 0	Squeeze-through;Hole;6912									
 3224 9600 0	3224 9604 0	Squeeze-through;Hole;6912									
 3226 9542 0	3219 9532 2	Enter;Tunnel;6659									
@@ -4923,17 +4928,17 @@
 # Port Phasmatys											
 3705 3503 1	3702 3503 0	Cross;Gangplank;17393									
 3702 3503 0	3705 3503 1	Cross;Gangplank;17392									
-3659 3509 0	3659 3507 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
-3659 3507 0	3659 3509 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
-3660 3509 0	3660 3507 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
-3660 3507 0	3660 3509 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
-3654 3485 0	3651 3485 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
-3651 3485 0	3654 3485 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
-3654 3486 0	3651 3486 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
-3651 3486 0	3654 3486 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
-3670 3454 0	3670 3452 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
-3670 3452 0	3670 3454 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
-3669 3454 0	3669 3452 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy					
+3659 3509 0	3659 3507 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy
+3659 3507 0	3659 3509 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy
+3660 3509 0	3660 3507 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy
+3660 3507 0	3660 3509 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy
+3654 3485 0	3651 3485 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy
+3651 3485 0	3654 3485 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy
+3654 3486 0	3651 3486 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy
+3651 3486 0	3654 3486 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy
+3670 3454 0	3670 3452 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy
+3670 3452 0	3670 3454 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy
+3669 3454 0	3669 3452 0	Pay-toll(2-Ecto);Energy Barrier;16105				Ghosts Ahoy
 											
 # Port Khazard											
 2674 3141 1	2674 3144 0	Cross;Gangplank;17403									
@@ -5013,7 +5018,11 @@
 1311 10189 0	1311 3808 0	Exit;Cave exit;34514									
 1312 10189 0	1311 3806 0	Exit;Cave exit;34514									
 1312 10189 0	1311 3808 0	Exit;Cave exit;34514									
-1311 10214 0	1311 10215 0	Climb;Rocks;34544									
+1303 10205 0	1301 10205 0	Climb;Rocks;34544
+1303 10206 0	1301 10206 0	Climb;Rocks;34544
+1301 10205 0	1303 10205 0	Climb;Rocks;34544
+1301 10206 0	1303 10206 0	Climb;Rocks;34544
+1311 10214 0	1311 10215 0	Climb;Rocks;34544
 1312 10214 0	1312 10215 0	Climb;Rocks;34544									
 1311 10215 0	1311 10214 0	Climb;Rocks;34544									
 1312 10215 0	1312 10214 0	Climb;Rocks;34544									
@@ -5031,12 +5040,12 @@
 1318 10189 2	1313 10189 1	Climb;Steps;34531									
 
 # Piscatoris Fishing Colony											
-2344 3650 0	2344 3655 0	Enter;Hole;12656				Swan Song					
-2344 3655 0	2344 3650 0	Enter;Hole;12656				Swan Song					
-2343 3661 0	2343 3663 0	Open;Colony gate;12723				Swan Song					
-2343 3663 0	2343 3661 0	Open;Colony gate;12723				Swan Song					
-2344 3661 0	2344 3663 0	Open;Colony gate;12725				Swan Song					
-2344 3663 0	2344 3661 0	Open;Colony gate;12725				Swan Song					
+2344 3650 0	2344 3655 0	Enter;Hole;12656				Swan Song
+2344 3655 0	2344 3650 0	Enter;Hole;12656				Swan Song
+2343 3661 0	2343 3663 0	Open;Colony gate;12723				Swan Song
+2343 3663 0	2343 3661 0	Open;Colony gate;12723				Swan Song
+2344 3661 0	2344 3663 0	Open;Colony gate;12725				Swan Song
+2344 3663 0	2344 3661 0	Open;Colony gate;12725				Swan Song
 											
 # Quetzacali Gorge											
 1520 3247 0	1513 3243 0	Pass-through;Gate;55322									

@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.util.npc;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
@@ -26,6 +27,7 @@ import java.util.stream.Stream;
 
 import static net.runelite.api.Perspective.LOCAL_TILE_SIZE;
 
+@Slf4j
 public class Rs2Npc {
     /**
      * Retrieves an NPC by its index, returning an {@link Rs2NpcModel}.
@@ -573,52 +575,42 @@ public class Rs2Npc {
                 return false;
             }
 
-            int index = -1;
+            final int index;
             String[] actions = npcComposition.getActions();
 
-            if (action == null || action.isEmpty()) {
-                OptionalInt optionalIndex = IntStream.range(0, actions.length)
+            if (action == null || action.isBlank()) {
+                index = IntStream.range(0, actions.length)
                         .filter(i -> actions[i] != null && !actions[i].isEmpty())
-                        .findFirst();
-
-                if (optionalIndex.isPresent()) {
-                    index = optionalIndex.getAsInt();
-                    action = actions[index];
-                }
-            }
-            else {
-                String finalAction = action;
-                OptionalInt optionalIndex = IntStream.range(0, actions.length)
+                        .findFirst().orElse(-1);
+            } else {
+                final String finalAction = action;
+                index = IntStream.range(0, actions.length)
                         .filter(i -> actions[i] != null && actions[i].equalsIgnoreCase(finalAction))
-                        .findFirst();
-
-                if (optionalIndex.isPresent()) {
-                    index = optionalIndex.getAsInt();
-                }
+                        .findFirst().orElse(-1);
             }
 
-            MenuAction menuAction = getMenuAction(index);
-
+            final MenuAction menuAction = getMenuAction(index);
             if (menuAction == null) {
                 if (index == -1 && !Microbot.getClient().isWidgetSelected()) {
-                    Microbot.log("Error: Action '" + action + "' not found for NPC: " + npc.getName());
+                    log.warn("Action='{}' not found for NPC='{}'", action, npc.getName());
                 } else {
-                    Microbot.log("Error: Could not get menu action for action '" + action + "' on NPC: " + npc.getName());
+                    log.error("Could not get menu action for Action='{}' on NPC='{}'", action, npc.getName());
                 }
                 return false;
             }
+
+            action = actions[index];
 
             if (!Rs2Camera.isTileOnScreen(npc.getLocalLocation())) {
                 Rs2Camera.turnTo(npc);
             }
 
-            Microbot.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc),
+            Microbot.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc, action),
                     Rs2UiHelper.getActorClickbox(npc));
             return true;
 
         } catch (Exception ex) {
-            Microbot.log("Error interacting with NPC '" + npc.getName() + "' for action '" + action + "': " + ex.getMessage());
-            ex.printStackTrace();
+            log.error("Error interacting with NPC '{}' for action '{}': ", npc.getName(), action, ex);
             return false;
         }
     }

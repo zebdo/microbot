@@ -1,11 +1,18 @@
 package net.runelite.client.plugins.microbot.mining.shootingstar;
 
-import net.runelite.api.*;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+import javax.inject.Inject;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.GameObject;
+import net.runelite.api.GameState;
+import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
+import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.Pickaxe;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarState;
 import net.runelite.client.plugins.microbot.mining.shootingstar.model.Star;
@@ -27,394 +34,529 @@ import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.walker.WalkerState;
 
-import javax.inject.Inject;
-import java.util.*;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
+@Slf4j
+public class ShootingStarScript extends Script
+{
+	public static ShootingStarState state;
+	private final ShootingStarPlugin plugin;
+	private final ShootingStarConfig config;
+	private Rs2InventorySetup rs2InventorySetup;
+	private Pickaxe pickaxe;
+	private Star currentStar;
+	private boolean hasEquipment = false;
+	private boolean hasInventory = false;
 
-public class ShootingStarScript extends Script {
-    public static ShootingStarState state;
-    private final ShootingStarPlugin plugin;
-    Rs2InventorySetup rs2InventorySetup;
-    Pickaxe pickaxe;
-    Star star;
-    private boolean hasEquipment = false;
-    private boolean hasInventory = false;
+	@Inject
+	public ShootingStarScript(ShootingStarPlugin plugin, ShootingStarConfig config)
+	{
+		this.plugin = plugin;
+		this.config = config;
+	}
 
-    @Inject
-    public ShootingStarScript(ShootingStarPlugin plugin) {
-        this.plugin = plugin;
-    }
+	public boolean run()
+	{
+		Microbot.enableAutoRunOn = true;
+		initialPlayerLocation = null;
+		hasEquipment = false;
+		hasInventory = false;
+		Rs2Antiban.resetAntibanSettings();
+		applyAntiBanSettings();
+		Rs2Antiban.setActivity(Activity.GENERAL_MINING);
+		mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
+			try
+			{
+				if (!super.run())
+				{
+					return;
+				}
+				if (!Microbot.isLoggedIn())
+				{
+					return;
+				}
+				long startTime = System.currentTimeMillis();
 
-    public boolean run() {
-        Microbot.enableAutoRunOn = true;
-        initialPlayerLocation = null;
-        hasEquipment = false;
-        hasInventory = false;
-        Rs2Antiban.resetAntibanSettings();
-        applyAntiBanSettings();
-        Rs2Antiban.setActivity(Activity.GENERAL_MINING);
-        mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
-            try {
-                if (!Microbot.isLoggedIn()) return;
-                if (!super.run()) return;
-                long startTime = System.currentTimeMillis();
+				if (initialPlayerLocation == null)
+				{
+					initialPlayerLocation = Rs2Player.getWorldLocation();
+				}
 
-                if (initialPlayerLocation == null) {
-                    initialPlayerLocation = Rs2Player.getWorldLocation();
-                }
+				if (hasStateChanged())
+				{
+					state = updateStarState();
+				}
 
-                if (hasStateChanged()) {
-                    state = updateStarState();
-                }
+				if (state == null)
+				{
+					Microbot.showMessage("Unable to evaluate state");
+					Microbot.stopPlugin(plugin);
+					return;
+				}
 
-                if (state == null) {
-                    Microbot.showMessage("Unable to evaluate state");
-                    shutdown();
-                    return;
-                }
+				if (Rs2Player.isMoving() || Rs2Antiban.getCategory().isBusy())
+				{
+					return;
+				}
+				if (Rs2AntibanSettings.actionCooldownActive)
+				{
+					return;
+				}
 
-                if (Rs2Player.isMoving() || Rs2Antiban.getCategory().isBusy()) return;
-                if (Rs2AntibanSettings.actionCooldownActive) return;
-                
-                if (Rs2Gembag.isUnknown()) {
-                    Rs2Gembag.checkGemBag();
-                    return;
-                }
+				if (Rs2Gembag.isUnknown())
+				{
+					Rs2Gembag.checkGemBag();
+					return;
+				}
 
-                switch (state) {
-                    case WAITING_FOR_STAR:
-                        if (plugin.useNearestHighTierStar()) {
-                            if (!hasSelectedStar()) {
-                                star = plugin.getClosestHighestTierStar();
+				switch (state)
+				{
+					case WAITING_FOR_STAR:
+						if (config.useNearestHighTierStar())
+						{
+							if (!hasSelectedStar())
+							{
+								if (plugin.getStarList().isEmpty()) {
+									log.debug("No stars found, waiting for api data");
+									return;
+								}
 
-                                if (star == null) {
-                                    Microbot.showMessage("Unable to find a star within your tier range. Consider disabling useNearestHighTierStar until higher mining level.");
-                                    shutdown();
-                                    return;
-                                }
-                            } else {
-                                star = plugin.getSelectedStar();
-                            }
-                        } else {
-                            star = plugin.getSelectedStar();
+								currentStar = plugin.getClosestHighestTierStar();
 
-                            if (star == null) {
-                                Microbot.log("Please select a star inside of the panel to start the script.");
-                                sleepUntil(this::hasSelectedStar);
-                                return;
-                            }
-                        }
+								if (currentStar == null)
+								{
+									Microbot.showMessage("Unable to find a star within your tier range. Consider disabling useNearestHighTierStar until higher mining level.");
+									Microbot.stopPlugin(plugin);
+									return;
+								}
+							}
+							else
+							{
+								currentStar = plugin.getSelectedStar();
+							}
+						}
+						else
+						{
+							currentStar = plugin.getSelectedStar();
 
-                        Microbot.log("Found star @ " + star.getShootingStarLocation().getLocationName());
-                        plugin.updateSelectedStar(star);
+							if (currentStar == null)
+							{
+								log.warn("Please select a star inside of the panel to start the script.");
+								sleepUntil(this::hasSelectedStar);
+								return;
+							}
+						}
 
-                        state = ShootingStarState.WALKING;
-                        break;
-                    case WALKING:
-                        toggleLockState(true);
+						log.info("Found star @ {}", currentStar.getShootingStarLocation().getLocationName());
+						plugin.updateSelectedStar(currentStar);
 
-                        if (Rs2Player.getWorld() != star.getWorldObject().getId()) {
-                            Microbot.hopToWorld(star.getWorldObject().getId());
-                            sleepUntil(() -> Microbot.getClient().getGameState() == GameState.LOGGED_IN);
-                            return;
-                        }
+						state = ShootingStarState.WALKING;
+						break;
+					case WALKING:
+						toggleLockState(true);
 
-                        boolean isNearShootingStar = Rs2Player.getWorldLocation().distanceTo(star.getShootingStarLocation().getWorldPoint()) < 6;
+						if (Rs2Player.getWorld() != currentStar.getWorld())
+						{
+							Microbot.hopToWorld(currentStar.getWorld());
+							sleepUntil(() -> Microbot.getClient().getGameState() == GameState.LOGGED_IN);
+							return;
+						}
 
-                        if (!isNearShootingStar) {
-                            WalkerState walkerState = Rs2Walker.walkWithState(star.getShootingStarLocation().getWorldPoint(), 6);
-                            if (walkerState == WalkerState.UNREACHABLE) {
-                                plugin.removeStar(plugin.getSelectedStar());
-                                plugin.updatePanelList(true);
-                                state = ShootingStarState.WAITING_FOR_STAR;
-                            }
-                            return;
-                        }
+						boolean isNearShootingStar = Rs2Player.getWorldLocation().distanceTo(currentStar.getShootingStarLocation().getWorldPoint()) < 6;
 
-                        initialPlayerLocation = Rs2Player.getWorldLocation();
+						if (!isNearShootingStar)
+						{
+							WalkerState walkerState = Rs2Walker.walkWithState(currentStar.getShootingStarLocation().getWorldPoint(), 6);
+							if (walkerState == WalkerState.UNREACHABLE)
+							{
+								log.debug("Walker State is {}, removing star from list", walkerState);
+								plugin.removeStar(plugin.getSelectedStar());
+								plugin.updatePanelList(true);
+								state = ShootingStarState.WAITING_FOR_STAR;
+							}
+							return;
+						}
 
-                        state = ShootingStarState.MINING;
-                        break;
-                    case MINING:
-                        if (!star.hasRequirements()) {
-                            Microbot.status = "Waiting for star to degrade";
-                            Microbot.log("Unable to mine current star level, waiting..");
-                            return;
-                        }
+						initialPlayerLocation = Rs2Player.getWorldLocation();
 
-                        if (Rs2Inventory.isFull()) {
-                            state = ShootingStarState.BANKING;
-                            return;
-                        }
+						state = ShootingStarState.MINING;
+						break;
+					case MINING:
+						if (!currentStar.hasRequirements())
+						{
+							Microbot.status = "Waiting for star to degrade";
+							log.warn("Unable to mine current star level, waiting..");
+							return;
+						}
 
-                        if (Rs2Equipment.isWearing("Dragon pickaxe"))
-                            Rs2Combat.setSpecState(true, 1000);
+						if (Rs2Inventory.isFull())
+						{
+							state = ShootingStarState.BANKING;
+							return;
+						}
 
-                        TileObject starObject = Rs2GameObject.findObjectById(star.getObjectID());
+						if (Rs2Equipment.isWearing("Dragon pickaxe"))
+						{
+							Rs2Combat.setSpecState(true, 1000);
+						}
 
-                        if (starObject != null) {
-                            Rs2GameObject.interact(starObject, "mine");
-                            Rs2Antiban.actionCooldown();
-                        }
+						TileObject starObject = Rs2GameObject.getGameObject(currentStar.getObjectId());
 
-                        break;
-                    case BANKING:
-                        BankLocation nearestBank = Rs2Bank.getNearestBank();
-                        boolean isNearBank = Rs2Bank.walkToBank(nearestBank);
-                        if (!isNearBank || !Rs2Bank.isNearBank(nearestBank, 6)) return;
+						if (starObject != null)
+						{
+							Rs2GameObject.interact(starObject, "mine");
+							sleepUntil(Rs2Player::isAnimating);
+							Rs2Antiban.actionCooldown();
+							Rs2Antiban.moveMouseOffScreen();
+						}
 
-                        toggleLockState(false);
+						break;
+					case BANKING:
+						BankLocation nearestBank = Rs2Bank.getNearestBank();
+						boolean isNearBank = Rs2Bank.walkToBank(nearestBank);
+						if (!isNearBank || !Rs2Bank.isNearBank(nearestBank, 6))
+						{
+							return;
+						}
 
-                        boolean isBankOpen = Rs2Bank.useBank();
-                        if (!isBankOpen || !Rs2Bank.isOpen()) return;
+						toggleLockState(false);
 
-                        if (Rs2Inventory.hasItem("uncut")) {
-                            Rs2Bank.depositAll(x -> x.getName().toLowerCase().contains("uncut"));
-                        }
+						boolean isBankOpen = Rs2Bank.openBank();
+						if (!isBankOpen || !Rs2Bank.isOpen())
+						{
+							return;
+						}
 
-                        if (isUsingInventorySetup()) {
-                            if (!hasEquipment) {
-                                hasEquipment = rs2InventorySetup.loadEquipment();
-                                Rs2Random.waitEx(1200, 300);
-                            }
-                            if (!hasInventory && rs2InventorySetup.doesEquipmentMatch()) {
-                                hasInventory = rs2InventorySetup.loadInventory();
-                                Rs2Random.waitEx(1200, 300);
-                            }
+						if (Rs2Inventory.hasItem("uncut"))
+						{
+							Rs2Bank.depositAll(x -> x.getName().toLowerCase().contains("uncut"));
+						}
 
-                            if (!hasEquipment || !hasInventory) return;
-                        } else {
-                            if (pickaxe == null) {
-                                pickaxe = getBestPickaxe(Rs2Bank.bankItems());
-                                if (pickaxe != null) {
-                                    Rs2Bank.withdrawItem(pickaxe.getItemName());
-                                    Rs2Random.waitEx(1200, 300);
-                                } else {
-                                    Microbot.showMessage("Unable to find pickaxe, please purchase a pickaxe");
-                                    shutdown();
-                                    return;
-                                }
-                            }
-                        }
-                        
-                        if (Rs2Gembag.isAnyGemSlotFull()) {
-                            Rs2Bank.emptyGemBag();
-                        }
+						if (isUsingInventorySetup())
+						{
+							if (!hasEquipment)
+							{
+								hasEquipment = rs2InventorySetup.loadEquipment();
+								Rs2Random.waitEx(1200, 300);
+							}
+							if (!hasInventory && rs2InventorySetup.doesEquipmentMatch())
+							{
+								hasInventory = rs2InventorySetup.loadInventory();
+								Rs2Random.waitEx(1200, 300);
+							}
 
-                        boolean bankClosed = Rs2Bank.closeBank();
-                        if (!bankClosed || Rs2Bank.isOpen()) return;
+							if (!hasEquipment || !hasInventory)
+							{
+								return;
+							}
+						}
+						else
+						{
+							if (pickaxe == null)
+							{
+								pickaxe = getBestPickaxe(Rs2Bank.bankItems());
+								if (pickaxe != null)
+								{
+									Rs2Bank.withdrawItem(pickaxe.getItemName());
+									Rs2Random.waitEx(1200, 300);
+								}
+								else
+								{
+									Microbot.showMessage("Unable to find pickaxe, please purchase a pickaxe");
+									Microbot.stopPlugin(plugin);
+									return;
+								}
+							}
+						}
 
-                        if (hasSelectedStar()) {
-                            if (!star.equals(plugin.getSelectedStar()))
-                                return;
+						if (Rs2Gembag.isAnyGemSlotFull())
+						{
+							Rs2Bank.emptyGemBag();
+						}
 
-                            state = ShootingStarState.WALKING;
-                            return;
-                        }
+						boolean bankClosed = Rs2Bank.closeBank();
+						if (!bankClosed || Rs2Bank.isOpen())
+						{
+							return;
+						}
 
-                        state = ShootingStarState.WAITING_FOR_STAR;
-                        break;
-                }
+						if (hasSelectedStar())
+						{
+							if (!currentStar.equals(plugin.getSelectedStar()))
+							{
+								return;
+							}
 
-                long endTime = System.currentTimeMillis();
-                long totalTime = endTime - startTime;
-                System.out.println("Total time for loop " + totalTime);
+							state = ShootingStarState.WALKING;
+							return;
+						}
 
-            } catch (Exception ex) {
-                ex.printStackTrace();
-                Microbot.log(ex.getMessage());
-            }
-        }, 0, 600, TimeUnit.MILLISECONDS);
-        return true;
-    }
+						state = ShootingStarState.WAITING_FOR_STAR;
+						break;
+				}
 
-    @Override
-    public void shutdown() {
-        super.shutdown();
-        state = null;
-        star = null;
-        pickaxe = null;
-        Rs2Antiban.resetAntibanSettings();
-    }
+				long endTime = System.currentTimeMillis();
+				long totalTime = endTime - startTime;
+				System.out.println("Total time for loop " + totalTime);
 
-    private boolean isUsingInventorySetup() {
-        boolean isInventorySetupPluginEnabled = Microbot.isPluginEnabled(MInventorySetupsPlugin.class);
-        if (!isInventorySetupPluginEnabled) return false;
+			}
+			catch (Exception ex)
+			{
+				log.error("Error in ShootingStarScript main loop: {} - ", ex.getMessage(), ex);
+			}
+		}, 0, 600, TimeUnit.MILLISECONDS);
+		return true;
+	}
 
-        return plugin.isUseInventorySetups();
-    }
+	@Override
+	public void shutdown()
+	{
+		super.shutdown();
+		state = null;
+		currentStar = null;
+		pickaxe = null;
+		Rs2Antiban.resetAntibanSettings();
+	}
 
-    private boolean hasSelectedStar() {
-        return plugin.getSelectedStar() != null;
-    }
+	private boolean isUsingInventorySetup()
+	{
+		boolean isInventorySetupPluginEnabled = Microbot.isPluginEnabled(MInventorySetupsPlugin.class);
+		if (!isInventorySetupPluginEnabled)
+		{
+			return false;
+		}
 
-    public boolean shouldBank() {
-        boolean isInventoryFull = Rs2Inventory.isFull();
-        boolean shouldBreak = (shouldBreak() && plugin.useBreakAtBank());
-        boolean isAnyGemBagFull = Rs2Gembag.hasGemBag() && Rs2Gembag.isAnyGemSlotFull();
-        if (isUsingInventorySetup()) {
-            hasEquipment = rs2InventorySetup.doesEquipmentMatch();
-            hasInventory = rs2InventorySetup.doesInventoryMatch();
-            System.out.printf("hasEquipment: %s%nhasInventory: %s%nIs Inventory Full: %s%nshouldBreak: %s%nIsAnyGemBagFull: %s%n", hasEquipment, hasInventory, isInventoryFull, shouldBreak, isAnyGemBagFull);
+		return config.useInventorySetup();
+	}
 
-            return (!hasEquipment || !hasInventory) || isInventoryFull || shouldBreak || isAnyGemBagFull;
-        }
-        return pickaxe == null || isInventoryFull || shouldBreak || isAnyGemBagFull;
-    }
+	private boolean hasSelectedStar()
+	{
+		return plugin.getSelectedStar() != null;
+	}
 
-    public ShootingStarState getState() {
-        if (shouldBank()) {
-            return ShootingStarState.BANKING;
-        }
+	public boolean shouldBank()
+	{
+		boolean isInventoryFull = Rs2Inventory.isFull();
+		boolean shouldBreak = (shouldBreak() && config.useBreakAtBank());
+		boolean isAnyGemBagFull = Rs2Gembag.hasGemBag() && Rs2Gembag.isAnyGemSlotFull();
+		if (isUsingInventorySetup())
+		{
+			hasEquipment = rs2InventorySetup.doesEquipmentMatch();
+			hasInventory = rs2InventorySetup.doesInventoryMatch();
+			System.out.printf("hasEquipment: %s%nhasInventory: %s%nIs Inventory Full: %s%nshouldBreak: %s%nIsAnyGemBagFull: %s%n", hasEquipment, hasInventory, isInventoryFull, shouldBreak, isAnyGemBagFull);
 
-        if (hasSelectedStar()) {
-            return ShootingStarState.WALKING;
-        }
+			return (!hasEquipment || !hasInventory) || isInventoryFull || shouldBreak || isAnyGemBagFull;
+		}
+		return pickaxe == null || isInventoryFull || shouldBreak || isAnyGemBagFull;
+	}
 
-        return ShootingStarState.WAITING_FOR_STAR;
-    }
+	public ShootingStarState getState()
+	{
+		if (shouldBank())
+		{
+			return ShootingStarState.BANKING;
+		}
 
-    private ShootingStarState updateStarState() {
-        if (state == null) {
-            if (isUsingInventorySetup()) {
-                rs2InventorySetup = new Rs2InventorySetup(plugin.getInventorySetup(), mainScheduledFuture);
-                if (!rs2InventorySetup.hasSpellBook()) {
-                    Microbot.showMessage("Your spellbook is not matching the inventory setup.");
-                    shutdown();
-                    return null;
-                }
-            } else {
-                if (Rs2Inventory.hasItem("pickaxe") || Rs2Equipment.isWearing("pickaxe")) {
-                    pickaxe = getBestPickaxe(Rs2Equipment.items());
-                    if (pickaxe == null) {
-                        pickaxe = getBestPickaxe(Rs2Inventory.items().collect(Collectors.toList()));
-                    }
-                }
-            }
-            return getState();
-        }
+		if (hasSelectedStar())
+		{
+			return ShootingStarState.WALKING;
+		}
 
-        Star selectedStar = plugin.getSelectedStar();
+		return ShootingStarState.WAITING_FOR_STAR;
+	}
 
-        if (selectedStar == null) {
-            if (shouldBank()) {
-                return ShootingStarState.BANKING;
-            }
+	private ShootingStarState updateStarState()
+	{
+		if (state == null)
+		{
+			if (isUsingInventorySetup())
+			{
+				rs2InventorySetup = new Rs2InventorySetup(config.inventorySetup(), mainScheduledFuture);
+				if (!rs2InventorySetup.hasSpellBook())
+				{
+					Microbot.showMessage("Your spellbook is not matching the inventory setup.");
+					Microbot.stopPlugin(plugin);
+					return null;
+				}
+			}
+			else
+			{
+				if (Rs2Inventory.hasItem("pickaxe") || Rs2Equipment.isWearing("pickaxe"))
+				{
+					pickaxe = getBestPickaxe(Rs2Equipment.items());
+					if (pickaxe == null)
+					{
+						pickaxe = getBestPickaxe(Rs2Inventory.items().collect(Collectors.toList()));
+					}
+				}
+			}
+			return getState();
+		}
 
-            return ShootingStarState.WAITING_FOR_STAR;
-        }
+		Star selectedStar = plugin.getSelectedStar();
 
-        if (!star.equals(selectedStar)) {
-            star = selectedStar;
-            if (state == ShootingStarState.MINING) {
-                WorldPoint randomNearestWalkableTile = Rs2Tile.getNearestWalkableTile(Rs2Player.getWorldLocation());
-                Rs2Walker.walkFastCanvas(randomNearestWalkableTile);
-            }
-            if (state == ShootingStarState.WALKING) {
-                Rs2Walker.setTarget(null);
-                Rs2Player.waitForWalking();
-            }
-            return ShootingStarState.WALKING;
-        }
+		if (selectedStar == null)
+		{
+			if (shouldBank())
+			{
+				return ShootingStarState.BANKING;
+			}
 
-        if (state == ShootingStarState.MINING) {
-            GameObject starObject = Rs2GameObject.findObject("crashed star", false, 10, false, initialPlayerLocation);
+			return ShootingStarState.WAITING_FOR_STAR;
+		}
 
-            if (star == null || starObject == null) {
-                
-                if (plugin.getSelectedStar().getTier() == 1) {
-                    plugin.setTotalStarsMined(plugin.getTotalStarsMined() + 1);
-                }
-                plugin.removeStar(plugin.getSelectedStar());
-                plugin.updatePanelList(true);
+		if (!currentStar.equals(selectedStar))
+		{
+			currentStar = selectedStar;
+			if (state == ShootingStarState.MINING)
+			{
+				WorldPoint randomNearestWalkableTile = Rs2Tile.getNearestWalkableTile(Rs2Player.getWorldLocation());
+				Rs2Walker.walkFastCanvas(randomNearestWalkableTile);
+			}
+			if (state == ShootingStarState.WALKING)
+			{
+				Rs2Walker.setTarget(null);
+				Rs2Player.waitForWalking();
+			}
+			return ShootingStarState.WALKING;
+		}
 
-                if (shouldBank()) {
-                    return ShootingStarState.BANKING;
-                }
+		if (state == ShootingStarState.MINING)
+		{
+			GameObject starObject = Rs2GameObject.getGameObject("crashed star", initialPlayerLocation, 10);
 
-                return ShootingStarState.WAITING_FOR_STAR;
-            }
+			if (currentStar == null || starObject == null)
+			{
 
-            star.setObjectID(starObject.getId());
-            plugin.updateSelectedStar(star);
-            plugin.updatePanelList(true);
-            star = selectedStar;
-        }
-        return ShootingStarState.MINING;
-    }
+				if (plugin.getSelectedStar().getTier() == 1)
+				{
+					plugin.setTotalStarsMined(plugin.getTotalStarsMined() + 1);
+				}
+				plugin.removeStar(plugin.getSelectedStar());
+				plugin.updatePanelList(true);
 
-    private boolean hasStateChanged() {
-        // If no state (on plugin start)
-        if (state == null) return true;
-        // If waiting for star or if you are returning to bank & no selected star, no state change (mainly for manual mode, but also to allow waiting for star to run)
-        if (state == ShootingStarState.WAITING_FOR_STAR || (state == ShootingStarState.BANKING && plugin.getSelectedStar() == null))
-            return false;
-        // If you are walking or mining a star & the star becomes null
-        if (plugin.getSelectedStar() == null) return true;
-        // If the instance of the current star in the script does not equal the selected star in the plugin (only based on world & location)
-        if (!star.equals(plugin.getSelectedStar())) return true;
-        // If the state is mining state, scan the crashed star game object & check if the game object id has updated.
-        if (state == ShootingStarState.MINING) {
-            GameObject starObject = Rs2GameObject.findObject("crashed star", false, 10, false, initialPlayerLocation);
-            return hasStarGameObjectChanged(starObject);
-        }
-        return false;
-    }
+				if (shouldBank())
+				{
+					return ShootingStarState.BANKING;
+				}
 
-    private boolean hasStarGameObjectChanged(GameObject starObject) {
-        // If the GameObject does not exist anymore
-        if (starObject == null) return true;
+				return ShootingStarState.WAITING_FOR_STAR;
+			}
 
-        // If the GameObject has updated to a new tier
-        return star.getObjectID() != starObject.getId();
-    }
+			int _newTier = currentStar.getTierBasedOnObjectId(starObject.getId());
+			currentStar.setTier(_newTier);
+			plugin.updatePanelList(false);
+			currentStar = selectedStar;
+		}
+		return ShootingStarState.MINING;
+	}
 
-    private Pickaxe getBestPickaxe(List<Rs2ItemModel> items) {
-        Pickaxe bestPickaxe = null;
+	private boolean hasStateChanged()
+	{
+		// If no state (on plugin start)
+		if (state == null)
+		{
+			return true;
+		}
+		// If waiting for star or if you are returning to bank & no selected star, no state change (mainly for manual mode, but also to allow waiting for star to run)
+		if (state == ShootingStarState.WAITING_FOR_STAR || (state == ShootingStarState.BANKING && plugin.getSelectedStar() == null))
+		{
+			return false;
+		}
+		// If you are walking or mining a star & the star becomes null
+		if (plugin.getSelectedStar() == null)
+		{
+			return true;
+		}
+		// If the instance of the current star in the script does not equal the selected star in the plugin (only based on world & location)
+		if (!currentStar.equals(plugin.getSelectedStar()))
+		{
+			return true;
+		}
+		// If the state is mining state, scan the crashed star game object & check if the game object id has updated.
+		if (state == ShootingStarState.MINING)
+		{
+			GameObject starObject = Rs2GameObject.getGameObject("crashed star", initialPlayerLocation, 10);
+			return hasStarGameObjectChanged(starObject);
+		}
+		return false;
+	}
 
-        for (Pickaxe pickaxe : Pickaxe.values()) {
-            if (items.stream().noneMatch(i -> i.getName().toLowerCase().contains(pickaxe.getItemName()))) continue;
-            if (pickaxe.hasRequirements()) {
-                if (bestPickaxe == null || pickaxe.getMiningLevel() > bestPickaxe.getMiningLevel()) {
-                    bestPickaxe = pickaxe;
-                }
-            }
-        }
-        return bestPickaxe;
-    }
+	private boolean hasStarGameObjectChanged(GameObject starObject)
+	{
+		// If the GameObject does not exist anymore
+		if (starObject == null)
+		{
+			return true;
+		}
 
-    private boolean shouldBreak() {
-        if (!plugin.isBreakHandlerEnabled()) return false;
+		// If the GameObject has updated to a new tier
+		return currentStar.getObjectId() != starObject.getId();
+	}
 
-        return BreakHandlerScript.breakIn <= 1;
-    }
+	private Pickaxe getBestPickaxe(List<Rs2ItemModel> items)
+	{
+		Pickaxe bestPickaxe = null;
 
-    public void toggleLockState(boolean lock) {
-        if (!plugin.isBreakHandlerEnabled()) return;
-        
-        if (plugin.isBreakHandlerEnabled() && plugin.useBreakAtBank()) {
-            if (lock && !BreakHandlerScript.isLockState()) {
-                BreakHandlerScript.setLockState(true);
-            } else if (!lock && BreakHandlerScript.isLockState()) {
-                BreakHandlerScript.setLockState(false);
-            }
-        }
-    }
+		for (Pickaxe pickaxe : Pickaxe.values())
+		{
+			if (items.stream().noneMatch(i -> i.getName().toLowerCase().contains(pickaxe.getItemName())))
+			{
+				continue;
+			}
+			if (pickaxe.hasRequirements())
+			{
+				if (bestPickaxe == null || pickaxe.getMiningLevel() > bestPickaxe.getMiningLevel())
+				{
+					bestPickaxe = pickaxe;
+				}
+			}
+		}
+		return bestPickaxe;
+	}
 
-    private void applyAntiBanSettings() {
-        Rs2AntibanSettings.antibanEnabled = true;
-        Rs2AntibanSettings.usePlayStyle = true;
-        Rs2AntibanSettings.simulateFatigue = true;
-        Rs2AntibanSettings.simulateAttentionSpan = true;
-        Rs2AntibanSettings.behavioralVariability = true;
-        Rs2AntibanSettings.nonLinearIntervals = true;
-        Rs2AntibanSettings.naturalMouse = true;
-        Rs2AntibanSettings.simulateMistakes = true;
-        Rs2AntibanSettings.moveMouseOffScreen = true;
-        Rs2AntibanSettings.contextualVariability = true;
-        Rs2AntibanSettings.devDebug = false;
-        Rs2AntibanSettings.playSchedule = true;
-        Rs2AntibanSettings.actionCooldownChance = 0.35;
-    }
+	private boolean shouldBreak()
+	{
+		if (!plugin.isBreakHandlerEnabled())
+		{
+			return false;
+		}
+
+		return BreakHandlerScript.breakIn <= 1;
+	}
+
+	public void toggleLockState(boolean lock)
+	{
+		if (!plugin.isBreakHandlerEnabled())
+		{
+			return;
+		}
+
+		if (plugin.isBreakHandlerEnabled() && config.useBreakAtBank())
+		{
+			if (lock && !BreakHandlerScript.isLockState())
+			{
+				BreakHandlerScript.setLockState(true);
+			}
+			else if (!lock && BreakHandlerScript.isLockState())
+			{
+				BreakHandlerScript.setLockState(false);
+			}
+		}
+	}
+
+	private void applyAntiBanSettings()
+	{
+		Rs2AntibanSettings.antibanEnabled = true;
+		Rs2AntibanSettings.usePlayStyle = true;
+		Rs2AntibanSettings.simulateFatigue = true;
+		Rs2AntibanSettings.simulateAttentionSpan = true;
+		Rs2AntibanSettings.behavioralVariability = true;
+		Rs2AntibanSettings.nonLinearIntervals = true;
+		Rs2AntibanSettings.naturalMouse = true;
+		Rs2AntibanSettings.simulateMistakes = true;
+		Rs2AntibanSettings.moveMouseOffScreen = true;
+		Rs2AntibanSettings.contextualVariability = true;
+		Rs2AntibanSettings.devDebug = false;
+		Rs2AntibanSettings.playSchedule = true;
+		Rs2AntibanSettings.actionCooldownChance = 0.35;
+	}
 }

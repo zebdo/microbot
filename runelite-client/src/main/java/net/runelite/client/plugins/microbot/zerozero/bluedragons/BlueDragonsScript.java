@@ -17,6 +17,7 @@ import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -26,6 +27,7 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import javax.inject.Inject;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 public class BlueDragonsScript extends Script {
 
@@ -297,7 +299,7 @@ public class BlueDragonsScript extends Script {
         Rs2Player.eatAt(config.eatAtHealthPercent());
 
         if (!underAttack()) {
-            NPC dragon = getAvailableDragon();
+            Rs2NpcModel dragon = getAvailableDragon();
             if (dragon != null) {
                 logOnceToChat("Found available dragon. Attacking.", true, config);
                 if (attackDragon(dragon)) {
@@ -349,7 +351,11 @@ public class BlueDragonsScript extends Script {
         if (!isInventoryFull()) {
             lootedAnything |= lootItem("Scaly blue dragonhide");
         }
-        
+        if (config.lootMiscItems() && !isInventoryFull()) {
+            Rs2GroundItem.lootItemBasedOnValue(new LootingParameters(3500, 100000, 8, 1, 1, false, true));
+        }
+
+
         if (config.lootDragonhide() && !isInventoryFull()) {
             lootedAnything |= lootItem("Blue dragonhide");
         }
@@ -450,8 +456,8 @@ public class BlueDragonsScript extends Script {
         }
     }
 
-    private NPC getAvailableDragon() {
-        NPC dragon = Rs2Npc.getNpc("Blue dragon");
+    private Rs2NpcModel getAvailableDragon() {
+        Rs2NpcModel dragon = Rs2Npc.getNpc("Blue dragon");
         logOnceToChat("Found dragon: " + (dragon != null ? "Yes (ID: " + dragon.getId() + ")" : "No"), true, config);
         
         if (dragon != null) {
@@ -468,7 +474,7 @@ public class BlueDragonsScript extends Script {
         return null;
     }
 
-    private boolean attackDragon(NPC dragon) {
+    private boolean attackDragon(Rs2NpcModel dragon) {
         final int dragonId = dragon.getId();
         
         if (Rs2Combat.inCombat() && dragon.getInteracting() != Microbot.getClient().getLocalPlayer()) {
@@ -531,7 +537,7 @@ public class BlueDragonsScript extends Script {
 
     private boolean hopIfPlayerAtSafeSpot() {
         boolean otherPlayersAtSafeSpot = false;
-        List<Player> players = Rs2Player.getPlayers();
+        List<Player> players = Rs2Player.getPlayers(it->it!=null).collect(Collectors.toList());
 
         for (Player player : players) {
             if (player != null &&
@@ -600,6 +606,6 @@ public class BlueDragonsScript extends Script {
     }
 
     private boolean underAttack() {
-        return Rs2Combat.inCombat();
+        return Rs2Player.isAnimating(5000);
     }
 }

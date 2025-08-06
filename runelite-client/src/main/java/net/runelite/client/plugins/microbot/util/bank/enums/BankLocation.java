@@ -21,7 +21,7 @@ public enum BankLocation {
     ARCEUUS(new WorldPoint(1624, 3745, 0), true),
     ARDOUGNE_NORTH(new WorldPoint(2616, 3332, 0), true),
     ARDOUGNE_SOUTH(new WorldPoint(2655, 3283, 0), true),
-	AUBURNVALE(new WorldPoint(1416, 3350, 0), true),
+	AUBURNVALE(new WorldPoint(1413, 3353, 0), true),
     BARBARIAN_OUTPOST(new WorldPoint(2536, 3574, 0), true),
     BLAST_FURNACE_BANK(new WorldPoint(1948, 4957, 0), true),
     BLAST_MINE(new WorldPoint(1502, 3856, 0), true),
@@ -77,6 +77,7 @@ public enum BankLocation {
     MOR_UL_REK(new WorldPoint(2541, 5140, 0), true),
     MOTHERLOAD(new WorldPoint(3760, 5666, 0), true),
     MOUNT_KARUULM(new WorldPoint(1324, 3824, 0), true),
+    MOUNT_QUIDAMORTEM (new WorldPoint(1254,3571,0),true),
     MYTHS_GUILD(new WorldPoint(2463, 2847, 1), true),
     NARDAH(new WorldPoint(3428, 2892, 0), true),
 	NEMUS_RETREAT(new WorldPoint(1386, 3309, 0), true),
@@ -194,7 +195,7 @@ public enum BankLocation {
                         Rs2Player.getQuestState(Quest.FAIRYTALE_I__GROWING_PAINS) == QuestState.FINISHED &&
                         Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN) != QuestState.NOT_STARTED;
             case FOSSIL_ISLAND:
-                // TODO: How to check if the chest has been built? maybe there is a varbit?
+                return Rs2Player.getQuestState(Quest.BONE_VOYAGE) == QuestState.FINISHED && Microbot.getVarbitValue(VarbitID.FOSSIL_BANK) == 1;
             case VOLCANO_BANK:
             case FOSSIL_ISLAND_WRECK:
                 // Requires Bone Voyage
@@ -202,6 +203,7 @@ public enum BankLocation {
             case ALDARIN:
 			case AUBURNVALE:
 			case DARKFROST:
+            case MOUNT_QUIDAMORTEM:
 			case NEMUS_RETREAT:
 			case TAL_TEKLAN:
             case VARLAMORE_EAST:

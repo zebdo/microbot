@@ -49,7 +49,11 @@ public class MicrobotPluginManager {
         return MICROBOT_PLUGINS.listFiles();
     }
 
-    public void loadSideLoadPlugins() {
+    /**
+     * Load plugins from the sideloading folder, matching the provided jar names.
+     * @param jarNames
+     */
+    public void loadSideLoadPlugins(List<String> jarNames) {
         File[] files = createSideloadingFolder();
         if (files == null)
         {
@@ -58,9 +62,13 @@ public class MicrobotPluginManager {
 
         for (File f : files)
         {
+            boolean match = jarNames.isEmpty() || jarNames.stream().anyMatch(x -> x.equalsIgnoreCase(f.getName()));
+
+            if (!match) continue;
+
             if (f.getName().endsWith(".jar"))
             {
-                System.out.println("Side-loading plugin " + f.getName());
+                log.info("Side-loading plugin " + f.getName());
 
                 try
                 {
@@ -239,15 +247,9 @@ public class MicrobotPluginManager {
         return plugin;
     }
 
-    public void loadCorePlugins(List<String> packages) throws IOException, PluginInstantiationException
+    public void loadCorePlugins(List<Class<?>> plugins) throws IOException, PluginInstantiationException
     {
         SplashScreen.stage(.59, null, "Loading plugins");
-        ClassPath classPath = ClassPath.from(getClass().getClassLoader());
-
-        List<Class<?>> plugins = packages.stream()
-                .flatMap(packageName -> classPath.getTopLevelClassesRecursive(packageName).stream())
-                .map(ClassPath.ClassInfo::load)
-                .collect(Collectors.toList());
 
         loadPlugins(plugins, (loaded, total) ->
                 SplashScreen.stage(.60, .70, null, "Loading plugins", loaded, total, false));

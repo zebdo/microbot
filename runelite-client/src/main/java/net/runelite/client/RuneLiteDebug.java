@@ -151,6 +151,8 @@ public class RuneLiteDebug {
     @Inject
     private MicrobotPluginManager microbotPluginManager;
 
+    public static List<Class<?>> pluginsToDebug = new ArrayList<>();
+
     public static void main(String[] args) throws Exception {
         Locale.setDefault(Locale.ENGLISH);
 
@@ -365,7 +367,7 @@ public class RuneLiteDebug {
         Updater updater = injector.getInstance(Updater.class);
         updater.update(); // will exit if an update is in progress
 
-        microbotPluginManager.loadSideLoadPlugins();
+        microbotPluginManager.loadSideLoadPlugins(new ArrayList<>());
         SplashScreen.stage(.70, null, "Finalizing configuration");
 
         // Plugins have provided their config, so set default config
@@ -401,11 +403,10 @@ public class RuneLiteDebug {
 
         clientUI.show();
 
-        // This will initialize configuration
-        microbotPluginManager.loadCorePlugins(Arrays.asList("net.runelite.client.plugins.microbot", "net.runelite.client.plugins.banktags", "net.runelite.client.plugins.config", "net.runelite.client.plugins.cluescrolls",
-                "net.runelite.client.plugins.devtools", "net.runelite.client.plugins.stretchedmode", "net.runelite.client.plugins.gpu", "net.runelite.client.plugins.rsnhider"));
+        pluginManager.loadCorePlugins();
 
-        // Start plugins later so we can already login
+        microbotPluginManager.loadCorePlugins(pluginsToDebug);
+
         pluginManager.startPlugins();
 
         if (telemetryClient != null) {

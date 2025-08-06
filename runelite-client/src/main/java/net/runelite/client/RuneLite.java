@@ -32,53 +32,7 @@ import com.google.gson.Gson;
 import com.google.inject.Guice;
 import com.google.inject.Inject;
 import com.google.inject.Injector;
-import java.applet.Applet;
-import java.awt.Desktop;
-import java.io.File;
-import java.io.IOException;
-import java.lang.management.ManagementFactory;
-import java.lang.management.RuntimeMXBean;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
-import java.net.URI;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
-import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.SecureRandom;
-import java.security.cert.CertificateException;
-import java.security.cert.X509Certificate;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Stream;
-import javax.annotation.Nullable;
-import javax.inject.Provider;
-import javax.inject.Singleton;
-import javax.management.ObjectName;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509TrustManager;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-import joptsimple.ArgumentAcceptingOptionSpec;
-import joptsimple.OptionParser;
-import joptsimple.OptionSet;
-import joptsimple.OptionSpec;
-import joptsimple.ValueConversionException;
-import joptsimple.ValueConverter;
+import joptsimple.*;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
@@ -89,7 +43,6 @@ import net.runelite.client.discord.DiscordService;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 import net.runelite.client.plugins.PluginManager;
-import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.sideloading.MicrobotPluginManager;
 import net.runelite.client.rs.ClientLoader;
 import net.runelite.client.ui.ClientUI;
@@ -108,6 +61,40 @@ import okhttp3.Request;
 import okhttp3.Response;
 import org.slf4j.LoggerFactory;
 
+import javax.annotation.Nullable;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.management.ObjectName;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509TrustManager;
+import javax.swing.*;
+import java.applet.Applet;
+import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.lang.management.ManagementFactory;
+import java.lang.management.RuntimeMXBean;
+import java.net.Authenticator;
+import java.net.PasswordAuthentication;
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
+import java.security.*;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
+import java.util.List;
+import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Stream;
+
+import static java.nio.file.StandardCopyOption.COPY_ATTRIBUTES;
+
 @Singleton
 @Slf4j
 public class RuneLite
@@ -121,7 +108,10 @@ public class RuneLite
 	public static final File NOTIFICATIONS_DIR = new File(RuneLite.RUNELITE_DIR, "notifications");
 
 	private static final int MAX_OKHTTP_CACHE_SIZE = 20 * 1024 * 1024; // 20mb
-	public static String USER_AGENT = "RuneLite/" + RuneLiteProperties.getVersion() + "-" + RuneLiteProperties.getCommit() + (RuneLiteProperties.isDirty() ? "+" : "");
+	public static String USER_AGENT = "RuneLite/" + RuneLiteProperties.getVersion();
+
+	// A seperated comma delimited list of jars to side load
+	private static List<String> jarsToSideLoad = new ArrayList<>();
 
 	@Getter
 	private static Injector injector;
@@ -198,7 +188,10 @@ public class RuneLite
 		parser.accepts("profile", "Configuration profile to use").withRequiredArg();
 		parser.accepts("noupdate", "Skips the launcher update");
 		parser.accepts("clean-randomdat", "Clean random dat file");
-
+		OptionSpec<String> plugins = parser.accepts("plugins")
+				.withRequiredArg()
+				.ofType(String.class)
+				.withValuesSeparatedBy(',');
 
         final ArgumentAcceptingOptionSpec<String> proxyInfo = parser.accepts("proxy", "Use a proxy server for your runelite session")
                 .withRequiredArg().ofType(String.class);
@@ -303,6 +296,10 @@ public class RuneLite
                 });
             }
         }
+
+		if (options.has("plugins")) {
+			jarsToSideLoad = options.valuesOf(plugins);
+		}
 
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) ->
         {
@@ -482,7 +479,7 @@ public class RuneLite
 		pluginManager.loadSideLoadPlugins();
 		externalPluginManager.loadExternalPlugins();
 
-        microbotPluginManager.loadSideLoadPlugins();
+        microbotPluginManager.loadSideLoadPlugins(jarsToSideLoad);
 
         SplashScreen.stage(.70, null, "Finalizing configuration");
 

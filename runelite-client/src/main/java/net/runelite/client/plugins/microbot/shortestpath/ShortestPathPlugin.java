@@ -258,18 +258,21 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
     }
 
     public void restartPathfinding(WorldPoint start, Set<WorldPoint> ends, boolean canReviveFiltered) {
+        ExecutorService executor;
         synchronized (pathfinderMutex) {
             if (pathfinder != null) {
                 pathfinder.cancel();
                 pathfinderFuture.cancel(true);
             }
 
-            if (pathfindingExecutor == null) {
+            if ((executor = pathfindingExecutor) == null) {
                 ThreadFactory shortestPathNaming = new ThreadFactoryBuilder().setNameFormat("shortest-path-%d").build();
-                pathfindingExecutor = Executors.newSingleThreadExecutor(shortestPathNaming);
+                executor = Executors.newSingleThreadExecutor(shortestPathNaming);
+                pathfindingExecutor = executor;
             }
         }
 
+        final ExecutorService finalExecutor = executor;
         getClientThread().invokeLater(() -> {
             pathfinderConfig.refresh();
             pathfinderConfig.filterLocations(ends, canReviveFiltered);
@@ -278,7 +281,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
                     setTarget(null);
                 } else {
                     pathfinder = new Pathfinder(pathfinderConfig, start, ends);
-                    pathfinderFuture = pathfindingExecutor.submit(pathfinder);
+                    pathfinderFuture = finalExecutor.submit(pathfinder);
                 }
             }
         });
@@ -315,6 +318,9 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
         if (!CONFIG_GROUP.equals(event.getGroup())) {
             return;
         }
+
+		// Reset config in Rs2Walker when changed
+		Rs2Walker.setConfig(config);
 
         if ("drawDebugPanel".equals(event.getKey())) {
             if (config.drawDebugPanel()) {

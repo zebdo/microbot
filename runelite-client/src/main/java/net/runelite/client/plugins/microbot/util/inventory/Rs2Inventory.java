@@ -39,6 +39,7 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -189,7 +190,7 @@ public class Rs2Inventory {
                 if (primaryItem == secondaryItem) continue;
 
                 int slotDifference = calculateSlotDifference(primaryItem.getSlot(), secondaryItem.getSlot());
-                if (slotDifference < minSlotDifference) {
+                if (slotDifference <= minSlotDifference) {
                     minSlotDifference = slotDifference;
                     closestPrimaryItem = primaryItem;
                     closestSecondaryItem = secondaryItem;
@@ -644,15 +645,14 @@ public class Rs2Inventory {
     }
 
     /**
-     * Gets the item in the inventory with the specified name.
-     * this method ignores casing
+     * Gets the item in the inventory with one of the specified names.
      *
-     * @param name The name to match.
+     * @param names to match.
      *
-     * @return The item with the specified name, or null if not found.
+     * @return The item with one of the specified names, or null if not found.
      */
-    public static Rs2ItemModel get(String name) {
-        return get(name, false, false);
+    public static Rs2ItemModel get(String... names) {
+        return get(names, false);
     }
 
     /**
@@ -664,34 +664,7 @@ public class Rs2Inventory {
      * @return The item with the specified name, or null if not found.
      */
     public static Rs2ItemModel get(String name, boolean exact) {
-        return get(exact ? x -> x.getName().equalsIgnoreCase(name) :
-                x -> x.getName().toLowerCase().contains(name.toLowerCase()));
-    }
-
-    /**
-     * Gets the item in the inventory with the specified name.
-     * this method ignores casing
-     *
-     * @param name The name to match.
-     *
-     * @return The item with the specified name, or null if not found.
-     */
-    public static Rs2ItemModel get(String name, boolean stackable, boolean exact) {
-        Predicate<Rs2ItemModel> filter = exact ? item -> item.getName().equalsIgnoreCase(name) :
-                item -> item.getName().toLowerCase().contains(name.toLowerCase());
-        if (stackable) filter = filter.and(Rs2ItemModel::isStackable);
-        return get(filter);
-    }
-
-    /**
-     * Gets the item in the inventory with one of the specified names.
-     *
-     * @param names The names to match.
-     *
-     * @return The item with one of the specified names, or null if not found.
-     */
-    public static Rs2ItemModel get(String... names) {
-        return get(names, false);
+        return get(name, false, exact);
     }
 
     /**
@@ -703,8 +676,34 @@ public class Rs2Inventory {
      * @return The item with one of the specified names, or null if not found.
      */
     public static Rs2ItemModel get(String[] names, boolean exact) {
-        return get(exact ? item -> Arrays.stream(names).anyMatch(name -> name.equalsIgnoreCase(item.getName())) :
-                item -> Arrays.stream(names).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase())));
+        return get(names, false, exact);
+    }
+
+    /**
+     * Gets the item in the inventory with the specified name.
+     * this method ignores casing
+     *
+     * @param name The name to match.
+     *
+     * @return The item with the specified name, or null if not found.
+     */
+    public static Rs2ItemModel get(String name, boolean stackable, boolean exact) {
+        return get(new String[] {name}, stackable, exact);
+    }
+
+    /**
+     * Gets the item in the inventory with the specified name.
+     * this method ignores casing
+     *
+     * @param names to match.
+     *
+     * @return The item with the specified name, or null if not found.
+     */
+    public static Rs2ItemModel get(String[] names, boolean stackable, boolean exact) {
+        Predicate<Rs2ItemModel> filter = Rs2ItemModel.matches(exact, names);
+        if (stackable) filter = filter.and(Rs2ItemModel::isStackable);
+        return exact ? items(filter).findFirst().orElse(null) :
+                items(filter).min(Comparator.comparingInt(item -> item.getName().length())).orElse(null);
     }
 
     /**

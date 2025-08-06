@@ -15,8 +15,26 @@ import net.runelite.client.plugins.microbot.magetrainingarena.enums.*;
         "- When set to buy rewards, the rooms are cycled until the points are met, the reward will be stored in your bank. <br />" +
         "- If not set to buy rewards, the rooms are cycled as if it would buy the rewards then continues cycling the rooms afterwards. <br />" +
         "  <br />" +
-        "- 'All items' will get enough points for you to finish Collection Log'")
+        "- 'All items' will get enough points for you to finish Collection Log'" +
+        "  <br />" +
+        "  For repeat rooms functionality to work the requirements must be met and you must be in the room you wish to repeat.")
 public interface MageTrainingArenaConfig extends Config {
+    @ConfigSection(
+            name = "Rooms",
+            description = "Magic Training Arena Rooms",
+            position = 1
+    )
+    String roomSection = "rooms";
+
+    @ConfigItem(
+            keyName = "repeatRoom",
+            name = "Repeat Room",
+            description = "Determines whether the bot should repeat the current room.",
+            position = 0,
+            section = roomSection
+    )
+    default boolean repeatRoom() { return false; }
+
     @ConfigSection(
             name = "Rewards",
             description = "Rewards",
