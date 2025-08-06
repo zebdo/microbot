@@ -8,10 +8,10 @@ import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.*;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2ObjectModel;
-import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItemModel;
-import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.HotkeyListener;
 import net.runelite.client.eventbus.Subscribe;
@@ -31,7 +31,9 @@ import javax.inject.Inject;
 @PluginDescriptor(
         name = "Rs2 Cache Debugger",
         description = "Debug and visualize Rs2Cache system with configurable overlays, cache statistics, and performance monitoring",
-        tags = {"cache", "debug", "overlay", "npc", "object", "ground items", "performance", "vox"}
+        tags = {"cache", "debug", "overlay", "npc", "object", "ground items", "performance", "vox"},
+        enabledByDefault = false,
+        disableOnStartUp = true
 )
 @Slf4j
 public class Rs2CacheDebuggerPlugin extends Plugin {
@@ -94,7 +96,7 @@ public class Rs2CacheDebuggerPlugin extends Plugin {
     private final HotkeyListener logCacheInfoListener = new HotkeyListener(() -> config.logCacheInfoHotkey()) {
         @Override
         public void hotkeyPressed() {
-            logDetailedCacheInfo();
+            Microbot.getClientThread().runOnSeperateThread(()-> {logDetailedCacheInfo(); return null;});
         }
     };
     
@@ -203,14 +205,14 @@ public class Rs2CacheDebuggerPlugin extends Plugin {
             }
             
             // Apply preset filter
-            if (!preset.test(npcModel)) {
+            if (!preset.test(npcModel)) {                
                 return false;
             }
             
             // Apply custom filter if specified
             if (customFilter != null && !customFilter.trim().isEmpty()) {
                 String npcName = npcModel.getName();
-                if (npcName == null) {
+                if (npcName == null) {                    
                     return false;
                 }
                 return npcName.toLowerCase().contains(customFilter.toLowerCase());
@@ -411,86 +413,76 @@ public class Rs2CacheDebuggerPlugin extends Plugin {
     }
     
     /**
-     * Log detailed cache information including performance metrics
+     * Log detailed cache information using the new unified logging system
      */
     public void logDetailedCacheInfo() {
         log.info("=== Rs2 Cache Debugger - Detailed Cache Analysis ===");
         
-        // NPC Cache Analysis
+        boolean dumpToFile = config.showCachePerformanceMetrics(); // Use performance metrics config to determine file dumping
+        LogOutputMode outputMode = 
+                dumpToFile ?LogOutputMode.BOTH 
+                          : LogOutputMode.CONSOLE_ONLY;
+        // Use new unified logging for all caches
+        log.info("Generating detailed cache state reports...");
+        
+        // NPC Cache State
         if (Rs2NpcCache.getInstance() != null) {
-            log.info("NPC Cache: {} entries, Mode: {}", 
-                Rs2NpcCache.getInstance().size(), Rs2NpcCache.getInstance().getCacheMode());
-            
-            if (config.showCachePerformanceMetrics()) {
-                // Use cache statistics for performance logging
-                var npcStats = Rs2NpcCache.getInstance().getStatistics();
-                log.info("NPC Cache Performance - Hit Rate: {}%, Total Hits: {}, Total Misses: {}", 
-                    String.format("%.1f", npcStats.getHitRate() * 100),
-                    npcStats.cacheHits,
-                    npcStats.cacheMisses);
-            }
-            
-            // Demonstrate cache utilities
-            var closestNpc = Rs2NpcCache.getClosestNpcByGameId(1); // Man NPC ID
-            if (closestNpc.isPresent()) {
-                log.info("Closest Man NPC: {} at distance {}", 
-                    closestNpc.get().getName(), closestNpc.get().getDistanceFromPlayer());
-            }
-            
-            // Cache invalidation info
-            var npcStats = Rs2NpcCache.getInstance().getStatistics();
-            log.info("NPC Cache Last Invalidation: {}, Mode: {}", 
-                npcStats.totalInvalidations > 0 ? "Available" : "None",
-                npcStats.cacheMode);
+            log.info("--- NPC Cache Analysis ---");
+            // Use new LogOutputMode for better control
+           
+            Rs2NpcCache.logState(outputMode);
+        }
+        // Quest Cache State
+        if (Rs2QuestCache.getInstance() != null) {
+            log.info("--- Quest Cache Analysis ---");
+            Rs2QuestCache.logState(outputMode);
         }
         
-        // Object Cache Analysis
+        // Object Cache State  
         if (Rs2ObjectCache.getInstance() != null) {
-            log.info("Object Cache: {} entries, Mode: {}", 
-                Rs2ObjectCache.getInstance().size(), Rs2ObjectCache.getInstance().getCacheMode());
-                
-            if (config.showCachePerformanceMetrics()) {
-                var objectStats = Rs2ObjectCache.getInstance().getStatistics();
-                log.info("Object Cache Performance - Hit Rate: {}%, Total Hits: {}, Total Misses: {}", 
-                    String.format("%.1f", objectStats.getHitRate() * 100),
-                    objectStats.cacheHits,
-                    objectStats.cacheMisses);
-            }
-                
-            // Demonstrate cache utilities  
-            var closestBank = Rs2ObjectCache.getClosestObjectByName("Bank booth");
-            if (closestBank.isPresent()) {
-                log.info("Closest Bank: {} at distance {}", 
-                    closestBank.get().getName(), closestBank.get().getDistanceFromPlayer());
-            }
+            log.info("--- Object Cache Analysis ---");
+            Rs2ObjectCache.logState(outputMode);
         }
         
-        // Ground Item Cache Analysis
+        // Ground Item Cache State
         if (Rs2GroundItemCache.getInstance() != null) {
-            log.info("Ground Item Cache: {} entries, Mode: {}", 
-                Rs2GroundItemCache.getInstance().size(), Rs2GroundItemCache.getInstance().getCacheMode());
-                
-            if (config.showCachePerformanceMetrics()) {
-                var groundItemStats = Rs2GroundItemCache.getInstance().getStatistics();
-                log.info("Ground Item Cache Performance - Hit Rate: {}%, Total Hits: {}, Total Misses: {}", 
-                    String.format("%.1f", groundItemStats.getHitRate() * 100),
-                    groundItemStats.cacheHits,
-                    groundItemStats.cacheMisses);
-            }
-                
-            // Demonstrate cache utilities
-            var closestItem = Rs2GroundItemCache.getClosestItemByName("Coins");
-            if (closestItem.isPresent()) {
-                log.info("Closest Coins: {} x{} at distance {}", 
-                    closestItem.get().getName(), closestItem.get().getQuantity(), 
-                    closestItem.get().getDistanceFromPlayer());
-            }
+            log.info("--- Ground Item Cache Analysis ---");
+            Rs2GroundItemCache.logState(outputMode);
         }
         
+        // Skill Cache State
+        if (Rs2SkillCache.getInstance() != null) {
+            log.info("--- Skill Cache Analysis ---");
+            Rs2SkillCache.logState(outputMode);
+        }
+        
+        // Varbit Cache State
+        if (Rs2VarbitCache.getInstance() != null) {
+            log.info("--- Varbit Cache Analysis ---");
+            Rs2VarbitCache.logState(outputMode);
+        }
+        
+        // VarPlayer Cache State
+        if (Rs2VarPlayerCache.getInstance() != null) {
+            log.info("--- VarPlayer Cache Analysis ---");
+            Rs2VarPlayerCache.logState(outputMode);
+        }
+        
+        // Quest Cache State
+        if (Rs2QuestCache.getInstance() != null) {
+            log.info("--- Quest Cache Analysis ---");
+            Rs2QuestCache.logState(outputMode);
+        }
+        
+        // Plugin State Summary
+        log.info("--- Plugin State Summary ---");
         log.info("Active Overlays - NPC: {}, Object: {}, Ground Items: {}, Info Panel: {}", 
             npcOverlayEnabled, objectOverlayEnabled, groundItemOverlayEnabled, infoPanelEnabled);
-            
-        log.info("Cache Manager: Available");
+        
+        if (dumpToFile) {
+            log.info("Cache state files written to: ~/.runelite/microbot-plugins/cache/");
+        }
+        
         log.info("=== End Cache Analysis ===");
     }
     

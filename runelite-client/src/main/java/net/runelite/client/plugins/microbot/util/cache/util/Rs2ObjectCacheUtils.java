@@ -719,6 +719,9 @@ public class Rs2ObjectCacheUtils {
         return getAll().min(Comparator.comparingInt(Rs2ObjectModel::getTicksSinceCreation));
     }
 
+    
+
+
     // ============================================
     // Scene and Viewport Extraction Methods
     // ============================================
@@ -1016,6 +1019,7 @@ public class Rs2ObjectCacheUtils {
      * Checks if any type of game object is visible in the current viewport using enhanced detection.
      * Supports all TileObject subtypes: GameObject, WallObject, GroundObject, DecorativeObject.
      * Uses client thread for safe access to viewport bounds, canvas coordinates, and object rendering data.
+     * Includes staleness detection to prevent NPEs from invalid cached objects.
      * 
      * @param objectModel The object model to check (supports all object types)
      * @return true if the object is visible on screen
@@ -1028,6 +1032,7 @@ public class Rs2ObjectCacheUtils {
 
             TileObject tileObject = objectModel.getTileObject();
             
+          
             // Use client thread for safe access to viewport and canvas coordinates
             Boolean result = Microbot.getClientThread().runOnClientThreadOptional(() -> {
                 Client client = Microbot.getClient();
@@ -1035,33 +1040,41 @@ public class Rs2ObjectCacheUtils {
                     return false;
                 }
                 
-                // Get canvas location (screen coordinates) for the object
-                Point canvasLocation = tileObject.getCanvasLocation();
-                if (canvasLocation == null) {
-                    //return false; // Object is not visible (behind camera, too far, etc.)
+                try {
+                    // Get canvas location (screen coordinates) for the object
+                    Point canvasLocation = tileObject.getCanvasLocation();
+                    if (canvasLocation == null) {
+                        //return false; // Object is not visible (behind camera, too far, etc.)
+                    }
+                    
+                    // Check if canvas coordinates are within viewport bounds
+                    if (!isPointInViewport(client, canvasLocation)) {
+                        //return false; // Object is outside visible screen area
+                    }
+                    
+                    // Enhanced visibility checks for better accuracy
+                    // First check convex hull (fast geometric check)
+                    Shape hull = getObjectConvexHull(tileObject);
+                    if (hull == null) {
+                        // If no hull available, the basic canvas location check is sufficient
+                        return true;
+                    }
+                    
+                    // Check if convex hull intersects with viewport
+                    Rectangle viewportBounds = getViewportBounds(client);
+                    if (!hull.intersects(viewportBounds)) {
+                        //return false; // Hull doesn't intersect viewport
+                    }
+                    
+                    // For maximum accuracy, check model visibility (optional enhanced check)
+                    return isObjectModelVisible(tileObject);
+                } catch (NullPointerException | IllegalStateException e) {
+                    // Object became stale during processing
+                    return false;
+                } catch (Exception e) {
+                    // Other errors should default to not visible
+                    return false;
                 }
-                
-                // Check if canvas coordinates are within viewport bounds
-                if (!isPointInViewport(client, canvasLocation)) {
-                    //return false; // Object is outside visible screen area
-                }
-                
-                // Enhanced visibility checks for better accuracy
-                // First check convex hull (fast geometric check)
-                Shape hull = getObjectConvexHull(tileObject);
-                if (hull == null) {
-                    // If no hull available, the basic canvas location check is sufficient
-                    return true;
-                }
-                
-                // Check if convex hull intersects with viewport
-                Rectangle viewportBounds = getViewportBounds(client);
-                if (!hull.intersects(viewportBounds)) {
-                  //  return false; // Hull doesn't intersect viewport
-                }
-                
-                // For maximum accuracy, check model visibility (optional enhanced check)
-                return isObjectModelVisible(tileObject);
             }).orElse(false);
             
             return result;
@@ -1069,7 +1082,7 @@ public class Rs2ObjectCacheUtils {
         } catch (Exception e) {
             // Log error for debugging but don't spam logs
             if (Math.random() < 0.001) { // Log ~0.1% of errors to avoid spam
-                log.debug("Error checking viewport visibility for object {}: {}", 
+                log.info("Error checking viewport visibility for object {}: {}", 
                          objectModel.getId(), e.getMessage());
             }
             return false;
@@ -1117,21 +1130,47 @@ public class Rs2ObjectCacheUtils {
     /**
      * Gets the convex hull for any type of tile object.
      * Based on ObjectIndicatorsOverlay and VisibilityHelper patterns.
+     * Includes null safety checks to prevent stale object references.
      * 
      * @param tileObject The tile object
-     * @return The convex hull shape, or null if not visible
+     * @return The convex hull shape, or null if not visible or object is stale
      */
     public static Shape getObjectConvexHull(Object tileObject) {
-        if (tileObject instanceof GameObject) {
-            return ((GameObject) tileObject).getConvexHull();
-        } else if (tileObject instanceof GroundObject) {
-            return ((GroundObject) tileObject).getConvexHull();
-        } else if (tileObject instanceof DecorativeObject) {
-            return ((DecorativeObject) tileObject).getConvexHull();
-        } else if (tileObject instanceof WallObject) {
-            return ((WallObject) tileObject).getConvexHull();
-        } else if (tileObject instanceof TileObject) {
-            return ((TileObject) tileObject).getCanvasTilePoly();
+        if(tileObject == null) {
+            return null; // No object to check
+        }   
+        
+        try {
+            if (tileObject instanceof GameObject) {
+                GameObject gameObject = (GameObject) tileObject;
+                // Check if the object is still valid before accessing convex hull
+              
+                return gameObject.getConvexHull();
+            } else if (tileObject instanceof GroundObject) {
+                GroundObject groundObject = (GroundObject) tileObject;
+                
+                return groundObject.getConvexHull();
+            } else if (tileObject instanceof DecorativeObject) {
+                DecorativeObject decorativeObject = (DecorativeObject) tileObject;
+              
+                return decorativeObject.getConvexHull();
+            } else if (tileObject instanceof WallObject) {
+                WallObject wallObject = (WallObject) tileObject;
+                
+                return wallObject.getConvexHull();
+            } else if (tileObject instanceof TileObject) {
+                TileObject tileObj = (TileObject) tileObject;
+                
+                return tileObj.getCanvasTilePoly();
+            }
+        } catch (NullPointerException | IllegalStateException e) {
+            // Object has become stale/invalid - this is expected behavior in a cache system
+            log.info("Stale object detected in convex hull calculation: {}", e.getMessage());
+            return null;
+        } catch (Exception e) {
+            // Log unexpected errors for debugging
+            log.warn("Unexpected error getting convex hull: {}", e.getMessage());
+            return null;
         }
         return null;
     }
@@ -1139,41 +1178,59 @@ public class Rs2ObjectCacheUtils {
     /**
      * Checks if an object's model has visible triangles (enhanced visibility check).
      * Based on VisibilityHelper approach - checks model triangle transparency.
+     * Includes safety checks for stale objects.
      * 
      * @param tileObject The tile object to check
      * @return true if the object has visible model triangles
      */
     public static boolean isObjectModelVisible(Object tileObject) {
         try {
+            if (tileObject instanceof TileObject) {
+                return false;
+            }
             return checkObjectModelVisibility(tileObject);
+        } catch (NullPointerException | IllegalStateException e) {
+            // Object is stale
+            return false;
         } catch (Exception e) {
-            return true; // Default to visible on error
+            return true; // Default to visible on unexpected error
         }
     }
 
     /**
      * Performs the actual model visibility check for different object types.
+     * Includes defensive checks for stale objects.
      * 
      * @param tileObject The tile object to check
      * @return true if visible triangles are found
      */
     private static boolean checkObjectModelVisibility(Object tileObject) {
-        if (tileObject instanceof GameObject) {
-            Model model = extractModel(((GameObject) tileObject).getRenderable());
-            return modelHasVisibleTriangles(model);
-        } else if (tileObject instanceof GroundObject) {
-            Model model = extractModel(((GroundObject) tileObject).getRenderable());
-            return modelHasVisibleTriangles(model);
-        } else if (tileObject instanceof DecorativeObject) {
-            DecorativeObject decoObj = ((DecorativeObject) tileObject);
-            Model model1 = extractModel(decoObj.getRenderable());
-            Model model2 = extractModel(decoObj.getRenderable2());
-            return modelHasVisibleTriangles(model1) || modelHasVisibleTriangles(model2);
-        } else if (tileObject instanceof WallObject) {
-            WallObject wallObj = ((WallObject) tileObject);
-            Model model1 = extractModel(wallObj.getRenderable1());
-            Model model2 = extractModel(wallObj.getRenderable2());
-            return modelHasVisibleTriangles(model1) || modelHasVisibleTriangles(model2);
+        try {
+            if (tileObject instanceof GameObject) {
+                GameObject gameObject = (GameObject) tileObject;
+                Model model = extractModel(gameObject.getRenderable());
+                return modelHasVisibleTriangles(model);
+            } else if (tileObject instanceof GroundObject) {
+                GroundObject groundObject = (GroundObject) tileObject;
+                Model model = extractModel(groundObject.getRenderable());
+                return modelHasVisibleTriangles(model);
+            } else if (tileObject instanceof DecorativeObject) {
+                DecorativeObject decoObj = (DecorativeObject) tileObject;
+                Model model1 = extractModel(decoObj.getRenderable());
+                Model model2 = extractModel(decoObj.getRenderable2());
+                return modelHasVisibleTriangles(model1) || modelHasVisibleTriangles(model2);
+            } else if (tileObject instanceof WallObject) {
+                WallObject wallObj = (WallObject) tileObject;
+                Model model1 = extractModel(wallObj.getRenderable1());
+                Model model2 = extractModel(wallObj.getRenderable2());
+                return modelHasVisibleTriangles(model1) || modelHasVisibleTriangles(model2);
+            }
+        } catch (NullPointerException | IllegalStateException e) {
+            // Object is stale, not visible
+            return false;
+        } catch (Exception e) {
+            // For other exceptions, log and assume visible
+            log.debug("Error checking model visibility: {}", e.getMessage());
         }
         return true; // Default to visible for unknown types
     }

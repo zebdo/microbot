@@ -1,16 +1,30 @@
 package net.runelite.client.plugins.microbot.shortestpath.pathfinder;
 
+import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
+import net.runelite.api.Client;
+import net.runelite.api.Constants;
+import net.runelite.api.GameState;
+import net.runelite.api.Quest;
+import net.runelite.api.QuestState;
+import net.runelite.api.Skill;
+import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.itemcharges.ItemChargeConfig;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.shortestpath.*;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.cache.Rs2QuestCache;
+import net.runelite.client.plugins.microbot.util.cache.Rs2SkillCache;
 import net.runelite.client.plugins.microbot.util.cache.Rs2SpiritTreeCache;
+import net.runelite.client.plugins.microbot.util.cache.Rs2VarPlayerCache;
+import net.runelite.client.plugins.microbot.util.cache.Rs2VarbitCache;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
@@ -64,6 +78,12 @@ public class PathfinderConfig {
     private final Client client;
     private final ShortestPathConfig config;
 
+	private final List<QuestState> questStateOrder = Arrays.asList(
+		QuestState.NOT_STARTED,
+		QuestState.IN_PROGRESS,
+		QuestState.FINISHED
+	);
+
     @Getter
     private long calculationCutoffMillis;
     @Getter
@@ -97,10 +117,6 @@ public class PathfinderConfig {
     private boolean useNpcs;
     //END microbot variables
     private TeleportationItem useTeleportationItems;
-    private final int[] boostedLevels = new int[Skill.values().length];
-    private Map<Quest, QuestState> questStates = new HashMap<>();
-    private Map<Integer, Integer> varbitValues = new HashMap<>();
-    private Map<Integer, Integer> varplayerValues = new HashMap<>();
 
     @Getter
     @Setter
@@ -162,17 +178,13 @@ public class PathfinderConfig {
         //END microbot variables
 
         if (GameState.LOGGED_IN.equals(client.getGameState())) {
-            for (int i = 0; i < Skill.values().length; i++) {
-                boostedLevels[i] = client.getBoostedSkillLevel(Skill.values()[i]);
-            }
-
             refreshTransports(target);
             //START microbot variables
             refreshRestrictionData();
             
             // Do not switch back to inventory tab if we are inside of the telekinetic room in Mage Training Arena
             if (Rs2Player.getWorldLocation().getRegionID() != 13463) {
-                Rs2Tab.switchToInventoryTab();
+                Rs2Tab.switchTo(InterfaceTab.INVENTORY);
             }
             //END microbot variables
         }
@@ -234,11 +246,11 @@ public class PathfinderConfig {
      */
     private void refreshTransports(WorldPoint target) {
         useFairyRings &= !QuestState.NOT_STARTED.equals(Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN))
-                && (Rs2Inventory.contains(ItemID.DRAMEN_STAFF, ItemID.LUNAR_STAFF)
+                && (Rs2Inventory.contains(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
                 || Rs2Equipment.isWearing(ItemID.DRAMEN_STAFF)
-                || Rs2Equipment.isWearing(ItemID.LUNAR_STAFF)
-                || (ShortestPathPlugin.getPathfinderConfig().useBankItems && (Rs2Bank.hasItem(ItemID.DRAMEN_STAFF)|| Rs2Bank.hasItem(ItemID.LUNAR_STAFF)))
-                || Microbot.getVarbitValue(Varbits.DIARY_LUMBRIDGE_ELITE)  == 1);
+                || Rs2Equipment.isWearing(ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
+                || (ShortestPathPlugin.getPathfinderConfig().useBankItems && (Rs2Bank.hasItem(ItemID.DRAMEN_STAFF)|| Rs2Bank.hasItem(ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)))
+                || Microbot.getVarbitValue(VarbitID.LUMBRIDGE_DIARY_ELITE_COMPLETE) == 1);
         useGnomeGliders &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
         useSpiritTrees &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
         useQuetzals &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
@@ -247,44 +259,14 @@ public class PathfinderConfig {
         transportsPacked.clear();
         usableTeleports.clear();
          // Check spirit tree farming states for farmable spirit trees
-
         Rs2SpiritTreeCache.getInstance().update();       
-        //Rs2SpiritTreeCache.logAllTreeStates();             
-        //log.info("useSpiritTrees: {}", useSpiritTrees);
-        Microbot.getClientThread().runOnClientThreadOptional(() -> {
-            for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
-                for (Transport transport : entry.getValue()) {
-                    for (Quest quest : transport.getQuests()) {
-                        try {
-                            QuestState currentState = questStates.get(quest);
-                            QuestState newState = Rs2Player.getQuestState(quest);
-
-                            // Only update if the new state is more progressed
-                            if (currentState == null || isMoreProgressed(newState, currentState)) {
-                                questStates.put(quest, newState);
-                            }
-                        } catch (NullPointerException ignored) {
-                            System.out.println(ignored.getMessage());
-                        }
-                    }
-                    for (TransportVarbit varbitCheck : transport.getVarbits()) {
-                        varbitValues.put(varbitCheck.getVarbitId(), Microbot.getVarbitValue(varbitCheck.getVarbitId()));
-                    }
-                    
-                    for (TransportVarPlayer varplayerCheck : transport.getVarplayers()) {
-                        varplayerValues.put(varplayerCheck.getVarplayerId(), Microbot.getVarbitPlayerValue(varplayerCheck.getVarplayerId()));
-                    }
-                    
-                   
-                }
-            }
-            return true;
-        });
-
+        //Rs2SpiritTreeCache.logAllTreeStates();                     
         for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
             WorldPoint point = entry.getKey();
             Set<Transport> usableTransports = new HashSet<>(entry.getValue().size());
             for (Transport transport : entry.getValue()) {
+				// Mutate action
+				updateActionBasedOnQuestState(transport);
 
                 if (point == null && useTransport(transport)) {
                     usableTeleports.add(transport);
@@ -305,123 +287,55 @@ public class PathfinderConfig {
         }
     }
 
-    /**
-     * Refreshes transport data with target-based optimization for filtering similar transports.
-     * This variant enables more intelligent filtering by considering the target destination.
-     * 
-     * @param target Target destination for optimized transport filtering
-     */
     public void refresh() {
         refresh(null);        
     }
 
     private void refreshRestrictionData() {
         restrictedPointsPacked.clear();
-
-        Set<Quest> questsToFetch = new HashSet<>();
-        Set<Integer> varbitsToFetch = new HashSet<>();
-        Set<Integer> varplayersToFetch = new HashSet<>();
         List<Restriction> allRestrictions = Stream.concat(resourceRestrictions.stream(), customRestrictions.stream())
                 .collect(Collectors.toList());
 
-        for (Restriction entry : allRestrictions) {
-            questsToFetch.addAll(entry.getQuests());
-            
-            for (TransportVarbit varbitCheck : entry.getVarbits()) {
-                varbitsToFetch.add(varbitCheck.getVarbitId());
-            }
-
-            for (TransportVarPlayer varplayerCheck : entry.getVarplayers()) {
-                varplayersToFetch.add(varplayerCheck.getVarplayerId());
-            }
-        }
-
-        // Fetch quest states and varbit values directly
-        for (Quest quest : questsToFetch) {
-            try {
-                QuestState currentState = questStates.get(quest);
-                QuestState newState = Rs2Player.getQuestState(quest);
-
-                // Only update if the new state is more progressed
-                if (currentState == null || isMoreProgressed(newState, currentState)) {
-                    questStates.put(quest, newState);
+        allRestrictions.stream()
+            .filter(entry -> {
+                // Explicit restriction: no requirements
+                if (entry.getQuests().isEmpty() && entry.getVarbits().isEmpty() && entry.getVarplayers().isEmpty() && !entry.isMembers() && Arrays.stream(entry.getSkillLevels()).allMatch(level -> level == 0) && entry.getItemIdRequirements().isEmpty()) {
+                    return true;
                 }
-            } catch (NullPointerException ignored) {
-                // Handle exceptions if necessary
-            }
-        }
-        for (Integer varbitId : varbitsToFetch) {
-            varbitValues.put(varbitId, Microbot.getVarbitValue(varbitId));
-        }
 
-        for (Integer varplayerId : varplayersToFetch) {
-            varplayerValues.put(varplayerId, Microbot.getVarbitPlayerValue(varplayerId));
-        }
-
-        for (Restriction entry : allRestrictions) {
-            boolean restrictionApplies = false;
-
-            // Check if there are no quests, varbits, varplayers, doesn't require a members world or skills, used for explicit restrictions
-            if (entry.getQuests().isEmpty() && entry.getVarbits().isEmpty() && entry.getVarplayers().isEmpty() && !entry.isMembers() && Arrays.stream(entry.getSkillLevels()).allMatch(level -> level == 0) && entry.getItemIdRequirements().isEmpty()) {
-                restrictionApplies = true;
-            }
-            
-            // Members World Check
-            if (!restrictionApplies) {
+                // Members world check
                 if (entry.isMembers() && !client.getWorldType().contains(WorldType.MEMBERS)) {
-                    restrictionApplies = true;
+                    return true;
                 }
-            }
-
-            // Quest check
-            if (!restrictionApplies) {
-                for (Quest quest : entry.getQuests()) {
-                    if (questStates.getOrDefault(quest, QuestState.NOT_STARTED) != QuestState.FINISHED) {
-                        restrictionApplies = true;
-                        break;
-                    }
+                // Quest check
+				if (entry.getQuests().entrySet().stream().anyMatch(qe -> {
+					QuestState playerState = Rs2QuestCache.getQuestState(qe.getKey());
+					QuestState requiredState = qe.getValue();
+					int playerIndex = questStateOrder.indexOf(playerState);
+					int requiredIndex = questStateOrder.indexOf(requiredState);
+					return playerIndex < requiredIndex;
+				})) {
+					return true;
+				}
+                // Varbit check
+                if (entry.getVarbits().stream().anyMatch(varbitCheck -> !varbitCheck.matches(Rs2VarbitCache.getVarbitValue(varbitCheck.getVarbitId())))) {
+                    return true;
                 }
-            }
-
-            // Varbit check
-            if (!restrictionApplies) {
-                for (TransportVarbit varbitCheck : entry.getVarbits()) {
-                    int varbitId = varbitCheck.getVarbitId();
-                    int actualValue = varbitValues.getOrDefault(varbitId, -1);
-                    if (!varbitCheck.matches(actualValue)) {
-                        restrictionApplies = true;
-                        break;
-                    }
+                // Varplayer check
+                if (entry.getVarplayers().stream().anyMatch(varplayerCheck -> !varplayerCheck.matches(Rs2VarPlayerCache.getVarPlayerValue(varplayerCheck.getVarplayerId())))) {
+                    return true;
                 }
-            }
-            
-            // Varplayer check
-            if (!restrictionApplies) {
-                for (TransportVarPlayer varplayerCheck : entry.getVarplayers()) {
-                    int varplayerId = varplayerCheck.getVarplayerId();
-                    int actualValue = varplayerValues.getOrDefault(varplayerId, -1);
-                    if (!varplayerCheck.matches(actualValue)) {
-                        restrictionApplies = true;
-                        break;
-                    }
+                // Skill level check
+                if (!hasRequiredLevels(entry)) {
+                    return true;
                 }
-            }
-
-            // Skill level check
-            if (!restrictionApplies && !hasRequiredLevels(entry)) {
-                restrictionApplies = true;
-            }
-            
-            if (!restrictionApplies && !entry.getItemIdRequirements().isEmpty()) {
-                if (!hasRequiredItems(entry)) {
-                    restrictionApplies = true;
+                // Item requirement check
+                if (!entry.getItemIdRequirements().isEmpty() && !hasRequiredItems(entry)) {
+                    return true;
                 }
-            }
-
-            if (restrictionApplies) {
-                restrictedPointsPacked.add(entry.getPackedWorldPoint());
-            }
-        }
+                return false;
+            })
+            .forEach(entry -> restrictedPointsPacked.add(entry.getPackedWorldPoint()));
     }
 
     public static boolean isInWilderness(WorldPoint p) {
@@ -477,66 +391,101 @@ public class PathfinderConfig {
 
     }
 
-    private boolean completedQuests(Transport transport) {
-        for (Quest quest : transport.getQuests()) {
-            QuestState state = questStates.getOrDefault(quest, QuestState.NOT_STARTED);
-            if (state != QuestState.FINISHED) {
-                return false;
-            }
-        }
-        return true;
-    }
+	private boolean completedQuests(Transport transport) {
+		return transport.getQuests().entrySet().stream()
+			.allMatch(entry -> {
+				QuestState playerState = Rs2QuestCache.getQuestState(entry.getKey());
+				QuestState requiredState = entry.getValue();
+				int playerIndex = questStateOrder.indexOf(playerState);
+				int requiredIndex = questStateOrder.indexOf(requiredState);
+				return playerIndex >= requiredIndex;
+			});
+	}
 
     private boolean varbitChecks(Transport transport) {
-        if (varbitValues.isEmpty()) return true;
-        for (TransportVarbit varbitCheck : transport.getVarbits()) {
-            int actualValue = varbitValues.getOrDefault(varbitCheck.getVarbitId(), -1);
-            if (!varbitCheck.matches(actualValue)) {
-                return false;
-            }
-        }
-        return true;
+        return transport.getVarbits().isEmpty() ||
+			transport.getVarbits().stream()
+				.allMatch(varbitCheck -> varbitCheck.matches(Rs2VarbitCache.getVarbitValue(varbitCheck.getVarbitId())));
     }
 
-    private boolean varplayerChecks(Transport transport) {
-        if (varplayerValues.isEmpty()) return true;
-        for (TransportVarPlayer varplayerCheck : transport.getVarplayers()) {
-            int actualValue = varplayerValues.getOrDefault(varplayerCheck.getVarplayerId(), -1);
-            if (!varplayerCheck.matches(actualValue)) {
-                return false;
-            }
-        }
-        return true;
-    }
+	private boolean varplayerChecks(Transport transport) {
+		return transport.getVarplayers().isEmpty() ||
+			transport.getVarplayers().stream()
+				.allMatch(varplayerCheck -> varplayerCheck.matches(Rs2VarPlayerCache.getVarPlayerValue(varplayerCheck.getVarplayerId())));
+	}
 
     private boolean useTransport(Transport transport) {
         // Check if the feature flag is disabled
-        if (!isFeatureEnabled(transport)) return false;
+        if (!isFeatureEnabled(transport)) {
+			log.debug("Transport Type {} is disabled by feature flag", transport.getType());
+			return false;
+		}
         // If the transport requires you to be in a members world (used for more granular member requirements)
-        if (transport.isMembers() && !client.getWorldType().contains(WorldType.MEMBERS)) return false;
+        if (transport.isMembers() && !client.getWorldType().contains(WorldType.MEMBERS)) {
+			log.debug("Transport ( O: {} D: {} ) requires members world", transport.getOrigin(), transport.getDestination());
+			return false;
+		}
         // If you don't meet level requirements
-        if (!hasRequiredLevels(transport)) return false;
+        if (!hasRequiredLevels(transport)) {
+			log.debug("Transport ( O: {} D: {} ) requires skill levels {}", transport.getOrigin(), transport.getDestination(), Arrays.toString(transport.getSkillLevels()));
+			return false;
+		}
         // If the transport has quest requirements & the quest haven't been completed
-        if (transport.isQuestLocked() && !completedQuests(transport)) return false;
+        if (transport.isQuestLocked() && !completedQuests(transport)) {
+			log.debug("Transport ( O: {} D: {} ) requires quests {}", transport.getOrigin(), transport.getDestination(), transport.getQuests());
+			return false;
+		}
         // Check Spirit Tree specific requirements (farming state for farmable trees)
         if (transport.getType() == TransportType.SPIRIT_TREE) return isSpiritTreeUsable(transport);
         // If the transport has varbit requirements & the varbits do not match
-        if (!varbitChecks(transport)) return false;
+        if (!varbitChecks(transport)) {
+			log.debug("Transport ( O: {} D: {} ) requires varbits {}", transport.getOrigin(), transport.getDestination(), transport.getVarbits());
+			return false;
+		}
         // If the transport has varplayer requirements & the varplayers do not match
-        if (!varplayerChecks(transport)) return false;
+        if (!varplayerChecks(transport)) {
+			log.debug("Transport ( O: {} D: {} ) requires varplayers {}", transport.getOrigin(), transport.getDestination(), transport.getVarplayers());
+			return false;
+		}
         // If you don't have the required currency & amount for transport
         if (transport.getCurrencyAmount() > 0 
             && !Rs2Inventory.hasItemAmount(transport.getCurrencyName(), transport.getCurrencyAmount())
-            && !(ShortestPathPlugin.getPathfinderConfig().useBankItems && Rs2Bank.count(transport.getCurrencyName()) >= transport.getCurrencyAmount())
-            ) return false;
+            && !(ShortestPathPlugin.getPathfinderConfig().useBankItems && Rs2Bank.count(transport.getCurrencyName()) >= transport.getCurrencyAmount())) {
+			log.debug("Transport ( O: {} D: {} ) requires {} x {}", transport.getOrigin(), transport.getDestination(), transport.getCurrencyAmount(), transport.getCurrencyName());
+			return false;
+		}
         // Check if Teleports are globally disabled
-        if (TransportType.isTeleport(transport.getType()) && Rs2Walker.disableTeleports) return false;
+        if (TransportType.isTeleport(transport.getType()) && Rs2Walker.disableTeleports) {
+			log.debug("Transport ( O: {} D: {} ) is a teleport but teleports are globally disabled", transport.getOrigin(), transport.getDestination());
+			return false;
+		}
         // Check Teleport Item Settings
-        if (transport.getType() == TELEPORTATION_ITEM) return isTeleportationItemUsable(transport);
+        if (transport.getType() == TELEPORTATION_ITEM) {
+			boolean isUsable = isTeleportationItemUsable(transport);
+			if (!isUsable)
+			{
+				log.debug("Transport ( O: {} D: {} ) is a teleport item but is not usable", transport.getOrigin(), transport.getDestination());
+			}
+			return isUsable;
+		}
         // Check Teleport Spell Settings
-        if (transport.getType() == TELEPORTATION_SPELL) return isTeleportationSpellUsable(transport);
+        if (transport.getType() == TELEPORTATION_SPELL) {
+			boolean isUsable = isTeleportationSpellUsable(transport);
+			if (!isUsable)
+			{
+				log.debug("Transport ( O: {} D: {} ) is a teleport spell but is not usable", transport.getOrigin(), transport.getDestination());
+			}
+			return isUsable;
+		}
         // Used for Generic Item Requirements
-        if (!transport.getItemIdRequirements().isEmpty()) return hasRequiredItems(transport);
+        if (!transport.getItemIdRequirements().isEmpty()) {
+			boolean hasRequiredItems = hasRequiredItems(transport);
+			if (!hasRequiredItems)
+			{
+				log.debug("Transport ( O: {} D: {} ) requires items {}", transport.getOrigin(), transport.getDestination(), transport.getItemIdRequirements().stream().flatMap(Set::stream).collect(Collectors.toSet()));
+			}
+			return hasRequiredItems;
+		}
         
 
         return true;
@@ -545,32 +494,30 @@ public class PathfinderConfig {
     /** Checks if the player has all the required skill levels for the transport */
     private boolean hasRequiredLevels(Transport transport) {
         int[] requiredLevels = transport.getSkillLevels();
-        for (int i = 0; i < boostedLevels.length; i++) {
-            int boostedLevel = boostedLevels[i];
-            int requiredLevel = requiredLevels[i];
-            if (boostedLevel < requiredLevel) {
-                return false;
-            }
-        }
-        return true;
+        Skill[] skills = Skill.values();
+        return IntStream.range(0, requiredLevels.length)
+            .filter(i -> requiredLevels[i] > 0)
+            .allMatch(i -> Rs2SkillCache.getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
     }
 
     /** Checks if the player has all the required skill levels for the restriction */
     private boolean hasRequiredLevels(Restriction restriction) {
         int[] requiredLevels = restriction.getSkillLevels();
-        for (int i = 0; i < boostedLevels.length; i++) {
-
-            if (Skill.values()[i] == Skill.AGILITY && requiredLevels[i] > 0 && !config.useAgilityShortcuts()) return false;
-
-            int boostedLevel = boostedLevels[i];
-            int requiredLevel = requiredLevels[i];
-
-            if (boostedLevel < requiredLevel) {
-                return false;
-            }
-        }
-        return true;
+        Skill[] skills = Skill.values();
+        return IntStream.range(0, requiredLevels.length)
+            .filter(i -> requiredLevels[i] > 0)
+            .allMatch(i -> Rs2SkillCache.getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
     }
+
+	private void updateActionBasedOnQuestState(Transport transport) {
+		if (Objects.equals(transport.getType(), TransportType.SHIP) &&
+			(Objects.equals(transport.getName(), "Veos") || Objects.equals(transport.getName(), "Captain Magoro"))) {
+			QuestState questState = Rs2QuestCache.getQuestState(Quest.CLIENT_OF_KOUREND);
+			if (questState != QuestState.FINISHED && !Objects.equals(transport.getAction(), "Talk-to")) {
+				transport.setAction("Talk-to");
+			}
+		}
+	}
 
     private boolean isFeatureEnabled(Transport transport) {
         TransportType type = transport.getType();
@@ -694,7 +641,7 @@ public class PathfinderConfig {
 
     /** Checks if the Chronicle has charges */
     private boolean hasChronicleCharges() {
-        if (!Rs2Equipment.hasEquipped(ItemID.CHRONICLE)) {
+        if (!Rs2Equipment.isWearing(ItemID.CHRONICLE)) {
             if (!Rs2Inventory.hasItem(ItemID.CHRONICLE))
                 return false;
         }
@@ -706,7 +653,7 @@ public class PathfinderConfig {
         if (charges == null || charges.isEmpty()) {
             if (Rs2Inventory.hasItem(ItemID.CHRONICLE)) {
                 Rs2Inventory.interact(ItemID.CHRONICLE, "Check charges");
-            } else if (Rs2Equipment.hasEquipped(ItemID.CHRONICLE)) {
+            } else if (Rs2Equipment.isWearing(ItemID.CHRONICLE)) {
                 Rs2Equipment.interact(ItemID.CHRONICLE, "Check charges");
             }
             charges = Microbot.getConfigManager().getRSProfileConfiguration(ItemChargeConfig.GROUP, ItemChargeConfig.KEY_CHRONICLE);
@@ -714,21 +661,6 @@ public class PathfinderConfig {
 
         // Validate charges
         return charges != null && Integer.parseInt(charges) > 0;
-    }
-    
-    /** Checks if a QuestState is further progressed than currentState **/
-    private boolean isMoreProgressed(QuestState newState, QuestState currentState) {
-        if (currentState == null) return false;
-        if (newState == null) return false;
-        
-        // Define the progression order of states
-        List<QuestState> progressionOrder = Arrays.asList(
-                QuestState.NOT_STARTED,
-                QuestState.IN_PROGRESS,
-                QuestState.FINISHED
-        );
-
-        return progressionOrder.indexOf(newState) > progressionOrder.indexOf(currentState);
     }
 
     /**
@@ -991,8 +923,8 @@ public class PathfinderConfig {
         // Calculate the centroid (average of the three points)
         int x = (p1.getX() + p2.getX() + p3.getX()) / 3;
         int y = (p1.getY() + p2.getY() + p3.getY()) / 3;
-        int plane = p1.getPlane(); // All points should be on the same plane at this point
-        
+        int plane = p1.getPlane(); // All points should be on the same plane
+
         return new WorldPoint(x, y, plane);
     }
 

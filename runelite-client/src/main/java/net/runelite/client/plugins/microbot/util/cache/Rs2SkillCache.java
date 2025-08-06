@@ -9,6 +9,8 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.model.SkillData;
 import net.runelite.client.plugins.microbot.util.cache.strategy.simple.SkillUpdateStrategy;
 import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializable;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
+import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
 
 import java.time.Instant;
 import java.time.ZoneId;
@@ -428,10 +430,77 @@ public class Rs2SkillCache extends Rs2Cache<Skill, SkillData> implements CacheSe
      */
     public static synchronized void resetInstance() {
         if (instance != null) {
-            instance.close();
+            instance.invalidateAll();
             instance = null;
         }
     }
+    
+    /**
+     * Logs the current state of all cached skills for debugging.
+     * 
+     * @param dumpToFile Whether to also dump the information to a file
+     */
+    public static void logState(LogOutputMode mode) {
+        var cache = getInstance();
+        var stats = cache.getStatistics();
+        
+        // Create the log content
+        StringBuilder logContent = new StringBuilder();
+        
+        String header = String.format("=== Skill Cache State (%d entries) ===", cache.size());
+        logContent.append(header).append("\n");
+        
+        String statsInfo = Rs2CacheLoggingUtils.formatCacheStatistics(
+            stats.getHitRate(), stats.cacheHits, stats.cacheMisses, stats.cacheMode.toString());
+        logContent.append(statsInfo).append("\n\n");
+        
+        if (cache.size() == 0) {
+            String emptyMsg = "Cache is empty";            
+            logContent.append(emptyMsg).append("\n");
+        } else {
+            // Table format for skills
+            String[] headers = {"Skill", "Level", "Boosted", "Experience", "Previous", "Last Updated"};
+            int[] columnWidths = {15, 8, 8, 12, 20, 12};
+            
+            String tableHeader = Rs2CacheLoggingUtils.formatTableHeader(headers, columnWidths);            
+            logContent.append("\n").append(tableHeader);
+            
+            // Sort skills by name for consistent ordering
+            for (Skill skill : Skill.values()) {
+                SkillData data = cache.get(skill);
+                if (data != null) {
+                    String previousInfo = "";
+                    if (data.getPreviousLevel() != null || data.getPreviousExperience() != null) {
+                        previousInfo = String.format("L%s E%s", 
+                            data.getPreviousLevel() != null ? data.getPreviousLevel() : "?",
+                            data.getPreviousExperience() != null ? data.getPreviousExperience() : "?");
+                    }
+                    
+                    String[] values = {
+                        skill.name(),
+                        String.valueOf(data.getLevel()),
+                        String.valueOf(data.getBoostedLevel()),
+                        String.valueOf(data.getExperience()),
+                        Rs2CacheLoggingUtils.truncate(previousInfo, 19),
+                        Rs2CacheLoggingUtils.formatTimestamp(data.getLastUpdated())
+                    };
+                    
+                    String row = Rs2CacheLoggingUtils.formatTableRow(values, columnWidths);                    
+                    logContent.append(row);
+                }
+            }
+            
+            String tableFooter = Rs2CacheLoggingUtils.formatTableFooter(columnWidths);            
+            logContent.append(tableFooter);
+        }
+        
+        String footer = "=== End Skill Cache State ===";
+        logContent.append(footer).append("\n");
+        
+    
+        Rs2CacheLoggingUtils.writeCacheLogFile("skill", logContent.toString(), true);                    
+    }
+    
     
     // ============================================
     // CacheSerializable Implementation

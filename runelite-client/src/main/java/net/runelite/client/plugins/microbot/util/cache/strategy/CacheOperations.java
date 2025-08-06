@@ -48,4 +48,11 @@ public interface CacheOperations<K, V> {
      * @return The number of entries in the cache
      */
     int size();
+    
+    /**
+     * Gets the name of this cache for logging and debugging.
+     * 
+     * @return The cache name
+     */
+    String getCacheName();
 }

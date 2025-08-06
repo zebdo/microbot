@@ -114,6 +114,11 @@ public class ShootingStarScript extends Script
 						{
 							if (!hasSelectedStar())
 							{
+								if (plugin.getStarList().isEmpty()) {
+									log.debug("No stars found, waiting for api data");
+									return;
+								}
+
 								currentStar = plugin.getClosestHighestTierStar();
 
 								if (currentStar == null)
@@ -148,9 +153,9 @@ public class ShootingStarScript extends Script
 					case WALKING:
 						toggleLockState(true);
 
-						if (Rs2Player.getWorld() != currentStar.getWorldObject().getId())
+						if (Rs2Player.getWorld() != currentStar.getWorld())
 						{
-							Microbot.hopToWorld(currentStar.getWorldObject().getId());
+							Microbot.hopToWorld(currentStar.getWorld());
 							sleepUntil(() -> Microbot.getClient().getGameState() == GameState.LOGGED_IN);
 							return;
 						}
@@ -162,6 +167,7 @@ public class ShootingStarScript extends Script
 							WalkerState walkerState = Rs2Walker.walkWithState(currentStar.getShootingStarLocation().getWorldPoint(), 6);
 							if (walkerState == WalkerState.UNREACHABLE)
 							{
+								log.debug("Walker State is {}, removing star from list", walkerState);
 								plugin.removeStar(plugin.getSelectedStar());
 								plugin.updatePanelList(true);
 								state = ShootingStarState.WAITING_FOR_STAR;
@@ -192,7 +198,7 @@ public class ShootingStarScript extends Script
 							Rs2Combat.setSpecState(true, 1000);
 						}
 
-						TileObject starObject = Rs2GameObject.getGameObject(currentStar.getObjectID());
+						TileObject starObject = Rs2GameObject.getGameObject(currentStar.getObjectId());
 
 						if (starObject != null)
 						{
@@ -435,9 +441,9 @@ public class ShootingStarScript extends Script
 				return ShootingStarState.WAITING_FOR_STAR;
 			}
 
-			currentStar.setObjectID(starObject.getId());
-			plugin.updateSelectedStar(currentStar);
-			plugin.updatePanelList(true);
+			int _newTier = currentStar.getTierBasedOnObjectId(starObject.getId());
+			currentStar.setTier(_newTier);
+			plugin.updatePanelList(false);
 			currentStar = selectedStar;
 		}
 		return ShootingStarState.MINING;
@@ -483,7 +489,7 @@ public class ShootingStarScript extends Script
 		}
 
 		// If the GameObject has updated to a new tier
-		return currentStar.getObjectID() != starObject.getId();
+		return currentStar.getObjectId() != starObject.getId();
 	}
 
 	private Pickaxe getBestPickaxe(List<Rs2ItemModel> items)

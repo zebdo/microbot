@@ -8,6 +8,7 @@ import net.runelite.api.TileItem;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -391,7 +392,8 @@ public class Rs2GroundItemModel {
      */
     public int getDistanceFromPlayer() {
         return Microbot.getClientThread().runOnClientThreadOptional(() -> {
-            WorldPoint playerLocation = Microbot.getClient().getLocalPlayer().getWorldLocation();
+            WorldPoint playerLocation = 
+            Rs2Player.getWorldLocation();
             return playerLocation.distanceTo(location);
         }).orElse(Integer.MAX_VALUE);
     }

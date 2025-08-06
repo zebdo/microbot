@@ -195,7 +195,7 @@ public enum BankLocation {
                         Rs2Player.getQuestState(Quest.FAIRYTALE_I__GROWING_PAINS) == QuestState.FINISHED &&
                         Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN) != QuestState.NOT_STARTED;
             case FOSSIL_ISLAND:
-                // TODO: How to check if the chest has been built? maybe there is a varbit?
+                return Rs2Player.getQuestState(Quest.BONE_VOYAGE) == QuestState.FINISHED && Microbot.getVarbitValue(VarbitID.FOSSIL_BANK) == 1;
             case VOLCANO_BANK:
             case FOSSIL_ISLAND_WRECK:
                 // Requires Bone Voyage

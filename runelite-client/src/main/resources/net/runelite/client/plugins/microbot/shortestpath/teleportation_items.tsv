@@ -16,7 +16,7 @@
 2643 3675 0		13129;13130;13131		5005=0		Y	T	19	4	Fremennik sea boots
 2643 3675 0		13132				Y	F	19	4	Fremennik sea boots
 # Kandarin headgear (3 has 1 teleport per day, 4 is unlimited)										
-2729 3409 0		13137;13138;13139;13140				Y	F	19	4	Kandarin headgear
+2729 3409 0		13139;13140				Y	F	19	4	Kandarin headgear
 # Wilderness Sword (3 has 1 teleport per day, 4 is unlimited)										
 3377 3890 0		13110;13111				Y	F	19	4	Wilderness sword
 # Western Banner (3 has 1 teleport per day, 4 is unlimited)										
@@ -162,7 +162,7 @@
 3352 3782 0		24251				Y	T	19	4	Wilderness Crabs tablet
 1680 3134 0		28824	Twilight's Promise			Y	T	19	4	Civitas illa Fortis tablet
 										
-#  Teleport Scrolls (todo: how to detect these in the master scroll book?)										
+# Teleport Scrolls
 3419 2917 0		12402				Y	T	19	4	Nardah teleport
 3325 3412 0		12403				Y	T	19	4	Digsite teleport
 2541 2925 0		12404				Y	T	19	4	Feldip hills teleport
@@ -178,6 +178,29 @@
 1310 1250 0		13249				Y	T	19	4	Key master teleport
 3128 3832 0		21802				Y	T	19	4	Revenant cave teleport
 1645 3580 0		23387				Y	T	19	4	Watson teleport
+3658 3402 0		29782	Priest in Peril			Y	T	19	4	Spider cave teleport
+1641 2920 0		30040				Y	T	19	4	Colossal wyrm teleport
+1439 10074 0		30775				Y	T	19	4	Chasm teleport
+
+# Master Scroll Book
+3419 2917 0		21389		5672>0		Y	T	19	4	Master Scroll Book: Nardah
+3325 3412 0		21389		5673>0		Y	T	19	4	Master Scroll Book: Digsite
+2541 2925 0		21389		5674>0		Y	T	19	4	Master Scroll Book: Feldip hills
+2094 3913 0		21389	Lunar Diplomacy	5675>0		Y	T	19	4	Master Scroll Book: Lunar isle
+3488 3288 0		21389	Priest in Peril	5676>0		Y	T	19	4	Master Scroll Book: Mort'ton
+2658 2659 0		21389		5677>0		Y	T	19	4	Master Scroll Book: Pest control
+2339 3649 0		21389		5678>0		Y	T	19	4	Master Scroll Book: Piscatoris
+2789 3066 0		21389	Tai Bwo Wannai Trio	5679>0		Y	T	19	4	Master Scroll Book: Tai bwo wannai
+2194 3258 0		21389	Regicide	5680>0		Y	T	19	4	Master Scroll Book: Iorwerth camp
+3701 2996 0		21389	Cabin Fever	5681>0		Y	T	19	4	Master Scroll Book: Mos le'harmless
+3302 3487 0		21389		5682>0		Y	T	19	4	Master Scroll Book: Lumberyard
+2196 3056 0		21389	Regicide	5683>0		Y	T	19	4	Master Scroll Book: Zul-andra
+1310 1250 0		21389		5684>0		Y	T	19	4	Master Scroll Book: Key master
+3128 3832 0		21389		6056>0		Y	T	19	4	Master Scroll Book: Revenant cave
+1645 3580 0		21389		8253>0		Y	T	19	4	Master Scroll Book: Watson
+3658 3402 0		21389	Priest in Peril	10995>0		Y	T	19	4	Master Scroll Book: Spider cave
+1641 2920 0		21389		11029>0		Y	T	19	4	Master Scroll Book: Colossal wyrm
+1439 10074 0		21389		16238>0		Y	T	19	4	Master Scroll Book: Chasm of fire
 										
 # capes										
 2931 3286 0		9780;9781				Y	F	19	4	Crafting cape: Teleport
@@ -322,7 +345,7 @@
 1504 3815 0		13393				Y	T	19	4	3. Xeric's talisman: Xeric's Inferno
 1644 3673 0		13393				Y	T	19	4	4. Xeric's talisman: Xeric's Heart
 # Requires the use of an ancient tablet to activate										
-1254 3560 0		13393				Y	T	19	4	5. Xeric's talisman: Xeric's Honour
+# 1254 3560 0		13393				Y	T	19	4	5. Xeric's talisman: Xeric's Honour
 3200 3355 0		13660					T	19	4	Chronicle: Teleport
 3615 9461 0		26914				Y	F	19	4	Amulet of the eye: Teleport
 2981 3276 0		26818				Y	T	19	4	1. Ring of the elements: Air Altar

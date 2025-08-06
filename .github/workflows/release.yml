@@ -4,6 +4,9 @@ on:
     branches:
       - main
 
+env:
+  version: "1.9.7"
+
 jobs:
   build:
     runs-on: ubuntu-latest  # You can choose a different runner if needed
@@ -21,16 +24,17 @@ jobs:
           java-version: 11
 
       - name: Build Shaded JAR
-        run: mvn clean package
-
+        run: |
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          mvn clean package -Dmicrobot.commit.sha=$COMMIT_SHA
 
       - name: Create Release
         uses: "marvinpinto/action-automatic-releases@latest"
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
-          automatic_release_tag: "1.9.6.1"
+          automatic_release_tag: "$version"
           prerelease: false
-          title: "Release 1.9.6.1"
+          title: "Release $version"
           files: |
             /home/runner/work/Microbot/Microbot/runelite-client/target/microbot-*.jar
 
@@ -43,3 +47,22 @@ jobs:
           source: runelite-client/target/microbot-*.jar
           target: /var/www/files/releases/microbot/stable/
           strip_components: 2
+
+      - name: Set up Maven settings
+        run: |
+          mkdir -p ~/.m2
+          cat > ~/.m2/settings.xml <<EOL
+          <settings>
+          <servers>
+           <server>
+             <id>microbot-release</id>
+             <username>${{ secrets.NEXUS_USER }}</username>
+             <password>${{ secrets.NEXUS_PASSWORD }}</password>
+           </server>
+          </servers>
+          </settings>
+          EOL
+
+      - name: Deploy to Nexus
+        run: mvn deploy:deploy-file -DgroupId=com.microbot -DartifactId=client -Dversion=$version -Dpackaging=jar -Dfile=runelite-client/target/microbot-$version.jar -DrepositoryId=microbot-release -Durl=https://nexus.microbot.cloud/repository/microbot-release/
+

@@ -3,12 +3,18 @@ package net.runelite.client.plugins.microbot.util.cache;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.GameState;
+import net.runelite.api.Skill;
+import net.runelite.api.GameState;
+import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
@@ -20,7 +26,10 @@ import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.util.cache.model.SpiritTreeData;
 import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializable;
 import net.runelite.client.plugins.microbot.util.cache.strategy.farming.SpiritTreeUpdateStrategy;
+import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
+import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
 import net.runelite.client.plugins.microbot.util.farming.SpiritTree;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 /**
  * Thread-safe cache for spirit tree farming states and travel availability using the unified cache architecture.
@@ -50,9 +59,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
     private Rs2SpiritTreeCache() {
         super("SpiritTreeCache", CacheMode.EVENT_DRIVEN_ONLY);
         this.withUpdateStrategy(new SpiritTreeUpdateStrategy())
-                .withPersistence("spiritTrees");
-        
-        log.debug("Rs2SpiritTreeCache initialized with TTL of {} minutes", SPIRIT_TREE_DATA_TTL / 60000);
+                .withPersistence("spiritTrees");            
     }
     
     /**
@@ -96,9 +103,12 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
                 if (spiritTree.getType() == SpiritTree.SpiritTreeType.BUILT_IN) {
                     // Built-in trees are available if quest requirements are met
                     availableForTravel = spiritTree.hasQuestRequirements();
-                } else {
+                } else if (spiritTree.getType() == SpiritTree.SpiritTreeType.FARMABLE) {
                     // Farmable trees - get current farming state
                     cropState = spiritTree.getPatchState();
+                    availableForTravel = spiritTree.isAvailableForTravel();
+                }else if (spiritTree.getType() == SpiritTree.SpiritTreeType.POH) {
+                    // Other types (e.g. POH spirit trees) - use default availability
                     availableForTravel = spiritTree.isAvailableForTravel();
                 }
                 
@@ -123,9 +133,9 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
      */
     public static Set<WorldPoint> getAvailableOrigins() {
         return getInstance().stream()
-            .filter(data -> data.isAvailableForTravel())
-            .map(data -> data.getPatch().getLocation())
-            .filter(location -> location != null)
+            .filter(SpiritTreeData::isAvailableForTravel)
+            .map(data -> data.getSpiritTree().getLocation())
+            .filter(Objects::nonNull)
             .collect(Collectors.toSet());
     }
     
@@ -147,8 +157,8 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
      */
     public static List<SpiritTree> getAvailableSpiritTrees() {
         return getInstance().stream()
-            .filter(data -> data.isAvailableForTravel())
-            .map(SpiritTreeData::getPatch)
+            .filter(SpiritTreeData::isAvailableForTravel)
+            .map(SpiritTreeData::getSpiritTree)
             .collect(Collectors.toList());
     }
     
@@ -159,7 +169,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
      */
     public static List<SpiritTreeData> getFarmableTreeStates() {
         return getInstance().stream()
-            .filter(data -> data.getPatch().getType() == SpiritTree.SpiritTreeType.FARMABLE)
+            .filter(data -> data.getSpiritTree().getType() == SpiritTree.SpiritTreeType.FARMABLE)
             .collect(Collectors.toList());
     }
     
@@ -170,12 +180,11 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
      */
     public static List<SpiritTreeData> getPatchesRequiringAttention() {
         return getInstance().stream()
-            .filter(data -> data.getPatch().getType() == SpiritTree.SpiritTreeType.FARMABLE)
+            .filter(data -> data.getSpiritTree().getType() == SpiritTree.SpiritTreeType.FARMABLE)
             .filter(data -> {
                 CropState state = data.getCropState();
                 return state == CropState.DISEASED || 
-                       state == CropState.DEAD || 
-                       state == CropState.HARVESTABLE;
+                       state == CropState.DEAD;
             })
             .collect(Collectors.toList());
     }
@@ -187,7 +196,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
      */
     public static List<SpiritTreeData> getEmptyPatches() {
         return getInstance().stream()
-            .filter(data -> data.getPatch().getType() == SpiritTree.SpiritTreeType.FARMABLE)
+            .filter(data -> data.getSpiritTree().getType() == SpiritTree.SpiritTreeType.FARMABLE)
             .filter(data -> data.getCropState() == CropState.EMPTY)
             .collect(Collectors.toList());
     }
@@ -209,9 +218,9 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
         WorldArea queryArea = new WorldArea(origin, 3, 3); // 3x3 area around query point
         
         return getInstance().stream()
-            .filter(data -> data.isAvailableForTravel())
-            .map(data -> data.getPatch().getLocation())
-            .filter(location -> location != null)
+            .filter(SpiritTreeData::isAvailableForTravel)
+            .map(data -> data.getSpiritTree().getLocation())
+            .filter(Objects::nonNull)
             .anyMatch(location -> {
                 // Create an area around each spirit tree location (accounting for multi-tile objects)
                 WorldArea spiritTreeArea = new WorldArea(location, 3, 3); // 3x3 area around spirit tree
@@ -231,15 +240,15 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
     public static boolean isDestinationAvailable(WorldPoint destination) {
         return isOriginAvailable(destination);
     }
-    
-    /**
-     * Checks if a spirit tree transport is available for pathfinding.
-     * This method is specifically designed for pathfinder integration.
-     * Validates that the origin location (where the player would start) has an available spirit tree.
-     * 
-     * @param transport The transport object to check
-     * @return true if the spirit tree at the origin is available for travel
-     */
+
+	/**
+	 * Checks if a spirit tree transport is available for pathfinding.
+	 * This method is specifically designed for pathfinder integration.
+	 * Validates that the transport is of type SPIRIT_TREE and that both the origin and destination are available.
+	 *
+	 * @param transport The transport object to check
+	 * @return true if the transport is a valid spirit tree and both ends are available for travel
+	 */
     public static boolean isSpiritTreeTransportAvailable(Transport transport) {
         if (transport == null) {
             return false;
@@ -250,12 +259,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
             return false;
         }
         
-        if (transport.getOrigin() == null) {
-            log.debug("Spirit tree transport has null origin, cannot check availability");
-            return false;
-        }
-        
-        return isOriginAvailable(transport.getOrigin());
+        return isOriginAvailable(transport.getOrigin()) & isDestinationAvailable(transport.getDestination());
     }
     
     /**
@@ -271,10 +275,10 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
         
         return getInstance().stream()
             .filter(data -> data.isAvailableForTravel())
-            .filter(data -> data.getPatch().getLocation() != null)
+            .filter(data -> data.getSpiritTree().getLocation() != null)
             .min((data1, data2) -> {
-                int dist1 = data1.getPatch().getLocation().distanceTo(fromLocation);
-                int dist2 = data2.getPatch().getLocation().distanceTo(fromLocation);
+                int dist1 = data1.getSpiritTree().getLocation().distanceTo(fromLocation);
+                int dist2 = data2.getSpiritTree().getLocation().distanceTo(fromLocation);
                 return Integer.compare(dist1, dist2);
             });
     }
@@ -312,8 +316,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
             for (SpiritTree spiritTree : SpiritTree.values()) {
                 try {
                     // Get existing cached data
-                    SpiritTreeData existingData = getSpiritTreeData(spiritTree);
-                    
+                    SpiritTreeData existingData = getSpiritTreeData(spiritTree);                    
                     // Determine update strategy based on spiritTree type and existing data
                     SpiritTreeData updatedData = createUpdatedSpiritTreeData(
                         spiritTree, existingData, playerLocation, farmingLevel);
@@ -348,9 +351,13 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
                     log.warn("Failed to update spirit tree data for spiritTree {}: {}", spiritTree.name(), e.getMessage());
                 }
             }
-            
-            log.debug("Static spirit tree cache update completed: {} new, {} updated, {} preserved entries",
-                newEntriesCount, updatedCount, preservedCount);
+            List<SpiritTreeData> farambleTrees = getFarmableTreeStates();
+            int availabilityFarmableTrees = (int) farambleTrees.stream()
+                .filter(SpiritTreeData::isAvailableForTravel)
+                .count();
+            log.debug(getFarmingStatusSummary());
+            log.debug("Static spirit tree cache update completed: \n\t{} new entries, {} updated, {} preserved entries, {} farmable trees (available for travel: {})",
+                newEntriesCount, updatedCount, preservedCount, farambleTrees.size(), availabilityFarmableTrees);
             
         } catch (Exception e) {
             log.error("Failed to update spirit tree cache from FarmingHandler: {}", e.getMessage(), e);
@@ -371,8 +378,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
             if (spiritTree.getType() == SpiritTree.SpiritTreeType.BUILT_IN) {
                 boolean accessible = spiritTree.hasQuestRequirements();                                               
                 // If we have existing data and it's recent, preserve travel availability info
-                if ((existingData != null && existingData.isAvailableForTravel() != accessible) ||
-                    (existingData == null)) {
+                if (existingData == null || existingData.isAvailableForTravel() != accessible) {
                     
                     // Update with quest accessibility but preserve recent travel information
                     return new SpiritTreeData(
@@ -381,37 +387,39 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
                         accessible, // Must be both accessible and available
                         playerLocation,
                         false, // Not detected via widget in static update
-                        false, // Not detected via game object in static update
-                        farmingLevel
+                        false // Not detected via game object in static update                        
                     );
                 } 
-            }
-            
+            }            
             // For farmable trees, use FarmingHandler to predict state
-            else if (spiritTree.getType() == SpiritTree.SpiritTreeType.FARMABLE) {
+            else if (spiritTree.getType() == SpiritTree.SpiritTreeType.FARMABLE ) {
                 CropState predictedState = spiritTree.getPatchState(); // Uses Rs2Farming.predictPatchState internally
-                
-                if (predictedState != null) {
-                    // Determine travel availability based on crop state
-                    boolean availableForTravel = ((predictedState == CropState.HARVESTABLE || 
-                                                predictedState == CropState.UNCHECKED)) && spiritTree.hasQuestRequirements();
-                    
-                    // If we have existing data that was recently updated dynamically, be careful about overriding
-                    if ((existingData != null && 
-                        (existingData.isDetectedViaWidget() || existingData.isDetectedViaGameObject())||availableForTravel))
-                        {
-                        
-                        // Use the more specific information: dynamic detection for travel, farming handler for crop state
+                CropState lastCropState = existingData != null ? existingData.getCropState() : null;
+                if (predictedState != null && !predictedState.equals(lastCropState)) {
+                    // Determine travel availability based on crop state 
+                    boolean detectedViaWidget = existingData != null && existingData.isDetectedViaWidget();
+                    boolean detectedViaNearPatch = existingData != null && existingData.isDetectedViaNearBy();                    
+                    boolean availableForTravelLast  = existingData != null && existingData.isAvailableForTravel();
+                    boolean availableForTravel = spiritTree.isAvailableForTravel();
+                    if ((availableForTravel != availableForTravelLast) && 
+                        (lastCropState!=null && (lastCropState == CropState.UNCHECKED || lastCropState == CropState.GROWING))) {
+                        log.info("Spirit tree {} is now available, last available for travel was false, and tree was predicted updating to true", spiritTree.name());
+                         // Use the more specific information: dynamic detection for travel, farming handler for crop state
                         return new SpiritTreeData(
                             spiritTree,
                             predictedState, // Always update with latest farming prediction
-                            availableForTravel, // Preserve recent dynamic travel detection
+                            availableForTravel &&  farmingLevel >= 83, // Preserve recent dynamic travel detection
                             playerLocation,
-                            existingData !=null ?existingData.isDetectedViaWidget():false, // Preserve detection context
-                            existingData !=null ?existingData.isDetectedViaGameObject():false, // Preserve detection context
-                            farmingLevel
+                            false, 
+                            false                            
                         );
-                    } 
+                   
+                    } else {                        
+                        log.info("Spirit tree {} not updated, farm state: {}, available for travel last: {}, detected via widget: {}, detected via near patch: {}, last farming state: {}", 
+                            spiritTree.name(), predictedState, availableForTravelLast, detectedViaWidget, detectedViaNearPatch, lastCropState);
+                        
+                    }                                                               
+                   
                     
                 } else {
                     // If FarmingHandler can't predict the state, preserve existing data if available
@@ -442,7 +450,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
             return data1 == data2;
         }
         
-        return data1.getPatch().equals(data2.getPatch()) &&
+        return data1.getSpiritTree().equals(data2.getSpiritTree()) &&
                java.util.Objects.equals(data1.getCropState(), data2.getCropState()) &&
                data1.isAvailableForTravel() == data2.isAvailableForTravel();
     }
@@ -456,14 +464,14 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
         }
         
         return String.format("[%s|%s|travel=%s]", 
-            data.getPatch().name(),
+            data.getSpiritTree().name(),
             data.getCropState() != null ? data.getCropState().name() : "N/A",
             data.isAvailableForTravel());
     }    /**
      * Forces a refresh of farmable spirit tree states only.
      */
     public static void refreshFarmableStates() {
-        log.info("Refreshing farmable spirit tree states");    
+        log.debug("Refreshing farmable spirit tree states");    
         Rs2SpiritTreeCache.getInstance().update();
     }
     
@@ -482,7 +490,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
         long totalEntries = cache.size();
         long availableForTravel = cache.stream().filter(SpiritTreeData::isAvailableForTravel).count();
         long farmableEntries = cache.stream()
-            .filter(data -> data.getPatch().getType() == SpiritTree.SpiritTreeType.FARMABLE)
+            .filter(data -> data.getSpiritTree().getType() == SpiritTree.SpiritTreeType.FARMABLE)
             .count();
         long staleEntries = cache.stream()
             .filter(data -> data.isStale(STALE_DATA_THRESHOLD))
@@ -497,31 +505,40 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
     /**
      * Logs the current state of all cached spirit trees for debugging.
      */
-    public static void logAllTreeStates() {
-        log.info("=== Spirit Tree Cache States ===");
-        
+    public static void logState(LogOutputMode mode) {
+        StringBuilder logContent = new StringBuilder();
+        logContent.append("=== Spirit Tree Cache States ===\n");
+        logContent.append(String.format("%-20s %-12s %-12s %-10s %-10s %-8s\n",
+            "Name", "Type", "CropState", "Available", "Updated", "Via"));
+
         getInstance().stream()
-            .sorted((data1, data2) -> data1.getPatch().name().compareTo(data2.getPatch().name()))
+            .sorted(Comparator.comparing(data -> data.getSpiritTree().name()))
             .forEach(data -> {
-                String patchType = data.getPatch().getType().name();
-                String cropState = data.getCropState() != null ? data.getCropState().name() : "N/A";
-                String lastUpdated = Instant.ofEpochMilli(data.getLastUpdated())
-                    .atZone(ZoneId.systemDefault())
-                    .format(DateTimeFormatter.ofPattern("HH:mm:ss"));
-                String detection = data.isDetectedViaWidget() ? "WIDGET" : 
-                                 (data.isDetectedViaGameObject() ? "OBJECT" : "INIT");
-                
-                log.info("  {}: {} | {} | Available: {} | Updated: {} | Via: {}",
-                    data.getPatch().name(),
-                    patchType,
-                    cropState,
-                    data.isAvailableForTravel(),
-                    lastUpdated,
-                    detection
-                );
+            String spiritTreeType = data.getSpiritTree().getType().name();
+            String cropState = data.getCropState() != null ? data.getCropState().name() : "N/A";
+            String lastUpdated = Instant.ofEpochMilli(data.getLastUpdated())
+                .atZone(ZoneId.systemDefault())
+                .format(DateTimeFormatter.ofPattern("HH:mm:ss"));
+            String detection = data.isDetectedViaWidget() ? "WIDGET" : 
+                     (data.isDetectedViaNearBy() ? "NEARBY" : "INIT");
+
+            logContent.append(String.format("%-20s %-12s %-12s %-10s %-10s %-8s\n",
+                data.getSpiritTree().name(),
+                spiritTreeType,
+                cropState,
+                data.isAvailableForTravel(),
+                lastUpdated,
+                detection
+            ));
             });
-        
-        log.info("=== End Spirit Tree Cache States ===");
+
+        logContent.append("=== End Spirit Tree Cache States ===\n");
+
+        Rs2CacheLoggingUtils.outputCacheLog(
+            "spirit_tree",
+            logContent.toString(),
+            mode
+        );
     }
     
     // ============================================
@@ -578,17 +595,7 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
      */
     @Subscribe
     public void onGameStateChanged(GameStateChanged event) {
-        switch (event.getGameState()) {
-            case LOGGED_IN:
-                log.debug("Player logged in, spirit tree cache ready for updates");
-                break;
-            case LOGIN_SCREEN:
-            case CONNECTION_LOST:
-                log.debug("Player logging out, preserving spirit tree cache state");
-                break;
-            default:
-                break;
-        }
+        getInstance().handleEvent(event);
     }
     
     
@@ -629,13 +636,16 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
             .filter(data -> data.getCropState() == CropState.HARVESTABLE || 
                            data.getCropState() == CropState.UNCHECKED)
             .count();
+        long readyForHarvest = farmableStates.stream()
+            .filter(data -> data.getCropState() == CropState.HARVESTABLE)
+            .count();
         long needsAttention = farmableStates.stream()
             .filter(data -> data.getCropState() == CropState.DISEASED || 
                            data.getCropState() == CropState.DEAD)
             .count();
         
-        return String.format("Spirit Trees: %d/%d planted, %d grown, %d need attention",
-            planted, farmableStates.size(), grown, needsAttention);
+        return String.format("Spirit Trees: %d/%d planted, %d grown (%d harvest ready), %d need attention",
+            planted, farmableStates.size(), grown, readyForHarvest, needsAttention);
     }
     
     // ============================================
@@ -648,9 +658,9 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
     private static WorldPoint getPlayerLocationSafely() {
         try {
             if (Microbot.getClient() != null && 
-                Microbot.getClient().getGameState() == net.runelite.api.GameState.LOGGED_IN &&
+                Microbot.getClient().getGameState() == GameState.LOGGED_IN &&
                 Microbot.getClient().getLocalPlayer() != null) {
-                return Microbot.getClient().getLocalPlayer().getWorldLocation();
+                return Rs2Player.getWorldLocation();
             }
         } catch (Exception e) {
             log.trace("Could not get player location: {}", e.getMessage());
@@ -664,8 +674,8 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
     private static Integer getFarmingLevelSafely() {
         try {
             if (Microbot.getClient() != null && 
-                Microbot.getClient().getGameState() == net.runelite.api.GameState.LOGGED_IN) {
-                return Microbot.getClient().getRealSkillLevel(net.runelite.api.Skill.FARMING);
+                Microbot.getClient().getGameState() == GameState.LOGGED_IN) {
+                return Rs2Player.getRealSkillLevel(Skill.FARMING);
             }
         } catch (Exception e) {
             log.trace("Could not get farming level: {}", e.getMessage());
