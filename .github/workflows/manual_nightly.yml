@@ -7,7 +7,7 @@ on:
         description: branch
 
 env:
-  version: "1.9.6.1"
+  version: "1.9.7"
 
 jobs:
   build:
