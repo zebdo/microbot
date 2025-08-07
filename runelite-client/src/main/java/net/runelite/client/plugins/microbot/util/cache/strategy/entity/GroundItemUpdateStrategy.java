@@ -28,6 +28,7 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
     
     // ScheduledExecutorService for non-blocking operations
     private final ScheduledExecutorService executorService;
+    private ScheduledFuture<?> periodicSceneScanTask;
     private ScheduledFuture<?> sceneScanTask;
     
     // Scene scan tracking
@@ -88,14 +89,34 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
             return;
         }
         
-        // Submit scene scan to executor service for non-blocking execution
-        executorService.schedule(() -> {
-            try {
-                performSceneScanInternal(cache);
-            } catch (Exception e) {
-                log.error("Error during ground item scene scan", e);
-            }
-        }, delayMs, TimeUnit.MILLISECONDS); // delay before scan
+        // Respect minimum scan interval unless forced
+        if ((System.currentTimeMillis() - lastSceneScan) < MIN_SCAN_INTERVAL_MS) {
+            log.debug("Skipping ground item scene scan due to minimum interval not reached");
+            scanActive.set(false);
+            return;
+        }
+        
+        if (sceneScanTask != null && !sceneScanTask.isDone()) {
+            log.info("Skipping ground item scene scan - already scheduled or running");
+            return; // Don't perform scan if already scheduled or running
+        }
+        
+        if (scanActive.compareAndSet(false, true)) {
+            // Submit scene scan to executor service for non-blocking execution
+            sceneScanTask = executorService.schedule(() -> {
+                try {
+                    performSceneScanInternal(cache);
+                } catch (Exception e) {
+                    log.error("Error during ground item scene scan", e);
+                } finally {
+                    scanActive.set(false);
+                    scanRequest.set(false); // Reset request after scan
+                }
+            }, delayMs, TimeUnit.MILLISECONDS); // delay before scan
+        } else {
+            log.debug("Skipping ground item scene scan - already active");
+            return; // Don't perform scan if already active
+        }
     }
     
     /**
@@ -114,14 +135,20 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
         // Cancel existing task if any
         stopPeriodicSceneScan();
         
-        sceneScanTask = executorService.scheduleWithFixedDelay(() -> {
+        periodicSceneScanTask = executorService.scheduleWithFixedDelay(() -> {
             try {
-                if (scanRequest.get() && Microbot.loggedIn) {
-                    log.debug("Periodic ground item scene scan triggered");
-                    performSceneScanInternal(cache);
+                if (scanActive.compareAndSet(false, true)) {
+                    if (scanRequest.get() && Microbot.loggedIn) {
+                        log.debug("Periodic ground item scene scan triggered");
+                        performSceneScanInternal(cache);
+                    }
+                } else {
+                    log.debug("Skipping scheduled ground item scene scan - already active");
                 }
             } catch (Exception e) {
                 log.error("Error in periodic ground item scene scan", e);
+            } finally {
+                scanActive.set(false);
             }
         }, intervalSeconds, intervalSeconds, TimeUnit.SECONDS);
         
@@ -132,9 +159,9 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
      * Stops periodic scene scanning.
      */
     public void stopPeriodicSceneScan() {
-        if (sceneScanTask != null && !sceneScanTask.isDone()) {
-            sceneScanTask.cancel(false);
-            sceneScanTask = null;
+        if (periodicSceneScanTask != null && !periodicSceneScanTask.isDone()) {
+            periodicSceneScanTask.cancel(false);
+            periodicSceneScanTask = null;
             log.debug("Stopped periodic ground item scene scanning");
         }
     }
@@ -148,10 +175,10 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
     public boolean requestSceneScan(CacheOperations<String, Rs2GroundItemModel> cache) {
         if (scanRequest.compareAndSet(false, true)) {
             log.debug("Ground item scene scan requested");
-            performSceneScan(cache, 0);
+            performSceneScan(cache, 5); // Perform with 5ms delay for stability
         }
         if (!Microbot.getClient().isClientThread()){
-            sleepUntil(()->!scanRequest.get()); 
+            sleepUntil(()->!scanRequest.get(), 1000); // Wait until scan is requested and reset
         }        
         return !scanRequest.get(); // Return true if scan was requested,reseted               
     }
@@ -161,78 +188,74 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
      * Scans all tiles in the scene to find ground items similar to ObjectUpdateStrategy.
      */
     private void performSceneScanInternal(CacheOperations<String, Rs2GroundItemModel> cache) {
-        if (scanActive.compareAndSet(false, true)) {
-            try {
-                long currentTime = System.currentTimeMillis();
-                
-               // Check minimum interval to prevent excessive scanning
-                if (currentTime - lastSceneScan < MIN_SCAN_INTERVAL_MS) {
-                    log.debug("Skipping Ground scene scan - too soon since last scan");
-                    scanActive.set(false);
-                    return;
-                }
-                Player player = Microbot.getClient().getLocalPlayer();
-                if (player == null) {
-                    log.warn("Cannot perform ground item scene scan - no player");
-                    scanActive.set(false);
-                    return;
-                }
-                
-                Scene scene = player.getWorldView().getScene();
-                if (scene == null) {
-                    log.warn("Cannot perform ground item scene scan - no scene");
-                    scanActive.set(false);
-                    return;
-                }
-                
-                Tile[][][] tiles = scene.getTiles();
-                if (tiles == null) {
-                    log.warn("Cannot perform ground item scene scan - no tiles");
-                    scanActive.set(false);
-                    return;
-                }
-                
-                int addedItems = 0;
-                int z = player.getWorldView().getPlane();
-                
-                log.debug("Starting ground item scene scan (cache size: {})", cache.size());
-                
-                for (int x = 0; x < Constants.SCENE_SIZE; x++) {
-                    for (int y = 0; y < Constants.SCENE_SIZE; y++) {
-                        Tile tile = tiles[z][x][y];
-                        if (tile == null) continue;
-                        if(tile.getGroundItems() == null) continue; // Ensure ground items are loaded
-                        // Get ground items on this tile
-                        for (TileItem tileItem : tile.getGroundItems()) {
-                            if (tileItem != null) {
-                                String key = generateKey(tileItem, tile.getWorldLocation());
-                                
-                                // Only add if not already in cache to avoid recursive calls
-                                if (!cache.containsKey(key)) {
-                                    Rs2GroundItemModel groundItemModel = new Rs2GroundItemModel(tileItem, tile);
-                                    cache.put(key, groundItemModel);
-                                    addedItems++;
-                                }
+        try {
+            long currentTime = System.currentTimeMillis();
+            
+           // Check minimum interval to prevent excessive scanning
+            if (currentTime - lastSceneScan < MIN_SCAN_INTERVAL_MS) {
+                log.debug("Skipping Ground scene scan - too soon since last scan");
+                scanActive.set(false);
+                return;
+            }
+            Player player = Microbot.getClient().getLocalPlayer();
+            if (player == null) {
+                log.warn("Cannot perform ground item scene scan - no player");
+                scanActive.set(false);
+                return;
+            }
+            
+            Scene scene = player.getWorldView().getScene();
+            if (scene == null) {
+                log.warn("Cannot perform ground item scene scan - no scene");
+                scanActive.set(false);
+                return;
+            }
+            
+            Tile[][][] tiles = scene.getTiles();
+            if (tiles == null) {
+                log.warn("Cannot perform ground item scene scan - no tiles");
+                scanActive.set(false);
+                return;
+            }
+            
+            int addedItems = 0;
+            int z = player.getWorldView().getPlane();
+            
+            log.debug("Starting ground item scene scan (cache size: {})", cache.size());
+            
+            for (int x = 0; x < Constants.SCENE_SIZE; x++) {
+                for (int y = 0; y < Constants.SCENE_SIZE; y++) {
+                    Tile tile = tiles[z][x][y];
+                    if (tile == null) continue;
+                    if(tile.getGroundItems() == null) continue; // Ensure ground items are loaded
+                    // Get ground items on this tile
+                    for (TileItem tileItem : tile.getGroundItems()) {
+                        if (tileItem != null) {
+                            String key = generateKey(tileItem, tile.getWorldLocation());
+                            
+                            // Only add if not already in cache to avoid recursive calls
+                            if (!cache.containsKey(key)) {
+                                Rs2GroundItemModel groundItemModel = new Rs2GroundItemModel(tileItem, tile);
+                                cache.put(key, groundItemModel);
+                                addedItems++;
                             }
                         }
                     }
                 }
-                                                
-                if (addedItems > 0) {
-                    log.debug("Ground item scene scan completed - added {} items (total cache size: {})", 
-                            addedItems, cache.size());
-                } else {
-                    log.debug("Ground item scene scan completed - no new items added");
-                }
-                scanRequest.set(false); //NOT in finally block to allow for rescan if there are an error 
-            }catch (Exception e) {
-                log.error("Error during ground item scene scan", e);                
-            }finally {
-                scanActive.set(false);
-                lastSceneScan = System.currentTimeMillis(); // Update last scan time                
             }
-        } else {
-            log.debug("Ground item scene scan already in progress, skipping");
+                                            
+            if (addedItems > 0) {
+                log.debug("Ground item scene scan completed - added {} items (total cache size: {})", 
+                        addedItems, cache.size());
+            } else {
+                log.debug("Ground item scene scan completed - no new items added");
+            }
+            scanRequest.set(false); //NOT in finally block to allow for rescan if there are an error 
+        }catch (Exception e) {
+            log.error("Error during ground item scene scan", e);                
+        }finally {
+            scanActive.set(false);
+            lastSceneScan = System.currentTimeMillis(); // Update last scan time                
         }
     }
     
@@ -284,10 +307,22 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
     @Override
     public void onDetach(CacheOperations<String, Rs2GroundItemModel> cache) {
         log.debug("GroundItemUpdateStrategy detached from cache");
+        // Cancel periodic scanning when detaching
+        if (periodicSceneScanTask != null && !periodicSceneScanTask.isDone()) {
+            periodicSceneScanTask.cancel(false);
+            periodicSceneScanTask = null;
+        }
     }
+    
     @Override
     public void close() {
+        log.info("Shutting down GroundItemUpdateStrategy");
         stopPeriodicSceneScan();
+        if (sceneScanTask != null && !sceneScanTask.isDone()) {
+            sceneScanTask.cancel(false);
+            sceneScanTask = null;
+            log.debug("Cancelled active ground item scene scan task");
+        }
         shutdownExecutorService();
     }
     /**

@@ -15,7 +15,6 @@ import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.strategy.CacheUpdateStrategy;
-import net.runelite.client.plugins.microbot.util.gameobject.Rs2ObjectModel;
 import net.runelite.client.plugins.microbot.util.cache.strategy.CacheOperations;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 
@@ -28,7 +27,8 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcModel> {
     
     // ScheduledExecutorService for non-blocking operations
-    private final ScheduledExecutorService executorService;    
+    private final ScheduledExecutorService executorService;
+    private ScheduledFuture<?> periodicSceneScanTask;
     private ScheduledFuture<?> sceneScanTask;
     
     // Scene scan tracking
@@ -89,14 +89,34 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
             return;
         }
         
-        // Submit scene scan to executor service for non-blocking execution
-        executorService.schedule(() -> {
-            try {
-                performSceneScanInternal(cache);
-            } catch (Exception e) {
-                log.error("Error during NPC scene scan", e);
-            }
-        }, delayMs, TimeUnit.MILLISECONDS); // delay before scan
+        // Respect minimum scan interval unless forced
+        if ((System.currentTimeMillis() - lastSceneScan) < MIN_SCAN_INTERVAL_MS) {
+            log.debug("Skipping NPC scene scan due to minimum interval not reached");
+            scanActive.set(false);
+            return;
+        }
+        
+        if (sceneScanTask != null && !sceneScanTask.isDone()) {
+            log.info("Skipping NPC scene scan - already scheduled or running");
+            return; // Don't perform scan if already scheduled or running
+        }
+        
+        if (scanActive.compareAndSet(false, true)) {
+            // Submit scene scan to executor service for non-blocking execution
+            sceneScanTask = executorService.schedule(() -> {
+                try {
+                    performSceneScanInternal(cache);
+                } catch (Exception e) {
+                    log.error("Error during NPC scene scan", e);
+                } finally {
+                    scanActive.set(false);
+                    scanRequest.set(false); // Reset request after scan
+                }
+            }, delayMs, TimeUnit.MILLISECONDS); // delay before scan
+        } else {
+            log.debug("Skipping NPC scene scan - already active");
+            return; // Don't perform scan if already active
+        }
     }
     
     /**
@@ -115,14 +135,20 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
         // Cancel existing task if any
         stopPeriodicSceneScan();
         
-        sceneScanTask = executorService.scheduleWithFixedDelay(() -> {
+        periodicSceneScanTask = executorService.scheduleWithFixedDelay(() -> {
             try {
-                if (scanRequest.get() && Microbot.loggedIn) {
-                    log.debug("Periodic NPC scene scan triggered");
-                    performSceneScanInternal(cache);
+                if (scanActive.compareAndSet(false, true)) {
+                    if (scanRequest.get() && Microbot.loggedIn) {
+                        log.debug("Periodic NPC scene scan triggered");
+                        performSceneScanInternal(cache);
+                    }
+                } else {
+                    log.debug("Skipping scheduled NPC scene scan - already active");
                 }
             } catch (Exception e) {
                 log.error("Error in periodic NPC scene scan", e);
+            } finally {
+                scanActive.set(false);
             }
         }, intervalSeconds, intervalSeconds, TimeUnit.SECONDS);
         
@@ -133,9 +159,9 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
      * Stops periodic scene scanning.
      */
     public void stopPeriodicSceneScan() {
-        if (sceneScanTask != null && !sceneScanTask.isDone()) {
-            sceneScanTask.cancel(false);
-            sceneScanTask = null;
+        if (periodicSceneScanTask != null && !periodicSceneScanTask.isDone()) {
+            periodicSceneScanTask.cancel(false);
+            periodicSceneScanTask = null;
             log.debug("Stopped periodic NPC scene scanning");
         }
     }
@@ -149,8 +175,8 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
      */    
     public boolean requestSceneScan(CacheOperations<Integer, Rs2NpcModel> cache) {
         if (scanRequest.compareAndSet(false, true)) {
-            log.debug("Object scene scan requested");
-            performSceneScan(cache, 0); // Perform immediately
+            log.debug("NPC scene scan requested");
+            performSceneScan(cache, 5); // Perform with 5ms delay for stability
         }
         if (!Microbot.getClient().isClientThread()){
             sleepUntil(()->!scanRequest.get(), 1000); // Wait until scan is requested and reset
@@ -163,53 +189,51 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
      * This is similar to how Rs2Npc.getNpcs() works but loads into cache.
      */
     private void performSceneScanInternal(CacheOperations<Integer, Rs2NpcModel> cache) {
-        if (scanActive.compareAndSet(false, true)) {
-            try {
-                long currentTime = System.currentTimeMillis();
-                
-                // Check minimum interval to prevent excessive scanning
-                if (currentTime - lastSceneScan < MIN_SCAN_INTERVAL_MS) {
-                    log.debug("Skipping NPC scene scan - too soon since last scan");
-                    scanActive.set(false);
-                    return;
-                }
-                
-                Player player = Microbot.getClient().getLocalPlayer();
-                if (player == null) {
-                    log.info("Cannot perform NPC scene scan - no player");
-                    scanActive.set(false);
-                    return;
-                }
-                
-                // Get all NPCs from the client
-                int addedNpcs = 0;
-                log.debug("Starting NPC scene scan (cache size: {})", cache.size());
-                
-                for (NPC npc : Microbot.getClient().getTopLevelWorldView().npcs()) {
-                    if (npc != null && npc.getName() != null) {
-                        // Only add if not already in cache to avoid recursive calls
-                        if (!cache.containsKey(npc.getIndex())) {
-                            Rs2NpcModel npcModel = new Rs2NpcModel(npc);
-                            cache.put(npc.getIndex(), npcModel);
-                            addedNpcs++;
-                        }
+        try {
+            long currentTime = System.currentTimeMillis();
+            
+            // Check minimum interval to prevent excessive scanning
+            if (currentTime - lastSceneScan < MIN_SCAN_INTERVAL_MS) {
+                log.debug("Skipping NPC scene scan - too soon since last scan");
+                scanActive.set(false);
+                return;
+            }
+            
+            Player player = Microbot.getClient().getLocalPlayer();
+            if (player == null) {
+                log.info("Cannot perform NPC scene scan - no player");
+                scanActive.set(false);
+                return;
+            }
+            
+            // Get all NPCs from the client
+            int addedNpcs = 0;
+            log.debug("Starting NPC scene scan (cache size: {})", cache.size());
+            
+            for (NPC npc : Microbot.getClient().getTopLevelWorldView().npcs()) {
+                if (npc != null && npc.getName() != null) {
+                    // Only add if not already in cache to avoid recursive calls
+                    if (!cache.containsKey(npc.getIndex())) {
+                        Rs2NpcModel npcModel = new Rs2NpcModel(npc);
+                        cache.put(npc.getIndex(), npcModel);
+                        addedNpcs++;
                     }
                 }
-                            
-                
-                if (addedNpcs > 0) {
-                    log.debug("NPC scene scan completed - added {} NPCs (total cache size: {})", 
-                            addedNpcs, cache.size());
-                } else {
-                    log.debug("NPC scene scan completed - no new NPCs added");
-                }
-                scanRequest.set(false); // Reset request after scan
-            } finally {
-                lastSceneScan =  System.currentTimeMillis();   // Update last scan time;                
-                scanActive.set(false);                
             }
-        } else {
-            log.debug("NPC scene scan already in progress, skipping");
+                        
+            
+            if (addedNpcs > 0) {
+                log.debug("NPC scene scan completed - added {} NPCs (total cache size: {})", 
+                        addedNpcs, cache.size());
+            } else {
+                log.debug("NPC scene scan completed - no new NPCs added");
+            }
+            scanRequest.set(false); // Reset request after scan
+        } catch (Exception e) {
+            log.error("Error during NPC scene scan", e);
+        } finally {
+            lastSceneScan =  System.currentTimeMillis();   // Update last scan time;                
+            scanActive.set(false);                
         }
     }
     
@@ -243,10 +267,22 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
     @Override
     public void onDetach(CacheOperations<Integer, Rs2NpcModel> cache) {
         log.debug("NpcUpdateStrategy detached from cache");
+        // Cancel periodic scanning when detaching
+        if (periodicSceneScanTask != null && !periodicSceneScanTask.isDone()) {
+            periodicSceneScanTask.cancel(false);
+            periodicSceneScanTask = null;
+        }
     }
+    
     @Override
     public void close() {
-        stopPeriodicSceneScan();            
+        log.info("Shutting down NpcUpdateStrategy");
+        stopPeriodicSceneScan();
+        if (sceneScanTask != null && !sceneScanTask.isDone()) {
+            sceneScanTask.cancel(false);
+            sceneScanTask = null;
+            log.debug("Cancelled active NPC scene scan task");
+        }
         shutdownExecutorService();        
     }
      /**

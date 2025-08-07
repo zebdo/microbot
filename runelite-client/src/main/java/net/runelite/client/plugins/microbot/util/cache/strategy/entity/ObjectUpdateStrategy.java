@@ -19,6 +19,7 @@ import net.runelite.client.plugins.microbot.util.cache.Rs2Cache;
 import net.runelite.client.plugins.microbot.util.cache.strategy.CacheOperations;
 import net.runelite.client.plugins.microbot.util.cache.strategy.CacheUpdateStrategy;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2ObjectModel;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 /**
  * Enhanced cache update strategy for game object data.
  * Handles all types of object spawn/despawn events and provides scene scanning.
@@ -30,6 +31,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
     
     // ScheduledExecutorService for non-blocking operations
     private final ScheduledExecutorService executorService;
+    private ScheduledFuture<?> periodicSceneScanTask;
     private ScheduledFuture<?> sceneScanTask;
     AtomicBoolean scanActive = new AtomicBoolean(false);
     AtomicBoolean scanRequest = new AtomicBoolean(false);
@@ -140,18 +142,33 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                       executorService.isShutdown() ,executorService == null  , scanActive.get());
             return;
         }
-        
-        // Submit scene scan to executor service for non-blocking execution
-        executorService.schedule(() -> {
-            try {
-                performSceneScanInternal(cache);
-            } catch (Exception e) {
-                log.error("Error during scene scan", e);
-            }finally {
-                scanActive.set(false);
-                scanRequest.set(false); // Reset request after scan
-            }
-        }, delayMs, TimeUnit.MILLISECONDS); // 100ms delay before scan
+     
+        // Respect minimum scan interval unless forced
+        if ((System.currentTimeMillis() - lastSceneScan) < MIN_SCAN_INTERVAL_MS) {
+            log.debug("Skipping scene scan due to minimum interval not reached");
+            scanActive.set(false);
+            return;
+        }      
+        if (sceneScanTask != null && !sceneScanTask.isDone()) {
+            log.info("Skipping scene scan - already scheduled or running");
+            return; // Don't perform scan if already scheduled or running
+        }
+        if (scanActive.compareAndSet(false,true)){  
+            // Submit scene scan to executor service for non-blocking execution
+            sceneScanTask = executorService.schedule(() -> {
+                try {
+                    performSceneScanInternal(cache);
+                } catch (Exception e) {
+                    log.error("Error during scene scan", e);
+                }finally {
+                    scanActive.set(false);
+                    scanRequest.set(false); // Reset request after scan
+                }
+            }, delayMs, TimeUnit.MILLISECONDS); // 100ms delay before scan
+        }else{
+            log.debug("Skipping scene scan - already active");
+            return; // Don't perform scan if already active
+        }
     }
     
     /**
@@ -168,11 +185,15 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
         }
         stopPeriodicSceneScan();
                
-        sceneScanTask = executorService.scheduleWithFixedDelay(() -> {
+        periodicSceneScanTask = executorService.scheduleWithFixedDelay(() -> {
             try {
-                if (scanRequest.get() && Microbot.loggedIn) { // Only perform scan if request is set and not already active
-                    log.debug("Performing scheduled scene scan");
-                    performSceneScanInternal(cache);
+                if (scanActive.compareAndSet(false,true)){ 
+                    if (scanRequest.get() && Microbot.loggedIn) { // Only perform scan if request is set and not already active
+                        log.debug("Performing scheduled scene scan");
+                        performSceneScanInternal(cache);
+                    }
+                } else {
+                    log.debug("Skipping scheduled scene scan - already active");
                 }
             } catch (Exception e) {
                 log.error("Error during scheduled scene scan", e);
@@ -189,140 +210,147 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
      */
 
     private void performSceneScanInternal(CacheOperations<String, Rs2ObjectModel> cache) {
-        if (scanActive.compareAndSet(false,true)){ 
-            try {
-                long currentTime = System.currentTimeMillis();               
-                log.debug("Performing scene scan (last scan: {}, current time: {}) , loggedin: {}",  lastSceneScan, currentTime, Microbot.loggedIn);
-                if (!Microbot.loggedIn || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
-                    log.warn("Cannot perform scene scan - not logged in");
-                    scanActive.set(false);
-                    return;
-                }
-                // Respect minimum scan interval unless forced
-                if ((currentTime - lastSceneScan) < MIN_SCAN_INTERVAL_MS) {
-                    log.warn("Skipping scene scan due to minimum interval not reached");
-                    scanActive.set(false);
-                    return;
-                }                                   
-                Player player = Microbot.getClient().getLocalPlayer();
-                if (player == null) {
-                    log.warn("Cannot perform scene scan - no player");
-                    scanActive.set(false);
-                    return;
-                }
-                WorldPoint playerPoint = QuestPerspective.getRealWorldPointFromLocal( Microbot.getClient(), player.getWorldLocation());
-                if (playerPoint == null) {
-                    log.warn("Cannot perform scene scan - player location is null");
-                    scanActive.set(false);
-                    return ;
-                }
         
+        try {
+            long currentTime = System.currentTimeMillis();               
+            log.debug("Performing scene scan (last scan: {}, current time: {}) , loggedin: {}",  lastSceneScan, currentTime, Microbot.loggedIn);
+            if (!Microbot.loggedIn || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
+                log.warn("Cannot perform scene scan - not logged in");
+                scanActive.set(false);
+                return;
+            }
+                                        
+            Player player = Rs2Player.getLocalPlayer();
+            if (player == null) {
+                log.warn("Cannot perform scene scan - no player");
+                scanActive.set(false);
+                return;
+            }
+            WorldPoint playerPoint = QuestPerspective.getRealWorldPointFromLocal( Microbot.getClient(), player.getWorldLocation());
+            if (playerPoint == null) {
+                log.warn("Cannot perform scene scan - player location is null");
+                scanActive.set(false);
+                return ;
+            }
+    
+            WorldView worldView = player.getWorldView();
+            if (worldView == null) {
+                log.warn("Cannot perform scene scan - no world view");
+                scanActive.set(false);
+                return;
+            }
+            WorldView topLevelWorldView = Microbot.getClient().getTopLevelWorldView();
+            if (topLevelWorldView == null) {
+                log.warn("Cannot perform scene scan - no top-level world view");
+                scanActive.set(false);
+                return;
+            }
+            Scene scene = worldView.getScene();
+            if (scene == null) {
+                log.warn("Cannot perform scene scan - no scene");
+                scanActive.set(false);
+                return;
+            }
 
-                Scene scene = player.getWorldView().getScene();
-                if (scene == null) {
-                    log.warn("Cannot perform scene scan - no scene");
-                    scanActive.set(false);
-                    return;
-                }
-                
-                Tile[][][] tiles = scene.getTiles();
-                if (tiles == null) {
-                    log.warn("Cannot perform scene scan - no tiles");
-                    scanActive.set(false);
-                    return;
-                }
-                
-                // Collect all objects first to avoid recursive cache calls
-                java.util.Map<String, Rs2ObjectModel> objectsToAdd = new java.util.HashMap<>();
-                int z = player.getWorldView().getPlane();
-                
-                log.debug("Starting scene scan (cache size: {})", cache.size());
-                
-                for (int x = 0; x < Constants.SCENE_SIZE; x++) {
-                    for (int y = 0; y < Constants.SCENE_SIZE; y++) {
-                        Tile tile = tiles[z][x][y];
-                        if (tile == null) continue;
-                        
-                        // Check GameObjects
-                        GameObject[] gameObjects = tile.getGameObjects();
-                        if (gameObjects != null) {
-                            for (GameObject gameObject : gameObjects) {
-                                if (gameObject == null) continue;
-                                
-                                // Only add if it's the primary location for multi-tile objects
-                                if (gameObject.getSceneMinLocation().equals(tile.getSceneLocation())) {
-                                    String cacheId = generateCacheIdForGameObject(gameObject, tile);
-                                    if (!objectsToAdd.containsKey(cacheId)) {
-                                        Rs2ObjectModel objectModel = new Rs2ObjectModel(gameObject, tile);
-                                        objectsToAdd.put(cacheId, objectModel);
-                                    }
+            
+            Tile[][][] tiles = scene.getTiles();
+            if (tiles == null) {
+                log.warn("Cannot perform scene scan - no tiles");
+                scanActive.set(false);
+                return;
+            }
+            
+            // Collect all objects first to avoid recursive cache calls
+            java.util.Map<String, Rs2ObjectModel> objectsToAdd = new java.util.HashMap<>();
+            int z = worldView.getPlane();
+            
+            log.debug("Starting scene scan (cache size: {})", cache.size());
+            
+            for (int x = 0; x < Constants.SCENE_SIZE; x++) {
+                for (int y = 0; y < Constants.SCENE_SIZE; y++) {
+                    Tile tile = tiles[z][x][y];
+                    if (tile == null) continue;
+                    
+                    // Check GameObjects
+                    GameObject[] gameObjects = tile.getGameObjects();
+                    if (gameObjects != null) {
+                        for (GameObject gameObject : gameObjects) {
+                            if (gameObject == null) continue;
+                            
+                            // Only add if it's the primary location for multi-tile objects
+                            if (gameObject.getSceneMinLocation().equals(tile.getSceneLocation())) {
+                                String cacheId = generateCacheIdForGameObject(gameObject, tile);
+                                if (!objectsToAdd.containsKey(cacheId)) {
+                                    Rs2ObjectModel objectModel = new Rs2ObjectModel(gameObject, tile);
+                                    objectsToAdd.put(cacheId, objectModel);
                                 }
                             }
                         }
-                        
-                        // Check GroundObject
-                        GroundObject groundObject = tile.getGroundObject();
-                        if (groundObject != null) {
-                            String cacheId = generateCacheId("GroundObject", groundObject.getId(), groundObject.getWorldLocation());
-                            if (!objectsToAdd.containsKey(cacheId)) {
-                                Rs2ObjectModel objectModel = new Rs2ObjectModel(groundObject, tile);
-                                objectsToAdd.put(cacheId, objectModel);
-                            }
-                        }
-                        
-                        // Check WallObject
-                        WallObject wallObject = tile.getWallObject();
-                        if (wallObject != null) {
-                            String cacheId = generateCacheId("WallObject", wallObject.getId(), wallObject.getWorldLocation());
-                            if (!objectsToAdd.containsKey(cacheId)) {
-                                Rs2ObjectModel objectModel = new Rs2ObjectModel(wallObject, tile);
-                                objectsToAdd.put(cacheId, objectModel);
-                            }
-                        }
-                        
-                        // Check DecorativeObject
-                        DecorativeObject decorativeObject = tile.getDecorativeObject();
-                        if (decorativeObject != null) {
-                            String cacheId = generateCacheId("DecorativeObject", decorativeObject.getId(), decorativeObject.getWorldLocation());
-                            if (!objectsToAdd.containsKey(cacheId)) {
-                                Rs2ObjectModel objectModel = new Rs2ObjectModel(decorativeObject, tile);
-                                objectsToAdd.put(cacheId, objectModel);
-                            }
-                        }
                     }
-                }
-                
-                // Now update the cache in batch to avoid recursive calls
-                int addedObjects = 0;
-                for (java.util.Map.Entry<String, Rs2ObjectModel> entry : objectsToAdd.entrySet()) {
-                    String cacheId = entry.getKey();
-                    Rs2ObjectModel objectModel = entry.getValue();
                     
-                    // Only add if not already in cache (avoid recursive get calls by checking internally)
-                    if (!cache.containsKey(cacheId)) {
-                        cache.put(cacheId, objectModel);
-                        addedObjects++;
+                    // Check GroundObject
+                    GroundObject groundObject = tile.getGroundObject();
+                    if (groundObject != null) {
+                        String cacheId = generateCacheId("GroundObject", groundObject.getId(), groundObject.getWorldLocation());
+                        if (!objectsToAdd.containsKey(cacheId)) {
+                            Rs2ObjectModel objectModel = new Rs2ObjectModel(groundObject, tile);
+                            objectsToAdd.put(cacheId, objectModel);
+                        }
+                    }
+                    
+                    // Check WallObject
+                    WallObject wallObject = tile.getWallObject();
+                    if (wallObject != null) {
+                        String cacheId = generateCacheId("WallObject", wallObject.getId(), wallObject.getWorldLocation());
+                        if (!objectsToAdd.containsKey(cacheId)) {
+                            Rs2ObjectModel objectModel = new Rs2ObjectModel(wallObject, tile);
+                            objectsToAdd.put(cacheId, objectModel);
+                        }
+                    }
+                    
+                    // Check DecorativeObject
+                    DecorativeObject decorativeObject = tile.getDecorativeObject();
+                    if (decorativeObject != null) {
+                        String cacheId = generateCacheId("DecorativeObject", decorativeObject.getId(), decorativeObject.getWorldLocation());
+                        if (!objectsToAdd.containsKey(cacheId)) {
+                            Rs2ObjectModel objectModel = new Rs2ObjectModel(decorativeObject, tile);
+                            objectsToAdd.put(cacheId, objectModel);
+                        }
                     }
                 }
-                
-                
-                
-                if (addedObjects > 0) {
-                    log.debug("scene scan completed - added {} objects (total cache size: {}), time taken: {} ms", 
-                            addedObjects, cache.size(), System.currentTimeMillis() - currentTime);
-                } else {
-                    log.debug("Scene scan completed - no new objects added");
-                }
-                scanRequest.set(false); //NOT in finally block to allow for rescan if there are an error 
-            } catch (Exception e) {
-                log.error("Error during scene scan", e);
-            } finally {
-                // Reset scan state
-                lastSceneScan =  System.currentTimeMillis();   // Update last scan time;                
-                scanActive.set(false);
             }
             
+            // Now update the cache in batch to avoid recursive calls
+            int addedObjects = 0;
+            for (java.util.Map.Entry<String, Rs2ObjectModel> entry : objectsToAdd.entrySet()) {
+                String cacheId = entry.getKey();
+                Rs2ObjectModel objectModel = entry.getValue();
+                
+                // Only add if not already in cache (avoid recursive get calls by checking internally)
+                if (!cache.containsKey(cacheId)) {
+                    cache.put(cacheId, objectModel);
+                    addedObjects++;
+                }
+            }
+            
+            
+            
+            if (addedObjects > 0) {
+                log.debug("scene scan completed - added {} objects (total cache size: {}), time taken: {} ms", 
+                        addedObjects, cache.size(), System.currentTimeMillis() - currentTime);
+            } else {
+                log.debug("Scene scan completed - no new objects added");
+            }
+            scanRequest.set(false); //NOT in finally block to allow for rescan if there are an error 
+        } catch (Exception e) {
+            log.error("Error during scene scan", e);
+        } finally {
+            // Reset scan state
+            lastSceneScan =  System.currentTimeMillis();   // Update last scan time;                
+            scanActive.set(false);
         }
+            
+        
     }
     
   
@@ -332,8 +360,8 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
      */
     public void stopPeriodicSceneScan() {        
         if (isPeriodicSceneScanActive()) {
-            sceneScanTask.cancel(false);
-            sceneScanTask = null;
+            periodicSceneScanTask.cancel(false);
+            periodicSceneScanTask = null;
             log.debug("Stopped periodic scene scanning");
         }
     }
@@ -344,7 +372,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
      * @return true if periodic scanning is running
      */
     private boolean isPeriodicSceneScanActive() {
-        return sceneScanTask != null && !sceneScanTask.isDone();
+        return periodicSceneScanTask != null && !periodicSceneScanTask.isDone();
     }
   
     /**
@@ -356,7 +384,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
     public boolean requestSceneScan(CacheOperations<String, Rs2ObjectModel> cache) {
         if (scanRequest.compareAndSet(false, true)) {
             log.debug("Object scene scan requested");
-            performSceneScan(cache, 0); // Perform immediately
+            performSceneScan(cache, 5); // Perform immediately
         }
         if (!Microbot.getClient().isClientThread()){
             sleepUntil(()->!scanRequest.get(), 1000); // Wait until scan is requested and reset
@@ -479,13 +507,13 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
             case LOGGED_IN:
                 // Check for region changes and clear cache if changed
                 if (Rs2Cache.checkAndHandleRegionChange(cache)) {
-                    log.debug("Region change detected on login - performing scene scan");
+                    log.info("Region change detected on login - performing scene scan");
                     cache.invalidateAll(); // Clear cache on region change
                     performSceneScan(cache, Constants.GAME_TICK_LENGTH * 2);
                 } else if (lastGameState != null && lastGameState != GameState.LOGGED_IN) {
                     cache.invalidateAll(); // Clear cache on region change
                     // Request scene scan when logging in - might have missed spawn events
-                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 3); // Perform scan after 10 game ticks to allow scene to stabilize
+                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 2); // Perform scan after 10 game ticks to allow scene to stabilize
                 }
                 
                 lastGameState = GameState.LOGGED_IN;
@@ -494,12 +522,12 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
             case LOADING:
                 // Check for region changes during loading
                 if (Rs2Cache.checkAndHandleRegionChange(cache)) {
-                    log.debug("Region change detected during loading - performing scene scan");
+                    log.info("Region change detected during loading - performing scene scan");
                     cache.invalidateAll(); // Clear cache on region change
-                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 2);
+                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 4);
                 } else {
                     cache.invalidateAll(); // Clear cache on region change
-                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 3);
+                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 4); // Perform scan after 5 game ticks to allow scene to stabilize
                 }
                 lastGameState = GameState.LOADING;
                 log.debug("Game loading - checking regions and requesting scene scan");
@@ -512,9 +540,9 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                 lastGameState = event.getGameState();
                 
                 // Cancel periodic scanning
-                if (sceneScanTask != null && !sceneScanTask.isDone()) {
-                    sceneScanTask.cancel(false);
-                    sceneScanTask = null;
+                if (periodicSceneScanTask != null && !periodicSceneScanTask.isDone()) {
+                    periodicSceneScanTask.cancel(false);
+                    periodicSceneScanTask = null;
                 }
                 log.debug("Player logged out - clearing scan request and stopping periodic scanning");
                 break;
@@ -613,16 +641,22 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
     public void onDetach(CacheOperations<String, Rs2ObjectModel> cache) {
         log.debug("ObjectUpdateStrategy detached from cache");
         // Cancel periodic scanning when detaching
-        if (sceneScanTask != null && !sceneScanTask.isDone()) {
-            sceneScanTask.cancel(false);
-            sceneScanTask = null;
-        }
+        if (periodicSceneScanTask != null && !periodicSceneScanTask.isDone()) {
+            periodicSceneScanTask.cancel(false);
+            periodicSceneScanTask = null;
+        }         
     }
     
     @Override
     public void close() {        
         log.info("Shutting down ObjectUpdateStrategy");                                    
-        stopPeriodicSceneScan();            
+        stopPeriodicSceneScan();          
+        if (sceneScanTask != null && !sceneScanTask.isDone()) {
+            sceneScanTask.cancel(false);
+            sceneScanTask = null;
+            log.debug("Cancelled active scene scan task");
+        
+        }  
         shutdownExecutorService();        
     }
      /**
