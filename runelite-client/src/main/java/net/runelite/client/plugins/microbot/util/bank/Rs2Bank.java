@@ -2225,7 +2225,10 @@ public class Rs2Bank {
             sleepUntil(()-> Rs2Widget.getWidget(983046) != null, Rs2Random.between(2000,5000));
             if(Rs2Widget.getWidget(983046) != null){
                 if(Rs2Widget.clickWidget(983046)){
-                    return true;
+                    sleepUntil(()-> Rs2Widget.getWidget(15,11).getChildren()[0] == null, Rs2Random.between(500,1000));
+                    if(Rs2Widget.clickWidget(983048)){ // close the bag
+                        return true;
+                    }
                 }
             }
         }
