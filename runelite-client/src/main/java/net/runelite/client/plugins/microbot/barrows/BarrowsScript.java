@@ -1388,42 +1388,27 @@ public class BarrowsScript extends Script {
         }
     }
     public void solvePuzzle(){
-
         //correct model ids are  6725, 6731, 6713, 6719
         //widget ids are 1638413, 1638415,1638417
-        if(Rs2Widget.getWidget(1638413)!=null){
-            stopFutureWalker();
-            if(Rs2Widget.getWidget(1638413).getModelId() == 6725 || Rs2Widget.getWidget(1638413).getModelId() == 6731
-            ||Rs2Widget.getWidget(1638413).getModelId() == 6713||Rs2Widget.getWidget(1638413).getModelId() == 6719){
-                Microbot.log("Solution found");
-                if(Rs2Widget.getWidget(1638413)!=null) {
-                    Rs2Widget.clickWidget(1638413);
-                    sleep(500, 1500);
-                }
-            }
-        }
 
-        if(Rs2Widget.getWidget(1638415)!=null){
-            stopFutureWalker();
-            if(Rs2Widget.getWidget(1638415).getModelId() == 6725 || Rs2Widget.getWidget(1638415).getModelId() == 6731
-                    ||Rs2Widget.getWidget(1638415).getModelId() == 6713||Rs2Widget.getWidget(1638415).getModelId() == 6719){
-                Microbot.log("Solution found");
-                if(Rs2Widget.getWidget(1638415)!=null) {
-                    Rs2Widget.clickWidget(1638415);
-                    sleep(500, 1500);
-                }
-            }
-        }
+        int widgets[] = {1638413, 1638415, 1638417};
+        int modelIDs[] = {6725, 6731, 6713, 6719};
 
-        if(Rs2Widget.getWidget(1638417)!=null){
-            stopFutureWalker();
-            if(Rs2Widget.getWidget(1638417).getModelId() == 6725 || Rs2Widget.getWidget(1638417).getModelId() == 6731
-                    ||Rs2Widget.getWidget(1638417).getModelId() == 6713||Rs2Widget.getWidget(1638417).getModelId() == 6719){
-                Microbot.log("Solution found");
-                if(Rs2Widget.getWidget(1638417)!=null) {
-                    Rs2Widget.clickWidget(1638417);
-                    sleep(500, 1500);
+        for (int widget : widgets) {
+            if(!super.isRunning()) break;
+
+            if(Rs2Widget.getWidget(widget)!=null){
+                for (int modelID : modelIDs) {
+                    if(!super.isRunning()) break;
+
+                    if(Rs2Widget.getWidget(widget).getModelId() == modelID){
+                        Microbot.log("Solution found");
+                        stopFutureWalker();
+                        Rs2Widget.clickWidget(widget);
+                    }
                 }
+            } else {
+                break;
             }
         }
 
