@@ -144,16 +144,27 @@ public class GiantSeaweedFarmerScript extends Script {
             return false;
         }
         
-        // Check if seaweed spores are on the ground within 15 tiles
-        if (Rs2GroundItem.exists("seaweed spore", 15)) {
+        boolean anyLooted = false;
+        // Keep looting while spores exist on the ground
+        while (Rs2GroundItem.exists("seaweed spore", 15)) {
             Microbot.log("Seaweed spore detected - looting");
             boolean looted = Rs2GroundItem.loot("seaweed spore", 15);
             if (looted) {
-                Rs2Inventory.waitForInventoryChanges(2000);
+                // Wait for the player to walk to the spore and pick it up
+                Rs2Inventory.waitForInventoryChanges(5000);
+                anyLooted = true;
+                sleep(600, 800); // Small delay before checking for more spores
+            } else {
+                // If we couldn't loot it, break to avoid infinite loop
+                break;
             }
-            return looted;
         }
-        return false;
+        
+        if (anyLooted) {
+            Microbot.log("Finished looting seaweed spores");
+        }
+        
+        return anyLooted;
     }
 
     public boolean run(GiantSeaweedFarmerConfig config) {
@@ -358,11 +369,35 @@ public class GiantSeaweedFarmerScript extends Script {
                 return false;
             case "Harvestable":
                 Rs2GameObject.interact(obj, "Pick");
-                sleepUntil(() -> getSeaweedPatchState(obj).equals("Empty") || Rs2Inventory.isFull(), 20000);
+                // Check for spores periodically while harvesting
+                sleepUntil(() -> {
+                    // Check for spores every cycle and interrupt if found
+                    if (config.lootSeaweedSpores() && Rs2GroundItem.exists("seaweed spore", 15)) {
+                        Microbot.log("Spore detected during harvest - interrupting to loot!");
+                        // Stop current action to loot spores
+                        Rs2Player.stopAnimation();
+                        checkAndLootSeaweedSpores(config);
+                        // Resume harvesting after looting
+                        Rs2GameObject.interact(obj, "Pick");
+                    }
+                    return getSeaweedPatchState(obj).equals("Empty") || Rs2Inventory.isFull();
+                }, 20000);
                 return false;
             case "Weeds":
                 Rs2GameObject.interact(obj);
-                Rs2Player.waitForAnimation(10000);
+                // Check for spores while clearing weeds
+                sleepUntil(() -> {
+                    // Check for spores every cycle and interrupt if found
+                    if (config.lootSeaweedSpores() && Rs2GroundItem.exists("seaweed spore", 15)) {
+                        Microbot.log("Spore detected while clearing weeds - interrupting to loot!");
+                        // Stop current action to loot spores
+                        Rs2Player.stopAnimation();
+                        checkAndLootSeaweedSpores(config);
+                        // Resume clearing after looting
+                        Rs2GameObject.interact(obj);
+                    }
+                    return !Rs2Player.isAnimating();
+                }, 10000);
                 return false;
             case "Dead":
                 Rs2GameObject.interact(obj, "Clear");
