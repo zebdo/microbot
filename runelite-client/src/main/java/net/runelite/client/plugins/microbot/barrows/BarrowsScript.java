@@ -155,9 +155,6 @@ public class BarrowsScript extends Script {
                             return;
                         }
 
-
-
-
                         stopFutureWalker();
                         closeBank();
 
@@ -229,8 +226,6 @@ public class BarrowsScript extends Script {
                         //Enter mound
                         if (Rs2Player.getWorldLocation().getPlane() != 3) {
                             Microbot.log("Entering the mound");
-
-                            checkForWorldMap();
 
                             handlePOH(config);
 
@@ -416,7 +411,7 @@ public class BarrowsScript extends Script {
                 }
 
 
-                if(inTunnels && shouldBank == false) {
+                if(inTunnels && !shouldBank) {
                     Microbot.log("In the tunnels");
                     if(!varbitCheckEnabled){
                         varbitCheckEnabled=true;
@@ -429,12 +424,9 @@ public class BarrowsScript extends Script {
                     outOfSupplies(config);
                     gainRP(config);
 
-                    //threaded walk because the brother could appear, the puzzle door could be there.
                     if(!Rs2Player.isMoving()) {
                         startWalkingToTheChest();
                     }
-                    //threaded walk because the brother could appear, the puzzle door could be there.
-                    //Moved Rs2Walker.setTarget(null); inside the puzzle solver and bother check.
 
                     solvePuzzle();
                     checkForBrother(config);
@@ -481,16 +473,13 @@ public class BarrowsScript extends Script {
                             } else {
                                 if(config.selectedToBarrowsTPMethod().getToBarrowsTPMethodItemID() == ItemID.BARROWS_TELEPORT){
                                     Rs2Inventory.interact("Barrows teleport", "Break");
-                                    sleepUntil(() -> Rs2Player.getAnimation() == 4069, Rs2Random.between(2000, 4000));
-                                    sleepUntil(() -> !Rs2Player.isAnimating(), Rs2Random.between(6000, 10000));
+                                    sleepUntil(() -> Rs2Player.getWorldLocation().getY() < 9600 || Rs2Player.getWorldLocation().getY() > 9730, Rs2Random.between(6000, 10000));
                                     ChestsOpened++;
                                     WhoisTun = "Unknown";
                                     inTunnels = false;
                                 } else {
                                     Rs2Inventory.interact("Teleport to house", "Inside");
-                                    sleepUntil(() -> Rs2Player.getAnimation() == 4069, Rs2Random.between(2000, 4000));
-                                    sleepUntil(() -> !Rs2Player.isAnimating(), Rs2Random.between(6000, 10000));
-                                    sleepUntil(() -> Rs2GameObject.getGameObject(4525) != null, Rs2Random.between(6000, 10000));
+                                    sleepUntil(() -> Rs2Player.getWorldLocation().getY() < 9600 || Rs2Player.getWorldLocation().getY() > 9730, Rs2Random.between(6000, 10000));
                                     ChestsOpened++;
                                     WhoisTun = "Unknown";
                                     inTunnels = false;
@@ -712,10 +701,6 @@ public class BarrowsScript extends Script {
         return true;
     }
 
-    public void rotateToObject(TileObject object){
-        Rs2Camera.turnTo(object);
-    }
-
     public void checkForWorldMap(){
         if(Rs2Widget.getWidget(38993938) != null){
             if(Rs2Widget.getWidget(38993938).getText().contains("Key")){
@@ -813,6 +798,7 @@ public class BarrowsScript extends Script {
 
     public void digIntoTheMound(Rs2WorldArea moundArea){
         while (moundArea.contains(Rs2Player.getWorldLocation()) && Rs2Player.getWorldLocation().getPlane() != 3) {
+            checkForWorldMap();
 
             if (!super.isRunning()) {
                 break;
@@ -839,6 +825,7 @@ public class BarrowsScript extends Script {
 
     public void goToTheMound(Rs2WorldArea moundArea){
         while (!moundArea.contains(Rs2Player.getWorldLocation())) {
+            checkForWorldMap();
             int totalTiles = moundArea.toWorldPointList().size();
             WorldPoint randomMoundTile;
             if (!super.isRunning()) {
