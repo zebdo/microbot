@@ -14,6 +14,9 @@ import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import java.awt.*;
 
 public class Rs2UiHelper {
+
+	private static final Pattern COL_TAG_PATTERN = Pattern.compile("<col=[^>]+>|</col>");
+
     public static boolean isRectangleWithinViewport(Rectangle rectangle) {
         int viewportHeight = Microbot.getClient().getViewportHeight();
         int viewportWidth = Microbot.getClient().getViewportWidth();
@@ -123,7 +126,7 @@ public class Rs2UiHelper {
      * @return the text without color tags.
      */
     public static String stripColTags(String text) {
-        return text != null ? text.replaceAll("<col=[^>]+>|</col>", "") : "";
+        return text != null ? COL_TAG_PATTERN.matcher(text).replaceAll("") : "";
     }
 
 	public static Rectangle getDefaultRectangle() {
