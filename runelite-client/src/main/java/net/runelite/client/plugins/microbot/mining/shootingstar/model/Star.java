@@ -1,85 +1,77 @@
 package net.runelite.client.plugins.microbot.mining.shootingstar.model;
 
-import com.google.gson.annotations.SerializedName;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import java.util.EnumSet;
 import net.runelite.api.Skill;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarLocation;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.http.api.worlds.World;
 import net.runelite.http.api.worlds.WorldType;
 
-@Data
-@AllArgsConstructor
-public class Star
+public interface Star
 {
-	private long calledAt;
-	@SerializedName("estimatedEnd")
-	private long endsAt;
-	private int world;
-	private World worldObject;
-	private Object locationKey;
-	private String rawLocation;
-	private ShootingStarLocation shootingStarLocation;
-	private int tier;
-	private transient boolean selected;
-	private transient boolean hidden;
 
-	private int objectID;
-	private int miningLevel;
+	long getCalledAt();
 
-	public boolean hasRequirements()
+	long getEndsAt();
+
+	void setEndsAt(long endsAt);
+
+	int getWorld();
+
+	Object getLocationKey();
+
+	String getRawLocation();
+
+	ShootingStarLocation getShootingStarLocation();
+
+	void setShootingStarLocation(ShootingStarLocation shootingStarLocation);
+
+	int getTier();
+
+	void setTier(int tier);
+
+	boolean isSelected();
+
+	void setSelected(boolean selected);
+
+	boolean isHidden();
+
+	boolean isGameModeWorld();
+
+	void setGameModeWorld(boolean gameModeWorld);
+
+	boolean isSeasonalWorld();
+
+	void setSeasonalWorld(boolean seasonalWorld);
+
+	boolean isMemberWorld();
+
+	void setMemberWorld(boolean memberWorld);
+
+	void setHidden(boolean hidden);
+
+	default boolean hasRequirements()
 	{
-		return this.hasLocationRequirements() && this.hasMiningLevel();
+		return hasLocationRequirements() && hasMiningLevel();
 	}
 
-	public boolean hasMiningLevel()
+	default boolean hasMiningLevel()
 	{
-		return Rs2Player.getSkillRequirement(Skill.MINING, this.miningLevel, true);
+		return Rs2Player.getSkillRequirement(Skill.MINING, getMiningLevel(), true);
 	}
 
-	public boolean hasLocationRequirements()
+	default boolean hasLocationRequirements()
 	{
-		return this.shootingStarLocation.hasRequirements();
+		return getShootingStarLocation().hasRequirements();
 	}
 
-	public boolean isInWilderness()
+	default boolean isInWilderness()
 	{
-		return this.shootingStarLocation.isInWilderness();
+		return getShootingStarLocation().isInWilderness();
 	}
 
-	public int getRequiredMiningLevel()
-	{
-		switch (this.tier)
-		{
-			case 1:
-				return 10;
-			case 2:
-				return 20;
-			case 3:
-				return 30;
-			case 4:
-				return 40;
-			case 5:
-				return 50;
-			case 6:
-				return 60;
-			case 7:
-				return 70;
-			case 8:
-				return 80;
-			case 9:
-				return 90;
-			default:
-				return -1;
-		}
-	}
-
-	public int getObjectIDBasedOnTier()
-	{
-		switch (this.tier)
-		{
+	default int getObjectId() {
+		switch (getTier()) {
 			case 1:
 				return ObjectID.STAR_SIZE_ONE_STAR;
 			case 2:
@@ -103,9 +95,34 @@ public class Star
 		}
 	}
 
-	public int getTierBasedOnObjectID()
+	default int getMiningLevel() {
+		switch (getTier()) {
+			case 1:
+				return 10;
+			case 2:
+				return 20;
+			case 3:
+				return 30;
+			case 4:
+				return 40;
+			case 5:
+				return 50;
+			case 6:
+				return 60;
+			case 7:
+				return 70;
+			case 8:
+				return 80;
+			case 9:
+				return 90;
+			default:
+				return -1;
+		}
+	}
+
+	default int getTierBasedOnObjectId(int objectId)
 	{
-		switch (this.objectID)
+		switch (objectId)
 		{
 			case ObjectID.STAR_SIZE_ONE_STAR:
 				return 1;
@@ -130,60 +147,20 @@ public class Star
 		}
 	}
 
-	public boolean isGameModeWorld()
+	default EnumSet<WorldType> getGameModeWorldTypes()
 	{
-		return this.getWorldObject().getTypes().contains(WorldType.PVP) ||
-			this.getWorldObject().getTypes().contains(WorldType.HIGH_RISK) ||
-			this.getWorldObject().getTypes().contains(WorldType.BOUNTY) ||
-			this.getWorldObject().getTypes().contains(WorldType.SKILL_TOTAL) ||
-			this.getWorldObject().getTypes().contains(WorldType.LAST_MAN_STANDING) ||
-			this.getWorldObject().getTypes().contains(WorldType.QUEST_SPEEDRUNNING) ||
-			this.getWorldObject().getTypes().contains(WorldType.BETA_WORLD) ||
-			this.getWorldObject().getTypes().contains(WorldType.DEADMAN) ||
-			this.getWorldObject().getTypes().contains(WorldType.PVP_ARENA) ||
-			this.getWorldObject().getTypes().contains(WorldType.TOURNAMENT) ||
-			this.getWorldObject().getTypes().contains(WorldType.FRESH_START_WORLD);
-	}
-
-	public boolean isMemberWorld()
-	{
-		return !this.isGameModeWorld() && this.getWorldObject().getTypes().contains(WorldType.MEMBERS);
-	}
-
-	public boolean isF2PWorld()
-	{
-		return !this.isGameModeWorld() && !this.getWorldObject().getTypes().contains(WorldType.MEMBERS);
-	}
-
-	public boolean isInSeasonalWorld()
-	{
-		return this.getWorldObject().getTypes().contains(WorldType.SEASONAL);
-	}
-
-	@Override
-	public boolean equals(Object obj)
-	{
-		if (this == obj)
-		{
-			return true;
-		}
-		if (obj == null)
-		{
-			return false;
-		}
-		if (getClass() != obj.getClass())
-		{
-			return false;
-		}
-		Star other = (Star) obj;
-		return this.getWorld() == other.getWorld() && this.getShootingStarLocation().equals(other.getShootingStarLocation());
-	}
-
-	@Override
-	public int hashCode()
-	{
-		int result = Integer.hashCode(world);
-		result = 31 * result + (shootingStarLocation != null ? shootingStarLocation.hashCode() : 0);
-		return result;
+		return EnumSet.of(
+			WorldType.PVP,
+			WorldType.HIGH_RISK,
+			WorldType.BOUNTY,
+			WorldType.SKILL_TOTAL,
+			WorldType.LAST_MAN_STANDING,
+			WorldType.QUEST_SPEEDRUNNING,
+			WorldType.BETA_WORLD,
+			WorldType.DEADMAN,
+			WorldType.PVP_ARENA,
+			WorldType.TOURNAMENT,
+			WorldType.FRESH_START_WORLD
+		);
 	}
 }

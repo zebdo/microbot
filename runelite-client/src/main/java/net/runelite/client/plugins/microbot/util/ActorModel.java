@@ -394,6 +394,12 @@ public class ActorModel implements Actor
 	}
 
 	@Override
+	public int getAnimationHeightOffset()
+	{
+		return actor.getAnimationHeightOffset();
+	}
+
+	@Override
 	public Model getModel()
 	{
 		return actor.getModel();

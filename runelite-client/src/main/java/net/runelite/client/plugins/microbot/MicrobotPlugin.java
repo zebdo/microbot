@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.*;
 import net.runelite.api.events.*;
-import net.runelite.api.widgets.Widget;
+import net.runelite.client.RuneLiteProperties;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.eventbus.EventBus;
@@ -122,6 +122,9 @@ public class MicrobotPlugin extends Plugin
 	@Override
 	protected void startUp() throws AWTException
 	{
+		log.info("Microbot: {} - {}", RuneLiteProperties.getMicrobotVersion(), RuneLiteProperties.getMicrobotCommit());
+		log.info("JVM: {} {}", System.getProperty("java.vendor"), System.getProperty("java.runtime.version"));
+
 		gameChatAppender = new GameChatAppender();
 		gameChatAppender.setName("GAME_CHAT");
 		
@@ -213,12 +216,8 @@ public class MicrobotPlugin extends Plugin
 			(oldProfile == null || oldProfile.isEmpty() || !newProfile.equals(oldProfile))
 		)
 		{
-			log.info("\nReceived RuneScape profile change event from '{}' to '{}'", oldProfile, newProfile);
-			// Handle profile changes for all cache systems through .tmpFiles/Rs2Cache/MicrobotOverlay.java
-			Rs2CacheManager.savePersistentCaches(oldProfile);
-			Rs2CacheManager.setUnknownInitialCacheState();
-			Rs2CacheManager.loadCacheStateFromConfig(newProfile);
-			
+			log.info("\nReceived RuneScape profile change event from '{}' to '{}'", oldProfile, newProfile);			
+			Rs2CacheManager.handleProfileChange(newProfile, oldProfile);
 			return;
 		}
 		
@@ -301,14 +300,11 @@ public class MicrobotPlugin extends Plugin
 				int[] currentRegions = client.getMapRegions();
 				int[] lastRegions = Microbot.getLastKnownRegions();
 				boolean regionsChanged = (currentRegions != null && (lastRegions == null || !Arrays.equals(currentRegions, lastRegions)));
-				boolean wasLoggedIn = Microbot.loggedIn;
+				boolean wasLoggedIn = Microbot.loggedIn;								
 				if (!wasLoggedIn) {
 					Microbot.setLoginTime(Instant.now());
-					Rs2RunePouch.fullUpdate();					
-					// Load all cache states from config when logging in through Rs2CacheManager
-					// should be detected by onRuneScapeProfileChanged event
-					//Rs2CacheManager.setUnknownInitialCacheState();
-					//Rs2CacheManager.loadInitialCacheStateFromConfig();
+					Rs2RunePouch.fullUpdate();		
+					Rs2CacheManager.registerEventHandlers();						
 				}
 				if (currentRegions != null) {
 					Microbot.setLastKnownRegions(currentRegions.clone());
@@ -322,6 +318,7 @@ public class MicrobotPlugin extends Plugin
 		   //Rs2CacheManager.emptyCacheState(); // should not be nessary here, handled in ClientShutdown event, 
 		   // and we also handle correct cache loading in onRuneScapeProfileChanged event
 		   Microbot.loggedIn = false;
+		   Rs2CacheManager.unregisterEventHandlers();
 		   Microbot.setLastKnownRegions(null);		   
 	   }
 	}
@@ -520,12 +517,7 @@ public class MicrobotPlugin extends Plugin
 
 	@Subscribe
 	public void onGameTick(GameTick event)
-	{
-		if(!Rs2CacheManager.isCacheDataVaild() && Microbot.getClient().getGameState() == GameState.LOGGED_IN)
-		{
-			// Cache loading is now handled properly during login/profile changes
-			//Rs2CacheManager.loadInitialCacheStateFromConfig();			
-		}
+	{		
 		// Cache loading is now handled properly during login/profile changes
 		// No need to call loadInitialCacheFromCurrentConfig on every tick
 	}
@@ -550,16 +542,7 @@ public class MicrobotPlugin extends Plugin
 			// Set the EventBus for cache event handling (without loading caches yet)
 			Rs2CacheManager.setEventBus(eventBus);
 			
-			// Initialize all cache instances (they register themselves automatically)
-			Rs2VarbitCache.getInstance();
-			Rs2SkillCache.getInstance();
-			Rs2QuestCache.getInstance();
-			
-			// Initialize specialized entity caches
-			Rs2NpcCache.getInstance();
-			Rs2GroundItemCache.getInstance();
-			Rs2ObjectCache.getInstance();
-			
+		
 			// Keep deprecated EntityCache for backward compatibility (for now)
 			//Rs2EntityCache.getInstance();
 			

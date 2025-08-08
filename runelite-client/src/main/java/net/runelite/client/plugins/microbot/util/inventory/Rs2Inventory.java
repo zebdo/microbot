@@ -39,6 +39,7 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -644,15 +645,14 @@ public class Rs2Inventory {
     }
 
     /**
-     * Gets the item in the inventory with the specified name.
-     * this method ignores casing
+     * Gets the item in the inventory with one of the specified names.
      *
-     * @param name The name to match.
+     * @param names to match.
      *
-     * @return The item with the specified name, or null if not found.
+     * @return The item with one of the specified names, or null if not found.
      */
-    public static Rs2ItemModel get(String name) {
-        return get(name, false, false);
+    public static Rs2ItemModel get(String... names) {
+        return get(names, false);
     }
 
     /**
@@ -664,34 +664,7 @@ public class Rs2Inventory {
      * @return The item with the specified name, or null if not found.
      */
     public static Rs2ItemModel get(String name, boolean exact) {
-        return get(exact ? x -> x.getName().equalsIgnoreCase(name) :
-                x -> x.getName().toLowerCase().contains(name.toLowerCase()));
-    }
-
-    /**
-     * Gets the item in the inventory with the specified name.
-     * this method ignores casing
-     *
-     * @param name The name to match.
-     *
-     * @return The item with the specified name, or null if not found.
-     */
-    public static Rs2ItemModel get(String name, boolean stackable, boolean exact) {
-        Predicate<Rs2ItemModel> filter = exact ? item -> item.getName().equalsIgnoreCase(name) :
-                item -> item.getName().toLowerCase().contains(name.toLowerCase());
-        if (stackable) filter = filter.and(Rs2ItemModel::isStackable);
-        return get(filter);
-    }
-
-    /**
-     * Gets the item in the inventory with one of the specified names.
-     *
-     * @param names The names to match.
-     *
-     * @return The item with one of the specified names, or null if not found.
-     */
-    public static Rs2ItemModel get(String... names) {
-        return get(names, false);
+        return get(name, false, exact);
     }
 
     /**
@@ -703,8 +676,34 @@ public class Rs2Inventory {
      * @return The item with one of the specified names, or null if not found.
      */
     public static Rs2ItemModel get(String[] names, boolean exact) {
-        return get(exact ? item -> Arrays.stream(names).anyMatch(name -> name.equalsIgnoreCase(item.getName())) :
-                item -> Arrays.stream(names).anyMatch(name -> item.getName().toLowerCase().contains(name.toLowerCase())));
+        return get(names, false, exact);
+    }
+
+    /**
+     * Gets the item in the inventory with the specified name.
+     * this method ignores casing
+     *
+     * @param name The name to match.
+     *
+     * @return The item with the specified name, or null if not found.
+     */
+    public static Rs2ItemModel get(String name, boolean stackable, boolean exact) {
+        return get(new String[] {name}, stackable, exact);
+    }
+
+    /**
+     * Gets the item in the inventory with the specified name.
+     * this method ignores casing
+     *
+     * @param names to match.
+     *
+     * @return The item with the specified name, or null if not found.
+     */
+    public static Rs2ItemModel get(String[] names, boolean stackable, boolean exact) {
+        Predicate<Rs2ItemModel> filter = Rs2ItemModel.matches(exact, names);
+        if (stackable) filter = filter.and(Rs2ItemModel::isStackable);
+        return exact ? items(filter).findFirst().orElse(null) :
+                items(filter).min(Comparator.comparingInt(item -> item.getName().length())).orElse(null);
     }
 
     /**
@@ -773,7 +772,7 @@ public class Rs2Inventory {
      * @return True if the player has the specified quantity of the item, false otherwise.
      */
     public static boolean hasItemAmount(int id, int amount) {
-       return hasItemAmount(id, amount, false);
+        return hasItemAmount(id, amount, false);
     }
 
     /**
@@ -876,39 +875,39 @@ public class Rs2Inventory {
                 .findFirst().orElse(EMPTY_ARRAY);
     }
 
-	/**
-	 * Retrieves a list of all edible food items currently in the player's inventory.
-	 * <p>
-	 * This includes:
-	 * <ul>
-	 *   <li>Items with an "Eat" inventory action</li>
-	 *   <li>Items named "Jug of wine"</li>
-	 * </ul>
-	 * This excludes:
-	 * <ul>
-	 *   <li>Noted items</li>
-	 *   <li>Items containing "rock cake" in the name</li>
-	 * </ul>
-	 *
-	 * @return a list of {@link Rs2ItemModel} representing edible food in the inventory
-	 */
-	public static List<Rs2ItemModel> getInventoryFood() {
-		return items(Rs2ItemModel::isFood).collect(Collectors.toList());
-	}
+    /**
+     * Retrieves a list of all edible food items currently in the player's inventory.
+     * <p>
+     * This includes:
+     * <ul>
+     *   <li>Items with an "Eat" inventory action</li>
+     *   <li>Items named "Jug of wine"</li>
+     * </ul>
+     * This excludes:
+     * <ul>
+     *   <li>Noted items</li>
+     *   <li>Items containing "rock cake" in the name</li>
+     * </ul>
+     *
+     * @return a list of {@link Rs2ItemModel} representing edible food in the inventory
+     */
+    public static List<Rs2ItemModel> getInventoryFood() {
+        return items(Rs2ItemModel::isFood).collect(Collectors.toList());
+    }
 
-	/**
-	 * Retrieves a list of fast food items (tick delay = 1) from the player's inventory.
-	 * <p>
-	 * This is a filtered subset of {@link #getInventoryFood()}, using known food IDs
-	 * with a 1-tick consumption delay.
-	 *
-	 * @return a list of {@link Rs2ItemModel} representing fast food in the inventory
-	 */
-	public static List<Rs2ItemModel> getInventoryFastFood() {
-		return Rs2Inventory.getInventoryFood().stream()
-			.filter(item -> Rs2Food.getFastFoodIds().contains(item.getId()))
-			.collect(Collectors.toList());
-	}
+    /**
+     * Retrieves a list of fast food items (tick delay = 1) from the player's inventory.
+     * <p>
+     * This is a filtered subset of {@link #getInventoryFood()}, using known food IDs
+     * with a 1-tick consumption delay.
+     *
+     * @return a list of {@link Rs2ItemModel} representing fast food in the inventory
+     */
+    public static List<Rs2ItemModel> getInventoryFastFood() {
+        return Rs2Inventory.getInventoryFood().stream()
+                .filter(item -> Rs2Food.getFastFoodIds().contains(item.getId()))
+                .collect(Collectors.toList());
+    }
 
     public static List<Rs2ItemModel> getPotions() {
         return items(item -> Arrays.stream(item.getInventoryActions()).anyMatch("drink"::equalsIgnoreCase))
@@ -1768,8 +1767,8 @@ public class Rs2Inventory {
     private static final Pattern usesRegexPattern = Pattern.compile("^(.*?)(?:\\(\\d+\\))?$");
     private static Stream<Rs2ItemModel> getPotionsInInventory(String... potionNames) {
         return getPotions().stream().filter(item -> {
-                    final Matcher matcher = usesRegexPattern.matcher(item.getName());
-                    return matcher.matches() && Arrays.stream(potionNames).anyMatch(name -> name.equalsIgnoreCase(matcher.group(1).trim()));
+            final Matcher matcher = usesRegexPattern.matcher(item.getName());
+            return matcher.matches() && Arrays.stream(potionNames).anyMatch(name -> name.equalsIgnoreCase(matcher.group(1).trim()));
         });
     }
 
@@ -1899,8 +1898,8 @@ public class Rs2Inventory {
     /**
      * Sell item to the shop
      *
-     * @param itemName item to sell
-     * @param quantity STRING quantity of items to sell
+     * @param itemName name of the item to sell
+     * @param quantity string quantity of items to sell
      *
      * @return true if the item was successfully sold, false otherwise
      */
@@ -1912,6 +1911,26 @@ public class Rs2Inventory {
             return false;
         }
         invokeMenu(item, "Sell " + quantity);
+        return true;
+    }
+
+    /**
+     * Sell item to the shop
+     *
+     * @param itemID ID of the item to sell
+     * @param quantity string quantity of items to sell
+     *
+     * @return true if the item was successfully sold, false otherwise
+     */
+    public static boolean sellItem(int itemID, String quantity) {
+        assert Set.of("1","5","10","50").contains(quantity); // I think these should be all valid quantities
+        final Rs2ItemModel item = get(itemID);
+        if (item == null) {
+            Microbot.log("Item not found in inventory.");
+            return false;
+        }
+        invokeMenu(item, "Sell " + quantity);
+        Rs2Shop.waitForShopChanges();
         return true;
     }
 
@@ -2168,7 +2187,7 @@ public class Rs2Inventory {
                     }
                 });
                 return rs2Items;
-                
+
             case ZIGZAG:
                 int[] customOrder = {
                         0, 4, 1, 5, 2, 6, 3, 7,
@@ -2176,7 +2195,7 @@ public class Rs2Inventory {
                         16, 20, 17, 21, 18, 22, 19, 23,
                         27, 26, 25, 24
                 };
-                
+
                 Map<Integer, Integer> orderMap = new HashMap<>();
                 for (int i = 0; i < customOrder.length; i++) {
                     orderMap.put(customOrder[i], i);

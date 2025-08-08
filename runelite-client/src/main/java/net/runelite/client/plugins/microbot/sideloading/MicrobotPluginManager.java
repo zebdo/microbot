@@ -247,15 +247,9 @@ public class MicrobotPluginManager {
         return plugin;
     }
 
-    public void loadCorePlugins(List<String> packages) throws IOException, PluginInstantiationException
+    public void loadCorePlugins(List<Class<?>> plugins) throws IOException, PluginInstantiationException
     {
         SplashScreen.stage(.59, null, "Loading plugins");
-        ClassPath classPath = ClassPath.from(getClass().getClassLoader());
-
-        List<Class<?>> plugins = packages.stream()
-                .flatMap(packageName -> classPath.getTopLevelClassesRecursive(packageName).stream())
-                .map(ClassPath.ClassInfo::load)
-                .collect(Collectors.toList());
 
         loadPlugins(plugins, (loaded, total) ->
                 SplashScreen.stage(.60, .70, null, "Loading plugins", loaded, total, false));

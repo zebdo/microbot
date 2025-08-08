@@ -315,9 +315,9 @@ public class Rs2InventorySetup {
 
 			if (item.getQuantity() > 1) {
 				if (isFuzzy) {
-					Rs2Bank.withdrawAllAndEquip((String) identifier);
+					Rs2Bank.withdrawXAndEquip((String) identifier, item.getQuantity());
 				} else {
-					Rs2Bank.withdrawAllAndEquip((int) identifier);
+					Rs2Bank.withdrawXAndEquip((int) identifier, item.getQuantity());
 				}
 			} else {
 				if (isFuzzy) {

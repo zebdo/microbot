@@ -37,7 +37,7 @@ public class Rs2NpcCacheOverlay extends Rs2BaseCacheOverlay {
     private boolean renderCombatLevel = false; // Show combat level
     private boolean renderDistance = false; // Show distance from player
     private boolean onlyShowTextOnHover = true; // Only show text when mouse is hovering
-    private Predicate<Rs2NpcModel> renderFilter;
+    private Predicate<Rs2NpcModel> renderFilter = npc -> true;
     
     public Rs2NpcCacheOverlay(Client client, ModelOutlineRenderer modelOutlineRenderer) {
         super(client, modelOutlineRenderer);
@@ -61,6 +61,7 @@ public class Rs2NpcCacheOverlay extends Rs2BaseCacheOverlay {
         if (Rs2NpcCache.getInstance() == null || Rs2NpcCache.getInstance().size() == 0) {
             return null; // No NPCs to render
         }
+        renderFilter = renderFilter != null ? renderFilter : npc -> true; // Default to no filter
         // Render all visible NPCs from cache
         Rs2NpcCache.getAllNpcs()
                 .filter(npc -> renderFilter == null || renderFilter.test(npc))
@@ -237,9 +238,65 @@ public class Rs2NpcCacheOverlay extends Rs2BaseCacheOverlay {
                 if (displayLocation != null) {
                     HoverInfoContainer.HoverInfo hoverInfo = new HoverInfoContainer.HoverInfo(
                         infoLines, displayLocation, borderColor, entityType);
-                    HoverInfoContainer.setHoverInfo(hoverInfo);
+                    //HoverInfoContainer.setHoverInfo(hoverInfo);
+                    renderDetailedInfoBox(graphics, infoLines, 
+                    displayLocation, borderColor);
                 }
+                
             }
+    }
+    /**
+     * Renders a detailed info box with multiple lines of information.
+     * Each line is rendered separately with a colored border indicating the object type.
+     * 
+     * @param graphics The graphics context
+     * @param infoLines List of information lines to display
+     * @param location The location to render the info box
+     * @param borderColor The border color (indicates object type)
+     */
+    private void renderDetailedInfoBox(Graphics2D graphics, java.util.List<String> infoLines, 
+                                     net.runelite.api.Point location, Color borderColor) {
+        if (infoLines.isEmpty()) return;
+        
+        FontMetrics fm = graphics.getFontMetrics();
+        int lineHeight = fm.getHeight();
+        int maxWidth = 0;
+        
+        // Calculate the maximum width needed
+        for (String line : infoLines) {
+            int lineWidth = fm.stringWidth(line);
+            if (lineWidth > maxWidth) {
+                maxWidth = lineWidth;
+            }
+        }
+        
+        // Calculate box dimensions
+        int padding = 6;
+        int boxWidth = maxWidth + (padding * 2);
+        int boxHeight = (infoLines.size() * lineHeight) + (padding * 2);
+        
+        // Calculate box position (centered above the location)
+        int boxX = location.getX() - (boxWidth / 2);
+        int boxY = location.getY() - boxHeight - 10; // 10 pixels above the object
+        
+        // Draw the info box background
+        Color backgroundColor = new Color(0, 0, 0, 180); // Semi-transparent black
+        graphics.setColor(backgroundColor);
+        graphics.fillRect(boxX, boxY, boxWidth, boxHeight);
+        
+        // Draw the border in object type color
+        graphics.setColor(borderColor);
+        graphics.setStroke(new BasicStroke(2.0f));
+        graphics.drawRect(boxX, boxY, boxWidth, boxHeight);
+        
+        // Draw the text lines
+        graphics.setColor(Color.WHITE);
+        for (int i = 0; i < infoLines.size(); i++) {
+            String line = infoLines.get(i);
+            int textX = boxX + padding;
+            int textY = boxY + padding + fm.getAscent() + (i * lineHeight);
+            graphics.drawString(line, textX, textY);
+        }
     }
     
     /**

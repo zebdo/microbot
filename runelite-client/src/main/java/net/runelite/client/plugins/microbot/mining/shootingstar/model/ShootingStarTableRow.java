@@ -103,7 +103,7 @@ public class ShootingStarTableRow extends JPanel
 				// double click row hops to world
 				if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e))
 				{
-					Microbot.hopToWorld(starData.getWorldObject().getId());
+					Microbot.hopToWorld(starData.getWorld());
 				}
 			}
 		};
@@ -113,7 +113,7 @@ public class ShootingStarTableRow extends JPanel
 	{
 		JPanel panel = new JPanel(new BorderLayout(7, 0));
 		panel.setBorder(new EmptyBorder(0, 5, 0, 5));
-		JLabel worldLabel = new JLabel(Integer.toString(starData.getWorldObject().getId()));
+		JLabel worldLabel = new JLabel(Integer.toString(starData.getWorld()));
 		worldLabel.setFont(FontManager.getRunescapeSmallFont());
 		worldLabel.setForeground(worldColor(world));
 		panel.add(worldLabel);
@@ -122,7 +122,7 @@ public class ShootingStarTableRow extends JPanel
 
 	private Color worldColor(int curWorld)
 	{
-		if (starData.getWorldObject().getId() == curWorld)
+		if (starData.getWorld() == curWorld)
 		{
 			return BRAND_ORANGE;
 		}
@@ -195,6 +195,12 @@ public class ShootingStarTableRow extends JPanel
 		panel.add(timeLeftLabel);
 		updateTime();
 		return panel;
+	}
+
+	public void updateTier()
+	{
+		tierLabel.setText(Integer.toString(starData.getTier()));
+		updateTierColor();
 	}
 
 	public void updateTime()

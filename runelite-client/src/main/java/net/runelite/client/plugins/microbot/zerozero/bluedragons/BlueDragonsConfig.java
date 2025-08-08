@@ -10,7 +10,8 @@ import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
         "<hr style='width: 75%; border-top: 1px solid #000;'/> </center> <br />" +
         "1. Equip your <b>RANGED</b> gear <br />" +
         "2. <b style='color: red;'>MUST</b> have Falador teleport (runes/teletab) <br />" +
-        "3. Correct food amount from config <br /> <br />" +
+        "3. Correct food amount from config <br />" +
+        "4. Start with your dusty key in your inventory or have 70 agility <br /> <br />" +
         "<center>Press <b style='color: green;'>START</b> and enjoy :)</center>")
 public interface BlueDragonsConfig extends Config {
     @ConfigItem(keyName = "startPlugin", name = "Start/Stop the Plugin", description = "This is start or stop the plugin on a toggle")
@@ -24,6 +25,9 @@ public interface BlueDragonsConfig extends Config {
 
     @ConfigItem(keyName = "lootEnsouledHead", name = "Loot Ensouled heads", description = "LootEnsouled heads dropped by the dragon", section = lootSection)
     default boolean lootEnsouledHead() { return true; }
+
+    @ConfigItem(keyName = "lootMiscItems", name = "Loot items over 3.5k?", description = "Should we loot items worth more than 3.5k?", section = lootSection)
+    default boolean lootMiscItems() { return true; }
 
     @ConfigSection(name = "Food Options", description = "Settings for selecting food and health threshold", position = 2)
     String foodSection = "foodSection";

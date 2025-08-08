@@ -2,11 +2,15 @@ package net.runelite.client.plugins.microbot.util.cache;
 
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Client;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.strategy.*;
+import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import java.time.Instant;
-
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
@@ -38,7 +42,58 @@ import java.util.stream.Stream;
 @Slf4j
 public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K, V> {
     
-    @Getter
+    // ============================================
+    // UTC Timestamp Constants
+    // ============================================
+    
+    /** UTC timestamp formatter for cache logging */
+    private static final DateTimeFormatter UTC_TIMESTAMP_FORMATTER = 
+        DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS 'UTC'")
+                         .withZone(ZoneOffset.UTC);
+    
+    /**
+     * Gets the current UTC timestamp in milliseconds since epoch.
+     * 
+     * @return Current UTC timestamp in milliseconds
+     */
+    private static long getCurrentUtcTimestamp() {
+        return Instant.now().toEpochMilli();
+    }
+    
+    /**
+     * Formats a timestamp (in milliseconds since epoch) to a human-readable UTC string.
+     * 
+     * @param timestampMillis The timestamp in milliseconds since epoch
+     * @return Formatted UTC timestamp string
+     */
+    public static String formatUtcTimestamp(long timestampMillis) {
+        return UTC_TIMESTAMP_FORMATTER.format(Instant.ofEpochMilli(timestampMillis));
+    }
+    
+    // ============================================
+    // POH Region Constants
+    // ============================================
+    
+    /** POH region ID */
+    private static final int POH_REGION_RIMMINGTON_1 = 7513;
+    private static final int POH_REGION_RIMMINGTON_2 = 7514;    
+    private static final int POH_REGION_UNKNOWN__1 = 8025;
+    private static final int POH_REGION_ADVERTISEMENT_2 = 8026;
+    private static final int POH_REGION_ADVERTISEMENT_3 = 7769;
+    private static final int POH_REGION_ADVERTISEMENT_4 = 7770;
+    
+    /** All POH region IDs for easy checking (immutable list) */
+    private static final List<Integer> POH_REGIONS = Collections.unmodifiableList(Arrays.asList(
+        POH_REGION_RIMMINGTON_1,
+        POH_REGION_RIMMINGTON_2,
+        POH_REGION_UNKNOWN__1,
+        POH_REGION_ADVERTISEMENT_2,
+        POH_REGION_ADVERTISEMENT_3,
+        POH_REGION_ADVERTISEMENT_4
+    ));
+    
+ 
+    
     private final String cacheName;
     
     @Getter
@@ -55,6 +110,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
     
     // Cache configuration
     private final long ttlMillis;
+    private volatile boolean enableCustomTTLInvalidation = false;
     private final long globalInvalidationInterval;
     private final long creationTime;
     
@@ -66,6 +122,137 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
     
     // Optional scheduled cleanup task
     private ScheduledFuture<?> cleanupTask;
+    
+    // ============================================
+    // Region Change Detection - Unified Support
+    // ============================================
+    
+    // Track current regions to detect changes across all cache types
+    private static volatile int[] lastKnownRegions = null;
+    private static volatile int lastRegionCheckTick = -1;
+    
+    // Thread-safe flag to prevent multiple region checks per tick
+    private static final AtomicBoolean regionCheckInProgress = new AtomicBoolean(false);
+    
+    /**
+     * Checks for region changes and clears cache if regions have changed.
+     * This handles the issue where RuneLite doesn't fire despawn events on region changes.
+     * Optimized to only check once per game tick across all cache instances.
+     */
+    public static boolean checkAndHandleRegionChange(CacheOperations<?, ?> cache) {
+        return checkAndHandleRegionChange(cache, false,false);
+    }
+    
+    /**
+     * Checks for region changes and clears cache if regions have changed.
+     * 
+     * @param cache The cache to potentially clear on region change
+     * @param force Whether to force a region check regardless of tick optimization
+     * @return true if region changed and cache was cleared, false otherwise
+     */
+    public static boolean checkAndHandleRegionChange(CacheOperations<?, ?> cache, boolean force, boolean withInvalidation) {
+        // Get current game tick from client
+        Client client = Microbot.getClient();
+        if (client == null) {
+            return false;
+        }
+        
+        int currentGameTick = client.getTickCount();
+        
+        // Only check once per game tick to avoid redundant checks during burst events
+        if (!force && lastRegionCheckTick == currentGameTick) {
+            return false;
+        }
+        
+        // Prevent multiple concurrent region checks
+        if (!regionCheckInProgress.compareAndSet(false, true)) {
+            return false;
+        }
+        
+        try {
+            // Skip if cache is empty and we're not forcing
+            if (!force && cache.size() == 0) {
+                lastRegionCheckTick = currentGameTick;
+                return false;
+            }
+            
+            @SuppressWarnings("deprecation")
+            int[] currentRegions = client.getMapRegions();
+            if (currentRegions == null) {
+                lastRegionCheckTick = currentGameTick;
+                return false;
+            }
+            
+            // Check if regions have changed
+            if (lastKnownRegions == null || !Arrays.equals(lastKnownRegions, currentRegions)) {
+                if (lastKnownRegions != null) {
+                    log.debug("Region change detected for cache {} - clearing cache. Old regions: {}, New regions: {}", 
+                        cache.getCacheName(), Arrays.toString(lastKnownRegions), Arrays.toString(currentRegions));
+                    if(withInvalidation) cache.invalidateAll();
+                    lastKnownRegions = currentRegions.clone();
+                    lastRegionCheckTick = currentGameTick;
+                    return true;
+                } else {
+                    // First time initialization
+                    lastKnownRegions = currentRegions.clone();
+                }
+            }
+            
+            // Mark that we've checked regions this tick
+            lastRegionCheckTick = currentGameTick;
+            return false;
+            
+        } finally {
+            regionCheckInProgress.set(false);
+        }
+    }
+    
+   
+    
+    /**
+     * Checks if player is currently in a Player-Owned House (POH).
+     * Uses instance detection, portal presence, and region-based detection for reliable POH detection.
+     * 
+     * @return true if player is in POH, false otherwise
+     */
+    public static boolean isInPOH() {
+        try {
+            // Check if player is in instance and portal object exists
+            boolean instanceAndPortal = Rs2Player.IsInInstance() && Rs2GameObject.getTileObject(4525) != null;            
+            // Check if current region is standard POH region
+            int[] currentRegions = getCurrentRegions();
+            boolean inStandardPoh = currentRegions != null && 
+                Arrays.stream(currentRegions).anyMatch(region -> POH_REGIONS.contains(region));                                    
+            // Return true if any detection method confirms POH
+            return inStandardPoh;
+            
+        } catch (Exception e) {
+            log.warn("Error checking POH status: {}", e.getMessage());
+            return false;
+        }
+    }
+    
+    /**
+     * Gets the current player's regions if available.
+     * 
+     * @return Array of current regions, or null if not available
+     */
+    public static int[] getCurrentRegions() {
+        try {
+            Client client = Microbot.getClient();
+            if (client == null) {
+                return null;
+            }
+            
+            @SuppressWarnings("deprecation")
+            int[] regions = client.getMapRegions();
+            return regions != null ? regions.clone() : null;
+            
+        } catch (Exception e) {
+            log.warn("Error getting current regions: {}", e.getMessage());
+            return null;
+        }
+    }
     
     // ============================================
     // Serialization Support
@@ -105,7 +292,16 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
     public boolean isPersistenceEnabled() {
         return persistenceEnabled;
     }
-    
+    // ============================================
+    // custom invalidation  Support
+    // ============================================
+    protected void setEnableCustomTTLInvalidation() {
+        this.enableCustomTTLInvalidation = true;
+        log.debug("Enabled custom TTL invalidation for cache {}", cacheName);
+    }
+    protected boolean isEnableCustomTTLInvalidation() {
+        return enableCustomTTLInvalidation;
+    }
 
     
     /**
@@ -140,11 +336,11 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         this.cacheMode = cacheMode;
         this.ttlMillis = ttlMillis;
         this.globalInvalidationInterval = globalInvalidationInterval;
-        this.creationTime = System.currentTimeMillis();
+        this.creationTime = getCurrentUtcTimestamp();
         
         this.cache = new ConcurrentHashMap<>();
         this.cacheTimestamps = new ConcurrentHashMap<>();
-        this.lastGlobalInvalidation = new AtomicLong(System.currentTimeMillis());
+        this.lastGlobalInvalidation = new AtomicLong(getCurrentUtcTimestamp());
         this.isShutdown = new AtomicBoolean(false);
         this.cacheHits = new AtomicLong(0);
         this.cacheMisses = new AtomicLong(0);
@@ -257,7 +453,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
      */
     public V get(K key, Supplier<V> valueLoader) {
         if (isShutdown.get()) {
-            log.warn("Cache {} is shut down, loading value directly", cacheName);
+            log.warn("Cache \"{}\" is shut down, loading value directly", cacheName);
             return valueLoader.get();
         }
         
@@ -288,6 +484,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
      */
     @Override
     public void put(K key, V value) {
+
         if (isShutdown.get() || value == null) {
             return;
         }
@@ -301,7 +498,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         }
         
         cache.put(key, valueToStore);
-        cacheTimestamps.put(key, System.currentTimeMillis());
+        cacheTimestamps.put(key, getCurrentUtcTimestamp());
         
         log.trace("Put value for key {} in cache {}", key, cacheName);
     }
@@ -319,18 +516,27 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
     }
     
     /**
-     * Invalidates all cached data.
+     * Invalidates all cached data in a thread-safe manner.
+     * Uses synchronization to ensure atomicity of cache and timestamp clearing.
      */
     @Override
-    public void invalidateAll() {
-
+    public synchronized void invalidateAll() {
         int sizeBefore = cache.size();
         cache.clear();
         cacheTimestamps.clear();
-        lastGlobalInvalidation.set(System.currentTimeMillis());
+        lastGlobalInvalidation.set(getCurrentUtcTimestamp());
         totalInvalidations.incrementAndGet();
-        
-        log.debug("Invalidated all {} entries in cache {}", sizeBefore, cacheName);
+        log.debug("Invalidated all {} entries in cache {}", sizeBefore, cacheName);    
+    }
+
+    /**
+     * Gets the cache timestamp for a specific key.
+     * 
+     * @param key The key to get the timestamp for
+     * @return The timestamp when the key was cached, or null if not found
+     */
+    public Long getCacheTimestamp(K key) {
+        return cacheTimestamps.get(key);
     }
     
     // ============================================
@@ -343,7 +549,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
      * @param criteria The query criteria
      * @return Stream of matching values
      */
-    public Stream<V> query(QueryCriteria criteria) {
+    public synchronized Stream<V> query(QueryCriteria criteria) {
         for (QueryStrategy<K, V> strategy : queryStrategies) {
             for (Class<? extends QueryCriteria> supportedType : strategy.getSupportedQueryTypes()) {
                 if (supportedType.isInstance(criteria)) {
@@ -363,7 +569,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
      * @return Collection of cached values
      */
     @SuppressWarnings("unchecked")
-    public Collection<V> values() {
+    public synchronized Collection<V> values() {        
         if (isShutdown.get()) {
             return Collections.emptyList();
         }
@@ -385,6 +591,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
                     }
                 })
                 .collect(Collectors.toList());
+    
     }
     
     // ============================================
@@ -397,10 +604,35 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
      * 
      * @return Stream of all cached values
      */
-    public Stream<V> stream() {
-        return values().stream();
+
+    public synchronized Stream<V> stream() {
+        if (isShutdown.get()) {
+            return Stream.empty();
+        }
+        if (cacheMode == CacheMode.AUTOMATIC_INVALIDATION) {
+            checkGlobalInvalidation();
+        }
+        // Defensive copy for strong consistency, but less efficient:
+        List<Map.Entry<K, Object>> entries = new ArrayList<>(cache.entrySet());
+        return entries.stream()
+            .filter(entry -> {
+            Long timestamp = cacheTimestamps.get(entry.getKey());
+            return timestamp != null && !isExpired(timestamp);
+            })
+            .map(entry -> {
+            if (valueWrapper != null) {
+                @SuppressWarnings("unchecked")
+                V unwrapped = (V) valueWrapper.unwrap(entry.getValue());
+                return unwrapped;
+            } else {
+                @SuppressWarnings("unchecked")
+                V value = (V) entry.getValue();
+                return value;
+            }
+            })
+            .filter(Objects::nonNull);
     }
-    
+
     /**
      * Returns statistics as a formatted string for legacy compatibility.
      */
@@ -460,6 +692,11 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         return cache.size();
     }
     
+    @Override
+    public String getCacheName() {
+        return cacheName;
+    }
+    
     // ============================================
     // Print Functions for Cache Information
     // ============================================
@@ -483,7 +720,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         sb.append(String.format("Cache Name: %s\n", cacheName));
         sb.append(String.format("Cache Mode: %s\n", cacheMode));
         sb.append(String.format("Created: %s\n", formatter.format(Instant.ofEpochMilli(creationTime))));
-        sb.append(String.format("Uptime: %d ms\n", System.currentTimeMillis() - creationTime));
+        sb.append(String.format("Uptime: %d ms\n", getCurrentUtcTimestamp() - creationTime));
         sb.append(String.format("Is Shutdown: %s\n", isShutdown.get()));
         sb.append("\n");
         
@@ -595,7 +832,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
                 persistenceEnabled ? "Enabled" : "Disabled"));
         
         // Uptime
-        long uptimeMs = System.currentTimeMillis() - creationTime;
+        long uptimeMs = getCurrentUtcTimestamp() - creationTime;
         String uptimeStr;
         if (uptimeMs < 60000) {
             uptimeStr = String.format("%ds", uptimeMs / 1000);
@@ -720,7 +957,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         }
         
         // EVENT_DRIVEN_ONLY mode: entries never expire by time
-        if (cacheMode == CacheMode.EVENT_DRIVEN_ONLY) {
+        if (cacheMode == CacheMode.EVENT_DRIVEN_ONLY && !enableCustomTTLInvalidation) {
             return false;
         }
         
@@ -730,7 +967,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
         }
         
         // AUTOMATIC_INVALIDATION mode: check TTL
-        return System.currentTimeMillis() - timestamp > ttlMillis;
+        return getCurrentUtcTimestamp() - timestamp > ttlMillis;
     }
     
     /**
@@ -741,10 +978,10 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
             return;
         }
         
-        long currentTime = System.currentTimeMillis();
+        long currentTime = getCurrentUtcTimestamp();
         if (currentTime - lastGlobalInvalidation.get() > globalInvalidationInterval) {
             if (lastGlobalInvalidation.compareAndSet(lastGlobalInvalidation.get(), currentTime)) {
-                log.info("Performing global invalidation for cache {}", cacheName);
+                log.debug("Performing global invalidation for cache {}", cacheName);
                 invalidateAll();
             }
         }
@@ -870,7 +1107,7 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
                 cacheHits.get(),
                 cacheMisses.get(),
                 totalInvalidations.get(),
-                System.currentTimeMillis() - creationTime,
+                getCurrentUtcTimestamp() - creationTime,
                 ttlMillis,
                 globalInvalidationInterval,
                 getEstimatedMemorySize()
@@ -936,12 +1173,13 @@ public abstract class Rs2Cache<K, V> implements AutoCloseable, CacheOperations<K
                 cleanupTask.cancel(true);
             }
             
-            // Detach all strategies
+            // Detach and close all strategies
             for (CacheUpdateStrategy<K, V> strategy : updateStrategies) {
                 try {
                     strategy.onDetach(this);
+                    strategy.close(); // Close the strategy to release resources
                 } catch (Exception e) {
-                    log.warn("Error detaching strategy {} from cache {}: {}", 
+                    log.warn("Error detaching/closing strategy {} from cache {}: {}", 
                             strategy.getClass().getSimpleName(), cacheName, e.getMessage());
                 }
             }

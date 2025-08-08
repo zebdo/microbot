@@ -259,10 +259,8 @@ public class PathfinderConfig {
         transportsPacked.clear();
         usableTeleports.clear();
          // Check spirit tree farming states for farmable spirit trees
-
         Rs2SpiritTreeCache.getInstance().update();       
-        //Rs2SpiritTreeCache.logAllTreeStates();             
-        //log.info("useSpiritTrees: {}", useSpiritTrees);
+        //Rs2SpiritTreeCache.logAllTreeStates();                     
         for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
             WorldPoint point = entry.getKey();
             Set<Transport> usableTransports = new HashSet<>(entry.getValue().size());
@@ -304,6 +302,7 @@ public class PathfinderConfig {
                 if (entry.getQuests().isEmpty() && entry.getVarbits().isEmpty() && entry.getVarplayers().isEmpty() && !entry.isMembers() && Arrays.stream(entry.getSkillLevels()).allMatch(level -> level == 0) && entry.getItemIdRequirements().isEmpty()) {
                     return true;
                 }
+
                 // Members world check
                 if (entry.isMembers() && !client.getWorldType().contains(WorldType.MEMBERS)) {
                     return true;

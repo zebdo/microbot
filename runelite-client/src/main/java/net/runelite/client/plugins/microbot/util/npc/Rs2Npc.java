@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.util.npc;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
@@ -26,6 +27,7 @@ import java.util.stream.Stream;
 
 import static net.runelite.api.Perspective.LOCAL_TILE_SIZE;
 
+@Slf4j
 public class Rs2Npc {
     /**
      * Retrieves an NPC by its index, returning an {@link Rs2NpcModel}.
@@ -118,11 +120,18 @@ public class Rs2Npc {
      * @return A sorted list of {@link Rs2NpcModel} objects matching the given criteria.
      */
     public static Stream<Rs2NpcModel> getNpcsForPlayer(Predicate<Rs2NpcModel> predicate) {
-        List<Rs2NpcModel> npcs = getNpcs(x -> Objects.equals(x.getInteracting(), Microbot.getClient().getLocalPlayer()))
+        // Get local player reference once to avoid repeated calls during stream processing
+        Player localPlayer = Microbot.getClient().getLocalPlayer();
+        if (localPlayer == null || localPlayer.getLocalLocation() == null) {
+            return Stream.empty();
+        }
+        
+        LocalPoint playerLocation = localPlayer.getLocalLocation();
+        
+        List<Rs2NpcModel> npcs = getNpcs(x -> Objects.equals(x.getInteracting(), localPlayer))
                 .filter(predicate)
                 .sorted(Comparator.comparingInt(value ->
-                        value.getLocalLocation().distanceTo(
-                                Microbot.getClient().getLocalPlayer().getLocalLocation())))
+                        value.getLocalLocation().distanceTo(playerLocation)))
                 .collect(Collectors.toList());
 
         return npcs.stream();
@@ -146,11 +155,20 @@ public class Rs2Npc {
      */
     public static List<Rs2NpcModel> getNpcsForPlayer(String name, boolean exact) {
         if (name == null || name.isEmpty()) return Collections.emptyList();
+        
+        // Get local player location once to avoid repeated calls during stream processing
+        Player localPlayer = Microbot.getClient().getLocalPlayer();
+        if (localPlayer == null || localPlayer.getLocalLocation() == null) {
+            return Collections.emptyList();
+        }
+        
+        LocalPoint playerLocation = localPlayer.getLocalLocation();
+        
         return getNpcsForPlayer(x -> {
             String npcName = x.getName();
             if (npcName == null || npcName.isEmpty()) return false;
             return (exact ? npcName.equalsIgnoreCase(name) : npcName.toLowerCase().contains(name.toLowerCase()));
-        }).sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation())))
+        }).sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(playerLocation)))
           .collect(Collectors.toList());
     }
 
@@ -197,16 +215,87 @@ public class Rs2Npc {
      * @return A sorted {@link Stream} of {@link Rs2NpcModel} objects that match the given predicate.
      */
     public static Stream<Rs2NpcModel> getNpcs(Predicate<Rs2NpcModel> predicate) {
-        List<Rs2NpcModel> npcList = Optional.of(Microbot.getClient().getTopLevelWorldView().npcs().stream()
-                .filter(Objects::nonNull)
-                .map(Rs2NpcModel::new)
-                .filter(x -> x.getName() != null)
-                .filter(predicate)
-                .sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(Microbot.getClient().getLocalPlayer().getLocalLocation())))
-                .collect(Collectors.toList()))
-                .orElse(new ArrayList<>());
-
-        return npcList.stream();
+        try {
+            // Defensive null checks for client and world view
+            if (Microbot.getClient() == null) {
+                log.warn("Client is null, returning empty NPC stream");
+                return Stream.empty();
+            }
+            
+            if (Microbot.getClient().getTopLevelWorldView() == null) {
+                log.warn("TopLevelWorldView is null, returning empty NPC stream");
+                return Stream.empty();
+            }
+            
+            if (Microbot.getClient().getTopLevelWorldView().npcs() == null) {
+                log.warn("NPCs collection is null, returning empty NPC stream");
+                return Stream.empty();
+            }
+            
+            if (Microbot.getClient().getLocalPlayer() == null) {
+                log.warn("Local player is null, returning empty NPC stream");
+                return Stream.empty();
+            }
+            
+            if (Microbot.getClient().getLocalPlayer().getLocalLocation() == null) {
+                log.warn("Local player location is null, returning empty NPC stream");
+                return Stream.empty();
+            }
+            
+            // Make local copies to avoid null issues during stream processing
+            final Stream<? extends NPC> npcStream = Microbot.getClient().getTopLevelWorldView().npcs().stream();
+            final LocalPoint playerLocation = Microbot.getClient().getLocalPlayer().getLocalLocation();
+            
+            // Safe predicate wrapper to prevent null issues
+            Predicate<Rs2NpcModel> safePredicate = predicate != null ? predicate : (npc -> true);            
+            List<Rs2NpcModel> npcList = npcStream
+                    .filter(Objects::nonNull) // Filter out null NPCs                  
+                    .map(npc -> {
+                        try {
+                            return new Rs2NpcModel(npc);
+                        } catch (Exception e) {
+                            log.debug("Error creating Rs2NpcModel: {}", e.getMessage());
+                            return null;
+                        }
+                    })
+                    .filter(Objects::nonNull) // Filter out failed model creations
+                    .filter(npcModel -> {
+                        try {
+                            // Additional safety checks for Rs2NpcModel
+                            return npcModel.getName() != null && 
+                                   npcModel.getLocalLocation() != null;
+                        } catch (Exception e) {
+                            log.debug("Error accessing Rs2NpcModel properties: {}", e.getMessage());
+                            return false;
+                        }
+                    })
+                    .filter(npcModel -> {
+                        try {
+                            return safePredicate.test(npcModel);
+                        } catch (Exception e) {
+                            log.debug("Error in predicate test: {}", e.getMessage());
+                            return false;
+                        }
+                    })
+                    .sorted(Comparator.comparingInt(value -> {
+                        try {
+                            if (value != null && value.getLocalLocation() != null && playerLocation != null) {
+                                return value.getLocalLocation().distanceTo(playerLocation);
+                            }
+                            return Integer.MAX_VALUE; // Put problematic NPCs at the end
+                        } catch (Exception e) {
+                            log.debug("Error calculating distance: {}", e.getMessage());
+                            return Integer.MAX_VALUE;
+                        }
+                    }))
+                    .collect(Collectors.toList());
+            
+            return npcList.stream();
+            
+        } catch (Exception e) {
+            log.debug("Unexpected error in getNpcs: {}", e.getMessage(), e);
+            return Stream.empty();
+        }
     }
 
     /**
@@ -573,52 +662,42 @@ public class Rs2Npc {
                 return false;
             }
 
-            int index = -1;
+            final int index;
             String[] actions = npcComposition.getActions();
 
-            if (action == null || action.isEmpty()) {
-                OptionalInt optionalIndex = IntStream.range(0, actions.length)
+            if (action == null || action.isBlank()) {
+                index = IntStream.range(0, actions.length)
                         .filter(i -> actions[i] != null && !actions[i].isEmpty())
-                        .findFirst();
-
-                if (optionalIndex.isPresent()) {
-                    index = optionalIndex.getAsInt();
-                    action = actions[index];
-                }
-            }
-            else {
-                String finalAction = action;
-                OptionalInt optionalIndex = IntStream.range(0, actions.length)
+                        .findFirst().orElse(-1);
+            } else {
+                final String finalAction = action;
+                index = IntStream.range(0, actions.length)
                         .filter(i -> actions[i] != null && actions[i].equalsIgnoreCase(finalAction))
-                        .findFirst();
-
-                if (optionalIndex.isPresent()) {
-                    index = optionalIndex.getAsInt();
-                }
+                        .findFirst().orElse(-1);
             }
 
-            MenuAction menuAction = getMenuAction(index);
-
+            final MenuAction menuAction = getMenuAction(index);
             if (menuAction == null) {
                 if (index == -1 && !Microbot.getClient().isWidgetSelected()) {
-                    Microbot.log("Error: Action '" + action + "' not found for NPC: " + npc.getName());
+                    log.warn("Action='{}' not found for NPC='{}'", action, npc.getName());
                 } else {
-                    Microbot.log("Error: Could not get menu action for action '" + action + "' on NPC: " + npc.getName());
+                    log.error("Could not get menu action for Action='{}' on NPC='{}'", action, npc.getName());
                 }
                 return false;
             }
+
+            action = actions[index];
 
             if (!Rs2Camera.isTileOnScreen(npc.getLocalLocation())) {
                 Rs2Camera.turnTo(npc);
             }
 
-            Microbot.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc),
+            Microbot.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc, action),
                     Rs2UiHelper.getActorClickbox(npc));
             return true;
 
         } catch (Exception ex) {
-            Microbot.log("Error interacting with NPC '" + npc.getName() + "' for action '" + action + "': " + ex.getMessage());
-            ex.printStackTrace();
+            log.error("Error interacting with NPC '{}' for action '{}': ", npc.getName(), action, ex);
             return false;
         }
     }

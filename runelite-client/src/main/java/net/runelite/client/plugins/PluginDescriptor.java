@@ -108,6 +108,17 @@ public @interface PluginDescriptor
      * always on
      */
     boolean alwaysOn() default false;
+	/**
+	 * If this plugin should be disabled on startup. This is used for plugins that
+	 * are not needed in certain situations, like the cache debugger.
+	 */
+	boolean disableOnStartUp() default false; 
+	/**
+	 * disable the plugin on startup and not allow it to be enabled
+	 * This is used for plugins that are not needed in certain situations
+	 * @return
+	 */
+	boolean disable() default false;
 
 	/**
 	 * Whether or not plugin is hidden from configuration panel

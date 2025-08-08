@@ -5,7 +5,7 @@ on:
       - main
 
 env:
-  version: "1.9.6.1"
+  version: "1.9.7"
 
 jobs:
   build:
@@ -24,8 +24,9 @@ jobs:
           java-version: 11
 
       - name: Build Shaded JAR
-        run: mvn clean package
-
+        run: |
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          mvn clean package -Dmicrobot.commit.sha=$COMMIT_SHA
 
       - name: Create Release
         uses: "marvinpinto/action-automatic-releases@latest"

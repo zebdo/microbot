@@ -118,9 +118,9 @@ public enum PlayStyle {
     public void evolvePlayStyle() {
         phase += frequency;
         primaryTickInterval = adjustInterval(primaryTickInterval, amplitude);
-        log.info("Primary tick interval: {}", primaryTickInterval);
+        log.debug("Primary tick interval: {}", primaryTickInterval);
         secondaryTickInterval = adjustInterval(secondaryTickInterval, amplitude);
-        log.info("Secondary tick interval: {}", secondaryTickInterval);
+        log.debug("Secondary tick interval: {}", secondaryTickInterval);
         if(Rs2AntibanSettings.devDebug)
             Microbot.log("Slightly adjusting playStyle intervals.");
     }
