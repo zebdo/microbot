@@ -13,6 +13,7 @@ import org.slf4j.event.Level;
 
 import java.util.List;
 
+import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 public class RitualEvent implements BlockingEvent {
@@ -40,6 +41,7 @@ public class RitualEvent implements BlockingEvent {
 
             if (Rs2Player.getWorldLocation().equals(targetCircle.getWorldLocation())) {
                 // Microbot.log("RitualEvent: Already at the target circle, performing the ritual.", Level.INFO);
+                sleepGaussian(600, 600);
                 continue; // TODO find some condition to wait for here
             }
 
