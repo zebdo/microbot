@@ -267,12 +267,10 @@ public class FornBirdhouseRunsScript extends Script {
         );
         
         for (int pendantId : pendantIds) {
-            if (!super.isRunning()) return false;
-            if (Rs2Bank.hasBankItem(pendantId, 1)) {
-                if (Rs2Bank.withdrawX(pendantId, 1)) {
-                    pendantWithdrawn = true;
-                    break;
-                }
+            if (!isRunning()) break;
+            if (Rs2Bank.withdrawX(pendantId, 1)) {
+                pendantWithdrawn = true;
+                break;
             }
         }
         
@@ -316,12 +314,10 @@ public class FornBirdhouseRunsScript extends Script {
         );
         
         for (int seedId : seedIds) {
-            if (!super.isRunning()) return false;
-            if (Rs2Bank.hasBankItem(seedId, 40)) {
-                if (Rs2Bank.withdrawX(seedId, 40)) {
-                    Microbot.log("Withdrew 40 of seed ID: " + seedId);
-                    return true;
-                }
+            if (!isRunning()) break;
+            if (Rs2Bank.withdrawX(seedId, 40)) {
+                Microbot.log("Withdrew 40 of seed ID: " + seedId);
+                return true;
             }
         }
         
