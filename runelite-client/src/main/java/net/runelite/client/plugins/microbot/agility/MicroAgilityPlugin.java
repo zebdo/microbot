@@ -82,7 +82,7 @@ public class MicroAgilityPlugin extends Plugin implements SchedulablePlugin
 	@Override
 	public LogicalCondition getStopCondition() {
 		if (this.stopCondition == null) {
-			this.lockCondition = new LockCondition("Barrows in critical operation");
+			this.lockCondition = new LockCondition("Agility in critical operation");
 			AndCondition andCondition = new AndCondition();
 			andCondition.addCondition(lockCondition);
 			this.stopCondition = andCondition;
