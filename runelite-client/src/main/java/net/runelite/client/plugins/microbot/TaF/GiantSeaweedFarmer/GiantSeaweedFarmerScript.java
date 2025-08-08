@@ -138,18 +138,20 @@ public class GiantSeaweedFarmerScript extends Script {
         return "Empty";
     }
     
-    private boolean checkAndLootSeaweedSpores(GiantSeaweedFarmerConfig config) {
+    private void checkAndLootSeaweedSpores(GiantSeaweedFarmerConfig config) {
         // Only check if config option is enabled
         if (!config.lootSeaweedSpores()) {
-            return false;
+            return;
         }
         
         boolean anyLooted = false;
-        // Keep looting while spores exist on the ground
-        while (Rs2GroundItem.exists("seaweed spore", 15)) {
+        // Keep looting while spores exist on the ground and script is running
+        while (Rs2GroundItem.exists("seaweed spore", 15) && this.isRunning()) {
             Microbot.log("Seaweed spore detected - looting");
             boolean looted = Rs2GroundItem.loot("seaweed spore", 15);
             if (looted) {
+                // Wait for the player to stop moving before checking inventory
+                sleepUntil(() -> !Rs2Player.isMoving());
                 // Wait for the player to walk to the spore and pick it up
                 Rs2Inventory.waitForInventoryChanges(5000);
                 anyLooted = true;
@@ -163,8 +165,6 @@ public class GiantSeaweedFarmerScript extends Script {
         if (anyLooted) {
             Microbot.log("Finished looting seaweed spores");
         }
-        
-        return anyLooted;
     }
 
     public boolean run(GiantSeaweedFarmerConfig config) {
