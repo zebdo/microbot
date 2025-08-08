@@ -11,6 +11,7 @@ import java.util.concurrent.TimeUnit;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -25,6 +26,8 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
  */
 @Slf4j
 public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcModel> {
+    
+    GameState lastGameState = null;
     
     // ScheduledExecutorService for non-blocking operations
     private final ScheduledExecutorService executorService;
@@ -53,16 +56,8 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
     public void handleEvent(final Object event, CacheOperations<Integer, Rs2NpcModel> cache) {
         if (executorService == null || executorService.isShutdown()) {
             return; // Don't process events if shut down
-        }
-        
-        // Submit event handling to executor service for non-blocking processing
-        //executorService.submit(() -> {
-            //try {
-                processEventInternal(event, cache);
-            //} catch (Exception e) {
-                //log.error("Error processing event: {}", event.getClass().getSimpleName(), e);
-            //}
-        //});
+        }                
+        processEventInternal(event, cache);        
     }
     
     /**
@@ -73,6 +68,8 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
             handleNpcSpawned((NpcSpawned) event, cache);
         } else if (event instanceof NpcDespawned) {
             handleNpcDespawned((NpcDespawned) event, cache);
+        } else if (event instanceof GameStateChanged) {
+            handleGameStateChanged((GameStateChanged) event, cache);
         }
     }
     
@@ -97,7 +94,7 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
         }
         
         if (sceneScanTask != null && !sceneScanTask.isDone()) {
-            log.info("Skipping NPC scene scan - already scheduled or running");
+            log.debug("Skipping NPC scene scan - already scheduled or running");
             return; // Don't perform scan if already scheduled or running
         }
         
@@ -174,6 +171,10 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
      * @return true if a scan would be beneficial
      */    
     public boolean requestSceneScan(CacheOperations<Integer, Rs2NpcModel> cache) {
+        if (scanActive.get()) {
+            log.debug("Skipping scene scan request - already active");
+            return false; // Don't request scan if already active
+        }
         if (scanRequest.compareAndSet(false, true)) {
             log.debug("NPC scene scan requested");
             performSceneScan(cache, 5); // Perform with 5ms delay for stability
@@ -185,8 +186,9 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
     }
     
     /**
-     * Performs the actual scene scan to populate NPCs from the client's NPC list.
-     * This is similar to how Rs2Npc.getNpcs() works but loads into cache.
+     * Performs the actual scene scan to synchronize NPCs with the current scene.
+     * This method both adds new NPCs found in the scene AND removes cached NPCs no longer present.
+     * Provides complete scene synchronization in a single operation.
      */
     private void performSceneScanInternal(CacheOperations<Integer, Rs2NpcModel> cache) {
         try {
@@ -201,17 +203,21 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
             
             Player player = Microbot.getClient().getLocalPlayer();
             if (player == null) {
-                log.info("Cannot perform NPC scene scan - no player");
+                log.debug("Cannot perform NPC scene scan - no player");
                 scanActive.set(false);
                 return;
             }
             
-            // Get all NPCs from the client
+            // Build a set of all currently existing NPC indices from the scene
+            java.util.Set<Integer> currentSceneIndices = new java.util.HashSet<>();
             int addedNpcs = 0;
-            log.debug("Starting NPC scene scan (cache size: {})", cache.size());
+            log.debug("Starting NPC scene synchronization (cache size: {})", cache.size());
             
+            // Phase 1: Scan scene and add new NPCs
             for (NPC npc : Microbot.getClient().getTopLevelWorldView().npcs()) {
-                if (npc != null && npc.getName() != null) {
+                if (npc != null && npc.getId() != -1) { // Use ID instead of getName() to avoid client thread requirement
+                    currentSceneIndices.add(npc.getIndex()); // Track all scene NPCs
+                    
                     // Only add if not already in cache to avoid recursive calls
                     if (!cache.containsKey(npc.getIndex())) {
                         Rs2NpcModel npcModel = new Rs2NpcModel(npc);
@@ -220,17 +226,38 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
                     }
                 }
             }
-                        
             
-            if (addedNpcs > 0) {
-                log.debug("NPC scene scan completed - added {} NPCs (total cache size: {})", 
-                        addedNpcs, cache.size());
+            // Phase 2: Remove cached NPCs no longer in scene
+            int removedNpcs = 0;
+            if (!currentSceneIndices.isEmpty()) {
+                // Find cached NPCs that are no longer in the scene using CacheOperations streaming
+                java.util.List<Integer> keysToRemove = cache.entryStream()
+                    .map(java.util.Map.Entry::getKey)
+                    .filter(key -> !currentSceneIndices.contains(key))
+                    .collect(java.util.stream.Collectors.toList());
+                
+                // Remove the NPCs that are no longer in scene
+                for (Integer key : keysToRemove) {
+                    // Use raw cached value to avoid triggering recursive scene scans
+                    Rs2NpcModel npc = cache.getRawValue(key);
+                    cache.remove(key);
+                    if (npc != null) {
+                        removedNpcs++;
+                        log.trace("Removed NPC not in scene: ID {} (index: {})", npc.getId(), key);
+                    }
+                }
+            }
+            
+            // Log comprehensive results
+            if (addedNpcs > 0 || removedNpcs > 0) {
+                log.debug("NPC scene synchronization completed - added {} NPCs, removed {} NPCs (total cache size: {})", 
+                        addedNpcs, removedNpcs, cache.size());
             } else {
-                log.debug("NPC scene scan completed - no new NPCs added");
+                log.debug("NPC scene synchronization completed - no changes made");
             }
             scanRequest.set(false); // Reset request after scan
         } catch (Exception e) {
-            log.error("Error during NPC scene scan", e);
+            log.error("Error during NPC scene synchronization", e);
         } finally {
             lastSceneScan =  System.currentTimeMillis();   // Update last scan time;                
             scanActive.set(false);                
@@ -242,7 +269,7 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
         if (npc != null) {
             Rs2NpcModel npcModel = new Rs2NpcModel(npc);
             cache.put(npc.getIndex(), npcModel);
-            log.trace("Added NPC {} (index: {}) to cache via spawn event", npc.getName(), npc.getIndex());
+            log.trace("Added NPC ID {} (index: {}) to cache via spawn event", npc.getId(), npc.getIndex());
         }
     }
     
@@ -250,13 +277,61 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
         NPC npc = event.getNpc();
         if (npc != null) {
             cache.remove(npc.getIndex());
-            log.trace("Removed NPC {} (index: {}) from cache via despawn event", npc.getName(), npc.getIndex());
+            log.trace("Removed NPC ID {} (index: {}) from cache via despawn event", npc.getId(), npc.getIndex());
+        }
+    }
+    
+    /**
+     * Handles game state changes for NPC cache management.
+     * 
+     * <p><strong>Why NPCs don't require scene scanning on LOGGED_IN/LOADING:</strong></p>
+     * <ul>
+     *   <li>NPCs are automatically managed by the RuneLite client's event system</li>
+     *   <li>{@link net.runelite.api.events.NpcSpawned} events are reliably triggered when NPCs appear</li>
+     *   <li>{@link net.runelite.api.events.NpcDespawned} events are reliably triggered when NPCs disappear</li>
+     *   <li>Region changes automatically trigger proper spawn/despawn events for all NPCs</li>
+     *   <li>This makes manual scene scanning unnecessary and potentially wasteful</li>
+     * </ul>
+     * 
+     * <p>This is different from ground items, which have timing-based despawn mechanics
+     * that require additional handling through periodic cleanup.</p>
+     * 
+     * @param event The game state change event
+     * @param cache The NPC cache operations interface
+     */
+    private void handleGameStateChanged(GameStateChanged event, CacheOperations<Integer, Rs2NpcModel> cache) {
+        switch (event.getGameState()) {
+            case LOGGED_IN:
+                // NPCs are handled entirely by spawn/despawn events - no manual scanning needed
+                lastGameState = GameState.LOGGED_IN;
+                log.debug("Player logged in - NPC events will handle population automatically");
+                break;
+            case LOADING:
+                // Region changes during loading automatically trigger NPC despawn/spawn events
+                lastGameState = GameState.LOADING;
+                log.debug("Game loading - NPC events will handle region change automatically");
+                break;
+            case LOGIN_SCREEN:
+            case LOGGING_IN:
+            case CONNECTION_LOST:
+                // Clear any ongoing operations and invalidate cache on logout
+                if (sceneScanTask != null && !sceneScanTask.isDone()) {
+                    sceneScanTask.cancel(true);
+                    sceneScanTask = null;
+                }
+                cache.invalidateAll();
+                lastGameState = event.getGameState();
+                log.debug("Player logged out - cleared NPC cache and stopped operations");
+                break;
+            default:
+                lastGameState = event.getGameState();
+                break;
         }
     }
     
     @Override
     public Class<?>[] getHandledEventTypes() {
-        return new Class<?>[]{NpcSpawned.class, NpcDespawned.class};
+        return new Class<?>[]{NpcSpawned.class, NpcDespawned.class, GameStateChanged.class};
     }
     
     @Override
@@ -276,7 +351,7 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
     
     @Override
     public void close() {
-        log.info("Shutting down NpcUpdateStrategy");
+        log.debug("Shutting down NpcUpdateStrategy");
         stopPeriodicSceneScan();
         if (sceneScanTask != null && !sceneScanTask.isDone()) {
             sceneScanTask.cancel(false);

@@ -150,7 +150,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
             return;
         }      
         if (sceneScanTask != null && !sceneScanTask.isDone()) {
-            log.info("Skipping scene scan - already scheduled or running");
+            log.debug("Skipping scene scan - already scheduled or running");
             return; // Don't perform scan if already scheduled or running
         }
         if (scanActive.compareAndSet(false,true)){  
@@ -161,8 +161,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                 } catch (Exception e) {
                     log.error("Error during scene scan", e);
                 }finally {
-                    scanActive.set(false);
-                    scanRequest.set(false); // Reset request after scan
+                    
                 }
             }, delayMs, TimeUnit.MILLISECONDS); // 100ms delay before scan
         }else{
@@ -197,7 +196,8 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                 }
             } catch (Exception e) {
                 log.error("Error during scheduled scene scan", e);
-            }finally {                
+            }finally {  
+                
             }
 
         }, intervalSeconds, intervalSeconds, TimeUnit.SECONDS);
@@ -260,12 +260,14 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                 return;
             }
             
-            // Collect all objects first to avoid recursive cache calls
+            // Build a set of all currently existing object keys from the scene
+            java.util.Set<String> currentSceneKeys = new java.util.HashSet<>();
             java.util.Map<String, Rs2ObjectModel> objectsToAdd = new java.util.HashMap<>();
             int z = worldView.getPlane();
             
-            log.debug("Starting scene scan (cache size: {})", cache.size());
+            log.debug("Starting object scene synchronization (cache size: {})", cache.size());
             
+            // Phase 1: Scan scene and collect all objects
             for (int x = 0; x < Constants.SCENE_SIZE; x++) {
                 for (int y = 0; y < Constants.SCENE_SIZE; y++) {
                     Tile tile = tiles[z][x][y];
@@ -280,6 +282,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                             // Only add if it's the primary location for multi-tile objects
                             if (gameObject.getSceneMinLocation().equals(tile.getSceneLocation())) {
                                 String cacheId = generateCacheIdForGameObject(gameObject, tile);
+                                currentSceneKeys.add(cacheId); // Track all scene objects
                                 if (!objectsToAdd.containsKey(cacheId)) {
                                     Rs2ObjectModel objectModel = new Rs2ObjectModel(gameObject, tile);
                                     objectsToAdd.put(cacheId, objectModel);
@@ -292,6 +295,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                     GroundObject groundObject = tile.getGroundObject();
                     if (groundObject != null) {
                         String cacheId = generateCacheId("GroundObject", groundObject.getId(), groundObject.getWorldLocation());
+                        currentSceneKeys.add(cacheId); // Track all scene objects
                         if (!objectsToAdd.containsKey(cacheId)) {
                             Rs2ObjectModel objectModel = new Rs2ObjectModel(groundObject, tile);
                             objectsToAdd.put(cacheId, objectModel);
@@ -302,6 +306,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                     WallObject wallObject = tile.getWallObject();
                     if (wallObject != null) {
                         String cacheId = generateCacheId("WallObject", wallObject.getId(), wallObject.getWorldLocation());
+                        currentSceneKeys.add(cacheId); // Track all scene objects
                         if (!objectsToAdd.containsKey(cacheId)) {
                             Rs2ObjectModel objectModel = new Rs2ObjectModel(wallObject, tile);
                             objectsToAdd.put(cacheId, objectModel);
@@ -312,6 +317,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                     DecorativeObject decorativeObject = tile.getDecorativeObject();
                     if (decorativeObject != null) {
                         String cacheId = generateCacheId("DecorativeObject", decorativeObject.getId(), decorativeObject.getWorldLocation());
+                        currentSceneKeys.add(cacheId); // Track all scene objects
                         if (!objectsToAdd.containsKey(cacheId)) {
                             Rs2ObjectModel objectModel = new Rs2ObjectModel(decorativeObject, tile);
                             objectsToAdd.put(cacheId, objectModel);
@@ -320,7 +326,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                 }
             }
             
-            // Now update the cache in batch to avoid recursive calls
+            // Phase 2: Add new objects to cache
             int addedObjects = 0;
             for (java.util.Map.Entry<String, Rs2ObjectModel> entry : objectsToAdd.entrySet()) {
                 String cacheId = entry.getKey();
@@ -333,13 +339,32 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
                 }
             }
             
+            // Phase 3: Remove cached objects no longer in scene
+            int removedObjects = 0;
+            if (!currentSceneKeys.isEmpty()) {
+                // Find cached objects that are no longer in the scene using CacheOperations streaming
+                java.util.List<String> keysToRemove = cache.entryStream()
+                    .map(java.util.Map.Entry::getKey)
+                    .filter(key -> !currentSceneKeys.contains(key))
+                    .collect(java.util.stream.Collectors.toList());
+                
+                // Remove the objects that are no longer in scene
+                for (String key : keysToRemove) {
+                    Rs2ObjectModel object = cache.getRawValue(key); // Use raw value to avoid triggering recursive scene scans
+                    cache.remove(key);
+                    if (object != null) {
+                        removedObjects++;
+                        log.trace("Removed object not in scene: ID {} ({})", object.getId(), key);
+                    }
+                }
+            }
             
-            
-            if (addedObjects > 0) {
-                log.debug("scene scan completed - added {} objects (total cache size: {}), time taken: {} ms", 
-                        addedObjects, cache.size(), System.currentTimeMillis() - currentTime);
+            // Log comprehensive results
+            if (addedObjects > 0 || removedObjects > 0) {
+                log.debug("Object scene synchronization completed - added {} objects, removed {} objects (total cache size: {}), time taken: {} ms", 
+                        addedObjects, removedObjects, cache.size(), System.currentTimeMillis() - currentTime);
             } else {
-                log.debug("Scene scan completed - no new objects added");
+                log.debug("Object scene synchronization completed - no changes made");
             }
             scanRequest.set(false); //NOT in finally block to allow for rescan if there are an error 
         } catch (Exception e) {
@@ -382,6 +407,10 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
      * @return true if a scan would be beneficial
      */    
     public boolean requestSceneScan(CacheOperations<String, Rs2ObjectModel> cache) {
+        if (scanActive.get()) {
+            log.debug("Skipping scene scan request - already active");
+            return false; // Don't request scan if already active
+        }
         if (scanRequest.compareAndSet(false, true)) {
             log.debug("Object scene scan requested");
             performSceneScan(cache, 5); // Perform immediately
@@ -505,45 +534,40 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
     private void handleGameStateChanged(GameStateChanged event, CacheOperations<String, Rs2ObjectModel> cache) {
         switch (event.getGameState()) {
             case LOGGED_IN:
-                // Check for region changes and clear cache if changed
+                // Check for region changes and perform scene scan to synchronize
                 if (Rs2Cache.checkAndHandleRegionChange(cache)) {
-                    log.info("Region change detected on login - performing scene scan");
-                    cache.invalidateAll(); // Clear cache on region change
-                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 2);
+                    log.debug("Region change detected on login - performing scene synchronization");
+                    performSceneScan(cache, Constants.GAME_TICK_LENGTH *3);
                 } else if (lastGameState != null && lastGameState != GameState.LOGGED_IN) {
-                    cache.invalidateAll(); // Clear cache on region change
-                    // Request scene scan when logging in - might have missed spawn events
-                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 2); // Perform scan after 10 game ticks to allow scene to stabilize
+                    // Perform scene synchronization when logging in - might have missed spawn events
+                    performSceneScan(cache, Constants.GAME_TICK_LENGTH *3); // Perform scan after 2 game ticks to allow scene to stabilize
                 }
                 
                 lastGameState = GameState.LOGGED_IN;
-                log.debug("Player logged in - checking regions and requesting scene scan");
+                log.debug("Player logged in - checking regions and requesting scene synchronization");
                 break;
             case LOADING:
                 // Check for region changes during loading
                 if (Rs2Cache.checkAndHandleRegionChange(cache)) {
-                    log.info("Region change detected during loading - performing scene scan");
-                    cache.invalidateAll(); // Clear cache on region change
-                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 4);
+                    log.debug("Region change detected during loading - performing scene synchronization");
+                    performSceneScan(cache, Constants.GAME_TICK_LENGTH *1);
                 } else {
-                    cache.invalidateAll(); // Clear cache on region change
-                    performSceneScan(cache, Constants.GAME_TICK_LENGTH * 4); // Perform scan after 5 game ticks to allow scene to stabilize
+                    performSceneScan(cache, Constants.GAME_TICK_LENGTH*1); // Perform scan after 4 game ticks to allow scene to stabilize
                 }
                 lastGameState = GameState.LOADING;
-                log.debug("Game loading - checking regions and requesting scene scan");
+                log.debug("Game loading - checking regions and requesting scene synchronization");
                 break;
             case LOGIN_SCREEN:
             case LOGGING_IN:
             case CONNECTION_LOST:
-                // Clear scan request when logging out and stop periodic scanning
+                // Clear scan request when logging out and stop periodic scanning                              
+                if (sceneScanTask != null && !sceneScanTask.isDone()) {
+                    sceneScanTask.cancel(true);
+                    sceneScanTask = null;
+                }                
+                scanRequest.set(false); // Reset scan request
                 cache.invalidateAll();
                 lastGameState = event.getGameState();
-                
-                // Cancel periodic scanning
-                if (periodicSceneScanTask != null && !periodicSceneScanTask.isDone()) {
-                    periodicSceneScanTask.cancel(false);
-                    periodicSceneScanTask = null;
-                }
                 log.debug("Player logged out - clearing scan request and stopping periodic scanning");
                 break;
             default:
@@ -649,7 +673,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
     
     @Override
     public void close() {        
-        log.info("Shutting down ObjectUpdateStrategy");                                    
+        log.debug("Shutting down ObjectUpdateStrategy");                                    
         stopPeriodicSceneScan();          
         if (sceneScanTask != null && !sceneScanTask.isDone()) {
             sceneScanTask.cancel(false);
