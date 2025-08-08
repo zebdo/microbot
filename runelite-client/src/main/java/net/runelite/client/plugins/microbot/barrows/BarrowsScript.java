@@ -1216,8 +1216,8 @@ public class BarrowsScript extends Script {
     public void drinkPrayerPot(){
         NPC hintArrow = Microbot.getClient().getHintArrowNpc();
         Rs2NpcModel currentBrother = null;
-        if(hintArrow != null) currentBrother = new Rs2NpcModel(hintArrow);
-        if(currentBrother != null && !currentBrother.getName().contains("Dharok") && currentBrother.getHealthPercentage() < Rs2Random.between(25,35)) return;
+        if(hintArrow != null)  currentBrother = new Rs2NpcModel(hintArrow);
+        if(currentBrother != null && !currentBrother.getName().contains("Dharok") && currentBrother.getHealthPercentage() < Rs2Random.between(35,42)) return;
 
         if(Rs2Player.getBoostedSkillLevel(Skill.PRAYER) <= Rs2Random.between(8,15)){
             if(Rs2Inventory.contains(it->it!=null&&it.getName().contains("Prayer potion")||it.getName().contains("moth mix")||it.getName().contains("Moonlight moth"))){
