@@ -232,7 +232,6 @@ public class FornBirdhouseRunsScript extends Script {
     private boolean setupManualInventory() {
         // Walk to nearest bank
         Rs2Walker.walkTo(Rs2Bank.getNearestBank().getWorldPoint(), 20);
-        sleepUntil(() -> Rs2Bank.getNearestBank() != null && Rs2Player.distanceTo(Rs2Bank.getNearestBank().getWorldPoint()) < 10);
         
         // Open bank
         if (!Rs2Bank.openBank()) {
@@ -243,7 +242,7 @@ public class FornBirdhouseRunsScript extends Script {
         
         // Deposit all
         Rs2Bank.depositAll();
-        sleepUntil(Rs2Inventory::isEmpty);
+        Rs2Inventory.waitForInventoryChanges(5000);
         
         // Withdraw chisel
         if (!Rs2Bank.withdrawX(ItemID.CHISEL, 1)) {
@@ -260,14 +259,15 @@ public class FornBirdhouseRunsScript extends Script {
         // Withdraw digsite pendant (prefer lower charges)
         boolean pendantWithdrawn = false;
         List<Integer> pendantIds = Arrays.asList(
-            11190, // NECKLACE_OF_DIGSITE_1
-            11191, // NECKLACE_OF_DIGSITE_2
-            11192, // NECKLACE_OF_DIGSITE_3
-            11193, // NECKLACE_OF_DIGSITE_4
-            11194  // NECKLACE_OF_DIGSITE_5
+            ItemID.NECKLACE_OF_DIGSITE_1,
+            ItemID.NECKLACE_OF_DIGSITE_2,
+            ItemID.NECKLACE_OF_DIGSITE_3,
+            ItemID.NECKLACE_OF_DIGSITE_4,
+            ItemID.NECKLACE_OF_DIGSITE_5
         );
         
         for (int pendantId : pendantIds) {
+            if (!super.isRunning()) return false;
             if (Rs2Bank.hasBankItem(pendantId, 1)) {
                 if (Rs2Bank.withdrawX(pendantId, 1)) {
                     pendantWithdrawn = true;
@@ -305,17 +305,18 @@ public class FornBirdhouseRunsScript extends Script {
     private boolean withdrawSeeds() {
         // Priority list of seeds for birdhouses
         List<Integer> seedIds = Arrays.asList(
-            ItemID.POTATO_SEED,        // 5318
-            ItemID.ONION_SEED,         // 5319
-            ItemID.CABBAGE_SEED,       // 5324
-            ItemID.TOMATO_SEED,        // 5322
-            ItemID.BARLEY_SEED,        // 5305
-            5307,                      // HAMMERSTONE_HOP_SEED
-            5309,                      // YANILLIAN_HOP_SEED
-            5310                       // KRANDORIAN_HOP_SEED
+            ItemID.POTATO_SEED,
+            ItemID.ONION_SEED,
+            ItemID.CABBAGE_SEED,
+            ItemID.TOMATO_SEED,
+            ItemID.BARLEY_SEED,
+            ItemID.HAMMERSTONE_HOP_SEED,
+            ItemID.YANILLIAN_HOP_SEED,
+            ItemID.KRANDORIAN_HOP_SEED
         );
         
         for (int seedId : seedIds) {
+            if (!super.isRunning()) return false;
             if (Rs2Bank.hasBankItem(seedId, 40)) {
                 if (Rs2Bank.withdrawX(seedId, 40)) {
                     Microbot.log("Withdrew 40 of seed ID: " + seedId);
