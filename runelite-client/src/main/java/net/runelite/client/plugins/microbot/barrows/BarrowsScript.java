@@ -42,7 +42,7 @@ public class BarrowsScript extends Script {
     public static boolean test = false;
     public static boolean inTunnels = false;
     public static String WhoisTun = "Unknown";
-    private String neededRune = "unknown";
+    public String neededRune = "unknown";
     private boolean shouldBank = false;
     private boolean shouldAttackSkeleton = false;
     private boolean varbitCheckEnabled = true;
@@ -534,6 +534,12 @@ public class BarrowsScript extends Script {
                                                 sleepUntil(() -> Rs2Inventory.get(therune).getQuantity() > config.minRuneAmount(), Rs2Random.between(2000, 4000));
                                             }
                                         } else {
+                                            if(neededRune.equals("Wrath rune")){
+                                                if(Rs2Bank.hasItem("Blood rune") && Rs2Bank.count("Blood rune") > config.minRuneAmount()){
+                                                    neededRune = "Blood rune";
+                                                    return;
+                                                }
+                                            }
                                             Microbot.log("We're out of " + neededRune + "s. stopping...");
                                             super.shutdown();
                                         }
@@ -1063,6 +1069,8 @@ public class BarrowsScript extends Script {
     }
 
     public void gettheRune(){
+        if(!neededRune.equals("unknown")) return;
+
         neededRune = "unknown";
         int magicLvl = Rs2Player.getRealSkillLevel(Skill.MAGIC);
 
@@ -1073,7 +1081,7 @@ public class BarrowsScript extends Script {
             }
         }
 
-        if(magicLvl >= 62 && magicLvl < 81 || Rs2Equipment.get(EquipmentInventorySlot.WEAPON).getName().equals("Twinflame staff")){
+        if(magicLvl >= 62 && magicLvl < 81){
             neededRune = "Blood rune";
             if (Rs2Magic.getCurrentAutoCastSpell() != Rs2CombatSpells.WIND_WAVE) {
                 Rs2Combat.setAutoCastSpell(Rs2CombatSpells.WIND_WAVE, false);
