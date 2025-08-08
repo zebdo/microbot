@@ -533,16 +533,16 @@ public class BarrowsScript extends Script {
                                                 String therune = neededRune;
                                                 sleepUntil(() -> Rs2Inventory.get(therune).getQuantity() > config.minRuneAmount(), Rs2Random.between(2000, 4000));
                                             }
-                                        } else {
-                                            if(neededRune.equals("Wrath rune")){
-                                                if(Rs2Bank.hasItem("Blood rune") && Rs2Bank.count("Blood rune") > config.minRuneAmount()){
-                                                    neededRune = "Blood rune";
-                                                    return;
-                                                }
-                                            }
-                                            Microbot.log("We're out of " + neededRune + "s. stopping...");
-                                            super.shutdown();
                                         }
+                                    } else {
+                                        if(neededRune.equals("Wrath rune")){
+                                            if(Rs2Bank.hasItem("Blood rune") && Rs2Bank.count("Blood rune") > config.minRuneAmount()){
+                                                neededRune = "Blood rune";
+                                                return;
+                                            }
+                                        }
+                                        Microbot.log("We're out of " + neededRune + "s. stopping...");
+                                        super.shutdown();
                                     }
                                 }
                             }
