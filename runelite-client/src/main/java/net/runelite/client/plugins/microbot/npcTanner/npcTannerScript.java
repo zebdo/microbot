@@ -176,6 +176,7 @@ public class npcTannerScript extends Script {
                 if((!Rs2Inventory.contains("Coins"))||(Rs2Inventory.get("Coins").getQuantity()<=80)||(Rs2Inventory.count(whattotan)==0)){
                     if(Rs2Inventory.count(whattotan)==0){
                         whattotan = "Unset";
+                        return;
                     }
                     Microbot.log("Out of Coins or "+whattotan);
                     shutdown();
