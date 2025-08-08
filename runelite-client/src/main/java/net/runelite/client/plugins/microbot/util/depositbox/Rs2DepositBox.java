@@ -106,7 +106,7 @@ public class Rs2DepositBox {
         if (depositAllWidget == null) return;
 
         Rs2Widget.clickWidget(depositAllWidget);
-        sleepUntil(Rs2Inventory::isEmpty);
+        Rs2Inventory.waitForInventoryChanges(5000);
     }
 
     /**
