@@ -374,8 +374,7 @@ public class GiantSeaweedFarmerScript extends Script {
                     // Check for spores every cycle and interrupt if found
                     if (config.lootSeaweedSpores() && Rs2GroundItem.exists("seaweed spore", 15)) {
                         Microbot.log("Spore detected during harvest - interrupting to loot!");
-                        // Stop current action to loot spores
-                        Rs2Player.stopAnimation();
+                        // Loot spores (this will interrupt the current action)
                         checkAndLootSeaweedSpores(config);
                         // Resume harvesting after looting
                         Rs2GameObject.interact(obj, "Pick");
@@ -390,8 +389,7 @@ public class GiantSeaweedFarmerScript extends Script {
                     // Check for spores every cycle and interrupt if found
                     if (config.lootSeaweedSpores() && Rs2GroundItem.exists("seaweed spore", 15)) {
                         Microbot.log("Spore detected while clearing weeds - interrupting to loot!");
-                        // Stop current action to loot spores
-                        Rs2Player.stopAnimation();
+                        // Loot spores (this will interrupt the current action)
                         checkAndLootSeaweedSpores(config);
                         // Resume clearing after looting
                         Rs2GameObject.interact(obj);
