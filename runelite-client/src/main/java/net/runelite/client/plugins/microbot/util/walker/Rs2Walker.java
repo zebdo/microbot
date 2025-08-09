@@ -244,11 +244,6 @@ public class Rs2Walker {
                 }
             }
 
-            if ((pathfinder = ShortestPathPlugin.getPathfinder()) == null) {
-                setTarget(null);
-                return WalkerState.EXIT;
-            }
-
             int indexOfStartPoint = getClosestTileIndex(path);
             if (indexOfStartPoint == -1) {
                 log.error("The walker is confused, unable to find our starting point in the web, exiting.");
@@ -1085,11 +1080,13 @@ public class Rs2Walker {
                     int orientation = ((WallObject) object).getOrientationA();
 
                     if (searchNeighborPoint(orientation, probe, fromWp) || searchNeighborPoint(orientation, probe, toWp)) {
-                        found = true;
+						log.info("Found door (type: {}) at {} between {} and {}", "Wall Object", probe, fromWp, toWp);
+						found = true;
                     }
                 } else {
                     String name = comp.getName();
                     if (name != null && name.toLowerCase().contains("door")) {
+						log.info("Found door (type: {}) at {} between {} and {}", "Game Object", probe, fromWp, toWp);
                         found = true;
                     }
                 }
@@ -1215,7 +1212,6 @@ public class Rs2Walker {
 
         var tiles = Rs2Tile.getReachableTilesFromTile(Rs2Player.getWorldLocation(), 20);
 
-        //Exception to handle objects that handle long animations or walk
         /**
          * Exception to handle objects that handle long animations or walk
          * ignore colission if we did not find a valid tile to walk on
