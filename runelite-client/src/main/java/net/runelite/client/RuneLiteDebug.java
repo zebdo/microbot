@@ -43,7 +43,6 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.microbot.MicrobotClientLoader;
-import net.runelite.client.plugins.microbot.example.ExamplePlugin;
 import net.runelite.client.plugins.microbot.sideloading.MicrobotPluginManager;
 import net.runelite.client.ui.ClientUI;
 import net.runelite.client.ui.FatalErrorDialog;
@@ -406,8 +405,6 @@ public class RuneLiteDebug {
         clientUI.show();
 
         pluginManager.loadRuneliteCorePlugins();
-
-        pluginsToDebug.add(ExamplePlugin.class);
 
         microbotPluginManager.loadCorePlugins(pluginsToDebug);
 

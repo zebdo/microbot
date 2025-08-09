@@ -5,7 +5,7 @@ on:
       - main
 
 env:
-  version: "1.9.7.1"
+  version: ${microbot.version}
 
 jobs:
   build:

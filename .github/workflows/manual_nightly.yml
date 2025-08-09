@@ -6,9 +6,6 @@ on:
       parameter:
         description: branch
 
-env:
-  version: "1.9.7.1"
-
 jobs:
   build:
     runs-on: ubuntu-latest  # You can choose a different runner if needed
@@ -38,6 +35,19 @@ jobs:
         run: |
           COMMIT_SHA=$(git rev-parse --short HEAD)
           mvn clean package -Dmicrobot.commit.sha=$COMMIT_SHA
+
+      - name: Read microbot.version from POM
+        id: version
+        run: |
+          V=$(mvn -q -f runelite-client/pom.xml help:evaluate \
+                -Dexpression=microbot.version -DforceStdout)
+          # fallback to project.version if the property isn't defined
+          if [ -z "$V" ]; then
+            V=$(mvn -q -f runelite-client/pom.xml help:evaluate \
+                  -Dexpression=project.version -DforceStdout)
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Using version: $V"
 
       - name: Create Release
         uses: "marvinpinto/action-automatic-releases@latest"
