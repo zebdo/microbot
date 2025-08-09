@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.TaF.GiantSeaweedFarmer;
 
+import net.runelite.api.ItemID;
 import net.runelite.api.Skill;
 import net.runelite.api.TileObject;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -146,14 +147,16 @@ public class GiantSeaweedFarmerScript extends Script {
         
         boolean anyLooted = false;
         // Keep looting while spores exist on the ground and script is running
-        while (Rs2GroundItem.exists("seaweed spore", 15) && this.isRunning()) {
+        while (Rs2GroundItem.exists(ItemID.SEAWEED_SPORE, 15) && this.isRunning()) {
             Microbot.log("Seaweed spore detected - looting");
-            boolean looted = Rs2GroundItem.loot("seaweed spore", 15);
+            boolean looted = Rs2GroundItem.loot(ItemID.SEAWEED_SPORE, 15);
             if (looted) {
-                // Wait for the player to stop moving before checking inventory
-                sleepUntil(() -> !Rs2Player.isMoving());
-                // Wait for the player to walk to the spore and pick it up
-                Rs2Inventory.waitForInventoryChanges(5000);
+                // Wait for the player to start moving towards the spore (or timeout if unreachable)
+                sleepUntil(() -> Rs2Player.isMoving(), 1000);
+                // Now wait for the player to stop moving (arrived at spore)
+                sleepUntil(() -> !Rs2Player.isMoving(), 5000);
+                // Wait for the player to pick it up
+                Rs2Inventory.waitForInventoryChanges(2000);
                 anyLooted = true;
                 sleep(600, 800); // Small delay before checking for more spores
             } else {
@@ -372,7 +375,7 @@ public class GiantSeaweedFarmerScript extends Script {
                 // Check for spores periodically while harvesting
                 sleepUntil(() -> {
                     // Check for spores every cycle and interrupt if found
-                    if (config.lootSeaweedSpores() && Rs2GroundItem.exists("seaweed spore", 15)) {
+                    if (config.lootSeaweedSpores() && Rs2GroundItem.exists(ItemID.SEAWEED_SPORE, 15)) {
                         Microbot.log("Spore detected during harvest - interrupting to loot!");
                         // Loot spores (this will interrupt the current action)
                         checkAndLootSeaweedSpores(config);
@@ -387,7 +390,7 @@ public class GiantSeaweedFarmerScript extends Script {
                 // Check for spores while clearing weeds
                 sleepUntil(() -> {
                     // Check for spores every cycle and interrupt if found
-                    if (config.lootSeaweedSpores() && Rs2GroundItem.exists("seaweed spore", 15)) {
+                    if (config.lootSeaweedSpores() && Rs2GroundItem.exists(ItemID.SEAWEED_SPORE, 15)) {
                         Microbot.log("Spore detected while clearing weeds - interrupting to loot!");
                         // Loot spores (this will interrupt the current action)
                         checkAndLootSeaweedSpores(config);
