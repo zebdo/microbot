@@ -1,20 +1,19 @@
 package net.runelite.client.plugins.microbot.mining.shootingstar;
 
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+
 import com.google.inject.Provides;
 import java.awt.AWTException;
 import java.awt.image.BufferedImage;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
 import java.io.IOException;
-import java.io.InputStream;
-import java.lang.reflect.Type;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Comparator;
@@ -23,20 +22,23 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Properties;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
+import javax.swing.JFileChooser;
+import javax.swing.JOptionPane;
 import javax.swing.SwingUtilities;
+import javax.swing.filechooser.FileNameExtensionFilter;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.ChatMessageType;
 import net.runelite.api.GameState;
-import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.GameTick;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
@@ -44,17 +46,16 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerPlugin;
-import net.runelite.client.plugins.microbot.mining.shootingstar.enums.ShootingStarLocation;
 import net.runelite.client.plugins.microbot.mining.shootingstar.model.Star;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import net.runelite.client.task.Schedule;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageUtil;
-import net.runelite.http.api.worlds.World;
-import net.runelite.http.api.worlds.WorldResult;
 
 @PluginDescriptor(
 	name = PluginDescriptor.GZ + "ShootingStar",
@@ -65,25 +66,45 @@ import net.runelite.http.api.worlds.WorldResult;
 @Slf4j
 public class ShootingStarPlugin extends Plugin
 {
+
+	public static String version = "1.4.0";
+
 	@Getter
-	public List<Star> starList = new ArrayList<>();
+	private List<Star> starList = new ArrayList<>();
 
 	@Inject
 	private ShootingStarScript shootingStarScript;
 
-	public static String version = "1.3.0";
-	private String httpEndpoint;
+	@Inject
+	private ShootingStarApiClient shootingStarApiClient;
+
+	@Inject
+	private ShootingStarConfig config;
+
+	@Provides
+	ShootingStarConfig provideConfig(ConfigManager configManager)
+	{
+		return configManager.getConfig(ShootingStarConfig.class);
+	}
+
+	@Inject
+	private OverlayManager overlayManager;
+	@Inject
+	private ShootingStarOverlay shootingStarOverlay;
+
+	@Inject
+	private ClientToolbar clientToolbar;
+
+	private NavigationButton navButton;
+	private ShootingStarPanel panel;
 
 	@Getter
 	@Setter
 	public int totalStarsMined = 0;
-	private int apiTickCounter = 0;
-	private int updateListTickCounter = 0;
-	private int lastWorld;
-	private static final int TICKS_PER_MINUTE = 100;
-	private static final int UPDATE_INTERVAL = 3;
-	private static final ZoneId utcZoneId = ZoneId.of("UTC");
-
+	private final AtomicInteger apiTickCounter = new AtomicInteger(0);
+	private int lastWorld = -1;
+	private final int UPDATE_INTERVAL = 3;
+	private final ZoneId utcZoneId = ZoneId.of("UTC");
 	@Getter
 	private boolean displayAsMinutes;
 	@Getter
@@ -93,173 +114,12 @@ public class ShootingStarPlugin extends Plugin
 
 	private Set<String> blacklistedLocations = new HashSet<>();
 
-	@Inject
-	private ShootingStarConfig config;
-	@Inject
-	private OverlayManager overlayManager;
-	@Inject
-	private ShootingStarOverlay shootingStarOverlay;
-
-	@Inject
-	private ClientToolbar clientToolbar;
-	private NavigationButton navButton;
-	private ShootingStarPanel panel;
-
-	public void fetchStars()
-	{
-		// Create HTTP request to pull in StarData from API
-		HttpClient httpClient = HttpClient.newHttpClient();
-		HttpRequest request = HttpRequest.newBuilder()
-			.uri(URI.create(httpEndpoint))
-			.build();
-		String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
-			.thenApply(HttpResponse::body)
-			.join();
-		Gson gson = new Gson();
-		Type listType = new TypeToken<List<Star>>()
-		{
-		}.getType();
-		List<Star> starData = gson.fromJson(jsonResponse, listType);
-
-		ZonedDateTime now = ZonedDateTime.now(utcZoneId);
-
-		boolean inSeasonalWorld = Microbot.getClient().getWorldType().contains(WorldType.SEASONAL);
-
-		// Format starData into Star Model
-		for (Star star : starData)
-		{
-			// Filter out stars that ended longer than three mintues ago to avoid adding really old stars
-			if (star.getEndsAt() < now.minusMinutes(UPDATE_INTERVAL).toInstant().toEpochMilli())
-			{
-				continue;
-			}
-
-			// Set ObjectID & MiningLevel based on Shooting Star Tier
-			star.setObjectID(star.getObjectIDBasedOnTier());
-			star.setMiningLevel(star.getRequiredMiningLevel());
-
-			// Populate ShootingStarLocation based on locationKey & rawLocation
-			ShootingStarLocation location = findLocation(star.getLocationKey().toString(), star.getRawLocation());
-			if (location == null)
-			{
-				log.debug("No match found for location: {} - {}", star.getLocationKey(), star.getRawLocation());
-				continue;
-			}
-
-			star.setShootingStarLocation(location);
-			star.setWorldObject(findWorld(star.getWorld()));
-
-			if (star.isGameModeWorld())
-			{
-				continue;
-			}
-
-			// Seasonal world filtering
-			if (inSeasonalWorld && !star.isInSeasonalWorld())
-			{
-				continue; // Skip non-seasonal worlds if the player is in a seasonal world
-			}
-			else if (!inSeasonalWorld && star.isInSeasonalWorld())
-			{
-				continue; // Skip seasonal worlds if the player is not in a seasonal world
-			}
-
-			addToList(star);
-		}
-		updateHiddenStars();
-		updatePanelList(true);
-	}
-
-	private ShootingStarLocation findLocation(String locationKey, String rawLocation)
-	{
-		for (ShootingStarLocation location : ShootingStarLocation.values())
-		{
-			boolean enumName = locationKey.equalsIgnoreCase(location.name());
-			boolean locationString = rawLocation.equalsIgnoreCase(location.getRawLocationName()) || locationKey.equalsIgnoreCase(location.getShortLocationName());
-			if (enumName || locationString)
-			{
-				return location;
-			}
-		}
-		return null;
-	}
-
-	private World findWorld(int worldID)
-	{
-		WorldResult worldResult = Microbot.getWorldService().getWorlds();
-		if (worldResult == null)
-		{
-			return null;
-		}
-		return worldResult.findWorld(worldID);
-	}
-
-	private void addToList(Star data)
-	{
-		// Find oldStar inside of starList
-		Star oldStar = starList.stream()
-			.filter(data::equals)
-			.findFirst()
-			.orElse(null);
-
-		// If there is an oldStar in the same world & location
-		if (oldStar != null)
-		{
-			updateStarInList(oldStar, data);
-			return;
-		}
-
-		// If oldStar not found, add new star into the list
-		starList.add(data);
-	}
-
-	private void updateStarInList(Star oldStar, Star newStar)
-	{
-		oldStar.setTier(newStar.getTier());
-		oldStar.setObjectID(oldStar.getObjectIDBasedOnTier());
-		oldStar.setEndsAt(newStar.getEndsAt());
-		oldStar.setMiningLevel(oldStar.getRequiredMiningLevel());
-	}
-
-	private void checkDepletedStars()
-	{
-		List<Star> stars = new ArrayList<>(starList);
-		ZonedDateTime now = ZonedDateTime.now(utcZoneId);
-		boolean fullUpdate = false;
-
-		for (Star star : stars)
-		{
-			if (star.getEndsAt() < now.minusMinutes(UPDATE_INTERVAL).toInstant().toEpochMilli())
-			{
-				removeStar(star);
-				fullUpdate = true;
-			}
-		}
-
-		updatePanelList(fullUpdate);
-	}
-
-	@Provides
-	ShootingStarConfig provideConfig(ConfigManager configManager)
-	{
-		return configManager.getConfig(ShootingStarConfig.class);
-	}
-
 	@Override
 	protected void startUp() throws AWTException
 	{
 		displayAsMinutes = config.isDisplayAsMinutes();
 		hideMembersWorlds = !Rs2Player.isInMemberWorld();
 		hideF2PWorlds = Rs2Player.isInMemberWorld();
-
-		try
-		{
-			loadUrlFromProperties();
-		}
-		catch (IOException e)
-		{
-			throw new RuntimeException(e);
-		}
 
 		loadBlacklistedLocations();
 		fetchStars();
@@ -276,6 +136,7 @@ public class ShootingStarPlugin extends Plugin
 		removePanel();
 		starList.clear();
 		lastWorld = -1;
+		apiTickCounter.set(0);
 		overlayManager.remove(shootingStarOverlay);
 	}
 
@@ -306,28 +167,35 @@ public class ShootingStarPlugin extends Plugin
 			updatePanelList(true);
 		}
 
+		if (event.getKey().equals(ShootingStarConfig.providerName)) {
+			log.info("Provider changed to: {}", config.getProvider());
+			final int beforeSize = starList.size();
+			starList.clear();
+			fetchStars();
+			log.info("Stars fetched: {} (before: {})", starList.size(), beforeSize);
+		}
+
 		if (event.getKey().equals(ShootingStarConfig.hideOverlay))
 		{
 			toggleOverlay(config.isHideOverlay());
 		}
 	}
 
-	@Subscribe
-	public void onGameTick(GameTick event)
-	{
-		if (updateListTickCounter >= TICKS_PER_MINUTE)
-		{
-			checkDepletedStars();
-			updateListTickCounter = 0;
-		}
+	@Schedule(
+		period = 1,
+		unit = ChronoUnit.MINUTES,
+		asynchronous = true
+	)
+	public void tick() {
+		checkDepletedStars();
 
-		if (apiTickCounter >= (TICKS_PER_MINUTE * UPDATE_INTERVAL))
+		if (apiTickCounter.get() >= UPDATE_INTERVAL)
 		{
 			fetchStars();
-			apiTickCounter = 0;
+			apiTickCounter.set(0);
 		}
-		updateListTickCounter++;
-		apiTickCounter++;
+
+		apiTickCounter.incrementAndGet();
 
 		if (config.useBreakAtBank() && !isBreakHandlerEnabled())
 		{
@@ -339,11 +207,120 @@ public class ShootingStarPlugin extends Plugin
 	@Subscribe
 	public void onGameStateChanged(GameStateChanged event)
 	{
-		if (event.getGameState() == GameState.LOGGED_IN && Microbot.getClient().getWorld() != lastWorld)
+		if (event.getGameState() == GameState.LOGGED_IN)
 		{
-			lastWorld = Microbot.getClient().getWorld();
-			updatePanelList(true);
+			if (lastWorld == -1)
+			{
+				lastWorld = Microbot.getClient().getWorld();
+				fetchStars();
+			}
+			else
+			{
+				int currentWorld = Microbot.getClient().getWorld();
+
+				if (currentWorld != lastWorld)
+				{
+					lastWorld = currentWorld;
+					updatePanelList(true);
+				}
+			}
 		}
+	}
+
+	@Subscribe
+	public void onChatMessage(ChatMessage event) {
+		if (event.getType() != ChatMessageType.GAMEMESSAGE) return;
+
+		if (event.getMessage().equalsIgnoreCase("oh dear, you are dead!") && config.shutdownOnDeath()) {
+			Rs2Walker.setTarget(null);
+			shutDown();
+		}
+	}
+
+	public void fetchStars()
+	{
+		List<Star> latestStars = shootingStarApiClient.getStarData(config.getProvider());
+		boolean fullUpdate = false;
+
+		for (Star star : latestStars) {
+			// Find oldStar inside starList
+			Star oldStar = starList.stream()
+				.filter(star::equals)
+				.findFirst()
+				.orElse(null);
+
+			// If there is an oldStar in the same world & location
+			if (oldStar != null)
+			{
+				oldStar.setEndsAt(star.getEndsAt());
+				oldStar.setTier(star.getTier());
+				continue;
+			}
+
+			// If oldStar not found, add new star into the list
+			starList.add(star);
+			fullUpdate = true;
+		}
+
+		if (fullUpdate) {
+			updateHiddenStars();
+		}
+
+		updatePanelList(fullUpdate);
+	}
+
+	private void checkDepletedStars()
+	{
+		ZonedDateTime now = ZonedDateTime.now(utcZoneId);
+		long threshold = now.minusMinutes(UPDATE_INTERVAL).toInstant().toEpochMilli();
+
+		List<Star> depletedStars = starList.stream()
+			.filter(star -> star.getEndsAt() < threshold)
+			.collect(Collectors.toList());
+
+		depletedStars.forEach(this::removeStar);
+
+		boolean fullUpdate = !depletedStars.isEmpty();
+		updatePanelList(fullUpdate);
+	}
+
+	public void removeStar(Star star)
+	{
+		if (star.equals(getSelectedStar()))
+		{
+			star.setSelected(false);
+		}
+		starList.remove(star);
+	}
+
+	public void updateSelectedStar(Star star)
+	{
+		Star oldStar = getSelectedStar();
+		if (oldStar == null)
+		{
+			star.setSelected(!star.isSelected());
+		}
+		else if (!oldStar.equals(star))
+		{
+			oldStar.setSelected(false);
+			star.setSelected(!star.isSelected());
+		}
+	}
+
+	public void updateHiddenStars()
+	{
+		starList.forEach(star -> {
+			boolean hide = hideMembersWorlds && star.isMemberWorld()
+				|| (hideF2PWorlds && !star.isMemberWorld())
+				|| (config.isHideWildernessLocations() && star.isInWilderness())
+				|| blacklistedLocations.contains(star.getShootingStarLocation().getLocationName());
+			star.setHidden(hide);
+		});
+	}
+
+	public Star getSelectedStar()
+	{
+		return starList.stream().filter(Star::isSelected).findFirst().orElse(null);
 	}
 
 	private void createPanel()
@@ -368,6 +345,20 @@ public class ShootingStarPlugin extends Plugin
 		clientToolbar.removeNavigation(navButton);
 		navButton = null;
 		panel = null;
+	}
+
+	public void updatePanelList(boolean fullUpdate)
+	{
+		List<Star> stars = new ArrayList<>(starList);
+
+		if (fullUpdate)
+		{
+			SwingUtilities.invokeLater(() -> panel.updateList(stars));
+		}
+		else
+		{
+			SwingUtilities.invokeLater(() -> panel.refreshList(stars));
+		}
 	}
 
 	private void toggleOverlay(boolean hideOverlay)
@@ -432,6 +423,11 @@ public class ShootingStarPlugin extends Plugin
 			return null; // No accessible stars found
 		}
 
+		if (ShortestPathPlugin.getPathfinderConfig().getTransports().isEmpty())
+		{
+			ShortestPathPlugin.getPathfinderConfig().refresh();
+		}
+
 		Pathfinder pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), Microbot.getClient().getLocalPlayer().getWorldLocation(), accessibleStarPoints);
 		pathfinder.run();
 		List<WorldPoint> path = pathfinder.getPath();
@@ -472,10 +468,7 @@ public class ShootingStarPlugin extends Plugin
 
 	private void enableBreakHandler()
 	{
-		Plugin breakHandlerPlugin = Microbot.getPluginManager().getPlugins().stream()
-			.filter(x -> x.getClass().getName().equals(BreakHandlerPlugin.class.getName()))
-			.findFirst()
-			.orElse(null);
+		Plugin breakHandlerPlugin = Microbot.getPlugin(BreakHandlerPlugin.class);
 
 		Microbot.startPlugin(breakHandlerPlugin);
 	}
@@ -483,34 +476,6 @@ public class ShootingStarPlugin extends Plugin
 	public boolean isBreakHandlerEnabled()
 	{
 		return Microbot.isPluginEnabled(BreakHandlerPlugin.class);
-	}
-
-	public void removeStar(Star star)
-	{
-		if (star.equals(getSelectedStar()))
-		{
-			star.setSelected(false);
-		}
-		starList.remove(star);
-	}
-
-	public void updateSelectedStar(Star star)
-	{
-		Star oldStar = getSelectedStar();
-		if (oldStar == null)
-		{
-			star.setSelected(!star.isSelected());
-			return;
-		}
-		else if (!oldStar.equals(star))
-		{
-			oldStar.setSelected(false);
-			star.setSelected(!star.isSelected());
-			return;
-		}
-
-		oldStar.setTier(star.getTierBasedOnObjectID());
-		oldStar.setMiningLevel(star.getRequiredMiningLevel());
 	}
 
 	public Duration getScriptRuntime()
@@ -532,27 +497,6 @@ public class ShootingStarPlugin extends Plugin
 			.collect(Collectors.toSet());
 	}
 
-	public void updateHiddenStars()
-	{
-		for (Star star : starList)
-		{
-			boolean hide = hideMembersWorlds && star.isMemberWorld();
-			if (hideF2PWorlds && star.isF2PWorld())
-			{
-				hide = true;
-			}
-			if (config.isHideWildernessLocations() && star.isInWilderness())
-			{
-				hide = true;
-			}
-			if (blacklistedLocations.contains(star.getShootingStarLocation().getLocationName()))
-			{
-				hide = true;
-			}
-			star.setHidden(hide);
-		}
-	}
-
 	public void addLocationToBlacklist(String locationName)
 	{
 		blacklistedLocations.add(locationName);
@@ -570,39 +514,82 @@ public class ShootingStarPlugin extends Plugin
 		updatePanelList(true);
 	}
 
-	public void updatePanelList(boolean fullUpdate)
+	public void exportBlacklistedLocations()
 	{
-		List<Star> stars = new ArrayList<>(starList);
+		StringBuilder sb = new StringBuilder();
+		blacklistedLocations.forEach(location -> sb.append(location).append(System.lineSeparator()));
 
-		if (fullUpdate)
-		{
-			SwingUtilities.invokeLater(() -> panel.updateList(stars));
-		}
-		else
-		{
-			SwingUtilities.invokeLater(() -> panel.refreshList(stars));
-		}
-	}
-
-	public Star getSelectedStar()
-	{
-		return starList.stream().filter(Star::isSelected).findFirst().orElse(null);
-	}
-
-	private void loadUrlFromProperties() throws IOException
-	{
-		Properties properties = new Properties();
-
-		try (InputStream input = ShootingStarPlugin.class.getResourceAsStream("shootingstar.properties"))
-		{
-			if (input == null)
-			{
-				System.out.println("unable to load shootingstar.properties");
-				return;
+		try {
+			File file = chooseFileToSave("Export Blacklisted Locations", "txt");
+			if (file != null) {
+				try (BufferedWriter writer = new BufferedWriter(new FileWriter(file))) {
+					writer.write(sb.toString());
+					JOptionPane.showMessageDialog(null, "Blacklisted locations exported successfully: " + file.getAbsolutePath());
+				}
 			}
-
-			properties.load(input);
-			httpEndpoint = properties.getProperty("microbot.shootingstar.http");
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(null, "Error exporting blacklisted locations: " + e.getMessage());
+			log.error("Error exporting blacklisted locations", e);
 		}
+	}
+
+	public void importBlacklistedLocations()
+	{
+		try {
+			File file = chooseFileToOpen("Import Blacklisted Locations", "txt");
+			if (file != null) {
+				try (BufferedReader reader = new BufferedReader(new FileReader(file))) {
+					Set<String> importedLocations = new HashSet<>();
+					String line;
+					while ((line = reader.readLine()) != null) {
+						String location = line.trim();
+						if (!location.isEmpty()) {
+							importedLocations.add(location);
+						}
+					}
+
+					blacklistedLocations = importedLocations;
+					String joined = String.join(",", blacklistedLocations);
+					Microbot.getConfigManager().setConfiguration(ShootingStarConfig.configGroup, ShootingStarConfig.blacklistedLocations, joined);
+
+					updateHiddenStars();
+					updatePanelList(true);
+
+					JOptionPane.showMessageDialog(null, "Blacklisted locations imported successfully: " + file.getAbsolutePath());
+				}
+			}
+		} catch (IOException e) {
+			JOptionPane.showMessageDialog(null, "Error importing blacklisted locations: " + e.getMessage());
+			log.error("Error importing blacklisted locations", e);
+		}
+	}
+
+	private File chooseFileToSave(String dialogTitle, String fileExtension) {
+		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setDialogTitle(dialogTitle);
+		fileChooser.setFileFilter(new FileNameExtensionFilter("*." + fileExtension, fileExtension));
+
+		int userSelection = fileChooser.showSaveDialog(null);
+		if (userSelection == JFileChooser.APPROVE_OPTION) {
+			File fileToSave = fileChooser.getSelectedFile();
+			// Add file extension if not already present
+			if (!fileToSave.getName().toLowerCase().endsWith("." + fileExtension)) {
+				fileToSave = new File(fileToSave.getAbsolutePath() + "." + fileExtension);
+			}
+			return fileToSave;
+		}
+		return null;
+	}
+
+	private File chooseFileToOpen(String dialogTitle, String fileExtension) {
+		JFileChooser fileChooser = new JFileChooser();
+		fileChooser.setDialogTitle(dialogTitle);
+		fileChooser.setFileFilter(new FileNameExtensionFilter("*." + fileExtension, fileExtension));
+
+		int userSelection = fileChooser.showOpenDialog(null);
+		if (userSelection == JFileChooser.APPROVE_OPTION) {
+			return fileChooser.getSelectedFile();
+		}
+		return null;
 	}
 }

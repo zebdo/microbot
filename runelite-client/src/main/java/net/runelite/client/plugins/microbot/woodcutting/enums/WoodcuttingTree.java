@@ -20,8 +20,8 @@ public enum WoodcuttingTree {
     MAGIC("magic tree", "Magic logs", ItemID.MAGIC_LOGS, 75, "Chop down"),
     REDWOOD("redwood tree", "Redwood logs", ItemID.REDWOOD_LOGS, 90, "Cut"),
     EVERGREEN_TREE("evergreen tree" , "Logs", ItemID.LOGS, 1, "Chop down"),
-    DEAD_TREE("dead tree" , "Logs", ItemID.LOGS, 1, "Chop down");
-
+    DEAD_TREE("dead tree" , "Logs", ItemID.LOGS, 1, "Chop down"),
+    INFECTED_ROOT("infected root", "Logs", ItemID.LOGS, 80, "Chop");
 
     private final String name;
     private final String log;

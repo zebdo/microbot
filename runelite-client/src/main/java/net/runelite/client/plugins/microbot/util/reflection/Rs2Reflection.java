@@ -114,6 +114,7 @@ public class Rs2Reflection {
         }
         System.out.println("[INVOKE] => param0: " + param0 + " param1: " + param1 + " opcode: " + opcode + " id: " + identifier + " itemid: " + itemId);
     }
+	/**
 
     @SneakyThrows
     public static int getAnimation(Rs2NpcModel npc)
@@ -121,12 +122,6 @@ public class Rs2Reflection {
         return getAnimation(npc.getRuneliteNpc());
     }
 
-    /**
-     * get animation id
-     *
-     * @param actor
-     * @return uncensored animation id
-     */
     private static Field sequenceField;
     private static int sequenceFieldMultiplierValue;
     @SneakyThrows
@@ -187,6 +182,7 @@ public class Rs2Reflection {
         }
         return -1;
     }
+	 **/
 
     @SneakyThrows
     public static String[] getGroundItemActions(ItemComposition item) {

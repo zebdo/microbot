@@ -1086,7 +1086,6 @@ public class KittenPlugin extends Plugin {
         }
     }
 
-    @Inject
     public boolean playerHasFollower() {
         return 0 < (client.getVarpValue(VAR_PLAYER_FOLLOWER));
     }

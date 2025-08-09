@@ -541,13 +541,25 @@ public interface ShortestPathConfig extends Config {
     )
     String sectionAdvanced = "sectionAdvanced";
 
+	@ConfigItem(
+		keyName = "randomizeFinalTile",
+		name = "Randomize final tile",
+		description = "Whether to randomize the final tile of the path by a few tiles.<br>" +
+			"This can be disabled in situations where you want to be able to click on the final tile directly, such as when using the path for a script that requires precise clicking.",
+		position = 0,
+		section = sectionAdvanced
+	)
+	default boolean randomizeFinalTile() {
+		return true;
+	}
+
     @ConfigItem(
             keyName = "walkWithBankedTransports",
             name = "Walk with banked transports",
             description = "Whether to use the walk with banked transport functionality or the normal walking.<br>" +
                     "This will use banked transports when the path via the bank to grab the transportation items is more efficient, " +
                     "otherwise it will use the normal pathfinding.",
-            position = 0,
+            position = 1,
             section = sectionAdvanced
     )
     default boolean walkWithBankedTransports() {
@@ -558,7 +570,7 @@ public interface ShortestPathConfig extends Config {
             keyName = "minBankRouteSavings",
             name = "Min. bank route savings (tiles)",
             description = "Minimum number of tiles the bank route must be shorter than the direct route to use banking.",
-            position = 1,
+            position = 2,
             section = sectionAdvanced
     )
     @Range(min = 0)
@@ -571,7 +583,7 @@ public interface ShortestPathConfig extends Config {
             name = "Prefer  non-consumable teleports and spells",
             description = " Whether to prefer using non-consumable teleportation items and spells over consumable items.<br>" +
                     "This will only apply when 'Walk with banked transports' is enabled",
-            position = 2,
+            position = 3,
             section = sectionAdvanced
     )
     default boolean preferNonConsumableTeleportAndSpells() {
@@ -582,7 +594,7 @@ public interface ShortestPathConfig extends Config {
                 name = "Prefer transport to target",
                 description = "Whether to prefer using transports to reach the target instead of walking.<br>" +
                         "This will only apply when 'Walk with banked transports' is enabled.",
-                position = 3,
+                position = 4,
                 section = sectionAdvanced
         )
         default boolean preferTransportToTarget() {
@@ -594,7 +606,7 @@ public interface ShortestPathConfig extends Config {
             name = "Max similar transport distance (tiles)",
             description = "Maximum distance between spell and consumable item teleport destinations to prefer spells over items.<br>" +
                     "Only applies when 'Walk with banked transports' is enabled. Set to 0 to disable filtering.",
-            position = 4,
+            position = 5,
             section = sectionAdvanced
     )
     @Range(min = 0, max = 100)

@@ -43,8 +43,8 @@ public class PathMinimapOverlay extends Overlay {
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
         graphics.setClip(plugin.getMinimapClipArea());
 
-        List<WorldPoint> pathPoints = plugin.getPathfinder().getPath();
-        Color pathColor = plugin.getPathfinder().isDone() ? plugin.colourPath : plugin.colourPathCalculating;
+        List<WorldPoint> pathPoints = ShortestPathPlugin.getPathfinder().getPath();
+        Color pathColor = ShortestPathPlugin.getPathfinder().isDone() ? plugin.colourPath : plugin.colourPathCalculating;
         for (WorldPoint pathPoint : pathPoints) {
             if (pathPoint.getPlane() != client.getPlane()) {
                 continue;

@@ -62,6 +62,7 @@ import net.runelite.api.Actor;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.EquipmentInventorySlot;
+import net.runelite.api.GameState;
 import net.runelite.api.Item;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.NPC;
@@ -189,7 +190,7 @@ public class TimersAndBuffsPlugin extends Plugin
 	@Override
 	public void startUp()
 	{
-		if (config.showHomeMinigameTeleports())
+		if (config.showHomeMinigameTeleports() && client.getGameState() == GameState.LOGGED_IN)
 		{
 			checkTeleport(VarPlayerID.AIDE_TELE_TIMER);
 			checkTeleport(VarPlayerID.SLUG2_REGIONUID);
@@ -703,7 +704,7 @@ public class TimersAndBuffsPlugin extends Plugin
 			removeGameTimer(HOME_TELEPORT);
 			removeGameTimer(MINIGAME_TELEPORT);
 		}
-		else
+		else if (client.getGameState() == GameState.LOGGED_IN)
 		{
 			checkTeleport(VarPlayerID.AIDE_TELE_TIMER);
 			checkTeleport(VarPlayerID.SLUG2_REGIONUID);

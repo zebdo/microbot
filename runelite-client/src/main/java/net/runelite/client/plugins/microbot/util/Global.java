@@ -1,6 +1,5 @@
 package net.runelite.client.plugins.microbot.util;
 
-import com.google.common.util.concurrent.Uninterruptibles;
 import lombok.SneakyThrows;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -43,17 +42,21 @@ public class Global {
     }
 
     @SneakyThrows
-    public static <T> T sleepUntilNotNull(Callable<T> method, int time) {
+    public static <T> T sleepUntilNotNull(Callable<T> method, int timeoutMillis, int sleepMillis) {
         if (Microbot.getClient().isClientThread()) return null;
         boolean done;
         T methodResponse;
-        long startTime = System.currentTimeMillis();
+        final long endTime = System.currentTimeMillis()+timeoutMillis;
         do {
             methodResponse = method.call();
             done = methodResponse != null;
-            sleep(100);
-        } while (!done && System.currentTimeMillis() - startTime < time);
+            sleep(sleepMillis);
+        } while (!done && System.currentTimeMillis() < endTime);
         return methodResponse;
+    }
+
+    public static <T> T sleepUntilNotNull(Callable<T> method, int timeoutMillis) {
+        return sleepUntilNotNull(method, timeoutMillis, 100);
     }
 
     public static boolean sleepUntil(BooleanSupplier awaitedCondition) {

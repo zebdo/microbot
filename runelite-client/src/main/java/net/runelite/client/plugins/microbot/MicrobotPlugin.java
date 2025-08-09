@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.*;
 import net.runelite.api.events.*;
-import net.runelite.api.widgets.Widget;
+import net.runelite.client.RuneLiteProperties;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.eventbus.EventBus;
@@ -122,6 +122,9 @@ public class MicrobotPlugin extends Plugin
 	@Override
 	protected void startUp() throws AWTException
 	{
+		log.info("Microbot: {} - {}", RuneLiteProperties.getMicrobotVersion(), RuneLiteProperties.getMicrobotCommit());
+		log.info("JVM: {} {}", System.getProperty("java.vendor"), System.getProperty("java.runtime.version"));
+
 		gameChatAppender = new GameChatAppender();
 		gameChatAppender.setName("GAME_CHAT");
 		

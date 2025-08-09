@@ -5,7 +5,7 @@ on:
       - main
 
 env:
-  version: "1.9.6.1"
+  version: ${microbot.version}
 
 jobs:
   build:
@@ -24,8 +24,9 @@ jobs:
           java-version: 11
 
       - name: Build Shaded JAR
-        run: mvn clean package
-
+        run: |
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          mvn clean package -Dmicrobot.commit.sha=$COMMIT_SHA
 
       - name: Create Release
         uses: "marvinpinto/action-automatic-releases@latest"
@@ -63,5 +64,5 @@ jobs:
           EOL
 
       - name: Deploy to Nexus
-        run: mvn deploy:deploy-file -DgroupId=com.microbot -DartifactId=client -Dversion=$version -Dpackaging=jar -Dfile=runelite-client/target/microbot-$version.jar -DrepositoryId=microbot-release -Durl=https://nexus.microbot.cloud/repository/microbot-release/
+        run: mvn deploy:deploy-file -DgroupId=com.microbot -DartifactId=client -Dversion=${{ steps.version.outputs.version }} -Dpackaging=jar -Dfile=runelite-client/target/microbot-${{ steps.version.outputs.version }}.jar -DrepositoryId=microbot-release -Durl=https://nexus.microbot.cloud/repository/microbot-release/
 

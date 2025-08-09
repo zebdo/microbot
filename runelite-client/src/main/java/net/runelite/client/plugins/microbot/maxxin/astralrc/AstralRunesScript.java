@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.maxxin.astralrc;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.TileObject;
@@ -15,7 +16,6 @@ import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.RunePouchType;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spellbook;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
@@ -24,8 +24,6 @@ import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
-import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
-import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -33,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class AstralRunesScript extends Script {
     public static String version = "0.0.2";
     private final AstralRunesPlugin plugin;
@@ -46,7 +45,6 @@ public class AstralRunesScript extends Script {
     private final static WorldPoint ASTRAL_ALTAR_WORLD_POINT = new WorldPoint(2158, 3864, 0);
     private final static int ASTRAL_ALTAR_ID = 34771;
 
-    private int foodItemId;
     private boolean canCastMoonclanTeleport = false;
     public final int runeItemId = ItemID.ASTRALRUNE;
     public static int runesForSession = 0;
@@ -73,16 +71,15 @@ public class AstralRunesScript extends Script {
         Microbot.enableAutoRunOn = false;
         Rs2Antiban.resetAntibanSettings();
         Rs2AntibanSettings.naturalMouse = true;
-        this.foodItemId = config.foodType().getId();
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
+				if (!super.run()) return;
                 if (!Microbot.isLoggedIn()) return;
-                if (!super.run()) return;
                 if (Rs2AntibanSettings.actionCooldownActive) return;
 
                 // Mitigate how often we check for runes since it switches to magic tab
                 if( !Rs2Bank.isOpen() )
-                    canCastMoonclanTeleport = isLunar() && Rs2Magic.canCast(MagicAction.MOONCLAN_TELEPORT);
+                    canCastMoonclanTeleport = Rs2Spells.MOONCLAN_TELEPORT.hasRequirements() && Rs2Magic.hasRequiredRunes(Rs2Spells.MOONCLAN_TELEPORT);
 
                 if( config.autoSetup() ) {
                     if (!handleAutoSetup(config)) {
@@ -173,7 +170,7 @@ public class AstralRunesScript extends Script {
 
                         if( !Rs2Bank.isOpen() ) {
                             if( playerLoc.distanceTo(LUNAR_ISLE_BANK_WORLD_POINT) > 20 ) {
-                                Rs2Magic.cast(MagicAction.MOONCLAN_TELEPORT);
+                                Rs2Magic.cast(Rs2Spells.MOONCLAN_TELEPORT);
                                 sleep(2200);
                                 Rs2Walker.walkFastCanvas(LUNAR_ISLE_BANK_WORLD_POINT_AFTER_TELEPORT);
                             }
@@ -183,7 +180,7 @@ public class AstralRunesScript extends Script {
                             TileObject bankTile = Rs2GameObject.getGameObject(bankTileLoc);
                             Rs2Walker.walkFastCanvas(LUNAR_ISLE_BANK_WORLD_POINT);
                             if( bankTile != null && !Rs2Bank.isOpen() ) {
-                                Rs2Bank.openBank(bankTile);
+                                Rs2Bank.openBank();
                                 updateRuneStates();
                                 if( Rs2Inventory.hasItem(runeItemId) ) {
                                     Rs2Bank.depositAll(runeItemId);
@@ -218,12 +215,12 @@ public class AstralRunesScript extends Script {
                             Rs2Inventory.waitForInventoryChanges(600);
                         }
                         if( foodNeeded ) {
-                            if( !Rs2Bank.hasItem(foodItemId) ) {
-                                Microbot.showMessage("No food found in bank (Item ID: " + foodItemId + ")");
+                            if( !Rs2Bank.hasItem(config.foodType().getId()) ) {
+                                Microbot.showMessage("No food found in bank (Item ID: " + config.foodType().getId() + ")");
                                 shutdown();
                                 return;
                             }
-                            Rs2Bank.withdrawX(foodItemId, 3);
+                            Rs2Bank.withdrawX(config.foodType().getId(), 3);
                             Rs2Inventory.waitForInventoryChanges(800);
                         }
 
@@ -234,11 +231,11 @@ public class AstralRunesScript extends Script {
                         }
 
                         if( foodNeeded ) {
-                            while(Rs2Player.getHealthPercentage() < 70 && Rs2Inventory.hasItem(foodItemId)) {
+                            while(Rs2Player.getHealthPercentage() < 70 && Rs2Inventory.hasItem(config.foodType().getId())) {
                                 Rs2Player.useFood();
                                 Rs2Inventory.waitForInventoryChanges(800);
-                                if(!Rs2Inventory.hasItem(foodItemId) && Rs2Player.getHealthPercentage() < 70) {
-                                    Rs2Bank.withdrawX(foodItemId, 3);
+                                if(!Rs2Inventory.hasItem(config.foodType().getId()) && Rs2Player.getHealthPercentage() < 70) {
+                                    Rs2Bank.withdrawX(config.foodType().getId(), 3);
                                     Rs2Inventory.waitForInventoryChanges(800);
                                 }
                             }
@@ -287,14 +284,13 @@ public class AstralRunesScript extends Script {
 
                         break;
                     default:
-                        System.out.println("This shouldn't happen");
+                        log.error("Unknown state: {}", state);
                         state = State.BANKING;
                         break;
                 }
 
             } catch (Exception ex) {
-                System.out.println("Error: " + ex.getMessage());
-                ex.printStackTrace();
+                log.trace("Exception in AstralRunesScript main loop: {} - ", ex.getMessage(), ex);
             }
         }, 0, 600, TimeUnit.MILLISECONDS);
         return true;
@@ -318,7 +314,7 @@ public class AstralRunesScript extends Script {
 
         if(!isLunar() && isLunarIsleRegion() && Rs2Player.getWorldLocation().distanceTo(LUNAR_ISLE_CRAFT_WORLD_POINT) < 20) {
             setSpellbookLunarAltar();
-            canCastMoonclanTeleport = Rs2Magic.canCast(MagicAction.MOONCLAN_TELEPORT);
+            canCastMoonclanTeleport = Rs2Spells.MOONCLAN_TELEPORT.hasRequirements() && Rs2Magic.hasRequiredRunes(Rs2Spells.MOONCLAN_TELEPORT);
         }
 
         if(!canCastMoonclanTeleport) {
@@ -328,11 +324,8 @@ public class AstralRunesScript extends Script {
                 return false;
             }
             Rs2Random.wait(1500, 2000);
-            setRunePouchLoadout(config);
-            Rs2Inventory.waitForInventoryChanges(600);
             Rs2Bank.closeBank();
-            if(isLunar())
-                canCastMoonclanTeleport = Rs2Magic.canCast(MagicAction.MOONCLAN_TELEPORT);
+			canCastMoonclanTeleport = Rs2Spells.MOONCLAN_TELEPORT.hasRequirements() && Rs2Magic.hasRequiredRunes(Rs2Spells.MOONCLAN_TELEPORT);
         }
 
         if(isLunar() && !canCastMoonclanTeleport) {
@@ -363,7 +356,7 @@ public class AstralRunesScript extends Script {
                 Rs2Inventory.interact(ItemID.TELEPORTSCROLL_LUNARISLE, "Teleport");
                 sleep(2500);
             } else if(isLunar() && canCastMoonclanTeleport ) {
-                Rs2Magic.cast(MagicAction.MOONCLAN_TELEPORT);
+                Rs2Magic.cast(Rs2Spells.MOONCLAN_TELEPORT);
                 sleep(2500);
             }
             sleepUntil(() -> LUNAR_ISLE_REGION_IDS.contains(Rs2Player.getWorldLocation().getRegionID()));
@@ -402,16 +395,6 @@ public class AstralRunesScript extends Script {
         return Rs2Bank.isOpen();
     }
 
-    private static void setRunePouchLoadout(AstralRunesConfig config) {
-        var runePouchType = Arrays.stream(RunePouchType.values()).findFirst().orElse(null);
-        if( runePouchType != null ) {
-            var runePouchItemId = runePouchType.getItemId();
-            Rs2Inventory.interact(runePouchItemId, "Configure");
-            Rs2Random.wait(800, 1200);
-            Rs2Widget.clickWidget(config.runePouchLoadout().getWidgetId());
-            Rs2Random.wait(800, 1200);
-        }
-    }
 
     private void setSpellbookLunarAltar() {
         if( isLunarIsleRegion() ) {
@@ -421,7 +404,7 @@ public class AstralRunesScript extends Script {
                 Rs2GameObject.interact(altarGameObject, "Pray");
                 sleepUntil(this::isLunar);
                 Rs2Random.wait(400, 800);
-                canCastMoonclanTeleport = Rs2Magic.canCast(MagicAction.MOONCLAN_TELEPORT);
+                canCastMoonclanTeleport = Rs2Spells.MOONCLAN_TELEPORT.hasRequirements() && Rs2Magic.hasRequiredRunes(Rs2Spells.MOONCLAN_TELEPORT);
             }
         }
     }
@@ -479,6 +462,7 @@ public class AstralRunesScript extends Script {
 
     @Override
     public void shutdown() {
+		canCastMoonclanTeleport = false;
         Rs2Antiban.resetAntibanSettings();
         super.shutdown();
     }

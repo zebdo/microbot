@@ -219,15 +219,17 @@ class PluginListPanel extends PluginPanel {
         Collections.addAll(fakePlugins, descriptor);
     }
 
-    void refresh() {
-        // update enabled / disabled status of all items
-        pluginList.forEach(listItem ->
-        {
-            final Plugin plugin = listItem.getPluginConfig().getPlugin();
-            if (plugin != null) {
-                listItem.setPluginEnabled(pluginManager.isPluginEnabled(plugin));
-            }
-        });
+	void refresh()
+	{
+		// update enabled / disabled status of all items
+		pluginList.forEach(listItem ->
+		{
+			final Plugin plugin = listItem.getPluginConfig().getPlugin();
+			if (plugin != null)
+			{
+				listItem.setPluginEnabled(pluginManager.isPluginActive(plugin));
+			}
+		});
 
         int scrollBarPosition = scrollPane.getVerticalScrollBar().getValue();
 

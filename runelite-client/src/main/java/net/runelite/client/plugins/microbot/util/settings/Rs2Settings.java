@@ -1,7 +1,9 @@
 package net.runelite.client.plugins.microbot.util.settings;
 
+import java.awt.Rectangle;
 import java.util.Map;
 import lombok.NoArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.MenuAction;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.VarbitID;
@@ -20,6 +22,7 @@ import java.awt.event.KeyEvent;
 import static net.runelite.client.plugins.microbot.globval.VarbitIndices.TOGGLE_ROOFS;
 import static net.runelite.client.plugins.microbot.util.Global.*;
 
+@Slf4j
 @NoArgsConstructor
 public class Rs2Settings
 {
@@ -190,13 +193,13 @@ public class Rs2Settings
 		var areaSoundBtn = Rs2Widget.getWidget(ComponentID.SETTINGS_SIDE_AREA_SOUND_SLIDER).getStaticChildren()[0];
 		if (musicBtn == null || soundEffectBtn == null || areaSoundBtn == null)
 		{
-			Microbot.log("Music settings buttons not found");
+			log.info("Music settings buttons not found");
 			return;
 		}
 
 		if (musicBtn.getActions() == null || soundEffectBtn.getActions() == null || areaSoundBtn.getActions() == null)
 		{
-			Microbot.log("Music settings buttons actions not found");
+			log.info("Music settings buttons actions not found");
 			return;
 		}
 
@@ -234,6 +237,39 @@ public class Rs2Settings
 	public static int getMinimumItemValueAlchemyWarning()
 	{
 		return Microbot.getVarbitValue(6091);
+	}
+
+	/**
+	 * Checks if spell filtering is enabled in the magic spellbook.
+	 *
+	 * @return {@code true} if spell filtering is enabled, {@code false} otherwise
+	 */
+	public static boolean isSpellFilteringEnabled()
+	{
+		return Microbot.getVarbitValue(VarbitID.MAGIC_SPELLBOOK_HIDEFILTERBUTTON) == 0;
+	}
+
+	/**
+	 * Enables spell filtering if it's currently disabled.
+	 */
+	public static void enableSpellFiltering()
+	{
+		if(isSpellFilteringEnabled()) return;
+		Widget spellbookInterfaceWidget = Rs2Tab.getSpellBookTab();
+		if (spellbookInterfaceWidget == null)
+		{
+			log.info("Spellbook interface widget not found, cannot toggle spell filter.");
+			return;
+		}
+		else
+		{
+			log.info("Spellbook widget found, enabling spell filters.");
+		}
+
+		Rectangle spellbookBounds = spellbookInterfaceWidget.getBounds();
+		NewMenuEntry spellFilterEntry = new NewMenuEntry("Enable spell filtering", "", 2, MenuAction.CC_OP, -1, spellbookInterfaceWidget.getId(), false);
+		Microbot.doInvoke(spellFilterEntry, spellbookBounds != null && Rs2UiHelper.isRectangleWithinCanvas(spellbookBounds) ? spellbookBounds : Rs2UiHelper.getDefaultRectangle());
+		sleepUntil(Rs2Settings::isSpellFilteringEnabled, 2000);
 	}
 
 	private static boolean closeSettingsMenu()

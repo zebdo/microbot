@@ -98,7 +98,8 @@ public class RuneLiteDebug {
     public static final File DEFAULT_SESSION_FILE = new File(RUNELITE_DIR, "session");
 
     private static final int MAX_OKHTTP_CACHE_SIZE = 20 * 1024 * 1024; // 20mb
-    public static String USER_AGENT = "RuneLite/" + RuneLiteProperties.getVersion() + "-" + RuneLiteProperties.getCommit() + (RuneLiteProperties.isDirty() ? "+" : "");
+    public static String USER_AGENT = "RuneLite/" + RuneLiteProperties.getVersion();
+
 
     @Getter
     private static Injector injector;
@@ -150,6 +151,8 @@ public class RuneLiteDebug {
 
     @Inject
     private MicrobotPluginManager microbotPluginManager;
+
+    public static List<Class<?>> pluginsToDebug = new ArrayList<>();
 
     public static void main(String[] args) throws Exception {
         Locale.setDefault(Locale.ENGLISH);
@@ -401,11 +404,10 @@ public class RuneLiteDebug {
 
         clientUI.show();
 
-        // This will initialize configuration
-        microbotPluginManager.loadCorePlugins(Arrays.asList("net.runelite.client.plugins.microbot", "net.runelite.client.plugins.banktags", "net.runelite.client.plugins.config", "net.runelite.client.plugins.cluescrolls",
-                "net.runelite.client.plugins.devtools", "net.runelite.client.plugins.stretchedmode", "net.runelite.client.plugins.gpu", "net.runelite.client.plugins.rsnhider"));
+        pluginManager.loadRuneliteCorePlugins();
 
-        // Start plugins later so we can already login
+        microbotPluginManager.loadCorePlugins(pluginsToDebug);
+
         pluginManager.startPlugins();
 
         if (telemetryClient != null) {
@@ -456,13 +458,15 @@ public class RuneLiteDebug {
     }
 
     @VisibleForTesting
-    static OkHttpClient buildHttpClient(boolean insecureSkipTlsVerification) {
+    static OkHttpClient buildHttpClient(boolean insecureSkipTlsVerification)
+    {
         OkHttpClient.Builder builder = new OkHttpClient.Builder()
                 .pingInterval(30, TimeUnit.SECONDS)
                 .addInterceptor(chain ->
                 {
                     Request request = chain.request();
-                    if (request.header("User-Agent") != null) {
+                    if (request.header("User-Agent") != null)
+                    {
                         return chain.proceed(request);
                     }
 
@@ -478,7 +482,8 @@ public class RuneLiteDebug {
                 {
                     // This has to be a network interceptor so it gets hit before the cache tries to store stuff
                     Response res = chain.proceed(chain.request());
-                    if (res.code() >= 400 && "GET".equals(res.request().method())) {
+                    if (res.code() >= 400 && "GET".equals(res.request().method()))
+                    {
                         // if the request 404'd we don't want to cache it because its probably temporary
                         res = res.newBuilder()
                                 .header("Cache-Control", "no-store")
@@ -487,13 +492,19 @@ public class RuneLiteDebug {
                     return res;
                 });
 
-        try {
-            if (insecureSkipTlsVerification || RuneLiteProperties.isInsecureSkipTlsVerification()) {
+        try
+        {
+            if (insecureSkipTlsVerification || RuneLiteProperties.isInsecureSkipTlsVerification())
+            {
                 setupInsecureTrustManager(builder);
-            } else {
+            }
+            else
+            {
                 setupTrustManager(builder);
             }
-        } catch (KeyStoreException | KeyManagementException | NoSuchAlgorithmException e) {
+        }
+        catch (KeyStoreException | KeyManagementException | NoSuchAlgorithmException e)
+        {
             log.warn("error setting up trust manager", e);
         }
 
