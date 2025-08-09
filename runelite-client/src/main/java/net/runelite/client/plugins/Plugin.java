@@ -24,6 +24,8 @@
  */
 package net.runelite.client.plugins;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Module;
@@ -74,5 +76,19 @@ public abstract class Plugin implements Module
 	public void setInjector(Injector injector)
 	{
 		this.injector = injector;
+	}
+
+	/**
+	 * plugin-hub -> Retrieves the version of the plugin from the plugin.json file.
+	 * @return
+	 */
+	public String getVersionFromJson() {
+		try {
+			String jsonContent = new String(getClass().getResourceAsStream("plugin.json").readAllBytes());
+			JsonObject jsonObject = new Gson().fromJson(jsonContent, JsonObject.class);
+			return jsonObject.get("version").getAsString();
+		} catch (Exception e) {
+			return "1.0.0"; // Default version if file cannot be read
+		}
 	}
 }
