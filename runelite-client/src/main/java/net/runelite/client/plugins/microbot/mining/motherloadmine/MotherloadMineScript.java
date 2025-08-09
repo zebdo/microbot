@@ -1,8 +1,7 @@
 package net.runelite.client.plugins.microbot.mining.motherloadmine;
 
-import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Stream;
+import java.util.concurrent.ThreadLocalRandom;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameObject;
@@ -35,7 +34,6 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
@@ -110,7 +108,7 @@ public class MotherloadMineScript extends Script
     {
         if (!super.run() || !Microbot.isLoggedIn())
         {
-            resetMiningState();
+            resetMiningState(true);
             return;
         }
 
@@ -162,18 +160,18 @@ public class MotherloadMineScript extends Script
             return;
         }
 
+		if (Rs2Inventory.isFull() && Rs2Inventory.hasItem(ItemID.PAYDIRT))
+		{
+			resetMiningState();
+			status = MLMStatus.DEPOSIT_HOPPER;
+			return;
+		}
+
 		int sackCount = Microbot.getVarbitValue(VarbitID.MOTHERLODE_SACK_TRANSMIT);
         if (sackCount >= maxSackSize || (shouldEmptySack && !Rs2Inventory.contains(ItemID.PAYDIRT)))
         {
             resetMiningState();
             status = MLMStatus.EMPTY_SACK;
-            return;
-        }
-
-        if (Rs2Inventory.isFull() && Rs2Inventory.hasItem(ItemID.PAYDIRT))
-        {
-            resetMiningState();
-			status = MLMStatus.DEPOSIT_HOPPER;
             return;
         }
         status = MLMStatus.MINING;
@@ -207,12 +205,9 @@ public class MotherloadMineScript extends Script
 
         if (walkToMiningSpot())
         {
-            if (!Rs2Player.isMoving())
-            {
-                attemptToMineVein();
-                Rs2Antiban.actionCooldown();
-                Rs2Antiban.takeMicroBreakByChance();
-            }
+			attemptToMineVein();
+			Rs2Antiban.actionCooldown();
+			Rs2Antiban.takeMicroBreakByChance();
         }
     }
 
@@ -234,6 +229,7 @@ public class MotherloadMineScript extends Script
         }
 
         shouldEmptySack = false;
+		shouldRepairWaterwheel = false;
         Rs2Antiban.takeMicroBreakByChance();
         status = MLMStatus.IDLE;
     }
@@ -260,10 +256,6 @@ public class MotherloadMineScript extends Script
 
 			dropHammerIfNeeded();
 			shouldRepairWaterwheel = false;
-			if (Microbot.getVarbitValue(VarbitID.MOTHERLODE_SACK_TRANSMIT) > maxSackSize - 28)
-			{
-				shouldEmptySack = true;
-			}
 		}
     }
 
@@ -294,10 +286,7 @@ public class MotherloadMineScript extends Script
 
 			shouldRepairWaterwheel = true;
 
-            if (Microbot.getVarbitValue(VarbitID.MOTHERLODE_SACK_TRANSMIT) > maxSackSize - 28)
-            {
-                shouldEmptySack = true;
-            }
+			shouldEmptySack = Microbot.getVarbitValue(VarbitID.MOTHERLODE_SACK_TRANSMIT) >= (maxSackSize - 28);
         }
         else
         {
@@ -449,7 +438,7 @@ public class MotherloadMineScript extends Script
         if (Rs2GameObject.interact(vein))
         {
             oreVein = vein;
-            sleepUntil(Rs2Player::isAnimating, 5_000);
+            sleepUntil(() -> Rs2Player.isAnimating() && oreVein.getWorldLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 2, 10_000);
             if (!Rs2Player.isAnimating()) {
 				oreVein = null;
 			}
@@ -544,11 +533,16 @@ public class MotherloadMineScript extends Script
         return height < UPPER_FLOOR_HEIGHT;
     }
 
-    private void resetMiningState()
+    private void resetMiningState(boolean force)
     {
         oreVein = null;
-        miningSpot = MLMMiningSpot.IDLE;
+        miningSpot = (ThreadLocalRandom.current().nextBoolean() || force) ? MLMMiningSpot.IDLE : miningSpot;
     }
+
+	private void resetMiningState()
+	{
+		resetMiningState(false);
+	}
 
 	private boolean hasHammer() {
 		return Rs2Equipment.isWearing("hammer") || Rs2Inventory.hasItem("hammer");
