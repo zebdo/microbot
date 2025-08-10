@@ -44,6 +44,7 @@ import java.util.Collections;
 import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.TimeUnit;
+import net.runelite.client.plugins.mining.MiningAnimation;
 
 @Slf4j
 public class MotherloadMineScript extends Script
@@ -381,18 +382,21 @@ public class MotherloadMineScript extends Script
             else {
                 int randomChoice = Math.toIntExact(Arrays.stream(MLMMiningSpot.values()).filter(s -> s.getWorldPoint() != null && s.isDownstairs()).count());
                 switch (randomChoice) {
-                    case 0:
+                    case 1:
                         miningSpot = MLMMiningSpot.WEST_LOWER;
                         break;
-                    case 1:
+                    case 2:
                         miningSpot = MLMMiningSpot.WEST_MID;
                         break;
-                    case 2:
+                    case 3:
                         miningSpot = MLMMiningSpot.SOUTH_WEST;
                         break;
-                    case 3:
+                    case 4:
                         miningSpot = MLMMiningSpot.SOUTH_EAST;
                         break;
+					default:
+						miningSpot = MLMMiningSpot.WEST_LOWER;
+						break;
                 }
             }
         } else {
@@ -444,12 +448,13 @@ public class MotherloadMineScript extends Script
             repositionCameraAndMove();
             return;
         }
-        // once a vein is found and ready to be interacted (mined), trigger the pickaxe special attack function
+
         handlePickaxeSpec();
+
         if (Rs2GameObject.interact(vein))
         {
             oreVein = vein;
-            sleepUntil(() -> Rs2Player.isAnimating() && oreVein.getWorldLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 2, 10_000);
+            sleepUntil(() -> AntibanPlugin.isMining() && oreVein.getWorldLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 2, 10_000);
             if (!Rs2Player.isAnimating()) {
 				oreVein = null;
 			}
