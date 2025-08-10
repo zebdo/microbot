@@ -4,6 +4,7 @@ import java.awt.Rectangle;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -197,9 +198,9 @@ public class MotherloadMineScript extends Script
         maxSackSize = sackUpgraded ? SACK_LARGE_SIZE : SACK_SIZE;
     }
 
-    private void handleMining()
-    {
-        if (oreVein != null && AntibanPlugin.isMining()) return;
+	private void handleMining()
+	{
+		if (oreVein != null && AntibanPlugin.isMining()) return;
 
 		if (Rs2Gembag.isUnknown()) {
 			Rs2Gembag.checkGemBag();
@@ -207,18 +208,22 @@ public class MotherloadMineScript extends Script
 
 		shouldRepairWaterwheel = false;
 
-        if (miningSpot == MLMMiningSpot.IDLE)
-        {
-            selectMiningSpotFromConfig();
-        }
+		if (miningSpot == MLMMiningSpot.IDLE)
+		{
+			selectMiningSpotFromConfig();
+		}
 
-        if (walkToMiningSpot())
-        {
-			attemptToMineVein();
+		if (!walkToMiningSpot()) return;
+
+		if (attemptToMineVein())
+		{
 			Rs2Antiban.actionCooldown();
 			Rs2Antiban.takeMicroBreakByChance();
-        }
-    }
+		} else {
+			oreVein = null;
+		}
+	}
+
 
     private void emptySack()
     {
@@ -483,24 +488,24 @@ public class MotherloadMineScript extends Script
         return Rs2Walker.walkTo(target, 10);
     }
 
-    private void attemptToMineVein() {
-        WallObject vein = findClosestVein();
-        if (vein == null) {
-            repositionCameraAndMove();
-            return;
-        }
+	private boolean attemptToMineVein() {
+		WallObject vein = findClosestVein();
+		if (vein == null) {
+			repositionCameraAndMove();
+			return false;
+		}
 
-        handlePickaxeSpec();
+		handlePickaxeSpec();
 
-        if (Rs2GameObject.interact(vein))
-        {
-            oreVein = vein;
-            sleepUntil(() -> AntibanPlugin.isMining() && oreVein.getWorldLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 2, 10_000);
-            if (!Rs2Player.isAnimating()) {
-				oreVein = null;
-			}
-        }
-    }
+		if (!Rs2GameObject.interact(vein)) return false;
+		oreVein = vein;
+
+		return sleepUntil(() -> {
+			WallObject _vein = Rs2GameObject.getWallObject(o -> Objects.equals(o.getWorldLocation(), vein.getWorldLocation()));
+			if (_vein == null || !isValidVein(_vein)) return false;
+			return AntibanPlugin.isMining() && _vein.getWorldLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) <= 2;
+		}, 10_000);
+	}
 
     private WallObject findClosestVein()
     {
