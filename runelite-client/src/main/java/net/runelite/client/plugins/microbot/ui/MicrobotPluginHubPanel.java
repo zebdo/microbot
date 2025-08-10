@@ -34,7 +34,6 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.config.PluginSearch;
 import net.runelite.client.plugins.config.SearchablePlugin;
-import net.runelite.client.plugins.config.TopLevelConfigPanel;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginClient;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManifest;
@@ -171,6 +170,8 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             this.userCount = userCount;
             this.installed = installed;
 
+            var currentVersion = loadedPlugins.isEmpty() ? manifest.getVersion() : loadedPlugins.iterator().next().getClass().getAnnotation(PluginDescriptor.class).version();
+
             Collections.addAll(keywords, SPACES.split(manifest.getDisplayName()));
 
             Collections.addAll(keywords, SPACES.split(manifest.getDescription()));
@@ -193,9 +194,9 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             author.setFont(FontManager.getRunescapeSmallFont());
             author.setToolTipText(manifest.getAuthor());
 
-            JLabel version = new JLabel(manifest.getVersion());
+            JLabel version = new JLabel(currentVersion);
             version.setFont(FontManager.getRunescapeSmallFont());
-            version.setToolTipText(manifest.getVersion());
+            version.setToolTipText(currentVersion);
 
             String descriptionText = manifest.getDescription();
 
@@ -243,21 +244,42 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             if (!installed) {
                 addrm.setText("Install");
                 addrm.setBackground(new Color(0x28BE28));
-                addrm.addActionListener(l ->
-                {
+                addrm.addActionListener(l -> {
                     addrm.setText("Installing");
                     addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
                     microbotPluginManager.install(manifest);
                 });
             } else if (installed) {
-                addrm.setText("Remove");
-                addrm.setBackground(new Color(0xBE2828));
-                addrm.addActionListener(l ->
-                {
-                    addrm.setText("Removing");
-                    addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                    microbotPluginManager.remove(manifest.getInternalName());
-                });
+                // Check if update is available
+                boolean updateAvailable = false;
+                if (!loadedPlugins.isEmpty()) {
+                    Plugin loadedPlugin = loadedPlugins.iterator().next();
+                    PluginDescriptor descriptor = loadedPlugin.getClass().getAnnotation(PluginDescriptor.class);
+                    String loadedVersion = descriptor != null ? descriptor.version() : "0";
+                    String manifestVersion = manifest.getVersion();
+
+                    updateAvailable = !loadedVersion.equals(manifestVersion);
+                }
+
+                if (updateAvailable) {
+                    addrm.setText("Update");
+                    addrm.setBackground(new Color(0x1E90FF)); // Dodger Blue
+                    addrm.addActionListener(l -> {
+                        addrm.setText("Updating");
+                        addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
+                        microbotPluginManager.remove(manifest.getInternalName());
+                        microbotPluginManager.install(manifest); // This will update the plugin
+                        reloadPluginList();
+                    });
+                } else {
+                    addrm.setText("Remove");
+                    addrm.setBackground(new Color(0xBE2828));
+                    addrm.addActionListener(l -> {
+                        addrm.setText("Removing");
+                        addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
+                        microbotPluginManager.remove(manifest.getInternalName());
+                    });
+                }
             } else {
                 addrm.setText("Unavailable");
                 addrm.setBackground(Color.GRAY);
@@ -316,7 +338,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
         }
     }
 
-    private final TopLevelConfigPanel topLevelConfigPanel;
+    private final MicrobotTopLevelConfigPanel topLevelConfigPanel;
     private final MicrobotPluginManager microbotPluginManager;
     private final PluginManager pluginManager;
     private final MicrobotPluginClient microbotPluginClient;
@@ -332,7 +354,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
 
     @Inject
     MicrobotPluginHubPanel(
-            TopLevelConfigPanel topLevelConfigPanel,
+            MicrobotTopLevelConfigPanel topLevelConfigPanel,
             MicrobotPluginManager microbotPluginManager,
             PluginManager pluginManager,
             MicrobotPluginClient microbotPluginClient,

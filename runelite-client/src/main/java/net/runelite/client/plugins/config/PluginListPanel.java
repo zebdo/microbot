@@ -175,7 +175,7 @@ class PluginListPanel extends PluginPanel {
 
         // Might add a different check later if needed, but for now, we consider external plugins as those
         Predicate<Plugin> isExternalPlugin = plugin ->
-                plugin.getClass().getPackageName().isEmpty();
+                plugin.getClass().getAnnotation(PluginDescriptor.class).isExternal();
 
         // populate pluginList with all non-hidden plugins
         pluginList = Stream.concat(
