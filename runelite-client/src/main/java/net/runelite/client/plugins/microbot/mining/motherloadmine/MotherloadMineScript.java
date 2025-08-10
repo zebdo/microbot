@@ -81,7 +81,6 @@ public class MotherloadMineScript extends Script
     public static WallObject oreVein;
     public static MLMMiningSpot miningSpot = MLMMiningSpot.IDLE;
     private int maxSackSize;
-	private Rectangle motherloadSackBounds;
 	private Set<String> itemsToKeep;
 
 	private final MotherloadMinePlugin plugin;
@@ -336,8 +335,7 @@ public class MotherloadMineScript extends Script
 
 			Rectangle gameObjectBounds = getMotherloadSackBounds();
 			Rectangle depositBoxBounds = Rs2DepositBox.getDepositBoxBounds();
-			if (gameObjectBounds != null && depositBoxBounds != null &&
-				(!Rs2UiHelper.isRectangleWithinViewport(gameObjectBounds) || Rs2UiHelper.isRectangleWithinRectangle(depositBoxBounds, gameObjectBounds))) {
+			if (depositBoxBounds != null && (!Rs2UiHelper.isRectangleWithinViewport(gameObjectBounds) || depositBoxBounds.intersects(gameObjectBounds))) {
 				Rs2DepositBox.closeDepositBox();
 			}
         }
@@ -655,15 +653,9 @@ public class MotherloadMineScript extends Script
 		}
 	}
 
-	/*
-		TODO: this needs to be further tested.
-	 */
 	private Rectangle getMotherloadSackBounds() {
-		if (motherloadSackBounds == null) {
-			TileObject sack = Rs2GameObject.getAll(o -> o.getId() == ObjectID.MOTHERLODE_SACK).stream().findFirst().orElse(null);
-			motherloadSackBounds = Rs2UiHelper.getObjectClickbox(sack);
-		}
-		return motherloadSackBounds;
+		TileObject sack = Rs2GameObject.getAll(o -> o.getId() == ObjectID.MOTHERLODE_SACK).stream().findFirst().orElse(null);
+		return Rs2UiHelper.getObjectClickbox(sack);
 	}
 
 	private int getBrokenStrutCount() {
