@@ -250,7 +250,7 @@ public class PluginManager {
 
 
             /**
-             * /ODO: Over itme these should be moved into a core folder within the microbot plugins folder
+             * TODO: Over time these should be moved into a core folder within the microbot plugins folder
              * This way we can easily detect any core plugins required to run microbot
              */
             if (pkg.contains(".microbot") && (
