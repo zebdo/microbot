@@ -401,8 +401,8 @@ public class MicrobotPluginHubPanel extends PluginPanel {
         });
 
         JLabel externalPluginWarning1 = new JLabel("<html>Microbot plugins are verified to not be " +
-                "malicious or rule-breaking, but are not " +
-                "maintained by the RuneLite developers. " +
+                "malicious, but are not " +
+                "maintained by the Microbot developers. " +
                 "They may cause bugs or instability.</html>");
         externalPluginWarning1.setBackground(new Color(0xFFBB33));
         externalPluginWarning1.setForeground(Color.BLACK);
