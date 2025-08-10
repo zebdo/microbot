@@ -1,7 +1,6 @@
 package net.runelite.client.plugins.microbot.sandcrabs;
 
 import com.google.inject.Provides;
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.Subscribe;
