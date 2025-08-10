@@ -80,7 +80,6 @@ public class MicrobotPluginHubPanel extends PluginPanel {
     private static final ImageIcon MISSING_ICON;
     private static final ImageIcon HELP_ICON;
     private static final ImageIcon CONFIGURE_ICON;
-    private static final ImageIcon PLUGIN_UNAVAILABLE_ICON;
     private static final Pattern SPACES = Pattern.compile(" +");
 
     static {
@@ -92,28 +91,27 @@ public class MicrobotPluginHubPanel extends PluginPanel {
 
         BufferedImage configureIcon = ImageUtil.loadImageResource(MicrobotPluginHubPanel.class, "pluginhub_configure.png");
         CONFIGURE_ICON = new ImageIcon(configureIcon);
-
-        PLUGIN_UNAVAILABLE_ICON = new ImageIcon(ImageUtil.loadImageResource(MicrobotPluginHubPanel.class, "mdi_alert.png"));
     }
 
     private class PluginIcon extends JLabel {
-        @Nullable
-        private final MicrobotPluginManifest manifest;
         private boolean loadingStarted;
-        private boolean loaded;
+        private String iconUrl;
 
-        PluginIcon(MicrobotPluginManifest manifest) {
+        private boolean hasIcon() {
+            return !iconUrl.isBlank();
+        }
+
+        PluginIcon(String iconUrl) {
             setIcon(MISSING_ICON);
 
-            this.manifest = manifest.hasIcon() ? manifest : null;
-            this.loaded = !manifest.hasIcon();
+            this.iconUrl = iconUrl;
         }
 
         @Override
         public void paint(Graphics g) {
             super.paint(g);
 
-            if (!loaded && !loadingStarted) {
+            if (!loadingStarted) {
                 loadingStarted = true;
                 synchronized (iconLoadQueue) {
                     iconLoadQueue.add(this);
@@ -126,15 +124,14 @@ public class MicrobotPluginHubPanel extends PluginPanel {
 
         private void load() {
             try {
-                BufferedImage img = microbotPluginClient.downloadIcon(manifest);
+                BufferedImage img = microbotPluginClient.downloadIcon(iconUrl);
                 if (img == null) {
                     return;
                 }
 
-                loaded = true;
                 SwingUtilities.invokeLater(() -> setIcon(new ImageIcon(img)));
             } catch (IOException e) {
-                log.info("Cannot download icon for plugin \"{}\"", manifest.getInternalName(), e);
+                log.info("Cannot download icon \"{}\"", iconUrl, e);
             }
         }
     }
@@ -166,8 +163,6 @@ public class MicrobotPluginHubPanel extends PluginPanel {
         private static final int ICON_WIDTH = 48;
         private static final int BOTTOM_LINE_HEIGHT = 16;
 
-        private final MicrobotPluginManifest manifest;
-
         @Getter
         private final List<String> keywords = new ArrayList<>();
 
@@ -176,25 +171,21 @@ public class MicrobotPluginHubPanel extends PluginPanel {
 
         @Getter
         private final boolean installed;
+        private Plugin plugin;
 
-        PluginItem(MicrobotPluginManifest manifest, Collection<Plugin> loadedPlugins, int userCount, boolean installed) {
-            this.manifest = manifest;
+        PluginItem(Collection<Plugin> loadedPlugins, int userCount, boolean installed, MicrobotPluginManifest manifest) {
+            plugin = loadedPlugins.stream().iterator().next();
+            var pluginDescriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
             this.userCount = userCount;
             this.installed = installed;
 
-            Collections.addAll(keywords, SPACES.split(manifest.getDisplayName().toLowerCase()));
+            Collections.addAll(keywords, SPACES.split(pluginDescriptor.name()));
 
-            if (manifest.getDescription() != null) {
-                Collections.addAll(keywords, SPACES.split(manifest.getDescription().toLowerCase()));
-            }
+            Collections.addAll(keywords, SPACES.split(pluginDescriptor.description()));
 
-            if (manifest.getAuthor() != null) {
-                Collections.addAll(keywords, manifest.getAuthor().toLowerCase());
-            }
+            Collections.addAll(keywords, pluginDescriptor.author());
 
-            if (manifest.getTags() != null) {
-                Collections.addAll(keywords, manifest.getTags());
-            }
+            Collections.addAll(keywords, pluginDescriptor.tags());
 
             setBackground(ColorScheme.DARKER_GRAY_COLOR);
             setOpaque(true);
@@ -202,22 +193,19 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             GroupLayout layout = new GroupLayout(this);
             setLayout(layout);
 
-            JLabel pluginName = new JLabel(manifest.getDisplayName());
+            JLabel pluginName = new JLabel(pluginDescriptor.name());
             pluginName.setFont(FontManager.getRunescapeBoldFont());
-            pluginName.setToolTipText(manifest.getDisplayName());
+            pluginName.setToolTipText(pluginDescriptor.name());
 
-            JLabel author = new JLabel(manifest.getAuthor());
+            JLabel author = new JLabel(pluginDescriptor.author());
             author.setFont(FontManager.getRunescapeSmallFont());
-            author.setToolTipText(manifest.getAuthor());
+            author.setToolTipText(pluginDescriptor.author());
 
-            JLabel version = new JLabel(manifest.getVersion());
+            JLabel version = new JLabel(pluginDescriptor.version());
             version.setFont(FontManager.getRunescapeSmallFont());
-            version.setToolTipText(manifest.getVersion());
+            version.setToolTipText(pluginDescriptor.version());
 
-            String descriptionText = manifest.getDescription();
-            if (!Strings.isNullOrEmpty(manifest.getUnavailableReason())) {
-                descriptionText = manifest.getUnavailableReason();
-            }
+            String descriptionText = pluginDescriptor.description();
 
             if (!descriptionText.startsWith("<html>")) {
                 descriptionText = "<html>" + HtmlEscapers.htmlEscaper().escape(descriptionText) + "</html>";
@@ -227,21 +215,17 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             description.setVerticalAlignment(JLabel.TOP);
             description.setToolTipText(descriptionText);
 
-            JLabel icon = new PluginIcon(manifest);
+            JLabel icon = new PluginIcon(pluginDescriptor.iconUrl());
             icon.setHorizontalAlignment(JLabel.CENTER);
 
             JLabel badge = new JLabel();
-            if (manifest.getUnavailableReason() != null) {
-                badge.setIcon(PLUGIN_UNAVAILABLE_ICON);
-                badge.setToolTipText(descriptionText);
-            }
 
             JButton help = new JButton(HELP_ICON);
             SwingUtil.removeButtonDecorations(help);
             help.setBorder(null);
             help.setToolTipText("Open help");
-            if (manifest.getSupportUrl() != null) {
-                help.addActionListener(ev -> LinkBrowser.browse("https://chsami.github.io/Microbot-Hub/" + manifest.getInternalName()));
+            if (pluginDescriptor.supportUrl() != null) {
+                help.addActionListener(ev -> LinkBrowser.browse("https://chsami.github.io/Microbot-Hub/" + plugin.getClass().getSimpleName()));
             } else {
                 help.setVisible(false);
             }
@@ -253,9 +237,8 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             if (!loadedPlugins.isEmpty()) {
                 String search = null;
                 if (loadedPlugins.size() > 1) {
-                    search = manifest.getInternalName();
+                    search = plugin.getClass().getSimpleName();
                 } else {
-                    Plugin plugin = loadedPlugins.iterator().next();
                     configure.addActionListener(l -> topLevelConfigPanel.openConfigurationPanel(plugin));
                 }
 
@@ -267,39 +250,24 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                 configure.setVisible(false);
             }
 
-            boolean isUnavailable = manifest.getUnavailableReason() != null;
-            boolean canInstall = !installed && !isUnavailable;
-            boolean canRemove = installed && !isUnavailable;
-
             JButton addrm = new JButton();
-            if (canInstall) {
+            if (!installed) {
                 addrm.setText("Install");
                 addrm.setBackground(new Color(0x28BE28));
                 addrm.addActionListener(l ->
                 {
-                    if (manifest.getWarning() != null) {
-                        int result = JOptionPane.showConfirmDialog(
-                                this,
-                                "<html><p>" + manifest.getWarning() + "</p><strong>Are you sure you want to install this plugin?</strong></html>",
-                                "Installing " + manifest.getDisplayName(),
-                                JOptionPane.YES_NO_OPTION,
-                                JOptionPane.WARNING_MESSAGE);
-                        if (result != JOptionPane.OK_OPTION) {
-                            return;
-                        }
-                    }
                     addrm.setText("Installing");
                     addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                    microbotPluginManager.install(manifest);
+                    microbotPluginManager.install(plugin, manifest);
                 });
-            } else if (canRemove) {
+            } else if (installed) {
                 addrm.setText("Remove");
                 addrm.setBackground(new Color(0xBE2828));
                 addrm.addActionListener(l ->
                 {
                     addrm.setText("Removing");
                     addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                    microbotPluginManager.remove(manifest.getInternalName());
+                    microbotPluginManager.remove(plugin.getClass().getSimpleName());
                 });
             } else {
                 addrm.setText("Unavailable");
@@ -537,34 +505,27 @@ public class MicrobotPluginHubPanel extends PluginPanel {
 
     private void reloadPluginList(List<MicrobotPluginManifest> manifest, Map<String, Integer> pluginCounts) {
         lastManifest = manifest;
-        Map<String, MicrobotPluginManifest> displayMap = manifest.stream()
-                .collect(Collectors.toMap(MicrobotPluginManifest::getInternalName, Function.identity()));
 
-        Multimap<String, Plugin> loadedPlugins = HashMultimap.create();
-
-        Predicate<Plugin> isMicrobotPlugin = plugin ->
-                plugin.getClass().getPackage().getName().toLowerCase().contains("microbot");
-
-        // Might add a different check later if needed, but for now, we consider external plugins as those
         Predicate<Plugin> isExternalPluginPredicate = plugin ->
-                plugin.getClass().getPackageName().isEmpty();
+                plugin.getClass().getAnnotation(PluginDescriptor.class).isExternal();
 
-        for (Plugin p : pluginManager.getPlugins()
+        List<Plugin> loadedPlugins = pluginManager.getPlugins()
                 .stream()
                 .filter(plugin -> !plugin.getClass().getAnnotation(PluginDescriptor.class).hidden())
-                .filter(p -> p.getClass().getPackageName().isEmpty())
-                .filter(isMicrobotPlugin.or(isExternalPluginPredicate))
-                .collect(Collectors.toList())) {
-            // external plugins
-            loadedPlugins.put(p.getClass().getSimpleName(), p);
-        }
+                .filter(isExternalPluginPredicate)
+                .collect(Collectors.toList());
 
         Set<String> installed = new HashSet<>(microbotPluginManager.getInstalledPlugins());
 
-        plugins = Sets.union(displayMap.keySet(), loadedPlugins.keySet())
-                .stream()
-                .map(id -> new PluginItem(displayMap.get(id), loadedPlugins.get(id),
-                        pluginCounts.getOrDefault(id, -1), installed.contains(id)))
+        var pluginManifest = manifest.stream()
+                .filter(x -> x.getInternalName().equalsIgnoreCase(plugins.getClass().getSimpleName()))
+                .findFirst()
+                .orElse(null);
+
+        plugins = loadedPlugins.stream()
+                .map(plugin -> new PluginItem(Collections.singleton(plugin),
+                        pluginCounts.getOrDefault(plugin.getClass().getSimpleName(), -1),
+                        installed.contains(plugin.getClass().getSimpleName()), pluginManifest))
                 .collect(Collectors.toList());
 
         SwingUtilities.invokeLater(() ->
@@ -590,11 +551,10 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             pluginItems = PluginSearch.search(plugins, query);
         } else {
             pluginItems = plugins.stream()
-                    .sorted(Comparator.comparing((PluginItem p) -> p.manifest.getUnavailableReason() != null)
-                            .thenComparing(PluginItem::isInstalled)
+                    .sorted(Comparator.comparing(PluginItem::isInstalled)
                             .thenComparingInt(PluginItem::getUserCount)
                             .reversed()
-                            .thenComparing(p -> p.manifest.getDisplayName())
+                            .thenComparing(p -> p.plugin.getClass().getSimpleName())
                     )
                     .collect(Collectors.toList());
         }
@@ -635,7 +595,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             refreshing.setVisible(true);
 
             Map<String, Integer> pluginCounts = plugins == null ? Collections.emptyMap()
-                    : plugins.stream().collect(Collectors.toMap(pi -> pi.manifest.getInternalName(), PluginItem::getUserCount));
+                    : plugins.stream().collect(Collectors.toMap(pi -> pi.plugin.getClass().getSimpleName(), PluginItem::getUserCount));
             executor.submit(() -> reloadPluginList(lastManifest, pluginCounts));
         }
     }

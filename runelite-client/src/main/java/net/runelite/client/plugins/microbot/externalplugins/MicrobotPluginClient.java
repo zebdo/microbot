@@ -28,6 +28,8 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.PluginDescriptor;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -85,14 +87,9 @@ public class MicrobotPluginClient
     /**
      * Downloads plugin icon from the Microbot Hub
      */
-    public BufferedImage downloadIcon(MicrobotPluginManifest plugin) throws IOException
+    public BufferedImage downloadIcon(String iconUrl) throws IOException
     {
-        if (plugin.getIconUrl() == null)
-        {
-            return null;
-        }
-
-        HttpUrl url = HttpUrl.parse(plugin.getIconUrl());
+        HttpUrl url = HttpUrl.parse(iconUrl);
         if (url == null)
         {
             return null;
@@ -112,9 +109,19 @@ public class MicrobotPluginClient
     /**
      * Returns the URL for downloading a plugin JAR
      */
-    public HttpUrl getJarURL(MicrobotPluginManifest plugin)
+    public HttpUrl getJarURL(Plugin plugin)
     {
-        return HttpUrl.parse(plugin.getUrl());
+        var descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
+        var url  = "https://nexus.microbot.cloud/repository/microbot-plugins/net/runelite/client/plugins/microbot/"
+                + plugin.getClass().getSimpleName() +
+                "/"
+                + descriptor.version() +
+                "/"
+                + plugin.getClass().getSimpleName().toLowerCase() +
+                "-"
+                + descriptor.version() +
+                ".jar";
+        return HttpUrl.parse(url);
     }
 
     /**

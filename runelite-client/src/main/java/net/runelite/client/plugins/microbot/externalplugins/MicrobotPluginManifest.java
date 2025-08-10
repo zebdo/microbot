@@ -35,7 +35,6 @@ public class MicrobotPluginManifest {
     /**
      * Unique identifier for the plugin
      */
-    @SerializedName("id")
     private String internalName;
 
     /**

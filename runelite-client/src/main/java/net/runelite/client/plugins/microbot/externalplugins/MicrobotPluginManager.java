@@ -126,7 +126,7 @@ public class MicrobotPluginManager
         return plugins;
     }
 
-    private void saveInstalledPlugins(List<String> plugins)
+    public void saveInstalledPlugins(List<String> plugins)
     {
         try
         {
@@ -143,7 +143,7 @@ public class MicrobotPluginManager
         return new File(PLUGIN_DIR, internalName + ".jar");
     }
 
-    public void install(MicrobotPluginManifest plugin)
+    public void install(Plugin plugin, MicrobotPluginManifest manifest)
     {
         executor.execute(() -> {
             try
@@ -151,7 +151,7 @@ public class MicrobotPluginManager
                 HttpUrl url = microbotPluginClient.getJarURL(plugin);
                 if (url == null)
                 {
-                    log.error("Invalid URL for plugin: {}", plugin.getInternalName());
+                    log.error("Invalid URL for plugin: {}", plugin.getClass().getSimpleName());
                     return;
                 }
 
@@ -163,36 +163,37 @@ public class MicrobotPluginManager
                 {
                     if (!response.isSuccessful())
                     {
-                        log.error("Error downloading plugin: {}, code: {}", plugin.getInternalName(), response.code());
+                        log.error("Error downloading plugin: {}, code: {}", plugin.getClass().getSimpleName(), response.code());
                         return;
                     }
 
                     byte[] jarData = response.body().bytes();
 
                     // Verify the SHA-256 hash
-                    if (!verifyHash(jarData, plugin.getSha256()))
+                    if (!verifyHash(jarData, manifest.getSha256()))
                     {
-                        log.error("Plugin hash verification failed for: {}", plugin.getInternalName());
+                        log.error("Plugin hash verification failed for: {}", plugin.getClass().getSimpleName());
                         return;
                     }
 
                     // Save the jar file
-                    File pluginFile = getPluginJarFile(plugin.getInternalName());
+                    File pluginFile = getPluginJarFile(plugin.getClass().getSimpleName());
                     Files.write(jarData, pluginFile);
 
-                    loadSideLoadPlugins(Collections.singletonList(pluginFile.getName()));
-
                     List<String> plugins = getInstalledPlugins();
-                    if (!plugins.contains(plugin.getInternalName()))
+                    if (!plugins.contains(plugin.getClass().getSimpleName()))
                     {
-                        plugins.add(plugin.getInternalName());
+                        plugins.add(plugin.getClass().getSimpleName());
                         saveInstalledPlugins(plugins);
                     }
+
+                    loadSideLoadPlugins();
+
                 }
             }
             catch (IOException e)
             {
-                log.error("Error installing plugin: {}", plugin.getInternalName(), e);
+                log.error("Error installing plugin: {}", plugin.getClass().getSimpleName(), e);
             }
         });
     }
@@ -264,9 +265,8 @@ public class MicrobotPluginManager
 
     /**
      * Load plugins from the sideloading folder, matching the provided jar names.
-     * @param jarNames
      */
-    public void loadSideLoadPlugins(List<String> jarNames) {
+    public void loadSideLoadPlugins() {
         File[] files = createSideloadingFolder();
         if (files == null)
         {
@@ -275,9 +275,16 @@ public class MicrobotPluginManager
 
         for (File f : files)
         {
-            boolean match = jarNames.isEmpty() || jarNames.stream().anyMatch(x -> x.equalsIgnoreCase(f.getName()));
+            var installedPlugins = getInstalledPlugins();
 
-            if (!match) continue;
+            var match = installedPlugins.stream()
+                    .filter(x -> x.equals(f.getName().replace(".jar", "")))
+                    .findFirst();
+
+            if (!match.isPresent())
+            {
+                continue; // Skip if the plugin is not in the installed list
+            }
 
             if (f.getName().endsWith(".jar"))
             {
