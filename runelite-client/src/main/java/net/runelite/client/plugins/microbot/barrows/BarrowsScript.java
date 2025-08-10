@@ -1412,6 +1412,7 @@ public class BarrowsScript extends Script {
                     if(Rs2Widget.getWidget(widget).getModelId() == modelID || random <= secondRandom){
                         Microbot.log("Solution found");
                         Rs2Widget.clickWidget(widget);
+                        break;
                     }
                 }
             } else {
