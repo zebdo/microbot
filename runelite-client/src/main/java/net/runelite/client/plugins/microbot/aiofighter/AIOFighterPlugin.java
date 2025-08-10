@@ -20,6 +20,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.aiofighter.bank.BankerScript;
 import net.runelite.client.plugins.microbot.aiofighter.cannon.CannonScript;
 import net.runelite.client.plugins.microbot.aiofighter.combat.*;
+import net.runelite.client.plugins.microbot.aiofighter.loot.EatForSpaceScript;
 import net.runelite.client.plugins.microbot.aiofighter.enums.PrayerStyle;
 import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.aiofighter.loot.LootScript;
@@ -72,6 +73,7 @@ public class AIOFighterPlugin extends Plugin {
     private final AttackNpcScript attackNpc = new AttackNpcScript();
 
     private final FoodScript foodScript = new FoodScript();
+    private final EatForSpaceScript eatForSpaceScript = new EatForSpaceScript();
     private final LootScript lootScript = new LootScript();
     private final SafeSpot safeSpotScript = new SafeSpot();
     private final FlickerScript flickerScript = new FlickerScript();
@@ -150,6 +152,7 @@ public class AIOFighterPlugin extends Plugin {
         Microbot.getSpecialAttackConfigs()
                 .setSpecialAttack(true);
         Rs2Slayer.blacklistedSlayerMonsters = getBlacklistedSlayerNpcs();
+        eatForSpaceScript.run(config);  // Run eat for space BEFORE banking decisions
         bankerScript.run(config);
         shopScript.run(config);
     }
@@ -160,6 +163,7 @@ public class AIOFighterPlugin extends Plugin {
         cannonScript.shutdown();
         attackNpc.shutdown();
         foodScript.shutdown();
+        eatForSpaceScript.shutdown();
         safeSpotScript.shutdown();
         flickerScript.shutdown();
         useSpecialAttackScript.shutdown();
