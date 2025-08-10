@@ -8,6 +8,7 @@ import net.runelite.client.plugins.microbot.aiofighter.enums.PrayerStyle;
 import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
+import net.runelite.client.plugins.microbot.util.misc.SpecialAttackWeaponEnum;
 import net.runelite.client.plugins.microbot.util.slayer.enums.SlayerMaster;
 
 @ConfigGroup(AIOFighterConfig.GROUP)
@@ -137,33 +138,21 @@ public interface AIOFighterConfig extends Config {
     }
 
     @ConfigItem(
-            keyName = "Custom spec weapon",
-            name = "Custom spec weapon",
-            description = "Name of weapon to switch to for special attack (leave empty to use current weapon)",
+            keyName = "Spec weapon",
+            name = "Spec weapon",
+            description = "Special attack weapon to use",
             position = 4,
             section = combatSection
     )
-    default String customSpecWeapon() {
-        return "";
-    }
-
-    @Range(min = 1, max = 100)
-    @ConfigItem(
-            keyName = "Spec attack cost",
-            name = "Spec attack cost %",
-            description = "Special attack energy cost percentage (1-100)",
-            position = 5,
-            section = combatSection
-    )
-    default int specAttackCost() {
-        return 100;
+    default SpecialAttackWeaponEnum specWeapon() {
+        return null;
     }
 
     @ConfigItem(
             keyName = "Cannon",
             name = "Auto reload cannon",
             description = "Automatically reloads cannon",
-            position = 6,
+            position = 5,
             section = combatSection
     )
     default boolean toggleCannon() {
@@ -175,7 +164,7 @@ public interface AIOFighterConfig extends Config {
             keyName = "Safe Spot",
             name = "Safe Spot",
             description = "Shift Right-click the ground to select the safe spot tile",
-            position = 7,
+            position = 6,
             section = combatSection
     )
     default boolean toggleSafeSpot() {
@@ -187,7 +176,7 @@ public interface AIOFighterConfig extends Config {
             keyName = "PlayStyle",
             name = "Play Style",
             description = "Play Style",
-            position = 8,
+            position = 7,
             section = combatSection
     )
     default PlayStyle playStyle() {
@@ -198,7 +187,7 @@ public interface AIOFighterConfig extends Config {
             keyName = "ReachableNpcs",
             name = "Only attack reachable npcs",
             description = "Only attack npcs that we can reach with melee",
-            position = 9,
+            position = 8,
             section = combatSection
     )
     default boolean attackReachableNpcs() {
@@ -403,7 +392,7 @@ public interface AIOFighterConfig extends Config {
             keyName = "Center Tile",
             name = "Manual Center Tile",
             description = "Shift Right-click the ground to select the center tile",
-            position = 10,
+            position = 9,
             section = combatSection
     )
     default boolean toggleCenterTile() {
