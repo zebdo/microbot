@@ -135,6 +135,5 @@ public @interface PluginDescriptor
 	String version() default "1.0.0";
 	String minClientVersion() default "1.0.0";
 	String iconUrl() default "";
-	String supportUrl() default "";
 	boolean isExternal() default false; // Indicates if the plugin is an external plugin, loaded from a JAR file
 }

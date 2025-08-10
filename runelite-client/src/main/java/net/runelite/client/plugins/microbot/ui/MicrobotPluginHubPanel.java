@@ -216,11 +216,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             SwingUtil.removeButtonDecorations(help);
             help.setBorder(null);
             help.setToolTipText("Open help");
-            if (pluginDescriptor.supportUrl() != null) {
-                help.addActionListener(ev -> LinkBrowser.browse("https://chsami.github.io/Microbot-Hub/" + plugin.getClass().getSimpleName()));
-            } else {
-                help.setVisible(false);
-            }
+            help.addActionListener(ev -> LinkBrowser.browse("https://chsami.github.io/Microbot-Hub/" + plugin.getClass().getSimpleName()));
 
             JButton configure = new JButton(CONFIGURE_ICON);
             SwingUtil.removeButtonDecorations(configure);
