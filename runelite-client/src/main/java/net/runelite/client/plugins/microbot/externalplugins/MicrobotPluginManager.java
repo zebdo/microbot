@@ -1,45 +1,259 @@
-package net.runelite.client.plugins.microbot.sideloading;
+/*
+ * Copyright (c) 2023 Microbot
+ * All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions are met:
+ *
+ * 1. Redistributions of source code must retain the above copyright notice, this
+ *    list of conditions and the following disclaimer.
+ * 2. Redistributions in binary form must reproduce the above copyright notice,
+ *    this list of conditions and the following disclaimer in the documentation
+ *    and/or other materials provided with the distribution.
+ *
+ * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+ * ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE FOR
+ * ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+ * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+package net.runelite.client.plugins.microbot.externalplugins;
 
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.graph.Graph;
 import com.google.common.graph.GraphBuilder;
 import com.google.common.graph.Graphs;
 import com.google.common.graph.MutableGraph;
+import com.google.common.io.Files;
 import com.google.common.reflect.ClassPath;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
+import net.runelite.client.eventbus.EventBus;
+import net.runelite.client.events.ExternalPluginsChanged;
 import net.runelite.client.plugins.*;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.ui.SplashScreen;
+import okhttp3.HttpUrl;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
 import java.io.File;
+import java.io.FileReader;
 import java.io.IOException;
-import java.nio.file.Files;
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
-@Singleton
-@Slf4j
-public class MicrobotPluginManager {
 
+@Slf4j
+@Singleton
+public class MicrobotPluginManager
+{
+    private static final File PLUGIN_DIR = new File(RuneLite.RUNELITE_DIR, "microbot-plugins");
+    private static final File PLUGIN_LIST = new File(PLUGIN_DIR, "plugins.json");
+
+    private final OkHttpClient okHttpClient;
+    private final MicrobotPluginClient microbotPluginClient;
+    private final EventBus eventBus;
+    private final ScheduledExecutorService executor;
     private final PluginManager pluginManager;
+    private final Gson gson;
 
     @Inject
-    MicrobotPluginManager(PluginManager pluginManager) {
+    private MicrobotPluginManager(
+        OkHttpClient okHttpClient,
+        MicrobotPluginClient microbotPluginClient,
+        EventBus eventBus,
+        ScheduledExecutorService executor,
+        PluginManager pluginManager,
+        Gson gson)
+    {
+        this.okHttpClient = okHttpClient;
+        this.microbotPluginClient = microbotPluginClient;
+        this.eventBus = eventBus;
+        this.executor = executor;
         this.pluginManager = pluginManager;
+        this.gson = gson;
+
+        PLUGIN_DIR.mkdirs();
+
+        if (!PLUGIN_LIST.exists())
+        {
+            try
+            {
+                PLUGIN_LIST.createNewFile();
+                Files.asCharSink(PLUGIN_LIST, StandardCharsets.UTF_8).write("[]");
+            }
+            catch (IOException e)
+            {
+                log.error("Unable to create Microbot plugin list", e);
+            }
+        }
     }
 
+    public List<String> getInstalledPlugins()
+    {
+        List<String> plugins = new ArrayList<>();
+        try (FileReader reader = new FileReader(PLUGIN_LIST))
+        {
+            plugins = gson.fromJson(reader, new TypeToken<List<String>>(){}.getType());
+            if (plugins == null)
+            {
+                plugins = new ArrayList<>();
+            }
+        }
+        catch (IOException | com.google.gson.JsonSyntaxException e)
+        {
+            log.error("Error reading Microbot plugin list", e);
+        }
+        return plugins;
+    }
+
+    public void saveInstalledPlugins(List<String> plugins)
+    {
+        try
+        {
+            Files.asCharSink(PLUGIN_LIST, StandardCharsets.UTF_8).write(gson.toJson(plugins));
+        }
+        catch (IOException e)
+        {
+            log.error("Error writing Microbot plugin list", e);
+        }
+    }
+
+    private File getPluginJarFile(String internalName)
+    {
+        return new File(PLUGIN_DIR, internalName + ".jar");
+    }
+
+    public void install(Plugin plugin, MicrobotPluginManifest manifest)
+    {
+        executor.execute(() -> {
+            try
+            {
+                HttpUrl url = microbotPluginClient.getJarURL(plugin);
+                if (url == null)
+                {
+                    log.error("Invalid URL for plugin: {}", plugin.getClass().getSimpleName());
+                    return;
+                }
+
+                Request request = new Request.Builder()
+                    .url(url)
+                    .build();
+
+                try (Response response = okHttpClient.newCall(request).execute())
+                {
+                    if (!response.isSuccessful())
+                    {
+                        log.error("Error downloading plugin: {}, code: {}", plugin.getClass().getSimpleName(), response.code());
+                        return;
+                    }
+
+                    byte[] jarData = response.body().bytes();
+
+                    // Verify the SHA-256 hash
+                    if (!verifyHash(jarData, manifest.getSha256()))
+                    {
+                        log.error("Plugin hash verification failed for: {}", plugin.getClass().getSimpleName());
+                        return;
+                    }
+
+                    // Save the jar file
+                    File pluginFile = getPluginJarFile(plugin.getClass().getSimpleName());
+                    Files.write(jarData, pluginFile);
+
+                    List<String> plugins = getInstalledPlugins();
+                    if (!plugins.contains(plugin.getClass().getSimpleName()))
+                    {
+                        plugins.add(plugin.getClass().getSimpleName());
+                        saveInstalledPlugins(plugins);
+                    }
+
+                    loadSideLoadPlugins();
+
+                }
+            }
+            catch (IOException e)
+            {
+                log.error("Error installing plugin: {}", plugin.getClass().getSimpleName(), e);
+            }
+        });
+    }
+
+    public void remove(String internalName)
+    {
+        executor.execute(() -> {
+            // Remove the jar file
+            File pluginFile = getPluginJarFile(internalName);
+            if (pluginFile.exists() && !pluginFile.delete())
+            {
+                log.warn("Could not delete plugin file: {}", pluginFile);
+            }
+
+            pluginManager.remove(pluginManager.getPlugins().stream().filter(x -> x.getClass().getSimpleName().equals(internalName)).findFirst().orElse(null));
+
+            // Update installed plugins list
+            List<String> plugins = getInstalledPlugins();
+            if (plugins.contains(internalName))
+            {
+                plugins.remove(internalName);
+                saveInstalledPlugins(plugins);
+            }
+
+            // Notify for plugin change
+            eventBus.post(new ExternalPluginsChanged());
+        });
+    }
+
+    private boolean verifyHash(byte[] jarData, String expectedHash)
+    {
+        try
+        {
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
+            byte[] hash = digest.digest(jarData);
+
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : hash)
+            {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1)
+                {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+
+            return hexString.toString().equals(expectedHash);
+        }
+        catch (NoSuchAlgorithmException e)
+        {
+            log.error("Error verifying plugin hash", e);
+            return false;
+        }
+    }
     public static File[] createSideloadingFolder() {
         final File MICROBOT_PLUGINS = new File(RuneLite.RUNELITE_DIR, "microbot-plugins");
-        if (!Files.exists(MICROBOT_PLUGINS.toPath())) {
+        if (!java.nio.file.Files.exists(MICROBOT_PLUGINS.toPath())) {
             try {
-                Files.createDirectories(MICROBOT_PLUGINS.toPath());
+                java.nio.file.Files.createDirectories(MICROBOT_PLUGINS.toPath());
                 System.out.println("Directory for sideloading was created successfully.");
                 return MICROBOT_PLUGINS.listFiles();
             } catch (IOException e) {
@@ -51,9 +265,8 @@ public class MicrobotPluginManager {
 
     /**
      * Load plugins from the sideloading folder, matching the provided jar names.
-     * @param jarNames
      */
-    public void loadSideLoadPlugins(List<String> jarNames) {
+    public void loadSideLoadPlugins() {
         File[] files = createSideloadingFolder();
         if (files == null)
         {
@@ -62,9 +275,16 @@ public class MicrobotPluginManager {
 
         for (File f : files)
         {
-            boolean match = jarNames.isEmpty() || jarNames.stream().anyMatch(x -> x.equalsIgnoreCase(f.getName()));
+            var installedPlugins = getInstalledPlugins();
 
-            if (!match) continue;
+            var match = installedPlugins.stream()
+                    .filter(x -> x.equals(f.getName().replace(".jar", "")))
+                    .findFirst();
+
+            if (!match.isPresent())
+            {
+                continue; // Skip if the plugin is not in the installed list
+            }
 
             if (f.getName().endsWith(".jar"))
             {
@@ -81,6 +301,9 @@ public class MicrobotPluginManager {
                             .collect(Collectors.toList());
 
                     loadPlugins(plugins, null);
+
+                    eventBus.post(new ExternalPluginsChanged());
+
                 }
                 catch (PluginInstantiationException | IOException ex)
                 {
@@ -212,10 +435,10 @@ public class MicrobotPluginManager {
             Injector parent = Microbot.getInjector();
 
             if (deps.size() > 1) {
-                List<Module> modules = new ArrayList<>(deps.size());
+                List<com.google.inject.Module> modules = new ArrayList<>(deps.size());
                 for (Plugin p : deps) {
                     // Create a module for each dependency
-                    Module module = (Binder binder) ->
+                    com.google.inject.Module module = (Binder binder) ->
                     {
                         binder.bind((Class<Plugin>) p.getClass()).toInstance(p);
                         binder.install(p);
