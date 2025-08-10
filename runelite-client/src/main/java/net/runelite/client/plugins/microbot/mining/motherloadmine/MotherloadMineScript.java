@@ -1,7 +1,9 @@
 package net.runelite.client.plugins.microbot.mining.motherloadmine;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameObject;
@@ -347,12 +349,21 @@ public class MotherloadMineScript extends Script
 			}
 		} else {
 			Rs2InventorySetup mlmInventorySetup = new Rs2InventorySetup(config.getInventorySetup(), mainScheduledFuture);
+			boolean doesEquipmentMatch = true;
+			boolean doesInventoryMatch = true;
+
 			if (!mlmInventorySetup.doesEquipmentMatch()) {
-				mlmInventorySetup.loadEquipment();
+				doesEquipmentMatch = mlmInventorySetup.loadEquipment();
 			}
 
 			if (!mlmInventorySetup.doesInventoryMatch()) {
-				mlmInventorySetup.loadInventory();
+				doesInventoryMatch = mlmInventorySetup.loadInventory();
+			}
+
+			if (!doesEquipmentMatch || !doesInventoryMatch) {
+				Microbot.showMessage("Failed to load inventory setup. Please check your settings.");
+				Microbot.stopPlugin(plugin);
+				return;
 			}
 		}
 
@@ -368,7 +379,7 @@ public class MotherloadMineScript extends Script
                 miningSpot = Rs2Random.between(0, 1) == 0 ? MLMMiningSpot.WEST_UPPER : MLMMiningSpot.EAST_UPPER;
             }
             else {
-                int randomChoice = Rs2Random.between(0, 3);
+                int randomChoice = Math.toIntExact(Arrays.stream(MLMMiningSpot.values()).filter(s -> s.getWorldPoint() != null && s.isDownstairs()).count());
                 switch (randomChoice) {
                     case 0:
                         miningSpot = MLMMiningSpot.WEST_LOWER;
