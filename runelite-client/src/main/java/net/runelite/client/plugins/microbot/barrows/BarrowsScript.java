@@ -1395,6 +1395,8 @@ public class BarrowsScript extends Script {
 
         int widgets[] = {1638413, 1638415, 1638417};
         int modelIDs[] = {6725, 6731, 6713, 6719};
+        int random = Rs2Random.between(0,1000);
+        int secondRandom = Rs2Random.between(1,10);
 
         for (int widget : widgets) {
             if(!super.isRunning()) break;
@@ -1407,7 +1409,7 @@ public class BarrowsScript extends Script {
                 for (int modelID : modelIDs) {
                     if(!super.isRunning()) break;
 
-                    if(Rs2Widget.getWidget(widget).getModelId() == modelID){
+                    if(Rs2Widget.getWidget(widget).getModelId() == modelID || random <= secondRandom){
                         Microbot.log("Solution found");
                         Rs2Widget.clickWidget(widget);
                     }
