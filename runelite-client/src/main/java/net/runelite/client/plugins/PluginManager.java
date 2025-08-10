@@ -259,7 +259,8 @@ public class PluginManager {
                             || pkg.endsWith("microbot")
                             || pkg.contains(".shortestpath")
                             || pkg.contains(".rs2cachedebugger")
-                            || pkg.contains("pluginscheduler"))) {
+                            || pkg.contains("pluginscheduler")
+                            || pkg.contains("inventorysetups"))) {
                 microbotPlugins.add(clazz);
             } else if (!pkg.contains("microbot")) {
                 otherPlugins.add(clazz);
