@@ -2,12 +2,9 @@ package net.runelite.client.plugins.microbot.sandcrabs;
 
 import net.runelite.api.GameState;
 import net.runelite.api.NPC;
-import net.runelite.api.Quest;
-import net.runelite.api.QuestState;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
-import net.runelite.client.plugins.microbot.agility.MicroAgilityPlugin;
 import net.runelite.client.plugins.microbot.sandcrabs.enums.State;
 import net.runelite.client.plugins.microbot.sandcrabs.models.ScanLocation;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
