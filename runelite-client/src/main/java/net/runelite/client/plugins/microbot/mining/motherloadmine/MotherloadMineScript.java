@@ -1,14 +1,16 @@
 package net.runelite.client.plugins.microbot.mining.motherloadmine;
 
+import java.awt.Rectangle;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.stream.Collectors;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameObject;
 import net.runelite.api.Perspective;
 import net.runelite.api.Skill;
+import net.runelite.api.TileObject;
 import net.runelite.api.WallObject;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
@@ -35,6 +37,7 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -43,8 +46,8 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import net.runelite.client.plugins.mining.MiningAnimation;
 
 @Slf4j
 public class MotherloadMineScript extends Script
@@ -77,6 +80,9 @@ public class MotherloadMineScript extends Script
     public static WallObject oreVein;
     public static MLMMiningSpot miningSpot = MLMMiningSpot.IDLE;
     private int maxSackSize;
+	private Rectangle motherloadSackBounds;
+	private Set<String> itemsToKeep;
+
 	private final MotherloadMinePlugin plugin;
     private final MotherloadMineConfig config;
 
@@ -158,7 +164,7 @@ public class MotherloadMineScript extends Script
             return;
         }
 
-        if (shouldRepairWaterwheel && Rs2GameObject.getGameObjects(o -> o.getId() == ObjectID.MOTHERLODE_WHEEL_STRUT_BROKEN).size() > 1) {
+        if (shouldRepairWaterwheel && getBrokenStrutCount() > 1) {
             status = MLMStatus.FIXING_WATERWHEEL;
             return;
         }
@@ -255,7 +261,9 @@ public class MotherloadMineScript extends Script
 
 		if (Rs2GameObject.interact(ObjectID.MOTHERLODE_WHEEL_STRUT_BROKEN))
 		{
-			Rs2Player.waitForXpDrop(Skill.SMITHING, 10_000);
+			// We use a modified version of waitForXpDrop to ensure we break out of the sleep if the strut is repaired
+			final int skillExp = Microbot.getClient().getSkillExperience(Skill.SMITHING);
+			sleepUntilTrue(() -> skillExp != Microbot.getClient().getSkillExperience(Skill.SMITHING) || getBrokenStrutCount() <= 1, 100, 10_000);
 
 			dropHammerIfNeeded();
 			shouldRepairWaterwheel = false;
@@ -283,13 +291,20 @@ public class MotherloadMineScript extends Script
         {
             ensureLowerFloor();
         }
+
+		final int paydirtToDeposit = Rs2Inventory.count(ItemID.PAYDIRT);
+
         if (hopper.isPresent() && Rs2GameObject.interact(hopper.get()))
         {
 			sleepUntil(() -> !Rs2Inventory.isFull() && !Rs2Player.isAnimating(), 10_000);
 
 			shouldRepairWaterwheel = true;
 
-			shouldEmptySack = Microbot.getVarbitValue(VarbitID.MOTHERLODE_SACK_TRANSMIT) >= (maxSackSize - 28);
+			// Calculate the effective sack size after deposit as VarbitID.MOTHERLODE_SACK_TRANSMIT takes time to update
+			final int currentSackAmount = Microbot.getVarbitValue(VarbitID.MOTHERLODE_SACK_TRANSMIT);
+			final int effectiveSackAmount = Math.max(currentSackAmount, Math.min(maxSackSize, currentSackAmount + paydirtToDeposit));
+
+			shouldEmptySack = effectiveSackAmount >= (maxSackSize - 28);
         }
         else
         {
@@ -313,11 +328,18 @@ public class MotherloadMineScript extends Script
 			if (config.useDepositAll()) {
 				Rs2DepositBox.depositAll();
 			} else {
-				Rs2DepositBox.depositAllExcept("hammer", "pickaxe", "gem bag");
+				String[] _itemsToKeep = getItemsToKeep().toArray(new String[0]);
+				Rs2DepositBox.depositAllExcept(_itemsToKeep);
 				Rs2Inventory.waitForInventoryChanges(5000);
 			}
+
+			Rectangle gameObjectBounds = getMotherloadSackBounds();
+			Rectangle depositBoxBounds = Rs2DepositBox.getDepositBoxBounds();
+			if (gameObjectBounds != null && depositBoxBounds != null &&
+				(!Rs2UiHelper.isRectangleWithinViewport(gameObjectBounds) || Rs2UiHelper.isRectangleWithinRectangle(depositBoxBounds, gameObjectBounds))) {
+				Rs2DepositBox.closeDepositBox();
+			}
         }
-        status = MLMStatus.IDLE;
     }
 
 	private void setupInventory() {
@@ -380,24 +402,17 @@ public class MotherloadMineScript extends Script
                 miningSpot = Rs2Random.between(0, 1) == 0 ? MLMMiningSpot.WEST_UPPER : MLMMiningSpot.EAST_UPPER;
             }
             else {
-                int randomChoice = Math.toIntExact(Arrays.stream(MLMMiningSpot.values()).filter(s -> s.getWorldPoint() != null && s.isDownstairs()).count());
-                switch (randomChoice) {
-                    case 1:
-                        miningSpot = MLMMiningSpot.WEST_LOWER;
-                        break;
-                    case 2:
-                        miningSpot = MLMMiningSpot.WEST_MID;
-                        break;
-                    case 3:
-                        miningSpot = MLMMiningSpot.SOUTH_WEST;
-                        break;
-                    case 4:
-                        miningSpot = MLMMiningSpot.SOUTH_EAST;
-                        break;
-					default:
-						miningSpot = MLMMiningSpot.WEST_LOWER;
-						break;
-                }
+				MLMMiningSpot[] filteredSpots = Arrays.stream(MLMMiningSpot.values())
+					.filter(s -> s.getWorldPoint() != null && s.isDownstairs())
+					.toArray(MLMMiningSpot[]::new);
+
+				int size = filteredSpots.length;
+				if (size == 0) return;
+
+				int randomIndex = Rs2Random.randomGaussian(size / 2.0, size / 6.0);
+				randomIndex = Math.max(0, Math.min(size - 1, randomIndex));
+
+				miningSpot = filteredSpots[randomIndex];
             }
         } else {
             switch (selected) {
@@ -612,11 +627,45 @@ public class MotherloadMineScript extends Script
 		}
 	}
 
+	/*
+		TODO: this needs to be further tested.
+	 */
+	private Rectangle getMotherloadSackBounds() {
+		if (motherloadSackBounds == null) {
+			TileObject sack = Rs2GameObject.getAll(o -> o.getId() == ObjectID.MOTHERLODE_SACK).stream().findFirst().orElse(null);
+			motherloadSackBounds = Rs2UiHelper.getObjectClickbox(sack);
+		}
+		return motherloadSackBounds;
+	}
+
+	private int getBrokenStrutCount() {
+		List<GameObject> brokenStruts = Rs2GameObject.getGameObjects(o -> o.getId() == ObjectID.MOTHERLODE_WHEEL_STRUT_BROKEN);
+		return brokenStruts.isEmpty() ? 0 : brokenStruts.size();
+	}
+
+	private Set<String> getItemsToKeep() {
+		if (itemsToKeep == null) {
+			Set<String> _itemsToKeep = new HashSet<>();
+			if (Rs2Inventory.hasItem("hammer")) {
+				_itemsToKeep.add("hammer");
+			}
+			if (Rs2Inventory.hasItem("pickaxe")) {
+				_itemsToKeep.add("pickaxe");
+			}
+			if (Rs2Gembag.hasGemBag()) {
+				_itemsToKeep.add("gem bag");
+			}
+			itemsToKeep = _itemsToKeep;
+		}
+		return itemsToKeep;
+	}
+
     @Override
     public void shutdown()
     {
         Rs2Antiban.resetAntibanSettings();
         Rs2Walker.setTarget(null);
+		itemsToKeep = null;
         super.shutdown();
     }
 }
