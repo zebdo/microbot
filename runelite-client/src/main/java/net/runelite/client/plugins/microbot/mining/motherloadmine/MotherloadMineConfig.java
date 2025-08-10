@@ -18,7 +18,6 @@ public interface MotherloadMineConfig extends Config
 {
 	String configGroup = "micro-motherloadmine";
 
-	String isPickaxeInInventory = "isPickaxeInInventory";
 	String useInventorySetup = "useInventorySetup";
 	String inventorySetup = "inventory-setup";
 	String useDepositAll = "useDepositAll";
@@ -42,24 +41,10 @@ public interface MotherloadMineConfig extends Config
 	String featureSection = "features";
 
 	@ConfigItem(
-		keyName = isPickaxeInInventory,
-		name = "Pickaxe In Inventory",
-		description = "Where should the plugin look for a pickaxe<br>" +
-			"Enabled - looks in inventory<br>" +
-			"Disabled - looks in equipment",
-		position = 0,
-		section = generalSection
-	)
-	default boolean isPickaxeInInventory()
-	{
-		return false;
-	}
-
-	@ConfigItem(
 		keyName = useInventorySetup,
 		name = "Enable Inventory Setup",
 		description = "Enable this option to use an inventory setup with the plugin",
-		position = 1,
+		position = 0,
 		section = generalSection
 	)
 	default boolean useInventorySetup()
@@ -71,7 +56,7 @@ public interface MotherloadMineConfig extends Config
 		keyName = inventorySetup,
 		name = "Inventory Setup",
 		description = "Select the inventory setup to use with the plugin",
-		position = 2,
+		position = 1,
 		section = generalSection
 	)
 	default InventorySetup getInventorySetup()
@@ -84,7 +69,7 @@ public interface MotherloadMineConfig extends Config
 		name = "Use Deposit All",
 		description = "Uses deposit all button in the deposit box<br>" +
 			"Note: ensure you enable locked slots enabled for the items you want to keep in your inventory",
-		position = 3,
+		position = 2,
 		section = generalSection
 	)
 	default boolean useDepositAll()
@@ -96,7 +81,7 @@ public interface MotherloadMineConfig extends Config
 		keyName = antiCrash,
 		name = "Anti Crash",
 		description = "Avoids other players when mining in the lower level",
-		position = 4,
+		position = 3,
 		section = generalSection
 	)
 	default boolean useAntiCrash()

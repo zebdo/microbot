@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.GameObject;
 import net.runelite.api.Perspective;
 import net.runelite.api.Skill;
@@ -344,32 +345,59 @@ public class MotherloadMineScript extends Script
 
 	private void setupInventory() {
 		if (!config.useInventorySetup()) {
-			Rs2ItemModel pickaxe = Pickaxe.getBestPickaxe(config.isPickaxeInInventory());
+			Rs2ItemModel pickaxe = Pickaxe.getBestPickaxe(false);
 			if (pickaxe == null) {
-				Rs2Bank.openBank();
-				sleepUntil(Rs2Bank::isOpen);
-				pickaxe = Pickaxe.getBestBankedPickaxe(config.isPickaxeInInventory());
+				pickaxe = Pickaxe.getBestPickaxe(true);
 				if (pickaxe == null) {
-					Microbot.showMessage("No pickaxe found in bank or inventory. Please bank a pickaxe.");
-					Microbot.stopPlugin(plugin);
-					return;
-				}
+					Rs2Bank.openBank();
+					sleepUntil(Rs2Bank::isOpen);
+					pickaxe = Pickaxe.getBestBankedPickaxe(true);
+					if (pickaxe == null) {
+						Microbot.showMessage("No pickaxe found in bank or inventory. Please bank a pickaxe.");
+						Microbot.stopPlugin(plugin);
+						return;
+					}
 
-				if (config.isPickaxeInInventory()) {
-					Rs2Bank.withdrawOne(pickaxe.getId());
-					Rs2Inventory.waitForInventoryChanges(5000);
-				}
-				else {
-					final Rs2ItemModel _pickaxe = pickaxe;
-					Rs2Bank.withdrawAndEquip(_pickaxe.getId());
-					sleepUntil(() -> Rs2Equipment.isWearing(_pickaxe.getId()));
+					if (Rs2Inventory.isFull()) {
+						Rs2Bank.depositAll();
+					}
+
+					boolean hasAttackRequirements = Pickaxe.hasAttackLevelRequirement(pickaxe.getId());
+					if (hasAttackRequirements) {
+						final Rs2ItemModel currentWeaponSlot = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
+						final Rs2ItemModel _pickaxe = pickaxe;
+						Rs2Bank.withdrawAndEquip(_pickaxe.getId());
+						sleepUntil(() -> Rs2Equipment.isWearing(_pickaxe.getId()));
+						if (currentWeaponSlot != null) {
+							Rs2Bank.depositOne(currentWeaponSlot.getId());
+							Rs2Inventory.waitForInventoryChanges(5000);
+						}
+					} else {
+						Rs2Bank.withdrawOne(pickaxe.getId());
+						Rs2Inventory.waitForInventoryChanges(5000);
+					}
+					final int[] gemBagIDs = {ItemID.GEM_BAG, ItemID.GEM_BAG_OPEN};
+
+					for (int gemBagID : gemBagIDs) {
+						if (!isRunning()) break;
+
+						if (Rs2Bank.withdrawOne(gemBagID)) {
+							Rs2Inventory.waitForInventoryChanges(5000);
+							break;
+						}
+					}
+
+					if (Rs2Random.dicePercentage(10) && !hasHammer()) {
+						if (Rs2Bank.withdrawOne("hammer")) {
+							Rs2Inventory.waitForInventoryChanges(5000);
+						}
+					}
+
+					Rs2Bank.toggleItemLock("hammer", false);
+					Rs2Bank.toggleItemLock("gem bag", false);
 				}
 			}
-			if (!config.isPickaxeInInventory() && Rs2Inventory.hasItem(pickaxe.getId())) {
-				final Rs2ItemModel _pickaxe = pickaxe;
-				Rs2Inventory.equip(_pickaxe.getId());
-				sleepUntil(() -> Rs2Equipment.isWearing(_pickaxe.getId()));
-			}
+
 		} else {
 			Rs2InventorySetup mlmInventorySetup = new Rs2InventorySetup(config.getInventorySetup(), mainScheduledFuture);
 			boolean doesEquipmentMatch = true;

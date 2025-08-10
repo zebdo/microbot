@@ -77,4 +77,12 @@ public enum Pickaxe
 					.findFirst().orElse(0)))
                 .orElse(null);
     }
+
+	public static boolean hasAttackLevelRequirement(int itemId) {
+		return Arrays.stream(Pickaxe.values())
+			.filter(p -> p.getItemID() == itemId)
+			.findFirst()
+			.map(p -> Rs2Player.getSkillRequirement(Skill.ATTACK, p.getAttackLevel()))
+			.orElse(false);
+	}
 }
