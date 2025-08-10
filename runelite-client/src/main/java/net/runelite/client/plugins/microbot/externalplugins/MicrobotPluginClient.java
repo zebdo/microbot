@@ -28,8 +28,6 @@ import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.plugins.Plugin;
-import net.runelite.client.plugins.PluginDescriptor;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -109,19 +107,9 @@ public class MicrobotPluginClient
     /**
      * Returns the URL for downloading a plugin JAR
      */
-    public HttpUrl getJarURL(Plugin plugin)
+    public HttpUrl getJarURL(MicrobotPluginManifest manifest)
     {
-        var descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
-        var url  = "https://nexus.microbot.cloud/repository/microbot-plugins/net/runelite/client/plugins/microbot/"
-                + plugin.getClass().getSimpleName() +
-                "/"
-                + descriptor.version() +
-                "/"
-                + plugin.getClass().getSimpleName().toLowerCase() +
-                "-"
-                + descriptor.version() +
-                ".jar";
-        return HttpUrl.parse(url);
+        return HttpUrl.parse(manifest.getUrl());
     }
 
     /**

@@ -143,15 +143,16 @@ public class MicrobotPluginManager
         return new File(PLUGIN_DIR, internalName + ".jar");
     }
 
-    public void install(Plugin plugin, MicrobotPluginManifest manifest)
+    public void install(MicrobotPluginManifest manifest)
     {
         executor.execute(() -> {
             try
             {
-                HttpUrl url = microbotPluginClient.getJarURL(plugin);
+                HttpUrl url = microbotPluginClient.getJarURL(manifest);
                 if (url == null)
                 {
-                    log.error("Invalid URL for plugin: {}", plugin.getClass().getSimpleName());
+
+                    log.error("Invalid URL for plugin: {}", manifest.getInternalName());
                     return;
                 }
 
@@ -163,7 +164,7 @@ public class MicrobotPluginManager
                 {
                     if (!response.isSuccessful())
                     {
-                        log.error("Error downloading plugin: {}, code: {}", plugin.getClass().getSimpleName(), response.code());
+                        log.error("Error downloading plugin: {}, code: {}", manifest.getInternalName(), response.code());
                         return;
                     }
 
@@ -172,18 +173,18 @@ public class MicrobotPluginManager
                     // Verify the SHA-256 hash
                     if (!verifyHash(jarData, manifest.getSha256()))
                     {
-                        log.error("Plugin hash verification failed for: {}", plugin.getClass().getSimpleName());
+                        log.error("Plugin hash verification failed for: {}", manifest.getInternalName());
                         return;
                     }
 
                     // Save the jar file
-                    File pluginFile = getPluginJarFile(plugin.getClass().getSimpleName());
+                    File pluginFile = getPluginJarFile(manifest.getInternalName());
                     Files.write(jarData, pluginFile);
 
                     List<String> plugins = getInstalledPlugins();
-                    if (!plugins.contains(plugin.getClass().getSimpleName()))
+                    if (!plugins.contains(manifest.getInternalName()))
                     {
-                        plugins.add(plugin.getClass().getSimpleName());
+                        plugins.add(manifest.getInternalName());
                         saveInstalledPlugins(plugins);
                     }
 
@@ -193,7 +194,7 @@ public class MicrobotPluginManager
             }
             catch (IOException e)
             {
-                log.error("Error installing plugin: {}", plugin.getClass().getSimpleName(), e);
+                log.error("Error installing plugin: {}", manifest.getInternalName(), e);
             }
         });
     }
@@ -208,7 +209,12 @@ public class MicrobotPluginManager
                 log.warn("Could not delete plugin file: {}", pluginFile);
             }
 
-            pluginManager.remove(pluginManager.getPlugins().stream().filter(x -> x.getClass().getSimpleName().equals(internalName)).findFirst().orElse(null));
+            pluginManager.remove(pluginManager.getPlugins().stream()
+                    .filter(x ->
+                            x.getClass().getSimpleName().equals(internalName)
+                                    && x.getClass().getAnnotation(PluginDescriptor.class).isExternal())
+                    .findFirst()
+                    .orElse(null));
 
             // Update installed plugins list
             List<String> plugins = getInstalledPlugins();

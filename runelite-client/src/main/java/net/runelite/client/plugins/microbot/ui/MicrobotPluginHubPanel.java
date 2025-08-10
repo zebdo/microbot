@@ -62,6 +62,7 @@ import java.io.IOException;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -163,21 +164,20 @@ public class MicrobotPluginHubPanel extends PluginPanel {
 
         @Getter
         private final boolean installed;
-        private Plugin plugin;
+        private MicrobotPluginManifest manifest;
 
-        PluginItem(Collection<Plugin> loadedPlugins, int userCount, boolean installed, MicrobotPluginManifest manifest) {
-            plugin = loadedPlugins.stream().iterator().next();
-            var pluginDescriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
+        PluginItem(MicrobotPluginManifest manifest, Collection<Plugin> loadedPlugins, int userCount, boolean installed) {
+            this.manifest = manifest;
             this.userCount = userCount;
             this.installed = installed;
 
-            Collections.addAll(keywords, SPACES.split(pluginDescriptor.name()));
+            Collections.addAll(keywords, SPACES.split(manifest.getDisplayName()));
 
-            Collections.addAll(keywords, SPACES.split(pluginDescriptor.description()));
+            Collections.addAll(keywords, SPACES.split(manifest.getDescription()));
 
-            Collections.addAll(keywords, pluginDescriptor.author());
+            Collections.addAll(keywords, manifest.getAuthor());
 
-            Collections.addAll(keywords, pluginDescriptor.tags());
+            Collections.addAll(keywords, manifest.getTags());
 
             setBackground(ColorScheme.DARKER_GRAY_COLOR);
             setOpaque(true);
@@ -185,19 +185,19 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             GroupLayout layout = new GroupLayout(this);
             setLayout(layout);
 
-            JLabel pluginName = new JLabel(pluginDescriptor.name());
+            JLabel pluginName = new JLabel(manifest.getDisplayName());
             pluginName.setFont(FontManager.getRunescapeBoldFont());
-            pluginName.setToolTipText(pluginDescriptor.name());
+            pluginName.setToolTipText(manifest.getDisplayName());
 
-            JLabel author = new JLabel(pluginDescriptor.author());
+            JLabel author = new JLabel(manifest.getAuthor());
             author.setFont(FontManager.getRunescapeSmallFont());
-            author.setToolTipText(pluginDescriptor.author());
+            author.setToolTipText(manifest.getAuthor());
 
-            JLabel version = new JLabel(pluginDescriptor.version());
+            JLabel version = new JLabel(manifest.getVersion());
             version.setFont(FontManager.getRunescapeSmallFont());
-            version.setToolTipText(pluginDescriptor.version());
+            version.setToolTipText(manifest.getVersion());
 
-            String descriptionText = pluginDescriptor.description();
+            String descriptionText = manifest.getDescription();
 
             if (!descriptionText.startsWith("<html>")) {
                 descriptionText = "<html>" + HtmlEscapers.htmlEscaper().escape(descriptionText) + "</html>";
@@ -207,7 +207,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             description.setVerticalAlignment(JLabel.TOP);
             description.setToolTipText(descriptionText);
 
-            JLabel icon = new PluginIcon(pluginDescriptor.iconUrl());
+            JLabel icon = new PluginIcon(manifest.getIconUrl());
             icon.setHorizontalAlignment(JLabel.CENTER);
 
             JLabel badge = new JLabel();
@@ -216,7 +216,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             SwingUtil.removeButtonDecorations(help);
             help.setBorder(null);
             help.setToolTipText("Open help");
-            help.addActionListener(ev -> LinkBrowser.browse("https://chsami.github.io/Microbot-Hub/" + plugin.getClass().getSimpleName()));
+            help.addActionListener(ev -> LinkBrowser.browse("https://chsami.github.io/Microbot-Hub/" + manifest.getInternalName()));
 
             JButton configure = new JButton(CONFIGURE_ICON);
             SwingUtil.removeButtonDecorations(configure);
@@ -225,8 +225,9 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             if (!loadedPlugins.isEmpty()) {
                 String search = null;
                 if (loadedPlugins.size() > 1) {
-                    search = plugin.getClass().getSimpleName();
+                    search = manifest.getInternalName();
                 } else {
+                    Plugin plugin = loadedPlugins.iterator().next();
                     configure.addActionListener(l -> topLevelConfigPanel.openConfigurationPanel(plugin));
                 }
 
@@ -246,7 +247,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                 {
                     addrm.setText("Installing");
                     addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                    microbotPluginManager.install(plugin, manifest);
+                    microbotPluginManager.install(manifest);
                 });
             } else if (installed) {
                 addrm.setText("Remove");
@@ -255,7 +256,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                 {
                     addrm.setText("Removing");
                     addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                    microbotPluginManager.remove(plugin.getClass().getSimpleName());
+                    microbotPluginManager.remove(manifest.getInternalName());
                 });
             } else {
                 addrm.setText("Unavailable");
@@ -306,7 +307,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
 
         @Override
         public String getSearchableName() {
-            return plugin.getClass().getAnnotation(PluginDescriptor.class).name();
+            return manifest.getDisplayName();
         }
 
         @Override
@@ -505,16 +506,38 @@ public class MicrobotPluginHubPanel extends PluginPanel {
 
         Set<String> installed = new HashSet<>(microbotPluginManager.getInstalledPlugins());
 
-        var pluginManifest = manifest.stream()
-                .filter(x -> x.getInternalName().equalsIgnoreCase(plugins.getClass().getSimpleName()))
-                .findFirst()
-                .orElse(null);
+        // Pre-index manifests by internalName (lowercased)
+        Map<String, MicrobotPluginManifest> manifestByName = manifest.stream()
+                .filter(m -> m.getInternalName() != null)
+                .collect(Collectors.toMap(
+                        m -> m.getInternalName().toLowerCase(Locale.ROOT),
+                        Function.identity(),
+                        (a, b) -> a // keep first on duplicates
+                ));
 
-        plugins = loadedPlugins.stream()
-                .map(plugin -> new PluginItem(Collections.singleton(plugin),
-                        pluginCounts.getOrDefault(plugin.getClass().getSimpleName(), -1),
-                        installed.contains(plugin.getClass().getSimpleName()), pluginManifest))
+        // Index loaded plugins by simple name (lowercased) → all instances for that name
+        Map<String, Collection<Plugin>> pluginsByName = loadedPlugins.stream()
+                .collect(Collectors.groupingBy(
+                        p -> p.getClass().getSimpleName().toLowerCase(Locale.ROOT),
+                        LinkedHashMap::new,
+                        Collectors.toCollection(LinkedHashSet::new) // stable, no dups
+                ));
+
+        // Build PluginItem list by looping over manifests
+        plugins = manifestByName.entrySet().stream()
+                .map(e -> {
+                    String key = e.getKey();                       // lowercased internalName
+                    MicrobotPluginManifest m = e.getValue();
+                    String simpleName = m.getInternalName();       // original case
+
+                    Collection<Plugin> group = pluginsByName.getOrDefault(key, Collections.emptySet());
+                    int count = pluginCounts.getOrDefault(simpleName, -1);
+                    boolean isInstalled = installed.contains(simpleName);
+
+                    return new PluginItem(m, group, count, isInstalled);
+                })
                 .collect(Collectors.toList());
+
 
         SwingUtilities.invokeLater(() ->
         {
@@ -542,7 +565,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                     .sorted(Comparator.comparing(PluginItem::isInstalled)
                             .thenComparingInt(PluginItem::getUserCount)
                             .reversed()
-                            .thenComparing(p -> p.plugin.getClass().getSimpleName())
+                            .thenComparing(p -> p.manifest.getInternalName())
                     )
                     .collect(Collectors.toList());
         }
@@ -583,7 +606,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             refreshing.setVisible(true);
 
             Map<String, Integer> pluginCounts = plugins == null ? Collections.emptyMap()
-                    : plugins.stream().collect(Collectors.toMap(pi -> pi.plugin.getClass().getSimpleName(), PluginItem::getUserCount));
+                    : plugins.stream().collect(Collectors.toMap(pi -> pi.manifest.getInternalName(), PluginItem::getUserCount));
             executor.submit(() -> reloadPluginList(lastManifest, pluginCounts));
         }
     }
