@@ -1085,17 +1085,20 @@ public class Rs2Walker {
 
                 boolean found = false;
 
+				final String name = comp.getName();
+
                 if (object instanceof WallObject) {
                     int orientation = ((WallObject) object).getOrientationA();
 
                     if (searchNeighborPoint(orientation, probe, fromWp) || searchNeighborPoint(orientation, probe, toWp)) {
-						log.info("Found door (type: {}) at {} between {} and {}", "Wall Object", probe, fromWp, toWp);
+						log.info("Found WallObject door - name {} with action {} at {} - from {} to {}", name, action, probe, fromWp, toWp);
+						found = true;
+					} else if (searchNeighborPoint(orientation + 1, probe, fromWp) || searchNeighborPoint(orientation + 1, probe, toWp)) {
 						found = true;
                     }
                 } else {
-                    String name = comp.getName();
                     if (name != null && name.toLowerCase().contains("door")) {
-						log.info("Found door (type: {}) at {} between {} and {}", "Game Object", probe, fromWp, toWp);
+						log.info("Found GameObject door - name {} with action {} at {} - from {} to {}", name, action, probe, fromWp, toWp);
                         found = true;
                     }
                 }
