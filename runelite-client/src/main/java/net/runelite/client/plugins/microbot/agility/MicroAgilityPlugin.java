@@ -3,6 +3,8 @@ package net.runelite.client.plugins.microbot.agility;
 import com.google.inject.Provides;
 import java.awt.AWTException;
 import java.util.List;
+import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
@@ -17,7 +19,9 @@ import net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugi
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LockCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.PredicateCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
+import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -42,8 +46,7 @@ public class MicroAgilityPlugin extends Plugin implements SchedulablePlugin
 	@Inject
 	private AgilityScript agilityScript;
 
-	private LockCondition lockCondition;
-	private LogicalCondition stopCondition = null;
+	private LogicalCondition stopCondition;
 
 	@Provides
 	MicroAgilityConfig provideConfig(ConfigManager configManager)
@@ -72,7 +75,13 @@ public class MicroAgilityPlugin extends Plugin implements SchedulablePlugin
 	public void onPluginScheduleEntrySoftStopEvent(PluginScheduleEntrySoftStopEvent event) {
 		try{
 			if (event.getPlugin() == this) {
-				Microbot.stopPlugin(this);
+				Microbot.getClientThread().runOnSeperateThread(() -> {
+					if (config.agilityCourse().getHandler().getCurrentObstacleIndex() > 0) {
+						Global.sleepUntil(() -> config.agilityCourse().getHandler().getCurrentObstacleIndex() == 0, 10_000);
+					}
+					Microbot.stopPlugin(this);
+					return null;
+				});
 			}
 		} catch (Exception e) {
 			log.error("Error stopping plugin: ", e);
@@ -81,13 +90,21 @@ public class MicroAgilityPlugin extends Plugin implements SchedulablePlugin
 
 	@Override
 	public LogicalCondition getStopCondition() {
-		if (this.stopCondition == null) {
-			this.lockCondition = new LockCondition("Agility in critical operation");
-			AndCondition andCondition = new AndCondition();
-			andCondition.addCondition(lockCondition);
-			this.stopCondition = andCondition;
+		if (stopCondition == null) {
+			LogicalCondition _stopCondition = new AndCondition();
+
+			Supplier<Integer> currentIndexSupplier = () -> config.agilityCourse().getHandler().getCurrentObstacleIndex();
+			Predicate<Integer> isAtStartPredicate = index -> index == 0;
+			PredicateCondition<Integer> atStartCondition = new PredicateCondition<>(
+				isAtStartPredicate,
+				currentIndexSupplier,
+				"Player is at the start of the agility course (index 0)"
+			);
+
+			_stopCondition.addCondition(atStartCondition);
+			stopCondition = _stopCondition;
 		}
-		return this.stopCondition;
+		return stopCondition;
 	}
 
 	public AgilityCourseHandler getCourseHandler()
