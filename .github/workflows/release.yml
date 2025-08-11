@@ -48,7 +48,7 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "$version"
           prerelease: false
-          title: "Release $version"
+          title: "Release ${{ steps.version.outputs.version }}"
           files: |
             /home/runner/work/Microbot/Microbot/runelite-client/target/microbot-*.jar
 
