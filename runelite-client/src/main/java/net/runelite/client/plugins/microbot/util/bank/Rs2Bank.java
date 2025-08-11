@@ -1240,7 +1240,7 @@ public class Rs2Bank {
                 if (!Rs2GameObject.interact(nearestObj.get(), "Bank")) return false;
             } else {
                 final Rs2NpcModel banker = Rs2Npc.getBankerNPC();
-                if (!Rs2Npc.interact(banker, "Bank")) return false;
+                if (banker == null || !Rs2Npc.interact(banker, "Bank")) return false;
             }
 
             return sleepUntil(Rs2Bank::isOpen, 5_000);
