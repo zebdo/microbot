@@ -44,7 +44,7 @@ public enum Pickaxe
 	}
 
 	public static int[] getAccessibleItemIDs() {
-		return Arrays.stream(Pickaxe.values()).filter(p -> p.hasRequirements(false)).mapToInt(Pickaxe::getItemID).toArray();
+		return Arrays.stream(Pickaxe.values()).filter(p -> p.hasRequirements(true)).mapToInt(Pickaxe::getItemID).toArray();
 	}
 
 	public static boolean hasItem() {
