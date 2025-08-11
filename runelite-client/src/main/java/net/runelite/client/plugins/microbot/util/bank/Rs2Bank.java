@@ -1240,7 +1240,7 @@ public class Rs2Bank {
                 if (!Rs2GameObject.interact(nearestObj.get(), "Bank")) return false;
             } else {
                 final Rs2NpcModel banker = Rs2Npc.getBankerNPC();
-                if (!Rs2Npc.interact(banker, "Bank")) return false;
+                if (banker == null || !Rs2Npc.interact(banker, "Bank")) return false;
             }
 
             return sleepUntil(Rs2Bank::isOpen, 5_000);
@@ -2209,6 +2209,31 @@ public class Rs2Bank {
      */
     public static boolean emptySeedBox() {
         return empty(ItemID.SEED_BOX,ItemID.SEED_BOX_OPEN);
+    }
+
+    /**
+     * Empties the looting bag if one is present. The bank must be open.
+     *
+     * @return true if the looting bag was emptied, false otherwise.
+     */
+    public static boolean depositLootingBag(){
+        if(!Rs2Inventory.contains(ItemID.LOOTING_BAG_OPEN)) return false;
+        if(!Rs2Bank.isOpen()) return false;
+
+        //The looting bag's deposit-loot widget's ID is 983046
+        if (Rs2Inventory.interact(ItemID.LOOTING_BAG_OPEN, "View")) {
+            sleepUntil(()-> Rs2Widget.getWidget(983046) != null, Rs2Random.between(2000,5000));
+            if(Rs2Widget.getWidget(983046) != null){
+                if(Rs2Widget.clickWidget(983046)){
+                    sleepUntil(()-> Rs2Widget.getWidget(15,11).getChildren()[0] == null, Rs2Random.between(500,1000));
+                    if(Rs2Widget.clickWidget(983048)){ // close the bag
+                        return true;
+                    }
+                }
+            }
+        }
+
+        return false;
     }
 
 
