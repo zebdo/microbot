@@ -1218,7 +1218,7 @@ public class BarrowsScript extends Script {
         NPC hintArrow = Microbot.getClient().getHintArrowNpc();
         Rs2NpcModel currentBrother = null;
         if(hintArrow != null)  currentBrother = new Rs2NpcModel(hintArrow);
-        if(currentBrother != null && !currentBrother.getName().contains("Dharok") && currentBrother.getHealthPercentage() < Rs2Random.between(35,42)) skipThePot = true;
+        if(currentBrother != null && !currentBrother.getName().contains("Dharok") && currentBrother.getHealthPercentage() < Rs2Random.between(40,50)) skipThePot = true;
 
         if(!skipThePot) {
             if (Rs2Player.getBoostedSkillLevel(Skill.PRAYER) <= Rs2Random.between(8, 15)) {
@@ -1397,6 +1397,10 @@ public class BarrowsScript extends Script {
         int modelIDs[] = {6725, 6731, 6713, 6719};
         int random = Rs2Random.between(0,1000);
         int secondRandom = Rs2Random.between(1,10);
+
+        sleepUntil(()-> Rs2Widget.getWidget(widgets[0]) != null ||
+                Rs2Widget.getWidget(widgets[1]) != null ||
+                Rs2Widget.getWidget(widgets[2]) != null, Rs2Random.between(300,800));
 
         for (int widget : widgets) {
             if(!super.isRunning()) break;
