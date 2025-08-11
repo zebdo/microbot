@@ -33,6 +33,7 @@ public class FornBirdhouseRunsScript extends Script {
     private static final WorldPoint birdhouseLocation4 = new WorldPoint(3679, 3815, 0);
     public static double version = 1.0;
     private boolean initialized;
+    private String setupErrorMessage = "";
     @Inject
     private Notifier notifier;
     private final FornBirdhouseRunsPlugin plugin;
@@ -81,10 +82,10 @@ public class FornBirdhouseRunsScript extends Script {
                             return;
                         }
                     } else {
-                        // Manual bank withdrawal
+                        // Auto bank withdrawal
                         if (!setupManualInventory()) {
-                            Microbot.log("Failed to setup inventory manually");
-                            plugin.reportFinished("Birdhouse run failed to setup inventory manually",false);
+                            Microbot.log("Failed to setup inventory: " + setupErrorMessage);
+                            plugin.reportFinished("Birdhouse run failed: " + setupErrorMessage, false);
                             this.shutdown();
                             return;
                         }
@@ -235,7 +236,8 @@ public class FornBirdhouseRunsScript extends Script {
         
         // Open bank
         if (!Rs2Bank.openBank()) {
-            Microbot.log("Failed to open bank");
+            setupErrorMessage = "Could not open bank";
+            Microbot.log(setupErrorMessage);
             return false;
         }
         sleepUntil(Rs2Bank::isOpen);
@@ -246,13 +248,15 @@ public class FornBirdhouseRunsScript extends Script {
         
         // Withdraw chisel
         if (!Rs2Bank.withdrawX(ItemID.CHISEL, 1)) {
-            Microbot.log("Failed to withdraw chisel");
+            setupErrorMessage = "Missing chisel in bank";
+            Microbot.log(setupErrorMessage);
             return false;
         }
         
         // Withdraw hammer
         if (!Rs2Bank.withdrawX(ItemID.HAMMER, 1)) {
-            Microbot.log("Failed to withdraw hammer");
+            setupErrorMessage = "Missing hammer in bank";
+            Microbot.log(setupErrorMessage);
             return false;
         }
         
@@ -275,21 +279,30 @@ public class FornBirdhouseRunsScript extends Script {
         }
         
         if (!pendantWithdrawn) {
-            Microbot.log("Failed to withdraw digsite pendant");
+            setupErrorMessage = "Missing digsite pendant in bank";
+            Microbot.log(setupErrorMessage);
             return false;
         }
         
         // Withdraw logs
         LogType selectedLogType = config.logType();
+        // Check if bank has enough logs first
+        int logCount = Rs2Bank.count(selectedLogType.getLogID());
+        if (logCount < 4) {
+            setupErrorMessage = "Need 4 " + selectedLogType.getLogName().toLowerCase() + " but only have " + logCount + " in bank";
+            Microbot.log(setupErrorMessage);
+            return false;
+        }
         if (!Rs2Bank.withdrawX(selectedLogType.getLogID(), 4)) {
-            Microbot.log("Failed to withdraw " + selectedLogType.getLogName());
+            setupErrorMessage = "Failed to withdraw " + selectedLogType.getLogName().toLowerCase();
+            Microbot.log(setupErrorMessage);
             return false;
         }
         
         // Withdraw seeds (smart selection)
         boolean seedsWithdrawn = withdrawSeeds();
         if (!seedsWithdrawn) {
-            Microbot.log("Failed to withdraw seeds");
+            // setupErrorMessage is set in withdrawSeeds
             return false;
         }
         
@@ -297,6 +310,7 @@ public class FornBirdhouseRunsScript extends Script {
         Rs2Bank.closeBank();
         sleepUntil(() -> !Rs2Bank.isOpen());
         
+        Microbot.log("Inventory setup complete - starting birdhouse run");
         return true;
     }
 
@@ -315,12 +329,18 @@ public class FornBirdhouseRunsScript extends Script {
         
         for (int seedId : seedIds) {
             if (!isRunning()) break;
-            if (Rs2Bank.withdrawX(seedId, 40)) {
-                Microbot.log("Withdrew 40 of seed ID: " + seedId);
-                return true;
+            // Check if bank has enough BEFORE trying to withdraw
+            if (Rs2Bank.count(seedId) >= 40) {
+                if (Rs2Bank.withdrawX(seedId, 40)) {
+                    Microbot.log("Withdrew 40 of seed ID: " + seedId);
+                    return true;
+                }
             }
         }
         
+        // If we get here, no seed type had 40+ available
+        setupErrorMessage = "Need 40 seeds but no birdhouse seed type has 40+ in bank";
+        Microbot.log(setupErrorMessage);
         return false;
     }
 }
