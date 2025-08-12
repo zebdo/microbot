@@ -4,6 +4,7 @@ import net.runelite.api.*;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
@@ -325,9 +326,14 @@ public class TitheFarmingScript extends Script {
         if (plant.isEmptyPatch()) { //start planting seeds
             Rs2Inventory.interact(TitheFarmMaterial.getSeedForLevel().getName(), "Use");
             clickPatch(plant);
+            // save 1 tick by manually clicking watering can immediately after planting seed
+            sleepUntil(() -> Rs2Player.getAnimation() == AnimationID.FARMING_SEED_DIBBING, 2_000);
+            Rs2Inventory.interact(TitheFarmMaterial.getWateringCan(), "Use");
+            sleep(200);
+            clickPatch(plant);
             sleepUntil(Rs2Player::isAnimating, config.sleepAfterPlantingSeed());
             if (Rs2Player.isAnimating()) {
-                sleepUntil(() -> plants.stream().noneMatch(x -> x.getIndex() == finalPlant.getIndex() && x.isEmptyPatch()));
+                sleepUntil(() -> plants.stream().noneMatch(x -> x.getIndex() == finalPlant.getIndex() && x.isValidToWater()));
             }
         }
 
