@@ -112,4 +112,15 @@ public class GiantSeaweedFarmerPlugin extends Plugin implements SchedulablePlugi
         // Create a new stop condition
         return this.stopCondition;
     }
+    
+    public LockCondition getLockCondition(LogicalCondition stopCondition) {
+        return lookCondition;
+    }
+    
+    public void reportFinished(String message, boolean success) {
+        Microbot.showMessage(message);
+        if (!success) {
+            log.error(message);
+        }
+    }
 }
