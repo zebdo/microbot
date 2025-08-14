@@ -44,26 +44,18 @@ public class GiantSeaweedSporeScript extends Script {
             Microbot.log("Seaweed spore detected - looting");
             boolean looted = Rs2GroundItem.loot(ItemID.SEAWEED_SPORE, 15);
             if (looted) {
-                // Spam click if not moving yet (underwater seaweed area can be sticky)
-                for (int i = 0; i < 3 && !Rs2Player.isMoving() && this.isRunning(); i++) {
-                    sleep(100, 150); // Very short wait to check if movement started
-                    if (!Rs2Player.isMoving()) {
-                        Rs2GroundItem.loot(ItemID.SEAWEED_SPORE, 15); // Click again
-                    }
-                }
-                
-                // If we started moving, wait for arrival
+                // Wait for movement to start and complete
+                sleepUntil(Rs2Player::isMoving, 2000);
                 if (Rs2Player.isMoving()) {
                     sleepUntil(() -> !Rs2Player.isMoving(), 5000);
                 }
                 
                 // Wait for inventory change
                 Rs2Inventory.waitForInventoryChanges(2000);
-                sleep(300, 500); // Shorter delay before checking for more spores
+                sleep(300, 500);
             } else {
                 // If loot failed, try again after a small delay
                 sleep(200, 300);
-                // Loop will continue and retry if spore still exists
             }
         }
         Microbot.log("Finished looting seaweed spores");
