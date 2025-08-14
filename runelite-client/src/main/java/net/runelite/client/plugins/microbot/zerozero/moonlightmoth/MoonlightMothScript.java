@@ -1,10 +1,9 @@
 package net.runelite.client.plugins.microbot.zerozero.moonlightmoth;
 
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.client.game.ItemManager;
+import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -18,22 +17,11 @@ import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import java.util.concurrent.TimeUnit;
 
-import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
-
 public class MoonlightMothScript extends Script {
 
-    private String lastChatMessage = "";
     public int totalCaught = 0;
     public int pricePerMoth = 0;
-
-    private enum State {
-        CHECK_STATE,
-        BANKING,
-        SHOPPING,
-        TRAVELLING,
-        CATCHING
-    }
-
+    private String lastChatMessage = "";
     private State currentState = State.CHECK_STATE;
 
     public boolean run(MoonlightMothConfig config) {
@@ -315,7 +303,6 @@ public class MoonlightMothScript extends Script {
         Rs2Inventory.dropAll("Vial");
     }
 
-
     void logOnceToChat(String message, boolean isDebug) {
         if (!message.equals(lastChatMessage)) {
             if (!isDebug || (isDebug && MoonlightMothConfig.debugMessages())) {
@@ -330,5 +317,13 @@ public class MoonlightMothScript extends Script {
         currentState = State.CHECK_STATE;
         lastChatMessage = "";
         super.shutdown();
+    }
+
+    private enum State {
+        CHECK_STATE,
+        BANKING,
+        SHOPPING,
+        TRAVELLING,
+        CATCHING
     }
 }

@@ -13,18 +13,16 @@ import java.time.Instant;
 @PluginDescriptor(
         name = PluginDescriptor.zerozero + "MoonlightMoth",
         description = "Moonlight moth catcher",
-        tags = {"moonlight", "moth", "catcher","microbot","prayer"},
+        tags = {"moonlight", "moth", "catcher", "microbot", "prayer"},
         enabledByDefault = false
 )
 public class MoonlightMothPlugin extends Plugin {
     static final String CONFIG = "moonlightmoth";
     public Instant scriptStartTime;
     @Inject
-    private OverlayManager overlayManager;
-
-    @Inject
     public MoonlightMothScript script;
-
+    @Inject
+    private OverlayManager overlayManager;
     @Inject
     private MoonlightMothConfig config;
 

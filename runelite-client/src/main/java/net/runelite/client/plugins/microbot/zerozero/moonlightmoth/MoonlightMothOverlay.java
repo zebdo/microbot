@@ -1,7 +1,5 @@
 package net.runelite.client.plugins.microbot.zerozero.moonlightmoth;
 
-import lombok.Setter;
-import net.runelite.api.Client;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.TaF.GemCrabKiller.GemCrabKillerPlugin;
 import net.runelite.client.ui.overlay.OverlayLayer;
@@ -11,7 +9,6 @@ import net.runelite.client.ui.overlay.components.ComponentOrientation;
 import net.runelite.client.ui.overlay.components.ImageComponent;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.SplitComponent;
-import net.runelite.client.ui.overlay.components.TitleComponent;
 import net.runelite.client.util.ImageUtil;
 
 import javax.inject.Inject;
@@ -21,8 +18,8 @@ import java.time.Instant;
 
 public class MoonlightMothOverlay extends OverlayPanel {
 
-    private final ImageComponent imageComponent;
     public final MoonlightMothPlugin plugin;
+    private final ImageComponent imageComponent;
 
     @Inject
     public MoonlightMothOverlay(MoonlightMothPlugin plugin) {
@@ -76,14 +73,14 @@ public class MoonlightMothOverlay extends OverlayPanel {
 
             // Avoid division by zero
             int caughtPerHour = hoursElapsed > 0 ?
-                    (int)(plugin.script.totalCaught / hoursElapsed) : 0;
+                    (int) (plugin.script.totalCaught / hoursElapsed) : 0;
             int profitPerHour = hoursElapsed > 0 ?
-                    (int)((plugin.script.totalCaught * plugin.script.pricePerMoth) / hoursElapsed) : 0;
+                    (int) ((plugin.script.totalCaught * plugin.script.pricePerMoth) / hoursElapsed) : 0;
 
             // Total caught moths
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Total moths caught:")
-                    .right(String.valueOf(plugin.script.totalCaught) + " (" + caughtPerHour + "/hr)")
+                    .right(plugin.script.totalCaught + " (" + caughtPerHour + "/hr)")
                     .rightColor(Color.YELLOW)
                     .build());
             // Total profit
@@ -93,7 +90,7 @@ public class MoonlightMothOverlay extends OverlayPanel {
                     .rightColor(Color.YELLOW)
                     .build());
 
-        } catch(Exception ex) {
+        } catch (Exception ex) {
             System.out.println(ex.getMessage());
         }
         return super.render(graphics);
