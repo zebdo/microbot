@@ -316,6 +316,8 @@ public class MoonlightMothScript extends Script {
         logOnceToChat("MoonlightMoth stopped", false);
         currentState = State.CHECK_STATE;
         lastChatMessage = "";
+        totalCaught = 0;
+        pricePerMoth = 0;
         super.shutdown();
     }
 
