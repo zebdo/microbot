@@ -46,7 +46,7 @@ public class BreakHandlerScript extends Script {
     public static String version = "2.0.0";
     
     // Constants for configuration and timing
-    private static final int SCHEDULER_INTERVAL_MS = Constants.GAME_TICK_LENGTH;
+    private static final int SCHEDULER_INTERVAL_MS = 1000;
     private static final int MINUTES_TO_SECONDS = 60;
     
     // Configuration-dependent timing values (accessed through helper methods)

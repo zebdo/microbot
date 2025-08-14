@@ -631,7 +631,10 @@ public class Rs2Npc {
      */
 
     public static boolean interact(Rs2NpcModel npc, String action) {
-        if (npc == null) return false;
+        if (npc == null) {
+            log.error("Error interacting with NPC for action '{}': NPC is null", action);
+            return false;
+        }
 
         Microbot.status = action + " " + npc.getName();
         try {
@@ -643,7 +646,12 @@ public class Rs2Npc {
                                 + Microbot.cantReachTargetRetries + " times but failed. Please take a look at what is happening.");
                         return false;
                     }
-                    Rs2Walker.walkTo(Rs2Tile.getNearestWalkableTileWithLineOfSight(npc.getWorldLocation()), 0);
+                    final WorldPoint npcWorldPoint = npc.getWorldLocation();
+                    if (npcWorldPoint == null) {
+                        log.error("Error interacting with NPC '{}' for action '{}': WorldPoint is null", npc.getName(), action);
+                        return false;
+                    }
+                    Rs2Walker.walkTo(Rs2Tile.getNearestWalkableTileWithLineOfSight(npcWorldPoint), 0);
                     Microbot.pauseAllScripts.compareAndSet(true, false);
                     Microbot.cantReachTargetRetries++;
                     return false;
@@ -654,17 +662,20 @@ public class Rs2Npc {
                 }
             }
 
-            NPCComposition npcComposition = Microbot.getClientThread().runOnClientThreadOptional(
+            final NPCComposition npcComposition = Microbot.getClientThread().runOnClientThreadOptional(
                     () -> Microbot.getClient().getNpcDefinition(npc.getId())).orElse(null);
+            if (npcComposition == null) {
+                log.error("Error interacting with NPC '{}' for action '{}': NPCComposition is null", npc.getName(), action);
+                return false;
+            }
 
-            if (npcComposition == null || npcComposition.getActions() == null) {
-                Microbot.log("Error: Could not get NPC composition or actions for NPC: " + npc.getName());
+            final String[] actions = npcComposition.getActions();
+            if (actions == null) {
+                log.error("Error interacting with NPC '{}' for action '{}': Actions are null", npc.getName(), action);
                 return false;
             }
 
             final int index;
-            String[] actions = npcComposition.getActions();
-
             if (action == null || action.isBlank()) {
                 index = IntStream.range(0, actions.length)
                         .filter(i -> actions[i] != null && !actions[i].isEmpty())
@@ -678,17 +689,21 @@ public class Rs2Npc {
 
             final MenuAction menuAction = getMenuAction(index);
             if (menuAction == null) {
-                if (index == -1 && !Microbot.getClient().isWidgetSelected()) {
-                    log.warn("Action='{}' not found for NPC='{}'", action, npc.getName());
+                if (index == -1) {
+                    log.error("Error interacting with NPC '{}' for action '{}': Action not found. Actions={}", npc.getName(), action, actions);
                 } else {
-                    log.error("Could not get menu action for Action='{}' on NPC='{}'", action, npc.getName());
+                    log.error("Error interacting with NPC '{}' for action '{}': Invalid Index={}. Actions={}", npc.getName(), action, index, actions);
                 }
                 return false;
             }
+            action = menuAction == MenuAction.WIDGET_TARGET_ON_NPC ? "Use" : actions[index];
 
-            action = actions[index];
-
-            if (!Rs2Camera.isTileOnScreen(npc.getLocalLocation())) {
+            final LocalPoint localPoint = npc.getLocalLocation();
+            if (localPoint == null) {
+                log.error("Error interacting with NPC '{}' for action '{}': LocalPoint is null", npc.getName(), action);
+                return false;
+            }
+            if (!Rs2Camera.isTileOnScreen(localPoint)) {
                 Rs2Camera.turnTo(npc);
             }
 
@@ -953,7 +968,7 @@ public class Rs2Npc {
      * @return {@code true} if the pickpocket action was successfully executed, {@code false} otherwise.
      */
     public static boolean pickpocket(NPC npc) {
-        return interact(new Rs2NpcModel(npc), "pickpocket");
+        return interact(npc instanceof Rs2NpcModel ? (Rs2NpcModel) npc : new Rs2NpcModel(npc), "pickpocket");
     }
 
     /**
@@ -980,9 +995,17 @@ public class Rs2Npc {
      */
     public static boolean hasLineOfSight(Rs2NpcModel npc) {
         if (npc == null) return false;
-        if (npc.getWorldLocation().equals(Rs2Player.getWorldLocation())) return true;
 
-        return npc.getWorldLocation().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation().toWorldArea());
+        final WorldPoint npcLoc = npc.getWorldLocation();
+        if (npcLoc == null) return false;
+
+        final WorldPoint myLoc = Rs2Player.getWorldLocation();
+        if (myLoc == null) return false;
+
+        if (npcLoc.equals(myLoc)) return true;
+
+        final WorldView wv = Microbot.getClient().getTopLevelWorldView();
+        return wv != null && npcLoc.toWorldArea().hasLineOfSightTo(wv, myLoc);
     }
 
     /**
