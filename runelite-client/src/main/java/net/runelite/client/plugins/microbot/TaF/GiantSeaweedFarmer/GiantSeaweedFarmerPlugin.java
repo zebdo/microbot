@@ -122,5 +122,6 @@ public class GiantSeaweedFarmerPlugin extends Plugin implements SchedulablePlugi
         if (!success) {
             log.error(message);
         }
+        Microbot.stopPlugin(this);
     }
 }
