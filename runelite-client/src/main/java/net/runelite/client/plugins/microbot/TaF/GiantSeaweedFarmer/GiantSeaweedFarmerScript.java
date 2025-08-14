@@ -306,13 +306,13 @@ public class GiantSeaweedFarmerScript extends Script {
             return;
         }
 
-        var handledPatch = handlePatch(patchToFarm, config);
+        var handledPatch = handlePatch(patchToFarm);
         if (handledPatch) {
             handledPatches.add(patchToFarm);
         }
     }
 
-    private boolean handlePatch(int patchId, GiantSeaweedFarmerConfig config) {
+    private boolean handlePatch(int patchId) {
         if (Rs2Inventory.isFull()) {
             Rs2NpcModel leprechaun = Rs2Npc.getNpc("Tool leprechaun");
             if (leprechaun != null) {
@@ -324,112 +324,29 @@ public class GiantSeaweedFarmerScript extends Script {
             return false;
         }
 
-        // FIRST: Check if there's any Dead seaweed that needs clearing
-        TileObject deadPatch = Rs2GameObject.getGameObjects()
-                .stream()
-                .filter(o -> {
-                    var objComp = Rs2GameObject.convertToObjectComposition(o, false);
-                    return objComp != null && objComp.getActions() != null && 
-                           Arrays.asList(objComp.getActions()).contains("Clear");
-                })
-                .findFirst()
-                .orElse(null);
-                
-        if (deadPatch != null) {
-            Microbot.log("Found Dead seaweed to clear");
-            // Clear the dead patch
-            Rs2GameObject.interact(deadPatch, "Clear");
-            sleepUntil(() -> {
-                // Check if there's still a dead patch nearby
-                return !Rs2GameObject.getGameObjects()
-                        .stream()
-                        .anyMatch(o -> {
-                            var objComp = Rs2GameObject.convertToObjectComposition(o, false);
-                            return objComp != null && objComp.getActions() != null && 
-                                   Arrays.asList(objComp.getActions()).contains("Clear");
-                        });
-            }, 10000);
-            
-            // Now find the Empty patch and plant it
-            Microbot.log("Dead patch cleared, looking for Empty patch to plant");
-            sleep(500, 1000); // Small delay to ensure patch state updates
-            
-            // Find the now-empty patch
-            TileObject emptyPatch = Rs2GameObject.getGameObjects()
-                    .stream()
-                    .filter(o -> {
-                        var objComp = Rs2GameObject.convertToObjectComposition(o, false);
-                        if (objComp == null || objComp.getName() == null) return false;
-                        String name = objComp.getName().toLowerCase();
-                        // Look for seaweed patch that can be planted
-                        return name.contains("seaweed") && objComp.getActions() != null &&
-                               (Arrays.asList(objComp.getActions()).contains("Rake") ||
-                                Arrays.asList(objComp.getActions()).contains("Plant"));
-                    })
-                    .findFirst()
-                    .orElse(null);
-                    
-            if (emptyPatch != null) {
-                Microbot.log("Found Empty patch, planting");
-                // Check if it needs raking first
-                var objComp = Rs2GameObject.convertToObjectComposition(emptyPatch, false);
-                if (objComp != null && objComp.getActions() != null && 
-                    Arrays.asList(objComp.getActions()).contains("Rake")) {
-                    Rs2GameObject.interact(emptyPatch, "Rake");
-                    sleepUntil(() -> {
-                        var comp = Rs2GameObject.convertToObjectComposition(emptyPatch, false);
-                        return comp != null && comp.getActions() != null && 
-                               Arrays.asList(comp.getActions()).contains("Plant");
-                    }, 10000);
-                }
-                
-                // Now plant
-                Rs2Inventory.use("compost");
-                Rs2GameObject.interact(emptyPatch, "Compost");
-                Rs2Player.waitForXpDrop(Skill.FARMING);
-                Rs2Inventory.use(" spore");
-                Rs2GameObject.interact(emptyPatch, "Plant");
-                sleepUntil(() -> {
-                    var state = getSeaweedPatchState(emptyPatch);
-                    return state.equals("Growing");
-                }, 10000);
-                
-                Microbot.log("Patch planted after clearing dead seaweed");
-                return true; // Mark as handled since we've completed the full cycle
-            } else {
-                Microbot.log("Could not find Empty patch after clearing");
-                return false; // Try again next iteration
-            }
-        }
-
-        // Now try to find a patch with the base ID or any seaweed patch
         Integer[] ids = {
                 patchId
         };
-        TileObject obj = Rs2GameObject.findObject(ids);
+        var obj = Rs2GameObject.findObject(ids);
         
-        // If not found with base ID, try finding any seaweed patch
+        // If not found by ID, look for Dead seaweed specifically
         if (obj == null) {
-            // Try finding any seaweed patch nearby
             obj = Rs2GameObject.getGameObjects()
                     .stream()
                     .filter(o -> {
                         var objComp = Rs2GameObject.convertToObjectComposition(o, false);
                         return objComp != null && objComp.getName() != null && 
-                               objComp.getName().toLowerCase().contains("seaweed");
+                               objComp.getName().equalsIgnoreCase("Dead seaweed");
                     })
                     .findFirst()
                     .orElse(null);
         }
         
-        if (obj == null) {
-            Microbot.log("Could not find patch with ID: " + patchId);
-            return false;
-        }
+        if (obj == null) return false;
         
-        final TileObject patchObj = obj;
+        // Make final reference for lambda usage
+        final var patchObj = obj;
         var state = getSeaweedPatchState(patchObj);
-        Microbot.log("Patch " + patchId + " state: " + state);
         switch (state) {
             case "Empty":
                 Rs2Inventory.use("compost");
@@ -438,29 +355,20 @@ public class GiantSeaweedFarmerScript extends Script {
                 Rs2Inventory.use(" spore");
                 Rs2GameObject.interact(patchObj, "Plant");
                 sleepUntil(() -> getSeaweedPatchState(patchObj).equals("Growing"));
-                // Patch is now planted and growing, we're done with it
-                return true;
+                return false;
             case "Harvestable":
                 Rs2GameObject.interact(patchObj, "Pick");
                 sleepUntil(() -> getSeaweedPatchState(patchObj).equals("Empty") || Rs2Inventory.isFull(), 20000);
-                // Don't mark as handled yet - we may need to replant after harvesting
                 return false;
             case "Weeds":
                 Rs2GameObject.interact(patchObj);
                 sleepUntil(() -> !getSeaweedPatchState(patchObj).equals("Weeds"), 10000);
-                // Don't mark as handled yet - we still need to plant after clearing weeds
                 return false;
             case "Dead":
                 Rs2GameObject.interact(patchObj, "Clear");
                 sleepUntil(() -> getSeaweedPatchState(patchObj).equals("Empty"));
-                // Don't mark as handled yet - we still need to plant after clearing
                 return false;
-            case "Growing":
-            case "Diseased":
-                // These states mean the patch is already being used, mark as handled
-                return true;
             default:
-                // Unknown state, skip this patch
                 currentPatch = null;
                 return true;
         }
