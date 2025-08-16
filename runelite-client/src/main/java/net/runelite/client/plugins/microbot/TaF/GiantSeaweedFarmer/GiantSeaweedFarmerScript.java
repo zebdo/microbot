@@ -329,14 +329,18 @@ public class GiantSeaweedFarmerScript extends Script {
         };
         var obj = Rs2GameObject.findObject(ids);
         
-        // If not found by ID, look for Dead seaweed specifically
+        // If not found by ID, look for patch objects by name
         if (obj == null) {
             obj = Rs2GameObject.getGameObjects()
                     .stream()
                     .filter(o -> {
                         var objComp = Rs2GameObject.convertToObjectComposition(o, false);
-                        return objComp != null && objComp.getName() != null && 
-                               objComp.getName().equalsIgnoreCase("Dead seaweed");
+                        if (objComp == null || objComp.getName() == null) return false;
+                        String name = objComp.getName();
+                        // Look for seaweed patch objects or dead seaweed
+                        return name.equalsIgnoreCase("Dead seaweed") || 
+                               name.equalsIgnoreCase("Seaweed patch") ||
+                               (name.equalsIgnoreCase("Seaweed") && objComp.getId() == patchId);
                     })
                     .findFirst()
                     .orElse(null);
@@ -354,20 +358,20 @@ public class GiantSeaweedFarmerScript extends Script {
                 Rs2Player.waitForXpDrop(Skill.FARMING);
                 Rs2Inventory.use(" spore");
                 Rs2GameObject.interact(patchObj, "Plant");
-                sleepUntil(() -> getSeaweedPatchState(patchObj).equals("Growing"));
-                return false;
+                sleepUntil(() -> getSeaweedPatchState(patchObj).equals("Growing"), 10000);
+                return true;
             case "Harvestable":
                 Rs2GameObject.interact(patchObj, "Pick");
                 sleepUntil(() -> getSeaweedPatchState(patchObj).equals("Empty") || Rs2Inventory.isFull(), 20000);
-                return false;
+                return true;
             case "Weeds":
                 Rs2GameObject.interact(patchObj);
                 sleepUntil(() -> !getSeaweedPatchState(patchObj).equals("Weeds"), 10000);
-                return false;
+                return true;
             case "Dead":
                 Rs2GameObject.interact(patchObj, "Clear");
-                sleepUntil(() -> getSeaweedPatchState(patchObj).equals("Empty"));
-                return false;
+                sleepUntil(() -> getSeaweedPatchState(patchObj).equals("Empty"), 10000);
+                return true;
             default:
                 currentPatch = null;
                 return true;
