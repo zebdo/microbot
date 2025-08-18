@@ -344,7 +344,7 @@ public class FornBirdhouseRunsScript extends Script {
         
         // If we get here, no seed type had 40+ available
         setupErrorMessage = "Need 40 seeds but no birdhouse seed type has 40+ in bank";
-        Microbot.log(setupErrorMessage);
+        log.error(setupErrorMessage);
         return false;
     }
 }
