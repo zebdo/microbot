@@ -49,9 +49,9 @@ public class MicrobotPluginManifest {
     private String description;
 
     /**
-     * Plugin author
+     * Plugin authors (optional)
      */
-    private String author;
+    private String[] authors;
 
     /**
      * Plugin version
@@ -78,12 +78,13 @@ public class MicrobotPluginManifest {
      */
     private String iconUrl;
 
-    /**
-     * Support URL for the plugin (optional)
-     */
-    private String supportUrl;
+	/**
+	 * Flag indicating the plugin is disabled. (optional)
+	 * This is used for plugins that are no longer functional or have been deprecated.
+	 */
+	private boolean disable;
 
-    /**
+	/**
      * Tags for the plugin (optional)
      */
     private String[] tags;
@@ -107,5 +108,18 @@ public class MicrobotPluginManifest {
      */
     public boolean hasIcon() {
         return iconUrl != null && !iconUrl.isEmpty();
+    }
+
+    /**
+     * Gets the author(s) as a single string.
+     */
+    public String getAuthor() {
+        if (authors == null || authors.length == 0) {
+            return "Unknown";
+        }
+        if (authors.length == 1) {
+            return authors[0];
+        }
+        return String.join(", ", authors);
     }
 }
