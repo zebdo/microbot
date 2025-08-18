@@ -964,11 +964,16 @@ public class BarrowsScript extends Script {
             shouldBank = true;
             return;
         }
-        if (Rs2Inventory.count(it->it!=null&&it.getName().toLowerCase().contains(config.prayerRestoreType().getPrayerRestoreTypeName().toLowerCase())) < 1) {
+
+        String name = config.prayerRestoreType().getPrayerRestoreTypeName();
+        if(name.contains("(")) name = config.prayerRestoreType().getPrayerRestoreTypeName().split("\\(")[0];
+        String splitName = name;
+        if (Rs2Inventory.count(it->it!=null&&it.getName().toLowerCase().contains(splitName.toLowerCase())) < 1) {
             Microbot.log("We don't have enough "+config.prayerRestoreType().getPrayerRestoreTypeName());
             shouldBank = true;
             return;
         }
+
         if(Rs2Player.getRunEnergy() <= 5){
             Microbot.log("We need more run energy ");
             shouldBank = true;
