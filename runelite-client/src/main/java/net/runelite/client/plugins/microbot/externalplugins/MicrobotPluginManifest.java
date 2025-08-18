@@ -78,6 +78,11 @@ public class MicrobotPluginManifest {
      */
     private String iconUrl;
 
+    /**
+     * URL to the plugin's card image (optional)
+     */
+    private String cardUrl;
+
 	/**
 	 * Flag indicating the plugin is disabled. (optional)
 	 * This is used for plugins that are no longer functional or have been deprecated.

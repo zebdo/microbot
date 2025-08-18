@@ -141,9 +141,15 @@ public @interface PluginDescriptor
 	String minClientVersion() default "1.0.0";
 	/**
 	 * An optional URL to an icon for the plugin.
-	 * This icon will be displayed in the plugin hub list & the card for the plugin on the website
+	 * This icon will be displayed in the plugin hub list
 	 */
 	String iconUrl() default "";
+
+	/**
+	 * An optional URL to an banner image for the plugin.
+	 * this image will be displayed in the plugin card on the website.
+	 */
+	String cardUrl() default "";
 
 	/**
 	 * A flag to denote if a plugin is an external plugin (loaded from a JAR file) or a native plugin.
