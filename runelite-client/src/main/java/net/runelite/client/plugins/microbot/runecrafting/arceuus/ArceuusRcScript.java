@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public class ArceuusRcScript extends Script {
-    public static final String version = "1.0.10";
+    public static final String version = "1.0.2";
 
     private static ArceuusRcConfig config;
 
@@ -325,7 +325,9 @@ public class ArceuusRcScript extends Script {
         final AtomicInteger emptyCount = new AtomicInteger(Rs2Inventory.emptySlotCount());
         Rs2Player.waitForAnimation(10_000);
         while (emptyCount.get() > 0) {
+            if (!Rs2Player.isAnimating(1_800)) return; // runestone probably mined - need to switch
             if (sleepUntil(() -> {
+                if (!Rs2Player.isAnimating(1_800)) return true;
                 final int newEmptyCount = Rs2Inventory.emptySlotCount();
                 if (newEmptyCount >= emptyCount.get()) return false;
                 emptyCount.set(newEmptyCount);
