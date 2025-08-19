@@ -38,6 +38,7 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
+import net.runelite.client.RuneLiteProperties;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.events.ExternalPluginsChanged;
 import net.runelite.client.plugins.*;
@@ -50,6 +51,7 @@ import okhttp3.Response;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+import javax.swing.*;
 import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
@@ -145,6 +147,19 @@ public class MicrobotPluginManager
     public void install(MicrobotPluginManifest manifest)
     {
         executor.execute(() -> {
+            // Check if plugin is disabled
+            if (manifest.isDisable()) {
+                log.error("Plugin {} is disabled and cannot be installed.", manifest.getInternalName());
+                return;
+            }
+
+            // Check version compatibility before installing
+            if (!isClientVersionCompatible(manifest.getMinClientVersion())) {
+                log.error("Plugin {} requires client version {} or higher, but current version is {}. Installation aborted.",
+                    manifest.getInternalName(), manifest.getMinClientVersion(), RuneLiteProperties.getMicrobotVersion());
+                return;
+            }
+
             try
             {
                 HttpUrl url = microbotPluginClient.getJarURL(manifest);
@@ -201,21 +216,53 @@ public class MicrobotPluginManager
     public void remove(String internalName)
     {
         executor.execute(() -> {
-            // Remove the jar file
-            File pluginFile = getPluginJarFile(internalName);
-            if (pluginFile.exists() && !pluginFile.delete())
-            {
-                log.warn("Could not delete plugin file: {}", pluginFile);
+            List<Plugin> pluginsToRemove = pluginManager.getPlugins().stream()
+                    .filter(plugin -> {
+                        PluginDescriptor descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
+                        if (descriptor == null) {
+                            return false;
+                        }
+
+                        boolean isExternal = descriptor.isExternal();
+                        String className = plugin.getClass().getSimpleName();
+                        String descriptorName = descriptor.name();
+
+                        boolean nameMatches = className.equals(internalName) ||
+                                            descriptorName.equals(internalName) ||
+                                            className.toLowerCase().equals(internalName.toLowerCase()) ||
+                                            descriptorName.toLowerCase().equals(internalName.toLowerCase());
+
+                        return isExternal && nameMatches;
+                    })
+                    .collect(Collectors.toList());
+
+            for (Plugin plugin : pluginsToRemove) {
+                if (pluginManager.isPluginEnabled(plugin)) {
+                    try {
+                        pluginManager.setPluginEnabled(plugin, false);
+
+                        if (pluginManager.isPluginActive(plugin)) {
+                            SwingUtilities.invokeLater(() -> {
+                                try {
+                                    pluginManager.stopPlugin(plugin);
+                                } catch (PluginInstantiationException e) {
+                                    log.warn("Error stopping plugin {}: {}", plugin.getClass().getSimpleName(), e.getMessage());
+                                }
+                            });
+                        }
+                    } catch (Exception e) {
+                        log.warn("Error stopping plugin {}: {}", plugin.getClass().getSimpleName(), e.getMessage());
+                    }
+                }
+
+                pluginManager.remove(plugin);
             }
 
-            pluginManager.remove(pluginManager.getPlugins().stream()
-                    .filter(x ->
-                            x.getClass().getSimpleName().equals(internalName)
-                                    && x.getClass().getAnnotation(PluginDescriptor.class).isExternal())
-                    .findFirst()
-                    .orElse(null));
+            File pluginFile = getPluginJarFile(internalName);
+            if (pluginFile.exists()) {
+                pluginFile.delete();
+            }
 
-            // Update installed plugins list
             List<String> plugins = getInstalledPlugins();
             if (plugins.contains(internalName))
             {
@@ -223,17 +270,41 @@ public class MicrobotPluginManager
                 saveInstalledPlugins(plugins);
             }
 
-            // Notify for plugin change
             eventBus.post(new ExternalPluginsChanged());
         });
     }
 
     private boolean verifyHash(byte[] jarData, String expectedHash)
     {
+        if ((expectedHash == null || expectedHash.isEmpty()) || (jarData == null || jarData.length == 0))
+        {
+            throw new IllegalArgumentException("Hash or jar data is null/empty");
+        }
+
+        String computedHash = calculateSHA256Hash(jarData);
+        return computedHash.equals(expectedHash);
+    }
+
+    /**
+     * Calculate SHA-256 hash for byte array data and return as hex string
+     */
+    private String calculateSHA256Hash(byte[] data)
+    {
         try
         {
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
-            byte[] hash = digest.digest(jarData);
+
+            int offset = 0;
+            int bufferSize = 8192;
+
+            while (offset < data.length)
+            {
+                int bytesToProcess = Math.min(bufferSize, data.length - offset);
+                digest.update(data, offset, bytesToProcess);
+                offset += bytesToProcess;
+            }
+
+            byte[] hash = digest.digest();
 
             StringBuilder hexString = new StringBuilder();
             for (byte b : hash)
@@ -245,24 +316,24 @@ public class MicrobotPluginManager
                 }
                 hexString.append(hex);
             }
-
-            return hexString.toString().equals(expectedHash);
+            return hexString.toString();
         }
         catch (NoSuchAlgorithmException e)
         {
-            log.error("Error verifying plugin hash", e);
-            return false;
+            log.trace("Error computing SHA-256 hash", e);
+			throw new RuntimeException("SHA-256 algorithm not found", e);
         }
     }
+
     public static File[] createSideloadingFolder() {
         final File MICROBOT_PLUGINS = new File(RuneLite.RUNELITE_DIR, "microbot-plugins");
         if (!java.nio.file.Files.exists(MICROBOT_PLUGINS.toPath())) {
             try {
                 java.nio.file.Files.createDirectories(MICROBOT_PLUGINS.toPath());
-                System.out.println("Directory for sideloading was created successfully.");
+                log.debug("Directory for sideloading was created successfully.");
                 return MICROBOT_PLUGINS.listFiles();
             } catch (IOException e) {
-                e.printStackTrace();
+                log.trace("Error creating directory for sideloading!", e);
             }
         }
         return MICROBOT_PLUGINS.listFiles();
@@ -293,7 +364,7 @@ public class MicrobotPluginManager
 
             if (f.getName().endsWith(".jar"))
             {
-                log.info("Side-loading plugin " + f.getName());
+                log.info("Side-loading plugin {}", f.getName());
 
                 try
                 {
@@ -301,7 +372,7 @@ public class MicrobotPluginManager
 
                     List<Class<?>> plugins = new ArrayList<>();
 
-                    MicrobotPluginClassLoader classLoader = new MicrobotPluginClassLoader(fileBytes, getClass().getClassLoader());
+                    MicrobotPluginClassLoader classLoader = new MicrobotPluginClassLoader(getClass().getClassLoader(), f.getName(), fileBytes);
 
                     // Assuming you know the class names you want to load
                     Set<String> classNamesToLoad = classLoader.getLoadedClassNames();
@@ -311,7 +382,7 @@ public class MicrobotPluginManager
                             Class<?> clazz = classLoader.loadClass(className);
                             plugins.add(clazz);
                         } catch (ClassNotFoundException e) {
-                            e.printStackTrace();
+                            log.trace("Class not found during sideloading: {}", className, e);
                         }
                     }
 
@@ -320,9 +391,9 @@ public class MicrobotPluginManager
                     eventBus.post(new ExternalPluginsChanged());
 
                 }
-                catch (PluginInstantiationException | IOException ex)
+                catch (PluginInstantiationException | IOException e)
                 {
-                    System.out.println("error sideloading plugin " + ex);
+                    log.trace("Error loading side-loaded plugin!", e);
                 }
             }
         }
@@ -384,6 +455,19 @@ public class MicrobotPluginManager
                 continue;
             }
 
+            // Check version compatibility for external plugins
+            if (pluginDescriptor.isExternal() && !isClientVersionCompatible(pluginDescriptor.minClientVersion())) {
+                log.error("Plugin {} requires client version {} or higher, but current version is {}. Skipping plugin loading.",
+                    clazz.getSimpleName(), pluginDescriptor.minClientVersion(), RuneLiteProperties.getMicrobotVersion());
+                continue;
+            }
+
+			// Check if the plugin is disabled
+			if (pluginDescriptor.disable()) {
+				log.error("Plugin {} has been disabled upstream", clazz.getSimpleName());
+				continue;
+			}
+
             graph.addNode((Class<Plugin>) clazz);
         }
 
@@ -410,7 +494,7 @@ public class MicrobotPluginManager
             Plugin plugin;
             try {
                 plugin = instantiate(pluginManager.getPlugins(), (Class<Plugin>) pluginClazz);
-                log.info("Microbot pluginManager loaded " + plugin.getName());
+                log.info("Microbot pluginManager loaded " + plugin.getClass().getSimpleName());
                 newPlugins.add(plugin);
                 pluginManager.addPlugin(plugin);
             } catch (PluginInstantiationException ex) {
@@ -483,6 +567,72 @@ public class MicrobotPluginManager
 
         log.debug("Loaded plugin {}", clazz.getSimpleName());
         return plugin;
+    }
+
+    /**
+     * Check if the current client version is compatible with the required minimum version
+     */
+    public boolean isClientVersionCompatible(String minClientVersion) {
+        if (minClientVersion == null || minClientVersion.isEmpty()) {
+            return true;
+        }
+
+        String currentVersion = RuneLiteProperties.getMicrobotVersion();
+        if (currentVersion == null) {
+            log.warn("Unable to determine current Microbot version");
+            return false;
+        }
+
+        return compareVersions(currentVersion, minClientVersion) >= 0;
+    }
+
+    /**
+     * Compare two version strings using semantic versioning with support for 4-part versions
+     * Supports formats like: 1.9.7, 1.9.7.1, 1.9.8, 1.9.8.1
+     * @param version1 The first version to compare
+     * @param version2 The second version to compare
+     * @return -1 if version1 < version2, 0 if equal, 1 if version1 > version2
+     */
+    @VisibleForTesting
+    static int compareVersions(String version1, String version2) {
+        if (version1 == null && version2 == null) return 0;
+        if (version1 == null) return -1;
+        if (version2 == null) return 1;
+
+        // Split versions by dots and handle up to 4 parts (major.minor.patch.build)
+        String[] v1Parts = version1.split("\\.");
+        String[] v2Parts = version2.split("\\.");
+
+        int maxLength = Math.max(v1Parts.length, v2Parts.length);
+
+        for (int i = 0; i < maxLength; i++) {
+            int v1Part = i < v1Parts.length ? parseVersionPart(v1Parts[i]) : 0;
+            int v2Part = i < v2Parts.length ? parseVersionPart(v2Parts[i]) : 0;
+
+            if (v1Part < v2Part) return -1;
+            if (v1Part > v2Part) return 1;
+        }
+
+        return 0;
+    }
+
+    /**
+     * Parse a version part, extracting only the numeric portion
+     */
+    private static int parseVersionPart(String part) {
+        if (part == null || part.isEmpty()) return 0;
+
+        StringBuilder numericPart = new StringBuilder();
+        for (char c : part.toCharArray()) {
+            if (!Character.isDigit(c)) break;
+			numericPart.append(c);
+        }
+
+        try {
+            return numericPart.length() > 0 ? Integer.parseInt(numericPart.toString()) : 0;
+        } catch (NumberFormatException e) {
+            return 0;
+        }
     }
 
     public void loadCorePlugins(List<Class<?>> plugins) throws IOException, PluginInstantiationException
