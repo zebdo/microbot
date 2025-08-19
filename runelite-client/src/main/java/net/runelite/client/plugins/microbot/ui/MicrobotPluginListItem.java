@@ -31,6 +31,7 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.SwingUtil;
+import org.jetbrains.annotations.NotNull;
 
 import javax.swing.*;
 import javax.swing.border.EmptyBorder;
@@ -92,13 +93,7 @@ class MicrobotPluginListItem extends JPanel implements SearchablePlugin
 		setLayout(new BorderLayout(3, 0));
 		setPreferredSize(new Dimension(PluginPanel.PANEL_WIDTH, 20));
 
-		JLabel nameLabel = new JLabel(pluginConfig.getName());
-		nameLabel.setForeground(Color.WHITE);
-
-		if (!pluginConfig.getDescription().isEmpty())
-		{
-			nameLabel.setToolTipText("<html>" + pluginConfig.getName() + ":<br>" + pluginConfig.getDescription() + "</html>");
-		}
+		JLabel nameLabel = createNameLabel(pluginConfig);
 
 		pinButton = new JToggleButton(OFF_STAR);
 		pinButton.setSelectedIcon(ON_STAR);
@@ -146,7 +141,7 @@ class MicrobotPluginListItem extends JPanel implements SearchablePlugin
 			uninstallItem.addActionListener(ev -> pluginListPanel.getExternalPluginManager().remove(internalName));
 		}
 
-		addLabelPopupMenu(nameLabel, configMenuItem, pluginConfig.createSupportMenuItem(), uninstallItem);
+		addLabelPopupMenu(nameLabel, configMenuItem, pluginConfig.createSupportMenuItem(pluginConfig.getPlugin()), uninstallItem);
 		add(nameLabel, BorderLayout.CENTER);
 
 		onOffToggle = new MicrobotPluginToggleButton();
@@ -155,10 +150,7 @@ class MicrobotPluginListItem extends JPanel implements SearchablePlugin
 		if (pluginConfig.getPlugin() != null)
 		{
 			PluginDescriptor pluginDescriptor = pluginConfig.getPlugin().getClass().getAnnotation(PluginDescriptor.class);
-			if (pluginDescriptor.alwaysOn()) {
-				onOffToggle.setEnabled(false);
-				onOffToggle.setSelected(true);
-			}
+
 			onOffToggle.addActionListener(i ->
 			{
 				if (onOffToggle.isSelected())
@@ -170,11 +162,41 @@ class MicrobotPluginListItem extends JPanel implements SearchablePlugin
 					pluginListPanel.stopPlugin(pluginConfig.getPlugin());
 				}
 			});
+
+			if (pluginDescriptor.alwaysOn()) {
+				onOffToggle.setEnabled(false);
+				onOffToggle.setSelected(true);
+				pluginListPanel.startPlugin(pluginConfig.getPlugin());
+			}
+			if (pluginDescriptor.disableOnStartUp()) {
+				onOffToggle.setSelected(false);
+				pluginListPanel.stopPlugin(pluginConfig.getPlugin());
+			}
+			if (pluginDescriptor.disable()) {
+				onOffToggle.setEnabled(false);
+				onOffToggle.setSelected(false);
+				pluginListPanel.stopPlugin(pluginConfig.getPlugin());
+			}
 		}
 		else
 		{
 			onOffToggle.setVisible(false);
 		}
+	}
+
+	@NotNull
+	private static JLabel createNameLabel(MicrobotPluginConfigurationDescriptor pluginConfig) {
+		JLabel nameLabel = new JLabel(pluginConfig.getName());
+		int buttons = 21 /*pin*/ + 25 /*config, if present*/ + 34 /*toggle approx*/ + 12 /*margins*/;
+		int textWidth = PluginPanel.PANEL_WIDTH - buttons;
+		nameLabel.setText("<html><div style='width:" + textWidth + "px'>" + pluginConfig.getName() + "</div></html>");
+		nameLabel.setForeground(Color.WHITE);
+
+		if (!pluginConfig.getDescription().isEmpty())
+		{
+			nameLabel.setToolTipText("<html>" + pluginConfig.getName() + ":<br>" + pluginConfig.getDescription() + "</html>");
+		}
+		return nameLabel;
 	}
 
 	@Override

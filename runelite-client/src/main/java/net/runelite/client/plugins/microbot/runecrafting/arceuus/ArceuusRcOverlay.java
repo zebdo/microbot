@@ -37,6 +37,12 @@ public class ArceuusRcOverlay extends OverlayPanel {
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Status: " + Microbot.status).right("Version: " + ArceuusRcScript.version)
                     .build());
+
+            if (plugin.getArceuusRcScript() != null) {
+                panelComponent.getChildren().add(LineComponent.builder()
+                        .left("State: " + plugin.getArceuusRcScript().getState()).build()
+                );
+            }
         } catch (Exception ex) {
             Microbot.logStackTrace(this.getClass().getSimpleName(), ex);
         }

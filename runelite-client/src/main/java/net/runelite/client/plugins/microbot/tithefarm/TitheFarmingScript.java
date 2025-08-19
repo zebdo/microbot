@@ -4,8 +4,10 @@ import net.runelite.api.*;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.tithefarm.enums.TitheFarmLanes;
 import net.runelite.client.plugins.microbot.tithefarm.enums.TitheFarmMaterial;
 import net.runelite.client.plugins.microbot.tithefarm.enums.TitheFarmState;
@@ -15,7 +17,7 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.math.Random;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -56,7 +58,7 @@ public class TitheFarmingScript extends Script {
 
     public static final int WATERING_CANS_AMOUNT = 8;
 
-    public static final int DISTANCE_TRESHHOLD_MINIMAP_WALK = 8;
+    public static final int DISTANCE_THRESHOLD_MINIMAP_WALK = 8;
 
     public static int gricollerCanCharges = -1;
 
@@ -66,33 +68,32 @@ public class TitheFarmingScript extends Script {
         TitheFarmLanes lane = config.Lanes();
 
         if (lane == TitheFarmLanes.Randomize) {
-            lane = TitheFarmLanes.values()[Random.random(0, TitheFarmLanes.values().length - 1)];
+            lane = TitheFarmLanes.values()[Rs2Random.betweenInclusive(0, TitheFarmLanes.values().length - 1)];
         }
 
         switch (lane) {
             case LANE_1_2:
                 plants = new ArrayList<>(Arrays.asList(
-                        new TitheFarmPlant(35, 25, 1),
-                        new TitheFarmPlant(40, 25, 2),
-                        new TitheFarmPlant(35, 28, 3),
-                        new TitheFarmPlant(40, 28, 4),
-                        new TitheFarmPlant(35, 31, 5),
-                        new TitheFarmPlant(40, 31, 6),
-                        new TitheFarmPlant(35, 34, 7),
-                        new TitheFarmPlant(40, 34, 8),
-                        new TitheFarmPlant(35, 40, 9),
-                        new TitheFarmPlant(40, 40, 10),
-                        new TitheFarmPlant(35, 43, 11),
-                        new TitheFarmPlant(40, 43, 12),
-                        new TitheFarmPlant(35, 46, 13),
-                        new TitheFarmPlant(40, 46, 14),
-                        new TitheFarmPlant(35, 49, 15),
-                        new TitheFarmPlant(40, 49, 16),
-                        new TitheFarmPlant(45, 49, 17),
-                        new TitheFarmPlant(45, 46, 18),
-                        new TitheFarmPlant(45, 49, 19),
-                        new TitheFarmPlant(45, 46, 20),
-                        new TitheFarmPlant(45, 43, 21)));
+                        new TitheFarmPlant(35, 25, 15),
+                        new TitheFarmPlant(40, 25, 16),
+                        new TitheFarmPlant(35, 28, 17),
+                        new TitheFarmPlant(40, 28, 18),
+                        new TitheFarmPlant(35, 31, 19),
+                        new TitheFarmPlant(40, 31, 20),
+                        new TitheFarmPlant(35, 34, 1),
+                        new TitheFarmPlant(40, 34, 2),
+                        new TitheFarmPlant(35, 40, 3),
+                        new TitheFarmPlant(40, 40, 4),
+                        new TitheFarmPlant(35, 43, 5),
+                        new TitheFarmPlant(40, 43, 6),
+                        new TitheFarmPlant(35, 46, 7),
+                        new TitheFarmPlant(40, 46, 8),
+                        new TitheFarmPlant(35, 49, 9),
+                        new TitheFarmPlant(40, 49, 10),
+                        new TitheFarmPlant(45, 49, 11),
+                        new TitheFarmPlant(45, 46, 12),
+                        new TitheFarmPlant(45, 43, 13),
+                        new TitheFarmPlant(45, 40, 14)));
                 break;
             case LANE_2_3:
                 plants = new ArrayList<>(Arrays.asList(
@@ -169,6 +170,7 @@ public class TitheFarmingScript extends Script {
             try {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
+                if (BreakHandlerScript.isBreakActive()) return;
 
                 if (init) {
                     state = STARTING;
@@ -187,7 +189,7 @@ public class TitheFarmingScript extends Script {
                 }
 
                 if (hasSelectAnOption()) {
-                    Rs2Keyboard.typeString("3");
+                    Rs2Keyboard.keyPress('3');
                     sleep(1500, 1800);
                     return;
                 }
@@ -200,7 +202,7 @@ public class TitheFarmingScript extends Script {
                     state = TitheFarmState.LEAVE;
                 }
 
-                if (Rs2Inventory.hasItemAmount(TitheFarmMaterial.getSeedForLevel().getFruitId(), config.storeFruitTreshhold())) {
+                if (Rs2Inventory.hasItemAmount(TitheFarmMaterial.getSeedForLevel().getFruitId(), config.storeFruitThreshold())) {
                     depositSack();
                     return;
                 }
@@ -210,6 +212,7 @@ public class TitheFarmingScript extends Script {
                         if (!depositSack()) {
                             leave();
                         }
+                        BreakHandlerScript.setLockState(false);
                     break;
                     case TAKE_SEEDS:
                         if (isInMinigame()) {
@@ -236,9 +239,12 @@ public class TitheFarmingScript extends Script {
                         break;
                     case REFILL_WATERCANS:
                         refillWaterCans(config);
+                        BreakHandlerScript.setLockState(false);
+                        sleepGaussian(800, 200);
                         break;
                     case PLANTING_SEEDS:
                     case HARVEST:
+                        BreakHandlerScript.setLockState(true);
                         coreLoop(config);
                         break;
                 }
@@ -305,7 +311,7 @@ public class TitheFarmingScript extends Script {
 
         final TitheFarmPlant finalPlant = plant;
 
-        if (plant.getGameObject().getWorldLocation().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) > DISTANCE_TRESHHOLD_MINIMAP_WALK) {
+        if (plant.getGameObject().getWorldLocation().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) > DISTANCE_THRESHOLD_MINIMAP_WALK) {
             //Important to know that there are two world locations when you are in an instance
             //thats why we use the world location of the getLocalPlayer instead of Rs2Player.getWorldLocation
             //because Rs2Player.getWorldLocation will give us the world location in the instance and we do not want that
@@ -320,9 +326,14 @@ public class TitheFarmingScript extends Script {
         if (plant.isEmptyPatch()) { //start planting seeds
             Rs2Inventory.interact(TitheFarmMaterial.getSeedForLevel().getName(), "Use");
             clickPatch(plant);
+            // save 1 tick by manually clicking watering can immediately after planting seed
+            sleepUntil(() -> Rs2Player.getAnimation() == AnimationID.FARMING_SEED_DIBBING, 2_000);
+            Rs2Inventory.interact(TitheFarmMaterial.getWateringCan(), "Use");
+            sleep(200,300);
+            clickPatch(plant);
             sleepUntil(Rs2Player::isAnimating, config.sleepAfterPlantingSeed());
             if (Rs2Player.isAnimating()) {
-                sleepUntil(() -> plants.stream().noneMatch(x -> x.getIndex() == finalPlant.getIndex() && x.isEmptyPatch()));
+                sleepUntil(() -> plants.stream().noneMatch(x -> x.getIndex() == finalPlant.getIndex() && x.isValidToWater()));
             }
         }
 
@@ -408,7 +419,7 @@ public class TitheFarmingScript extends Script {
         if (TitheFarmMaterial.hasGricollersCan()) {
             checkGricollerCharges();
             sleepUntil(() -> gricollerCanCharges != -1);
-            if (gricollerCanCharges < config.gricollerCanRefillTreshhold()) {
+            if (gricollerCanCharges < config.gricollerCanRefillThreshold()) {
                 walkToBarrel();
                 Rs2Inventory.interact(ItemID.ZEAH_WATERINGCAN, "Use");
                 Rs2GameObject.interact("Water barrel");
@@ -428,11 +439,11 @@ public class TitheFarmingScript extends Script {
 
     private void walkToBarrel() {
         final TileObject gameObject = Rs2GameObject.findObjectById(ObjectID.WATER_BARREL1);
-        if (gameObject.getWorldLocation().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) > DISTANCE_TRESHHOLD_MINIMAP_WALK) {
+        if (gameObject.getWorldLocation().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) > DISTANCE_THRESHOLD_MINIMAP_WALK) {
             Rs2Walker.walkMiniMap(gameObject.getWorldLocation(), 1);
             sleepUntil(Rs2Player::isMoving);
         }
-        sleepUntil(() -> gameObject.getWorldLocation().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) < DISTANCE_TRESHHOLD_MINIMAP_WALK);
+        sleepUntil(() -> gameObject.getWorldLocation().distanceTo2D(Microbot.getClient().getLocalPlayer().getWorldLocation()) < DISTANCE_THRESHOLD_MINIMAP_WALK);
     }
 
     private void checkGricollerCharges() {
@@ -448,9 +459,9 @@ public class TitheFarmingScript extends Script {
         Rs2GameObject.interact(ObjectID.TITHE_PLANT_SEED_TABLE);
         boolean result = Rs2Widget.sleepUntilHasWidget(TitheFarmMaterial.getSeedForLevel().getName());
         if (!result) return;
-        keyPress(TitheFarmMaterial.getSeedForLevel().getOption());
+        Rs2Keyboard.keyPress(TitheFarmMaterial.getSeedForLevel().getOption());
         sleep(1000);
-        Rs2Keyboard.typeString(String.valueOf(Random.random(1000, 10000)));
+        Rs2Keyboard.typeString(String.valueOf(Rs2Random.betweenInclusive(1000, 10000)));
         sleep(600);
         Rs2Keyboard.enter();
         sleepUntil(() -> Rs2Inventory.hasItem(TitheFarmMaterial.getSeedForLevel().getName()));

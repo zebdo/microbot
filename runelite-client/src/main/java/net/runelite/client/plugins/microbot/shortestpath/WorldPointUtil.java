@@ -17,7 +17,7 @@ public class WorldPointUtil {
 
     public static int packWorldPoint(WorldPoint point) {
         if (point == null) {
-            return -1;
+            return UNDEFINED;
         }
         return packWorldPoint(point.getX(), point.getY(), point.getPlane());
     }
@@ -83,9 +83,7 @@ public class WorldPointUtil {
 
     public static int distanceBetween(int previousX, int previousY, int previousZ,
                                       int currentX, int currentY, int currentZ, int diagonal) {
-        final int dz = Math.abs(previousZ - currentZ);
-
-        if (dz != 0) {
+        if (previousZ != currentZ) {
             return Integer.MAX_VALUE;
         }
 
@@ -115,19 +113,23 @@ public class WorldPointUtil {
                 current.getX(), current.getY(), current.getPlane(), diagonal);
     }
 
-    // Matches WorldArea.distanceTo
-    public static int distanceToArea(int packedPoint, WorldArea area) {
-        final int plane = unpackWorldPlane(packedPoint);
-        if (area.getPlane() != plane) {
-            return Integer.MAX_VALUE;
-        }
+	public static int distanceToArea(int packedPoint, WorldArea area) {
+		final int plane = unpackWorldPlane(packedPoint);
+		if (area.getPlane() != plane) {
+			return Integer.MAX_VALUE;
+		}
+		return distanceToArea2D(packedPoint, area);
+	}
 
-        final int y = unpackWorldY(packedPoint);
-        final int x = unpackWorldX(packedPoint);
-        final int areaMaxX = area.getX() + area.getWidth() - 1;
-        final int areaMaxY = area.getY() + area.getHeight() - 1;
-        final int dx = Math.max(Math.max(area.getX() - x, 0), x - areaMaxX);
-        final int dy = Math.max(Math.max(area.getY() - y, 0), y - areaMaxY);
+    // Matches WorldArea.distanceTo
+    public static int distanceToArea2D(int packedPoint, WorldArea area)
+	{
+		final int y = unpackWorldY(packedPoint);
+		final int x = unpackWorldX(packedPoint);
+		final int areaMaxX = area.getX() + area.getWidth() - 1;
+		final int areaMaxY = area.getY() + area.getHeight() - 1;
+		final int dx = Math.max(Math.max(area.getX() - x, 0), x - areaMaxX);
+		final int dy = Math.max(Math.max(area.getY() - y, 0), y - areaMaxY);
 
         return Math.max(dx, dy);
     }
@@ -253,5 +255,20 @@ public class WorldPointUtil {
                 (unpackWorldX(packedPoint) - worldView.getBaseX() << LOCAL_COORD_BITS) + (1 << LOCAL_COORD_BITS - 1),
                 (unpackWorldY(packedPoint) - worldView.getBaseY() << LOCAL_COORD_BITS) + (1 << LOCAL_COORD_BITS - 1),
                 worldView.getId());
+    }
+
+    public static String toString(int packedPoint) {
+        final int x = unpackWorldX(packedPoint);
+        final int y = unpackWorldY(packedPoint);
+        final int z = unpackWorldPlane(packedPoint);
+        return "(" + x + "," + y + "," + z + ")";
+    }
+
+    public static String toString(Collection<Integer> packedPoints) {
+        StringBuilder s = new StringBuilder();
+        if (packedPoints.size() != 1) s.append("[");
+        for (int packedPoint : packedPoints) s.append(toString(packedPoint));
+        if (packedPoints.size() != 1) s.append("]");
+        return s.toString();
     }
 }

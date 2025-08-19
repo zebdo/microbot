@@ -4,6 +4,9 @@ on:
   schedule:
     - cron: "0 0 * * *"
 
+env:
+  version: ${microbot.version}
+
 jobs:
   build:
     runs-on: ubuntu-latest  # You can choose a different runner if needed
@@ -15,7 +18,12 @@ jobs:
         with:
           # Specify the branch you want
           ref: development
-          fetch-depth: 0
+
+      - name: Force sync with latest development
+        run: |
+          git fetch origin development
+          git checkout development
+          git reset --hard origin/development
 
       - name: Set up JDK 11
         uses: actions/setup-java@v3
@@ -24,8 +32,22 @@ jobs:
           java-version: 11
 
       - name: Build Shaded JAR
-        run: mvn clean package
+        run: |
+          COMMIT_SHA=$(git rev-parse --short HEAD)
+          mvn clean package -Dmicrobot.commit.sha=$COMMIT_SHA
 
+      - name: Read microbot.version from POM
+        id: version
+        run: |
+          V=$(mvn -q -f runelite-client/pom.xml help:evaluate \
+                -Dexpression=microbot.version -DforceStdout)
+          # fallback to project.version if the property isn't defined
+          if [ -z "$V" ]; then
+            V=$(mvn -q -f runelite-client/pom.xml help:evaluate \
+                  -Dexpression=project.version -DforceStdout)
+          fi
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          echo "Using version: $V"
 
       - name: Create Release
         uses: "marvinpinto/action-automatic-releases@latest"
@@ -46,3 +68,21 @@ jobs:
           source: runelite-client/target/microbot-*.jar
           target: /var/www/files/releases/microbot/nightly/
           strip_components: 2
+
+      - name: Set up Maven settings
+        run: |
+            mkdir -p ~/.m2
+            cat > ~/.m2/settings.xml <<EOL
+            <settings>
+            <servers>
+             <server>
+               <id>microbot-nightly</id>
+               <username>${{ secrets.NEXUS_USER }}</username>
+               <password>${{ secrets.NEXUS_PASSWORD }}</password>
+             </server>
+            </servers>
+            </settings>
+            EOL
+
+      - name: Deploy to Nexus
+        run: mvn deploy:deploy-file -DgroupId=com.microbot -DartifactId=client -Dversion=${{ steps.version.outputs.version }} -Dpackaging=jar -Dfile=runelite-client/target/microbot-${{ steps.version.outputs.version }}.jar -DrepositoryId=microbot-nightly -Durl=https://nexus.microbot.cloud/repository/microbot-nightly/

@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.shortestpath;
 
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -10,6 +11,7 @@ import net.runelite.client.plugins.microbot.util.walker.WalkerState;
 
 import java.util.concurrent.TimeUnit;
 
+@Slf4j
 public class ShortestPathScript extends Script {
 
     @Setter
@@ -25,10 +27,11 @@ public class ShortestPathScript extends Script {
 
                 if (getTriggerWalker() != null) {
                     WalkerState state  = WalkerState.UNREACHABLE;
+
                     if (config.walkWithBankedTransports()){
-                        state= Rs2Walker.walkWithBankedTransportsAndState(getTriggerWalker(),10,false);
-                    }else {
-                        state= Rs2Walker.walkWithState(getTriggerWalker());
+                        state = Rs2Walker.walkWithBankedTransportsAndState(getTriggerWalker(),10,false);
+                    } else {
+                        state = Rs2Walker.walkWithState(getTriggerWalker());
                     }
                     if (state == WalkerState.ARRIVED || state == WalkerState.UNREACHABLE) {
                         setTriggerWalker(null);
@@ -36,8 +39,7 @@ public class ShortestPathScript extends Script {
                 }
 
             } catch (Exception ex) {
-                ex.printStackTrace();
-                Microbot.log(ex.getMessage());
+                log.trace("Exception in ShortestPathScript: {} - ", ex.getMessage(), ex);
             }
         }, 0, 1000, TimeUnit.MILLISECONDS);
         return true;

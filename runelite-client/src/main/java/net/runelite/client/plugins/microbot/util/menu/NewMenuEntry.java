@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.util.menu;
 
+import lombok.Getter;
 import net.runelite.api.*;
 import net.runelite.api.widgets.Widget;
 import org.jetbrains.annotations.NotNull;
@@ -8,71 +9,78 @@ import javax.annotation.Nullable;
 import java.util.function.Consumer;
 
 public class NewMenuEntry implements MenuEntry {
+    @Getter
     private String option;
+    @Getter
     private String target;
+    @Getter
     private int identifier;
+    @Getter
     private MenuAction type;
+    @Getter
     private int param0;
+    @Getter
     private int param1;
+    @Getter
     private boolean forceLeftClick;
+    @Getter
     private int itemId;
     private Actor actor;
     private TileObject gameObject;
     private Widget widget;
 
-    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target) {
-        this.option = target;
-        this.target = "";
-        this.identifier = identifier;
-        this.type = MenuAction.of(opcode);
+    private NewMenuEntry(int param0, int param1, MenuAction type, int identifier) {
         this.param0 = param0;
         this.param1 = param1;
+        this.type = type;
+        this.identifier = identifier;
+    }
+
+    private NewMenuEntry(int param0, int param1, int opcode, int identifier) {
+        this(param0, param1, MenuAction.of(opcode), identifier);
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target) {
+        this(param0, param1, opcode, identifier);
+        this.option = target;
+        this.target = "";
         this.forceLeftClick = false;
         this.itemId = itemId;
     }
 
-    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, Actor actor) {
-        this.option = "Use";
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, Actor actor, String option) {
+        this(param0, param1, opcode, identifier);
+        this.option = option;
         this.target = target;
-        this.identifier = identifier;
-        this.type = MenuAction.of(opcode);
-        this.param0 = param0;
-        this.param1 = param1;
         this.forceLeftClick = false;
         this.itemId = itemId;
         this.actor = actor;
     }
 
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, Actor actor) {
+        this(param0, param1, opcode, identifier, itemId, target, actor, "Use");
+    }
+
     public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String option, String target, TileObject gameObject) {
-        this.option = "Use";
+        this(param0, param1, opcode, identifier);
+        this.option = option;
         this.target = target;
-        this.identifier = identifier;
-        this.type = MenuAction.of(opcode);
-        this.param0 = param0;
-        this.param1 = param1;
         this.forceLeftClick = false;
         this.itemId = itemId;
-        this.option = option;
         this.gameObject = gameObject;
     }
 
     public NewMenuEntry(String option, String target, int identifier, MenuAction type, int param0, int param1, boolean forceLeftClick) {
+        this(param0, param1, type, identifier);
         this.option = option;
         this.target = target;
-        this.identifier = identifier;
-        this.type = type;
-        this.param0 = param0;
-        this.param1 = param1;
         this.forceLeftClick = forceLeftClick;
     }
 
     public NewMenuEntry(String option, int param0, int param1, int opcode, int identifier, int itemId, String target) {
+        this(param0, param1, opcode, identifier);
         this.option = option;
         this.target = target;
-        this.identifier = identifier;
-        this.type = MenuAction.of(opcode);
-        this.param0 = param0;
-        this.param1 = param1;
         this.forceLeftClick = false;
         this.itemId = itemId;
     }
@@ -80,17 +88,9 @@ public class NewMenuEntry implements MenuEntry {
     public NewMenuEntry() {
     }
 
-    public String getOption() {
-        return this.option;
-    }
-
     public MenuEntry setOption(String option) {
         this.option = option;
         return this;
-    }
-
-    public String getTarget() {
-        return this.target;
     }
 
     public MenuEntry setTarget(String target) {
@@ -98,17 +98,9 @@ public class NewMenuEntry implements MenuEntry {
         return this;
     }
 
-    public int getIdentifier() {
-        return this.identifier;
-    }
-
     public MenuEntry setIdentifier(int identifier) {
         this.identifier = identifier;
         return this;
-    }
-
-    public MenuAction getType() {
-        return this.type;
     }
 
     public MenuEntry setType(MenuAction type) {
@@ -116,26 +108,14 @@ public class NewMenuEntry implements MenuEntry {
         return this;
     }
 
-    public int getParam0() {
-        return this.param0;
-    }
-
     public MenuEntry setParam0(int param0) {
         this.param0 = param0;
         return this;
     }
 
-    public int getParam1() {
-        return this.param1;
-    }
-
     public MenuEntry setParam1(int param1) {
         this.param1 = param1;
         return this;
-    }
-
-    public boolean isForceLeftClick() {
-        return this.forceLeftClick;
     }
 
     public MenuEntry setForceLeftClick(boolean forceLeftClick) {
@@ -180,10 +160,6 @@ public class NewMenuEntry implements MenuEntry {
 
     public int getItemOp() {
         return 0;
-    }
-
-    public int getItemId() {
-        return itemId;
     }
 
     @Override

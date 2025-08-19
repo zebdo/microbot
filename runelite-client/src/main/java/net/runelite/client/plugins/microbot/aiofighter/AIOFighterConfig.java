@@ -8,6 +8,7 @@ import net.runelite.client.plugins.microbot.aiofighter.enums.PrayerStyle;
 import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
+import net.runelite.client.plugins.microbot.util.misc.SpecialAttackWeaponEnum;
 import net.runelite.client.plugins.microbot.util.slayer.enums.SlayerMaster;
 
 @ConfigGroup(AIOFighterConfig.GROUP)
@@ -21,7 +22,7 @@ import net.runelite.client.plugins.microbot.util.slayer.enums.SlayerMaster;
         "8. Right-click NPCs to add them to the attack list. <br />")
 public interface AIOFighterConfig extends Config {
 
-    String GROUP = "PlayerAssistant";
+    String GROUP = "playerassist";
 
     @ConfigSection(
             name = "Combat",
@@ -34,7 +35,7 @@ public interface AIOFighterConfig extends Config {
             name = "Slayer",
             description = "Slayer",
             position = 11,
-            closedByDefault = true
+            closedByDefault = false
     )
     String slayerSection = "Slayer";
     @ConfigSection(
@@ -49,7 +50,7 @@ public interface AIOFighterConfig extends Config {
             name = "Gear",
             description = "Gear",
             position = 55,
-            closedByDefault = true
+            closedByDefault = false
     )
     String gearSection = "Gear";
     // Safety section
@@ -137,10 +138,21 @@ public interface AIOFighterConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "Spec weapon",
+            name = "Spec weapon",
+            description = "Special attack weapon to use",
+            position = 4,
+            section = combatSection
+    )
+    default SpecialAttackWeaponEnum specWeapon() {
+        return null;
+    }
+
+    @ConfigItem(
             keyName = "Cannon",
             name = "Auto reload cannon",
             description = "Automatically reloads cannon",
-            position = 4,
+            position = 5,
             section = combatSection
     )
     default boolean toggleCannon() {
@@ -152,7 +164,7 @@ public interface AIOFighterConfig extends Config {
             keyName = "Safe Spot",
             name = "Safe Spot",
             description = "Shift Right-click the ground to select the safe spot tile",
-            position = 5,
+            position = 6,
             section = combatSection
     )
     default boolean toggleSafeSpot() {
@@ -164,7 +176,7 @@ public interface AIOFighterConfig extends Config {
             keyName = "PlayStyle",
             name = "Play Style",
             description = "Play Style",
-            position = 6,
+            position = 7,
             section = combatSection
     )
     default PlayStyle playStyle() {
@@ -175,7 +187,7 @@ public interface AIOFighterConfig extends Config {
             keyName = "ReachableNpcs",
             name = "Only attack reachable npcs",
             description = "Only attack npcs that we can reach with melee",
-            position = 7,
+            position = 8,
             section = combatSection
     )
     default boolean attackReachableNpcs() {
@@ -192,86 +204,6 @@ public interface AIOFighterConfig extends Config {
     default boolean toggleFood() {
         return false;
     }
-
-    // Testing if full auto potion manager is preferred over individual potion toggles
-
-//    @ConfigItem(
-//            keyName = "Auto Prayer Potion",
-//            name = "Auto prayer potion",
-//            description = "Automatically drinks prayer potions",
-//            position = 1,
-//            section = foodAndPotionsSection
-//    )
-//    default boolean togglePrayerPotions() {
-//        return false;
-//    }
-//
-//    @ConfigItem(
-//            keyName = "Combat potion",
-//            name = "Auto combat potion",
-//            description = "Automatically drinks combat potions",
-//            position = 2,
-//            section = foodAndPotionsSection
-//    )
-//    default boolean toggleCombatPotion() {
-//        return false;
-//    }
-//
-//    @ConfigItem(
-//            keyName = "Ranging/Bastion potion",
-//            name = "Auto Ranging/Bastion potion",
-//            description = "Automatically drinks Ranging/Bastion potions",
-//            position = 3,
-//            section = foodAndPotionsSection
-//    )
-//    default boolean toggleRangingPotion() {
-//        return false;
-//    }
-//
-//    @ConfigItem(
-//            keyName = "Magic/Battlemage potion",
-//            name = "Auto Magic/Battlemage potion",
-//            description = "Automatically drinks Magic/Battlemage potions",
-//            position = 4,
-//            section = foodAndPotionsSection
-//    )
-//    default boolean toggleMagicPotion() {
-//        return false;
-//    }
-//
-//    @ConfigItem(
-//            keyName = "Use AntiPoison",
-//            name = "Auto AntiPoison",
-//            description = "Use AntiPoison",
-//            position = 8,
-//            section = foodAndPotionsSection
-//    )
-//    default boolean useAntiPoison() {
-//        return false;
-//    }
-//
-//    // use antifire potion
-//    @ConfigItem(
-//            keyName = "useAntifirePotion",
-//            name = "Auto Antifire Potion",
-//            description = "Use Antifire Potion",
-//            position = 9,
-//            section = foodAndPotionsSection
-//    )
-//    default boolean useAntifirePotion() {
-//        return false;
-//    }
-//    // Use goading potion
-//    @ConfigItem(
-//            keyName = "useGoadingPotion",
-//            name = "Auto Goading Potion",
-//            description = "Use Goading Potion",
-//            position = 10,
-//            section = foodAndPotionsSection
-//    )
-//    default boolean useGoadingPotion() {
-//        return false;
-//    }
 
     @ConfigItem(
             keyName = "Loot items",
@@ -455,23 +387,12 @@ public interface AIOFighterConfig extends Config {
     )
     default boolean eatFoodForSpace() { return false; }
 
-    @ConfigItem(
-            keyName = "waitForLoot",
-            name = "Wait for Loot",
-            description = "Wait for loot to appear before attacking next NPC (6 second timeout)",
-            position = 103,
-            section = lootSection
-    )
-    default boolean toggleWaitForLoot() {
-        return false;
-    }
-
     //set center tile manually
     @ConfigItem(
             keyName = "Center Tile",
             name = "Manual Center Tile",
             description = "Shift Right-click the ground to select the center tile",
-            position = 6,
+            position = 9,
             section = combatSection
     )
     default boolean toggleCenterTile() {
@@ -668,7 +589,7 @@ public interface AIOFighterConfig extends Config {
             section = banking
     )
     default boolean bank() {
-        return false;
+        return true;
     }
 
     //Minimum free inventory slots to bank
@@ -681,183 +602,8 @@ public interface AIOFighterConfig extends Config {
             section = banking
     )
     default int minFreeSlots() {
-        return 5;
-    }
-
-    // checkbox to use stamina potions when banking
-    @ConfigItem(
-            keyName = "useStamina",
-            name = "Use stamina potions",
-            description = "Use stamina potions when banking",
-            position = 2,
-            section = banking
-    )
-    default boolean useStamina() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "staminaValue",
-            name = "Stamina Potions",
-            description = "Amount of stamina potions to withdraw",
-            position = 2,
-            section = banking
-    )
-    default int staminaValue() {
         return 0;
     }
-
-    // checkbox to use food when banking
-    @ConfigItem(
-            keyName = "useFood",
-            name = "Use food",
-            description = "Use food when banking",
-            position = 3,
-            section = banking
-    )
-    default boolean useFood() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "foodValue",
-            name = "Food",
-            description = "Amount of food to withdraw",
-            position = 3,
-            section = banking
-    )
-    default int foodValue() {
-        return 0;
-    }
-
-    // checkbox to use restore potions when banking
-    @ConfigItem(
-            keyName = "useRestore",
-            name = "Use restore potions",
-            description = "Use restore potions when banking",
-            position = 4,
-            section = banking
-    )
-    default boolean useRestore() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "restoreValue",
-            name = "Restore Potions",
-            description = "Amount of restore potions to withdraw",
-            position = 4,
-            section = banking
-    )
-    default int restoreValue() {
-        return 0;
-    }
-
-    // checkbox to use prayer potions when banking
-    @ConfigItem(
-            keyName = "usePrayer",
-            name = "Use prayer potions",
-            description = "Use prayer potions when banking",
-            position = 5,
-            section = banking
-    )
-    default boolean usePrayer() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "prayerValue",
-            name = "Prayer Potions",
-            description = "Amount of prayer potions to withdraw",
-            position = 5,
-            section = banking
-    )
-    default int prayerValue() {
-        return 0;
-    }
-
-    // checkbox to use antipoison potions when banking
-    @ConfigItem(
-            keyName = "useAntipoison",
-            name = "Use antipoison potions",
-            description = "Use antipoison potions when banking",
-            position = 6,
-            section = banking
-    )
-    default boolean useAntipoison() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "antipoisonValue",
-            name = "Antipoison Potions",
-            description = "Amount of antipoison potions to withdraw",
-            position = 6,
-            section = banking
-    )
-    default int antipoisonValue() {
-        return 0;
-    }
-
-    // checkbox to use antifire potions when banking
-    @ConfigItem(
-            keyName = "useAntifire",
-            name = "Use antifire potions",
-            description = "Use antifire potions when banking",
-            position = 7,
-            section = banking
-    )
-    default boolean useAntifire() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "antifireValue",
-            name = "Antifire Potions",
-            description = "Amount of antifire potions to withdraw",
-            position = 7,
-            section = banking
-    )
-    default int antifireValue() {
-        return 0;
-    }
-
-    // checkbox to use combat potions when banking
-    @ConfigItem(
-            keyName = "useCombat",
-            name = "Use combat potions",
-            description = "Use combat potions when banking",
-            position = 8,
-            section = banking
-    )
-    default boolean useCombat() {
-        return false;
-    }
-
-    @ConfigItem(
-            keyName = "combatValue",
-            name = "Combat Potions",
-            description = "Amount of combat potions to withdraw",
-            position = 8,
-            section = banking
-    )
-    default int combatValue() {
-        return 0;
-    }
-
-
-    // checkbox to use teleportation items when banking
-    @ConfigItem(
-            keyName = "ignoreTeleport",
-            name = "Ignore Teleport Items",
-            description = "ignore teleport items when banking",
-            position = 9,
-            section = banking
-    )
-    default boolean ignoreTeleport() {
-        return true;
-    }
-
     // Safety section
     @ConfigItem(
             keyName = "useSafety",
@@ -933,8 +679,7 @@ public interface AIOFighterConfig extends Config {
             name = "Slayer Mode",
             description = "Slayer Mode",
             position = 0,
-            section = slayerSection,
-            hidden = true
+            section = slayerSection
     )
     default boolean slayerMode() {
         return false;
@@ -946,11 +691,148 @@ public interface AIOFighterConfig extends Config {
             name = "Slayer Master",
             description = "Slayer Master",
             position = 1,
-            section = slayerSection,
-            hidden = true
+            section = slayerSection
     )
     default SlayerMaster slayerMaster() {
         return SlayerMaster.VANNAKA;
+    }
+
+    // Inventory setups: Default, Dragon & Wyvern, Drake, Kurask & Turoth, Cave & Miscellaneous
+    @ConfigItem(
+            keyName = "DefaultInventorySetup",
+            name = "Default Setup",
+            description = "Default Inventory Setup",
+            position = 2,
+            section = slayerSection
+    )
+    default InventorySetup defaultInventorySetup() {
+        return null;
+    }
+
+    @ConfigItem(
+            keyName = "DragonWyvernInventorySetup",
+            name = "Dragon & Wyvern Setup",
+            description = "Dragon & Wyvern Inventory Setup",
+            position = 3,
+            section = slayerSection
+    )
+    default InventorySetup dragonWyvernInventorySetup() {
+        return null;
+    }
+
+    @ConfigItem(
+            keyName = "DrakeInventorySetup",
+            name = "Drake Setup",
+            description = "Drake Inventory Setup",
+            position = 4,
+            section = slayerSection
+    )
+    default InventorySetup drakeInventorySetup() {
+        return null;
+    }
+
+    @ConfigItem(
+            keyName = "KuraskTurothInventorySetup",
+            name = "Kurask & Turoth Setup",
+            description = "Kurask & Turoth Inventory Setup",
+            position = 5,
+            section = slayerSection
+    )
+    default InventorySetup kuraskTurothInventorySetup() {
+        return null;
+    }
+
+    @ConfigItem(
+            keyName = "CaveMiscellaneousInventorySetup",
+            name = "Cave & Misc Setup",
+            description = "Cave & Miscellaneous Inventory Setup",
+            position = 6,
+            section = slayerSection
+    )
+    default InventorySetup caveMiscellaneousInventorySetup() {
+        return null;
+    }
+
+    // hidden config item for current slayer inventory setup
+    @ConfigItem(
+            keyName = "currentInventorySetup",
+            name = "Current Inventory Setup",
+            description = "Current Inventory Setup",
+            hidden = true
+    )
+    default InventorySetup currentInventorySetup() {
+        return null;
+    }
+
+    // hidden config item for slayer task
+    @ConfigItem(
+            keyName = "slayerTask",
+            name = "Slayer Task",
+            description = "Slayer Task",
+            hidden = true
+    )
+    default String slayerTask() {
+        return "";
+    }
+    // hidden config item for slayer location name
+    @ConfigItem(
+            keyName = "slayerLocation",
+            name = "Slayer Location",
+            description = "Slayer Location",
+            hidden = true
+    )
+    default String slayerLocation() {
+        return "";
+    }
+    // hidden config item for remaining slayer kills
+    @ConfigItem(
+            keyName = "remainingSlayerKills",
+            name = "Remaining Slayer Kills",
+            description = "Remaining Slayer Kills",
+            hidden = true
+    )
+    default int remainingSlayerKills() {
+        return 0;
+    }
+    // hidden config item for slayer has task weakness
+    @ConfigItem(
+            keyName = "slayerHasTaskWeakness",
+            name = "Slayer Has Task Weakness",
+            description = "Slayer Has Task Weakness",
+            hidden = true
+    )
+    default boolean slayerHasTaskWeakness() {
+        return false;
+    }
+    // hidden config item for slayer task weakness item
+    @ConfigItem(
+            keyName = "slayerTaskWeaknessItem",
+            name = "Slayer Task Weakness Item",
+            description = "Slayer Task Weakness Item",
+            hidden = true
+    )
+    default String slayerTaskWeaknessItem() {
+        return "";
+    }
+    // hidden config item for slayer task weakness threshold
+    @ConfigItem(
+            keyName = "slayerTaskWeaknessThreshold",
+            name = "Slayer Task Weakness Threshold",
+            description = "Slayer Task Weakness Threshold",
+            hidden = true
+    )
+    default int slayerTaskWeaknessThreshold() {
+        return 0;
+    }
+    // hidden config item for list of blacklisted slayer npcs
+    @ConfigItem(
+            keyName = "blacklistedSlayerNpcs",
+            name = "Blacklisted Slayer Npcs",
+            description = "Blacklisted Slayer Npcs",
+            hidden = true
+    )
+    default String blacklistedSlayerNpcs() {
+        return "null,";
     }
 
 

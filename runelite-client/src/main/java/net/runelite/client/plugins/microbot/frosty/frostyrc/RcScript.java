@@ -645,7 +645,7 @@ public class RcScript extends Script {
             }
 
             if (plugin.getMyWorldPoint().equals(firstCaveExit) &&
-                    Rs2Player.getRealSkillLevel(Skill.AGILITY) > 93) {
+                    Rs2Player.getRealSkillLevel(Skill.AGILITY) >= 93) {
                 Microbot.log("Walking to blood ruins " +
                         outsideBloodRuins93);
                 Rs2Walker.walkTo(outsideBloodRuins93);
@@ -653,7 +653,7 @@ public class RcScript extends Script {
             }
 
             if (plugin.getMyWorldPoint().equals(firstCaveExit) &&
-                    Rs2Player.getRealSkillLevel(Skill.AGILITY) < 93 && Rs2Player.getRealSkillLevel(Skill.AGILITY) > 74) {
+                    Rs2Player.getRealSkillLevel(Skill.AGILITY) < 93 && Rs2Player.getRealSkillLevel(Skill.AGILITY) >= 74) {
                 Microbot.log("Walking to ruins: " + outsideBloodRuins74);
                 Rs2Walker.walkTo(outsideBloodRuins74);
                 sleepUntil(() -> plugin.getMyWorldPoint().equals(outsideBloodRuins74), 1200);

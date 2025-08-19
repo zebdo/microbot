@@ -123,6 +123,10 @@ public class AntibanOverlay extends Overlay {
         int timeLeft = Rs2Antiban.getTIMEOUT();
         float percent = (float) timeLeft / totalTime;
 
+		if (Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
+			return; // Ensure client and player are available
+		}
+
         // Get the player's screen location
         Point playerLocation = getCanvasTextLocation(graphics, Microbot.getClient().getLocalPlayer());
 

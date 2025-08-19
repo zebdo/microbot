@@ -1,7 +1,14 @@
 package net.runelite.client.plugins.microbot.util.settings;
 
+import java.awt.Rectangle;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.MenuAction;
+import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
+import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
@@ -14,6 +21,7 @@ import static net.runelite.client.plugins.microbot.util.widget.Rs2Widget.*;
 /**
  * Rs2SpellBookSettings allows to enable/disable spell book filters
  */
+@Slf4j
 public class Rs2SpellBookSettings {
     /**
      * toggle spell filter
@@ -29,19 +37,23 @@ public class Rs2SpellBookSettings {
             return true;
         }
 
-        Rs2Tab.switchToMagicTab();
+		if (!Rs2Settings.isSpellFilteringEnabled()) {
+			Rs2Settings.enableSpellFiltering();
+		}
+
+        Rs2Tab.switchTo(InterfaceTab.MAGIC);
 
         if (!sleepUntilTrue(() -> Rs2Tab.getCurrentTab() == InterfaceTab.MAGIC, 300, 2000)) {
             return false;
         }
 
-        Microbot.log((toggle ? "Turning on" : "Turning off") + " following spell filter: " + text);
+        log.info("{} following spell filter: {}", toggle ? "Turning on" : "Turning off", text);
         if (!hasWidgetText(text, 218, 0, true)) {
             Rs2Widget.clickWidget("Filters", Optional.of(218), 0, true);
 
             boolean result = sleepUntilHasWidgetText(text, 218, 0, true, 2000);
             if (!result) {
-                Microbot.log("did not find widget with text : " + text);
+                log.error("did not find widget with text: {}", text);
                 return false;
             }
         }
