@@ -30,6 +30,8 @@ public class GiantSeaweedFarmerScript extends Script {
     public static final String VERSION = "1.0";
     public static final int UNDERWATER_ANCHOR = 30948;
     public static final int BOAT = 30919;
+    // Critical section flag to prevent spore looting during compost+plant sequence
+    public static volatile boolean inCriticalSection = false;
     private final GiantSeaweedFarmerPlugin giantSeaweedPlugin;
     private final LockCondition lookCondition;
     public GiantSeaweedFarmerStatus BOT_STATE = GiantSeaweedFarmerStatus.BANKING;
@@ -76,11 +78,19 @@ public class GiantSeaweedFarmerScript extends Script {
         }
     }
 
+    // Track last varbit value to reduce log spam
+    private static int lastVarbitValue = -1;
+    
     // Using official RuneLite varbit ranges for seaweed patches
     private static String getSeaweedPatchState(TileObject rs2TileObject) {
         var game_obj = Rs2GameObject.convertToObjectComposition(rs2TileObject, true);
         var varbitValue = Microbot.getVarbitValue(game_obj.getVarbitId());
-        Microbot.log("Seaweed patch varbit value: " + varbitValue);
+        
+        // Only log when varbit value changes
+        if (varbitValue != lastVarbitValue) {
+            Microbot.log("Seaweed patch varbit value changed: " + lastVarbitValue + " -> " + varbitValue);
+            lastVarbitValue = varbitValue;
+        }
 
         // Official RuneLite varbit ranges for SEAWEED patches from PatchImplementation.java
         // Note: varbit 3 means fully raked (0 rakes remaining) so it's ready for planting
@@ -327,17 +337,47 @@ public class GiantSeaweedFarmerScript extends Script {
         Microbot.log("Patch state detected as: " + state);
         switch (state) {
             case "Empty":
-                Rs2Inventory.use("compost");
-                Rs2GameObject.interact(patchObj, "Compost");
-                Rs2Player.waitForXpDrop(Skill.FARMING);
-                Rs2Inventory.use(" spore");
-                Rs2GameObject.interact(patchObj, "Plant");
-                sleepUntil(() -> getSeaweedPatchState(patchObj).equals("Growing"), 10000);
-                return true;
+                // Enter critical section to prevent spore looting interruption
+                inCriticalSection = true;
+                try {
+                    // Verify we have materials before starting atomic operation
+                    boolean hasCompost = Rs2Inventory.contains("compost") || 
+                                        Rs2Inventory.contains("Supercompost") ||
+                                        Rs2Inventory.contains("Ultracompost") ||
+                                        Rs2Inventory.contains("Bottomless compost bucket");
+                    
+                    if (hasCompost) {
+                        Rs2Inventory.use("compost");
+                        Rs2GameObject.interact(patchObj, "Compost");
+                        Rs2Player.waitForXpDrop(Skill.FARMING);
+                    }
+                    
+                    // Always attempt planting if we have spores
+                    if (Rs2Inventory.contains("seaweed spore")) {
+                        Rs2Inventory.use(" spore");
+                        Rs2GameObject.interact(patchObj, "Plant");
+                        sleepUntil(() -> getSeaweedPatchState(patchObj).equals("Growing"), 10000);
+                    }
+                    return true;
+                } finally {
+                    // Always release critical section, even if error occurs
+                    inCriticalSection = false;
+                }
             case "Harvestable":
                 Rs2GameObject.interact(patchObj, "Pick");
-                sleepUntil(() -> getSeaweedPatchState(patchObj).equals("Empty") || Rs2Inventory.isFull(), 20000);
-                return true;
+                sleepUntil(() -> {
+                    // Re-find the patch object at the same location to get updated state
+                    var currentPatch = Rs2GameObject.getGameObjects()
+                        .stream()
+                        .filter(o -> o.getWorldLocation().equals(patchObj.getWorldLocation()))
+                        .findFirst()
+                        .orElse(null);
+                    if (currentPatch == null) return false;
+                    String currentState = getSeaweedPatchState(currentPatch);
+                    // Harvesting is complete when patch becomes empty or inventory is full
+                    return currentState.equals("Empty") || Rs2Inventory.isFull();
+                }, 20000);
+                return false; // Don't mark as handled - needs planting after harvesting
             case "Weeds":
                 Rs2GameObject.interact(patchObj, "Rake");
                 sleepUntil(() -> {
@@ -377,6 +417,7 @@ public class GiantSeaweedFarmerScript extends Script {
         BOT_STATE = GiantSeaweedFarmerStatus.BANKING;
         handledPatches = new ArrayList<>();
         lookCondition.unlock();
+        inCriticalSection = false; // Ensure flag is cleared on shutdown
         super.shutdown();
     }
 }
