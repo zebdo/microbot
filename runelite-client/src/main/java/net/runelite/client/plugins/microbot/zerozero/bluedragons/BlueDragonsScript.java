@@ -139,18 +139,62 @@ public class BlueDragonsScript extends Script {
 
         if (Rs2Bank.walkToBankAndUseBank(BankLocation.FALADOR_WEST)) {
             logOnceToChat("Opened bank. Depositing loot.", true, config);
+            // Core drops
+            Rs2Bank.depositAll("Blue dragonhide");
             Rs2Bank.depositAll("Dragon bones");
-            Rs2Bank.depositAll("Dragon spear");
-            Rs2Bank.depositAll("Shield left half");
             Rs2Bank.depositAll("Scaly blue dragonhide");
-
-            if (config.lootEnsouledHead()) {
-                Rs2Bank.depositAll("Ensouled dragon head");
-            }
-
-            if (config.lootDragonhide()) {
-                Rs2Bank.depositAll("Blue dragonhide");
-            }
+            Rs2Bank.depositAll("Ensouled dragon head");
+            
+            // Equipment drops
+            Rs2Bank.depositAll("Steel platelegs");
+            Rs2Bank.depositAll("Mithril axe");
+            Rs2Bank.depositAll("Steel battleaxe");
+            Rs2Bank.depositAll("Mithril spear");
+            Rs2Bank.depositAll("Adamant full helm");
+            Rs2Bank.depositAll("Mithril kiteshield");
+            Rs2Bank.depositAll("Rune dagger");
+            Rs2Bank.depositAll("Rune javelin");
+            Rs2Bank.depositAll("Rune spear");
+            Rs2Bank.depositAll("Shield left half");
+            Rs2Bank.depositAll("Dragon spear");
+            
+            // Runes
+            Rs2Bank.depositAll("Nature rune");
+            Rs2Bank.depositAll("Fire rune");
+            
+            // Herbs
+            Rs2Bank.depositAll("Grimy guam leaf");
+            Rs2Bank.depositAll("Grimy marrentill");
+            Rs2Bank.depositAll("Grimy tarromin");
+            Rs2Bank.depositAll("Grimy harralander");
+            Rs2Bank.depositAll("Grimy ranarr weed");
+            Rs2Bank.depositAll("Grimy irit leaf");
+            Rs2Bank.depositAll("Grimy avantoe");
+            Rs2Bank.depositAll("Grimy kwuarm");
+            Rs2Bank.depositAll("Grimy cadantine");
+            Rs2Bank.depositAll("Grimy lantadyme");
+            Rs2Bank.depositAll("Grimy dwarf weed");
+            
+            // Resources and gems
+            Rs2Bank.depositAll("Coins");
+            Rs2Bank.depositAll("Adamantite ore");
+            Rs2Bank.depositAll("Bass");
+            Rs2Bank.depositAll("Uncut sapphire");
+            Rs2Bank.depositAll("Uncut emerald");
+            Rs2Bank.depositAll("Uncut ruby");
+            Rs2Bank.depositAll("Uncut diamond");
+            
+            // Talismans and keys
+            Rs2Bank.depositAll("Chaos talisman");
+            Rs2Bank.depositAll("Nature talisman");
+            Rs2Bank.depositAll("Loop half of key");
+            Rs2Bank.depositAll("Tooth half of key");
+            Rs2Bank.depositAll("Tooth half of key (moon key)");
+            Rs2Bank.depositAll("Brimstone key");
+            Rs2Bank.depositAll("Frozen tear");
+            
+            // Clue scrolls
+            Rs2Bank.depositAll("Clue scroll (hard)");
             logOnceToChat("Withdrawing food for combat.", true, config);
             withdrawFood(config);
             Rs2Bank.closeBank();
