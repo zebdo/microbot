@@ -137,20 +137,8 @@ public class BlueDragonsScript extends Script {
         logOnceToChat("Current location: " + Microbot.getClient().getLocalPlayer().getWorldLocation(), true, config);
 
         if (Rs2Bank.walkToBankAndUseBank(BankLocation.FALADOR_WEST)) {
-            logOnceToChat("Opened bank. Depositing loot.", true, config);
-            Rs2Bank.depositAll("Dragon bones");
-            Rs2Bank.depositAll("Dragon spear");
-            Rs2Bank.depositAll("Shield left half");
-            Rs2Bank.depositAll("Scaly blue dragonhide");
-
-            if (config.lootEnsouledHead()) {
-                Rs2Bank.depositAll("Ensouled dragon head");
-            }
-
-            if (config.lootDragonhide()) {
-                Rs2Bank.depositAll("Blue dragonhide");
-            }
-            logOnceToChat("Withdrawing food for combat.", true, config);
+            String[] thingsWeWantToKeep = {config.foodType().getName(), "Law rune", "Air rune", "Water rune", "Falador teleport", "Dusty key"};
+            Rs2Bank.depositAllExcept(thingsWeWantToKeep);
             withdrawFood(config);
             Rs2Bank.closeBank();
             logOnceToChat("Banking complete. Transitioning to travel state.", true, config);
@@ -351,10 +339,10 @@ public class BlueDragonsScript extends Script {
         if (!isInventoryFull()) {
             lootedAnything |= lootItem("Scaly blue dragonhide");
         }
+
         if (config.lootMiscItems() && !isInventoryFull()) {
             Rs2GroundItem.lootItemBasedOnValue(new LootingParameters(3500, 100000, 8, 1, 1, false, true));
         }
-
 
         if (config.lootDragonhide() && !isInventoryFull()) {
             lootedAnything |= lootItem("Blue dragonhide");
