@@ -45,6 +45,7 @@ public class BlueDragonsScript extends Script {
 
     private static final int BLUE_DRAGON_ID_1 = 265;
     private static final int BLUE_DRAGON_ID_2 = 266;
+    private static final int BLUE_DRAGON_ID_3 = 267;
     private static final int MIN_WORLD = 302;
     private static final int MAX_WORLD = 580;
 
@@ -227,7 +228,7 @@ public class BlueDragonsScript extends Script {
             return;
         }
 
-        boolean walkAttemptSuccessful = Rs2Walker.walkTo(SAFE_SPOT);
+        boolean walkAttemptSuccessful = Rs2Walker.walkTo(SAFE_SPOT, 0);
         
         if (!walkAttemptSuccessful) {
             logOnceToChat("Failed to start walking to safe spot. Will retry next tick.", true, config);
@@ -461,8 +462,8 @@ public class BlueDragonsScript extends Script {
         logOnceToChat("Found dragon: " + (dragon != null ? "Yes (ID: " + dragon.getId() + ")" : "No"), true, config);
         
         if (dragon != null) {
-            boolean correctId = (dragon.getId() == BLUE_DRAGON_ID_1 || dragon.getId() == BLUE_DRAGON_ID_2);
-            logOnceToChat("Dragon has correct ID (265 or 266): " + correctId, true, config);
+            boolean correctId = (dragon.getId() == BLUE_DRAGON_ID_1 || dragon.getId() == BLUE_DRAGON_ID_2 || dragon.getId() == BLUE_DRAGON_ID_3);
+            logOnceToChat("Dragon has correct ID (265, 266, or 267): " + correctId, true, config);
             
             boolean hasLineOfSight = Rs2Npc.hasLineOfSight(new Rs2NpcModel(dragon));
             logOnceToChat("Has line of sight to dragon: " + hasLineOfSight, true, config);
@@ -511,7 +512,7 @@ public class BlueDragonsScript extends Script {
         
         if (distance > 15) {
             logOnceToChat("Using walkTo to approach safe spot", true, config);
-            Rs2Walker.walkTo(SAFE_SPOT);
+            Rs2Walker.walkTo(SAFE_SPOT, 0);
             
             sleepUntil(() -> Rs2Player.distanceTo(SAFE_SPOT) <= 5, 30000);
         }
