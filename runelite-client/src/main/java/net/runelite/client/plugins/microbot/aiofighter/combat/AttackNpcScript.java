@@ -99,11 +99,51 @@ public class AttackNpcScript extends Script {
                 if(config.state().equals(State.BANKING) || config.state().equals(State.WALKING))
                     return;
 
+                // Check if we should pause while looting is happening
+                if (Microbot.pauseAllScripts.get()) {
+                    return; // Don't attack while looting
+                }
+                
+                // Check if our current target just died and we should wait for loot
+                if (config.toggleWaitForLoot() && !AIOFighterPlugin.isWaitingForLoot()) {
+                    // Check if we were recently in combat but no longer interacting (NPC just died)
+                    Actor currentInteracting = Rs2Player.getInteracting();
+                    
+                    // If we're not interacting but were recently, the NPC probably just died
+                    if (currentInteracting == null && Rs2Player.isInCombat()) {
+                        // We were in combat but lost our target - NPC likely died
+                        AIOFighterPlugin.setWaitingForLoot(true);
+                        AIOFighterPlugin.setLastNpcKilledTime(System.currentTimeMillis());
+                        Microbot.log("Lost target while in combat, waiting for loot...");
+                        return;
+                    }
+                    
+                    if (currentInteracting instanceof net.runelite.api.NPC) {
+                        net.runelite.api.NPC npc = (net.runelite.api.NPC) currentInteracting;
+                        if (npc.isDead() || (npc.getHealthRatio() == 0 && npc.getHealthScale() > 0)) {
+                            AIOFighterPlugin.setWaitingForLoot(true);
+                            AIOFighterPlugin.setLastNpcKilledTime(System.currentTimeMillis());
+                            Microbot.log("NPC died, waiting for loot...");
+                            return;
+                        }
+                    }
+                }
 
-
-
-
-
+                // Check if we're waiting for loot
+                if (config.toggleWaitForLoot() && AIOFighterPlugin.isWaitingForLoot()) {
+                    long timeSinceKill = System.currentTimeMillis() - AIOFighterPlugin.getLastNpcKilledTime();
+                    if (timeSinceKill >= AIOFighterPlugin.LOOT_WAIT_TIMEOUT) {
+                        // Timeout reached, resume combat
+                        AIOFighterPlugin.setWaitingForLoot(false);
+                        AIOFighterPlugin.setLastNpcKilledTime(0);
+                        Microbot.log("Loot wait timeout reached, resuming combat");
+                    } else {
+                        // Still waiting for loot, don't attack
+                        int secondsLeft = (int)((AIOFighterPlugin.LOOT_WAIT_TIMEOUT - timeSinceKill) / 1000);
+                        Microbot.status = "Waiting for loot... " + secondsLeft + "s";
+                        return;
+                    }
+                }
 
                 if (config.toggleCenterTile() && config.centerLocation().getX() == 0
                         && config.centerLocation().getY() == 0) {
@@ -126,6 +166,7 @@ public class AttackNpcScript extends Script {
 
                 if (!attackableNpcs.isEmpty()) {
                     noNpcCount = 0;
+                    
                     Rs2NpcModel npc = attackableNpcs.stream().findFirst().orElse(null);
 
                     if (!Rs2Camera.isTileOnScreen(npc.getLocalLocation()))

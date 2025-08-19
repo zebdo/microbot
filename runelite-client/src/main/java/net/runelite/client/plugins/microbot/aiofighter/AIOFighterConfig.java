@@ -387,6 +387,17 @@ public interface AIOFighterConfig extends Config {
     )
     default boolean eatFoodForSpace() { return false; }
 
+    @ConfigItem(
+            keyName = "waitForLoot",
+            name = "Wait for Loot",
+            description = "Wait for loot to appear before attacking next NPC (6 second timeout)",
+            position = 103,
+            section = lootSection
+    )
+    default boolean toggleWaitForLoot() {
+        return false;
+    }
+
     //set center tile manually
     @ConfigItem(
             keyName = "Center Tile",
