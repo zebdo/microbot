@@ -17,6 +17,7 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
+import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -25,6 +26,7 @@ import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.settings.Rs2Settings;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import org.slf4j.event.Level;
@@ -68,6 +70,14 @@ public class TheMessScript extends Script {
         Rs2AntibanSettings.naturalMouse = true;
         Rs2AntibanSettings.actionCooldownActive = true;
         Rs2Antiban.setTIMEOUT(Rs2Random.betweenInclusive(1, 4));
+
+        /*
+         * Set camera settings for the script.
+         * To avoid clicking through UI elements like inventory and such.
+         */
+        Rs2Camera.setZoom(Rs2Random.randomGaussian(200, 20));
+        Rs2Camera.setYaw((Rs2Random.dicePercentage(50)? Rs2Random.randomGaussian(750, 50) : Rs2Random.randomGaussian(1700, 50)));
+        Rs2Camera.setPitch(Rs2Random.betweenInclusive(418, 512));
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -342,7 +352,7 @@ public class TheMessScript extends Script {
                                 Rs2Keyboard.typeString(amount);
                                 Rs2Keyboard.keyPress(KeyEvent.VK_ENTER);
                                 Rs2Antiban.actionCooldown();
-                                Rs2Keyboard.keyPress(KeyEvent.VK_ESCAPE);
+                                sleepUntil(() -> closeMessShop());
                                 Rs2Inventory.waitForInventoryChanges(2000);
                                 return Rs2Inventory.hasItem(itemId);
                             }
@@ -509,7 +519,7 @@ public class TheMessScript extends Script {
                     Rs2Antiban.actionCooldown();
                     return true;
                 } else if (getCurrentState() == State.CUT_PINEAPPLE) {
-                    while (Rs2Inventory.hasItem(ItemID.HOSIDIUS_SERVERY_PINEAPPLE) || !isRunning()) {
+                    while (Rs2Inventory.hasItem(ItemID.HOSIDIUS_SERVERY_PINEAPPLE) && isRunning()) {
                         Rs2Widget.clickWidget(item1Widget);
                         sleepGaussian(120, 40);
                         Rs2Widget.clickWidget(item2Widget);
@@ -520,7 +530,7 @@ public class TheMessScript extends Script {
                     sleepUntil(() -> Rs2Inventory.waitForInventoryChanges(2000));
                     return true;
                 } else {
-                    while (Rs2Inventory.hasItem(item1) || !isRunning()) {
+                    while (Rs2Inventory.hasItem(item1) && isRunning()) {
                         Rs2Widget.clickWidget(item1Widget);
                         sleepGaussian(120, 40);
                         Rs2Widget.clickWidget(item2Widget);
@@ -571,7 +581,7 @@ public class TheMessScript extends Script {
                         if (index != -1) {
                             Rs2Widget.clickWidgetFast(children[index], index, 4);
                             Rs2Inventory.waitForInventoryChanges(2000);
-                            Rs2Keyboard.keyPress(KeyEvent.VK_ESCAPE);
+                            sleepUntil(() -> closeMessShop());
                             Rs2Antiban.actionCooldown();
                             return Rs2Inventory.hasItem(itemId);
                         }
@@ -632,6 +642,34 @@ public class TheMessScript extends Script {
         State.USE_BUFFET_TABLE.setNext(State.WAITING);
         State.WAITING.setNext(State.GETTING_READY);
         State.HOP_WORLD.setNext(State.USE_BUFFET_TABLE);
+    }
+
+    private boolean closeMessShop() {
+        if (!Rs2Settings.isEscCloseInterfaceSettingEnabled()){
+            closeWithESCKey();
+        } else {
+            Widget w = Rs2Widget.getWidget(15859713);
+            if (w == null) {
+                debug("Closing button was not found, trying to close the shop using ESC key.");
+                closeWithESCKey();
+            } else {
+                Widget[] children = w.getChildren();
+                if (children != null && children.length > 0) {
+                    Rs2Widget.clickWidget(children[children.length - 1]);
+                } else {
+                    debug("No children found in the widget, trying to close the shop using ESC key.");
+                    closeWithESCKey();
+                }
+            }
+        }
+        return true;
+    }
+
+    private void closeWithESCKey() {
+        Rs2Keyboard.keyPress(KeyEvent.VK_ESCAPE);
+        if (!Rs2Inventory.isOpen()) {
+            Rs2Inventory.open();
+        }
     }
 
     private void info(String message) {
