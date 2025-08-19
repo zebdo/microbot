@@ -353,7 +353,7 @@ public class BlueDragonsScript extends Script {
             lootedAnything |= lootItem("Scaly blue dragonhide");
         }
         if (config.lootMiscItems() && !isInventoryFull()) {
-            Rs2GroundItem.lootItemBasedOnValue(new LootingParameters(3500, 100000, 8, 1, 1, false, true));
+            Rs2GroundItem.lootItemBasedOnValue(new LootingParameters(config.lootValueThreshold(), 100000, 8, 1, 1, false, true));
         }
 
 
