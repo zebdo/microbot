@@ -28,8 +28,8 @@ public class Rs2Settings
 {
 
 	static final int SETTINGS_INTERFACE = InterfaceID.Settings.UNIVERSE;
-	static final int SETTINGS_CLICKABLE = InterfaceID.Settings.SETTINGS_CLICKZONE;
-	static final int SETTINGS_CATEGORIES = InterfaceID.Settings.CATEGORIES_CLICKZONE;
+	static final int SETTINGS_CLICKABLE = 8781844;
+	static final int SETTINGS_CATEGORIES = 8781848;
 	static final int ALL_SETTINGS_BUTTON = 7602208;
 
 	public static boolean openSettings()
