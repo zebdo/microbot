@@ -123,10 +123,47 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                     return;
                 }
 
-                SwingUtilities.invokeLater(() -> setIcon(new ImageIcon(img)));
+                // Scale the image to fit within the icon area while maintaining aspect ratio
+                int iconWidth = 48; // ICON_WIDTH as defined in PluginItem
+                int iconHeight = 70; // HEIGHT as defined in PluginItem
+
+                BufferedImage scaledImg = scaleImageToFit(img, iconWidth, iconHeight);
+                SwingUtilities.invokeLater(() -> setIcon(new ImageIcon(scaledImg)));
             } catch (IOException e) {
                 log.info("Cannot download icon \"{}\"", iconUrl, e);
             }
+        }
+
+        /**
+         * Scales an image to fit within the specified dimensions while maintaining aspect ratio
+         */
+        private BufferedImage scaleImageToFit(BufferedImage originalImage, int maxWidth, int maxHeight) {
+            int originalWidth = originalImage.getWidth();
+            int originalHeight = originalImage.getHeight();
+
+            // Calculate the scaling factor to fit the image within the bounds
+            double scaleX = (double) maxWidth / originalWidth;
+            double scaleY = (double) maxHeight / originalHeight;
+            double scale = Math.min(scaleX, scaleY); // Use the smaller scale to ensure it fits
+
+            // Calculate the new dimensions
+            int newWidth = (int) (originalWidth * scale);
+            int newHeight = (int) (originalHeight * scale);
+
+            // Create a new scaled image
+            BufferedImage scaledImage = new BufferedImage(newWidth, newHeight, BufferedImage.TYPE_INT_ARGB);
+            Graphics2D g2d = scaledImage.createGraphics();
+
+            // Enable high-quality rendering
+            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+            g2d.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // Draw the scaled image
+            g2d.drawImage(originalImage, 0, 0, newWidth, newHeight, null);
+            g2d.dispose();
+
+            return scaledImage;
         }
     }
 
@@ -253,13 +290,13 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                         String requiredVersion = manifest.getMinClientVersion();
 
                         String message = String.format(
-                            "Cannot install plugin '%s'.\n\n" +
-                            "Required client version: %s\n" +
-                            "Current client version: %s\n\n" +
-                            "Please update your Microbot client to install this plugin.",
-                            manifest.getDisplayName(),
-                            requiredVersion != null ? requiredVersion : "Unknown",
-							_currentMicrobotVersion != null ? _currentMicrobotVersion : "Unknown"
+                                "Cannot install plugin '%s'.\n\n" +
+                                        "Required client version: %s\n" +
+                                        "Current client version: %s\n\n" +
+                                        "Please update your Microbot client to install this plugin.",
+                                manifest.getDisplayName(),
+                                requiredVersion != null ? requiredVersion : "Unknown",
+                                _currentMicrobotVersion != null ? _currentMicrobotVersion : "Unknown"
                         );
                         // Create a custom dialog
                         JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Version Incompatibility", true);
@@ -283,8 +320,8 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                         okButton.setBackground(ColorScheme.BRAND_ORANGE);
                         okButton.setForeground(ColorScheme.DARKER_GRAY_COLOR);
                         okButton.setBorder(BorderFactory.createCompoundBorder(
-                            BorderFactory.createEmptyBorder(1, 1, 1, 1),
-                            BorderFactory.createLineBorder(ColorScheme.MEDIUM_GRAY_COLOR, 1)
+                                BorderFactory.createEmptyBorder(1, 1, 1, 1),
+                                BorderFactory.createLineBorder(ColorScheme.MEDIUM_GRAY_COLOR, 1)
                         ));
                         okButton.setFocusPainted(false);
                         okButton.setFont(okButton.getFont().deriveFont(Font.BOLD));
