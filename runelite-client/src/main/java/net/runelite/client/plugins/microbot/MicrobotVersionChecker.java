@@ -45,7 +45,7 @@ public class MicrobotVersionChecker
 			String remoteVersion = fetchRemoteVersion();
 			String localVersion = RuneLiteProperties.getMicrobotVersion();
 			String remote = remoteVersion == null ? null : remoteVersion.trim();
-			String local  = localVersion == null ? ""   : localVersion.trim();
+			String local = localVersion == null ? "" : localVersion.trim();
 			if (remote != null && !remote.isEmpty() && !remote.equals(local))
 			{
 				newVersionAvailable.set(true);
@@ -53,7 +53,7 @@ public class MicrobotVersionChecker
 			}
 			else
 			{
-				log.debug("Microbot client is up to date: {}", local);
+				log.debug("Microbshot client is up to date: {}", local);
 			}
 		}
 		catch (Exception e)
@@ -125,7 +125,18 @@ public class MicrobotVersionChecker
 
 	public void shutdown()
 	{
-		scheduledExecutorService.shutdownNow();
-		newVersionAvailable.set(false);
+		try
+		{
+			if (future != null)
+			{
+				future.cancel(true);
+			}
+		}
+		finally
+		{
+			scheduledExecutorService.shutdownNow();
+			newVersionAvailable.set(false);
+			scheduled.set(false);
+		}
 	}
 }
