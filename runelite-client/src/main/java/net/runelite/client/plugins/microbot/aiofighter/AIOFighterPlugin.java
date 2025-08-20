@@ -87,6 +87,7 @@ public class AIOFighterPlugin extends Plugin {
     private final SafetyScript safetyScript = new SafetyScript();
     private final SlayerScript slayerScript = new SlayerScript();
     private final ShopScript shopScript = new ShopScript();
+    private final DodgeProjectileScript dodgeScript = new DodgeProjectileScript();
     @Inject
     private AIOFighterConfig config;
     @Inject
@@ -135,6 +136,7 @@ public class AIOFighterPlugin extends Plugin {
         }
         if (!config.toggleCenterTile() && Microbot.isLoggedIn() && !config.slayerMode())
             setCenter(Rs2Player.getWorldLocation());
+        dodgeScript.run(config);
         lootScript.run(config);
         cannonScript.run(config);
         attackNpc.run(config);
@@ -172,6 +174,7 @@ public class AIOFighterPlugin extends Plugin {
         lootScript.shutdown();
         cannonScript.shutdown();
         attackNpc.shutdown();
+        dodgeScript.shutdown();
         foodScript.shutdown();
         eatForSpaceScript.shutdown();
         safeSpotScript.shutdown();
@@ -412,6 +415,14 @@ public class AIOFighterPlugin extends Plugin {
         }
     }
 
+    @Subscribe
+    public void onProjectileMoved(ProjectileMoved event) {
+        Projectile projectile = event.getProjectile();
+        if (projectile.getTargetActor() == null) {
+            //Projectiles that have targetActor null are targeting a WorldPoint and are dodgeable.
+            dodgeScript.projectiles.add(event.getProjectile());
+        }
+    }
 
     @Subscribe
     public void onGameTick(GameTick gameTick) {

@@ -195,6 +195,17 @@ public interface AIOFighterConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "DodgeProjectiles",
+            name = "Dodge AoE projectiles",
+            description = "Dodge projectiles that target player location.",
+            position = 9,
+            section = combatSection
+    )
+    default boolean dodgeProjectiles() {
+        return true;
+    }
+
+    @ConfigItem(
             keyName = "Food",
             name = "Auto eat food",
             description = "Automatically eats food",
