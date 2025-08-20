@@ -156,6 +156,10 @@ public class GiantSeaweedFarmerScript extends Script {
 
     private void returnToBank() {
         Rs2Walker.walkTo(3731, 10280, 1); // Get to anchor
+        
+        // Brief pause to allow spore detection before climbing
+        sleep(300, 500);
+        
         Rs2GameObject.interact(UNDERWATER_ANCHOR, "Climb");
         sleepUntil(() -> Rs2Player.getWorldLocation().getPlane() == 0, 7000);
         if (Rs2Player.getWorldLocation().getPlane() != 0) {
