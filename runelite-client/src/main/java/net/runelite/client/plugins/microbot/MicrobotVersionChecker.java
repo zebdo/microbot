@@ -2,10 +2,11 @@ package net.runelite.client.plugins.microbot;
 
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
+import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.inject.Singleton;
@@ -13,29 +14,29 @@ import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLiteProperties;
 import net.runelite.client.ui.ClientUI;
-import org.jetbrains.annotations.NotNull;
 
 @Slf4j
 @Singleton
 public class MicrobotVersionChecker
 {
 	private final AtomicBoolean newVersionAvailable = new AtomicBoolean(false);
-	private static final String REMOTE_VERSION_URL = "https://microbot.cloud/api/version/client";
-	private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(new ThreadFactory()
-	{
-		@Override
-		public Thread newThread(@NotNull Runnable r)
-		{
-			Thread t = new Thread(r);
-			t.setName(this.getClass().getSimpleName());
-			return t;
-		}
+	private final AtomicBoolean scheduled = new AtomicBoolean(false);
+	private volatile ScheduledFuture<?> future;
+	private final String REMOTE_VERSION_URL = "https://microbot.cloud/api/version/client";
+	private static final String NEW_CLIENT_MARKER = "(NEW CLIENT AVAILABLE)";
+
+	private final ScheduledExecutorService scheduledExecutorService = Executors.newSingleThreadScheduledExecutor(r -> {
+		Thread t = new Thread(r, MicrobotVersionChecker.class.getSimpleName());
+		t.setDaemon(true);
+		t.setUncaughtExceptionHandler((th, e) -> log.warn("Version checker thread error", e));
+		return t;
 	});
 
 	private void runVersionCheck()
 	{
 		if (newVersionAvailable.get())
 		{
+			appendToTitle();
 			return;
 		}
 
@@ -43,14 +44,16 @@ public class MicrobotVersionChecker
 		{
 			String remoteVersion = fetchRemoteVersion();
 			String localVersion = RuneLiteProperties.getMicrobotVersion();
-			if (remoteVersion != null && !remoteVersion.trim().equals(localVersion))
+			String remote = remoteVersion == null ? null : remoteVersion.trim();
+			String local  = localVersion == null ? ""   : localVersion.trim();
+			if (remote != null && !remote.isEmpty() && !remote.equals(local))
 			{
 				newVersionAvailable.set(true);
-				notifyNewVersionAvailable(remoteVersion, localVersion);
+				notifyNewVersionAvailable(remote, local);
 			}
 			else
 			{
-				log.debug("Microbot client is up to date: {}", localVersion);
+				log.debug("Microbot client is up to date: {}", local);
 			}
 		}
 		catch (Exception e)
@@ -61,23 +64,48 @@ public class MicrobotVersionChecker
 
 	private String fetchRemoteVersion() throws Exception
 	{
-		URL url = new URL(REMOTE_VERSION_URL);
-		try (BufferedReader in = new BufferedReader(new InputStreamReader(url.openStream())))
+		var url = new URL(REMOTE_VERSION_URL);
+		var conn = (HttpURLConnection) url.openConnection();
+		conn.setConnectTimeout(5_000);
+		conn.setReadTimeout(5_000);
+		conn.setRequestMethod("GET");
+		conn.setInstanceFollowRedirects(true);
+		try (var reader = new BufferedReader(new InputStreamReader(conn.getInputStream(), java.nio.charset.StandardCharsets.UTF_8)))
 		{
-			return in.readLine();
+			if (conn.getResponseCode() != 200)
+			{
+				log.debug("Version check responded with HTTP {}", conn.getResponseCode());
+				return null;
+			}
+			String line = reader.readLine();
+			return line != null ? line.trim() : null;
+		}
+		finally
+		{
+			conn.disconnect();
 		}
 	}
 
 	private void notifyNewVersionAvailable(String remoteVersion, String localVersion)
 	{
+		appendToTitle();
+		log.info("New Microbot client version available: {} (current: {})", remoteVersion, localVersion);
+	}
+
+	private void appendToTitle()
+	{
 		SwingUtilities.invokeLater(() -> {
 			try
 			{
-				String oldTitle = ClientUI.getFrame().getTitle();
-				if (!oldTitle.contains("(NEW CLIENT AVAILABLE)"))
+				var frame = ClientUI.getFrame();
+				if (frame == null)
 				{
-					log.info("New Microbot client version available: {} (current: {})", remoteVersion, localVersion);
-					ClientUI.getFrame().setTitle(oldTitle + " (NEW CLIENT AVAILABLE)");
+					return;
+				}
+				String oldTitle = String.valueOf(frame.getTitle());
+				if (!oldTitle.contains(NEW_CLIENT_MARKER))
+				{
+					frame.setTitle(oldTitle + " " + NEW_CLIENT_MARKER);
 				}
 			}
 			catch (Exception e)
@@ -89,10 +117,14 @@ public class MicrobotVersionChecker
 
 	public void checkForUpdate()
 	{
-		scheduledExecutorService.scheduleWithFixedDelay(this::runVersionCheck, 0, 10, TimeUnit.MINUTES);
+		if (scheduled.compareAndSet(false, true))
+		{
+			future = scheduledExecutorService.scheduleWithFixedDelay(this::runVersionCheck, 0, 10, TimeUnit.MINUTES);
+		}
 	}
 
-	public void shutdown() {
+	public void shutdown()
+	{
 		scheduledExecutorService.shutdownNow();
 		newVersionAvailable.set(false);
 	}
