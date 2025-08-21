@@ -41,7 +41,7 @@ public class LootScript extends Script {
                 if (AIOFighterPlugin.getState().equals(State.BANKING) || AIOFighterPlugin.getState().equals(State.WALKING)) {
                     return;
                 }
-                if (Rs2Player.isInCombat() && !config.toggleForceLoot()) {
+                if (Rs2Player.isInCombat() && !config.toggleForceLoot() && !AIOFighterPlugin.isWaitingForLoot()) {
                     return;
                 }
 
