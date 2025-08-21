@@ -16,10 +16,13 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.woodcutting.Forestry.*;
+import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
 import java.awt.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
 @PluginDescriptor(
@@ -31,11 +34,10 @@ import java.util.regex.Pattern;
 @Slf4j
 public class AutoWoodcuttingPlugin extends Plugin {
     @Inject
-    @Getter(AccessLevel.PACKAGE)
+    @Getter(AccessLevel.MODULE)
     public AutoWoodcuttingScript autoWoodcuttingScript;
     @Inject
-    @Getter(AccessLevel.PACKAGE)
-    private AutoWoodcuttingConfig config;
+    public AutoWoodcuttingConfig config;
     @Inject
     private OverlayManager overlayManager;
     @Inject
@@ -51,7 +53,14 @@ public class AutoWoodcuttingPlugin extends Plugin {
     private RootEvent rootEvent;
     private StrugglingSaplingEvent saplingEvent;
 
+    // Forestry event variables
+    public final List<NPC> ritualCircles = new ArrayList<>();
+    public ForestryEvents currentForestryEvent = ForestryEvents.NONE;
+    public final GameObject[] saplingOrder = new GameObject[3];
+    public final List<GameObject> saplingIngredients = new ArrayList<>(5);
+
     private static final Pattern WOOD_CUT_PATTERN = Pattern.compile("You get (?:some|an)[\\w ]+(?:logs?|mushrooms)\\.");
+
     @Provides
     AutoWoodcuttingConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(AutoWoodcuttingConfig.class);
@@ -70,6 +79,8 @@ public class AutoWoodcuttingPlugin extends Plugin {
     protected void shutDown() {
         autoWoodcuttingScript.shutdown();
         this.removeEvents();
+        ritualCircles.clear();
+        currentForestryEvent = ForestryEvents.NONE;
         overlayManager.remove(woodcuttingOverlay);
     }
 
@@ -90,29 +101,26 @@ public class AutoWoodcuttingPlugin extends Plugin {
             autoWoodcuttingScript.cannotLightFire = true;
         }
 
-        if (msg.startsWith("The sapling seems to love"))
-        {
+        if (msg.startsWith("The sapling seems to love")) {
             int ingredientNum = msg.contains("first") ? 1 : (msg.contains("second") ? 2 : (msg.contains("third") ? 3 : -1));
-            if (ingredientNum == -1)
-            {
+            if (ingredientNum == -1) {
                 log.debug("unable to find ingredient index from message: {}", msg);
                 return;
             }
 
-            GameObject ingredientObj = autoWoodcuttingScript.getSaplingIngredients().stream()
+            GameObject ingredientObj = this.saplingIngredients.stream()
                     .filter(obj -> {
                         String compositionName = Rs2GameObject.getCompositionName(obj).orElse(null);
                         return compositionName != null && msg.contains(compositionName.toLowerCase());
                     })
                     .findAny()
                     .orElse(null);
-            if (ingredientObj == null)
-            {
+            if (ingredientObj == null) {
                 log.debug("unable to find ingredient from message: {}", msg);
                 return;
             }
 
-            autoWoodcuttingScript.saplingOrder[ingredientNum - 1] = ingredientObj;
+            this.saplingOrder[ingredientNum - 1] = ingredientObj;
         }
     }
 
@@ -121,7 +129,7 @@ public class AutoWoodcuttingPlugin extends Plugin {
         NPC npc = event.getNpc();
         int id = npc.getId();
         if (id >= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_A_1 && id <= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_D_4) {
-            autoWoodcuttingScript.ritualCircles.add(npc);
+            this.ritualCircles.add(npc);
         }
     }
 
@@ -130,15 +138,14 @@ public class AutoWoodcuttingPlugin extends Plugin {
         NPC npc = event.getNpc();
         int id = npc.getId();
         if (id >= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_A_1 && id <= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_D_4) {
-            autoWoodcuttingScript.ritualCircles.remove(npc);
+            this.ritualCircles.remove(npc);
         }
     }
 
     @Subscribe
     public void onGameObjectSpawned(final GameObjectSpawned event) {
         GameObject gameObject = event.getGameObject();
-        switch (gameObject.getId())
-        {
+        switch (gameObject.getId()) {
             case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_1:
             case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_2:
             case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_3:
@@ -146,7 +153,7 @@ public class AutoWoodcuttingPlugin extends Plugin {
             case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_4B:
             case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_4C:
             case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_5:
-                autoWoodcuttingScript.getSaplingIngredients().add(gameObject);
+                this.saplingIngredients.add(gameObject);
                 break;
         }
     }
@@ -163,7 +170,7 @@ public class AutoWoodcuttingPlugin extends Plugin {
             case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_4B:
             case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_4C:
             case ObjectID.GATHERING_EVENT_SAPLING_INGREDIENT_5:
-                autoWoodcuttingScript.getSaplingIngredients().remove(object);
+                this.saplingIngredients.remove(object);
                 break;
         }
     }
@@ -171,59 +178,103 @@ public class AutoWoodcuttingPlugin extends Plugin {
     private void addEvents() {
         var eventManager = Microbot.getBlockingEventManager();
 
-        eggEvent = new EggEvent();
-        entlingsEvent = new EntlingsEvent();
-        flowersEvent = new FlowersEvent();
-        foxEvent = new FoxEvent();
-        hivesEvent = new HivesEvent(config);
-        leprechaunEvent = new LeprechaunEvent();
-        ritualEvent = new RitualEvent(autoWoodcuttingScript);
-        rootEvent = new RootEvent();
-        saplingEvent = new StrugglingSaplingEvent(this);
-
         if (config.eggEvent()) {
+            eggEvent = new EggEvent(this);
             eventManager.add(eggEvent);
         }
+
         if (config.entlingsEvent()) {
+            entlingsEvent = new EntlingsEvent(this);
             eventManager.add(entlingsEvent);
         }
+
         if (config.flowersEvent()) {
+            flowersEvent = new FlowersEvent(this);
             eventManager.add(flowersEvent);
         }
+
         if (config.foxEvent()) {
+            foxEvent = new FoxEvent(this);
             eventManager.add(foxEvent);
         }
+
         if (config.hivesEvent()) {
+            hivesEvent = new HivesEvent(this);
             eventManager.add(hivesEvent);
         }
+
         if (config.leprechaunEvent()) {
+            leprechaunEvent = new LeprechaunEvent(this);
             eventManager.add(leprechaunEvent);
         }
+
         if (config.ritualEvent()) {
+            ritualEvent = new RitualEvent(this);
             eventManager.add(ritualEvent);
         }
+
         if (config.rootEvent()) {
+            rootEvent = new RootEvent(this);
             eventManager.add(rootEvent);
         }
+
         if (config.saplingEvent()) {
+            saplingEvent = new StrugglingSaplingEvent(this);
             eventManager.add(saplingEvent);
+        }
     }
-    }
+
     private void removeEvents() {
         var eventManager = Microbot.getBlockingEventManager();
-        eventManager.remove(eggEvent);
-        eventManager.remove(entlingsEvent);
-        eventManager.remove(flowersEvent);
-        eventManager.remove(foxEvent);
-        eventManager.remove(hivesEvent);
-        eventManager.remove(leprechaunEvent);
-        eventManager.remove(ritualEvent);
-        eventManager.remove(rootEvent);
-        eventManager.remove(saplingEvent);
+
+        if (eggEvent != null) {
+            eventManager.remove(eggEvent);
+            eggEvent = null;
+        }
+
+        if (entlingsEvent != null) {
+            eventManager.remove(entlingsEvent);
+            entlingsEvent = null;
+        }
+
+        if (flowersEvent != null) {
+            eventManager.remove(flowersEvent);
+            flowersEvent = null;
+        }
+
+        if (foxEvent != null) {
+            eventManager.remove(foxEvent);
+            foxEvent = null;
+        }
+
+        if (hivesEvent != null) {
+            eventManager.remove(hivesEvent);
+            hivesEvent = null;
+        }
+
+        if (leprechaunEvent != null) {
+            eventManager.remove(leprechaunEvent);
+            leprechaunEvent = null;
+        }
+
+        if (ritualEvent != null) {
+            eventManager.remove(ritualEvent);
+            ritualEvent = null;
+        }
+
+        if (rootEvent != null) {
+            eventManager.remove(rootEvent);
+            rootEvent = null;
+        }
+
+        if (saplingEvent != null) {
+            eventManager.remove(saplingEvent);
+            saplingEvent = null;
+        }
     }
 
     @Subscribe
-    public void onConfigChanged(ConfigChanged ev) {
+    public void onConfigChanged (ConfigChanged ev){
         if (ev.getGroup().equals(AutoWoodcuttingConfig.configGroup)) {
             if (ev.getKey().equals("enableForestry")) {
                 if (config.enableForestry()) {
@@ -232,10 +283,117 @@ public class AutoWoodcuttingPlugin extends Plugin {
                     this.removeEvents();
                 }
             } else {
-                // If any other config changes, we need to re-add the events
-                this.removeEvents();
-                this.addEvents();
+                var key = ev.getKey();
+                var value = ev.getNewValue();
+                if (value != null && value.equals("true")) {
+                    this.addEvent(key);
+                }
+                else if (value != null && value.equals("false")) {
+                    this.removeEvent(key);
+                }
             }
+        }
+    }
+
+    private void addEvent(String key){
+        var eventManager = Microbot.getBlockingEventManager();
+        switch (key) {
+            case "eggEvent":
+                eggEvent = new EggEvent(this);
+                eventManager.add(eggEvent);
+                break;
+            case "entlingsEvent":
+                entlingsEvent = new EntlingsEvent(this);
+                eventManager.add(entlingsEvent);
+                break;
+            case "flowersEvent":
+                flowersEvent = new FlowersEvent(this);
+                eventManager.add(flowersEvent);
+                break;
+            case "foxEvent":
+                foxEvent = new FoxEvent(this);
+                eventManager.add(foxEvent);
+                break;
+            case "hivesEvent":
+                hivesEvent = new HivesEvent(this);
+                eventManager.add(hivesEvent);
+                break;
+            case "leprechaunEvent":
+                leprechaunEvent = new LeprechaunEvent(this);
+                eventManager.add(leprechaunEvent);
+                break;
+            case "ritualEvent":
+                ritualEvent = new RitualEvent(this);
+                eventManager.add(ritualEvent);
+                break;
+            case "rootEvent":
+                rootEvent = new RootEvent(this);
+                eventManager.add(rootEvent);
+                break;
+            case "saplingEvent":
+                saplingEvent = new StrugglingSaplingEvent(this);
+                eventManager.add(saplingEvent);
+                break;
+        }
+    }
+
+    private void removeEvent(String key) {
+        var eventManager = Microbot.getBlockingEventManager();
+        switch (key) {
+            case "eggEvent":
+                if (eggEvent != null) {
+                    eventManager.remove(eggEvent);
+                    eggEvent = null;
+                }
+                break;
+            case "entlingsEvent":
+                if (entlingsEvent != null) {
+                    eventManager.remove(entlingsEvent);
+                    entlingsEvent = null;
+                }
+                break;
+            case "flowersEvent":
+                if (flowersEvent != null) {
+                    eventManager.remove(flowersEvent);
+                    flowersEvent = null;
+                }
+                break;
+            case "foxEvent":
+                if (foxEvent != null) {
+                    eventManager.remove(foxEvent);
+                    foxEvent = null;
+                }
+                break;
+            case "hivesEvent":
+                if (hivesEvent != null) {
+                    eventManager.remove(hivesEvent);
+                    hivesEvent = null;
+                }
+                break;
+            case "leprechaunEvent":
+                if (leprechaunEvent != null) {
+                    eventManager.remove(leprechaunEvent);
+                    leprechaunEvent = null;
+                }
+                break;
+            case "ritualEvent":
+                if (ritualEvent != null) {
+                    eventManager.remove(ritualEvent);
+                    ritualEvent = null;
+                }
+                break;
+            case "rootEvent":
+                if (rootEvent != null) {
+                    eventManager.remove(rootEvent);
+                    rootEvent = null;
+                }
+                break;
+            case "saplingEvent":
+                if (saplingEvent != null) {
+                    eventManager.remove(saplingEvent);
+                    saplingEvent = null;
+                }
+                break;
         }
     }
 }

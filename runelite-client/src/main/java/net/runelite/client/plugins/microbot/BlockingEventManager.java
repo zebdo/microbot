@@ -5,7 +5,10 @@ import net.runelite.client.plugins.microbot.util.events.*;
 import net.runelite.client.ui.SplashScreen;
 import org.slf4j.event.Level;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -78,8 +81,6 @@ public class BlockingEventManager
         return Collections.unmodifiableList(blockingEvents);
     }
 
-    public boolean IsEventPending() { return !pendingEvents.isEmpty(); }
-
     private void sortBlockingEvents()
     {
         blockingEvents.sort(
@@ -121,7 +122,6 @@ public class BlockingEventManager
                         "Error validating BlockingEvent (%s): %s",
                         event.getName(),
                         ex);
-                ex.printStackTrace();
             }
         }
     }
@@ -161,7 +161,6 @@ public class BlockingEventManager
                         "Error executing BlockingEvent (%s): %s",
                         event.getName(),
                         ex);
-                ex.printStackTrace();
             }
             finally
             {

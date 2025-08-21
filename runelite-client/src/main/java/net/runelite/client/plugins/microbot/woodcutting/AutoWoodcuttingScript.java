@@ -1,7 +1,5 @@
 package net.runelite.client.plugins.microbot.woodcutting;
 
-import lombok.AccessLevel;
-import lombok.Getter;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -22,6 +20,7 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.woodcutting.Rs2Woodcutting;
 import net.runelite.client.plugins.microbot.woodcutting.enums.*;
 
+import javax.inject.Inject;
 import java.awt.event.KeyEvent;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
@@ -32,9 +31,6 @@ import static net.runelite.api.gameval.ItemID.TINDERBOX;
 
 
 public class AutoWoodcuttingScript extends Script {
-
-    @Getter(AccessLevel.PACKAGE)
-    private final List<GameObject> saplingIngredients = new ArrayList<>(5);
 
     public static final List<Integer> BURNING_ANIMATION_IDS = List.of(
             FORESTRY_CAMPFIRE_BURNING_LOGS,
@@ -55,10 +51,12 @@ public class AutoWoodcuttingScript extends Script {
     public volatile boolean cannotLightFire = false;
     WoodcuttingScriptState woodcuttingScriptState = WoodcuttingScriptState.WOODCUTTING;
     private boolean hasAutoHopMessageShown = false;
-    // Forestry event variables
-    public final List<NPC> ritualCircles = new ArrayList<>();
-    public ForestryEvents currentForestryEvent = ForestryEvents.NONE;
-    public final GameObject[] saplingOrder = new GameObject[3];
+    private final AutoWoodcuttingPlugin plugin;
+
+    @Inject
+    public AutoWoodcuttingScript(AutoWoodcuttingPlugin plugin) {
+        this.plugin = plugin;
+    }
 
     private static void handleFiremaking(AutoWoodcuttingConfig config) {
         if (!Rs2Inventory.hasItem(TINDERBOX)) {
@@ -96,10 +94,6 @@ public class AutoWoodcuttingScript extends Script {
         }
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                if (Microbot.getBlockingEventManager().IsEventPending()){
-                    sleep(300);
-                    return;
-                }
                 if (preFlightChecks(config)) return;
                 switch (woodcuttingScriptState) {
                     case WOODCUTTING:
@@ -201,6 +195,10 @@ public class AutoWoodcuttingScript extends Script {
         if (woodcuttingScriptState != WoodcuttingScriptState.RESETTING &&
                 (Rs2Player.isMoving() || (Rs2Player.isAnimating() && !BURNING_ANIMATION_IDS.contains(Rs2Player.getLastAnimationID())))) {
             return true;
+        }
+
+        if (this.plugin.currentForestryEvent != ForestryEvents.NONE) {
+            this.plugin.currentForestryEvent = ForestryEvents.NONE;
         }
 
         return Rs2AntibanSettings.actionCooldownActive;
@@ -339,8 +337,6 @@ public class AutoWoodcuttingScript extends Script {
         returnPoint = null;
         initialPlayerLocation = null;
         hasAutoHopMessageShown = false;
-        ritualCircles.clear();
-        currentForestryEvent = ForestryEvents.NONE;
         Rs2Antiban.resetAntibanSettings();
     }
 }

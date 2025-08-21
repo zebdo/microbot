@@ -4,10 +4,17 @@ import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.BlockingEvent;
 import net.runelite.client.plugins.microbot.BlockingEventPriority;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 
 import java.util.stream.Collectors;
 
 public class FlowersEvent implements BlockingEvent {
+
+    private final AutoWoodcuttingPlugin plugin;
+    public FlowersEvent(AutoWoodcuttingPlugin plugin) {
+        this.plugin = plugin;
+    }
+
     @Override
     public boolean validate() {
         var flowers = Rs2Npc.getNpcs(npc ->

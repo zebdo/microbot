@@ -6,9 +6,17 @@ import net.runelite.client.plugins.microbot.BlockingEventPriority;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
+import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import org.slf4j.event.Level;
 
 public class FoxEvent implements BlockingEvent {
+
+    private final AutoWoodcuttingPlugin plugin;
+    public FoxEvent(AutoWoodcuttingPlugin plugin) {
+        this.plugin = plugin;
+    }
+
     @Override
     public boolean validate() {
         var outDoorFox = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_POACHERS_FOX_OUTDOORS);
@@ -18,6 +26,8 @@ public class FoxEvent implements BlockingEvent {
 
     @Override
     public boolean execute() {
+        Microbot.log("FoxEvent: Executing Fox event");
+        plugin.currentForestryEvent = ForestryEvents.FOX_TRAP;
         while (this.validate()) {
             var trap = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_POACHERS_TRAP);
             if (trap == null) {

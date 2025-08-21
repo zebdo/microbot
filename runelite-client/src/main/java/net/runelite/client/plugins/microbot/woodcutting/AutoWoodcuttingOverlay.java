@@ -79,8 +79,7 @@ public class AutoWoodcuttingOverlay extends OverlayPanel {
                     .right(this.plugin.autoWoodcuttingScript.woodcuttingScriptState.toString())
                     .rightColor(HIGHLIGHT_COLOR)
                     .build());
-            var forestry = config.enableForestry() ? plugin.autoWoodcuttingScript.currentForestryEvent != ForestryEvents.NONE ? plugin.autoWoodcuttingScript.currentForestryEvent.toString() : "None" : "Disabled";
-            if (forestry != null && !forestry.equals("None") && !forestry.equals("Disabled")) {
+            var forestry = config.enableForestry() ? plugin.currentForestryEvent != ForestryEvents.NONE ? plugin.currentForestryEvent.toString() : "None" : "Disabled";            if (forestry != null && !forestry.equals("None") && !forestry.equals("Disabled")) {
                 panelComponent.getChildren().add(LineComponent.builder()
                         .left("Forestry Event:")
                         .right(forestry)

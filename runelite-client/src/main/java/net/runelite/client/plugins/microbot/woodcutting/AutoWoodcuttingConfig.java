@@ -14,7 +14,7 @@ import net.runelite.client.plugins.microbot.woodcutting.enums.WoodcuttingWalkBac
                 "<p>If forestry is enabled, remember to use one of the forestry worlds for best results</p>" +
                 "</html>")
 public interface AutoWoodcuttingConfig extends Config {
-    String configGroup = "Woodcutting";
+    String configGroup = "AutoWoodcutting";
     @ConfigSection(
             name = "General",
             description = "General",

@@ -11,12 +11,20 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
+import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
+import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 
 import java.util.Comparator;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 public class EggEvent implements BlockingEvent {
+
+    private final AutoWoodcuttingPlugin plugin;
+    public EggEvent(AutoWoodcuttingPlugin plugin) {
+        this.plugin = plugin;
+    }
+
     @Override
     public boolean validate() {
         var pheasantNests = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("pheasant nest", false));
@@ -34,6 +42,7 @@ public class EggEvent implements BlockingEvent {
             return false; // If the forester is not found, we cannot proceed with the event
         }
 
+        plugin.currentForestryEvent = ForestryEvents.PHEASANT;
         while (this.validate()) {
 
             // If we have an egg, interact with the forester

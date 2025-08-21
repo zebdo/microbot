@@ -10,8 +10,16 @@ import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.woodcutting.Rs2Woodcutting;
+import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
+import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 
 public class RootEvent implements BlockingEvent {
+
+    private final AutoWoodcuttingPlugin plugin;
+    public RootEvent(AutoWoodcuttingPlugin plugin) {
+        this.plugin = plugin;
+    }
+
     @Override
     public boolean validate() {
         if (!Microbot.loggedIn) return false; // Ensure the player is logged in as the cache will nullref if not logged in
@@ -32,6 +40,8 @@ public class RootEvent implements BlockingEvent {
 
     @Override
     public boolean execute() {
+        Microbot.log("RootEvent: Executing Root event");
+        plugin.currentForestryEvent = ForestryEvents.TREE_ROOT;
         while (this.validate()) {
             var root = Rs2ObjectCache.getClosestObjectById(ObjectID.GATHERING_EVENT_RISING_ROOTS).orElse(null);
             var specialRoot = Rs2ObjectCache.getClosestObjectById(ObjectID.GATHERING_EVENT_RISING_ROOTS_SPECIAL).orElse(null);

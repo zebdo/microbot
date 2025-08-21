@@ -10,6 +10,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingScript;
+import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 
 import java.util.Arrays;
 import java.util.List;
@@ -48,6 +49,7 @@ public class StrugglingSaplingEvent implements BlockingEvent {
     public boolean execute() {
         try {
             Microbot.log("StrugglingSaplingEvent: Executing Struggling Sapling event");
+            plugin.currentForestryEvent = ForestryEvents.STRUGGLING_SAPLING;
             // Find the struggling sapling
             var sapling = Rs2GameObject.getGameObjects(Rs2GameObject.nameMatches("Struggling sapling", false))
                     .stream()
@@ -81,11 +83,11 @@ public class StrugglingSaplingEvent implements BlockingEvent {
                 GameObject correctIngredient;
                 //if we have mulch in inventory, check if we know the correct ingredient or pick a random one
                 if (Rs2Inventory.contains(ItemID.GATHERING_EVENT_SAPLING_MULCH_STAGE2)) {
-                    correctIngredient = plugin.autoWoodcuttingScript.saplingOrder[2];
+                    correctIngredient = plugin.saplingOrder[2];
                 } else if (Rs2Inventory.contains(ItemID.GATHERING_EVENT_SAPLING_MULCH_STAGE1)) {
-                    correctIngredient = plugin.autoWoodcuttingScript.saplingOrder[1];
+                    correctIngredient = plugin.saplingOrder[1];
                 } else {
-                    correctIngredient = plugin.autoWoodcuttingScript.saplingOrder[0];
+                    correctIngredient = plugin.saplingOrder[0];
                 }
 
                 if (correctIngredient != null) {

@@ -10,9 +10,18 @@ import net.runelite.client.plugins.microbot.util.cache.Rs2ObjectCache;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
+import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import org.slf4j.event.Level;
 
 public class LeprechaunEvent implements BlockingEvent {
+
+    private final AutoWoodcuttingPlugin plugin;
+
+    public LeprechaunEvent(AutoWoodcuttingPlugin plugin) {
+        this.plugin = plugin;
+    }
+
     @Override
     public boolean validate() {
         var leprechaun = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_WOODCUTTING_LEPRECHAUN);
@@ -21,6 +30,9 @@ public class LeprechaunEvent implements BlockingEvent {
 
     @Override
     public boolean execute() {
+        Microbot.log("LeprechaunEvent: Executing Leprechaun event");
+        plugin.currentForestryEvent = ForestryEvents.RAINBOW;
+
         while (this.validate()) {
             var endOfRainbow = Rs2ObjectCache.getClosestObjectById(ObjectID.GATHERING_EVENT_WOODCUTTING_LEPRECHAUN_RAINBOW);
             if (endOfRainbow.isEmpty()) {
