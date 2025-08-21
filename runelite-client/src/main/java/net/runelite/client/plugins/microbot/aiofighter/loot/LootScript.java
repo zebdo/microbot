@@ -6,6 +6,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterConfig;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterPlugin;
+import net.runelite.client.plugins.microbot.aiofighter.combat.AttackNpcScript;
 import net.runelite.client.plugins.microbot.aiofighter.enums.DefaultLooterStyle;
 import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
@@ -59,6 +60,13 @@ public class LootScript extends Script {
                 }
                 if (config.toggleDelayedLooting()) {
                     groundItems.sort(Comparator.comparingInt(Rs2GroundItem::calculateDespawnTime));
+                }
+                // Clear wait for loot state since we found loot
+                if (AIOFighterPlugin.isWaitingForLoot()) {
+                    AIOFighterPlugin.setWaitingForLoot(false);
+                    AIOFighterPlugin.setLastNpcKilledTime(0);
+                    AttackNpcScript.cachedTargetNpc = null; // Clear the cached NPC
+                    Microbot.log("Loot found, clearing wait state");
                 }
                 //Pause other scripts before looting
                 Microbot.pauseAllScripts.getAndSet(true);

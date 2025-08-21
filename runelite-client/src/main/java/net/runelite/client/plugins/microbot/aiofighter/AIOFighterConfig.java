@@ -401,12 +401,24 @@ public interface AIOFighterConfig extends Config {
     @ConfigItem(
             keyName = "waitForLoot",
             name = "Wait for Loot",
-            description = "Wait for loot to appear before attacking next NPC (6 second timeout)",
+            description = "Wait for loot to appear before attacking next NPC",
             position = 103,
             section = lootSection
     )
     default boolean toggleWaitForLoot() {
         return false;
+    }
+
+    @Range(min = 1, max = 10)
+    @ConfigItem(
+            keyName = "lootWaitTimeout",
+            name = "Loot Wait Timeout",
+            description = "Seconds to wait for loot before resuming combat (1-10)",
+            position = 104,
+            section = lootSection
+    )
+    default int lootWaitTimeout() {
+        return 6;
     }
 
     //set center tile manually

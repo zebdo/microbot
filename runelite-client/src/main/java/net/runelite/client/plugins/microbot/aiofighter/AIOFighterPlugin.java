@@ -75,8 +75,6 @@ public class AIOFighterPlugin extends Plugin {
     @Getter @Setter
     private static boolean waitingForLoot = false;
     
-    public static final int LOOT_WAIT_TIMEOUT = 6000; // 6 seconds
-    
     private final CannonScript cannonScript = new CannonScript();
     private final AttackNpcScript attackNpc = new AttackNpcScript();
 
@@ -445,19 +443,6 @@ public class AIOFighterPlugin extends Plugin {
         try {
             if(config.togglePrayer())
                 flickerScript.onNpcDespawned(npcDespawned);
-            
-            // Handle wait for loot feature
-            if (config.toggleWaitForLoot()) {
-                NPC npc = npcDespawned.getNpc();
-                if (npc != null && npc.isDead()) {
-                    Player localPlayer = Microbot.getClient().getLocalPlayer();
-                    if (localPlayer != null && localPlayer.getInteracting() == npc) {
-                        waitingForLoot = true;
-                        lastNpcKilledTime = System.currentTimeMillis();
-                        Microbot.log("NPC died, waiting for loot...");
-                    }
-                }
-            }
         } catch (Exception e) {
             log.info("AIO Fighter Plugin onNpcDespawned Error: " + e.getMessage());
         }

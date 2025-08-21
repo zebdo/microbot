@@ -45,6 +45,7 @@ public class AttackNpcScript extends Script {
     public static Actor currentNpc = null;
     public static AtomicReference<List<Rs2NpcModel>> filteredAttackableNpcs = new AtomicReference<>(new ArrayList<>());
     public static Rs2WorldArea attackableArea = null;
+    public static net.runelite.api.NPC cachedTargetNpc = null;
     private boolean messageShown = false;
     private int noNpcCount = 0;
 
@@ -108,42 +109,42 @@ public class AttackNpcScript extends Script {
                     return; // Don't attack while looting
                 }
 
-                // Check if our current target just died and we should wait for loot
-                if (config.toggleWaitForLoot() && !AIOFighterPlugin.isWaitingForLoot()) {
-                    // Check if we were recently in combat but no longer interacting (NPC just died)
+                // Check if we need to update our cached target (but not while waiting for loot)
+                if (!AIOFighterPlugin.isWaitingForLoot()) {
                     Actor currentInteracting = Rs2Player.getInteracting();
-
-                    // If we're not interacting but were recently, the NPC probably just died
-                    if (currentInteracting == null && Rs2Player.isInCombat()) {
-                        // We were in combat but lost our target - NPC likely died
-                        AIOFighterPlugin.setWaitingForLoot(true);
-                        AIOFighterPlugin.setLastNpcKilledTime(System.currentTimeMillis());
-                        Microbot.log("Lost target while in combat, waiting for loot...");
-                        return;
-                    }
-
                     if (currentInteracting instanceof net.runelite.api.NPC) {
                         net.runelite.api.NPC npc = (net.runelite.api.NPC) currentInteracting;
-                        if (npc.isDead() || (npc.getHealthRatio() == 0 && npc.getHealthScale() > 0)) {
-                            AIOFighterPlugin.setWaitingForLoot(true);
-                            AIOFighterPlugin.setLastNpcKilledTime(System.currentTimeMillis());
-                            Microbot.log("NPC died, waiting for loot...");
-                            return;
+                        // Update our cached target to who we're fighting
+                        if (npc.getHealthRatio() > 0 && !npc.isDead()) {
+                            cachedTargetNpc = npc;
                         }
+                    }
+                }
+                
+                // Check if our cached target died
+                if (config.toggleWaitForLoot() && !AIOFighterPlugin.isWaitingForLoot() && cachedTargetNpc != null) {
+                    if (cachedTargetNpc.isDead() || (cachedTargetNpc.getHealthRatio() == 0 && cachedTargetNpc.getHealthScale() > 0)) {
+                        AIOFighterPlugin.setWaitingForLoot(true);
+                        AIOFighterPlugin.setLastNpcKilledTime(System.currentTimeMillis());
+                        Microbot.log("NPC died, waiting for loot...");
+                        cachedTargetNpc = null;
+                        return;
                     }
                 }
 
                 // Check if we're waiting for loot
                 if (config.toggleWaitForLoot() && AIOFighterPlugin.isWaitingForLoot()) {
                     long timeSinceKill = System.currentTimeMillis() - AIOFighterPlugin.getLastNpcKilledTime();
-                    if (timeSinceKill >= AIOFighterPlugin.LOOT_WAIT_TIMEOUT) {
+                    int timeoutMs = config.lootWaitTimeout() * 1000;
+                    if (timeSinceKill >= timeoutMs) {
                         // Timeout reached, resume combat
                         AIOFighterPlugin.setWaitingForLoot(false);
                         AIOFighterPlugin.setLastNpcKilledTime(0);
+                        cachedTargetNpc = null; // Clear cached NPC on timeout
                         Microbot.log("Loot wait timeout reached, resuming combat");
                     } else {
                         // Still waiting for loot, don't attack
-                        int secondsLeft = (int)((AIOFighterPlugin.LOOT_WAIT_TIMEOUT - timeSinceKill) / 1000);
+                        int secondsLeft = (int)((timeoutMs - timeSinceKill) / 1000);
                         Microbot.status = "Waiting for loot... " + secondsLeft + "s";
                         return;
                     }
