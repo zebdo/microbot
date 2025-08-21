@@ -395,7 +395,7 @@ public class HouseThievingScript extends Script {
         var currentDodgyNecklace = getDodgyNecklaceAmount();
         var dodgyNecklaceReqsMet = !config.useDodgyNecklace() || (config.useDodgyNecklace() && currentDodgyNecklace >= config.dodgyNecklaceAmount());
 
-        if( hasMaxHouseKeys(config) && !hasAnyFood && currentDodgyNecklace < 1 ) {
+        if( hasMaxHouseKeys(config) && !hasAnyFood && currentDodgyNecklace < 1 && Rs2Inventory.emptySlotCount() > 5) {
             state = State.FINDING_HOUSE;
             return;
         }
