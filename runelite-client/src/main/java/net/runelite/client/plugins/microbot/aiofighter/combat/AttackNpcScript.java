@@ -4,6 +4,7 @@ import lombok.SneakyThrows;
 import net.runelite.api.Actor;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterConfig;
@@ -37,6 +38,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
 
+import static net.runelite.api.gameval.VarbitID.*;
+
 public class AttackNpcScript extends Script {
 
     public static Actor currentNpc = null;
@@ -48,6 +51,7 @@ public class AttackNpcScript extends Script {
     public static void skipNpc() {
         currentNpc = null;
     }
+
     @SneakyThrows
     public void run(AIOFighterConfig config) {
         try {
@@ -64,11 +68,11 @@ public class AttackNpcScript extends Script {
                 if (!Microbot.isLoggedIn() || !super.run() || !config.toggleCombat())
                     return;
 
-                if(config.centerLocation().distanceTo(Rs2Player.getWorldLocation()) < config.attackRadius() &&
-                        !config.centerLocation().equals(new WorldPoint(0, 0, 0)) &&  AIOFighterPlugin.getState() != State.BANKING) {
-                    if(ShortestPathPlugin.getPathfinder() != null)
+                if (config.centerLocation().distanceTo(Rs2Player.getWorldLocation()) < config.attackRadius() &&
+                        !config.centerLocation().equals(new WorldPoint(0, 0, 0)) && AIOFighterPlugin.getState() != State.BANKING) {
+                    if (ShortestPathPlugin.getPathfinder() != null)
                         Rs2Walker.setTarget(null);
-                     AIOFighterPlugin.setState(State.IDLE);
+                    AIOFighterPlugin.setState(State.IDLE);
                 }
 
                 attackableArea = new Rs2WorldArea(config.centerLocation().toWorldArea());
@@ -86,9 +90,9 @@ public class AttackNpcScript extends Script {
                 );
                 final List<Rs2NpcModel> attackableNpcs = new ArrayList<>();
 
-                for (var attackableNpc: filteredAttackableNpcs.get()) {
+                for (var attackableNpc : filteredAttackableNpcs.get()) {
                     if (attackableNpc == null || attackableNpc.getName() == null) continue;
-                    for (var npcToAttack: npcsToAttack) {
+                    for (var npcToAttack : npcsToAttack) {
                         if (npcToAttack.equalsIgnoreCase(attackableNpc.getName())) {
                             attackableNpcs.add(attackableNpc);
                         }
@@ -96,19 +100,19 @@ public class AttackNpcScript extends Script {
                 }
                 filteredAttackableNpcs.set(attackableNpcs);
 
-                if(config.state().equals(State.BANKING) || config.state().equals(State.WALKING))
+                if (config.state().equals(State.BANKING) || config.state().equals(State.WALKING))
                     return;
 
                 // Check if we should pause while looting is happening
                 if (Microbot.pauseAllScripts.get()) {
                     return; // Don't attack while looting
                 }
-                
+
                 // Check if our current target just died and we should wait for loot
                 if (config.toggleWaitForLoot() && !AIOFighterPlugin.isWaitingForLoot()) {
                     // Check if we were recently in combat but no longer interacting (NPC just died)
                     Actor currentInteracting = Rs2Player.getInteracting();
-                    
+
                     // If we're not interacting but were recently, the NPC probably just died
                     if (currentInteracting == null && Rs2Player.isInCombat()) {
                         // We were in combat but lost our target - NPC likely died
@@ -117,7 +121,7 @@ public class AttackNpcScript extends Script {
                         Microbot.log("Lost target while in combat, waiting for loot...");
                         return;
                     }
-                    
+
                     if (currentInteracting instanceof net.runelite.api.NPC) {
                         net.runelite.api.NPC npc = (net.runelite.api.NPC) currentInteracting;
                         if (npc.isDead() || (npc.getHealthRatio() == 0 && npc.getHealthScale() > 0)) {
@@ -156,17 +160,15 @@ public class AttackNpcScript extends Script {
                 messageShown = false;
 
 
-
-
                 if (Rs2AntibanSettings.actionCooldownActive) {
-                     AIOFighterPlugin.setState(State.COMBAT);
-                    handleItemOnNpcToKill();
+                    AIOFighterPlugin.setState(State.COMBAT);
+                    handleItemOnNpcToKill(config);
                     return;
                 }
 
                 if (!attackableNpcs.isEmpty()) {
                     noNpcCount = 0;
-                    
+
                     Rs2NpcModel npc = attackableNpcs.stream().findFirst().orElse(null);
 
                     if (!Rs2Camera.isTileOnScreen(npc.getLocalLocation()))
@@ -201,18 +203,18 @@ public class AttackNpcScript extends Script {
 
 
                 } else {
-                    if(Rs2Player.getWorldLocation().isInArea(attackableArea)){
-                        Microbot.log(Level.INFO,"No attackable NPC found");
+                    if (Rs2Player.getWorldLocation().isInArea(attackableArea)) {
+                        Microbot.log(Level.INFO, "No attackable NPC found");
                         noNpcCount++;
-                        if(noNpcCount > 60 && config.slayerMode()){
-                            Microbot.log(Level.INFO,"No attackable NPC found for 60 ticks, resetting slayer task");
-                             AIOFighterPlugin.addBlacklistedSlayerNpcs(Rs2Slayer.slayerTaskMonsterTarget);
+                        if (noNpcCount > 60 && config.slayerMode()) {
+                            Microbot.log(Level.INFO, "No attackable NPC found for 60 ticks, resetting slayer task");
+                            AIOFighterPlugin.addBlacklistedSlayerNpcs(Rs2Slayer.slayerTaskMonsterTarget);
                             noNpcCount = 0;
                             SlayerScript.reset();
                         }
                     } else {
-                        Rs2Walker.walkTo(config.centerLocation(),0);
-                         AIOFighterPlugin.setState(State.WALKING);
+                        Rs2Walker.walkTo(config.centerLocation(), 0);
+                        AIOFighterPlugin.setState(State.WALKING);
                     }
 
                 }
@@ -226,17 +228,17 @@ public class AttackNpcScript extends Script {
     /**
      * item on npcs that need to kill like rockslug
      */
-    private void handleItemOnNpcToKill() {
+    private void handleItemOnNpcToKill(AIOFighterConfig config) {
         Rs2NpcModel npc = Rs2Npc.getNpcsForPlayer(ActorModel::isDead).findFirst().orElse(null);
         List<String> lizardVariants = new ArrayList<>(Arrays.asList("Lizard", "Desert Lizard", "Small Lizard"));
         if (npc == null) return;
-        if (lizardVariants.contains(npc.getName()) && npc.getHealthRatio() < 5) {
-            Rs2Inventory.useItemOnNpc(ItemID.SLAYER_BAG_OF_SALT, npc);
-            Rs2Player.waitForAnimation();
-        } else if (npc.getName().equalsIgnoreCase("rockslug") && npc.getHealthRatio() < 5) {
+        if (Microbot.getVarbitValue(SLAYER_AUTOKILL_DESERTLIZARDS) == 0 && lizardVariants.contains(npc.getName()) && npc.getHealthRatio() < 5) {
             Rs2Inventory.useItemOnNpc(ItemID.SLAYER_ICY_WATER, npc);
             Rs2Player.waitForAnimation();
-        } else if (npc.getName().equalsIgnoreCase("gargoyle") && npc.getHealthRatio() < 3) {
+        } else if (Microbot.getVarbitValue(SLAYER_AUTOKILL_ROCKSLUGS) == 0 && npc.getName().equalsIgnoreCase("rockslug") && npc.getHealthRatio() < 5) {
+            Rs2Inventory.useItemOnNpc(ItemID.SLAYER_BAG_OF_SALT, npc);
+            Rs2Player.waitForAnimation();
+        } else if (Microbot.getVarbitValue(SLAYER_AUTOKILL_GARGOYLES) == 0 && npc.getName().equalsIgnoreCase("gargoyle") && npc.getHealthRatio() < 3) {
             Rs2Inventory.useItemOnNpc(ItemID.SLAYER_ROCK_HAMMER, npc);
             Rs2Player.waitForAnimation();
         }
