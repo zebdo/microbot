@@ -7,6 +7,7 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -211,9 +212,7 @@ public class AutoWoodcuttingScript extends Script {
                 woodcuttingScriptState = WoodcuttingScriptState.WOODCUTTING;
                 break;
             case BANK:
-                List<String> itemNames = Arrays.stream(config.itemsToBank().split(",")).map(String::toLowerCase).collect(Collectors.toList());
-
-                if (!Rs2Bank.bankItemsAndWalkBackToOriginalPosition(itemNames, getReturnPoint(config)))
+                if (!handleBanking(config))
                     return;
                 woodcuttingScriptState = WoodcuttingScriptState.WOODCUTTING;
                 break;
@@ -238,6 +237,23 @@ public class AutoWoodcuttingScript extends Script {
                 woodcuttingScriptState = WoodcuttingScriptState.WOODCUTTING;
                 break;
         }
+    }
+
+    private boolean handleBanking(AutoWoodcuttingConfig config)
+    {
+        BankLocation nearestBank = Rs2Bank.getNearestBank();
+        boolean isBankOpen = Rs2Bank.isNearBank(nearestBank, 8) ? Rs2Bank.openBank() : Rs2Bank.walkToBankAndUseBank(nearestBank);
+        if (!isBankOpen || !Rs2Bank.isOpen()) return false;
+        List<String> itemNames = Arrays.stream(config.itemsToBank().split(",")).map(String::toLowerCase).collect(Collectors.toList());
+        Rs2Bank.depositAll(i -> itemNames.stream().anyMatch(itemName -> i.getName().toLowerCase().contains(itemName)));
+        Rs2Inventory.waitForInventoryChanges(1800);
+        Rs2Bank.emptyLogBasket();
+
+        Rs2Bank.closeBank();
+        sleepUntil(() -> !Rs2Bank.isOpen());
+
+        Rs2Walker.walkTo(getReturnPoint(config));
+        return true;
     }
 
     private void burnLog(AutoWoodcuttingConfig config) {

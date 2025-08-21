@@ -110,7 +110,7 @@ public interface AutoWoodcuttingConfig extends Config {
             section = resetSection
     )
     default String itemsToBank() {
-        return "logs,sturdy beehive parts,petal garland,golden pheasant egg,pheasant tail feathers,fox whistle";
+        return "logs,sturdy beehive parts,petal garland,golden pheasant egg,pheasant tail feathers,fox whistle,key,nest,fruit";
     }
 
     @ConfigItem(
