@@ -37,7 +37,7 @@ public class HivesEvent implements BlockingEvent {
             if (Rs2Widget.findWidget("How many logs would you like to add", null, false) != null) {
                 Microbot.log("HivesEvent: Adding logs to the beehive.", Level.INFO);
                 Rs2Keyboard.keyPress(KeyEvent.VK_SPACE);
-                sleepUntil(() -> !Rs2Player.isAnimating());
+                sleepUntil(() -> !Rs2Player.isInteracting() && !Rs2Player.isAnimating(1200), 6000);
                 continue;
             }
             var beehive = Rs2Npc.getNpcs(x -> x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_1 || x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_2)
@@ -47,7 +47,7 @@ public class HivesEvent implements BlockingEvent {
                 Microbot.log("HivesEvent: Interacting with the beehive to build it.", Level.INFO);
                 Rs2Npc.interact(beehive, "Build");
                 Rs2Player.waitForAnimation();
-                sleepUntil(() -> !Rs2Inventory.contains(plugin.config.TREE().getLog()) || !Rs2Player.isAnimating(), 40000);
+                sleepUntil(() -> !Rs2Player.isAnimating(), 6000);
             }
             //TODO Player might want to drop sturdy Beehive parts if they are in the inventory
         }

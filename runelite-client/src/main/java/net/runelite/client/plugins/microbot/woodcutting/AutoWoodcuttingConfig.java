@@ -92,6 +92,33 @@ public interface AutoWoodcuttingConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "LootNests",
+            name = "Loot Bird Nests",
+            description = "Loot bird nests from trees and events",
+            position = 6,
+            section = generalSection
+    )
+    default boolean lootBirdNests() { return true; }
+
+    @ConfigItem(
+            keyName = "LootSeeds",
+            name = "Loot Seeds",
+            description = "Loot seeds from events",
+            position = 7,
+            section = generalSection
+    )
+    default boolean lootSeeds() { return true; }
+
+    @ConfigItem(
+            keyName = "LootMyItemsOnly",
+            name = "Loot my items only",
+            description = "Only loot your items (Ironman)",
+            position = 8,
+            section = generalSection
+    )
+    default boolean lootMyItemsOnly() { return false;}
+
+    @ConfigItem(
             keyName = "ItemAction",
             name = "Item Action",
             description = "Task to perform with logs",

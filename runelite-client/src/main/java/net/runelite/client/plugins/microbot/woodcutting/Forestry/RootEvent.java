@@ -13,6 +13,8 @@ import net.runelite.client.plugins.microbot.util.woodcutting.Rs2Woodcutting;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
+
 public class RootEvent implements BlockingEvent {
 
     private final AutoWoodcuttingPlugin plugin;
@@ -64,6 +66,7 @@ public class RootEvent implements BlockingEvent {
                 Microbot.log("RootEvent: Interacting with special root at " + specialRoot.getWorldLocation());
                 Rs2GameObject.interact(specialRoot.getTileObject(), "Chop down");
                 Rs2Player.waitForAnimation(5000);
+                sleepUntil(() -> !Rs2Player.isInteracting(), 40000);
             }
             // If regular root is present
             else if (root != null) {
@@ -79,6 +82,7 @@ public class RootEvent implements BlockingEvent {
                 Microbot.log("RootEvent: Interacting with regular root at " + root.getWorldLocation());
                 Rs2GameObject.interact(root.getTileObject(), "Chop down");
                 Rs2Player.waitForAnimation(5000);
+                sleepUntil(() -> !Rs2Player.isInteracting(), 40000);
             }
         }
         return false;

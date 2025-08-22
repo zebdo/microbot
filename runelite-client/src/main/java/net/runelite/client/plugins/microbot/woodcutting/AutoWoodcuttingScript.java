@@ -11,6 +11,8 @@ import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.util.grounditem.LootingParameters;
+import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -152,6 +154,12 @@ public class AutoWoodcuttingScript extends Script {
             woodcuttingScriptState = WoodcuttingScriptState.RESETTING;
             return true;
         }
+
+        if (handleLooting(config)) {
+            Rs2Antiban.actionCooldown();
+            return true;
+        }
+
         return false;
     }
 
@@ -254,6 +262,35 @@ public class AutoWoodcuttingScript extends Script {
 
         Rs2Walker.walkTo(getReturnPoint(config));
         return true;
+    }
+
+    private boolean handleLooting(AutoWoodcuttingConfig config)
+    {
+        if (!config.lootBirdNests() && !config.lootSeeds()) {
+            return false; // No looting options selected
+        }
+
+        List<String> itemsToLootList = new ArrayList<>();
+
+            if (config.lootSeeds()) {
+                itemsToLootList.add("seed");
+            }
+            if (config.lootBirdNests()) {
+                itemsToLootList.add("nest");
+            }
+
+            String[] itemsToLoot = itemsToLootList.toArray(new String[0]);
+
+        LootingParameters itemLootParams = new LootingParameters(
+                15,
+                1,
+                1,
+                1,
+                false,
+                config.lootMyItemsOnly(),
+                itemsToLoot
+        );
+        return Rs2GroundItem.lootItemsBasedOnNames(itemLootParams);
     }
 
     private void burnLog(AutoWoodcuttingConfig config) {

@@ -13,7 +13,9 @@ import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingScript;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static net.runelite.api.gameval.ObjectID.*;
@@ -71,6 +73,10 @@ public class StrugglingSaplingEvent implements BlockingEvent {
                 return false;
             }
 
+            Set<Integer> triedFirstIngredients = new HashSet<>();
+            Set<Integer> triedSecondIngredients = new HashSet<>();
+            Set<Integer> triedThirdIngredients = new HashSet<>();
+
             while (this.validate()) {
                 // If we have mulch stage 3 in inventory, add them to the sapling
                 if (Rs2Inventory.contains(ItemID.GATHERING_EVENT_SAPLING_MULCH_STAGE3)) {
@@ -80,15 +86,17 @@ public class StrugglingSaplingEvent implements BlockingEvent {
                     continue;
                 }
 
-                GameObject correctIngredient;
                 //if we have mulch in inventory, check if we know the correct ingredient or pick a random one
+                // Determine current stage
+                int stage;
                 if (Rs2Inventory.contains(ItemID.GATHERING_EVENT_SAPLING_MULCH_STAGE2)) {
-                    correctIngredient = plugin.saplingOrder[2];
+                    stage = 2;
                 } else if (Rs2Inventory.contains(ItemID.GATHERING_EVENT_SAPLING_MULCH_STAGE1)) {
-                    correctIngredient = plugin.saplingOrder[1];
+                    stage = 1;
                 } else {
-                    correctIngredient = plugin.saplingOrder[0];
+                    stage = 0;
                 }
+                var correctIngredient = plugin.saplingOrder[stage];
 
                 if (correctIngredient != null) {
                     // Look for matching ingredient in our available ingredients
@@ -102,14 +110,32 @@ public class StrugglingSaplingEvent implements BlockingEvent {
                     }
                     continue;
                 }
-                // TODO save incorrect ingredients to a list to avoid collecting it again
+
+                // If we don't know the correct ingredient, try to collect a random one
+                Set<Integer> triedIngredients;
+                if (stage == 2) triedIngredients = triedThirdIngredients;
+                else if (stage == 1) triedIngredients = triedSecondIngredients;
+                else triedIngredients = triedFirstIngredients;
+
+                var availableIngredients = ingredients.stream()
+                        .filter(ingredient -> !triedIngredients.contains(ingredient.getId()))
+                        .collect(Collectors.toList());
+                if (availableIngredients.isEmpty()) {
+                    Microbot.log("StrugglingSaplingEvent: All ingredients have been tried for stage " + stage + ".");
+                    break;
+                }
+
                 Microbot.log("StrugglingSaplingEvent: No known correct ingredient, collecting a random one.");
-                var randomIngredient = ingredients.get((int) (Math.random() * ingredients.size()));
+                var randomIngredient = availableIngredients.get((int) (Math.random() * availableIngredients.size()));
                 Microbot.log("StrugglingSaplingEvent: Collecting random ingredient: " + randomIngredient.getWorldLocation());
                 Rs2GameObject.interact(randomIngredient, "Collect");
                 Rs2Player.waitForAnimation();
             }
+
             Microbot.log("StrugglingSaplingEvent: Finished processing struggling sapling.");
+            plugin.saplingOrder[0] = null; // Reset the sapling order after processing
+            plugin.saplingOrder[1] = null;
+            plugin.saplingOrder[2] = null;
             return true;
         }
         catch (Exception e) {
