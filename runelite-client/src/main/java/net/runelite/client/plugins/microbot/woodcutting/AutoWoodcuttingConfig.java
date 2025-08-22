@@ -152,10 +152,21 @@ public interface AutoWoodcuttingConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "ItemsToKeep",
+            name = "Items to keep when dropping (Comma separated)",
+            description = "Items to keep in inventory",
+            position = 3,
+            section = resetSection
+    )
+    default String itemsToKeep() {
+        return "axe,tinderbox,crystal shard,demon tear,petal garland,golden pheasant egg,pheasant tail feathers,fox whistle,key";
+    }
+
+    @ConfigItem(
             keyName = "WalkBack",
             name = "Walk Back",
             description = "Walk back the initial spot or last cut down",
-            position = 3,
+            position = 4,
             section = resetSection
     )
     default WoodcuttingWalkBack walkBack() {

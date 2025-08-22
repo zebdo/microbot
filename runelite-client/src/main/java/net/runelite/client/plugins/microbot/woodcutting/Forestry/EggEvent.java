@@ -87,7 +87,11 @@ public class EggEvent implements BlockingEvent {
                     .min(Comparator.comparingInt(o -> o.getWorldLocation().distanceTo(Rs2Player.getWorldLocation())))
                     .orElse(null);
 
-            Rs2GameObject.interact(closestNest, "Retrieve-egg");
+            var interact = Rs2GameObject.interact(closestNest);
+            if (!interact) {
+                Microbot.log("EggEvent: Failed to interact with the pheasant nest.");
+                Microbot.log("EggEvent: Closest nest is null? " + (closestNest == null));
+            }
             Rs2Player.waitForAnimation();
         }
         Microbot.log("EggEvent: Ending Egg event.");
