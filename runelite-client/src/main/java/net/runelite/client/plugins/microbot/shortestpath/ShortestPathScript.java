@@ -17,7 +17,7 @@ public class ShortestPathScript extends Script {
     @Getter
     // used for calling the walker from a mainthread
     // running the walker on a seperate thread is a lot easier for debugging
-    private WorldPoint triggerWalker;
+    private volatile WorldPoint triggerWalker;
 
     public boolean run(ShortestPathConfig config) {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
