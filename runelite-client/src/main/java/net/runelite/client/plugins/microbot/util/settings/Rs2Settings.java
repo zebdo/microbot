@@ -28,8 +28,8 @@ public class Rs2Settings
 {
 
 	static final int SETTINGS_INTERFACE = InterfaceID.Settings.UNIVERSE;
-	static final int SETTINGS_CLICKABLE = InterfaceID.Settings.SETTINGS_CLICKZONE;
-	static final int SETTINGS_CATEGORIES = InterfaceID.Settings.CATEGORIES_CLICKZONE;
+	static final int SETTINGS_CLICKABLE = 8781844;
+	static final int SETTINGS_CATEGORIES = 8781848;
 	static final int ALL_SETTINGS_BUTTON = 7602208;
 
 	public static boolean openSettings()
@@ -244,8 +244,8 @@ public class Rs2Settings
 		Widget widget = Rs2Widget.getWidget(SETTINGS_CLICKABLE);
 		if (widget == null) return false;
 
-		// MenuEntryImpl(getOption=Toggle, getTarget=, getIdentifier=1, getType=CC_OP, getParam0=33, getParam1=8781843, getItemId=-1, isForceLeftClick=false, getWorldViewId=-1, isDeprioritized=false)
-		NewMenuEntry menuEntry = new NewMenuEntry("Toggle", "", 1, MenuAction.CC_OP, 33, widget.getId(), false);
+		// MenuEntryImpl(getOption=Toggle, getTarget=, getIdentifier=1, getType=CC_OP, getParam0=34, getParam1=8781844, getItemId=-1, isForceLeftClick=false, getWorldViewId=-1, isDeprioritized=false)
+		NewMenuEntry menuEntry = new NewMenuEntry("Toggle", "", 1, MenuAction.CC_OP, 34, widget.getId(), false);
 		Microbot.doInvoke(menuEntry, Rs2UiHelper.getDefaultRectangle());
 		boolean success = sleepUntil(() -> !isWorldSwitcherConfirmationEnabled());
 
