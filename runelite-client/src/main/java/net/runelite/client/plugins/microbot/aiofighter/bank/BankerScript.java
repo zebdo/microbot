@@ -386,6 +386,7 @@ public class BankerScript extends Script {
             inventorySetup.loadInventory();
 
 
+            Rs2Bank.depositLootingBag();
             Rs2Bank.emptyGemBag();
             Rs2Bank.emptyHerbSack();
             Rs2Bank.emptySeedBox();
