@@ -109,28 +109,12 @@ public class Rs2Reflection {
      * @return
      */
     @SneakyThrows
+    @Deprecated(since="1.9.8.7 - Runelite exposes all animations", forRemoval=true)
     public static int getAnimation(NPC npc) {
         if (npc == null) {
             return -1;
         }
-        try {
-            Class<?> caClass = npc.getClass().getSuperclass();
-
-            Field caField = caClass.getDeclaredField("ca");
-            caField.setAccessible(true);
-            Object rkObject = caField.get(npc);
-
-            Field abField = rkObject.getClass().getDeclaredField("ab");
-            abField.setAccessible(true);
-            int abRaw = (int) abField.get(rkObject);
-
-            int animation = abRaw * 1901052507;
-
-            return animation;
-        } catch(Exception ex) {
-            Microbot.log("Failed to get animation : " + ex.getMessage());
-        }
-        return -1;
+        return npc.getAnimation();
     }
 
     /**
@@ -139,35 +123,26 @@ public class Rs2Reflection {
      * @return
      */
     @SneakyThrows
+    @Deprecated(since="1.9.8.7 - Runelite exposes overheads on npcs", forRemoval = true)
     public static HeadIcon getHeadIcon(Rs2NpcModel npc) {
         if (npc == null) {
             return null;
         }
 
-        NPC runeliteNpc = npc.getRuneliteNpc();
-
-        Field npcOverHeadIconsField = runeliteNpc.getClass().getDeclaredField("ap");
-        npcOverHeadIconsField.setAccessible(true);
-        Object NPCOverheadIcons = npcOverHeadIconsField.get(runeliteNpc);
-
-        Field overheadSpriteIdsField = NPCOverheadIcons.getClass().getDeclaredField("ab");
-        overheadSpriteIdsField.setAccessible(true);
-        short[] overheadSpriteIds = (short[]) overheadSpriteIdsField.get(NPCOverheadIcons);
-
-        if (overheadSpriteIds == null) {
+        if (npc.getOverheadSpriteIds() == null) {
             Microbot.log("Failed to find the correct overhead prayer.");
             return null;
         }
 
-        for (int i = 0; i < overheadSpriteIds.length; i++) {
-            int overheadSpriteId = overheadSpriteIds[i];
+        for (int i = 0; i < npc.getOverheadSpriteIds().length; i++) {
+            int overheadSpriteId = npc.getOverheadSpriteIds()[i];
 
             if (overheadSpriteId == -1) continue;
 
             return HeadIcon.values()[overheadSpriteId];
         }
 
-        Microbot.log("Found overheadSpriteIds: " + Arrays.toString(overheadSpriteIds) + " but failed to find valid overhead prayer.");
+        Microbot.log("Found overheadSpriteIds: " + Arrays.toString(npc.getOverheadSpriteIds()) + " but failed to find valid overhead prayer.");
 
         return null;
     }
