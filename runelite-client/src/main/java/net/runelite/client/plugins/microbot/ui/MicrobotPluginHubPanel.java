@@ -446,8 +446,19 @@ public class MicrobotPluginHubPanel extends PluginPanel {
     private final JLabel refreshing;
     private final JPanel mainPanel;
     private List<PluginItem> plugins = null;
-    private List<MicrobotPluginManifest> lastManifest;
 
+    /**
+     * Creates the Microbot plugin hub panel, builds and lays out its UI, wires interactions,
+     * and kicks off the initial plugin list load.
+     *
+     * The constructor:
+     * - registers F5 to reload the plugin list,
+     * - configures the search field to run filtering on text changes,
+     * - constructs warning banners, the scrollable plugin list area, and action buttons,
+     * - hides the loading indicator and starts an asynchronous reload of available plugins.
+     *
+     * @param topLevelConfigPanel panel used to open per-plugin configuration from a plugin's Configure action
+     */
     @Inject
     MicrobotPluginHubPanel(
             MicrobotTopLevelConfigPanel topLevelConfigPanel,
@@ -572,46 +583,80 @@ public class MicrobotPluginHubPanel extends PluginPanel {
         reloadPluginList();
     }
 
-    private void reloadPluginList() {
-        if (refreshing.isVisible()) {
-            return;
-        }
+	/**
+	 * Refreshes the panel's plugin list by asynchronously fetching manifests and plugin counts.
+	 *
+	 * This method is non-reentrant — if a refresh is already in progress (the refreshing indicator is visible)
+	 * it returns immediately. It shows the refreshing indicator, clears the mainPanel, and submits a background
+	 * task that:
+	 * - obtains the current manifest collection from microbotPluginManager,
+	 * - attempts to fetch plugin counts from microbotPluginClient,
+	 *   - if fetching counts fails, logs the error and (on the EDT) shows a brief error message with a Retry button
+	 *     in the mainPanel,
+	 * - delegates to reloadPluginList(Collection<MicrobotPluginManifest>, Map<String, Integer>) with the
+	 *   retrieved (or empty on failure) counts.
+	 *
+	 * All UI updates are performed on the Event Dispatch Thread where required.
+	 */
+	private void reloadPluginList()
+	{
+		if (refreshing.isVisible())
+		{
+			return;
+		}
 
-        refreshing.setVisible(true);
-        mainPanel.removeAll();
+		refreshing.setVisible(true);
+		mainPanel.removeAll();
 
-        executor.submit(() ->
-        {
-            List<MicrobotPluginManifest> manifest;
-            try {
-                manifest = microbotPluginClient.downloadManifest();
-            } catch (IOException e) {
-                log.error("Error loading plugins from Microbot Hub", e);
-                SwingUtilities.invokeLater(() ->
-                {
-                    refreshing.setVisible(false);
-                    mainPanel.add(new JLabel("Downloading the plugin manifest failed"));
+		executor.submit(() ->
+		{
+			Collection<MicrobotPluginManifest> manifestCollection = microbotPluginManager.getManifestMap().values();
 
-                    JButton retry = new JButton("Retry");
-                    retry.addActionListener(l -> reloadPluginList());
-                    mainPanel.add(retry);
-                });
-                return;
-            }
+			Map<String, Integer> pluginCounts = Collections.emptyMap();
+			try
+			{
+				pluginCounts = microbotPluginClient.getPluginCounts();
+			}
+			catch (IOException e)
+			{
+				log.warn("Unable to download plugin counts", e);
+				SwingUtilities.invokeLater(() ->
+				{
+					refreshing.setVisible(false);
+					mainPanel.add(new JLabel("Downloading the plugin manifest failed"));
 
-            Map<String, Integer> pluginCounts = Collections.emptyMap();
-            try {
-                pluginCounts = microbotPluginClient.getPluginCounts();
-            } catch (IOException e) {
-                log.warn("Unable to download plugin counts", e);
-            }
+					JButton retry = new JButton("Retry");
+					retry.addActionListener(l -> reloadPluginList());
+					mainPanel.add(retry);
+					mainPanel.revalidate();
+				});
+			}
 
-            reloadPluginList(manifest, pluginCounts);
-        });
-    }
+			reloadPluginList(manifestCollection, pluginCounts);
+		});
+	}
 
-    private void reloadPluginList(List<MicrobotPluginManifest> manifest, Map<String, Integer> pluginCounts) {
-        lastManifest = manifest;
+    /**
+     * Rebuilds the internal list of PluginItem entries from the provided manifests and plugin counts,
+     * then schedules a UI refresh.
+     *
+     * <p>Behavior:
+     * - Ignores manifests with {@code isDisable() == true}.
+     * - Uses the first manifest encountered for any duplicate internal names (case-insensitive).
+     * - Considers currently loaded external plugins (non-hidden, annotated {@code PluginDescriptor.isExternal()}),
+     *   grouping multiple runtime instances by the manifest's internal name (case-insensitive).
+     * - Reads installation state from {@code microbotPluginManager.getInstalledPlugins()}.
+     * - Reads the user count for a manifest from {@code pluginCounts} using the manifest's internal name;
+     *   if a count is missing, {@code -1} is used.
+     * - Replaces the panel's {@code plugins} list with the constructed PluginItem instances.
+     *
+     * <p>After rebuilding the list, posts to the Event Dispatch Thread to hide the refreshing indicator
+     * (if visible) and execute a filtered refresh of the visible items via {@code filter()}.
+     *
+     * @param manifest     collection of manifests to display (may contain disabled or duplicate entries)
+     * @param pluginCounts mapping from manifest internal name to user count; missing entries result in count {@code -1}
+     */
+    private void reloadPluginList(Collection<MicrobotPluginManifest> manifest, Map<String, Integer> pluginCounts) {
 
         // Filter out disabled plugins before processing
         List<MicrobotPluginManifest> enabledManifest = manifest.stream()
@@ -709,12 +754,18 @@ public class MicrobotPluginHubPanel extends PluginPanel {
         searchBar.requestFocusInWindow();
     }
 
+    /**
+     * Deactivates the panel UI and clears transient state.
+     *
+     * Hides the refreshing indicator, removes all components from the main panel,
+     * clears the cached plugin list, and resets any queued icon loads so they will
+     * not start when the panel is inactive.
+     */
     @Override
     public void onDeactivate() {
         mainPanel.removeAll();
         refreshing.setVisible(false);
         plugins = null;
-        lastManifest = null;
 
         synchronized (iconLoadQueue) {
             for (PluginIcon pi; (pi = iconLoadQueue.poll()) != null; ) {
@@ -723,19 +774,48 @@ public class MicrobotPluginHubPanel extends PluginPanel {
         }
     }
 
-    @Subscribe
-    private void onExternalPluginsChanged(ExternalPluginsChanged ev) {
-        if (!refreshing.isVisible() && lastManifest != null) {
-            refreshing.setVisible(true);
+	/**
+	 * Handle an ExternalPluginsChanged event by asynchronously reloading the external plugin list.
+	 *
+	 * <p>If a refresh is already in progress this method returns immediately. Otherwise it shows the
+	 * refreshing indicator, submits a background task that obtains the current manifest collection and
+	 * attempts to fetch plugin counts, and then delegates to {@code reloadPluginList(Collection, Map)}.
+	 * Any I/O error while fetching counts is logged and ignored (an empty counts map is used).</p>
+	 *
+	 * @param ev the event indicating external plugins have changed
+	 */
+	@Subscribe
+	private void onExternalPluginsChanged(ExternalPluginsChanged ev) {
+		if (refreshing.isVisible()) {
+			return;
+		}
+		refreshing.setVisible(true);
 
-            Map<String, Integer> pluginCounts = plugins == null ? Collections.emptyMap()
-                    : plugins.stream().collect(Collectors.toMap(pi -> pi.manifest.getInternalName(), PluginItem::getUserCount));
-            executor.submit(() -> reloadPluginList(lastManifest, pluginCounts));
-        }
-    }
+		executor.submit(() -> {
+			Collection<MicrobotPluginManifest> manifestCollection = microbotPluginManager.getManifestMap().values();
+
+			Map<String, Integer> pluginCounts = Collections.emptyMap();
+			try
+			{
+				pluginCounts = microbotPluginClient.getPluginCounts();
+			}
+			catch (IOException e)
+			{
+				log.warn("Unable to download plugin counts", e);
+			}
+
+			reloadPluginList(manifestCollection, pluginCounts);
+		});
+	}
 
     // A utility class copied from the original PluginHubPanel
     private static class FixedWidthPanel extends JPanel {
+        /**
+         * Returns the preferred size constrained to the panel's fixed width.
+         *
+         * The height is taken from the superclass's preferred height; the width is
+         * forced to PluginPanel.PANEL_WIDTH so the panel remains a fixed column width.
+         */
         @Override
         public Dimension getPreferredSize() {
             return new Dimension(PluginPanel.PANEL_WIDTH, super.getPreferredSize().height);

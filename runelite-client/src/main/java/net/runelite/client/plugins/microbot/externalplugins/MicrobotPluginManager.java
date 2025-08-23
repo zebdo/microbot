@@ -31,11 +31,14 @@ import com.google.common.graph.Graphs;
 import com.google.common.graph.MutableGraph;
 import com.google.common.io.Files;
 import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
 import com.google.gson.reflect.TypeToken;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Injector;
 import com.google.inject.Module;
+import java.util.concurrent.TimeUnit;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
 import net.runelite.client.RuneLiteProperties;
@@ -59,6 +62,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
@@ -77,38 +81,80 @@ public class MicrobotPluginManager
     private final PluginManager pluginManager;
     private final Gson gson;
 
-    @Inject
-    private MicrobotPluginManager(
-        OkHttpClient okHttpClient,
-        MicrobotPluginClient microbotPluginClient,
-        EventBus eventBus,
-        ScheduledExecutorService executor,
-        PluginManager pluginManager,
-        Gson gson)
-    {
-        this.okHttpClient = okHttpClient;
-        this.microbotPluginClient = microbotPluginClient;
-        this.eventBus = eventBus;
-        this.executor = executor;
-        this.pluginManager = pluginManager;
-        this.gson = gson;
+	@Getter
+    private final Map<String, MicrobotPluginManifest> manifestMap = new ConcurrentHashMap<>();
 
-        PLUGIN_DIR.mkdirs();
-
-        if (!PLUGIN_LIST.exists())
-        {
-            try
-            {
-                PLUGIN_LIST.createNewFile();
-                Files.asCharSink(PLUGIN_LIST, StandardCharsets.UTF_8).write("[]");
+    /**
+     * Loads plugin manifests from the remote Microbot plugin service and refreshes the local manifest cache.
+     *
+     * Replaces the contents of {@code manifestMap} with the manifests returned by the remote client and
+     * posts an {@link ExternalPluginsChanged} event to notify listeners of the update.
+     * Any exceptions during manifest retrieval are caught and logged.
+     */
+    private void loadManifest() {
+        try {
+            List<MicrobotPluginManifest> manifests = microbotPluginClient.downloadManifest();
+            manifestMap.clear();
+            for (MicrobotPluginManifest manifest : manifests) {
+                manifestMap.put(manifest.getInternalName(), manifest);
             }
-            catch (IOException e)
-            {
-                log.error("Unable to create Microbot plugin list", e);
-            }
+            log.info("Loaded {} plugin manifests.", manifestMap.size());
+            eventBus.post(new ExternalPluginsChanged());
+        } catch (Exception e) {
+            log.error("Failed to fetch plugin manifests", e);
         }
     }
 
+	/**
+	 * Creates and initializes the MicrobotPluginManager singleton.
+	 *
+	 * Initializes injected dependencies, ensures the plugin directory and plugin list file exist
+	 * (creating them with an empty JSON array if missing), loads the remote plugin manifest cache,
+	 * and schedules periodic manifest refreshes every 10 minutes.
+	 */
+	@Inject
+	private MicrobotPluginManager(
+		OkHttpClient okHttpClient,
+		MicrobotPluginClient microbotPluginClient,
+		EventBus eventBus,
+		ScheduledExecutorService executor,
+		PluginManager pluginManager,
+		Gson gson)
+	{
+		this.okHttpClient = okHttpClient;
+		this.microbotPluginClient = microbotPluginClient;
+		this.eventBus = eventBus;
+		this.executor = executor;
+		this.pluginManager = pluginManager;
+		this.gson = gson;
+
+		PLUGIN_DIR.mkdirs();
+
+		if (!PLUGIN_LIST.exists())
+		{
+			try
+			{
+				PLUGIN_LIST.createNewFile();
+				Files.asCharSink(PLUGIN_LIST, StandardCharsets.UTF_8).write("[]");
+			}
+			catch (IOException e)
+			{
+				log.error("Unable to create Microbot plugin list", e);
+			}
+		}
+
+		loadManifest();
+		executor.scheduleWithFixedDelay(this::loadManifest, 10, 10, TimeUnit.MINUTES);
+	}
+
+    /**
+     * Reads and returns the list of installed external plugin internal names from the on-disk plugin list.
+     *
+     * The method parses the JSON array stored at PLUGIN_LIST and returns it as a List of strings.
+     * If the file is empty, malformed, or an IO error occurs, an empty list is returned (errors are logged).
+     *
+     * @return a non-null List of installed plugin internal names (empty if none or on read/parse failure)
+     */
     public List<String> getInstalledPlugins()
     {
         List<String> plugins = new ArrayList<>();
@@ -120,7 +166,7 @@ public class MicrobotPluginManager
                 plugins = new ArrayList<>();
             }
         }
-        catch (IOException | com.google.gson.JsonSyntaxException e)
+        catch (IOException | JsonSyntaxException e)
         {
             log.error("Error reading Microbot plugin list", e);
         }
@@ -139,80 +185,120 @@ public class MicrobotPluginManager
         }
     }
 
+    /**
+     * Returns the File pointing to the plugin JAR for the given internal plugin name.
+     *
+     * The returned File is constructed as {@code PLUGIN_DIR/<internalName>.jar}; this method does
+     * not check that the file exists or is readable.
+     *
+     * @param internalName the internal identifier of the plugin (used as the JAR filename without extension)
+     * @return a File representing the expected JAR file location for the plugin
+     */
     private File getPluginJarFile(String internalName)
     {
         return new File(PLUGIN_DIR, internalName + ".jar");
     }
 
-    public void install(MicrobotPluginManifest manifest)
-    {
-        executor.execute(() -> {
-            // Check if plugin is disabled
-            if (manifest.isDisable()) {
-                log.error("Plugin {} is disabled and cannot be installed.", manifest.getInternalName());
-                return;
-            }
+	/**
+	 * Asynchronously installs a plugin described by the provided manifest.
+	 *
+	 * <p>The installation task (run on the manager's executor) performs these steps:
+	 * - validates the manifest is not disabled and that the current client version meets the manifest's minimum requirement;
+	 * - resolves the plugin JAR URL from the manifest and downloads the JAR;
+	 * - verifies the downloaded JAR's SHA-256 hash against the manifest;
+	 * - writes the JAR to the local sideload directory, updates the internal manifest cache and the persisted installed-plugins list;
+	 * - attempts to load the newly installed sideload plugin.</p>
+	 *
+	 * <p>All I/O and verification errors are logged; this method does not throw exceptions and returns immediately after scheduling the task.</p>
+	 *
+	 * @param manifest a MicrobotPluginManifest describing the plugin to install (internal name, download URL metadata, expected SHA-256, min client version, and enabled/disabled flag)
+	 */
+	public void install(MicrobotPluginManifest manifest)
+	{
+		executor.execute(() -> {
+			// Check if plugin is disabled
+			if (manifest.isDisable())
+			{
+				log.error("Plugin {} is disabled and cannot be installed.", manifest.getInternalName());
+				return;
+			}
 
-            // Check version compatibility before installing
-            if (!isClientVersionCompatible(manifest.getMinClientVersion())) {
-                log.error("Plugin {} requires client version {} or higher, but current version is {}. Installation aborted.",
-                    manifest.getInternalName(), manifest.getMinClientVersion(), RuneLiteProperties.getMicrobotVersion());
-                return;
-            }
+			// Check version compatibility before installing
+			if (!isClientVersionCompatible(manifest.getMinClientVersion()))
+			{
+				log.error("Plugin {} requires client version {} or higher, but current version is {}. Installation aborted.",
+					manifest.getInternalName(), manifest.getMinClientVersion(), RuneLiteProperties.getMicrobotVersion());
+				return;
+			}
 
-            try
-            {
-                HttpUrl url = microbotPluginClient.getJarURL(manifest);
-                if (url == null)
-                {
+			try
+			{
+				HttpUrl url = microbotPluginClient.getJarURL(manifest);
+				if (url == null)
+				{
 
-                    log.error("Invalid URL for plugin: {}", manifest.getInternalName());
-                    return;
-                }
+					log.error("Invalid URL for plugin: {}", manifest.getInternalName());
+					return;
+				}
 
-                Request request = new Request.Builder()
-                    .url(url)
-                    .build();
+				Request request = new Request.Builder()
+					.url(url)
+					.build();
 
-                try (Response response = okHttpClient.newCall(request).execute())
-                {
-                    if (!response.isSuccessful())
-                    {
-                        log.error("Error downloading plugin: {}, code: {}", manifest.getInternalName(), response.code());
-                        return;
-                    }
+				try (Response response = okHttpClient.newCall(request).execute())
+				{
+					if (!response.isSuccessful())
+					{
+						log.error("Error downloading plugin: {}, code: {}", manifest.getInternalName(), response.code());
+						return;
+					}
 
-                    byte[] jarData = response.body().bytes();
+					byte[] jarData = response.body().bytes();
 
-                    // Verify the SHA-256 hash
-                    if (!verifyHash(jarData, manifest.getSha256()))
-                    {
-                        log.error("Plugin hash verification failed for: {}", manifest.getInternalName());
-                        return;
-                    }
+					// Verify the SHA-256 hash
+					if (!verifyHash(jarData, manifest.getSha256()))
+					{
+						log.error("Plugin hash verification failed for: {}", manifest.getInternalName());
+						return;
+					}
 
-                    // Save the jar file
-                    File pluginFile = getPluginJarFile(manifest.getInternalName());
-                    Files.write(jarData, pluginFile);
+					manifestMap.put(manifest.getInternalName(), manifest);
+					// Save the jar file
+					File pluginFile = getPluginJarFile(manifest.getInternalName());
+					Files.write(jarData, pluginFile);
+					List<String> plugins = getInstalledPlugins();
+					if (!plugins.contains(manifest.getInternalName()))
+					{
+						plugins.add(manifest.getInternalName());
+						saveInstalledPlugins(plugins);
+					}
+					loadSideLoadPlugin(manifest.getInternalName());
+				}
+			}
+			catch (IOException e)
+			{
+				log.error("Error installing plugin: {}", manifest.getInternalName(), e);
+			}
+		});
+	}
 
-                    List<String> plugins = getInstalledPlugins();
-                    if (!plugins.contains(manifest.getInternalName()))
-                    {
-                        plugins.add(manifest.getInternalName());
-                        saveInstalledPlugins(plugins);
-                    }
-
-                    loadSideLoadPlugins();
-
-                }
-            }
-            catch (IOException e)
-            {
-                log.error("Error installing plugin: {}", manifest.getInternalName(), e);
-            }
-        });
-    }
-
+    /**
+     * Removes an installed external plugin identified by its internal name.
+     *
+     * This is performed asynchronously on the manager's executor. The method locates loaded plugins
+     * whose class simple name or PluginDescriptor name matches the supplied internalName (case-insensitive
+     * match or exact match), and only considers plugins marked as external. For each match it:
+     * - Disables the plugin if enabled, attempts to stop it if active, and removes it from the PluginManager.
+     * - Deletes the corresponding plugin JAR file returned by getPluginJarFile(internalName) if present.
+     * - Removes the internalName from the persisted installed-plugins list and saves the updated list.
+     * Finally, posts an ExternalPluginsChanged event to the event bus.
+     *
+     * Errors encountered while disabling/stopping/removing plugins or deleting files are logged and do not
+     * propagate to the caller.
+     *
+     * @param internalName the plugin's internal identifier (class simple name or PluginDescriptor name);
+     *                     matching is case-insensitive and also supports exact-case matches
+     */
     public void remove(String internalName)
     {
         executor.execute(() -> {
@@ -325,6 +411,15 @@ public class MicrobotPluginManager
         }
     }
 
+    /**
+     * Ensures the application's "microbot-plugins" sideload directory exists and returns its contents.
+     *
+     * If the directory does not exist this method attempts to create it. Returns the array of files
+     * contained in the sideload directory, or null if the directory does not exist or its contents
+     * cannot be listed (e.g., I/O error or permission issue).
+     *
+     * @return an array of File objects for files in the sideload directory, or null if unavailable
+     */
     public static File[] createSideloadingFolder() {
         final File MICROBOT_PLUGINS = new File(RuneLite.RUNELITE_DIR, "microbot-plugins");
         if (!java.nio.file.Files.exists(MICROBOT_PLUGINS.toPath())) {
@@ -339,75 +434,178 @@ public class MicrobotPluginManager
         return MICROBOT_PLUGINS.listFiles();
     }
 
-    /**
-     * Load plugins from the sideloading folder, matching the provided jar names.
-     */
-    public void loadSideLoadPlugins() {
-        File[] files = createSideloadingFolder();
-        if (files == null)
-        {
-            return;
-        }
+	/**
+	 * Synchronizes the set of loaded external plugins with the persisted installed list.
+	 *
+	 * Compares currently loaded external plugins against the list returned by getInstalledPlugins()
+	 * and initiates removal for any loaded external plugin whose internal name is not present in that list.
+	 * Removal is performed via remove(...) and may trigger plugin unload and filesystem cleanup.
+	 */
+	public void syncPlugins()
+	{
+		List<String> installed = getInstalledPlugins();
+		Map<String, Plugin> loadedByInternalName = pluginManager.getPlugins().stream()
+			.filter(p -> p.getClass().isAnnotationPresent(PluginDescriptor.class))
+			.filter(p -> {
+				PluginDescriptor d = p.getClass().getAnnotation(PluginDescriptor.class);
+				return d != null && d.isExternal();
+			})
+			.collect(Collectors.toMap(
+				p -> p.getClass().getAnnotation(PluginDescriptor.class).name(),
+				p -> p,
+				(a, b) -> a
+			));
 
-        for (File f : files)
-        {
-            var installedPlugins = getInstalledPlugins();
-
-            var match = installedPlugins.stream()
-                    .filter(x -> x.equals(f.getName().replace(".jar", "")))
-                    .findFirst();
-
-            if (!match.isPresent())
-            {
-                continue; // Skip if the plugin is not in the installed list
-            }
-
-            if (f.getName().endsWith(".jar"))
-            {
-                log.info("Side-loading plugin {}", f.getName());
-
-                try
-                {
-                    byte[] fileBytes = Files.toByteArray(f);
-
-                    List<Class<?>> plugins = new ArrayList<>();
-
-                    MicrobotPluginClassLoader classLoader = new MicrobotPluginClassLoader(getClass().getClassLoader(), f.getName(), fileBytes);
-
-                    // Assuming you know the class names you want to load
-                    Set<String> classNamesToLoad = classLoader.getLoadedClassNames();
-
-                    for (String className : classNamesToLoad) {
-                        try {
-                            Class<?> clazz = classLoader.loadClass(className);
-                            plugins.add(clazz);
-                        } catch (ClassNotFoundException e) {
-                            log.trace("Class not found during sideloading: {}", className, e);
-                        }
-                    }
-
-                    loadPlugins(plugins, null);
-
-                    eventBus.post(new ExternalPluginsChanged());
-
-                }
-                catch (PluginInstantiationException | IOException e)
-                {
-                    log.trace("Error loading side-loaded plugin!", e);
-                }
-            }
-        }
-    }
+		// Remove plugins that are loaded but not installed
+		for (Map.Entry<String, Plugin> entry : loadedByInternalName.entrySet())
+		{
+			if (!installed.contains(entry.getKey()))
+			{
+				remove(entry.getKey());
+			}
+		}
+	}
 
     /**
-     * Topologically sort a graph. Uses Kahn's algorithm.
-     *
-     * @param graph - A directed graph
-     * @param <T>   - The type of the item contained in the nodes of the graph
-     * @return - A topologically sorted list corresponding to graph.
-     * <p>
-     * Multiple invocations with the same arguments may return lists that are not equal.
-     */
+	 * Loads a single sideloaded external plugin (if installed and not already loaded).
+	 *
+	 * This method looks for a jar named "<internalName>.jar" in the sideload folder, verifies
+	 * that the plugin is recorded as installed, validates the jar's SHA-256 against the
+	 * manifest in the manifest cache, loads classes using MicrobotPluginClassLoader, and
+	 * delegates instantiation to loadPlugins. If the plugin is successfully loaded an
+	 * ExternalPluginsChanged event is posted.
+	 *
+	 * The method returns silently when the sideload folder is unavailable, the plugin is not
+	 * in the installed list, the plugin is already loaded, the manifest is missing, or the
+	 * jar fails hash validation. Any instantiation or IO errors are caught and logged.
+	 *
+	 * @param internalName internal plugin name (used as the manifest key and the jar file name without ".jar")
+	 */
+	private void loadSideLoadPlugin(String internalName)
+	{
+		File[] files = createSideloadingFolder();
+		if (files == null)
+		{
+			return;
+		}
+		List<String> installedPlugins = getInstalledPlugins();
+		if (!installedPlugins.contains(internalName))
+		{
+			return; // Not installed
+		}
+		Set<String> loadedInternalNames = pluginManager.getPlugins().stream()
+			.filter(p -> p.getClass().isAnnotationPresent(PluginDescriptor.class))
+			.filter(p -> p.getClass().getAnnotation(PluginDescriptor.class).isExternal())
+			.map(p -> p.getClass().getAnnotation(PluginDescriptor.class).name())
+			.collect(Collectors.toSet());
+		if (loadedInternalNames.contains(internalName))
+		{
+			return; // Already loaded
+		}
+		boolean loaded = false;
+		for (File f : files)
+		{
+			if (!f.getName().equals(internalName + ".jar"))
+			{
+				continue;
+			}
+			MicrobotPluginManifest manifest = manifestMap.get(internalName);
+			if (manifest == null)
+			{
+				log.warn("No manifest found for plugin {}. Skipping hash validation and load.", internalName);
+				return;
+			}
+			try
+			{
+				byte[] fileBytes = Files.toByteArray(f);
+				// Validate hash before loading
+				if (!verifyHash(fileBytes, manifest.getSha256()))
+				{
+					log.error("Hash mismatch for plugin {}. Skipping load.", internalName);
+					return;
+				}
+				List<Class<?>> plugins = new ArrayList<>();
+				MicrobotPluginClassLoader classLoader = new MicrobotPluginClassLoader(getClass().getClassLoader(), f.getName(), fileBytes);
+				Set<String> classNamesToLoad = classLoader.getLoadedClassNames();
+				for (String className : classNamesToLoad)
+				{
+					try
+					{
+						Class<?> clazz = classLoader.loadClass(className);
+						plugins.add(clazz);
+					}
+					catch (ClassNotFoundException e)
+					{
+						log.trace("Class not found during sideloading: {}", className, e);
+					}
+				}
+				loadPlugins(plugins, null);
+				loaded = true;
+			}
+			catch (PluginInstantiationException | IOException e)
+			{
+				log.trace("Error loading side-loaded plugin!", e);
+			}
+		}
+		if (loaded)
+		{
+			eventBus.post(new ExternalPluginsChanged());
+		}
+	}
+
+	/**
+	 * Loads all installed sideloaded external plugins found in the sideload folder.
+	 *
+	 * <p>Performs a sync of currently loaded external plugins against the installed list, then scans
+	 * the sideload directory for JAR files whose base name matches an installed plugin internal name.
+	 * For each installed-but-not-yet-loaded external plugin it delegates to {@link #loadSideLoadPlugin(String)}.</p>
+	 *
+	 * <p>Non-JAR files and plugins not present in the installed plugins list are ignored.</p>
+	 */
+	public void loadSideLoadPlugins()
+	{
+		syncPlugins();
+		File[] files = createSideloadingFolder();
+		if (files == null)
+		{
+			return;
+		}
+		List<String> installedPlugins = getInstalledPlugins();
+		Set<String> loadedInternalNames = pluginManager.getPlugins().stream()
+			.filter(p -> p.getClass().isAnnotationPresent(PluginDescriptor.class))
+			.filter(p -> p.getClass().getAnnotation(PluginDescriptor.class).isExternal())
+			.map(p -> p.getClass().getAnnotation(PluginDescriptor.class).name())
+			.collect(Collectors.toSet());
+		for (File f : files)
+		{
+			if (!f.getName().endsWith(".jar"))
+			{
+				continue;
+			}
+			String internalName = f.getName().replace(".jar", "");
+			if (!installedPlugins.contains(internalName))
+			{
+				continue; // Skip if not in installed list
+			}
+			if (loadedInternalNames.contains(internalName))
+			{
+				continue; // Already loaded
+			}
+			loadSideLoadPlugin(internalName);
+		}
+	}
+
+    /**
+         * Returns a topologically sorted list of the nodes in the given directed graph using Kahn's algorithm.
+         *
+         * <p>Nodes with no incoming edges will appear before their successors. The relative order of nodes
+         * that are not constrained by dependencies is not guaranteed and may vary between invocations.</p>
+         *
+         * @param graph the directed graph to sort
+         * @param <T>   the node element type
+         * @return a list of graph nodes in topologically sorted order
+         * @throws RuntimeException if the graph contains at least one cycle
+         */
     @VisibleForTesting
     static <T> List<T> topologicalSort(Graph<T> graph) {
         MutableGraph<T> graphCopy = Graphs.copyOf(graph);
@@ -435,81 +633,147 @@ public class MicrobotPluginManager
         return l;
     }
 
-    public List<Plugin> loadPlugins(List<Class<?>> plugins, BiConsumer<Integer, Integer> onPluginLoaded) throws PluginInstantiationException {
-        MutableGraph<Class<? extends Plugin>> graph = GraphBuilder
-                .directed()
-                .build();
+	/**
+	 * Loads and registers Plugin classes after resolving dependencies and returns instances of the successfully
+	 * loaded plugins.
+	 *
+	 * <p>This method:
+	 * <ul>
+	 *   <li>skips plugin classes that are already loaded by the PluginManager,</li>
+	 *   <li>validates that classes have a PluginDescriptor and extend Plugin,</li>
+	 *   <li>skips external plugins that are disabled or whose minimum client version is not met,</li>
+	 *   <li>builds a directed dependency graph from {@link PluginDependency} annotations and topologically
+	 *       sorts it,</li>
+	 *   <li>instantiates plugins in dependency order, registers each instance with the PluginManager, and
+	 *       invokes the optional progress callback for each plugin loaded,</li>
+	 *   <li>logs and skips plugins that fail to instantiate.</li>
+	 * </ul>
+	 *
+	 * @param plugins a list of plugin classes to consider for loading
+	 * @param onPluginLoaded optional progress callback receiving (loadedCount, totalCount); may be null
+	 * @return a list of plugin instances that were successfully instantiated and registered
+	 * @throws PluginInstantiationException if the dependency graph contains a cycle (preventing a load order)
+	 */
+	public List<Plugin> loadPlugins(List<Class<?>> plugins, BiConsumer<Integer, Integer> onPluginLoaded) throws PluginInstantiationException
+	{
+		MutableGraph<Class<? extends Plugin>> graph = GraphBuilder
+			.directed()
+			.build();
 
-        for (Class<?> clazz : plugins) {
-            PluginDescriptor pluginDescriptor = clazz.getAnnotation(PluginDescriptor.class);
+		Set<Class<?>> alreadyLoaded = pluginManager.getPlugins().stream()
+			.map(Object::getClass)
+			.collect(Collectors.toSet());
 
-            if (pluginDescriptor == null) {
-                if (clazz.getSuperclass() == Plugin.class) {
-                    log.error("Class {} is a plugin, but has no plugin descriptor", clazz);
-                }
-                continue;
-            }
+		for (Class<?> clazz : plugins)
+		{
+			if (alreadyLoaded.contains(clazz))
+			{
+				log.debug("Plugin {} is already loaded, skipping duplicate.", clazz.getSimpleName());
+				continue;
+			}
+			PluginDescriptor pluginDescriptor = clazz.getAnnotation(PluginDescriptor.class);
 
-            if (clazz.getSuperclass() != Plugin.class) {
-                log.error("Class {} has plugin descriptor, but is not a plugin", clazz);
-                continue;
-            }
+			if (pluginDescriptor == null)
+			{
+				if (clazz.getSuperclass() == Plugin.class)
+				{
+					log.error("Class {} is a plugin, but has no plugin descriptor", clazz);
+				}
+				continue;
+			}
 
-            // Check version compatibility for external plugins
-            if (pluginDescriptor.isExternal() && !isClientVersionCompatible(pluginDescriptor.minClientVersion())) {
-                log.error("Plugin {} requires client version {} or higher, but current version is {}. Skipping plugin loading.",
-                    clazz.getSimpleName(), pluginDescriptor.minClientVersion(), RuneLiteProperties.getMicrobotVersion());
-                continue;
-            }
+			if (clazz.getSuperclass() != Plugin.class)
+			{
+				log.error("Class {} has plugin descriptor, but is not a plugin", clazz);
+				continue;
+			}
+
+			// Check version compatibility for external plugins
+			if (pluginDescriptor.isExternal() && !isClientVersionCompatible(pluginDescriptor.minClientVersion()))
+			{
+				log.error("Plugin {} requires client version {} or higher, but current version is {}. Skipping plugin loading.",
+					clazz.getSimpleName(), pluginDescriptor.minClientVersion(), RuneLiteProperties.getMicrobotVersion());
+				continue;
+			}
 
 			// Check if the plugin is disabled
-			if (pluginDescriptor.disable()) {
+			if (pluginDescriptor.disable())
+			{
 				log.error("Plugin {} has been disabled upstream", clazz.getSimpleName());
 				continue;
 			}
 
-            graph.addNode((Class<Plugin>) clazz);
-        }
+			graph.addNode((Class<Plugin>) clazz);
+		}
 
-        // Build plugin graph
-        for (Class<? extends Plugin> pluginClazz : graph.nodes()) {
-            PluginDependency[] pluginDependencies = pluginClazz.getAnnotationsByType(PluginDependency.class);
+		// Build plugin graph
+		for (Class<? extends Plugin> pluginClazz : graph.nodes())
+		{
+			PluginDependency[] pluginDependencies = pluginClazz.getAnnotationsByType(PluginDependency.class);
 
-            for (PluginDependency pluginDependency : pluginDependencies) {
-                if (graph.nodes().contains(pluginDependency.value())) {
-                    graph.putEdge(pluginDependency.value(), pluginClazz);
-                }
-            }
-        }
+			for (PluginDependency pluginDependency : pluginDependencies)
+			{
+				if (graph.nodes().contains(pluginDependency.value()))
+				{
+					graph.putEdge(pluginDependency.value(), pluginClazz);
+				}
+			}
+		}
 
-        if (Graphs.hasCycle(graph)) {
-            throw new PluginInstantiationException("Plugin dependency graph contains a cycle!");
-        }
+		if (Graphs.hasCycle(graph))
+		{
+			throw new PluginInstantiationException("Plugin dependency graph contains a cycle!");
+		}
 
-        List<Class<? extends Plugin>> sortedPlugins = topologicalSort(graph);
+		List<Class<? extends Plugin>> sortedPlugins = topologicalSort(graph);
 
-        int loaded = 0;
-        List<Plugin> newPlugins = new ArrayList<>();
-        for (Class<? extends Plugin> pluginClazz : sortedPlugins) {
-            Plugin plugin;
-            try {
-                plugin = instantiate(pluginManager.getPlugins(), (Class<Plugin>) pluginClazz);
-                log.info("Microbot pluginManager loaded " + plugin.getClass().getSimpleName());
-                newPlugins.add(plugin);
-                pluginManager.addPlugin(plugin);
-            } catch (PluginInstantiationException ex) {
-                log.error("Error instantiating plugin!", ex);
-            }
+		int loaded = 0;
+		List<Plugin> newPlugins = new ArrayList<>();
+		for (Class<? extends Plugin> pluginClazz : sortedPlugins)
+		{
+			Plugin plugin;
+			try
+			{
+				plugin = instantiate(pluginManager.getPlugins(), (Class<Plugin>) pluginClazz);
+				log.info("Microbot pluginManager loaded " + plugin.getClass().getSimpleName());
+				newPlugins.add(plugin);
+				pluginManager.addPlugin(plugin);
+			}
+			catch (PluginInstantiationException ex)
+			{
+				log.error("Error instantiating plugin!", ex);
+			}
 
-            loaded++;
-            if (onPluginLoaded != null) {
-                onPluginLoaded.accept(loaded, sortedPlugins.size());
-            }
-        }
+			loaded++;
+			if (onPluginLoaded != null)
+			{
+				onPluginLoaded.accept(loaded, sortedPlugins.size());
+			}
+		}
 
-        return newPlugins;
-    }
+		return newPlugins;
+	}
 
+    /**
+     * Instantiates a plugin class, wires its declared {@link PluginDependency} requirements, and installs a Guice injector for it.
+     *
+     * <p>This method:
+     * <ul>
+     *   <li>Validates that every {@link PluginDependency} on the class is present in {@code scannedPlugins} (throws {@link PluginInstantiationException} if any are missing).</li>
+     *   <li>Creates the plugin instance via its no-arg constructor (wraps instantiation failures in {@link PluginInstantiationException}; {@link ThreadDeath} is rethrown).</li>
+     *   <li>Builds a parent injector based on the resolved dependencies:
+     *     <ul>
+     *       <li>If multiple dependencies exist, creates a child injector that binds and installs each dependency as a module.</li>
+     *       <li>If a single dependency exists, reuses that dependency's injector as the parent.</li>
+     *       <li>Otherwise uses the global Microbot injector as the parent.</li>
+     *     </ul>
+     *   </li>
+     *   <li>Creates a child injector that binds the newly created plugin instance and installs the plugin as a Guice module, then assigns the resulting injector to the plugin.</li>
+     * </ul>
+     *
+     * @return the instantiated and injected {@link Plugin}
+     * @throws PluginInstantiationException if a dependency is unmet or if instantiation/injector creation fails
+     */
     private Plugin instantiate(Collection<Plugin> scannedPlugins, Class<Plugin> clazz) throws PluginInstantiationException {
         PluginDependency[] pluginDependencies = clazz.getAnnotationsByType(PluginDependency.class);
         List<Plugin> deps = new ArrayList<>();
