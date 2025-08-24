@@ -66,26 +66,29 @@ public class LootScript extends Script {
                     AttackNpcScript.cachedTargetNpcIndex = -1; // Clear the cached NPC index
                     Microbot.log("Loot found, clearing wait state");
                 }
-                //Pause other scripts before looting
+                //Pause other scripts before looting and always release
                 Microbot.pauseAllScripts.getAndSet(true);
-                for (GroundItem groundItem : groundItems) {
-                    if (Rs2Inventory.emptySlotCount() <= minFreeSlots && !canStackItem(groundItem)) {
-                        Microbot.log("Unable to pick loot: " + groundItem.getName() + " making space");
-                        if (!config.eatFoodForSpace()) {
-                            continue;
+                try {
+                    for (GroundItem groundItem : groundItems) {
+                        if (Rs2Inventory.emptySlotCount() <= minFreeSlots && !canStackItem(groundItem)) {
+                            Microbot.log("Unable to pick loot: " + groundItem.getName() + " making space");
+                            if (!config.eatFoodForSpace()) {
+                                continue;
+                            }
+                            int emptySlots = Rs2Inventory.emptySlotCount();
+                            if (Rs2Player.eatAt(100)) {
+                                sleepUntil(() -> emptySlots < Rs2Inventory.emptySlotCount(), 1200);
+                            }
                         }
-                        int emptySlots = Rs2Inventory.emptySlotCount();
-                        if (Rs2Player.eatAt(100)) {
-                            sleepUntil(() -> emptySlots < Rs2Inventory.emptySlotCount(), 1200);
+                        Microbot.log("Picking up loot: " + groundItem.getName());
+                        if (!waitForGroundItemDespawn(() -> interact(groundItem), groundItem)) {
+                            return;
                         }
                     }
-                    Microbot.log("Picking up loot: " + groundItem.getName());
-                    if (!waitForGroundItemDespawn(() -> interact(groundItem), groundItem)) {
-                        return;
-                    }
+                    Microbot.log("Looting complete");
+                } finally {
+                    Microbot.pauseAllScripts.compareAndSet(true, false);
                 }
-                Microbot.log("Looting complete");
-                Microbot.pauseAllScripts.compareAndSet(true, false);
             } catch (Exception ex) {
                 Microbot.log("Looterscript: " + ex.getMessage());
             }
