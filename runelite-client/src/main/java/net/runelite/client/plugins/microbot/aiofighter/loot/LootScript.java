@@ -6,7 +6,6 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterConfig;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterPlugin;
-import net.runelite.client.plugins.microbot.aiofighter.combat.AttackNpcScript;
 import net.runelite.client.plugins.microbot.aiofighter.enums.DefaultLooterStyle;
 import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
@@ -77,7 +76,8 @@ public class LootScript extends Script {
                         }
                         Microbot.log("Picking up loot: " + groundItem.getName());
                         if (!waitForGroundItemDespawn(() -> interact(groundItem), groundItem)) {
-                            return;
+                            // Skip this item and continue to the next rather than aborting the whole pass
+                            continue;
                         }
                         // Clear wait state after first successful pickup
                         if (!clearedWait && AIOFighterPlugin.isWaitingForLoot()) {

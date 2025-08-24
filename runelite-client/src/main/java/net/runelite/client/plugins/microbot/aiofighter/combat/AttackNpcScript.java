@@ -129,6 +129,7 @@ public class AttackNpcScript extends Script {
                     if (cachedNpcModel != null && (cachedNpcModel.isDead() || (cachedNpcModel.getHealthRatio() == 0 && cachedNpcModel.getHealthScale() > 0))) {
                         AIOFighterPlugin.setWaitingForLoot(true);
                         AIOFighterPlugin.setLastNpcKilledTime(System.currentTimeMillis());
+                        Microbot.status = "Waiting for loot...";
                         Microbot.log("NPC died, waiting for loot...");
                         cachedTargetNpcIndex = -1;
                         return;
@@ -141,13 +142,11 @@ public class AttackNpcScript extends Script {
                     int timeoutMs = config.lootWaitTimeout() * 1000;
                     if (timeSinceKill >= timeoutMs) {
                         // Timeout reached, resume combat
-                        AIOFighterPlugin.setWaitingForLoot(false);
-                        AIOFighterPlugin.setLastNpcKilledTime(0);
+                        AIOFighterPlugin.clearWaitForLoot("Loot wait timeout reached, resuming combat");
                         cachedTargetNpcIndex = -1; // Clear cached NPC on timeout
-                        Microbot.log("Loot wait timeout reached, resuming combat");
                     } else {
                         // Still waiting for loot, don't attack
-                        int secondsLeft = (int) Math.max(0, TimeUnit.MILLISECONDS.toSeconds(timeoutMs - timeSinceKill));
+                        int secondsLeft = (int) Math.max(1, TimeUnit.MILLISECONDS.toSeconds(timeoutMs - timeSinceKill));
                         Microbot.status = "Waiting for loot... " + secondsLeft + "s";
                         return;
                     }
