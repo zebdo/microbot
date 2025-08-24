@@ -63,7 +63,7 @@ public class LootScript extends Script {
                 if (AIOFighterPlugin.isWaitingForLoot()) {
                     AIOFighterPlugin.setWaitingForLoot(false);
                     AIOFighterPlugin.setLastNpcKilledTime(0);
-                    AttackNpcScript.cachedTargetNpc = null; // Clear the cached NPC
+                    AttackNpcScript.cachedTargetNpcIndex = -1; // Clear the cached NPC index
                     Microbot.log("Loot found, clearing wait state");
                 }
                 //Pause other scripts before looting

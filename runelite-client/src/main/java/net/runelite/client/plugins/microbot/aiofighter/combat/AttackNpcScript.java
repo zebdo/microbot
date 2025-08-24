@@ -45,7 +45,7 @@ public class AttackNpcScript extends Script {
     public static Actor currentNpc = null;
     public static AtomicReference<List<Rs2NpcModel>> filteredAttackableNpcs = new AtomicReference<>(new ArrayList<>());
     public static Rs2WorldArea attackableArea = null;
-    public static net.runelite.api.NPC cachedTargetNpc = null;
+    public static int cachedTargetNpcIndex = -1;
     private boolean messageShown = false;
     private int noNpcCount = 0;
 
@@ -116,18 +116,21 @@ public class AttackNpcScript extends Script {
                         net.runelite.api.NPC npc = (net.runelite.api.NPC) currentInteracting;
                         // Update our cached target to who we're fighting
                         if (npc.getHealthRatio() > 0 && !npc.isDead()) {
-                            cachedTargetNpc = npc;
+                            cachedTargetNpcIndex = npc.getIndex();
                         }
                     }
                 }
                 
                 // Check if our cached target died
-                if (config.toggleWaitForLoot() && !AIOFighterPlugin.isWaitingForLoot() && cachedTargetNpc != null) {
-                    if (cachedTargetNpc.isDead() || (cachedTargetNpc.getHealthRatio() == 0 && cachedTargetNpc.getHealthScale() > 0)) {
+                if (config.toggleWaitForLoot() && !AIOFighterPlugin.isWaitingForLoot() && cachedTargetNpcIndex != -1) {
+                    // Find the NPC by index using Rs2 API
+                    Rs2NpcModel cachedNpcModel = Rs2Npc.getNpcByIndex(cachedTargetNpcIndex);
+                    
+                    if (cachedNpcModel != null && (cachedNpcModel.isDead() || (cachedNpcModel.getHealthRatio() == 0 && cachedNpcModel.getHealthScale() > 0))) {
                         AIOFighterPlugin.setWaitingForLoot(true);
                         AIOFighterPlugin.setLastNpcKilledTime(System.currentTimeMillis());
                         Microbot.log("NPC died, waiting for loot...");
-                        cachedTargetNpc = null;
+                        cachedTargetNpcIndex = -1;
                         return;
                     }
                 }
@@ -140,7 +143,7 @@ public class AttackNpcScript extends Script {
                         // Timeout reached, resume combat
                         AIOFighterPlugin.setWaitingForLoot(false);
                         AIOFighterPlugin.setLastNpcKilledTime(0);
-                        cachedTargetNpc = null; // Clear cached NPC on timeout
+                        cachedTargetNpcIndex = -1; // Clear cached NPC on timeout
                         Microbot.log("Loot wait timeout reached, resuming combat");
                     } else {
                         // Still waiting for loot, don't attack
