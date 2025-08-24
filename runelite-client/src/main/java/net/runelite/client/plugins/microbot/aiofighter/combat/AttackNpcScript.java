@@ -45,7 +45,7 @@ public class AttackNpcScript extends Script {
     public static Actor currentNpc = null;
     public static AtomicReference<List<Rs2NpcModel>> filteredAttackableNpcs = new AtomicReference<>(new ArrayList<>());
     public static Rs2WorldArea attackableArea = null;
-    public static int cachedTargetNpcIndex = -1;
+    public static volatile int cachedTargetNpcIndex = -1;
     private boolean messageShown = false;
     private int noNpcCount = 0;
 
@@ -147,7 +147,7 @@ public class AttackNpcScript extends Script {
                         Microbot.log("Loot wait timeout reached, resuming combat");
                     } else {
                         // Still waiting for loot, don't attack
-                        int secondsLeft = (int)((timeoutMs - timeSinceKill) / 1000);
+                        int secondsLeft = (int) Math.max(0, TimeUnit.MILLISECONDS.toSeconds(timeoutMs - timeSinceKill));
                         Microbot.status = "Waiting for loot... " + secondsLeft + "s";
                         return;
                     }

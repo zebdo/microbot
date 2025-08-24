@@ -59,16 +59,11 @@ public class LootScript extends Script {
                 if (config.toggleDelayedLooting()) {
                     groundItems.sort(Comparator.comparingInt(Rs2GroundItem::calculateDespawnTime));
                 }
-                // Clear wait for loot state since we found loot
-                if (AIOFighterPlugin.isWaitingForLoot()) {
-                    AIOFighterPlugin.setWaitingForLoot(false);
-                    AIOFighterPlugin.setLastNpcKilledTime(0);
-                    AttackNpcScript.cachedTargetNpcIndex = -1; // Clear the cached NPC index
-                    Microbot.log("Loot found, clearing wait state");
-                }
+                // Defer clearing wait-for-loot until we successfully pick at least one item
                 //Pause other scripts before looting and always release
                 Microbot.pauseAllScripts.getAndSet(true);
                 try {
+                    boolean clearedWait = false;
                     for (GroundItem groundItem : groundItems) {
                         if (Rs2Inventory.emptySlotCount() <= minFreeSlots && !canStackItem(groundItem)) {
                             Microbot.log("Unable to pick loot: " + groundItem.getName() + " making space");
@@ -83,6 +78,11 @@ public class LootScript extends Script {
                         Microbot.log("Picking up loot: " + groundItem.getName());
                         if (!waitForGroundItemDespawn(() -> interact(groundItem), groundItem)) {
                             return;
+                        }
+                        // Clear wait state after first successful pickup
+                        if (!clearedWait && AIOFighterPlugin.isWaitingForLoot()) {
+                            AIOFighterPlugin.clearWaitForLoot("First loot item picked up");
+                            clearedWait = true;
                         }
                     }
                     Microbot.log("Looting complete");

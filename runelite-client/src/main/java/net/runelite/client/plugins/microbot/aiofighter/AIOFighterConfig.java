@@ -412,7 +412,7 @@ public interface AIOFighterConfig extends Config {
     @Range(min = 1, max = 10)
     @ConfigItem(
             keyName = "lootWaitTimeout",
-            name = "Loot Wait Timeout",
+            name = "Loot Wait Timeout (s)",
             description = "Seconds to wait for loot before resuming combat (1-10)",
             position = 104,
             section = lootSection
