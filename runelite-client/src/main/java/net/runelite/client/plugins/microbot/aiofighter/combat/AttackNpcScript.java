@@ -112,8 +112,8 @@ public class AttackNpcScript extends Script {
                 // Check if we need to update our cached target (but not while waiting for loot)
                 if (!AIOFighterPlugin.isWaitingForLoot()) {
                     Actor currentInteracting = Rs2Player.getInteracting();
-                    if (currentInteracting instanceof net.runelite.api.NPC) {
-                        net.runelite.api.NPC npc = (net.runelite.api.NPC) currentInteracting;
+                    if (currentInteracting instanceof Rs2NpcModel) {
+                        Rs2NpcModel npc = (Rs2NpcModel) currentInteracting;
                         // Update our cached target to who we're fighting
                         if (npc.getHealthRatio() > 0 && !npc.isDead()) {
                             cachedTargetNpcIndex = npc.getIndex();
