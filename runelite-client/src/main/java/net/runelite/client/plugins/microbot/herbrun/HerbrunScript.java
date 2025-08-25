@@ -60,10 +60,15 @@ public class HerbrunScript extends Script {
                 initialized = true;
                 HerbrunPlugin.status = "Gearing up";
                 populateHerbPatches();
-                if (herbPatches.isEmpty()) {                                        
-                    plugin.reportFinished("No herb patches ready to farm",true);
-                    this.shutdown();
-                    return;
+                
+                // Wait for herbPatches to be populated by client thread (bounded wait with 1000ms timeout)
+                if (!sleepUntil(() -> !herbPatches.isEmpty(), 1000)) {
+                    // If still empty after timeout, check once more to handle edge cases
+                    if (herbPatches.isEmpty()) {                                        
+                        plugin.reportFinished("No herb patches ready to farm",true);
+                        this.shutdown();
+                        return;
+                    }
                 }
                 
                 if (config.useInventorySetup()) {
