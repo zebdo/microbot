@@ -70,8 +70,12 @@ public class LootScript extends Script {
                                 continue;
                             }
                             int emptySlots = Rs2Inventory.emptySlotCount();
-                            if (Rs2Player.eatAt(100)) {
+                            if (Rs2Player.eatAt(100, true)) {
                                 sleepUntil(() -> emptySlots < Rs2Inventory.emptySlotCount(), 1200);
+                            }
+                            // If we still don't have space and can't stack this item, skip it
+                            if (Rs2Inventory.emptySlotCount() <= minFreeSlots && !canStackItem(groundItem)) {
+                                continue;
                             }
                         }
                         Microbot.log("Picking up loot: " + groundItem.getName());
