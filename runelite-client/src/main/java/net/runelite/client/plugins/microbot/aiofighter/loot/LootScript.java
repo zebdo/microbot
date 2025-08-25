@@ -60,7 +60,7 @@ public class LootScript extends Script {
                 }
                 // Defer clearing wait-for-loot until we successfully pick at least one item
                 //Pause other scripts before looting and always release
-                Microbot.pauseAllScripts.getAndSet(true);
+                boolean previousPauseState = Microbot.pauseAllScripts.getAndSet(true);
                 try {
                     boolean clearedWait = false;
                     for (GroundItem groundItem : groundItems) {
@@ -91,7 +91,7 @@ public class LootScript extends Script {
                     }
                     Microbot.log("Looting complete");
                 } finally {
-                    Microbot.pauseAllScripts.compareAndSet(true, false);
+                    Microbot.pauseAllScripts.set(previousPauseState);
                 }
             } catch (Exception ex) {
                 Microbot.log("Looterscript: " + ex.getMessage());
