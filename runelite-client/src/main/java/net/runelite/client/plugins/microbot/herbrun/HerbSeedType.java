@@ -64,14 +64,4 @@ public enum HerbSeedType {
     public String toString() {
         return seedName;
     }
-    
-    /**
-     * Find HerbSeedType by item id; returns null when not found.
-     */
-    public static HerbSeedType fromItemId(int id) {
-        for (HerbSeedType t : values()) {
-            if (t != BEST && t.itemId == id) return t;
-        }
-        return null;
-    }
 }

@@ -23,16 +23,6 @@ public enum CompostType {
         return this == BOTTOMLESS;
     }
 
-    /**
-     * Find CompostType by item id; returns NONE when not found.
-     */
-    public static CompostType fromItemId(int id) {
-        for (CompostType t : values()) {
-            if (t.itemId == id) return t;
-        }
-        return NONE;
-    }
-
     @Override
     public String toString() {
         return compostName;
