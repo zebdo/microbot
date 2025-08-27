@@ -319,8 +319,8 @@ public class HerbrunScript extends Script {
             return false;
         }
         
-        // Deposit all except equipped items
-        Rs2Bank.depositAllExcept(true);
+        // Deposit all items into bank
+        Rs2Bank.depositAll();
         Rs2Inventory.waitForInventoryChanges(5000);
         
         // Count enabled patches to know how many seeds/compost we need
