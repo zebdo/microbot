@@ -75,7 +75,7 @@ public enum Rs2Spellbook {
      * Located at Dark Altar north of Arceuus - requires speaking to Tyss NPC
      */
     ARCEUUS(3,
-            new WorldPoint(1694, 3878, 0), // Dark Altar location north of Arceuus            
+            new WorldPoint(1712, 3883, 0), // Dark Altar location north of Arceuus
             NpcID.ARCEUUS_DARKGUARDIAN, // Tyss NPC ID
             null,
             "Dark Altar north of Arceuus - speak to Tyss to access Arceuus spellbook");
@@ -205,6 +205,7 @@ public enum Rs2Spellbook {
             case MODERN:
                 // For switching to MODERN, try altar method first (most reliable)
                 // We determine which altar to use based on current spellbook
+                if(Rs2Magic.getSpellbook().equals(Rs2Spellbook.ARCEUUS)) return switchViaNpc(); //Needed for swapping from Arceuus to Modern.
                 return switchViaAltar();
                 
             case ANCIENT:
