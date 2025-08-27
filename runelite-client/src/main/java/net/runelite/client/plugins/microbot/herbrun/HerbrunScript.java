@@ -364,6 +364,15 @@ public class HerbrunScript extends Script {
         } else {
             // Original logic for specific seed type
             int seedsNeeded = patchCount; // 1 seed per patch
+            
+            // Validate farming level requirement
+            int farmingLevel = Rs2SkillCache.getRealSkillLevel(Skill.FARMING);
+            if (!seedType.canPlant(farmingLevel)) {
+                log("Cannot plant " + seedType.getSeedName() + " - requires Farming level " + 
+                    seedType.getLevelRequired() + " (you have " + farmingLevel + ")");
+                return false;
+            }
+            
             if (!Rs2Bank.withdrawX(seedType.getItemId(), seedsNeeded)) {
                 if (!config.allowPartialRuns()) {
                     log("Failed to withdraw " + seedsNeeded + " " + seedType.getSeedName());
