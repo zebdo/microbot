@@ -1,0 +1,27 @@
+# Quest Helper Sync Tracking File
+# This file tracks the last synchronized commit from the external quest-helper repository
+# 
+# External Repository: https://github.com/Zoinkwiz/quest-helper
+# Local Integration: runelite-client/src/main/java/net/runelite/client/plugins/microbot/questhelper/
+#
+# Sync History:
+# - Initial sync setup: Thu Aug 28 04:13:45 PM CEST 2025
+# - Method used: manual
+# - Partial sync: Thu Aug 28 04:28:12 PM CEST 2025
+# - Applied first 4 patches (commits d2df892a..4c204e89)
+# - Status: 4 patches applied successfully, 76 patches pending
+#
+# IMPORTANT: Do not manually edit this file unless you know what you're doing.
+# Use the quest-helper update scripts to manage synchronization.
+
+# Last fully synchronized commit
+addaf40546502f93ec4ca52b13b08606a84ecb9e
+
+# Partial sync status (local commit: 5fdbff2593)
+# Applied patches: 0001-0004 
+# Remaining patches: 0005-0080 (manual application needed due to conflicts)
+
+# Commit details (for reference):
+# Date: 2025-07-21 19:15:58 +0100
+# Message: fix: typo in Recruitment Drive (#2184)
+# External HEAD at setup: 6329d81ee15a07a4b4fb53217bd4305e978c7a0e
