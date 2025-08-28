@@ -109,8 +109,7 @@ public class GiantSeaweedFarmerPlugin extends Plugin implements SchedulablePlugi
     public LogicalCondition getStopCondition() {
         if (lockCondition == null) {
             // Create a lock condition to prevent the plugin from running while the bank is open
-            lockCondition = new LockCondition("Giant Seaweed Farmer lock",true
-            );
+            lockCondition = new LockCondition("Giant Seaweed Farmer lock",false,true);
             this.stopCondition.addCondition(lockCondition);
         }
         // Create a new stop condition

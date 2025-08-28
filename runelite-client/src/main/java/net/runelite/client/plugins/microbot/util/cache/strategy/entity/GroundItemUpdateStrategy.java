@@ -58,9 +58,13 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
     @Override
     public void handleEvent(Object event, CacheOperations<String, Rs2GroundItemModel> cache) {
         if (executorService == null || executorService.isShutdown() || !Microbot.loggedIn || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
+            log.warn("GroundItemUpdateStrategy is shut down or not logged in, ignoring event: {}", event.getClass().getSimpleName());
             return; // Don't process events if shut down
         }
-        
+        if (scanActive.get()){
+            log.debug("Skipping event processing - scan already active: {}", event.getClass().getSimpleName());
+            return; // Don't process events if a scan is already active
+        }
         // Submit event handling to executor service for non-blocking processing
         executorService.submit(() -> {
             try {

@@ -66,8 +66,8 @@ public class PredicateCondition<T> extends LockCondition {
      * Creates a new predicate condition with a specified reason and initial lock state.
      * 
      * @param reason The reason why the plugin is locked
-     * @param defaultLocked The initial locked state of the condition
-    * @param withBreakHandlerLock Whether to initially lock the condition
+     * @param defaultLocked The initial locked state of the condition.
+    * @param withBreakHandlerLock Whether this condition participates in BreakHandler coordination (lock hand-off), not an initial lock state.
      * @param predicate The predicate to evaluate
      * @param stateSupplier A supplier that provides the current state to evaluate against the predicate
      * @param predicateDescription A human-readable description of what the predicate checks

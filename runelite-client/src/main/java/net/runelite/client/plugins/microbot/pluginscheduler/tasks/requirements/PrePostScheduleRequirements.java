@@ -26,8 +26,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
-
-import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.PrePostScheduleRequirements;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.enums.RequirementPriority;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.enums.TaskContext;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.enums.OrRequirementMode;
@@ -118,7 +116,7 @@ public abstract class PrePostScheduleRequirements  {
             log.warn("Requirements collection already initialized: " + collectionName);
             return false; // Already initialized
         }
-        if (!Microbot.isLoggedIn() || !Rs2CacheManager.isCacheDataVaild()){
+        if (!Microbot.isLoggedIn() || !Rs2CacheManager.isCacheDataValid()){
             log.error("Cannot initialize requirements collection: " + collectionName + " - not logged in or cache data invalid");
             return false; // Cannot initialize if not logged in or cache is invalid
         }

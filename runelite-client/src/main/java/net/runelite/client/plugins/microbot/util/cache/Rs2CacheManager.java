@@ -52,7 +52,7 @@ public class Rs2CacheManager implements AutoCloseable {
      * 
      * @return true if cache manager state is valid and consistent, false otherwise
      */
-    public static boolean isCacheDataVaild() {
+    public static boolean isCacheDataValid() {
         return loggedInCacheStateKnown.get() && rsProfileKey != null && !rsProfileKey.get().isEmpty() 
                 && Microbot.getConfigManager() != null 
                 && rsProfileKey.get().equals(Microbot.getConfigManager().getRSProfileKey()) && cacheLoadingInProgress.get() == false;
@@ -554,7 +554,7 @@ public class Rs2CacheManager implements AutoCloseable {
      * Implements retry logic to ensure player is valid before loading.
      */
     public static void loadCacheStateFromConfig(String newRsProfileKey) {
-        if (!isCacheDataVaild()) {
+        if (!isCacheDataValid()) {
             // Start retry task if not already in progress
             if (cacheLoadingInProgress.compareAndSet(false, true)) {
                 // Schedule retry task in background thread
@@ -614,7 +614,7 @@ public class Rs2CacheManager implements AutoCloseable {
      * This method handles both Rs2Bank and other cache systems.
      */
     public static void setUnknownInitialCacheState() {
-        if (    isCacheDataVaild() 
+        if (    isCacheDataValid() 
                 && rsProfileKey != null 
                 && Microbot.getConfigManager() != null 
                 && rsProfileKey.get() ==  Microbot.getConfigManager().getRSProfileKey()) {
@@ -635,7 +635,7 @@ public class Rs2CacheManager implements AutoCloseable {
         // Only re-load from config if loading from a new profile
         if (newRsProfileKey != null && !newRsProfileKey.equals(rsProfileKey.get())) {
             // If we've hopped between profiles, save current state first
-            if (rsProfileKey != null&& !rsProfileKey.get().isEmpty() && isCacheDataVaild()) {
+            if (rsProfileKey != null&& !rsProfileKey.get().isEmpty() && isCacheDataValid()) {
                 log.info("Saving current cache state before loading new profile: {}, we have valid cache", rsProfileKey.get());
                 savePersistentCaches(rsProfileKey.get());
             }            
@@ -669,7 +669,7 @@ public class Rs2CacheManager implements AutoCloseable {
      */
     public static void emptyCacheState() {
         // Save current state before clearing
-        if (rsProfileKey != null && !rsProfileKey.get().isEmpty() && isCacheDataVaild()) {
+        if (rsProfileKey != null && !rsProfileKey.get().isEmpty() && isCacheDataValid()) {
             savePersistentCaches(rsProfileKey.get());
         }        
         // Clear Rs2Bank state        
@@ -703,7 +703,7 @@ public class Rs2CacheManager implements AutoCloseable {
      */
     public static void savePersistentCaches(String profileKey) {
         try {
-            if (!isCacheDataVaild() ) {
+            if (!isCacheDataValid() ) {
                 log.warn("Cache data is not valid, cannot save persistent caches");
                 return;
             }

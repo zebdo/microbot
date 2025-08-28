@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.accountselector;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameState;
+import net.runelite.client.config.ConfigProfile;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -23,7 +24,8 @@ public class AutoLoginScript extends Script {
     private enum LoginState {
         WAITING_FOR_LOGIN_SCREEN,
         ATTEMPTING_LOGIN,
-        LOGIN_EXTENDED_SLEEP
+        LOGIN_EXTENDED_SLEEP,
+        ERROR
     }
     
     private LoginState loginState = LoginState.WAITING_FOR_LOGIN_SCREEN;
@@ -31,6 +33,8 @@ public class AutoLoginScript extends Script {
     private Instant loginWatchdogStartTime = null;
     private Instant extendedSleepStartTime = null;
     private Instant lastLoginAttemptTime = null;
+    private long lastExtendedSleepLoggedMinute = -1;
+
 
     public boolean run(AutoLoginConfig autoLoginConfig) {
         log.info("Starting AutoLogin script with world selection");
@@ -64,6 +68,9 @@ public class AutoLoginScript extends Script {
             case LOGIN_EXTENDED_SLEEP:
                 handleLoginExtendedSleepState(config);
                 break;
+            case ERROR:
+                log.error("Auto login script in error state, resetting disable auto login");
+                Microbot.stopPlugin(AutoLoginPlugin.class);
         }
     }
     
@@ -78,7 +85,7 @@ public class AutoLoginScript extends Script {
             return;
         }
         
-        if (Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN) {
+        if (Microbot.getClient()!=null && Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN) {
             log.info("Login screen detected, initiating login");
             initiateLogin(config);
             transitionToState(LoginState.ATTEMPTING_LOGIN);
@@ -130,10 +137,29 @@ public class AutoLoginScript extends Script {
         }
         
         // check if still on login screen
-        if (Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN) {
+        if (Microbot.getClient()!=null && Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN) {
             log.info("Retrying login attempt {} of {}", retryCount + 1, config.maxLoginRetries());
+            int currentLoginIndex = Microbot.getClient().getLoginIndex();
+            if (Microbot.getClient().getLoginIndex() == 3 || Microbot.getClient().getLoginIndex() == 24) { // you were disconnected from the server.
+                log.info("Detected disconnection screen");
+                //should be handled in Login class, on next login call
+            }
+            if (currentLoginIndex == 4 || currentLoginIndex == 3) { // we are in the auth screen and cannot login
+                // 3 mean wrong authtifaction
+                log.error("Authentication failed, please check credentials");
+                transitionToState(LoginState.ERROR);
+                return;                
+            }
+            if (currentLoginIndex == 34) { // we are not a member and cannot login
+                log.error("Account is not a member, cannot login to members world");
+                transitionToState(LoginState.ERROR);
+                return;
+            }
+            // we have to find out  other indexes that mean we cannot login
             initiateLogin(config);
         } else {
+          
+           
             // not on login screen anymore, return to waiting
             resetLoginState();
             transitionToState(LoginState.WAITING_FOR_LOGIN_SCREEN);
@@ -166,9 +192,10 @@ public class AutoLoginScript extends Script {
             transitionToState(LoginState.WAITING_FOR_LOGIN_SCREEN);
         } else {
             // show progress occasionally
-            if (sleepTime % 5 == 0 && sleepTime > 0) { // every 5 minutes
+            if (sleepTime > 0 && sleepTime % 5 == 0 && sleepTime != lastExtendedSleepLoggedMinute) {
                 long remaining = config.extendedSleepDuration() - sleepTime;
                 log.debug("Extended sleep in progress - {} minutes remaining", remaining);
+                lastExtendedSleepLoggedMinute = sleepTime;
             }
         }
     }
@@ -184,7 +211,6 @@ public class AutoLoginScript extends Script {
                 log.info("Login watchdog started for {} minutes", config.loginWatchdogTimeout());
             }
             
-            boolean loginSuccess = false;
             int targetWorld = -1;
             
             // check for preferred world first
@@ -195,7 +221,12 @@ public class AutoLoginScript extends Script {
                     targetWorld = config.world();
                     log.info("Using preferred world: {}", targetWorld);
                 } else {
-                    log.warn("Preferred world {} is not accessible, using selection mode", config.usePreferredWorld());
+                    ConfigProfile activeProfile = Login.activeProfile;
+                    boolean isMemberFromProfile = activeProfile != null && activeProfile.isMember();
+                    boolean isLocalPlayerAvailable = Microbot.getClient()!=null && Microbot.getClient().getLocalPlayer() != null;
+                    boolean isMemberFromClient = Microbot.getClient()!=null && Microbot.getClient().getLocalPlayer() != null ? Rs2Player.isMember() : false;
+                    log.error("Preferred world {} is not accessible,\n\t ->check if we have member access set in profile(current value {}), or when logged in, have we member access ? (LocalPlayer? {}, isMember? {})", 
+                    config.usePreferredWorld(), isMemberFromProfile, isLocalPlayerAvailable, isMemberFromClient);                        
                 }
             }
             
@@ -203,30 +234,37 @@ public class AutoLoginScript extends Script {
             if (targetWorld == -1) {
                 switch (config.worldSelectionMode()) {
                     case CURRENT_WORLD:
-                        // use legacy behavior for current world                                           
-                        new Login();
-                        loginSuccess = true;
+                        // no specific world selection - use default login
                         break;
                         
                     case RANDOM_WORLD:
-                        loginSuccess = Rs2WorldUtil.performLogin(true, config.regionPreference().getWorldRegion(), 
-                                                                config.avoidEmptyWorlds(), config.avoidOvercrowdedWorlds());
-                        targetWorld = Login.getRandomWorld(Rs2Player.isMember());
+                        targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+                            config.regionPreference().getWorldRegion(),
+                            config.avoidEmptyWorlds(),
+                            config.avoidOvercrowdedWorlds());
                         break;
                         
                     case BEST_POPULATION:
-                        loginSuccess = Rs2WorldUtil.performLogin(false, config.regionPreference().getWorldRegion(), 
-                                                                config.avoidEmptyWorlds(), config.avoidOvercrowdedWorlds());
+                        targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
+                            false,
+                            config.regionPreference().getWorldRegion(),
+                            config.avoidEmptyWorlds(),
+                            config.avoidOvercrowdedWorlds());
                         break;
                         
                     case BEST_PING:
-                        targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(true, config.regionPreference().getWorldRegion(), 
-                                                                                 config.avoidEmptyWorlds(), config.avoidOvercrowdedWorlds());
+                        targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
+                            true,
+                            config.regionPreference().getWorldRegion(),
+                            config.avoidEmptyWorlds(),
+                            config.avoidOvercrowdedWorlds());
                         break;
                         
                     case REGIONAL_RANDOM:
-                        loginSuccess = Rs2WorldUtil.performLogin(true, config.regionPreference().getWorldRegion(), 
-                                                                config.avoidEmptyWorlds(), config.avoidOvercrowdedWorlds());
+                        targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+                            config.regionPreference().getWorldRegion(),
+                            config.avoidEmptyWorlds(),
+                            config.avoidOvercrowdedWorlds());
                         break;
                         
                     default:
@@ -240,24 +278,16 @@ public class AutoLoginScript extends Script {
                 }
             }
             
-            // login with specific world if determined
-            if (targetWorld != -1 && !loginSuccess) {
-                log.info("Attempting login to world: {}", targetWorld);
-                new Login(targetWorld);
-                loginSuccess = true;
-            }else if(!loginSuccess){                
-                new Login();// fallback login to last world used
-                loginSuccess = true;
-            }
+            // perform login attempt and track retry state
+            retryCount++;
+            lastLoginAttemptTime = Instant.now();
             
-            if (loginSuccess) {
-                retryCount++;
-                lastLoginAttemptTime = Instant.now();
+            if (targetWorld != -1) {
+                log.info("Attempting login to selected world: {} (attempt {})", targetWorld, retryCount);
+                new Login(targetWorld);
             } else {
-                log.warn("login failed, retrying with fallback");
-                new Login(config.world());
-                retryCount++;
-                lastLoginAttemptTime = Instant.now();
+                log.info("Using default login (current world or last used) (attempt {})", retryCount);
+                new Login();
             }
             
         } catch (Exception ex) {
@@ -285,6 +315,7 @@ public class AutoLoginScript extends Script {
         loginWatchdogStartTime = null;
         extendedSleepStartTime = null;
         lastLoginAttemptTime = null;
+        lastExtendedSleepLoggedMinute = -1;
     }
     
     @Override
@@ -293,5 +324,6 @@ public class AutoLoginScript extends Script {
 
         resetLoginState();
         super.shutdown();
+        
     }
 }

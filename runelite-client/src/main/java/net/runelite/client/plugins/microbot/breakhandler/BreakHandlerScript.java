@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
  * WAITING_FOR_BREAK -> BREAK_REQUESTED -> INITIATING_BREAK -> LOGOUT_REQUESTED -> 
  * LOGGED_OUT -> LOGIN_REQUESTED -> LOGGING_IN -> BREAK_ENDING -> WAITING_FOR_BREAK
  * 
- * Micro breaks follow: WAITING_FOR_BREAK -> BREAK_REQUESTED -> MICRO_BREAK_ACTIVE -> BREAK_ENDING
+ * Micro breaks follow: WAITING_FOR_BREAK -> BREAK_REQUESTED -> INGAME_BREAK_ACTIVE -> BREAK_ENDING
  * 
  * @version 2.0.0
  */
@@ -446,7 +446,7 @@ public class BreakHandlerScript extends Script {
     }
 
     /**
-     * State: MICRO_BREAK_ACTIVE
+     * State: INGAME_BREAK_ACTIVE
      * In micro break state (no logout), waiting for duration to complete.
      */
     private void handleLoginBreakActiveState() {
@@ -483,13 +483,7 @@ public class BreakHandlerScript extends Script {
             
             switch (config.worldSelectionMode()) {
                 case CURRENT_WORLD:
-                    // use default login to stay in current world
-                    if (Login.activeProfile != null) {
-                        new Login();
-                    } else {
-                        new Login();
-                    }
-                    loginSuccess = true;
+                    // use default login to stay in current world                                                   
                     break;
                     
                 case RANDOM_WORLD:
@@ -520,14 +514,11 @@ public class BreakHandlerScript extends Script {
                                         config.avoidEmptyWorlds(), config.avoidOvercrowdedWorlds());
                     break;
                     
-                default:
-                    // fallback to legacy behavior                   
-                    new Login();
-                    loginSuccess = true;                    
+                default:                    
                     break;
             }            
             
-            // login with specific world if determined
+            // login WHEN NO specific world if determined // use default login to stay in current world
             if (!loginSuccess) {
                 new Login();
                 

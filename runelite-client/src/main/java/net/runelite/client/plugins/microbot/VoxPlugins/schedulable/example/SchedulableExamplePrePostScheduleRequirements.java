@@ -36,6 +36,7 @@ import net.runelite.client.plugins.microbot.util.shop.models.Rs2ShopType;
 import net.runelite.client.plugins.microbot.util.shop.StoreLocations;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
+import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.grandexchange.models.TimeSeriesInterval;
 import net.runelite.client.plugins.microbot.util.grounditem.models.Rs2SpawnLocation;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.logical.OrRequirement;
@@ -381,12 +382,12 @@ public class SchedulableExamplePrePostScheduleRequirements extends PrePostSchedu
                                                             2, 
                                                             1,
                                                             TimeSeriesInterval.FIVE_MINUTES,
-                                                            true), // 20 longbows, flexible buying
+                                                            true), // 2 longbows, flexible buying
              mapleShortbowGEItem, new ShopItemRequirement(mapleShortbowGEItem, 
                                                         2, 
                                                     1,
                                                     TimeSeriesInterval.FIVE_MINUTES,
-                                                    true)  // 20 shortbows, flexible buying
+                                                    true)  // 2 shortbows, flexible buying
          );
          
          // Brian's shop: base stock=2, can sell up to 10 per world (max stock=12)
@@ -525,7 +526,7 @@ public class SchedulableExamplePrePostScheduleRequirements extends PrePostSchedu
             ItemRequirement fireRuneRequirement = new ItemRequirement(
                 ItemID.FIRERUNE,
                 5,
-                -2,
+                -1,
                 RequirementPriority.MANDATORY,
                 10,
                 "Fire runes in inventory",
@@ -594,7 +595,7 @@ public class SchedulableExamplePrePostScheduleRequirements extends PrePostSchedu
      */
     private static boolean hasFireStaffAvailable(List<ItemRequirement> staffReqs) {
         int[] staffIds = staffReqs.stream().mapToInt(ItemRequirement::getId).toArray();
-        return Rs2Inventory.contains(staffIds) || Rs2Bank.hasItem(staffIds);
+        return Rs2Inventory.contains(staffIds) || Rs2Bank.hasItem(staffIds)|| Rs2Equipment.isWearing(staffIds);
     }
 
     

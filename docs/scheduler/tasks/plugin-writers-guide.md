@@ -66,7 +66,7 @@ Create your requirements class extending [`PrePostScheduleRequirements`](../../.
 
 **Collection Integration**: Leverage [`ItemRequirementCollection`](../../../runelite-client/src/main/java/net/runelite/client/plugins/microbot/pluginscheduler/tasks/requirements/data/ItemRequirementCollection.java) for standard equipment sets rather than defining individual items.
 
-**Context Assignment**: Assign requirements to appropriate contexts (PRE_SCHEDULE, POST_SCHEDULE, IMMEDIATE) based on when they should be fulfilled.
+**Context Assignment**: Assign requirements to appropriate contexts (PRE_SCHEDULE, POST_SCHEDULE, BOTH) based on when they should be fulfilled.
 
 ### Step 3: Task Manager Implementation
 

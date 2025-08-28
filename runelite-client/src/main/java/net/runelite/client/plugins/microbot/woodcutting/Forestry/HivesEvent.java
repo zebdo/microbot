@@ -13,10 +13,12 @@ import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import org.slf4j.event.Level;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.awt.event.KeyEvent;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
-
+@Slf4j
 public class HivesEvent implements BlockingEvent {
 
     private final AutoWoodcuttingPlugin plugin;
@@ -26,9 +28,16 @@ public class HivesEvent implements BlockingEvent {
 
     @Override
     public boolean validate() {
-        var beehives = Rs2Npc.getNpcs(x -> x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_1 || x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_2);
-        return beehives.findAny().isPresent() && Rs2Inventory.count(plugin.config.TREE().getLogID()) > 1;
-    }
+        try{
+            if (plugin == null || !Microbot.isPluginEnabled(plugin)) return false;
+            if (Microbot.getClient() == null || !Microbot.isLoggedIn()) return false;
+            var beehives = Rs2Npc.getNpcs(x -> x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_1 || x.getId() == net.runelite.api.gameval.NpcID.GATHERING_EVENT_BEES_BEEBOX_2);
+            return beehives.findAny().isPresent() && Rs2Inventory.count(plugin.config.TREE().getLogID()) > 1;    
+        } catch (Exception e) {
+            log.error("HivesEvent: Exception in validate method", e);
+            return false;
+        }
+    }  
 
     @Override
     public boolean execute() {
@@ -52,6 +61,7 @@ public class HivesEvent implements BlockingEvent {
             //TODO Player might want to drop sturdy Beehive parts if they are in the inventory
         }
         Microbot.log("HivesEvent: Finished building the beehives.", Level.INFO);
+        plugin.incrementForestryEventCompleted();
         return true;
     }
 

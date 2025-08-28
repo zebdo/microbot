@@ -4,12 +4,16 @@ import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.BlockingEvent;
 import net.runelite.client.plugins.microbot.BlockingEventPriority;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.birdhouseruns.enums.Log;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import org.slf4j.event.Level;
 
+import lombok.extern.slf4j.Slf4j;
+
+@Slf4j
 public class FoxEvent implements BlockingEvent {
 
     private final AutoWoodcuttingPlugin plugin;
@@ -19,9 +23,16 @@ public class FoxEvent implements BlockingEvent {
 
     @Override
     public boolean validate() {
-        var outDoorFox = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_POACHERS_FOX_OUTDOORS);
-        var indoorFox = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_POACHERS_FOX_INDOORS);
-        return outDoorFox != null || indoorFox != null;
+        try{
+            if (plugin == null || !Microbot.isPluginEnabled(plugin)) return false;
+            if (Microbot.getClient() == null || !Microbot.isLoggedIn()) return false;
+            var outDoorFox = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_POACHERS_FOX_OUTDOORS);
+            var indoorFox = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_POACHERS_FOX_INDOORS);
+            return outDoorFox != null || indoorFox != null;
+        } catch (Exception e) {
+            log.error("FoxEvent: Exception in validate method", e);
+            return false;
+        }
     }
 
     @Override
@@ -39,6 +50,7 @@ public class FoxEvent implements BlockingEvent {
             Rs2Player.waitForAnimation(1000);
         }
         Microbot.log("FoxEvent: Finished executing the Fox event.", Level.INFO);
+        plugin.incrementForestryEventCompleted();
         return true;
     }
 

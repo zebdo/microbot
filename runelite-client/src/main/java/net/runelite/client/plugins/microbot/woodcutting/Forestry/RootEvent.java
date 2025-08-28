@@ -15,6 +15,8 @@ import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 public class RootEvent implements BlockingEvent {
 
     private final AutoWoodcuttingPlugin plugin;
@@ -24,19 +26,25 @@ public class RootEvent implements BlockingEvent {
 
     @Override
     public boolean validate() {
-        if (!Microbot.loggedIn) return false; // Ensure the player is logged in as the cache will nullref if not logged in
-        var root = Rs2ObjectCache.getClosestObjectById(ObjectID.GATHERING_EVENT_RISING_ROOTS).orElse(null);
-        var specialRoot = Rs2ObjectCache.getClosestObjectById(ObjectID.GATHERING_EVENT_RISING_ROOTS_SPECIAL).orElse(null);
+        try{
+            if (plugin == null || !Microbot.isPluginEnabled(plugin)) return false;
+            if (Microbot.getClient() == null || !Microbot.isLoggedIn()) return false;
+            var root = Rs2ObjectCache.getClosestObjectById(ObjectID.GATHERING_EVENT_RISING_ROOTS).orElse(null);
+            var specialRoot = Rs2ObjectCache.getClosestObjectById(ObjectID.GATHERING_EVENT_RISING_ROOTS_SPECIAL).orElse(null);
 
-        // Is the hasAction Check needed?
-        // If special root is present
-        if (specialRoot != null)
-            return Rs2GameObject.hasAction(specialRoot.getObjectComposition(), "Chop down");
-        // If regular root is present
-        if (root != null)
-            return (Rs2GameObject.hasAction(root.getObjectComposition(), "Chop down"));
+            // Is the hasAction Check needed?
+            // If special root is present
+            if (specialRoot != null)
+                return Rs2GameObject.hasAction(specialRoot.getObjectComposition(), "Chop down");
+            // If regular root is present
+            if (root != null)
+                return (Rs2GameObject.hasAction(root.getObjectComposition(), "Chop down"));
 
-        return false; // No roots found
+            return false; // No roots found
+        } catch (Exception e) {
+            log.error("RootEvent: Exception in validate method", e);
+            return false;
+        }
 
     }
 
@@ -85,7 +93,8 @@ public class RootEvent implements BlockingEvent {
                 sleepUntil(() -> !Rs2Player.isInteracting(), 40000);
             }
         }
-        return false;
+        plugin.incrementForestryEventCompleted();
+        return true;
     }
 
     @Override

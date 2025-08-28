@@ -46,7 +46,7 @@ The [`RequirementSolver`](../../../runelite-client/src/main/java/net/runelite/cl
 
 ### Context-Aware Execution
 
-Requirements operate within specific contexts (PRE_SCHEDULE, POST_SCHEDULE, IMMEDIATE) allowing the system to coordinate when different preparations occur during the plugin lifecycle.
+Requirements operate within specific contexts (PRE_SCHEDULE, POST_SCHEDULE, BOTH) allowing the system to coordinate when different preparations occur during the plugin lifecycle.
 
 ## Documentation Structure
 

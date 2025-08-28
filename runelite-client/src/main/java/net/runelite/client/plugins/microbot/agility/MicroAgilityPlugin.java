@@ -115,6 +115,10 @@ public class MicroAgilityPlugin extends Plugin implements SchedulablePlugin
 	public void onPluginScheduleEntryPostScheduleTaskEvent(PluginScheduleEntryPostScheduleTaskEvent event) {
 		try{
 			 if (event.getPlugin() == this) {
+				if (isLocked(getStopCondition())) {
+	              	log.warn("Agility: PostScheduleTaskEvent ignored while locked.");
+	                return;
+	            }
 				log.info("Scheduler requesting Agility Plugin soft stop");
 				PluginPauseEvent.setPaused(true);
 				if(agilityScript != null && agilityScript.isRunning()) {

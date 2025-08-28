@@ -2,7 +2,7 @@
 
 ## Overview
 
-The `PluginScheduleEntryPostScheduleTaskEvent` is a critical component of the Plugin Scheduler system that enables graceful termination of plugins. This event is sent by the scheduler to notify a plugin that it should begin its shutdown process due to stop conditions being met or other scheduling requirements.
+The `PluginScheduleEntryPostScheduleTaskEvent` signals the start of post-schedule tasks for a plugin. It is emitted when the scheduler transitions a schedule entry out of its main task phase (e.g., stop conditions met, user-initiated stop, or scheduler shutdown) so that coordinated cleanup/post actions can run.
 
 ## Class Structure
 

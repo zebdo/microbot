@@ -35,8 +35,8 @@ public class NpcKillCountCondition extends NpcCondition {
     private final Pattern npcNamePattern;
     private final int targetCountMin;
     private final int targetCountMax;
-    private transient int currentTargetCount;
-    private transient int currentKillCount;
+    private transient volatile int currentTargetCount;
+    private transient volatile int currentKillCount;
     private transient volatile boolean satisfied = false;
     private transient boolean registered = false;
     

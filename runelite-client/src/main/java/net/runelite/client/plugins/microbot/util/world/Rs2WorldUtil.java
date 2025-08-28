@@ -6,6 +6,7 @@ import net.runelite.http.api.worlds.WorldResult;
 import net.runelite.http.api.worlds.World;
 import net.runelite.http.api.worlds.WorldType;
 import net.runelite.http.api.worlds.WorldRegion;
+import net.runelite.client.config.ConfigProfile;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -16,6 +17,8 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
+
+import io.reactivex.rxjava3.annotations.Nullable;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
@@ -47,6 +50,7 @@ public class Rs2WorldUtil {
      * @param worldId The world ID to check accessibility for
      * @return true if the player can access the world, false otherwise
      */
+    @Nullable
     public static boolean canAccessWorld(int worldId) {
         try {
             if (worldId == -1){
@@ -68,11 +72,22 @@ public class Rs2WorldUtil {
                 log.warn("World {} not found in world list", worldId);
                 return false;
             }
-            
-            boolean isPlayerMember = Rs2Player.isMember();
-            boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
-            
-            return isWorldAccessible(targetWorld, isPlayerMember, isInSeasonalWorld);
+            ConfigProfile activeProfile = Login.activeProfile;
+            if(!Microbot.isLoggedIn() ){
+                if(activeProfile != null){
+                    boolean isPlayerMember = activeProfile.isMember();
+                    return isWorldAccessible(targetWorld, isPlayerMember, false);
+                }
+                log.warn("Cannot determine world accessibility - not logged in and no active profile");
+                return false;// Cannot determine accessibility if not logged in and no profile
+            }
+            if(Microbot.getClient() != null &&  Microbot.getClient().getLocalPlayer() != null){
+                boolean isPlayerMember = Rs2Player.isMember();    
+                boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
+                return isWorldAccessible(targetWorld, isPlayerMember, isInSeasonalWorld);                
+            }
+            log.warn("Cannot determine world accessibility - client or local player is null");
+            return false;                                    
             
         } catch (Exception e) {
             log.error("Error checking world accessibility for world {}: {}", worldId, e.getMessage());
@@ -106,26 +121,33 @@ public class Rs2WorldUtil {
             world.getTypes().contains(WorldType.LEGACY_ONLY) ||
             world.getTypes().contains(WorldType.EOC_ONLY) ||
             world.getTypes().contains(WorldType.FRESH_START_WORLD)) {
+            log.warn("World {} has restricted type(s): {}", world.getId(), world.getTypes());
             return false;
         }
         
         // Check player count limits
         if (world.getPlayers() >= 2000 || world.getPlayers() < 0) {
+            log.warn("World {} is full or has invalid player count: {}", world.getId(), world.getPlayers());
             return false;
         }
         
         // Check seasonal world compatibility (strict matching as in Login.java)
         if (isInSeasonalWorld != world.getTypes().contains(WorldType.SEASONAL)) {
+            log.warn("World {} seasonal type mismatch (player in seasonal: {}, world seasonal: {})",
+                     world.getId(), isInSeasonalWorld, world.getTypes().contains(WorldType.SEASONAL));
             return false;
         }
         // Ensure the world is not seasonal if player is in not in a seasonal world
         if (!isInSeasonalWorld == world.getTypes().contains(WorldType.SEASONAL)) {
+            log.warn("World {} seasonal type mismatch (player in seasonal: {}, world seasonal: {})",
+                     world.getId(), isInSeasonalWorld, world.getTypes().contains(WorldType.SEASONAL));
             return false;
         }
         
         // Check membership requirements
         boolean isWorldMembers = world.getTypes().contains(WorldType.MEMBERS);
         if (isWorldMembers && !isPlayerMember) {
+            log.warn("World {} is members only but player is not a member", world.getId());
             return false; // Members world but player is not a member
         }
         

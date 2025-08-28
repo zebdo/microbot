@@ -12,11 +12,14 @@ import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import org.slf4j.event.Level;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.util.List;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
+@Slf4j
 public class RitualEvent implements BlockingEvent {
 
     private final AutoWoodcuttingPlugin plugin;
@@ -27,8 +30,15 @@ public class RitualEvent implements BlockingEvent {
 
     @Override
     public boolean validate() {
-        var dryad = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_DRYAD);
-        return dryad != null;
+        try{
+            if (plugin == null || !Microbot.isPluginEnabled(plugin)) return false;
+            if (Microbot.getClient() == null || !Microbot.isLoggedIn()) return false;
+            var dryad = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_DRYAD);
+            return dryad != null;
+        } catch (Exception e) {
+            log.error("RitualEvent: Exception in validate method", e);
+            return false;
+        }
     }
 
     @Override
@@ -53,6 +63,7 @@ public class RitualEvent implements BlockingEvent {
             sleepUntil(() -> Rs2Player.getWorldLocation().equals(targetCircle.getWorldLocation()), 5000);
         }
         Microbot.log("RitualEvent: Finished executing the ritual event.", Level.INFO);
+        plugin.incrementForestryEventCompleted();
         return true;
     }
 

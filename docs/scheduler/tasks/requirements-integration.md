@@ -36,7 +36,7 @@ The integration system uses a registry-based architecture for requirement manage
 
 Requirements are executed through a sophisticated framework that coordinates timing, resource management, and error handling:
 
-**Context-Aware Execution**: Requirements execute within appropriate contexts (PRE_SCHEDULE, POST_SCHEDULE, IMMEDIATE) based on their nature and timing requirements.
+**Context-Aware Execution**: Requirements execute within appropriate contexts (PRE_SCHEDULE, POST_SCHEDULE, BOTH) based on their nature and timing requirements.
 
 **Resource Coordination**: The execution framework coordinates access to shared resources like banking, equipment management, and location positioning.
 
@@ -54,7 +54,7 @@ The system includes a comprehensive ecosystem of requirement types:
 
 **Inventory Requirements**: Handled by [`ItemRequirement`](../../../runelite-client/src/main/java/net/runelite/client/plugins/microbot/pluginscheduler/tasks/requirements/requirement/item/ItemRequirement.java) for complex inventory preparation and item management.
 
-**Location Requirements**: Coordinated through [`LocationRequirement`](../../../runelite-client/src/main/java/net/runelite/client/plugins/microbot/pluginscheduler/tasks/requirements/types/LocationRequirement.java) for precise positioning and area preparation.
+**Location Requirements**: Coordinated through [`LocationRequirement`](../../../runelite-client/src/main/java/net/runelite/client/plugins/microbot/pluginscheduler/tasks/requirements/requirement/location/LocationRequirement.java) for precise positioning and area preparation.
 
 **Game State Requirements**: Various specialized requirements for spellbooks, prayers, and other game state conditions.
 

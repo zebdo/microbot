@@ -11,6 +11,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 import javax.swing.SwingUtilities;
 
@@ -19,6 +21,7 @@ import org.slf4j.event.Level;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.accountselector.AutoLoginPlugin;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerConfig;
@@ -1155,4 +1158,66 @@ public class SchedulerPluginUtil{
         }
     }
     
+    public static void disableAllRunningNonEessentialPlugin() {
+      
+    
+        // Check if client is at login screen
+        List<Plugin> conditionProviders = new ArrayList<>();
+        if (Microbot.getPluginManager() == null || Microbot.getClient() == null) {
+            return;
+
+        } else {
+            // Find all plugins implementing ConditionProvider
+            conditionProviders = Microbot.getPluginManager().getPlugins().stream()
+                    .filter(plugin -> plugin instanceof SchedulablePlugin)
+                    .collect(Collectors.toList());
+            
+            // Filter out essential plugins and disable non-essential enabled plugins
+            List<Plugin> enabledList = conditionProviders.stream()
+                    .filter(plugin -> Microbot.getPluginManager().isPluginEnabled(plugin))
+                    .filter(plugin -> {
+                        PluginDescriptor descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
+                        return descriptor != null && !descriptor.enabledByDefault();
+                    })
+                    .collect(Collectors.toList());
+            
+            // Helper predicate to identify Microbot plugins
+            Predicate<Plugin> isMicrobotPlugin = plugin ->
+                    plugin.getClass().getPackage().getName().toLowerCase().contains("microbot");
+            
+            // Helper predicate to identify external plugins from Microbot Hub
+            Predicate<Plugin> isMicrobotExternalPlugin = plugin -> {
+                PluginDescriptor descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
+                return descriptor != null && descriptor.isExternal() && 
+                        plugin.getClass().getPackage().getName().toLowerCase().contains("microbot");
+            };
+            
+            // Disable all non-essential plugins that are currently enabled, but exclude Microbot-related plugins
+            List<Plugin> allEnabledPlugins = Microbot.getPluginManager().getPlugins().stream()
+                    .filter(plugin -> Microbot.getPluginManager().isPluginEnabled(plugin)
+                        && !plugin.getClass().getName().equals("net.runelite.client.plugins.microbot.pluginscheduler.SchedulerPlugin"))
+                    .collect(Collectors.toList());
+                    
+            for (Plugin plugin : allEnabledPlugins) {
+                PluginDescriptor descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
+                
+                // Skip if it's not a Microbot plugin (internal or external from Microbot Hub)
+                if (!(isMicrobotPlugin.test(plugin) || isMicrobotExternalPlugin.test(plugin))) {                        
+                    continue;
+                }
+                
+                // Only disable non-essential, Microbot
+                if (descriptor != null && !descriptor.enabledByDefault()) {
+                    try {
+                        Microbot.stopPlugin(plugin);
+                        log.debug("Disabled non-essential Microbot plugin: {}", plugin.getName());
+                    } catch (Exception e) {
+                        log.warn("Failed to disable plugin {}: {}", plugin.getName(), e.getMessage());
+                    }
+                }
+            }
+        }
+    }
+        
+
 }

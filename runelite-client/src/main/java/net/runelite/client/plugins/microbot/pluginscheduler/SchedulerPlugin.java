@@ -32,6 +32,8 @@ import javax.swing.Timer;
 
 import org.slf4j.event.Level;
 import java.nio.file.Files;
+
+import com.google.common.util.concurrent.AbstractScheduledService.Scheduler;
 import com.google.inject.Provides;
 
 import lombok.Getter;
@@ -231,66 +233,13 @@ public class SchedulerPlugin extends Plugin {
             return;
         }
         setState(SchedulerState.INITIALIZING);       
-        // Schedule repeated checks until initialized or max checks reached
-        
+        // Schedule repeated checks until initialized or max checks reached        
         Microbot.getClientThread().invokeLater(() -> {
-            // Check if client is at login screen
-            List<Plugin> conditionProviders = new ArrayList<>();
-            if (Microbot.getPluginManager() == null || Microbot.getClient() == null) {
-                return;
-
-            } else {
-                // Find all plugins implementing ConditionProvider
-                conditionProviders = Microbot.getPluginManager().getPlugins().stream()
-                        .filter(plugin -> plugin instanceof SchedulablePlugin)
-                        .collect(Collectors.toList());
-                
-                // Filter out essential plugins and disable non-essential enabled plugins
-                List<Plugin> enabledList = conditionProviders.stream()
-                        .filter(plugin -> Microbot.getPluginManager().isPluginEnabled(plugin))
-                        .filter(plugin -> {
-                            PluginDescriptor descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
-                            return descriptor != null && !descriptor.enabledByDefault();
-                        })
-                        .collect(Collectors.toList());
-                
-                // Helper predicate to identify Microbot plugins
-                Predicate<Plugin> isMicrobotPlugin = plugin ->
-                        plugin.getClass().getPackage().getName().toLowerCase().contains("microbot");
-                
-                // Helper predicate to identify external plugins from Microbot Hub
-                Predicate<Plugin> isMicrobotExternalPlugin = plugin -> {
-                    PluginDescriptor descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
-                    return descriptor != null && descriptor.isExternal() && 
-                           plugin.getClass().getPackage().getName().toLowerCase().contains("microbot");
-                };
-                
-                // Disable all non-essential plugins that are currently enabled, but exclude Microbot-related plugins
-                List<Plugin> allEnabledPlugins = Microbot.getPluginManager().getPlugins().stream()
-                        .filter(plugin -> Microbot.getPluginManager().isPluginEnabled(plugin) 
-                                                && !(plugin.getClass().equals(this.getClass())))
-                        .collect(Collectors.toList());
-                        
-                for (Plugin plugin : allEnabledPlugins) {
-                    PluginDescriptor descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
-                    
-                    // Skip if it's not a Microbot plugin (internal or external from Microbot Hub)
-                    if (!(isMicrobotPlugin.test(plugin) || isMicrobotExternalPlugin.test(plugin))) {                        
-                        continue;
-                    }
-                    
-                    // Only disable non-essential, Microbot, non-schedulable plugins
-                    if (descriptor != null && !descriptor.enabledByDefault() && !(plugin instanceof SchedulablePlugin)) {
-                        try {
-                            Microbot.stopPlugin(plugin);
-                            log.debug("Disabled non-essential Microbot plugin: {}", plugin.getName());
-                        } catch (Exception e) {
-                            log.warn("Failed to disable plugin {}: {}", plugin.getName(), e.getMessage());
-                        }
-                    }
-                }
-            }
-
+            SchedulerPluginUtil.disableAllRunningNonEessentialPlugin();
+            // Find all plugins implementing ConditionProvider
+            List<Plugin> conditionProviders = Microbot.getPluginManager().getPlugins().stream()
+                    .filter(plugin -> plugin instanceof SchedulablePlugin)
+                    .collect(Collectors.toList());
             boolean isAtLoginScreen = Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN;
             boolean isLoggedIn = Microbot.getClient().getGameState() == GameState.LOGGED_IN;
             boolean isAtLoginAuth = Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN_AUTHENTICATOR;
@@ -2086,7 +2035,7 @@ public class SchedulerPlugin extends Plugin {
         
         
         // check that cache system is fully loaded and player profile is ready
-        if (!Rs2CacheManager.isCacheDataVaild()) {
+        if (!Rs2CacheManager.isCacheDataValid()) {
             log.debug("Cache system not yet fully loaded, waiting for profile initialization");
             return false;
         }
@@ -2248,20 +2197,14 @@ public class SchedulerPlugin extends Plugin {
             // user wants to logout and return to automatic break handling
             log.info("manual logout requested - resuming automatic break handling");
             
-            // unlock break handler
-            if (SchedulerPluginUtil.isBreakHandlerEnabled()) {
-                BreakHandlerScript.setLockState(false);
-                log.info("unlocked break handler for automatic break management");
-            }
+            // unlock break handler            
+            BreakHandlerScript.setLockState(false);
+            log.info("unlocked break handler for automatic break management");            
             
             // reset plugin pause event state
             PluginPauseEvent.setPaused(false);
-            
-            // logout if logged in
-            if (isLoggedIn) {
-                startLoginMonitoringThread(false); // logout without canceling break
-            }
-            
+            SchedulerPluginUtil.disableAllRunningNonEessentialPlugin();
+            // logout if logged in but -> the "SCHEDULING" state should determine if we need to logout.
             // return to scheduling state
             setState(SchedulerState.SCHEDULING);
             log.info("returned to automatic scheduling mode");
@@ -2282,12 +2225,9 @@ public class SchedulerPlugin extends Plugin {
             // set manual login active state
             setState(SchedulerState.MANUAL_LOGIN_ACTIVE);
             
-            // lock break handler to prevent automatic breaks
-            if (SchedulerPluginUtil.isBreakHandlerEnabled()) {
-                BreakHandlerScript.setLockState(true);
-                log.info("locked break handler to prevent automatic breaks");
-            }
-            
+            // lock break handler to prevent automatic breaks            
+            BreakHandlerScript.setLockState(true);
+            log.info("locked break handler to prevent automatic breaks");                        
             // pause plugin execution during manual control
             PluginPauseEvent.setPaused(true);
             
@@ -2412,7 +2352,7 @@ public class SchedulerPlugin extends Plugin {
                         if (currentPlugin != null) {
                             currentPlugin.setEnabled(false);
                         }
-                        log.error("Failed to login, stopping plugin: {}", currentPlugin.getName());                        
+                        log.error("Failed to login, stopping plugin: {}", currentPlugin != null ? currentPlugin.getName() : "none");
                         currentPlugin = null;
                         setState(SchedulerState.SCHEDULING);
                     }
@@ -3700,7 +3640,8 @@ public class SchedulerPlugin extends Plugin {
                     // Check if plugin implements SchedulablePlugin and trigger pre-schedule tasks
                     Plugin plugin = currentPlugin.getPlugin();
                     //boolean triggered = currentPlugin.triggerPostScheduleTasks(hasDisabledQoLPlugin) ();
-                    log.warn("Current phase is MAIN_EXECUTION and we are in SOFT_STOPPING_PLUGIN state, but post-schedule tasks can be started: {}");
+                    log.warn("Current phase is MAIN_EXECUTION and we are in SOFT_STOPPING_PLUGIN state, but post-schedule tasks can be started: {}",
+                            currentPluginPrePostScheduleTask.canStartPostScheduleTasks());
                         
                 }
             }

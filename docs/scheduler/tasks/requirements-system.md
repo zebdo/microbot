@@ -100,7 +100,7 @@ The [`TaskContext`](../../../runelite-client/src/main/java/net/runelite/client/p
 
 **POST_SCHEDULE**: Requirements for cleanup and restoration operations after plugin completion.
 
-**IMMEDIATE**: Requirements that must be fulfilled immediately when encountered, for urgent or time-sensitive operations.
+**BOTH**: Requirements that must be fulfilled immediately when encountered, for urgent or time-sensitive operations.
 
 ### Priority Framework
 

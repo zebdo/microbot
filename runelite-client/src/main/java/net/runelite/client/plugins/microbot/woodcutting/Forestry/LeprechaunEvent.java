@@ -14,6 +14,8 @@ import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import org.slf4j.event.Level;
 
+import lombok.extern.slf4j.Slf4j;
+@Slf4j
 public class LeprechaunEvent implements BlockingEvent {
 
     private final AutoWoodcuttingPlugin plugin;
@@ -24,8 +26,15 @@ public class LeprechaunEvent implements BlockingEvent {
 
     @Override
     public boolean validate() {
-        var leprechaun = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_WOODCUTTING_LEPRECHAUN);
-        return leprechaun != null;
+        try{
+            if (plugin == null || !Microbot.isPluginEnabled(plugin)) return false;
+            if (Microbot.getClient() == null || !Microbot.isLoggedIn()) return false;
+            var leprechaun = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_WOODCUTTING_LEPRECHAUN);
+            return leprechaun != null;
+        } catch (Exception e) {
+            log.error("LeprechaunEvent: Exception in validate method", e);
+            return false;
+        }
     }
 
     @Override
@@ -46,6 +55,7 @@ public class LeprechaunEvent implements BlockingEvent {
                 Global.sleepUntil(() -> Rs2Player.getWorldLocation().equals(location), 5000);
             }
         }
+        plugin.incrementForestryEventCompleted();
         return true;
 
         //TODO: Implement interaction with the leprechaun for banking

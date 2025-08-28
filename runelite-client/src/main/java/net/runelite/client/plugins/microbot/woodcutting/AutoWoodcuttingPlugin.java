@@ -23,6 +23,7 @@ import javax.inject.Inject;
 import java.awt.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Pattern;
 
 @PluginDescriptor(
@@ -58,6 +59,9 @@ public class AutoWoodcuttingPlugin extends Plugin {
     public ForestryEvents currentForestryEvent = ForestryEvents.NONE;
     public final GameObject[] saplingOrder = new GameObject[3];
     public final List<GameObject> saplingIngredients = new ArrayList<>(5);
+    
+    // thread-safe counter for completed forestry events
+    private final AtomicInteger completedForestryEvents = new AtomicInteger(0);
 
     private static final Pattern WOOD_CUT_PATTERN = Pattern.compile("You get (?:some|an)[\\w ]+(?:logs?|mushrooms)\\.");
 
@@ -81,6 +85,7 @@ public class AutoWoodcuttingPlugin extends Plugin {
         this.removeEvents();
         ritualCircles.clear();
         currentForestryEvent = ForestryEvents.NONE;
+        completedForestryEvents.set(0);
         overlayManager.remove(woodcuttingOverlay);
     }
 
@@ -395,5 +400,13 @@ public class AutoWoodcuttingPlugin extends Plugin {
                 }
                 break;
         }
+    }
+    
+    public void incrementForestryEventCompleted() {
+        completedForestryEvents.incrementAndGet();
+    }
+    
+    public int getCompletedForestryEventCount() {
+        return completedForestryEvents.get();
     }
 }

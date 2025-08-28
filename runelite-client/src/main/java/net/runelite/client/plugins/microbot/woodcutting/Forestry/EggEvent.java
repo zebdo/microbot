@@ -18,8 +18,10 @@ import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import java.util.Comparator;
 import java.util.stream.Collectors;
 
-import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
+import lombok.extern.slf4j.Slf4j;
 
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
+@Slf4j
 public class EggEvent implements BlockingEvent {
 
     private final AutoWoodcuttingPlugin plugin;
@@ -29,8 +31,15 @@ public class EggEvent implements BlockingEvent {
 
     @Override
     public boolean validate() {
-        var forester = Rs2NpcCache.getClosestNpcByGameId(NpcID.GATHERING_EVENT_PHEASANT_FORESTER);
-        return forester.isPresent();
+        try{
+            if (plugin == null || !Microbot.isPluginEnabled(plugin)) return false;
+            if (Microbot.getClient() == null || !Microbot.isLoggedIn()) return false;
+            var forester = Rs2NpcCache.getClosestNpcByGameId(NpcID.GATHERING_EVENT_PHEASANT_FORESTER);
+            return forester.isPresent();
+        } catch (Exception e) {
+            log.error("EggEvent: Exception in validate method", e);
+            return false;
+        }
     }
 
     @Override
@@ -40,7 +49,7 @@ public class EggEvent implements BlockingEvent {
         var forester = Rs2NpcCache.getClosestNpcByGameId(NpcID.GATHERING_EVENT_PHEASANT_FORESTER);
         if (forester.isEmpty()) {
             Microbot.log("EggEvent: Forester not found, cannot proceed with egg event.");
-            return false; // If the forester is not found, we cannot proceed with the event
+            return true; // If the forester is not found, we cannot proceed with the event
         }
 
         plugin.currentForestryEvent = ForestryEvents.PHEASANT;
@@ -95,6 +104,7 @@ public class EggEvent implements BlockingEvent {
             Rs2Player.waitForAnimation();
         }
         Microbot.log("EggEvent: Ending Egg event.");
+        plugin.incrementForestryEventCompleted();
         return true;
     }
 

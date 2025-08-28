@@ -34,6 +34,7 @@ public class BreakHandlerOverlay extends OverlayPanel {
     @Override
     public Dimension render(Graphics2D graphics) {
         try {
+            panelComponent.getChildren().clear();
             panelComponent.setPreferredSize(new Dimension(180, 280));
             panelComponent.getChildren().add(TitleComponent.builder()
                     .text("BreakHandler V" + BreakHandlerScript.version)
