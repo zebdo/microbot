@@ -223,7 +223,9 @@ public class HerbrunScript extends Script {
                 if (seedInInventory != null) {
                     Rs2Inventory.use(seedInInventory.getItemId());
                     Rs2GameObject.interact(obj, "Plant");
-                    sleepUntil(() -> getHerbPatchState(obj).equals("Growing"));
+                    sleepUntil(() -> getHerbPatchState(obj).equals("Growing"), 10000);
+                } else {
+                    log("No herb seeds found in inventory for planting");
                 }
                 return false;
             case "Harvestable":
