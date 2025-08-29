@@ -1,37 +1,12 @@
 package net.runelite.client.plugins.microbot;
 
 import com.google.inject.Injector;
-import java.awt.Rectangle;
-import java.io.BufferedWriter;
-import java.io.File;
-import java.io.FileWriter;
-import java.io.IOException;
-import java.lang.reflect.Field;
-import java.time.Duration;
-import java.time.Instant;
-import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Objects;
-import java.util.Scanner;
-import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.swing.JDialog;
-import javax.swing.JOptionPane;
-import javax.swing.SwingUtilities;
-import javax.swing.Timer;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.annotations.Component;
 import net.runelite.api.annotations.Varbit;
@@ -63,11 +38,8 @@ import net.runelite.client.plugins.loottracker.LootTrackerRecord;
 import net.runelite.client.plugins.microbot.configs.SpecialAttackConfigs;
 import net.runelite.client.plugins.microbot.dashboard.PluginRequestModel;
 import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchScript;
-import static net.runelite.client.plugins.microbot.util.Global.sleep;
-import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
-import static net.runelite.client.plugins.microbot.util.Global.sleepUntilNotNull;
-import net.runelite.client.plugins.microbot.util.cache.Rs2VarbitCache;
 import net.runelite.client.plugins.microbot.util.cache.Rs2VarPlayerCache;
+import net.runelite.client.plugins.microbot.util.cache.Rs2VarbitCache;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -83,6 +55,29 @@ import net.runelite.client.ui.overlay.worldmap.WorldMapPointManager;
 import net.runelite.client.util.WorldUtil;
 import net.runelite.http.api.worlds.World;
 import org.slf4j.event.Level;
+
+import javax.inject.Inject;
+import javax.swing.Timer;
+import javax.swing.*;
+import java.awt.*;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.lang.reflect.Field;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.List;
+import java.util.*;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.stream.Collectors;
+
+import static net.runelite.client.plugins.microbot.util.Global.*;
 @Slf4j
 @NoArgsConstructor
 public class Microbot {
@@ -251,6 +246,21 @@ public class Microbot {
 	public static StructComposition getStructComposition(int structId)
 	{
 		return getClientThread().runOnClientThreadOptional(() -> getClient().getStructComposition(structId)).orElse(null);
+	}
+
+	public static List<Integer> getDBTableRows(int table)
+	{
+		return getClientThread().runOnClientThreadOptional(() -> getClient().getDBTableRows(table)).orElse(new ArrayList<>());
+	}
+
+	public static Object[] getDBTableField(int rowID, int column, int tupleIndex)
+	{
+		return getClientThread().runOnClientThreadOptional(() -> getClient().getDBTableField(rowID, column, tupleIndex)).orElse(new Object[]{});
+	}
+
+	public static List<Integer> getDBRowsByValue(int table, int column, int tupleIndex, Object value)
+	{
+		return getClientThread().runOnClientThreadOptional(() -> getClient().getDBRowsByValue(table, column, tupleIndex, value)).orElse(new ArrayList<>());
 	}
 
 	public static void setIsGainingExp(boolean value)

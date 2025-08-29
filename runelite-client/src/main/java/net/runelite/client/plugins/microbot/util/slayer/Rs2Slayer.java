@@ -1,7 +1,7 @@
 package net.runelite.client.plugins.microbot.util.slayer;
 
-import net.runelite.api.EnumID;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.DBTableID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -65,8 +65,42 @@ public class Rs2Slayer {
         if (taskId == 0) {
             return null;
         }
-        return Microbot.getEnum(693)
-                .getStringValue(taskId);
+
+        int taskDBRow;
+        if (taskId == 98 /* Bosses, from [proc,helper_slayer_current_assignment] */)
+        {
+            var bossRows = Microbot.getDBRowsByValue(
+                    DBTableID.SlayerTaskSublist.ID,
+                    DBTableID.SlayerTaskSublist.COL_SUBTABLE_ID,
+                    0,
+                    taskId);
+
+            if (bossRows.isEmpty())
+            {
+                return null;
+            }
+            taskDBRow = (Integer) Microbot.getDBTableField(
+                    bossRows.get(0),
+                    DBTableID.SlayerTaskSublist.COL_TASK, 0)[0];
+        }
+        else
+        {
+            var taskRows = Microbot.getDBRowsByValue(
+                    DBTableID.SlayerTask.ID,
+                    DBTableID.SlayerTask.COL_ID,
+                    0,
+                    taskId);
+            if (taskRows.isEmpty())
+            {
+                return null;
+            }
+            taskDBRow = taskRows.get(0);
+        }
+
+        return (String) Microbot.getDBTableField(
+                taskDBRow,
+                DBTableID.SlayerTask.COL_NAME_UPPERCASE,
+                0)[0];
     }
 
     /**
