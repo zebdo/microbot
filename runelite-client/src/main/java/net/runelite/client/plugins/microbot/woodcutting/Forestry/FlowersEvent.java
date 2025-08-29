@@ -6,6 +6,7 @@ import net.runelite.client.plugins.microbot.BlockingEventPriority;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 
@@ -40,6 +41,13 @@ public class FlowersEvent implements BlockingEvent {
     @Override
     public boolean execute() {
         plugin.currentForestryEvent = ForestryEvents.FLOWERING_TREE;
+        Rs2Walker.setTarget(null); // stop walking, stop moving to bank for example
+        
+        // ensure inventory space for strange pollen and fruits/seeds
+        if (!plugin.ensureInventorySpace(3)) {
+            log.warn("Cannot make enough inventory space for flowering tree rewards, ending event.");
+            return true;
+        }
         
         while (this.validate()) {
             var flowers = Rs2Npc.getNpcs(npc -> 

@@ -167,6 +167,14 @@ public abstract class LocationCondition implements Condition {
         if (points == null || points.length == 0) {
             throw new IllegalArgumentException("At least one point must be provided");
         }
+        if (distance < 0) {
+            throw new IllegalArgumentException("Distance must be >= 0");
+        }
+        for (int i = 0; i < points.length; i++) {
+            if (points[i] == null) {
+                throw new IllegalArgumentException("points[" + i + "] must not be null");
+            }
+        }
         if (points.length == 1) {
              return new PositionCondition(name, points[0], distance);
          } else {

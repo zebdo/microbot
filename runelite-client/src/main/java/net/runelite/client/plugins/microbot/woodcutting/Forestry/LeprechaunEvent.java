@@ -6,13 +6,20 @@ import net.runelite.client.plugins.microbot.BlockingEvent;
 import net.runelite.client.plugins.microbot.BlockingEventPriority;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.Global;
+import net.runelite.client.plugins.microbot.util.cache.Rs2NpcCache;
 import net.runelite.client.plugins.microbot.util.cache.Rs2ObjectCache;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
+
+import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
+
+import java.util.Optional;
+
 import org.slf4j.event.Level;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 
 import lombok.extern.slf4j.Slf4j;
 @Slf4j
@@ -29,8 +36,8 @@ public class LeprechaunEvent implements BlockingEvent {
         try{
             if (plugin == null || !Microbot.isPluginEnabled(plugin)) return false;
             if (Microbot.getClient() == null || !Microbot.isLoggedIn()) return false;
-            var leprechaun = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_WOODCUTTING_LEPRECHAUN);
-            return leprechaun != null;
+            Optional<Rs2NpcModel> leprechaun =  Rs2NpcCache.getClosestNpcByGameId(NpcID.GATHERING_EVENT_WOODCUTTING_LEPRECHAUN);
+            return leprechaun.isPresent();
         } catch (Exception e) {
             log.error("LeprechaunEvent: Exception in validate method", e);
             return false;
@@ -41,10 +48,13 @@ public class LeprechaunEvent implements BlockingEvent {
     public boolean execute() {
         Microbot.log("LeprechaunEvent: Executing Leprechaun event");
         plugin.currentForestryEvent = ForestryEvents.RAINBOW;
-
+        Rs2Walker.setTarget(null); // stop walking, stop moving to bank for example
         while (this.validate()) {
+            log.info("LeprechaunEvent: Leprechaun event still valid, continuing execution get opbject");
             var endOfRainbow = Rs2ObjectCache.getClosestObjectById(ObjectID.GATHERING_EVENT_WOODCUTTING_LEPRECHAUN_RAINBOW);
-            if (endOfRainbow.isEmpty()) {
+            if (!endOfRainbow.isPresent() || endOfRainbow.isEmpty()) {
+                log.warn("LeprechaunEvent: End of the rainbow not found, retrying...");
+                sleepGaussian(900, 300);
                 continue; // If the end of the rainbow is not found, we cannot proceed with the event
             }
             // Move to the end of the rainbow

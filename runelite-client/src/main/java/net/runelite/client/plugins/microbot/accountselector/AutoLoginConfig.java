@@ -5,8 +5,8 @@ import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
-import net.runelite.client.plugins.microbot.breakhandler.WorldSelectionMode;
-import net.runelite.client.plugins.microbot.breakhandler.RegionPreference;
+import net.runelite.client.plugins.microbot.util.world.RegionPreference;
+import net.runelite.client.plugins.microbot.util.world.WorldSelectionMode;
 
 @ConfigGroup("AutoLoginConfig")
 public interface AutoLoginConfig extends Config {

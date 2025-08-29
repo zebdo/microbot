@@ -8,6 +8,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingScript;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
@@ -85,7 +86,14 @@ public class StrugglingSaplingEvent implements BlockingEvent {
             Set<Integer> triedFirstIngredients = new HashSet<>();
             Set<Integer> triedSecondIngredients = new HashSet<>();
             Set<Integer> triedThirdIngredients = new HashSet<>();
-
+            Rs2Walker.setTarget(null); // stop walking, stop moving to bank for example
+            
+            // ensure inventory space for mulch items and reward (up to 25 items)
+            if (!plugin.ensureInventorySpace(5)) {
+                Microbot.log("StrugglingSaplingEvent: Cannot make enough inventory space, ending event.");
+                return true;
+            }
+            
             while (this.validate()) {
                 // If we have mulch stage 3 in inventory, add them to the sapling
                 if (Rs2Inventory.contains(ItemID.GATHERING_EVENT_SAPLING_MULCH_STAGE3)) {
@@ -150,7 +158,7 @@ public class StrugglingSaplingEvent implements BlockingEvent {
         }
         catch (Exception e) {
             Microbot.log("StrugglingSaplingEvent: Error during execution: " + e.getMessage() + Arrays.toString(e.getStackTrace()));
-            return false;
+            return this.validate();
         }
     }
 

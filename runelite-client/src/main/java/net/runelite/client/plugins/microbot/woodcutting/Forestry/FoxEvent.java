@@ -7,6 +7,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.birdhouseruns.enums.Log;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import org.slf4j.event.Level;
@@ -39,6 +40,14 @@ public class FoxEvent implements BlockingEvent {
     public boolean execute() {
         Microbot.log("FoxEvent: Executing Fox event");
         plugin.currentForestryEvent = ForestryEvents.FOX_TRAP;
+        Rs2Walker.setTarget(null); // stop walking
+        
+        // ensure inventory space for potential fox whistle (1/30 chance)
+        if (!plugin.ensureInventorySpace(1)) {
+            Microbot.log("FoxEvent: Cannot make inventory space for potential rewards, ending event.");
+            return true;
+        }
+        
         while (this.validate()) {
             var trap = Rs2Npc.getNpc(NpcID.GATHERING_EVENT_POACHERS_TRAP);
             if (trap == null) {

@@ -5,6 +5,7 @@ import net.runelite.api.GameState;
 import net.runelite.client.config.ConfigProfile;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.world.Rs2WorldUtil;
@@ -215,25 +216,26 @@ public class AutoLoginScript extends Script {
             
             // check for preferred world first
             if (config.usePreferredWorld()) {
-                boolean isAccessible = Rs2WorldUtil.canAccessWorld(config.world());
-                        
-                if (isAccessible) {
-                    targetWorld = config.world();
-                    log.info("Using preferred world: {}", targetWorld);
-                } else {
-                    ConfigProfile activeProfile = Login.activeProfile;
-                    boolean isMemberFromProfile = activeProfile != null && activeProfile.isMember();
-                    boolean isLocalPlayerAvailable = Microbot.getClient()!=null && Microbot.getClient().getLocalPlayer() != null;
-                    boolean isMemberFromClient = Microbot.getClient()!=null && Microbot.getClient().getLocalPlayer() != null ? Rs2Player.isMember() : false;
-                    log.error("Preferred world {} is not accessible,\n\t ->check if we have member access set in profile(current value {}), or when logged in, have we member access ? (LocalPlayer? {}, isMember? {})", 
-                    config.usePreferredWorld(), isMemberFromProfile, isLocalPlayerAvailable, isMemberFromClient);                        
-                }
+              
             }
             
             // use world selection mode if no preferred world or preferred world not accessible
             if (targetWorld == -1) {
                 switch (config.worldSelectionMode()) {
-                    case CURRENT_WORLD:
+                    case CURRENT_PREFERRED_WORLD:
+                        boolean isAccessible = Rs2WorldUtil.canAccessWorld(config.world());
+                        
+                        if (isAccessible) {
+                            targetWorld = config.world();
+                            log.info("Using preferred world: {}", targetWorld);
+                        } else {
+                            ConfigProfile activeProfile = Login.activeProfile;
+                            boolean isMemberFromProfile = activeProfile != null && activeProfile.isMember();
+                            boolean isLocalPlayerAvailable = Microbot.getClient()!=null && Microbot.getClient().getLocalPlayer() != null;
+                            boolean isMemberFromClient = Microbot.getClient()!=null && Microbot.getClient().getLocalPlayer() != null ? Rs2Player.isMember() : false;
+                            log.error("Preferred world {} is not accessible,\n\t ->check if we have member access set in profile(current value {}), or when logged in, have we member access ? (LocalPlayer? {}, isMember? {})", 
+                            config.usePreferredWorld(), isMemberFromProfile, isLocalPlayerAvailable, isMemberFromClient);                        
+                        }
                         // no specific world selection - use default login
                         break;
                         

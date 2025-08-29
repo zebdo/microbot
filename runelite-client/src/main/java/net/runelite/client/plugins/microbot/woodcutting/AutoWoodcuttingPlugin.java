@@ -15,9 +15,15 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
+import net.runelite.client.plugins.microbot.util.inventory.InteractOrder;
 import net.runelite.client.plugins.microbot.woodcutting.Forestry.*;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 import net.runelite.client.ui.overlay.OverlayManager;
+
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 import javax.inject.Inject;
 import java.awt.*;
@@ -55,7 +61,7 @@ public class AutoWoodcuttingPlugin extends Plugin {
     private StrugglingSaplingEvent saplingEvent;
 
     // Forestry event variables
-    public final List<NPC> ritualCircles = new ArrayList<>();
+    public final List<Rs2NpcModel> ritualCircles = new ArrayList<>();
     public ForestryEvents currentForestryEvent = ForestryEvents.NONE;
     public final GameObject[] saplingOrder = new GameObject[3];
     public final List<GameObject> saplingIngredients = new ArrayList<>(5);
@@ -134,7 +140,7 @@ public class AutoWoodcuttingPlugin extends Plugin {
         NPC npc = event.getNpc();
         int id = npc.getId();
         if (id >= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_A_1 && id <= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_D_4) {
-            this.ritualCircles.add(npc);
+            this.ritualCircles.add(new Rs2NpcModel(npc));
         }
     }
 
@@ -143,7 +149,7 @@ public class AutoWoodcuttingPlugin extends Plugin {
         NPC npc = event.getNpc();
         int id = npc.getId();
         if (id >= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_A_1 && id <= NpcID.GATHERING_EVENT_ENCHANTED_RITUAL_D_4) {
-            this.ritualCircles.remove(npc);
+            this.ritualCircles.removeIf(n -> n.getIndex() == npc.getIndex());
         }
     }
 
@@ -408,5 +414,40 @@ public class AutoWoodcuttingPlugin extends Plugin {
     
     public int getCompletedForestryEventCount() {
         return completedForestryEvents.get();
+    }
+    
+    /**
+     * Ensures inventory has space for forestry event rewards by dropping logs if needed
+     * @param requiredSlots minimum number of free slots needed
+     * @return true if enough space was made available
+     */
+    public boolean ensureInventorySpace(int requiredSlots) {
+        int currentFreeSlots = 28 - Rs2Inventory.count();
+        if (currentFreeSlots >= requiredSlots) {
+            return true;
+        }
+        
+        String logName = config.TREE().getLog();
+        int slotsNeeded = requiredSlots - currentFreeSlots;
+        int logsToDelete = Math.min(slotsNeeded, Rs2Inventory.count(logName));
+        
+        if (logsToDelete <= 0) {
+            log.warn("Cannot make inventory space - no logs to drop");
+            return false;
+        }
+        
+        log.info("Making space for forestry rewards: dropping {} logs", logsToDelete);
+        
+        int actualDropped = Rs2Inventory.dropAmount(logName, logsToDelete, InteractOrder.EFFICIENT_ROW);
+        
+        sleepUntil(() -> (28 - Rs2Inventory.count()) >= requiredSlots, 2000);
+        
+        boolean success = (28 - Rs2Inventory.count()) >= requiredSlots;
+        if (!success) {
+            log.warn("Failed to create enough inventory space: dropped {} logs but still need {} slots", 
+                actualDropped, requiredSlots);
+        }
+        
+        return success;
     }
 }

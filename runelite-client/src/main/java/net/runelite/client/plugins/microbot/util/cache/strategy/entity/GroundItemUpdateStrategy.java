@@ -66,13 +66,13 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
             return; // Don't process events if a scan is already active
         }
         // Submit event handling to executor service for non-blocking processing
-        executorService.submit(() -> {
-            try {
+        //executorService.submit(() -> {
+          //  try {
                 processEventInternal(event, cache);
-            } catch (Exception e) {
-                log.error("Error processing event: {}", event.getClass().getSimpleName(), e);
-            }
-        });
+            //} catch (Exception e) {
+              //  log.error("Error processing event: {}", event.getClass().getSimpleName(), e);
+            //}
+        //});
     }
     
     /**
@@ -314,8 +314,7 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
     
     private void handleItemDespawned(ItemDespawned event, CacheOperations<String, Rs2GroundItemModel> cache) {
         TileItem item = event.getItem();
-        Rs2GroundItemModel groundItem = new Rs2GroundItemModel(item, event.getTile());
-        log.debug(groundItem.toDetailedString());
+        //Rs2GroundItemModel groundItem = new Rs2GroundItemModel(item, event.getTile());        
         if (item != null) {
             String key = generateKey(item, event.getTile().getWorldLocation());
             cache.remove(key);

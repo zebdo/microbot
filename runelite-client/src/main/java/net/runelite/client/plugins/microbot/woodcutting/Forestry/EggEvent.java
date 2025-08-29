@@ -11,6 +11,7 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
@@ -64,7 +65,7 @@ public class EggEvent implements BlockingEvent {
                 sleepUntil(() -> !Rs2Inventory.isFull(), 5000);
             }
         }
-
+        Rs2Walker.setTarget(null); // stop walking, stop moving to bank for example
         while (this.validate()) {
 
             // If we have an egg, interact with the forester

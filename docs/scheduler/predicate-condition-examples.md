@@ -72,14 +72,14 @@ public class MicroAgilityPlugin extends Plugin implements SchedulablePlugin {
             
             boolean playerPlayerIsNotInCourse = ((Microbot.getClient().getLocalPlayer()!=null && !Rs2Player.isInteracting()) && index == 0 && (AgilityPlugin.getMarksOfGrace() == null || AgilityPlugin.getMarksOfGrace().isEmpty()));
             // Return true if player is NOT in a course (condition to stop is satisfied)
-            return playerRegionId;
+            return playerPlayerIsNotInCourse;
         };
         
         // Create the predicate condition
         notInCourseCondition = new PredicateCondition<>(
                 "Player is currently in an agility course",
                 true, // with break handler lock, so during the predicate is true we cane take a break
-                notInAgilityRegion,
+                notInAgilityCourse,
                 () -> Rs2Player.getLocalPlayer(), // provider
                 "Player is not in an agility course region"
         );

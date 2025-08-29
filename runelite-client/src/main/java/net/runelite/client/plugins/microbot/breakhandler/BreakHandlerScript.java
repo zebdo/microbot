@@ -477,58 +477,71 @@ public class BreakHandlerScript extends Script {
         
         log.info("Attempting intelligent login with world selection");
         try {
-            boolean loginSuccess = false;            
-                                   
-            // use world selection mode if no preferred world or preferred world not accessible
+            int targetWorld = -1;                       
+            // use world selection mode if no last world or last world not accessible
             
             switch (config.worldSelectionMode()) {
-                case CURRENT_WORLD:
-                    // use default login to stay in current world                                                   
+                case CURRENT_PREFERRED_WORLD:
+                    if (preBreakWorld != -1) {
+                        boolean isAccessible = Rs2WorldUtil.canAccessWorld(preBreakWorld);
+                        if (isAccessible) {
+                            targetWorld = preBreakWorld;
+                            log.info("Using last world before break: {}", targetWorld);
+                        } else {
+                            log.warn("Last world {} is not accessible, falling back to world selection mode", preBreakWorld);
+                        }
+                    }
+        
+                    // no specific world selection - use default login
                     break;
                     
                 case RANDOM_WORLD:
-                    loginSuccess = Rs2WorldUtil
-                            .performLogin(true, config.regionPreference().getWorldRegion(), 
-                                        config.avoidEmptyWorlds(), config.avoidOvercrowdedWorlds());
+                    targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+                        config.regionPreference().getWorldRegion(),
+                        config.avoidEmptyWorlds(),
+                        config.avoidOvercrowdedWorlds());
                     break;
                     
                 case BEST_POPULATION:
-                    loginSuccess = Rs2WorldUtil
-                            .performLogin(false, config.regionPreference().getWorldRegion(), 
-                                        config.avoidEmptyWorlds(), config.avoidOvercrowdedWorlds());
+                    targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
+                        false,
+                        config.regionPreference().getWorldRegion(),
+                        config.avoidEmptyWorlds(),
+                        config.avoidOvercrowdedWorlds());
                     break;
                     
                 case BEST_PING:
-                    // get best ping world
-                    int targetWorld = Rs2WorldUtil
-                            .getBestAccessibleWorldForLogin(true, config.regionPreference().getWorldRegion(), 
-                                                          config.avoidEmptyWorlds(), config.avoidOvercrowdedWorlds());
-                    if (targetWorld != -1) {
-                        new Login(targetWorld);
-                    }
+                    targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
+                        true,
+                        config.regionPreference().getWorldRegion(),
+                        config.avoidEmptyWorlds(),
+                        config.avoidOvercrowdedWorlds());
                     break;
                     
                 case REGIONAL_RANDOM:
-                    loginSuccess = Rs2WorldUtil
-                            .performLogin(true, config.regionPreference().getWorldRegion(), 
-                                        config.avoidEmptyWorlds(), config.avoidOvercrowdedWorlds());
+                    targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+                        config.regionPreference().getWorldRegion(),
+                        config.avoidEmptyWorlds(),
+                        config.avoidOvercrowdedWorlds());
                     break;
                     
-                default:                    
+                default:
+                    // fallback to current world
                     break;
-            }            
+                }
+        
             
-            // login WHEN NO specific world if determined // use default login to stay in current world
-            if (!loginSuccess) {
+            // perform login attempt
+            if (targetWorld != -1) {
+                log.info("Attempting login to selected world: {}", targetWorld);
+                new Login(targetWorld);
+            } else {
+                log.info("Using default login (current world or last used)");
                 new Login();
-                
             }
-            loginSuccess = Microbot.isLoggedIn();
-            
-          
             
         } catch (Exception ex) {
-            log.error("Error initiating login", ex);          
+            log.error("Error initiating login", ex);
         }
     }
 

@@ -6,6 +6,8 @@ import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
 import net.runelite.client.plugins.microbot.util.antiban.enums.PlaySchedule;
+import net.runelite.client.plugins.microbot.util.world.RegionPreference;
+import net.runelite.client.plugins.microbot.util.world.WorldSelectionMode;
 
 @ConfigGroup(BreakHandlerConfig.configGroup)
 public interface BreakHandlerConfig extends Config {
@@ -129,20 +131,9 @@ public interface BreakHandlerConfig extends Config {
             section = breakBehaviorOptions
     )
     default WorldSelectionMode worldSelectionMode() {
-        return WorldSelectionMode.CURRENT_WORLD;
+        return WorldSelectionMode.CURRENT_PREFERRED_WORLD;
     }
-    
-    @ConfigItem(
-            keyName = "lastWorld",
-            name = "Login to Last world",
-            description = "Login to the last world used prior to the break (if available).",
-            position = 3,
-            section = breakBehaviorOptions
-    )
-    default boolean lastWorld() {
-        return true;
-    }
-    
+        
     @ConfigItem(
             keyName = "regionPreference",
             name = "Region preference",

@@ -7,6 +7,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 
@@ -40,6 +41,14 @@ public class EntlingsEvent implements BlockingEvent {
     public boolean execute() {
         Microbot.log("EntlingsEvent: Starting Entlings event execution");
         plugin.currentForestryEvent = ForestryEvents.ENTLING;
+        Rs2Walker.setTarget(null); // stop walking, stop moving to bank for example
+        
+        // ensure inventory space for tree leaves and potential egg nest (20% chance)
+        if (!plugin.ensureInventorySpace(2)) {
+            Microbot.log("EntlingsEvent: Cannot make enough inventory space, ending event.");
+            return true;
+        }
+        
         while (this.validate()) {
             var entlings = Rs2Npc.getNpcs(npc -> npc.getId() == NpcID.GATHERING_EVENT_ENTLINGS_NPC_01)
             .sorted(Comparator.comparingInt(e ->

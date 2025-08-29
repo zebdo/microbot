@@ -10,6 +10,7 @@ import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.skills.woodcutting.Rs2Woodcutting;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.woodcutting.AutoWoodcuttingPlugin;
 import net.runelite.client.plugins.microbot.woodcutting.enums.ForestryEvents;
 
@@ -52,6 +53,7 @@ public class RootEvent implements BlockingEvent {
     public boolean execute() {
         Microbot.log("RootEvent: Executing Root event");
         plugin.currentForestryEvent = ForestryEvents.TREE_ROOT;
+        Rs2Walker.setTarget(null); // stop walking, stop moving to bank for example
         while (this.validate()) {
             var root = Rs2ObjectCache.getClosestObjectById(ObjectID.GATHERING_EVENT_RISING_ROOTS).orElse(null);
             var specialRoot = Rs2ObjectCache.getClosestObjectById(ObjectID.GATHERING_EVENT_RISING_ROOTS_SPECIAL).orElse(null);

@@ -23,8 +23,6 @@ import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
 import com.google.common.eventbus.Subscribe;
-
-import io.reactivex.rxjava3.annotations.NonNull;
 import net.runelite.client.config.ConfigDescriptor;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
