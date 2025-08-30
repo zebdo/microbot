@@ -29,7 +29,7 @@ The integrated Quest Helper works together with other plugins to give a nice uni
 If you have the [Not Enough Runes](https://runelite.net/plugin-hub/show/not-enough-runes) plugin installed, you can
 right-click item requirements and click `Go to NER...` to look that item up in Not Enough Runes.
 
-![](./images/not-enough-runes-01.png)
+![Not Enough Runes context menu](./images/not-enough-runes-01.png)
 
 ### Shortest Path
 
