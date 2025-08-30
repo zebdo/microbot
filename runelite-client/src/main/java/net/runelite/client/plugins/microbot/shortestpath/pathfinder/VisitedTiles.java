@@ -34,6 +34,7 @@ public class VisitedTiles {
 
     public boolean get(int x, int y, int plane) {
         final int regionIndex = getRegionIndex(x / REGION_SIZE, y / REGION_SIZE);
+        //If we use a 'magic' worldPoint for PoH when we don't know PoH tiles (-1,-1, 0) it will return visited true here
         if (regionIndex < 0 || regionIndex >= visitedRegions.length) {
             return true; // Region is out of bounds; report that it's been visited to avoid exploring it further
         }

@@ -111,15 +111,25 @@ public class CollisionMap {
         // Transports are pre-filtered by PathfinderConfig.refreshTransports
         // Thus any transports in the list are guaranteed to be valid per the user's settings
         for (Transport transport : transports) {
+            System.out.println("Found transport from=" + transport.getOrigin() + " -> " + transport.getDestination() + " travelTime=" + transport.getDuration() + " name=" + transport.getDisplayInfo());
             //START microbot variables
-            if (visited.get(transport.getDestination())) continue;
-
-            if (TransportType.isTeleport(transport.getType())) {
-                if (config.isIgnoreTeleportAndItems()) continue;
-                neighbors.add(new TransportNode(transport.getDestination(), node, config.getDistanceBeforeUsingTeleport() + transport.getDuration()));
-            } else {
-                neighbors.add(new TransportNode(transport.getDestination(), node, transport.getDuration()));
+            if (visited.get(transport.getDestination())) {
+                System.out.println("Ignoring since we've already visited");
+                continue;
             }
+
+            Node transportNode;
+            if (TransportType.isTeleport(transport.getType())) {
+                if (config.isIgnoreTeleportAndItems()) {
+                    System.out.println("Ignoring teleport and items from=" + transport.getOrigin() + " -> " + transport.getDestination() + " travelTime=" + transport.getDuration() + " name=" + transport.getDisplayInfo());
+                    continue;
+                }
+                transportNode = new TransportNode(transport.getDestination(), node, config.getDistanceBeforeUsingTeleport() + transport.getDuration());
+            } else {
+                transportNode = new TransportNode(transport.getDestination(), node, transport.getDuration());
+            }
+            System.out.println("Adding transport node from=" + transport.getOrigin() + " -> " + transport.getDestination() + " travelTime=" + transportNode.cost + " name=" + transport.getDisplayInfo());
+            neighbors.add(transportNode);
             //END microbot variables
         }
 

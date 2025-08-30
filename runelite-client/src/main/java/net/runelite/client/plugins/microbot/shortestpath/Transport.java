@@ -107,7 +107,7 @@ public class Transport {
      */
     @Getter
     private final Set<TransportVarPlayer> varplayers = new HashSet<>();
-    
+
     @Getter
     private String currencyName = "";
     @Getter
@@ -159,7 +159,7 @@ public class Transport {
 
         this.varplayers.addAll(origin.varplayers);
         this.varplayers.addAll(destination.varplayers);
-        
+
         //START microbot variables
         this.name = origin.getName();
         this.objectId = origin.getObjectId();
@@ -215,7 +215,7 @@ public class Transport {
                 System.out.println("Skipped invalid value: " + value);
             }
         }
-        
+
         if ((value = fieldMap.get("Currency")) != null) {
             // Split the string by space
             String[] parts = value.split(DELIM);
@@ -288,7 +288,7 @@ public class Transport {
         if ((value = fieldMap.get("Wilderness level")) != null && !value.trim().isEmpty()) {
             this.maxWildernessLevel = Integer.parseInt(value);
         }
-        
+
         if ((value = fieldMap.get("isMembers")) != null && !value.trim().isEmpty()) {
             this.isMembers = "Y".equals(value.trim()) || "yes".equals(value.trim().toLowerCase());
         }
@@ -358,6 +358,29 @@ public class Transport {
                 (getRequiredLevel(Skill.RANGED) > 1 || getRequiredLevel(Skill.STRENGTH) > 1)) {
             this.type = TransportType.GRAPPLE_SHORTCUT;
         }
+    }
+
+    public Transport(String displayInfo, WorldPoint origin, WorldPoint destination, TransportType type, int duration, boolean isMembers) {
+        this.origin = origin;
+        this.destination = destination;
+        this.type = type;
+        this.duration = duration;
+        this.displayInfo = displayInfo;
+        this.isConsumable = false;
+        this.isMembers = isMembers;
+        this.maxWildernessLevel = 20;
+    }
+
+    // Origin null means they will be considered as teleport from the pathfinder's start position
+    public Transport(String displayInfo, WorldPoint destination, TransportType type, int duration, boolean isMembers) {
+        this.origin = null;
+        this.destination = destination;
+        this.type = type;
+        this.duration = duration;
+        this.displayInfo = displayInfo;
+        this.isConsumable = false;
+        this.isMembers = isMembers;
+        this.maxWildernessLevel = 20;
     }
 
     /**

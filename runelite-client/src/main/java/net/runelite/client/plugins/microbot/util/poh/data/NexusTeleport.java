@@ -3,47 +3,143 @@ package net.runelite.client.plugins.microbot.util.poh.data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.gameval.VarbitID;
+import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
+import net.runelite.client.plugins.worldmap.TeleportLocationData;
 import net.runelite.client.plugins.worldmap.TeleportType;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import static net.runelite.api.gameval.VarbitID.VARROCK_DIARY_MEDIUM_COMPLETE;
+
+
+/**
+ *
+ */
 @Getter
 @RequiredArgsConstructor
-public enum NexusTeleport {
-    VARROCK(TeleportType.NORMAL_MAGIC, "Varrock", new WorldPoint(3213, 3424, 0)),
-    VARROCK_GE(TeleportType.NORMAL_MAGIC, "Grand Exchange", new WorldPoint(3164, 3478, 0)),
-    LUMBRIDGE(TeleportType.NORMAL_MAGIC, "Lumbridge", new WorldPoint(3222, 3218, 0)),
-    FALADOR(TeleportType.NORMAL_MAGIC, "Falador", new WorldPoint(2965, 3381, 0)),
-    ARDOUGNE(TeleportType.NORMAL_MAGIC, "Ardougne", new WorldPoint(2664, 3306, 0)),
-    CAMELOT(TeleportType.NORMAL_MAGIC, "Camelot", new WorldPoint(2757, 3477, 0)),
-    WATCHTOWER(TeleportType.NORMAL_MAGIC, "Watchtower", new WorldPoint(2547, 3114, 0)),
-    KOUREND(TeleportType.NORMAL_MAGIC, "Kourend Castle", new WorldPoint(1643, 3672, 0)),
-    MARIM(TeleportType.NORMAL_MAGIC, "Marim", new WorldPoint(2797, 2798, 1)),
-    SENNTISTEN(TeleportType.ANCIENT_MAGICKS, "Senntisten", new WorldPoint(3319, 3336, 0)),
-    KHARYRLL(TeleportType.ANCIENT_MAGICKS, "Kharyrll", new WorldPoint(3494, 3473, 0)),
-    CARRALLANGER(TeleportType.ANCIENT_MAGICKS, "Carrallanger", new WorldPoint(3157, 3667, 0)),
-    ANNAKARL(TeleportType.ANCIENT_MAGICKS, "Annakarl", new WorldPoint(3288, 3888, 0)),
-    LUNAR_ISLE(TeleportType.LUNAR_MAGIC, "Lunar Isle", new WorldPoint(2093, 3912, 0)),
-    WATERBIRTH(TeleportType.LUNAR_MAGIC, "Waterbirth Island", new WorldPoint(2546, 3755, 0)),
-    FISHING_GUILD(TeleportType.LUNAR_MAGIC, "Fishing Guild", new WorldPoint(2612, 3391, 0)),
-    ARCEUUS_LIBRARY(TeleportType.ARCEUUS_MAGIC, "Arceuus Library", new WorldPoint(1632, 3838, 0)),
-    DRAYNOR_MANOR(TeleportType.ARCEUUS_MAGIC, "Draynor Manor", new WorldPoint(3108, 3352, 0)),
-    BATTLEFRONT(TeleportType.ARCEUUS_MAGIC, "Battlefront", new WorldPoint(1349, 3739, 0)),
-    MIND_ALTAR(TeleportType.ARCEUUS_MAGIC, "Mind Altar", new WorldPoint(2979, 3509, 0)),
-    FENKENSTRAINS_CASTLE(TeleportType.ARCEUUS_MAGIC, "Fenken' Castle", new WorldPoint(3548, 3528, 0)),
-    SALVE_GRAVEYARD(TeleportType.ARCEUUS_MAGIC, "Salve Graveyard", new WorldPoint(3433, 3461, 0)),
-    WEST_ARDOUGNE(TeleportType.ARCEUUS_MAGIC, "West Ardougne", new WorldPoint(2500, 3291, 0)),
-    HARMONY_ISLAND(TeleportType.ARCEUUS_MAGIC, "Harmony Island", new WorldPoint(3797, 2866, 0)),
-    CEMETERY(TeleportType.ARCEUUS_MAGIC, "Cemetery", new WorldPoint(2978, 3763, 0)),
-    BARROWS(TeleportType.ARCEUUS_MAGIC, "Barrows", new WorldPoint(3565, 3315, 0)),
-    APE_ATOLL_DUNGEON(TeleportType.ARCEUUS_MAGIC, "Ape Atoll Dungeon", new WorldPoint(2770, 2703, 0)),
-    CATHERBY(TeleportType.LUNAR_MAGIC, "Catherby", new WorldPoint(2802, 3449, 0)),
-    GHORROCK(TeleportType.ANCIENT_MAGICKS, "Ghorrock", new WorldPoint(2977, 3872, 0)),
-    WEISS(TeleportType.OTHER, "Weiss", new WorldPoint(2846, 3940, 0)),
-    TROLL_STRONGHOLD(TeleportType.OTHER, "Troll Stronghold", new WorldPoint(2838, 3693, 0)),
-    CIVITAS_ILLA_FORTIS(TeleportType.NORMAL_MAGIC, "Civitas illa Fortis", new WorldPoint(1681, 3133, 0));
-
+public enum NexusTeleport implements PohTransportable {
+    VARROCK(TeleportType.NORMAL_MAGIC, "Varrock", TeleportLocationData.VARROCK.getLocation()),
+    VARROCK_GE(TeleportType.NORMAL_MAGIC, "Grand Exchange", TeleportLocationData.VARROCK_GE.getLocation()),
+    LUMBRIDGE(TeleportType.NORMAL_MAGIC, "Lumbridge", TeleportLocationData.LUMBRIDGE.getLocation()),
+    FALADOR(TeleportType.NORMAL_MAGIC, "Falador", TeleportLocationData.FALADOR.getLocation()),
+    CAMELOT(TeleportType.NORMAL_MAGIC, "Camelot", TeleportLocationData.CAMELOT.getLocation()),
+    KOUREND(TeleportType.NORMAL_MAGIC, "Kourend Castle", TeleportLocationData.KOUREND.getLocation()),
+    ARDOUGNE(TeleportType.NORMAL_MAGIC, "Ardougne", TeleportLocationData.ARDOUGNE.getLocation()),
+    WATCHTOWER(TeleportType.NORMAL_MAGIC, "Watchtower", TeleportLocationData.WATCHTOWER.getLocation()),
+    MARIM(TeleportType.NORMAL_MAGIC, "Marim", TeleportLocationData.APE_ATOLL.getLocation()),
+    SENNTISTEN(TeleportType.ANCIENT_MAGICKS, "Senntisten", TeleportLocationData.SENNTISTEN.getLocation()),
+    KHARYRLL(TeleportType.ANCIENT_MAGICKS, "Kharyrll", TeleportLocationData.KHARYRLL.getLocation()),
+    CARRALLANGER(TeleportType.ANCIENT_MAGICKS, "Carrallanger", TeleportLocationData.CARRALLANGER.getLocation()),
+    WATERBIRTH(TeleportType.LUNAR_MAGIC, "Waterbirth Island", TeleportLocationData.WATERBIRTH.getLocation()),
+    ANNAKARL(TeleportType.ANCIENT_MAGICKS, "Annakarl", TeleportLocationData.ANNAKARL.getLocation()),
+    GHORROCK(TeleportType.ANCIENT_MAGICKS, "Ghorrock", TeleportLocationData.GHORROCK.getLocation()),
+    LUNAR_ISLE(TeleportType.LUNAR_MAGIC, "Lunar Isle", TeleportLocationData.MOONCLAN.getLocation()),
+    CATHERBY(TeleportType.LUNAR_MAGIC, "Catherby", TeleportLocationData.CATHERBY.getLocation()),
+    FISHING_GUILD(TeleportType.LUNAR_MAGIC, "Fishing Guild", TeleportLocationData.FISHING_GUILD.getLocation()),
+    TROLL_STRONGHOLD(TeleportType.OTHER, "Troll Stronghold", TeleportLocationData.TROLLHEIM.getLocation()),
+    WEISS(TeleportType.OTHER, "Weiss", TeleportLocationData.WEISS_ICY_BASALT.getLocation()),
+    ARCEUUS_LIBRARY(TeleportType.ARCEUUS_MAGIC, "Arceuus Library", TeleportLocationData.ARCEUUS_LIBRARY.getLocation()),
+    DRAYNOR_MANOR(TeleportType.ARCEUUS_MAGIC, "Draynor Manor", TeleportLocationData.DRAYNOR_MANOR.getLocation()),
+    BATTLEFRONT(TeleportType.ARCEUUS_MAGIC, "Battlefront", TeleportLocationData.BATTLEFRONT.getLocation()),
+    MIND_ALTAR(TeleportType.ARCEUUS_MAGIC, "Mind Altar", TeleportLocationData.MIND_ALTAR.getLocation()),
+    SALVE_GRAVEYARD(TeleportType.ARCEUUS_MAGIC, "Salve Graveyard", TeleportLocationData.SALVE_GRAVEYARD.getLocation()),
+    FENKENSTRAINS_CASTLE(TeleportType.ARCEUUS_MAGIC, "Fenken' Castle", TeleportLocationData.FENKENSTRAINS_CASTLE.getLocation()),
+    WEST_ARDOUGNE(TeleportType.ARCEUUS_MAGIC, "West Ardougne", TeleportLocationData.WEST_ARDOUGNE.getLocation()),
+    HARMONY_ISLAND(TeleportType.ARCEUUS_MAGIC, "Harmony Island", TeleportLocationData.HARMONY_ISLAND.getLocation()),
+    CEMETERY(TeleportType.ARCEUUS_MAGIC, "Cemetery", TeleportLocationData.CEMETERY.getLocation()),
+    BARROWS(TeleportType.ARCEUUS_MAGIC, "Barrows", TeleportLocationData.BARROWS.getLocation()),
+    APE_ATOLL_DUNGEON(TeleportType.ARCEUUS_MAGIC, "Ape Atoll Dungeon", TeleportLocationData.APE_ATOLL_ARCEUUS.getLocation()),
+    CIVITAS_ILLA_FORTIS(TeleportType.NORMAL_MAGIC, "Civitas illa Fortis", TeleportLocationData.CIVITAS_ILLA_FORTIS.getLocation());
 
     private final TeleportType type;
     private final String text;
     private final WorldPoint location;
 
+    @Override
+    public String toString() {
+        return "NexusTeleport -> " + text;
+    }
+
+    @Override
+    public WorldPoint getDestination() {
+        return location;
+    }
+
+    public int varbitValue() {
+        int ordinal = ordinal();
+        //Since you get Varrock GE for free with Varrock, there's no varbit value for it
+        return ordinal > 2 ? ordinal : ordinal - 1;
+    }
+
+    public PohTransport getPohTransport() {
+        return new PohTransport(this);
+    }
+
+    @Override
+    public boolean transport() {
+        return PohTeleports.usePortalNexus(this);
+    }
+
+    public final static Integer[] PORTAL_IDS = {ObjectID.POH_NEXUS_PORTAL_1, ObjectID.POH_NEXUS_PORTAL_2, ObjectID.POH_NEXUS_PORTAL_3, ObjectID.POH_NEXUS_PORTAL_LEAGUE_5};
+
+    public static List<NexusTeleport> getAvailableTeleports() {
+        List<NexusTeleport> teleports = new ArrayList<>();
+        for (int varbit : VARBITS) {
+            int value = Microbot.getVarbitValue(varbit);
+            if (value <= 0) continue;
+
+            if (value == 1) {
+                teleports.add(NexusTeleport.VARROCK);
+                if (Microbot.getVarbitValue(VARROCK_DIARY_MEDIUM_COMPLETE) == 1) {
+                    teleports.add(NexusTeleport.VARROCK_GE);
+                }
+                continue;
+            }
+            NexusTeleport tp = NexusTeleport.values()[value];
+            teleports.add(tp);
+        }
+        return teleports;
+    }
+
+    public static final int[] VARBITS = new int[]{
+            VarbitID.POH_NEXUS_TELE_1,
+            VarbitID.POH_NEXUS_TELE_2,
+            VarbitID.POH_NEXUS_TELE_3,
+            VarbitID.POH_NEXUS_TELE_4,
+            VarbitID.POH_NEXUS_TELE_5,
+            VarbitID.POH_NEXUS_TELE_6,
+            VarbitID.POH_NEXUS_TELE_7,
+            VarbitID.POH_NEXUS_TELE_8,
+            VarbitID.POH_NEXUS_TELE_9,
+            VarbitID.POH_NEXUS_TELE_10,
+            VarbitID.POH_NEXUS_TELE_11,
+            VarbitID.POH_NEXUS_TELE_12,
+            VarbitID.POH_NEXUS_TELE_13,
+            VarbitID.POH_NEXUS_TELE_14,
+            VarbitID.POH_NEXUS_TELE_15,
+            VarbitID.POH_NEXUS_TELE_16,
+            VarbitID.POH_NEXUS_TELE_17,
+            VarbitID.POH_NEXUS_TELE_18,
+            VarbitID.POH_NEXUS_TELE_19,
+            VarbitID.POH_NEXUS_TELE_20,
+            VarbitID.POH_NEXUS_TELE_21,
+            VarbitID.POH_NEXUS_TELE_22,
+            VarbitID.POH_NEXUS_TELE_23,
+            VarbitID.POH_NEXUS_TELE_24,
+            VarbitID.POH_NEXUS_TELE_25,
+            VarbitID.POH_NEXUS_TELE_26,
+            VarbitID.POH_NEXUS_TELE_27,
+            VarbitID.POH_NEXUS_TELE_28,
+            VarbitID.POH_NEXUS_TELE_29,
+            VarbitID.POH_NEXUS_TELE_30,
+            VarbitID.POH_NEXUS_TELE_31,
+            VarbitID.POH_NEXUS_TELE_32,
+            VarbitID.POH_NEXUS_TELE_33,
+            VarbitID.POH_NEXUS_TELE_34,
+            VarbitID.POH_NEXUS_TELE_35,
+    };
 }

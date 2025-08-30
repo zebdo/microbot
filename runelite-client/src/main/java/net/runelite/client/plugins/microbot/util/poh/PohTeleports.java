@@ -1,20 +1,23 @@
 package net.runelite.client.plugins.microbot.util.poh;
 
-import net.runelite.api.NullObjectID;
-import net.runelite.api.ObjectID;
 import net.runelite.api.TileObject;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.equipment.JewelleryLocationEnum;
+import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.poh.data.JewelleryBox;
 import net.runelite.client.plugins.microbot.util.poh.data.NexusTeleport;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
@@ -34,15 +37,17 @@ public class PohTeleports {
      * Checks if the player is in their house
      * based on the purple portal and if the player is
      * in an instance
+     *
      * @return
      */
     public static boolean isInHouse() {
-        return Rs2Player.IsInInstance() && Rs2GameObject.findObjectById(ObjectID.PORTAL_4525) != null;
+        return Rs2Player.IsInInstance() && Rs2GameObject.getGameObject(ObjectID.POH_EXIT_PORTAL) != null;
     }
 
     /**
      * Checks if a player is in their house
      * sends a microbot log if the player is not in their house
+     *
      * @return
      */
     public static boolean checkIsInHouse() {
@@ -61,6 +66,7 @@ public class PohTeleports {
      * or has in his inventory
      * Teleport currently not added: Fortis Colosseum.
      * Requirements: Hero	12,000	Ability to teleport to the Colosseum via the ring of dueling
+     *
      * @return
      */
     public static boolean useJewelleryBox(JewelleryLocationEnum jewelleryLocationEnum) {
@@ -73,9 +79,7 @@ public class PohTeleports {
         if (!checkIsInHouse()) return false;
 
         if (getJewelleryBoxInterface() == null) {
-            final Integer[] ornateJewelleryBox = new Integer[] { NullObjectID.NULL_29154, NullObjectID.NULL_29155, NullObjectID.NULL_29156};
-            TileObject tileObject = Rs2GameObject.findObject(ornateJewelleryBox);
-            Rs2GameObject.interact(tileObject, "Teleport Menu");
+            Rs2GameObject.interact(JewelleryBox.getObject(), "Teleport Menu");
         }
 
         sleepUntil(() -> getJewelleryBoxInterface() != null);
@@ -85,15 +89,17 @@ public class PohTeleports {
 
     /**
      * Checks if the jewellerybox interface is open
+     *
      * @return
      */
     public static Widget getJewelleryBoxInterface() {
-        return Rs2Widget.getWidget(590, 0);
+        return Rs2Widget.getWidget(InterfaceID.POH_JEWELLERY_BOX, 0);
     }
 
     /**
      * Interact with the jewellerybox widget based on the
      * JewelleryLocationEnum destination description
+     *
      * @param jewelleryLocationEnum
      * @return
      */
@@ -120,17 +126,14 @@ public class PohTeleports {
 
     /**
      * Will click on the nexus and interact with the widget
+     *
      * @param nexusTeleport
      * @return
      */
     public static boolean usePortalNexus(NexusTeleport nexusTeleport) {
         //TODO: Add config here to inform the user if the teleport is a wilderness teleport
         if (getPortalNexusInterface() == null) {
-            List<Integer> portalNexuses = new ArrayList<>();
-            for (int i = ObjectID.PORTAL_NEXUS; i < ObjectID.PORTAL_NEXUS_33410; i++) {
-                portalNexuses.add(i);
-            }
-            TileObject tileObject = Rs2GameObject.findObject(portalNexuses.toArray(Integer[]::new));
+            TileObject tileObject = Rs2GameObject.getTileObject(NexusTeleport.PORTAL_IDS);
             Rs2GameObject.interact(tileObject, "Teleport Menu");
         }
 
@@ -140,11 +143,12 @@ public class PohTeleports {
     }
 
     public static Widget getPortalNexusInterface() {
-        return Rs2Widget.getWidget(17, 0);
+        return Rs2Widget.getWidget(InterfaceID.TELENEXUS_TELEPORT, 0);
     }
 
     /**
      * Will interact with the portal nexus widget if it's open
+     *
      * @param nexusTeleport
      * @return
      */
@@ -181,5 +185,28 @@ public class PohTeleports {
         sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(nexusTeleport.getLocation()) < 10);
 
         return true;
+    }
+
+    public static boolean teleportToPoh() {
+        if (Rs2Equipment.isWearing("Construct. cape", false)) {
+            return Rs2Equipment.interact("Construct. cape", "Tele to POH");
+        } else if (Rs2Inventory.contains("Construct. cape", false)) {
+            return Rs2Inventory.interact("Construct. cape", "Tele to POH");
+        } else if (Rs2Inventory.contains("Teleport to house")) {
+            return Rs2Inventory.interact("Teleport to house", "Break");
+        } else if (Rs2Magic.canCast(Rs2Spells.TELEPORT_TO_HOUSE)) {
+            return Rs2Magic.cast(Rs2Spells.TELEPORT_TO_HOUSE);
+        }
+        return false;
+    }
+
+    public static boolean hasTeleportToPoh() {
+        if (Rs2Inventory.contains(false, "Construct. cape") || Rs2Equipment.isWearing("Construct. cape", false)) {
+            return true;
+        }
+        if (Rs2Inventory.contains("Teleport to house")) {
+            return true;
+        }
+        return Rs2Magic.canCast(Rs2Spells.TELEPORT_TO_HOUSE);
     }
 }
