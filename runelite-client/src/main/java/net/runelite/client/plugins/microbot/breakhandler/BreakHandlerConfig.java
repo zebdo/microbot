@@ -123,7 +123,7 @@ public interface BreakHandlerConfig extends Config {
 
     @ConfigItem(
             keyName = "useRandomWorld",
-            name = "Use RandomWorld",
+            name = "Use Random World",
             description = "Change to a random world once break is finished",
             position = 2,
             section = breakBehaviorOptions
