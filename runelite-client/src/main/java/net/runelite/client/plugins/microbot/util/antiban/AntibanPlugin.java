@@ -13,7 +13,6 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerPlugin;
-import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
 import net.runelite.client.plugins.microbot.util.antiban.enums.Activity;
 import net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity;
 import net.runelite.client.plugins.microbot.util.antiban.enums.CombatSkills;
@@ -251,12 +250,6 @@ public class AntibanPlugin extends Plugin {
                     .findFirst()
                     .orElse(null);
             Microbot.startPlugin(breakHandlerPlugin);
-        }
-
-        if (Rs2AntibanSettings.takeMicroBreaks &&
-                !Rs2AntibanSettings.microBreakActive &&
-                !BreakHandlerScript.isBreakActive()) {
-            Rs2Antiban.takeMicroBreakByChance();
         }
 
         if (Rs2Antiban.isMining()) {
