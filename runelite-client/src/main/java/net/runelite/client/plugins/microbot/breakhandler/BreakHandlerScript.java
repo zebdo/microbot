@@ -106,6 +106,10 @@ public class BreakHandlerScript extends Script {
     private String originalWindowTitle = "";
     private BreakHandlerConfig config;
 
+    // Track world state across breaks
+    private int preBreakWorld = -1;
+    private boolean loggedOutDuringBreak = false;
+
     /**
      * Checks if a break is currently active (any break state except waiting).
      */
@@ -323,8 +327,13 @@ public class BreakHandlerScript extends Script {
         Microbot.pauseAllScripts.compareAndSet(false, true);
         PluginPauseEvent.setPaused(true);
         Rs2Walker.setTarget(null);
+
+        // Remember the world we were in before the break
+        preBreakWorld = Microbot.getClient().getWorld();
+
         // Determine next state based on break type
         boolean logout = shouldLogout();
+        loggedOutDuringBreak = logout && !(Rs2AntibanSettings.microBreakActive && config.onlyMicroBreaks());
         if (!logout || (Rs2AntibanSettings.microBreakActive && config.onlyMicroBreaks())) {
             setBreakDuration();
             transitionToState(BreakHandlerState.MICRO_BREAK_ACTIVE);
@@ -448,9 +457,12 @@ public class BreakHandlerScript extends Script {
         try {
             // Use the Login utility class to handle login
             if (Login.activeProfile != null) {
-                new Login();
+                int world = config.useRandomWorld()
+                        ? Login.getRandomWorld(Rs2Player.isMember())
+                        : preBreakWorld;
+                new Login(world);
             } else {
-                // If no active profile, use default login
+                // If no active profile, fall back to default login
                 new Login();
             }
             transitionToState(BreakHandlerState.LOGGING_IN);
@@ -612,7 +624,7 @@ public class BreakHandlerScript extends Script {
      * Handles world switching based on configuration.
      */
     private void handleWorldSwitching() {
-        if (config.useRandomWorld()) {
+        if (config.useRandomWorld() && !loggedOutDuringBreak) {
             try {
                 int randomWorld = Login.getRandomWorld(Rs2Player.isMember());
                 Microbot.hopToWorld(randomWorld);
