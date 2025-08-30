@@ -76,6 +76,8 @@ public class AttackNpcScript extends Script {
                     AIOFighterPlugin.setState(State.IDLE);
                 }
 
+                if (config.state().equals(State.BANKING) || config.state().equals(State.WALKING))
+                    return;
 
                 if (Rs2Magic.isSpellbook(Rs2Spellbook.ARCEUUS)) {
                     Map.Entry<Rs2ItemModel, HeadType> head = Rs2Reanimate.getReanimatableHead();
@@ -121,9 +123,6 @@ public class AttackNpcScript extends Script {
                     }
                 }
                 filteredAttackableNpcs.set(attackableNpcs);
-
-                if (config.state().equals(State.BANKING) || config.state().equals(State.WALKING))
-                    return;
 
 
                 if (config.toggleCenterTile() && config.centerLocation().getX() == 0
