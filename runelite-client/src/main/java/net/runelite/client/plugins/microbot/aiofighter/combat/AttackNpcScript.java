@@ -81,8 +81,11 @@ public class AttackNpcScript extends Script {
                     Map.Entry<Rs2ItemModel, HeadType> head = Rs2Reanimate.getReanimatableHead();
                     if (head != null) {
                         boolean prevPause = Microbot.pauseAllScripts.getAndSet(true);
-                        if (head.getValue().reanimate(head.getKey())) {
-                            sleepUntil(() -> Rs2Npc.getNpcsForPlayer(Rs2Reanimate::isReanimated).findAny().isPresent(), 15000);
+                        try {
+                            if (head.getValue().reanimate(head.getKey())) {
+                                sleepUntil(() -> Rs2Npc.getNpcsForPlayer(Rs2Reanimate::isReanimated).findAny().isPresent(), 15000);
+                            }
+                        } finally {
                             Microbot.pauseAllScripts.set(prevPause);
                         }
                     }

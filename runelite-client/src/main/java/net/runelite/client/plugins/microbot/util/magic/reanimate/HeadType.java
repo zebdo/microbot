@@ -9,6 +9,8 @@ import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 
+import java.util.Arrays;
+
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 import static net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory.interact;
 
@@ -42,36 +44,36 @@ public enum HeadType {
 
     public boolean reanimate(Rs2ItemModel head) {
         if (!isEnsouled(head)) return false;
-        Rs2Magic.cast(spell);
+        if (!Rs2Magic.cast(spell)) {
+            return false;
+        }
         sleepUntil(() -> Microbot.getClientThread().runOnClientThreadOptional(() -> Rs2Tab.getCurrentTab() == InterfaceTab.INVENTORY).orElse(false), 5000);
         return interact(head, "Reanimate");
     }
 
     public Rs2ItemModel getHead() {
-        return Rs2Inventory.get(i -> {
-            String name = i.getName();
-            if (name == null || !name.contains("Ensouled")) return false;
-            for (String n : names) {
-                if (name.contains(n)) {
-                    return true;
-                }
+        return Rs2Inventory.get(this::canReanimate);
+    }
+
+    public boolean canReanimate(Rs2ItemModel head) {
+        if (head == null) return false;
+        return canReanimate(head.getName());
+    }
+
+    public boolean canReanimate(String headName) {
+        if (headName == null) return false;
+        String lower = headName.toLowerCase();
+        for (String n : names) {
+            if (lower.contains(n)) {
+                return true;
             }
-            return false;
-        });
+        }
+        return false;
     }
 
     public static HeadType getHeadType(Rs2ItemModel head) {
-        if (head == null) return null;
-        String name = head.getName();
-        if (name == null || !name.contains("Ensouled")) return null;
-        for (HeadType t : values()) {
-            for (String n : t.names) {
-                if (name.contains(n)) {
-                    return t;
-                }
-            }
-        }
-        return null;
+        if (!isEnsouled(head)) return null;
+        return Arrays.stream(values()).filter(ht -> ht.canReanimate(head.getName())).findFirst().orElse(null);
     }
 
     public static boolean isEnsouled(Rs2ItemModel head) {
