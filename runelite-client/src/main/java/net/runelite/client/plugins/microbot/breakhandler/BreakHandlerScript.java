@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Slf4j
 public class BreakHandlerScript extends Script {
-    public static String version = "2.0.0";
+    public static String version = "2.1.0";
     
     // Constants for configuration and timing
     private static final int SCHEDULER_INTERVAL_MS = 1000;
