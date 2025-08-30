@@ -40,7 +40,7 @@ the "Use 'Shortest Path' plugin" in the Quest Helper config.
 
 Next time you start a quest, the Shortest Path plugin will help you take the shortest path to the destination.
 
-![](./images/shortest-path-02.png)
+![Shortest Path path overlay example](./images/shortest-path-02.png)
 
 You can configure what teleportation methods, or the aesthetic of the path in the Shortest Path config.
 
