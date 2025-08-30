@@ -325,7 +325,6 @@ public class BreakHandlerScript extends Script {
         Rs2Walker.setTarget(null);
         // Determine next state based on break type
         boolean logout = shouldLogout();
-
         if (!logout || (Rs2AntibanSettings.microBreakActive && config.onlyMicroBreaks())) {
             setBreakDuration();
             transitionToState(BreakHandlerState.MICRO_BREAK_ACTIVE);
@@ -553,7 +552,10 @@ public class BreakHandlerScript extends Script {
      * Determines if logout should occur based on configuration and conditions.
      */
     private boolean shouldLogout() {
-        return isOutsidePlaySchedule() || config.logoutAfterBreak();
+        // Only attempt to logout during a normal break. When a micro break is
+        // active we should remain logged in regardless of the logout setting.
+        return !Rs2AntibanSettings.microBreakActive &&
+            (isOutsidePlaySchedule() || config.logoutAfterBreak());
     }
 
     /**
