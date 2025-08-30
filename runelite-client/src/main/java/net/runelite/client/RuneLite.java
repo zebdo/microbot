@@ -458,6 +458,9 @@ public class RuneLite
 		// Load user configuration
 		configManager.load();
 
+		// Initialize MicrobotPluginManager after configManager is loaded
+		microbotPluginManager.init();
+
 		// Update check requires ConfigManager to be ready before it runs
 		Updater updater = injector.getInstance(Updater.class);
 		updater.update(); // will exit if an update is in progress

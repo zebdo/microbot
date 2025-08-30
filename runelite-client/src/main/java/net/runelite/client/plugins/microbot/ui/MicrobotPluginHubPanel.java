@@ -625,7 +625,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                 .filter(isExternalPluginPredicate)
                 .collect(Collectors.toList());
 
-        Set<String> installed = new HashSet<>(microbotPluginManager.getInstalledPlugins());
+        List<MicrobotPluginManifest> installed = new ArrayList<>(microbotPluginManager.getInstalledPlugins());
 
         // Pre-index manifests by internalName (lowercased) - using filtered list
         Map<String, MicrobotPluginManifest> manifestByName = enabledManifest.stream()
@@ -633,27 +633,27 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                 .collect(Collectors.toMap(
                         m -> m.getInternalName().toLowerCase(Locale.ROOT),
                         Function.identity(),
-                        (a, b) -> a // keep first on duplicates
+                        (a, b) -> a
                 ));
 
-        // Index loaded plugins by simple name (lowercased) → all instances for that name
+        // Index loaded plugins by simple name (lowercased) - all instances for that name
         Map<String, Collection<Plugin>> pluginsByName = loadedPlugins.stream()
                 .collect(Collectors.groupingBy(
                         p -> p.getClass().getSimpleName().toLowerCase(Locale.ROOT),
                         LinkedHashMap::new,
-                        Collectors.toCollection(LinkedHashSet::new) // stable, no dups
+                        Collectors.toCollection(LinkedHashSet::new)
                 ));
 
         // Build PluginItem list by looping over manifests
         plugins = manifestByName.entrySet().stream()
                 .map(e -> {
-                    String key = e.getKey();                       // lowercased internalName
+                    String key = e.getKey();
                     MicrobotPluginManifest m = e.getValue();
-                    String simpleName = m.getInternalName();       // original case
+                    String simpleName = m.getInternalName();
 
                     Collection<Plugin> group = pluginsByName.getOrDefault(key, Collections.emptySet());
                     int count = pluginCounts.getOrDefault(simpleName, -1);
-                    boolean isInstalled = installed.contains(simpleName);
+                    boolean isInstalled = installed.stream().anyMatch(im -> im.getInternalName().equalsIgnoreCase(simpleName));
 
                     return new PluginItem(m, group, count, isInstalled);
                 })

@@ -3,7 +3,7 @@ package net.runelite.client.plugins.microbot.github;
 import lombok.SneakyThrows;
 import net.runelite.client.RuneLite;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
+import net.runelite.client.externalplugins.ExternalPluginManager;
 import net.runelite.client.plugins.microbot.github.models.FileInfo;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
@@ -32,7 +32,7 @@ public class GithubPanel extends PluginPanel {
     private final JList<FileInfo> fileList = new JList<>(listModel);
 
     @Inject
-    MicrobotPluginManager microbotPluginManager;
+	ExternalPluginManager externalPluginManager;
 
     @Inject
     ConfigManager configManager;
@@ -120,7 +120,7 @@ public class GithubPanel extends PluginPanel {
                 JLabel label = (JLabel) super.getListCellRendererComponent(list, value, index, isSelected, cellHasFocus);
                 if (value instanceof FileInfo) {
                     FileInfo fileInfo = (FileInfo) value;
-                    File localFile = new File(RuneLite.RUNELITE_DIR, "microbot-plugins/" + fileInfo.getName());
+                    File localFile = new File(RuneLite.RUNELITE_DIR, "sideloaded-plugins/" + fileInfo.getName());
                     boolean exists = localFile.exists();
 
                     if (exists) {
@@ -188,7 +188,7 @@ public class GithubPanel extends PluginPanel {
      */
     private void openMicrobotSideLoadingFolder() {
         String userHome = System.getProperty("user.home");
-        File folder = new File(userHome, ".runelite/microbot-plugins");
+        File folder = new File(userHome, ".runelite/sideloaded-plugins");
 
         if (folder.exists()) {
             try {
@@ -274,9 +274,6 @@ public class GithubPanel extends PluginPanel {
 
         worker.execute();
         progressDialog.setVisible(true); // blocks until worker finishes
-        microbotPluginManager.saveInstalledPlugins(downloadedPlugins);
-        microbotPluginManager.loadSideLoadPlugins();
-
     }
 
     /**
