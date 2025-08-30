@@ -324,7 +324,9 @@ public class BreakHandlerScript extends Script {
         PluginPauseEvent.setPaused(true);
         Rs2Walker.setTarget(null);
         // Determine next state based on break type
-        if (Rs2AntibanSettings.microBreakActive && (config.onlyMicroBreaks() || !shouldLogout())) {
+        boolean logout = shouldLogout();
+
+        if (!logout || (Rs2AntibanSettings.microBreakActive && config.onlyMicroBreaks())) {
             setBreakDuration();
             transitionToState(BreakHandlerState.MICRO_BREAK_ACTIVE);
         } else {
