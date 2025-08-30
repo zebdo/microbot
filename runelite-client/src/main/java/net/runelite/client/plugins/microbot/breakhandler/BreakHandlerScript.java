@@ -458,7 +458,7 @@ public class BreakHandlerScript extends Script {
             // Use the Login utility class to handle login
             if (Login.activeProfile != null) {
                 int world = config.useRandomWorld()
-                        ? Login.getRandomWorld(Rs2Player.isMember())
+                        ? Login.getRandomWorld(Rs2Player.isMember(), config.regionFilter().getRegion())
                         : preBreakWorld;
                 new Login(world);
             } else {
@@ -626,7 +626,7 @@ public class BreakHandlerScript extends Script {
     private void handleWorldSwitching() {
         if (config.useRandomWorld() && !loggedOutDuringBreak) {
             try {
-                int randomWorld = Login.getRandomWorld(Rs2Player.isMember());
+                int randomWorld = Login.getRandomWorld(Rs2Player.isMember(), config.regionFilter().getRegion());
                 Microbot.hopToWorld(randomWorld);
                 log.info("Switched to world {}", randomWorld);
             } catch (Exception ex) {
