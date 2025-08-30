@@ -264,7 +264,8 @@ public class BreakHandlerScript extends Script {
         
         // Check for normal break conditions
         boolean normalBreakTime = breakIn <= 0 && !isLockState();
-        boolean microBreakTime = Rs2AntibanSettings.microBreakActive && !isLockState();
+        boolean microBreakTime = Rs2AntibanSettings.takeMicroBreaks &&
+            Rs2AntibanSettings.microBreakActive && !isLockState();
         
         if (normalBreakTime || microBreakTime) {
             log.info("Break time reached - Normal: {}, Micro: {}", normalBreakTime, microBreakTime);
@@ -333,8 +334,10 @@ public class BreakHandlerScript extends Script {
 
         // Determine next state based on break type
         boolean logout = shouldLogout();
-        loggedOutDuringBreak = logout && !(Rs2AntibanSettings.microBreakActive && config.onlyMicroBreaks());
-        if (!logout || (Rs2AntibanSettings.microBreakActive && config.onlyMicroBreaks())) {
+        boolean isMicroBreak = Rs2AntibanSettings.takeMicroBreaks &&
+            Rs2AntibanSettings.microBreakActive;
+        loggedOutDuringBreak = logout && !(isMicroBreak && config.onlyMicroBreaks());
+        if (!logout || (isMicroBreak && config.onlyMicroBreaks())) {
             setBreakDuration();
             transitionToState(BreakHandlerState.MICRO_BREAK_ACTIVE);
         } else {
@@ -436,7 +439,8 @@ public class BreakHandlerScript extends Script {
      */
     private void handleMicroBreakActiveState() {
         // Check if micro break should end
-        if ((breakDuration <= 0 && !Rs2AntibanSettings.microBreakActive) || config.breakEndNow()) {
+        if ((breakDuration <= 0 && !(Rs2AntibanSettings.takeMicroBreaks &&
+            Rs2AntibanSettings.microBreakActive)) || config.breakEndNow()) {
             log.info("Micro break completed");
             transitionToState(BreakHandlerState.BREAK_ENDING);
         }
@@ -566,7 +570,7 @@ public class BreakHandlerScript extends Script {
     private boolean shouldLogout() {
         // Only attempt to logout during a normal break. When a micro break is
         // active we should remain logged in regardless of the logout setting.
-        return !Rs2AntibanSettings.microBreakActive &&
+        return !(Rs2AntibanSettings.takeMicroBreaks && Rs2AntibanSettings.microBreakActive) &&
             (isOutsidePlaySchedule() || config.logoutAfterBreak());
     }
 
@@ -585,7 +589,7 @@ public class BreakHandlerScript extends Script {
      * Sets the break duration based on configuration and break type.
      */
     private void setBreakDuration() {
-        if (Rs2AntibanSettings.microBreakActive) {
+        if (Rs2AntibanSettings.takeMicroBreaks && Rs2AntibanSettings.microBreakActive) {
             // Micro break duration - use proper range and convert minutes to seconds
             breakDuration = Rs2Random.between(
                 Rs2AntibanSettings.microBreakDurationLow * MINUTES_TO_SECONDS,
