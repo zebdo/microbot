@@ -67,7 +67,7 @@ public LogicalCondition getStopCondition() {
     OrCondition orCondition = new OrCondition();
     
     // Create a lock condition for manual prevention of stopping
-    this.lockCondition = new LockCondition("Locked because the Plugin is in a critical operation");
+    this.lockCondition = new LockCondition("Locked because the Plugin is in a critical operation", true);
     
     // Add enabled conditions based on configuration
     if (config.enableTimeCondition()) {
@@ -319,7 +319,7 @@ The lock condition works by returning `false` for `isSatisfied()` when locked, w
 
 ```java
 // Create the lock condition
-this.lockCondition = new LockCondition("Locked because the Plugin is in a critical operation");
+this.lockCondition = new LockCondition("Locked because the Plugin is in a critical operation", true);
 
 // Add it to the condition structure with AND logic
 AndCondition andCondition = new AndCondition();

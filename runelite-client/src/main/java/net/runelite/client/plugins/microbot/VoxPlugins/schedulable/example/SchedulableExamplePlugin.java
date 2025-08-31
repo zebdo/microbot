@@ -28,7 +28,6 @@ import net.runelite.client.input.KeyManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerConfig;
 import net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.location.AreaCondition;
@@ -44,7 +43,6 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.resource.P
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.time.IntervalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntryPostScheduleTaskEvent;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntryPreScheduleTaskEvent;
-import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntryPreScheduleTaskFinishedEvent;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.AbstractPrePostScheduleTasks;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -242,7 +240,8 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
                                     "SchedulableExample", 
                                     "scheduleMode", 
                                 Boolean.class
-                                );        log.info("\n\tSchedulable Example plugin started\n\t -In SchedulerMode:{}\n\t -Press {} to test the PluginScheduleEntryMainTaskFinishedEvent successfully\n\t -Press {} to test the PluginScheduleEntryMainTaskFinishedEvent unsuccessfully\n\t -Use {} to toggle the lock condition (prevents the plugin from being stopped)\n\t -Use {} to test Pre-Schedule Tasks functionality\n\t -Use {} to test Post-Schedule Tasks functionality\n\t -Use {} to cancel running pre/post schedule tasks",
+                                );        
+        log.info("\n\tSchedulable Example plugin started\n\t -In SchedulerMode:{}\n\t -Press {} to test the PluginScheduleEntryMainTaskFinishedEvent successfully\n\t -Press {} to test the PluginScheduleEntryMainTaskFinishedEvent unsuccessfully\n\t -Use {} to toggle the lock condition (prevents the plugin from being stopped)\n\t -Use {} to test Pre-Schedule Tasks functionality\n\t -Use {} to test Post-Schedule Tasks functionality\n\t -Use {} to cancel running pre/post schedule tasks",
                 scheduleMode,
                 config.finishPluginSuccessfulHotkey(),
                 config.finishPluginNotSuccessfulHotkey(),
@@ -268,10 +267,7 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
         
         if (prePostScheduleTasks != null && event.isSchedulerControlled() && !prePostScheduleTasks.isPreTaskComplete()) {
             // Plugin has pre/post tasks and is under scheduler control
-            log.info("SchedulableExample starting with pre-schedule tasks from scheduler");
-            
-        
-            
+            log.info("SchedulableExample starting with pre-schedule tasks from scheduler");                                
             try {
                 // Execute pre-schedule tasks with callback to start the script
                 runPreScheduleTasks();
@@ -283,9 +279,7 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
    
     
     @Override
-    protected void shutDown() {
-      
-
+    protected void shutDown() {      
         // Clean up PrePostScheduleTasks if initialized
         if (prePostScheduleTasks != null) {
             try {
@@ -393,7 +387,7 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
          // Create an OR condition - we'll stop when ANY of the enabled conditions are met
          OrCondition orCondition = new OrCondition();
          if (this.lockCondition == null) {
-             this.lockCondition = new LockCondition("Locked because the Plugin "+getName()+" is in a critical operation");
+             this.lockCondition = new LockCondition("Locked because the Plugin "+getName()+" is in a critical operation", false,true); //ensure unlock on shutdown of the plugin !
          }
          
          // Add enabled conditions based on configuration
@@ -550,20 +544,17 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
     public AbstractPrePostScheduleTasks getPrePostScheduleTasks() {
         SchedulableExampleConfig config = provideConfig(Microbot.getConfigManager());
         if (prePostScheduleRequirements == null || prePostScheduleTasks == null) {
+            if(Microbot.getClient().getGameState() != GameState.LOGGED_IN) {
+               log.debug("Schedulable Example - Cannot provide pre/post schedule tasks - not logged in");
+                return null; // Return null if not logged in
+            }
             log.info("Initializing Pre/Post Schedule Requirements and Tasks...");
             this.prePostScheduleRequirements = new SchedulableExamplePrePostScheduleRequirements(config);
             this.prePostScheduleTasks = new SchedulableExamplePrePostScheduleTasks(this, keyManager,prePostScheduleRequirements);            
             // Log the requirements status
-            log.info("\nPrePostScheduleRequirements initialized:\n{}", prePostScheduleRequirements.getDetailedDisplay());
-        }
-        if (!prePostScheduleRequirements.isInitialized()){
-            log.error("Failed to initialize Pre/Post Schedule Requirements. Cannot proceed with tasks.");
-            this.prePostScheduleRequirements = null;
-            this.prePostScheduleTasks = null;
-            return null; // Return null if requirements are not met
-        }
-        // Return the pre/post schedule tasks instance
-       
+            if (prePostScheduleRequirements.isInitialized()) log.info("\nPrePostScheduleRequirements initialized:\n{}", prePostScheduleRequirements.getDetailedDisplay());
+        }        
+        // Return the pre/post schedule tasks instance       
         return this.prePostScheduleTasks;
     }
     
@@ -862,22 +853,27 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
     @Subscribe
 	public void onConfigChanged(ConfigChanged event)
 	{
-		if (event.getGroup().equals("SchedulableExample"))
-		{
-			this.startCondition = null;
-            this.stopCondition = null;            
-            // Initialize Pre/Post Schedule Requirements and Tasks
+		final ConfigDescriptor desc = getConfigDescriptor();
+		if (desc != null && desc.getGroup() != null && event.getGroup().equals(desc.getGroup().value())) {
+			
+            this.startCondition = null;
+            this.stopCondition = null;        
+            log.info(
+				"Config change detected for {}: {}={}, config group {}",
+				getName(),
+				event.getGroup(),
+				event.getKey(),
+				desc.getGroup().value()
+			);
             if (config.enablePrePostRequirements()) {
-                log.info("Config change - -Initializing Pre/Post Schedule Requirements and Tasks...");
-                if (prePostScheduleTasks!= null) {
-                    prePostScheduleTasks.close();
+                if (prePostScheduleTasks != null && !prePostScheduleTasks.isExecuting()) {                    
+                    if (prePostScheduleRequirements != null) {
+                        prePostScheduleRequirements.setConfig(config);    
+                        prePostScheduleRequirements.reset();
+                    }
+                    // prePostScheduleTasks.reset(); when we allow reexecution of pre/post-schedule tasks on config change
+                    log.info("PrePostScheduleRequirements initialized:\n{}", prePostScheduleRequirements.getDetailedDisplay());
                 }
-                // Reset prePostScheduleTasks to null to ensure fresh initialization
-                prePostScheduleRequirements = null;
-                prePostScheduleTasks = null;
-                
-                // Log the requirements status
-                log.info("PrePostScheduleRequirements initialized:\n{}", prePostScheduleRequirements.getDetailedDisplay());
             } else {
                 log.info("Pre/Post Schedule Requirements are disabled in configuration");
             }
@@ -889,9 +885,11 @@ public class SchedulableExamplePlugin extends Plugin implements SchedulablePlugi
         if (event.getGameState() == GameState.LOGGED_IN) {           
             log.info("GameState changed to LOGGED_IN"); 
             getPrePostScheduleTasks();           
-            if(prePostScheduleTasks != null && prePostScheduleTasks.isScheduleMode() && !prePostScheduleTasks.isPreTaskComplete() && !prePostScheduleTasks.isPreScheduleRunning()) {
-                log.info("Plugin is running in Scheduler Mode");
-                runPreScheduleTasks();
+            if( prePostScheduleTasks != null 
+                && prePostScheduleTasks.isScheduleMode() && 
+                !prePostScheduleTasks.isPreTaskComplete() && 
+                !prePostScheduleTasks.isPreScheduleRunning()) {
+                log.info("Plugin is running in Scheduler Mode - waiting for scheduler to start pre-schedule tasks");
             } else {
                 log.info("Plugin is running in normal mode");
             }

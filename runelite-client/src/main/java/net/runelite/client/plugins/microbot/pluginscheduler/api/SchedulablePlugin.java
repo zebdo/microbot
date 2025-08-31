@@ -6,6 +6,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.condition.Condition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LockCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.event.ExecutionResult;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntryMainTaskFinishedEvent;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntryPostScheduleTaskEvent;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntryPostScheduleTaskFinishedEvent;
@@ -13,17 +14,17 @@ import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginSchedule
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntryPreScheduleTaskFinishedEvent;
 import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.AbstractPrePostScheduleTasks;
-import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.enums.ScheduleContext;
+import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.enums.TaskContext;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.Requirement;
 import net.runelite.client.plugins.microbot.pluginscheduler.util.SchedulerPluginUtil;
-import okhttp3.Call;
 
-import org.lwjgl.system.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.event.Level;
 
-import lombok.NonNull;
+import com.google.common.eventbus.Subscribe;
+
+import io.reactivex.rxjava3.annotations.NonNull;
 import net.runelite.client.config.ConfigDescriptor;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -31,9 +32,11 @@ import net.runelite.client.plugins.microbot.Microbot;
 import java.awt.Component;
 import java.awt.Window;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import javax.annotation.Nullable;
 import javax.swing.*;
 
 
@@ -111,8 +114,23 @@ public interface SchedulablePlugin {
      *
      * @param event The stop event containing the plugin reference that should be stopped
      */
-    
-    public void onPluginScheduleEntryPostScheduleTaskEvent(PluginScheduleEntryPostScheduleTaskEvent event);
+    @Subscribe
+    default public void onPluginScheduleEntryPostScheduleTaskEvent(PluginScheduleEntryPostScheduleTaskEvent event){
+        if (event.getPlugin() == this) {
+            log.info("Plugin must implement it onPluginScheduleEntryPostScheduleTaskEvent method to handle post-schedule tasks.");
+        } 
+    }
+    /*
+     * Use {@link onPluginScheduleEntryPostScheduleTaskEvent} instead.
+     */
+    @Deprecated
+    @Subscribe
+    default public void onPluginScheduleEntrySoftStopEvent(PluginScheduleEntryPostScheduleTaskEvent event){
+        log.warn("onPluginScheduleEntrySoftStopEvent is deprecated. Use onPluginScheduleEntryPostScheduleTaskEvent instead.");
+        if (event.getPlugin() == this) {
+            log.info("Plugin must implement it onPluginScheduleEntryPostScheduleTaskEvent method to handle post-schedule tasks.");
+        }
+    }
     
     /**
      * Handles the {@link PluginScheduleEntryPreScheduleTaskEvent} posted by the scheduler when a plugin should start pre-schedule tasks.
@@ -145,13 +163,13 @@ public interface SchedulablePlugin {
                     }
                     // Report pre-schedule task completion - the scheduler will transition to RUNNING_PLUGIN state
                     Microbot.getEventBus().post(new PluginScheduleEntryPreScheduleTaskFinishedEvent(
-                        (Plugin) this, true, "Pre-schedule tasks completed successfully"));
+                        (Plugin) this, ExecutionResult.SUCCESS, "Pre-schedule tasks completed successfully"));
                 });
             } catch (Exception e) {
                 log.error("Error during Pre-Schedule Tasks for {}", this.getClass().getSimpleName(), e);
                 // Report pre-schedule task failure
                 Microbot.getEventBus().post(new PluginScheduleEntryPreScheduleTaskFinishedEvent(
-                    (Plugin) this, false, "Pre-schedule tasks failed: " + e.getMessage()));
+                    (Plugin) this, ExecutionResult.HARD_FAILURE, "Pre-schedule tasks failed: " + e.getMessage()));
             }
         } else {
             // No pre-schedule tasks or not under scheduler control - execute callback immediately
@@ -163,7 +181,7 @@ public interface SchedulablePlugin {
             
             // Report completion immediately
             Microbot.getEventBus().post(new PluginScheduleEntryPreScheduleTaskFinishedEvent(
-                (Plugin) this, true, "No pre-schedule tasks - callback executed successfully"));
+                (Plugin) this, ExecutionResult.SUCCESS, "No pre-schedule tasks - callback executed successfully"));
         }
     }
 
@@ -203,7 +221,7 @@ public interface SchedulablePlugin {
      * conditions haven't been met yet.
      * 
      * @param reason A description of why the plugin is finished
-     * @param success Whether the task was completed successfully
+     * @param result The execution result (SUCCESS, SOFT_FAILURE, or HARD_FAILURE)
      */
     private String reportFinished_internal(String reason, boolean success) {
         if ( this instanceof Plugin && !Microbot.isPluginEnabled((Plugin)this)){
@@ -229,7 +247,11 @@ public interface SchedulablePlugin {
                 }
             }
         }
-        boolean isSchedulerMode = AbstractPrePostScheduleTasks.isScheduleMode(this,getConfigDescriptor().getGroup().value());
+        String configGrpName  = "";
+        if(getConfigDescriptor()!=null){
+            configGrpName = getConfigDescriptor().getGroup().value();
+        }
+        boolean isSchedulerMode = AbstractPrePostScheduleTasks.isScheduleMode(this,configGrpName);
         log.info("test if plugin is in:\n\t\tscheduler mode: {} -- should stop {}", isSchedulerMode, shouldStop);
         String prefix = "Plugin [" + this.getClass().getSimpleName() + "] finished: ";
         String reasonExt= reason == null ? prefix+"No reason provided" : prefix+reason;
@@ -281,44 +303,88 @@ public interface SchedulablePlugin {
             return reasonExt;
         }
     }
-    default public void reportFinished(String reason, boolean success) {
-
-        String  reasonExt  = reportFinished_internal(reason, success);
+    /**
+     * Reports that the plugin has finished its main task.
+     * 
+     * @param reason A description of why the plugin finished
+     * @param result The execution result (SUCCESS, SOFT_FAILURE, or HARD_FAILURE)
+     */
+    default public void reportFinished(String reason, ExecutionResult result) {
+        String reasonExt = reportFinished_internal(reason, result.isSuccess());
         if (reasonExt == null) {
             return; // Plugin is not enabled or scheduler is not running
         }
         Microbot.getEventBus().post(new PluginScheduleEntryMainTaskFinishedEvent(
                 (Plugin) this, // "this" will be the plugin instance
                 reasonExt,
-                success
+                result
             )
-            );
+        );
     }
-    default public void reportPostScheduleTaskFinished(String reason, boolean success) {        
-        String  reasonExt  = reportFinished_internal(reason, success);
+
+    /**
+     * @deprecated Use {@link #reportFinished(String, ExecutionResult)} instead for granular result reporting
+     */
+    @Deprecated
+    default public void reportFinished(String reason, boolean success) {
+        ExecutionResult result = success ? ExecutionResult.SUCCESS : ExecutionResult.HARD_FAILURE;
+        reportFinished(reason, result);
+    }
+    /**
+     * Reports that the plugin's post-schedule tasks have finished.
+     * 
+     * @param reason A description of the completion
+     * @param result The execution result (SUCCESS, SOFT_FAILURE, or HARD_FAILURE)
+     */
+    default public void reportPostScheduleTaskFinished(String reason, ExecutionResult result) {        
+        String reasonExt = reportFinished_internal(reason, result.isSuccess());
         if (reasonExt == null) {
             return; // Plugin is not enabled or scheduler is not running
         }
         Microbot.getEventBus().post(new PluginScheduleEntryPostScheduleTaskFinishedEvent(
                 (Plugin) this, // "this" will be the plugin instance
-                success,
+                result,
                 reasonExt
             )
         );
     }
-    default public void reportPreScheduleTaskFinished(String reason, boolean success) {
-        if (!success){
-            reason  = reportFinished_internal(reason, success);
+
+    /**
+     * @deprecated Use {@link #reportPostScheduleTaskFinished(String, ExecutionResult)} instead for granular result reporting
+     */
+    @Deprecated
+    default public void reportPostScheduleTaskFinished(String reason, boolean success) {        
+        ExecutionResult result = success ? ExecutionResult.SUCCESS : ExecutionResult.HARD_FAILURE;
+        reportPostScheduleTaskFinished(reason, result);
+    }
+    /**
+     * Reports that the plugin's pre-schedule tasks have finished.
+     * 
+     * @param reason A description of the completion
+     * @param result The execution result (SUCCESS, SOFT_FAILURE, or HARD_FAILURE)
+     */
+    default public void reportPreScheduleTaskFinished(String reason, ExecutionResult result) {
+        if (!result.isSuccess()) {
+            reason = reportFinished_internal(reason, result.isSuccess());
         }
         if (reason == null) {
             return; // Plugin is not enabled or scheduler is not running
         }
         Microbot.getEventBus().post(new PluginScheduleEntryPreScheduleTaskFinishedEvent(
                 (Plugin) this, // "this" will be the plugin instance
-                success,
+                result,
                 reason
             )
-            );
+        );
+    }
+
+    /**
+     * @deprecated Use {@link #reportPreScheduleTaskFinished(String, ExecutionResult)} instead for granular result reporting
+     */
+    @Deprecated
+    default public void reportPreScheduleTaskFinished(String reason, boolean success) {
+        ExecutionResult result = success ? ExecutionResult.SUCCESS : ExecutionResult.HARD_FAILURE;
+        reportPreScheduleTaskFinished(reason, result);
     }
 
     
@@ -418,16 +484,81 @@ public interface SchedulablePlugin {
      * 
      * @return The new lock state (true if locked, false if unlocked), or null if no lock condition exists
      */
-    default Boolean toggleLock(Condition stopConditions) {
-        if (stopConditions == null) {
+    default Boolean toggleLock(Condition anyCondition) {
+        if (anyCondition == null) {
             return null; // No stop conditions defined
         }
-        LockCondition lockCondition = getLockCondition( stopConditions);
+        LockCondition lockCondition = getLockCondition( anyCondition);
         
         if (lockCondition != null) {
             return lockCondition.toggleLock();
         }
         return null;
+    }
+    
+    /**
+     * Unlocks all lock conditions in both start and stop conditions.
+     * This utility function provides defensive unlocking of all lock conditions
+     * to prevent plugins from getting stuck in locked states.
+     */
+    default void unlockAllConditions() {
+        unlockAllStartConditions();
+        unlockAllStopConditions();
+    }
+    
+    /**
+     * Unlocks all lock conditions in the start conditions.
+     * Recursively searches through the condition structure to find and unlock all lock conditions.
+     */
+    default void unlockAllStartConditions() {
+        LogicalCondition startCondition = getStartCondition();
+        if (startCondition != null) {
+            List<LockCondition> allLockConditions = startCondition.findAllLockConditions();
+            for (LockCondition lockCondition : allLockConditions) {
+                if (lockCondition.isLocked()) {
+                    lockCondition.unlock();
+                }
+            }
+        }
+    }
+    
+    /**
+     * Unlocks all lock conditions in the stop conditions.
+     * Recursively searches through the condition structure to find and unlock all lock conditions.
+     */
+    default void unlockAllStopConditions() {
+        LogicalCondition stopCondition = getStopCondition();
+        if (stopCondition != null) {
+            List<LockCondition> allLockConditions = stopCondition.findAllLockConditions();
+            for (LockCondition lockCondition : allLockConditions) {
+                if (lockCondition.isLocked()) {
+                    lockCondition.unlock();
+                }
+            }
+        }
+    }
+    
+    /**
+     * Gets all lock conditions from both start and stop conditions.
+     * 
+     * @return List of all lock conditions found in the plugin's condition structure
+     */
+    default List<LockCondition> getAllLockConditions() {
+        List<LockCondition> allLocks = new ArrayList<>();
+        
+        // get start condition locks
+        LogicalCondition startCondition = getStartCondition();
+        if (startCondition != null) {
+            allLocks.addAll(startCondition.findAllLockConditions());
+        }
+        
+        // get stop condition locks
+        LogicalCondition stopCondition = getStopCondition();
+        if (stopCondition != null) {
+            allLocks.addAll(stopCondition.findAllLockConditions());
+        }
+        
+        return allLocks;
     }
     
         /**
@@ -474,6 +605,7 @@ public interface SchedulablePlugin {
      * @see AbstractPrePostScheduleTasks#isScheduleMode()
      * @see SchedulerPlugin
      */
+    @Nullable
     default public AbstractPrePostScheduleTasks getPrePostScheduleTasks(){
         // Default implementation returns null, subclasses should override if they support pre/post tasks
         return null;
@@ -533,14 +665,14 @@ public interface SchedulablePlugin {
      * Plugin developers can control whether and how to integrate external requirements.
      * 
      * @param requirement The requirement to add
-     * @param scheduleContext The context in which this requirement should be fulfilled (PRE_SCHEDULE, POST_SCHEDULE, or BOTH)
+     * @param TaskContext The context in which this requirement should be fulfilled (PRE_SCHEDULE, POST_SCHEDULE, or BOTH)
      * @return true if the requirement was accepted and registered, false if rejected
      */
     default boolean addCustomRequirement(Requirement requirement, 
-                                      ScheduleContext scheduleContext) {
+                                      TaskContext taskContext) {
         AbstractPrePostScheduleTasks tasks = getPrePostScheduleTasks();
         if (tasks != null) {
-            return tasks.addCustomRequirement(requirement, scheduleContext);
+            return tasks.addCustomRequirement(requirement, taskContext);
         }
         return false; // No pre/post tasks available, cannot register custom requirements
     }

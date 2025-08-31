@@ -74,8 +74,8 @@ public LogicalCondition getStopCondition() {
     // Create a logical condition structure for when the plugin should stop
     OrCondition orCondition = new OrCondition();
     
-    // Create a lock condition to prevent stopping during critical operations
-    LockCondition lockCondition = new LockCondition("Locked during critical operation");
+    // Create a lock condition to prevent stopping during critical operations , and the break handler for taking a break
+    LockCondition lockCondition = new LockCondition("Locked during critical operation", true); //ensure unlock on shutdown of the plugin !
     
     // Add your specific conditions
     orCondition.addCondition(new TimeCondition(30, TimeUnit.MINUTES));
@@ -103,7 +103,7 @@ public LogicalCondition getStopCondition() {
 
 private LogicalCondition createStopCondition() {
     if (this.lockCondition == null) {
-        this.lockCondition = new LockCondition("Locked because the Plugin " + getName() + " is in a critical operation");
+        this.lockCondition = new LockCondition("Locked because the Plugin " + getName() + " is in a critical operation", true); //ensure unlock on shutdown of the plugin !
     }
 
     AndCondition andCondition = new AndCondition();
@@ -213,7 +213,7 @@ The lock condition is a powerful feature that prevents your plugin from being st
 
 ```java
 // Creating the lock condition
-this.lockCondition = new LockCondition("Locked during critical operation");
+this.lockCondition = new LockCondition("Locked during critical operation", true; //ensure unlock on shutdown of the plugin !
 
 // Locking before a critical operation
 lockCondition.lock();
@@ -554,7 +554,7 @@ Location conditions can serve various purposes:
 3. **Safety Checks**: Prevent dangerous activities
    ```java
    // Don't allow stop in dangerous areas
-   LockCondition lockCondition = new LockCondition("In wilderness");
+   LockCondition lockCondition = new LockCondition("In wilderness", true); //ensure unlock on shutdown of the plugin !
    
    // Lock when entering wilderness
    if (LocationCondition.inAnyArea(

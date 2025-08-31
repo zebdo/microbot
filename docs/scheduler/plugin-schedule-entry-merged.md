@@ -449,7 +449,7 @@ The scheduler can be configured to interrupt or prevent default plugins from run
 // In SchedulerPlugin.java
 if (prioritizeNonDefaultPlugins) {
     // Look for any upcoming non-default plugin within the configured time window
-    PluginScheduleEntry upcomingNonDefault = getNextScheduledPlugin(false, 
+    PluginScheduleEntry upcomingNonDefault = getNextScheduledPluginEntry(false, 
                                                 Duration.ofMinutes(nonDefaultPluginLookAheadMinutes))
         .filter(plugin -> !plugin.isDefault())
         .orElse(null);

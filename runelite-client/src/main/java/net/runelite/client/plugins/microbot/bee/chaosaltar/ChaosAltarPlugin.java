@@ -42,7 +42,7 @@ public class ChaosAltarPlugin extends Plugin implements SchedulablePlugin {
     ChaosAltarOverlay chaosAltarOverlay;
 
     LogicalCondition stopCondition = new AndCondition();
-    LockCondition lockCondition = new LockCondition();
+    LockCondition lockCondition = new LockCondition("ChaosAlterPlugin",false, true);
 
 
     @Override
@@ -55,6 +55,9 @@ public class ChaosAltarPlugin extends Plugin implements SchedulablePlugin {
 
     protected void shutDown() {
         chaosAltarScript.shutdown();
+        if (lockCondition != null && lockCondition.isLocked()) {
+            lockCondition.unlock();
+        }
         overlayManager.remove(chaosAltarOverlay);
     }
 
