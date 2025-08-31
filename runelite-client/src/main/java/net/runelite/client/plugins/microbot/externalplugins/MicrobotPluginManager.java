@@ -38,7 +38,6 @@ import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Injector;
 import com.google.inject.Module;
-import java.util.concurrent.TimeUnit;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
 import net.runelite.client.RuneLiteProperties;
@@ -60,9 +59,12 @@ import javax.inject.Singleton;
 import javax.swing.*;
 import java.io.File;
 import java.io.IOException;
+import java.net.Proxy;
+import java.net.ProxySelector;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
@@ -246,6 +248,19 @@ public class MicrobotPluginManager
     }
 
 	/**
+	 * Creates an OkHttpClient instance that does not use any proxy settings.
+	 * @param base
+	 * @return
+	 */
+	private static OkHttpClient noProxy(OkHttpClient base) {
+		return base.newBuilder()
+				.proxy(Proxy.NO_PROXY)
+				.proxySelector(ProxySelector.of(null))
+				.build();
+	}
+
+
+	/**
      * Installs a Microbot plugin by downloading its JAR, saving it, and loading it into the client.
      *
      * @param manifest the MicrobotPluginManifest describing the plugin to install
@@ -272,8 +287,12 @@ public class MicrobotPluginManager
 					return;
 				}
 
-				Request request = new Request.Builder().url(url).build();
-				try (Response response = okHttpClient.newCall(request).execute()) {
+				OkHttpClient localClient = noProxy(okHttpClient);
+				Request request = new Request.Builder()
+						.url(url)
+						.build();
+
+				try (Response response = localClient.newCall(request).execute()) {
 					if (!response.isSuccessful() || response.body() == null) {
 						log.error("Error downloading plugin: {}, code: {}", internalName, response.code());
 						return;
@@ -594,7 +613,7 @@ public class MicrobotPluginManager
 			}
 
 			// Check version compatibility for external plugins
-			if (pluginDescriptor.isExternal() && !isClientVersionCompatible(pluginDescriptor.minClientVersion()))
+			if (pluginDescriptor.isExternal() && !Rs2UiHelper.isClientVersionCompatible(pluginDescriptor.minClientVersion()))
 			{
 				log.error("Plugin {} requires client version {} or higher, but current version is {}. Skipping plugin loading.",
 					clazz.getSimpleName(), pluginDescriptor.minClientVersion(), RuneLiteProperties.getMicrobotVersion());
