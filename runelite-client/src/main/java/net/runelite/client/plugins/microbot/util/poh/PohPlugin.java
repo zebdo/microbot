@@ -10,7 +10,6 @@ import net.runelite.client.plugins.microbot.util.poh.data.*;
 import net.runelite.client.plugins.microbot.util.poh.ui.MasterPanel;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
-import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageUtil;
 
 import javax.inject.Inject;
@@ -19,6 +18,17 @@ import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.List;
 
+/**
+ * This plugin is designed to track and manage teleport options available in a player's
+ * house including mounted objects, portals, nexus teleports, and jewellery box options.
+ *
+ * The plugin creates a new panel available directly from the toolbar for managing these teleports.
+ * It dynamically retrieves configurations to build an p-to-date list of available transport options.
+ *
+ * Core responsibilities of this plugin include:
+ * - Initializing the plugin and adding a navigation button to the PoH Panel for user access.
+ * - Dynamically fetching available Player-Owned House transport options based on the user's configuration.
+ */
 @PluginDescriptor(
         name = "Player-Owned-House",
         description = "PoH Teleport Tracker",
@@ -37,9 +47,6 @@ public class PohPlugin extends Plugin {
     PohConfig providePohConfig(ConfigManager configManager) {
         return configManager.getConfig(PohConfig.class);
     }
-
-    @Inject
-    private OverlayManager overlayManager;
 
     @Inject
     private ClientToolbar clientToolbar;
@@ -64,7 +71,13 @@ public class PohPlugin extends Plugin {
     }
 
 
-    public static List<PohTransport> getTransports() {
+    /**
+     * Retrieves a list of available Player-Owned House (PoH) transports based on the current PohConfig.
+     * This includes transports from mounted glory, mounted digsite, portals, nexus teleports, and jewellery box.
+     *
+     * @return a list of {@link PohTransport} objects representing the available PoH transport options.
+     */
+    public static List<PohTransport> getAvailableTransports() {
         List<PohTransport> transports = new ArrayList<>();
         boolean mountedGlory = Microbot.getConfigManager().getConfiguration(PohConfig.CONFIG_GROUP, PohConfig.MOUNTED_GLORY, Boolean.class);
         boolean mountedDigsite = Microbot.getConfigManager().getConfiguration(PohConfig.CONFIG_GROUP, PohConfig.MOUNTED_DIGSITE, Boolean.class);

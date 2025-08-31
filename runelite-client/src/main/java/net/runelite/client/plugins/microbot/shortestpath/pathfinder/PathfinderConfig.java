@@ -263,7 +263,7 @@ public class PathfinderConfig {
         Rs2SpiritTreeCache.getInstance().update();
         //Rs2SpiritTreeCache.logAllTreeStates();
         if (usePoh) {
-            usableTeleports.addAll(PohPlugin.getTransports());
+            usableTeleports.addAll(PohPlugin.getAvailableTransports());
         }
         for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
             WorldPoint point = entry.getKey();

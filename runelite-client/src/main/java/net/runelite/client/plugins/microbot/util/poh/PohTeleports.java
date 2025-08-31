@@ -187,6 +187,16 @@ public class PohTeleports {
         return true;
     }
 
+    /**
+     * Attempts to teleport the player to their Player-Owned House (POH) using available methods in the following order:
+     * 1. If the player is wearing the “Construct. cape”, it interacts with it to teleport.
+     * 2. If the player has the “Construct. cape” in their inventory, it interacts with it to teleport.
+     * 3. If the player has a “Teleport to house” item in their inventory, it uses the item to teleport.
+     * 4. If the player can cast the "Teleport to house" spell, it casts the spell.
+     * If none of these conditions are met, the teleport will fail.
+     *
+     * @return true if the teleport action was successfully performed; false otherwise
+     */
     public static boolean teleportToPoh() {
         if (Rs2Equipment.isWearing("Construct. cape", false)) {
             return Rs2Equipment.interact("Construct. cape", "Tele to POH");
@@ -200,6 +210,15 @@ public class PohTeleports {
         return false;
     }
 
+    /**
+     * Determines whether the player has a method to teleport to their Player-Owned House (POH).
+     * This can be satisfied by the following criteria:
+     * 1. The player has a "Construct. cape" in their inventory or is wearing it.
+     * 2. The player has a "Teleport to house" item in their inventory.
+     * 3. The player can cast the "Teleport to house" spell.
+     *
+     * @return true if the player possesses at least one method to teleport to their POH, false otherwise.
+     */
     public static boolean hasTeleportToPoh() {
         if (Rs2Inventory.contains(false, "Construct. cape") || Rs2Equipment.isWearing("Construct. cape", false)) {
             return true;

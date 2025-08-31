@@ -116,6 +116,7 @@ public enum PohPortal implements PohTransportable {
     private final String displayName;
     private final WorldPoint destination;
     private final Integer[] objectIds;
+    private final int time = 4;
 
     public GameObject getPortal() {
         return Rs2GameObject.getGameObject(objectIds);

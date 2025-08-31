@@ -112,6 +112,11 @@ public enum JewelleryBox {
                             public boolean transport() {
                                 return PohTeleports.useJewelleryBox(location);
                             }
+
+                            @Override
+                            public int getTime() {
+                                return 6;
+                            }
                         })
                 ).collect(Collectors.toList());
     }

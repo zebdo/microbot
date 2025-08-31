@@ -59,6 +59,8 @@ public enum NexusTeleport implements PohTransportable {
     private final String text;
     private final WorldPoint location;
 
+    private final int time = 6;
+
     @Override
     public String toString() {
         return "NexusTeleport -> " + text;

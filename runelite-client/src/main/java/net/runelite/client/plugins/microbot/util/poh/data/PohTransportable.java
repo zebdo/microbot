@@ -7,4 +7,6 @@ public interface PohTransportable {
     WorldPoint getDestination();
 
     boolean transport();
+
+    int getTime();
 }

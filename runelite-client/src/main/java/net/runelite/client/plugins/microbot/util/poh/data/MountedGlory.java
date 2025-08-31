@@ -24,6 +24,8 @@ public enum MountedGlory implements PohTransportable {
     private final String destinationName;
     private final WorldPoint destination;
 
+    private final int time = 4;
+
 
     @Override
     public boolean transport() {
