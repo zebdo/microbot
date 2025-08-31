@@ -19,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.beans.PropertyChangeSupport;
 import java.lang.reflect.InvocationTargetException;
 import java.util.Arrays;
+import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -57,6 +58,7 @@ public class SplashScreen extends JFrame implements ActionListener {
         }
     }
 
+    private static ScheduledExecutorService scheduledRandomFactExecutorService;
     private static ScheduledFuture<?> scheduledRandomFactFuture;
 
     static String escape(String s) {
@@ -266,7 +268,7 @@ public class SplashScreen extends JFrame implements ActionListener {
 
         setVisible(true);
 
-        ScheduledExecutorService scheduledRandomFactExecutorService = new java.util.concurrent.ScheduledThreadPoolExecutor(1);
+        ScheduledExecutorService scheduledRandomFactExecutorService = Executors.newSingleThreadScheduledExecutor();
         scheduledRandomFactFuture = scheduledRandomFactExecutorService.scheduleAtFixedRate(
                 () -> {
                     RandomFactClient.getRandomFactAsync(SplashScreen::setFact);
@@ -319,7 +321,13 @@ public class SplashScreen extends JFrame implements ActionListener {
             if (INSTANCE == null) return;
 
             INSTANCE.timer.stop();
-            if (scheduledRandomFactFuture != null) scheduledRandomFactFuture.cancel(true);
+            if (scheduledRandomFactFuture != null) {
+                scheduledRandomFactFuture.cancel(true);
+            }
+            if (scheduledRandomFactExecutorService != null) {
+                scheduledRandomFactExecutorService.shutdownNow();
+                scheduledRandomFactExecutorService = null;
+            }
             INSTANCE.setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
             INSTANCE.dispose();
             INSTANCE = null;
