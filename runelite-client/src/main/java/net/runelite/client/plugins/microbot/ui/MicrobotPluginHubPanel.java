@@ -38,6 +38,7 @@ import net.runelite.client.plugins.config.SearchablePlugin;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginClient;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManifest;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.ui.ClientUI;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
@@ -285,7 +286,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                 addrm.setBackground(new Color(0x28BE28));
                 addrm.addActionListener(l -> {
                     // Check version compatibility before installing
-                    if (!microbotPluginManager.isClientVersionCompatible(manifest.getMinClientVersion())) {
+                    if (!Rs2UiHelper.isClientVersionCompatible(manifest.getMinClientVersion())) {
                         String _currentMicrobotVersion = RuneLiteProperties.getMicrobotVersion();
                         String requiredVersion = manifest.getMinClientVersion();
 

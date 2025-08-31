@@ -204,19 +204,19 @@ public class MicrobotPluginManager
 		String json = configManager.getConfiguration(MicrobotConfig.configGroup, MicrobotConfig.installedPlugins);
 
 		if (json == null || json.isEmpty()) {
-			return Collections.emptyList();
+			return new ArrayList<>();
 		}
 
 		try {
 			List<MicrobotPluginManifest> plugins = gson.fromJson(
 				json, new TypeToken<List<MicrobotPluginManifest>>() {}.getType()
 			);
-			return plugins != null ? plugins : Collections.emptyList();
+			return plugins != null ? plugins : new ArrayList<>();
 		}
 		catch (JsonSyntaxException e) {
 			log.error("Error reading Microbot plugin list from config manager", e);
 			configManager.setConfiguration(MicrobotConfig.configGroup, MicrobotConfig.installedPlugins, "[]");
-			return Collections.emptyList();
+			return new ArrayList<>();
 		}
 	}
 
@@ -713,7 +713,7 @@ public class MicrobotPluginManager
                     modules.add(module);
                 }
 
-                // Create a parent injector containing all of the dependencies
+                // Create a parent injector containing all the dependencies
                 parent = parent.createChildInjector(modules);
             } else if (!deps.isEmpty()) {
                 // With only one dependency we can simply use its injector
