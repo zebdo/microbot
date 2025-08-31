@@ -66,7 +66,6 @@ public class HerbrunScript extends Script {
                     // If still empty after timeout, check once more to handle edge cases
                     if (herbPatches.isEmpty()) {                                        
                         plugin.reportFinished("No herb patches ready to farm",true);
-                        this.shutdown();
                         return;
                     }
                 }
@@ -106,7 +105,6 @@ public class HerbrunScript extends Script {
                 }
                 HerbrunPlugin.status = "Finished";
                 plugin.reportFinished("Herb run finished",true);
-                this.shutdown();
                 return;
             }
 
@@ -344,11 +342,17 @@ public class HerbrunScript extends Script {
         }
         
         // Withdraw teleportation runes
-        Rs2Bank.withdrawX(ItemID.LAWRUNE, 20);
-        Rs2Bank.withdrawX(ItemID.AIRRUNE, 50);
-        Rs2Bank.withdrawX(ItemID.EARTHRUNE, 50);
-        Rs2Bank.withdrawX(ItemID.FIRERUNE, 50);
-        Rs2Bank.withdrawX(ItemID.WATERRUNE, 50);
+        boolean missingRunes = false;
+        missingRunes |= !Rs2Bank.withdrawX(ItemID.LAWRUNE, 20);
+        missingRunes |= !Rs2Bank.withdrawX(ItemID.AIRRUNE, 50);
+        missingRunes |= !Rs2Bank.withdrawX(ItemID.EARTHRUNE, 50);
+        missingRunes |= !Rs2Bank.withdrawX(ItemID.FIRERUNE, 50);
+        missingRunes |= !Rs2Bank.withdrawX(ItemID.WATERRUNE, 50);
+        
+        if (missingRunes) {
+            log("Missing teleportation runes - cannot complete herb run");
+            return false;
+        }
         
         // Withdraw Ectophial if Morytania is enabled
         if (config.enableMorytania() && Rs2Bank.hasItem(ItemID.ECTOPHIAL)) {

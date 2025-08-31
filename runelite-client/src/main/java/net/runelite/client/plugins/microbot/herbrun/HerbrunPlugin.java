@@ -10,6 +10,7 @@ import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.AndCondition;
+import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LockCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.condition.logical.LogicalCondition;
 import net.runelite.client.plugins.microbot.pluginscheduler.event.PluginScheduleEntrySoftStopEvent;
 import net.runelite.client.ui.overlay.OverlayManager;
@@ -41,7 +42,8 @@ public class HerbrunPlugin extends Plugin implements SchedulablePlugin{
     HerbrunScript herbrunScript;
 
     static String status;
-    private LogicalCondition stopCondition = new AndCondition();
+    private LockCondition lockCondition;
+    private LogicalCondition stopCondition = null;
     
 
     @Override
@@ -55,17 +57,28 @@ public class HerbrunPlugin extends Plugin implements SchedulablePlugin{
     protected void shutDown() {
         herbrunScript.shutdown();
         overlayManager.remove(HerbrunOverlay);
+        status = null; // Reset status on shutdown
     }
 
     @Subscribe
     public void onPluginScheduleEntrySoftStopEvent(PluginScheduleEntrySoftStopEvent event) {
-        if (event.getPlugin() == this) {
-            Microbot.stopPlugin(this);
+        try {
+            if (event.getPlugin() == this) {
+                Microbot.stopPlugin(this);
+            }
+        } catch (Exception e) {
+            log.error("Error stopping plugin: ", e);
         }
     }
-     @Override     
+
+    @Override
     public LogicalCondition getStopCondition() {
-        // Create a new stop condition        
+        if (this.stopCondition == null) {
+            this.lockCondition = new LockCondition("Herb run in progress");
+            AndCondition andCondition = new AndCondition();
+            andCondition.addCondition(lockCondition);
+            this.stopCondition = andCondition;
+        }
         return this.stopCondition;
     }
     @Override
