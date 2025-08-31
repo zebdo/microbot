@@ -3,9 +3,11 @@ package net.runelite.client.plugins.microbot.util.misc;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
+import net.runelite.client.RuneLiteProperties;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -13,6 +15,7 @@ import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 
 import java.awt.*;
 
+@Slf4j
 public class Rs2UiHelper {
 
 	public static final Pattern COL_TAG_PATTERN = Pattern.compile("<col=[^>]+>|</col>");
@@ -68,7 +71,7 @@ public class Rs2UiHelper {
     public static Rectangle getActorClickbox(Actor actor) {
         LocalPoint lp = actor.getLocalLocation();
         if (lp == null) {
-            Microbot.log("LocalPoint is null");
+            log.warn("LocalPoint is null");
             return getDefaultRectangle();
         }
 
@@ -155,5 +158,70 @@ public class Rs2UiHelper {
 
 		// Return -1 if no number is found
 		return -1;
+	}
+
+	/**
+	 * Check if the current client version is compatible with the required minimum version
+	 */
+	public static boolean isClientVersionCompatible(String minClientVersion) {
+		if (minClientVersion == null || minClientVersion.isEmpty()) {
+			return true;
+		}
+
+		String currentVersion = RuneLiteProperties.getMicrobotVersion();
+		if (currentVersion == null) {
+			log.warn("Unable to determine current Microbot version");
+			return false;
+		}
+
+		return compareVersions(currentVersion, minClientVersion) >= 0;
+	}
+
+	/**
+	 * Compare two version strings using semantic versioning with support for 4-part versions
+	 * Supports formats like: 1.9.7, 1.9.7.1, 1.9.8, 1.9.8.1
+	 * @param version1 The first version to compare
+	 * @param version2 The second version to compare
+	 * @return -1 if version1 < version2, 0 if equal, 1 if version1 > version2
+	 */
+	public static int compareVersions(String version1, String version2) {
+		if (version1 == null && version2 == null) return 0;
+		if (version1 == null) return -1;
+		if (version2 == null) return 1;
+
+		// Split versions by dots and handle up to 4 parts (major.minor.patch.build)
+		String[] v1Parts = version1.split("\\.");
+		String[] v2Parts = version2.split("\\.");
+
+		int maxLength = Math.max(v1Parts.length, v2Parts.length);
+
+		for (int i = 0; i < maxLength; i++) {
+			int v1Part = i < v1Parts.length ? parseVersionPart(v1Parts[i]) : 0;
+			int v2Part = i < v2Parts.length ? parseVersionPart(v2Parts[i]) : 0;
+
+			if (v1Part < v2Part) return -1;
+			if (v1Part > v2Part) return 1;
+		}
+
+		return 0;
+	}
+
+	/**
+	 * Parse a version part, extracting only the numeric portion
+	 */
+	public static int parseVersionPart(String part) {
+		if (part == null || part.isEmpty()) return 0;
+
+		StringBuilder numericPart = new StringBuilder();
+		for (char c : part.toCharArray()) {
+			if (!Character.isDigit(c)) break;
+			numericPart.append(c);
+		}
+
+		try {
+			return numericPart.length() > 0 ? Integer.parseInt(numericPart.toString()) : 0;
+		} catch (NumberFormatException e) {
+			return 0;
+		}
 	}
 }

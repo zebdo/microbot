@@ -48,6 +48,7 @@ import net.runelite.client.events.ExternalPluginsChanged;
 import net.runelite.client.plugins.*;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.MicrobotConfig;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.ui.SplashScreen;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
@@ -258,7 +259,7 @@ public class MicrobotPluginManager
 				return;
 			}
 
-			if (!isClientVersionCompatible(manifest.getMinClientVersion())) {
+			if (!Rs2UiHelper.isClientVersionCompatible(manifest.getMinClientVersion())) {
 				log.error("Plugin {} requires client version {} or higher, but current version is {}. Installation aborted.",
 					internalName, manifest.getMinClientVersion(), RuneLiteProperties.getMicrobotVersion());
 				return;
@@ -715,72 +716,6 @@ public class MicrobotPluginManager
 
         log.debug("Loaded plugin {}", clazz.getSimpleName());
         return plugin;
-    }
-
-    /**
-     * Check if the current client version is compatible with the required minimum version
-     */
-    public boolean isClientVersionCompatible(String minClientVersion) {
-        if (minClientVersion == null || minClientVersion.isEmpty()) {
-            return true;
-        }
-
-        String currentVersion = RuneLiteProperties.getMicrobotVersion();
-        if (currentVersion == null) {
-            log.warn("Unable to determine current Microbot version");
-            return false;
-        }
-
-        return compareVersions(currentVersion, minClientVersion) >= 0;
-    }
-
-    /**
-     * Compare two version strings using semantic versioning with support for 4-part versions
-     * Supports formats like: 1.9.7, 1.9.7.1, 1.9.8, 1.9.8.1
-     * @param version1 The first version to compare
-     * @param version2 The second version to compare
-     * @return -1 if version1 < version2, 0 if equal, 1 if version1 > version2
-     */
-    @VisibleForTesting
-    static int compareVersions(String version1, String version2) {
-        if (version1 == null && version2 == null) return 0;
-        if (version1 == null) return -1;
-        if (version2 == null) return 1;
-
-        // Split versions by dots and handle up to 4 parts (major.minor.patch.build)
-        String[] v1Parts = version1.split("\\.");
-        String[] v2Parts = version2.split("\\.");
-
-        int maxLength = Math.max(v1Parts.length, v2Parts.length);
-
-        for (int i = 0; i < maxLength; i++) {
-            int v1Part = i < v1Parts.length ? parseVersionPart(v1Parts[i]) : 0;
-            int v2Part = i < v2Parts.length ? parseVersionPart(v2Parts[i]) : 0;
-
-            if (v1Part < v2Part) return -1;
-            if (v1Part > v2Part) return 1;
-        }
-
-        return 0;
-    }
-
-    /**
-     * Parse a version part, extracting only the numeric portion
-     */
-    private static int parseVersionPart(String part) {
-        if (part == null || part.isEmpty()) return 0;
-
-        StringBuilder numericPart = new StringBuilder();
-        for (char c : part.toCharArray()) {
-            if (!Character.isDigit(c)) break;
-			numericPart.append(c);
-        }
-
-        try {
-            return numericPart.length() > 0 ? Integer.parseInt(numericPart.toString()) : 0;
-        } catch (NumberFormatException e) {
-            return 0;
-        }
     }
 
     public void loadCorePlugins(List<Class<?>> plugins) throws IOException, PluginInstantiationException

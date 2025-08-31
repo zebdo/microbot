@@ -13,6 +13,7 @@ import javax.inject.Singleton;
 import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLiteProperties;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.ui.ClientUI;
 
 @Slf4j
@@ -46,14 +47,14 @@ public class MicrobotVersionChecker
 			String localVersion = RuneLiteProperties.getMicrobotVersion();
 			String remote = remoteVersion == null ? null : remoteVersion.trim();
 			String local = localVersion == null ? "" : localVersion.trim();
-			if (remote != null && !remote.isEmpty() && !remote.equals(local))
+			if (remote != null && !remote.isEmpty() && Rs2UiHelper.compareVersions(local, remote) < 0)
 			{
 				newVersionAvailable.set(true);
 				notifyNewVersionAvailable(remote, local);
 			}
 			else
 			{
-				log.debug("Microbshot client is up to date: {}", local);
+				log.debug("Microbot client is up to date: {}", local);
 			}
 		}
 		catch (Exception e)
