@@ -64,7 +64,24 @@ public class HerbrunPlugin extends Plugin implements SchedulablePlugin{
     public void onPluginScheduleEntrySoftStopEvent(PluginScheduleEntrySoftStopEvent event) {
         try {
             if (event.getPlugin() == this) {
-                Microbot.stopPlugin(this);
+                // Check if lock is active before stopping
+                if (lockCondition != null && lockCondition.isLocked()) {
+                    log.info("Soft stop deferred - plugin is locked: {}", lockCondition.getReason());
+                    // Defer the stop operation to respect the lock
+                    Microbot.getClientThread().invokeLater(() -> {
+                        // Re-check lock state when invokeLater executes
+                        if (lockCondition == null || !lockCondition.isLocked()) {
+                            log.info("Lock released, proceeding with deferred stop");
+                            Microbot.stopPlugin(this);
+                        } else {
+                            log.warn("Lock still active, stop operation cancelled");
+                        }
+                        return true;
+                    });
+                } else {
+                    log.info("Stopping plugin immediately - no lock active");
+                    Microbot.stopPlugin(this);
+                }
             }
         } catch (Exception e) {
             log.error("Error stopping plugin: ", e);
