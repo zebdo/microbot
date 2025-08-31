@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLiteProperties;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -18,6 +19,7 @@ import java.util.UUID;
 /**
  * Class that communicates with the microbot api
  */
+@Slf4j
 public class MicrobotApi {
 
     private final OkHttpClient client;
