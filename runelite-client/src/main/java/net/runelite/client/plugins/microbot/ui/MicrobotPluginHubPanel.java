@@ -39,11 +39,7 @@ import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginClient
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManifest;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
-import net.runelite.client.ui.ClientUI;
-import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.DynamicGridLayout;
-import net.runelite.client.ui.FontManager;
-import net.runelite.client.ui.PluginPanel;
+import net.runelite.client.ui.*;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.LinkBrowser;
@@ -572,43 +568,38 @@ public class MicrobotPluginHubPanel extends PluginPanel {
         reloadPluginList();
     }
 
-	private void reloadPluginList()
-	{
-		if (refreshing.isVisible())
-		{
-			return;
-		}
+    private void reloadPluginList() {
+        if (refreshing.isVisible()) {
+            return;
+        }
 
-		refreshing.setVisible(true);
-		mainPanel.removeAll();
+        refreshing.setVisible(true);
+        mainPanel.removeAll();
 
-		executor.submit(() ->
-		{
-			Collection<MicrobotPluginManifest> manifestCollection = microbotPluginManager.getManifestMap().values();
+        executor.submit(() ->
+        {
+            Collection<MicrobotPluginManifest> manifestCollection = microbotPluginManager.getManifestMap().values();
 
-			Map<String, Integer> pluginCounts = Collections.emptyMap();
-			try
-			{
-				pluginCounts = microbotPluginClient.getPluginCounts();
-			}
-			catch (IOException e)
-			{
-				log.warn("Unable to download plugin counts", e);
-				SwingUtilities.invokeLater(() ->
-				{
-					refreshing.setVisible(false);
-					mainPanel.add(new JLabel("Downloading the plugin manifest failed"));
+            Map<String, Integer> pluginCounts = Collections.emptyMap();
+            try {
+                pluginCounts = microbotPluginClient.getPluginCounts();
+            } catch (IOException e) {
+                log.warn("Unable to download plugin counts", e);
+                SwingUtilities.invokeLater(() ->
+                {
+                    refreshing.setVisible(false);
+                    mainPanel.add(new JLabel("Downloading the plugin manifest failed"));
 
-					JButton retry = new JButton("Retry");
-					retry.addActionListener(l -> reloadPluginList());
-					mainPanel.add(retry);
-					mainPanel.revalidate();
-				});
-			}
+                    JButton retry = new JButton("Retry");
+                    retry.addActionListener(l -> reloadPluginList());
+                    mainPanel.add(retry);
+                    mainPanel.revalidate();
+                });
+            }
 
-			reloadPluginList(manifestCollection, pluginCounts);
-		});
-	}
+            reloadPluginList(manifestCollection, pluginCounts);
+        });
+    }
 
     private void reloadPluginList(Collection<MicrobotPluginManifest> manifest, Map<String, Integer> pluginCounts) {
 
@@ -721,10 +712,10 @@ public class MicrobotPluginHubPanel extends PluginPanel {
         }
     }
 
-	@Subscribe
-	private void onExternalPluginsChanged(ExternalPluginsChanged ev) {
-		reloadPluginList();
-	}
+    @Subscribe
+    private void onExternalPluginsChanged(ExternalPluginsChanged ev) {
+        reloadPluginList();
+    }
 
     // A utility class copied from the original PluginHubPanel
     private static class FixedWidthPanel extends JPanel {
