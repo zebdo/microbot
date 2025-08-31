@@ -209,7 +209,7 @@ public class HerbrunScript extends Script {
                     }
                     Rs2Inventory.use(compost.getItemId());
                     Rs2GameObject.interact(obj, "Compost");
-                    Rs2Player.waitForXpDrop(Skill.FARMING);
+                    Rs2Player.waitForXpDrop(Skill.FARMING, 10000, false);
                     
                     // Drop empty bucket if configured (not for bottomless bucket)
                     if (config.dropEmptyBuckets() && !config.compostType().isBottomless()) {
