@@ -133,6 +133,13 @@ public interface QoLConfig extends Config {
     )
     String autoPrayerSection = "autoPrayerSection";
 
+    @ConfigSection(
+            name = "Grand Exchange",
+            description = "Grand Exchange settings",
+            position = 91
+    )
+    String grandExchangeSection = "grandExchangeSection";
+
     // boolean to render Max Hit Overlay
     @ConfigItem(
             keyName = "renderMaxHitOverlay",
@@ -934,4 +941,14 @@ public interface QoLConfig extends Config {
         return false;
     }
 
+    @ConfigItem(
+            keyName = "grandExchangeHotkey",
+            name = "Paste and Search GE Hotkey",
+            description = "Pastes clipboard text into the GE search box.",
+            position = 0,
+            section = grandExchangeSection
+    )
+    default Keybind grandExchangeHotkey() {
+        return Keybind.NOT_SET;
+    }
 }
