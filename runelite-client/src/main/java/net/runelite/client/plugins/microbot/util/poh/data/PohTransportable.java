@@ -8,5 +8,7 @@ public interface PohTransportable {
 
     boolean transport();
 
-    int getTime();
+    int getDuration();
+
+    String displayInfo();
 }

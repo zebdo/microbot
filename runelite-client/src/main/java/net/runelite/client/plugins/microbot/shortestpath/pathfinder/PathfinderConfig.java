@@ -20,7 +20,6 @@ import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.poh.PohPlugin;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -263,7 +262,7 @@ public class PathfinderConfig {
         Rs2SpiritTreeCache.getInstance().update();
         //Rs2SpiritTreeCache.logAllTreeStates();
         if (usePoh) {
-            usableTeleports.addAll(PohPlugin.getAvailableTransports());
+            usableTeleports.addAll(Rs2PohCache.getAllAvailableTransports());
         }
         for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
             WorldPoint point = entry.getKey();

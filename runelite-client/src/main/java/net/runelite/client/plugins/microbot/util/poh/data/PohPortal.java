@@ -8,6 +8,7 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.worldmap.TeleportLocationData;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 @Getter
@@ -116,7 +117,7 @@ public enum PohPortal implements PohTransportable {
     private final String displayName;
     private final WorldPoint destination;
     private final Integer[] objectIds;
-    private final int time = 4;
+    private final int duration = 4;
 
     public GameObject getPortal() {
         return Rs2GameObject.getGameObject(objectIds);
@@ -127,7 +128,7 @@ public enum PohPortal implements PohTransportable {
     }
 
     @Override
-    public String toString() {
+    public String displayInfo() {
         return "PoHPortal -> " + displayName;
     }
 
@@ -135,6 +136,19 @@ public enum PohPortal implements PohTransportable {
     public boolean transport() {
         GameObject portal = getPortal();
         return Rs2GameObject.interact(portal, "enter");
+    }
+
+    public static PohPortal getPohPortal(GameObject portal) {
+        if (portal == null) {
+            return null;
+        }
+        int objId = portal.getId();
+        for (PohPortal pohPortal : PohPortal.values()) {
+            if (Arrays.stream(pohPortal.objectIds).anyMatch((id) -> id == objId)) {
+                return pohPortal;
+            }
+        }
+        return null;
     }
 
     public static List<PohPortal> findPortalsInPoh() {

@@ -13,8 +13,8 @@ import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.poh.data.JewelleryBox;
-import net.runelite.client.plugins.microbot.util.poh.data.NexusTeleport;
+import net.runelite.client.plugins.microbot.util.poh.data.JewelleryBoxType;
+import net.runelite.client.plugins.microbot.util.poh.data.NexusPortal;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.Arrays;
@@ -79,7 +79,7 @@ public class PohTeleports {
         if (!checkIsInHouse()) return false;
 
         if (getJewelleryBoxInterface() == null) {
-            Rs2GameObject.interact(JewelleryBox.getObject(), "Teleport Menu");
+            Rs2GameObject.interact(JewelleryBoxType.getObject(), "Teleport Menu");
         }
 
         sleepUntil(() -> getJewelleryBoxInterface() != null);
@@ -127,19 +127,19 @@ public class PohTeleports {
     /**
      * Will click on the nexus and interact with the widget
      *
-     * @param nexusTeleport
+     * @param nexusPortal
      * @return
      */
-    public static boolean usePortalNexus(NexusTeleport nexusTeleport) {
+    public static boolean usePortalNexus(NexusPortal nexusPortal) {
         //TODO: Add config here to inform the user if the teleport is a wilderness teleport
         if (getPortalNexusInterface() == null) {
-            TileObject tileObject = Rs2GameObject.getTileObject(NexusTeleport.PORTAL_IDS);
+            TileObject tileObject = Rs2GameObject.getTileObject(NexusPortal.PORTAL_IDS);
             Rs2GameObject.interact(tileObject, "Teleport Menu");
         }
 
         sleepUntil(() -> getPortalNexusInterface() != null);
 
-        return interactWithPortalNexusWidget(nexusTeleport);
+        return interactWithPortalNexusWidget(nexusPortal);
     }
 
     public static Widget getPortalNexusInterface() {
@@ -149,14 +149,14 @@ public class PohTeleports {
     /**
      * Will interact with the portal nexus widget if it's open
      *
-     * @param nexusTeleport
+     * @param nexusPortal
      * @return
      */
-    public static boolean interactWithPortalNexusWidget(NexusTeleport nexusTeleport) {
+    public static boolean interactWithPortalNexusWidget(NexusPortal nexusPortal) {
         Widget portalNexusWidget = getPortalNexusInterface();
         if (portalNexusWidget == null) return false;
 
-        Widget widget = Rs2Widget.findWidget(nexusTeleport.getText().toLowerCase(), Arrays.stream(portalNexusWidget.getStaticChildren()).collect(Collectors.toList()));
+        Widget widget = Rs2Widget.findWidget(nexusPortal.getText().toLowerCase(), Arrays.stream(portalNexusWidget.getStaticChildren()).collect(Collectors.toList()));
 
         if (widget == null) return false;
 
@@ -182,7 +182,7 @@ public class PohTeleports {
             Rs2Widget.enterWilderness();
         }
 
-        sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(nexusTeleport.getLocation()) < 10);
+        sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(nexusPortal.getLocation()) < 10);
 
         return true;
     }

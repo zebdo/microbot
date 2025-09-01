@@ -21,7 +21,7 @@ import static net.runelite.api.gameval.VarbitID.VARROCK_DIARY_MEDIUM_COMPLETE;
  */
 @Getter
 @RequiredArgsConstructor
-public enum NexusTeleport implements PohTransportable {
+public enum NexusPortal implements PohTransportable {
     VARROCK(TeleportType.NORMAL_MAGIC, "Varrock", TeleportLocationData.VARROCK.getLocation()),
     VARROCK_GE(TeleportType.NORMAL_MAGIC, "Grand Exchange", TeleportLocationData.VARROCK_GE.getLocation()),
     LUMBRIDGE(TeleportType.NORMAL_MAGIC, "Lumbridge", TeleportLocationData.LUMBRIDGE.getLocation()),
@@ -59,10 +59,10 @@ public enum NexusTeleport implements PohTransportable {
     private final String text;
     private final WorldPoint location;
 
-    private final int time = 6;
+    private final int duration = 6;
 
     @Override
-    public String toString() {
+    public String displayInfo() {
         return "NexusTeleport -> " + text;
     }
 
@@ -88,20 +88,20 @@ public enum NexusTeleport implements PohTransportable {
 
     public final static Integer[] PORTAL_IDS = {ObjectID.POH_NEXUS_PORTAL_1, ObjectID.POH_NEXUS_PORTAL_2, ObjectID.POH_NEXUS_PORTAL_3, ObjectID.POH_NEXUS_PORTAL_LEAGUE_5};
 
-    public static List<NexusTeleport> getAvailableTeleports() {
-        List<NexusTeleport> teleports = new ArrayList<>();
+    public static List<NexusPortal> getAvailableTeleports() {
+        List<NexusPortal> teleports = new ArrayList<>();
         for (int varbit : VARBITS) {
             int value = Microbot.getVarbitValue(varbit);
             if (value <= 0) continue;
 
             if (value == 1) {
-                teleports.add(NexusTeleport.VARROCK);
+                teleports.add(NexusPortal.VARROCK);
                 if (Microbot.getVarbitValue(VARROCK_DIARY_MEDIUM_COMPLETE) == 1) {
-                    teleports.add(NexusTeleport.VARROCK_GE);
+                    teleports.add(NexusPortal.VARROCK_GE);
                 }
                 continue;
             }
-            NexusTeleport tp = NexusTeleport.values()[value];
+            NexusPortal tp = NexusPortal.values()[value];
             teleports.add(tp);
         }
         return teleports;

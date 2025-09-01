@@ -27,7 +27,7 @@ public class PohTransport extends Transport {
      * The pathfinder can treat this as an available transport when conditions are met.
      */
     public PohTransport(PohTransportable transportable) {
-        super(transportable.toString(), transportable.getDestination(), TransportType.POH, transportable.getTime(), true);
+        super(transportable.displayInfo(), transportable.getDestination(), TransportType.POH, transportable.getDuration(), true);
         this.transportable = transportable;
     }
 

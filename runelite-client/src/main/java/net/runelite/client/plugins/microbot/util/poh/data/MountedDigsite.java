@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.util.poh.data;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import net.runelite.api.GameObject;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.InterfaceID;
@@ -30,7 +31,7 @@ public enum MountedDigsite implements PohTransportable {
     private final String destinationName;
     private final WorldPoint destination;
 
-    private final int time = 4;
+    private final int duration = 4;
 
     @Override
     public boolean transport() {
@@ -59,6 +60,14 @@ public enum MountedDigsite implements PohTransportable {
         return Rs2GameObject.getTileObject(IDS);
     }
 
+    public static boolean isMountedDigsite(GameObject go) {
+        if (go == null) return false;
+        for (int objId : IDS) {
+            if (objId == go.getId()) return true;
+        }
+        return false;
+    }
+
     public static List<PohTransport> getTransports() {
         return Arrays.stream(values()).map(PohTransport::new).collect(Collectors.toList());
     }
@@ -68,7 +77,7 @@ public enum MountedDigsite implements PohTransportable {
     }
 
     @Override
-    public String toString() {
+    public String displayInfo() {
         return "MountedDigsite -> " + destinationName;
     }
 }

@@ -1,12 +1,8 @@
 package net.runelite.client.plugins.microbot.util.poh.data;
 
 import lombok.Getter;
-import lombok.RequiredArgsConstructor;
-import net.runelite.api.GameObject;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.util.equipment.JewelleryLocationEnum;
-import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
 
 import java.util.Arrays;
@@ -14,131 +10,88 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Getter
-@RequiredArgsConstructor
-public enum JewelleryBox {
-    NONE(-1),
-    BASIC(ObjectID.POH_JEWELLERY_BOX_1,
-            // Games Necklace teleports
-            JewelleryLocationEnum.BARBARIAN_ASSAULT,
-            JewelleryLocationEnum.BURTHORPE_GAMES_ROOM,
-            JewelleryLocationEnum.TEARS_OF_GUTHIX,
-            JewelleryLocationEnum.CORPOREAL_BEAST,
-            JewelleryLocationEnum.WINTERTODT_CAMP,
-            // Ring of Dueling teleports
-            JewelleryLocationEnum.PVP_ARENA,
-            JewelleryLocationEnum.FEROX_ENCLAVE,
-            JewelleryLocationEnum.CASTLE_WARS,
-            JewelleryLocationEnum.FORTIS_COLOSSEUM
-    ),
-    FANCY(ObjectID.POH_JEWELLERY_BOX_2,
-            // All Basic teleports
-            JewelleryLocationEnum.BARBARIAN_ASSAULT,
-            JewelleryLocationEnum.BURTHORPE_GAMES_ROOM,
-            JewelleryLocationEnum.TEARS_OF_GUTHIX,
-            JewelleryLocationEnum.CORPOREAL_BEAST,
-            JewelleryLocationEnum.WINTERTODT_CAMP,
-            JewelleryLocationEnum.PVP_ARENA,
-            JewelleryLocationEnum.FEROX_ENCLAVE,
-            JewelleryLocationEnum.CASTLE_WARS,
-            JewelleryLocationEnum.FORTIS_COLOSSEUM,
-            // Combat Bracelet teleports
-            JewelleryLocationEnum.WARRIORS_GUILD,
-            JewelleryLocationEnum.CHAMPIONS_GUILD,
-            JewelleryLocationEnum.EDGEVILLE_MONASTERY,
-            JewelleryLocationEnum.RANGING_GUILD,
-            // Skills Necklace teleports
-            JewelleryLocationEnum.FISHING_GUILD_NECK,
-            JewelleryLocationEnum.MINING_GUILD,
-            JewelleryLocationEnum.CRAFTING_GUILD,
-            JewelleryLocationEnum.COOKING_GUILD,
-            JewelleryLocationEnum.WOODCUTTING_GUILD,
-            JewelleryLocationEnum.FARMING_GUILD
-    ),
-    ORNATE(ObjectID.POH_JEWELLERY_BOX_3,
-            // All Fancy teleports
-            JewelleryLocationEnum.BARBARIAN_ASSAULT,
-            JewelleryLocationEnum.BURTHORPE_GAMES_ROOM,
-            JewelleryLocationEnum.TEARS_OF_GUTHIX,
-            JewelleryLocationEnum.CORPOREAL_BEAST,
-            JewelleryLocationEnum.WINTERTODT_CAMP,
-            JewelleryLocationEnum.PVP_ARENA,
-            JewelleryLocationEnum.FEROX_ENCLAVE,
-            JewelleryLocationEnum.CASTLE_WARS,
-            JewelleryLocationEnum.FORTIS_COLOSSEUM,
-            JewelleryLocationEnum.WARRIORS_GUILD,
-            JewelleryLocationEnum.CHAMPIONS_GUILD,
-            JewelleryLocationEnum.EDGEVILLE_MONASTERY,
-            JewelleryLocationEnum.RANGING_GUILD,
-            JewelleryLocationEnum.FISHING_GUILD_NECK,
-            JewelleryLocationEnum.MINING_GUILD,
-            JewelleryLocationEnum.CRAFTING_GUILD,
-            JewelleryLocationEnum.COOKING_GUILD,
-            JewelleryLocationEnum.WOODCUTTING_GUILD,
-            JewelleryLocationEnum.FARMING_GUILD,
-            // Amulet of Glory teleports
-            JewelleryLocationEnum.EDGEVILLE,
-            JewelleryLocationEnum.KARAMJA,
-            JewelleryLocationEnum.DRAYNOR_VILLAGE,
-            JewelleryLocationEnum.AL_KHARID,
-            // Ring of Wealth teleports
-            JewelleryLocationEnum.MISCELLANIA,
-            JewelleryLocationEnum.GRAND_EXCHANGE,
-            JewelleryLocationEnum.FALADOR_PARK,
-            JewelleryLocationEnum.DONDAKAN
-    );
+public enum JewelleryBox implements PohTransportable {
+    // Games Necklace teleports
+    BARBARIAN_ASSAULT(JewelleryLocationEnum.BARBARIAN_ASSAULT, JewelleryBoxType.BASIC, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    BURTHORPE_GAMES_ROOM(JewelleryLocationEnum.BURTHORPE_GAMES_ROOM, JewelleryBoxType.BASIC, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    TEARS_OF_GUTHIX(JewelleryLocationEnum.TEARS_OF_GUTHIX, JewelleryBoxType.BASIC, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    CORPOREAL_BEAST(JewelleryLocationEnum.CORPOREAL_BEAST, JewelleryBoxType.BASIC, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    WINTERTODT_CAMP(JewelleryLocationEnum.WINTERTODT_CAMP, JewelleryBoxType.BASIC, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
 
-    private final int objectId;
-    private final List<JewelleryLocationEnum> jewelleryLocations;
+    // Ring of Dueling teleports
+    PVP_ARENA(JewelleryLocationEnum.PVP_ARENA, JewelleryBoxType.BASIC, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    FEROX_ENCLAVE(JewelleryLocationEnum.FEROX_ENCLAVE, JewelleryBoxType.BASIC, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    CASTLE_WARS(JewelleryLocationEnum.CASTLE_WARS, JewelleryBoxType.BASIC, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    FORTIS_COLOSSEUM(JewelleryLocationEnum.FORTIS_COLOSSEUM, JewelleryBoxType.BASIC, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
 
-    JewelleryBox(int objectId, JewelleryLocationEnum... locations) {
-        this.objectId = objectId;
-        this.jewelleryLocations = Arrays.asList(locations);
+    // Combat Bracelet teleports
+    WARRIORS_GUILD(JewelleryLocationEnum.WARRIORS_GUILD, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    CHAMPIONS_GUILD(JewelleryLocationEnum.CHAMPIONS_GUILD, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    EDGEVILLE_MONASTERY(JewelleryLocationEnum.EDGEVILLE_MONASTERY, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    RANGING_GUILD(JewelleryLocationEnum.RANGING_GUILD, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+
+    // Skills Necklace teleports
+    FISHING_GUILD_NECK(JewelleryLocationEnum.FISHING_GUILD_NECK, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    MINING_GUILD(JewelleryLocationEnum.MINING_GUILD, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    CRAFTING_GUILD(JewelleryLocationEnum.CRAFTING_GUILD, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    COOKING_GUILD(JewelleryLocationEnum.COOKING_GUILD, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    WOODCUTTING_GUILD(JewelleryLocationEnum.WOODCUTTING_GUILD, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+    FARMING_GUILD(JewelleryLocationEnum.FARMING_GUILD, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
+
+    // Amulet of Glory teleports
+    EDGEVILLE(JewelleryLocationEnum.EDGEVILLE, JewelleryBoxType.ORNATE),
+    KARAMJA(JewelleryLocationEnum.KARAMJA, JewelleryBoxType.ORNATE),
+    DRAYNOR_VILLAGE(JewelleryLocationEnum.DRAYNOR_VILLAGE, JewelleryBoxType.ORNATE),
+    AL_KHARID(JewelleryLocationEnum.AL_KHARID, JewelleryBoxType.ORNATE),
+
+    // Ring of Wealth teleports
+    MISCELLANIA(JewelleryLocationEnum.MISCELLANIA, JewelleryBoxType.ORNATE),
+    GRAND_EXCHANGE(JewelleryLocationEnum.GRAND_EXCHANGE, JewelleryBoxType.ORNATE),
+    FALADOR_PARK(JewelleryLocationEnum.FALADOR_PARK, JewelleryBoxType.ORNATE),
+    DONDAKAN(JewelleryLocationEnum.DONDAKAN, JewelleryBoxType.ORNATE);
+
+    private final JewelleryLocationEnum location;
+    private final List<JewelleryBoxType> availableInBoxTypes;
+
+    JewelleryBox(JewelleryLocationEnum jewelleryLocationEnum, JewelleryBoxType... jewelleryBoxType) {
+        this.location = jewelleryLocationEnum;
+        this.availableInBoxTypes = Arrays.asList(jewelleryBoxType);
     }
 
-    public List<PohTransport> getTransports() {
-        return jewelleryLocations.stream()
-                .map(location -> new PohTransport(new PohTransportable() {
-                            @Override
-                            public String toString() {
-                                return name() + " -> " + location.getDestination();
-                            }
-
-                            @Override
-                            public WorldPoint getDestination() {
-                                return location.getLocation();
-                            }
-
-                            @Override
-                            public boolean transport() {
-                                return PohTeleports.useJewelleryBox(location);
-                            }
-
-                            @Override
-                            public int getTime() {
-                                return 6;
-                            }
-                        })
-                ).collect(Collectors.toList());
+    @Override
+    public WorldPoint getDestination() {
+        return location.getLocation();
     }
 
-    public static Integer[] getJewelleryBoxIds() {
-        return Arrays.stream(JewelleryBox.values()).map(JewelleryBox::getObjectId).toArray(Integer[]::new);
+    @Override
+    public boolean transport() {
+        return PohTeleports.useJewelleryBox(location);
     }
 
-    public static GameObject getObject() {
-        return Rs2GameObject.getGameObject(getJewelleryBoxIds());
+    @Override
+    public int getDuration() {
+        return 6;
     }
 
-    public static JewelleryBox getJewelleryBox() {
-        GameObject go = getObject();
-        if (go == null) {
-            return NONE;
-        }
-        for (JewelleryBox box : values()) {
-            if (box.objectId == go.getId()) {
-                return box;
-            }
-        }
-        return NONE;
+    @Override
+    public String displayInfo() {
+        return "JewelleryBox -> " + name();
     }
+
+    /**
+     * Checks if this teleport is available in the specified box type
+     */
+    public boolean isAvailableIn(JewelleryBoxType boxType) {
+        return availableInBoxTypes.contains(boxType);
+    }
+
+    /**
+     * Gets all teleports available for a specific jewellery box type
+     */
+    public static List<JewelleryBox> getAvailableTeleports(JewelleryBoxType boxType) {
+        return Arrays.stream(values())
+                .filter(teleport -> teleport.isAvailableIn(boxType))
+                .collect(Collectors.toList());
+    }
+
 }
