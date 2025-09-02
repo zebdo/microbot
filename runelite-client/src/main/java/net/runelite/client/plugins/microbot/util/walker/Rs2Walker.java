@@ -1474,12 +1474,6 @@ public class Rs2Walker {
                         }
                     }
 
-                    if (handleTrapdoor(transport)) {
-                        sleepUntil(() -> !Rs2Player.isAnimating());
-                        sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
-                        break;
-                    }
-                    
                     if (transport.getType() == TransportType.CANOE) {
                         if (handleCanoe(transport)) {
                             sleep(600 * 2); // wait 2 extra ticks before walking
@@ -1558,7 +1552,20 @@ public class Rs2Walker {
 
 					if (transport.getObjectId() <= 0) break;
 
-					List<TileObject> objects = Rs2GameObject.getAll(o -> o.getId() == transport.getObjectId(), transport.getOrigin(), 10).stream()
+					Map<Integer, Integer> openToClosedTrapdoors = new HashMap<>();
+					openToClosedTrapdoors.put(1581, 1579); // open trapdoor -> closed trapdoor
+					openToClosedTrapdoors.put(882, 881); // open manhole -> closed manhole
+
+					// Determine which object IDs to search for
+					List<Integer> objectIdsToSearch = new ArrayList<>();
+					objectIdsToSearch.add(transport.getObjectId());
+
+					// If this transport is for an open trapdoor, also search for the closed version
+					if (openToClosedTrapdoors.containsKey(transport.getObjectId())) {
+						objectIdsToSearch.add(openToClosedTrapdoors.get(transport.getObjectId()));
+					}
+
+					List<TileObject> objects = Rs2GameObject.getAll(o -> objectIdsToSearch.contains(o.getId()), transport.getOrigin(), 10).stream()
 						.sorted(Comparator.comparingInt(o -> o.getWorldLocation().distanceTo(transport.getOrigin())))
 						.collect(Collectors.toList());
 
@@ -1569,7 +1576,8 @@ public class Rs2Walker {
 							.min(Comparator.comparing(o -> ((TileObject) o).getWorldLocation().distanceTo(transport.getOrigin()))
 								.thenComparing(o -> ((TileObject) o).getWorldLocation().distanceTo(transport.getDestination()))).orElse(null);
 					}
-					if (object != null && object.getId() == transport.getObjectId()) {
+
+					if (object != null) {
 						System.out.println("Object Type: " + Rs2GameObject.getObjectType(object));
 
 						if (!(object instanceof GroundObject)) {
@@ -1616,6 +1624,31 @@ public class Rs2Walker {
     }
 
     private static boolean handleObjectExceptions(Transport transport, TileObject tileObject) {
+        Map<Integer, Integer> trapdoors = new HashMap<>();
+        trapdoors.put(1579, 1581); // closed trapdoor -> open trapdoor
+        trapdoors.put(881, 882); // closed manhole -> open manhole (used for varrock sewers)
+
+        for (Map.Entry<Integer, Integer> entry : trapdoors.entrySet()) {
+            final int closedTrapdoorId = entry.getKey();
+			final int openTrapdoorId = entry.getValue();
+
+            if (transport.getObjectId() == openTrapdoorId) {
+				if (tileObject.getId() == closedTrapdoorId) {
+					Rs2GameObject.interact(tileObject, "Open");
+					sleepUntil(() -> Rs2GameObject.exists(openTrapdoorId));
+					TileObject openTrapdoor = Rs2GameObject.getAll(o -> o.getId() == openTrapdoorId, tileObject.getWorldLocation(), 10).stream().findFirst().orElse(null);
+					if (openTrapdoor != null) {
+						Rs2GameObject.interact(openTrapdoor, transport.getAction());
+					}
+				} else if (tileObject.getId() == openTrapdoorId) {
+					Rs2GameObject.interact(tileObject, transport.getAction());
+				}
+				sleepUntil(() -> !Rs2Player.isAnimating());
+				sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
+				return true;
+            }
+        }
+
         //Al kharid broken wall will animate once and then stop and then animate again
         if (tileObject.getId() == ObjectID.KHARID_POSHWALL_TOPLESS || tileObject.getId() == ObjectID.KHARID_BIGWINDOW) {
             Rs2Player.waitForAnimation();
@@ -1912,25 +1945,6 @@ public class Rs2Walker {
                 }
 				log.info("Traveling to {} - ({})", transport.getDisplayInfo(), transport.getDestination());
                 return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 100, 8000);
-            }
-        }
-        return false;
-    }
-
-    private static boolean handleTrapdoor(Transport transport) {
-        Map<Integer, Integer> trapdoors = new HashMap<>();
-        trapdoors.put(1579, 1581); // closed trapdoor -> open trapdoor
-        trapdoors.put(881, 882); // closed manhole -> open manhole (used for varrock sewers)
-
-        for (Map.Entry<Integer, Integer> entry : trapdoors.entrySet()) {
-            int closedTrapdoorId = entry.getKey();
-            int openTrapdoorId = entry.getValue();
-
-            if (transport.getObjectId() == openTrapdoorId) {
-                if (Rs2GameObject.interact(closedTrapdoorId, "Open")) {
-                    sleepUntil(() -> Rs2GameObject.exists(openTrapdoorId));
-                }
-                return Rs2GameObject.interact(openTrapdoorId, transport.getAction());
             }
         }
         return false;
@@ -2764,15 +2778,15 @@ public class Rs2Walker {
             ShortestPathPlugin.getPathfinderConfig().setUseBankItems(useBankItems);
             ShortestPathPlugin.getPathfinderConfig().refresh(destination); // Use target-based refresh
             List<WorldPoint> path = getWalkPath(destination);
-            
+
             // Get path and extract relevant transports with filtering applied
             List<Transport> transports = getTransportsForPath(path, 0, prefTransportType, true);
-            
+
             // Log found transports for debugging
             transports.forEach(t -> log.debug("Transport found: " + t));
             
             return transports;
-            
+
         } finally {
             // Always restore original configuration
             ShortestPathPlugin.getPathfinderConfig().setUseBankItems(originalUseBankItems);
