@@ -340,7 +340,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
 
                     addrm.setText("Installing");
                     addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                    microbotPluginManager.install(manifest);
+                    microbotPluginManager.installPlugin(manifest.getInternalName());
                 });
             } else if (installed) {
                 // Check if update is available
@@ -360,9 +360,8 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                     addrm.addActionListener(l -> {
                         addrm.setText("Updating");
                         addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                        microbotPluginManager.remove(manifest.getInternalName());
-                        microbotPluginManager.install(manifest); // This will update the plugin
-                        reloadPluginList();
+                        microbotPluginManager.update();
+						reloadPluginList();
                     });
                 } else {
                     addrm.setText("Remove");
@@ -370,7 +369,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                     addrm.addActionListener(l -> {
                         addrm.setText("Removing");
                         addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                        microbotPluginManager.remove(manifest.getInternalName());
+                        microbotPluginManager.removePlugin(manifest.getInternalName());
                     });
                 }
             } else {

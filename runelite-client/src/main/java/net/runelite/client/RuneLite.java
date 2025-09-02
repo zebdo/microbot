@@ -469,6 +469,7 @@ public class RuneLite
 		eventBus.register(clientUI);
 		eventBus.register(pluginManager);
 		eventBus.register(externalPluginManager);
+		eventBus.register(microbotPluginManager);
 		eventBus.register(overlayManager);
 		eventBus.register(configManager);
 		eventBus.register(discordService);
