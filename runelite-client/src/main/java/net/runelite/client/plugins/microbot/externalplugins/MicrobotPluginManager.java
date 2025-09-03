@@ -39,11 +39,10 @@ import com.google.inject.CreationException;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import javax.annotation.Nullable;
+import javax.inject.Named;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
 import net.runelite.client.RuneLiteProperties;
@@ -92,10 +91,15 @@ public class MicrobotPluginManager
     private final Gson gson;
     private final ConfigManager configManager;
 
+	@Inject
+	@Named("safeMode")
+	private boolean safeMode;
+
     private final Map<String, MicrobotPluginManifest> manifestMap = new ConcurrentHashMap<>();
 
     private final AtomicBoolean isShuttingDown = new AtomicBoolean(false);
     private volatile boolean profileRefreshInProgress = false;
+	private static final String PLUGIN_PACKAGE = "net.runelite.client.plugins.microbot";
 
 	@Inject
 	private MicrobotPluginManager(
@@ -123,9 +127,8 @@ public class MicrobotPluginManager
 	 * Initializes the MicrobotPluginManager
 	 */
 	public void init() {
-		loadManifest();
 		migrateLegacyPluginsJson();
-		executor.scheduleWithFixedDelay(this::loadManifest, 10, 10, TimeUnit.MINUTES);
+		executor.scheduleWithFixedDelay(this::loadManifest, 0, 10, TimeUnit.MINUTES);
 	}
 
 	/**
@@ -377,7 +380,6 @@ public class MicrobotPluginManager
 				}
 			}
 			loadPlugins(plugins, null);
-			eventBus.post(new ExternalPluginsChanged());
 		}
 		catch (PluginInstantiationException | IOException e)
 		{
@@ -387,6 +389,10 @@ public class MicrobotPluginManager
 
 	public void loadSideLoadPlugins()
 	{
+		if (safeMode) {
+			log.warn("Safe mode is enabled, skipping loading of sideloaded plugins.");
+			return;
+		}
 		File[] files = createSideloadingFolder();
 		if (files == null)
 		{
@@ -415,6 +421,7 @@ public class MicrobotPluginManager
 			}
 			loadSideLoadPlugin(internalName);
 		}
+		eventBus.post(new ExternalPluginsChanged());
 	}
 
     /**
@@ -604,13 +611,103 @@ public class MicrobotPluginManager
         return plugin;
     }
 
-    public void loadCorePlugins(List<Class<?>> plugins) throws IOException, PluginInstantiationException
-    {
-        SplashScreen.stage(.59, null, "Loading plugins");
+	/**
+	 * Determines if a class is a Microbot-related Plugin that should be loaded.
+	 * This includes plugins from utility packages, UI components, and specific Microbot systems.
+	 *
+	 * @param clazz the class to check
+	 * @return true if the class should be included in Microbot plugin loading
+	 */
+	private static boolean isMicrobotRelatedPlugin(Class<?> clazz) {
+		if (clazz == null || clazz.getPackage() == null) {
+			return false;
+		}
 
-        loadPlugins(plugins, (loaded, total) ->
-                SplashScreen.stage(.60, .70, null, "Loading plugins", loaded, total, false));
-    }
+		if (!Plugin.class.isAssignableFrom(clazz) || clazz == Plugin.class) {
+			return false;
+		}
+
+		PluginDescriptor descriptor = clazz.getAnnotation(PluginDescriptor.class);
+		if (descriptor == null) {
+			return false;
+		}
+
+		String pkg = clazz.getPackage().getName();
+
+		if (pkg.startsWith(PLUGIN_PACKAGE)) {
+			return pkg.equals(PLUGIN_PACKAGE)
+				|| pkg.contains(".ui")
+				|| pkg.contains(".util")
+				|| pkg.contains(".shortestpath")
+				|| pkg.contains(".rs2cachedebugger")
+				|| pkg.contains(".questhelper")
+				|| pkg.contains("pluginscheduler")
+				|| pkg.contains("inventorysetups")
+				|| pkg.contains("breakhandler");
+		}
+
+		return false;
+	}
+
+	/**
+	 * Scans the classpath for Microbot-related Plugin classes and returns them.
+	 * This includes plugin classes from utility packages, UI components, and specific Microbot systems.
+	 *
+	 * @return list of Microbot-related Plugin classes found on the classpath
+	 */
+	private List<Class<?>> scanForMicrobotPlugins() {
+		List<Class<?>> microbotPlugins = new ArrayList<>();
+
+		try {
+			ClassPath classPath = ClassPath.from(getClass().getClassLoader());
+
+			for (ClassPath.ClassInfo classInfo : classPath.getAllClasses()) {
+				if (!classInfo.getPackageName().startsWith(PLUGIN_PACKAGE)) {
+					continue;
+				}
+
+				try {
+					Class<?> clazz = classInfo.load();
+					if (isMicrobotRelatedPlugin(clazz)) {
+						microbotPlugins.add(clazz);
+						log.debug("Found Microbot plugin class: {}", clazz.getName());
+					}
+				} catch (Throwable e) {
+					log.trace("Could not load class during Microbot scan: {}", classInfo.getName(), e);
+				}
+			}
+
+			log.info("Found {} additional Microbot plugin classes during classpath scan", microbotPlugins.size());
+		} catch (IOException e) {
+			log.error("Failed to scan classpath for Microbot plugin classes", e);
+		}
+
+		return microbotPlugins;
+	}
+
+	public void loadCorePlugins(List<Class<?>> plugins) throws PluginInstantiationException
+	{
+		SplashScreen.stage(.59, null, "Loading plugins");
+		List<Class<?>> combinedPlugins = new ArrayList<>(plugins);
+
+		List<Class<?>> additionalMicrobotPlugins = scanForMicrobotPlugins();
+
+		Set<Class<?>> existingPlugins = new HashSet<>(plugins);
+
+		List<Class<?>> newMicrobotPlugins = additionalMicrobotPlugins.stream()
+			.filter(clazz -> !existingPlugins.contains(clazz))
+			.collect(Collectors.toList());
+
+		combinedPlugins.addAll(newMicrobotPlugins);
+
+		log.info("Loading core plugins: {} passed in + {} core Microbot plugins = {} total",
+			plugins.size(), newMicrobotPlugins.size(), combinedPlugins.size());
+
+		if (!combinedPlugins.isEmpty()) {
+			loadPlugins(combinedPlugins, (loaded, total) ->
+				SplashScreen.stage(.60, .70, null, "Loading Microbot plugins", loaded, total, false));
+		}
+	}
 
 	@Subscribe
 	public void onClientShutdown(ClientShutdown shutdown)
@@ -637,6 +734,11 @@ public class MicrobotPluginManager
 	 * Refreshes plugins when the profile changes or when install/remove operations occur.
 	 */
 	private void refresh() {
+		if (safeMode) {
+			log.warn("Safe mode is enabled, skipping loading of sideloaded plugins.");
+			return;
+		}
+
 		if (isShuttingDown.get()) {
 			return;
 		}
@@ -652,6 +754,34 @@ public class MicrobotPluginManager
 			log.debug("Starting plugin refresh");
 
 			List<MicrobotPluginManifest> installedPlugins = getInstalledPlugins();
+
+			List<MicrobotPluginManifest> disabledPlugins = installedPlugins.stream()
+				.filter(plugin -> {
+					MicrobotPluginManifest upstreamManifest = manifestMap.get(plugin.getInternalName());
+					return upstreamManifest != null && upstreamManifest.isDisable();
+				})
+				.collect(Collectors.toList());
+
+			if (!disabledPlugins.isEmpty()) {
+				log.warn("Found {} disabled plugin(s) that have been disabled upstream:", disabledPlugins.size());
+				for (MicrobotPluginManifest disabledPlugin : disabledPlugins) {
+					log.warn("  - Plugin '{}' ({}) has been disabled upstream and will be removed from your installed plugins",
+						disabledPlugin.getDisplayName(), disabledPlugin.getInternalName());
+				}
+
+				List<MicrobotPluginManifest> enabledPlugins = installedPlugins.stream()
+					.filter(plugin -> {
+						MicrobotPluginManifest upstreamManifest = manifestMap.get(plugin.getInternalName());
+						return upstreamManifest == null || !upstreamManifest.isDisable();
+					})
+					.collect(Collectors.toList());
+
+				saveInstalledPlugins(enabledPlugins);
+				installedPlugins = enabledPlugins;
+
+				log.info("Automatically removed {} disabled plugin(s) from your installed plugins list", disabledPlugins.size());
+			}
+
 			Set<String> installedNames = installedPlugins.stream()
 				.map(MicrobotPluginManifest::getInternalName)
 				.collect(Collectors.toSet());
@@ -659,7 +789,14 @@ public class MicrobotPluginManager
 			List<Plugin> allLoadedPlugins = new ArrayList<>(pluginManager.getPlugins());
 
 			List<Plugin> loadedExternalPlugins = allLoadedPlugins.stream()
-				.filter(plugin -> getPluginManifest(plugin) != null)
+				.filter(plugin -> {
+					PluginDescriptor descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
+					if (descriptor == null || !descriptor.isExternal()) {
+						return false;
+					}
+					String packageName = plugin.getClass().getPackage().getName();
+					return packageName.contains("microbot");
+				})
 				.collect(Collectors.toList());
 
 			Set<String> loadedPluginNames = loadedExternalPlugins.stream()
@@ -886,41 +1023,42 @@ public class MicrobotPluginManager
 	/**
 	 * Installs a plugin and triggers UI refresh.
 	 *
-	 * @param internalName the internal name of the plugin to install
+	 * @param manifest the manifest of the plugin to install
 	 */
-	public void installPlugin(String internalName) {
-		executor.submit(() -> {
-			install(internalName);
-			SwingUtilities.invokeLater(() -> eventBus.post(new ExternalPluginsChanged()));
-		});
+	public void installPlugin(MicrobotPluginManifest manifest) {
+		executor.submit(() -> install(manifest));
 	}
 
 	/**
 	 * Removes a plugin and triggers UI refresh.
 	 *
-	 * @param internalName the internal name of the plugin to remove
+	 * @param manifest the manifest of the plugin to remove
 	 */
-	public void removePlugin(String internalName) {
-		executor.submit(() -> {
-			remove(internalName);
-			SwingUtilities.invokeLater(() -> eventBus.post(new ExternalPluginsChanged()));
-		});
+	public void removePlugin(MicrobotPluginManifest manifest) {
+		executor.submit(() -> remove(manifest));
 	}
 
 	/**
 	 * Installs a plugin by adding it to the installed plugins list in config.
 	 *
-	 * @param internalName the internal name of the plugin to install
+	 * @param manifest the manifest of the plugin to install
 	 */
-	public void install(String internalName) {
+	public void install(MicrobotPluginManifest manifest) {
+		if (manifest == null || !manifestMap.containsValue(manifest)) {
+			log.error("Can't install plugin: unable to identify manifest");
+			return;
+		}
+
+		final String internalName = manifest.getInternalName();
 		if (internalName == null || internalName.isEmpty()) {
 			log.error("Cannot install plugin: internal name is null or empty");
 			return;
 		}
 
-		MicrobotPluginManifest manifest = manifestMap.get(internalName);
-		if (manifest == null) {
-			log.error("Cannot install plugin {}: manifest not found", internalName);
+		if (manifest.isDisable()) {
+			log.warn("Cannot install plugin '{}' ({}): This plugin has been disabled upstream by the developers. " +
+				"This usually means the plugin is no longer functional, has security issues, or has been deprecated.",
+				manifest.getDisplayName(), internalName);
 			return;
 		}
 
@@ -942,9 +1080,16 @@ public class MicrobotPluginManager
 	/**
 	 * Removes a plugin by removing it from the installed plugins list in config.
 	 *
-	 * @param internalName the internal name of the plugin to remove
+	 * @param manifest the manifest of the plugin to remove
 	 */
-	public void remove(String internalName) {
+	public void remove(MicrobotPluginManifest manifest) {
+		if (manifest == null) {
+			log.error("Can't remove plugin: unable to identify manifest");
+			return;
+		}
+
+		final String internalName = manifest.getInternalName();
+
 		if (internalName == null || internalName.isEmpty()) {
 			log.error("Cannot remove plugin: internal name is null or empty");
 			return;
@@ -976,7 +1121,6 @@ public class MicrobotPluginManager
 
 	/**
 	 * Gets the manifest for a given plugin, this pulls from the global manifest map.
-	 * which is important for detecting plugins from other profiles that are still loaded.
 	 *
 	 * @param plugin the plugin to get the manifest for
 	 * @return the manifest for the plugin, or null if not found or not an external plugin
@@ -995,7 +1139,6 @@ public class MicrobotPluginManager
 
 	/**
 	 * Gets the manifest for a plugin from the current profile's installed plugins list only.
-	 * This is used for operations that should only work with the current profile's plugins.
 	 *
 	 * @param internalName the internal name of the plugin
 	 * @return the manifest for the plugin from the current profile, or null if not found
