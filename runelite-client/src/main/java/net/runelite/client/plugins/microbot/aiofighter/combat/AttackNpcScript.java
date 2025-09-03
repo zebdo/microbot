@@ -4,7 +4,6 @@ import lombok.SneakyThrows;
 import net.runelite.api.Actor;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterConfig;
@@ -18,6 +17,7 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
+import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldArea;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -162,11 +162,19 @@ public class AttackNpcScript extends Script {
                 }
                 messageShown = false;
 
-
-                if (Rs2AntibanSettings.actionCooldownActive) {
-                    AIOFighterPlugin.setState(State.COMBAT);
-                    handleItemOnNpcToKill(config);
-                    return;
+                if(Rs2AntibanSettings.antibanEnabled && Rs2AntibanSettings.actionCooldownChance > 0){
+                    if (Rs2AntibanSettings.actionCooldownActive) {
+                        AIOFighterPlugin.setState(State.COMBAT);
+                        handleItemOnNpcToKill(config);
+                        return;
+                    }
+                }
+                else {
+                    if (Rs2Combat.inCombat()) {
+                        AIOFighterPlugin.setState(State.COMBAT);
+                        handleItemOnNpcToKill(config);
+                        return;
+                    }
                 }
 
                 if (!attackableNpcs.isEmpty()) {
