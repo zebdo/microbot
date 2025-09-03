@@ -1,9 +1,9 @@
 package net.runelite.client.plugins.microbot.qualityoflife;
 
 import net.runelite.client.config.*;
-import net.runelite.client.plugins.microbot.fletching.enums.FletchingItem;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.qualityoflife.enums.CraftingItem;
+import net.runelite.client.plugins.microbot.qualityoflife.enums.FletchingItem;
 import net.runelite.client.plugins.microbot.qualityoflife.enums.WintertodtActions;
 import net.runelite.client.plugins.microbot.util.misc.SpecialAttackWeaponEnum;
 
