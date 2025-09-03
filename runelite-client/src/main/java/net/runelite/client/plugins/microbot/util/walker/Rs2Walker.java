@@ -1951,15 +1951,15 @@ public class Rs2Walker {
     /**
      * Checks if the player's current location is within the specified area defined by the given world points.
      *
-     * @param worldPoints an array of two world points of the NW and SE corners of the area
+     * @param worldPoints an array of two world points of the SE and NW corners of the area
      * @return true if the player's current location is within the specified area, false otherwise
      */
     public static boolean isInArea(WorldPoint... worldPoints) {
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
-        return playerLocation.getX() <= worldPoints[0].getX() &&   // NW corner x
-                playerLocation.getY() >= worldPoints[0].getY() &&   // NW corner y
-                playerLocation.getX() >= worldPoints[1].getX() &&   // SE corner x
-                playerLocation.getY() <= worldPoints[1].getY();     // SE corner Y
+        return playerLocation.getX() <= worldPoints[0].getX() &&   // SE corner x
+                playerLocation.getY() >= worldPoints[0].getY() &&   // SE corner y
+                playerLocation.getX() >= worldPoints[1].getX() &&   // NW corner x
+                playerLocation.getY() <= worldPoints[1].getY();     // NW corner Y
         // draws box from 2 points to check against all variations of player X,Y from said points.
     }
 
@@ -1972,9 +1972,9 @@ public class Rs2Walker {
      */
     @Deprecated(since = "1.5.5", forRemoval = true)
     public static boolean isInArea(WorldPoint centerOfArea, int range) {
-        WorldPoint nwCorner = new WorldPoint(centerOfArea.getX() + range + range, centerOfArea.getY() - range, centerOfArea.getPlane());
-        WorldPoint seCorner = new WorldPoint(centerOfArea.getX() - range - range, centerOfArea.getY() + range, centerOfArea.getPlane());
-        return isInArea(nwCorner, seCorner); // call to our sibling
+        WorldPoint seCorner = new WorldPoint(centerOfArea.getX() + range, centerOfArea.getY() - range, centerOfArea.getPlane());
+        WorldPoint nwCorner = new WorldPoint(centerOfArea.getX() - range, centerOfArea.getY() + range, centerOfArea.getPlane());
+        return isInArea(seCorner, nwCorner); // call to our sibling
     }
 
     public static boolean isNear() {
