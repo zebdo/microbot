@@ -127,8 +127,11 @@ public class MicrobotPluginManager
 	 * Initializes the MicrobotPluginManager
 	 */
 	public void init() {
-		migrateLegacyPluginsJson();
-		executor.scheduleWithFixedDelay(this::loadManifest, 0, 10, TimeUnit.MINUTES);
+		executor.submit(() -> {
+			loadManifest();
+			migrateLegacyPluginsJson();
+		});
+		executor.scheduleWithFixedDelay(this::loadManifest, 10, 10, TimeUnit.MINUTES);
 	}
 
 	/**
@@ -833,14 +836,19 @@ public class MicrobotPluginManager
 			Set<String> needsRedownload = validManifests.keySet().stream()
 				.filter(pluginName -> {
 					File pluginFile = getPluginJarFile(pluginName);
-					if (!needsDownload.contains(pluginName)) {
+					if (!pluginFile.exists())
+					{
 						return false;
 					}
-					if (!verifyHash(pluginName)) {
+					if (!verifyHash(pluginName))
+					{
 						log.info("Hash verification failed for plugin: {}. Marking for redownload.", pluginName);
-						if (pluginFile.delete()) {
+						if (pluginFile.delete())
+						{
 							log.info("Deleted outdated plugin file: {}", pluginFile.getName());
-						} else {
+						}
+						else
+						{
 							log.warn("Failed to delete outdated plugin file: {}", pluginFile.getAbsolutePath());
 						}
 						return true;
@@ -916,6 +924,7 @@ public class MicrobotPluginManager
 				try {
 					if (!verifyHash(pluginName)) {
 						log.warn("Plugin hash verification failed for: {}. The installed version may be outdated or from a different source.", pluginName);
+						continue;
 					}
 
 					List<Class<?>> pluginClasses = new ArrayList<>();
@@ -986,7 +995,7 @@ public class MicrobotPluginManager
 			File pluginFile = getPluginJarFile(internalName);
 
 			HttpUrl jarUrl = microbotPluginClient.getJarURL(manifest);
-			if (jarUrl == null) {
+			if (jarUrl == null || !jarUrl.isHttps()) {
 				log.error("Invalid JAR URL for plugin {}", internalName);
 				return false;
 			}
