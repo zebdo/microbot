@@ -4692,9 +4692,9 @@
 											
 # watchtower											
 2933 4712 2	2549 3112 1	Climb-down;Ladder;2797									
-2549 3112 1	2933 4712 2	Climb-down;Ladder;2797									
+2549 3112 1	2933 4712 2	Climb-up;Ladder;2796
 2544 3112 1	2544 3112 0	Climb-down;Ladder;17122									
-2544 3112 0	2544 3112 1	Climb-down;Ladder;17122									
+2544 3112 0	2544 3112 1	Climb-up;Ladder;2833
 											
 # kourend											
 1618 3680 0	1614 3680 1	Climb-up;Staircase;11807									
@@ -4704,12 +4704,12 @@
 1639 3673 0	1666 10050 0	Investigate;Statue;27785									
 1666 10050 0	1639 3673 0	Climb-up;Vine ladder;28894									
 1562 3791 0	1617 10101 0	Enter;Hole;28921					5090=1				
-1617 10101 0	1562 3791 0	Climb-up;Vine;28895									
+1617 10101 0	1562 3791 0	Climb-up;Vine;28895					5090=1
 1469 3653 0	1650 9987 0	Enter;Hole;28919					5080=1				
-1650 9987 0	1469 3653 0	Climb-up;Vine;28895									
+1650 9987 0	1469 3653 0	Climb-up;Vine;28895					5080=1
 1696 3864 0	1719 10101 0	Enter;Hole;28920					5070=1				
-1719 10101 0	1696 3864 0	Climb-up;Vine;28898									
-1727 9993 0	1803 9968 0	Climb-up;Vine;28897	 								
+1719 10101 0	1696 3864 0	Climb-up;Vine;28898					5070=1
+1727 9993 0	1803 9968 0	Climb-up;Vine;28897	 				5087=1
 1803 9968 0	1727 9993 0	Enter;Strange passage;28918	 				5087=1				
 1670 3569 0	1800 9968 0	Climb-down;Staircase;34865									
 1800 9968 0	1670 3569 0	Climb-up;Staircase;34864									
@@ -5185,3 +5185,7 @@
 # CRASH SITE
 2026 5611 0	2128 5647 0	Enter;Cavern Entrance;28686
 2128 5647 0	2026 5611 0	Climb-up;Rope;28687
+
+# Isle of Souls
+2310 2919 0	2167 9308 0	Enter;Cave;40736
+2167 9308 0	2310 2919 0	Exit;Opening;40737

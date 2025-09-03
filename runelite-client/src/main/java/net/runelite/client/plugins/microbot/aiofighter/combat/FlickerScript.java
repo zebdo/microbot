@@ -173,7 +173,7 @@ public class FlickerScript extends Script {
                 AttackStyle attackStyle = AttackStyleMapper.mapToAttackStyle(style);
 
                 if (m != null) {
-                    if (forceReset && m.lastAttack <= 0) {
+                    if (forceReset && (m.lastAttack <= 0 || npc.getAnimation() != -1)) {
                         m.lastAttack = m.rs2NpcStats.getAttackSpeed();
                     }
                     if ((!npc.isDead() && m.lastAttack <= 0) ||

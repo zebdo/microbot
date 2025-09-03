@@ -215,6 +215,39 @@ public class PluginManager {
         }
     }
 
+    /**
+     * Loads core RuneLite plugins, excluding any Microbot-related plugins.
+     * This method filters out plugins from the microbot package hierarchy.
+     */
+    public void loadCoreRunelitePlugins() throws IOException, PluginInstantiationException {
+        SplashScreen.stage(.59, null, "Loading core RuneLite plugins");
+        ClassPath classPath = ClassPath.from(getClass().getClassLoader());
+
+        List<Class<?>> plugins = classPath.getTopLevelClassesRecursive(PLUGIN_PACKAGE).stream()
+                .map(ClassInfo::load)
+                .filter(clazz -> !isMicrobotRelatedClass(clazz))
+                .collect(Collectors.toList());
+
+        loadPlugins(plugins, (loaded, total) ->
+                SplashScreen.stage(.60, .70, null, "Loading core RuneLite plugins", loaded, total, false));
+    }
+
+    /**
+     * Determines if a class is related to Microbot and should be excluded from core RuneLite plugin loading.
+     *
+     * @param clazz the class to check
+     * @return true if the class is Microbot-related and should be filtered out
+     */
+    private static boolean isMicrobotRelatedClass(Class<?> clazz) {
+        if (clazz == null || clazz.getPackage() == null) {
+            return false;
+        }
+
+        String packageName = clazz.getPackage().getName();
+
+        return packageName.startsWith(PLUGIN_PACKAGE + ".microbot");
+    }
+
     public void loadCorePlugins() throws IOException, PluginInstantiationException {
         SplashScreen.stage(.59, null, "Loading plugins");
         ClassPath classPath = ClassPath.from(getClass().getClassLoader());
@@ -224,49 +257,6 @@ public class PluginManager {
                 .collect(Collectors.toList());
 
         loadPlugins(plugins, (loaded, total) ->
-                SplashScreen.stage(.60, .70, null, "Loading plugins", loaded, total, false));
-    }
-
-    /**
-     * This excludes any microbot plugin
-     *
-     * @throws IOException
-     * @throws PluginInstantiationException
-     */
-    public void loadRuneliteCorePlugins() throws IOException, PluginInstantiationException {
-        SplashScreen.stage(.59, null, "Loading plugins");
-        ClassPath classPath = ClassPath.from(getClass().getClassLoader());
-
-        List<Class<?>> microbotPlugins = new ArrayList<>();
-        List<Class<?>> otherPlugins = new ArrayList<>();
-
-        for (ClassInfo classInfo : classPath.getTopLevelClassesRecursive(PLUGIN_PACKAGE)) {
-
-            Class<?> clazz = classInfo.load();
-            String pkg = clazz.getPackageName().toLowerCase();
-
-
-            /**
-             * TODO: Over time these should be moved into a core folder within the microbot plugins folder
-             * This way we can easily detect any core plugins required to run microbot
-             */
-            if (pkg.contains(".microbot") && (
-                    pkg.contains(".util")
-                            || pkg.contains(".ui")
-                            || pkg.endsWith("microbot")
-                            || pkg.contains(".shortestpath")
-                            || pkg.contains(".rs2cachedebugger")
-                            || pkg.contains("pluginscheduler")
-                            || pkg.contains("inventorysetups"))) {
-                microbotPlugins.add(clazz);
-            } else if (!pkg.contains("microbot")) {
-                otherPlugins.add(clazz);
-            }
-        }
-
-        otherPlugins.addAll(microbotPlugins);
-
-        loadPlugins(otherPlugins, (loaded, total) ->
                 SplashScreen.stage(.60, .70, null, "Loading plugins", loaded, total, false));
     }
 

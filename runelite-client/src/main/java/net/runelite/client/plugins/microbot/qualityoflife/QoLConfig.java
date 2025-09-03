@@ -1,9 +1,9 @@
 package net.runelite.client.plugins.microbot.qualityoflife;
 
 import net.runelite.client.config.*;
-import net.runelite.client.plugins.microbot.fletching.enums.FletchingItem;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.qualityoflife.enums.CraftingItem;
+import net.runelite.client.plugins.microbot.qualityoflife.enums.FletchingItem;
 import net.runelite.client.plugins.microbot.qualityoflife.enums.WintertodtActions;
 import net.runelite.client.plugins.microbot.util.misc.SpecialAttackWeaponEnum;
 
@@ -132,6 +132,13 @@ public interface QoLConfig extends Config {
         position = 90
     )
     String autoPrayerSection = "autoPrayerSection";
+
+    @ConfigSection(
+            name = "Grand Exchange",
+            description = "Grand Exchange settings",
+            position = 91
+    )
+    String grandExchangeSection = "grandExchangeSection";
 
     // boolean to render Max Hit Overlay
     @ConfigItem(
@@ -934,4 +941,14 @@ public interface QoLConfig extends Config {
         return false;
     }
 
+    @ConfigItem(
+            keyName = "grandExchangeHotkey",
+            name = "Paste and Search GE Hotkey",
+            description = "Pastes clipboard text into the GE search box.",
+            position = 0,
+            section = grandExchangeSection
+    )
+    default Keybind grandExchangeHotkey() {
+        return Keybind.NOT_SET;
+    }
 }

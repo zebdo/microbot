@@ -262,7 +262,7 @@ public class MahoganyHomesScript extends Script {
         if (plugin.getCurrentHome() != null
                 && plugin.getCurrentHome().isInside(Rs2Player.getWorldLocation())
                 && Hotspot.isEverythingFixed()) {
-            if(plugin.getConfig().usePlankSack() && planksInPlankSack() > 0){
+            if(plugin.getConfig().usePlankSack() && planksInPlankSack() > 0 && !Rs2Inventory.isFull()){
                 if (Rs2Inventory.contains(ItemID.PLANK_SACK) && Rs2Inventory.contains(ItemID.STEEL_BAR)) {
                     Rs2ItemModel plankSack = Rs2Inventory.get(ItemID.PLANK_SACK);
                     if (plankSack != null) {
@@ -322,11 +322,22 @@ public class MahoganyHomesScript extends Script {
                 log("Getting new contract");
 
 
-                var npc = Rs2Npc.getNpcWithAction("Contract");
+                // Search for Mahogany Homes contract NPCs directly by name
+                var npc = Rs2Npc.getNpcs()
+                    .filter(n -> n.getName() != null && 
+                           (n.getName().equals("Amy") || 
+                            n.getName().equals("Marlo") || 
+                            n.getName().equals("Ellie") || 
+                            n.getName().equals("Angelo")))
+                    .findFirst()
+                    .orElse(null);
+                
                 if (npc == null) {
+                    log("No contract NPC found, waiting before retry");
+                    sleep(2000, 3000);  // Wait 2-3 seconds to prevent spam
                     return;
                 }
-                log("NPC found: " + npc.getComposition().transform().getName());
+                log("NPC found: " + npc.getName());
                 if (Rs2Npc.interact(npc, "Contract")) {
                     handleContractDialogue();
                 }
@@ -338,9 +349,13 @@ public class MahoganyHomesScript extends Script {
     }
 
     public void handleContractDialogue() {
-        sleepUntil(Rs2Dialogue::hasSelectAnOption, Rs2Dialogue::clickContinue, 10000, 300);
+        // Reduced timeout and early return if dialogue not available
+        if (!sleepUntil(Rs2Dialogue::hasSelectAnOption, Rs2Dialogue::clickContinue, 5000, 300)) {
+            log("No dialogue options available, returning early");
+            return;
+        }
         Rs2Dialogue.keyPressForDialogueOption(plugin.getConfig().currentTier().getPlankSelection().getChatOption());
-        sleepUntil(Rs2Dialogue::hasContinue, 10000);
+        sleepUntil(Rs2Dialogue::hasContinue, 5000);
         sleep(400, 800);
         sleepUntil(() -> !Rs2Dialogue.isInDialogue(), Rs2Dialogue::clickContinue, 6000, 300);
         sleep(1200, 2200);
@@ -394,12 +409,30 @@ public class MahoganyHomesScript extends Script {
                             Rs2Bank.withdrawAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
                             Rs2Bank.closeBank();
                     } else {
-                        if (Rs2Inventory.getEmptySlots() - steelBarsNeeded() > 0)
-                            Rs2Bank.withdrawX(plugin.getConfig().currentTier().getPlankSelection().getPlankId(), Rs2Inventory.getEmptySlots() - steelBarsNeeded());
-                        sleep(600, 1200);
+                        // Withdraw steel bars first if needed
                         if (steelBarsNeeded() > steelBarsInInventory()) {
-                            Rs2Bank.withdrawX(ItemID.STEEL_BAR, steelBarsNeeded());
-                            sleep(600, 1200);
+                            Rs2Bank.withdrawX(ItemID.STEEL_BAR, steelBarsNeeded() - steelBarsInInventory());
+                            Rs2Inventory.waitForInventoryChanges(5000);
+                        }
+                        
+                        // Calculate if we'll have enough space for planks after steel bars
+                        int freeSlots = Rs2Inventory.getEmptySlots();
+                        int currentPlanks = planksInInventory() + planksInPlankSack();
+                        int additionalPlanksNeeded = planksNeeded() - currentPlanks;
+                        
+                        if (additionalPlanksNeeded <= 0) {
+                            // We already have enough planks
+                            log("Already have sufficient planks: %d/%d", currentPlanks, planksNeeded());
+                        } else if (freeSlots >= additionalPlanksNeeded) {
+                            // Withdraw all planks to fill inventory
+                            Rs2Bank.withdrawAll(plugin.getConfig().currentTier().getPlankSelection().getPlankId());
+                            Rs2Inventory.waitForInventoryChanges(5000);
+                        } else {
+                            // This should never happen - inventory can't fit required materials
+                            log("CRITICAL ERROR: Need %d more planks but only %d slots available!", additionalPlanksNeeded, freeSlots);
+                            Microbot.showMessage("Please free up inventory space! Need " + additionalPlanksNeeded + " more planks but only " + freeSlots + " slots available. Stopping script.");
+                            shutdown();
+                            return;
                         }
                     }
                     Rs2Bank.closeBank();
