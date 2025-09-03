@@ -36,6 +36,10 @@ public class LootScript extends Script {
                     return;
                 }
 
+                if (config.toggleWaitForLoot()) {
+                    //TODO: currently disabled as it had merge conflicts with ducks changes.
+                }
+
 
                 if (config.looterStyle().equals(DefaultLooterStyle.MIXED) || config.looterStyle().equals(DefaultLooterStyle.ITEM_LIST)) {
                     lootItemsOnName(config);
@@ -54,42 +58,6 @@ public class LootScript extends Script {
                 lootArrows(config);
 
             } catch(Exception ex) {
-                // Defer clearing wait-for-loot until we successfully pick at least one item
-                //Pause other scripts before looting and always release
-                boolean previousPauseState = Microbot.pauseAllScripts.getAndSet(true);
-                try {
-                    boolean clearedWait = false;
-                    for (GroundItem groundItem : groundItems) {
-                        if (Rs2Inventory.emptySlotCount() <= minFreeSlots && !canStackItem(groundItem)) {
-                            Microbot.log("Unable to pick loot: " + groundItem.getName() + " making space");
-                            if (!config.eatFoodForSpace()) {
-                                continue;
-                            }
-                            int emptySlots = Rs2Inventory.emptySlotCount();
-                            if (Rs2Player.eatAt(100, true)) {
-                                sleepUntil(() -> emptySlots < Rs2Inventory.emptySlotCount(), 1200);
-                            }
-                            // If we still don't have space and can't stack this item, skip it
-                            if (Rs2Inventory.emptySlotCount() <= minFreeSlots && !canStackItem(groundItem)) {
-                                continue;
-                            }
-                        }
-                        Microbot.log("Picking up loot: " + groundItem.getName());
-                        if (!waitForGroundItemDespawn(() -> interact(groundItem), groundItem)) {
-                            // Skip this item and continue to the next rather than aborting the whole pass
-                            continue;
-                        }
-                        // Clear wait state after first successful pickup
-                        if (!clearedWait && AIOFighterPlugin.isWaitingForLoot()) {
-                            AIOFighterPlugin.clearWaitForLoot("First loot item picked up");
-                            clearedWait = true;
-                        }
-                    }
-                    Microbot.log("Looting complete");
-                } finally {
-                    Microbot.pauseAllScripts.set(previousPauseState);
-                }
-            } catch (Exception ex) {
                 Microbot.log("Looterscript: " + ex.getMessage());
             }
 
