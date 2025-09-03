@@ -99,6 +99,12 @@ public class Rs2Walker {
 
     public static boolean disableTeleports = false;
 
+    // Trapdoor and manhole mappings for open/closed states
+    private static final Map<Integer, Integer> OPEN_TO_CLOSED_MAPPINGS = Map.of(
+        1581, 1579, // open trapdoor -> closed trapdoor
+        882, 881    // open manhole -> closed manhole
+    );
+
     public static boolean walkTo(int x, int y, int plane) {
         return walkTo(x, y, plane, config.reachedDistance());
     }
@@ -1552,17 +1558,13 @@ public class Rs2Walker {
 
 					if (transport.getObjectId() <= 0) break;
 
-					Map<Integer, Integer> openToClosedTrapdoors = new HashMap<>();
-					openToClosedTrapdoors.put(1581, 1579); // open trapdoor -> closed trapdoor
-					openToClosedTrapdoors.put(882, 881); // open manhole -> closed manhole
-
-					// Determine which object IDs to search for
+					// Use class-level constants for object ID mapping
 					List<Integer> objectIdsToSearch = new ArrayList<>();
 					objectIdsToSearch.add(transport.getObjectId());
 
 					// If this transport is for an open trapdoor, also search for the closed version
-					if (openToClosedTrapdoors.containsKey(transport.getObjectId())) {
-						objectIdsToSearch.add(openToClosedTrapdoors.get(transport.getObjectId()));
+					if (OPEN_TO_CLOSED_MAPPINGS.containsKey(transport.getObjectId())) {
+						objectIdsToSearch.add(OPEN_TO_CLOSED_MAPPINGS.get(transport.getObjectId()));
 					}
 
 					List<TileObject> objects = Rs2GameObject.getAll(o -> objectIdsToSearch.contains(o.getId()), transport.getOrigin(), 10).stream()
@@ -1624,11 +1626,7 @@ public class Rs2Walker {
     }
 
     private static boolean handleObjectExceptions(Transport transport, TileObject tileObject) {
-        Map<Integer, Integer> trapdoors = new HashMap<>();
-        trapdoors.put(1579, 1581); // closed trapdoor -> open trapdoor
-        trapdoors.put(881, 882); // closed manhole -> open manhole (used for varrock sewers)
-
-        for (Map.Entry<Integer, Integer> entry : trapdoors.entrySet()) {
+        for (Map.Entry<Integer, Integer> entry : OPEN_TO_CLOSED_MAPPINGS.entrySet()) {
             final int closedTrapdoorId = entry.getKey();
 			final int openTrapdoorId = entry.getValue();
 
