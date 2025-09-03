@@ -16,6 +16,9 @@ import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
+import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.skillcalculator.skills.MagicAction;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.agility.courses.PyramidObstacleData.ObstacleArea;
@@ -1157,7 +1160,7 @@ public class PyramidCourse implements AgilityCourseHandler {
                     }
                 } else {
                     // Not in dialogue, use pyramid top on Simon
-                    boolean used = Rs2Inventory.useItemOnNpc(ItemID.PYRAMID_TOP, simon);
+                    boolean used = Rs2Inventory.useItemOnNpc(ItemID.PYRAMID_TOP, new Rs2NpcModel(simon));
                     if (used) {
                         log.debug("Successfully used pyramid top on Simon");
                         Global.sleepUntil(() -> Rs2Dialogue.isInDialogue(), 3000);
@@ -1197,19 +1200,35 @@ public class PyramidCourse implements AgilityCourseHandler {
             return false;
         }
     }
-    
-    /**
-     * Checks for empty waterskins in inventory and drops them
-     * @return true if waterskins were dropped, false otherwise
-     */
+
+
     private boolean handleEmptyWaterskins() {
-        if (Rs2Inventory.contains(ItemID.WATERSKIN0)) {
-            log.debug("Found empty waterskin(s), dropping them");
-            Rs2Inventory.drop(ItemID.WATERSKIN0);
-            Global.sleep(300, 500);
+        final boolean hasEmpty = Rs2Inventory.contains(ItemID.WATERSKIN0);
+        if (!hasEmpty) return false;
+
+        final boolean hasFilled = Rs2Inventory.contains(
+                ItemID.WATERSKIN1, ItemID.WATERSKIN2, ItemID.WATERSKIN3, ItemID.WATERSKIN4
+        );
+
+        if (!hasFilled && Rs2Magic.canCast(MagicAction.HUMIDIFY)) {
+            log.debug("All waterskins are empty; casting Humidify");
+            if (Rs2Magic.cast(MagicAction.HUMIDIFY)) {
+                Global.sleepUntil(Rs2Player::isAnimating, 1500);
+                Global.sleepUntil(() -> !Rs2Player.isAnimating() && !Rs2Inventory.contains(ItemID.WATERSKIN0), 3500);
+                Global.sleep(200, 400);
+            }
             return true;
         }
-        return false;
+
+        if (hasFilled && Rs2Magic.canCast(MagicAction.HUMIDIFY)) {
+            log.debug("Have filled waterskin(s); not casting Humidify because not all Waterskins are empty");
+            return false;
+        }
+
+        log.debug("Cannot cast Humidify; dropping empty waterskin(s)");
+        Rs2Inventory.drop(ItemID.WATERSKIN0);
+        Global.sleep(300, 500);
+        return true;
     }
     
 }
