@@ -333,6 +333,9 @@ public class RuneLiteDebug {
         // Load user configuration
         configManager.load();
 
+		// Initialize MicrobotPluginManager after configManager is loaded
+		microbotPluginManager.init();
+
         // Update check requires ConfigManager to be ready before it runs
         Updater updater = injector.getInstance(Updater.class);
         updater.update(); // will exit if an update is in progress
@@ -359,6 +362,7 @@ public class RuneLiteDebug {
         eventBus.register(clientUI);
         eventBus.register(pluginManager);
         eventBus.register(externalPluginManager);
+		eventBus.register(microbotPluginManager);
         eventBus.register(overlayManager);
         eventBus.register(configManager);
         eventBus.register(discordService);
@@ -372,7 +376,7 @@ public class RuneLiteDebug {
 
         clientUI.show();
 
-        pluginManager.loadRuneliteCorePlugins();
+        pluginManager.loadCoreRunelitePlugins();
 
         microbotPluginManager.loadCorePlugins(pluginsToDebug);
 
