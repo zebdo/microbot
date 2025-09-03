@@ -1,7 +1,6 @@
 package net.runelite.client.plugins.microbot.breakhandler;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Constants;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.pluginscheduler.util.SchedulerPluginUtil;

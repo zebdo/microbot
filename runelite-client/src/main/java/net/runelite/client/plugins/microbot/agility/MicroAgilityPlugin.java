@@ -82,6 +82,7 @@ public class MicroAgilityPlugin extends Plugin implements SchedulablePlugin
 
 		// Initialize pre/post schedule tasks
 		if (Microbot.isLoggedIn()) {
+			getPrePostScheduleTasks(); // Ensure tasks are initialized if logged in at startup
 			// Check if running in schedule mode
 			if (isScheduleMode()) {
 				log.info("Agility Plugin started in Scheduler Mode, wait for the event trigger to run pre-schedule tasks");
@@ -168,15 +169,8 @@ public class MicroAgilityPlugin extends Plugin implements SchedulablePlugin
 		return stopCondition;
 	}
 	
-	private boolean isScheduleMode() {
-		// Check if the plugin is running in schedule mode
-		getPrePostScheduleTasks();
-		log.debug("Agility Plugin is in \n\tScheduler Mode: {} \n isInitialized?: {}", 
-			prePostScheduleTasks != null && prePostScheduleTasks.isScheduleMode(), 
-			prePostScheduleRequirements != null && prePostScheduleRequirements.isInitialized());
-
-		return prePostScheduleRequirements != null &&
-			   prePostScheduleTasks != null && prePostScheduleTasks.isScheduleMode();
+	private boolean isScheduleMode() {		
+		return AbstractPrePostScheduleTasks.isScheduleMode(this,getConfigDescriptor().getGroup().value());
 	}
 	
 	@Override
@@ -188,11 +182,12 @@ public class MicroAgilityPlugin extends Plugin implements SchedulablePlugin
             }
 			log.info("Initializing Agility Pre/Post Schedule Requirements and Tasks...");
 			this.prePostScheduleRequirements = new MicroAgilityPrePostScheduleRequirements(config);
-			
+			log.info("finalized Agility Pre/Post Schedule Requirements:\n{}", prePostScheduleRequirements.getDetailedDisplay());
 		}			
 		if (this.prePostScheduleTasks==null){
-			this.prePostScheduleTasks = new MicroAgilityPrePostScheduleTasks(this, prePostScheduleRequirements);				
-			log.info("Agility PrePostScheduleRequirements and PrePostTask System initialized:\n{}", prePostScheduleRequirements.getDetailedDisplay());
+			log.info("Creating Agility Pre/Post Schedule Tasks...");
+			this.prePostScheduleTasks = new MicroAgilityPrePostScheduleTasks(this, prePostScheduleRequirements);	
+			log.info("Agility Pre/Post Schedule Tasks created successfully");						
 		}
 				
 		// Return the pre/post schedule tasks instance
@@ -234,7 +229,7 @@ public class MicroAgilityPlugin extends Plugin implements SchedulablePlugin
 			log.debug("GameState changed to LOGGED_IN - initializing Agility tasks");
 			
 			// Only run pre-schedule tasks if in scheduler mode
-			if (!isScheduleMode()) {                           
+			if (!agilityScript.isRunning() && !isScheduleMode()) {                           
 				// In normal mode, start script if not already running
 				if (agilityScript != null && !agilityScript.isRunning()) {
 					log.debug("Game State - Agility Plugin in Normal Mode - starting script");

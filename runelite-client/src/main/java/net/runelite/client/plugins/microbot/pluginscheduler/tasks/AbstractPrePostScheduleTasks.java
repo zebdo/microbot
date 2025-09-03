@@ -531,7 +531,7 @@ public abstract class AbstractPrePostScheduleTasks implements AutoCloseable, Key
         }else{
             PluginScheduleEntry currentPlugin =  schedulablePlugin.getCurrentPlugin();            
             if (currentPlugin == null) {
-                log.warn("\nNo current plugin is running by the Scheduler Plugin, so it also can be the plugin is start in scheduler mode");
+                log.warn("\nNo current plugin is running by the Scheduler Plugin, so it also can not be the plugin is start in scheduler mode");
                 scheduleModeDetect =  false; // No current plugin is running, so it can not be in schedule mode
             }else{
                 if (currentPlugin.isRunning() && currentPlugin.getPlugin() != null && !currentPlugin.getPlugin().equals(plugin)) {

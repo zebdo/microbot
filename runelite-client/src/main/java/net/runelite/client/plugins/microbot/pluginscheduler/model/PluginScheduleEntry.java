@@ -2232,8 +2232,13 @@ public class PluginScheduleEntry implements AutoCloseable {
                         .map(condition -> (LockCondition) condition)
                         .anyMatch(LockCondition::isLocked);
             if(hasLockedConditions){
-                //**Should be done by the plugin itself, on shout down.. it also should only be relevant on a hard stop-> because otherwise the plugin should not be able to be stop at the first hand**
+                //Should be done by the plugin itself, on shout down.. 
+                //-- it also should only be relevant on a hard stop-> because otherwise the plugin should not be able to be stoped at the first hand**
                 //-- safeguard only, if the plugin is not running any more
+                if (reason != StopReason.HARD_STOP ){
+                    log.warn("Plugin '{}' has locked conditions but stop reason is '{}'. This may indicate the plugin did not handle shutdown properly.", 
+                            this.getCleanName(), reason);
+                }
                 log.debug("Unlocking any remaining lock conditions for the plugin '{}'", this.getCleanName());
                 this.getStopConditions().stream()
                         .filter(condition -> condition instanceof LockCondition)

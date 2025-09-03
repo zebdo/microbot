@@ -121,25 +121,25 @@ public class Rs2WorldUtil {
             world.getTypes().contains(WorldType.LEGACY_ONLY) ||
             world.getTypes().contains(WorldType.EOC_ONLY) ||
             world.getTypes().contains(WorldType.FRESH_START_WORLD)) {
-            log.warn("World {} has restricted type(s): {}", world.getId(), world.getTypes());
+            log.debug("World {} has restricted type(s): {}", world.getId(), world.getTypes());
             return false;
         }
         
         // Check player count limits
         if (world.getPlayers() >= 2000 || world.getPlayers() < 0) {
-            log.warn("World {} is full or has invalid player count: {}", world.getId(), world.getPlayers());
+            log.debug("World {} is full or has invalid player count: {}", world.getId(), world.getPlayers());
             return false;
         }
         
         // Check seasonal world compatibility (strict matching as in Login.java)
         if (isInSeasonalWorld != world.getTypes().contains(WorldType.SEASONAL)) {
-            log.warn("World {} seasonal type mismatch (player in seasonal: {}, world seasonal: {})",
+            log.debug("World {} seasonal type mismatch (player in seasonal: {}, world seasonal: {})",
                      world.getId(), isInSeasonalWorld, world.getTypes().contains(WorldType.SEASONAL));
             return false;
         }
         // Ensure the world is not seasonal if player is in not in a seasonal world
         if (!isInSeasonalWorld == world.getTypes().contains(WorldType.SEASONAL)) {
-            log.warn("World {} seasonal type mismatch (player in seasonal: {}, world seasonal: {})",
+            log.debug("World {} seasonal type mismatch (player in seasonal: {}, world seasonal: {})",
                      world.getId(), isInSeasonalWorld, world.getTypes().contains(WorldType.SEASONAL));
             return false;
         }
@@ -147,7 +147,7 @@ public class Rs2WorldUtil {
         // Check membership requirements
         boolean isWorldMembers = world.getTypes().contains(WorldType.MEMBERS);
         if (isWorldMembers && !isPlayerMember) {
-            log.warn("World {} is members only but player is not a member", world.getId());
+            log.debug("World {} is members only but player is not a member", world.getId());
             return false; // Members world but player is not a member
         }
         

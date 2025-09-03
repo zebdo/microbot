@@ -119,11 +119,11 @@ public class GotrPlugin extends Plugin implements SchedulablePlugin {
     private boolean isScheduleMode() {
         // Check if the plugin is running in schedule mode
         // @see net.runelite.client.plugins.microbot.pluginscheduler.api.SchedulablePlugin#getConfigDescriptor() must be implented here so the AbstractPrePostScheduleTasks can be determine the config correct and the SchedulerPlugin can set it
-        getPrePostScheduleTasks();
-        log.info("GOTR Plugin is in \n\tScheduler Mode: {} \n isInitialized?: {}", prePostScheduleTasks != null && prePostScheduleTasks.isScheduleMode(), 
-                 prePostScheduleRequirements != null && prePostScheduleRequirements.isInitialized());
+        //getPrePostScheduleTasks();
+        //log.debug("GOTR Plugin is in \n\tScheduler Mode: {} \n isInitialized?: {}", prePostScheduleTasks != null && prePostScheduleTasks.isScheduleMode(), 
+        //         prePostScheduleRequirements != null && prePostScheduleRequirements.isInitialized());
 
-        return prePostScheduleRequirements != null && prePostScheduleRequirements.isInitialized() && prePostScheduleTasks.isScheduleMode();
+        return AbstractPrePostScheduleTasks.isScheduleMode(this,getConfigDescriptor().getGroup().value());
     }
     @Subscribe
     public void onGameStateChanged(GameStateChanged event) {

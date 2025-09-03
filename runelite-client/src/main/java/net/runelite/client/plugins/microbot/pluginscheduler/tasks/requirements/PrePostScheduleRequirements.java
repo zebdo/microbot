@@ -3,6 +3,7 @@ import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.GameState;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
+import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.cache.Rs2CacheManager;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
@@ -12,7 +13,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spellbook;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
-
+import net.runelite.api.Constants;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -62,6 +63,8 @@ public abstract class PrePostScheduleRequirements  {
     @Getter
     private final String activityType;    
     private boolean initialized = false;
+    private InventorySetupPlanner currentPreScheduleLayoutPlan = null;
+    private InventorySetupPlanner currentPostScheduleLayoutPlan = null;
     // Centralized requirement management
 
     private final RequirementRegistry registry = new RequirementRegistry();
@@ -99,12 +102,13 @@ public abstract class PrePostScheduleRequirements  {
         this.collectionName = collectionName;
         this.activityType = activityType;
         this.isWildernessCollection = isWildernessCollection; // Set wilderness flag
+        this.currentPreScheduleLayoutPlan = null;
+        this.currentPostScheduleLayoutPlan = null;
         initialize(); // try to Initialize requirements collection
        
     }
     public boolean isInitialized(){
-        if (!initialized) {
-            
+        if (!initialized) {            
             initialized = initialize(); // Initialize if not already done
             if (initialized) log.info("\nPrePostScheduleRequirements <{}> initialized:\n{}",collectionName, this.getDetailedDisplay());
             return initialized;            
@@ -124,6 +128,8 @@ public abstract class PrePostScheduleRequirements  {
             boolean success = initializeRequirements();
             if (success) {
                 initialized = true;
+                this.currentPreScheduleLayoutPlan = null;
+                this.currentPostScheduleLayoutPlan = null;
                 log.info("Successfully initialized requirements collection: " + collectionName);
             } else {
                 log.error("Failed to initialize requirements collection: " + collectionName);
@@ -144,9 +150,7 @@ public abstract class PrePostScheduleRequirements  {
     public void reset() {
         initialized = false;
         clearOriginalSpellbook();
-        this.getRegistry().clear(); // Clear the registry to remove all requirements
-        initialize(); // Reinitialize requirements  
-
+        this.getRegistry().clear(); // Clear the registry to remove all requirements        
     }
 
     /**
@@ -940,6 +944,59 @@ public abstract class PrePostScheduleRequirements  {
             executionState.updateCurrentRequirement(requirement, requirement.getName(), requirementIndex);
         }
     }
+    /**
+     * Generates the inventory setup name for pre-schedule requirements.
+     * The format is: [OS]_{collectionName}_PRE_SCHEDULE
+     * This name is used to identify the corresponding InventorySetup in the plugin.
+     *
+     * @return The inventory setup name for pre-schedule requirements
+     */
+    public String getPreInventorySetupName() {
+        return "[OS]_" + collectionName + "_" + TaskContext.PRE_SCHEDULE.name();
+
+    }   
+    /**
+     * Retrieves the InventorySetup object for pre-schedule requirements.
+     * Searches the MInventorySetupsPlugin for a setup matching the pre-schedule name.
+     *
+     * @return The InventorySetup for pre-schedule, or null if not found
+     */
+    public InventorySetup getPreInventorySetup() {
+        String setupName = getPreInventorySetupName();        
+        return getInventorySetup(setupName);
+    }
+    private InventorySetup getInventorySetup(String setupName) {
+        InventorySetup inventorySetup = MInventorySetupsPlugin.getInventorySetups().stream()
+            .filter(Objects::nonNull)
+            .filter(x -> x.getName().equalsIgnoreCase(setupName))
+            .findFirst()
+            .orElse(null);
+        return inventorySetup;
+
+    }
+
+    /**
+     * Generates the inventory setup name for post-schedule requirements.
+     * The format is: [OS]_{collectionName}_POST_SCHEDULE
+     * This name is used to identify the corresponding InventorySetup in the plugin.
+     *
+     * @return The inventory setup name for post-schedule requirements
+     */
+    public String getPostInventorySetupName() {
+        return "[OS]_" + collectionName + "_" + TaskContext.POST_SCHEDULE.name();
+    }
+     /**
+     * Retrieves the InventorySetup object for post-schedule requirements.
+     * Searches the MInventorySetupsPlugin for a setup matching the post-schedule name.
+     *
+     * @return The InventorySetup for post-schedule, or null if not found
+     */
+    public InventorySetup getPostInventorySetup() {
+        String setupName = getPostInventorySetupName();
+
+        return getInventorySetup(setupName);
+    }
+    
     
     /**
      * Comprehensive inventory and equipment layout planning and fulfillment system.
@@ -962,7 +1019,32 @@ public abstract class PrePostScheduleRequirements  {
 
             // Step 1: Analyze all requirements and create constraint maps
             log.info("\n--- Step 1: Analyzing Requirements and Creating Layout Plan ---");
-            InventorySetupPlanner layoutPlan = analyzeRequirementsAndCreateLayoutPlan(scheduledFuture,context);
+            InventorySetupPlanner layoutPlan = null;
+            String inventorySetupName = null;
+            if (context == TaskContext.PRE_SCHEDULE) {
+                log.info("Using pre-schedule inventory setup name: {}", getPreInventorySetupName());            
+                inventorySetupName = getPreInventorySetupName();
+                if (currentPreScheduleLayoutPlan  == null) {
+                    log.info("No existing layout plan found, analyzing requirements to create new plan");
+                    this.currentPreScheduleLayoutPlan = analyzeRequirementsAndCreateLayoutPlan(scheduledFuture,context);                    
+                } else {
+                    log.info("Existing layout plan found, re-analyzing requirements to update plan");
+                }
+                layoutPlan = this.currentPreScheduleLayoutPlan;
+            }else if( context == TaskContext.POST_SCHEDULE) {
+                log.info("Using post-schedule inventory setup name: {}", getPostInventorySetupName());
+                inventorySetupName = getPostInventorySetupName();
+                if (currentPostScheduleLayoutPlan  == null) {
+                    log.info("No existing layout plan found, analyzing requirements to create new plan");
+                    this.currentPostScheduleLayoutPlan = analyzeRequirementsAndCreateLayoutPlan(scheduledFuture,context);                    
+                } else {
+                    log.info("Existing layout plan found, re-analyzing requirements to update plan");
+                }
+                layoutPlan = this.currentPostScheduleLayoutPlan;
+            } else {
+                log.error("Invalid context for inventory and equipment layout planning: {}", context);
+                return false;
+            }
             
             if (layoutPlan == null) {
                 log.error("Failed to create inventory layout plan");
@@ -1011,7 +1093,6 @@ public abstract class PrePostScheduleRequirements  {
             
             // Step 2.5: Convert plan to InventorySetup and add to plugin BEFORE execution
             log.debug("\n--- Step 2.5: Creating InventorySetup from Plan ---");
-            String inventorySetupName = "[OS]_" + collectionName + "_" + context.name();//OS stands for Optimal Setup
             InventorySetup createdSetup = layoutPlan.addToInventorySetupsPlugin(inventorySetupName);
             
             if (createdSetup == null) {
@@ -1174,12 +1255,12 @@ public abstract class PrePostScheduleRequirements  {
                     log.warn("Executor service is shutdown, skipping item deposit: {}", item.getName());
                     return null; // Skip if executor service is shutdown
                 }
-                boolean deposited = Rs2Bank.depositAll(item.getId());
+                Rs2Bank.depositAll(item.getId());
+                boolean deposited = sleepUntil(()->!Rs2Inventory.hasItem(item.getName()), Constants.GAME_TICK_LENGTH*2);
                 if (deposited) {
-                    log.info("\tDeposited inventory item: {} x{}", item.getName(), item.getQuantity());
-                    sleepUntil(()->!Rs2Inventory.hasItem(item.getName()), 200);
+                    log.info("\n\tDeposited inventory item: {} x{}", item.getName(), item.getQuantity());                    
                 } else {
-                    log.warn("\tFailed to deposit inventory item: {} x{}", item.getName(), item.getQuantity());
+                    log.warn("\n\tFailed to deposit inventory item: {} x{}", item.getName(), item.getQuantity());
                 }
             }
             // deposit all unnecessary equipment items at once using bulk deposit
@@ -1211,7 +1292,8 @@ public abstract class PrePostScheduleRequirements  {
                     // fallback to individual deposits if bulk fails
                     for (Rs2ItemModel item : itemNotInItemReqsEquipment) {
                         EquipmentInventorySlot itemSlot = EquipmentInventorySlot.values()[item.getSlot()];
-                        boolean individualDeposited = Rs2Bank.depositEquippedItem(itemSlot);
+                        Rs2Bank.depositEquippedItem(itemSlot);
+                        boolean individualDeposited = sleepUntil(()->!Rs2Equipment.hasEquipped(item.getId()), Constants.GAME_TICK_LENGTH*2); 
                         if (individualDeposited) {
                             log.info("\\tDeposited individual equipment item: {} x{}", item.getName(), item.getQuantity());
                         } else {

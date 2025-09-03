@@ -94,6 +94,9 @@ public class YourPlugin extends Plugin implements SchedulablePlugin {
     @Subscribe
     public void onPluginScheduleEntryPostScheduleTaskEvent(PluginScheduleEntryPostScheduleTaskEvent event) {
         if (event.getPlugin() == this && prePostTasks != null) {
+            if (lockCondition != null && lockCondition.isLocked()) {
+                return; // respect critical section
+            }
             // Execute post-schedule cleanup
             prePostTasks.executePostScheduleTasks(lockCondition);
         }

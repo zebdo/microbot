@@ -48,7 +48,7 @@ public class FlowersEvent implements BlockingEvent {
             log.warn("Cannot make enough inventory space for flowering tree rewards, ending event.");
             return true;
         }
-        
+        log.info("FlowersEvent: Executing Flowers event");
         while (this.validate()) {
             var flowers = Rs2Npc.getNpcs(npc -> 
                 npc.getName() != null && isFloweringBush(npc.getId())

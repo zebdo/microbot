@@ -74,7 +74,7 @@ public abstract class Requirement implements Comparable<Requirement> {
      * Abstract method to fulfill this requirement.
      * Each requirement type implements its own fulfillment logic.
      * 
-     * @param executorService The ScheduledExecutorService on which this requirement fulfillment is running
+     * @param scheduledFuture The CompletableFuture for cancellation support
      * @return true if the requirement was fulfilled successfully, false otherwise
      */
     public abstract boolean fulfillRequirement(CompletableFuture<Boolean> scheduledFuture);

@@ -95,6 +95,9 @@ public class LootRequirement extends Requirement {
         
         private double calculateAverageDistance() {
             WorldPoint playerLocation = Rs2Player.getWorldLocation();
+            if (playerLocation == null) {
+                return Double.MAX_VALUE;
+            }
             return locations.stream()
                 .mapToInt(location -> location.distanceTo(playerLocation))
                 .average()
@@ -267,7 +270,7 @@ public class LootRequirement extends Requirement {
         }
         
         if (spawnLocation == null || spawnLocation.getLocations() == null || spawnLocation.getLocations().isEmpty()) {            
-            log. error("No spawn locations defined for loot requirement: " + getName());
+            log.error("No spawn locations defined for loot requirement: " + getName());
             return false;
         }
         
@@ -356,7 +359,10 @@ public class LootRequirement extends Requirement {
      */
     private boolean moveToCluster(SpawnCluster cluster) {
         WorldPoint currentPosition = Rs2Player.getWorldLocation();
-        
+        if (currentPosition == null) {
+            log.error("Player location is unknown, cannot move to cluster for " + getName());
+            return false;
+        }
         // Check if we're already near the cluster
         boolean nearCluster = cluster.locations.stream()
             .anyMatch(location -> currentPosition.distanceTo(location) <= 15);
@@ -374,7 +380,7 @@ public class LootRequirement extends Requirement {
         // Wait for arrival
         return sleepUntil(() -> {
             WorldPoint playerLoc = Rs2Player.getWorldLocation();
-            return cluster.locations.stream()
+            return playerLoc!=null && cluster.locations.stream()
                 .anyMatch(location -> playerLoc.distanceTo(location) <= 15);
         }, 30000);
     }
@@ -449,7 +455,7 @@ public class LootRequirement extends Requirement {
                     // Try checking a bit further from cluster center
                     boolean foundNearby = false;
                     for (WorldPoint location : cluster.locations) {
-                        if (Rs2Player.getWorldLocation().distanceTo(location) <= 30) {
+                        if (Rs2Player.getWorldLocation()!=null && Rs2Player.getWorldLocation().distanceTo(location) <= 30) {
                             for (int itemId : getItemIds()) {
                                 if (Rs2GroundItem.exists(itemId, 15)) {
                                     Rs2Walker.walkTo(location);
@@ -523,6 +529,9 @@ public class LootRequirement extends Requirement {
         
         // Check if we're near any spawn location
         WorldPoint currentPosition = Rs2Player.getWorldLocation();
+        if (currentPosition == null) {
+            return false;
+        }
         for (WorldPoint location : spawnLocation.getLocations()) {
             if (location.distanceTo(currentPosition) <= 20) {
                 // Check if any of our target items are available to loot
