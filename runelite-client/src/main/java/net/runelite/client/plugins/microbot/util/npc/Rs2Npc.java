@@ -205,6 +205,8 @@ public class Rs2Npc {
         return (double) ratio / (double) scale * 100;
     }
 
+    private static final Rs2NpcModel[] EMPTY_ARRAY = new Rs2NpcModel[0];
+
     /**
      * Retrieves a stream of NPCs filtered by a given condition.
      *
@@ -216,88 +218,92 @@ public class Rs2Npc {
      */
     public static Stream<Rs2NpcModel> getNpcs(Predicate<Rs2NpcModel> predicate) {
         try {
-            // Defensive null checks for client and world view
-            if (Microbot.getClient() == null) {
-                log.warn("Client is null, returning empty NPC stream");
-                return Stream.empty();
-            }
-            
-            if (Microbot.getClient().getTopLevelWorldView() == null) {
-                log.warn("TopLevelWorldView is null, returning empty NPC stream");
-                return Stream.empty();
-            }
-            
-            if (Microbot.getClient().getTopLevelWorldView().npcs() == null) {
-                log.warn("NPCs collection is null, returning empty NPC stream");
-                return Stream.empty();
-            }
-            
-            if (Microbot.getClient().getLocalPlayer() == null) {
-                log.warn("Local player is null, returning empty NPC stream");
-                return Stream.empty();
-            }
-            
-            if (Microbot.getClient().getLocalPlayer().getLocalLocation() == null) {
-                log.warn("Local player location is null, returning empty NPC stream");
-                return Stream.empty();
-            }
-            
-            // Make local copies to avoid null issues during stream processing
-            final Stream<? extends NPC> npcStream = Microbot.getClient().getTopLevelWorldView().npcs().stream();
-            final LocalPoint playerLocation = Microbot.getClient().getLocalPlayer().getLocalLocation();
-            
-            // Safe predicate wrapper to prevent null issues
-            Predicate<Rs2NpcModel> safePredicate = predicate != null ? predicate : (npc -> true);            
-            List<Rs2NpcModel> npcList = npcStream
-                    .filter(Objects::nonNull) // Filter out null NPCs                  
-                    .map(npc -> {
-                        try {
-                            return new Rs2NpcModel(npc);
-                        } catch (Exception e) {
-                            log.debug("Error creating Rs2NpcModel: {}", e.getMessage());
-                            return null;
-                        }
-                    })
-                    .filter(Objects::nonNull) // Filter out failed model creations
-                    .filter(npcModel -> {
-                        try {
-                            // Additional safety checks for Rs2NpcModel
-                            return npcModel.getName() != null && 
-                                   npcModel.getLocalLocation() != null;
-                        } catch (Exception e) {
-                            log.debug("Error accessing Rs2NpcModel properties: {}", e.getMessage());
-                            return false;
-                        }
-                    })
-                    .filter(npcModel -> {
-                        try {
-                            return safePredicate.test(npcModel);
-                        } catch (Exception e) {
-                            log.debug("Error in predicate test: {}", e.getMessage());
-                            return false;
-                        }
-                    })
-                    .sorted(Comparator.comparingInt(value -> {
-                        try {
-                            if (value != null && value.getLocalLocation() != null && playerLocation != null) {
-                                return value.getLocalLocation().distanceTo(playerLocation);
+            // Execute all game object access on client thread to prevent race conditions
+            Rs2NpcModel[] npcArray = Microbot.getClientThread().runOnClientThreadOptional(() -> {
+                // Defensive null checks for client and world view
+                if (Microbot.getClient() == null) {
+                    log.warn("Client is null, returning empty NPC stream");
+                    return EMPTY_ARRAY;
+                }
+
+                if (Microbot.getClient().getTopLevelWorldView() == null) {
+                    log.warn("TopLevelWorldView is null, returning empty NPC stream");
+                    return EMPTY_ARRAY;
+                }
+
+                if (Microbot.getClient().getTopLevelWorldView().npcs() == null) {
+                    log.warn("NPCs collection is null, returning empty NPC stream");
+                    return EMPTY_ARRAY;
+                }
+
+                if (Microbot.getClient().getLocalPlayer() == null) {
+                    log.warn("Local player is null, returning empty NPC stream");
+                    return EMPTY_ARRAY;
+                }
+
+                if (Microbot.getClient().getLocalPlayer().getLocalLocation() == null) {
+                    log.warn("Local player location is null, returning empty NPC stream");
+                    return EMPTY_ARRAY;
+                }
+
+                // Make local copies to avoid null issues during stream processing
+                final Stream<? extends NPC> npcStream = Microbot.getClient().getTopLevelWorldView().npcs().stream();
+                final LocalPoint playerLocation = Microbot.getClient().getLocalPlayer().getLocalLocation();
+
+                // Safe predicate wrapper to prevent null issues
+                Predicate<Rs2NpcModel> safePredicate = predicate != null ? predicate : (npc -> true);
+                return npcStream
+                        .filter(Objects::nonNull) // Filter out null NPCs
+                        .map(npc -> {
+                            try {
+                                return new Rs2NpcModel(npc);
+                            } catch (Exception e) {
+                                log.debug("Error creating Rs2NpcModel: {}", e.getMessage());
+                                return null;
                             }
-                            return Integer.MAX_VALUE; // Put problematic NPCs at the end
-                        } catch (Exception e) {
-                            log.debug("Error calculating distance: {}", e.getMessage());
-                            return Integer.MAX_VALUE;
-                        }
-                    }))
-                    .collect(Collectors.toList());
-            
-            return npcList.stream();
-            
+                        })
+                        .filter(Objects::nonNull) // Filter out failed model creations
+                        .filter(npcModel -> {
+                            try {
+                                // Additional safety checks for Rs2NpcModel
+                                return npcModel.getName() != null &&
+                                       npcModel.getLocalLocation() != null;
+                            } catch (Exception e) {
+                                log.debug("Error accessing Rs2NpcModel properties: {}", e.getMessage());
+                                return false;
+                            }
+                        })
+                        .filter(npcModel -> {
+                            try {
+                                return safePredicate.test(npcModel);
+                            } catch (Exception e) {
+                                log.debug("Error in predicate test: {}", e.getMessage());
+                                return false;
+                            }
+                        })
+                        .sorted(Comparator.comparingInt(value -> {
+                            try {
+                                if (value != null && value.getLocalLocation() != null && playerLocation != null) {
+                                    return value.getLocalLocation().distanceTo(playerLocation);
+                                }
+                                return Integer.MAX_VALUE; // Put problematic NPCs at the end
+                            } catch (Exception e) {
+                                log.debug("Error calculating distance: {}", e.getMessage());
+                                return Integer.MAX_VALUE;
+                            }
+                        }))
+                        .toArray(Rs2NpcModel[]::new);
+            }).orElse(EMPTY_ARRAY);
+
+            // Convert array back to stream for API compatibility
+            return Arrays.stream(npcArray);
+
         } catch (Exception e) {
             log.debug("Unexpected error in getNpcs: {}", e.getMessage(), e);
             return Stream.empty();
         }
     }
-
+    
     /**
      * Retrieves a stream of all NPCs in the game world.
      *

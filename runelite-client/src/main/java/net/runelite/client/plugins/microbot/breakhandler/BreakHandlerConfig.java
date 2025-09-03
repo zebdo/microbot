@@ -123,7 +123,7 @@ public interface BreakHandlerConfig extends Config {
 
     @ConfigItem(
             keyName = "useRandomWorld",
-            name = "Use RandomWorld",
+            name = "Use Random World",
             description = "Change to a random world once break is finished",
             position = 2,
             section = breakBehaviorOptions
@@ -133,10 +133,21 @@ public interface BreakHandlerConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "regionFilter",
+            name = "Region Filter",
+            description = "Restrict random worlds to a specific region",
+            position = 3,
+            section = breakBehaviorOptions
+    )
+    default RegionFilter regionFilter() {
+        return RegionFilter.ANY;
+    }
+
+    @ConfigItem(
             keyName = "shutdownClient",
             name = "Shutdown Client",
             description = "<html><b style='color:red;'>WARNING:</b> This will completely shutdown the entire RuneLite client during breaks.<br/>Use with caution - you will need to manually restart the client after breaks.</html>",
-            position = 3,
+            position = 4,
             section = breakBehaviorOptions
     )
     default boolean shutdownClient() {

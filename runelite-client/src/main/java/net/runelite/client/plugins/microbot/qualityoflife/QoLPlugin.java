@@ -10,8 +10,16 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.ProfileChanged;
+import net.runelite.client.input.KeyManager;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.VarClientID;
+import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.MicrobotPlugin;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
@@ -47,6 +55,13 @@ import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.SplashScreen;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageUtil;
+import net.runelite.client.input.KeyListener;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.VarClientID;
+import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
+import java.awt.Toolkit;
+import java.awt.datatransfer.Clipboard;
+import java.awt.datatransfer.DataFlavor;
 import org.apache.commons.lang3.reflect.FieldUtils;
 
 
@@ -73,7 +88,7 @@ import static net.runelite.client.plugins.microbot.util.Global.awaitExecutionUnt
         enabledByDefault = false
 )
 @Slf4j
-public class QoLPlugin extends Plugin {
+public class QoLPlugin extends Plugin implements KeyListener {
     public static final List<NewMenuEntry> bankMenuEntries = new LinkedList<>();
     public static final List<NewMenuEntry> furnaceMenuEntries = new LinkedList<>();
     public static final List<NewMenuEntry> anvilMenuEntries = new LinkedList<>();
@@ -142,6 +157,9 @@ public class QoLPlugin extends Plugin {
     @Inject
     private AutoPrayer autoPrayer;
 
+    @Inject
+    private KeyManager keyManager;
+
     @Provides
     QoLConfig provideConfig(ConfigManager configManager) {
         return configManager.getConfig(QoLConfig.class);
@@ -203,6 +221,7 @@ public class QoLPlugin extends Plugin {
         bankpinScript.run(config);
         potionManagerScript.run(config);
         autoPrayer.run(config);
+        keyManager.registerKeyListener(this);
         // pvpScript.run(config);
         awaitExecutionUntil(() ->Microbot.getClientThread().invokeLater(this::updateUiElements), () -> !SplashScreen.isOpen(), 600);
     }
@@ -222,6 +241,7 @@ public class QoLPlugin extends Plugin {
         eventBus.unregister(craftingManager);
         potionManagerScript.shutdown();
         autoPrayer.shutdown();
+        keyManager.unregisterKeyListener(this);
     }
 
     @Subscribe(
@@ -822,6 +842,38 @@ public class QoLPlugin extends Plugin {
     public void onPlayerChanged(PlayerChanged event) {
         if (config.aggressiveAntiPkMode() && autoPrayer.isFollowingPlayer(event.getPlayer())) {
             autoPrayer.handleAggressivePrayerOnGearChange(event.getPlayer(), config);
+        }
+    }
+
+    @Override
+    public void keyTyped(KeyEvent e) {
+        if (config.grandExchangeHotkey().matches(e)) {
+            e.consume();
+        }
+    }
+
+    @Override
+    public void keyPressed(KeyEvent e) {
+        if (config.grandExchangeHotkey().matches(e)) {
+            e.consume();
+            try {
+                String clipboardText = (String) Toolkit.getDefaultToolkit().getSystemClipboard().getData(DataFlavor.stringFlavor);
+                if (clipboardText != null && !clipboardText.isEmpty()) {
+                    Microbot.getClientThread().invoke(() -> {
+                        Microbot.getClient().setVarcStrValue(VarClientID.MESLAYERINPUT, clipboardText);
+                        Microbot.getClient().runScript(ScriptID.GE_ITEM_SEARCH);
+                    });
+                }
+            } catch (Exception ex) {
+                Microbot.log("Failed to paste from clipboard: " + ex.getMessage());
+            }
+        }
+    }
+
+    @Override
+    public void keyReleased(KeyEvent e) {
+        if (config.grandExchangeHotkey().matches(e)) {
+            e.consume();
         }
     }
 }

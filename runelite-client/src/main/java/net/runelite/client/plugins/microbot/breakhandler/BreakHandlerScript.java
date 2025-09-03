@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Slf4j
 public class BreakHandlerScript extends Script {
-    public static String version = "2.0.0";
+    public static String version = "2.1.0";
     
     // Constants for configuration and timing
     private static final int SCHEDULER_INTERVAL_MS = 1000;
@@ -105,6 +105,10 @@ public class BreakHandlerScript extends Script {
     // UI and configuration
     private String originalWindowTitle = "";
     private BreakHandlerConfig config;
+
+    // Track world state across breaks
+    private int preBreakWorld = -1;
+    private boolean loggedOutDuringBreak = false;
 
     /**
      * Checks if a break is currently active (any break state except waiting).
@@ -323,8 +327,14 @@ public class BreakHandlerScript extends Script {
         Microbot.pauseAllScripts.compareAndSet(false, true);
         PluginPauseEvent.setPaused(true);
         Rs2Walker.setTarget(null);
+
+        // Remember the world we were in before the break
+        preBreakWorld = Microbot.getClient().getWorld();
+
         // Determine next state based on break type
-        if (Rs2AntibanSettings.microBreakActive && (config.onlyMicroBreaks() || !shouldLogout())) {
+        boolean logout = shouldLogout();
+        loggedOutDuringBreak = logout && !(Rs2AntibanSettings.microBreakActive && config.onlyMicroBreaks());
+        if (!logout || (Rs2AntibanSettings.microBreakActive && config.onlyMicroBreaks())) {
             setBreakDuration();
             transitionToState(BreakHandlerState.MICRO_BREAK_ACTIVE);
         } else {
@@ -447,9 +457,12 @@ public class BreakHandlerScript extends Script {
         try {
             // Use the Login utility class to handle login
             if (Login.activeProfile != null) {
-                new Login();
+                int world = config.useRandomWorld()
+                        ? Login.getRandomWorld(Rs2Player.isMember(), config.regionFilter().getRegion())
+                        : preBreakWorld;
+                new Login(world);
             } else {
-                // If no active profile, use default login
+                // If no active profile, fall back to default login
                 new Login();
             }
             transitionToState(BreakHandlerState.LOGGING_IN);
@@ -551,7 +564,10 @@ public class BreakHandlerScript extends Script {
      * Determines if logout should occur based on configuration and conditions.
      */
     private boolean shouldLogout() {
-        return isOutsidePlaySchedule() || config.logoutAfterBreak();
+        // Only attempt to logout during a normal break. When a micro break is
+        // active we should remain logged in regardless of the logout setting.
+        return !Rs2AntibanSettings.microBreakActive &&
+            (isOutsidePlaySchedule() || config.logoutAfterBreak());
     }
 
     /**
@@ -608,9 +624,9 @@ public class BreakHandlerScript extends Script {
      * Handles world switching based on configuration.
      */
     private void handleWorldSwitching() {
-        if (config.useRandomWorld()) {
+        if (config.useRandomWorld() && !loggedOutDuringBreak) {
             try {
-                int randomWorld = Login.getRandomWorld(Rs2Player.isMember());
+                int randomWorld = Login.getRandomWorld(Rs2Player.isMember(), config.regionFilter().getRegion());
                 Microbot.hopToWorld(randomWorld);
                 log.info("Switched to world {}", randomWorld);
             } catch (Exception ex) {

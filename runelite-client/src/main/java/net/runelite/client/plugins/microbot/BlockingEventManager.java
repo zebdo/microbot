@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 public class BlockingEventManager
 {
@@ -21,7 +22,6 @@ public class BlockingEventManager
 
     // Change the queue to hold just the event references
     private final BlockingQueue<BlockingEvent> eventQueue = new LinkedBlockingQueue<>(MAX_QUEUE_SIZE);
-    private final ScheduledExecutorService scheduler;
     private final ExecutorService blockingExecutor;
     private final AtomicBoolean isRunning = new AtomicBoolean(false);
 
@@ -32,19 +32,21 @@ public class BlockingEventManager
         return t;
     };
 
+    private final ScheduledExecutorService scheduler =
+            Executors.newSingleThreadScheduledExecutor(threadFactory);
+    private ScheduledFuture<?> loopFuture;
+    private static final long INITIAL_DELAY_MS = 300;
+    private volatile long currentDelay = INITIAL_DELAY_MS;
+    private static final long MAX_DELAY_MS = 5000; // Maximum delay of 5 seconds
+    private final AtomicInteger failureCount = new AtomicInteger(0);
+
     public BlockingEventManager()
     {
         // single-threaded executor for running event.execute()
         this.blockingExecutor = Executors.newSingleThreadExecutor(threadFactory);
 
         // scheduler for periodic validate() calls
-        this.scheduler = Executors.newSingleThreadScheduledExecutor(threadFactory);
-        this.scheduler.scheduleWithFixedDelay(
-                this::validateAndEnqueue,
-                0,
-                300,
-                TimeUnit.MILLISECONDS
-        );
+        startLoop();
 
         // pre-register core events
         blockingEvents.add(new WelcomeScreenEvent());
@@ -59,8 +61,8 @@ public class BlockingEventManager
         sortBlockingEvents();
     }
 
-    public void shutdown()
-    {
+    public void shutdown() {
+        if (loopFuture != null) loopFuture.cancel(true);
         scheduler.shutdownNow();
         blockingExecutor.shutdownNow();
     }
@@ -89,40 +91,55 @@ public class BlockingEventManager
         );
     }
 
+    private void startLoop() {
+        loopFuture = scheduler.schedule(this::loopOnce, 0, TimeUnit.MILLISECONDS);
+    }
+
+    private void loopOnce() {
+        try {
+            validateAndEnqueueWithBackoff();
+        } catch (Throwable t) {
+            Microbot.log(Level.ERROR, "BlockingEvent loop error: %s", t);
+        } finally {
+            // re-schedule using the latest currentDelay (volatile)
+            loopFuture = scheduler.schedule(this::loopOnce, currentDelay, TimeUnit.MILLISECONDS);
+        }
+    }
+
     /**
      * Runs every 300ms on the scheduler thread: tries each event.validate()
      * and, if true, offers it into the queue (drops if full).
      */
-    private void validateAndEnqueue()
-    {
-        if(SplashScreen.isOpen())
-        {
-            return;
-        }
-        for (BlockingEvent event : blockingEvents)
-        {
-            try
-            {
-                if (event.validate())
-                {
-                    // only enqueue if it wasn't already pending
-                    if (pendingEvents.add(event))
-                    {
-                        // offer; if the queue is full, drop and remove from pending
-                        if (!eventQueue.offer(event))
-                        {
-                            pendingEvents.remove(event);
+    private void validateAndEnqueueWithBackoff() {
+        boolean hasValidEvents = false;
+        if (!SplashScreen.isOpen()) {
+            for (BlockingEvent event : blockingEvents) {
+                try {
+                    if (event.validate()) {
+                        hasValidEvents = true;
+                        if (pendingEvents.add(event)) {
+                            if (!eventQueue.offer(event)) {
+                                pendingEvents.remove(event);
+                            }
                         }
                     }
+                } catch (Exception ex) {
+                    Microbot.log(Level.ERROR,
+                            "Error validating BlockingEvent (%s): %s",
+                            event.getName(),
+                            ex);
                 }
             }
-            catch (Exception ex)
-            {
-                Microbot.log(Level.ERROR,
-                        "Error validating BlockingEvent (%s): %s",
-                        event.getName(),
-                        ex);
-            }
+        }
+
+        if (!hasValidEvents) {
+            // Increase delay exponentially
+            int failures = failureCount.incrementAndGet();
+            currentDelay = Math.min(INITIAL_DELAY_MS * (1L << Math.min(failures, 4)), MAX_DELAY_MS);
+        } else {
+            // Reset on success
+            failureCount.set(0);
+            currentDelay = INITIAL_DELAY_MS;
         }
     }
 
