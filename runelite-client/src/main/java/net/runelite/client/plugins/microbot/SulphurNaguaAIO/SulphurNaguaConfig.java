@@ -52,4 +52,14 @@ public interface SulphurNaguaConfig extends Config {
     default int moonlightPotionsMinimum() {
         return 2;
     }
+
+    @ConfigItem(
+            keyName = "usePiety",
+            name = "Use Piety?",
+            description = "When enabled, the bot will also use the Piety prayer during combat.",
+            position = 4
+    )
+    default boolean usePiety() {
+        return false;
+    }
 }
