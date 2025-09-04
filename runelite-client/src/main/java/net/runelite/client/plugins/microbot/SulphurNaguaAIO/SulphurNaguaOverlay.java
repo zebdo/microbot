@@ -34,13 +34,13 @@ public class SulphurNaguaOverlay extends OverlayPanel {
             panelComponent.setPreferredSize(new Dimension(200, 300));
             panelComponent.setBackgroundColor(BACKGROUND_COLOR);
 
-            // Titel - Korrigierte, einfache Darstellung
+            // Titel
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Sulphur Nagua Fighter")
                     .leftColor(Color.white)
                     .build());
 
-            // Sicherheitsabfrage, um Abstürze zu verhindern, falls das Skript noch nicht initialisiert ist
+            // Sicherheitsabfrage, um Abstürze zu verhindern
             if (plugin.sulphurNaguaScript == null) {
                 panelComponent.getChildren().add(LineComponent.builder()
                         .left("Status:")
@@ -60,8 +60,6 @@ public class SulphurNaguaOverlay extends OverlayPanel {
             panelComponent.getChildren().add(LineComponent.builder()
                     .left("Status:")
                     .right(plugin.sulphurNaguaScript.currentState.name())
-                    // ----- HIER IST DIE KORREKTUR -----
-                    // Die Farbe wird wieder dynamisch gesetzt
                     .rightColor(getStateColor(plugin.sulphurNaguaScript.currentState))
                     .build());
 
@@ -94,7 +92,6 @@ public class SulphurNaguaOverlay extends OverlayPanel {
                     .build());
 
         } catch (Exception ex) {
-            // Logge den Fehler, damit du im Microbot-Log nachsehen kannst, was schiefgeht
             Microbot.logStackTrace("SulphurNaguaOverlay Fehler:", ex);
         }
         return super.render(graphics);
@@ -104,14 +101,15 @@ public class SulphurNaguaOverlay extends OverlayPanel {
         return String.format("%,d", number);
     }
 
-
+    // KORRIGIERT: Die Methode wurde an die neuen Zustände aus dem Script angepasst.
     private Color getStateColor(SulphurNaguaState state) {
         if (state == null) return NORMAL_COLOR;
 
         switch (state) {
             case FIGHTING:
                 return DANGER_COLOR;
-            case WALKING:
+            case WALKING_TO_PREP: // Neuer Zustand hinzugefügt
+            case WALKING_TO_FIGHT: // Neuer Zustand hinzugefügt
                 return WARNING_COLOR;
             case PREPARATION:
                 return PREPARATION_COLOR;
@@ -121,4 +119,3 @@ public class SulphurNaguaOverlay extends OverlayPanel {
         }
     }
 }
-
