@@ -63,7 +63,8 @@ public class AlchScript extends Script {
                         }
 
                         if (!Rs2Magic.hasRequiredRunes(plugin.getAlchSpell())) {
-                            Microbot.log("Unable to cast alchemy spell");
+                            Microbot.showMessage("Out of runes for alchemy");
+                            shutdown();
                             return;
                         }
                         
