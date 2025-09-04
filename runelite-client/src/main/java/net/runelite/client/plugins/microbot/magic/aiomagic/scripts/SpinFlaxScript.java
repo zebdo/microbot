@@ -107,9 +107,15 @@ public class SpinFlaxScript extends Script {
                     case CASTING:
                         Microbot.status = "Casting: Spin Flax (" + castsDone + "/5)";
 
-                        if (!Rs2Inventory.hasItem(ItemID.FLAX) || !Rs2Magic.hasRequiredRunes(Rs2Spells.SPIN_FLAX)) {
+                        if (!Rs2Inventory.hasItem(ItemID.FLAX)) {
                             state = MagicState.BANKING;
                             break;
+                        }
+
+                        if (!Rs2Magic.hasRequiredRunes(Rs2Spells.SPIN_FLAX)) {
+                            Microbot.showMessage("Out of runes for Spin Flax");
+                            shutdown();
+                            return;
                         }
 
                         if (castsDone >= 5) {

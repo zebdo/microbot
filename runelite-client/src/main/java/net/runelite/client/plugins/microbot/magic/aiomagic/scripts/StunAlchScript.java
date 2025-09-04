@@ -52,7 +52,14 @@ public class StunAlchScript extends Script {
                         }
 
                         if (!Rs2Magic.hasRequiredRunes(plugin.getAlchSpell())) {
-                            Microbot.log("Unable to cast alchemy spell");
+                            Microbot.showMessage("Out of runes for alchemy");
+                            shutdown();
+                            return;
+                        }
+
+                        if (!Rs2Magic.hasRequiredRunes(plugin.getStunSpell().getRs2Spell())) {
+                            Microbot.showMessage("Out of runes for " + plugin.getStunSpell().name());
+                            shutdown();
                             return;
                         }
 
