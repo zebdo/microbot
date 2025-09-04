@@ -31,14 +31,6 @@ public enum JewelleryBoxType {
     }
 
     /**
-     * Gets all PohTransports available for this jewellery box type
-     */
-    public List<PohTransport> getTransports() {
-        return getAvailableTeleports().stream()
-                .map(PohTransport::new).collect(Collectors.toList());
-    }
-
-    /**
      * Gets all jewellery box object IDs (excluding NONE)
      */
     public static Integer[] getJewelleryBoxIds() {

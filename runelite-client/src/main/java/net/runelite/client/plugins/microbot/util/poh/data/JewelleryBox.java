@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Getter
-public enum JewelleryBox implements PohTransportable {
+public enum JewelleryBox implements PohTeleport {
     // Games Necklace teleports
     BARBARIAN_ASSAULT(JewelleryLocationEnum.BARBARIAN_ASSAULT, JewelleryBoxType.BASIC, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
     BURTHORPE_GAMES_ROOM(JewelleryLocationEnum.BURTHORPE_GAMES_ROOM, JewelleryBoxType.BASIC, JewelleryBoxType.FANCY, JewelleryBoxType.ORNATE),
@@ -64,7 +64,7 @@ public enum JewelleryBox implements PohTransportable {
     }
 
     @Override
-    public boolean transport() {
+    public boolean execute() {
         return PohTeleports.useJewelleryBox(location);
     }
 

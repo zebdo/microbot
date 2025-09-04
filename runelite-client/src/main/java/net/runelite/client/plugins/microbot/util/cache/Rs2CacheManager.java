@@ -212,7 +212,7 @@ public class Rs2CacheManager implements AutoCloseable {
                    Rs2SkillCache.getInstance().size() +
                    Rs2QuestCache.getInstance().size() +
                    Rs2SpiritTreeCache.getInstance().size() +
-                    Rs2PohCache.getInstance().size();
+                   Rs2PohCache.getInstance().size();
         } catch (Exception e) {
             log.error("Error calculating total cache size: {}", e.getMessage(), e);
             return 0;
@@ -234,7 +234,7 @@ public class Rs2CacheManager implements AutoCloseable {
                    Rs2SkillCache.getInstance().getEstimatedMemorySize() +
                    Rs2QuestCache.getInstance().getEstimatedMemorySize() +
                    Rs2SpiritTreeCache.getInstance().getEstimatedMemorySize() +
-                    Rs2PohCache.getInstance().getEstimatedMemorySize();
+                   Rs2PohCache.getInstance().getEstimatedMemorySize();
         } catch (Exception e) {
             log.error("Error calculating total memory usage: {}", e.getMessage(), e);
             return 0;

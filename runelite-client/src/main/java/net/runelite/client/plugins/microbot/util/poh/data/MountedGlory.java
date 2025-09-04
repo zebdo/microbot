@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 @Getter
 @RequiredArgsConstructor
-public enum MountedGlory implements PohTransportable {
+public enum MountedGlory implements PohTeleport {
     EDGEVILLE("Edgeville", TeleportLocationData.EDGEVILLE.getLocation()),
     KARAMJA("Karamja", TeleportLocationData.KARAMJA.getLocation()),
     DRAYNOR_VILLAGE("Draynor Village", TeleportLocationData.DRAYNOR_VILLAGE.getLocation()),
@@ -29,7 +29,7 @@ public enum MountedGlory implements PohTransportable {
 
 
     @Override
-    public boolean transport() {
+    public boolean execute() {
         return Rs2GameObject.interact(getObject(), destinationName);
     }
 
@@ -37,7 +37,7 @@ public enum MountedGlory implements PohTransportable {
         return Rs2GameObject.getTileObject(ObjectID.POH_TROPHY_AMULETOFGLORY_4);
     }
 
-    public static List<PohTransportable> getTransports() {
+    public static List<PohTeleport> getTransports() {
         return Arrays.stream(values()).collect(Collectors.toList());
     }
 

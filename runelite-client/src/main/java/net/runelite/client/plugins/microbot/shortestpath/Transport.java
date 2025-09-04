@@ -1,8 +1,8 @@
 package net.runelite.client.plugins.microbot.shortestpath;
 
-import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Quest;
 import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
@@ -16,6 +16,7 @@ import java.util.*;
 /**
  * This class represents a travel point between two WorldPoints.
  */
+@Slf4j
 public class Transport {
     //START microbot variables
     @Getter
@@ -25,6 +26,13 @@ public class Transport {
     private int objectId;
     @Getter
     private String name;
+    /**
+     * Used by PohTransport to trace back to the PohTransportable that can execute the teleportation
+     */
+    @Getter
+    private String enumValue;
+    @Getter
+    private String enumClass;
     //END microbot variables
 
     /**
@@ -119,6 +127,8 @@ public class Transport {
     @Getter
     private boolean isMembers = false;
 
+
+
     /**
      * Creates a new transport from an origin-only transport
      * and a destination-only transport, and merges requirements
@@ -163,6 +173,7 @@ public class Transport {
         //START microbot variables
         this.name = origin.getName();
         this.objectId = origin.getObjectId();
+        this.enumValue = origin.getEnumValue();
         this.action = origin.getAction();
         this.currencyName = origin.getCurrencyName();
         this.currencyAmount = origin.getCurrencyAmount();
@@ -197,6 +208,12 @@ public class Transport {
         }
 
         //START microbot variables
+        if((value = fieldMap.get("EnumValue")) != null && !value.trim().isEmpty()) {
+            this.enumValue = value.trim();
+        }
+        if((value = fieldMap.get("EnumClass")) != null && !value.trim().isEmpty()) {
+            this.enumClass = value.trim();
+        }
 
         if ((value = fieldMap.get("menuOption menuTarget objectID")) != null && !value.trim().isEmpty()) {
             value = value.trim(); // Remove leading/trailing spaces
@@ -360,29 +377,6 @@ public class Transport {
         }
     }
 
-    public Transport(String displayInfo, WorldPoint origin, WorldPoint destination, TransportType type, int duration, boolean isMembers) {
-        this.origin = origin;
-        this.destination = destination;
-        this.type = type;
-        this.duration = duration;
-        this.displayInfo = displayInfo;
-        this.isConsumable = false;
-        this.isMembers = isMembers;
-        this.maxWildernessLevel = 20;
-    }
-
-    // Origin null means they will be considered as teleport from the pathfinder's start position
-    public Transport(String displayInfo, WorldPoint destination, TransportType type, int duration, boolean isMembers) {
-        this.origin = null;
-        this.destination = destination;
-        this.type = type;
-        this.duration = duration;
-        this.displayInfo = displayInfo;
-        this.isConsumable = false;
-        this.isMembers = isMembers;
-        this.maxWildernessLevel = 20;
-    }
-
     /**
      * The skill level required to use this transport
      */
@@ -471,6 +465,7 @@ public class Transport {
 
 
                 Transport transport = new Transport(fieldMap, transportType);
+
                 newTransports.add(transport);
 
             }
@@ -552,6 +547,8 @@ public class Transport {
         addTransports(transports, "wilderness_obelisks.tsv", TransportType.WILDERNESS_OBELISK);
         addTransports(transports, "magic_carpets.tsv", TransportType.MAGIC_CARPET);
         addTransports(transports, "npcs.tsv", TransportType.NPC);
+        addTransports(transports, "teleportation_poh.tsv", TransportType.POH);
+        System.out.println("Loaded " + transports.size() + " transports");
         return transports;
     }
 

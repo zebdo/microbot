@@ -10,16 +10,18 @@ import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.Rs2Cache;
-import net.runelite.client.plugins.microbot.util.cache.model.PohTeleportData;
+import net.runelite.client.plugins.microbot.util.cache.Rs2PohCache;
 import net.runelite.client.plugins.microbot.util.cache.model.SkillData;
 import net.runelite.client.plugins.microbot.util.cache.model.SpiritTreeData;
 import net.runelite.client.plugins.microbot.util.cache.model.VarbitData;
 import net.runelite.client.plugins.microbot.util.farming.SpiritTree;
+import net.runelite.client.plugins.microbot.util.poh.data.*;
 
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -153,7 +155,7 @@ public class CacheSerializationManager {
                 .registerTypeAdapter(VarbitData.class, new VarbitDataAdapter())
                 .registerTypeAdapter(SpiritTree.class, new SpiritTreePatchAdapter())
                 .registerTypeAdapter(SpiritTreeData.class, new SpiritTreeDataAdapter())
-                .registerTypeAdapter(PohTeleportData.class, new PohTeleportDataAdapter())
+                .registerTypeAdapter(Rs2PohCache.TYPE_TOKEN, new PohTeleportDataAdapter())
                 .create();
     }
 
@@ -365,7 +367,7 @@ public class CacheSerializationManager {
                     log.debug("SpiritTrees serialization completed, JSON length: {}", spiritTreeJson != null ? spiritTreeJson.length() : 0);
                     return spiritTreeJson;
                 case POH_CACHE_KEY:
-                    String pohJson = serializePohCache((Rs2Cache<String, PohTeleportData>) cache);
+                    String pohJson = serializePohCache((Rs2Cache<String, List<PohTeleport>>) cache);
                     log.debug("PoH serialization completed, JSON length: {}", pohJson != null ? pohJson.length() : 0);
                     return pohJson;
                 default:
@@ -405,7 +407,7 @@ public class CacheSerializationManager {
                     deserializeSpiritTreeCache((Rs2Cache<SpiritTree, SpiritTreeData>) cache, json);
                     break;
                 case POH_CACHE_KEY:
-                    deserializePohCache((Rs2Cache<String, PohTeleportData>) cache, json);
+                    deserializePohCache((Rs2Cache<String, List<PohTeleport>>) cache, json);
                     break;
                 default:
                     log.warn("Unknown cache type for deserialization: {}", configKey);
@@ -564,13 +566,6 @@ public class CacheSerializationManager {
     }
 
     // Spirit tree cache serialization
-    private static String serializePohCache(Rs2Cache<String, PohTeleportData> cache) {
-        // Use the new method to get all entries for serialization
-        Map<String, PohTeleportData> data = cache.getEntriesForSerialization();
-        return gson.toJson(data);
-    }
-
-    // Spirit tree cache serialization
     private static String serializeSpiritTreeCache(Rs2Cache<SpiritTree, SpiritTreeData> cache) {
         // Use the new method to get all entries for serialization
         Map<SpiritTree, SpiritTreeData> data = cache.getEntriesForSerialization();
@@ -599,13 +594,25 @@ public class CacheSerializationManager {
         }
     }
 
-    private static void deserializePohCache(Rs2Cache<String, PohTeleportData> cache, String json){
-        Type type = new TypeToken<Map<String, PohTeleportData>>(){}.getType();
-        Map<String, PohTeleportData> data = gson.fromJson(json, type);
+    //Poh Serialization
+    private static String serializePohCache(Rs2Cache<String, List<PohTeleport>> cache) {
+        // Use the new method to get all entries for serialization
+        Map<String, List<PohTeleport>> data = cache.getEntriesForSerialization();
+        String json = gson.toJson(data, Rs2PohCache.TYPE_TOKEN);
+        log.debug("Serialized Poh Cache");
+        log.debug(json);
+        return json;
+    }
+
+    //Poh Deserialization
+    private static void deserializePohCache(Rs2Cache<String, List<PohTeleport>> cache, String json){
+        log.debug("Deserializing Poh cache");
+        log.debug(json);
+        Map<String, List<PohTeleport>> data = gson.fromJson(json, Rs2PohCache.TYPE_TOKEN);
         if (data != null) {
             int entriesLoaded = 0;
             int entriesSkipped = 0;
-            for (Map.Entry<String, PohTeleportData> entry : data.entrySet()) {
+            for (Map.Entry<String, List<PohTeleport>> entry : data.entrySet()) {
                 // Only load entries that are not already present in cache (cache entries are newer)
                 if (!cache.containsKey(entry.getKey())) {
                     cache.put(entry.getKey(), entry.getValue());

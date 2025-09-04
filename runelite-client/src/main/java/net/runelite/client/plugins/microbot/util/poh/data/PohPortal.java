@@ -12,7 +12,7 @@ import java.util.Arrays;
 import java.util.List;
 
 @Getter
-public enum PohPortal implements PohTransportable {
+public enum PohPortal implements PohTeleport {
     // Standard spellbook
     VARROCK("Varrock", TeleportLocationData.VARROCK.getLocation(),
             ObjectID.POH_PORTAL_MAG_VARROCK, ObjectID.POH_PORTAL_MARBLE_VARROCK, ObjectID.POH_PORTAL_TEAK_VARROCK,
@@ -123,17 +123,13 @@ public enum PohPortal implements PohTransportable {
         return Rs2GameObject.getGameObject(objectIds);
     }
 
-    public PohTransport getPohTransport() {
-        return new PohTransport(this);
-    }
-
     @Override
     public String displayInfo() {
         return "PoHPortal -> " + displayName;
     }
 
     @Override
-    public boolean transport() {
+    public boolean execute() {
         GameObject portal = getPortal();
         return Rs2GameObject.interact(portal, "enter");
     }

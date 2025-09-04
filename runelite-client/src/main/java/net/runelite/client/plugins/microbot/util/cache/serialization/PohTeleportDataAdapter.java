@@ -1,94 +1,82 @@
+
 package net.runelite.client.plugins.microbot.util.cache.serialization;
 
 import com.google.gson.*;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.plugins.microbot.util.cache.model.PohTeleportData;
+import net.runelite.client.plugins.microbot.util.poh.data.PohTeleport;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
-/**
- * Gson adapter for PohTeleportData serialization/deserialization.
- * Handles safe serialization of POH teleport cache data for persistent storage.
- * <p>
- * This adapter serializes only the essential data needed to reconstruct the PohTeleportData:
- * - The enum class name for type safety
- * - The teleportable names (enum names) for reconstruction
- * <p>
- * The PohTransport objects are reconstructed on deserialization to avoid serialization complexity.
- */
 @Slf4j
-public class PohTeleportDataAdapter implements JsonSerializer<PohTeleportData>, JsonDeserializer<PohTeleportData> {
+public class PohTeleportDataAdapter implements JsonSerializer<Map<String, List<PohTeleport>>>,
+        JsonDeserializer<Map<String, List<PohTeleport>>> {
 
     @Override
-    public JsonElement serialize(PohTeleportData src, Type typeOfSrc, JsonSerializationContext context) {
-        JsonObject json = new JsonObject();
+    public JsonElement serialize(Map<String, List<PohTeleport>> src, Type typeOfSrc, JsonSerializationContext context) {
+        JsonArray array = new JsonArray();
 
-        try {
-            // Store the enum class name for type safety during deserialization
-            if (src.getClazz() != null) {
-                json.addProperty("enumClassName", src.getClazz().getName());
+        for (Map.Entry<String, List<PohTeleport>> entry : src.entrySet()) {
+            JsonObject obj = new JsonObject();
+            obj.addProperty("pohTeleport", entry.getKey());
+
+            JsonArray transports = new JsonArray();
+            for (PohTeleport transport : entry.getValue()) {
+                JsonObject tObj = new JsonObject();
+                tObj.addProperty("class", transport.getClass().getName());
+                tObj.addProperty("name", transport.name()); // assuming PohTransport is enum
+                transports.add(tObj);
             }
 
-            // Store teleportable names as a JSON array
-            if (src.getTeleportableNames() != null && !src.getTeleportableNames().isEmpty()) {
-                JsonArray namesArray = new JsonArray();
-                for (String name : src.getTeleportableNames()) {
-                    namesArray.add(name);
-                }
-                json.add("teleportableNames", namesArray);
-            }
-
-            // We don't serialize PohTransport objects as they can be reconstructed from teleportableNames
-            // This avoids potential serialization issues with complex transport objects
-
-        } catch (Exception e) {
-            // Create minimal fallback serialization
-            json.addProperty("enumClassName", src.getClazz() != null ? src.getClazz().getName() : null);
-            json.add("teleportableNames", new JsonArray());
+            obj.add("transports", transports);
+            array.add(obj);
         }
 
-        return json;
+        return array;
     }
 
     @Override
-    public PohTeleportData deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+    public Map<String, List<PohTeleport>> deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
             throws JsonParseException {
+        Map<String, List<PohTeleport>> map = new HashMap<>();
+        JsonArray array = json.getAsJsonArray();
 
-        JsonObject jsonObject = json.getAsJsonObject();
-        log.debug("Deserializing PohTeleportData: {}", jsonObject);
+        for (JsonElement elem : array) {
+            JsonObject obj = elem.getAsJsonObject();
+            String type = obj.get("pohTeleport").getAsString();
 
-        try {
-            PohTeleportData data = new PohTeleportData();
+            List<PohTeleport> transports = new ArrayList<>();
+            JsonArray transportsJson = obj.getAsJsonArray("transports");
 
-            // Deserialize enum class
-            if (jsonObject.has("enumClassName") && !jsonObject.get("enumClassName").isJsonNull()) {
-                String className = jsonObject.get("enumClassName").getAsString();
+            for (JsonElement tElem : transportsJson) {
+                JsonObject tObj = tElem.getAsJsonObject();
+                String className = tObj.get("class").getAsString();
+                String name = tObj.get("name").getAsString();
+
                 try {
-                    @SuppressWarnings("unchecked")
-                    Class<? extends Enum> enumClass = (Class<? extends Enum>) Class.forName(className);
-                    data.setClazz(enumClass);
+                    Class<?> clazz = Class.forName(className);
+                    if (clazz.isEnum() && PohTeleport.class.isAssignableFrom(clazz)) {
+                        @SuppressWarnings("unchecked")
+                        PohTeleport transport = (PohTeleport) Enum.valueOf(
+                                (Class<Enum>) clazz.asSubclass(Enum.class),
+                                name
+                        );
+                        transports.add(transport);
+                    } else {
+                        throw new JsonParseException("Not a valid PohTransport enum: " + className);
+                    }
                 } catch (ClassNotFoundException e) {
-                    log.warn("Failed to deserialize PohTeleportData: enum class not found: {}", className);
-                    data.setClazz(null);
-                }
-            } else {
-                log.warn("Failed to deserialize PohTeleportData: enumClassName not found");
-            }
-
-            // Deserialize teleportable names
-            if (jsonObject.has("teleportableNames") && !jsonObject.get("teleportableNames").isJsonNull()) {
-                JsonArray namesArray = jsonObject.getAsJsonArray("teleportableNames");
-                for (JsonElement nameElement : namesArray) {
-                    String name = nameElement.getAsString();
-                    data.addTransportable(name);
-                    log.debug("Added teleportable name: {}", name);
+                    log.error("Unknown class during deserialization: {}", className, e);
+                    throw new JsonParseException("Unknown class: " + className, e);
                 }
             }
 
-            return data;
-
-        } catch (Exception e) {
-            throw new JsonParseException("Failed to deserialize PohTeleportData: " + e.getMessage(), e);
+            map.put(type, transports);
         }
+
+        return map;
     }
 }

@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.util.poh.data;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
+import net.runelite.api.GameObject;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.gameval.VarbitID;
@@ -21,7 +22,7 @@ import static net.runelite.api.gameval.VarbitID.VARROCK_DIARY_MEDIUM_COMPLETE;
  */
 @Getter
 @RequiredArgsConstructor
-public enum NexusPortal implements PohTransportable {
+public enum NexusPortal implements PohTeleport {
     VARROCK(TeleportType.NORMAL_MAGIC, "Varrock", TeleportLocationData.VARROCK.getLocation()),
     VARROCK_GE(TeleportType.NORMAL_MAGIC, "Grand Exchange", TeleportLocationData.VARROCK_GE.getLocation()),
     LUMBRIDGE(TeleportType.NORMAL_MAGIC, "Lumbridge", TeleportLocationData.LUMBRIDGE.getLocation()),
@@ -77,16 +78,21 @@ public enum NexusPortal implements PohTransportable {
         return ordinal > 2 ? ordinal : ordinal - 1;
     }
 
-    public PohTransport getPohTransport() {
-        return new PohTransport(this);
-    }
 
     @Override
-    public boolean transport() {
+    public boolean execute() {
         return PohTeleports.usePortalNexus(this);
     }
 
     public final static Integer[] PORTAL_IDS = {ObjectID.POH_NEXUS_PORTAL_1, ObjectID.POH_NEXUS_PORTAL_2, ObjectID.POH_NEXUS_PORTAL_3, ObjectID.POH_NEXUS_PORTAL_LEAGUE_5};
+
+    public static boolean isNexusPortal(GameObject go) {
+        if (go == null) return false;
+        for (int id : PORTAL_IDS) {
+            if (id == go.getId()) return true;
+        }
+        return false;
+    }
 
     public static List<NexusPortal> getAvailableTeleports() {
         List<NexusPortal> teleports = new ArrayList<>();
@@ -144,4 +150,5 @@ public enum NexusPortal implements PohTransportable {
             VarbitID.POH_NEXUS_TELE_34,
             VarbitID.POH_NEXUS_TELE_35,
     };
+
 }

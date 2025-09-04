@@ -12,16 +12,12 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.worldmap.TeleportLocationData;
 
-import java.util.Arrays;
-import java.util.List;
-import java.util.stream.Collectors;
-
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 
 @Getter
 @RequiredArgsConstructor
-public enum MountedDigsite implements PohTransportable {
+public enum MountedDigsite implements PohTeleport {
     FOSSIL_ISLAND(ObjectID.POH_AMULET_DIG_FOSSIL, "Fossil Island", TeleportLocationData.HOUSE_ON_THE_HILL.getLocation()),
     DIGSITE(ObjectID.POH_AMULET_DIG_DIGSITE, "Digsite", TeleportLocationData.DIGSITE.getLocation()),
     LITHKREN(ObjectID.POH_AMULET_DIG_LITHKREN, "Lithkren", TeleportLocationData.LITHKREN.getLocation()),
@@ -34,7 +30,7 @@ public enum MountedDigsite implements PohTransportable {
     private final int duration = 4;
 
     @Override
-    public boolean transport() {
+    public boolean execute() {
         TileObject pendant = getObject();
         if (pendant == null) {
             return false;
@@ -68,10 +64,6 @@ public enum MountedDigsite implements PohTransportable {
         return false;
     }
 
-    public static List<PohTransport> getTransports() {
-        return Arrays.stream(values()).map(PohTransport::new).collect(Collectors.toList());
-    }
-
     private static Widget getWidget() {
         return Rs2Widget.getWidget(InterfaceID.MENU, 3);
     }
@@ -80,4 +72,5 @@ public enum MountedDigsite implements PohTransportable {
     public String displayInfo() {
         return "MountedDigsite -> " + destinationName;
     }
+
 }
