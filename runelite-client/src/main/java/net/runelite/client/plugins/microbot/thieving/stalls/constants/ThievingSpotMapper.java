@@ -15,7 +15,8 @@ public class ThievingSpotMapper {
                 ThievingSpot.VARROCK_TEA_STALL, varrockTeaStallThievingSpot,
                 ThievingSpot.ARDY_BAKER, ardyBakerThievingSpot,
                 ThievingSpot.ARDY_SILK, ardySilkThievingSpot,
-                ThievingSpot.HOSIDIUS_FRUIT, hosidiusFruitThievingSpot
+                ThievingSpot.HOSIDIUS_FRUIT, hosidiusFruitThievingSpot,
+                ThievingSpot.FORTIS_GEM_STALL, fortisGemStallThievingSpot
         );
 
         return map.get(thievingSpot);
@@ -25,4 +26,5 @@ public class ThievingSpotMapper {
     private ArdyBakerThievingSpot ardyBakerThievingSpot;
     private ArdySilkThievingSpot ardySilkThievingSpot;
     private HosidiusFruitThievingSpot hosidiusFruitThievingSpot;
+    private FortisGemStallThievingSpot fortisGemStallThievingSpot;
 }
