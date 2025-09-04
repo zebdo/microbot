@@ -90,7 +90,7 @@ public class BirdHunterScript extends Script {
         int hunterLevel = Rs2Player.getRealSkillLevel(Skill.HUNTER);
         int allowedSnares = getAvailableTraps(hunterLevel);  // Calculate the allowed number of snares
 
-        int snaresInInventory = Rs2Inventory.count(ItemID.HUNTING_OJIBWAY_BIRD_SNARE);
+        int snaresInInventory = Rs2Inventory.itemQuantity(ItemID.HUNTING_OJIBWAY_BIRD_SNARE);
         Microbot.log("Allowed snares: " + allowedSnares + ", Snares in inventory: " + snaresInInventory);
 
         return snaresInInventory >= allowedSnares;  // Return true if enough snares, false otherwise

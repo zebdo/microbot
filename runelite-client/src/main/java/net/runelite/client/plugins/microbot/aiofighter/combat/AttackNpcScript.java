@@ -4,7 +4,6 @@ import lombok.SneakyThrows;
 import net.runelite.api.Actor;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.aiofighter.AIOFighterConfig;
@@ -18,6 +17,7 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2Antiban;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
+import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldArea;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -45,6 +45,7 @@ public class AttackNpcScript extends Script {
     public static Actor currentNpc = null;
     public static AtomicReference<List<Rs2NpcModel>> filteredAttackableNpcs = new AtomicReference<>(new ArrayList<>());
     public static Rs2WorldArea attackableArea = null;
+    public static volatile int cachedTargetNpcIndex = -1;
     private boolean messageShown = false;
     private int noNpcCount = 0;
 
@@ -103,6 +104,53 @@ public class AttackNpcScript extends Script {
                 if (config.state().equals(State.BANKING) || config.state().equals(State.WALKING))
                     return;
 
+                // Check if we should pause while looting is happening
+                if (Microbot.pauseAllScripts.get()) {
+                    return; // Don't attack while looting
+                }
+
+                // Check if we need to update our cached target (but not while waiting for loot)
+                if (!AIOFighterPlugin.isWaitingForLoot()) {
+                    Actor currentInteracting = Rs2Player.getInteracting();
+                    if (currentInteracting instanceof Rs2NpcModel) {
+                        Rs2NpcModel npc = (Rs2NpcModel) currentInteracting;
+                        // Update our cached target to who we're fighting
+                        if (npc.getHealthRatio() > 0 && !npc.isDead()) {
+                            cachedTargetNpcIndex = npc.getIndex();
+                        }
+                    }
+                }
+                
+                // Check if our cached target died
+                if (config.toggleWaitForLoot() && !AIOFighterPlugin.isWaitingForLoot() && cachedTargetNpcIndex != -1) {
+                    // Find the NPC by index using Rs2 API
+                    Rs2NpcModel cachedNpcModel = Rs2Npc.getNpcByIndex(cachedTargetNpcIndex);
+                    
+                    if (cachedNpcModel != null && (cachedNpcModel.isDead() || (cachedNpcModel.getHealthRatio() == 0 && cachedNpcModel.getHealthScale() > 0))) {
+                        AIOFighterPlugin.setWaitingForLoot(true);
+                        AIOFighterPlugin.setLastNpcKilledTime(System.currentTimeMillis());
+                        Microbot.status = "Waiting for loot...";
+                        Microbot.log("NPC died, waiting for loot...");
+                        cachedTargetNpcIndex = -1;
+                        return;
+                    }
+                }
+
+                // Check if we're waiting for loot
+                if (config.toggleWaitForLoot() && AIOFighterPlugin.isWaitingForLoot()) {
+                    long timeSinceKill = System.currentTimeMillis() - AIOFighterPlugin.getLastNpcKilledTime();
+                    int timeoutMs = config.lootWaitTimeout() * 1000;
+                    if (timeSinceKill >= timeoutMs) {
+                        // Timeout reached, resume combat
+                        AIOFighterPlugin.clearWaitForLoot("Loot wait timeout reached, resuming combat");
+                        cachedTargetNpcIndex = -1; // Clear cached NPC on timeout
+                    } else {
+                        // Still waiting for loot, don't attack
+                        int secondsLeft = (int) Math.max(1, TimeUnit.MILLISECONDS.toSeconds(timeoutMs - timeSinceKill));
+                        Microbot.status = "Waiting for loot... " + secondsLeft + "s";
+                        return;
+                    }
+                }
 
                 if (config.toggleCenterTile() && config.centerLocation().getX() == 0
                         && config.centerLocation().getY() == 0) {
@@ -114,15 +162,24 @@ public class AttackNpcScript extends Script {
                 }
                 messageShown = false;
 
-
-                if (Rs2AntibanSettings.actionCooldownActive) {
-                    AIOFighterPlugin.setState(State.COMBAT);
-                    handleItemOnNpcToKill(config);
-                    return;
+                if(Rs2AntibanSettings.antibanEnabled && Rs2AntibanSettings.actionCooldownChance > 0){
+                    if (Rs2AntibanSettings.actionCooldownActive) {
+                        AIOFighterPlugin.setState(State.COMBAT);
+                        handleItemOnNpcToKill(config);
+                        return;
+                    }
+                }
+                else {
+                    if (Rs2Combat.inCombat()) {
+                        AIOFighterPlugin.setState(State.COMBAT);
+                        handleItemOnNpcToKill(config);
+                        return;
+                    }
                 }
 
                 if (!attackableNpcs.isEmpty()) {
                     noNpcCount = 0;
+
                     Rs2NpcModel npc = attackableNpcs.stream().findFirst().orElse(null);
 
                     if (!Rs2Camera.isTileOnScreen(npc.getLocalLocation()))

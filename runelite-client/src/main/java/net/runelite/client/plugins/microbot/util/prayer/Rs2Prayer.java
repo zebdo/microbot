@@ -1,23 +1,25 @@
 package net.runelite.client.plugins.microbot.util.prayer;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.MenuAction;
 import net.runelite.api.Skill;
 import net.runelite.api.annotations.Component;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
-import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
+import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.awt.*;
 import java.util.Arrays;
 import java.util.stream.Stream;
 
-import static net.runelite.api.Varbits.QUICK_PRAYER;
-import static net.runelite.client.plugins.microbot.globval.VarbitIndices.SELECTED_QUICK_PRAYERS;
-import static net.runelite.client.plugins.microbot.globval.VarbitValues.QUICK_PRAYER_ENABLED;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
+@Slf4j
 public class Rs2Prayer {
     
     @Component
@@ -27,37 +29,135 @@ public class Rs2Prayer {
     @Component
     private static final int QUICK_PRAYER_ORB_COMPONENT_ID = 10485779;
 
-    public static void toggle(Rs2PrayerEnum name) {
-        if (!Rs2Player.hasPrayerPoints()) return;
-        Microbot.doInvoke(new NewMenuEntry(-1, name.getIndex(), MenuAction.CC_OP.getId(), 1,-1, "Activate"), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
-        // Rs2Reflection.invokeMenu(-1, name.getIndex(), MenuAction.CC_OP.getId(), 1,-1, "Activate", "", -1, -1);
-    }
+	/**
+	 * Toggles a prayer on or off. If the prayer is already in the desired state, no action is taken.
+	 *
+	 * @param prayer the prayer to toggle
+	 */
+	public static void toggle(Rs2PrayerEnum prayer) {
+		if (isOutOfPrayer()) return;
+		invokePrayer(prayer, false);
+	}
 
-    public static void toggle(Rs2PrayerEnum name, boolean on) {
-        final int varBit = name.getVarbit();
-        if(!on) {
-            if (Microbot.getVarbitValue(varBit) == 0) return;
-        } else {
-            if (Microbot.getVarbitValue(varBit) == 1) return;
-        }
+	/**
+	 * Toggles a prayer to a specific state (on or off).
+	 *
+	 * @param prayer the prayer to toggle
+	 * @param on true to enable the prayer, false to disable it
+	 * @return true if the prayer is in the desired state after the operation, false otherwise
+	 */
+	public static boolean toggle(Rs2PrayerEnum prayer, boolean on) {
+		return toggle(prayer, on, false); // Default to not using the mouse to ensure compatibility with previous behavior
+	}
 
-        if (!Rs2Player.hasPrayerPoints()) return;
+	/**
+	 * Toggles a prayer to a specific state (on or off) with optional mouse control.
+	 * If using mouse, will automatically switch to the prayer tab if not already active.
+	 *
+	 * @param prayer the prayer to toggle
+	 * @param on true to enable the prayer, false to disable it
+	 * @param withMouse true to use mouse
+	 * @return true if the prayer is in the desired state after the operation, false otherwise
+	 */
+	public static boolean toggle(Rs2PrayerEnum prayer, boolean on, boolean withMouse) {
+		if (isOutOfPrayer()) return false;
 
-        Microbot.doInvoke(new NewMenuEntry(-1, name.getIndex(), MenuAction.CC_OP.getId(), 1,-1, "Activate"), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
-        //Rs2Reflection.invokeMenu(-1, name.getIndex(), MenuAction.CC_OP.getId(), 1,-1, "Activate", "", -1, -1);
-    }
+		if (isPrayerActive(prayer) == on) return true;
 
+		if (withMouse && Rs2Tab.getCurrentTab() != InterfaceTab.PRAYER)
+		{
+			Rs2Tab.switchTo(InterfaceTab.PRAYER);
+		}
+
+		invokePrayer(prayer, withMouse);
+
+		return sleepUntil(() -> isPrayerActive(prayer) == on, 10_000);
+	}
+
+	/**
+	 * Invokes a prayer action
+	 * Creates a menu entry and executes it with the appropriate bounds.
+	 *
+	 * @param prayer the prayer to invoke
+	 * @param withMouse true to use mouse clicks with prayer bounds
+	 */
+	private static void invokePrayer(Rs2PrayerEnum prayer, boolean withMouse) {
+		NewMenuEntry menuEntry = new NewMenuEntry(
+			-1,
+			prayer.getIndex(),
+			MenuAction.CC_OP.getId(),
+			1,
+			-1,
+			"Activate"
+		);
+
+		Rectangle prayerBounds = withMouse ? getPrayerBounds(prayer) : Rs2UiHelper.getDefaultRectangle();
+
+		Microbot.doInvoke(menuEntry, prayerBounds);
+	}
+
+	/**
+	 * Gets the bounds of a specific prayer widget
+	 * Returns a default rectangle if the widget is not found or has invalid bounds.
+	 *
+	 * @param prayer the prayer to get bounds for
+	 * @return the bounds of the prayer widget, or default rectangle if not available
+	 */
+	private static Rectangle getPrayerBounds(Rs2PrayerEnum prayer) {
+		Widget prayerWidget = Rs2Widget.getWidget(prayer.getIndex());
+		if (prayerWidget == null) {
+			log.warn("Prayer widget not found: {}", prayer.getName());
+			return Rs2UiHelper.getDefaultRectangle(); // return a default rectangle if the widget is not found
+		}
+
+		Rectangle bounds = prayerWidget.getBounds();
+		if (bounds == null || bounds.width <= 0 || bounds.height <= 0) {
+			log.warn("Invalid prayer bounds for: {}", prayer.getName());
+			return Rs2UiHelper.getDefaultRectangle(); // return a default rectangle if bounds are invalid
+		}
+
+		return bounds;
+	}
+
+    /**
+     * Checks if a specific prayer is set as a quick prayer.
+     * Quick prayers are prayers that can be activated/deactivated with the quick prayer orb.
+     *
+     * @param prayer the prayer to check
+     * @return true if the prayer is set as a quick prayer, false otherwise
+     */
     public static boolean isQuickPrayerSet(Rs2PrayerEnum prayer) {
-        int selectedQuickPrayersVarbit = Microbot.getVarbitValue(SELECTED_QUICK_PRAYERS);
-        return (selectedQuickPrayersVarbit & (1 << prayer.getQuickPrayerIndex())) != 0;
-    }
-    public static boolean isPrayerActive(Rs2PrayerEnum name) {
-        final int varBit = name.getVarbit();
-        return Microbot.getVarbitValue(varBit) == 1;
+        final int selectedQuickPrayers = Microbot.getVarbitValue(VarbitID.QUICKPRAYER_SELECTED);
+        return (selectedQuickPrayers & (1 << prayer.getQuickPrayerIndex())) != 0;
     }
 
+	/**
+	 * Checks if the player has any quick prayers configured.
+	 *
+	 * @return true if at least one quick prayer is set, false if no quick prayers are configured
+	 */
+	public static boolean hasAnyQuickPrayers() {
+		return Microbot.getVarbitValue(VarbitID.QUICKPRAYER_SELECTED) > 0;
+	}
+
+	/**
+	 * Checks if a specific prayer is currently active.
+	 *
+	 * @param prayer the prayer to check
+	 * @return true if the prayer is currently active, false otherwise
+	 */
+	public static boolean isPrayerActive(Rs2PrayerEnum prayer) {
+		return Microbot.getVarbitValue(prayer.getVarbit()) == 1;
+	}
+
+    /**
+     * Checks if quick prayers are currently enabled/active.
+     * When quick prayers are active, all configured quick prayers are turned on.
+     *
+     * @return true if quick prayers are currently active, false otherwise
+     */
     public static boolean isQuickPrayerEnabled() {
-        return Microbot.getVarbitValue(QUICK_PRAYER) == QUICK_PRAYER_ENABLED.getValue();
+        return Microbot.getVarbitValue(VarbitID.QUICKPRAYER_ACTIVE) == 1;
     }
 
     public static boolean setQuickPrayers(Rs2PrayerEnum[] prayers) {
@@ -77,28 +177,151 @@ public class Rs2Prayer {
         return true;
     }
 
-    public static boolean toggleQuickPrayer(boolean on) {
-        boolean bit = Microbot.getVarbitValue(QUICK_PRAYER) == QUICK_PRAYER_ENABLED.getValue();
+	/**
+	 * Toggles quick prayers on or off
+	 * Does nothing if the player is out of prayer points or has no quick prayers configured.
+	 */
+	public static void toggleQuickPrayer() {
+		if (isOutOfPrayer() || !hasAnyQuickPrayers()) return;
+		invokeQuickPrayer(false);
+	}
 
-        boolean isQuickPrayerSet = Microbot.getVarbitValue(4102) > 0;
-        if (!isQuickPrayerSet) return false;
+	/**
+	 * Toggles quick prayers to a specific state
+	 *
+	 * @param on true to enable quick prayers, false to disable them
+	 * @return true if quick prayers are in the desired state after the operation, false otherwise
+	 */
+	public static boolean toggleQuickPrayer(boolean on) {
+		return toggleQuickPrayer(on, false); // Default to not using the mouse to ensure compatibility with previous behavior
+	}
 
-        if (Rs2Widget.isHidden(QUICK_PRAYER_ORB_COMPONENT_ID)) return false;
-        if (!Rs2Player.hasPrayerPoints()) return false;
-        if (on == bit) return true;
+    /**
+     * Toggles quick prayers to a specific state with optional mouse control.
+     * Quick prayers allow activating/deactivating multiple configured prayers at once.
+     *
+     * @param on true to enable quick prayers, false to disable them
+     * @param withMouse true to use mouse
+     * @return true if quick prayers are in the desired state after the operation, false otherwise
+     */
+    public static boolean toggleQuickPrayer(boolean on, boolean withMouse) {
+		if (!hasAnyQuickPrayers()) return false;
+		if (isOutOfPrayer()) return false;
+		if (on == isQuickPrayerEnabled()) return true;
 
-        Microbot.doInvoke(new NewMenuEntry(-1, QUICK_PRAYER_ORB_COMPONENT_ID, MenuAction.CC_OP.getId(), 1, -1, "Quick-prayers"), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
-        return true;
+		boolean wasActive = isQuickPrayerEnabled();
+
+		invokeQuickPrayer(withMouse);
+
+        return sleepUntil(() -> isQuickPrayerEnabled() != wasActive, 10_000);
     }
 
+	/**
+	 * Invokes the quick prayer orb action
+	 * Creates a menu entry for the quick prayer orb and executes it.
+	 *
+	 * @param withMouse true to use mouse with orb bounds
+	 */
+	private static void invokeQuickPrayer(boolean withMouse) {
+		NewMenuEntry entry = new NewMenuEntry(
+			-1,
+			QUICK_PRAYER_ORB_COMPONENT_ID,
+			MenuAction.CC_OP.getId(),
+			1,
+			-1,
+			"Quick-prayers"
+		);
+
+		Microbot.doInvoke(entry, withMouse ? getQuickPrayerOrbBounds() : Rs2UiHelper.getDefaultRectangle());
+	}
+
+	/**
+	 * Gets the bounds of the quick prayer orb widget
+	 * The quick prayer orb is used to toggle all configured quick prayers at once.
+	 * Returns a default rectangle if the widget is not found or has invalid bounds.
+	 *
+	 * @return the bounds of the quick prayer orb widget, or default rectangle if not available
+	 */
+	private static Rectangle getQuickPrayerOrbBounds() {
+		Widget quickPrayerOrbWidget = Rs2Widget.getWidget(QUICK_PRAYER_ORB_COMPONENT_ID);
+		if (quickPrayerOrbWidget == null) {
+			log.warn("Quick prayer orb widget not found");
+			return Rs2UiHelper.getDefaultRectangle(); // return a default rectangle if the widget is not found
+		}
+
+		Rectangle bounds = quickPrayerOrbWidget.getBounds();
+		if (bounds == null || bounds.width <= 0 || bounds.height <= 0) {
+			log.warn("Invalid quick prayer orb bounds");
+			return Rs2UiHelper.getDefaultRectangle(); // return a default rectangle if bounds are invalid
+		}
+
+		return bounds;
+	}
+
+    /**
+     * Checks if the player has run out of prayer points.
+     * When out of prayer points, prayers cannot be activated and existing prayers will be disabled.
+     *
+     * @return true if the player's current prayer level is 0 or below, false otherwise
+     */
     public static boolean isOutOfPrayer() {
         return Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER) <= 0;
     }
+
     /**
      * Disables all active prayers.
      */
     public static void disableAllPrayers() {
-        Arrays.stream(Rs2PrayerEnum.values()).filter(Rs2Prayer::isPrayerActive).forEach(Rs2Prayer::toggle);
+        disableAllPrayers(false);
+    }
+
+    /**
+     * Disables all active prayers.
+     * @param withMouse whether to use mouse clicks for disabling prayers
+     */
+    public static void disableAllPrayers(boolean withMouse) {
+        Arrays.stream(Rs2PrayerEnum.values())
+            .filter(Rs2Prayer::isPrayerActive)
+            .forEach(prayer -> Rs2Prayer.toggle(prayer, false, withMouse));
+    }
+
+    /**
+     * Disables all active prayers except the ones specified in the array.
+     * @param prayersToKeep array of prayers to keep active
+     */
+    public static void disableAllPrayersExcept(Rs2PrayerEnum[] prayersToKeep) {
+        disableAllPrayersExcept(prayersToKeep, false);
+    }
+
+    /**
+     * Disables all active prayers except the ones specified in the array.
+     * @param prayersToKeep array of prayers to keep active
+     * @param withMouse whether to use mouse clicks for disabling prayers
+     */
+    public static void disableAllPrayersExcept(Rs2PrayerEnum[] prayersToKeep, boolean withMouse) {
+        Arrays.stream(Rs2PrayerEnum.values())
+            .filter(Rs2Prayer::isPrayerActive)
+            .filter(prayer -> !Arrays.asList(prayersToKeep).contains(prayer))
+            .forEach(prayer -> Rs2Prayer.toggle(prayer, false, withMouse));
+    }
+
+    /**
+     * Enables the specified prayers.
+     * @param prayers array of prayers to enable
+     */
+    public static void enablePrayers(Rs2PrayerEnum[] prayers) {
+        enablePrayers(prayers, false);
+    }
+
+    /**
+     * Enables the specified prayers.
+     * @param prayers array of prayers to enable
+     * @param withMouse whether to use mouse clicks for enabling prayers
+     */
+    public static void enablePrayers(Rs2PrayerEnum[] prayers, boolean withMouse) {
+        Arrays.stream(prayers)
+            .filter(prayer -> !Rs2Prayer.isPrayerActive(prayer))
+            .forEach(prayer -> Rs2Prayer.toggle(prayer, true, withMouse));
     }
 
     public static Rs2PrayerEnum getActiveProtectionPrayer() {
@@ -149,7 +372,7 @@ public class Rs2Prayer {
 
     public static Rs2PrayerEnum getBestMagePrayer() {
         int prayerLevel = Microbot.getClient().getRealSkillLevel(Skill.PRAYER);
-        boolean auguryUnlocked = Microbot.getVarbitValue(5452) == 1;
+        boolean auguryUnlocked = isAuguryUnlocked();
 
         if (auguryUnlocked && prayerLevel >= Rs2PrayerEnum.AUGURY.getLevel())
             return Rs2PrayerEnum.AUGURY;
@@ -165,7 +388,7 @@ public class Rs2Prayer {
 
     public static Rs2PrayerEnum getBestRangePrayer() {
         int prayerLevel = Microbot.getClient().getRealSkillLevel(Skill.PRAYER);
-        boolean rigourUnlocked = Microbot.getVarbitValue(5451) == 1;
+        boolean rigourUnlocked = isRigourUnlocked();
 
         if (rigourUnlocked && prayerLevel >= Rs2PrayerEnum.RIGOUR.getLevel())
             return Rs2PrayerEnum.RIGOUR;

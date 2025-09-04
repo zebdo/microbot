@@ -291,6 +291,7 @@ public class Rs2NpcManager {
      * @param avoidWilderness Whether to avoid locations in the Wilderness.
      */
     public static MonsterLocation getClosestLocation(String npcName, int minClustering, boolean avoidWilderness) {
+        boolean originalUseBankItems = ShortestPathPlugin.getPathfinderConfig().isUseBankItems();
         ShortestPathPlugin.getPathfinderConfig().setUseBankItems(true);
         Microbot.log(Level.INFO,"Finding closest location for: " + npcName);
 
@@ -332,6 +333,7 @@ public class Rs2NpcManager {
         }
 
         Microbot.log(Level.INFO,"Closest location for " + npcName + ": " + closest.getLocationName());
+        ShortestPathPlugin.getPathfinderConfig().setUseBankItems(originalUseBankItems);
         return closest;
     }
 
