@@ -125,7 +125,7 @@ public class JewelryScript extends Script {
                                 Rs2Inventory.waitForInventoryChanges(1800);
                             }
                             
-                            if (plugin.getJewelry().getGem() != null) {
+                            if (plugin.getJewelry().getGem() != Gem.NONE) {
                                 Rs2Bank.withdrawX(plugin.getJewelry().getGem().getCutItemID(), withdrawAmount);
                                 Rs2Inventory.waitForInventoryChanges(1800);
                             }
