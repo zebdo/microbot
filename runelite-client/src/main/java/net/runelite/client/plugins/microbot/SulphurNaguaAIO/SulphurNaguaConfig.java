@@ -9,10 +9,10 @@ import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 @ConfigGroup("SulphurNaguaAIO")
 @ConfigInformation("<html>"
         + "<h2 style='color: #6d9eeb;'>Sulphur Nagua script by VIP</h2>"
-        + "<p>This plugin automates fighting Sulphur Nagua in the Cam Torm region of Valamore.</p>\n"
+        + "<p>This plugin automates fighting Sulphur Nagua in the Cam Torm region of Varlamore.</p>\n"
         + "<p>Requirements:</p>\n"
         + "<ol>\n"
-        + "    <li>Access to Valamore and the Cam Torm area</li>\n"
+        + "    <li>Access to Varlamore and the Cam Torm area</li>\n"
         + "    <li>Completion of the 'Perilous Moons' quest</li>\n"
         + "    <li>Minimum 43 Prayer</li>\n"
         + "    <li>Minimum 38 Herblore</li>\n"
@@ -21,7 +21,10 @@ import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
         + "<p>This script will automatically fight Sulphur Nagua, drink Moonlight Potions, and brew new ones when supplies run out.</p>\n"
         + "</html>")
 
-
+/**
+ * Configuration interface for the Sulphur Nagua script.
+ * Defines the user-configurable settings in the plugin side panel.
+ */
 public interface SulphurNaguaConfig extends Config {
     @ConfigItem(
             keyName = "useInventorySetup",
