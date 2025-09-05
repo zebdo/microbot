@@ -370,38 +370,46 @@ public class Rs2Settings
 	 * and enable the slot locking feature.
 	 * @return {@code true} if bank slot locking is successfully enabled or already enabled, {@code false} otherwise
 	 */
-	public static boolean enableBankSlotLocking()
-	{
+	public static boolean enableBankSlotLocking() {
 		if (isBankSlotLockingEnabled()) return true;
 
-		if (!Rs2Bank.isOpen()) {
-			log.info("Bank is not open, cannot enable bank slot locking.");
+		Rs2Widget.clickWidget(InterfaceID.Bankmain.MENU_BUTTON);
+		if (!sleepUntil(() -> Rs2Widget.isWidgetVisible(InterfaceID.Bankmain.MENU_CONTAINER), 2000)) {
+			log.debug("Bank menu did not open within timeout.");
 			return false;
 		}
 
-		Rs2Widget.clickWidget(InterfaceID.Bankmain.MENU_BUTTON);
-
-		sleepUntil(() -> Rs2Widget.isWidgetVisible(InterfaceID.Bankmain.MENU_CONTAINER), 2000);
-
 		Rs2Widget.clickWidget(InterfaceID.Bankmain.LOCKS);
-
-		sleepUntil(() -> Rs2Widget.isWidgetVisible(InterfaceID.BankSideLocks.DONE), 2000);
+		if (!sleepUntil(() -> Rs2Widget.isWidgetVisible(InterfaceID.BankSideLocks.DONE), 2000)) {
+			log.debug("Bank Locks panel did not appear.");
+			return false;
+		}
 
 		if (Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_IGNOREINVLOCKS) != 0) {
 			Rs2Widget.clickWidget(InterfaceID.BankSideLocks.IGNORELOCKS);
-			sleepUntil(() -> Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_IGNOREINVLOCKS) == 0, 2000);
+			if (!sleepUntil(() -> Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_IGNOREINVLOCKS) == 0, 2000)) {
+				log.debug("Failed to disable 'ignore inventory locks' setting.");
+				return false;
+			}
 		}
 
 		if (Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_SHOWOP) != 1) {
 			Rs2Widget.clickWidget(InterfaceID.BankSideLocks.EXTRAOPTIONS);
-			sleepUntil(()->Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_SHOWOP) == 1, 2000);
+			if (!sleepUntil(() -> Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_SHOWOP) == 1, 2000)) {
+				log.debug("Failed to enable 'show inventory locks menu option' setting.");
+				return false;
+			}
 		}
 
 		Rs2Widget.clickWidget(InterfaceID.BankSideLocks.DONE);
+		if (!sleepUntil(() -> !Rs2Widget.isWidgetVisible(InterfaceID.BankSideLocks.DONE), 2000)) {
+			log.debug("Locks panel did not close after clicking DONE.");
+			return false;
+		}
 
-		sleepUntil(() -> !Rs2Widget.isWidgetVisible(InterfaceID.BankSideLocks.DONE), 2000);
-
-		Rs2Widget.clickWidget(InterfaceID.Bankmain.MENU_BUTTON);
+		if (Rs2Widget.isWidgetVisible(InterfaceID.Bankmain.MENU_CONTAINER)) {
+			Rs2Widget.clickWidget(InterfaceID.Bankmain.MENU_BUTTON);
+		}
 
 		return isBankSlotLockingEnabled();
 	}
