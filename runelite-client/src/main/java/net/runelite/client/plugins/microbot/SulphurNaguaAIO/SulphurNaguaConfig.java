@@ -42,14 +42,4 @@ public interface SulphurNaguaConfig extends Config {
     default InventorySetup inventorySetup() {
         return null;
     }
-
-    @ConfigItem(
-            keyName = "moonlightPotionsMinimum",
-            name = "Minimum Moonlight Potions",
-            description = "If the number of potions falls below this value, new ones will be made. Set to 0 to always fill the entire free inventory.",
-            position = 3
-    )
-    default int moonlightPotionsMinimum() {
-        return 2;
-    }
 }
