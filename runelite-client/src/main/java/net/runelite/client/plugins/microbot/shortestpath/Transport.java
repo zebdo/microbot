@@ -10,6 +10,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 
@@ -547,6 +548,7 @@ public class Transport {
         addTransports(transports, "wilderness_obelisks.tsv", TransportType.WILDERNESS_OBELISK);
         addTransports(transports, "magic_carpets.tsv", TransportType.MAGIC_CARPET);
         addTransports(transports, "npcs.tsv", TransportType.NPC);
+        addTransports(transports, "portal_poh.tsv", TransportType.TELEPORTATION_PORTAL);
         addTransports(transports, "teleportation_poh.tsv", TransportType.POH);
         System.out.println("Loaded " + transports.size() + " transports");
         return transports;

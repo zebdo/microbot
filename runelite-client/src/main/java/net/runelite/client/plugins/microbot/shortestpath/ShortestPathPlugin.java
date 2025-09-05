@@ -906,25 +906,27 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
     }
 
     public static void generatePohTsvContent() {
-        StringBuilder tsvBuilder = new StringBuilder("Destination\tisMembers\tEnumValue\tEnumClass\tDisplay info\tWilderness level\tDuration\n");
-
+        //Teleports
+        StringBuilder teleportBuilder = new StringBuilder("Destination\tisMembers\tEnumValue\tEnumClass\tDisplay info\tWilderness level\tDuration\n");
         for (NexusPortal value : NexusPortal.values()) {
-            tsvBuilder.append(value.getTsvValue());
+            teleportBuilder.append(value.getTsvValue());
         }
         for (MountedDigsite value : MountedDigsite.values()) {
-            tsvBuilder.append(value.getTsvValue());
+            teleportBuilder.append(value.getTsvValue());
         }
         for (MountedGlory value : MountedGlory.values()) {
-            tsvBuilder.append(value.getTsvValue());
+            teleportBuilder.append(value.getTsvValue());
         }
         for (JewelleryBox value : JewelleryBox.values()) {
-            tsvBuilder.append(value.getTsvValue());
+            teleportBuilder.append(value.getTsvValue());
         }
         for (PohPortal value : PohPortal.values()) {
-            tsvBuilder.append(value.getTsvValue());
+            teleportBuilder.append(value.getTsvValue());
         }
+        writePohToTsv(teleportBuilder.toString(), "teleportation_poh.tsv");
 
-        writePohToTsv(tsvBuilder.toString(), "teleportation_poh.tsv");
+        //Outside portals
+        writePohToTsv(HouseLocation.buildPortalMappingTSV(), "portal_poh.tsv");
     }
 
     /**
