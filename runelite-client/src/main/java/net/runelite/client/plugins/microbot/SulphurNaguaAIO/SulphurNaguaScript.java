@@ -1,8 +1,6 @@
 package net.runelite.client.plugins.microbot.SulphurNaguaAIO;
 
 import net.runelite.api.Skill;
-import java.util.List;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -388,20 +386,11 @@ public class SulphurNaguaScript extends Script {
     }
 
     private void drinkMoonlightPotion() {
-        // 1. Get a list of all inventory items. The new API uses 'Rs2ItemModel'.
-        List<Rs2ItemModel> inventoryItems = Rs2Inventory.all();
-
-        // 2. Loop through the items in the order of the inventory slots.
-        for (net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel item : inventoryItems) {
-            if (item != null) {
-                // 3. Check if the item is a moonlight potion using 'item.id' (the new way).
-                if (MOONLIGHT_POTION_IDS.contains(item.getId())) {
-
-                    // 4. Drink the first one found and then stop.
-                    if (Rs2Inventory.interact(item.getId(), "Drink")) {
-                        lastPotionDrinkTime = System.currentTimeMillis();
-                        break; // This stops the loop so you only drink one.
-                    }
+        for (int potionId : MOONLIGHT_POTION_IDS) {
+            if (Rs2Inventory.hasItem(potionId)) {
+                if (Rs2Inventory.interact(potionId, "Drink")) {
+                    lastPotionDrinkTime = System.currentTimeMillis();
+                    break;
                 }
             }
         }
