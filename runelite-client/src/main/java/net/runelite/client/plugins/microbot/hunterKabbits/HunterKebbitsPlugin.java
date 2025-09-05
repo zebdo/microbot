@@ -19,7 +19,7 @@ import java.time.Instant;
  * Handles configuration, overlay management, event subscriptions, and script lifecycle.
  */
 @PluginDescriptor(
-        name =  "Kebbits",
+        name = PluginDescriptor.TaFCat + "Kebbits",
         description = "Automates Kebbits hunting",
         tags = {"hunter", "kebbits", "skilling"},
         enabledByDefault = false
