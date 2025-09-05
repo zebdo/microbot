@@ -21,11 +21,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.shortestpath.*;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
-import net.runelite.client.plugins.microbot.util.cache.Rs2QuestCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2SkillCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2SpiritTreeCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2VarPlayerCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2VarbitCache;
+import net.runelite.client.plugins.microbot.util.cache.*;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
@@ -474,6 +470,14 @@ public class PathfinderConfig {
 			log.debug("Transport ( O: {} D: {} ) is a teleport but teleports are globally disabled", transport.getOrigin(), transport.getDestination());
 			return false;
 		}
+        if(transport.getType() == TransportType.POH){
+            boolean isUsable = Rs2PohCache.isTransportUsable(transport);
+            if (!isUsable)
+            {
+                log.debug("Transport ( O: {} D: {} ) is a POH teleport but is not usable", transport.getOrigin(), transport.getDestination());
+            }
+            return isUsable;
+        }
         // Check Teleport Item Settings
         if (transport.getType() == TELEPORTATION_ITEM) {
 			boolean isUsable = isTeleportationItemUsable(transport);
