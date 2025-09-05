@@ -50,7 +50,8 @@ public class TeleAlchScript extends Script {
                         }
 
                         if (!Rs2Magic.hasRequiredRunes(plugin.getAlchSpell())) {
-                            Microbot.log("Unable to cast alchemy spell");
+                            Microbot.showMessage("Out of runes for alchemy");
+                            shutdown();
                             return;
                         }
 
@@ -74,6 +75,12 @@ public class TeleAlchScript extends Script {
                         }
 
                         Rs2Magic.alch(alchItem, 100, 150);
+
+                        if (!Rs2Magic.hasRequiredRunes(plugin.getTeleportSpell().getRs2Spell())) {
+                            Microbot.showMessage("Out of runes for " + plugin.getTeleportSpell().name());
+                            shutdown();
+                            return;
+                        }
 
                         Rs2Magic.cast(plugin.getTeleportSpell().getRs2Spell().getMagicAction());
 

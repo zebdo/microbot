@@ -45,6 +45,12 @@ public class TeleportScript extends Script {
                 
                 switch (state) {
                     case CASTING:
+                        if (!Rs2Magic.hasRequiredRunes(plugin.getTeleportSpell().getRs2Spell())) {
+                            Microbot.showMessage("Out of runes for " + plugin.getTeleportSpell().name());
+                            shutdown();
+                            return;
+                        }
+
                         if (!Rs2Magic.cast(plugin.getTeleportSpell().getRs2Spell().getMagicAction())) {
                             Microbot.log("Unable to cast " + plugin.getTeleportSpell().getRs2Spell().name());
                         }

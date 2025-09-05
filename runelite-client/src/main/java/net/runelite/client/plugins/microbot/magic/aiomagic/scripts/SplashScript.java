@@ -40,6 +40,12 @@ public class SplashScript extends Script {
 				if (!super.run()) return;
 				long startTime = System.currentTimeMillis();
 
+				if (!Rs2Magic.canCast(plugin.getCombatSpell().getMagicAction())) {
+					Microbot.showMessage("Out of runes for " + plugin.getCombatSpell().name());
+					shutdown();
+					return;
+				}
+
 				if (Rs2Magic.getCurrentAutoCastSpell() != plugin.getCombatSpell()) {
 					Rs2Combat.setAutoCastSpell(plugin.getCombatSpell(), false);
 					return;
