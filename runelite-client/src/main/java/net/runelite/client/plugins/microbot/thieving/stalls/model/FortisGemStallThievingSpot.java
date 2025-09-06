@@ -102,19 +102,19 @@ public class FortisGemStallThievingSpot implements IStallThievingSpot {
     }
 
     private boolean isUncutGem(Rs2ItemModel item) {
-        String n = item.getName().toLowerCase();
-        return n.equals("uncut sapphire") ||
-                n.equals("uncut emerald") ||
-                n.equals("uncut ruby") ||
-                n.equals("uncut diamond");
+        int id = item.getId();
+        return id == ItemID.UNCUT_SAPPHIRE ||
+                id == ItemID.UNCUT_EMERALD ||
+                id == ItemID.UNCUT_RUBY ||
+                id == ItemID.UNCUT_DIAMOND;
     }
 
     private boolean isGemBagCompletelyFull() {
         if (Rs2Gembag.isUnknown()) return false;
-        int sapphire = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getName().equalsIgnoreCase("uncut sapphire")).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
-        int emerald = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getName().equalsIgnoreCase("uncut emerald")).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
-        int ruby = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getName().equalsIgnoreCase("uncut ruby")).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
-        int diamond = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getName().equalsIgnoreCase("uncut diamond")).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
+        int sapphire = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getId() == ItemID.UNCUT_SAPPHIRE).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
+        int emerald = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getId() == ItemID.UNCUT_EMERALD).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
+        int ruby = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getId() == ItemID.UNCUT_RUBY).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
+        int diamond = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getId() == ItemID.UNCUT_DIAMOND).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
         return sapphire >= 60 && emerald >= 60 && ruby >= 60 && diamond >= 60;
     }
 }
