@@ -159,8 +159,13 @@ public final class Rs2LootEngine {
                     if (!ensureSpaceFor(gi, params)) continue;
                     lootAction.accept(gi);
                 }
-                final Predicate<GroundItem> base = baseRangeAndOwnershipFilter(params);
-                return validateLoot(base);
+                // Validate only items we targeted in this pass
+                final Set<String> targetKeys = candidateBuckets.values().stream()
+                        .flatMap(List::stream)
+                        .map(Rs2LootEngine::uniqueKey)
+                        .collect(Collectors.toSet());
+                return getGroundItems().values().stream()
+                        .noneMatch(gi -> targetKeys.contains(uniqueKey(gi)));
             });
         }
 
