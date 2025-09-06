@@ -111,7 +111,10 @@ public class FortisGemStallThievingSpot implements IStallThievingSpot {
 
     private boolean isGemBagCompletelyFull() {
         if (Rs2Gembag.isUnknown()) return false;
-        return Rs2Gembag.getGemBagContents().size() == 5 &&
-                Rs2Gembag.getGemBagContents().stream().allMatch(g -> g.getQuantity() >= 60);
+        int sapphire = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getName().equalsIgnoreCase("uncut sapphire")).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
+        int emerald = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getName().equalsIgnoreCase("uncut emerald")).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
+        int ruby = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getName().equalsIgnoreCase("uncut ruby")).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
+        int diamond = Rs2Gembag.getGemBagContents().stream().filter(i -> i.getName().equalsIgnoreCase("uncut diamond")).findFirst().map(Rs2ItemModel::getQuantity).orElse(0);
+        return sapphire >= 60 && emerald >= 60 && ruby >= 60 && diamond >= 60;
     }
 }
