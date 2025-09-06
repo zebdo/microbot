@@ -680,6 +680,8 @@ public class DemonicGorillaScript extends Script {
 
         if (!isCombatPotionActive(threshold)) {
             consumePotion(Rs2Potion.getCombatPotionsVariants());
+            consumePotion(Rs2Potion.getAttackPotionsVariants());
+            consumePotion(Rs2Potion.getStrengthPotionsVariants());
         }
 
         if (!isRangingPotionActive(threshold)) {
