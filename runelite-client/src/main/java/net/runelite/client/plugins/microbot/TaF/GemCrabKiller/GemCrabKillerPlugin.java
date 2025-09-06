@@ -60,6 +60,9 @@ public class GemCrabKillerPlugin extends Plugin {
     }
 
     public long getXpGained() {
+        if (startTotalExp == 0L && Microbot.isLoggedIn()) {
+            startTotalExp = Microbot.getClient().getOverallExperience();
+        }
         return Microbot.getClient().getOverallExperience() - startTotalExp;
     }
 
