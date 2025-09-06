@@ -75,6 +75,7 @@ public class DemonicGorillaScript extends Script {
     private Rs2InventorySetup magicGear = null;
     private Rs2InventorySetup meleeGear = null;
 
+    private void enableAntibanSettings()
     {
         Microbot.enableAutoRunOn = false;
         Rs2Antiban.resetAntibanSettings();
@@ -98,6 +99,7 @@ public class DemonicGorillaScript extends Script {
         travelStep = TravelStep.GNOME_STRONGHOLD;
         isRunning = true;
         Microbot.enableAutoRunOn = false;
+        enableAntibanSettings();
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn() || !super.run()) return;
@@ -355,17 +357,7 @@ public class DemonicGorillaScript extends Script {
         if (currentTarget != null && !currentTarget.isDead()) {
             int currentAnimation = currentTarget.getAnimation();
             var location = currentTarget.getWorldLocation();
-            if (lastGameTick != gameTickCount) {
-                if (currentAnimation == DEMONIC_GORILLA_MAGIC_ATTACK || currentAnimation == DEMONIC_GORILLA_RANGED_ATTACK || currentAnimation == DEMONIC_GORILLA_MELEE_ATTACK) {
-                    if (currentAnimation != lastRealAnimation) {
-                        npcAnimationCount = 1;
-                    } else {
-                        npcAnimationCount++;
-                    }
-                    lastRealAnimation = currentAnimation;
-                }
-            }
-            // Handle normal prayer switching
+            // Handle prayer switching
             if (currentAnimation == DEMONIC_GORILLA_MAGIC_ATTACK) {
                 newDefensivePrayer = Rs2PrayerEnum.PROTECT_MAGIC;
             } else if (currentAnimation == DEMONIC_GORILLA_RANGED_ATTACK) {
