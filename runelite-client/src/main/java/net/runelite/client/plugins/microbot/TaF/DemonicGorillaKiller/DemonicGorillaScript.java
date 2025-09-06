@@ -34,7 +34,7 @@ import static net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIn
 // Script heavily inspired by Tormented Demon script
 public class DemonicGorillaScript extends Script {
 
-    public static final double VERSION = 1.1;
+    public static final double VERSION = 1.2;
     public static final int DEMONIC_GORILLA_PRAYER_SWITCH = 7224;
     public static final int DEMONIC_GORILLA_MAGIC_ATTACK = 7225;
     public static final int DEMONIC_GORILLA_MELEE_ATTACK = 7226;
