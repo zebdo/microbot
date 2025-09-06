@@ -42,8 +42,10 @@ import net.runelite.client.discord.DiscordService;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 import net.runelite.client.plugins.PluginManager;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.MicrobotClientLoader;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
+import net.runelite.client.proxy.ProxyChecker;
 import net.runelite.client.ui.ClientUI;
 import net.runelite.client.ui.FatalErrorDialog;
 import net.runelite.client.ui.SplashScreen;
@@ -73,8 +75,6 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.lang.management.RuntimeMXBean;
-import java.net.Authenticator;
-import java.net.PasswordAuthentication;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -174,7 +174,6 @@ public class RuneLiteDebug {
 
         final ArgumentAcceptingOptionSpec<String> proxyInfo = parser.accepts("proxy", "Use a proxy server for your runelite session")
                 .withRequiredArg().ofType(String.class);
-        parser.accepts("proxy-type", "The Type of proxy: HTTP or SOCKS").withRequiredArg().ofType(String.class);
         final ArgumentAcceptingOptionSpec<File> sessionfile = parser.accepts("sessionfile", "Use a specified session file")
                 .withRequiredArg()
                 .withValuesConvertedBy(new ConfigFileConverter())
@@ -208,47 +207,6 @@ public class RuneLiteDebug {
             logger.setLevel(Level.DEBUG);
         }
 
-        //More information about java proxies can be found here
-        //https://docs.oracle.com/javase/8/docs/technotes/guides/net/proxies.html
-        //usage: -proxy=IP:PORT:USER:PASS -proxytype=SOCKS
-        //OR
-        //usage: -proxy=IP:PORT:USER:PASS -proxytype=HTTP
-        if (options.has("proxy")) {
-            String[] proxy = options.valueOf(proxyInfo).split(":");
-            boolean httpProxy = false;
-            boolean socksProxy = true; //default we take socks proxy
-            if (options.has("proxy-type")) {
-                socksProxy = options.valueOf("proxy-type").toString().equalsIgnoreCase("SOCKS");
-                httpProxy = options.valueOf("proxy-type").toString().equalsIgnoreCase("HTTP");
-            }
-
-            ClientUI.proxyMessage = (socksProxy ? "SOCKS" : "HTTP") + " Proxy with address " + options.valueOf(proxyInfo);
-
-            if (httpProxy && proxy.length >= 2) {
-                System.setProperty("http.proxyHost", proxy[0]);
-                System.setProperty("http.proxyPort", proxy[1]);
-            } else if (socksProxy && proxy.length >= 2) {
-                System.setProperty("socksProxyHost", proxy[0]);
-                System.setProperty("socksProxyPort", proxy[1]);
-            }
-
-            if (socksProxy && proxy.length >= 4) {
-                System.setProperty("java.net.socks.username", proxy[2]);
-                System.setProperty("java.net.socks.password", proxy[3]);
-
-                final String user = proxy[2];
-                final char[] pass = proxy[3].toCharArray();
-
-                Authenticator.setDefault(new Authenticator() {
-                    private final PasswordAuthentication auth = new PasswordAuthentication(user, pass);
-
-                    protected PasswordAuthentication getPasswordAuthentication() {
-                        return auth;
-                    }
-                });
-            }
-        }
-
         Thread.setDefaultUncaughtExceptionHandler((thread, throwable) ->
         {
             log.error("Uncaught exception:", throwable);
@@ -262,6 +220,17 @@ public class RuneLiteDebug {
         RuneLiteAPI.CLIENT = okHttpClient;
 
         SplashScreen.init();
+
+        if (options.has(proxyInfo)) {
+            String ip = ProxyChecker.getDetectedIp(okHttpClient);
+            if (ip.isEmpty()) {
+                Microbot.showMessage("Failed to detect external IP address, check your proxy settings. \n\n Make sure to use the format scheme://user:pass@host:port");
+                System.exit(1);
+            }
+
+            ClientUI.proxyMessage = " - Proxy enabled (detected IP " + ip + ")";
+        }
+
         SplashScreen.stage(0, "Retrieving client", "");
 
         try {
@@ -364,6 +333,9 @@ public class RuneLiteDebug {
         // Load user configuration
         configManager.load();
 
+		// Initialize MicrobotPluginManager after configManager is loaded
+		microbotPluginManager.init();
+
         // Update check requires ConfigManager to be ready before it runs
         Updater updater = injector.getInstance(Updater.class);
         updater.update(); // will exit if an update is in progress
@@ -390,6 +362,7 @@ public class RuneLiteDebug {
         eventBus.register(clientUI);
         eventBus.register(pluginManager);
         eventBus.register(externalPluginManager);
+		eventBus.register(microbotPluginManager);
         eventBus.register(overlayManager);
         eventBus.register(configManager);
         eventBus.register(discordService);
@@ -403,7 +376,7 @@ public class RuneLiteDebug {
 
         clientUI.show();
 
-        pluginManager.loadRuneliteCorePlugins();
+        pluginManager.loadCoreRunelitePlugins();
 
         microbotPluginManager.loadCorePlugins(pluginsToDebug);
 
