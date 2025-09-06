@@ -403,7 +403,8 @@ public interface AIOFighterConfig extends Config {
             name = "Wait for Loot",
             description = "Wait for loot to appear before attacking next NPC",
             position = 103,
-            section = lootSection
+            section = lootSection,
+            hidden = true
     )
     default boolean toggleWaitForLoot() {
         return false;
@@ -415,7 +416,8 @@ public interface AIOFighterConfig extends Config {
             name = "Loot Wait Timeout (s)",
             description = "Seconds to wait for loot before resuming combat (1-10)",
             position = 104,
-            section = lootSection
+            section = lootSection,
+            hidden = true
     )
     default int lootWaitTimeout() {
         return 6;
