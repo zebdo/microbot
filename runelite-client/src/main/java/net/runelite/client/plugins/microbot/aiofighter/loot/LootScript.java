@@ -75,10 +75,7 @@ public class LootScript extends Script {
                 if (config.toggleLootRunes())       builder.addRunes(DEFAULT_MIN_STACK_EXCLUSIVE_RUNES);
 
                 // Execute one combined, distance-sorted looting pass
-                boolean looted = builder.loot();
-                if (looted) {
-                    Microbot.pauseAllScripts.compareAndSet(true, false);
-                }
+                builder.loot();
 
             } catch (Exception ex) {
                 Microbot.log("LootScript: " + ex.getMessage());
