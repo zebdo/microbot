@@ -3373,13 +3373,14 @@ public class Rs2Bank {
      */
     private static boolean toggleItemLock(Rs2ItemModel rs2Item)
     {
-        if (rs2Item == null
-                || !isOpen()
-                || !Rs2Inventory.hasItem(rs2Item.getId())
-                || Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_IGNOREINVLOCKS) != 0
-                || Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_SHOWOP) != 1) {
+        if (rs2Item == null || !isOpen() || !Rs2Inventory.hasItem(rs2Item.getId())) return false;
+
+        boolean isLockEnabled = Rs2Settings.enableBankSlotLocking();
+        if (!isLockEnabled) {
+            log.debug("Bank slot locking is not enabled in settings.");
             return false;
         }
+
         container = BANK_INVENTORY_ITEM_CONTAINER;
         final int currentLockState = Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_OVERVIEW);
         invokeMenu(10, rs2Item);

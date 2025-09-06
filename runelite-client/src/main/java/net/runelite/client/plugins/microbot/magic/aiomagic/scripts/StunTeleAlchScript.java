@@ -50,7 +50,14 @@ public class StunTeleAlchScript extends Script {
                         }
                         // Ensure we can alch
                         if (!Rs2Magic.hasRequiredRunes(plugin.getAlchSpell())) {
-                            Microbot.log("Unable to cast alchemy spell");
+                            Microbot.showMessage("Out of runes for alchemy");
+                            shutdown();
+                            return;
+                        }
+                        // Ensure we can stun
+                        if (!Rs2Magic.hasRequiredRunes(plugin.getStunSpell().getRs2Spell())) {
+                            Microbot.showMessage("Out of runes for " + plugin.getStunSpell().name());
+                            shutdown();
                             return;
                         }
                         // Resolve the alch item
@@ -86,6 +93,11 @@ public class StunTeleAlchScript extends Script {
                             sleep(200, 300);
                         }
                         // 3) TELEPORT: always the hard-locked teleport
+                        if (!Rs2Magic.hasRequiredRunes(FIXED_TELEPORT.getRs2Spell())) {
+                            Microbot.showMessage("Out of runes for " + FIXED_TELEPORT.name());
+                            shutdown();
+                            return;
+                        }
                         Rs2Magic.cast(FIXED_TELEPORT.getRs2Spell().getMagicAction());
                         sleep(100, 200);
                         break;
@@ -105,4 +117,3 @@ public class StunTeleAlchScript extends Script {
         super.shutdown();
     }
 }
-
