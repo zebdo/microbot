@@ -51,7 +51,7 @@ public class StoneChestThieverScript extends Script {
                 var chestLocation = new WorldPoint(1300, 10087, 0);
 
                 if (Rs2Player.distanceTo(chestLocation) > 5) {
-                    Rs2Walker.walkTo(chestLocation);
+                    Rs2Walker.walkTo(chestLocation, 0);
                     return;
                 }
                 final int poison = Microbot.getClient().getVarpValue(VarPlayerID.POISON);
