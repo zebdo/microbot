@@ -4,6 +4,7 @@ import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.util.Rs2InventorySetup;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.item.Rs2EnsouledHead;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 
 @ConfigInformation("Farms all the ensouled heads in your bank, equip all your combat gear before starting the script.")
@@ -76,8 +77,8 @@ public interface EnsouledHeadSlayerConfig extends Config {
             description = "Which ensouled head to farm?",
             position = 7
     )
-    default EnsouledHeads ensouledHeads() {
-        return EnsouledHeads.IMP;
+    default Rs2EnsouledHead ensouledHeads() {
+        return Rs2EnsouledHead.IMP;
     }
 
     @ConfigItem(

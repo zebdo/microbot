@@ -20,11 +20,7 @@ import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldArea;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
-import net.runelite.client.plugins.microbot.util.magic.Rs2Spellbook;
-import net.runelite.client.plugins.microbot.util.magic.reanimate.HeadType;
-import net.runelite.client.plugins.microbot.util.magic.reanimate.Rs2Reanimate;
+import net.runelite.client.plugins.microbot.util.item.Rs2EnsouledHead;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcManager;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
@@ -35,7 +31,10 @@ import net.runelite.client.plugins.microbot.util.skills.slayer.Rs2Slayer;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import org.slf4j.event.Level;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.stream.Collectors;
@@ -82,18 +81,18 @@ public class AttackNpcScript extends Script {
                     return;
 
                 if (config.reanimateEnsouledHeads()) {
-                    Map.Entry<Rs2ItemModel, HeadType> head = Rs2Reanimate.getReanimatableHead();
+                    Rs2EnsouledHead head = Rs2EnsouledHead.getReanimatableHead();
                     if (head != null) {
                         boolean prevPause = Microbot.pauseAllScripts.getAndSet(true);
                         try {
-                            if (head.getValue().reanimate(head.getKey())) {
-                                sleepUntil(() -> Rs2Npc.getNpcsForPlayer(Rs2Reanimate::isReanimated).findAny().isPresent(), 15000);
+                            if (head.reanimate()) {
+                                sleepUntil(() -> Rs2Npc.getNpcsForPlayer(Rs2EnsouledHead::isNpcReanimated).findAny().isPresent(), 15000);
                             }
                         } finally {
                             Microbot.pauseAllScripts.set(prevPause);
                         }
                     }
-                    Rs2NpcModel reanimated = Rs2Npc.getNpcsForPlayer(Rs2Reanimate::isReanimated).findAny().orElse(null);
+                    Rs2NpcModel reanimated = Rs2Npc.getNpcsForPlayer(Rs2EnsouledHead::isNpcReanimated).findAny().orElse(null);
                     if (reanimated != null) {
                         Rs2Npc.interact(reanimated, "Attack");
                         return;
@@ -184,14 +183,13 @@ public class AttackNpcScript extends Script {
                 }
                 messageShown = false;
 
-                if(Rs2AntibanSettings.antibanEnabled && Rs2AntibanSettings.actionCooldownChance > 0){
+                if (Rs2AntibanSettings.antibanEnabled && Rs2AntibanSettings.actionCooldownChance > 0) {
                     if (Rs2AntibanSettings.actionCooldownActive) {
                         AIOFighterPlugin.setState(State.COMBAT);
                         handleItemOnNpcToKill(config);
                         return;
                     }
-                }
-                else {
+                } else {
                     if (Rs2Combat.inCombat()) {
                         AIOFighterPlugin.setState(State.COMBAT);
                         handleItemOnNpcToKill(config);
