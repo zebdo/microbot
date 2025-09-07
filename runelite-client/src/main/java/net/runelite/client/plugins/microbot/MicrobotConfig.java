@@ -12,6 +12,7 @@ import net.runelite.client.config.ConfigSection;
 public interface MicrobotConfig extends Config
 {
 	String configGroup = "microbot";
+	String installedPlugins = "installedPlugins";
 
 	@ConfigSection(
 		name = "General",

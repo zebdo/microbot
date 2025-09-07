@@ -29,6 +29,7 @@ import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Provides;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.questhelper.bank.banktab.BankTabItems;
 import net.runelite.client.plugins.microbot.questhelper.bank.banktab.PotionStorage;
 import net.runelite.client.plugins.microbot.questhelper.managers.*;
@@ -579,7 +580,7 @@ public class QuestHelperPlugin extends Plugin
 			binder.bind(QuestHelper.class).toInstance(questHelper);
 			binder.install(questHelper);
 		};
-		Injector questInjector = RuneLite.getInjector().createChildInjector(questModule);
+		Injector questInjector = Microbot.getInjector().createChildInjector(questModule);
 		injector.injectMembers(questHelper);
 		questHelper.setInjector(questInjector);
 		questHelper.setQuest(quest);

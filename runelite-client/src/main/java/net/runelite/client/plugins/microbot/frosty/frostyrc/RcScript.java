@@ -48,6 +48,8 @@ public class RcScript extends Script {
     private final WorldPoint outsideWrathRuins = new WorldPoint(2445, 2818, 0);
     private final WorldPoint wrathRuinsLoc = new WorldPoint(2445, 2824, 0);
 
+	private volatile boolean forceDrinkAtFerox = false;
+
     public static final int pureEss = 7936;
     public static final int feroxPool = 39651;
     public static final int monasteryRegion = 10290;
@@ -99,6 +101,7 @@ public class RcScript extends Script {
             try {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
+                if (shouldPauseForBreak()) return;
                 long startTime = System.currentTimeMillis();
 
                 if (lumbyElite == -1) {
@@ -158,6 +161,23 @@ public class RcScript extends Script {
         //Rs2Player.logout();
     }
 
+    private boolean shouldPauseForBreak() {
+        if (!plugin.isBreakHandlerEnabled()) {
+            return false;
+        }
+
+        if (BreakHandlerScript.isBreakActive()) {
+            return true;
+        }
+
+        if (BreakHandlerScript.breakIn <= 0) {
+            BreakHandlerScript.setLockState(false);
+            return true;
+        }
+
+        return false;
+    }
+
     private void checkPouches() {
         Rs2Inventory.interact(colossalPouch, "Check");
         sleepGaussian(900, 200);
@@ -174,16 +194,20 @@ public class RcScript extends Script {
             }
         }
 
+		if (plugin.isBreakHandlerEnabled()) {
+			BreakHandlerScript.setLockState(true);
+		}
+
         Rs2Tab.switchToInventoryTab();
+
+		if (Rs2Inventory.hasDegradedPouch()) {
+			Rs2Magic.repairPouchesWithLunar();
+			sleepGaussian(900, 200);
+			return;
+		}
 
         if (Rs2Inventory.anyPouchUnknown()) {
             checkPouches();
-        }
-
-        if (Rs2Inventory.hasDegradedPouch()) {
-            Rs2Magic.repairPouchesWithLunar();
-            sleepGaussian(900, 200);
-            return;
         }
 
         if (Rs2Inventory.isFull() && Rs2Inventory.allPouchesFull() && Rs2Inventory.contains(pureEss)) {
@@ -193,10 +217,6 @@ public class RcScript extends Script {
         }
         if (!config.usePoh()) {
             handleFeroxRunEnergy();
-        }
-
-        if (plugin.isBreakHandlerEnabled()) {
-            BreakHandlerScript.setLockState(false);
         }
 
         while (!Rs2Bank.isOpen() && isRunning() &&
@@ -330,8 +350,9 @@ public class RcScript extends Script {
     }
 
     private void handleFeroxRunEnergy() {
-        if (Rs2Player.getRunEnergy() < 45) {
-            Microbot.log("We are thirsty...let us Drink");
+		if (forceDrinkAtFerox || Rs2Player.getRunEnergy() <= 15 || Rs2Player.getHealthPercentage() <= 20) {
+			Microbot.log("We are thirsty...let us Drink");
+            forceDrinkAtFerox = true;
             if (plugin.getMyWorldPoint().distanceTo(feroxPoolWp) > 5) {
                 Microbot.log("Walking to Ferox pool");
                 Rs2Walker.walkTo(feroxPoolWp);
@@ -344,6 +365,7 @@ public class RcScript extends Script {
             }
             sleepUntil(() -> (!Rs2Player.isInteracting()) && !Rs2Player.isAnimating() && Rs2Player.getRunEnergy() > 90);
             sleepGaussian(1100, 200);
+			forceDrinkAtFerox = false;
         }
     }
 
@@ -452,11 +474,18 @@ public class RcScript extends Script {
             BreakHandlerScript.setLockState(true);
         }
 
+		if (Rs2Bank.isOpen()) { Rs2Bank.closeBank(); }
+
         if (Rs2Inventory.contains(mythCape)) {
             Microbot.log("Interacting with myth cape");
             Rs2Inventory.interact(mythCape, "Teleport");
             sleepUntil(() -> plugin.getMyWorldPoint().getRegionID() == mythicStatueRegion);
-            sleepGaussian(1100, 200);
+            sleepGaussian(600, 200);
+
+			GameObject statue = Rs2GameObject.get("Mythic Statue");
+			if (statue != null && !Rs2Player.isAnimating()) {
+				Rs2GameObject.interact(statue, "Teleport");
+			}
 
             if (plugin.getMyWorldPoint().getRegionID() == mythicStatueRegion) {
                 Microbot.log("Walking to Wrath ruins");
@@ -707,6 +736,16 @@ public class RcScript extends Script {
             Microbot.log("Crafting runes");
             handleEmptyPouch();
         }
+
+		handleFeroxRunEnergy();
+
+		if (plugin.isBreakHandlerEnabled()) {
+			BreakHandlerScript.setLockState(false);
+			if (BreakHandlerScript.isBreakActive() || BreakHandlerScript.breakIn <= 0) {
+				return;
+			}
+		}
+
         state = State.BANKING;
     }
 
@@ -731,7 +770,13 @@ public class RcScript extends Script {
         Rs2Tab.switchToEquipmentTab();
         sleepGaussian(1300, 200);
 
-        List<Teleports> bankTeleport = Arrays.asList(
+        boolean needRefill = (forceDrinkAtFerox || Rs2Player.getRunEnergy() <= 15 || Rs2Player.getHealthPercentage() <= 20);
+        List<Teleports> bankTeleport = needRefill
+                ? Arrays.asList(
+                Teleports.FEROX_ENCLAVE,
+                Teleports.CRAFTING_CAPE,
+                Teleports.FARMING_CAPE)
+                : Arrays.asList(
                 Teleports.CRAFTING_CAPE,
                 Teleports.FARMING_CAPE,
                 Teleports.FEROX_ENCLAVE
@@ -745,6 +790,10 @@ public class RcScript extends Script {
                     Rs2Equipment.interact(bankTeleportsId, teleport.getInteraction());
                     sleepUntil(() -> teleport.matchesRegion(plugin.getMyWorldPoint().getRegionID()));
                     sleepGaussian(1100, 200);
+					if (teleport == Teleports.FEROX_ENCLAVE) {
+						forceDrinkAtFerox = true;
+						handleFeroxRunEnergy();
+					}
                     teleportUsed = true;
                     break;
                 }

@@ -415,13 +415,16 @@ public class BlastoiseFurnaceScript extends Script {
         boolean hasStaminaPotion = Rs2Bank.hasItem(Rs2Potion.getStaminaPotion());
         boolean hasEnergyPotion = Rs2Bank.hasItem(Rs2Potion.getRestoreEnergyPotionsVariants());
 
-        if ((Rs2Player.hasStaminaBuffActive() && hasEnergyPotion) || (!hasStaminaPotion && hasEnergyPotion)) {
-            String potionName = getLowestDosePotionName(Rs2Potion.getRestoreEnergyPotionsVariants());
+
+        if (!Rs2Player.hasStaminaBuffActive() && hasStaminaPotion) {
+            String potionName = getLowestDosePotionName(List.of(Rs2Potion.getStaminaPotion()));
             if (potionName != null) {
                 withdrawAndDrink(potionName);
+                return;
             }
-        } else if (hasStaminaPotion) {
-            String potionName = getLowestDosePotionName(List.of(Rs2Potion.getStaminaPotion()));
+        }
+        if (hasEnergyPotion) {
+            String potionName = getLowestDosePotionName(Rs2Potion.getRestoreEnergyPotionsVariants());
             if (potionName != null) {
                 withdrawAndDrink(potionName);
             }

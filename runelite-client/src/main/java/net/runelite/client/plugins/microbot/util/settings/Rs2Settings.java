@@ -11,6 +11,7 @@ import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
@@ -349,5 +350,67 @@ public class Rs2Settings
 
 		Microbot.doInvoke(menuEntry, Rs2UiHelper.getDefaultRectangle());
 		return true;
+	}
+
+	/**
+	 * Checks if bank slot locking is enabled.
+	 * Slot locking allows you to lock specific inventory slots in the bank,
+	 * preventing items from being deposited when using the Deposit All button.
+	 *
+	 * @return {@code true} if bank slot locking is enabled, {@code false} otherwise
+	 */
+	public static boolean isBankSlotLockingEnabled()
+	{
+		return Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_SHOWOP) == 1 && Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_IGNOREINVLOCKS) == 0;
+	}
+
+	/**
+	 * Enables bank slot locking if it's currently disabled.
+	 * If bank is open, it will navigate to the bank settings,
+	 * and enable the slot locking feature.
+	 * @return {@code true} if bank slot locking is successfully enabled or already enabled, {@code false} otherwise
+	 */
+	public static boolean enableBankSlotLocking() {
+		if (isBankSlotLockingEnabled()) return true;
+
+		Rs2Widget.clickWidget(InterfaceID.Bankmain.MENU_BUTTON);
+		if (!sleepUntil(() -> Rs2Widget.isWidgetVisible(InterfaceID.Bankmain.MENU_CONTAINER), 2000)) {
+			log.debug("Bank menu did not open within timeout.");
+			return false;
+		}
+
+		Rs2Widget.clickWidget(InterfaceID.Bankmain.LOCKS);
+		if (!sleepUntil(() -> Rs2Widget.isWidgetVisible(InterfaceID.BankSideLocks.DONE), 2000)) {
+			log.debug("Bank Locks panel did not appear.");
+			return false;
+		}
+
+		if (Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_IGNOREINVLOCKS) != 0) {
+			Rs2Widget.clickWidget(InterfaceID.BankSideLocks.IGNORELOCKS);
+			if (!sleepUntil(() -> Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_IGNOREINVLOCKS) == 0, 2000)) {
+				log.debug("Failed to disable 'ignore inventory locks' setting.");
+				return false;
+			}
+		}
+
+		if (Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_SHOWOP) != 1) {
+			Rs2Widget.clickWidget(InterfaceID.BankSideLocks.EXTRAOPTIONS);
+			if (!sleepUntil(() -> Microbot.getVarbitValue(VarbitID.BANK_SIDE_SLOT_SHOWOP) == 1, 2000)) {
+				log.debug("Failed to enable 'show inventory locks menu option' setting.");
+				return false;
+			}
+		}
+
+		Rs2Widget.clickWidget(InterfaceID.BankSideLocks.DONE);
+		if (!sleepUntil(() -> !Rs2Widget.isWidgetVisible(InterfaceID.BankSideLocks.DONE), 2000)) {
+			log.debug("Locks panel did not close after clicking DONE.");
+			return false;
+		}
+
+		if (Rs2Widget.isWidgetVisible(InterfaceID.Bankmain.MENU_CONTAINER)) {
+			Rs2Widget.clickWidget(InterfaceID.Bankmain.MENU_BUTTON);
+		}
+
+		return isBankSlotLockingEnabled();
 	}
 }

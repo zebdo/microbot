@@ -99,6 +99,12 @@ public class Rs2Walker {
 
     public static boolean disableTeleports = false;
 
+    // Trapdoor and manhole mappings for open/closed states
+    private static final Map<Integer, Integer> OPEN_TO_CLOSED_MAPPINGS = Map.of(
+        1581, 1579, // open trapdoor -> closed trapdoor
+        882, 881    // open manhole -> closed manhole
+    );
+
     public static boolean walkTo(int x, int y, int plane) {
         return walkTo(x, y, plane, config.reachedDistance());
     }
@@ -1474,12 +1480,6 @@ public class Rs2Walker {
                         }
                     }
 
-                    if (handleTrapdoor(transport)) {
-                        sleepUntil(() -> !Rs2Player.isAnimating());
-                        sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
-                        break;
-                    }
-                    
                     if (transport.getType() == TransportType.CANOE) {
                         if (handleCanoe(transport)) {
                             sleep(600 * 2); // wait 2 extra ticks before walking
@@ -1558,7 +1558,16 @@ public class Rs2Walker {
 
 					if (transport.getObjectId() <= 0) break;
 
-					List<TileObject> objects = Rs2GameObject.getAll(o -> o.getId() == transport.getObjectId(), transport.getOrigin(), 10).stream()
+					// Use class-level constants for object ID mapping
+					List<Integer> objectIdsToSearch = new ArrayList<>();
+					objectIdsToSearch.add(transport.getObjectId());
+
+					// If this transport is for an open trapdoor, also search for the closed version
+					if (OPEN_TO_CLOSED_MAPPINGS.containsKey(transport.getObjectId())) {
+						objectIdsToSearch.add(OPEN_TO_CLOSED_MAPPINGS.get(transport.getObjectId()));
+					}
+
+					List<TileObject> objects = Rs2GameObject.getAll(o -> objectIdsToSearch.contains(o.getId()), transport.getOrigin(), 10).stream()
 						.sorted(Comparator.comparingInt(o -> o.getWorldLocation().distanceTo(transport.getOrigin())))
 						.collect(Collectors.toList());
 
@@ -1569,7 +1578,8 @@ public class Rs2Walker {
 							.min(Comparator.comparing(o -> ((TileObject) o).getWorldLocation().distanceTo(transport.getOrigin()))
 								.thenComparing(o -> ((TileObject) o).getWorldLocation().distanceTo(transport.getDestination()))).orElse(null);
 					}
-					if (object != null && object.getId() == transport.getObjectId()) {
+
+					if (object != null) {
 						System.out.println("Object Type: " + Rs2GameObject.getObjectType(object));
 
 						if (!(object instanceof GroundObject)) {
@@ -1616,6 +1626,27 @@ public class Rs2Walker {
     }
 
     private static boolean handleObjectExceptions(Transport transport, TileObject tileObject) {
+        for (Map.Entry<Integer, Integer> entry : OPEN_TO_CLOSED_MAPPINGS.entrySet()) {
+            final int closedTrapdoorId = entry.getKey();
+			final int openTrapdoorId = entry.getValue();
+
+            if (transport.getObjectId() == openTrapdoorId) {
+				if (tileObject.getId() == closedTrapdoorId) {
+					Rs2GameObject.interact(tileObject, "Open");
+					sleepUntil(() -> Rs2GameObject.exists(openTrapdoorId));
+					TileObject openTrapdoor = Rs2GameObject.getAll(o -> o.getId() == openTrapdoorId, tileObject.getWorldLocation(), 10).stream().findFirst().orElse(null);
+					if (openTrapdoor != null) {
+						Rs2GameObject.interact(openTrapdoor, transport.getAction());
+					}
+				} else if (tileObject.getId() == openTrapdoorId) {
+					Rs2GameObject.interact(tileObject, transport.getAction());
+				}
+				sleepUntil(() -> !Rs2Player.isAnimating());
+				sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
+				return true;
+            }
+        }
+
         //Al kharid broken wall will animate once and then stop and then animate again
         if (tileObject.getId() == ObjectID.KHARID_POSHWALL_TOPLESS || tileObject.getId() == ObjectID.KHARID_BIGWINDOW) {
             Rs2Player.waitForAnimation();
@@ -1917,25 +1948,6 @@ public class Rs2Walker {
         return false;
     }
 
-    private static boolean handleTrapdoor(Transport transport) {
-        Map<Integer, Integer> trapdoors = new HashMap<>();
-        trapdoors.put(1579, 1581); // closed trapdoor -> open trapdoor
-        trapdoors.put(881, 882); // closed manhole -> open manhole (used for varrock sewers)
-
-        for (Map.Entry<Integer, Integer> entry : trapdoors.entrySet()) {
-            int closedTrapdoorId = entry.getKey();
-            int openTrapdoorId = entry.getValue();
-
-            if (transport.getObjectId() == openTrapdoorId) {
-                if (Rs2GameObject.interact(closedTrapdoorId, "Open")) {
-                    sleepUntil(() -> Rs2GameObject.exists(openTrapdoorId));
-                }
-                return Rs2GameObject.interact(openTrapdoorId, transport.getAction());
-            }
-        }
-        return false;
-    }
-
     /**
      * Checks if the player's current location is within the specified area defined by the given world points.
      *
@@ -1943,12 +1955,25 @@ public class Rs2Walker {
      * @return true if the player's current location is within the specified area, false otherwise
      */
     public static boolean isInArea(WorldPoint... worldPoints) {
-        WorldPoint playerLocation = Rs2Player.getWorldLocation();
-        return playerLocation.getX() <= worldPoints[0].getX() &&   // NW corner x
-                playerLocation.getY() >= worldPoints[0].getY() &&   // NW corner y
-                playerLocation.getX() >= worldPoints[1].getX() &&   // SE corner x
-                playerLocation.getY() <= worldPoints[1].getY();     // SE corner Y
+        if (worldPoints == null || worldPoints.length < 2 || worldPoints[0] == null || worldPoints[1] == null) {
+            throw new IllegalArgumentException("isInArea requires two WorldPoints.");
+        }
+        WorldPoint a = worldPoints[0];
+        WorldPoint b = worldPoints[1];
+        final int aX = a.getX(), aY = a.getY();
+        final int bX = b.getX(), bY = b.getY();
+
+        final int minX = Math.min(aX, bX);
+        final int maxX = Math.max(aX, bX);
+        final int minY = Math.min(aY, bY);
+        final int maxY = Math.max(aY, bY);
+
+        final WorldPoint playerLocation = Rs2Player.getWorldLocation();
+        final int playerX = playerLocation.getX();
+        final int playerY = playerLocation.getY();
+
         // draws box from 2 points to check against all variations of player X,Y from said points.
+        return (playerX >= minX && playerX <= maxX && playerY >= minY && playerY <= maxY);
     }
 
     /**
@@ -1960,9 +1985,9 @@ public class Rs2Walker {
      */
     @Deprecated(since = "1.5.5", forRemoval = true)
     public static boolean isInArea(WorldPoint centerOfArea, int range) {
-        WorldPoint nwCorner = new WorldPoint(centerOfArea.getX() + range + range, centerOfArea.getY() - range, centerOfArea.getPlane());
-        WorldPoint seCorner = new WorldPoint(centerOfArea.getX() - range - range, centerOfArea.getY() + range, centerOfArea.getPlane());
-        return isInArea(nwCorner, seCorner); // call to our sibling
+        WorldPoint seCorner = new WorldPoint(centerOfArea.getX() + range, centerOfArea.getY() - range, centerOfArea.getPlane());
+        WorldPoint nwCorner = new WorldPoint(centerOfArea.getX() - range, centerOfArea.getY() + range, centerOfArea.getPlane());
+        return isInArea(seCorner, nwCorner); // call to our sibling
     }
 
     public static boolean isNear() {
@@ -2764,15 +2789,15 @@ public class Rs2Walker {
             ShortestPathPlugin.getPathfinderConfig().setUseBankItems(useBankItems);
             ShortestPathPlugin.getPathfinderConfig().refresh(destination); // Use target-based refresh
             List<WorldPoint> path = getWalkPath(destination);
-            
+
             // Get path and extract relevant transports with filtering applied
             List<Transport> transports = getTransportsForPath(path, 0, prefTransportType, true);
-            
+
             // Log found transports for debugging
             transports.forEach(t -> log.debug("Transport found: " + t));
             
             return transports;
-            
+
         } finally {
             // Always restore original configuration
             ShortestPathPlugin.getPathfinderConfig().setUseBankItems(originalUseBankItems);

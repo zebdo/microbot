@@ -1,9 +1,14 @@
 package net.runelite.client.plugins.microbot.util.grounditem;
 
+import lombok.Getter;
+import lombok.Setter;
+
+@Setter
+@Getter
 public class LootingParameters {
 
     private int minValue, maxValue, range, minItems, minQuantity, minInvSlots;
-    private boolean delayedLooting, antiLureProtection;
+    private boolean delayedLooting, antiLureProtection, eatFoodForSpace;
     private String[] names;
     private String[] ignoredNames;
 
@@ -20,7 +25,7 @@ public class LootingParameters {
      * @param antiLureProtection A boolean indicating whether anti-lure protection should be enabled.
      */
     public LootingParameters(int minValue, int maxValue, int range, int minItems, int minInvSlots, boolean delayedLooting, boolean antiLureProtection) {
-        setValues(minValue, maxValue, range, minItems, 1, minInvSlots, delayedLooting, antiLureProtection, null, null);
+        setValues(minValue, maxValue, range, minItems, 1, minInvSlots, delayedLooting, antiLureProtection,false, null, null);
     }
 
     /**
@@ -36,7 +41,7 @@ public class LootingParameters {
      * @param names              The names of the items to be looted.
      */
     public LootingParameters(int range, int minItems, int minQuantity, int minInvSlots, boolean delayedLooting, boolean antiLureProtection, String... names) {
-        setValues(0, 0, range, minItems, minQuantity, minInvSlots, delayedLooting, antiLureProtection, null, names);
+        setValues(0, 0, range, minItems, minQuantity, minInvSlots, delayedLooting, antiLureProtection,false, null, names);
     }
 
     /**
@@ -54,10 +59,10 @@ public class LootingParameters {
      */
 
     public LootingParameters(int minValue, int maxValue, int range, int minItems, int minInvSlots, boolean delayedLooting, boolean antiLureProtection, String[] ignoredNames) {
-        setValues(minValue, maxValue, range, minItems, 1, minInvSlots, delayedLooting, antiLureProtection, ignoredNames, null);
+        setValues(minValue, maxValue, range, minItems, 1, minInvSlots, delayedLooting, antiLureProtection,false, ignoredNames, null);
     }
 
-    private void setValues(int minValue, int maxValue, int range, int minItems, int minQuantity, int minInvSlots, boolean delayedLooting, boolean antiLureProtection, String[] ignoredNames, String[] names) {
+    private void setValues(int minValue, int maxValue, int range, int minItems, int minQuantity, int minInvSlots, boolean delayedLooting, boolean antiLureProtection,boolean eatFoodForSpace, String[] ignoredNames, String[] names) {
         this.minValue = minValue;
         this.maxValue = maxValue;
         this.range = range;
@@ -66,50 +71,11 @@ public class LootingParameters {
         this.minInvSlots = minInvSlots;
         this.delayedLooting = delayedLooting;
         this.antiLureProtection = antiLureProtection;
+        this.eatFoodForSpace = eatFoodForSpace;
         this.ignoredNames = ignoredNames;
         this.names = names;
     }
 
 
-    // Getters
-    public int getMinValue() {
-        return minValue;
-    }
-
-    public int getMaxValue() {
-        return maxValue;
-    }
-
-    public int getRange() {
-        return range;
-    }
-
-    public int getMinItems() {
-        return minItems;
-    }
-
-    public int getMinQuantity() {
-        return minQuantity;
-    }
-
-    public int getMinInvSlots() {
-        return minInvSlots;
-    }
-
-    public boolean isDelayedLooting() {
-        return delayedLooting;
-    }
-
-    public boolean isAntiLureProtection() {
-        return antiLureProtection;
-    }
-
-    public String[] getIgnoredNames() {
-        return ignoredNames;
-    }
-
-    public String[] getNames() {
-        return names;
-    }
 
 }

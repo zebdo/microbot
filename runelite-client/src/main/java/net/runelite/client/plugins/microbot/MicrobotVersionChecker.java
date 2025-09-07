@@ -1,5 +1,11 @@
 package net.runelite.client.plugins.microbot;
 
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.RuneLiteProperties;
+import net.runelite.client.ui.ClientUI;
+
+import javax.inject.Singleton;
+import javax.swing.*;
 import java.io.BufferedReader;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -13,6 +19,7 @@ import javax.inject.Singleton;
 import javax.swing.SwingUtilities;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLiteProperties;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.ui.ClientUI;
 
 @Slf4j
@@ -46,14 +53,14 @@ public class MicrobotVersionChecker
 			String localVersion = RuneLiteProperties.getMicrobotVersion();
 			String remote = remoteVersion == null ? null : remoteVersion.trim();
 			String local = localVersion == null ? "" : localVersion.trim();
-			if (remote != null && !remote.isEmpty() && !remote.equals(local))
+			if (remote != null && !remote.isEmpty() && Rs2UiHelper.compareVersions(local, remote) < 0)
 			{
 				newVersionAvailable.set(true);
 				notifyNewVersionAvailable(remote, local);
 			}
 			else
 			{
-				log.debug("Microbshot client is up to date: {}", local);
+				log.debug("Microbot client is up to date: {}", local);
 			}
 		}
 		catch (Exception e)
@@ -86,33 +93,84 @@ public class MicrobotVersionChecker
 		}
 	}
 
-	private void notifyNewVersionAvailable(String remoteVersion, String localVersion)
-	{
-		appendToTitle();
+	/**
+	 * Notify that a new version is available by appending to the title and logging it.
+	 * @param remoteVersion
+	 * @param localVersion
+	 */
+	private void notifyNewVersionAvailable(String remoteVersion, String localVersion) {
+		appendToTitle(remoteVersion, localVersion);
 		log.info("New Microbot client version available: {} (current: {})", remoteVersion, localVersion);
 	}
 
-	private void appendToTitle()
-	{
+	/**
+	 * Append the new client marker to the title if not already present and
+	 * if the remote version is newer than the local version.
+	 * @param remoteVersion
+	 * @param localVersion
+	 */
+	private void appendToTitle(String remoteVersion, String localVersion) {
+		if (!isLocalVersionLower(localVersion, remoteVersion)) {
+			return;
+		}
+
 		SwingUtilities.invokeLater(() -> {
-			try
-			{
+			try {
 				var frame = ClientUI.getFrame();
-				if (frame == null)
-				{
+				if (frame == null) {
 					return;
 				}
 				String oldTitle = String.valueOf(frame.getTitle());
-				if (!oldTitle.contains(NEW_CLIENT_MARKER))
-				{
+				if (!oldTitle.contains(NEW_CLIENT_MARKER)) {
 					frame.setTitle(oldTitle + " " + NEW_CLIENT_MARKER);
 				}
 			}
-			catch (Exception e)
-			{
+			catch (Exception e) {
 				log.warn("Failed to update client title", e);
 			}
 		});
+	}
+
+	/**
+	 * Append the new client marker to the title if not already present.
+	 */
+	private void appendToTitle() {
+		SwingUtilities.invokeLater(() -> {
+			try {
+				var frame = ClientUI.getFrame();
+				if (frame == null) {
+					return;
+				}
+				String oldTitle = String.valueOf(frame.getTitle());
+				if (!oldTitle.contains(NEW_CLIENT_MARKER)) {
+					frame.setTitle(oldTitle + " " + NEW_CLIENT_MARKER);
+				}
+			}
+			catch (Exception e) {
+				log.warn("Failed to update client title", e);
+			}
+		});
+	}
+
+	/**
+	 * Check if the local version is lower than the remote version.
+	 * @param localVersion
+	 * @param remoteVersion
+	 * @return
+	 */
+	private boolean isLocalVersionLower(String localVersion, String remoteVersion) {
+		String[] local = localVersion.split("\\.");
+		String[] remote = remoteVersion.split("\\.");
+
+		int length = Math.min(local.length, remote.length);
+		for (int i = 0; i < length; i++) {
+			int localPart = Integer.parseInt(local[i]);
+			int remotePart = Integer.parseInt(remote[i]);
+			if (localPart != remotePart) {
+				return localPart < remotePart;
+			}
+		}
+		return local.length < remote.length;
 	}
 
 	public void checkForUpdate()

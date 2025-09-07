@@ -9,7 +9,7 @@ import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
 import net.runelite.client.plugins.microbot.util.misc.SpecialAttackWeaponEnum;
-import net.runelite.client.plugins.microbot.util.slayer.enums.SlayerMaster;
+import net.runelite.client.plugins.microbot.util.skills.slayer.enums.SlayerMaster;
 
 @ConfigGroup(AIOFighterConfig.GROUP)
 @ConfigInformation("1. Make sure to place the cannon first before starting the plugin. <br />" +
@@ -397,6 +397,31 @@ public interface AIOFighterConfig extends Config {
             section = lootSection
     )
     default boolean eatFoodForSpace() { return false; }
+
+    @ConfigItem(
+            keyName = "waitForLoot",
+            name = "Wait for Loot",
+            description = "Wait for loot to appear before attacking next NPC",
+            position = 103,
+            section = lootSection,
+            hidden = true
+    )
+    default boolean toggleWaitForLoot() {
+        return false;
+    }
+
+    @Range(min = 1, max = 10)
+    @ConfigItem(
+            keyName = "lootWaitTimeout",
+            name = "Loot Wait Timeout (s)",
+            description = "Seconds to wait for loot before resuming combat (1-10)",
+            position = 104,
+            section = lootSection,
+            hidden = true
+    )
+    default int lootWaitTimeout() {
+        return 6;
+    }
 
     //set center tile manually
     @ConfigItem(

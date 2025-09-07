@@ -32,6 +32,8 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
  */
 @Slf4j
 public class Rs2GroundItem {
+    private static final int DESPAWN_DELAY_THRESHOLD_TICKS = 150;
+
     private static boolean runWhilePaused(BooleanSupplier booleanSupplier) {
         final boolean paused = Microbot.pauseAllScripts.getAndSet(true);
         final boolean success = booleanSupplier.getAsBoolean();
@@ -173,7 +175,7 @@ public class Rs2GroundItem {
 
     /**
      * Retrieves all RS2Item objects within a specified range of a WorldPoint, sorted by distance.
-     * 
+     *
      * @param range The radius in tiles to search around the given world point
      * @param worldPoint The center WorldPoint to search around
      * @return An array of RS2Item objects found within the specified range, sorted by proximity
@@ -288,59 +290,123 @@ public class Rs2GroundItem {
     }
 
 
-    public static boolean lootItemBasedOnValue(LootingParameters params) {
-        final Predicate<GroundItem> filter = groundItem -> groundItem.getGePrice() > params.getMinValue() && (groundItem.getGePrice() / groundItem.getQuantity()) < params.getMaxValue() &&
-                groundItem.getLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) < params.getRange() &&
-                (!params.isAntiLureProtection() || (params.isAntiLureProtection() && groundItem.getOwnership() == OWNERSHIP_SELF));
 
-        List<GroundItem> groundItems = getGroundItems().values().stream()
-                .filter(filter)
+
+
+    private static Predicate<GroundItem> baseRangeAndOwnershipFilter(LootingParameters params) {
+        final WorldPoint me = Microbot.getClient().getLocalPlayer().getWorldLocation();
+        final boolean anti = params.isAntiLureProtection();
+        return gi ->
+                gi.getLocation().distanceTo(me) < params.getRange() &&
+                        (!anti || gi.getOwnership() == OWNERSHIP_SELF);
+    }
+
+    private static boolean passesIgnoredNames(GroundItem gi, Set<String> ignoredLower) {
+        if (ignoredLower == null || ignoredLower.isEmpty()) return true;
+        final String name = gi.getName() == null ? "" : gi.getName().trim().toLowerCase();
+        for (String needle : ignoredLower) {
+            if (name.contains(needle)) return false;
+        }
+        return true;
+    }
+
+    private static boolean ensureSpaceFor(GroundItem gi, LootingParameters params) {
+        if (Rs2Inventory.emptySlotCount() > params.getMinInvSlots()) {
+            return true;
+        }
+
+        if (params.isEatFoodForSpace() && !canTakeGroundItem(gi) && !Rs2Inventory.getInventoryFood().isEmpty()) {
+            if (Rs2Player.eatAt(100)) {
+                Rs2Player.waitForAnimation();
+            }
+        }
+        return canTakeGroundItem(gi);
+    }
+
+    private static boolean lootWithFilter(
+            LootingParameters params,
+            Predicate<GroundItem> itemPredicate,
+            Set<String> ignoredLower
+    ) {
+        final Predicate<GroundItem> base = baseRangeAndOwnershipFilter(params);
+        final Predicate<GroundItem> combined = base.and(itemPredicate);
+
+        final List<GroundItem> groundItems = getGroundItems().values().stream()
+                .filter(combined)
                 .collect(Collectors.toList());
 
         if (groundItems.size() < params.getMinItems()) return false;
+
         if (params.isDelayedLooting()) {
-            // Get the ground item with the lowest despawn time
-            GroundItem item = groundItems.stream().min(Comparator.comparingInt(Rs2GroundItem::calculateDespawnTime)).orElse(null);
-            assert item != null;
-            if (calculateDespawnTime(item) > 150) return false;
+            final GroundItem soonest = groundItems.stream()
+                    .min(Comparator.comparingInt(Rs2GroundItem::calculateDespawnTime))
+                    .orElse(null);
+            if (soonest == null) return false;
+            if (calculateDespawnTime(soonest) > DESPAWN_DELAY_THRESHOLD_TICKS) return false;
         }
 
         return runWhilePaused(() -> {
-            for (GroundItem groundItem : groundItems) {
-                if (groundItem.getQuantity() < params.getMinItems()) continue;
-                if (params.getIgnoredNames() != null && Arrays.stream(params.getIgnoredNames()).anyMatch(name -> groundItem.getName().trim().toLowerCase().contains(name.trim().toLowerCase()))) continue;
-                if (Rs2Inventory.emptySlotCount() < params.getMinInvSlots()) return true;
-                coreLoot(groundItem);
+            for (GroundItem gi : groundItems) {
+                if (gi.getQuantity() < params.getMinQuantity()) continue;
+                if (!passesIgnoredNames(gi, ignoredLower)) continue;
+                if (!ensureSpaceFor(gi, params)) continue;
+                coreLoot(gi);
             }
-            return validateLoot(filter);
+            return validateLoot(combined);
         });
+    }
+
+    private static Set<String> toLowerTrimmedSet(String[] arr) {
+        if (arr == null || arr.length == 0) return Collections.emptySet();
+        Set<String> out = new HashSet<>(arr.length);
+        for (String s : arr) {
+            if (s != null) {
+                final String t = s.trim().toLowerCase();
+                if (!t.isEmpty()) out.add(t);
+            }
+        }
+        return out;
+    }
+
+
+    public static boolean lootItemBasedOnValue(LootingParameters params) {
+        Predicate<GroundItem> byValue = gi -> {
+            final int qty = Math.max(1, gi.getQuantity());
+            final int price = gi.getGePrice();
+            return price > params.getMinValue() && (price / qty) < params.getMaxValue();
+        };
+
+        final Set<String> ignoredLower = toLowerTrimmedSet(params.getIgnoredNames());
+        return lootWithFilter(params, byValue, ignoredLower);
     }
 
     public static boolean lootItemsBasedOnNames(LootingParameters params) {
-        final Predicate<GroundItem> filter = groundItem ->
-                groundItem.getLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) < params.getRange() &&
-                        (!params.isAntiLureProtection() || (params.isAntiLureProtection() && groundItem.getOwnership() == OWNERSHIP_SELF)) &&
-                        Arrays.stream(params.getNames()).anyMatch(name -> groundItem.getName().trim().toLowerCase().contains(name.trim().toLowerCase()));
-        List<GroundItem> groundItems = getGroundItems().values().stream()
-                .filter(filter)
-                .collect(Collectors.toList());
-        if (groundItems.size() < params.getMinItems()) return false;
-        if (params.isDelayedLooting()) {
-            // Get the ground item with the lowest despawn time
-            GroundItem item = groundItems.stream().min(Comparator.comparingInt(Rs2GroundItem::calculateDespawnTime)).orElse(null);
-            assert item != null;
-            if (calculateDespawnTime(item) > 150) return false;
-        }
+        final Set<String> needles = toLowerTrimmedSet(params.getNames());
+        if (needles.isEmpty()) return false;
 
-        return runWhilePaused(() -> {
-            for (GroundItem groundItem : groundItems) {
-                if (groundItem.getQuantity() < params.getMinQuantity()) continue;
-                if (Rs2Inventory.emptySlotCount() <= params.getMinInvSlots()) return true;
-                coreLoot(groundItem);
+        Predicate<GroundItem> byNames = gi -> {
+            final String n = gi.getName() == null ? "" : gi.getName().trim().toLowerCase();
+            for (String needle : needles) {
+                if (n.contains(needle)) return true;
             }
-            return validateLoot(filter);
-        });
+            return false;
+        };
+
+        return lootWithFilter(params, byNames, /*ignoredLower*/ null);
     }
+
+    public static boolean lootUntradables(LootingParameters params) {
+        Predicate<GroundItem> untradables = gi ->
+                !gi.isTradeable() && gi.getId() != ItemID.COINS_995;
+
+        return lootWithFilter(params, untradables, /*ignoredLower*/ null);
+    }
+
+    public static boolean lootCoins(LootingParameters params) {
+        Predicate<GroundItem> coins = gi -> gi.getId() == ItemID.COINS_995;
+        return lootWithFilter(params, coins, /*ignoredLower*/ null);
+    }
+
 
     /**
      * Loots items based on their location and item ID.
@@ -364,60 +430,6 @@ public class Rs2GroundItem {
         });
     }
 
-    // Loot untradables
-    public static boolean lootUntradables(LootingParameters params) {
-        final Predicate<GroundItem> filter = groundItem ->
-                groundItem.getLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) < params.getRange() &&
-                        (!params.isAntiLureProtection() || (params.isAntiLureProtection() && groundItem.getOwnership() == OWNERSHIP_SELF)) &&
-                        !groundItem.isTradeable() &&
-                        groundItem.getId() != ItemID.COINS_995;
-        List<GroundItem> groundItems = getGroundItems().values().stream()
-                .filter(filter)
-                .collect(Collectors.toList());
-        if (groundItems.size() < params.getMinItems()) return false;
-        if (params.isDelayedLooting()) {
-            // Get the ground item with the lowest despawn time
-            GroundItem item = groundItems.stream().min(Comparator.comparingInt(Rs2GroundItem::calculateDespawnTime)).orElse(null);
-            assert item != null;
-            if (calculateDespawnTime(item) > 150) return false;
-        }
-
-        return runWhilePaused(() -> {
-            for (GroundItem groundItem : groundItems) {
-                if (groundItem.getQuantity() < params.getMinQuantity()) continue;
-                if (Rs2Inventory.emptySlotCount() <= params.getMinInvSlots()) return true;
-                coreLoot(groundItem);
-            }
-            return validateLoot(filter);
-        });
-    }
-
-    // Loot coins
-    public static boolean lootCoins(LootingParameters params) {
-        final Predicate<GroundItem> filter = groundItem ->
-                groundItem.getLocation().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) < params.getRange() &&
-                        (!params.isAntiLureProtection() || (params.isAntiLureProtection() && groundItem.getOwnership() == OWNERSHIP_SELF)) &&
-                        groundItem.getId() == ItemID.COINS_995;
-        List<GroundItem> groundItems = getGroundItems().values().stream()
-                .filter(filter)
-                .collect(Collectors.toList());
-        if (groundItems.size() < params.getMinItems()) return false;
-        if (params.isDelayedLooting()) {
-            // Get the ground item with the lowest despawn time
-            GroundItem item = groundItems.stream().min(Comparator.comparingInt(Rs2GroundItem::calculateDespawnTime)).orElse(null);
-            assert item != null;
-            if (calculateDespawnTime(item) > 150) return false;
-        }
-
-        return runWhilePaused(() -> {
-            for (GroundItem groundItem : groundItems) {
-                if (groundItem.getQuantity() < params.getMinQuantity()) continue;
-                if (Rs2Inventory.emptySlotCount() <= params.getMinInvSlots()) return true;
-                coreLoot(groundItem);
-            }
-            return validateLoot(filter);
-        });
-    }
 
 
     private static boolean hasLootableItems(Predicate<GroundItem> filter) {
@@ -538,5 +550,17 @@ public class Rs2GroundItem {
      */
     public static Table<WorldPoint, Integer, GroundItem> getGroundItems() {
         return GroundItemsPlugin.getCollectedGroundItems();
+    }
+
+    private static boolean canTakeGroundItem(GroundItem groundItem) {
+        int maxQuantity = groundItem.isStackable() ? 1 : groundItem.getQuantity();
+        int availableSlots = Rs2Inventory.emptySlotCount();
+        int quantity = Math.min(maxQuantity, availableSlots);
+
+        if (quantity == 0 && groundItem.isStackable()) {
+            return Rs2Inventory.hasItem(groundItem.getId());
+        }
+
+        return quantity > 0;
     }
 }

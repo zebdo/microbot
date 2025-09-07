@@ -6,6 +6,8 @@ import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
 import net.runelite.client.config.Range;
 import net.runelite.client.plugins.microbot.util.antiban.enums.PlaySchedule;
+import net.runelite.client.plugins.microbot.util.world.RegionPreference;
+import net.runelite.client.plugins.microbot.util.world.WorldSelectionMode;
 
 @ConfigGroup(BreakHandlerConfig.configGroup)
 public interface BreakHandlerConfig extends Config {
@@ -122,16 +124,48 @@ public interface BreakHandlerConfig extends Config {
     }
 
     @ConfigItem(
-            keyName = "useRandomWorld",
-            name = "Use RandomWorld",
-            description = "Change to a random world once break is finished",
+            keyName = "worldSelectionMode",
+            name = "World selection mode",
+            description = "How to select worlds during login after breaks",
             position = 2,
             section = breakBehaviorOptions
     )
-    default boolean useRandomWorld() {
-        return false;
+    default WorldSelectionMode worldSelectionMode() {
+        return WorldSelectionMode.CURRENT_PREFERRED_WORLD;
     }
-
+        
+    @ConfigItem(
+            keyName = "regionPreference",
+            name = "Region preference",
+            description = "Preferred region for world selection",
+            position = 4,
+            section = breakBehaviorOptions
+    )
+    default RegionPreference regionPreference() {
+        return RegionPreference.ANY_REGION;
+    }
+    
+    @ConfigItem(
+            keyName = "avoidEmptyWorlds",
+            name = "Avoid empty worlds",
+            description = "Avoid worlds with very low population (< 50 players)",
+            position = 5,
+            section = breakBehaviorOptions
+    )
+    default boolean avoidEmptyWorlds() {
+        return true;
+    }
+    
+    @ConfigItem(
+            keyName = "avoidOvercrowdedWorlds",
+            name = "Avoid overcrowded worlds",
+            description = "Avoid worlds with very high population (> 1800 players)",
+            position = 6,
+            section = breakBehaviorOptions
+    )
+    default boolean avoidOvercrowdedWorlds() {
+        return true;
+    }
     @ConfigItem(
             keyName = "shutdownClient",
             name = "Shutdown Client",
@@ -223,6 +257,30 @@ public interface BreakHandlerConfig extends Config {
     @Range(min = 1, max = 10)
     default int safeConditionTimeout() {
         return 10;
+    }
+    
+    @ConfigItem(
+            keyName = "loginWatchdogTimeout",
+            name = "Login watchdog timeout",
+            description = "Maximum time to attempt login before entering extended sleep (in minutes)",
+            position = 6,
+            section = advancedOptions
+    )
+    @Range(min = 1, max = 30)
+    default int loginWatchdogTimeout() {
+        return 10;
+    }
+    
+    @ConfigItem(
+            keyName = "extendedSleepDuration",
+            name = "Extended sleep duration",
+            description = "How long to sleep after login watchdog timeout (in minutes)",
+            position = 7,
+            section = advancedOptions
+    )
+    @Range(min = 5, max = 120)
+    default int extendedSleepDuration() {
+        return 30;
     }
 
     // ============================================================
