@@ -509,7 +509,7 @@ public class Rs2Player {
                     .filter(x -> x != null && x.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= distance)
                     .collect(Collectors.toList());
         }
-        if (time > 0 && players.size() > amountOfPlayers) {
+        if (time > 0 && players.size() >= amountOfPlayers) {
             // Update detection times for currently detected players
             for (Rs2PlayerModel player : players) {
                 playerDetectionTimes.putIfAbsent(player.getId(), currentTime);
