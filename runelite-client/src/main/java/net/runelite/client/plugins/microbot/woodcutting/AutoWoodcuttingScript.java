@@ -99,7 +99,6 @@ public class AutoWoodcuttingScript extends Script {
         Rs2Antiban.antibanSetupTemplates.applyWoodcuttingSetup();
         Rs2AntibanSettings.dynamicActivity = true;
         Rs2AntibanSettings.dynamicIntensity = true;
-        initialPlayerLocation = null;
         if (config.firemakeOnly()) {
             woodcuttingScriptState = WoodcuttingScriptState.FIREMAKING;
         }
@@ -150,10 +149,6 @@ public class AutoWoodcuttingScript extends Script {
     }
 
     private boolean beforeCuttingTreesChecks(AutoWoodcuttingConfig config) {
-        if (config.hopWhenPlayerDetected()) {
-            if (Rs2Player.logoutIfPlayerDetected(1, 10000))
-                return true;
-        }
 
         if (Rs2Woodcutting.isWearingAxeWithSpecialAttack())
             Rs2Combat.setSpecState(true, 1000);
@@ -194,6 +189,12 @@ public class AutoWoodcuttingScript extends Script {
     private boolean preFlightChecks(AutoWoodcuttingConfig config) {
         if (!Microbot.isLoggedIn()) return true;
         if (!super.run()) return true;
+
+        if (config.hopWhenPlayerDetected()) {
+            if (Rs2Player.logoutIfPlayerDetected(1, 10000))
+                return true;
+        }
+
         if (Rs2AntibanSettings.actionCooldownActive) return true;
 
         if (!hasAutoHopMessageShown && config.hopWhenPlayerDetected()) {
