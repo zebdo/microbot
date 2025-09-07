@@ -21,6 +21,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spellbook;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
+import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -400,6 +401,7 @@ public class FarmTreeRunScript extends Script {
     }
 
     private void bank(FarmTreeRunConfig config) {
+        items.clear();
         if (Rs2Bank.openBank() || Rs2Bank.walkToBank()) {
             sleepUntil(() -> !Rs2Player.isAnimating());
             if (!Rs2Bank.isOpen())
@@ -421,6 +423,7 @@ public class FarmTreeRunScript extends Script {
                 equipGraceful();
 
 
+            ensureWithdrawAsItem();
             // Add must have items
             items.add(new FarmingItem(ItemID.COINS_995, 10000));
             items.add(new FarmingItem(ItemID.SPADE, 1));
@@ -535,34 +538,36 @@ public class FarmTreeRunScript extends Script {
 
 //              TODO: Need to handle what happens if a required item does not exist
 
-            // Loop through the items and perform withdrawals
-            for (FarmingItem item : items) {
-                if (this.items.isEmpty())
-                    break;
+            List<FarmingItem> unnotedItems = items.stream()
+                    .filter(i -> !i.isNoted())
+                    .collect(Collectors.toList());
+            List<FarmingItem> notedItems = items.stream()
+                    .filter(FarmingItem::isNoted)
+                    .collect(Collectors.toList());
+
+            ensureWithdrawAsItem();
+            for (FarmingItem item : new ArrayList<>(unnotedItems)) {
                 int itemId = item.getItemId();
                 int quantity = item.getQuantity();
-                boolean noted = item.isNoted();
-
-                if (quantity <= 0)
-                    continue;
-
-//              Handle items which require to be noted
-                if (noted && !Rs2Bank.hasWithdrawAsNote()) {
-                    Rs2Bank.setWithdrawAsNote();
-                    sleep(500, 1200);
-                } else if (!noted && Rs2Bank.hasWithdrawAsNote()) { // Disables 'Note' toggle
-                    Rs2Bank.setWithdrawAsItem();
-                }
-
-                if (quantity == 1) {
-                    checkIfPlayerHasItem(item);
-                    Rs2Bank.withdrawOne(itemId);
-                } else {
-                    checkIfPlayerHasItem(item);
-                    Rs2Bank.withdrawX(itemId, quantity);
-                }
-
+                if (quantity <= 0) continue;
+                checkIfPlayerHasItem(item);
+                if (!isRunning()) return;
+                if (quantity == 1) Rs2Bank.withdrawOne(itemId); else Rs2Bank.withdrawX(itemId, quantity);
                 sleep(250, 1200);
+            }
+
+            if (!notedItems.isEmpty()) {
+                ensureWithdrawAsNote();
+                sleep(300, 900);
+                for (FarmingItem item : new ArrayList<>(notedItems)) {
+                    int itemId = item.getItemId();
+                    int quantity = item.getQuantity();
+                    if (quantity <= 0) continue;
+                    checkIfPlayerHasItem(item);
+                    if (!isRunning()) return;
+                    if (quantity == 1) Rs2Bank.withdrawOne(itemId); else Rs2Bank.withdrawX(itemId, quantity);
+                    sleep(250, 1200);
+                }
             }
 
             Rs2Bank.closeBank();
@@ -941,6 +946,24 @@ public class FarmTreeRunScript extends Script {
     private boolean isPatchEmpty(Patch patch) {
         String name = Rs2GameObject.getObjectComposition(patch.getId()).getName().toLowerCase();
         return name.endsWith("patch");
+    }
+
+    private void ensureWithdrawAsItem() {
+        final int ITEM_TOGGLE_COMPONENT = 786456; // Item toggle ID in Bank
+        for (int i = 0; i < 3; i++) {
+            if (Rs2Bank.hasWithdrawAsItem()) return;
+            Rs2Widget.clickWidget(ITEM_TOGGLE_COMPONENT);
+            sleepUntil(Rs2Bank::hasWithdrawAsItem, 600);
+        }
+    }
+
+    private void ensureWithdrawAsNote() {
+        final int NOTE_TOGGLE_COMPONENT = 786458; // Note toggle ID in Bank
+        for (int i = 0; i < 3; i++) {
+            if (Rs2Bank.hasWithdrawAsNote()) return;
+            Rs2Widget.clickWidget(NOTE_TOGGLE_COMPONENT);
+            sleepUntil(Rs2Bank::hasWithdrawAsNote, 600);
+        }
     }
 
     private static int getSaplingToUse(Patch patch, FarmTreeRunConfig config) {
