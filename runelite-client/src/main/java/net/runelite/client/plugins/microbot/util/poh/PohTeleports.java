@@ -13,6 +13,7 @@ import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.poh.data.HouseLocation;
 import net.runelite.client.plugins.microbot.util.poh.data.JewelleryBoxType;
 import net.runelite.client.plugins.microbot.util.poh.data.NexusPortal;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -56,6 +57,14 @@ public class PohTeleports {
             return false;
         }
         return true;
+    }
+
+    /**
+     * Checks if the player has a house
+     * @return true if a house location is found
+     */
+    public static boolean hasHouse() {
+        return HouseLocation.getHouseLocation() != null;
     }
 
     /**

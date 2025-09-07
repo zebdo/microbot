@@ -46,22 +46,21 @@ public interface PohTeleport {
     default String getTsvValue() {
         StringBuilder sb = new StringBuilder();
         WorldPoint dest = getDestination();
+
         String destination = dest.getX() + " " + dest.getY() + " " + dest.getPlane();
-        sb
-                .append(destination)
-                .append("\t")
-                .append("Y")
-                .append("\t")
-                .append(name())
-                .append("\t")
-                .append(getClass().getSimpleName())
-                .append("\t")
-                .append(displayInfo())
-                .append("\t")
-                .append(19)
-                .append("\t")
-                .append(getDuration())
-                .append("\n");
+        for (WorldPoint exitPortal : HouseStyle.getExitPortalLocations()) {
+            String origin = exitPortal.getX() + " " + exitPortal.getY() + " " + exitPortal.getPlane();
+            sb
+                    .append(origin).append("\t")
+                    .append(destination).append("\t")
+                    .append("Y").append("\t")
+                    .append(name()).append("\t")
+                    .append(getClass().getSimpleName()).append("\t")
+                    .append(displayInfo()).append("\t")
+                    .append(19).append("\t")
+                    .append(getDuration()).append("\n");
+        }
+
 
         return sb.toString();
     }

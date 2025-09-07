@@ -37,7 +37,6 @@ public enum TransportType {
             case TELEPORTATION_ITEM:
             case TELEPORTATION_MINIGAME:
             case TELEPORTATION_SPELL:
-            case POH:
                 return true;
             default:
                 return false;

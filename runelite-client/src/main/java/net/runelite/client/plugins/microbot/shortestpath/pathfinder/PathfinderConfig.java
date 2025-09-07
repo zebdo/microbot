@@ -254,7 +254,7 @@ public class PathfinderConfig {
         useGnomeGliders &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
         useSpiritTrees &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
         useQuetzals &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
-        usePoh &= PohTeleports.isInHouse() || PohTeleports.hasTeleportToPoh();
+        usePoh &= PohTeleports.hasHouse();
 
         transports.clear();
         transportsPacked.clear();
@@ -470,7 +470,7 @@ public class PathfinderConfig {
 			log.debug("Transport ( O: {} D: {} ) is a teleport but teleports are globally disabled", transport.getOrigin(), transport.getDestination());
 			return false;
 		}
-        if(transport.getType() == TransportType.POH){
+        if (transport.getType() == TransportType.POH) {
             boolean isUsable = Rs2PohCache.isTransportUsable(transport);
             if (!isUsable)
             {

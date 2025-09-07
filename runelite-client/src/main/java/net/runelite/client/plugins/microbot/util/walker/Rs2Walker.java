@@ -1052,7 +1052,8 @@ public class Rs2Walker {
                 ? Rs2WorldPoint.convertInstancedWorldPoint(rawTo)
                 : rawTo;
 
-        if (isInstance && toWp == null) {
+        if (isInstance && (toWp == null || fromWp == null)) {
+            System.out.println("HandleDoor: isInstance=true fromWp=" + fromWp + ", toWp=" + toWp);
             //This happens when we're inside the PoH and the next tile is the teleport destination
             //Rs2WorldPoint.convertInstancedWorldPoint(rawTo) -> LocalPoint l = Rs2LocalPoint.fromWorldInstance(worldPoint) returns null
             return false;
@@ -1625,13 +1626,6 @@ public class Rs2Walker {
      * @return true if the transport is an instance of PohTransport and its transport method executes successfully, false otherwise
      */
     private static boolean handlePohTransport(Transport transport) {
-        if (!PohTeleports.isInHouse()) {
-            if (PohTeleports.teleportToPoh()) {
-                if (!sleepUntil(PohTeleports::isInHouse, 10000)) {
-                    return false;
-                }
-            }
-        }
         PohTeleport teleport = Rs2PohCache.getTeleport(transport);
         if(teleport == null) {
             throw new IllegalStateException(String.format("PohTransport for Transport {} is null", transport));
@@ -1876,7 +1870,7 @@ public class Rs2Walker {
         if (rs2Item == null) return false;
 
         List<String> locationKeyWords = Arrays.asList("farm", "monastery", "lletya", "prifddinas", "rellekka", "waterbirth island", "neitiznot", "jatiszo",
-                "ver sinhaza", "darkmeyer", "slepe", "troll stronghold", "weiss", "ecto", "burgh", "duradel", "gem mine", "nardah", "kalphite cave",
+                "ver sinhaza", "darkmeyer", "slepe", "troll stronghold", "weiss", "ecto", "burgh", "duradel", "gem mine", "nardah", "kalphite cave", "Tele to POH", "inside", "outside",
                 "kourend woodland", "mount karuulm", "outside", "fishing guild", "otto's grotto", "stronghold slayer cave", "slayer tower", "fremennik", "tarn's lair", "dark beasts");
         List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "open", "teleport", "rub", "break", "reminisce", "signal", "play", "commune", "squash");
 
@@ -2509,7 +2503,7 @@ public class Rs2Walker {
 
         // Wait for the widget to become visible
         boolean widgetVisible = sleepUntilTrue(() -> !Rs2Widget.isHidden(GLIDER_PARENT_WIDGET, GLIDER_CHILD_WIDGET), Rs2Player::isMoving, 100, 10000);
-        
+
         if (!widgetVisible) {
             log.error("Widget did not become visible within the timeout.");
             return false;
