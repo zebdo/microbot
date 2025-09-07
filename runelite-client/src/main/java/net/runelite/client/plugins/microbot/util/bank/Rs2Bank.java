@@ -23,6 +23,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.RuneScapeProfileType;
@@ -2635,11 +2636,11 @@ public class Rs2Bank {
         return isWithdrawAs(false);
     }
 
-    private static final int NOTED_TOGGLE_WIDGET = 786458;
-
     public static boolean setWithdrawAs(boolean noted) {
         if (isWithdrawAs(noted)) return true;
-        Rs2Widget.clickWidget(NOTED_TOGGLE_WIDGET);
+        int target = noted ? InterfaceID.Bankmain.NOTE : InterfaceID.Bankmain.ITEM;
+        boolean clicked = Rs2Widget.clickWidget(target);
+        if (!clicked) return false;
         return sleepUntil(() -> isWithdrawAs(noted));
     }
 
