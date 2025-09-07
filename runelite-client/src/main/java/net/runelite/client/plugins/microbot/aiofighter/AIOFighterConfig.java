@@ -491,7 +491,7 @@ public interface AIOFighterConfig extends Config {
             keyName = "useMagic",
             name = "Use Magic",
             description = "Use Magic",
-            position = 1,
+            position = 0,
             section = skillingSection
     )
     default boolean useMagic() {
@@ -502,11 +502,22 @@ public interface AIOFighterConfig extends Config {
             keyName = "magicSpell",
             name = "Auto Cast Spell",
             description = "Magic Auto Cast Spell",
-            position = 2,
+            position = 1,
             section = skillingSection
     )
     default Rs2CombatSpells magicSpell() {
         return Rs2CombatSpells.WIND_STRIKE;
+    }
+
+    @ConfigItem(
+            keyName = "reanimateHeads",
+            name = "Reanimate Ensouled Heads",
+            description = "Enable to loot and reanimate ensouled heads with Arceeus",
+            position = 2,
+            section = skillingSection
+    )
+    default boolean reanimateEnsouledHeads() {
+        return false;
     }
 
     //Avoid Controlled attack style

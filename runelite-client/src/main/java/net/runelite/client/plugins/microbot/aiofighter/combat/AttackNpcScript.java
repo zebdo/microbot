@@ -81,7 +81,7 @@ public class AttackNpcScript extends Script {
                 if (config.state().equals(State.BANKING) || config.state().equals(State.WALKING))
                     return;
 
-                if (Rs2Magic.isSpellbook(Rs2Spellbook.ARCEUUS)) {
+                if (config.reanimateEnsouledHeads()) {
                     Map.Entry<Rs2ItemModel, HeadType> head = Rs2Reanimate.getReanimatableHead();
                     if (head != null) {
                         boolean prevPause = Microbot.pauseAllScripts.getAndSet(true);
@@ -125,9 +125,6 @@ public class AttackNpcScript extends Script {
                     }
                 }
                 filteredAttackableNpcs.set(attackableNpcs);
-
-                if (config.state().equals(State.BANKING) || config.state().equals(State.WALKING))
-                    return;
 
                 // Check if we should pause while looting is happening
                 if (Microbot.pauseAllScripts.get()) {
