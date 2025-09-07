@@ -45,8 +45,10 @@ public class DemonicGorillaOverlay extends OverlayPanel {
                     .left("Microbot status: " + Microbot.status)
                     .leftColor(Color.WHITE)
                     .build());
+            var lootRecord =  Microbot.getAggregateLootRecords("Demonic Gorilla");
+            var killValue = lootRecord == null ? "0" : String.valueOf(lootRecord.getKills());
             panelComponent.getChildren().add(LineComponent.builder()
-                    .left("Kill Count: " + DemonicGorillaScript.killCount + " / " + Microbot.getAggregateLootRecords("Demonic Gorilla").getKills())
+                    .left("Kill Count: " + DemonicGorillaScript.killCount + " / " + killValue)
                     .leftColor(Color.WHITE)
                     .build());
             panelComponent.getChildren().add(LineComponent.builder()

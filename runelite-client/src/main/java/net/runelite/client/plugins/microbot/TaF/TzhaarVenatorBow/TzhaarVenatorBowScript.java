@@ -122,7 +122,7 @@ public class TzhaarVenatorBowScript extends Script {
     private boolean shouldRetreat(TzHaarVenatorBowConfig config) {
         int currentHealth = Microbot.getClient().getBoostedSkillLevel(Skill.HITPOINTS);
         int currentPrayer = Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER);
-        var hasArrows = Rs2Equipment.hasEquippedSlot(EquipmentInventorySlot.AMMO);
+        var hasArrows = Rs2Equipment.isWearing(EquipmentInventorySlot.AMMO);
         boolean shouldEscapeBasedOnFoodAndHealth = Rs2Inventory.getInventoryFood().isEmpty() && currentHealth < 50;
         boolean noPrayerPotions = Rs2Inventory.items()
                 .noneMatch(item -> item != null && item.getName() != null && item.getName().toLowerCase().contains("prayer potion"));
@@ -223,13 +223,17 @@ public class TzhaarVenatorBowScript extends Script {
             Rs2Bank.depositAll();
             if (config.teleGrabLoot()) {
                 Rs2Bank.withdrawX("Law rune", 100);
+                Rs2Inventory.waitForInventoryChanges(1800);
                 Rs2Bank.withdrawX("Air rune", 300);
+                Rs2Inventory.waitForInventoryChanges(1800);
             }
             Rs2Bank.withdrawX(config.foodToWithdraw().getId(), 2);
+            Rs2Inventory.waitForInventoryChanges(1800);
             if (config.withdrawRangePotsCount() > 0) {
                 var potionType = Rs2Potion.getRangePotionsVariants();
                 for (var potion : potionType) {
                     var extracted = Rs2Bank.withdrawX(potion + "(4)", config.withdrawRangePotsCount());
+                    Rs2Inventory.waitForInventoryChanges(1800);
                     if (extracted) {
                         break;
                     }
@@ -237,6 +241,7 @@ public class TzhaarVenatorBowScript extends Script {
             }
 
             Rs2Bank.withdrawX("Prayer potion(4)", config.withdrawPrayerPotsCount() == 0 ? Rs2Inventory.getEmptySlots() - 2 : config.withdrawPrayerPotsCount());
+            Rs2Inventory.waitForInventoryChanges(1800);
             Rs2Bank.closeBank();
             if (Rs2Inventory.count("Prayer potion(4)") == 0) {
                 Microbot.log("Out of prayer potions, stopping script.");

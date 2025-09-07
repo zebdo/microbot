@@ -31,10 +31,10 @@ import static net.runelite.client.plugins.microbot.util.cache.Rs2PohCache.POH_CA
  * Serialization manager for Rs2UnifiedCache instances.
  * Handles automatic save/load to RuneLite profile configuration
  * similar to Rs2Bank serialization system.
- *
+ * 
  * Includes cache freshness tracking to prevent loading stale cache data
  * that wasn't properly saved due to ungraceful client shutdowns.
- *
+ * 
  * Cache freshness is determined by whether data was saved after being loaded,
  * not by session ID or time limits (unless explicitly specified).
  * This ensures we only load cache data that was properly persisted after modifications.
@@ -45,10 +45,10 @@ public class CacheSerializationManager {
     private static final String CONFIG_GROUP = "microbot";
     private static final String METADATA_SUFFIX = "_metadata";
     private static final Gson gson;
-
+    
     // Session identifier to track cache freshness across client restarts
     private static final String SESSION_ID = UUID.randomUUID().toString();
-
+    
     /**
      * Metadata class to track cache freshness and validity
      */
@@ -57,17 +57,17 @@ public class CacheSerializationManager {
         private final String sessionId;
         private final String saveTimestampUtc; // UTC timestamp in ISO 8601 format
         private final boolean stale;
-
+        
         // UTC formatter for consistent timestamp handling
         private static final DateTimeFormatter UTC_FORMATTER = DateTimeFormatter.ISO_INSTANT;
-
+        
         public CacheMetadata(String version, String sessionId, String saveTimestampUtc, boolean stale) {
             this.version = version;
             this.sessionId = sessionId;
             this.saveTimestampUtc = saveTimestampUtc;
             this.stale = stale;
         }
-
+        
         /**
          * Create CacheMetadata with current UTC timestamp
          */
@@ -75,15 +75,15 @@ public class CacheSerializationManager {
             String utcTimestamp = Instant.now().atOffset(ZoneOffset.UTC).format(UTC_FORMATTER);
             return new CacheMetadata(version, sessionId, utcTimestamp, stale);
         }
-
+        
         public boolean isNewVersion(String currentVersion){
             // Check if the current version is different from the saved version
             return !this.version.equals(currentVersion);
         }
-
+        
         /**
          * Checks if this metadata indicates fresh cache data that was properly saved after loading.
-         *
+         * 
          * @param maxAgeMs Maximum age in milliseconds (0 = ignore time completely)
          * @return true if cache data is fresh and was saved after loading
          */
@@ -92,21 +92,21 @@ public class CacheSerializationManager {
             if (stale) {
                 return false;
             }
-
+            
             // If maxAgeMs is 0, we don't care about time - only that it was saved after load
             if (maxAgeMs == 0) {
                 return true;
             }
-
+            
             // Otherwise check if it's within the time limit
             long age = getAgeMs();
             return age <= maxAgeMs;
         }
-
+        
         public boolean isFromCurrentSession() {
             return SESSION_ID.equals(sessionId);
         }
-
+        
         /**
          * Get age in milliseconds from the UTC timestamp
          */
@@ -119,7 +119,7 @@ public class CacheSerializationManager {
                 return Long.MAX_VALUE; // Treat as very old if parsing fails
             }
         }
-
+        
         /**
          * Get the save timestamp as human-readable string
          */
@@ -131,11 +131,11 @@ public class CacheSerializationManager {
                 return saveTimestampUtc; // Return raw if parsing fails
             }
         }
-
+        
         public boolean isStale() {
             return stale;
         }
-
+        
         /**
          * @deprecated Use getAgeMs() instead
          */
@@ -144,7 +144,7 @@ public class CacheSerializationManager {
             return getAgeMs();
         }
     }
-
+    
     // Initialize Gson with custom adapters
     static {
         gson = new GsonBuilder()
@@ -158,50 +158,50 @@ public class CacheSerializationManager {
                 .registerTypeAdapter(Rs2PohCache.TYPE_TOKEN, new PohTeleportDataAdapter())
                 .create();
     }
-
+    
     /**
      * Saves a cache to RuneLite profile configuration.
      * Also stores metadata to track cache freshness and prevent loading stale data.
-     *
+     * 
      * @param cache The cache to save
      * @param configKey The config key to save under
      * @param <K> The key type
      * @param <V> The value type
      */
     public static <K, V> void saveCache(Rs2Cache<K, V> cache, String configKey, String rsProfileKey) {
-        try {
+        try {            
             if (rsProfileKey == null || Microbot.getConfigManager() == null) {
                 log.warn("Cannot save cache {}: profile key or config manager not available", configKey);
                 return;
             }
-
+            
             // Serialize the cache data
             String json = serializeCacheData(cache, configKey);
-
+            
             if (json != null && !json.isEmpty()) {
-                log.debug(configKey + " JSON length: " + json.length());
+                log.debug(configKey + " JSON length: " + json.length());                
                 Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, rsProfileKey, configKey, json);
-
+                
                 // Store metadata to track cache freshness
                 // Mark as stale=false since we're actively saving cache data
                 CacheMetadata metadata = CacheMetadata.createWithCurrentUtcTime(VERSION, SESSION_ID, false);
                 String metadataJson = gson.toJson(metadata, CacheMetadata.class);
                 String metadataKey = configKey + METADATA_SUFFIX;
-                Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, rsProfileKey, metadataKey, metadataJson);
+                Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, rsProfileKey, metadataKey, metadataJson);                
                 log.info("Saved cache \"{}\" with updated metadata for session {} at {}", configKey, SESSION_ID, metadata.getSaveTimeFormatted());
             } else {
                 log.warn("No data to save for cache {}", configKey);
             }
-
+            
         } catch (Exception e) {
             log.error("Failed to save cache {} to config", configKey, e);
         }
     }
-
+    
     /**
      * Loads a cache from RuneLite profile configuration.
      * Checks cache freshness metadata before loading to prevent loading stale data.
-     *
+     * 
      * @param cache The cache to load into
      * @param configKey The config key to load from
      * @param <K> The key type
@@ -210,11 +210,11 @@ public class CacheSerializationManager {
     public static <K, V> void loadCache(Rs2Cache<K, V> cache, String configKey, String rsProfileKey, boolean forceInvalidate) {
         loadCache(cache, configKey, rsProfileKey, 0,forceInvalidate); // Default: ignore time, only check if saved after load
     }
-
+    
     /**
      * Loads a cache from RuneLite profile configuration with age limit.
      * Checks cache freshness metadata before loading to prevent loading stale data.
-     *
+     * 
      * @param cache The cache to load into
      * @param configKey The config key to load from
      * @param rsProfileKey The profile key to load from
@@ -228,14 +228,14 @@ public class CacheSerializationManager {
                 log.warn("Cannot load cache {}: config manager not available", configKey);
                 return;
             }
-
+            
             // Check cache freshness metadata first
             String metadataKey = configKey + METADATA_SUFFIX;
             String metadataJson = Microbot.getConfigManager().getConfiguration(CONFIG_GROUP, rsProfileKey, metadataKey);
-
+            
             CacheMetadata metadata = null;
             boolean shouldLoadFromConfig = false;
-
+            
             if (metadataJson != null && !metadataJson.isEmpty()) {
                 try {
                     metadata = gson.fromJson(metadataJson, CacheMetadata.class);
@@ -251,15 +251,15 @@ public class CacheSerializationManager {
                                                                 "  -stale: {}\n" + //
                                                                 "  -age: {}ms -isfresh? {} -max Age {}ms\n" + //
                                                                 "  -from current session: {}\n" + //
-                                                                "  -current version {} - last version {}- is new version? {}",
-                                    configKey, stale, age,  metadata.isFresh(maxAgeMs), maxAgeMs, fromCurrentSession, VERSION, oldVersion, metadata.isNewVersion(VERSION));
-                        } else {
+                                                                "  -current version {} \n-last version {}\n-is new version? {}",
+                                    configKey, stale, age,  metadata.isFresh(maxAgeMs), maxAgeMs, fromCurrentSession, VERSION, oldVersion, metadata.isNewVersion(VERSION));                                    
+                        } else {                        
                             log.warn("\nCache \"{}\" metadata indicated using a fresh cache \n" + //
                                                                 "  -stale: {}\n" + //
                                                                 "  -age: {}ms -isfresh? {} -max {} ms\n" + //
                                                                 "  -from current session: {}\n" + //
                                                                 "  -current version {} - last version {}- is new version? {}",
-                                    configKey, stale, age,  metadata.isFresh(maxAgeMs), maxAgeMs, fromCurrentSession, VERSION, oldVersion, metadata.isNewVersion(VERSION));
+                                    configKey, stale, age,  metadata.isFresh(maxAgeMs), maxAgeMs, fromCurrentSession, VERSION, oldVersion, metadata.isNewVersion(VERSION));                                    
                         }
                     }
                 } catch (JsonSyntaxException e) {
@@ -268,11 +268,11 @@ public class CacheSerializationManager {
             } else {
                 log.warn("No cache metadata found for {}, treating as stale data", configKey);
             }
-
+            
             if (!shouldLoadFromConfig) {
                 // Invalidate cache and start fresh instead of loading potentially stale data
-                if (forceInvalidate) cache.invalidateAll();
-            }else{
+                if (forceInvalidate) cache.invalidateAll();                                
+            }else{            
                 // Proceed with loading since metadata indicates fresh data
                 String json = Microbot.getConfigManager().getConfiguration(CONFIG_GROUP, rsProfileKey, configKey);
                 if (json != null && !json.isEmpty()) {
@@ -285,7 +285,7 @@ public class CacheSerializationManager {
              // Mark metadata as loaded but not yet saved to distinguish from fresh saves
             CacheMetadata loadedMetadata = CacheMetadata.createWithCurrentUtcTime(VERSION, SESSION_ID, true);
             String loadedMetadataJson = gson.toJson(loadedMetadata,CacheMetadata.class);
-            Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, rsProfileKey, metadataKey, loadedMetadataJson);
+            Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, rsProfileKey, metadataKey, loadedMetadataJson);         
             Microbot.getConfigManager().sendConfig(); // must be called to ensure config changes are saved immediately to the cloud and/or disk
 
         } catch (JsonSyntaxException e) {
@@ -296,10 +296,10 @@ public class CacheSerializationManager {
             log.error("Failed to load cache {} from config", configKey, e);
         }
     }
-
+    
     /**
      * Clears cache data from profile configuration.
-     *
+     * 
      * @param configKey The config key to clear
      */
     public static void clearCache(String configKey) {
@@ -310,11 +310,11 @@ public class CacheSerializationManager {
             log.error("Failed to clear cache {} from config", configKey, e);
         }
     }
-
+    
     /**
      * Clears cache data from profile configuration for a specific profile.
      * Also clears associated metadata.
-     *
+     * 
      * @param configKey The config key to clear
      * @param rsProfileKey The profile key to clear from
      */
@@ -332,7 +332,7 @@ public class CacheSerializationManager {
             log.error("Failed to clear cache {} from config for profile: {}", configKey, rsProfileKey, e);
         }
     }
-
+    
     /**
      * Serializes cache data to JSON based on cache type.
      * This method handles different cache types with specific serialization strategies.
@@ -343,7 +343,7 @@ public class CacheSerializationManager {
     private static <K, V> String serializeCacheData(Rs2Cache<K, V> cache, String configKey) {
         try {
             log.debug("Starting serialization for cache type: {}", configKey);
-
+            
             // Handle different cache types - using actual config keys from caches
             switch (configKey) {
                 case "skills":
@@ -379,7 +379,7 @@ public class CacheSerializationManager {
             return null;
         }
     }
-
+    
     /**
      * Deserializes cache data from JSON based on cache type.
      * Only persistent caches are deserialized (Skills, Quests, Varbits).
@@ -389,7 +389,7 @@ public class CacheSerializationManager {
     private static <K, V> void deserializeCacheData(Rs2Cache<K, V> cache, String configKey, String json) {
         try {
             log.debug("Starting deserialization for cache type: {}, JSON length: {}", configKey, json != null ? json.length() : 0);
-
+            
             switch (configKey) {
                 case "skills":
                     deserializeSkillCache((Rs2Cache<Skill, SkillData>) cache, json);
@@ -412,13 +412,13 @@ public class CacheSerializationManager {
                 default:
                     log.warn("Unknown cache type for deserialization: {}", configKey);
             }
-
+            
             log.debug("Deserialization completed for cache type: {}, final cache size: {}", configKey, cache.size());
         } catch (Exception e) {
             log.error("Failed to deserialize cache data for {}", configKey, e);
         }
     }
-
+    
     // Skill cache serialization
     private static String serializeSkillCache(Rs2Cache<Skill, SkillData> cache) {
         // Use the new method to get all entries for serialization
@@ -432,7 +432,7 @@ public class CacheSerializationManager {
         log.debug("Skills JSON preview: {}", json.length() > 200 ? json.substring(0, 200) + "..." : json);
         return json;
     }
-
+    
     private static void deserializeSkillCache(Rs2Cache<Skill, SkillData> cache, String json) {
         Type type = new TypeToken<Map<Skill, SkillData>>(){}.getType();
         Map<Skill, SkillData> data = gson.fromJson(json, type);
@@ -454,7 +454,7 @@ public class CacheSerializationManager {
             log.warn("Skill cache data was null after JSON parsing");
         }
     }
-
+    
     // Quest cache serialization
     private static String serializeQuestCache(Rs2Cache<Quest, QuestState> cache) {
         // Use the new method to get all entries for serialization
@@ -468,7 +468,7 @@ public class CacheSerializationManager {
         log.debug("Quest JSON preview: {}", json.length() > 200 ? json.substring(0, 200) + "..." : json);
         return json;
     }
-
+    
     private static void deserializeQuestCache(Rs2Cache<Quest, QuestState> cache, String json) {
         Type type = new TypeToken<Map<Quest, QuestState>>(){}.getType();
         Map<Quest, QuestState> data = gson.fromJson(json, type);
@@ -490,7 +490,7 @@ public class CacheSerializationManager {
             log.warn("Quest cache data was null after JSON parsing");
         }
     }
-
+    
     // Varbit cache serialization
     private static String serializeVarbitCache(Rs2Cache<Integer, VarbitData> cache) {
         // Use the new method to get all entries for serialization
@@ -504,7 +504,7 @@ public class CacheSerializationManager {
         log.debug("Varbit JSON preview: {}", json.length() > 200 ? json.substring(0, 200) + "..." : json);
         return json;
     }
-
+    
     private static void deserializeVarbitCache(Rs2Cache<Integer, VarbitData> cache, String json) {
         Type type = new TypeToken<Map<Integer, VarbitData>>(){}.getType();
         Map<Integer, VarbitData> data = gson.fromJson(json, type);
@@ -521,13 +521,13 @@ public class CacheSerializationManager {
                     log.debug("Skipped loading varbit {} - already present in cache with newer data", entry.getKey());
                 }
             }
-
+        
             log.debug("Deserialized {} varbit entries into cache, skipped {} existing entries", entriesLoaded, entriesSkipped);
         } else {
             log.warn("Varbit cache data was null after JSON parsing");
         }
     }
-
+    
     // VarPlayer cache serialization - reuses VarbitData structure
     private static String serializeVarPlayerCache(Rs2Cache<Integer, VarbitData> cache) {
         // Use the new method to get all entries for serialization
@@ -541,7 +541,7 @@ public class CacheSerializationManager {
         log.debug("VarPlayer JSON preview: {}", json.length() > 200 ? json.substring(0, 200) + "..." : json);
         return json;
     }
-
+    
     private static void deserializeVarPlayerCache(Rs2Cache<Integer, VarbitData> cache, String json) {
         Type type = new TypeToken<Map<Integer, VarbitData>>(){}.getType();
         Map<Integer, VarbitData> data = gson.fromJson(json, type);
@@ -558,13 +558,13 @@ public class CacheSerializationManager {
                     log.debug("Skipped loading varplayer {} - already present in cache with newer data", entry.getKey());
                 }
             }
-
+        
             log.debug("Deserialized {} varplayer entries into cache, skipped {} existing entries", entriesLoaded, entriesSkipped);
         } else {
             log.warn("VarPlayer cache data was null after JSON parsing");
         }
     }
-
+    
     // Spirit tree cache serialization
     private static String serializeSpiritTreeCache(Rs2Cache<SpiritTree, SpiritTreeData> cache) {
         // Use the new method to get all entries for serialization

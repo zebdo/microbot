@@ -34,7 +34,7 @@ import static net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIn
 // Script heavily inspired by Tormented Demon script
 public class DemonicGorillaScript extends Script {
 
-    public static final double VERSION = 1.1;
+    public static final double VERSION = 1.2;
     public static final int DEMONIC_GORILLA_PRAYER_SWITCH = 7224;
     public static final int DEMONIC_GORILLA_MAGIC_ATTACK = 7225;
     public static final int DEMONIC_GORILLA_MELEE_ATTACK = 7226;
@@ -75,6 +75,7 @@ public class DemonicGorillaScript extends Script {
     private Rs2InventorySetup magicGear = null;
     private Rs2InventorySetup meleeGear = null;
 
+    private void enableAntibanSettings()
     {
         Microbot.enableAutoRunOn = false;
         Rs2Antiban.resetAntibanSettings();
@@ -98,6 +99,7 @@ public class DemonicGorillaScript extends Script {
         travelStep = TravelStep.GNOME_STRONGHOLD;
         isRunning = true;
         Microbot.enableAutoRunOn = false;
+        enableAntibanSettings();
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn() || !super.run()) return;
@@ -355,17 +357,7 @@ public class DemonicGorillaScript extends Script {
         if (currentTarget != null && !currentTarget.isDead()) {
             int currentAnimation = currentTarget.getAnimation();
             var location = currentTarget.getWorldLocation();
-            if (lastGameTick != gameTickCount) {
-                if (currentAnimation == DEMONIC_GORILLA_MAGIC_ATTACK || currentAnimation == DEMONIC_GORILLA_RANGED_ATTACK || currentAnimation == DEMONIC_GORILLA_MELEE_ATTACK) {
-                    if (currentAnimation != lastRealAnimation) {
-                        npcAnimationCount = 1;
-                    } else {
-                        npcAnimationCount++;
-                    }
-                    lastRealAnimation = currentAnimation;
-                }
-            }
-            // Handle normal prayer switching
+            // Handle prayer switching
             if (currentAnimation == DEMONIC_GORILLA_MAGIC_ATTACK) {
                 newDefensivePrayer = Rs2PrayerEnum.PROTECT_MAGIC;
             } else if (currentAnimation == DEMONIC_GORILLA_RANGED_ATTACK) {
@@ -689,7 +681,12 @@ public class DemonicGorillaScript extends Script {
         if (!isCombatPotionActive(threshold)) {
             consumePotion(Rs2Potion.getCombatPotionsVariants());
         }
-
+        if (!Rs2Player.hasAttackActive(threshold)) {
+            consumePotion(Rs2Potion.getAttackPotionsVariants());
+        }
+        if (!Rs2Player.hasStrengthActive(threshold)) {
+            consumePotion(Rs2Potion.getStrengthPotionsVariants());
+        }
         if (!isRangingPotionActive(threshold)) {
             consumePotion(Rs2Potion.getRangePotionsVariants());
         }
