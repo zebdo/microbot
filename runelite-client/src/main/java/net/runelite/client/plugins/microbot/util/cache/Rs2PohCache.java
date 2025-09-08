@@ -10,9 +10,11 @@ import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
+import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializable;
 import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
 import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
+import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
 import net.runelite.client.plugins.microbot.util.poh.data.*;
 
 import java.lang.reflect.Type;
@@ -75,6 +77,9 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
             setTeleports(MountedGlory.class, List.of(MountedGlory.values()));
         } else if (NexusPortal.isNexusPortal(go)) {
             setTeleports(NexusPortal.class, NexusPortal.getAvailableTeleports());
+        } else if (PohTeleports.isFairyRing(go)) {
+            log.info("Found fairy rings in POH");
+            put("fairyRings", Collections.emptyList());
         }
     }
 
@@ -116,6 +121,9 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
     }
 
     public static boolean isTransportUsable(Transport transport) {
+        if (transport.getType() == TransportType.FAIRY_RING) {
+            return getInstance().containsKey("fairyRings");
+        }
         return getTeleport(transport) != null;
     }
 

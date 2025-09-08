@@ -29,6 +29,7 @@ import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
+import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
@@ -37,8 +38,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static net.runelite.client.plugins.microbot.shortestpath.TransportType.TELEPORTATION_ITEM;
-import static net.runelite.client.plugins.microbot.shortestpath.TransportType.TELEPORTATION_SPELL;
+import static net.runelite.client.plugins.microbot.shortestpath.TransportType.*;
+
 @Slf4j
 public class PathfinderConfig {
     private static final WorldArea WILDERNESS_ABOVE_GROUND = new WorldArea(2944, 3523, 448, 448, 0);
@@ -478,6 +479,7 @@ public class PathfinderConfig {
             }
             return isUsable;
         }
+
         // Check Teleport Item Settings
         if (transport.getType() == TELEPORTATION_ITEM) {
 			boolean isUsable = isTeleportationItemUsable(transport);
@@ -496,6 +498,7 @@ public class PathfinderConfig {
 			}
 			return isUsable;
 		}
+
         // Used for Generic Item Requirements
         if (!transport.getItemIdRequirements().isEmpty()) {
 			boolean hasRequiredItems = hasRequiredItems(transport);
@@ -505,6 +508,15 @@ public class PathfinderConfig {
 			}
 			return hasRequiredItems;
 		}
+
+        //Check PoH fairy ring requirement
+        if(transport.getType() == FAIRY_RING && HouseStyle.isPohExitLocation(transport.getOrigin())) {
+            boolean isUsable = Rs2PohCache.isTransportUsable(transport);
+            if (!isUsable) {
+                log.debug("Transport ( O: {} D: {} ) is a POH-Fairy-ring teleport but is not usable", transport.getOrigin(), transport.getDestination());
+            }
+            return isUsable;
+        }
         
 
         return true;

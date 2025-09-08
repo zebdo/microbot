@@ -2549,10 +2549,10 @@ public class Rs2Walker {
 
 		Rs2ItemModel startingWeapon = null;
 
-		TileObject fairyRingObject = Rs2GameObject.getAll(o -> Objects.equals(o.getWorldLocation(), transport.getOrigin())).stream().findFirst().orElse(null);
+		TileObject fairyRingObject = PohTeleports.isInHouse() ? PohTeleports.getFairyRings() : Rs2GameObject.getAll(o -> Objects.equals(o.getWorldLocation(), transport.getOrigin())).stream().findFirst().orElse(null);
 		if (fairyRingObject == null) return false;
 
-		if (!Rs2GameObject.canWalkTo(fairyRingObject, 25)) return false;
+		if (!PohTeleports.isInHouse() && !Rs2GameObject.canWalkTo(fairyRingObject, 25)) return false;
 
 		boolean hasLumbridgeElite = Microbot.getVarbitValue(VarbitID.LUMBRIDGE_DIARY_ELITE_COMPLETE) == 1;
 
@@ -2574,8 +2574,21 @@ public class Rs2Walker {
 			}
 		}
 
-		log.info("Interacting with Fairy Ring @ {}", fairyRingObject.getWorldLocation());
-		Rs2GameObject.interact(fairyRingObject, "Configure");
+        String lastDestinationAction = "last-destination-" + transport.getDisplayInfo();
+        String treeLastDestinationAction = "Ring-last-destination-" + transport.getDisplayInfo();
+        ObjectComposition composition = Rs2GameObject.convertToObjectComposition(fairyRingObject);
+        log.info("Interacting with Fairy Ring @ {}", fairyRingObject.getWorldLocation());
+
+        if (Rs2GameObject.hasAction(composition, lastDestinationAction, true)) {
+            return Rs2GameObject.interact(fairyRingObject, lastDestinationAction);
+        }else if (Rs2GameObject.hasAction(composition, treeLastDestinationAction, true)) {
+            return Rs2GameObject.interact(fairyRingObject, treeLastDestinationAction);
+        }
+        if (Rs2GameObject.hasAction(composition, "Configure", true)) {
+            Rs2GameObject.interact(fairyRingObject, "Configure");
+        } else if (Rs2GameObject.hasAction(composition, "Ring-configure", true)) {
+            Rs2GameObject.interact(fairyRingObject, "Ring-configure");
+        }
 		sleepUntil(() -> !Rs2Player.isMoving() && !Rs2Widget.isHidden(ComponentID.FAIRY_RING_TELEPORT_BUTTON), 10000);
 
 		rotateSlotToDesiredRotation(SLOT_ONE, Rs2Widget.getWidget(SLOT_ONE).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(0)), SLOT_ONE_ACW_ROTATION, SLOT_ONE_CW_ROTATION);

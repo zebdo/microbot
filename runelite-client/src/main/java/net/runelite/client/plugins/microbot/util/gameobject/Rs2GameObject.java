@@ -342,6 +342,14 @@ public class Rs2GameObject {
         return findReachableObject(objectName, exact, distance, anchorPoint, false, "");
     }
 
+    public static boolean hasAction(TileObject tileObject, String action) {
+        return hasAction(tileObject, action, false);
+    }
+
+    public static boolean hasAction(TileObject tileObject, String action, boolean exact) {
+        return hasAction(convertToObjectComposition(tileObject), action, exact);
+    }
+
     public static boolean hasAction(ObjectComposition objComp, String action, boolean exact) {
         if (objComp == null) return false;
 
