@@ -9,8 +9,8 @@ public enum WoodcuttingSecondaryAction {
     NONE("No secondary action"),
     BANK("Bank fletched items"),
     DROP("Drop fletched items"),
-    STRING_AND_DROP("String bows (if bowstring available)"),
-    STRING_AND_BANK("String bows (if bowstring available) and bank fletched items");
+    STRING_AND_DROP("String + Drop"),
+    STRING_AND_BANK("String + Bank");
 
     private final String description;
 

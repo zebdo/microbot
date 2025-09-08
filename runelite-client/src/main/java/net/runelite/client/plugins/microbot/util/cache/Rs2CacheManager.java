@@ -2,6 +2,8 @@ package net.runelite.client.plugins.microbot.util.cache;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Player;
+import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.client.config.ConfigProfile;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -470,6 +472,34 @@ public class Rs2CacheManager implements AutoCloseable {
         }
     }
     
+    public static void loadVarPlayerCache(){    
+        try {
+            if (Microbot.getConfigManager() == null) {
+                log.warn("Cannot load persistent varplayer cache: ConfigManager is null");
+                return;
+            }
+            String profileKey = Microbot.getConfigManager().getRSProfileKey();
+            if(rsProfileKey == null || rsProfileKey.get().isEmpty()){
+                log.warn("Cannot load persistent varplayer cache: profile key is null");
+                return;
+            }
+            rsProfileKey.set( profileKey);
+            if (rsProfileKey == null || rsProfileKey.get().isEmpty()) {
+                log.warn("Cannot load persistent varplayer cache: profile key is null");
+                return;
+            }
+        } catch (Exception e) {
+            log.error("Failed to load persistent varplayer cache", e);
+            return;
+        }
+        // Load VarPlayer cache
+        if (Rs2VarPlayerCache.getCache().isPersistenceEnabled()) {
+            CacheSerializationManager.loadCache(Rs2VarPlayerCache.getCache(), Rs2VarPlayerCache.getCache().getConfigKey(), rsProfileKey.get(), false);
+            log.debug ("Loaded VarPlayer cache from configuration, new cache size: {}", 
+                        Rs2VarPlayerCache.getCache().size());
+        }
+        
+    }
     /**
      * Loads persistent caches for a specific profile.
      * 
@@ -670,7 +700,24 @@ public class Rs2CacheManager implements AutoCloseable {
     public static void emptyCacheState() {
         // Save current state before clearing
         if (rsProfileKey != null && !rsProfileKey.get().isEmpty() && isCacheDataValid()) {
-            savePersistentCaches(rsProfileKey.get());
+             // check when the cache was last saved to validate membership expiry
+            long cacheTimestamp = Rs2VarPlayerCache.getInstance().getCacheTimestamp(VarPlayerID.ACCOUNT_CREDIT);
+            if (cacheTimestamp <= 0) {
+                log.info("No valid cache timestamp found for membership validation");                
+            }
+            
+            // calculate days since cache was saved
+            long currentTime = System.currentTimeMillis();
+            long daysSinceCached = (currentTime - cacheTimestamp) / (24 * 60 * 60 * 1000);
+            
+            // get cached membership days from when data was saved
+            int cachedMembershipDays = Rs2VarPlayerCache.getVarPlayerValue(VarPlayerID.ACCOUNT_CREDIT);
+            ConfigProfile profile = Microbot.getConfigManager().getProfile();
+            Microbot.getConfigManager().setMemberExpireDays(profile, cachedMembershipDays);
+            Microbot.getConfigManager().setMemberExpireDaysTimeStemp(profile, currentTime);
+            log.debug("Saving current cache state before clearing for profile: {}, cached membership days: {}, days since cached: {}, current time: {}",
+                    rsProfileKey.get(), cachedMembershipDays, daysSinceCached , currentTime);
+            
         }        
         // Clear Rs2Bank state        
         Rs2Bank.emptyCacheState();

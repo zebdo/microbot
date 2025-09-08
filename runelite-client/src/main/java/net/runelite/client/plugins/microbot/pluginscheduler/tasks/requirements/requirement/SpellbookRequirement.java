@@ -3,17 +3,25 @@ package net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import lombok.EqualsAndHashCode;
+import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.Quest;
+import net.runelite.api.QuestState;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.enums.RequirementPriority;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.enums.RequirementType;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.enums.TaskContext;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spellbook;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.walker.TransportRouteAnalysis;
+
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 import java.util.Collections;
 import java.util.List;
@@ -226,6 +234,7 @@ public class SpellbookRequirement extends Requirement {
      * Helper method to travel to the spellbook switching location.
      * Uses intelligent pathfinding to determine whether to go directly or via bank first
      * for transport items. Analyzes transport requirements and route efficiency.
+     * Special handling for Lunar Isle access requirements.
      * 
      * @param targetSpellbook The spellbook to switch to
      * @return true if travel was successful, false otherwise
@@ -243,6 +252,15 @@ public class SpellbookRequirement extends Requirement {
         if (currentLocation != null && currentLocation.distanceTo(location) <= 3) {
             Microbot.status = "Already near " + targetSpellbook.name() + " spellbook switch location";
             return true;
+        }
+        
+        // Special handling for Lunar Isle access (Lunar spellbook)
+        if (targetSpellbook == Rs2Spellbook.LUNAR) {
+            log.info("Handling Lunar Isle access for Lunar spellbook switching");
+            if (!ensureLunarIsleAccess()) {
+                log.error("Failed to ensure Lunar Isle access - cannot travel to Lunar spellbook location");
+                return false;
+            }
         }
         
         try {
@@ -291,6 +309,123 @@ public class SpellbookRequirement extends Requirement {
             }
             
             return true;
+        }
+    }
+    
+    /**
+     * Ensures proper access to Lunar Isle for Lunar spellbook switching.
+     * Handles the seal of passage requirement and Fremennik Diary elite tier exception.
+     * 
+     * @return true if Lunar Isle access is ensured, false otherwise
+     */
+    private static boolean ensureLunarIsleAccess() {
+        try {
+            // check if lunar diplomacy quest is completed (prerequisite for lunar isle access)
+            if (Rs2Player.getQuestState(Quest.LUNAR_DIPLOMACY) != QuestState.FINISHED) {
+                log.error("Lunar Diplomacy quest not completed - cannot access Lunar Isle for spellbook switching");
+                return false;
+            }
+            
+            // check fremennik elite diary completion (removes seal of passage requirement)            
+            boolean hasFremennikElite = Microbot.getVarbitValue(VarbitID.FREMENNIK_DIARY_ELITE_COMPLETE) == 1;
+            if (hasFremennikElite) {
+                log.info("Fremennik Elite diary completed - seal of passage not required for Lunar Isle access");
+                return true; // elite diary completed, no seal needed
+            }
+            
+            log.info("Fremennik Elite diary not completed - checking seal of passage requirement");
+            
+            // check if seal of passage is already equipped
+            if (Rs2Equipment.isWearing(ItemID.LUNAR_SEAL_OF_PASSAGE)) {
+                log.info("Seal of passage already equipped - Lunar Isle access confirmed");
+                return true;
+            }
+            
+            // check if seal of passage is in inventory
+            if (Rs2Inventory.hasItem(ItemID.LUNAR_SEAL_OF_PASSAGE)) {
+                log.info("Seal of passage in inventory, equipping it for Lunar Isle access");
+                // equip the seal of passage
+                if (Rs2Inventory.interact(ItemID.LUNAR_SEAL_OF_PASSAGE, "Wear")) {
+                    boolean equipped = sleepUntil(() -> Rs2Equipment.hasEquipped(ItemID.LUNAR_SEAL_OF_PASSAGE), 3000);
+                    if (equipped) {
+                        log.info("Successfully equipped seal of passage for Lunar Isle access");
+                        return true;
+                    } else {
+                        log.error("Failed to equip seal of passage within timeout");
+                    }
+                } else {
+                    log.error("Failed to interact with seal of passage to equip");
+                }
+            }
+            
+            log.info("Seal of passage not found in inventory, checking bank");
+
+            // try to get seal of passage from bank
+            if (!Rs2Bank.isOpen()) {
+                log.info("Opening bank to retrieve seal of passage");
+                if (!Rs2Bank.walkToBankAndUseBank()) {
+                    log.error("Failed to walk to bank and open it");
+                    return false;
+                }
+                
+                // wait for bank to open
+                boolean bankOpened = sleepUntil(() -> Rs2Bank.isOpen(), 5000);
+                if (!bankOpened) {
+                    log.error("Failed to open bank within timeout");
+                    return false;
+                }
+            }
+            
+            // check if seal of passage is in bank
+            if (!Rs2Bank.hasItem(ItemID.LUNAR_SEAL_OF_PASSAGE)) {
+                log.error("Seal of passage not found in bank - cannot access Lunar Isle without Fremennik Elite diary");
+                return false;
+            }
+            
+            log.info("Withdrawing seal of passage from bank");
+            
+            // withdraw seal of passage
+            if (Rs2Bank.withdrawAllAndEquip(ItemID.LUNAR_SEAL_OF_PASSAGE)) {
+                if (Rs2Equipment.isWearing(ItemID.LUNAR_SEAL_OF_PASSAGE)){
+                    log.info("Seal of passage already equipped after withdrawal");
+                    Rs2Bank.closeBank();
+                    sleepUntil(() -> !Rs2Bank.isOpen(), 2000);
+                    return true;
+                }
+                // wait for withdrawal to complete
+                boolean withdrawn = sleepUntil(() -> Rs2Inventory.hasItem(ItemID.LUNAR_SEAL_OF_PASSAGE), 3000);
+                if (!withdrawn) {
+                    log.error("Failed to withdraw seal of passage from bank within timeout");
+                    return false;
+                }
+                
+                log.info("Successfully withdrew seal of passage, now equipping it");
+                
+                // close bank first
+                Rs2Bank.closeBank();
+                sleepUntil(() -> !Rs2Bank.isOpen(), 2000);
+                
+                // equip the seal of passage
+                if (Rs2Inventory.interact(ItemID.LUNAR_SEAL_OF_PASSAGE, "Wear")) {
+                    boolean equipped = sleepUntil(() -> Rs2Equipment.hasEquipped(ItemID.LUNAR_SEAL_OF_PASSAGE), 3000);
+                    if (equipped) {
+                        log.info("Successfully equipped seal of passage for Lunar Isle access");
+                        return true;
+                    } else {
+                        log.error("Failed to equip seal of passage within timeout after withdrawal");
+                    }
+                } else {
+                    log.error("Failed to interact with seal of passage to equip after withdrawal");
+                }
+            } else {
+                log.error("Failed to withdraw seal of passage from bank");
+            }
+            
+            return false;
+            
+        } catch (Exception e) {
+            log.error("Error ensuring Lunar Isle access: {}", e.getMessage(), e);
+            return false;
         }
     }
     

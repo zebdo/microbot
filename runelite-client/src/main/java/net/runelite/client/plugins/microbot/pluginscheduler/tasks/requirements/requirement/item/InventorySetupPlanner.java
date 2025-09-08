@@ -2,7 +2,6 @@ package net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.
 
 import net.runelite.api.EquipmentInventorySlot;
 import net.runelite.api.Skill;
-import net.runelite.client.plugins.banktags.tabs.Layout;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsStackCompareID;
@@ -35,9 +34,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.stream.Collectors;
-
-import javax.swing.SwingUtilities;
-
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 /**

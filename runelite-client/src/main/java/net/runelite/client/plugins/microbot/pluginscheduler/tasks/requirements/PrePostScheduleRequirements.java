@@ -38,6 +38,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.r
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.Requirement;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.shop.ShopRequirement;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.SpellbookRequirement;
+import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.InventorySetupRequirement;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.conditional.ConditionalRequirement;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.conditional.OrderedRequirement;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.logical.LogicalRequirement;
@@ -691,6 +692,53 @@ public abstract class PrePostScheduleRequirements  {
      * @return true if all item requirements were fulfilled successfully, false otherwise
      */
     public boolean fulfillPrePostItemRequirements(CompletableFuture<Boolean> scheduledFuture, TaskExecutionState executionState, TaskContext context) {
+        // Check for InventorySetupRequirements first - they take precedence over progressive item management
+        List<InventorySetupRequirement> inventorySetupReqs = registry.getRequirements(InventorySetupRequirement.class, context);
+        
+        if (!inventorySetupReqs.isEmpty()) {
+            log.info("Found {} inventory setup requirement(s) for context: {} - using inventory setup approach instead of progressive item management", 
+                inventorySetupReqs.size(), context);
+            
+            // Initialize step tracking for inventory setup
+            updateFulfillmentStep(executionState, FulfillmentStep.ITEMS, "Loading inventory setup(s)", inventorySetupReqs.size());
+            
+            boolean success = true;
+            for (int i = 0; i < inventorySetupReqs.size(); i++) {
+                InventorySetupRequirement inventorySetupReq = inventorySetupReqs.get(i);
+                
+                // Update current requirement tracking
+                updateCurrentRequirement(executionState, inventorySetupReq, i + 1);
+                
+                try {
+                    log.info("Fulfilling inventory setup requirement {}/{}: {}", 
+                        i + 1, inventorySetupReqs.size(), inventorySetupReq.getName());
+                    
+                    boolean fulfilled = inventorySetupReq.fulfillRequirement(scheduledFuture);
+                    if (!fulfilled && inventorySetupReq.isMandatory()) {
+                        log.error("Failed to fulfill mandatory inventory setup requirement: {}", inventorySetupReq.getName());
+                        success = false;
+                        break;
+                    } else if (!fulfilled) {
+                        log.warn("Failed to fulfill optional inventory setup requirement: {}", inventorySetupReq.getName());
+                    } else {
+                        log.info("Successfully fulfilled inventory setup requirement: {}", inventorySetupReq.getName());
+                    }
+                } catch (Exception e) {
+                    log.error("Error fulfilling inventory setup requirement {}: {}", inventorySetupReq.getName(), e.getMessage());
+                    if (inventorySetupReq.isMandatory()) {
+                        success = false;
+                        break;
+                    }
+                }
+            }
+            
+            log.debug("Inventory setup requirements fulfillment completed. Success: {}", success);
+            return success;
+        }
+        
+        // No inventory setup requirements found - use progressive item management approach
+        log.debug("No inventory setup requirements found - using progressive item management approach");
+        
         // Get count of logical requirements for this context using the unified API
         int logicalReqsCount = registry.getItemCount(context);
         
@@ -702,9 +750,7 @@ public abstract class PrePostScheduleRequirements  {
         // Initialize step tracking
         updateFulfillmentStep(executionState, FulfillmentStep.ITEMS, "Processing item requirements", logicalReqsCount);
         
-        boolean success = true;
-        success = fulfillOptimalInventoryAndEquipmentLayout(scheduledFuture, context);
-        
+        boolean success = fulfillOptimalInventoryAndEquipmentLayout(scheduledFuture, context);
         
         log.debug("Item requirements fulfillment completed. Success: {}", success);
         return success;
