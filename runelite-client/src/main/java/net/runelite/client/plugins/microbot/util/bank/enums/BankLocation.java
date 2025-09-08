@@ -178,7 +178,7 @@ public enum BankLocation {
                 }
             case JATIZSO:
 				// Requires The Fremennik Trials & starting The Fremennik Isles
-                return Rs2Player.getQuestState(Quest.THE_FREMENNIK_TRIALS) == QuestState.FINISHED && Rs2Player.getQuestState(Quest.THE_FREMENNIK_ISLES) == QuestState.IN_PROGRESS;
+                return Rs2Player.getQuestState(Quest.THE_FREMENNIK_TRIALS) == QuestState.FINISHED && Rs2Player.getQuestState(Quest.THE_FREMENNIK_ISLES) != QuestState.NOT_STARTED;
             case NEITIZNOT:
                 // Requires The Fremennik Trials & The Fremennik Isles
                 return Rs2Player.getQuestState(Quest.THE_FREMENNIK_TRIALS) == QuestState.FINISHED && Rs2Player.getQuestState(Quest.THE_FREMENNIK_ISLES) == QuestState.FINISHED;
