@@ -56,7 +56,12 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
         VarbitID.FARMING_TRANSMIT_B, // 4772 - Etceteria and Brimhaven patches
         VarbitID.FARMING_TRANSMIT_F  // 7904 - Hosidius
     );
-    
+
+    /**
+     * Handle an event from the client and update the cache accordingly.
+     * @param event The event that occurred
+     * @param cache The cache to potentially update
+     */
     @Override
     public void handleEvent(Object event, CacheOperations<SpiritTree, SpiritTreeData> cache) {
         try {
@@ -77,11 +82,15 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
             log.error("Error handling event in SpiritTreeUpdateStrategy: {}", e.getMessage(), e);
         }
     }
-    
+
+    /**
+     * Get the event types that are handled by this strategy
+     */
     @Override
     public Class<?>[] getHandledEventTypes() {
         return new Class<?>[]{WidgetLoaded.class, VarbitChanged.class, GameStateChanged.class, GameObjectSpawned.class, GameObjectDespawned.class};
-    }    
+    }
+
     /**
      * Handle widget loaded events to detect spirit tree widget opening
      */
@@ -131,6 +140,15 @@ public class SpiritTreeUpdateStrategy implements CacheUpdateStrategy<SpiritTree,
         }
     }
 
+    /**
+     * Handles changes to game objects related to spirit trees and updates the cache accordingly.
+     * If the provided game object matches known spirit tree objects, it logs the detection
+     * and updates the cache with the relevant state.
+     *
+     * @param gameObject The game object that has changed. May be null, in which case this method does nothing.
+     * @param spawned    Indicates whether the game object was spawned (true) or despawned (false).
+     * @param cache      The cache instance used for storing and updating {@link SpiritTreeData} for detected spirit trees.
+     */
     private void handleGameObjectChange(GameObject gameObject, boolean spawned, CacheOperations<SpiritTree, SpiritTreeData> cache) {
         if(gameObject == null){
             return;
