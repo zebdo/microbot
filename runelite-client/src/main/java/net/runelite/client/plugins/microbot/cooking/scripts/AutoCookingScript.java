@@ -74,6 +74,12 @@ public class AutoCookingScript extends Script {
                         }
                     }
 
+                    if (location == null) {
+                        Microbot.showMessage("No suitable cooking location found");
+                        shutdown();
+                        return;
+                    }
+
                     getState(config, location);
                 }
 
@@ -81,6 +87,10 @@ public class AutoCookingScript extends Script {
 
                 switch (state) {
                     case COOKING:
+                        if (Rs2Bank.isOpen()) {
+                            Rs2Bank.closeBank();
+                            return;
+                        }
                         if (!cookingItem.hasRequirements()) {
                             Microbot.showMessage("You do not meet the requirements to cook this item");
                             shutdown();
@@ -119,6 +129,8 @@ public class AutoCookingScript extends Script {
                             state = CookingState.BANKING;
                             break;
                         }
+                        state = CookingState.WALKING;
+                        break;
                     case DROPPING:
                         Microbot.status = "Dropping " + cookingItem.getBurntItemName();
                         Rs2Inventory.dropAll(item -> item.getName().equalsIgnoreCase(cookingItem.getBurntItemName()), config.getDropOrder());
@@ -128,6 +140,7 @@ public class AutoCookingScript extends Script {
                     case BANKING:
                         if (location == CookingLocation.ROUGES_DEN) {
                             NPC npc = Rs2Npc.getBankerNPC();
+                            if (npc == null) return;
                             boolean isNPCBankOpen = Rs2Bank.openBank(npc);
                             if (!isNPCBankOpen) return;
                         } else {
@@ -138,7 +151,7 @@ public class AutoCookingScript extends Script {
                         Rs2Bank.depositAll();
                         Rs2Inventory.waitForInventoryChanges(1800);
                         
-                        if (!hasRawItem(cookingItem)) {
+                        if (!hasRawItemInBank(cookingItem)) {
                             Microbot.showMessage("No Raw Food Item found in Bank");
                             shutdown();
                             return;
@@ -210,10 +223,11 @@ public class AutoCookingScript extends Script {
     }
 
     private boolean hasRawItem(CookingItem cookingItem) {
-        if (Rs2Bank.isOpen()) {
-            return Rs2Bank.hasBankItem(cookingItem.getRawItemName(), true);
-        }
         return Rs2Inventory.hasItem(cookingItem.getRawItemName(), true);
+    }
+
+    private boolean hasRawItemInBank(CookingItem cookingItem) {
+        return Rs2Bank.hasBankItem(cookingItem.getRawItemName(), true);
     }
 
     private boolean hasCookedItem(CookingItem cookingItem) {

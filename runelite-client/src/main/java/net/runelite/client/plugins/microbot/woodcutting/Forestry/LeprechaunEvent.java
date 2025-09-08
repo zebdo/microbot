@@ -8,6 +8,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.cache.Rs2NpcCache;
 import net.runelite.client.plugins.microbot.util.cache.Rs2ObjectCache;
+import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -51,14 +52,14 @@ public class LeprechaunEvent implements BlockingEvent {
         Rs2Walker.setTarget(null); // stop walking, stop moving to bank for example
         while (this.validate()) {
             log.info("LeprechaunEvent: Leprechaun event still valid, continuing execution get opbject");
-            var endOfRainbow = Rs2ObjectCache.getClosestObjectById(ObjectID.GATHERING_EVENT_WOODCUTTING_LEPRECHAUN_RAINBOW);
-            if (!endOfRainbow.isPresent() || endOfRainbow.isEmpty()) {
+            var endOfRainbow = Rs2GameObject.getGameObject(ObjectID.GATHERING_EVENT_WOODCUTTING_LEPRECHAUN_RAINBOW);
+            if (endOfRainbow == null) {
                 log.warn("LeprechaunEvent: End of the rainbow not found, retrying...");
                 sleepGaussian(900, 300);
                 continue; // If the end of the rainbow is not found, we cannot proceed with the event
             }
             // Move to the end of the rainbow
-            var location = endOfRainbow.get().getWorldLocation();
+            var location = endOfRainbow.getWorldLocation();
             if (!Rs2Player.getWorldLocation().equals(location)) {
                 Microbot.log("LeprechaunEvent: Walking to the end of the rainbow at " + location, Level.INFO);
                 Rs2Walker.walkFastCanvas(location);

@@ -49,4 +49,34 @@ public interface GotrConfig extends Config {
     default boolean shouldDepositRunes() {
         return true;
     }
+
+    @ConfigItem(
+            keyName = "useLunarSpellbook",
+            name = "Use lunar spellbook",
+            description = "Switch to lunar spellbook for NPC Contact spell to repair pouches. Disable if using Cordelia repair with pearls.",
+            position = 4
+    )
+    default boolean useLunarSpellbook() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "useInventorySetup",
+            name = "Use inventory setup",
+            description = "Use a specific inventory setup instead of progressive equipment management",
+            position = 5
+    )
+    default boolean useInventorySetup() {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "inventorySetupName",
+            name = "Inventory setup name",
+            description = "Name of the inventory setup to use (only if 'Use inventory setup' is enabled)",
+            position = 6
+    )
+    default String inventorySetupName() {
+        return "";
+    }
 }

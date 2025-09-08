@@ -566,6 +566,7 @@ public class Rs2Widget {
      */
     public static boolean handleProcessingInterface( String actionText) {
         if (!isWidgetVisible(InterfaceID.SKILLMULTI, 0)) {
+            log.error("Processing interface not open");
             return false;
         }
         Widget mainWidget = getWidget(InterfaceID.SKILLMULTI, 0);
@@ -597,15 +598,19 @@ public class Rs2Widget {
         Integer shortcutKey = getProcessingWidgetKeyCode(optionWidget);
         log.debug("Found processing widget shortcut key: {}", shortcutKey);
         if (shortcutKey != null) {
+            sleep(600);
             Rs2Keyboard.keyPress(shortcutKey);
-            sleep(100); // Short delay to ensure prompt processing
+            sleep(600); // Short delay to ensure prompt processing
+            log.debug("Pressed shortcut key: {}", shortcutKey);
             sleepUntil(() -> isProductionWidgetOpen() == false, Rs2Random.between(1200, 1600));
             if(Rs2Dialogue.hasContinue()) {
                 Rs2Dialogue.clickContinue();
                 sleepUntil(() -> !Rs2Dialogue.hasContinue(), 2000);
                 return false; // we should not see it, only when we have not the req. for porcessing
             }
-            return isProductionWidgetOpen() == false;
+            if(isProductionWidgetOpen() == false){                
+                return true;
+            }
         }
         log.debug("No shortcut key found, clicking widget instead");
         // fall back to clicking widget

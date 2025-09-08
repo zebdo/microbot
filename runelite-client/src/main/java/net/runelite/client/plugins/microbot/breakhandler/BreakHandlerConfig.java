@@ -166,11 +166,22 @@ public interface BreakHandlerConfig extends Config {
     default boolean avoidOvercrowdedWorlds() {
         return true;
     }
+
+   @ConfigItem(
+            keyName = "Members Only",
+            name = "Members Only",
+            description = "Only select worlds that are member worlds",
+            position = 6,
+            section = breakBehaviorOptions
+    )
+    default boolean membersOnly() { return true; }
+
+
     @ConfigItem(
             keyName = "shutdownClient",
             name = "Shutdown Client",
             description = "<html><b style='color:red;'>WARNING:</b> This will completely shutdown the entire RuneLite client during breaks.<br/>Use with caution - you will need to manually restart the client after breaks.</html>",
-            position = 3,
+            position = 7,
             section = breakBehaviorOptions
     )
     default boolean shutdownClient() {

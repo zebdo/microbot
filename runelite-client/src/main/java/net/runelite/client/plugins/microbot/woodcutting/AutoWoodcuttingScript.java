@@ -99,7 +99,6 @@ public class AutoWoodcuttingScript extends Script {
         Rs2Antiban.antibanSetupTemplates.applyWoodcuttingSetup();
         Rs2AntibanSettings.dynamicActivity = true;
         Rs2AntibanSettings.dynamicIntensity = true;
-        initialPlayerLocation = null;
         if (config.firemakeOnly()) {
             woodcuttingScriptState = WoodcuttingScriptState.FIREMAKING;
         }
@@ -150,10 +149,6 @@ public class AutoWoodcuttingScript extends Script {
     }
 
     private boolean beforeCuttingTreesChecks(AutoWoodcuttingConfig config) {
-        if (config.hopWhenPlayerDetected()) {
-            if (Rs2Player.logoutIfPlayerDetected(1, 10000))
-                return true;
-        }
 
         if (Rs2Woodcutting.isWearingAxeWithSpecialAttack())
             Rs2Combat.setSpecState(true, 1000);
@@ -165,7 +160,7 @@ public class AutoWoodcuttingScript extends Script {
                 currentLogBasketCount = content == null ? 0 : content.quantity;
                 log.info("Initialized log basket count to {}", currentLogBasketCount);
             }
-            if(currentLogBasketCount < Rs2LogBasket.LOG_BASKET_CAPACITY){
+            if(currentLogBasketCount < Rs2LogBasket.LOG_BASKET_CAPACITY && Rs2Inventory.isFull() && Rs2Inventory.contains(config.TREE().getLog())) {
                 
                 if (Rs2LogBasket.fillLogBasket()) {
                     Rs2Antiban.actionCooldown();                                                
@@ -194,6 +189,12 @@ public class AutoWoodcuttingScript extends Script {
     private boolean preFlightChecks(AutoWoodcuttingConfig config) {
         if (!Microbot.isLoggedIn()) return true;
         if (!super.run()) return true;
+
+        if (config.hopWhenPlayerDetected()) {
+            if (Rs2Player.logoutIfPlayerDetected(1, 10000))
+                return true;
+        }
+
         if (Rs2AntibanSettings.actionCooldownActive) return true;
 
         if (!hasAutoHopMessageShown && config.hopWhenPlayerDetected()) {
@@ -462,7 +463,7 @@ public class AutoWoodcuttingScript extends Script {
         if (logCount > 0) {            
             boolean startFletchingSucces = Rs2Fletching.fletchItems(config.TREE().getLogID(), config.fletchingType().getContainsInventoryName(), "All");
             int fletchedItems = Rs2Inventory.getList( itemBounds -> itemBounds.getName().contains(config.fletchingType().getContainsInventoryName())).size();
-            log.info("We fletched " + logCount + " " + config.TREE() + " into " +fletchedItems + "of" + config.fletchingType().getContainsInventoryName() +  " "+ ", success: " + startFletchingSucces);
+            log.info("We fletched " + logCount + " " + config.TREE() + " into " +fletchedItems + " of" + config.fletchingType().getContainsInventoryName() +  " "+ ", success: " + startFletchingSucces);
             if (!startFletchingSucces) {
                 log.error("Failed to start fletching, stopping script");
                 shutdown();

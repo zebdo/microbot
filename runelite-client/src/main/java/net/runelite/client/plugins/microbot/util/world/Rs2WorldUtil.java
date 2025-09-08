@@ -72,19 +72,18 @@ public class Rs2WorldUtil {
                 log.warn("World {} not found in world list", worldId);
                 return false;
             }
-            ConfigProfile activeProfile = Login.activeProfile;
+            boolean isMemberAccount = Rs2WorldUtil.isMemberAccount();        
+            ConfigProfile activeProfile = Login.activeProfile;            
             if(!Microbot.isLoggedIn() ){
-                if(activeProfile != null){
-                    boolean isPlayerMember = activeProfile.isMember();
-                    return isWorldAccessible(targetWorld, isPlayerMember, false);
+                if(activeProfile != null){                    
+                    return isWorldAccessible(targetWorld, isMemberAccount, false);
                 }
                 log.warn("Cannot determine world accessibility - not logged in and no active profile");
                 return false;// Cannot determine accessibility if not logged in and no profile
             }
-            if(Microbot.getClient() != null &&  Microbot.getClient().getLocalPlayer() != null){
-                boolean isPlayerMember = Rs2Player.isMember();    
+            if(Microbot.getClient() != null &&  Microbot.getClient().getLocalPlayer() != null){                
                 boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
-                return isWorldAccessible(targetWorld, isPlayerMember, isInSeasonalWorld);                
+                return isWorldAccessible(targetWorld, isMemberAccount, isInSeasonalWorld);                
             }
             log.warn("Cannot determine world accessibility - client or local player is null");
             return false;                                    
@@ -94,7 +93,84 @@ public class Rs2WorldUtil {
             return false;
         }
     }
+    public static boolean isMemberAccount(){
+        ConfigProfile activeProfile = Login.activeProfile;
+         // try to get membership status from cached varplayer data
+        if(Microbot.getClient() != null &&  Microbot.getClient().getLocalPlayer() != null){
+            boolean isPlayerMember =  Rs2Player.isMember();                            
+            return isPlayerMember;
+        }
+        
+        try {
+            // check cached membership varplayer (VarPlayerID.ACCOUNT_CREDIT)
+            int membershipDays = getPorfileMemberShipDays();
+            if (membershipDays > 0) {
+                log.info("Found membership status from Profile: {} days remaining", membershipDays);
+                return true;
+            }
+
+        } catch (Exception e) {
+            log.debug("Could not retrieve membership status from loaded cache: {}", e.getMessage());
+        }
+        if(!Microbot.isLoggedIn() ){
+            if(activeProfile != null){
+                boolean isPlayerMember = activeProfile.isMember();
+                return isPlayerMember;
+            }                                               
+            log.warn("Cannot determine membership status - not logged in, no active profile, and no cached data available");
+            return false;
+        }                
+        return false;
+    }
     
+    /**
+     * attempts to load cached membership status from serialized varplayer data.
+     * integrates with cache serialization system to retrieve cached data when not logged in.
+     * also validates that membership days haven't expired based on serialization date.
+     * 
+     * @return true if cache loading was successful and membership data is still valid, false otherwise
+     */
+    private static int getPorfileMemberShipDays() {
+        try {
+          
+            String profileName = Login.activeProfile != null ? Login.activeProfile.getName() : null;            
+            long memberExpireDays = Login.activeProfile != null ? Login.activeProfile.getMemberExpireDays() : 0;
+            long memberExpireDaysTimeStemp = Login.activeProfile != null ? Login.activeProfile.getMemberExpireDaysTimeStemp() : 0;
+            if( memberExpireDays == 0 && memberExpireDaysTimeStemp == 0){
+                log.warn("No membership expiry data set in profile: {} (memberExpireDays: {}, memberExpireDaysTimeStemp: {})", 
+                profileName, memberExpireDays, memberExpireDaysTimeStemp);
+                return -1;
+            }            
+           
+            // calculate days since cache was saved
+            long currentTime = System.currentTimeMillis();
+            log.info("Checking membership expiry for profile: {} (memberExpireDays: {}, memberExpireDaysTimeStemp: {}, currentTime: {})", 
+                profileName, memberExpireDays, memberExpireDaysTimeStemp, currentTime);
+            long daysSinceCached = (currentTime - memberExpireDaysTimeStemp) / (24 * 60 * 60 * 1000);
+                        
+            if( daysSinceCached > memberExpireDays){
+                log.info("Membership expired since date - member expire days: {}, days passed: {}", 
+                    memberExpireDays, daysSinceCached);
+                return 0;
+            }
+            // calculate remaining membership days accounting for time passed
+            long remainingDays = (long)memberExpireDays - (long)daysSinceCached;
+            
+            if (remainingDays <= 0) {
+                log.info("Membership expired since date - member expire {}, days passed: {}", 
+                    memberExpireDays, daysSinceCached);
+                return 0;
+            }
+            
+            log.info("Valid membership found  - {} days remaining (last days membership expries: {}, days passed: {})", 
+                remainingDays, memberExpireDays, daysSinceCached);
+            return (int)remainingDays;
+            
+        } catch (Exception e) {
+            log.info("Error attempting to load membership status: {}", e.getMessage());
+            return -1;
+        }
+    }
     /**
      * Determines if a specific world is accessible based on player membership status,
      * seasonal world status, and world type restrictions.
@@ -170,7 +246,7 @@ public class Rs2WorldUtil {
                 return -1;
             }
             
-            boolean isPlayerMember = Rs2Player.isMember();
+            boolean isPlayerMember = Rs2WorldUtil.isMemberAccount();
             boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
             
             // Filter to accessible worlds and sort by player count (highest first)
@@ -210,7 +286,7 @@ public class Rs2WorldUtil {
                 return -1;
             }
             
-            boolean isPlayerMember = Rs2Player.isMember();
+            boolean isPlayerMember = Rs2WorldUtil.isMemberAccount();
             boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
             
             // Convert candidate worlds array to a list for easier filtering
@@ -257,7 +333,7 @@ public class Rs2WorldUtil {
                 return Collections.emptyList();
             }
             
-            boolean isPlayerMember = Rs2Player.isMember();
+            boolean isPlayerMember = Rs2WorldUtil.isMemberAccount();
             boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
             
             // Filter to accessible worlds and sort by player count (highest first)
@@ -387,7 +463,7 @@ public class Rs2WorldUtil {
             }
             
             // Get current player context for world filtering
-            boolean isPlayerMember = Rs2Player.isMember();
+            boolean isPlayerMember =Rs2WorldUtil.isMemberAccount();
             WorldRegion currentRegion = getCurrentPlayerRegion();
             
             // Find suitable world with improved filtering
@@ -587,7 +663,7 @@ public class Rs2WorldUtil {
                 return -1;
             }
             
-            boolean isPlayerMember = Rs2Player.isMember();
+            boolean isPlayerMember = Rs2WorldUtil.isMemberAccount();
             boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
             
             // Filter to accessible worlds first
@@ -644,7 +720,7 @@ public class Rs2WorldUtil {
                 return -1;
             }
             
-            boolean isPlayerMember = Rs2Player.isMember();
+            boolean isPlayerMember = isMemberAccount();
             boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
             
             // Convert exclude list to set for faster lookups
@@ -705,7 +781,7 @@ public class Rs2WorldUtil {
                 return Collections.emptyList();
             }
             
-            boolean isPlayerMember = Rs2Player.isMember();
+            boolean isPlayerMember = isMemberAccount();
             boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
             
             // Convert exclude list to set for faster lookups
@@ -778,7 +854,7 @@ public class Rs2WorldUtil {
                 return -1;
             }
             
-            boolean isPlayerMember = Rs2Player.isMember();
+            boolean isPlayerMember = isMemberAccount();
             boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
             
             // Convert candidate worlds array to a list for easier filtering
@@ -864,19 +940,22 @@ public class Rs2WorldUtil {
      * @param avoidOvercrowdedWorlds Whether to avoid worlds with population > 1800
      * @return Random accessible world ID, or -1 if no suitable world found
      */
-    public static int getRandomAccessibleWorld(boolean avoidEmptyWorlds, boolean avoidOvercrowdedWorlds) {
+    public static int getRandomAccessibleWorld(boolean avoidEmptyWorlds, boolean avoidOvercrowdedWorlds, boolean membersOnly) {
+        
+        
         try {
             WorldResult worldResult = Microbot.getWorldService().getWorlds();
             if (worldResult == null) {
                 log.warn("Failed to fetch world list for random world selection");
                 return -1;
             }
-            
-            boolean isPlayerMember = Rs2Player.isMember();
+            boolean isPlayerMember = isMemberAccount();    
+            final boolean membersOnlyLocal = isPlayerMember == false ? false : membersOnly; // enforce membersOnly to be false if player is not a member
             boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
             
             // filter to accessible worlds with configurable population filtering
             List<World> accessibleWorlds = worldResult.getWorlds().stream()
+                    .filter(world -> (membersOnlyLocal && world.getTypes().contains(WorldType.MEMBERS) == true) || !membersOnlyLocal  ) // respect membership if required
                     .filter(world -> isWorldAccessible(world, isPlayerMember, isInSeasonalWorld))
                     .filter(world -> applyPopulationFilters(world, avoidEmptyWorlds, avoidOvercrowdedWorlds))
                     .collect(Collectors.toList());
@@ -908,7 +987,7 @@ public class Rs2WorldUtil {
      * @return Random accessible world ID, or -1 if no suitable world found
      */
     public static int getRandomAccessibleWorld() {
-        return getRandomAccessibleWorld(true, true);
+        return getRandomAccessibleWorld(true, true, false);
     }
     
     /**
@@ -921,7 +1000,7 @@ public class Rs2WorldUtil {
      * @return Random accessible world ID from the region, or -1 if no suitable world found
      */
     public static int getRandomAccessibleWorldFromRegion(WorldRegion preferredRegion, 
-                                                         boolean avoidEmptyWorlds, boolean avoidOvercrowdedWorlds) {
+                                                         boolean avoidEmptyWorlds, boolean avoidOvercrowdedWorlds,boolean membersOnly) {
         try {
             WorldResult worldResult = Microbot.getWorldService().getWorlds();
             if (worldResult == null) {
@@ -929,11 +1008,12 @@ public class Rs2WorldUtil {
                 return -1;
             }
             
-            boolean isPlayerMember = Rs2Player.isMember();
-            boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
-            
+            boolean isPlayerMember = isMemberAccount();
+            boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);            
+            final boolean membersOnlyLocal = isPlayerMember == false ? false : membersOnly; // enforce membersOnly to be false if player is not a member
             // filter to accessible worlds in the specified region with configurable population filtering
             List<World> accessibleWorlds = worldResult.getWorlds().stream()
+                    .filter(world -> (membersOnlyLocal && world.getTypes().contains(WorldType.MEMBERS) == true) || !membersOnlyLocal  ) // respect membership if required
                     .filter(world -> isWorldAccessible(world, isPlayerMember, isInSeasonalWorld))
                     .filter(world -> preferredRegion == null || world.getRegion() == preferredRegion)
                     .filter(world -> applyPopulationFilters(world, avoidEmptyWorlds, avoidOvercrowdedWorlds))
@@ -942,7 +1022,7 @@ public class Rs2WorldUtil {
             if (accessibleWorlds.isEmpty()) {
                 log.warn("No accessible worlds found in region: {}", preferredRegion);
                 // fallback to any accessible world if no regional worlds available
-                return getRandomAccessibleWorld(avoidEmptyWorlds, avoidOvercrowdedWorlds);
+                return getRandomAccessibleWorld(avoidEmptyWorlds, avoidOvercrowdedWorlds, membersOnly);
             }
             
             // randomly select from accessible worlds in the region
@@ -956,7 +1036,7 @@ public class Rs2WorldUtil {
             
         } catch (Exception e) {
             log.error("Error selecting random accessible world from region: {}", e.getMessage());
-            return getRandomAccessibleWorld(avoidEmptyWorlds, avoidOvercrowdedWorlds); // fallback
+            return getRandomAccessibleWorld(avoidEmptyWorlds, avoidOvercrowdedWorlds, membersOnly); // fallback
         }
     }
     
@@ -967,8 +1047,8 @@ public class Rs2WorldUtil {
      * @param preferredRegion The preferred world region (null for any region)
      * @return Random accessible world ID from the region, or -1 if no suitable world found
      */
-    public static int getRandomAccessibleWorldFromRegion(WorldRegion preferredRegion) {
-        return getRandomAccessibleWorldFromRegion(preferredRegion, true, true);
+    public static int getRandomAccessibleWorldFromRegion(WorldRegion preferredRegion, boolean membersOnly) {
+        return getRandomAccessibleWorldFromRegion(preferredRegion, true, true, membersOnly);
     }
     
     /**
@@ -982,7 +1062,7 @@ public class Rs2WorldUtil {
      * @return Best accessible world ID, or -1 if no suitable world found
      */
     public static int getBestAccessibleWorldForLogin(boolean preferPing, WorldRegion preferredRegion, 
-                                                    boolean avoidEmptyWorlds, boolean avoidOvercrowdedWorlds) {
+                                                    boolean avoidEmptyWorlds, boolean avoidOvercrowdedWorlds, boolean membersOnly) {
         try {
             WorldResult worldResult = Microbot.getWorldService().getWorlds();
             if (worldResult == null) {
@@ -990,11 +1070,12 @@ public class Rs2WorldUtil {
                 return -1;
             }
             
-            boolean isPlayerMember = Rs2Player.isMember();
+            boolean isPlayerMember = isMemberAccount();
             boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
-            
+            final boolean membersOnlyLocal = isPlayerMember == false ? false : membersOnly; // enforce membersOnly to be false if player is not a member
             // filter to accessible worlds with configurable population filtering
             List<World> accessibleWorlds = worldResult.getWorlds().stream()
+                    .filter(world -> (membersOnlyLocal && world.getTypes().contains(WorldType.MEMBERS) == true) || !membersOnlyLocal  ) // only members worlds if required
                     .filter(world -> isWorldAccessible(world, isPlayerMember, isInSeasonalWorld))
                     .filter(world -> applyPopulationFilters(world, avoidEmptyWorlds, avoidOvercrowdedWorlds))
                     .collect(Collectors.toList());
@@ -1066,8 +1147,8 @@ public class Rs2WorldUtil {
      * @param preferredRegion Preferred world region (null for any region)
      * @return Best accessible world ID, or -1 if no suitable world found
      */
-    public static int getBestAccessibleWorldForLogin(boolean preferPing, WorldRegion preferredRegion) {
-        return getBestAccessibleWorldForLogin(preferPing, preferredRegion, true, true);
+    public static int getBestAccessibleWorldForLogin(boolean preferPing, WorldRegion preferredRegion, boolean membersOnly) {
+        return getBestAccessibleWorldForLogin(preferPing, preferredRegion, true, true, membersOnly);
     }
     
     /**
@@ -1134,7 +1215,7 @@ public class Rs2WorldUtil {
                 return stats;
             }
             
-            boolean isPlayerMember = Rs2Player.isMember();
+            boolean isPlayerMember = isMemberAccount();
             boolean isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
             
             List<World> allWorlds = worldResult.getWorlds();
@@ -1196,7 +1277,7 @@ public class Rs2WorldUtil {
      * @return true if login was successful, false otherwise
      */
     public static boolean performLogin(boolean useRandomWorld, WorldRegion preferredRegion, 
-                                     boolean avoidEmptyWorlds, boolean avoidOvercrowdedWorlds) {
+                                     boolean avoidEmptyWorlds, boolean avoidOvercrowdedWorlds, boolean membersOnly) {
         try {
             if (Microbot.isLoggedIn()) {
                 log.debug("Already logged in, skipping login");
@@ -1207,13 +1288,13 @@ public class Rs2WorldUtil {
             
             if (useRandomWorld) {
                 if (preferredRegion != null) {
-                    targetWorld = getRandomAccessibleWorldFromRegion(preferredRegion, avoidEmptyWorlds, avoidOvercrowdedWorlds);
+                    targetWorld = getRandomAccessibleWorldFromRegion(preferredRegion, avoidEmptyWorlds, avoidOvercrowdedWorlds, membersOnly);
                 } else {
-                    targetWorld = getRandomAccessibleWorld(avoidEmptyWorlds, avoidOvercrowdedWorlds);
+                    targetWorld = getRandomAccessibleWorld(avoidEmptyWorlds, avoidOvercrowdedWorlds, membersOnly);
                 }
             } else {
                 // use best world selection for optimal experience
-                targetWorld = getBestAccessibleWorldForLogin(false, preferredRegion, avoidEmptyWorlds, avoidOvercrowdedWorlds);
+                targetWorld = getBestAccessibleWorldForLogin(false, preferredRegion, avoidEmptyWorlds, avoidOvercrowdedWorlds, membersOnly);
             }
             
             if (targetWorld == -1) {
@@ -1254,8 +1335,8 @@ public class Rs2WorldUtil {
      * @param preferredRegion Preferred world region (null for current region or any)
      * @return true if login was successful, false otherwise
      */
-    public static boolean performLogin(boolean useRandomWorld, WorldRegion preferredRegion) {
-        return performLogin(useRandomWorld, preferredRegion, true, true);
+    public static boolean performLogin(boolean useRandomWorld, WorldRegion preferredRegion, boolean membersOnly) {
+        return performLogin(useRandomWorld, preferredRegion, true, true, membersOnly);
     }
     
     /**

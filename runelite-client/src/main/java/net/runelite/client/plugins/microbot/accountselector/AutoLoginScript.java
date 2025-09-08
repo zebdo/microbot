@@ -85,7 +85,8 @@ public class AutoLoginScript extends Script {
             resetLoginState();
             return;
         }
-        
+      
+       
         if (Microbot.getClient()!=null && Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN) {
             log.info("Login screen detected, initiating login");
             initiateLogin(config);
@@ -214,10 +215,7 @@ public class AutoLoginScript extends Script {
             
             int targetWorld = -1;
             
-            // check for preferred world first
-            if (config.usePreferredWorld()) {
-              
-            }
+            boolean membersOnly = config.membersOnly();
             
             // use world selection mode if no preferred world or preferred world not accessible
             if (targetWorld == -1) {
@@ -243,7 +241,7 @@ public class AutoLoginScript extends Script {
                         targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
                             config.regionPreference().getWorldRegion(),
                             config.avoidEmptyWorlds(),
-                            config.avoidOvercrowdedWorlds());
+                            config.avoidOvercrowdedWorlds(),membersOnly);
                         break;
                         
                     case BEST_POPULATION:
@@ -251,7 +249,8 @@ public class AutoLoginScript extends Script {
                             false,
                             config.regionPreference().getWorldRegion(),
                             config.avoidEmptyWorlds(),
-                            config.avoidOvercrowdedWorlds());
+                            config.avoidOvercrowdedWorlds(),                            
+                            membersOnly);
                         break;
                         
                     case BEST_PING:
@@ -259,14 +258,18 @@ public class AutoLoginScript extends Script {
                             true,
                             config.regionPreference().getWorldRegion(),
                             config.avoidEmptyWorlds(),
-                            config.avoidOvercrowdedWorlds());
+                            config.avoidOvercrowdedWorlds(),
+                            membersOnly
+                            );
                         break;
                         
                     case REGIONAL_RANDOM:
                         targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
                             config.regionPreference().getWorldRegion(),
                             config.avoidEmptyWorlds(),
-                            config.avoidOvercrowdedWorlds());
+                            config.avoidOvercrowdedWorlds(),
+                            membersOnly
+                            );
                         break;
                         
                     default:

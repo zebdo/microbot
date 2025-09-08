@@ -5,6 +5,8 @@ import net.runelite.api.MenuAction;
 import net.runelite.api.VarPlayer;
 import net.runelite.api.Varbits;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -29,9 +31,9 @@ public enum DailyTask {
     HERB_BOXES(
             "Herb Boxes",
             new WorldPoint(2608, 3114, 0),
-            () -> Microbot.getClient().getVarbitValue(Varbits.ACCOUNT_TYPE) == 0
-                    && Microbot.getClient().getVarpValue(VarPlayer.NMZ_REWARD_POINTS) >= 9500
-                    && Microbot.getClient().getVarbitValue(Varbits.DAILY_HERB_BOXES_COLLECTED) < 15,
+            () -> Microbot.getClient().getVarbitValue(VarbitID.IRONMAN) == 0
+                    && Microbot.getClient().getVarpValue(VarPlayerID.NZONE_REWARDPOINTS) >= 9500
+                    && Microbot.getClient().getVarbitValue(VarbitID.NZONE_HERBBOXES_PURCHASED) < 15,
             () -> {
                 Rs2GameObject.interact(26273, "Search");
                 sleepUntil(() -> Rs2Widget.findWidget("Dom Onion") != null);
@@ -41,7 +43,7 @@ public enum DailyTask {
                 sleepUntil(() -> !Rs2Inventory.hasItem("Herb box"), 20000);
 
             },
-            config -> false
+            DailyTasksConfig::collectHerbBoxes
     ),
 
     BATTLESTAVES(

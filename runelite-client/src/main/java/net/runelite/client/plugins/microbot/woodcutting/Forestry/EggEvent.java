@@ -72,13 +72,13 @@ public class EggEvent implements BlockingEvent {
             if (Rs2Inventory.contains("Pheasant egg")) {
                 Microbot.log("EggEvent: Interacting with the forester to give the egg.");
                 Rs2Npc.interact(forester.get(), "Talk-to");
-                sleepUntil(() -> Rs2Widget.findWidget("Freaky Forester", null, false) != null, 5000);
+                sleepUntil(Rs2Dialogue::isInDialogue, 5000);
                 while (Rs2Dialogue.isInDialogue()) Rs2Dialogue.clickContinue();
                 continue;
             }
 
             // If we don't have an egg, interact with the pheasant nest
-            var nests = Rs2GameObject.getGameObjects(ObjectID.GATHERING_EVENT_PHEASANT_NEST02);
+            var nests = Rs2GameObject.getGameObjects((gameObject) -> gameObject.getId() == ObjectID.GATHERING_EVENT_PHEASANT_NEST02);
             var pheasants = Rs2Npc.getNpcs(NpcID.GATHERING_EVENT_PHEASANT).collect(Collectors.toList());
 
             if (nests.isEmpty() || pheasants.isEmpty()) {

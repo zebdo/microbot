@@ -378,6 +378,43 @@ public class ConfigManager
 		}
 	}
 
+
+	public void setMemberExpireDays(ConfigProfile profile, long memberExpireDays) {
+
+		// flush pending config changes first in the event the profile being
+		// synced is the active profile.
+		sendConfig();
+
+		try (ProfileManager.Lock lock = profileManager.lock())
+		{
+			profile = lock.findProfile(profile.getId());
+			if (profile == null || profile.getMemberExpireDays() == memberExpireDays)
+			{
+				return;
+			}
+			profile.setMemberExpireDays(memberExpireDays);
+			lock.dirty();
+		}
+	}
+	public void setMemberExpireDaysTimeStemp(ConfigProfile profile, long memberExpireDaysTimeStemp) {
+
+		// flush pending config changes first in the event the profile being
+		// synced is the active profile.
+		sendConfig();
+
+		try (ProfileManager.Lock lock = profileManager.lock())
+		{
+			profile = lock.findProfile(profile.getId());
+			if (profile == null || profile.getMemberExpireDaysTimeStemp() == memberExpireDaysTimeStemp)
+			{
+				return;
+			}
+			profile.setMemberExpireDaysTimeStemp(memberExpireDaysTimeStemp);
+			lock.dirty();
+		}
+	}
+
+
 	public void toggleSync(ConfigProfile profile, boolean sync)
 	{
 		log.debug("Setting sync for {}: {}", profile.getName(), sync);

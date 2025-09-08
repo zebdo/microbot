@@ -26,9 +26,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
@@ -400,16 +398,12 @@ public class FarmTreeRunScript extends Script {
     }
 
     private void bank(FarmTreeRunConfig config) {
+        items.clear();
         if (Rs2Bank.openBank() || Rs2Bank.walkToBank()) {
             sleepUntil(() -> !Rs2Player.isAnimating());
             if (!Rs2Bank.isOpen())
                 return;
             sleep(600, 2200);
-
-            if (!Rs2Inventory.isEmpty()) {
-                Rs2Bank.depositAll();
-                Rs2Inventory.waitForInventoryChanges(3000);
-            }
 
             if (config.useGraceful() && !alreadyWearingGraceful() && !Rs2Equipment.isNaked()) {
                 Rs2Bank.depositEquipment();
@@ -532,37 +526,68 @@ public class FarmTreeRunScript extends Script {
             items.add(new FarmingItem(ItemID.EARTH_RUNE, 30));
             items.add(new FarmingItem(ItemID.WATER_RUNE, 30));
 
-
 //              TODO: Need to handle what happens if a required item does not exist
 
-            // Loop through the items and perform withdrawals
+            // Deposit only what we don't need: keep desired ids and their noted variants
+            Set<Integer> keepIds = new HashSet<>();
             for (FarmingItem item : items) {
-                if (this.items.isEmpty())
-                    break;
+                keepIds.add(item.getItemId());
+                Integer linked = getLinkedId(item.getItemId());
+                if (linked != null) keepIds.add(linked);
+            }
+            if (!keepIds.isEmpty()) {
+                Rs2Bank.depositAllExcept(keepIds.toArray(new Integer[0]));
+                Rs2Inventory.waitForInventoryChanges(1500);
+            }
+
+            List<FarmingItem> unnotedItems = items.stream()
+                    .filter(i -> !i.isNoted())
+                    .collect(Collectors.toList());
+            List<FarmingItem> notedItems = items.stream()
+                    .filter(FarmingItem::isNoted)
+                    .collect(Collectors.toList());
+
+            {
+                boolean toggled = Rs2Bank.setWithdrawAsItem();
+                if (!toggled || !Rs2Bank.hasWithdrawAsItem()) {
+                    Microbot.log("Failed to toggle bank to item mode");
+                    shutdown();
+                    plugin.reportFinished("Failed to toggle bank withdraw mode", false);
+                    return;
+                }
+            }
+            for (FarmingItem item : new ArrayList<>(unnotedItems)) {
                 int itemId = item.getItemId();
-                int quantity = item.getQuantity();
-                boolean noted = item.isNoted();
-
-                if (quantity <= 0)
-                    continue;
-
-//              Handle items which require to be noted
-                if (noted && !Rs2Bank.hasWithdrawAsNote()) {
-                    Rs2Bank.setWithdrawAsNote();
-                    sleep(500, 1200);
-                } else if (!noted && Rs2Bank.hasWithdrawAsNote()) { // Disables 'Note' toggle
-                    Rs2Bank.setWithdrawAsItem();
-                }
-
-                if (quantity == 1) {
-                    checkIfPlayerHasItem(item);
-                    Rs2Bank.withdrawOne(itemId);
-                } else {
-                    checkIfPlayerHasItem(item);
-                    Rs2Bank.withdrawX(itemId, quantity);
-                }
-
+                int desiredQty = item.getQuantity();
+                int haveQty = Rs2Inventory.itemQuantity(itemId);
+                int needQty = Math.max(0, desiredQty - haveQty);
+                if (needQty <= 0) continue;
+                checkIfPlayerHasItem(itemId, needQty, item.isOptional());
+                if (!isRunning()) return;
+                if (needQty == 1) Rs2Bank.withdrawOne(itemId); else Rs2Bank.withdrawX(itemId, needQty);
                 sleep(250, 1200);
+            }
+
+            if (!notedItems.isEmpty()) {
+                boolean toggled = Rs2Bank.setWithdrawAsNote();
+                if (!toggled || !Rs2Bank.hasWithdrawAsNote()) {
+                    Microbot.log("Failed to toggle bank to noted mode");
+                    shutdown();
+                    plugin.reportFinished("Failed to toggle bank withdraw mode", false);
+                    return;
+                }
+                sleep(300, 900);
+                for (FarmingItem item : new ArrayList<>(notedItems)) {
+                    int itemId = item.getItemId();
+                    int desiredQty = item.getQuantity();
+                    int haveQty = getInventoryQuantityIncludingLinked(itemId);
+                    int needQty = Math.max(0, desiredQty - haveQty);
+                    if (needQty <= 0) continue;
+                    checkIfPlayerHasItem(itemId, needQty, item.isOptional());
+                    if (!isRunning()) return;
+                    if (needQty == 1) Rs2Bank.withdrawOne(itemId); else Rs2Bank.withdrawX(itemId, needQty);
+                    sleep(250, 1200);
+                }
             }
 
             Rs2Bank.closeBank();
@@ -577,6 +602,14 @@ public class FarmTreeRunScript extends Script {
             shutdown();
             plugin.reportFinished("Inventory failed", false);
 
+        }
+    }
+
+    private void checkIfPlayerHasItem(int itemId, int quantity, boolean optional) {
+        if (!Rs2Bank.hasItem(new int[]{itemId}, quantity) && !optional) {
+            Microbot.showMessage("Not enough items: " + Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getItemDefinition(itemId).getName()) + ". Need " + quantity + ". Shut down.");
+            shutdown();
+            plugin.reportFinished("Inventory failed", false);
         }
     }
 
@@ -942,6 +975,23 @@ public class FarmTreeRunScript extends Script {
         String name = Rs2GameObject.getObjectComposition(patch.getId()).getName().toLowerCase();
         return name.endsWith("patch");
     }
+
+    private Integer getLinkedId(int id) {
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+            ItemComposition comp = Microbot.getItemManager().getItemComposition(id);
+            int linked = comp.getLinkedNoteId();
+            return linked > 0 ? linked : null;
+        }).orElse(null);
+    }
+
+    private int getInventoryQuantityIncludingLinked(int id) {
+        int qty = Rs2Inventory.itemQuantity(id);
+        Integer linked = getLinkedId(id);
+        if (linked != null) qty += Rs2Inventory.itemQuantity(linked);
+        return qty;
+    }
+
+    
 
     private static int getSaplingToUse(Patch patch, FarmTreeRunConfig config) {
         if (patch == Patch.FOSSIL_TREE_PATCH_A || patch == Patch.FOSSIL_TREE_PATCH_B || patch == Patch.FOSSIL_TREE_PATCH_C ) {

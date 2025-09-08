@@ -474,6 +474,7 @@ public class BreakHandlerScript extends Script {
             log.debug("Login watchdog started for {} minutes", config.loginWatchdogTimeout());
         }
         
+        boolean membersOnly = config.membersOnly();
         log.info("Attempting intelligent login with world selection");
         try {
             int targetWorld = -1;                       
@@ -498,7 +499,8 @@ public class BreakHandlerScript extends Script {
                     targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
                         config.regionPreference().getWorldRegion(),
                         config.avoidEmptyWorlds(),
-                        config.avoidOvercrowdedWorlds());
+                        config.avoidOvercrowdedWorlds(),
+                        membersOnly);
                     break;
                     
                 case BEST_POPULATION:
@@ -506,7 +508,9 @@ public class BreakHandlerScript extends Script {
                         false,
                         config.regionPreference().getWorldRegion(),
                         config.avoidEmptyWorlds(),
-                        config.avoidOvercrowdedWorlds());
+                        config.avoidOvercrowdedWorlds(),
+                        membersOnly
+                        );
                     break;
                     
                 case BEST_PING:
@@ -514,14 +518,18 @@ public class BreakHandlerScript extends Script {
                         true,
                         config.regionPreference().getWorldRegion(),
                         config.avoidEmptyWorlds(),
-                        config.avoidOvercrowdedWorlds());
+                        config.avoidOvercrowdedWorlds(),
+                        membersOnly
+                        );
                     break;
                     
                 case REGIONAL_RANDOM:
                     targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
                         config.regionPreference().getWorldRegion(),
                         config.avoidEmptyWorlds(),
-                        config.avoidOvercrowdedWorlds());
+                        config.avoidOvercrowdedWorlds(),
+                        membersOnly
+                        );
                     break;
                     
                 default:
