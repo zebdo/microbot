@@ -146,6 +146,7 @@ public class StrugglingSaplingEvent implements BlockingEvent {
                 var randomIngredient = availableIngredients.get((int) (Math.random() * availableIngredients.size()));
                 Microbot.log("StrugglingSaplingEvent: Collecting random ingredient: " + randomIngredient.getWorldLocation());
                 Rs2GameObject.interact(randomIngredient, "Collect");
+                triedIngredients.add(randomIngredient.getId());
                 Rs2Player.waitForAnimation();
             }
 
