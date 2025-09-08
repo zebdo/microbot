@@ -13,6 +13,7 @@ import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.r
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.Requirement;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.shop.ShopRequirement;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.SpellbookRequirement;
+import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.InventorySetupRequirement;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.item.RunePouchRequirement;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.logical.LogicalRequirement;
 import net.runelite.client.plugins.microbot.pluginscheduler.tasks.requirements.requirement.logical.OrRequirement;
@@ -104,6 +105,10 @@ public class RequirementRegistry {
     private volatile LocationRequirement preScheduleLocationRequirement = null;
     @Getter
     private volatile LocationRequirement postScheduleLocationRequirement = null;
+    @Getter
+    private volatile InventorySetupRequirement preScheduleInventorySetupRequirement = null;
+    @Getter
+    private volatile InventorySetupRequirement postScheduleInventorySetupRequirement = null;
     
     private volatile boolean cacheValid = false;
     private volatile boolean externalCacheValid = false;
@@ -148,6 +153,8 @@ public class RequirementRegistry {
             return registerSpellbookRequirement((SpellbookRequirement) requirement, key);
         } else if (requirement instanceof LocationRequirement) {
             return registerLocationRequirement((LocationRequirement) requirement, key);
+        } else if (requirement instanceof InventorySetupRequirement) {
+            return registerInventorySetupRequirement((InventorySetupRequirement) requirement, key);
         } else if (requirement instanceof RunePouchRequirement) {
             return registerRunePouchRequirement((RunePouchRequirement) requirement, key);
         }
@@ -266,6 +273,36 @@ public class RequirementRegistry {
         return previous == null;
     }
     
+    private boolean registerInventorySetupRequirement(InventorySetupRequirement requirement, RequirementKey key) {
+        boolean isPreSchedule = requirement.isPreSchedule();
+        boolean isPostSchedule = requirement.isPostSchedule();
+        
+        if (isPreSchedule && preScheduleInventorySetupRequirement != null) {
+            log.warn("Replacing existing pre-schedule inventory setup requirement: {} -> {}", 
+                    preScheduleInventorySetupRequirement, requirement);
+            RequirementKey preRequirementKey = new RequirementKey(preScheduleInventorySetupRequirement);
+            requirements.remove(preRequirementKey); // Remove old requirement to avoid duplicates
+        }
+        if (isPostSchedule && postScheduleInventorySetupRequirement != null) {
+            log.warn("Replacing existing post-schedule inventory setup requirement: {} -> {}", 
+                    postScheduleInventorySetupRequirement, requirement);
+            RequirementKey postRequirementKey = new RequirementKey(postScheduleInventorySetupRequirement);
+            requirements.remove(postRequirementKey); // Remove old requirement to avoid duplicates
+        }
+        
+        Requirement previous = requirements.put(key, requirement);
+        
+        if (isPreSchedule) {
+            preScheduleInventorySetupRequirement = requirement;
+        }
+        if (isPostSchedule) {
+            postScheduleInventorySetupRequirement = requirement;
+        }
+        
+        invalidateCache();
+        return previous == null;
+    }
+    
     private boolean registerRunePouchRequirement(RunePouchRequirement requirement, RequirementKey key) {
         // Check if any RunePouchRequirement already exists
         RunePouchRequirement existingRunePouchRequirement = requirements.values().stream()
@@ -315,6 +352,12 @@ public class RequirementRegistry {
             }
             if (removed == postScheduleLocationRequirement) {
                 postScheduleLocationRequirement = null;
+            }
+            if (removed == preScheduleInventorySetupRequirement) {
+                preScheduleInventorySetupRequirement = null;
+            }
+            if (removed == postScheduleInventorySetupRequirement) {
+                postScheduleInventorySetupRequirement = null;
             }
             
             invalidateCache();
@@ -394,6 +437,8 @@ public class RequirementRegistry {
         postScheduleSpellbookRequirement = null;
         preScheduleLocationRequirement = null;
         postScheduleLocationRequirement = null;
+        preScheduleInventorySetupRequirement = null;
+        postScheduleInventorySetupRequirement = null;
         invalidateCache();
     }
     

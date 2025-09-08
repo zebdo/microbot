@@ -94,13 +94,13 @@ public interface AutoLoginConfig extends Config {
    
 
     @ConfigItem(
-            keyName = "Is Member",
-            name = "Is member (Legacy)", 
-            description = "Legacy member setting - now auto-detected",
+            keyName = "Members Only",
+            name = "Members Only",
+            description = "Only select worlds that are member worlds",
             position = 6,
             section = worldSelectionSection
     )
-    default boolean isMember() { return false; }
+    default boolean membersOnly() { return true; }
   
     // Login behavior options
     @ConfigItem(
