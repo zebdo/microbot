@@ -2,8 +2,7 @@ package net.runelite.client.plugins.microbot.util.poh.data;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
-import net.runelite.api.GameObject;
-import net.runelite.api.TileObject;
+import net.runelite.api.DecorativeObject;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -33,15 +32,15 @@ public enum MountedGlory implements PohTeleport {
         return Rs2GameObject.interact(getObject(), destinationName);
     }
 
-    public static TileObject getObject() {
-        return Rs2GameObject.getTileObject(ObjectID.POH_TROPHY_AMULETOFGLORY_4);
+    public static DecorativeObject getObject() {
+        return Rs2GameObject.getDecorativeObject(ObjectID.POH_TROPHY_AMULETOFGLORY_4);
     }
 
     public static List<PohTeleport> getTransports() {
         return Arrays.stream(values()).collect(Collectors.toList());
     }
 
-    public static boolean isMountedGlory(GameObject go) {
+    public static boolean isMountedGlory(DecorativeObject go) {
         if (go == null) return false;
         return ObjectID.POH_TROPHY_AMULETOFGLORY_4 == go.getId();
     }

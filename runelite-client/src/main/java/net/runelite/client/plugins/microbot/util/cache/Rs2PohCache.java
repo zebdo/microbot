@@ -2,12 +2,10 @@ package net.runelite.client.plugins.microbot.util.cache;
 
 import com.google.gson.reflect.TypeToken;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.DecorativeObject;
 import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
-import net.runelite.api.events.GameObjectDespawned;
-import net.runelite.api.events.GameObjectSpawned;
-import net.runelite.api.events.GameStateChanged;
-import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.events.*;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
 import net.runelite.client.plugins.microbot.shortestpath.TransportType;
@@ -59,6 +57,20 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
     }
 
     @Subscribe
+    public void onDecorativeObjectSpawned(DecorativeObjectSpawned event) {
+        DecorativeObject go = event.getDecorativeObject();
+        if (MountedMythical.isMountedMythsCape(go)) {
+            setTeleports(MountedMythical.class, List.of(MountedMythical.values()));
+        } else if (MountedXerics.isMountedXerics(go)) {
+            setTeleports(MountedXerics.class, List.of(MountedXerics.values()));
+        } else if (MountedDigsite.isMountedDigsite(go)) {
+            setTeleports(MountedDigsite.class, List.of(MountedDigsite.values()));
+        } else if (MountedGlory.isMountedGlory(go)) {
+            setTeleports(MountedGlory.class, List.of(MountedGlory.values()));
+        }
+    }
+
+    @Subscribe
     public void onGameObjectSpawned(GameObjectSpawned event) {
         GameObject go = event.getGameObject();
         PohPortal portal = PohPortal.getPohPortal(go);
@@ -69,13 +81,7 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
         JewelleryBoxType jewelleryBoxType = JewelleryBoxType.getJewelleryBoxType(go);
         if (jewelleryBoxType != null) {
             setTeleports(JewelleryBox.class, jewelleryBoxType.getAvailableTeleports());
-            return;
-        }
-        if (MountedDigsite.isMountedDigsite(go)) {
-            setTeleports(MountedDigsite.class, List.of(MountedDigsite.values()));
-        } else if (MountedGlory.isMountedGlory(go)) {
-            setTeleports(MountedGlory.class, List.of(MountedGlory.values()));
-        } else if (NexusPortal.isNexusPortal(go)) {
+        }else if (NexusPortal.isNexusPortal(go)) {
             setTeleports(NexusPortal.class, NexusPortal.getAvailableTeleports());
         } else if (PohTeleports.isFairyRing(go)) {
             log.info("Found fairy rings in POH");

@@ -281,3 +281,18 @@ Origin	Destination	isMembers	EnumValue	EnumClass	Display info	Wilderness level	D
 1858 5707 0	2846 3940 0	Y	WEISS	PohPortal	PoHPortal -> Weiss	19	4
 1922 5707 2	2846 3940 0	Y	WEISS	PohPortal	PoHPortal -> Weiss	19	4
 1986 5707 0	2846 3940 0	Y	WEISS	PohPortal	PoHPortal -> Weiss	19	4
+1858 5707 0	1576 3528 0	Y	LOOKOUT	MountedXerics	MountedXerics -> Xeric's Lookout	19	4
+1922 5707 2	1576 3528 0	Y	LOOKOUT	MountedXerics	MountedXerics -> Xeric's Lookout	19	4
+1986 5707 0	1576 3528 0	Y	LOOKOUT	MountedXerics	MountedXerics -> Xeric's Lookout	19	4
+1858 5707 0	1754 3564 0	Y	GLADE	MountedXerics	MountedXerics -> Xeric's Glade	19	4
+1922 5707 2	1754 3564 0	Y	GLADE	MountedXerics	MountedXerics -> Xeric's Glade	19	4
+1986 5707 0	1754 3564 0	Y	GLADE	MountedXerics	MountedXerics -> Xeric's Glade	19	4
+1858 5707 0	1504 3819 0	Y	INFERNO	MountedXerics	MountedXerics -> Xeric's Inferno	19	4
+1922 5707 2	1504 3819 0	Y	INFERNO	MountedXerics	MountedXerics -> Xeric's Inferno	19	4
+1986 5707 0	1504 3819 0	Y	INFERNO	MountedXerics	MountedXerics -> Xeric's Inferno	19	4
+1858 5707 0	1641 3670 0	Y	HEART	MountedXerics	MountedXerics -> Xeric's Heart	19	4
+1922 5707 2	1641 3670 0	Y	HEART	MountedXerics	MountedXerics -> Xeric's Heart	19	4
+1986 5707 0	1641 3670 0	Y	HEART	MountedXerics	MountedXerics -> Xeric's Heart	19	4
+1858 5707 0	2458 2851 0	Y	MYTHS_GUILD	MountedMythical	MountedMythical -> Myths guild	19	4
+1922 5707 2	2458 2851 0	Y	MYTHS_GUILD	MountedMythical	MountedMythical -> Myths guild	19	4
+1986 5707 0	2458 2851 0	Y	MYTHS_GUILD	MountedMythical	MountedMythical -> Myths guild	19	4

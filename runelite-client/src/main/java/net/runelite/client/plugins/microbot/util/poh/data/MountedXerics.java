@@ -3,6 +3,8 @@ package net.runelite.client.plugins.microbot.util.poh.data;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.runelite.api.DecorativeObject;
+import net.runelite.api.GameObject;
+import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.ObjectID;
@@ -16,10 +18,12 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 @Getter
 @RequiredArgsConstructor
-public enum MountedDigsite implements PohTeleport {
-    FOSSIL_ISLAND(ObjectID.POH_AMULET_DIG_FOSSIL, "Fossil Island", TeleportLocationData.HOUSE_ON_THE_HILL.getLocation()),
-    DIGSITE(ObjectID.POH_AMULET_DIG_DIGSITE, "Digsite", TeleportLocationData.DIGSITE.getLocation()),
-    LITHKREN(ObjectID.POH_AMULET_DIG_LITHKREN, "Lithkren", TeleportLocationData.LITHKREN.getLocation()),
+public enum MountedXerics implements PohTeleport {
+    LOOKOUT(ObjectID.POH_AMULET_XERIC_LOOKOUT, "Xeric's Lookout", TeleportLocationData.XERICS_LOOKOUT.getLocation()),
+    GLADE(ObjectID.POH_AMULET_XERIC_GLADE, "Xeric's Glade", TeleportLocationData.XERICS_GLADE.getLocation()),
+    INFERNO(ObjectID.POH_AMULET_XERIC_INFERNO, "Xeric's Inferno", TeleportLocationData.XERICS_INFERNO.getLocation()),
+    HEART(ObjectID.POH_AMULET_XERIC_HEART, "Xeric's Heart", TeleportLocationData.XERICS_HEART.getLocation()),
+//    HONOUR(ObjectID.POH_AMULET_XERIC_GLADE, "Xeric's Honour", TeleportLocationData.XERICS_HONOUR.getLocation()), //Require's Ancient Tablet to be used on Xeric's Talisman
     ;
 
     private final int objectId;
@@ -30,17 +34,17 @@ public enum MountedDigsite implements PohTeleport {
 
     @Override
     public boolean execute() {
-        DecorativeObject pendant = getObject();
-        if (pendant == null) {
+        DecorativeObject talisman = getObject();
+        if (talisman == null) {
             return false;
         }
-        if (pendant.getId() == objectId) {
+        if (talisman.getId() == objectId) {
             //The correct id for the object means it has the right left click option, so we can just use that.
-            return Rs2GameObject.interact(pendant, destinationName);
+            return Rs2GameObject.interact(talisman, destinationName);
         }
         Widget widget = getWidget();
         if (widget == null) {
-            if (Rs2GameObject.interact(pendant, "Teleport menu")) {
+            if (Rs2GameObject.interact(talisman, "Teleport menu")) {
                 if (!sleepUntil(() -> getWidget() != null, 10000)) {
                     return false;
                 }
@@ -49,13 +53,13 @@ public enum MountedDigsite implements PohTeleport {
         return Rs2Widget.clickWidget(destinationName);
     }
 
-    public static final Integer[] IDS = {ObjectID.POH_AMULET_DIGSITE, ObjectID.POH_AMULET_DIG_LITHKREN, ObjectID.POH_AMULET_DIG_FOSSIL, ObjectID.POH_AMULET_DIG_DIGSITE};
+    public static final Integer[] IDS = {ObjectID.POH_AMULET_XERIC, ObjectID.POH_AMULET_XERIC_LOOKOUT, ObjectID.POH_AMULET_XERIC_GLADE, ObjectID.POH_AMULET_XERIC_INFERNO, ObjectID.POH_AMULET_XERIC_HEART, ObjectID.POH_AMULET_XERIC_HONOUR};
 
     public static DecorativeObject getObject() {
         return Rs2GameObject.getDecorativeObject(IDS);
     }
 
-    public static boolean isMountedDigsite(DecorativeObject go) {
+    public static boolean isMountedXerics(DecorativeObject go) {
         if (go == null) return false;
         for (int objId : IDS) {
             if (objId == go.getId()) return true;
@@ -69,7 +73,7 @@ public enum MountedDigsite implements PohTeleport {
 
     @Override
     public String displayInfo() {
-        return "MountedDigsite -> " + destinationName;
+        return getClass().getSimpleName() + " -> " + destinationName;
     }
 
 }
