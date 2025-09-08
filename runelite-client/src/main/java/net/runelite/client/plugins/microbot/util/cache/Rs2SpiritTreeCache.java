@@ -591,6 +591,14 @@ public class Rs2SpiritTreeCache extends Rs2Cache<SpiritTree, SpiritTreeData> imp
     }
 
     /**
+     * Handle GameObjectSpawned event and delegate to update strategy.
+     */
+    @Subscribe
+    public void onGameObjectDespawned(net.runelite.api.events.GameObjectDespawned event) {
+        getInstance().handleEvent(event);
+    }
+
+    /**
      * Handle game state changes for cache lifecycle management (unchanged).
      */
     @Subscribe
