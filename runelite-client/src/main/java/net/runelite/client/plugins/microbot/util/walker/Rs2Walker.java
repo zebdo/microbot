@@ -2575,7 +2575,7 @@ public class Rs2Walker {
 		}
 
         String lastDestinationAction = "last-destination-" + transport.getDisplayInfo();
-        String treeLastDestinationAction = "Ring-last-destination-" + transport.getDisplayInfo();
+        String treeLastDestinationAction = "Ring-last-destination (" + transport.getDisplayInfo() + ")";
         ObjectComposition composition = Rs2GameObject.convertToObjectComposition(fairyRingObject);
         log.info("Interacting with Fairy Ring @ {}", fairyRingObject.getWorldLocation());
 
