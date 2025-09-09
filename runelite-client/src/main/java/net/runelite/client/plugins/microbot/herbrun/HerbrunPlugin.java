@@ -61,7 +61,7 @@ public class HerbrunPlugin extends Plugin implements SchedulablePlugin{
     }
 
     @Subscribe
-    public void onPluginScheduleEntrySoftStopEvent(PluginScheduleEntryPostScheduleTaskEvent event) {
+    public void onPluginScheduleEntryPostScheduleTaskEvent(PluginScheduleEntryPostScheduleTaskEvent event) {
         try {
             if (event.getPlugin() == this) {
                 // Check if lock is active before stopping
