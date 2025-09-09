@@ -15,7 +15,10 @@ import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
+import net.runelite.client.plugins.microbot.util.item.Rs2EnsouledHead;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
+import net.runelite.client.plugins.microbot.util.magic.Spell;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
@@ -32,6 +35,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.util.antiban.enums.ActivityIntensity.MODERATE;
+import static net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory.interact;
+import static net.runelite.client.plugins.microbot.util.magic.Rs2Spells.*;
 
 public class EnsouledHeadSlayerScript extends Script {
     public static final String VERSION = "1.0";
@@ -39,7 +44,7 @@ public class EnsouledHeadSlayerScript extends Script {
     public EnsouledHeadSlayerStatus BOT_STATE = EnsouledHeadSlayerStatus.BANKING;
     public final WorldPoint ALTAR_LOCATION = new WorldPoint(1711, 3882, 0);
     private Rs2InventorySetup inventorySetup = null;
-    private final WorldArea SUMMON_AREA = new WorldArea(ALTAR_LOCATION, 40,40);
+    private final WorldArea SUMMON_AREA = new WorldArea(ALTAR_LOCATION, 40, 40);
     private boolean firstRun = true;
 
     {
@@ -128,7 +133,8 @@ public class EnsouledHeadSlayerScript extends Script {
             BOT_STATE = EnsouledHeadSlayerStatus.BANKING;
             return;
         }
-        if (Rs2Inventory.count(config.food().getName()) < 1 && Microbot.getClient().getBoostedSkillLevel(Skill.HITPOINTS) < Microbot.getClient().getRealSkillLevel(Skill.HITPOINTS) / 2) {;
+        if (Rs2Inventory.count(config.food().getName()) < 1 && Microbot.getClient().getBoostedSkillLevel(Skill.HITPOINTS) < Microbot.getClient().getRealSkillLevel(Skill.HITPOINTS) / 2) {
+            ;
             Microbot.log("Not enough food & below half health, banking...");
             BOT_STATE = EnsouledHeadSlayerStatus.BANKING;
             return;
@@ -141,7 +147,7 @@ public class EnsouledHeadSlayerScript extends Script {
                 x.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= 2).collect(Collectors.toList());
         if (enemy.isEmpty() && Rs2Player.getInteracting() == null && Rs2GameObject.getGroundObject(ENSOULED_GROUND_GRAPHICS) == null) {
             var ensouledHeadItem = Rs2Inventory.get("ensouled");
-            var spell = Arrays.stream(EnsouledHeads.values())
+            var spell = Arrays.stream(Rs2EnsouledHead.values())
                     .filter(x -> x.hasRequirements() && Objects.equals(x.getName(), ensouledHeadItem.getName()))
                     .findFirst()
                     .orElse(null);
@@ -154,10 +160,10 @@ public class EnsouledHeadSlayerScript extends Script {
                 // NPC animation finished - NPC should be spawned
                 sleepUntil(() -> Rs2GameObject.getGroundObject(ENSOULED_GROUND_GRAPHICS) == null, 4000);
                 // Without this delay, we won't wait for the NPC to spawn before trying other actions
-                sleep(3500,4500);
+                sleep(3500, 4500);
             }
         } else {
-            var animmatedEnemy =  enemy.stream().findFirst().orElse(null);
+            var animmatedEnemy = enemy.stream().findFirst().orElse(null);
             if (animmatedEnemy != null && !animmatedEnemy.isDead()) {
                 Rs2Npc.attack(animmatedEnemy);
             }
@@ -165,6 +171,7 @@ public class EnsouledHeadSlayerScript extends Script {
     }
 
     private int attempts = 0;
+
     private boolean handleBanking(EnsouledHeadSlayerConfig config) {
         // If first run, walk to any bank to prepare. If using a particular inventory setup, always use shortest path
         if (firstRun || config.useInventorySetup()) {
@@ -220,8 +227,8 @@ public class EnsouledHeadSlayerScript extends Script {
                     highestCount = entry.getValue();
                 }
             }
-            EnsouledHeads primaryHead = null;
-            for (EnsouledHeads head : EnsouledHeads.values()) {
+            Rs2EnsouledHead primaryHead = null;
+            for (Rs2EnsouledHead head : Rs2EnsouledHead.values()) {
                 if (head.getItemId() == highestId) {
                     primaryHead = head;
                     break;
@@ -240,9 +247,9 @@ public class EnsouledHeadSlayerScript extends Script {
             }
             Rs2Bank.withdrawX(primaryHead.getItemId(), availableSlots);
             int remainingSlots = Rs2Inventory.getEmptySlots();
-            MagicAction requiredSpell = primaryHead.getMagicSpell();
+            Spell requiredSpell = primaryHead.getMagicSpell();
             if (remainingSlots > 0) {
-                for (EnsouledHeads otherHead : EnsouledHeads.values()) {
+                for (Rs2EnsouledHead otherHead : Rs2EnsouledHead.values()) {
                     if (otherHead != primaryHead && otherHead.getMagicSpell() == requiredSpell) {
                         int count = headCounts.getOrDefault(otherHead.getItemId(), 0);
                         if (count > 0) {
@@ -255,7 +262,7 @@ public class EnsouledHeadSlayerScript extends Script {
                 }
             }
         } else {
-            EnsouledHeads selectedHead = config.ensouledHeads();
+            Rs2EnsouledHead selectedHead = config.ensouledHeads();
             extractRunes(config, selectedHead);
 
             int headCount = Rs2Bank.count(selectedHead.getItemId());
@@ -270,44 +277,27 @@ public class EnsouledHeadSlayerScript extends Script {
         return true;
     }
 
-    private void extractRunes(EnsouledHeadSlayerConfig config, EnsouledHeads selectedHead) {
+    private void extractRunes(EnsouledHeadSlayerConfig config, Rs2EnsouledHead selectedHead) {
         withdrawRunesForSpell(selectedHead.getMagicSpell());
         if (config.useGamesNecklaceForBanking() && Rs2Inventory.count("Games necklace") < 1) {
             Rs2Bank.withdrawX("Games necklace", 1);
             sleep(600, 800);
         }
         if (config.useArcheusLibraryTeleport() && Rs2Inventory.count("earth rune") < 2 && Rs2Inventory.count("law rune") < 1) {
-            Rs2Bank.withdrawX("earth rune", Rs2Random.between(4,10));
+            Rs2Bank.withdrawX("earth rune", Rs2Random.between(4, 10));
             sleep(600, 800);
-            Rs2Bank.withdrawX("law rune", Rs2Random.between(4,10));
+            Rs2Bank.withdrawX("law rune", Rs2Random.between(4, 10));
             sleep(600, 800);
         }
     }
 
-    private void withdrawRunesForSpell(MagicAction spell) {
+    private void withdrawRunesForSpell(Spell spell) {
         if (spell == null) return;
 
-        switch (spell) {
-            case BASIC_REANIMATION:
-                Rs2Bank.withdrawX("Nature rune", Rs2Random.between(2 * 28, 4 * 28));
-                Rs2Bank.withdrawX("Body rune", Rs2Random.between(4 * 28, 6 * 28));
-                break;
-            case ADEPT_REANIMATION:
-                Rs2Bank.withdrawX("Nature rune", Rs2Random.between(3 * 28, 6 * 28));
-                Rs2Bank.withdrawX("Body rune", Rs2Random.between(4 * 28, 6 * 28));
-                Rs2Bank.withdrawX("Soul rune", Rs2Random.between(28, 4 * 28));
-                break;
-            case EXPERT_REANIMATION:
-                Rs2Bank.withdrawX("Nature rune", Rs2Random.between(3 * 28, 5 * 28));
-                Rs2Bank.withdrawX("Soul rune", Rs2Random.between(2 * 28, 4 * 28));
-                Rs2Bank.withdrawX("blood rune", Rs2Random.between(28, 2 * 28));
-                break;
-            case MASTER_REANIMATION:
-                Rs2Bank.withdrawX( "Nature rune", Rs2Random.between(4 * 28, 6 * 28));
-                Rs2Bank.withdrawX( "Soul rune", Rs2Random.between(4 * 28, 6 * 28));
-                Rs2Bank.withdrawX( "Blood rune", Rs2Random.between(2 * 28, 4 * 28));
-                break;
-        }
+        spell.getRequiredRunes(28).forEach((rune, count) -> {
+            int withdrawCount = Rs2Random.nextInt(count, count * 2, 0.5, true);
+            Rs2Bank.withdrawX(rune.getId(), withdrawCount);
+        });
     }
 
     private boolean useInventorySetup(EnsouledHeadSlayerConfig config) {
@@ -339,4 +329,6 @@ public class EnsouledHeadSlayerScript extends Script {
         firstRun = true;
         super.shutdown();
     }
+
+
 }
