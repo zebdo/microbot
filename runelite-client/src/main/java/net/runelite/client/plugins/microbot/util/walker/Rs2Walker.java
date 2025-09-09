@@ -1099,9 +1099,7 @@ public class Rs2Walker {
                     if (searchNeighborPoint(orientation, probe, fromWp) || searchNeighborPoint(orientation, probe, toWp)) {
 						log.info("Found WallObject door - name {} with action {} at {} - from {} to {}", name, action, probe, fromWp, toWp);
 						found = true;
-					} else if (searchNeighborPoint(orientation + 1, probe, fromWp) || searchNeighborPoint(orientation + 1, probe, toWp)) {
-						found = true;
-                    }
+					}
                 } else {
                     if (name != null && name.toLowerCase().contains("door")) {
 						log.info("Found GameObject door - name {} with action {} at {} - from {} to {}", name, action, probe, fromWp, toWp);
