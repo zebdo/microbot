@@ -315,8 +315,8 @@ public class Rs2Walker {
             boolean doorOrTransportResult = false;
             for (int i = indexOfStartPoint; i < path.size(); i++) {
                 WorldPoint currentWorldPoint = path.get(i);
-
-                System.out.println("start loop " + i);
+                WorldPoint nextWorldPoint = i + 1 < path.size() ? path.get(i + 1) : null;
+                System.out.printf(String.format("start loop {}, from={}, to={}\n" + i, currentWorldPoint, nextWorldPoint));
 
 				// add breakpoint here
 
@@ -350,7 +350,7 @@ public class Rs2Walker {
 
                 //Again, would be nice to have access to current node, since we're going to have to handle transports in instance (PoH)
                 boolean inInstance = Microbot.getClient().getTopLevelWorldView().isInstance();
-                if (config.usePoh() || !inInstance) {
+                if (PohTeleports.isInHouse() || !inInstance) {
                     doorOrTransportResult = handleTransports(path, i);
                 }
 
@@ -1495,7 +1495,7 @@ public class Rs2Walker {
                     }
 
                     if (transport.getType() == TransportType.POH) {
-                        System.out.println("Using POH transport: " + transport.getName() + " " + transport.getType());
+                        log.debug("Using POH transport: " + transport.getDisplayInfo() + " " + transport.getType());
                         if (handlePohTransport(transport)) {
                             sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET, 10000);
                             break;

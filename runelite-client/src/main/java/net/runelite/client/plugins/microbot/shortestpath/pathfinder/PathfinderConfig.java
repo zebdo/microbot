@@ -261,11 +261,15 @@ public class PathfinderConfig {
         transportsPacked.clear();
         usableTeleports.clear();
 
-        Map.Entry<WorldPoint, Set<Transport>> extraTransport = null;
+        Map<WorldPoint, Set<PohTransport>> pohTransports = Rs2PohCache.getAvailableTransportsMap();
         for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
             WorldPoint point = entry.getKey();
-            Set<Transport> usableTransports = new HashSet<>(entry.getValue().size());
-            for (Transport transport : entry.getValue()) {
+            ArrayList<Transport> pointTransports = new ArrayList<>(entry.getValue());
+            if (pohTransports.containsKey(point)) {
+                pointTransports.addAll(pohTransports.get(point));
+            }
+            Set<Transport> usableTransports = new HashSet<>(pointTransports.size());
+            for (Transport transport : pointTransports) {
 				// Mutate action
 				updateActionBasedOnQuestState(transport);
 
@@ -283,19 +287,6 @@ public class PathfinderConfig {
             }
         }
 
-        HouseStyle style = HouseStyle.getStyle();
-        if (usePoh && style != null) {
-            //Since we have a house style, we have a house and can therefore add available transports
-            WorldPoint origin = style.getPohLocation();
-            int packedOrigin = WorldPointUtil.packWorldPoint(origin);
-            List<PohTransport> pohTransports = Rs2PohCache.getAvailableTransports()
-                    .stream().filter(this::useTransport).collect(Collectors.toList());
-            Set<Transport> existingTransports = transports.getOrDefault(origin, new HashSet<>());
-            existingTransports.addAll(pohTransports.stream().filter(pohTransport -> !existingTransports.contains(pohTransport)).collect(Collectors.toSet()));
-            transports.put(origin, existingTransports);
-            transportsPacked.put(packedOrigin, existingTransports);
-        }
-        
         // Filter similar transports based on distance when walk with banked transports is enabled
         if (useBankItems && config.maxSimilarTransportDistance() > 0) {            
             filterSimilarTransports(target);                                    

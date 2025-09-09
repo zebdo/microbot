@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.DecorativeObject;
 import net.runelite.api.GameObject;
 import net.runelite.api.GameState;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
@@ -192,6 +193,17 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
         return getInstance().values().stream()
                 .flatMap(Collection::stream).map(PohTransport::new)
                 .collect(Collectors.toList());
+    }
+
+    public static Map<WorldPoint, Set<PohTransport>> getAvailableTransportsMap() {
+        Map<WorldPoint, Set<PohTransport>> transports = new HashMap<>();
+        HouseStyle style = HouseStyle.getStyle();
+        if (style == null) return Collections.emptyMap();
+
+        transports.put(style.getPohLocation(), getInstance().values().stream()
+                .flatMap(Collection::stream).map(PohTransport::new)
+                .collect(Collectors.toSet()));
+        return transports;
     }
 
 
