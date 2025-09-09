@@ -31,15 +31,20 @@ public class MicrobotTopLevelConfigPanel extends PluginPanel {
     private boolean removeOnTabChange;
 
     // -- BEGIN: NEW badge ( to be removed once we migrate all plugins to Hub) --
-    private MaterialTab hubTab;
+    private final MaterialTab hubTab;
     private JPanel glassPane;
     private JLabel newBadgeOverlay;
     private Timer newBadgeTimer;
+    private Component previousGlassPane;
 
     private void createNewBadgeOverlay() {
         if (hubTab == null) return;
 
         glassPane = new JPanel() {
+            @Override
+            public boolean contains(int x, int y) {
+                return false;
+            }
             @Override
             protected void paintChildren(Graphics g) {
                 super.paintChildren(g);
@@ -55,7 +60,8 @@ public class MicrobotTopLevelConfigPanel extends PluginPanel {
             @Override
             protected void paintComponent(Graphics g) {
                 if (newBadge == null) {
-                    System.out.println("DEBUG: NEW.png not found!");
+                    System.out.println("DEBUG: newBadge image is null, cannot paint");
+                    SwingUtilities.invokeLater(MicrobotTopLevelConfigPanel.this::cleanupNewBadge);
                     return;
                 }
 
@@ -93,13 +99,18 @@ public class MicrobotTopLevelConfigPanel extends PluginPanel {
 
         newBadgeOverlay.setOpaque(false);
         newBadgeOverlay.setSize(32, 32);
+        newBadgeOverlay.setVisible(false);
         glassPane.add(newBadgeOverlay);
 
         SwingUtilities.invokeLater(() -> {
             JRootPane rootPane = SwingUtilities.getRootPane(this);
             if (rootPane != null) {
+                if (previousGlassPane == null) {
+                    previousGlassPane = rootPane.getGlassPane();
+                }
                 rootPane.setGlassPane(glassPane);
                 glassPane.setVisible(true);
+                updateBadgePosition();
             }
         });
 
@@ -119,15 +130,12 @@ public class MicrobotTopLevelConfigPanel extends PluginPanel {
         if (newBadgeOverlay == null || hubTab == null || glassPane == null) return;
 
         try {
-            Point tabLocationOnScreen = hubTab.getLocationOnScreen();
-            Point glassPaneLocationOnScreen = glassPane.getLocationOnScreen();
-
-            int x = tabLocationOnScreen.x - glassPaneLocationOnScreen.x + hubTab.getWidth() - 25;
-            int y = tabLocationOnScreen.y - glassPaneLocationOnScreen.y - 12;
-
+            Point topRight = SwingUtilities.convertPoint(hubTab, hubTab.getWidth(), 0, glassPane);
+            int x = topRight.x - 25;
+            int y = topRight.y - 12;
             newBadgeOverlay.setLocation(x, y);
         } catch (Exception ex) {
-            System.out.println("DEBUG: Error updating badge position: " + ex.getMessage());
+            System.out.println("DEBUG: Exception in updateBadgePosition: " + ex);
         }
     }
 
@@ -139,13 +147,13 @@ public class MicrobotTopLevelConfigPanel extends PluginPanel {
         if (glassPane != null) {
             glassPane.setVisible(false);
             JRootPane rootPane = SwingUtilities.getRootPane(this);
-            if (rootPane != null) {
-                rootPane.setGlassPane(new JPanel());
+            if (rootPane != null && previousGlassPane != null) {
+                rootPane.setGlassPane(previousGlassPane);
+                previousGlassPane = null;
             }
             glassPane = null;
         }
         newBadgeOverlay = null;
-        System.out.println("DEBUG: Badge cleaned up");
     }
     // -- END: NEW badge ( to be removed once we migrate all plugins to Hub) --
 
@@ -316,4 +324,3 @@ public class MicrobotTopLevelConfigPanel extends PluginPanel {
         pluginListPanel.openWithFilter(filter);
     }
 }
-
