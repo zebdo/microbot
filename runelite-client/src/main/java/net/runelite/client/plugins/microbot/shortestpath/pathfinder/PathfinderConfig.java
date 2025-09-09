@@ -261,11 +261,13 @@ public class PathfinderConfig {
         transportsPacked.clear();
         usableTeleports.clear();
 
+        // Get usable PoH transports, mapped to house location
         Map<WorldPoint, Set<PohTransport>> pohTransports = Rs2PohCache.getAvailableTransportsMap();
         for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
             WorldPoint point = entry.getKey();
             ArrayList<Transport> pointTransports = new ArrayList<>(entry.getValue());
             if (pohTransports.containsKey(point)) {
+                // At this point we can insert all the PoH Transports
                 pointTransports.addAll(pohTransports.get(point));
             }
             Set<Transport> usableTransports = new HashSet<>(pointTransports.size());
