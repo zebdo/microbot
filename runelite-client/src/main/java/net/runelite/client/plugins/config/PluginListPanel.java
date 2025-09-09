@@ -38,7 +38,6 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
-import net.runelite.client.plugins.microbot.dashboard.DashboardWebSocket;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.MultiplexingPluginPanel;
@@ -283,7 +282,6 @@ class PluginListPanel extends PluginPanel {
 
         try {
             pluginManager.startPlugin(plugin);
-            DashboardWebSocket.SendPluginList();
         } catch (PluginInstantiationException ex) {
             log.warn("Error when starting plugin {}", plugin.getClass().getSimpleName(), ex);
         }
@@ -294,7 +292,6 @@ class PluginListPanel extends PluginPanel {
 
         try {
             pluginManager.stopPlugin(plugin);
-            DashboardWebSocket.SendPluginList();
         } catch (PluginInstantiationException ex) {
             log.warn("Error when stopping plugin {}", plugin.getClass().getSimpleName(), ex);
         }
