@@ -9,7 +9,7 @@ public enum CompostType {
     REGULAR("Compost", ItemID.BUCKET_COMPOST),
     SUPER("Supercompost", ItemID.BUCKET_SUPERCOMPOST),
     ULTRA("Ultracompost", ItemID.BUCKET_ULTRACOMPOST),
-    BOTTOMLESS("Bottomless compost bucket", ItemID.BOTTOMLESS_COMPOST_BUCKET);
+    BOTTOMLESS("Bottomless compost bucket", ItemID.BOTTOMLESS_COMPOST_BUCKET_FILLED);
 
     private final String compostName;
     private final int itemId;
