@@ -188,7 +188,7 @@ public enum SpiritTree {
             null, // Location is dynamic based on player's house
             SpiritTreeType.POH,
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE),
-            0, // Requires 75 Construction
+            75, // Requires 75 Construction
             VarbitID.POH_SPIRIT_TREE_UPROOTED, //TODO Must be checked if correct POH Spirit Tree varbit
             List.of(ObjectID.POH_SPIRIT_TREE), // TODO Must be checked if correct - POH Spirit Tree object ID // we must update it. here are also variations for it.. leauge skins, christmas skins (), etc
             new int[] {-1}, // Region must be player's own house
@@ -200,7 +200,7 @@ public enum SpiritTree {
             null, // Location is dynamic based on player's house
             SpiritTreeType.POH,
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE, Quest.FAIRYTALE_II__CURE_A_QUEEN),
-            0, // Requires 75 Construction
+            95, // Requires 95 Construction
             VarbitID.POH_SPIRIT_TREE_UPROOTED, // TODO Must be checkedPOH Spirit Tree varbit (combined tree/ring uses same varbit)
             Rs2GameObject.getObjectIdsByName("poh_spirit_ring"),
             new int[] {-1}, // Region must be player's own house 
