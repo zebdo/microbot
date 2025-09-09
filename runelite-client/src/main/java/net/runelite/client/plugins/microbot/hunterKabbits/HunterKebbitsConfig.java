@@ -4,16 +4,21 @@ import net.runelite.client.config.*;
 
 @ConfigGroup("Hunter Kebbits")
 @ConfigInformation("<html>"
-        + "Kebbit script by VIP"
-        + "<p>This plugin automates Kebbit hunting in the Piscatoris Falconry area.</p>\n"
-        + "<p>Requirements:</p>\n"
-        + "<ol>\n"
-        + "    <li>Appropriate Hunter level for your chosen Kebbit type</li>\n"
-        + "    <li>Access to the Piscatoris Falconry area</li>\n"
-        + "    <li>Rent a falcon from the NPC Matthias</li>\n"
-        + "</ol>\n"
-        + "<p>Configure sleep timings and Kebbit type in the settings for optimal performance.</p>\n"
-        + "<p>Use the overlay option to display falcon status and hunter information on screen.</p>"
+        + "<b>Piscatoris Kebbit Hunter by VIP</b><br>"
+        + "Version: 1.0<br><br>"
+        + "<b>Description:</b><br>"
+        + "This script automates Kebbit hunting in the Piscatoris Falconry area.<br><br>"
+        + "<b>Requirements:</b>"
+        + "<ul>"
+        + "    <li>Appropriate Hunter level for the selected Kebbit.</li>"
+        + "    <li>Access to the Piscatoris Falconry area.</li>"
+        + "    <li>A falcon and Falconer's glove (obtained from Matthias).</li>"
+        + "</ul>"
+        + "<b>Configuration:</b>"
+        + "<ul>"
+        + "    <li>Select the type of Kebbit to hunt in the settings.</li>"
+        + "    <li>Enable the overlay to monitor the script's status.</li>"
+        + "</ul>"
         + "</html>")
 public interface HunterKebbitsConfig extends Config {
 

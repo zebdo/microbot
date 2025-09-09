@@ -17,6 +17,10 @@ public enum Gems
     DIAMOND("Diamond", 43),
     DRAGONSTONE("Dragonstone", 55),
     ONYX("Onyx", 67),
+    AMETHYST_BOLT_TIPS("Amethyst bolt tips", 83),
+    AMETHYST_ARROWTIPS("Amethyst arrowtips", 85),
+    AMETHYST_JAVELIN_HEADS("Amethyst javelin heads", 87),
+    AMETHYST_DART_TIPS("Amethyst dart tips", 89),
     ZENYTE("Zenyte", 89);
 
     private final String name;

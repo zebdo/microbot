@@ -20,13 +20,14 @@ import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldArea;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.item.Rs2EnsouledHead;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcManager;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2Prayer;
 import net.runelite.client.plugins.microbot.util.prayer.Rs2PrayerEnum;
-import net.runelite.client.plugins.microbot.util.slayer.Rs2Slayer;
+import net.runelite.client.plugins.microbot.util.skills.slayer.Rs2Slayer;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import org.slf4j.event.Level;
 
@@ -76,6 +77,29 @@ public class AttackNpcScript extends Script {
                     AIOFighterPlugin.setState(State.IDLE);
                 }
 
+                if (config.state().equals(State.BANKING) || config.state().equals(State.WALKING))
+                    return;
+
+                if (config.reanimateEnsouledHeads()) {
+                    Rs2EnsouledHead head = Rs2EnsouledHead.getReanimatableHead();
+                    if (head != null) {
+                        boolean prevPause = Microbot.pauseAllScripts.getAndSet(true);
+                        try {
+                            if (head.reanimate()) {
+                                sleepUntil(() -> Rs2Npc.getNpcsForPlayer(Rs2EnsouledHead::isNpcReanimated).findAny().isPresent(), 15000);
+                            }
+                        } finally {
+                            Microbot.pauseAllScripts.set(prevPause);
+                        }
+                    }
+                    Rs2NpcModel reanimated = Rs2Npc.getNpcsForPlayer(Rs2EnsouledHead::isNpcReanimated).findAny().orElse(null);
+                    if (reanimated != null) {
+                        Rs2Npc.interact(reanimated, "Attack");
+                        return;
+                    }
+                }
+
+
                 attackableArea = new Rs2WorldArea(config.centerLocation().toWorldArea());
                 attackableArea = attackableArea.offset(config.attackRadius());
                 List<String> npcsToAttack = Arrays.stream(config.attackableNpcs().split(","))
@@ -101,9 +125,6 @@ public class AttackNpcScript extends Script {
                 }
                 filteredAttackableNpcs.set(attackableNpcs);
 
-                if (config.state().equals(State.BANKING) || config.state().equals(State.WALKING))
-                    return;
-
                 // Check if we should pause while looting is happening
                 if (Microbot.pauseAllScripts.get()) {
                     return; // Don't attack while looting
@@ -120,12 +141,12 @@ public class AttackNpcScript extends Script {
                         }
                     }
                 }
-                
+
                 // Check if our cached target died
                 if (config.toggleWaitForLoot() && !AIOFighterPlugin.isWaitingForLoot() && cachedTargetNpcIndex != -1) {
                     // Find the NPC by index using Rs2 API
                     Rs2NpcModel cachedNpcModel = Rs2Npc.getNpcByIndex(cachedTargetNpcIndex);
-                    
+
                     if (cachedNpcModel != null && (cachedNpcModel.isDead() || (cachedNpcModel.getHealthRatio() == 0 && cachedNpcModel.getHealthScale() > 0))) {
                         AIOFighterPlugin.setWaitingForLoot(true);
                         AIOFighterPlugin.setLastNpcKilledTime(System.currentTimeMillis());
@@ -162,14 +183,13 @@ public class AttackNpcScript extends Script {
                 }
                 messageShown = false;
 
-                if(Rs2AntibanSettings.antibanEnabled && Rs2AntibanSettings.actionCooldownChance > 0){
+                if (Rs2AntibanSettings.antibanEnabled && Rs2AntibanSettings.actionCooldownChance > 0) {
                     if (Rs2AntibanSettings.actionCooldownActive) {
                         AIOFighterPlugin.setState(State.COMBAT);
                         handleItemOnNpcToKill(config);
                         return;
                     }
-                }
-                else {
+                } else {
                     if (Rs2Combat.inCombat()) {
                         AIOFighterPlugin.setState(State.COMBAT);
                         handleItemOnNpcToKill(config);
@@ -254,7 +274,6 @@ public class AttackNpcScript extends Script {
             Rs2Player.waitForAnimation();
         }
     }
-
 
     @Override
     public void shutdown() {

@@ -41,8 +41,7 @@ public interface DailyTasksConfig extends Config {
             name = "Collect Herb Boxes",
             description = "Collect daily herb boxes from NMZ",
             position = 0,
-            section = tasksSection,
-            hidden = true
+            section = tasksSection
     )
     default boolean collectHerbBoxes() {
         return true;

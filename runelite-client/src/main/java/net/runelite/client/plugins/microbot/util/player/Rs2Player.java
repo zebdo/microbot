@@ -158,7 +158,7 @@ public class Rs2Player {
         return teleBlockTime > 0;
     }
 
-    private static final Map<Player, Long> playerDetectionTimes = new ConcurrentHashMap<>();
+    private static final Map<Integer, Long> playerDetectionTimes = new ConcurrentHashMap<>();
 
     public static void handlePotionTimers(VarbitChanged event) {
         if (event.getVarbitId() == Varbits.ANTIFIRE) {
@@ -400,6 +400,9 @@ public class Rs2Player {
      * @return {@code true} if the player is interacting with another entity, {@code false} otherwise.
      */
     public static boolean isInteracting() {
+        if (Microbot.getClient().getLocalPlayer() == null) {
+            return false;
+        }
         return Optional.of(Microbot.getClient().getLocalPlayer().isInteracting()).orElse(false);
     }
 
@@ -506,18 +509,18 @@ public class Rs2Player {
                     .filter(x -> x != null && x.getWorldLocation().distanceTo(Rs2Player.getWorldLocation()) <= distance)
                     .collect(Collectors.toList());
         }
-        if (time > 0 && players.size() > amountOfPlayers) {
+        if (time > 0 && players.size() >= amountOfPlayers) {
             // Update detection times for currently detected players
             for (Rs2PlayerModel player : players) {
-                playerDetectionTimes.putIfAbsent(player, currentTime);
+                playerDetectionTimes.putIfAbsent(player.getId(), currentTime);
             }
 
             // Remove players who are no longer detected
-            playerDetectionTimes.keySet().retainAll(players);
+            playerDetectionTimes.keySet().retainAll(players.stream().map(Rs2PlayerModel::getId).collect(Collectors.toSet()));
 
             // Check if any player has been detected for longer than the specified time
             for (Rs2PlayerModel player : players) {
-                long detectionTime = playerDetectionTimes.getOrDefault(player, 0L);
+                long detectionTime = playerDetectionTimes.getOrDefault(player.getId(), 0L);
                 if (currentTime - detectionTime >= time) {
                     logout();
                     playerDetectionTimes.clear();
@@ -579,15 +582,15 @@ public class Rs2Player {
         if (time > 0 && players.size() >= amountOfPlayers) {
             // Update detection times for currently detected players
             for (Rs2PlayerModel player : players) {
-                playerDetectionTimes.putIfAbsent(player, currentTime);
+                playerDetectionTimes.putIfAbsent(player.getId(), currentTime);
             }
 
             // Remove players who are no longer detected
-            playerDetectionTimes.keySet().retainAll(players);
+            playerDetectionTimes.keySet().retainAll(players.stream().map(Rs2PlayerModel::getId).collect(Collectors.toSet()));
 
             // Check if any player has been detected for longer than the specified time
             for (Rs2PlayerModel player : players) {
-                long detectionTime = playerDetectionTimes.getOrDefault(player, 0L);
+                long detectionTime = playerDetectionTimes.getOrDefault(player.getId(), 0L);
                 if (currentTime - detectionTime >= time) {
                     int randomWorld = Login.getRandomWorld(isMember());
                     Microbot.hopToWorld(randomWorld);
@@ -1117,6 +1120,9 @@ public class Rs2Player {
             LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation());
             return WorldPoint.fromLocalInstance(Microbot.getClient(), l);
         } else {
+            if (Microbot.getClient().getLocalPlayer() == null) {
+                return null; // Handle case where local player is not available
+            }
             return Microbot.getClient().getLocalPlayer().getWorldLocation();
         }
     }

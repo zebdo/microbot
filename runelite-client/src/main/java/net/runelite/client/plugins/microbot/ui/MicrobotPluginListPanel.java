@@ -43,7 +43,6 @@ import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.config.PluginSearch;
 import net.runelite.client.plugins.microbot.MicrobotConfig;
-import net.runelite.client.plugins.microbot.dashboard.DashboardWebSocket;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.MultiplexingPluginPanel;
@@ -288,7 +287,6 @@ public class MicrobotPluginListPanel extends PluginPanel {
 
         try {
             pluginManager.startPlugin(plugin);
-            DashboardWebSocket.SendPluginList();
         } catch (PluginInstantiationException ex) {
             log.warn("Error when starting plugin {}", plugin.getClass().getSimpleName(), ex);
         }
@@ -299,7 +297,6 @@ public class MicrobotPluginListPanel extends PluginPanel {
 
         try {
             pluginManager.stopPlugin(plugin);
-            DashboardWebSocket.SendPluginList();
         } catch (PluginInstantiationException ex) {
             log.warn("Error when stopping plugin {}", plugin.getClass().getSimpleName(), ex);
         }

@@ -60,16 +60,19 @@ public class AIOMagicPlugin extends Plugin {
 	private SuperHeatScript superHeatScript;
 
 	@Inject
-	private TeleportScript teleportScript;
+    private TeleportScript teleportScript;
 
 	@Inject
-	private TeleAlchScript teleAlchScript;
+    private TeleAlchScript teleAlchScript;
 
 	@Inject
-	private StunAlchScript stunAlchScript;
+    private StunAlchScript stunAlchScript;
 
 	@Inject
-	private StunTeleAlchScript stunTeleAlchScript; // NEW
+    private StunTeleAlchScript stunTeleAlchScript; // NEW
+
+    @Inject
+    private SpinFlaxScript spinFlaxScript;
 
 	public static String version = "1.2.0"; // bumped
 
@@ -108,41 +111,45 @@ public class AIOMagicPlugin extends Plugin {
 			overlayManager.add(aioMagicOverlay);
 		}
 
-		switch (config.magicActivity()) {
-			case SPLASHING:
-				splashScript.run();
-				break;
-			case ALCHING:
-				alchScript.run();
-				break;
-			case SUPERHEAT:
-				superHeatScript.run();
-				break;
-			case TELEPORT:
-				teleportScript.run();
-				break;
-			case TELEALCH:
-				teleAlchScript.run();
-				break;
-			case STUNALCH:
-				stunAlchScript.run();
-				break;
-			case STUNTELEALCH: // NEW
-				stunTeleAlchScript.run();
-				break;
-		}
-	}
+        switch (config.magicActivity()) {
+            case SPLASHING:
+                splashScript.run();
+                break;
+            case ALCHING:
+                alchScript.run();
+                break;
+            case SUPERHEAT:
+                superHeatScript.run();
+                break;
+            case TELEPORT:
+                teleportScript.run();
+                break;
+            case TELEALCH:
+                teleAlchScript.run();
+                break;
+            case STUNALCH:
+                stunAlchScript.run();
+                break;
+            case STUNTELEALCH: // NEW
+                stunTeleAlchScript.run();
+                break;
+            case SPINFLAX:
+                spinFlaxScript.run();
+                break;
+        }
+    }
 
-	protected void shutDown() {
-		splashScript.shutdown();
-		alchScript.shutdown();
-		superHeatScript.shutdown();
-		teleportScript.shutdown();
-		teleAlchScript.shutdown();
-		stunAlchScript.shutdown();
-		if (stunTeleAlchScript != null) stunTeleAlchScript.shutdown(); // NEW
-		overlayManager.remove(aioMagicOverlay);
-	}
+    protected void shutDown() {
+        splashScript.shutdown();
+        alchScript.shutdown();
+        superHeatScript.shutdown();
+        teleportScript.shutdown();
+        teleAlchScript.shutdown();
+        stunAlchScript.shutdown();
+        if (stunTeleAlchScript != null) stunTeleAlchScript.shutdown(); // NEW
+        if (spinFlaxScript != null) spinFlaxScript.shutdown();
+        overlayManager.remove(aioMagicOverlay);
+    }
 
 	@Subscribe
 	public void onConfigChanged(ConfigChanged event) {

@@ -52,6 +52,7 @@ public class JewelryScript extends Script {
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
                 long startTime = System.currentTimeMillis();
+                if (setFullView()) return;
                 
                 if (hasStateChanged()) {
                     state = updateState();
@@ -73,7 +74,7 @@ public class JewelryScript extends Script {
                         Rs2Bank.preHover();
                         break;
                     case BANKING:
-                        boolean isBankOpen = Rs2Bank.isNearBank(plugin.getCraftingLocation().getBankLocation(),15) ? Rs2Bank.useBank() : Rs2Bank.walkToBankAndUseBank();
+                        boolean isBankOpen = Rs2Bank.isNearBank(15) ? Rs2Bank.openBank() : Rs2Bank.walkToBankAndUseBank();
                         
                         if (!isBankOpen || !Rs2Bank.isOpen()) return;
                         
@@ -103,13 +104,13 @@ public class JewelryScript extends Script {
                             return;
                         }
 
-                        int withdrawAmount = plugin.getJewelry().getGem() != Gem.NONE ? 13 : 27;
-                        
-                        boolean shouldCraftJewelry = plugin.getJewelry().getGem() != Gem.NONE 
-                                ? Rs2Bank.hasBankItem(plugin.getJewelry().getGem().getCutItemID(), withdrawAmount) && Rs2Bank.hasBankItem(plugin.getJewelry().getJewelryType().getItemID(), withdrawAmount)
-                                : Rs2Bank.hasBankItem(plugin.getJewelry().getJewelryType().getItemID(), withdrawAmount);
-                        
-                        if (shouldCraftJewelry) {
+                        int maxPerTrip = plugin.getJewelry().getGem() != Gem.NONE ? 13 : 27;
+                        int availableBars = Rs2Bank.count(plugin.getJewelry().getJewelryType().getItemID());
+                        int craftAmount = plugin.getJewelry().getGem() != Gem.NONE
+                                ? Math.min(Math.min(maxPerTrip, availableBars), Rs2Bank.count(plugin.getJewelry().getGem().getCutItemID()))
+                                : Math.min(maxPerTrip, availableBars);
+
+                        if (craftAmount > 0) {
                             if (!Rs2Inventory.isEmpty()){
                                 Rs2Bank.depositAllExcept(plugin.getJewelry().getToolItemID());
                                 Rs2Inventory.waitForInventoryChanges(1800);
@@ -125,12 +126,12 @@ public class JewelryScript extends Script {
                                 Rs2Inventory.waitForInventoryChanges(1800);
                             }
                             
-                            if (plugin.getJewelry().getGem() != null) {
-                                Rs2Bank.withdrawX(plugin.getJewelry().getGem().getCutItemID(), withdrawAmount);
+                            if (plugin.getJewelry().getGem() != Gem.NONE) {
+                                Rs2Bank.withdrawX(plugin.getJewelry().getGem().getCutItemID(), craftAmount);
                                 Rs2Inventory.waitForInventoryChanges(1800);
                             }
                             
-                            Rs2Bank.withdrawX(plugin.getJewelry().getJewelryType().getItemID(), withdrawAmount);
+                            Rs2Bank.withdrawX(plugin.getJewelry().getJewelryType().getItemID(), craftAmount);
                             Rs2Inventory.waitForInventoryChanges(1800);
                             Rs2Bank.closeBank();
                             sleepUntil(() -> !Rs2Bank.isOpen());
@@ -362,6 +363,24 @@ public class JewelryScript extends Script {
             }
         }, 0, 600, TimeUnit.MILLISECONDS);
         return true;
+    }
+
+    private boolean setFullView() {
+        boolean changed = false;
+        if (Rs2Camera.getZoom() > 200) {
+            Rs2Camera.setZoom(200);
+            changed = true;
+        }
+        if (Rs2Camera.getPitch() < 380) {
+            Rs2Camera.setPitch(383);
+            changed = true;
+        }
+        int yaw = Rs2Camera.getYaw();
+        if (yaw > 16 && yaw < 2032) {
+            Rs2Camera.setYaw(0);
+            changed = true;
+        }
+        return changed;
     }
 
     @Override

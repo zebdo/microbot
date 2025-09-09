@@ -2,6 +2,8 @@ package net.runelite.client.plugins.microbot.util.cache;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Player;
+import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.client.config.ConfigProfile;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
@@ -12,6 +14,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * Central manager for all Rs2UnifiedCache instances in the Microbot framework.
@@ -28,7 +31,7 @@ public class Rs2CacheManager implements AutoCloseable {
     private final AtomicBoolean isShutdown;
     
     // Profile management - similar to Rs2Bank
-    private static String rsProfileKey = null;
+    private static AtomicReference<String> rsProfileKey = new AtomicReference<>("");
     private static AtomicBoolean loggedInCacheStateKnown = new AtomicBoolean(false);
     
     // Cache loading retry configuration
@@ -36,8 +39,72 @@ public class Rs2CacheManager implements AutoCloseable {
     private static final long CACHE_LOAD_RETRY_DELAY_MS = 1000; // 1 second between retries
     private static final AtomicBoolean cacheLoadingInProgress = new AtomicBoolean(false);
     
-    public static boolean isCacheDataVaild() {
-        return loggedInCacheStateKnown.get();
+    /**
+     * Checks if cache data is VALID at the manager level (profile consistency).
+     * 
+     * VALID = Cache manager state is consistent and trustworthy
+     * - loggedInCacheStateKnown: Cache manager has initialized properly
+     * - rsProfileKey exists and matches current RuneLite profile
+     * - ConfigManager is available for cache operations
+     * - No cache loading operations in progress (atomic check)
+     * - No profile switches or stale manager state
+     * 
+     * This is the TOP-LEVEL validation for all cache systems.
+     * Individual caches (Rs2Bank, etc.) add their own validation layers.
+     * 
+     * @return true if cache manager state is valid and consistent, false otherwise
+     */
+    public static boolean isCacheDataValid() {
+        return loggedInCacheStateKnown.get() && rsProfileKey != null && !rsProfileKey.get().isEmpty() 
+                && Microbot.getConfigManager() != null 
+                && rsProfileKey.get().equals(Microbot.getConfigManager().getRSProfileKey()) && cacheLoadingInProgress.get() == false;
+    }
+    
+    /**
+     * Checks if bank cache is COMPLETELY READY (all validation layers).
+     * 
+     * This combines Rs2CacheManager validation + Rs2Bank validation + Rs2BankData states:
+     * 1. VALID: Cache manager profile consistency (this class)
+     * 2. VALID: Rs2Bank profile validation 
+     * 3. LOADED: Raw cache data from config (Rs2BankData)
+     * 4. BUILT: Rs2ItemModel objects ready for scripts (Rs2BankData)
+     * 
+     * Scripts should use this as the MASTER CHECK before using bank data.
+     * 
+     * @return true if all cache layers are ready, false otherwise
+     */
+    public static boolean isBankCacheLoaded() {
+        return Rs2Bank.isCacheLoaded();
+    }
+    
+    /**
+     * Checks if bank cache is BUILT (Stage 2: Usable objects ready).
+     * 
+     * BUILT = Rs2ItemModel objects created and ready for script usage
+     * - rebuildBankItemsList() completed successfully
+     * - Raw data converted to full objects with names/properties  
+     * - ItemManager validation done on client thread
+     * - Scripts can immediately use hasItem(), count(), etc.
+     * 
+     * @return true if bank items are built and script-ready, false otherwise
+     */
+    public static boolean isBankCacheDataBuild() {
+        return Rs2Bank.isCacheDataBuilt();
+    }
+    
+    /**
+     * Checks if bank cache is LOADED (Stage 1: Raw data from config).
+     * 
+     * LOADED = Raw cache data exists but NOT yet usable
+     * - idQuantityAndSlot array contains [id, quantity, slot] triplets
+     * - Data restored from RuneLite config persistence
+     * - Items are still integers - NO Rs2ItemModel objects yet
+     * - Client thread processing NOT required for this stage
+     * 
+     * @return true if raw cache data is loaded, false otherwise
+     */
+    public static boolean isBankCacheDataLoaded() {
+        return Rs2Bank.isCacheDataLoaded();
     }
  
     
@@ -394,13 +461,45 @@ public class Rs2CacheManager implements AutoCloseable {
     @SuppressWarnings("unused")
     private static void loadPersistentCaches() {
         try {
-            rsProfileKey = Microbot.getConfigManager().getRSProfileKey();
-            loadPersistentCaches(rsProfileKey);
+            rsProfileKey.set( Microbot.getConfigManager().getRSProfileKey());
+            if (rsProfileKey == null || rsProfileKey.get().isEmpty()) {
+                log.warn("Cannot load persistent caches: profile key is null");
+                return;
+            }
+            loadPersistentCaches(rsProfileKey.get());
         } catch (Exception e) {
             log.error("Failed to load persistent caches", e);
         }
     }
     
+    public static void loadVarPlayerCache(){    
+        try {
+            if (Microbot.getConfigManager() == null) {
+                log.warn("Cannot load persistent varplayer cache: ConfigManager is null");
+                return;
+            }
+            String profileKey = Microbot.getConfigManager().getRSProfileKey();
+            if(rsProfileKey == null || rsProfileKey.get().isEmpty()){
+                log.warn("Cannot load persistent varplayer cache: profile key is null");
+                return;
+            }
+            rsProfileKey.set( profileKey);
+            if (rsProfileKey == null || rsProfileKey.get().isEmpty()) {
+                log.warn("Cannot load persistent varplayer cache: profile key is null");
+                return;
+            }
+        } catch (Exception e) {
+            log.error("Failed to load persistent varplayer cache", e);
+            return;
+        }
+        // Load VarPlayer cache
+        if (Rs2VarPlayerCache.getCache().isPersistenceEnabled()) {
+            CacheSerializationManager.loadCache(Rs2VarPlayerCache.getCache(), Rs2VarPlayerCache.getCache().getConfigKey(), rsProfileKey.get(), false);
+            log.debug ("Loaded VarPlayer cache from configuration, new cache size: {}", 
+                        Rs2VarPlayerCache.getCache().size());
+        }
+        
+    }
     /**
      * Loads persistent caches for a specific profile.
      * 
@@ -413,7 +512,7 @@ public class Rs2CacheManager implements AutoCloseable {
                 return;
             }
             
-            Rs2CacheManager.rsProfileKey = profileKey;
+            Rs2CacheManager.rsProfileKey.set(profileKey);
             
             log.info("Loading persistent caches from configuration for profile: {}", profileKey);
             
@@ -485,7 +584,7 @@ public class Rs2CacheManager implements AutoCloseable {
      * Implements retry logic to ensure player is valid before loading.
      */
     public static void loadCacheStateFromConfig(String newRsProfileKey) {
-        if (!isCacheDataVaild()) {
+        if (!isCacheDataValid()) {
             // Start retry task if not already in progress
             if (cacheLoadingInProgress.compareAndSet(false, true)) {
                 // Schedule retry task in background thread
@@ -545,17 +644,17 @@ public class Rs2CacheManager implements AutoCloseable {
      * This method handles both Rs2Bank and other cache systems.
      */
     public static void setUnknownInitialCacheState() {
-        if (    isCacheDataVaild() 
+        if (    isCacheDataValid() 
                 && rsProfileKey != null 
                 && Microbot.getConfigManager() != null 
-                && rsProfileKey == Microbot.getConfigManager().getRSProfileKey()) {
+                && rsProfileKey.get() ==  Microbot.getConfigManager().getRSProfileKey()) {
             log.info("In Setting initial cache state as unknown for profile \'{}\', saving current cache state", rsProfileKey);
-            savePersistentCaches(rsProfileKey);
+            savePersistentCaches(rsProfileKey.get());
         }
         // Also handle Rs2Bank cache state
         Rs2Bank.setUnknownInitialCacheState();        
         loggedInCacheStateKnown.set( false);
-        rsProfileKey = null;
+        rsProfileKey.set("");
     }
     
     /**
@@ -564,11 +663,11 @@ public class Rs2CacheManager implements AutoCloseable {
      */
     private static void loadCaches(String newRsProfileKey) {
         // Only re-load from config if loading from a new profile
-        if (newRsProfileKey != null && !newRsProfileKey.equals(rsProfileKey)) {
+        if (newRsProfileKey != null && !newRsProfileKey.equals(rsProfileKey.get())) {
             // If we've hopped between profiles, save current state first
-            if (rsProfileKey != null && isCacheDataVaild()) {
-                log.info("Saving current cache state before loading new profile: {}, we have valid cache", rsProfileKey);
-                savePersistentCaches(rsProfileKey);
+            if (rsProfileKey != null&& !rsProfileKey.get().isEmpty() && isCacheDataValid()) {
+                log.info("Saving current cache state before loading new profile: {}, we have valid cache", rsProfileKey.get());
+                savePersistentCaches(rsProfileKey.get());
             }            
             // Load persistent caches
             loadPersistentCaches(newRsProfileKey);                        
@@ -600,13 +699,30 @@ public class Rs2CacheManager implements AutoCloseable {
      */
     public static void emptyCacheState() {
         // Save current state before clearing
-        if (rsProfileKey != null && isCacheDataVaild()) {
-            savePersistentCaches(rsProfileKey);
+        if (rsProfileKey != null && !rsProfileKey.get().isEmpty() && isCacheDataValid()) {
+             // check when the cache was last saved to validate membership expiry
+            long cacheTimestamp = Rs2VarPlayerCache.getInstance().getCacheTimestamp(VarPlayerID.ACCOUNT_CREDIT);
+            if (cacheTimestamp <= 0) {
+                log.info("No valid cache timestamp found for membership validation");                
+            }
+            
+            // calculate days since cache was saved
+            long currentTime = System.currentTimeMillis();
+            long daysSinceCached = (currentTime - cacheTimestamp) / (24 * 60 * 60 * 1000);
+            
+            // get cached membership days from when data was saved
+            int cachedMembershipDays = Rs2VarPlayerCache.getVarPlayerValue(VarPlayerID.ACCOUNT_CREDIT);
+            ConfigProfile profile = Microbot.getConfigManager().getProfile();
+            Microbot.getConfigManager().setMemberExpireDays(profile, cachedMembershipDays);
+            Microbot.getConfigManager().setMemberExpireDaysTimeStemp(profile, currentTime);
+            log.debug("Saving current cache state before clearing for profile: {}, cached membership days: {}, days since cached: {}, current time: {}",
+                    rsProfileKey.get(), cachedMembershipDays, daysSinceCached , currentTime);
+            
         }        
         // Clear Rs2Bank state        
         Rs2Bank.emptyCacheState();
         // Clear cache manager state
-        rsProfileKey = null;
+        rsProfileKey.set("");
         loggedInCacheStateKnown.set(false);
         Rs2CacheManager.invalidateAllCaches(false);
         log.info("Emptied all cache states");
@@ -618,8 +734,8 @@ public class Rs2CacheManager implements AutoCloseable {
      */
     public static void savePersistentCaches() {
         try {
-            if (rsProfileKey != null) {
-                savePersistentCaches(rsProfileKey);
+            if (rsProfileKey != null && !rsProfileKey.get().isEmpty()) {
+                savePersistentCaches(rsProfileKey.get());
             }
         } catch (Exception e) {
             log.error("Failed to save persistent caches", e);
@@ -634,7 +750,7 @@ public class Rs2CacheManager implements AutoCloseable {
      */
     public static void savePersistentCaches(String profileKey) {
         try {
-            if (!isCacheDataVaild() ) {
+            if (!isCacheDataValid() ) {
                 log.warn("Cache data is not valid, cannot save persistent caches");
                 return;
             }

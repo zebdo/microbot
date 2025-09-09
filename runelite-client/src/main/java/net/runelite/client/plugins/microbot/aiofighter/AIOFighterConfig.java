@@ -9,7 +9,7 @@ import net.runelite.client.plugins.microbot.aiofighter.enums.State;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
 import net.runelite.client.plugins.microbot.util.misc.SpecialAttackWeaponEnum;
-import net.runelite.client.plugins.microbot.util.slayer.enums.SlayerMaster;
+import net.runelite.client.plugins.microbot.util.skills.slayer.enums.SlayerMaster;
 
 @ConfigGroup(AIOFighterConfig.GROUP)
 @ConfigInformation("1. Make sure to place the cannon first before starting the plugin. <br />" +
@@ -491,7 +491,7 @@ public interface AIOFighterConfig extends Config {
             keyName = "useMagic",
             name = "Use Magic",
             description = "Use Magic",
-            position = 1,
+            position = 0,
             section = skillingSection
     )
     default boolean useMagic() {
@@ -502,11 +502,22 @@ public interface AIOFighterConfig extends Config {
             keyName = "magicSpell",
             name = "Auto Cast Spell",
             description = "Magic Auto Cast Spell",
-            position = 2,
+            position = 1,
             section = skillingSection
     )
     default Rs2CombatSpells magicSpell() {
         return Rs2CombatSpells.WIND_STRIKE;
+    }
+
+    @ConfigItem(
+            keyName = "reanimateHeads",
+            name = "Reanimate Ensouled Heads",
+            description = "Enable to loot and reanimate ensouled heads with Arceeus",
+            position = 2,
+            section = skillingSection
+    )
+    default boolean reanimateEnsouledHeads() {
+        return false;
     }
 
     //Avoid Controlled attack style
