@@ -8,6 +8,11 @@ import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
+import net.runelite.client.plugins.microbot.util.poh.PohTransport;
+import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
+import net.runelite.client.plugins.microbot.util.poh.data.MountedMythical;
+import net.runelite.client.plugins.microbot.util.poh.data.NexusPortal;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -27,14 +32,6 @@ public class Transport {
     private int objectId;
     @Getter
     private String name;
-    /**
-     * Used by PohTransport to trace back to the PohTransportable that can execute the teleportation
-     */
-    @Getter
-    private String enumValue;
-    @Getter
-    private String enumClass;
-    //END microbot variables
 
     /**
      * A location placeholder different from null to use for permutation transports
@@ -174,12 +171,17 @@ public class Transport {
         //START microbot variables
         this.name = origin.getName();
         this.objectId = origin.getObjectId();
-        this.enumValue = origin.getEnumValue();
         this.action = origin.getAction();
         this.currencyName = origin.getCurrencyName();
         this.currencyAmount = origin.getCurrencyAmount();
         this.isMembers = origin.isMembers;
         //END microbot variables
+    }
+
+    public Transport(WorldPoint destination, String displayInfo, TransportType transportType) {
+        this.destination = destination;
+        this.displayInfo = displayInfo;
+        this.type = transportType;
     }
 
     Transport(Map<String, String> fieldMap, TransportType transportType) {
@@ -209,13 +211,6 @@ public class Transport {
         }
 
         //START microbot variables
-        if((value = fieldMap.get("EnumValue")) != null && !value.trim().isEmpty()) {
-            this.enumValue = value.trim();
-        }
-        if((value = fieldMap.get("EnumClass")) != null && !value.trim().isEmpty()) {
-            this.enumClass = value.trim();
-        }
-
         if ((value = fieldMap.get("menuOption menuTarget objectID")) != null && !value.trim().isEmpty()) {
             value = value.trim(); // Remove leading/trailing spaces
 
@@ -544,12 +539,11 @@ public class Transport {
         addTransports(transports, "teleportation_minigames.tsv", TransportType.TELEPORTATION_MINIGAME);
         addTransports(transports, "teleportation_levers.tsv", TransportType.TELEPORTATION_LEVER);
         addTransports(transports, "teleportation_portals.tsv", TransportType.TELEPORTATION_PORTAL);
+        addTransports(transports, "teleportation_portals_poh.tsv", TransportType.TELEPORTATION_PORTAL);
         addTransports(transports, "teleportation_spells.tsv", TransportType.TELEPORTATION_SPELL);
         addTransports(transports, "wilderness_obelisks.tsv", TransportType.WILDERNESS_OBELISK);
         addTransports(transports, "magic_carpets.tsv", TransportType.MAGIC_CARPET);
         addTransports(transports, "npcs.tsv", TransportType.NPC);
-        addTransports(transports, "teleportation_portal_poh.tsv", TransportType.TELEPORTATION_PORTAL);
-        addTransports(transports, "teleportation_poh.tsv", TransportType.POH);
         System.out.println("Loaded " + transports.size() + " transports");
         return transports;
     }

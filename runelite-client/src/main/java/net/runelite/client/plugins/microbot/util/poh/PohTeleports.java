@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.util.poh;
 
 import net.runelite.api.GameObject;
 import net.runelite.api.TileObject;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.widgets.Widget;
@@ -11,6 +12,7 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.poh.data.HouseLocation;
+import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
 import net.runelite.client.plugins.microbot.util.poh.data.JewelleryBoxType;
 import net.runelite.client.plugins.microbot.util.poh.data.NexusPortal;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -18,6 +20,7 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;

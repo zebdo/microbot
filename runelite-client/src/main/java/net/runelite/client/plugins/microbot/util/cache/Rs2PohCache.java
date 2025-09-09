@@ -13,10 +13,12 @@ import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerial
 import net.runelite.client.plugins.microbot.util.cache.util.LogOutputMode;
 import net.runelite.client.plugins.microbot.util.cache.util.Rs2CacheLoggingUtils;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
+import net.runelite.client.plugins.microbot.util.poh.PohTransport;
 import net.runelite.client.plugins.microbot.util.poh.data.*;
 
 import java.lang.reflect.Type;
 import java.util.*;
+import java.util.stream.Collectors;
 
 @Slf4j
 public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements CacheSerializable {
@@ -59,6 +61,7 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
     @Subscribe
     public void onDecorativeObjectSpawned(DecorativeObjectSpawned event) {
         DecorativeObject go = event.getDecorativeObject();
+        if (go == null) return;
         if (MountedMythical.isMountedMythsCape(go)) {
             setTeleports(MountedMythical.class, List.of(MountedMythical.values()));
         } else if (MountedXerics.isMountedXerics(go)) {
@@ -71,8 +74,25 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
     }
 
     @Subscribe
+    public void onDecorativeObjectDespawned(DecorativeObjectDespawned event) {
+        DecorativeObject go = event.getDecorativeObject();
+        if (go == null) return;
+        if (MountedMythical.isMountedMythsCape(go)) {
+            remove(MountedMythical.class.getSimpleName());
+        } else if (MountedXerics.isMountedXerics(go)) {
+            remove(MountedXerics.class.getSimpleName());
+        } else if (MountedDigsite.isMountedDigsite(go)) {
+            remove(MountedDigsite.class.getSimpleName());
+        } else if (MountedGlory.isMountedGlory(go)) {
+            remove(MountedGlory.class.getSimpleName());
+        }
+    }
+
+    @Subscribe
     public void onGameObjectSpawned(GameObjectSpawned event) {
+        //TODO("Make sure we only add transport's when we're inside our own home.")
         GameObject go = event.getGameObject();
+        if (go == null) return;
         PohPortal portal = PohPortal.getPohPortal(go);
         if (portal != null) {
             addTeleport(PohPortal.class, portal);
@@ -81,7 +101,7 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
         JewelleryBoxType jewelleryBoxType = JewelleryBoxType.getJewelleryBoxType(go);
         if (jewelleryBoxType != null) {
             setTeleports(JewelleryBox.class, jewelleryBoxType.getAvailableTeleports());
-        }else if (NexusPortal.isNexusPortal(go)) {
+        } else if (NexusPortal.isNexusPortal(go)) {
             setTeleports(NexusPortal.class, NexusPortal.getAvailableTeleports());
         } else if (PohTeleports.isFairyRing(go)) {
             log.info("Found fairy rings in POH");
@@ -89,26 +109,53 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
         }
     }
 
-    private void addTeleport(Class<? extends Enum<? extends PohTeleport>> type, PohTeleport transport) {
-        String key = type.getSimpleName();
-        List<PohTeleport> transports = get(key, ArrayList::new);
-        if (transports.contains(transport)) {
-            return;
-        }
-        transports.add(transport);
-        put(key, transports);
-        log.info("Putting {} Teleport to {}", get(key).size(), key);
-    }
-
-    private void setTeleports(Class<? extends Enum<? extends PohTeleport>> type, List<? extends PohTeleport> transports) {
-        String key = type.getSimpleName();
-        put(key, Collections.unmodifiableList(transports));
-        log.info("Putting {} Teleports to {}", get(key).size(), key);
-    }
 
     @Subscribe
     public void onGameObjectDespawned(GameObjectDespawned event) {
+        GameObject go = event.getGameObject();
+        if (go == null) return;
+        PohPortal portal = PohPortal.getPohPortal(go);
+        if (portal != null) {
+            removeTeleport(PohPortal.class, portal);
+            return;
+        }
+        JewelleryBoxType jewelleryBoxType = JewelleryBoxType.getJewelleryBoxType(go);
+        if (jewelleryBoxType != null) {
+            remove(JewelleryBox.class.getSimpleName());
+        } else if (NexusPortal.isNexusPortal(go)) {
+            remove(NexusPortal.class.getSimpleName());
+        } else if (PohTeleports.isFairyRing(go)) {
+            log.info("Removing Fairy Rings from POH");
+            remove("fairyRings");
+        }
+    }
 
+    private void removeTeleport(Class<? extends Enum<? extends PohTeleport>> type, PohTeleport teleport) {
+        String key = type.getSimpleName();
+        List<PohTeleport> teleports = get(key, ArrayList::new);
+        if (!teleports.contains(teleport)) {
+            return;
+        }
+        teleports.remove(teleport);
+        put(key, teleports);
+        log.info("Removing {} Teleport from {}", teleport.name(), key);
+    }
+
+    private void addTeleport(Class<? extends Enum<? extends PohTeleport>> type, PohTeleport teleport) {
+        String key = type.getSimpleName();
+        List<PohTeleport> teleports = get(key, ArrayList::new);
+        if (teleports.contains(teleport)) {
+            return;
+        }
+        teleports.add(teleport);
+        put(key, teleports);
+        log.info("Adding {} Teleport to {}", teleport.name(), key);
+    }
+
+    private void setTeleports(Class<? extends Enum<? extends PohTeleport>> type, List<? extends PohTeleport> teleports) {
+        String key = type.getSimpleName();
+        put(key, Collections.unmodifiableList(teleports));
+        log.info("Putting {} Teleports to {}", get(key).size(), key);
     }
 
     @Override
@@ -127,23 +174,24 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
     }
 
     public static boolean isTransportUsable(Transport transport) {
+        if (transport == null) return false;
         if (transport.getType() == TransportType.FAIRY_RING) {
+            //For fairy ring we only have to check if the cache contains the key
             return getInstance().containsKey("fairyRings");
         }
-        return getTeleport(transport) != null;
+        // For anything else we have to see if the PohTeleport exists in the cache
+        if (!(transport instanceof PohTransport)) return false;
+
+        PohTransport pohTransport = (PohTransport) transport;
+        PohTeleport teleport = pohTransport.getTeleport();
+        String key = teleport.getClass().getSimpleName();
+        return getInstance().containsKey(key);
     }
 
-    public static PohTeleport getTeleport(Transport transport) {
-        String key = transport.getEnumClass();
-        String name = transport.getEnumValue();
-        List<PohTeleport> obj = getInstance().get(key);
-        if (obj == null) return null;
-
-        PohTeleport teleport = obj.stream()
-                .filter(pt -> pt.name().equals(name))
-                .findFirst().orElse(null);
-
-        return teleport;
+    public static List<PohTransport> getAvailableTransports() {
+        return getInstance().values().stream()
+                .flatMap(Collection::stream).map(PohTransport::new)
+                .collect(Collectors.toList());
     }
 
 

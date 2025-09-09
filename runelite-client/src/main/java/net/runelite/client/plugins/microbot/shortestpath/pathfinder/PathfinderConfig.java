@@ -29,6 +29,7 @@ import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
+import net.runelite.client.plugins.microbot.util.poh.PohTransport;
 import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -255,14 +256,12 @@ public class PathfinderConfig {
         useGnomeGliders &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
         useSpiritTrees &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
         useQuetzals &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
-        usePoh &= PohTeleports.hasHouse();
 
         transports.clear();
         transportsPacked.clear();
         usableTeleports.clear();
-         // Check spirit tree farming states for farmable spirit trees
-        Rs2SpiritTreeCache.getInstance().update();       
-        //Rs2SpiritTreeCache.logAllTreeStates();                     
+
+        Map.Entry<WorldPoint, Set<Transport>> extraTransport = null;
         for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
             WorldPoint point = entry.getKey();
             Set<Transport> usableTransports = new HashSet<>(entry.getValue().size());
@@ -282,6 +281,19 @@ public class PathfinderConfig {
                 transports.put(point, usableTransports);
                 transportsPacked.put(WorldPointUtil.packWorldPoint(point), usableTransports);
             }
+        }
+
+        HouseStyle style = HouseStyle.getStyle();
+        if (usePoh && style != null) {
+            //Since we have a house style, we have a house and can therefore add available transports
+            WorldPoint origin = style.getPohLocation();
+            int packedOrigin = WorldPointUtil.packWorldPoint(origin);
+            List<PohTransport> pohTransports = Rs2PohCache.getAvailableTransports()
+                    .stream().filter(this::useTransport).collect(Collectors.toList());
+            Set<Transport> existingTransports = transports.getOrDefault(origin, new HashSet<>());
+            existingTransports.addAll(pohTransports.stream().filter(pohTransport -> !existingTransports.contains(pohTransport)).collect(Collectors.toSet()));
+            transports.put(origin, existingTransports);
+            transportsPacked.put(packedOrigin, existingTransports);
         }
         
         // Filter similar transports based on distance when walk with banked transports is enabled
@@ -449,16 +461,19 @@ public class PathfinderConfig {
 		}
         // Check Spirit Tree specific requirements (farming state for farmable trees)
         if (transport.getType() == TransportType.SPIRIT_TREE) return isSpiritTreeUsable(transport);
+
         // If the transport has varbit requirements & the varbits do not match
         if (!varbitChecks(transport)) {
 			log.debug("Transport ( O: {} D: {} ) requires varbits {}", transport.getOrigin(), transport.getDestination(), transport.getVarbits());
 			return false;
 		}
+
         // If the transport has varplayer requirements & the varplayers do not match
         if (!varplayerChecks(transport)) {
 			log.debug("Transport ( O: {} D: {} ) requires varplayers {}", transport.getOrigin(), transport.getDestination(), transport.getVarplayers());
 			return false;
 		}
+
         // If you don't have the required currency & amount for transport
         if (transport.getCurrencyAmount() > 0 
             && !Rs2Inventory.hasItemAmount(transport.getCurrencyName(), transport.getCurrencyAmount())
@@ -466,19 +481,12 @@ public class PathfinderConfig {
 			log.debug("Transport ( O: {} D: {} ) requires {} x {}", transport.getOrigin(), transport.getDestination(), transport.getCurrencyAmount(), transport.getCurrencyName());
 			return false;
 		}
+
         // Check if Teleports are globally disabled
         if (TransportType.isTeleport(transport.getType()) && Rs2Walker.disableTeleports) {
 			log.debug("Transport ( O: {} D: {} ) is a teleport but teleports are globally disabled", transport.getOrigin(), transport.getDestination());
 			return false;
 		}
-        if (transport.getType() == TransportType.POH) {
-            boolean isUsable = Rs2PohCache.isTransportUsable(transport);
-            if (!isUsable)
-            {
-                log.debug("Transport ( O: {} D: {} ) is a POH teleport but is not usable", transport.getOrigin(), transport.getDestination());
-            }
-            return isUsable;
-        }
 
         // Check Teleport Item Settings
         if (transport.getType() == TELEPORTATION_ITEM) {
@@ -511,6 +519,8 @@ public class PathfinderConfig {
 
         //Check PoH fairy ring requirement
         if(transport.getType() == FAIRY_RING && HouseStyle.isPohExitLocation(transport.getOrigin())) {
+            //At this point we've already checked the Varbit requirement
+            //Now we need to check in cache if the object actually exists in the PoH
             boolean isUsable = Rs2PohCache.isTransportUsable(transport);
             if (!isUsable) {
                 log.debug("Transport ( O: {} D: {} ) is a POH-Fairy-ring teleport but is not usable", transport.getOrigin(), transport.getDestination());
