@@ -189,10 +189,10 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
         return getInstance().containsKey(key);
     }
 
-    public static List<PohTransport> getAvailableTransports() {
+    public static Set<PohTransport> getAvailableTransports() {
         return getInstance().values().stream()
                 .flatMap(Collection::stream).map(PohTransport::new)
-                .collect(Collectors.toList());
+                .collect(Collectors.toSet());
     }
 
     public static Map<WorldPoint, Set<PohTransport>> getAvailableTransportsMap() {
@@ -200,9 +200,7 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
         HouseStyle style = HouseStyle.getStyle();
         if (style == null) return Collections.emptyMap();
 
-        transports.put(style.getPohLocation(), getInstance().values().stream()
-                .flatMap(Collection::stream).map(PohTransport::new)
-                .collect(Collectors.toSet()));
+        transports.put(style.getPohLocation(), getAvailableTransports());
         return transports;
     }
 
