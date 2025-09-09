@@ -316,7 +316,7 @@ public class Rs2Walker {
             for (int i = indexOfStartPoint; i < path.size(); i++) {
                 WorldPoint currentWorldPoint = path.get(i);
                 WorldPoint nextWorldPoint = i + 1 < path.size() ? path.get(i + 1) : null;
-                System.out.printf(String.format("start loop {}, from={}, to={}\n" + i, currentWorldPoint, nextWorldPoint));
+                System.out.printf("start loop %s, from=%s, to=%s\n", i, currentWorldPoint, nextWorldPoint);
 
 				// add breakpoint here
 
