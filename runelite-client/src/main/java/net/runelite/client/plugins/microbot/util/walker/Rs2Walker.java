@@ -2572,7 +2572,7 @@ public class Rs2Walker {
             }
         }
 
-        String lastDestinationAction = "last-destination-" + transport.getDisplayInfo();
+        String lastDestinationAction = "last-destination (" + transport.getDisplayInfo() + ")";
         String treeLastDestinationAction = "Ring-last-destination (" + transport.getDisplayInfo() + ")";
         ObjectComposition composition = Rs2GameObject.convertToObjectComposition(fairyRingObject);
         log.info("Interacting with Fairy Ring @ {}", fairyRingObject.getWorldLocation());
@@ -2597,7 +2597,7 @@ public class Rs2Walker {
             Rs2Widget.clickWidget(ComponentID.FAIRY_RING_TELEPORT_BUTTON);
         }
 
-        sleepUntil(() -> Rs2Player.getGraphicId() == fairyRingGraphicId);
+        sleepUntil(() -> Rs2Player.getGraphicId() == fairyRingGraphicId, 5000);
         sleepUntil(() -> Objects.equals(Rs2Player.getWorldLocation(), transport.getDestination()) && Rs2Player.getGraphicId() != fairyRingGraphicId, 10000);
 
         if (startingWeapon != null) {
