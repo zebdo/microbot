@@ -41,66 +41,66 @@ public class Rs2CacheManager implements AutoCloseable {
     
     /**
      * Checks if cache data is VALID at the manager level (profile consistency).
-     * 
+     *
      * VALID = Cache manager state is consistent and trustworthy
      * - loggedInCacheStateKnown: Cache manager has initialized properly
      * - rsProfileKey exists and matches current RuneLite profile
      * - ConfigManager is available for cache operations
      * - No cache loading operations in progress (atomic check)
      * - No profile switches or stale manager state
-     * 
+     *
      * This is the TOP-LEVEL validation for all cache systems.
      * Individual caches (Rs2Bank, etc.) add their own validation layers.
-     * 
+     *
      * @return true if cache manager state is valid and consistent, false otherwise
      */
     public static boolean isCacheDataValid() {
-        return loggedInCacheStateKnown.get() && rsProfileKey != null && !rsProfileKey.get().isEmpty() 
-                && Microbot.getConfigManager() != null 
+        return loggedInCacheStateKnown.get() && rsProfileKey != null && !rsProfileKey.get().isEmpty()
+                && Microbot.getConfigManager() != null
                 && rsProfileKey.get().equals(Microbot.getConfigManager().getRSProfileKey()) && cacheLoadingInProgress.get() == false;
     }
-    
+
     /**
      * Checks if bank cache is COMPLETELY READY (all validation layers).
-     * 
+     *
      * This combines Rs2CacheManager validation + Rs2Bank validation + Rs2BankData states:
      * 1. VALID: Cache manager profile consistency (this class)
-     * 2. VALID: Rs2Bank profile validation 
+     * 2. VALID: Rs2Bank profile validation
      * 3. LOADED: Raw cache data from config (Rs2BankData)
      * 4. BUILT: Rs2ItemModel objects ready for scripts (Rs2BankData)
-     * 
+     *
      * Scripts should use this as the MASTER CHECK before using bank data.
-     * 
+     *
      * @return true if all cache layers are ready, false otherwise
      */
     public static boolean isBankCacheLoaded() {
         return Rs2Bank.isCacheLoaded();
     }
-    
+
     /**
      * Checks if bank cache is BUILT (Stage 2: Usable objects ready).
-     * 
+     *
      * BUILT = Rs2ItemModel objects created and ready for script usage
      * - rebuildBankItemsList() completed successfully
-     * - Raw data converted to full objects with names/properties  
+     * - Raw data converted to full objects with names/properties
      * - ItemManager validation done on client thread
      * - Scripts can immediately use hasItem(), count(), etc.
-     * 
+     *
      * @return true if bank items are built and script-ready, false otherwise
      */
     public static boolean isBankCacheDataBuild() {
         return Rs2Bank.isCacheDataBuilt();
     }
-    
+
     /**
      * Checks if bank cache is LOADED (Stage 1: Raw data from config).
-     * 
+     *
      * LOADED = Raw cache data exists but NOT yet usable
      * - idQuantityAndSlot array contains [id, quantity, slot] triplets
      * - Data restored from RuneLite config persistence
      * - Items are still integers - NO Rs2ItemModel objects yet
      * - Client thread processing NOT required for this stage
-     * 
+     *
      * @return true if raw cache data is loaded, false otherwise
      */
     public static boolean isBankCacheDataLoaded() {
@@ -181,6 +181,10 @@ public class Rs2CacheManager implements AutoCloseable {
             
             // Register SpiritTree cache events
             eventBus.register(Rs2SpiritTreeCache.getInstance());
+
+            // Register Poh cache events
+            eventBus.register(Rs2PohCache.getInstance());
+
             Rs2CacheManager.isEventRegistered.set(true); // Set registration flag
             log.info("All cache event handlers registered with EventBus");
         } catch (Exception e) {
@@ -205,7 +209,8 @@ public class Rs2CacheManager implements AutoCloseable {
             eventBus.unregister(Rs2SkillCache.getInstance());
             eventBus.unregister(Rs2QuestCache.getInstance());
             eventBus.unregister(Rs2SpiritTreeCache.getInstance());
-            Rs2CacheManager.isEventRegistered.set(false); // Reset registration flag 
+            eventBus.unregister(Rs2PohCache.getInstance());
+            Rs2CacheManager.isEventRegistered.set(false); // Reset registration flag
             log.debug("All cache event handlers unregistered from EventBus");
         } catch (Exception e) {
             log.error("Failed to unregister cache event handlers", e);
@@ -227,7 +232,8 @@ public class Rs2CacheManager implements AutoCloseable {
             Rs2VarPlayerCache.getInstance().invalidateAll();
             Rs2SkillCache.getInstance().invalidateAll();
             Rs2QuestCache.getInstance().invalidateAll();
-            Rs2SpiritTreeCache.getInstance().invalidateAll();            
+            Rs2SpiritTreeCache.getInstance().invalidateAll();
+            Rs2PohCache.getInstance().invalidateAll();
         } catch (Exception e) {
             log.error("Error invalidating caches: {}", e.getMessage(), e);
         }
@@ -272,7 +278,8 @@ public class Rs2CacheManager implements AutoCloseable {
                    Rs2VarPlayerCache.getInstance().size() +
                    Rs2SkillCache.getInstance().size() +
                    Rs2QuestCache.getInstance().size() +
-                   Rs2SpiritTreeCache.getInstance().size();
+                   Rs2SpiritTreeCache.getInstance().size() +
+                   Rs2PohCache.getInstance().size();
         } catch (Exception e) {
             log.error("Error calculating total cache size: {}", e.getMessage(), e);
             return 0;
@@ -293,7 +300,8 @@ public class Rs2CacheManager implements AutoCloseable {
                    Rs2VarPlayerCache.getInstance().getEstimatedMemorySize() +
                    Rs2SkillCache.getInstance().getEstimatedMemorySize() +
                    Rs2QuestCache.getInstance().getEstimatedMemorySize() +
-                   Rs2SpiritTreeCache.getInstance().getEstimatedMemorySize();
+                   Rs2SpiritTreeCache.getInstance().getEstimatedMemorySize() +
+                   Rs2PohCache.getInstance().getEstimatedMemorySize();
         } catch (Exception e) {
             log.error("Error calculating total memory usage: {}", e.getMessage(), e);
             return 0;
@@ -318,9 +326,10 @@ public class Rs2CacheManager implements AutoCloseable {
             int skillCount = Rs2SkillCache.getInstance().size();
             int questCount = Rs2QuestCache.getInstance().size();
             int spiritTreeCount = Rs2SpiritTreeCache.getInstance().size();
-            
-            int totalEntries = npcCount + groundItemCount + objectCount + varbitCount + varPlayerCount + skillCount + questCount + spiritTreeCount;
-            
+            int pohCacheCount = Rs2PohCache.getInstance().size();
+
+            int totalEntries = npcCount + groundItemCount + objectCount + varbitCount + varPlayerCount + skillCount + questCount + spiritTreeCount + pohCacheCount;
+
             stats.append("Total entries: ").append(totalEntries).append("\n");
             stats.append("Individual cache sizes:\n");
             stats.append("  NpcCache (EVENT_DRIVEN): ").append(npcCount).append(" entries\n");
@@ -331,7 +340,8 @@ public class Rs2CacheManager implements AutoCloseable {
             stats.append("  SkillCache (AUTO_INVALIDATION): ").append(skillCount).append(" entries\n");
             stats.append("  QuestCache (AUTO_INVALIDATION): ").append(questCount).append(" entries\n");
             stats.append("  SpiritTreeCache (EVENT_DRIVEN_ONLY): ").append(spiritTreeCount).append(" entries\n");
-            
+            stats.append("  PohCache (EVENT_DRIVEN_ONLY): ").append(pohCacheCount).append(" entries\n");
+
         } catch (Exception e) {
             stats.append("Error collecting statistics: ").append(e.getMessage()).append("\n");
             log.error("Error collecting cache statistics: {}", e.getMessage(), e);
@@ -365,6 +375,8 @@ public class Rs2CacheManager implements AutoCloseable {
                     return Rs2QuestCache.getInstance().getStatistics();
                 case "spirittreecache":
                     return Rs2SpiritTreeCache.getInstance().getStatistics();
+                case "pohcache":
+                    return Rs2PohCache.getInstance().getStatistics();
                 default:
                     log.warn("Unknown cache name: {}", cacheName);
                     return null;
@@ -436,7 +448,8 @@ public class Rs2CacheManager implements AutoCloseable {
             Rs2SkillCache.getInstance().close();
             Rs2QuestCache.getInstance().close();
             Rs2SpiritTreeCache.getInstance().close();
-            
+            Rs2PohCache.getInstance().close();
+
             log.debug("All cache instances closed successfully");
         } catch (Exception e) {
             log.error("Error closing cache instances", e);
@@ -558,7 +571,13 @@ public class Rs2CacheManager implements AutoCloseable {
                 log.debug ("Loaded SpiritTree cache from configuration, new cache size: {}", 
                           Rs2SpiritTreeCache.getCache().size());
             }
-            
+
+            if(Rs2PohCache.getInstance().isPersistenceEnabled()) {
+                CacheSerializationManager.loadCache(Rs2PohCache.getInstance(), Rs2PohCache.getInstance().getConfigKey(), profileKey,false);
+                log.debug ("Loaded PoH cache from configuration, new cache size: {}",
+                          Rs2PohCache.getInstance().size());
+                if(Microbot.isDebug()) Rs2PohCache.logState(LogOutputMode.CONSOLE_ONLY);
+            }
             log.info("Successfully loaded all persistent caches from configuration for profile: {}", profileKey);
         } catch (Exception e) {
             log.error("Failed to load persistent caches from configuration for profile: {}", profileKey, e);
@@ -644,9 +663,9 @@ public class Rs2CacheManager implements AutoCloseable {
      * This method handles both Rs2Bank and other cache systems.
      */
     public static void setUnknownInitialCacheState() {
-        if (    isCacheDataValid() 
-                && rsProfileKey != null 
-                && Microbot.getConfigManager() != null 
+        if (    isCacheDataValid()
+                && rsProfileKey != null
+                && Microbot.getConfigManager() != null
                 && rsProfileKey.get() ==  Microbot.getConfigManager().getRSProfileKey()) {
             log.info("In Setting initial cache state as unknown for profile \'{}\', saving current cache state", rsProfileKey);
             savePersistentCaches(rsProfileKey.get());
@@ -815,6 +834,13 @@ public class Rs2CacheManager implements AutoCloseable {
                 log.info("Saving SpiritTree cache to configuration, current size: {}", 
                           Rs2SpiritTreeCache.getCache().size());
             }
+
+            //Save PohCache
+            if(Rs2PohCache.getInstance().isPersistenceEnabled()) {
+                CacheSerializationManager.saveCache(Rs2PohCache.getInstance(), Rs2PohCache.getInstance().getConfigKey(), profileKey);
+                log.info("Saving PoH cache to configuration, current size: {}",
+                          Rs2PohCache.getInstance().size());
+            }
         } catch (Exception e) {
             log.error("Failed to save internal persistent caches for profile: {}", profileKey, e);
         }
@@ -838,7 +864,8 @@ public class Rs2CacheManager implements AutoCloseable {
             appendCacheStats(sb, "Skills", Rs2SkillCache.getInstance());
             appendCacheStats(sb, "Quests", Rs2QuestCache.getInstance());
             appendCacheStats(sb, "SpiritTrees", Rs2SpiritTreeCache.getInstance());
-            
+            appendCacheStats(sb, "PohTeleports", Rs2PohCache.getInstance());
+
             sb.append("\n=== SUMMARY ===\n");
             
             // Calculate totals
@@ -893,8 +920,9 @@ public class Rs2CacheManager implements AutoCloseable {
                                Rs2VarPlayerCache.getInstance().getEstimatedMemorySize() +
                                Rs2SkillCache.getInstance().getEstimatedMemorySize() +
                                Rs2QuestCache.getInstance().getEstimatedMemorySize() +
-                               Rs2SpiritTreeCache.getInstance().getEstimatedMemorySize();
-            
+                               Rs2SpiritTreeCache.getInstance().getEstimatedMemorySize() +
+                               Rs2PohCache.getInstance().getEstimatedMemorySize();
+
             sb.append("Entity Caches (Volatile): ").append(MemorySizeCalculator.formatMemorySize(entityMemory)).append("\n");
             sb.append("Player Caches (Persistent): ").append(MemorySizeCalculator.formatMemorySize(playerMemory)).append("\n");
             

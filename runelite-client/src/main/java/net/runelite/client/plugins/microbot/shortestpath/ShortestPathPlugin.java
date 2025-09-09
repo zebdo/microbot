@@ -128,7 +128,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
 
     @Inject
     private DebugOverlayPanel debugOverlayPanel;
-    
+
     @Inject
     private ETAOverlayPanel etaOverlayPanel;
 

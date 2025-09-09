@@ -39,6 +39,7 @@ import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
+import net.runelite.client.plugins.microbot.util.cache.Rs2PohCache;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.coords.Rs2LocalPoint;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldArea;
@@ -59,6 +60,8 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2Pvp;
+import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
+import net.runelite.client.plugins.microbot.util.poh.data.PohTeleport;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -343,7 +346,9 @@ public class Rs2Walker {
                     break;
                 }
 
-                if (!Microbot.getClient().getTopLevelWorldView().isInstance()) {
+                //Again, would be nice to have access to current node, since we're going to have to handle transports in instance (PoH)
+                boolean inInstance = Microbot.getClient().getTopLevelWorldView().isInstance();
+                if (config.usePoh() || !inInstance) {
                     doorOrTransportResult = handleTransports(path, i);
                 }
 
@@ -1047,6 +1052,13 @@ public class Rs2Walker {
                 ? Rs2WorldPoint.convertInstancedWorldPoint(rawTo)
                 : rawTo;
 
+        if (isInstance && (toWp == null || fromWp == null)) {
+            System.out.println("HandleDoor: isInstance=true fromWp=" + fromWp + ", toWp=" + toWp);
+            //This happens when we're inside the PoH and the next tile is the teleport destination
+            //Rs2WorldPoint.convertInstancedWorldPoint(rawTo) -> LocalPoint l = Rs2LocalPoint.fromWorldInstance(worldPoint) returns null
+            return false;
+        }
+
         boolean diagonal = Math.abs(fromWp.getX() - toWp.getX()) > 0
                 && Math.abs(fromWp.getY() - toWp.getY()) > 0;
 
@@ -1099,9 +1111,7 @@ public class Rs2Walker {
                     if (searchNeighborPoint(orientation, probe, fromWp) || searchNeighborPoint(orientation, probe, toWp)) {
 						log.info("Found WallObject door - name {} with action {} at {} - from {} to {}", name, action, probe, fromWp, toWp);
 						found = true;
-					} else if (searchNeighborPoint(orientation + 1, probe, fromWp) || searchNeighborPoint(orientation + 1, probe, toWp)) {
-						found = true;
-                    }
+					}
                 } else {
                     if (name != null && name.toLowerCase().contains("door")) {
 						log.info("Found GameObject door - name {} with action {} at {} - from {} to {}", name, action, probe, fromWp, toWp);
@@ -1480,6 +1490,14 @@ public class Rs2Walker {
                         }
                     }
 
+                    if (transport.getType() == TransportType.POH) {
+                        System.out.println("Using POH transport: " + transport.getName() + " " + transport.getType());
+                        if (handlePohTransport(transport)) {
+                            sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET, 10000);
+                            break;
+                        }
+                    }
+
                     if (transport.getType() == TransportType.CANOE) {
                         if (handleCanoe(transport)) {
                             sleep(600 * 2); // wait 2 extra ticks before walking
@@ -1596,6 +1614,21 @@ public class Rs2Walker {
             }
         }
         return false;
+    }
+
+    /**
+     * Handles the transportation process specifically for instances of PohTransport.
+     * Any Transport param that reaches this is assumed to be a PohTransport.
+     *
+     * @param transport the transport object to be checked and processed
+     * @return true if the transport is an instance of PohTransport and its transport method executes successfully, false otherwise
+     */
+    private static boolean handlePohTransport(Transport transport) {
+        PohTeleport teleport = Rs2PohCache.getTeleport(transport);
+        if(teleport == null) {
+            throw new IllegalStateException(String.format("PohTransport for Transport {} is null", transport));
+        }
+        return teleport.execute();
     }
 
     private static void handleObject(Transport transport, TileObject tileObject) {
@@ -1835,7 +1868,7 @@ public class Rs2Walker {
         if (rs2Item == null) return false;
 
         List<String> locationKeyWords = Arrays.asList("farm", "monastery", "lletya", "prifddinas", "rellekka", "waterbirth island", "neitiznot", "jatiszo",
-                "ver sinhaza", "darkmeyer", "slepe", "troll stronghold", "weiss", "ecto", "burgh", "duradel", "gem mine", "nardah", "kalphite cave",
+                "ver sinhaza", "darkmeyer", "slepe", "troll stronghold", "weiss", "ecto", "burgh", "duradel", "gem mine", "nardah", "kalphite cave", "Tele to POH", "inside", "outside",
                 "kourend woodland", "mount karuulm", "outside", "fishing guild", "otto's grotto", "stronghold slayer cave", "slayer tower", "fremennik", "tarn's lair", "dark beasts");
         List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "open", "teleport", "rub", "break", "reminisce", "signal", "play", "commune", "squash");
 
@@ -2022,6 +2055,11 @@ public class Rs2Walker {
         if (loc == null) return true;
 
         if (config.recalculateDistance() < 0 || lastPosition.equals(lastPosition = loc)) {
+            return true;
+        }
+
+        if (config.usePoh() && PohTeleports.isInHouse()) {
+            //Would be nice to have access to current node here and check if the current Node is a POH transport node.
             return true;
         }
 
@@ -2463,7 +2501,7 @@ public class Rs2Walker {
 
         // Wait for the widget to become visible
         boolean widgetVisible = sleepUntilTrue(() -> !Rs2Widget.isHidden(GLIDER_PARENT_WIDGET, GLIDER_CHILD_WIDGET), Rs2Player::isMoving, 100, 10000);
-        
+
         if (!widgetVisible) {
             log.error("Widget did not become visible within the timeout.");
             return false;
@@ -2509,10 +2547,10 @@ public class Rs2Walker {
 
 		Rs2ItemModel startingWeapon = null;
 
-		TileObject fairyRingObject = Rs2GameObject.getAll(o -> Objects.equals(o.getWorldLocation(), transport.getOrigin())).stream().findFirst().orElse(null);
+		TileObject fairyRingObject = PohTeleports.isInHouse() ? PohTeleports.getFairyRings() : Rs2GameObject.getAll(o -> Objects.equals(o.getWorldLocation(), transport.getOrigin())).stream().findFirst().orElse(null);
 		if (fairyRingObject == null) return false;
 
-		if (!Rs2GameObject.canWalkTo(fairyRingObject, 25)) return false;
+		if (!PohTeleports.isInHouse() && !Rs2GameObject.canWalkTo(fairyRingObject, 25)) return false;
 
 		boolean hasLumbridgeElite = Microbot.getVarbitValue(VarbitID.LUMBRIDGE_DIARY_ELITE_COMPLETE) == 1;
 
@@ -2534,8 +2572,21 @@ public class Rs2Walker {
 			}
 		}
 
-		log.info("Interacting with Fairy Ring @ {}", fairyRingObject.getWorldLocation());
-		Rs2GameObject.interact(fairyRingObject, "Configure");
+        String lastDestinationAction = "last-destination-" + transport.getDisplayInfo();
+        String treeLastDestinationAction = "Ring-last-destination (" + transport.getDisplayInfo() + ")";
+        ObjectComposition composition = Rs2GameObject.convertToObjectComposition(fairyRingObject);
+        log.info("Interacting with Fairy Ring @ {}", fairyRingObject.getWorldLocation());
+
+        if (Rs2GameObject.hasAction(composition, lastDestinationAction, true)) {
+            return Rs2GameObject.interact(fairyRingObject, lastDestinationAction);
+        }else if (Rs2GameObject.hasAction(composition, treeLastDestinationAction, true)) {
+            return Rs2GameObject.interact(fairyRingObject, treeLastDestinationAction);
+        }
+        if (Rs2GameObject.hasAction(composition, "Configure", true)) {
+            Rs2GameObject.interact(fairyRingObject, "Configure");
+        } else if (Rs2GameObject.hasAction(composition, "Ring-configure", true)) {
+            Rs2GameObject.interact(fairyRingObject, "Ring-configure");
+        }
 		sleepUntil(() -> !Rs2Player.isMoving() && !Rs2Widget.isHidden(ComponentID.FAIRY_RING_TELEPORT_BUTTON), 10000);
 
 		rotateSlotToDesiredRotation(SLOT_ONE, Rs2Widget.getWidget(SLOT_ONE).getRotationY(), getDesiredRotation(transport.getDisplayInfo().charAt(0)), SLOT_ONE_ACW_ROTATION, SLOT_ONE_CW_ROTATION);

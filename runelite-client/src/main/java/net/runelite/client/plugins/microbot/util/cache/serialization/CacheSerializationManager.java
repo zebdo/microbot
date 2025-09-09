@@ -10,17 +10,22 @@ import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.cache.Rs2Cache;
+import net.runelite.client.plugins.microbot.util.cache.Rs2PohCache;
 import net.runelite.client.plugins.microbot.util.cache.model.SkillData;
 import net.runelite.client.plugins.microbot.util.cache.model.SpiritTreeData;
 import net.runelite.client.plugins.microbot.util.cache.model.VarbitData;
 import net.runelite.client.plugins.microbot.util.farming.SpiritTree;
+import net.runelite.client.plugins.microbot.util.poh.data.*;
 
 import java.lang.reflect.Type;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+
+import static net.runelite.client.plugins.microbot.util.cache.Rs2PohCache.POH_CACHE_KEY;
 
 /**
  * Serialization manager for Rs2UnifiedCache instances.
@@ -150,6 +155,7 @@ public class CacheSerializationManager {
                 .registerTypeAdapter(VarbitData.class, new VarbitDataAdapter())
                 .registerTypeAdapter(SpiritTree.class, new SpiritTreePatchAdapter())
                 .registerTypeAdapter(SpiritTreeData.class, new SpiritTreeDataAdapter())
+                .registerTypeAdapter(Rs2PohCache.TYPE_TOKEN, new PohTeleportDataAdapter())
                 .create();
     }
     
@@ -245,7 +251,7 @@ public class CacheSerializationManager {
                                                                 "  -stale: {}\n" + //
                                                                 "  -age: {}ms -isfresh? {} -max Age {}ms\n" + //
                                                                 "  -from current session: {}\n" + //
-                                                                "  -current version {} \n-last version {}\n-is new version? {}", 
+                                                                "  -current version {} \n-last version {}\n-is new version? {}",
                                     configKey, stale, age,  metadata.isFresh(maxAgeMs), maxAgeMs, fromCurrentSession, VERSION, oldVersion, metadata.isNewVersion(VERSION));                                    
                         } else {                        
                             log.warn("\nCache \"{}\" metadata indicated using a fresh cache \n" + //
@@ -360,6 +366,10 @@ public class CacheSerializationManager {
                     String spiritTreeJson = serializeSpiritTreeCache((Rs2Cache<SpiritTree, SpiritTreeData>) cache);
                     log.debug("SpiritTrees serialization completed, JSON length: {}", spiritTreeJson != null ? spiritTreeJson.length() : 0);
                     return spiritTreeJson;
+                case POH_CACHE_KEY:
+                    String pohJson = serializePohCache((Rs2Cache<String, List<PohTeleport>>) cache);
+                    log.debug("PoH serialization completed, JSON length: {}", pohJson != null ? pohJson.length() : 0);
+                    return pohJson;
                 default:
                     log.warn("Unknown cache type for serialization: {}", configKey);
                     return null;
@@ -395,6 +405,9 @@ public class CacheSerializationManager {
                     break;
                 case "spiritTrees":
                     deserializeSpiritTreeCache((Rs2Cache<SpiritTree, SpiritTreeData>) cache, json);
+                    break;
+                case POH_CACHE_KEY:
+                    deserializePohCache((Rs2Cache<String, List<PohTeleport>>) cache, json);
                     break;
                 default:
                     log.warn("Unknown cache type for deserialization: {}", configKey);
@@ -558,7 +571,7 @@ public class CacheSerializationManager {
         Map<SpiritTree, SpiritTreeData> data = cache.getEntriesForSerialization();
         return gson.toJson(data);
     }
-    
+
     private static void deserializeSpiritTreeCache(Rs2Cache<SpiritTree, SpiritTreeData> cache, String json) {
         Type type = new TypeToken<Map<SpiritTree, SpiritTreeData>>(){}.getType();
         Map<SpiritTree, SpiritTreeData> data = gson.fromJson(json, type);
@@ -578,6 +591,40 @@ public class CacheSerializationManager {
             log.debug("Deserialized {} spirit tree entries into cache, skipped {} existing entries", entriesLoaded, entriesSkipped);
         } else {
             log.warn("Spirit tree cache data was null after JSON parsing");
+        }
+    }
+
+    //Poh Serialization
+    private static String serializePohCache(Rs2Cache<String, List<PohTeleport>> cache) {
+        // Use the new method to get all entries for serialization
+        Map<String, List<PohTeleport>> data = cache.getEntriesForSerialization();
+        String json = gson.toJson(data, Rs2PohCache.TYPE_TOKEN);
+        log.debug("Serialized Poh Cache");
+        log.debug(json);
+        return json;
+    }
+
+    //Poh Deserialization
+    private static void deserializePohCache(Rs2Cache<String, List<PohTeleport>> cache, String json){
+        log.debug("Deserializing Poh cache");
+        log.debug(json);
+        Map<String, List<PohTeleport>> data = gson.fromJson(json, Rs2PohCache.TYPE_TOKEN);
+        if (data != null) {
+            int entriesLoaded = 0;
+            int entriesSkipped = 0;
+            for (Map.Entry<String, List<PohTeleport>> entry : data.entrySet()) {
+                // Only load entries that are not already present in cache (cache entries are newer)
+                if (!cache.containsKey(entry.getKey())) {
+                    cache.put(entry.getKey(), entry.getValue());
+                    entriesLoaded++;
+                } else {
+                    entriesSkipped++;
+                    log.debug("Skipped loading poh teleport type {} - already present in cache with newer data", entry.getKey());
+                }
+            }
+            log.debug("Deserialized {} poh teleport entries into cache, skipped {} existing entries", entriesLoaded, entriesSkipped);
+        } else {
+            log.warn("Poh cache data was null after JSON parsing");
         }
     }
 }
