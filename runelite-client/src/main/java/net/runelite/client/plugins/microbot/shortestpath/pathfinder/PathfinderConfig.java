@@ -21,17 +21,15 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.shortestpath.*;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
-import net.runelite.client.plugins.microbot.util.cache.Rs2QuestCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2SkillCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2SpiritTreeCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2VarPlayerCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2VarbitCache;
+import net.runelite.client.plugins.microbot.util.cache.*;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
+import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
@@ -40,8 +38,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static net.runelite.client.plugins.microbot.shortestpath.TransportType.TELEPORTATION_ITEM;
-import static net.runelite.client.plugins.microbot.shortestpath.TransportType.TELEPORTATION_SPELL;
+import static net.runelite.client.plugins.microbot.shortestpath.TransportType.*;
+
 @Slf4j
 public class PathfinderConfig {
     private static final WorldArea WILDERNESS_ABOVE_GROUND = new WorldArea(2944, 3523, 448, 448, 0);
@@ -97,6 +95,7 @@ public class PathfinderConfig {
             useFairyRings,
             useGnomeGliders,
             useMinecarts,
+            usePoh,
             useQuetzals,
             useSpiritTrees,
             useTeleportationLevers,
@@ -164,6 +163,7 @@ public class PathfinderConfig {
         useFairyRings = ShortestPathPlugin.override("useFairyRings", config.useFairyRings());
         useGnomeGliders = ShortestPathPlugin.override("useGnomeGliders", config.useGnomeGliders());
         useMinecarts = ShortestPathPlugin.override("useMinecarts", config.useMinecarts());
+        usePoh = ShortestPathPlugin.override("usePoh", config.usePoh());
         useQuetzals = ShortestPathPlugin.override("useQuetzals", config.useQuetzals());
         useSpiritTrees = ShortestPathPlugin.override("useSpiritTrees", config.useSpiritTrees());
         useTeleportationItems = ShortestPathPlugin.override("useTeleportationItems", config.useTeleportationItems());
@@ -255,6 +255,7 @@ public class PathfinderConfig {
         useGnomeGliders &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
         useSpiritTrees &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
         useQuetzals &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
+        usePoh &= PohTeleports.hasHouse();
 
         transports.clear();
         transportsPacked.clear();
@@ -470,6 +471,15 @@ public class PathfinderConfig {
 			log.debug("Transport ( O: {} D: {} ) is a teleport but teleports are globally disabled", transport.getOrigin(), transport.getDestination());
 			return false;
 		}
+        if (transport.getType() == TransportType.POH) {
+            boolean isUsable = Rs2PohCache.isTransportUsable(transport);
+            if (!isUsable)
+            {
+                log.debug("Transport ( O: {} D: {} ) is a POH teleport but is not usable", transport.getOrigin(), transport.getDestination());
+            }
+            return isUsable;
+        }
+
         // Check Teleport Item Settings
         if (transport.getType() == TELEPORTATION_ITEM) {
 			boolean isUsable = isTeleportationItemUsable(transport);
@@ -488,6 +498,7 @@ public class PathfinderConfig {
 			}
 			return isUsable;
 		}
+
         // Used for Generic Item Requirements
         if (!transport.getItemIdRequirements().isEmpty()) {
 			boolean hasRequiredItems = hasRequiredItems(transport);
@@ -497,6 +508,15 @@ public class PathfinderConfig {
 			}
 			return hasRequiredItems;
 		}
+
+        //Check PoH fairy ring requirement
+        if(transport.getType() == FAIRY_RING && HouseStyle.isPohExitLocation(transport.getOrigin())) {
+            boolean isUsable = Rs2PohCache.isTransportUsable(transport);
+            if (!isUsable) {
+                log.debug("Transport ( O: {} D: {} ) is a POH-Fairy-ring teleport but is not usable", transport.getOrigin(), transport.getDestination());
+            }
+            return isUsable;
+        }
         
 
         return true;
@@ -543,6 +563,7 @@ public class PathfinderConfig {
                 case FAIRY_RING:
                 case GNOME_GLIDER:
                 case MINECART:
+                case POH:
                 case QUETZAL:
                 case WILDERNESS_OBELISK:
                 case TELEPORTATION_LEVER:
@@ -574,6 +595,8 @@ public class PathfinderConfig {
                 return useMinecarts;
             case NPC:
                 return useNpcs;
+            case POH:
+                return usePoh;
             case QUETZAL:
                 return useQuetzals;
             case SPIRIT_TREE:
@@ -949,6 +972,8 @@ public class PathfinderConfig {
             return "Canoe";
         } else if (transport.getType() == TransportType.NPC) {
             return "NPC";
+        } else if (transport.getType() == TransportType.POH) {
+            return "Player Owned House";
         } else if (transport.getType() == TransportType.TRANSPORT) {
             return "Transport";
         } else {

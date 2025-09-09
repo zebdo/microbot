@@ -1,15 +1,18 @@
 package net.runelite.client.plugins.microbot.util.poh;
 
-import net.runelite.api.NullObjectID;
-import net.runelite.api.ObjectID;
+import net.runelite.api.GameObject;
 import net.runelite.api.TileObject;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.equipment.JewelleryLocationEnum;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.poh.data.NexusTeleport;
+import net.runelite.client.plugins.microbot.util.poh.data.HouseLocation;
+import net.runelite.client.plugins.microbot.util.poh.data.JewelleryBoxType;
+import net.runelite.client.plugins.microbot.util.poh.data.NexusPortal;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.ArrayList;
@@ -34,15 +37,17 @@ public class PohTeleports {
      * Checks if the player is in their house
      * based on the purple portal and if the player is
      * in an instance
+     *
      * @return
      */
     public static boolean isInHouse() {
-        return Rs2Player.IsInInstance() && Rs2GameObject.findObjectById(ObjectID.PORTAL_4525) != null;
+        return Rs2Player.IsInInstance() && Rs2GameObject.getGameObject(ObjectID.POH_EXIT_PORTAL) != null;
     }
 
     /**
      * Checks if a player is in their house
      * sends a microbot log if the player is not in their house
+     *
      * @return
      */
     public static boolean checkIsInHouse() {
@@ -54,6 +59,14 @@ public class PohTeleports {
     }
 
     /**
+     * Checks if the player has a house
+     * @return true if a house location is found
+     */
+    public static boolean hasHouse() {
+        return HouseLocation.getHouseLocation() != null;
+    }
+
+    /**
      * Interacts with the jewelllerybox in a players house
      * The reason we use JewelleryLocationEnum is because it contains all the data we need for
      * jewellery teleports, so there was no need to add a seperate jewellerybox enum for the locations
@@ -61,6 +74,7 @@ public class PohTeleports {
      * or has in his inventory
      * Teleport currently not added: Fortis Colosseum.
      * Requirements: Hero	12,000	Ability to teleport to the Colosseum via the ring of dueling
+     *
      * @return
      */
     public static boolean useJewelleryBox(JewelleryLocationEnum jewelleryLocationEnum) {
@@ -73,9 +87,7 @@ public class PohTeleports {
         if (!checkIsInHouse()) return false;
 
         if (getJewelleryBoxInterface() == null) {
-            final Integer[] ornateJewelleryBox = new Integer[] { NullObjectID.NULL_29154, NullObjectID.NULL_29155, NullObjectID.NULL_29156};
-            TileObject tileObject = Rs2GameObject.findObject(ornateJewelleryBox);
-            Rs2GameObject.interact(tileObject, "Teleport Menu");
+            Rs2GameObject.interact(JewelleryBoxType.getObject(), "Teleport Menu");
         }
 
         sleepUntil(() -> getJewelleryBoxInterface() != null);
@@ -85,15 +97,17 @@ public class PohTeleports {
 
     /**
      * Checks if the jewellerybox interface is open
+     *
      * @return
      */
     public static Widget getJewelleryBoxInterface() {
-        return Rs2Widget.getWidget(590, 0);
+        return Rs2Widget.getWidget(InterfaceID.POH_JEWELLERY_BOX, 0);
     }
 
     /**
      * Interact with the jewellerybox widget based on the
      * JewelleryLocationEnum destination description
+     *
      * @param jewelleryLocationEnum
      * @return
      */
@@ -120,39 +134,37 @@ public class PohTeleports {
 
     /**
      * Will click on the nexus and interact with the widget
-     * @param nexusTeleport
+     *
+     * @param nexusPortal
      * @return
      */
-    public static boolean usePortalNexus(NexusTeleport nexusTeleport) {
+    public static boolean usePortalNexus(NexusPortal nexusPortal) {
         //TODO: Add config here to inform the user if the teleport is a wilderness teleport
         if (getPortalNexusInterface() == null) {
-            List<Integer> portalNexuses = new ArrayList<>();
-            for (int i = ObjectID.PORTAL_NEXUS; i < ObjectID.PORTAL_NEXUS_33410; i++) {
-                portalNexuses.add(i);
-            }
-            TileObject tileObject = Rs2GameObject.findObject(portalNexuses.toArray(Integer[]::new));
+            TileObject tileObject = Rs2GameObject.getTileObject(NexusPortal.PORTAL_IDS);
             Rs2GameObject.interact(tileObject, "Teleport Menu");
         }
 
         sleepUntil(() -> getPortalNexusInterface() != null);
 
-        return interactWithPortalNexusWidget(nexusTeleport);
+        return interactWithPortalNexusWidget(nexusPortal);
     }
 
     public static Widget getPortalNexusInterface() {
-        return Rs2Widget.getWidget(17, 0);
+        return Rs2Widget.getWidget(InterfaceID.TELENEXUS_TELEPORT, 0);
     }
 
     /**
      * Will interact with the portal nexus widget if it's open
-     * @param nexusTeleport
+     *
+     * @param nexusPortal
      * @return
      */
-    public static boolean interactWithPortalNexusWidget(NexusTeleport nexusTeleport) {
+    public static boolean interactWithPortalNexusWidget(NexusPortal nexusPortal) {
         Widget portalNexusWidget = getPortalNexusInterface();
         if (portalNexusWidget == null) return false;
 
-        Widget widget = Rs2Widget.findWidget(nexusTeleport.getText().toLowerCase(), Arrays.stream(portalNexusWidget.getStaticChildren()).collect(Collectors.toList()));
+        Widget widget = Rs2Widget.findWidget(nexusPortal.getText().toLowerCase(), Arrays.stream(portalNexusWidget.getStaticChildren()).collect(Collectors.toList()));
 
         if (widget == null) return false;
 
@@ -178,8 +190,42 @@ public class PohTeleports {
             Rs2Widget.enterWilderness();
         }
 
-        sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(nexusTeleport.getLocation()) < 10);
+        sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(nexusPortal.getLocation()) < 10);
 
         return true;
     }
+
+    private static List<Integer> FAIRY_RING_IDS = fairyRingIds();
+    private static List<Integer> SPIRIT_TREE_IDS = spiritTreeIds();
+
+    private static List<Integer> fairyRingIds() {
+        List<Integer> ids = new ArrayList<>();
+        ids.addAll(Rs2GameObject.getObjectIdsByName("poh_spirit_ring"));
+        ids.addAll(Rs2GameObject.getObjectIdsByName("poh_fairy_ring"));
+        return ids;
+    }
+
+    private static List<Integer> spiritTreeIds() {
+        List<Integer> ids = new ArrayList<>();
+        ids.addAll(Rs2GameObject.getObjectIdsByName("poh_spirit_ring"));
+        ids.addAll(Rs2GameObject.getObjectIdsByName("poh_spirit_tree"));
+        return ids;
+    }
+
+    public static GameObject getFairyRings() {
+        return Rs2GameObject.getGameObject(PohTeleports::isFairyRing);
+    }
+
+    public static GameObject getSpiritTree() {
+        return Rs2GameObject.getGameObject(PohTeleports::isSpiritTree);
+    }
+
+    public static boolean isFairyRing(TileObject tileObject) {
+        return FAIRY_RING_IDS.stream().anyMatch(id -> id == tileObject.getId());
+    }
+
+    public static boolean isSpiritTree(TileObject tileObject) {
+        return SPIRIT_TREE_IDS.stream().anyMatch(id -> id == tileObject.getId());
+    }
+
 }
