@@ -1,12 +1,15 @@
 package net.runelite.client.plugins.microbot.util.poh;
 
 import net.runelite.api.GameObject;
+import net.runelite.api.Skill;
 import net.runelite.api.TileObject;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.shortestpath.Transport;
+import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.util.equipment.JewelleryLocationEnum;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
@@ -17,10 +20,7 @@ import net.runelite.client.plugins.microbot.util.poh.data.JewelleryBoxType;
 import net.runelite.client.plugins.microbot.util.poh.data.NexusPortal;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
@@ -63,6 +63,7 @@ public class PohTeleports {
 
     /**
      * Checks if the player has a house
+     *
      * @return true if a house location is found
      */
     public static boolean hasHouse() {
@@ -229,6 +230,20 @@ public class PohTeleports {
 
     public static boolean isSpiritTree(TileObject tileObject) {
         return SPIRIT_TREE_IDS.stream().anyMatch(id -> id == tileObject.getId());
+    }
+
+    public static List<Transport> getTeleportsToPoh() {
+        HouseStyle style = HouseStyle.getStyle();
+        HouseLocation location = HouseLocation.getHouseLocation();
+        if (style == null || location == null) return List.of();
+        WorldPoint insidePoint = style.getPohLocation();
+        WorldPoint outsidePoint = location.getPortalLocation();
+        return List.of(
+                new Transport(insidePoint, "Teleport to House", TransportType.TELEPORTATION_SPELL, Map.of(Skill.MAGIC, 40)),
+                new Transport(insidePoint, "Construction cape: Tele to POH", TransportType.TELEPORTATION_ITEM, Set.of(Set.of(9789), Set.of(9790))),
+                new Transport(insidePoint, "Teleport to House tablet: Outside", TransportType.TELEPORTATION_ITEM, Set.of(Set.of(8013))),
+                new Transport(outsidePoint, insidePoint, location.name() + " -> PoH", TransportType.TELEPORTATION_PORTAL, "Home", "Portal", location.getPortalId())
+        );
     }
 
 }

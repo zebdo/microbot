@@ -184,6 +184,32 @@ public class Transport {
         this.type = transportType;
     }
 
+    public Transport(WorldPoint origin, WorldPoint destination, String displayInfo, TransportType transportType, String action, String target, int objectId) {
+        this.origin = origin;
+        this.destination = destination;
+        this.displayInfo = displayInfo;
+        this.type = transportType;
+        this.action = action;
+        this.name = target;
+        this.objectId = objectId;
+    }
+
+    public Transport(WorldPoint destination, String displayInfo, TransportType transportType, Set<Set<Integer>> itemIdRequirements) {
+        this.destination = destination;
+        this.displayInfo = displayInfo;
+        this.type = transportType;
+        this.itemIdRequirements = itemIdRequirements;
+    }
+
+    public Transport(WorldPoint destination, String displayInfo, TransportType transportType, Map<Skill, Integer> skillRequirement) {
+        this.destination = destination;
+        this.displayInfo = displayInfo;
+        this.type = transportType;
+        for (Map.Entry<Skill, Integer> entry : skillRequirement.entrySet()) {
+            this.skillLevels[entry.getKey().ordinal()] = entry.getValue();
+        }
+    }
+
     Transport(Map<String, String> fieldMap, TransportType transportType) {
         final String DELIM = " ";
         final String DELIM_MULTI = ";";

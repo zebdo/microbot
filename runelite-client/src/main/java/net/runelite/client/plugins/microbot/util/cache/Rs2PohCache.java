@@ -204,7 +204,6 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
         return transports;
     }
 
-
     public static void logState(LogOutputMode mode) {
         Rs2PohCache cache = getInstance();
         StringBuilder logContent = new StringBuilder();
