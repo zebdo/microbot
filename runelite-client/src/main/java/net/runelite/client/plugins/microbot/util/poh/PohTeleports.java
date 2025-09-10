@@ -232,18 +232,21 @@ public class PohTeleports {
         return SPIRIT_TREE_IDS.stream().anyMatch(id -> id == tileObject.getId());
     }
 
-    public static List<Transport> getTeleportsToPoh() {
+    public static Map<WorldPoint, Set<Transport>> getTransportsToPoh() {
         HouseStyle style = HouseStyle.getStyle();
         HouseLocation location = HouseLocation.getHouseLocation();
-        if (style == null || location == null) return List.of();
+        Map<WorldPoint, Set<Transport>> teleports = new HashMap<>();
+        if (style == null || location == null) return teleports;
         WorldPoint insidePoint = style.getPohLocation();
         WorldPoint outsidePoint = location.getPortalLocation();
-        return List.of(
+
+        teleports.put(null, Set.of(
                 new Transport(insidePoint, "Teleport to House", TransportType.TELEPORTATION_SPELL, Map.of(Skill.MAGIC, 40)),
                 new Transport(insidePoint, "Construction cape: Tele to POH", TransportType.TELEPORTATION_ITEM, Set.of(Set.of(9789), Set.of(9790))),
-                new Transport(insidePoint, "Teleport to House tablet: Outside", TransportType.TELEPORTATION_ITEM, Set.of(Set.of(8013))),
-                new Transport(outsidePoint, insidePoint, location.name() + " -> PoH", TransportType.TELEPORTATION_PORTAL, "Home", "Portal", location.getPortalId())
-        );
+                new Transport(insidePoint, "Teleport to House tablet: Outside", TransportType.TELEPORTATION_ITEM, Set.of(Set.of(8013)))
+        ));
+        teleports.put(outsidePoint, Set.of(new Transport(outsidePoint, insidePoint, location.name() + " -> PoH", TransportType.TELEPORTATION_PORTAL, "Home", "Portal", location.getPortalId())));
+        return teleports;
     }
 
 }

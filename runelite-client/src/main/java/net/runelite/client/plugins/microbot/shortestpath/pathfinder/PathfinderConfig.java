@@ -265,15 +265,10 @@ public class PathfinderConfig {
         Rs2SpiritTreeCache.getInstance().update();
         //Rs2SpiritTreeCache.logAllTreeStates();
 
-        // Get usable PoH transports, mapped to house location
-        Map<WorldPoint, Set<PohTransport>> pohTransports = Rs2PohCache.getAvailableTransportsMap();
-        for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
+        for (Map.Entry<WorldPoint, Set<Transport>> entry : createMergedList().entrySet()) {
             WorldPoint point = entry.getKey();
             ArrayList<Transport> pointTransports = new ArrayList<>(entry.getValue());
-            if (pohTransports.containsKey(point)) {
-                // At this point we can insert all the PoH Transports
-                pointTransports.addAll(pohTransports.get(point));
-            }
+
             Set<Transport> usableTransports = new HashSet<>(pointTransports.size());
             for (Transport transport : pointTransports) {
 				// Mutate action
@@ -297,6 +292,30 @@ public class PathfinderConfig {
         if (useBankItems && config.maxSimilarTransportDistance() > 0) {            
             filterSimilarTransports(target);                                    
         }
+    }
+
+    private Map<WorldPoint, Set<Transport>> createMergedList() {
+        // Create a merged map
+        Map<WorldPoint, Set<Transport>> mergedTransports = new HashMap<>();
+        Map<WorldPoint, Set<PohTransport>> transportsFromPoh = Rs2PohCache.getAvailableTransportsMap();
+        Map<WorldPoint, Set<Transport>> transportsToPoh = PohTeleports.getTransportsToPoh();
+
+        for (var entry : allTransports.entrySet()) {
+            mergedTransports.put(entry.getKey(), new HashSet<>(entry.getValue()));
+        }
+
+        for (var entry : transportsFromPoh.entrySet()) {
+            mergedTransports
+                    .computeIfAbsent(entry.getKey(), k -> new HashSet<>())
+                    .addAll(entry.getValue());
+        }
+
+        for (var entry : transportsToPoh.entrySet()) {
+            mergedTransports
+                    .computeIfAbsent(entry.getKey(), k -> new HashSet<>())
+                    .addAll(entry.getValue());
+        }
+        return mergedTransports;
     }
 
     public void refresh() {
