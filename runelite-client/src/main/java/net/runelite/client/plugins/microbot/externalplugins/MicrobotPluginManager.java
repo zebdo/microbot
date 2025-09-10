@@ -832,7 +832,6 @@ public class MicrobotPluginManager
 				})
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-			//TODO this line gives an issue with updating
 			Set<String> needsDownload = validManifests.keySet().stream()
 				.filter(microbotPluginManifest -> !getPluginJarFile(microbotPluginManifest).exists())
 				.collect(Collectors.toSet());
