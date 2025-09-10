@@ -677,6 +677,7 @@ public class TemporossScript extends Script {
                             NPC targetNpc = (NPC) currentTarget;
                           if (targetNpc.getId() == fishSpot.getId()) {
                                 return;
+                              }
                         }
                     }
                     Rs2Camera.turnTo(fishSpot);
