@@ -282,7 +282,7 @@ public class Rs2Inventory {
      * @return True if the inventory contains all the specified names, false otherwise.
      */
     public static boolean contains(String... names) {
-        return contains(true);
+        return contains(true, names);
     }
 
     public static boolean contains(boolean exact, String... names) {
