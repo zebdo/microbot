@@ -61,6 +61,8 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2Pvp;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
+import net.runelite.client.plugins.microbot.util.poh.PohTransport;
+import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
 import net.runelite.client.plugins.microbot.util.poh.data.PohTeleport;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
@@ -313,8 +315,8 @@ public class Rs2Walker {
             boolean doorOrTransportResult = false;
             for (int i = indexOfStartPoint; i < path.size(); i++) {
                 WorldPoint currentWorldPoint = path.get(i);
-
-                System.out.println("start loop " + i);
+                WorldPoint nextWorldPoint = i + 1 < path.size() ? path.get(i + 1) : null;
+                System.out.printf("start loop %s, from=%s, to=%s\n", i, currentWorldPoint, nextWorldPoint);
 
 				// add breakpoint here
 
@@ -348,7 +350,7 @@ public class Rs2Walker {
 
                 //Again, would be nice to have access to current node, since we're going to have to handle transports in instance (PoH)
                 boolean inInstance = Microbot.getClient().getTopLevelWorldView().isInstance();
-                if (config.usePoh() || !inInstance) {
+                if (PohTeleports.isInHouse() || !inInstance) {
                     doorOrTransportResult = handleTransports(path, i);
                 }
 
@@ -1407,8 +1409,9 @@ public class Rs2Walker {
      * @return
      */
     private static boolean handleTransports(List<WorldPoint> path, int indexOfStartPoint) {
-
-        for (Transport transport : ShortestPathPlugin.getTransports().getOrDefault(path.get(indexOfStartPoint), new HashSet<>())) {
+        Set<Transport> transports = ShortestPathPlugin.getTransports().getOrDefault(path.get(indexOfStartPoint), new HashSet<>());
+        log.debug("Found transports: {}", transports.stream().map(Transport::getDisplayInfo).collect(Collectors.joining(", ")));
+        for (Transport transport : transports) {
             Collection<WorldPoint> worldPointCollections;
             //in some cases the getOrigin is null, for teleports that start the player location
             if (transport.getOrigin() == null) {
@@ -1416,6 +1419,7 @@ public class Rs2Walker {
             } else {
                 worldPointCollections = WorldPoint.toLocalInstance(Microbot.getClient().getTopLevelWorldView(), transport.getOrigin());
             }
+            log.debug("Considering transport: {}", transport.getDisplayInfo());
             for (WorldPoint origin : worldPointCollections) {
                 if (transport.getOrigin() != null && Rs2Player.getWorldLocation().getPlane() != transport.getOrigin().getPlane()) {
                     continue;
@@ -1491,7 +1495,7 @@ public class Rs2Walker {
                     }
 
                     if (transport.getType() == TransportType.POH) {
-                        System.out.println("Using POH transport: " + transport.getName() + " " + transport.getType());
+                        log.debug("Using POH transport: " + transport.getDisplayInfo());
                         if (handlePohTransport(transport)) {
                             sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET, 10000);
                             break;
@@ -1624,11 +1628,10 @@ public class Rs2Walker {
      * @return true if the transport is an instance of PohTransport and its transport method executes successfully, false otherwise
      */
     private static boolean handlePohTransport(Transport transport) {
-        PohTeleport teleport = Rs2PohCache.getTeleport(transport);
-        if(teleport == null) {
-            throw new IllegalStateException(String.format("PohTransport for Transport {} is null", transport));
+        if(!(transport instanceof PohTransport)) {
+            throw new IllegalStateException("handlePohTransport should not be called for non-PohTransports");
         }
-        return teleport.execute();
+        return ((PohTransport)transport).execute();
     }
 
     private static void handleObject(Transport transport, TileObject tileObject) {
