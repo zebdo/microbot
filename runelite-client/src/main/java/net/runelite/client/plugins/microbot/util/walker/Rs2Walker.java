@@ -1495,7 +1495,7 @@ public class Rs2Walker {
                     }
 
                     if (transport.getType() == TransportType.POH) {
-                        log.debug("Using POH transport: " + transport.getDisplayInfo() + " " + transport.getType());
+                        log.debug("Using POH transport: " + transport.getDisplayInfo());
                         if (handlePohTransport(transport)) {
                             sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET, 10000);
                             break;

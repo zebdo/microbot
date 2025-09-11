@@ -131,7 +131,7 @@ public class Transport {
      * Creates a new transport from an origin-only transport
      * and a destination-only transport, and merges requirements
      */
-    Transport(Transport origin, Transport destination) {
+    public Transport(Transport origin, Transport destination) {
         this.origin = origin.origin;
         this.destination = destination.destination;
 
@@ -178,35 +178,47 @@ public class Transport {
         //END microbot variables
     }
 
-    public Transport(WorldPoint destination, String displayInfo, TransportType transportType) {
-        this.destination = destination;
-        this.displayInfo = displayInfo;
-        this.type = transportType;
-    }
-
-    public Transport(WorldPoint origin, WorldPoint destination, String displayInfo, TransportType transportType, String action, String target, int objectId) {
+    /**
+     * Base Transport constructor
+     */
+    public Transport(WorldPoint origin, WorldPoint destination, String displayInfo, TransportType transportType, boolean isMember, int duration) {
         this.origin = origin;
         this.destination = destination;
         this.displayInfo = displayInfo;
         this.type = transportType;
+        this.isMembers = isMember;
+        this.duration = duration;
+    }
+
+    /**
+     * Object interaction Transport constructor
+     */
+    public Transport(WorldPoint origin, WorldPoint destination, String displayInfo, TransportType transportType, boolean isMember, String action, String target, int objectId) {
+        this(origin, destination, displayInfo, transportType, isMember, 1);
         this.action = action;
         this.name = target;
         this.objectId = objectId;
     }
 
-    public Transport(WorldPoint destination, String displayInfo, TransportType transportType, Set<Set<Integer>> itemIdRequirements) {
-        this.destination = destination;
-        this.displayInfo = displayInfo;
-        this.type = transportType;
-        this.itemIdRequirements = itemIdRequirements;
+    /**
+     * Transport constructor with item requirements
+     */
+    public Transport(WorldPoint destination, String displayInfo, TransportType transportType, boolean isMember, int maxWildernessLevel, Set<Set<Integer>> itemIdRequirements) {
+        this(null, destination, displayInfo, transportType, isMember, 1);
+        this.maxWildernessLevel = maxWildernessLevel;
+        this.itemIdRequirements = itemIdRequirements != null ? new HashSet<>(itemIdRequirements) : new HashSet<>();
     }
 
-    public Transport(WorldPoint destination, String displayInfo, TransportType transportType, Map<Skill, Integer> skillRequirement) {
-        this.destination = destination;
-        this.displayInfo = displayInfo;
-        this.type = transportType;
-        for (Map.Entry<Skill, Integer> entry : skillRequirement.entrySet()) {
-            this.skillLevels[entry.getKey().ordinal()] = entry.getValue();
+    /**
+     * Transport constructor with skill requirements
+     */
+    public Transport(WorldPoint destination, String displayInfo, TransportType transportType, boolean isMember, int maxWildernessLevel, Map<Skill, Integer> skillRequirement) {
+        this(null, destination, displayInfo, transportType, isMember, 1);
+        this.maxWildernessLevel = maxWildernessLevel;
+        if (skillRequirement != null) {
+            for (Map.Entry<Skill, Integer> entry : skillRequirement.entrySet()) {
+                this.skillLevels[entry.getKey().ordinal()] = entry.getValue();
+            }
         }
     }
 

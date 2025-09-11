@@ -193,7 +193,7 @@ public class PathfinderConfig {
         }
     }
 
-    /** Specialized method for only updating player-held item and spell transports */
+    /** Specialized method for adding usableTeleports to `transports` */
     public void refreshTeleports(int packedLocation, int wildernessLevel) {
         Set<Transport> usableWildyTeleports = new HashSet<>(usableTeleports.size());
         if (ignoreTeleportAndItems) return;
@@ -267,10 +267,8 @@ public class PathfinderConfig {
 
         for (Map.Entry<WorldPoint, Set<Transport>> entry : createMergedList().entrySet()) {
             WorldPoint point = entry.getKey();
-            ArrayList<Transport> pointTransports = new ArrayList<>(entry.getValue());
-
-            Set<Transport> usableTransports = new HashSet<>(pointTransports.size());
-            for (Transport transport : pointTransports) {
+            Set<Transport> usableTransports = new HashSet<>(entry.getValue().size());
+            for (Transport transport : entry.getValue()) {
 				// Mutate action
 				updateActionBasedOnQuestState(transport);
 
@@ -295,22 +293,22 @@ public class PathfinderConfig {
     }
 
     private Map<WorldPoint, Set<Transport>> createMergedList() {
-        // Create a merged map
+        if (!usePoh) return allTransports;
         Map<WorldPoint, Set<Transport>> mergedTransports = new HashMap<>();
-        Map<WorldPoint, Set<PohTransport>> transportsFromPoh = Rs2PohCache.getAvailableTransportsMap();
-        Map<WorldPoint, Set<Transport>> transportsToPoh = PohTeleports.getTransportsToPoh();
 
+        // Start with putting all the TSV imported persistent transports
         for (var entry : allTransports.entrySet()) {
             mergedTransports.put(entry.getKey(), new HashSet<>(entry.getValue()));
         }
 
-        for (var entry : transportsFromPoh.entrySet()) {
+        // Add transports from PoH to somewhere in the world
+        for (var entry : Rs2PohCache.getAvailableTransportsMap(allTransports).entrySet()) {
             mergedTransports
                     .computeIfAbsent(entry.getKey(), k -> new HashSet<>())
                     .addAll(entry.getValue());
         }
-
-        for (var entry : transportsToPoh.entrySet()) {
+        // Add transports from the world to PoH
+        for (var entry : PohTeleports.getTransportsToPoh().entrySet()) {
             mergedTransports
                     .computeIfAbsent(entry.getKey(), k -> new HashSet<>())
                     .addAll(entry.getValue());
@@ -532,18 +530,6 @@ public class PathfinderConfig {
 			}
 			return hasRequiredItems;
 		}
-
-        //Check PoH fairy ring requirement
-        if(transport.getType() == FAIRY_RING && HouseStyle.isPohExitLocation(transport.getOrigin())) {
-            //At this point we've already checked the Varbit requirement
-            //Now we need to check in cache if the object actually exists in the PoH
-            boolean isUsable = Rs2PohCache.isTransportUsable(transport);
-            if (!isUsable) {
-                log.debug("Transport ( O: {} D: {} ) is a POH-Fairy-ring teleport but is not usable", transport.getOrigin(), transport.getDestination());
-            }
-            return isUsable;
-        }
-        
 
         return true;
     }

@@ -16,23 +16,14 @@ public class PohTransport extends Transport {
 
     @Getter
     private final PohTeleport teleport;
-    private final WorldPoint exitPortalPoint;
 
-    public PohTransport(PohTeleport teleport) {
-        super(teleport.getDestination(), teleport.displayInfo(), TransportType.POH);
+    public PohTransport(WorldPoint exitPortalPoint, PohTeleport teleport) {
+        super(
+                java.util.Objects.requireNonNull(exitPortalPoint, "exitPortalPoint is null"),
+                java.util.Objects.requireNonNull(teleport, "teleport is null").getDestination(),
+                teleport.displayInfo(), TransportType.POH, true, teleport.getDuration()
+        );
         this.teleport = teleport;
-        HouseStyle style = HouseStyle.getStyle();
-        this.exitPortalPoint = style != null ? style.getPohLocation() : new WorldPoint(-1, -1, -1);
-    }
-
-    /**
-     * The origin of a PoH transport is the WorldPoint inside Player-Owned House (POH) on entering
-     *
-     * @return WorldPoint N.W. of Exit Portal
-     */
-    @Override
-    public WorldPoint getOrigin() {
-        return exitPortalPoint;
     }
 
     /**
@@ -42,15 +33,6 @@ public class PohTransport extends Transport {
      */
     public boolean execute() {
         return teleport.execute();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        if (!super.equals(o)) return false;
-        PohTransport that = (PohTransport) o;
-        return teleport.equals(that.teleport);
     }
 
 }
