@@ -307,6 +307,11 @@ public class PathfinderConfig {
                     .computeIfAbsent(entry.getKey(), k -> new HashSet<>())
                     .addAll(entry.getValue());
         }
+
+        // If we're already in Poh there's no reason to add teleports to Poh
+        if (PohTeleports.isInHouse()) {
+            return mergedTransports;
+        }
         // Add transports from the world to PoH
         for (var entry : PohTeleports.getTransportsToPoh().entrySet()) {
             mergedTransports

@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.util.poh;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.GameObject;
 import net.runelite.api.Skill;
 import net.runelite.api.TileObject;
@@ -34,6 +35,7 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntilTrue;
  * 2. add fortis colosseum location in jewelleryLocationEnum
  * 3. Add configuration to allow the user to choose between teleports in wilderness or not
  */
+@Slf4j
 public class PohTeleports {
 
     /**
@@ -144,9 +146,13 @@ public class PohTeleports {
      */
     public static boolean usePortalNexus(NexusPortal nexusPortal) {
         //TODO: Add config here to inform the user if the teleport is a wilderness teleport
+        GameObject portal = Rs2GameObject.getGameObject(NexusPortal.PORTAL_IDS);
         if (getPortalNexusInterface() == null) {
-            TileObject tileObject = Rs2GameObject.getTileObject(NexusPortal.PORTAL_IDS);
-            Rs2GameObject.interact(tileObject, "Teleport Menu");
+            if (portal != null) {
+                Rs2GameObject.interact(portal, "Teleport Menu");
+            } else {
+                log.warn("Portal nexus not found");
+            }
         }
 
         sleepUntil(() -> getPortalNexusInterface() != null);
@@ -242,7 +248,7 @@ public class PohTeleports {
 
         transportMap.put(null, Set.of(
                 new Transport(insidePoint, "Teleport to House", TransportType.TELEPORTATION_SPELL, true, 19, Map.of(Skill.MAGIC, 40)),
-                new Transport(insidePoint, "Construction cape: Tele to POH", TransportType.TELEPORTATION_ITEM,true, 19,  Set.of(Set.of(9789), Set.of(9790))),
+                new Transport(insidePoint, "Construction cape: Tele to POH", TransportType.TELEPORTATION_ITEM, true, 19, Set.of(Set.of(9789), Set.of(9790))),
                 new Transport(insidePoint, "Teleport to House tablet: Outside", TransportType.TELEPORTATION_ITEM, true, 19, Set.of(Set.of(8013)))
         ));
         transportMap.put(outsidePoint, Set.of(
