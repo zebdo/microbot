@@ -213,7 +213,6 @@ public class MahoganyHomesScript extends Script {
             if (objectComp == null) continue;
 
             String name = objectComp.getName();
-            if(!name.equalsIgnoreCase("null")) System.out.println("Object found1: " + name);
 
             if (Arrays.asList(objectComp.getActions()).contains("Open") && !name.equalsIgnoreCase("Chest")) {
                 doors.add(door);
