@@ -380,7 +380,7 @@ public class MahoganyHomesScript extends Script {
                     sleepUntil(Rs2Bank::isOpen);
                     if (Rs2Bank.count(plugin.getConfig().currentTier().getPlankSelection().getPlankId()) <= 28 || Rs2Bank.count(ItemID.STEEL_BAR) <= 4 ){
                         System.out.println("Out of Plank or Steel Bar");
-                        shutdown();
+                        Microbot.stopPlugin(plugin);
                         return;
                     }
                     if (plugin.getConfig().usePlankSack()) {
