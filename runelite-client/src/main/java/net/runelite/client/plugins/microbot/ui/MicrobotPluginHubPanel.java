@@ -227,12 +227,25 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             pluginName.setToolTipText(manifest.getDisplayName());
             pluginName.setHorizontalAlignment(JLabel.LEFT);
 
-            JLabel author = new JLabel(manifest.getAuthors().length > 1 ? "Multiple authors" : (manifest.getAuthor().toLowerCase().contains("unknown") ? "Unknown" : manifest.getAuthor()));
+            String[] authorsArr = manifest.getAuthors();
+            String authorRaw = manifest.getAuthor();
+
+            String authorText;
+            String authorTooltip;
+            if (authorsArr != null && authorsArr.length > 1) {
+                authorText = "Multiple authors";
+                authorTooltip = String.join(", ", authorsArr);
+            } else {
+                String a = authorRaw != null ? authorRaw.trim() : "";
+                boolean isUnknown = a.isEmpty() || a.toLowerCase(Locale.ROOT).contains("unknown");
+                authorText = isUnknown ? "Unknown" : a;
+                authorTooltip = isUnknown ? "Unknown" : a;
+            }
+            JLabel author = new JLabel(authorText);
             author.setFont(FontManager.getRunescapeSmallFont());
-            author.setToolTipText(manifest.getAuthor());
+            author.setToolTipText(authorTooltip);
             author.setHorizontalAlignment(JLabel.LEFT);
             author.setBorder(new EmptyBorder(0, 0, 0, 5));
-
             JLabel version = new JLabel(currentVersion);
             version.setFont(FontManager.getRunescapeSmallFont());
             version.setToolTipText(currentVersion);
