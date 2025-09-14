@@ -225,10 +225,13 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             JLabel pluginName = new JLabel(manifest.getDisplayName());
             pluginName.setFont(FontManager.getRunescapeBoldFont());
             pluginName.setToolTipText(manifest.getDisplayName());
+            pluginName.setHorizontalAlignment(JLabel.LEFT);
 
-            JLabel author = new JLabel(manifest.getAuthors().length > 1 ? "Multiple authors" : manifest.getAuthor());
+            JLabel author = new JLabel(manifest.getAuthors().length > 1 ? "Multiple authors" : (manifest.getAuthor().toLowerCase().contains("unknown") ? "Unknown" : manifest.getAuthor()));
             author.setFont(FontManager.getRunescapeSmallFont());
             author.setToolTipText(manifest.getAuthor());
+            author.setHorizontalAlignment(JLabel.LEFT);
+            author.setBorder(new EmptyBorder(0, 0, 0, 5));
 
             JLabel version = new JLabel(currentVersion);
             version.setFont(FontManager.getRunescapeSmallFont());
@@ -387,9 +390,9 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                     .addGap(5)
                     .addGroup(layout.createParallelGroup()
                             .addGroup(layout.createSequentialGroup()
-                                    .addComponent(pluginName, 0, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-                                    .addComponent(author, 0, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
+                                    .addComponent(pluginName, 0, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(author))
                             .addComponent(description, 0, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
                             .addGroup(layout.createSequentialGroup()
                                     .addComponent(version, 0, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
