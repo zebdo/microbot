@@ -73,8 +73,6 @@ public class BreakHandlerPlugin extends Plugin {
                  "\npauseAllScripts: " + Microbot.pauseAllScripts.get() + 
                  "\nPluginPauseEvent.isPaused: " + PluginPauseEvent.isPaused());
         overlayManager.remove(breakHandlerOverlay);
-
-        
     }
 
     // on settings change
