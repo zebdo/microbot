@@ -327,6 +327,7 @@ public class AutoLoginScript extends Script {
                 new Login();
             }
             
+            
         } catch (Exception ex) {
             log.error("Error during intelligent login", ex);
             retryCount++;
@@ -353,6 +354,7 @@ public class AutoLoginScript extends Script {
         extendedSleepStartTime = null;
         lastLoginAttemptTime = null;
         lastExtendedSleepLoggedMinute = -1;
+        loginState = LoginState.WAITING_FOR_LOGIN_SCREEN;
     }
     
     /**
