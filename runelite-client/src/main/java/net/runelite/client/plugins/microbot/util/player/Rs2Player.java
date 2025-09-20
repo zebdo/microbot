@@ -85,7 +85,7 @@ public class Rs2Player {
     public static int lastAnimationID = AnimationID.IDLE;
 
     public static boolean hasPrayerRegenerationActive() {
-        return (Rs2VarbitCache.getVarbitValue(VarbitID.PRAYER_REGENERATION_POTION_TIMER) > 0);
+        return (Microbot.getVarbitValue(VarbitID.PRAYER_REGENERATION_POTION_TIMER) > 0);
     }
 
     public static boolean hasAntiFireActive() {

@@ -1,8 +1,5 @@
 package net.runelite.client.plugins.microbot;
 
-import java.time.Instant;
-import java.util.concurrent.ThreadFactory;
-import java.util.concurrent.atomic.AtomicInteger;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
@@ -16,12 +13,15 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
+import org.jetbrains.annotations.NotNull;
+
 import java.time.Duration;
-import java.time.LocalTime;
+import java.time.Instant;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
-import org.jetbrains.annotations.NotNull;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
 public abstract class Script extends Global implements IScript {
@@ -86,9 +86,10 @@ public abstract class Script extends Global implements IScript {
         if (Thread.currentThread().isInterrupted())
             return false;
         //when we log in, we must wait for the cache to be loaded before doing anything
-        if (Microbot.isLoggedIn() &&  !Rs2CacheManager.isCacheDataValid()) {
+        if (Microbot.isLoggedIn() && Microbot.isRs2CacheEnabled() && !Rs2CacheManager.isCacheDataValid()) {
             log.debug("Cache data is not valid, waiting...");
             return false;
+
         }
         //Avoid executing any blocking events if the player hasn't finished Tutorial Island
         if (Microbot.isLoggedIn() && !Rs2Player.hasCompletedTutorialIsland())

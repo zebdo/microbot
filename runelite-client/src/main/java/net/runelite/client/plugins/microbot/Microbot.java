@@ -195,6 +195,11 @@ public class Microbot {
 	@Setter
 	private static Instant loginTime;
 
+
+	@Setter
+	@Getter
+	private static boolean isRs2CacheEnabled = false;
+
 	/**
 	 * Get the total runtime of the script
 	 *
@@ -226,12 +231,19 @@ public class Microbot {
 
 	public static int getVarbitValue(@Varbit int varbit)
 	{
-		return Rs2VarbitCache.getVarbitValue(varbit);//getClientThread().runOnClientThreadOptional(() -> getClient().getVarbitValue(varbit)).orElse(0);
+		if (isRs2CacheEnabled())
+		{
+			return Rs2VarbitCache.getVarbitValue(varbit);
+		}
+		return getClientThread().runOnClientThreadOptional(() -> getClient().getVarbitValue(varbit)).orElse(0);
 	}
 
 	public static int getVarbitPlayerValue(@Varp int varpId)
 	{
-		return Rs2VarPlayerCache.getVarPlayerValue(varpId);
+		if (isRs2CacheEnabled()) {
+			return Rs2VarPlayerCache.getVarPlayerValue(varpId);
+		}
+		return getClientThread().runOnClientThreadOptional(() -> getClient().getVarpValue(varpId)).orElse(0);
 	}
 
 	public static EnumComposition getEnum(int id)
