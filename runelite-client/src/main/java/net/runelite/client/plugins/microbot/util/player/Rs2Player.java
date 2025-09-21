@@ -1,35 +1,21 @@
 package net.runelite.client.plugins.microbot.util.player;
 
 import lombok.Getter;
-import net.runelite.api.gameval.VarPlayerID;
-import net.runelite.api.gameval.VarbitID;
-import net.runelite.api.Actor;
-import net.runelite.api.AnimationID;
-import net.runelite.api.GraphicID;
-import net.runelite.api.MenuAction;
-import net.runelite.api.NPC;
-import net.runelite.api.Player;
-import net.runelite.api.Quest;
-import net.runelite.api.QuestState;
-import net.runelite.api.Skill;
-import net.runelite.api.VarPlayer;
-import net.runelite.api.Varbits;
+import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.kit.KitType;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.VarbitValues;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
-import net.runelite.client.plugins.microbot.util.cache.Rs2Cache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2QuestCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2SkillCache;
 import net.runelite.client.plugins.microbot.util.cache.Rs2VarPlayerCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2VarbitCache;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -1606,7 +1592,8 @@ public class Rs2Player {
      * @return The {@link QuestState} representing the player's progress in the quest.
      */
     public static QuestState getQuestState(Quest quest) {
-        return Rs2QuestCache.getQuestState(quest);
+        Client client = Microbot.getClient();
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> quest.getState(client)).orElse(null);
     }
 
     /**
@@ -1616,7 +1603,7 @@ public class Rs2Player {
      * @return The player's real level for the specified skill.
      */
     public static int getRealSkillLevel(Skill skill) {
-        return Rs2SkillCache.getRealSkillLevel(skill);
+        return Microbot.getClient().getRealSkillLevel(skill);
     }
 
     /**
@@ -1626,7 +1613,7 @@ public class Rs2Player {
      * @return The player's boosted level for the specified skill.
      */
     public static int getBoostedSkillLevel(Skill skill) {        
-        return Rs2SkillCache.getBoostedSkillLevel(skill);
+        return Microbot.getClient().getBoostedSkillLevel(skill);
     }
 
     /**

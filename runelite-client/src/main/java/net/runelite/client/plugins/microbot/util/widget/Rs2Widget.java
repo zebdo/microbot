@@ -1,30 +1,25 @@
 package net.runelite.client.plugins.microbot.util.widget;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.MenuAction;
 import net.runelite.api.annotations.Component;
-import net.runelite.api.annotations.Interface;
-
-import java.awt.Rectangle;
-import java.awt.event.KeyEvent;
-import net.runelite.api.widgets.Widget;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
+import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
-import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
-import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
-import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 
+import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.util.List;
 import java.util.*;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import lombok.extern.slf4j.Slf4j;
-
-import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
-import static net.runelite.client.plugins.microbot.util.Global.sleepUntilTrue;
-import static net.runelite.client.plugins.microbot.util.Global.sleep;
+import static net.runelite.client.plugins.microbot.util.Global.*;
 
 @Slf4j
 public class Rs2Widget {
@@ -164,7 +159,7 @@ public class Rs2Widget {
 
 			// Use findWidget to perform the search on all child types
 			Widget foundWidget = findWidget(text, List.of(rootWidget), exact);
-			return foundWidget != null;
+			return foundWidget != null && !foundWidget.isHidden();
 		}).orElse(false);
 	}
 
@@ -175,7 +170,7 @@ public class Rs2Widget {
 
             // Use findWidget to perform the search on all child types
             Widget foundWidget = findWidget(text, List.of(rootWidget), exact);
-            return foundWidget != null;
+            return foundWidget != null && !foundWidget.isHidden();
         }).orElse(false);
     }
 

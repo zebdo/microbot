@@ -198,7 +198,7 @@ public class Microbot {
 
 	@Setter
 	@Getter
-	private static boolean isRs2CacheEnabled = false;
+	public static boolean isRs2CacheEnabled = false;
 
 	/**
 	 * Get the total runtime of the script
