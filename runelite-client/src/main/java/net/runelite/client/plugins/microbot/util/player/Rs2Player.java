@@ -397,7 +397,7 @@ public class Rs2Player {
      * @return {@code true} if the player is a member (has remaining membership days), {@code false} otherwise.
      */
     public static boolean isMember() {
-        return Microbot.getClient().getVarpValue(VarPlayerID.ACCOUNT_CREDIT) > 0;
+        return Microbot.getVarbitPlayerValue(VarPlayerID.ACCOUNT_CREDIT) > 0;
     }
 
     /**
