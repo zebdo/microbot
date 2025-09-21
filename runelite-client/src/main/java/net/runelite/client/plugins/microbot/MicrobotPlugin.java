@@ -435,6 +435,7 @@ public class MicrobotPlugin extends Plugin
 					}
 					break;
 				case MicrobotConfig.keyEnableCache:
+					Microbot.showMessage("Restart your client to apply cache changes");
 					break;
 				default:
 					break;
