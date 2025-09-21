@@ -347,11 +347,11 @@ public class PathfinderConfig {
 					return true;
 				}
                 // Varbit check
-                if (entry.getVarbits().stream().anyMatch(varbitCheck -> !varbitCheck.matches(Microbot.getClient().getVarbitValue(varbitCheck.getVarbitId())))) {
+                if (entry.getVarbits().stream().anyMatch(varbitCheck -> !varbitCheck.matches(Microbot.getVarbitValue(varbitCheck.getVarbitId())))) {
                     return true;
                 }
                 // Varplayer check
-                if (entry.getVarplayers().stream().anyMatch(varplayerCheck -> !varplayerCheck.matches(Microbot.getClient().getVarpValue(varplayerCheck.getVarplayerId())))) {
+                if (entry.getVarplayers().stream().anyMatch(varplayerCheck -> !varplayerCheck.matches(Microbot.getVarbitPlayerValue(varplayerCheck.getVarplayerId())))) {
                     return true;
                 }
                 // Skill level check
@@ -443,13 +443,13 @@ public class PathfinderConfig {
     private boolean varbitChecks(Transport transport) {
         return transport.getVarbits().isEmpty() ||
 			transport.getVarbits().stream()
-				.allMatch(varbitCheck -> varbitCheck.matches(Microbot.getClient().getVarbitValue(varbitCheck.getVarbitId())));
+				.allMatch(varbitCheck -> varbitCheck.matches(Microbot.getVarbitValue(varbitCheck.getVarbitId())));
     }
 
 	private boolean varplayerChecks(Transport transport) {
 		return transport.getVarplayers().isEmpty() ||
 			transport.getVarplayers().stream()
-				.allMatch(varplayerCheck -> varplayerCheck.matches(Microbot.getClient().getVarpValue(varplayerCheck.getVarplayerId())));
+				.allMatch(varplayerCheck -> varplayerCheck.matches(Microbot.getVarbitPlayerValue(varplayerCheck.getVarplayerId())));
 	}
 
     private boolean useTransport(Transport transport) {
