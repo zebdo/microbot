@@ -15,7 +15,6 @@ import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.VarbitValues;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
-import net.runelite.client.plugins.microbot.util.cache.Rs2VarPlayerCache;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -398,7 +397,7 @@ public class Rs2Player {
      * @return {@code true} if the player is a member (has remaining membership days), {@code false} otherwise.
      */
     public static boolean isMember() {
-        return Rs2VarPlayerCache.getVarPlayerValue(VarPlayerID.ACCOUNT_CREDIT) > 0;
+        return Microbot.getClient().getVarpValue(VarPlayerID.ACCOUNT_CREDIT) > 0;
     }
 
     /**

@@ -1,17 +1,9 @@
 package net.runelite.client.plugins.microbot.shortestpath.pathfinder;
 
-import java.util.concurrent.CopyOnWriteArrayList;
-import java.util.stream.IntStream;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.Client;
-import net.runelite.api.Constants;
-import net.runelite.api.GameState;
-import net.runelite.api.Quest;
-import net.runelite.api.QuestState;
-import net.runelite.api.Skill;
-import net.runelite.api.WorldType;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
@@ -21,7 +13,9 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.shortestpath.*;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
-import net.runelite.client.plugins.microbot.util.cache.*;
+import net.runelite.client.plugins.microbot.util.cache.Rs2PohCache;
+import net.runelite.client.plugins.microbot.util.cache.Rs2SkillCache;
+import net.runelite.client.plugins.microbot.util.cache.Rs2SpiritTreeCache;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
@@ -29,17 +23,18 @@ import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
-import net.runelite.client.plugins.microbot.util.poh.PohTransport;
-import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static net.runelite.client.plugins.microbot.shortestpath.TransportType.*;
+import static net.runelite.client.plugins.microbot.shortestpath.TransportType.TELEPORTATION_ITEM;
+import static net.runelite.client.plugins.microbot.shortestpath.TransportType.TELEPORTATION_SPELL;
 
 @Slf4j
 public class PathfinderConfig {
@@ -343,7 +338,7 @@ public class PathfinderConfig {
                 }
                 // Quest check
 				if (entry.getQuests().entrySet().stream().anyMatch(qe -> {
-					QuestState playerState = Rs2QuestCache.getQuestState(qe.getKey());
+					QuestState playerState = Rs2Player.getQuestState(qe.getKey());
 					QuestState requiredState = qe.getValue();
 					int playerIndex = questStateOrder.indexOf(playerState);
 					int requiredIndex = questStateOrder.indexOf(requiredState);
@@ -352,11 +347,11 @@ public class PathfinderConfig {
 					return true;
 				}
                 // Varbit check
-                if (entry.getVarbits().stream().anyMatch(varbitCheck -> !varbitCheck.matches(Rs2VarbitCache.getVarbitValue(varbitCheck.getVarbitId())))) {
+                if (entry.getVarbits().stream().anyMatch(varbitCheck -> !varbitCheck.matches(Microbot.getClient().getVarbitValue(varbitCheck.getVarbitId())))) {
                     return true;
                 }
                 // Varplayer check
-                if (entry.getVarplayers().stream().anyMatch(varplayerCheck -> !varplayerCheck.matches(Rs2VarPlayerCache.getVarPlayerValue(varplayerCheck.getVarplayerId())))) {
+                if (entry.getVarplayers().stream().anyMatch(varplayerCheck -> !varplayerCheck.matches(Microbot.getClient().getVarpValue(varplayerCheck.getVarplayerId())))) {
                     return true;
                 }
                 // Skill level check
@@ -437,7 +432,7 @@ public class PathfinderConfig {
 	private boolean completedQuests(Transport transport) {
 		return transport.getQuests().entrySet().stream()
 			.allMatch(entry -> {
-				QuestState playerState = Rs2QuestCache.getQuestState(entry.getKey());
+				QuestState playerState = Rs2Player.getQuestState(entry.getKey());
 				QuestState requiredState = entry.getValue();
 				int playerIndex = questStateOrder.indexOf(playerState);
 				int requiredIndex = questStateOrder.indexOf(requiredState);
@@ -448,13 +443,13 @@ public class PathfinderConfig {
     private boolean varbitChecks(Transport transport) {
         return transport.getVarbits().isEmpty() ||
 			transport.getVarbits().stream()
-				.allMatch(varbitCheck -> varbitCheck.matches(Rs2VarbitCache.getVarbitValue(varbitCheck.getVarbitId())));
+				.allMatch(varbitCheck -> varbitCheck.matches(Microbot.getClient().getVarbitValue(varbitCheck.getVarbitId())));
     }
 
 	private boolean varplayerChecks(Transport transport) {
 		return transport.getVarplayers().isEmpty() ||
 			transport.getVarplayers().stream()
-				.allMatch(varplayerCheck -> varplayerCheck.matches(Rs2VarPlayerCache.getVarPlayerValue(varplayerCheck.getVarplayerId())));
+				.allMatch(varplayerCheck -> varplayerCheck.matches(Microbot.getClient().getVarpValue(varplayerCheck.getVarplayerId())));
 	}
 
     private boolean useTransport(Transport transport) {
@@ -560,7 +555,7 @@ public class PathfinderConfig {
 	private void updateActionBasedOnQuestState(Transport transport) {
 		if (Objects.equals(transport.getType(), TransportType.SHIP) &&
 			(Objects.equals(transport.getName(), "Veos") || Objects.equals(transport.getName(), "Captain Magoro"))) {
-			QuestState questState = Rs2QuestCache.getQuestState(Quest.CLIENT_OF_KOUREND);
+			QuestState questState = Rs2Player.getQuestState(Quest.CLIENT_OF_KOUREND);
 			if (questState != QuestState.FINISHED && !Objects.equals(transport.getAction(), "Talk-to")) {
 				transport.setAction("Talk-to");
 			}
