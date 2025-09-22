@@ -376,7 +376,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                     addrm.addActionListener(l -> {
                         addrm.setText("Updating");
                         addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                        microbotPluginManager.update();
+                        microbotPluginManager.updatePlugin(manifest);
 						reloadPluginList();
                     });
                 } else {
