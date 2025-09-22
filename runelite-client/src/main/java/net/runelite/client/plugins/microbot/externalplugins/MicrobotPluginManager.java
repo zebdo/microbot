@@ -32,8 +32,6 @@ import com.google.common.graph.MutableGraph;
 import com.google.common.io.Files;
 import com.google.common.reflect.ClassPath;
 import com.google.gson.Gson;
-import com.google.gson.JsonSyntaxException;
-import com.google.gson.reflect.TypeToken;
 import com.google.inject.Binder;
 import com.google.inject.CreationException;
 import com.google.inject.Injector;
@@ -46,10 +44,8 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ExternalPluginsChanged;
-import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.plugins.*;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.MicrobotConfig;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.ui.SplashScreen;
 import okhttp3.HttpUrl;
@@ -63,19 +59,23 @@ import javax.inject.Named;
 import javax.inject.Singleton;
 import javax.swing.*;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.net.Proxy;
 import java.net.ProxySelector;
-import java.nio.charset.StandardCharsets;
+import java.net.URLClassLoader;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BiConsumer;
+import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -91,6 +91,8 @@ public class MicrobotPluginManager
     private final PluginManager pluginManager;
     private final Gson gson;
     private final ConfigManager configManager;
+
+	private final Map<String, URLClassLoader> loaders = new ConcurrentHashMap<>();
 
 	@Inject
 	@Named("safeMode")
@@ -128,11 +130,7 @@ public class MicrobotPluginManager
 	 * Initializes the MicrobotPluginManager
 	 */
 	public void init() {
-		executor.submit(() -> {
-			loadManifest();
-			migrateLegacyPluginsJson();
-		});
-		executor.scheduleWithFixedDelay(this::loadManifest, 10, 10, TimeUnit.MINUTES);
+		loadManifest();
 	}
 
 	/**
@@ -177,86 +175,6 @@ public class MicrobotPluginManager
 	}
 
     /**
-     * Migrates legacy plugins.json to the installedPlugins config if necessary.
-     * Reads the old plugins.json file, converts it to the new format, and deletes the legacy file.
-     */
-    private void migrateLegacyPluginsJson() {
-        String json = configManager.getConfiguration(MicrobotConfig.configGroup, MicrobotConfig.installedPlugins);
-        if (json != null && !json.isEmpty()) {
-            return;
-        }
-        File legacyFile = new File(PLUGIN_DIR, "plugins.json");
-        if (!legacyFile.exists()) {
-            return;
-        }
-        try {
-            String legacyJson = Files.asCharSource(legacyFile, StandardCharsets.UTF_8).read();
-            List<String> internalNames = gson.fromJson(legacyJson, new TypeToken<List<String>>(){}.getType());
-            if (internalNames == null || internalNames.isEmpty()) {
-                return;
-            }
-            List<MicrobotPluginManifest> manifests = new ArrayList<>();
-            for (String internalName : internalNames) {
-                MicrobotPluginManifest manifest = manifestMap.get(internalName);
-                if (manifest != null) {
-                    manifests.add(manifest);
-                }
-            }
-            if (!manifests.isEmpty()) {
-                saveInstalledPlugins(manifests);
-                log.info("Migrated legacy plugins.json to installedPlugins config ({} plugins)", manifests.size());
-                if (!legacyFile.delete()) {
-                    log.warn("Failed to delete legacy plugins.json after migration: {}", legacyFile.getAbsolutePath());
-                }
-            }
-        } catch (Exception e) {
-            log.error("Failed to migrate legacy plugins.json", e);
-        }
-    }
-
-	/**
-     * Returns the list of installed Microbot plugins from the config manager.
-     *
-     * @return a list of installed MicrobotPluginManifest objects, or an empty list if none are installed
-     */
-    public List<MicrobotPluginManifest> getInstalledPlugins()
-	{
-		String json = configManager.getConfiguration(MicrobotConfig.configGroup, MicrobotConfig.installedPlugins);
-
-		if (json == null || json.isEmpty()) {
-			return new ArrayList<>();
-		}
-
-		try {
-			List<MicrobotPluginManifest> plugins = gson.fromJson(
-				json, new TypeToken<List<MicrobotPluginManifest>>() {}.getType()
-			);
-			return plugins != null ? plugins : new ArrayList<>();
-		}
-		catch (JsonSyntaxException e) {
-			log.error("Error reading Microbot plugin list from config manager", e);
-			configManager.setConfiguration(MicrobotConfig.configGroup, MicrobotConfig.installedPlugins, "[]");
-			return new ArrayList<>();
-		}
-	}
-
-	/**
-     * Saves the list of installed Microbot plugins to the config manager.
-     *
-     * @param plugins the list of MicrobotPluginManifest objects to save
-     */
-    public void saveInstalledPlugins(List<MicrobotPluginManifest> plugins)
-	{
-		try {
-			String json = gson.toJson(Objects.requireNonNullElse(plugins, Collections.emptyList()));
-			configManager.setConfiguration(MicrobotConfig.configGroup, MicrobotConfig.installedPlugins, json);
-		}
-		catch (Exception e) {
-			log.error("Error writing Microbot plugin list to config manager", e);
-		}
-	}
-
-    /**
      * Gets the File object for the plugin JAR file corresponding to the given internal name.
      *
      * @param internalName the internal name of the plugin
@@ -266,6 +184,16 @@ public class MicrobotPluginManager
     {
         return new File(PLUGIN_DIR, internalName + ".jar");
     }
+
+	/**
+	 * Gets the plugin manifest for a given plugin instance.
+	 * @param internalName
+	 * @return
+	 */
+	private byte[] getPluginJarByteArray(String internalName)
+	{
+		return new File(PLUGIN_DIR, internalName + ".jar").getPath().getBytes();
+	}
 
 	/**
 	 * Creates an OkHttpClient instance that does not use any proxy settings.
@@ -296,21 +224,67 @@ public class MicrobotPluginManager
             throw new IllegalArgumentException("Internal name is null/empty");
         }
 
-        MicrobotPluginManifest localManifest = getInstalledPluginManifest(internalName);
         MicrobotPluginManifest authoritativeManifest = manifestMap.get(internalName);
 
-        if (localManifest == null || authoritativeManifest == null) {
+        if (authoritativeManifest == null) {
             return false;
         }
-        String localHash = localManifest.getSha256();
+        String localHash = calculateHash(internalName);
         String authoritativeHash = authoritativeManifest.getSha256();
 
-        if (localHash == null || localHash.isEmpty() || authoritativeHash == null || authoritativeHash.isEmpty()) {
+        if (localHash.isEmpty() || authoritativeHash == null || authoritativeHash.isEmpty()) {
             return false;
         }
 
-        return localHash.equals(authoritativeHash);
+        var result = localHash.equals(authoritativeHash);
+
+		if (!result) {
+			log.warn("Hash mismatch for plugin {}: local={}, authoritative={}",
+				internalName, localHash, authoritativeHash);
+		}
+		return result;
     }
+
+	/**
+	 * Calculates the SHA-256 hash of the given JAR data.
+	 * @param interalName
+	 * @return
+	 */
+	private String calculateHash(String interalName)
+	{
+		try
+		{
+			MessageDigest digest = MessageDigest.getInstance("SHA-256");
+
+			File file = getPluginJarFile(interalName);
+			try (InputStream inputStream = new FileInputStream(file)) {
+				byte[] buffer = new byte[8192];
+				int bytesRead;
+				while ((bytesRead = inputStream.read(buffer)) != -1) {
+					digest.update(buffer, 0, bytesRead);
+				}
+			} catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+
+			byte[] hash = digest.digest();
+			StringBuilder hexString = new StringBuilder();
+			for (byte b : hash) {
+				String hex = Integer.toHexString(0xff & b);
+				if (hex.length() == 1) {
+					hexString.append('0');
+				}
+				hexString.append(hex);
+			}
+
+			return hexString.toString();
+		}
+		catch (NoSuchAlgorithmException e)
+		{
+			log.error("Error calculating plugin hash", e);
+			return "";
+		}
+	}
 
 	public static File[] createSideloadingFolder()
 	{
@@ -342,11 +316,6 @@ public class MicrobotPluginManager
 			log.debug("Plugin file {} does not exist", pluginFile);
 			return;
 		}
-		List<MicrobotPluginManifest> installedPlugins = getInstalledPlugins();
-		if (installedPlugins.stream().noneMatch(x -> x.getInternalName().equals(internalName)))
-		{
-			return;
-		}
 		Set<String> loadedInternalNames = pluginManager.getPlugins().stream()
 			.filter(p -> p.getClass().isAnnotationPresent(PluginDescriptor.class))
 			.filter(p -> p.getClass().getAnnotation(PluginDescriptor.class).isExternal())
@@ -356,21 +325,15 @@ public class MicrobotPluginManager
 		{
 			return;
 		}
-		MicrobotPluginManifest manifest = manifestMap.get(internalName);
-		if (manifest == null)
-		{
-			log.warn("No manifest found for plugin {}. Skipping hash validation and load.", internalName);
-			return;
-		}
 		try
 		{
-			if (!verifyHash(manifest.getInternalName()))
+			if (!verifyHash(internalName))
 			{
-				log.warn("Plugin hash verification failed for: {}", manifest.getInternalName());
+				log.warn("Plugin hash verification failed for: {}", internalName);
 			}
 			List<Class<?>> plugins = new ArrayList<>();
 			MicrobotPluginClassLoader classLoader = new MicrobotPluginClassLoader(pluginFile, getClass().getClassLoader());
-
+			loaders.put(internalName, classLoader);
 			for (ClassPath.ClassInfo classInfo : ClassPath.from(classLoader).getAllClasses())
 			{
 				try
@@ -402,7 +365,6 @@ public class MicrobotPluginManager
 		{
 			return;
 		}
-		List<MicrobotPluginManifest> installedPlugins = getInstalledPlugins();
 		Set<String> loadedInternalNames = pluginManager.getPlugins().stream()
 			.filter(p -> p.getClass().isAnnotationPresent(PluginDescriptor.class))
 			.filter(p -> p.getClass().getAnnotation(PluginDescriptor.class).isExternal())
@@ -415,10 +377,6 @@ public class MicrobotPluginManager
 				continue;
 			}
 			String internalName = f.getName().replace(".jar", "");
-			if (installedPlugins.stream().noneMatch(x -> x.getInternalName().equals(internalName)))
-			{
-				continue;
-			}
 			if (loadedInternalNames.contains(internalName))
 			{
 				continue;
@@ -721,21 +679,7 @@ public class MicrobotPluginManager
 	}
 
 	/**
-	 * Handles profile changes by refreshing plugins for the new profile.
-	 */
-	@Subscribe
-	public void onProfileChanged(ProfileChanged profileChanged) {
-		if (profileRefreshInProgress) {
-			log.debug("Profile refresh already in progress, skipping duplicate request");
-			return;
-		}
-
-		log.info("Profile changed, refreshing Microbot plugins for new profile");
-		update();
-	}
-
-	/**
-	 * Refreshes plugins when the profile changes or when install/remove operations occur.
+	 * Refreshes plugins
 	 */
 	private void refresh() {
 		if (safeMode) {
@@ -757,37 +701,36 @@ public class MicrobotPluginManager
 		try {
 			log.debug("Starting plugin refresh");
 
-			List<MicrobotPluginManifest> installedPlugins = getInstalledPlugins();
+			List<Plugin> installedPlugins = getInstalledPlugins();
 
-			List<MicrobotPluginManifest> disabledPlugins = installedPlugins.stream()
+			List<Plugin> disabledPlugins = installedPlugins.stream()
 				.filter(plugin -> {
-					MicrobotPluginManifest upstreamManifest = manifestMap.get(plugin.getInternalName());
+					MicrobotPluginManifest upstreamManifest = manifestMap.get(plugin.getClass().getSimpleName());
 					return upstreamManifest != null && upstreamManifest.isDisable();
 				})
 				.collect(Collectors.toList());
 
 			if (!disabledPlugins.isEmpty()) {
 				log.warn("Found {} disabled plugin(s) that have been disabled upstream:", disabledPlugins.size());
-				for (MicrobotPluginManifest disabledPlugin : disabledPlugins) {
-					log.warn("  - Plugin '{}' ({}) has been disabled upstream and will be removed from your installed plugins",
-						disabledPlugin.getDisplayName(), disabledPlugin.getInternalName());
+				for (Plugin disabledPlugin : disabledPlugins) {
+					log.warn("  - Plugin '{}' has been disabled upstream and will be removed from your installed plugins",
+						disabledPlugin.getClass().getSimpleName());
 				}
 
-				List<MicrobotPluginManifest> enabledPlugins = installedPlugins.stream()
+				List<Plugin> enabledPlugins = installedPlugins.stream()
 					.filter(plugin -> {
-						MicrobotPluginManifest upstreamManifest = manifestMap.get(plugin.getInternalName());
+						MicrobotPluginManifest upstreamManifest = manifestMap.get(plugin.getClass().getSimpleName());
 						return upstreamManifest == null || !upstreamManifest.isDisable();
 					})
 					.collect(Collectors.toList());
 
-				saveInstalledPlugins(enabledPlugins);
 				installedPlugins = enabledPlugins;
 
 				log.info("Automatically removed {} disabled plugin(s) from your installed plugins list", disabledPlugins.size());
 			}
 
 			Set<String> installedNames = installedPlugins.stream()
-				.map(MicrobotPluginManifest::getInternalName)
+				.map(plugin -> plugin.getClass().getSimpleName())
 				.collect(Collectors.toSet());
 
 			List<Plugin> allLoadedPlugins = new ArrayList<>(pluginManager.getPlugins());
@@ -821,22 +764,21 @@ public class MicrobotPluginManager
 					plugin.getClass().getSimpleName(), isExternal, manifest != null);
 			}
 
-			Map<String, MicrobotPluginManifest> validManifests = installedNames.stream()
-				.map(pluginName -> Map.entry(pluginName, manifestMap.get(pluginName)))
-				.filter(entry -> {
-					if (entry.getValue() == null) {
-						log.warn("No manifest found for installed plugin: {}", entry.getKey());
-						return false;
-					}
-					return true;
-				})
+			// TODO: current code will redownload all plugins, because manifestMap is a manifest of all the plugins on the hub
+			// we need to filter it down to only the ones the user has installed
+			// what i think we need to do:
+			// create a filtered down list of manifestmap that contains only  the installed plugins
+			// add your "install" plugin to this list, then use this list here
+			var userManifestMap = manifestMap.entrySet().stream()
+				.filter(e -> installedNames.contains(e.getKey()))
 				.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
-			Set<String> needsDownload = validManifests.keySet().stream()
+
+			Set<String> needsDownload = userManifestMap.keySet().stream()
 				.filter(microbotPluginManifest -> !getPluginJarFile(microbotPluginManifest).exists())
 				.collect(Collectors.toSet());
 
-			Set<String> needsRedownload = validManifests.keySet().stream()
+			Set<String> needsRedownload = userManifestMap.keySet().stream()
 				.filter(pluginName -> {
 					File pluginFile = getPluginJarFile(pluginName);
 					if (!pluginFile.exists())
@@ -848,7 +790,7 @@ public class MicrobotPluginManager
 						log.info("Hash verification failed for plugin: {}. Marking for redownload.", pluginName);
 						if (pluginFile.delete())
 						{
-							log.info("Deleted outdated plugin file: {}", pluginFile.getName());
+							log.info("Deleted outdated plugin file: {}", pluginFile.getClass().getSimpleName());
 						}
 						else
 						{
@@ -864,12 +806,10 @@ public class MicrobotPluginManager
 
 			Set<String> needsReload = new HashSet<>(needsDownload);
 
-			Set<File> keepFiles = validManifests.keySet().stream()
+			Set<File> keepFiles = userManifestMap.keySet().stream()
 				.map(this::getPluginJarFile)
 				.filter(File::exists)
 				.collect(Collectors.toSet());
-
-			Set<MicrobotPluginManifest> validPluginManifests = new HashSet<>(validManifests.values());
 
 			Instant now = Instant.now();
 			Instant keepAfter = now.minus(3, ChronoUnit.DAYS);
@@ -886,19 +826,14 @@ public class MicrobotPluginManager
 
 			for (String pluginName : needsDownload) {
 				log.info("Downloading missing plugin: {}", pluginName);
-				if (!downloadPlugin(pluginName)) {
-					MicrobotPluginManifest failedManifest = manifestMap.get(pluginName);
-					if (failedManifest != null) {
-						validPluginManifests.remove(failedManifest);
-					}
-				}
+				downloadPlugin(pluginName);
 			}
 
-			Set<String> installedPluginNames = validPluginManifests.stream()
+			Set<String> installedPluginNames = userManifestMap.values().stream()
 				.map(MicrobotPluginManifest::getInternalName)
 				.collect(Collectors.toSet());
 
-			Set<MicrobotPluginManifest> toAdd = validPluginManifests.stream()
+			Set<MicrobotPluginManifest> toAdd = userManifestMap.values().stream()
 					.filter(m -> needsReload.contains(m.getInternalName())
 							|| !loadedByInternalName.contains(m.getInternalName()))
 					.collect(Collectors.toSet());
@@ -986,7 +921,6 @@ public class MicrobotPluginManager
 			if (!toAdd.isEmpty() || !toRemove.isEmpty()) {
 				eventBus.post(new ExternalPluginsChanged());
 			}
-
 			log.info("Completed plugin refresh - Added: {}, Removed: {}", toAdd.size(), toRemove.size());
 		} catch (Exception e) {
 			log.error("Error during plugin refresh", e);
@@ -1088,19 +1022,17 @@ public class MicrobotPluginManager
 			return;
 		}
 
-		List<MicrobotPluginManifest> installedPlugins = getInstalledPlugins();
+		// Loaded plugins from pluginManager with isExternal = true
+		//manifestmap which is manifest from plugins.json
 
-		if (installedPlugins.stream().anyMatch(p -> internalName.equals(p.getInternalName()))) {
-			log.info("Plugin {} is already installed", internalName);
-			return;
+		var result = downloadPlugin(internalName);
+		if (result) {
+			//verifiy hash inside loadSidePlugin doesn't work
+			loadSideLoadPlugin(internalName);
 		}
 
-		installedPlugins.add(manifest);
-		saveInstalledPlugins(installedPlugins);
-
 		log.info("Added plugin {} to installed list", manifest.getDisplayName());
-
-		update();
+		eventBus.post(new ExternalPluginsChanged());
 	}
 
 	/**
@@ -1109,32 +1041,77 @@ public class MicrobotPluginManager
 	 * @param manifest the manifest of the plugin to remove
 	 */
 	public void remove(MicrobotPluginManifest manifest) {
-		if (manifest == null) {
-			log.error("Can't remove plugin: unable to identify manifest");
+		if (manifest == null || !manifestMap.containsValue(manifest)) {
+			log.error("Can't install plugin: unable to identify manifest");
 			return;
 		}
 
 		final String internalName = manifest.getInternalName();
-
 		if (internalName == null || internalName.isEmpty()) {
-			log.error("Cannot remove plugin: internal name is null or empty");
+			log.error("Cannot install plugin: internal name is null or empty");
 			return;
 		}
 
-		List<MicrobotPluginManifest> installedPlugins = getInstalledPlugins();
-
-		boolean wasInstalled = installedPlugins.removeIf(p -> internalName.equals(p.getInternalName()));
-
-		if (!wasInstalled) {
-			log.info("Plugin {} was not in installed list", internalName);
+		if (manifest.isDisable()) {
+			log.warn("Cannot install plugin '{}' ({}): This plugin has been disabled upstream by the developers. " +
+							"This usually means the plugin is no longer functional, has security issues, or has been deprecated.",
+					manifest.getDisplayName(), internalName);
 			return;
 		}
 
-		saveInstalledPlugins(installedPlugins);
+		var result = downloadPlugin(internalName);
+		if (result) {
+			var pluginToRemove = pluginManager.getPlugins().stream().filter(x -> x.getClass().getSimpleName().equalsIgnoreCase(internalName)).findFirst();
+			if (pluginToRemove.isPresent()) {
+				URLClassLoader cl = loaders.remove(internalName);
+				if (cl == null) return;
 
-		log.info("Removed plugin {} from installed list", internalName);
+				var plugin = pluginToRemove.get();
+				try {
+					SwingUtilities.invokeAndWait(() ->
+					{
+						try
+						{
+							pluginManager.stopPlugin(plugin);
+						}
+						catch (Exception e)
+						{
+							throw new RuntimeException(e);
+						}
+					});
+				} catch (InterruptedException | InvocationTargetException e) {
+					throw new RuntimeException(e);
+				}
 
-		update();
+                pluginManager.remove(plugin);
+
+				try { cl.close(); } catch (Exception ignored) {}
+				File jar = getPluginJarFile(internalName);
+				jar.delete();
+			} else {
+				log.warn("Plugin to remove not found in plugin manager: {}", internalName);
+			}
+		}
+
+		log.info("Added plugin {} to installed list", manifest.getDisplayName());
+		eventBus.post(new ExternalPluginsChanged());
+	}
+
+	/**
+	 * @apiNote
+	 * @return
+	 */
+	public List<Plugin> getInstalledPlugins() {
+		Predicate<Plugin> isExternalPluginPredicate = plugin ->
+				plugin.getClass().getAnnotation(PluginDescriptor.class).isExternal();
+
+		List<Plugin> loadedPlugins = pluginManager.getPlugins()
+				.stream()
+				.filter(plugin -> !plugin.getClass().getAnnotation(PluginDescriptor.class).hidden())
+				.filter(isExternalPluginPredicate)
+				.collect(Collectors.toList());
+
+		return loadedPlugins;
 	}
 
 	/**
@@ -1161,21 +1138,6 @@ public class MicrobotPluginManager
 		String internalName = plugin.getClass().getSimpleName();
 
 		return manifestMap.get(internalName);
-	}
-
-	/**
-	 * Gets the manifest for a plugin from the current profile's installed plugins list only.
-	 *
-	 * @param internalName the internal name of the plugin
-	 * @return the manifest for the plugin from the current profile, or null if not found
-	 */
-	@Nullable
-	private MicrobotPluginManifest getInstalledPluginManifest(String internalName) {
-		List<MicrobotPluginManifest> installedPlugins = getInstalledPlugins();
-		return installedPlugins.stream()
-			.filter(manifest -> internalName.equals(manifest.getInternalName()))
-			.findFirst()
-			.orElse(null);
 	}
 
 	/**
