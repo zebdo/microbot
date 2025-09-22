@@ -14,7 +14,6 @@ import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.shortestpath.*;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.cache.Rs2PohCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2SkillCache;
 import net.runelite.client.plugins.microbot.util.cache.Rs2SpiritTreeCache;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -540,7 +539,7 @@ public class PathfinderConfig {
         Skill[] skills = Skill.values();
         return IntStream.range(0, requiredLevels.length)
             .filter(i -> requiredLevels[i] > 0)
-            .allMatch(i -> Rs2SkillCache.getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
+            .allMatch(i -> Microbot.getClient().getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
     }
 
     /** Checks if the player has all the required skill levels for the restriction */
@@ -549,7 +548,7 @@ public class PathfinderConfig {
         Skill[] skills = Skill.values();
         return IntStream.range(0, requiredLevels.length)
             .filter(i -> requiredLevels[i] > 0)
-            .allMatch(i -> Rs2SkillCache.getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
+            .allMatch(i -> Microbot.getClient().getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
     }
 
 	private void updateActionBasedOnQuestState(Transport transport) {
