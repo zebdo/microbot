@@ -960,9 +960,6 @@ public class MicrobotPluginManager {
             return;
         }
 
-        // Loaded plugins from pluginManager with isExternal = true
-        //manifestmap which is manifest from plugins.json
-
         var result = downloadPlugin(internalName);
         if (result) {
             //verifiy hash inside loadSidePlugin doesn't work
