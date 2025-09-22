@@ -229,6 +229,15 @@ public class Rs2CacheManager implements AutoCloseable {
     }
     
     /**
+     * Checks if cache event handlers are currently registered with the EventBus.
+     * 
+     * @return true if event handlers are registered, false otherwise
+     */
+    public static boolean isEventHandlersRegistered() {
+        return isEventRegistered.get();
+    }
+    
+    /**
      * Invalidates all known unified caches.
      */
     public static void invalidateAllCaches(boolean savePersistentCaches) {
@@ -675,8 +684,7 @@ public class Rs2CacheManager implements AutoCloseable {
                 }
                 log.debug ("Loaded SpiritTree cache from configuration, new cache size: {}", 
                           Rs2SpiritTreeCache.getCache().size());
-            }
-
+            }            
             log.info("Finished Try to loaded all persistent caches from configuration for profile: {} - player {}", profileKey, playerName);
         } catch (Exception e) {
             log.error("Failed to load persistent caches from configuration for profile: {}", profileKey, e);
@@ -790,9 +798,8 @@ public class Rs2CacheManager implements AutoCloseable {
                     retryLoadCacheWithValidation(newRsProfileKey, 0);
                 } catch (Exception e) {
                     log.error("Failed during async cache loading for profile: {}", newRsProfileKey, e);
+                    cacheLoadingInProgress.set(false); // reset flag on unexpected error
                     throw new RuntimeException("Async cache load failed", e);
-                } finally {
-                    cacheLoadingInProgress.set(false);
                 }
             }, getInstance().cacheManagerExecutor);
 
@@ -928,13 +935,20 @@ public class Rs2CacheManager implements AutoCloseable {
      * @return CompletableFuture that completes when all saves are done
      */
     public static CompletableFuture<Void> savePersistentCachesAsync(String profileKey) {
-        if (!isCacheDataValid()) {
-            log.warn("Cache data is not valid, cannot save persistent caches");
-            return CompletableFuture.completedFuture(null);
-        }
         if (profileKey == null) {
             log.warn("Cannot save persistent caches: profile key is null");
             return CompletableFuture.completedFuture(null);
+        }
+
+        // if we're saving a "previous" profile during a switch, proceed even if ConfigManager has
+        // already moved to the new profile. otherwise ensure current state is valid.
+        if (profileKey.equals(rsProfileKey.get())) {
+            if (!isCacheDataValid()) {
+                log.warn("Cache data is not valid for profile '{}', cannot save persistent caches", profileKey);
+                return CompletableFuture.completedFuture(null);
+            }
+        } else {
+            log.debug("Saving caches for previous profile '{}' (active='{}')", profileKey, rsProfileKey.get());
         }
 
         String playerName = getLastKnownPlayerName();

@@ -27,7 +27,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -51,6 +50,7 @@ public class CacheSerializationManager {
     private static final String CACHE_SUBDIRECTORY = "caches";
     private static final String METADATA_SUFFIX = ".metadata";
     private static final String JSON_EXTENSION = ".json";
+
     private static final Gson gson;
     
     // Session identifier to track cache freshness across client restarts
@@ -741,51 +741,17 @@ public class CacheSerializationManager {
         }
     }
 
-    //Poh Serialization
-    private static String serializePohCache(Rs2Cache<String, List<PohTeleport>> cache) {
-        // Use the new method to get all entries for serialization
-        Map<String, List<PohTeleport>> data = cache.getEntriesForSerialization();
-        String json = gson.toJson(data, Rs2PohCache.TYPE_TOKEN);
-        log.debug("Serialized Poh Cache");
-        log.debug(json);
-        return json;
+
+    /**
+     * Creates a character-specific config key by appending player name.
+             *
+            * @param baseKey The base config key
+            * @param playerName The player name
+            * @return Character-specific config key
+            */
+    public static String createCharacterSpecificKey(String baseKey, String playerName) {
+        // sanitize player name for config key usage
+        String sanitizedPlayerName = playerName.replaceAll("[^a-zA-Z0-9_-]", "_");
+        return baseKey + "_" + sanitizedPlayerName;
     }
-
-    //Poh Deserialization
-    private static void deserializePohCache(Rs2Cache<String, List<PohTeleport>> cache, String json){
-        log.debug("Deserializing Poh cache");
-        log.debug(json);
-        Map<String, List<PohTeleport>> data = gson.fromJson(json, Rs2PohCache.TYPE_TOKEN);
-        if (data != null) {
-            int entriesLoaded = 0;
-            int entriesSkipped = 0;
-            for (Map.Entry<String, List<PohTeleport>> entry : data.entrySet()) {
-                // Only load entries that are not already present in cache (cache entries are newer)
-                if (!cache.containsKey(entry.getKey())) {
-                    cache.put(entry.getKey(), entry.getValue());
-                    entriesLoaded++;
-                } else {
-                    entriesSkipped++;
-                    log.debug("Skipped loading poh teleport type {} - already present in cache with newer data", entry.getKey());
-                }
-            }
-            log.debug("Deserialized {} poh teleport entries into cache, skipped {} existing entries", entriesLoaded, entriesSkipped);
-        } else {
-            log.warn("Poh cache data was null after JSON parsing");
-        }
-    }
-
-
-         /**
-       * Creates a character-specific config key by appending player name.
-              *
-              * @param baseKey The base config key
-              * @param playerName The player name
-              * @return Character-specific config key
-              */
-             public static String createCharacterSpecificKey(String baseKey, String playerName) {
-                 // sanitize player name for config key usage
-                 String sanitizedPlayerName = playerName.replaceAll("[^a-zA-Z0-9_-]", "_");
-                 return baseKey + "_" + sanitizedPlayerName;
-             }
 }

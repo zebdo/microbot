@@ -437,7 +437,8 @@ public class MicrobotPlugin extends Plugin
 					}
 					break;
 				case MicrobotConfig.keyEnableCache:
-					Microbot.showMessage("Restart your client to apply cache changes");
+					// Handle dynamic cache system initialization/shutdown
+					handleCacheConfigChange(ev.getNewValue());
 					break;
 				default:
 					break;
@@ -558,12 +559,20 @@ public class MicrobotPlugin extends Plugin
 	 */
 	private void initializeCacheSystem() {
 		try {
+			// Check if already initialized
+			if (Rs2CacheManager.isEventHandlersRegistered()) {
+				log.debug("Cache system already initialized, skipping");
+				return;
+			}
+			
 			// Get the cache manager instance
 			Rs2CacheManager cacheManager = Rs2CacheManager.getInstance();
 			
 			// Set the EventBus for cache event handling (without loading caches yet)
 			Rs2CacheManager.setEventBus(eventBus);
 			
+			// Register event handlers
+			Rs2CacheManager.registerEventHandlers();
 		
 			// Keep deprecated EntityCache for backward compatibility (for now)
 			//Rs2EntityCache.getInstance();
@@ -582,9 +591,18 @@ public class MicrobotPlugin extends Plugin
 	 */
 	private void shutdownCacheSystem() {
 		try {
+			// Check if already shutdown
+			if (!Rs2CacheManager.isEventHandlersRegistered()) {
+				log.debug("Cache system already shutdown, skipping");
+				return;
+			}
+			
 			Rs2CacheManager cacheManager = Rs2CacheManager.getInstance();
 			
 			log.debug("Final cache statistics before shutdown: {}", cacheManager.getCacheStatistics());
+			
+			// Unregister event handlers first
+			Rs2CacheManager.unregisterEventHandlers();
 			
 			// Close the cache manager and all caches
 			cacheManager.close();
@@ -607,6 +625,26 @@ public class MicrobotPlugin extends Plugin
 			
 		} catch (Exception e) {
 			log.error("Error during cache system shutdown: {}", e.getMessage(), e);
+		}
+	}
+	
+	/**
+	 * Handles cache configuration changes dynamically without requiring client restart.
+	 * This method is called when the user changes the "Enable Microbot Cache" config option.
+	 * 
+	 * @param newValue The new value of the cache enable config ("true" or "false")
+	 */
+	private void handleCacheConfigChange(String newValue) {
+		boolean enableCache = Objects.equals(newValue, "true");
+		
+		if (enableCache) {
+			log.info("Cache system enabled via config change - initializing...");
+			initializeCacheSystem();
+			Microbot.showMessage("Cache system enabled successfully");
+		} else {
+			log.info("Cache system disabled via config change - shutting down...");
+			shutdownCacheSystem();
+			Microbot.showMessage("Cache system disabled successfully");
 		}
 	}
 	/**
