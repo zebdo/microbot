@@ -56,6 +56,12 @@ public final class Rs2PlayerCache {
         if (e.getGameState() == GameState.LOGGED_IN) {
             populateQuests();
         }
+        if (e.getGameState() == GameState.LOGIN_SCREEN) {
+            questsPopulated = false;
+            quests.clear();
+            varbits.clear();
+            varps.clear();
+        }
     }
 
     @Subscribe
