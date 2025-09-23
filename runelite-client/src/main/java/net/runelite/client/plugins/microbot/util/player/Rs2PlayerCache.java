@@ -101,7 +101,6 @@ public final class Rs2PlayerCache {
                 quests.put(quest.getId(), questState);
             }
             long end = System.currentTimeMillis();
-            log.info("Populated quest state in {} ms", (end - start));
             questsPopulated = true;
         });
     }
