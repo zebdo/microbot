@@ -376,7 +376,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                     addrm.addActionListener(l -> {
                         addrm.setText("Updating");
                         addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                        microbotPluginManager.update();
+                        microbotPluginManager.updatePlugin(manifest);
 						reloadPluginList();
                     });
                 } else {
@@ -632,7 +632,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                 .filter(isExternalPluginPredicate)
                 .collect(Collectors.toList());
 
-        List<MicrobotPluginManifest> installed = new ArrayList<>(microbotPluginManager.getInstalledPlugins());
+        List<Plugin> installed = new ArrayList<>(microbotPluginManager.getInstalledPlugins());
 
         // Pre-index manifests by internalName (lowercased) - using filtered list
         Map<String, MicrobotPluginManifest> manifestByName = enabledManifest.stream()
@@ -660,7 +660,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
 
                     Collection<Plugin> group = pluginsByName.getOrDefault(key, Collections.emptySet());
                     int count = pluginCounts.getOrDefault(simpleName, -1);
-                    boolean isInstalled = installed.stream().anyMatch(im -> im.getInternalName().equalsIgnoreCase(simpleName));
+                    boolean isInstalled = installed.stream().anyMatch(im -> im.getClass().getSimpleName().equalsIgnoreCase(simpleName));
 
                     return new PluginItem(m, group, count, isInstalled);
                 })

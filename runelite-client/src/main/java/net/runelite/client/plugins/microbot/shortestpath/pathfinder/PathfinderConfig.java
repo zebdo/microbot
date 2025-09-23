@@ -14,7 +14,6 @@ import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.shortestpath.*;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.cache.Rs2PohCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2SkillCache;
 import net.runelite.client.plugins.microbot.util.cache.Rs2SpiritTreeCache;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -56,8 +55,10 @@ public class PathfinderConfig {
 
     private final SplitFlagMap mapData;
     private final ThreadLocal<CollisionMap> map;
-    /** All transports by origin {@link WorldPoint}. The null key is used for transports centered on the player. */
-	@Getter
+    /**
+     * All transports by origin {@link WorldPoint}. The null key is used for transports centered on the player.
+     */
+    @Getter
     private final Map<WorldPoint, Set<Transport>> allTransports;
     @Setter
     private volatile Set<Transport> usableTeleports;
@@ -72,11 +73,11 @@ public class PathfinderConfig {
     private final Client client;
     private final ShortestPathConfig config;
 
-	private final List<QuestState> questStateOrder = Arrays.asList(
-		QuestState.NOT_STARTED,
-		QuestState.IN_PROGRESS,
-		QuestState.FINISHED
-	);
+    private final List<QuestState> questStateOrder = Arrays.asList(
+            QuestState.NOT_STARTED,
+            QuestState.IN_PROGRESS,
+            QuestState.FINISHED
+    );
 
     @Getter
     private volatile long calculationCutoffMillis;
@@ -118,7 +119,7 @@ public class PathfinderConfig {
     @Setter
     // Used for manual calculating paths without teleport & items in caves
     private volatile boolean ignoreTeleportAndItems = false;
-    
+
     @Getter
     @Setter
     // Used to include bank items when searching for item requirements
@@ -163,7 +164,7 @@ public class PathfinderConfig {
         useQuetzals = ShortestPathPlugin.override("useQuetzals", config.useQuetzals());
         useSpiritTrees = ShortestPathPlugin.override("useSpiritTrees", config.useSpiritTrees());
         useTeleportationItems = ShortestPathPlugin.override("useTeleportationItems", config.useTeleportationItems());
-        useTeleportationMinigames = ShortestPathPlugin.override("useTeleportationMinigames",config.useTeleportationMinigames());
+        useTeleportationMinigames = ShortestPathPlugin.override("useTeleportationMinigames", config.useTeleportationMinigames());
         useTeleportationLevers = ShortestPathPlugin.override("useTeleportationLevers", config.useTeleportationLevers());
         useTeleportationPortals = ShortestPathPlugin.override("useTeleportationPortals", config.useTeleportationPortals());
         useTeleportationSpells = ShortestPathPlugin.override("useTeleportationSpells", config.useTeleportationSpells());
@@ -179,16 +180,19 @@ public class PathfinderConfig {
             refreshTransports(target);
             //START microbot variables
             refreshRestrictionData();
-            
+
             // Do not switch back to inventory tab if we are inside of the telekinetic room in Mage Training Arena
             if (Rs2Player.getWorldLocation().getRegionID() != 13463) {
                 Rs2Tab.switchTo(InterfaceTab.INVENTORY);
             }
+
             //END microbot variables
         }
     }
 
-    /** Specialized method for adding usableTeleports to `transports` */
+    /**
+     * Specialized method for adding usableTeleports to `transports`
+     */
     public void refreshTeleports(int packedLocation, int wildernessLevel) {
         Set<Transport> usableWildyTeleports = new HashSet<>(usableTeleports.size());
         if (ignoreTeleportAndItems) return;
@@ -235,18 +239,18 @@ public class PathfinderConfig {
             filteredTargets.clear();
         }
     }
-    
-    
+
+
     /**
      * Refreshes transport data with optional target-based optimization.
-     * 
+     *
      * @param target Optional target destination for optimized filtering (null for standard filtering)
      */
     private void refreshTransports(WorldPoint target) {
         useFairyRings &= !QuestState.NOT_STARTED.equals(Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN))
                 && (Rs2Inventory.contains(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
                 || Rs2Equipment.isWearing(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
-                || (ShortestPathPlugin.getPathfinderConfig().useBankItems && (Rs2Bank.hasItem(ItemID.DRAMEN_STAFF)|| Rs2Bank.hasItem(ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)))
+                || (ShortestPathPlugin.getPathfinderConfig().useBankItems && (Rs2Bank.hasItem(ItemID.DRAMEN_STAFF) || Rs2Bank.hasItem(ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)))
                 || Microbot.getVarbitValue(VarbitID.LUMBRIDGE_DIARY_ELITE_COMPLETE) == 1);
         useGnomeGliders &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
         useSpiritTrees &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
@@ -264,8 +268,8 @@ public class PathfinderConfig {
             WorldPoint point = entry.getKey();
             Set<Transport> usableTransports = new HashSet<>(entry.getValue().size());
             for (Transport transport : entry.getValue()) {
-				// Mutate action
-				updateActionBasedOnQuestState(transport);
+                // Mutate action
+                updateActionBasedOnQuestState(transport);
 
                 if (!useTransport(transport)) continue;
                 if (point == null) {
@@ -282,10 +286,11 @@ public class PathfinderConfig {
         }
 
         // Filter similar transports based on distance when walk with banked transports is enabled
-        if (useBankItems && config.maxSimilarTransportDistance() > 0) {            
-            filterSimilarTransports(target);                                    
+        if (useBankItems && config.maxSimilarTransportDistance() > 0) {
+            filterSimilarTransports(target);
         }
     }
+
 
     private Map<WorldPoint, Set<Transport>> createMergedList() {
         if (!usePoh) return allTransports;
@@ -317,7 +322,7 @@ public class PathfinderConfig {
     }
 
     public void refresh() {
-        refresh(null);        
+        refresh(null);
     }
 
     private void refreshRestrictionData() {
@@ -326,45 +331,45 @@ public class PathfinderConfig {
                 .collect(Collectors.toList());
 
         allRestrictions.stream()
-            .filter(entry -> {
-                // Explicit restriction: no requirements
-                if (entry.getQuests().isEmpty() && entry.getVarbits().isEmpty() && entry.getVarplayers().isEmpty() && !entry.isMembers() && Arrays.stream(entry.getSkillLevels()).allMatch(level -> level == 0) && entry.getItemIdRequirements().isEmpty()) {
-                    return true;
-                }
+                .filter(entry -> {
+                    // Explicit restriction: no requirements
+                    if (entry.getQuests().isEmpty() && entry.getVarbits().isEmpty() && entry.getVarplayers().isEmpty() && !entry.isMembers() && Arrays.stream(entry.getSkillLevels()).allMatch(level -> level == 0) && entry.getItemIdRequirements().isEmpty()) {
+                        return true;
+                    }
 
-                // Members world check
-                if (entry.isMembers() && !client.getWorldType().contains(WorldType.MEMBERS)) {
-                    return true;
-                }
-                // Quest check
-				if (entry.getQuests().entrySet().stream().anyMatch(qe -> {
-					QuestState playerState = Rs2Player.getQuestState(qe.getKey());
-					QuestState requiredState = qe.getValue();
-					int playerIndex = questStateOrder.indexOf(playerState);
-					int requiredIndex = questStateOrder.indexOf(requiredState);
-					return playerIndex < requiredIndex;
-				})) {
-					return true;
-				}
-                // Varbit check
-                if (entry.getVarbits().stream().anyMatch(varbitCheck -> !varbitCheck.matches(Microbot.getVarbitValue(varbitCheck.getVarbitId())))) {
-                    return true;
-                }
-                // Varplayer check
-                if (entry.getVarplayers().stream().anyMatch(varplayerCheck -> !varplayerCheck.matches(Microbot.getVarbitPlayerValue(varplayerCheck.getVarplayerId())))) {
-                    return true;
-                }
-                // Skill level check
-                if (!hasRequiredLevels(entry)) {
-                    return true;
-                }
-                // Item requirement check
-                if (!entry.getItemIdRequirements().isEmpty() && !hasRequiredItems(entry)) {
-                    return true;
-                }
-                return false;
-            })
-            .forEach(entry -> internalRestrictedPointsPacked.add(entry.getPackedWorldPoint()));
+                    // Members world check
+                    if (entry.isMembers() && !client.getWorldType().contains(WorldType.MEMBERS)) {
+                        return true;
+                    }
+                    // Quest check
+                    if (entry.getQuests().entrySet().stream().anyMatch(qe -> {
+                        QuestState playerState = Rs2Player.getQuestState(qe.getKey());
+                        QuestState requiredState = qe.getValue();
+                        int playerIndex = questStateOrder.indexOf(playerState);
+                        int requiredIndex = questStateOrder.indexOf(requiredState);
+                        return playerIndex < requiredIndex;
+                    })) {
+                        return true;
+                    }
+                    // Varbit check
+                    if (entry.getVarbits().stream().anyMatch(varbitCheck -> !varbitCheck.matches(Microbot.getVarbitValue(varbitCheck.getVarbitId())))) {
+                        return true;
+                    }
+                    // Varplayer check
+                    if (entry.getVarplayers().stream().anyMatch(varplayerCheck -> !varplayerCheck.matches(Microbot.getVarbitPlayerValue(varplayerCheck.getVarplayerId())))) {
+                        return true;
+                    }
+                    // Skill level check
+                    if (!hasRequiredLevels(entry)) {
+                        return true;
+                    }
+                    // Item requirement check
+                    if (!entry.getItemIdRequirements().isEmpty() && !hasRequiredItems(entry)) {
+                        return true;
+                    }
+                    return false;
+                })
+                .forEach(entry -> internalRestrictedPointsPacked.add(entry.getPackedWorldPoint()));
     }
 
     public static boolean isInWilderness(WorldPoint p) {
@@ -423,148 +428,149 @@ public class PathfinderConfig {
                 || WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_UNDERGROUND_LEVEL_19) == 0;
     }
 
-    public boolean isInLevel29Wilderness(int packedPoint){
+    public boolean isInLevel29Wilderness(int packedPoint) {
         return WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_ABOVE_GROUND_LEVEL_29) == 0
                 || WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_UNDERGROUND_LEVEL_29) == 0;
 
     }
 
-	private boolean completedQuests(Transport transport) {
-		return transport.getQuests().entrySet().stream()
-			.allMatch(entry -> {
-				QuestState playerState = Rs2Player.getQuestState(entry.getKey());
-				QuestState requiredState = entry.getValue();
-				int playerIndex = questStateOrder.indexOf(playerState);
-				int requiredIndex = questStateOrder.indexOf(requiredState);
-				return playerIndex >= requiredIndex;
-			});
-	}
+    private boolean completedQuests(Transport transport) {
+        return transport.getQuests().entrySet().stream()
+                .allMatch(entry -> {
+                    QuestState playerState = Rs2Player.getQuestState(entry.getKey());
+                    QuestState requiredState = entry.getValue();
+                    int playerIndex = questStateOrder.indexOf(playerState);
+                    int requiredIndex = questStateOrder.indexOf(requiredState);
+                    return playerIndex >= requiredIndex;
+                });
+    }
 
     private boolean varbitChecks(Transport transport) {
         return transport.getVarbits().isEmpty() ||
-			transport.getVarbits().stream()
-				.allMatch(varbitCheck -> varbitCheck.matches(Microbot.getVarbitValue(varbitCheck.getVarbitId())));
+                transport.getVarbits().stream()
+                        .allMatch(varbitCheck -> varbitCheck.matches(Microbot.getVarbitValue(varbitCheck.getVarbitId())));
     }
 
-	private boolean varplayerChecks(Transport transport) {
-		return transport.getVarplayers().isEmpty() ||
-			transport.getVarplayers().stream()
-				.allMatch(varplayerCheck -> varplayerCheck.matches(Microbot.getVarbitPlayerValue(varplayerCheck.getVarplayerId())));
-	}
+    private boolean varplayerChecks(Transport transport) {
+        return transport.getVarplayers().isEmpty() ||
+                transport.getVarplayers().stream()
+                        .allMatch(varplayerCheck -> varplayerCheck.matches(Microbot.getVarbitPlayerValue(varplayerCheck.getVarplayerId())));
+    }
 
     private boolean useTransport(Transport transport) {
         // Check if the feature flag is disabled
         if (!isFeatureEnabled(transport)) {
-			log.debug("Transport Type {} is disabled by feature flag", transport.getType());
-			return false;
-		}
+            log.debug("Transport Type {} is disabled by feature flag", transport.getType());
+            return false;
+        }
         // If the transport requires you to be in a members world (used for more granular member requirements)
         if (transport.isMembers() && !client.getWorldType().contains(WorldType.MEMBERS)) {
-			log.debug("Transport ( O: {} D: {} ) requires members world", transport.getOrigin(), transport.getDestination());
-			return false;
-		}
+            log.debug("Transport ( O: {} D: {} ) requires members world", transport.getOrigin(), transport.getDestination());
+            return false;
+        }
         // If you don't meet level requirements
         if (!hasRequiredLevels(transport)) {
-			log.debug("Transport ( O: {} D: {} ) requires skill levels {}", transport.getOrigin(), transport.getDestination(), Arrays.toString(transport.getSkillLevels()));
-			return false;
-		}
+            log.debug("Transport ( O: {} D: {} ) requires skill levels {}", transport.getOrigin(), transport.getDestination(), Arrays.toString(transport.getSkillLevels()));
+            return false;
+        }
         // If the transport has quest requirements & the quest haven't been completed
         if (transport.isQuestLocked() && !completedQuests(transport)) {
-			log.debug("Transport ( O: {} D: {} ) requires quests {}", transport.getOrigin(), transport.getDestination(), transport.getQuests());
-			return false;
-		}
+            log.debug("Transport ( O: {} D: {} ) requires quests {}", transport.getOrigin(), transport.getDestination(), transport.getQuests());
+            return false;
+        }
         // Check Spirit Tree specific requirements (farming state for farmable trees)
         if (transport.getType() == TransportType.SPIRIT_TREE) return isSpiritTreeUsable(transport);
 
         // If the transport has varbit requirements & the varbits do not match
         if (!varbitChecks(transport)) {
-			log.debug("Transport ( O: {} D: {} ) requires varbits {}", transport.getOrigin(), transport.getDestination(), transport.getVarbits());
-			return false;
-		}
+            log.debug("Transport ( O: {} D: {} ) requires varbits {}", transport.getOrigin(), transport.getDestination(), transport.getVarbits());
+            return false;
+        }
 
         // If the transport has varplayer requirements & the varplayers do not match
         if (!varplayerChecks(transport)) {
-			log.debug("Transport ( O: {} D: {} ) requires varplayers {}", transport.getOrigin(), transport.getDestination(), transport.getVarplayers());
-			return false;
-		}
+            log.debug("Transport ( O: {} D: {} ) requires varplayers {}", transport.getOrigin(), transport.getDestination(), transport.getVarplayers());
+            return false;
+        }
 
         // If you don't have the required currency & amount for transport
-        if (transport.getCurrencyAmount() > 0 
-            && !Rs2Inventory.hasItemAmount(transport.getCurrencyName(), transport.getCurrencyAmount())
-            && !(ShortestPathPlugin.getPathfinderConfig().useBankItems && Rs2Bank.count(transport.getCurrencyName()) >= transport.getCurrencyAmount())) {
-			log.debug("Transport ( O: {} D: {} ) requires {} x {}", transport.getOrigin(), transport.getDestination(), transport.getCurrencyAmount(), transport.getCurrencyName());
-			return false;
-		}
+        if (transport.getCurrencyAmount() > 0
+                && !Rs2Inventory.hasItemAmount(transport.getCurrencyName(), transport.getCurrencyAmount())
+                && !(ShortestPathPlugin.getPathfinderConfig().useBankItems && Rs2Bank.count(transport.getCurrencyName()) >= transport.getCurrencyAmount())) {
+            log.debug("Transport ( O: {} D: {} ) requires {} x {}", transport.getOrigin(), transport.getDestination(), transport.getCurrencyAmount(), transport.getCurrencyName());
+            return false;
+        }
 
         // Check if Teleports are globally disabled
         if (TransportType.isTeleport(transport.getType()) && Rs2Walker.disableTeleports) {
-			log.debug("Transport ( O: {} D: {} ) is a teleport but teleports are globally disabled", transport.getOrigin(), transport.getDestination());
-			return false;
-		}
+            log.debug("Transport ( O: {} D: {} ) is a teleport but teleports are globally disabled", transport.getOrigin(), transport.getDestination());
+            return false;
+        }
 
         // Check Teleport Item Settings
         if (transport.getType() == TELEPORTATION_ITEM) {
-			boolean isUsable = isTeleportationItemUsable(transport);
-			if (!isUsable)
-			{
-				log.debug("Transport ( O: {} D: {} ) is a teleport item but is not usable", transport.getOrigin(), transport.getDestination());
-			}
-			return isUsable;
-		}
+            boolean isUsable = isTeleportationItemUsable(transport);
+            if (!isUsable) {
+                log.debug("Transport ( O: {} D: {} ) is a teleport item but is not usable", transport.getOrigin(), transport.getDestination());
+            }
+            return isUsable;
+        }
         // Check Teleport Spell Settings
         if (transport.getType() == TELEPORTATION_SPELL) {
-			boolean isUsable = isTeleportationSpellUsable(transport);
-			if (!isUsable)
-			{
-				log.debug("Transport ( O: {} D: {} ) is a teleport spell but is not usable", transport.getOrigin(), transport.getDestination());
-			}
-			return isUsable;
-		}
+            boolean isUsable = isTeleportationSpellUsable(transport);
+            if (!isUsable) {
+                log.debug("Transport ( O: {} D: {} ) is a teleport spell but is not usable", transport.getOrigin(), transport.getDestination());
+            }
+            return isUsable;
+        }
 
         // Used for Generic Item Requirements
         if (!transport.getItemIdRequirements().isEmpty()) {
-			boolean hasRequiredItems = hasRequiredItems(transport);
-			if (!hasRequiredItems)
-			{
-				log.debug("Transport ( O: {} D: {} ) requires items {}", transport.getOrigin(), transport.getDestination(), transport.getItemIdRequirements().stream().flatMap(Set::stream).collect(Collectors.toSet()));
-			}
-			return hasRequiredItems;
-		}
+            boolean hasRequiredItems = hasRequiredItems(transport);
+            if (!hasRequiredItems) {
+                log.debug("Transport ( O: {} D: {} ) requires items {}", transport.getOrigin(), transport.getDestination(), transport.getItemIdRequirements().stream().flatMap(Set::stream).collect(Collectors.toSet()));
+            }
+            return hasRequiredItems;
+        }
 
         return true;
     }
 
-    /** Checks if the player has all the required skill levels for the transport */
+    /**
+     * Checks if the player has all the required skill levels for the transport
+     */
     private boolean hasRequiredLevels(Transport transport) {
         int[] requiredLevels = transport.getSkillLevels();
         Skill[] skills = Skill.values();
         return IntStream.range(0, requiredLevels.length)
-            .filter(i -> requiredLevels[i] > 0)
-            .allMatch(i -> Rs2SkillCache.getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
+                .filter(i -> requiredLevels[i] > 0)
+                .allMatch(i -> Microbot.getClient().getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
     }
 
-    /** Checks if the player has all the required skill levels for the restriction */
+    /**
+     * Checks if the player has all the required skill levels for the restriction
+     */
     private boolean hasRequiredLevels(Restriction restriction) {
         int[] requiredLevels = restriction.getSkillLevels();
         Skill[] skills = Skill.values();
         return IntStream.range(0, requiredLevels.length)
-            .filter(i -> requiredLevels[i] > 0)
-            .allMatch(i -> Rs2SkillCache.getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
+                .filter(i -> requiredLevels[i] > 0)
+                .allMatch(i -> Microbot.getClient().getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
     }
 
-	private void updateActionBasedOnQuestState(Transport transport) {
-		if (Objects.equals(transport.getType(), TransportType.SHIP) &&
-			(Objects.equals(transport.getName(), "Veos") || Objects.equals(transport.getName(), "Captain Magoro"))) {
-			QuestState questState = Rs2Player.getQuestState(Quest.CLIENT_OF_KOUREND);
-			if (questState != QuestState.FINISHED && !Objects.equals(transport.getAction(), "Talk-to")) {
-				transport.setAction("Talk-to");
-			}
-		}
-	}
+    private void updateActionBasedOnQuestState(Transport transport) {
+        if (Objects.equals(transport.getType(), TransportType.SHIP) &&
+                (Objects.equals(transport.getName(), "Veos") || Objects.equals(transport.getName(), "Captain Magoro"))) {
+            QuestState questState = Rs2Player.getQuestState(Quest.CLIENT_OF_KOUREND);
+            if (questState != QuestState.FINISHED && !Objects.equals(transport.getAction(), "Talk-to")) {
+                transport.setAction("Talk-to");
+            }
+        }
+    }
 
     private boolean isFeatureEnabled(Transport transport) {
         TransportType type = transport.getType();
-        
+
         if (!client.getWorldType().contains(WorldType.MEMBERS)) {
             // Transport types that require membership
             switch (type) {
@@ -632,16 +638,21 @@ public class PathfinderConfig {
         }
     }
 
-    /** Checks if a teleportation item is usable */
+    /**
+     * Checks if a teleportation item is usable
+     */
     private boolean isTeleportationItemUsable(Transport transport) {
         if (useTeleportationItems == TeleportationItem.NONE) return false;
         // Check consumable items configuration
-        if (useTeleportationItems == TeleportationItem.INVENTORY_NON_CONSUMABLE && transport.isConsumable()) return false;
-        
+        if (useTeleportationItems == TeleportationItem.INVENTORY_NON_CONSUMABLE && transport.isConsumable())
+            return false;
+
         return hasRequiredItems(transport);
     }
 
-    /** Checks if the player has any of the required equipment and inventory items for the transport */
+    /**
+     * Checks if the player has any of the required equipment and inventory items for the transport
+     */
     private boolean hasRequiredItems(Transport transport) {
         if (requiresChronicle(transport)) return hasChronicleCharges();
 
@@ -651,7 +662,9 @@ public class PathfinderConfig {
                 .anyMatch(itemId -> Rs2Equipment.isWearing(itemId) || Rs2Inventory.hasItem(itemId) || (ShortestPathPlugin.getPathfinderConfig().useBankItems && Rs2Bank.hasItem(itemId)));
     }
 
-    /** Checks if the player has any of the required equipment and inventory items for the restriction */
+    /**
+     * Checks if the player has any of the required equipment and inventory items for the restriction
+     */
     private boolean hasRequiredItems(Restriction restriction) {
         return restriction.getItemIdRequirements()
                 .stream()
@@ -659,9 +672,9 @@ public class PathfinderConfig {
                 .anyMatch(itemId -> Rs2Equipment.isWearing(itemId) || Rs2Inventory.hasItem(itemId));
     }
 
-    
+
     private boolean isTeleportationSpellUsable(Transport transport) {
-        
+
         boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
         String displayInfo = hasMultipleDestination
                 ? transport.getDisplayInfo().split(":")[0].trim().toLowerCase()
@@ -672,7 +685,9 @@ public class PathfinderConfig {
 //        return Rs2Magic.quickCanCast(displayInfo);
     }
 
-    /** Checks if the transport requires the Chronicle */
+    /**
+     * Checks if the transport requires the Chronicle
+     */
     private boolean requiresChronicle(Transport transport) {
         return transport.getItemIdRequirements()
                 .stream()
@@ -680,13 +695,15 @@ public class PathfinderConfig {
                 .anyMatch(itemId -> itemId == ItemID.CHRONICLE);
     }
 
-    /** Checks if the Chronicle has charges */
+    /**
+     * Checks if the Chronicle has charges
+     */
     private boolean hasChronicleCharges() {
         if (!Rs2Equipment.isWearing(ItemID.CHRONICLE)) {
             if (!Rs2Inventory.hasItem(ItemID.CHRONICLE))
                 return false;
         }
-        
+
         String charges = Microbot.getConfigManager()
                 .getRSProfileConfiguration(ItemChargeConfig.GROUP, ItemChargeConfig.KEY_CHRONICLE);
 
@@ -708,7 +725,7 @@ public class PathfinderConfig {
      * Check if a spirit tree transport is usable
      * This method integrates with the farming system to determine if farmable spirit trees
      * are planted and healthy enough for transportation
-     * 
+     *
      * @param transport The spirit tree transport to check
      * @return true if the spirit tree is available for travel
      */
@@ -716,17 +733,17 @@ public class PathfinderConfig {
         // Use the Rs2SpiritTreeCache directly for better performance and consistency
         return Rs2SpiritTreeCache.isSpiritTreeTransportAvailable(transport);
     }
-    
+
     @Deprecated(since = "1.6.2 - Add Restrictions to restrictions.tsv", forRemoval = true)
-    public void setRestrictedTiles(Restriction... restrictions){
+    public void setRestrictedTiles(Restriction... restrictions) {
         this.customRestrictions = List.of(restrictions);
     }
 
-    
+
     /**
      * Filters similar transports based on distance, removing consumable transport items when
      * better non-consumable alternatives exist within the configured distance.
-     * 
+     *
      * @param target Optional target destination for distance-based filtering optimization
      */
     private void filterSimilarTransports(WorldPoint target) {
@@ -753,15 +770,15 @@ public class PathfinderConfig {
         boolean preferTransports = config.preferTransportToTarget();
         HashMap<WorldPoint, Set<Transport>> allUsableTransports;
 
-        if (preferTransports) {            
-            allUsableTransports = new HashMap<>(transports);                                                    
+        if (preferTransports) {
+            allUsableTransports = new HashMap<>(transports);
         } else {
             allUsableTransports = new HashMap<>();
         }
         // Call the optimized filter method - now with safeguards against removing critical transports
         TransportFilterResult usableTeleportsResult = filterConsumableTeleports(teleportsToFilter,
-                        allUsableTransports,
-                        maxDistance, target);          
+                allUsableTransports,
+                maxDistance, target);
         // Apply the results
         filteringSummary.append(usableTeleportsResult.filterDetails);
 
@@ -801,53 +818,53 @@ public class PathfinderConfig {
         private final Set<Transport> removedTransports = new HashSet<>();
         private final Map<String, Integer> removedByCategory = new HashMap<>();
         private final StringBuilder filterDetails = new StringBuilder();
-        
-        public void addRemovedTransport(Transport transport, Transport alternative, 
-                                      String categoryName, int distance, boolean isTargetBased) {
+
+        public void addRemovedTransport(Transport transport, Transport alternative,
+                                        String categoryName, int distance, boolean isTargetBased) {
             removedTransports.add(transport);
-            
+
             // Track removal by category
-            String category = categoryName + " over Consumable Item (" + 
+            String category = categoryName + " over Consumable Item (" +
                     (isTargetBased ? "target-based" : "destination-based") + ", distance: " + distance + " tiles)";
             removedByCategory.merge(category, 1, Integer::sum);
-            
+
             // Log detailed removal information
             filterDetails.append("\t\tRemoved: '").append(transport.getDisplayInfo())
-                   .append("' (Consumable Item) due to similar '").append(alternative.getDisplayInfo())
-                   .append("' (").append(categoryName)
-                   .append(") - Distance: ").append(distance).append(" tiles (")
-                   .append(isTargetBased ? "target-based" : "destination-based").append(")\n");
+                    .append("' (Consumable Item) due to similar '").append(alternative.getDisplayInfo())
+                    .append("' (").append(categoryName)
+                    .append(") - Distance: ").append(distance).append(" tiles (")
+                    .append(isTargetBased ? "target-based" : "destination-based").append(")\n");
         }
     }
-    
+
     /**
      * Filters consumable transport items when similar non-consumable alternatives exist.
-     * 
-     * @param teleports The set of teleports to filter
+     *
+     * @param teleports           The set of teleports to filter
      * @param allUsableTransports Map of all usable transports by location
-     * @param maxDistance Maximum distance for considering transports similar
-     * @param target Optional target destination for optimization
+     * @param maxDistance         Maximum distance for considering transports similar
+     * @param target              Optional target destination for optimization
      * @return Result containing transports to remove and filtering details
      */
-    private TransportFilterResult filterConsumableTeleports(Set<Transport> teleports, 
+    private TransportFilterResult filterConsumableTeleports(Set<Transport> teleports,
                                                             HashMap<WorldPoint, Set<Transport>> allUsableTransports,
                                                             int maxDistance, WorldPoint target) {
         TransportFilterResult result = new TransportFilterResult();
-        
+
         // Skip processing if no filtering is needed
         if (maxDistance <= 0) {
             return result;
         }
-        
+
         // Fast early exit if there are no teleports to filter
         if (teleports == null || teleports.isEmpty()) {
             return result;
         }
-        
+
         // Separate consumable transport items from other transports (using streams for better performance)
         List<Transport> consumableItems = new ArrayList<>();
         List<Transport> nonConsumableTeleports = new ArrayList<>();
-        
+
         // First pass: separate the teleports into appropriate lists
         teleports.forEach(teleport -> {
             if (teleport.getType() == TransportType.TELEPORTATION_ITEM && teleport.isConsumable()) {
@@ -856,64 +873,64 @@ public class PathfinderConfig {
                 nonConsumableTeleports.add(teleport);
             }
         });
-        
+
         // Nothing to filter if no consumable items or no alternatives
         if (consumableItems.isEmpty() || nonConsumableTeleports.isEmpty()) {
             return result;
         }
-        
+
         // Add transportation network transports (like fairy rings, spirit trees) to the non-consumable list
         if (allUsableTransports != null && !allUsableTransports.isEmpty()) {
             allUsableTransports.values().stream()
-                .flatMap(Set::stream)
-                .filter(transport -> 
-                    transport.getType() == TransportType.FAIRY_RING || 
-                    transport.getType() == TransportType.GNOME_GLIDER ||
-                    transport.getType() == TransportType.SPIRIT_TREE || 
-                    transport.getType() == TransportType.QUETZAL)
-                .forEach(nonConsumableTeleports::add);
+                    .flatMap(Set::stream)
+                    .filter(transport ->
+                            transport.getType() == TransportType.FAIRY_RING ||
+                                    transport.getType() == TransportType.GNOME_GLIDER ||
+                                    transport.getType() == TransportType.SPIRIT_TREE ||
+                                    transport.getType() == TransportType.QUETZAL)
+                    .forEach(nonConsumableTeleports::add);
         }
-        
+
         // Check each consumable item against all non-consumable alternatives
         // Using a more optimized approach to avoid unnecessary calculations
         for (Transport consumableItem : consumableItems) {
             WorldPoint consumableDestination = consumableItem.getDestination();
             if (consumableDestination == null) continue;
-            
+
             Transport bestAlternative = null;
             int shortestDistance = Integer.MAX_VALUE;
             boolean isTargetBased = false;
-            
+
             // First determine if we can use target-based comparison
             boolean useTargetComparison = target != null && target.getPlane() == consumableDestination.getPlane();
-            
+
             // Pre-calculate target distance for the consumable item if needed
             int consumableToTarget = useTargetComparison ? consumableDestination.distanceTo2D(target) : 0;
-            
+
             // Process all non-consumable alternatives
             for (Transport nonConsumableTeleport : nonConsumableTeleports) {
                 WorldPoint nonConsumableDestination = nonConsumableTeleport.getDestination();
                 if (nonConsumableDestination == null) continue;
-                
+
                 // Ensure we're comparing points on the same plane
                 if (consumableDestination.getPlane() != nonConsumableDestination.getPlane()) {
                     continue;
                 }
-                
+
                 int distance;
-                
+
                 if (useTargetComparison) {
                     // Target-based comparison (optimized)
                     WorldPoint referencePoint = calculateReferencePoint(target, consumableDestination, nonConsumableDestination);
                     int nonConsumableToReference = nonConsumableDestination.distanceTo2D(referencePoint);
                     int consumableToReference = consumableDestination.distanceTo2D(referencePoint);
-                    
+
                     // Only consider alternatives that get us at least as close to the target
                     // This prevents removing consumable items that are better positioned
                     if (nonConsumableToReference > consumableToReference) {
                         continue;
                     }
-                    
+
                     // Calculate distance between the transports
                     distance = nonConsumableToReference;
                     isTargetBased = true;
@@ -922,7 +939,7 @@ public class PathfinderConfig {
                     distance = consumableDestination.distanceTo2D(nonConsumableDestination);
                     isTargetBased = false;
                 }
-                
+
                 // Keep track of the best alternative (shortest distance)
                 if (distance <= maxDistance && distance < shortestDistance) {
                     shortestDistance = distance;
@@ -930,27 +947,27 @@ public class PathfinderConfig {
                     break; // Found a suitable alternative, no need to check further
                 }
             }
-            
+
             // If we found a suitable alternative, remove the consumable item
             if (bestAlternative != null) {
                 result.addRemovedTransport(
-                    consumableItem,
-                    bestAlternative,
-                    getTransportTypeName(bestAlternative),
-                    shortestDistance,
-                    isTargetBased
+                        consumableItem,
+                        bestAlternative,
+                        getTransportTypeName(bestAlternative),
+                        shortestDistance,
+                        isTargetBased
                 );
             }
         }
-        
+
         return result;
     }
-    
+
     /**
      * Calculates a reference point based on the triangle formed by three world points.
      * This reference point is the centroid (average of the three points) which provides
      * a point of reference for comparing relative positions.
-     * 
+     *
      * @param p1 First point (typically the target)
      * @param p2 Second point (typically consumable destination)
      * @param p3 Third point (typically non-consumable destination)
@@ -967,7 +984,7 @@ public class PathfinderConfig {
 
     /**
      * Gets a human-readable name for a transport type.
-     * 
+     *
      * @param transport The transport to evaluate
      * @return Human-readable transport type name
      */
@@ -1000,8 +1017,8 @@ public class PathfinderConfig {
                         "useQuetzals=%b, useSpiritTrees=%b, useTeleportationLevers=%b, useTeleportationMinigames=%b, " +
                         "useTeleportationPortals=%b, useTeleportationSpells=%b, useMagicCarpets=%b, useWildernessObelisks=%b",
                 useAgilityShortcuts, useGrappleShortcuts, useBoats, useCanoes,
-                useCharterShips,useShips,useFairyRings,useGnomeGliders,useMinecarts,
-                useQuetzals,useSpiritTrees,useTeleportationLevers,useTeleportationMinigames,
-                useTeleportationPortals,useTeleportationSpells,useMagicCarpets,useWildernessObelisks);
+                useCharterShips, useShips, useFairyRings, useGnomeGliders, useMinecarts,
+                useQuetzals, useSpiritTrees, useTeleportationLevers, useTeleportationMinigames,
+                useTeleportationPortals, useTeleportationSpells, useMagicCarpets, useWildernessObelisks);
     }
 }

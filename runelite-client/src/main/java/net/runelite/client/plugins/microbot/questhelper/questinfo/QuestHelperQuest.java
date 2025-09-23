@@ -670,7 +670,8 @@ public enum QuestHelperQuest
 	@Getter
 	private final QuestDetails.Difficulty difficulty;
 
-	private final QuestVarbits varbit;
+	@Getter
+	public final QuestVarbits varbit;
 
 	private final QuestVarPlayer varPlayer;
 
