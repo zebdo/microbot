@@ -95,12 +95,10 @@ public final class Rs2PlayerCache {
     private void populateQuests() {
         clientThread.invokeLater(() ->
         {
-            long start = System.currentTimeMillis();
             for (Quest quest : Quest.values()) {
                 QuestState questState = quest.getState(client);
                 quests.put(quest.getId(), questState);
             }
-            long end = System.currentTimeMillis();
             questsPopulated = true;
         });
     }
@@ -128,7 +126,6 @@ public final class Rs2PlayerCache {
             return cached;
         }
 
-        log.info("Varbit {} not in cache, updating...", varbitId);
         int value = updateVarbitValue(varbitId);
 
         return value;
