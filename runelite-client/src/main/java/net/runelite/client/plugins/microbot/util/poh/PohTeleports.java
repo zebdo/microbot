@@ -247,14 +247,13 @@ public class PohTeleports {
         WorldPoint outsidePoint = location.getPortalLocation();
 
         transportMap.put(null, Set.of(
-                new Transport(insidePoint, "Teleport to House", TransportType.TELEPORTATION_SPELL, true, 19, Map.of(Skill.MAGIC, 40)),
                 new Transport(insidePoint, "Construction cape: Tele to POH", TransportType.TELEPORTATION_ITEM, true, 19, Set.of(Set.of(9789), Set.of(9790))),
-                new Transport(insidePoint, "Teleport to House tablet: Outside", TransportType.TELEPORTATION_ITEM, true, 19, Set.of(Set.of(8013)))
+                new Transport(insidePoint, "Teleport to House", TransportType.TELEPORTATION_SPELL, true, 19, Map.of(Skill.MAGIC, 40)),
+                new Transport(insidePoint, "Teleport to House tablet: Inside", TransportType.TELEPORTATION_ITEM, true, 19, Set.of(Set.of(8013)))
         ));
         transportMap.put(outsidePoint, Set.of(
                 new Transport(outsidePoint, insidePoint, location.name() + " -> PoH", TransportType.TELEPORTATION_PORTAL, true, "Home", "Portal", location.getPortalId())
         ));
         return transportMap;
     }
-
 }
