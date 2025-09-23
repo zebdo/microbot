@@ -123,11 +123,15 @@ public final class Rs2PlayerCache {
      * @return
      */
     public @Varbit int getVarbitValue(@Varbit int varbitId) {
-        int value = varbits.getOrDefault(varbitId, 0);
+        Integer cached = varbits.get(varbitId);
 
-        if (value <= 0) {
-            value = updateVarbitValue(varbitId);
+        if (cached != null) {
+            return cached;
         }
+
+        log.info("Varbit {} not in cache, updating...", varbitId);
+        int value = updateVarbitValue(varbitId);
+
         return value;
     }
 
@@ -135,9 +139,7 @@ public final class Rs2PlayerCache {
         int value;
         value = Microbot.getClientThread().runOnClientThreadOptional(() -> client.getVarbitValue(varbitId)).orElse(0);
 
-        if (value > 0) {
-            varbits.put(varbitId, value);
-        }
+        varbits.put(varbitId, value);
         return value;
     }
 
@@ -148,11 +150,14 @@ public final class Rs2PlayerCache {
      * @return
      */
     public @Varp int getVarpValue(@Varp int varbitId) {
-        int value = varps.getOrDefault(varbitId, 0);
+        Integer cached = varps.get(varbitId);
 
-        if (value <= 0) {
-            value = updateVarpValue(varbitId);
+        if (cached != null) {
+            return cached;
         }
+
+        int value = updateVarpValue(varbitId);
+
         return value;
     }
 

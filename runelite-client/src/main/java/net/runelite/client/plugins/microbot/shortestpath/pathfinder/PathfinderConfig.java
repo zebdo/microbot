@@ -34,6 +34,11 @@ import java.util.stream.Stream;
 
 import static net.runelite.client.plugins.microbot.shortestpath.TransportType.TELEPORTATION_ITEM;
 import static net.runelite.client.plugins.microbot.shortestpath.TransportType.TELEPORTATION_SPELL;
+import net.runelite.api.*;
+import net.runelite.client.plugins.microbot.util.cache.Rs2PohCache;
+import net.runelite.client.plugins.microbot.util.cache.Rs2SpiritTreeCache;
+import static net.runelite.client.plugins.microbot.shortestpath.TransportType.TELEPORTATION_ITEM;
+import static net.runelite.client.plugins.microbot.shortestpath.TransportType.TELEPORTATION_SPELL;
 
 @Slf4j
 public class PathfinderConfig {
@@ -377,6 +382,7 @@ public class PathfinderConfig {
     }
 
     private void refreshRestrictionData() {
+        long start = System.currentTimeMillis();
         internalRestrictedPointsPacked.clear();
         List<Restriction> all = Stream.concat(resourceRestrictions.stream(), customRestrictions.stream())
                 .collect(Collectors.toList());
