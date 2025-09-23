@@ -1128,7 +1128,7 @@ public class Rs2Player {
      * Checks if the player is within a specified distance of a given {@link WorldPoint}.
      *
      * @param worldPoint The {@link WorldPoint} to check proximity to.
-     * @param distance   The radius (in tiles) around the {@code worldPoint} to check.
+     * @param radius   The radius (in tiles) around the {@code worldPoint} to check.
      * @return {@code true} if the player is within the specified distance, {@code false} otherwise.
      * @deprecated Since 1.9.6, use {@link #isInArea(WorldPoint, int)} for better naming consistency.
      */
@@ -1141,7 +1141,7 @@ public class Rs2Player {
      * Checks if the player is within a specified distance of a given {@link WorldPoint}.
      *
      * @param worldPoint The {@link WorldPoint} to check proximity to.
-     * @param distance   The radius (in tiles) around the {@code worldPoint} to check.
+     * @param radius   The radius (in tiles) around the {@code worldPoint} to check.
      * @return {@code true} if the player is within the specified distance, {@code false} otherwise.
      */
     public static boolean isInArea(WorldPoint worldPoint, int radius) {
@@ -1595,8 +1595,7 @@ public class Rs2Player {
         if (Microbot.isRs2CacheEnabled) {
             return Rs2QuestCache.getQuestState(quest);
         } else {
-            Client client = Microbot.getClient();
-            return Microbot.getClientThread().runOnClientThreadOptional(() -> quest.getState(client)).orElse(null);
+            return Microbot.getRs2PlayerCache().getQuestState(quest);
         }
     }
 

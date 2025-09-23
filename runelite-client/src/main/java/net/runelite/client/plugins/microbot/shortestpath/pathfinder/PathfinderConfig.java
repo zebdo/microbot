@@ -183,6 +183,7 @@ public class PathfinderConfig {
             if (Rs2Player.getWorldLocation().getRegionID() != 13463) {
                 Rs2Tab.switchTo(InterfaceTab.INVENTORY);
             }
+
             //END microbot variables
         }
     }
@@ -242,35 +243,80 @@ public class PathfinderConfig {
      * @param target Optional target destination for optimized filtering (null for standard filtering)
      */
     private void refreshTransports(WorldPoint target) {
-        useFairyRings &= !QuestState.NOT_STARTED.equals(Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN))
-                && (Rs2Inventory.contains(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
-                || Rs2Equipment.isWearing(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
-                || (ShortestPathPlugin.getPathfinderConfig().useBankItems && (Rs2Bank.hasItem(ItemID.DRAMEN_STAFF)|| Rs2Bank.hasItem(ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)))
-                || Microbot.getVarbitValue(VarbitID.LUMBRIDGE_DIARY_ELITE_COMPLETE) == 1);
-        useGnomeGliders &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
-        useSpiritTrees &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
-        useQuetzals &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
+        long t0All = System.currentTimeMillis();
+
+        long tFairy = 0, tGliders = 0, tSpiritTrees = 0, tQuetzals = 0;
+        long tCacheUpdate = 0, tCreateMerged = 0, tUpdateAction = 0, tUseTransport = 0, tFilterSimilar = 0;
+
+        int seen = 0, usable = 0, teleUsable = 0;
+
+        final boolean useBankItemsCfg = ShortestPathPlugin.getPathfinderConfig().useBankItems;
+
+        // Fairy rings
+        long t0 = System.currentTimeMillis();
+        boolean fairyCond =
+                !QuestState.NOT_STARTED.equals(Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN)) &&
+                        (Rs2Inventory.contains(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
+                                || Rs2Equipment.isWearing(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
+                                || (useBankItemsCfg && (Rs2Bank.hasItem(ItemID.DRAMEN_STAFF) || Rs2Bank.hasItem(ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)))
+                                || Microbot.getVarbitValue(VarbitID.LUMBRIDGE_DIARY_ELITE_COMPLETE) == 1);
+        tFairy += System.currentTimeMillis() - t0;
+        useFairyRings = useFairyRings && fairyCond;
+
+        // Gnome gliders
+        t0 = System.currentTimeMillis();
+        boolean gliderCond = QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
+        tGliders += System.currentTimeMillis() - t0;
+        useGnomeGliders = useGnomeGliders && gliderCond;
+
+        // Spirit trees
+        t0 = System.currentTimeMillis();
+        boolean spiritCond = QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
+        tSpiritTrees += System.currentTimeMillis() - t0;
+        useSpiritTrees = useSpiritTrees && spiritCond;
+
+        // Quetzals
+        t0 = System.currentTimeMillis();
+        boolean quetzalCond = QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
+        tQuetzals += System.currentTimeMillis() - t0;
+        useQuetzals = useQuetzals && quetzalCond;
 
         transports.clear();
         transportsPacked.clear();
         usableTeleports.clear();
 
-        // Check spirit tree farming states for farmable spirit trees
+        // Spirit tree cache update
+        t0 = System.currentTimeMillis();
         Rs2SpiritTreeCache.getInstance().update();
-        //Rs2SpiritTreeCache.logAllTreeStates();
+        tCacheUpdate += System.currentTimeMillis() - t0;
 
-        for (Map.Entry<WorldPoint, Set<Transport>> entry : createMergedList().entrySet()) {
+        // Build merged map
+        t0 = System.currentTimeMillis();
+        Map<WorldPoint, Set<Transport>> merged = createMergedList();
+        tCreateMerged += System.currentTimeMillis() - t0;
+
+        for (Map.Entry<WorldPoint, Set<Transport>> entry : merged.entrySet()) {
             WorldPoint point = entry.getKey();
             Set<Transport> usableTransports = new HashSet<>(entry.getValue().size());
-            for (Transport transport : entry.getValue()) {
-				// Mutate action
-				updateActionBasedOnQuestState(transport);
 
-                if (!useTransport(transport)) continue;
+            for (Transport transport : entry.getValue()) {
+                seen++;
+
+                long t1 = System.currentTimeMillis();
+                updateActionBasedOnQuestState(transport);
+                tUpdateAction += System.currentTimeMillis() - t1;
+
+                t1 = System.currentTimeMillis();
+                boolean canUse = useTransport(transport);
+                tUseTransport += System.currentTimeMillis() - t1;
+                if (!canUse) continue;
+
                 if (point == null) {
                     usableTeleports.add(transport);
+                    teleUsable++;
                 } else {
                     usableTransports.add(transport);
+                    usable++;
                 }
             }
 
@@ -280,11 +326,22 @@ public class PathfinderConfig {
             }
         }
 
-        // Filter similar transports based on distance when walk with banked transports is enabled
-        if (useBankItems && config.maxSimilarTransportDistance() > 0) {            
-            filterSimilarTransports(target);                                    
+        if (useBankItems && config.maxSimilarTransportDistance() > 0) {
+            long t2 = System.currentTimeMillis();
+            filterSimilarTransports(target);
+            tFilterSimilar += System.currentTimeMillis() - t2;
+        }
+
+        long total = System.currentTimeMillis() - t0All;
+        if (config.drawDebugPanel()) {
+            log.info(
+                    "refreshTransports: total={}ms | checks ms: fairy={} gliders={} spiritTrees={} quetzals={} | cacheUpdate={} mergedMap={} updateAction={} useTransport={} filterSimilar={} | seen={} usable={} teleports={} points={}",
+                    total, tFairy, tGliders, tSpiritTrees, tQuetzals, tCacheUpdate, tCreateMerged, tUpdateAction, tUseTransport,
+                    tFilterSimilar, seen, usable, teleUsable, transports.size()
+            );
         }
     }
+
 
     private Map<WorldPoint, Set<Transport>> createMergedList() {
         if (!usePoh) return allTransports;
@@ -321,49 +378,89 @@ public class PathfinderConfig {
 
     private void refreshRestrictionData() {
         internalRestrictedPointsPacked.clear();
-        List<Restriction> allRestrictions = Stream.concat(resourceRestrictions.stream(), customRestrictions.stream())
+        List<Restriction> all = Stream.concat(resourceRestrictions.stream(), customRestrictions.stream())
                 .collect(Collectors.toList());
 
-        allRestrictions.stream()
-            .filter(entry -> {
-                // Explicit restriction: no requirements
-                if (entry.getQuests().isEmpty() && entry.getVarbits().isEmpty() && entry.getVarplayers().isEmpty() && !entry.isMembers() && Arrays.stream(entry.getSkillLevels()).allMatch(level -> level == 0) && entry.getItemIdRequirements().isEmpty()) {
-                    return true;
-                }
+        long tAll0 = System.currentTimeMillis();
+        long tQuest = 0, tVarbit = 0, tVarplayer = 0, tSkill = 0, tItem = 0;
+        int added = 0;
 
-                // Members world check
-                if (entry.isMembers() && !client.getWorldType().contains(WorldType.MEMBERS)) {
-                    return true;
-                }
-                // Quest check
-				if (entry.getQuests().entrySet().stream().anyMatch(qe -> {
-					QuestState playerState = Rs2Player.getQuestState(qe.getKey());
-					QuestState requiredState = qe.getValue();
-					int playerIndex = questStateOrder.indexOf(playerState);
-					int requiredIndex = questStateOrder.indexOf(requiredState);
-					return playerIndex < requiredIndex;
-				})) {
-					return true;
-				}
-                // Varbit check
-                if (entry.getVarbits().stream().anyMatch(varbitCheck -> !varbitCheck.matches(Microbot.getVarbitValue(varbitCheck.getVarbitId())))) {
-                    return true;
-                }
-                // Varplayer check
-                if (entry.getVarplayers().stream().anyMatch(varplayerCheck -> !varplayerCheck.matches(Microbot.getVarbitPlayerValue(varplayerCheck.getVarplayerId())))) {
-                    return true;
-                }
-                // Skill level check
-                if (!hasRequiredLevels(entry)) {
-                    return true;
-                }
-                // Item requirement check
-                if (!entry.getItemIdRequirements().isEmpty() && !hasRequiredItems(entry)) {
-                    return true;
-                }
-                return false;
-            })
-            .forEach(entry -> internalRestrictedPointsPacked.add(entry.getPackedWorldPoint()));
+        boolean isMembersWorld = client.getWorldType().contains(WorldType.MEMBERS);
+
+        for (Restriction r : all) {
+            boolean restricted = false;
+
+            // Unconditional restriction
+            if (r.getQuests().isEmpty() && r.getVarbits().isEmpty() && r.getVarplayers().isEmpty()
+                    && !r.isMembers() && Arrays.stream(r.getSkillLevels()).allMatch(l -> l == 0)
+                    && r.getItemIdRequirements().isEmpty()) {
+                restricted = true;
+            }
+
+            // Members world check
+            if (!restricted && r.isMembers() && !isMembersWorld) {
+                restricted = true;
+            }
+
+            // Quest check
+            if (!restricted && !r.getQuests().isEmpty()) {
+                long t0 = System.currentTimeMillis();
+                boolean fail = r.getQuests().entrySet().stream().anyMatch(qe -> {
+                    QuestState player = Rs2Player.getQuestState(qe.getKey());
+                    QuestState req = qe.getValue();
+                    int pi = questStateOrder.indexOf(player);
+                    int ri = questStateOrder.indexOf(req);
+                    return pi < ri;
+                });
+                tQuest += System.currentTimeMillis() - t0;
+                if (fail) restricted = true;
+            }
+
+            // Varbit check
+            if (!restricted && !r.getVarbits().isEmpty()) {
+                long t0 = System.currentTimeMillis();
+                boolean fail = r.getVarbits().stream()
+                        .anyMatch(vb -> !vb.matches(Microbot.getVarbitValue(vb.getVarbitId())));
+                tVarbit += System.currentTimeMillis() - t0;
+                if (fail) restricted = true;
+            }
+
+            // Varplayer check
+            if (!restricted && !r.getVarplayers().isEmpty()) {
+                long t0 = System.currentTimeMillis();
+                boolean fail = r.getVarplayers().stream()
+                        .anyMatch(vp -> !vp.matches(Microbot.getVarbitPlayerValue(vp.getVarplayerId())));
+                tVarplayer += System.currentTimeMillis() - t0;
+                if (fail) restricted = true;
+            }
+
+            // Skill level check
+            if (!restricted) {
+                long t0 = System.currentTimeMillis();
+                boolean ok = hasRequiredLevels(r);
+                tSkill += System.currentTimeMillis() - t0;
+                if (!ok) restricted = true;
+            }
+
+            // Item requirement check
+            if (!restricted && !r.getItemIdRequirements().isEmpty()) {
+                long t0 = System.currentTimeMillis();
+                boolean ok = hasRequiredItems(r);
+                tItem += System.currentTimeMillis() - t0;
+                if (!ok) restricted = true;
+            }
+
+            if (restricted) {
+                internalRestrictedPointsPacked.add(r.getPackedWorldPoint());
+                added++;
+            }
+        }
+
+        long totalMs = System.currentTimeMillis() - tAll0;
+        if (config.drawDebugPanel()) {
+            log.info("Refreshed {} restrictions. added={} total={}ms quests={}ms varbits={}ms varplayers={}ms skills={}ms items={}ms",
+                    all.size(), added, totalMs, tQuest, tVarbit, tVarplayer, tSkill, tItem);
+        }
     }
 
     public static boolean isInWilderness(WorldPoint p) {
