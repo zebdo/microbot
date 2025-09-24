@@ -327,16 +327,6 @@ public class Rs2Shop {
         if (list != null) {
             System.out.println("Storing shopItems");
             shopItems = list;
-
-            /*Print each item's name
-            System.out.println("Shop items:");
-            for (Rs2Item item : shopItems) {
-                System.out.println(item.name);
-                System.out.println(item.quantity);
-                System.out.println(item.slot);
-            }
-            */
-
         }
     }
 
