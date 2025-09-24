@@ -12,7 +12,6 @@ import net.runelite.client.config.ConfigSection;
 public interface MicrobotConfig extends Config
 {
 	String configGroup = "microbot";
-	String installedPlugins = "installedPlugins";
 
 	@ConfigSection(
 		name = "General",
@@ -27,6 +26,12 @@ public interface MicrobotConfig extends Config
 		position = 1
 	)
 	String loggingSection = "loggingSection";
+	@ConfigSection(
+			name = "Caching",
+			description = "Caching ingame data",
+			position = 2
+	)
+	String cacheSection = "cacheSection";
 
 	String keyEnableGameChatLogging = "enableGameChatLogging";
 	@ConfigItem(
@@ -81,6 +86,7 @@ public interface MicrobotConfig extends Config
 	}
 
 	String keyEnableMenuEntryLogging = "enableMenuEntryLogging";
+
 	@ConfigItem(
 			keyName = keyEnableMenuEntryLogging,
 			name = "Enable Menu Entry Logging",
@@ -89,6 +95,18 @@ public interface MicrobotConfig extends Config
 			section = loggingSection
 	)
 	default boolean enableMenuEntryLogging() {
+		return false;
+	}
+
+	String keyEnableCache = "enableRs2Cache";
+	@ConfigItem(
+			keyName = keyEnableCache,
+			name = "Enable Microbot Cache",
+			description = "This will cache ingame entities (npcs, objects,...) to improve performance",
+			position = 0,
+			section = cacheSection
+	)
+	default boolean isRs2CacheEnabled() {
 		return false;
 	}
 

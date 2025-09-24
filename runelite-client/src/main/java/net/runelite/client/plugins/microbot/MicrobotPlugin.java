@@ -2,21 +2,14 @@ package net.runelite.client.plugins.microbot;
 
 import ch.qos.logback.classic.LoggerContext;
 import com.google.inject.Provides;
-import java.awt.image.BufferedImage;
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Objects;
-import javax.inject.Provider;
-import javax.inject.Singleton;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.*;
 import net.runelite.api.events.*;
+import net.runelite.api.gameval.InventoryID;
 import net.runelite.client.RuneLiteProperties;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.eventbus.EventBus;
+import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.OverlayMenuClicked;
@@ -28,6 +21,7 @@ import net.runelite.client.plugins.microbot.ui.MicrobotPluginConfigurationDescri
 import net.runelite.client.plugins.microbot.ui.MicrobotPluginListPanel;
 import net.runelite.client.plugins.microbot.ui.MicrobotTopLevelConfigPanel;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.cache.*;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -37,29 +31,28 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
-import net.runelite.client.plugins.microbot.util.cache.Rs2CacheManager;
-import net.runelite.client.plugins.microbot.util.cache.Rs2VarbitCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2SkillCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2QuestCache;
-
-import net.runelite.client.plugins.microbot.util.cache.Rs2NpcCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2GroundItemCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2ObjectCache;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.OverlayMenuEntry;
-
-import javax.inject.Inject;
-import javax.swing.*;
-import java.awt.*;
-import java.util.List;
-import java.lang.reflect.InvocationTargetException;
-import java.time.Instant;
 import net.runelite.client.util.ImageUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import javax.inject.Inject;
+import javax.inject.Provider;
+import javax.inject.Singleton;
+import javax.swing.*;
+import java.awt.*;
+import java.awt.image.BufferedImage;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
 
 @PluginDescriptor(
 	name = PluginDescriptor.Default + "Microbot",
@@ -153,6 +146,8 @@ public class MicrobotPlugin extends Plugin
 			microbotConfig.onlyMicrobotLogging()
 		);
 
+		Microbot.setRs2CacheEnabled(microbotConfig.isRs2CacheEnabled());
+
 		Microbot.pauseAllScripts.set(false);
 
 		MicrobotPluginListPanel pluginListPanel = pluginListPanelProvider.get();
@@ -181,7 +176,9 @@ public class MicrobotPlugin extends Plugin
 		Microbot.getPouchScript().startUp();
 
 		// Initialize the cache system
-		initializeCacheSystem();
+		if (microbotConfig.isRs2CacheEnabled()) {
+			initializeCacheSystem();
+		}
 
 		if (overlayManager != null)
 		{
@@ -222,8 +219,10 @@ public class MicrobotPlugin extends Plugin
 			(oldProfile == null || oldProfile.isEmpty() || !newProfile.equals(oldProfile))
 		)
 		{
-			log.info("\nReceived RuneScape profile change event from '{}' to '{}'", oldProfile, newProfile);			
-			Rs2CacheManager.handleProfileChange(newProfile, oldProfile);
+			log.info("\nReceived RuneScape profile change event from '{}' to '{}'", oldProfile, newProfile);
+			if (microbotConfig.isRs2CacheEnabled()) {
+				Rs2CacheManager.handleProfileChange(newProfile, oldProfile);
+			}
 			return;
 		}
 		
@@ -307,8 +306,10 @@ public class MicrobotPlugin extends Plugin
 				boolean wasLoggedIn = Microbot.loggedIn;								
 				if (!wasLoggedIn) {
 					Microbot.setLoginTime(Instant.now());
-					Rs2RunePouch.fullUpdate();		
-					Rs2CacheManager.registerEventHandlers();						
+					Rs2RunePouch.fullUpdate();
+					if (microbotConfig.isRs2CacheEnabled()) {
+						Rs2CacheManager.registerEventHandlers();
+					}
 				}
 				if (currentRegions != null) {
 					Microbot.setLastKnownRegions(currentRegions.clone());
@@ -322,8 +323,10 @@ public class MicrobotPlugin extends Plugin
 		   //Rs2CacheManager.emptyCacheState(); // should not be nessary here, handled in ClientShutdown event, 
 		   // and we also handle correct cache loading in onRuneScapeProfileChanged event
 		   Microbot.loggedIn = false;
-		   Rs2CacheManager.unregisterEventHandlers();
-		   Microbot.setLastKnownRegions(null);		   
+		   if (microbotConfig.isRs2CacheEnabled()) {
+			   Rs2CacheManager.unregisterEventHandlers();
+		   }
+		   Microbot.setLastKnownRegions(null);
 	   }
 	}
 
@@ -431,6 +434,9 @@ public class MicrobotPlugin extends Plugin
 						gameChatAppender.stop();
 					}
 					break;
+				case MicrobotConfig.keyEnableCache:
+					Microbot.showMessage("Restart your client to apply cache changes");
+					break;
 				default:
 					break;
 			}
@@ -530,8 +536,10 @@ public class MicrobotPlugin extends Plugin
 	private void onClientShutdown(ClientShutdown e)
 	{
 		// Save all caches through Rs2CacheManager
-		Rs2CacheManager.savePersistentCaches();
-		Rs2CacheManager.getInstance().close();
+		if (microbotConfig.isRs2CacheEnabled()) {
+			Rs2CacheManager.savePersistentCaches();
+			Rs2CacheManager.getInstance().close();
+		}
 	}
 	
 	/**

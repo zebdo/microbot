@@ -225,11 +225,27 @@ public class MicrobotPluginHubPanel extends PluginPanel {
             JLabel pluginName = new JLabel(manifest.getDisplayName());
             pluginName.setFont(FontManager.getRunescapeBoldFont());
             pluginName.setToolTipText(manifest.getDisplayName());
+            pluginName.setHorizontalAlignment(JLabel.LEFT);
 
-            JLabel author = new JLabel(manifest.getAuthors().length > 1 ? "Multiple authors" : manifest.getAuthor());
+            String[] authorsArr = manifest.getAuthors();
+            String authorRaw = manifest.getAuthor();
+
+            String authorText;
+            String authorTooltip;
+            if (authorsArr != null && authorsArr.length > 1) {
+                authorText = "Multiple authors";
+                authorTooltip = String.join(", ", authorsArr);
+            } else {
+                String a = authorRaw != null ? authorRaw.trim() : "";
+                boolean isUnknown = a.isEmpty() || a.toLowerCase(Locale.ROOT).contains("unknown");
+                authorText = isUnknown ? "Unknown" : a;
+                authorTooltip = isUnknown ? "Unknown" : a;
+            }
+            JLabel author = new JLabel(authorText);
             author.setFont(FontManager.getRunescapeSmallFont());
-            author.setToolTipText(manifest.getAuthor());
-
+            author.setToolTipText(authorTooltip);
+            author.setHorizontalAlignment(JLabel.LEFT);
+            author.setBorder(new EmptyBorder(0, 0, 0, 5));
             JLabel version = new JLabel(currentVersion);
             version.setFont(FontManager.getRunescapeSmallFont());
             version.setToolTipText(currentVersion);
@@ -360,7 +376,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                     addrm.addActionListener(l -> {
                         addrm.setText("Updating");
                         addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                        microbotPluginManager.update();
+                        microbotPluginManager.updatePlugin(manifest);
 						reloadPluginList();
                     });
                 } else {
@@ -387,9 +403,9 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                     .addGap(5)
                     .addGroup(layout.createParallelGroup()
                             .addGroup(layout.createSequentialGroup()
-                                    .addComponent(pluginName, 0, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-                                    .addComponent(author, 0, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE))
+                                    .addComponent(pluginName, 0, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                                    .addComponent(author))
                             .addComponent(description, 0, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
                             .addGroup(layout.createSequentialGroup()
                                     .addComponent(version, 0, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
@@ -616,7 +632,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
                 .filter(isExternalPluginPredicate)
                 .collect(Collectors.toList());
 
-        List<MicrobotPluginManifest> installed = new ArrayList<>(microbotPluginManager.getInstalledPlugins());
+        List<Plugin> installed = new ArrayList<>(microbotPluginManager.getInstalledPlugins());
 
         // Pre-index manifests by internalName (lowercased) - using filtered list
         Map<String, MicrobotPluginManifest> manifestByName = enabledManifest.stream()
@@ -644,7 +660,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
 
                     Collection<Plugin> group = pluginsByName.getOrDefault(key, Collections.emptySet());
                     int count = pluginCounts.getOrDefault(simpleName, -1);
-                    boolean isInstalled = installed.stream().anyMatch(im -> im.getInternalName().equalsIgnoreCase(simpleName));
+                    boolean isInstalled = installed.stream().anyMatch(im -> im.getClass().getSimpleName().equalsIgnoreCase(simpleName));
 
                     return new PluginItem(m, group, count, isInstalled);
                 })

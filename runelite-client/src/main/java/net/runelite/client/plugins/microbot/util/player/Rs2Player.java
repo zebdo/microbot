@@ -1,35 +1,21 @@
 package net.runelite.client.plugins.microbot.util.player;
 
 import lombok.Getter;
-import net.runelite.api.gameval.VarPlayerID;
-import net.runelite.api.gameval.VarbitID;
-import net.runelite.api.Actor;
-import net.runelite.api.AnimationID;
-import net.runelite.api.GraphicID;
-import net.runelite.api.MenuAction;
-import net.runelite.api.NPC;
-import net.runelite.api.Player;
-import net.runelite.api.Quest;
-import net.runelite.api.QuestState;
-import net.runelite.api.Skill;
-import net.runelite.api.VarPlayer;
-import net.runelite.api.Varbits;
+import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.AnimationChanged;
 import net.runelite.api.events.VarbitChanged;
+import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.kit.KitType;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.VarbitValues;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
-import net.runelite.client.plugins.microbot.util.cache.Rs2Cache;
 import net.runelite.client.plugins.microbot.util.cache.Rs2QuestCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2SkillCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2VarPlayerCache;
-import net.runelite.client.plugins.microbot.util.cache.Rs2VarbitCache;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -85,7 +71,7 @@ public class Rs2Player {
     public static int lastAnimationID = AnimationID.IDLE;
 
     public static boolean hasPrayerRegenerationActive() {
-        return (Rs2VarbitCache.getVarbitValue(VarbitID.PRAYER_REGENERATION_POTION_TIMER) > 0);
+        return (Microbot.getVarbitValue(VarbitID.PRAYER_REGENERATION_POTION_TIMER) > 0);
     }
 
     public static boolean hasAntiFireActive() {
@@ -412,7 +398,7 @@ public class Rs2Player {
      * @return {@code true} if the player is a member (has remaining membership days), {@code false} otherwise.
      */
     public static boolean isMember() {
-        return Rs2VarPlayerCache.getVarPlayerValue(VarPlayerID.ACCOUNT_CREDIT) > 0;
+        return Microbot.getVarbitPlayerValue(VarPlayerID.ACCOUNT_CREDIT) > 0;
     }
 
     /**
@@ -1142,7 +1128,7 @@ public class Rs2Player {
      * Checks if the player is within a specified distance of a given {@link WorldPoint}.
      *
      * @param worldPoint The {@link WorldPoint} to check proximity to.
-     * @param distance   The radius (in tiles) around the {@code worldPoint} to check.
+     * @param radius   The radius (in tiles) around the {@code worldPoint} to check.
      * @return {@code true} if the player is within the specified distance, {@code false} otherwise.
      * @deprecated Since 1.9.6, use {@link #isInArea(WorldPoint, int)} for better naming consistency.
      */
@@ -1155,7 +1141,7 @@ public class Rs2Player {
      * Checks if the player is within a specified distance of a given {@link WorldPoint}.
      *
      * @param worldPoint The {@link WorldPoint} to check proximity to.
-     * @param distance   The radius (in tiles) around the {@code worldPoint} to check.
+     * @param radius   The radius (in tiles) around the {@code worldPoint} to check.
      * @return {@code true} if the player is within the specified distance, {@code false} otherwise.
      */
     public static boolean isInArea(WorldPoint worldPoint, int radius) {
@@ -1606,7 +1592,11 @@ public class Rs2Player {
      * @return The {@link QuestState} representing the player's progress in the quest.
      */
     public static QuestState getQuestState(Quest quest) {
-        return Rs2QuestCache.getQuestState(quest);
+        if (Microbot.isRs2CacheEnabled) {
+            return Rs2QuestCache.getQuestState(quest);
+        } else {
+            return Microbot.getRs2PlayerCache().getQuestState(quest);
+        }
     }
 
     /**
@@ -1616,7 +1606,7 @@ public class Rs2Player {
      * @return The player's real level for the specified skill.
      */
     public static int getRealSkillLevel(Skill skill) {
-        return Rs2SkillCache.getRealSkillLevel(skill);
+        return Microbot.getClient().getRealSkillLevel(skill);
     }
 
     /**
@@ -1626,7 +1616,7 @@ public class Rs2Player {
      * @return The player's boosted level for the specified skill.
      */
     public static int getBoostedSkillLevel(Skill skill) {        
-        return Rs2SkillCache.getBoostedSkillLevel(skill);
+        return Microbot.getClient().getBoostedSkillLevel(skill);
     }
 
     /**
