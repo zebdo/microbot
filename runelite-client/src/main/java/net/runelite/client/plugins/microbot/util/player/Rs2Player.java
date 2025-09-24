@@ -13,7 +13,6 @@ import net.runelite.api.kit.KitType;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.globval.VarbitValues;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.cache.Rs2QuestCache;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
@@ -1267,8 +1266,8 @@ public class Rs2Player {
      * @return {@code true} if the player is inside a multi-combat zone, {@code false} otherwise.
      */
     public static boolean isInMulti() {
-        return Microbot.getVarbitValue(Varbits.MULTICOMBAT_AREA)
-                == VarbitValues.INSIDE_MULTICOMBAT_ZONE.getValue();
+        return Microbot.getVarbitValue(VarbitID.MULTIWAY_INDICATOR)
+                == 1;
     }
 
     public static boolean drinkPrayerPotion() {

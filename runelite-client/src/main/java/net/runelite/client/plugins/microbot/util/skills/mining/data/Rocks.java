@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.mining.enums;
+package net.runelite.client.plugins.microbot.util.skills.mining.data;
 
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;

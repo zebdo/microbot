@@ -1,7 +1,5 @@
 package net.runelite.client.plugins.microbot.util.settings;
 
-import java.awt.Rectangle;
-import java.util.Map;
 import lombok.NoArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.MenuAction;
@@ -11,17 +9,18 @@ import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
-import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
+import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.util.Map;
 
-import static net.runelite.client.plugins.microbot.globval.VarbitIndices.TOGGLE_ROOFS;
-import static net.runelite.client.plugins.microbot.util.Global.*;
+import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 @Slf4j
 @NoArgsConstructor
@@ -102,7 +101,7 @@ public class Rs2Settings
 
 	public static boolean isHideRoofsEnabled()
 	{
-		return Microbot.getVarbitValue(TOGGLE_ROOFS) == 1;
+		return Microbot.getVarbitValue(VarbitID.OPTION_HIDE_ROOFTOPS) == 1;
 	}
 
 	public static boolean hideRoofs(boolean closeInterface)
