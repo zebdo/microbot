@@ -1,7 +1,6 @@
 package net.runelite.client.plugins.microbot.zerozero.moonlightmoth;
 
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.TaF.GemCrabKiller.GemCrabKillerPlugin;
 import net.runelite.client.ui.overlay.OverlayLayer;
 import net.runelite.client.ui.overlay.OverlayPanel;
 import net.runelite.client.ui.overlay.OverlayPosition;
@@ -32,7 +31,7 @@ public class MoonlightMothOverlay extends OverlayPanel {
 
     private BufferedImage getImageFromResources() {
         try {
-            var img = ImageUtil.loadImageResource(GemCrabKillerPlugin.class, "/net/runelite/client/plugins/microbot/MoonlightMoth/Moonlight_moth.png");
+            var img = ImageUtil.loadImageResource(MoonlightMothPlugin.class, "/net/runelite/client/plugins/microbot/MoonlightMoth/Moonlight_moth.png");
             return ImageUtil.resizeImage(img, 24, 24, true);
         } catch (Exception e) {
             e.printStackTrace();
