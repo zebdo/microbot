@@ -7,30 +7,25 @@ Please read this guide carefully before opening a pull request.
 
 ## Branching Model
 
-- **`development` branch**  
-  All contributors must branch off from `development`.  
-  Pull requests are only accepted into `development`.  
+- **Fork → Development → Main**
+  - You must **fork this repository** first.  
+  - All pull requests must target the **`development`** branch of the upstream Microbot repository.  
+  - **`main`** is protected and updated only by **Mocrosoft**, who merges from `development` into `main`.  
 
-- **`main` branch**  
-  Protected. Only **Mocrosoft** updates this branch by merging `development` → `main`.  
-
-- **Repository scope**  
-  This repository accepts **client changes only**.  
-  **Scripts are not allowed** here and will not be merged.  
+- **Repository scope**
+  - This repository accepts **client changes only**.  
+  - **No scripts are allowed** here.  
 
 ---
 
 ## Contribution Flow
 
 ```mermaid
-gitGraph
-   commit id: "main"
-   branch development
-   commit id: "dev work"
-   branch feature/my-change
-   commit id: "my feature"
-   commit id: "improve feature"
-   checkout development
-   merge feature/my-change id: "PR -> development"
-   checkout main
-   merge development id: "Mocrosoft merges"
+flowchart TD
+    A[Fork Microbot Repo] --> B[Clone your fork locally]
+    B --> C[Create a branch in your fork]
+    C --> D[Commit and push changes]
+    D --> E[Open Pull Request to upstream development]
+    E --> F[Community Review]
+    F --> G[Merged into development]
+    G --> H[Only the owner merges development → main]
