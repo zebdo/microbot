@@ -1,6 +1,7 @@
-package net.runelite.client.plugins.microbot.quest.logic;
+package net.runelite.client.plugins.microbot.questhelper.logic;
 
 import net.runelite.api.Quest;
+
 import java.util.HashMap;
 import java.util.Map;
 

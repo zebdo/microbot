@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.quest.logic;
+package net.runelite.client.plugins.microbot.questhelper.logic;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.MenuAction;
@@ -6,7 +6,7 @@ import net.runelite.api.Point;
 import net.runelite.api.Quest;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.quest.MQuestPlugin;
+import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
 import net.runelite.client.plugins.microbot.questhelper.steps.QuestStep;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -31,16 +31,16 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 @Slf4j
 public class PiratesTreasure extends BaseQuest {
 
-    public void setMQuestPlugin(MQuestPlugin mQuestPlugin) {
+    public void setMQuestPlugin(QuestHelperPlugin mQuestPlugin) {
         this.mQuestPlugin = mQuestPlugin;
     }
 
-        private MQuestPlugin mQuestPlugin;
+        private QuestHelperPlugin mQuestPlugin;
 
         public PiratesTreasure() {
         }
 
-        public PiratesTreasure(MQuestPlugin mQuestPlugin) {
+        public PiratesTreasure(QuestHelperPlugin mQuestPlugin) {
             this.mQuestPlugin = mQuestPlugin;
         }
 

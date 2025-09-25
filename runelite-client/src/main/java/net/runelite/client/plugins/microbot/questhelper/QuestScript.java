@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.quest;
+package net.runelite.client.plugins.microbot.questhelper;
 
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
@@ -8,9 +8,8 @@ import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
-import net.runelite.client.plugins.microbot.quest.logic.PiratesTreasure;
-import net.runelite.client.plugins.microbot.quest.logic.QuestRegistry;
-import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
+import net.runelite.client.plugins.microbot.questhelper.logic.PiratesTreasure;
+import net.runelite.client.plugins.microbot.questhelper.logic.QuestRegistry;
 import net.runelite.client.plugins.microbot.questhelper.questinfo.QuestHelperQuest;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
@@ -44,7 +43,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
-public class MQuestScript extends Script {
+public class QuestScript extends Script {
     public static double version = 0.3;
 
 
@@ -56,8 +55,8 @@ public class MQuestScript extends Script {
     boolean unreachableTarget = false;
     int unreachableTargetCheckDist = 1;
 
-    private MQuestConfig config;
-    private MQuestPlugin mQuestPlugin;
+    private QuestHelperConfig config;
+    private QuestHelperPlugin mQuestPlugin;
     private static ArrayList<Rs2NpcModel> npcsHandled = new ArrayList<>();
     private static ArrayList<TileObject> objectsHandeled = new ArrayList<>();
 
@@ -65,13 +64,14 @@ public class MQuestScript extends Script {
 
 
 
-    public boolean run(MQuestConfig config, MQuestPlugin mQuestPlugin) {
+    public boolean run(QuestHelperConfig config, QuestHelperPlugin mQuestPlugin) {
         this.config = config;
         this.mQuestPlugin = mQuestPlugin;
 
 
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
+                if (!config.startStopQuestHelper()) return;
                 if (!Microbot.isLoggedIn()) return;
                 if (!super.run()) return;
                 if (getQuestHelperPlugin().getSelectedQuest() == null) return;

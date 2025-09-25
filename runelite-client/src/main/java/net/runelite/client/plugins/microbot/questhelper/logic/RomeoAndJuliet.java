@@ -1,8 +1,8 @@
-package net.runelite.client.plugins.microbot.quest.logic;
+package net.runelite.client.plugins.microbot.questhelper.logic;
 
+import net.runelite.api.Quest;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.ObjectID;
-import net.runelite.api.Quest;
 import net.runelite.client.plugins.microbot.questhelper.steps.QuestStep;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;

@@ -1,7 +1,8 @@
-package net.runelite.client.plugins.microbot.quest.logic;
+package net.runelite.client.plugins.microbot.questhelper.logic;
 
-import net.runelite.api.gameval.NpcID;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.NpcID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.questhelper.steps.NpcStep;
@@ -12,7 +13,6 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
-import net.runelite.api.gameval.ItemID;
 
 /**
  * Custom logic for RuneMysteries Quest

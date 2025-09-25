@@ -29,6 +29,24 @@ import com.google.inject.Binder;
 import com.google.inject.Injector;
 import com.google.inject.Module;
 import com.google.inject.Provides;
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.*;
+import net.runelite.api.events.*;
+import net.runelite.api.gameval.InventoryID;
+import net.runelite.client.callback.ClientThread;
+import net.runelite.client.chat.ChatMessageManager;
+import net.runelite.client.config.ConfigManager;
+import net.runelite.client.eventbus.EventBus;
+import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.events.ClientShutdown;
+import net.runelite.client.events.ConfigChanged;
+import net.runelite.client.events.RuneScapeProfileChanged;
+import net.runelite.client.game.ItemManager;
+import net.runelite.client.game.SkillIconManager;
+import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.plugins.bank.BankSearch;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.questhelper.bank.banktab.BankTabItems;
 import net.runelite.client.plugins.microbot.questhelper.bank.banktab.PotionStorage;
@@ -44,33 +62,10 @@ import net.runelite.client.plugins.microbot.questhelper.runeliteobjects.extended
 import net.runelite.client.plugins.microbot.questhelper.statemanagement.PlayerStateManager;
 import net.runelite.client.plugins.microbot.questhelper.tools.Icon;
 import net.runelite.client.plugins.microbot.questhelper.util.worldmap.WorldMapAreaManager;
-import lombok.Getter;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.*;
-import net.runelite.api.annotations.Varbit;
-import net.runelite.api.events.*;
-import net.runelite.api.gameval.InventoryID;
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.VarbitID;
-import net.runelite.client.RuneLite;
-import net.runelite.client.callback.ClientThread;
-import net.runelite.client.chat.ChatMessageManager;
-import net.runelite.client.config.ConfigManager;
-import net.runelite.client.eventbus.EventBus;
-import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.events.ClientShutdown;
-import net.runelite.client.events.ConfigChanged;
-import net.runelite.client.events.RuneScapeProfileChanged;
-import net.runelite.client.game.ItemManager;
-import net.runelite.client.game.SkillIconManager;
-import net.runelite.client.plugins.Plugin;
-import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.bank.BankSearch;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.components.colorpicker.ColorPickerManager;
 import net.runelite.client.util.Text;
-import org.apache.commons.lang3.ArrayUtils;
 
 import javax.annotation.Nullable;
 import javax.inject.Inject;
@@ -181,6 +176,12 @@ public class QuestHelperPlugin extends Plugin
 		return configManager.getConfig(QuestHelperConfig.class);
 	}
 
+	// Microbot
+	public boolean fullCrate = false;
+	@Inject
+	QuestScript questScript;
+
+
 	@Override
 	protected void startUp() throws IOException
 	{
@@ -229,6 +230,7 @@ public class QuestHelperPlugin extends Plugin
 				GlobalFakeObjects.createNpcs(client, runeliteObjectManager, configManager, config);
 			}
 		});
+		questScript.run(config, this);
 	}
 
 	@Override
@@ -537,6 +539,9 @@ public class QuestHelperPlugin extends Plugin
 	@Subscribe
 	public void onChatMessage(ChatMessage chatMessage)
 	{
+		if (chatMessage.getMessage().equals("The crate is full of bananas.")) {
+			fullCrate = true;
+		}
 		if (config.showFan() && chatMessage.getType() == ChatMessageType.GAMEMESSAGE)
 		{
 			if (chatMessage.getMessage().contains("Congratulations! Quest complete!") ||

@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.quest.logic;
+package net.runelite.client.plugins.microbot.questhelper.logic;
 
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
