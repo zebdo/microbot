@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot;
 
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLiteProperties;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.ui.ClientUI;
 
 import javax.inject.Singleton;
@@ -15,12 +16,6 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
-import javax.inject.Singleton;
-import javax.swing.SwingUtilities;
-import lombok.extern.slf4j.Slf4j;
-import net.runelite.client.RuneLiteProperties;
-import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
-import net.runelite.client.ui.ClientUI;
 
 @Slf4j
 @Singleton
@@ -173,8 +168,15 @@ public class MicrobotVersionChecker
 		return local.length < remote.length;
 	}
 
+	/**
+	 * Start checking for updates every 10 minutes.
+	 */
 	public void checkForUpdate()
 	{
+		if (Microbot.isDebug()) {
+			return; // skip check for update when we are developing
+		}
+
 		if (scheduled.compareAndSet(false, true))
 		{
 			future = scheduledExecutorService.scheduleWithFixedDelay(this::runVersionCheck, 0, 10, TimeUnit.MINUTES);
