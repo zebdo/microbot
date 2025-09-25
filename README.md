@@ -2,6 +2,7 @@
 
 [![Donate](https://img.shields.io/badge/Donate-%E2%9D%A4-ff69b4?style=for-the-badge)]([https://your-donation-link.example](https://www.paypal.com/paypalme/MicrobotBE?country.x=BE))
 [![YouTube](https://img.shields.io/badge/YouTube-Subscribe-FF0000?style=for-the-badge&logo=youtube&logoColor=white)]([https://your-youtube-link.example](https://www.youtube.com/channel/UCEj_7N5OPJkdDi0VTMOJOpw))
+[![Website](https://img.shields.io/badge/Microbot-Website-0A66C2?style=for-the-badge&logo=google-chrome&logoColor=white)](https://themicrobot.com)
 
 
 # Microbot
