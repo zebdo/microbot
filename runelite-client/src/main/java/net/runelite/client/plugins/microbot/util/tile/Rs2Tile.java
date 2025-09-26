@@ -30,6 +30,14 @@ public abstract class Rs2Tile implements Tile {
     @Getter
     private static final Map<WorldPoint, Integer> dangerousGraphicsObjectTiles = Collections.unmodifiableMap(dangerousGraphicsObjectTilesInternal);
 
+    private static final Map<WorldPoint, Integer> dangerousWorldTilesInternal = new ConcurrentHashMap<>();
+    private static final Map<LocalPoint, Integer> dangerousLocalTilesInternal = new ConcurrentHashMap<>();
+    @Getter
+    private static final Map<LocalPoint, Integer> dangerousLocalTiles =
+            Collections.unmodifiableMap(dangerousLocalTilesInternal);
+
+
+
     private static ScheduledExecutorService tileExecutor;
 
     private static final int FLAG_DATA_SIZE = 104;
@@ -95,6 +103,42 @@ public abstract class Rs2Tile implements Tile {
                 return true;
             });
         }
+    }
+
+    public static void addDangerousGraphicsObjectTileForInstances(GraphicsObject graphicsObject, int time)
+    {
+        if (graphicsObject == null) return;
+
+        // Get local point directly from graphics object
+        LocalPoint lp = graphicsObject.getLocation();
+        if (lp == null) return;
+
+        // Convert to a world point in the current instance
+        WorldPoint wp = WorldPoint.fromLocalInstance(Microbot.getClient(), lp);
+        if (wp == null) return;
+
+        // --- GENERIC FILTER: reject "ghost" tiles too far from player ---
+        WorldPoint playerWp = Rs2Player.getWorldLocation();
+        if (playerWp == null || wp.distanceTo(playerWp) > 30) {
+            Microbot.log("Filtered ghost graphics too far away: " + wp);
+            return;
+        }
+
+        // Store in both maps (world for dodging, local for overlay)
+        dangerousWorldTilesInternal.merge(wp, time, Math::max);
+        dangerousLocalTilesInternal.merge(lp, time, Math::max);
+
+        Microbot.log("Graphics added: Local=" + lp + " | World=" + wp
+                + " | Total local=" + dangerousLocalTilesInternal.size()
+                + " | Total world=" + dangerousWorldTilesInternal.size());
+    }
+
+    public static Map<WorldPoint, Integer> getDangerousGraphicsObjectTiles() {
+        return Collections.unmodifiableMap(dangerousWorldTilesInternal);
+    }
+
+    public static Map<LocalPoint, Integer> getDangerousLocalTiles() {
+        return Collections.unmodifiableMap(dangerousLocalTilesInternal);
     }
 
     /**
