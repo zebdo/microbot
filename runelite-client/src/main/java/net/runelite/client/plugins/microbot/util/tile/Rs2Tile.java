@@ -48,13 +48,26 @@ public abstract class Rs2Tile implements Tile {
      */
     public static void init() {
         if (tileExecutor != null) return;
+
         tileExecutor = Executors.newSingleThreadScheduledExecutor();
         tileExecutor.scheduleWithFixedDelay(() -> {
-            // TODO: call this on game tick?
-            if (dangerousGraphicsObjectTilesInternal.isEmpty()) return;
+            // Update old world tiles (legacy)
+            if (!dangerousGraphicsObjectTilesInternal.isEmpty()) {
+                dangerousGraphicsObjectTilesInternal.replaceAll((wp, time) -> time - 600);
+                dangerousGraphicsObjectTilesInternal.entrySet().removeIf(entry -> entry.getValue() <= 0);
+            }
 
-            dangerousGraphicsObjectTilesInternal.replaceAll((worldPoint, time) -> time - 600);
-            dangerousGraphicsObjectTilesInternal.entrySet().removeIf(entry -> entry.getValue() <= 0);
+            // Update new world tiles
+            if (!dangerousWorldTilesInternal.isEmpty()) {
+                dangerousWorldTilesInternal.replaceAll((wp, time) -> time - 600);
+                dangerousWorldTilesInternal.entrySet().removeIf(entry -> entry.getValue() <= 0);
+            }
+
+            // Update local tiles (overlay)
+            if (!dangerousLocalTilesInternal.isEmpty()) {
+                dangerousLocalTilesInternal.replaceAll((lp, time) -> time - 600);
+                dangerousLocalTilesInternal.entrySet().removeIf(entry -> entry.getValue() <= 0);
+            }
         }, 0, 600, TimeUnit.MILLISECONDS);
     }
 
@@ -119,7 +132,7 @@ public abstract class Rs2Tile implements Tile {
 
         // --- GENERIC FILTER: reject "ghost" tiles too far from player ---
         WorldPoint playerWp = Rs2Player.getWorldLocation();
-        if (playerWp == null || wp.distanceTo(playerWp) > 30) {
+        if (playerWp == null || wp.distanceTo(playerWp) > 10) {
             Microbot.log("Filtered ghost graphics too far away: " + wp);
             return;
         }
