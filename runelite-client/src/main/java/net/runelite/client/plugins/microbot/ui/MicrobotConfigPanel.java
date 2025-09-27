@@ -38,6 +38,7 @@ import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.externalplugins.ExternalPluginManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginManager;
+import net.runelite.client.plugins.microbot.MicrobotConfigManager;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
 import net.runelite.client.ui.ColorScheme;
@@ -392,7 +393,7 @@ class MicrobotConfigPanel extends PluginPanel
 			if (result == JOptionPane.YES_OPTION)
 			{
 				configManager.setDefaultConfiguration(pluginConfig.getConfig(), true);
-
+				MicrobotConfigManager.resetProfilePluginProperties(pluginConfig.getPlugin().getClass());
 				// Reset non-config panel keys
 				Plugin plugin = pluginConfig.getPlugin();
 				if (plugin != null)
