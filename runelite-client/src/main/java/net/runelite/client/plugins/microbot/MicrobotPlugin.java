@@ -16,7 +16,7 @@ import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
-import net.runelite.client.plugins.microbot.qualityoflife.scripts.pouch.PouchOverlay;
+import net.runelite.client.plugins.microbot.pouch.PouchOverlay;
 import net.runelite.client.plugins.microbot.ui.MicrobotPluginConfigurationDescriptor;
 import net.runelite.client.plugins.microbot.ui.MicrobotPluginListPanel;
 import net.runelite.client.plugins.microbot.ui.MicrobotTopLevelConfigPanel;

@@ -1,17 +1,14 @@
 package net.runelite.client.plugins.microbot.util.tabs;
 
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.VarClientInt;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.VarClientID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.globval.VarcIntValues;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
+import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
-
-import java.util.Arrays;
-import java.util.Objects;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
@@ -20,40 +17,40 @@ public class Rs2Tab {
     private static final int TAB_SWITCH_SCRIPT = 915;
 
     public static InterfaceTab getCurrentTab() {
-        final int varcIntValue = Microbot.getClient().getVarcIntValue(VarClientInt.INVENTORY_TAB);
-        switch (VarcIntValues.valueOf(varcIntValue)) {
-            case TAB_COMBAT_OPTIONS:
+        final int varcIntValue = Microbot.getClient().getVarcIntValue(VarClientID.TOPLEVEL_PANEL);
+        switch (varcIntValue) {
+            case 0:
                 return InterfaceTab.COMBAT;
-            case TAB_SKILLS:
+            case 1:
                 return InterfaceTab.SKILLS;
-            case TAB_QUEST_LIST:
+            case 2:
                 return InterfaceTab.QUESTS;
-            case TAB_INVENTORY:
+            case 3:
                 return InterfaceTab.INVENTORY;
-            case TAB_WORN_EQUIPMENT:
+            case 4:
                 return InterfaceTab.EQUIPMENT;
-            case TAB_PRAYER:
+            case 5:
                 return InterfaceTab.PRAYER;
-            case TAB_SPELLBOOK:
+            case 6:
                 return InterfaceTab.MAGIC;
-            case TAB_FRIEND_LIST:
+            case 7:
                 return InterfaceTab.FRIENDS;
-            case TAB_LOGOUT:
+            case 8:
                 return InterfaceTab.LOGOUT;
-            case TAB_SETTINGS:
+            case 9:
                 return InterfaceTab.SETTINGS;
-            case TAB_MUSIC:
+            case 10:
                 return InterfaceTab.MUSIC;
-            case TAB_CHAT_CHANNEL:
+            case 11:
                 return InterfaceTab.CHAT;
-            case TAB_ACC_MANAGEMENT:
+            case 12:
                 return InterfaceTab.ACC_MAN;
-            case TAB_EMOTES:
+            case 13:
                 return InterfaceTab.EMOTES;
-            case TAB_NOT_SELECTED:
+            case -1:
                 return InterfaceTab.NOTHING_SELECTED;
             default:
-                throw new IllegalStateException("Unexpected value: " + VarcIntValues.valueOf(varcIntValue));
+                throw new IllegalStateException("Unexpected value: " + varcIntValue);
         }
     }
 
@@ -67,7 +64,8 @@ public class Rs2Tab {
         if (tab == InterfaceTab.NOTHING_SELECTED && Microbot.getVarbitValue(VarbitID.RESIZABLE_STONE_ARRANGEMENT) == 0)
             return false;
 
-        Microbot.getClientThread().invokeLater(() -> Microbot.getClient().runScript(TAB_SWITCH_SCRIPT, tab.getIndex()));
+        Rs2Keyboard.keyPress(tab.getHotkey());
+
         return sleepUntil(() -> isCurrentTab(tab));
     }
 
@@ -139,19 +137,6 @@ public class Rs2Tab {
     @Deprecated(since = "Use switchTo")
     public static boolean switchToLogout() {
         return switchTo(InterfaceTab.LOGOUT);
-    }
-
-    private final static int[] LOGOUT_WIDGET_ID_VARIATIONS = {
-            35913778, // Fixed Classic Display
-            10551342, // Resizable Classic Display
-            10747938  // Resizable Modern Display
-    };
-    private static Widget getLogoutWidget() {
-        return Arrays.stream(LOGOUT_WIDGET_ID_VARIATIONS).mapToObj(Rs2Widget::getWidget).filter(Objects::nonNull)
-                .findFirst().orElseGet(() -> {
-                    Microbot.showMessage("Unable to find logout button widget!");
-                    return null;
-                });
     }
 
 	public static Widget getSpellBookTab()

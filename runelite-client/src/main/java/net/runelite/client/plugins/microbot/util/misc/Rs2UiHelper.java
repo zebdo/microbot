@@ -1,8 +1,5 @@
 package net.runelite.client.plugins.microbot.util.misc;
 
-import java.util.concurrent.ThreadLocalRandom;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
 import net.runelite.api.*;
@@ -14,6 +11,9 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 
 import java.awt.*;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 public class Rs2UiHelper {
@@ -164,6 +164,9 @@ public class Rs2UiHelper {
 	 * Check if the current client version is compatible with the required minimum version
 	 */
 	public static boolean isClientVersionCompatible(String minClientVersion) {
+		if (Microbot.isDebug()) {
+			return true; // return true if we are developing
+		}
 		if (minClientVersion == null || minClientVersion.isEmpty()) {
 			return true;
 		}

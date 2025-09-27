@@ -41,9 +41,9 @@ import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginInstantiationException;
 import net.runelite.client.plugins.PluginManager;
-import net.runelite.client.plugins.config.PluginSearch;
 import net.runelite.client.plugins.microbot.MicrobotConfig;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
+import net.runelite.client.plugins.microbot.ui.search.MicrobotPluginSearch;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.MultiplexingPluginPanel;
 import net.runelite.client.ui.PluginPanel;
@@ -253,7 +253,7 @@ public class MicrobotPluginListPanel extends PluginPanel {
     private void onSearchBarChanged() {
         final String text = searchBar.getText();
         pluginList.forEach(mainPanel::remove);
-        PluginSearch.search(pluginList, text).forEach(mainPanel::add);
+        MicrobotPluginSearch.search(pluginList, text).forEach(mainPanel::add);
         revalidate();
     }
 

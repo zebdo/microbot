@@ -6,18 +6,17 @@ import net.runelite.client.config.ConfigProfile;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.breakhandler.BreakHandlerScript;
+import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.discord.Rs2Discord;
 import net.runelite.client.plugins.microbot.util.discord.models.DiscordEmbed;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.world.Rs2WorldUtil;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
-import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -57,6 +56,7 @@ public class AutoLoginScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!super.run()) return;
+                Rs2Tab.switchTo(InterfaceTab.INVENTORY); // ensure we are not on a blocking tab
                 if (BreakHandlerScript.isBreakActive() || BreakHandlerScript.isMicroBreakActive()) return;
 
                 // check for ban detection first
