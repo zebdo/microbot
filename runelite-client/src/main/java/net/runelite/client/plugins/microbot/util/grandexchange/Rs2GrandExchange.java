@@ -201,27 +201,26 @@ public class Rs2GrandExchange {
 
 
                 Rs2Widget.sleepUntilHasWidgetText("Start typing the name of an item to search for it", 162, 51, false, 5000);
+
                 String searchName = request.getItemName();
-                if (searchName.length() >= 26) {
-                    searchName = searchName.substring(0, 25); // Grand Exchange item names are limited to 25 characters.
+                boolean itemMatchedWithPreviousSearch = isPreviousSearchMatch(request.getItemName());
+                if (itemMatchedWithPreviousSearch) {
+                    var clickedPreviousSearch = clickPreviousSearch();
+                    if (!clickedPreviousSearch) break;
+                } else {
+                    if (searchItemName(request, searchName)) break;
                 }
-                Rs2Keyboard.typeString(request.getItemName());
 
-                if (!Rs2Widget.sleepUntilHasWidgetText(searchName, 162, 43, false, 5000)) break;
-
-                sleepUntil(() -> getSearchResultWidget(request.getItemName(), request.isExact()) != null, 2200);
-
-                Pair<Widget, Integer> itemResult = getSearchResultWidget(request.getItemName(), request.isExact());
-                if (itemResult == null) break;
-
-                Rs2Widget.clickWidgetFast(itemResult.getLeft(), itemResult.getRight(), 1);
                 sleepUntil(() -> GrandExchangeWidget.getPricePerItemButton_X() != null);
 
                 setPrice(request.getPrice());
                 if (request.getPercent() != 0) {
                     adjustPriceByPercent(request.getPercent());
                 }
-                setQuantity(request.getQuantity());
+                if (!setQuantity(request.getQuantity())) {
+                    //failed to set quantity
+                    return false;
+                }
                 confirm();
                 success = sleepUntil(() -> !isOfferScreenOpen());
                 break;
@@ -242,7 +241,10 @@ public class Rs2GrandExchange {
                     adjustPriceByPercent(request.getPercent());
                 }
                 if (request.getQuantity() > 0) {
-                    setQuantity(request.getQuantity());
+                    if (!setQuantity(request.getQuantity())) {
+                        //failed to set quantity
+                        return false;
+                    }
                 }
 
                 confirm();
@@ -255,6 +257,54 @@ public class Rs2GrandExchange {
         }
 
         return success;
+    }
+
+    /**
+     * Searches for an item name in the Grand Exchange search box and selects it from the results.
+     * @param request
+     * @param searchName
+     * @return
+     */
+    private static boolean searchItemName(GrandExchangeRequest request, String searchName) {
+        if (searchName.length() >= 26) {
+            searchName = searchName.substring(0, 25); // Grand Exchange item names are limited to 25 characters.
+        }
+        Rs2Keyboard.typeString(request.getItemName());
+
+        if (!Rs2Widget.sleepUntilHasWidgetText(searchName, 162, 43, false, 5000)) return true;
+
+        sleepUntil(() -> getSearchResultWidget(request.getItemName(), request.isExact()) != null, 2200);
+
+        Pair<Widget, Integer> itemResult = getSearchResultWidget(request.getItemName(), request.isExact());
+        if (itemResult == null) return true;
+
+        Rs2Widget.clickWidgetFast(itemResult.getLeft(), itemResult.getRight(), 1);
+        return false;
+    }
+
+    /**
+     * Checks if the previous search in the Grand Exchange matches the given item name.
+     * @param itemName
+     * @return
+     */
+    private static boolean isPreviousSearchMatch(String itemName) {
+        var mainWidget = Rs2Widget.getWidget(InterfaceID.Chatbox.MES_LAYER_SCROLLCONTENTS);
+        if (mainWidget == null) return false;
+        var previousSearchWidget = mainWidget.getChild(2);
+        if (previousSearchWidget == null) return false;
+        return previousSearchWidget.getText() != null && previousSearchWidget.getText().equalsIgnoreCase(itemName);
+    }
+
+    /**
+     * Gets the search result widget for a given item name in the Grand Exchange search results.
+     * @return
+     */
+    private static boolean clickPreviousSearch() {
+        var mainWidget = Rs2Widget.getWidget(InterfaceID.Chatbox.MES_LAYER_SCROLLCONTENTS);
+        if (mainWidget == null) return false;
+        var previousSearchWidget = mainWidget.getChild(2);
+        if (previousSearchWidget == null) return false;
+        return Rs2Widget.clickWidget(previousSearchWidget);
     }
 
 
@@ -501,8 +551,9 @@ public class Rs2GrandExchange {
      *
      * @param quantity the number of items to set for the offer
      */
-    private static void setQuantity(int quantity) {
-        if (quantity != getOfferQuantity()) {
+    private static boolean setQuantity(int quantity) {
+        int tries = 0;
+        while (quantity != getOfferQuantity()) {
             Widget quantityButtonX = GrandExchangeWidget.getQuantityButton_X();
             Microbot.getMouse().click(quantityButtonX.getBounds());
             sleepUntil(() -> Rs2Widget.getWidget(InterfaceID.Chatbox.MES_TEXT2) != null); //GE Enter Price/Quantity
@@ -511,7 +562,14 @@ public class Rs2GrandExchange {
             sleep(500, 750);
             Rs2Keyboard.enter();
             sleep(1000);
+            tries++;
+            if (tries > 3) {
+                log.error("Failed to set quantity after 3 tries, breaking out to avoid infinite loop.");
+                Rs2GrandExchange.closeExchange();
+                break;
+            }
         }
+        return tries <= 3;
     }
 
     /**
@@ -1553,7 +1611,7 @@ public class Rs2GrandExchange {
     }
 
     static int getOfferQuantity() {
-        return Microbot.getVarbitValue(4396);
+        return Microbot.getVarbitValue(VarbitID.GE_NEWOFFER_QUANTITY);
     }
 
     static int getOfferPrice() {
