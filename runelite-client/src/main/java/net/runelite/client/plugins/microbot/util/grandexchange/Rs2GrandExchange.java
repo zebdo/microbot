@@ -194,6 +194,7 @@ public class Rs2GrandExchange {
                 Widget buyOffer = GrandExchangeWidget.getOfferBuyButton(
                         request.getSlot() != null ? request.getSlot() : getAvailableSlot());
                 if (buyOffer == null) break;
+                if (request.getQuantity() <= 0) break;
 
                 Rs2Widget.clickWidgetFast(buyOffer);
                 sleepUntil(GrandExchangeWidget::isOfferTextVisible);
@@ -228,6 +229,7 @@ public class Rs2GrandExchange {
             case SELL:
                 if (!Rs2Inventory.hasItem(request.getItemName(), request.isExact())) break;
                 if (getAvailableSlots().length == 0) break;
+                if (request.getQuantity() <= 0) break;
 
                 if (!Rs2Inventory.interact(request.getItemName(), "Offer", request.isExact())) break;
 
@@ -2001,6 +2003,14 @@ public class Rs2GrandExchange {
             }
         }
         return null;
+    }
+
+    /**
+     * Checks if there is any active buy offer.
+     * @return
+     */
+    public static boolean hasOffer() {
+        return hasSoldOffer() || hasBoughtOffer();
     }
 
 }
