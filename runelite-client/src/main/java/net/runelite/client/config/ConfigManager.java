@@ -29,40 +29,6 @@ import com.google.common.base.MoreObjects;
 import com.google.common.base.Strings;
 import com.google.common.collect.ComparisonChain;
 import com.google.gson.Gson;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.io.File;
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.lang.reflect.Modifier;
-import java.lang.reflect.ParameterizedType;
-import java.lang.reflect.Proxy;
-import java.lang.reflect.Type;
-import java.time.Duration;
-import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Base64;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Set;
-import java.util.WeakHashMap;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
-import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.inject.Singleton;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.extern.slf4j.Slf4j;
@@ -77,14 +43,9 @@ import net.runelite.client.account.AccountSession;
 import net.runelite.client.account.SessionManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
-import net.runelite.client.events.ClientShutdown;
-import net.runelite.client.events.ConfigChanged;
-import net.runelite.client.events.ConfigSync;
-import net.runelite.client.events.ProfileChanged;
-import net.runelite.client.events.RuneScapeProfileChanged;
-import net.runelite.client.events.SessionClose;
-import net.runelite.client.events.SessionOpen;
+import net.runelite.client.events.*;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.inventorysetups.ConfigInventorySetupDataManager;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.util.ColorUtil;
@@ -93,6 +54,24 @@ import net.runelite.http.api.config.ConfigPatch;
 import net.runelite.http.api.config.ConfigPatchResult;
 import net.runelite.http.api.config.Configuration;
 import net.runelite.http.api.config.Profile;
+
+import javax.annotation.Nonnull;
+import javax.annotation.Nullable;
+import javax.inject.Inject;
+import javax.inject.Named;
+import javax.inject.Singleton;
+import java.awt.*;
+import java.io.File;
+import java.io.IOException;
+import java.lang.reflect.*;
+import java.time.Duration;
+import java.time.Instant;
+import java.util.List;
+import java.util.*;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 @Singleton
 @Slf4j
@@ -136,6 +115,9 @@ public class ConfigManager
 	private String rsProfileKey;
 
 	private final Map<Type, Serializer<?>> serializers = Collections.synchronizedMap(new WeakHashMap<>());
+
+	@Inject
+	ConfigInventorySetupDataManager configInventorySetupDataManager;
 
 	@Inject
 	private ConfigManager(
@@ -1258,9 +1240,27 @@ public class ConfigManager
 			// null and the empty string are treated identically in sendConfig and treated as an unset
 			// If a config value defaults to "" and the current value is null, it will cause an extra
 			// unset to be sent, so treat them as equal
+			boolean isInventorySetup = item.keyName().toLowerCase().contains("inventorysetup");
 			if (Objects.equals(current, valueString) || (Strings.isNullOrEmpty(current) && Strings.isNullOrEmpty(valueString)))
 			{
+				if (isInventorySetup) {
+					var setups = configInventorySetupDataManager.loadV3Setups(this);
+					if (!setups.isEmpty()) {
+						setConfiguration(group.value(), item.keyName(), gson.toJson(setups.get(0), InventorySetup.class));
+					}
+				}
 				continue; // already set to the default value
+			}
+
+			if (current != null && !current.isBlank()) {
+				if (isInventorySetup) {
+					var setups = configInventorySetupDataManager.loadV3Setups(this);
+					InventorySetup currentObj = gson.fromJson(current, InventorySetup.class);
+					if (!setups.isEmpty() && setups.stream()
+							.noneMatch(x -> x.getName().equalsIgnoreCase(currentObj.getName()))) {
+						setConfiguration(group.value(), item.keyName(), "");
+					}
+				}
 			}
 
 			log.debug("Setting default configuration value for {}.{} to {}", group.value(), item.keyName(), defaultValue);
