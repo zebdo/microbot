@@ -1,11 +1,13 @@
 package net.runelite.client.plugins.microbot.util.grandexchange.models;
 
+import lombok.Getter;
 import net.runelite.api.GrandExchangeOfferState;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.grandexchange.GrandExchangeSlots;
 
 /**
-	 * Class to hold detailed information about a Grand Exchange offer.
-	 */
+ * Class to hold detailed information about a Grand Exchange offer.
+ */
 public class GrandExchangeOfferDetails {
     private final int itemId;
     private final int quantitySold;
@@ -14,9 +16,11 @@ public class GrandExchangeOfferDetails {
     private final int spent;
     private final GrandExchangeOfferState state;
     private final boolean isSelling;
-    
-    public GrandExchangeOfferDetails(int itemId, int quantitySold, int totalQuantity, int price, int spent, 
-            GrandExchangeOfferState state, boolean isSelling) {
+    @Getter
+    private final GrandExchangeSlots slot;
+
+    public GrandExchangeOfferDetails(int itemId, int quantitySold, int totalQuantity, int price, int spent,
+                                     GrandExchangeOfferState state, boolean isSelling, GrandExchangeSlots slot) {
         this.itemId = itemId;
         this.quantitySold = quantitySold;
         this.totalQuantity = totalQuantity;
@@ -24,8 +28,9 @@ public class GrandExchangeOfferDetails {
         this.spent = spent;
         this.state = state;
         this.isSelling = isSelling;
+        this.slot = slot;
     }
-    
+
     /**
      * Calculates the progress percentage of this offer.
      *
@@ -37,7 +42,7 @@ public class GrandExchangeOfferDetails {
         }
         return (int) ((quantitySold * 100.0) / totalQuantity);
     }
-    
+
     /**
      * Checks if this offer is completed (either finished or cancelled).
      *
@@ -49,7 +54,7 @@ public class GrandExchangeOfferDetails {
                 state == GrandExchangeOfferState.CANCELLED_BUY ||
                 state == GrandExchangeOfferState.CANCELLED_SELL;
     }
-    
+
     /**
      * Checks if this offer is still in progress.
      *
@@ -59,7 +64,7 @@ public class GrandExchangeOfferDetails {
         return state == GrandExchangeOfferState.BUYING ||
                 state == GrandExchangeOfferState.SELLING;
     }
-    
+
     /**
      * Gets the item name for this offer.
      *

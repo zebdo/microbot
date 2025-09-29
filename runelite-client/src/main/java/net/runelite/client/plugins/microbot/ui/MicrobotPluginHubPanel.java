@@ -33,11 +33,11 @@ import net.runelite.client.events.ExternalPluginsChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginManager;
-import net.runelite.client.plugins.config.PluginSearch;
 import net.runelite.client.plugins.config.SearchablePlugin;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginClient;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManifest;
+import net.runelite.client.plugins.microbot.ui.search.MicrobotPluginSearch;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.ui.*;
 import net.runelite.client.ui.components.IconTextField;
@@ -687,7 +687,7 @@ public class MicrobotPluginHubPanel extends PluginPanel {
         boolean isSearching = query != null && !query.trim().isEmpty();
         List<PluginItem> pluginItems;
         if (isSearching) {
-            pluginItems = PluginSearch.search(plugins, query);
+            pluginItems = MicrobotPluginSearch.search(plugins, query);
         } else {
             pluginItems = plugins.stream()
                     .sorted(Comparator.comparing(PluginItem::isInstalled)
