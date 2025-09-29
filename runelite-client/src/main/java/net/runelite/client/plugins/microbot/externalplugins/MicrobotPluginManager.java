@@ -514,7 +514,9 @@ public class MicrobotPluginManager {
             Injector pluginInjector = parent.createChildInjector(pluginModule);
             plugin.setInjector(pluginInjector);
         } catch (CreationException ex) {
-            throw new PluginInstantiationException(ex);
+            log.error(ex.getMessage());
+            File jar = getPluginJarFile(plugin.getClass().getSimpleName());
+            jar.delete();
         }
 
         log.debug("Loaded plugin {}", clazz.getSimpleName());
