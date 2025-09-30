@@ -103,50 +103,6 @@ public class Rs2Reflection {
         System.out.println("[INVOKE] => param0: " + param0 + " param1: " + param1 + " opcode: " + opcode + " id: " + identifier + " itemid: " + itemId);
     }
 
-    /**
-     * Gets the animation of an NPC by using reflection.
-     * @param npc
-     * @return
-     */
-    @SneakyThrows
-    @Deprecated(since="1.9.8.7 - Runelite exposes all animations", forRemoval=true)
-    public static int getAnimation(NPC npc) {
-        if (npc == null) {
-            return -1;
-        }
-        return npc.getAnimation();
-    }
-
-    /**
-     * Gets the head icons of an NPC by using reflection.
-     * @param npc
-     * @return
-     */
-    @SneakyThrows
-    @Deprecated(since="1.9.8.7 - Runelite exposes overheads on npcs", forRemoval = true)
-    public static HeadIcon getHeadIcon(Rs2NpcModel npc) {
-        if (npc == null) {
-            return null;
-        }
-
-        if (npc.getOverheadSpriteIds() == null) {
-            Microbot.log("Failed to find the correct overhead prayer.");
-            return null;
-        }
-
-        for (int i = 0; i < npc.getOverheadSpriteIds().length; i++) {
-            int overheadSpriteId = npc.getOverheadSpriteIds()[i];
-
-            if (overheadSpriteId == -1) continue;
-
-            return HeadIcon.values()[overheadSpriteId];
-        }
-
-        Microbot.log("Found overheadSpriteIds: " + Arrays.toString(npc.getOverheadSpriteIds()) + " but failed to find valid overhead prayer.");
-
-        return null;
-    }
-
     @SneakyThrows
     public static String[] getGroundItemActions(ItemComposition item) {
         List<Field> fields = Arrays.stream(item.getClass().getFields()).filter(x -> x.getType().isArray()).collect(Collectors.toList());
