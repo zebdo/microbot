@@ -157,12 +157,13 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
 
     private Point lastMenuOpenedPoint;
     private ShortestPathPanel panel;
+    private PohPanel pohPanel;
     @Getter
     @Setter
     public static WorldMapPoint marker;
     @Setter
     public static volatile WorldPoint lastLocation = new WorldPoint(0, 0, 0);
-    private NavigationButton navButton;
+    private NavigationButton navButton, pohNavButton;
     private Shape minimapClipFixed;
     private Shape minimapClipResizeable;
     private BufferedImage minimapSpriteFixed;
@@ -205,14 +206,24 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
         pathfinderConfig = new PathfinderConfig(map, transports, restrictions, client, config);
 
         panel = injector.getInstance(ShortestPathPanel.class);
+        pohPanel = new PohPanel(config);
         final BufferedImage icon = ImageUtil.loadImageResource(ShortestPathPlugin.class, "panel_icon.png");
+        final BufferedImage pohIcon = ImageUtil.loadImageResource(ShortestPathPlugin.class, "poh_icon.png");
         navButton = NavigationButton.builder()
                 .tooltip("Web Walker")
                 .icon(icon)
                 .priority(8)
                 .panel(panel)
                 .build();
+
+        pohNavButton = NavigationButton.builder()
+                .tooltip("Poh Web Config")
+                .icon(pohIcon)
+                .priority(9)
+                .panel(pohPanel)
+                .build();
         clientToolbar.addNavigation(navButton);
+        clientToolbar.addNavigation(pohNavButton);
 
         Rs2Walker.setConfig(config);
         shortestPathScript = new ShortestPathScript();
@@ -245,6 +256,9 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
             panel.disposeTimers();
         }
         panel = null;
+
+        pohNavButton = null;
+        pohPanel = null;
 
         shortestPathScript.shutdown();
 

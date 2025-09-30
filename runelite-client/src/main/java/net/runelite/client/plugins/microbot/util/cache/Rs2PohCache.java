@@ -135,7 +135,8 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
 
     /**
      * Removes a teleport from cache using the given Class's simplename as key
-     * @param clazz Class to use as key
+     *
+     * @param clazz    Class to use as key
      * @param teleport PohTeleports to remove from value
      */
     private void removeTeleport(Class<? extends Enum<? extends PohTeleport>> clazz, PohTeleport teleport) {
@@ -151,7 +152,8 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
 
     /**
      * Adds a teleport to cache using the given Class's simplename as key
-     * @param clazz Class to use as key
+     *
+     * @param clazz    Class to use as key
      * @param teleport PohTeleports to add to value
      */
     private void addTeleport(Class<? extends Enum<? extends PohTeleport>> clazz, PohTeleport teleport) {
@@ -167,7 +169,8 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
 
     /**
      * Sets the teleports in cache using the given Class's simplename as key
-     * @param clazz Class to use as key
+     *
+     * @param clazz     Class to use as key
      * @param teleports List of PohTeleports to put as value
      */
     private void setTeleports(Class<? extends Enum<? extends PohTeleport>> clazz, List<? extends PohTeleport> teleports) {
@@ -188,6 +191,7 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
     /**
      * Creates a Set with all available PoH transports directly extracted from cached data
      * Excludes things like Fairy rings and spirit trees as they are based on existing data
+     *
      * @return Set with all cached PoH transports present in Cache flattened down
      */
     public static Set<PohTransport> getAvailablePohTransports() {
@@ -200,6 +204,7 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
 
     /**
      * Creates a map with all available PoH transports based on cached data
+     *
      * @param allTransports map with all persistent transports extracted from TSV's
      * @return Map with all transports available from inside PoH and fairy ring transports towards PoH
      */
@@ -210,7 +215,7 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
         WorldPoint exitPortal = pohTransports.stream().findFirst().get().getOrigin();
         //All the PohTransports start from the same WorldPoint, which is the exit portal inside the PoH
         if (hasFairyRings()) {
-            transportsMap.putAll(connectFairyRings(allTransports, exitPortal));
+            connectFairyRings(allTransports, exitPortal);
         }
         transportsMap.computeIfAbsent(exitPortal, p -> new HashSet<>()).addAll(pohTransports);
         return transportsMap;
@@ -218,15 +223,15 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
 
     /**
      * Connecting the PoH Fairy ring to all other fairy rings and vise versa
+     *
      * @param transportsMap map from which currently present fairy rings are found
-     * @param pohFairyRing position of the PoH fairy ring
+     * @param pohFairyRing  position of the PoH fairy ring
      * @return map with PoH fairy rings transports added
      */
-    private static Map<WorldPoint, Set<Transport>> connectFairyRings(
+    public static void connectFairyRings(
             Map<WorldPoint, Set<Transport>> transportsMap,
             WorldPoint pohFairyRing
     ) {
-        Map<WorldPoint, Set<Transport>> fairyTransportsMap = new HashMap<>();
         Transport pohFairyTransport = new Transport(pohFairyRing, pohFairyRing, "DIQ", FAIRY_RING, true, 5);
 
         //Find a point where there is FAIRY_RINGS (because that point will have data for ALL fairy rings)
@@ -236,18 +241,16 @@ public class Rs2PohCache extends Rs2Cache<String, List<PohTeleport>> implements 
                     for (Transport existingRingTransport : new HashSet<>(e.getValue())) {
                         if (existingRingTransport.getType() != FAIRY_RING) continue;
                         // add from poh
-                        fairyTransportsMap
+                        transportsMap
                                 .computeIfAbsent(pohFairyRing, k -> new HashSet<>())
                                 .add(new Transport(pohFairyTransport, existingRingTransport));
 
                         // add to poh
-                        fairyTransportsMap
+                        transportsMap
                                 .computeIfAbsent(existingRingPoint, k -> new HashSet<>())
                                 .add(new Transport(existingRingTransport, pohFairyTransport));
                     }
                 });
-
-        return fairyTransportsMap;
     }
 
     public static void logState(LogOutputMode mode) {

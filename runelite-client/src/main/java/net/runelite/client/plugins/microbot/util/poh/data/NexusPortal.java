@@ -151,4 +151,8 @@ public enum NexusPortal implements PohTeleport {
             VarbitID.POH_NEXUS_TELE_35,
     };
 
+    @Override
+    public String toString() {
+        return getText();
+    }
 }
