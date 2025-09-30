@@ -53,18 +53,6 @@ public class Rs2Equipment {
     }
 
     @Deprecated(since = "Use interact", forRemoval = true)
-    public static boolean useCapeAction(int itemId, String action) {
-        Rs2ItemModel item = get(itemId);
-        if (item == null) {
-            Microbot.status = "Cape is missing in the equipment slot";
-            return false;
-        }
-
-        invokeMenu(item, action);
-        return true;
-    }
-
-    @Deprecated(since = "Use interact", forRemoval = true)
     public static boolean useRingAction(JewelleryLocationEnum jewelleryLocationEnum) {
         if (!isWearing(EquipmentInventorySlot.RING)) {
             Microbot.status = "Amulet is missing in the equipment slot";
