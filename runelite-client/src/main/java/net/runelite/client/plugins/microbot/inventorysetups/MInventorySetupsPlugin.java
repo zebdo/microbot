@@ -426,7 +426,7 @@ public class MInventorySetupsPlugin extends Plugin
 			{
 				clientThread.invokeLater(() ->
 				{
-					boolean bankOpen = client.getItemContainer(InventoryID.BANK) != null;
+					boolean bankOpen = client.getItemContainer(net.runelite.api.gameval.InventoryID.BANK) != null;
 					if (config.persistHotKeysOutsideBank())
 					{
 						registerHotkeys();
@@ -546,7 +546,7 @@ public class MInventorySetupsPlugin extends Plugin
 	public void onMenuEntryAdded(MenuEntryAdded event)
 	{
 
-		Widget bankWidget = client.getWidget(ComponentID.BANK_TITLE_BAR);
+		Widget bankWidget = client.getWidget(net.runelite.api.gameval.InterfaceID.Bankmain.TITLE);
 		if (bankWidget == null || bankWidget.isHidden())
 		{
 			return;
@@ -561,7 +561,7 @@ public class MInventorySetupsPlugin extends Plugin
 		// add item to additional filtered items
 		else if (panel.getCurrentSelectedSetup() != null
 				&& bankTagsService.getActiveLayout() == null // If there is an active layout, then the real item behind the fake layout item may be added. So just disallow this menu.
-				&& event.getActionParam1() == ComponentID.BANK_ITEM_CONTAINER
+				&& event.getActionParam1() == net.runelite.api.gameval.InterfaceID.Bankmain.UNIVERSE
 				&& client.isKeyPressed(KeyCode.KC_SHIFT)
 				&& event.getOption().equals("Examine"))
 		{
