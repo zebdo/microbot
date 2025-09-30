@@ -52,17 +52,6 @@ public class Rs2Equipment {
         equipmentItems = Collections.unmodifiableList(_equipmentItems);
     }
 
-    @Deprecated(since = "Use interact", forRemoval = true)
-    public static boolean useAmuletAction(JewelleryLocationEnum jewelleryLocationEnum) {
-        if (!isWearing(EquipmentInventorySlot.AMULET) || !hasEquippedContains(jewelleryLocationEnum.getTooltip())) {
-            Microbot.status = "Amulet is missing in the equipment slot";
-            return false;
-        }
-        Microbot.doInvoke(new NewMenuEntry(-1, 25362449, MenuAction.CC_OP.getId(), jewelleryLocationEnum.getIdentifier(), -1, "Equip"),
-                new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
-        return true;
-    }
-
     public static Stream<Rs2ItemModel> all() {
         final List<Rs2ItemModel> items = items();
         if (items == null) return Stream.empty();
