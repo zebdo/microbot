@@ -53,17 +53,6 @@ public class Rs2Equipment {
     }
 
     @Deprecated(since = "Use interact", forRemoval = true)
-    public static boolean useRingAction(JewelleryLocationEnum jewelleryLocationEnum) {
-        if (!isWearing(EquipmentInventorySlot.RING)) {
-            Microbot.status = "Amulet is missing in the equipment slot";
-            return false;
-        }
-        Microbot.doInvoke(new NewMenuEntry(-1, 25362456, MenuAction.CC_OP.getId(), jewelleryLocationEnum.getIdentifier(), -1, "Equip"),
-                new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
-        return true;
-    }
-
-    @Deprecated(since = "Use interact", forRemoval = true)
     public static boolean useAmuletAction(JewelleryLocationEnum jewelleryLocationEnum) {
         if (!isWearing(EquipmentInventorySlot.AMULET) || !hasEquippedContains(jewelleryLocationEnum.getTooltip())) {
             Microbot.status = "Amulet is missing in the equipment slot";
