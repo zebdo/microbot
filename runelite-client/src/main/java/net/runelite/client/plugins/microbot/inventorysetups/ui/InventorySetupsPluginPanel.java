@@ -50,7 +50,6 @@ import java.util.Set;
 import net.runelite.client.plugins.microbot.inventorysetups.serialization.InventorySetupPortable;
 import lombok.Getter;
 import lombok.Setter;
-import net.runelite.api.InventoryID;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
