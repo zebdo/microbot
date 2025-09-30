@@ -109,10 +109,10 @@ public class Rs2ExplorersRing {
         }
 
         // Check if any Explorer's Ring is equipped
-        if ((Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_EASY) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_MEDIUM) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_HARD) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_ELITE))) {
+        if ((Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_EASY) ||
+                Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_MEDIUM) ||
+                Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_HARD) ||
+                Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_ELITE))) {
             return interact(item);
         }
         return false;
@@ -147,10 +147,10 @@ public class Rs2ExplorersRing {
                 Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_MEDIUM) ||
                 Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_HARD) ||
                 Rs2Inventory.hasItem(ItemID.LUMBRIDGE_RING_ELITE) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_EASY) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_MEDIUM) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_HARD) ||
-                Rs2Equipment.hasEquipped(ItemID.LUMBRIDGE_RING_ELITE);
+                Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_EASY) ||
+                Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_MEDIUM) ||
+                Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_HARD) ||
+                Rs2Equipment.isWearing(ItemID.LUMBRIDGE_RING_ELITE);
     }
 
     /**
