@@ -1339,7 +1339,7 @@ public abstract class PrePostScheduleRequirements  {
                     for (Rs2ItemModel item : itemNotInItemReqsEquipment) {
                         EquipmentInventorySlot itemSlot = EquipmentInventorySlot.values()[item.getSlot()];
                         Rs2Bank.depositEquippedItem(itemSlot);
-                        boolean individualDeposited = sleepUntil(()->!Rs2Equipment.hasEquipped(item.getId()), Constants.GAME_TICK_LENGTH*2); 
+                        boolean individualDeposited = sleepUntil(()->!Rs2Equipment.isWearing(item.getId()), Constants.GAME_TICK_LENGTH*2);
                         if (individualDeposited) {
                             log.info("\\tDeposited individual equipment item: {} x{}", item.getName(), item.getQuantity());
                         } else {
