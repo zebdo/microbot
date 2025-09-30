@@ -169,11 +169,6 @@ public class Rs2Equipment {
         return isWearing(names, false, searchSlots);
     }
 
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean isWearing(List<String> names, boolean exact, List<EquipmentInventorySlot> ignoreSlots) {
-        return isWearing(names.toArray(String[]::new), exact, ignoreSlots.toArray(EquipmentInventorySlot[]::new), false);
-    }
-
     private static boolean unEquip(Rs2ItemModel item) {
         return interact(item, "remove");
     }
@@ -303,16 +298,6 @@ public class Rs2Equipment {
 
     public static boolean interact(String[] names, String action) {
         return interact(names, action, false);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean isWearingShield() {
-        return isWearing(EquipmentInventorySlot.SHIELD);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean isNaked() {
-        return !isWearing();
     }
 
     public static void invokeMenu(Rs2ItemModel rs2Item, String action) {
