@@ -301,7 +301,7 @@ public class PathfinderConfig {
         }
 
         // Add transports from PoH to somewhere in the world
-        for (var entry : PohPanel.getAvailablePohTransportsMap(allTransports).entrySet()) {
+        for (var entry : PohPanel.getAvailableTransports(allTransports).entrySet()) {
             mergedTransports
                     .computeIfAbsent(entry.getKey(), k -> new HashSet<>())
                     .addAll(entry.getValue());

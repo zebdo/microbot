@@ -1,21 +1,18 @@
 package net.runelite.client.plugins.microbot.shortestpath.components;
 
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathConfig;
-import net.runelite.client.plugins.microbot.shortestpath.Transport;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
-import net.runelite.client.plugins.microbot.util.poh.PohTransport;
 import net.runelite.client.plugins.microbot.util.poh.data.*;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
-import java.util.*;
-import java.util.stream.Collectors;
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 
 import static net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin.CONFIG_GROUP;
-import static net.runelite.client.plugins.microbot.util.cache.Rs2PohCache.connectFairyRings;
 
 public class CheckboxPanel extends JPanel {
 
@@ -31,8 +28,8 @@ public class CheckboxPanel extends JPanel {
     private final JCheckBox mountedDigsiteCb;
     private final JCheckBox mountedXericsCb;
     private final JCheckBox mountedMythCapeCb;
-    private final JCheckBox fairyRingCb;
-    private final JCheckBox spiritTreeCb;
+    public final JCheckBox fairyRingCb;
+    public final JCheckBox spiritTreeCb;
     private final JCheckBox wildernessObeliskCb;
 
     private final ShortestPathConfig config;
@@ -141,14 +138,8 @@ public class CheckboxPanel extends JPanel {
     }
 
 
-    public void addTransports(WorldPoint exitPortal, Map<WorldPoint, Set<Transport>> allTransports) {
-        if (fairyRingCb.isSelected()) {
-            connectFairyRings(allTransports, exitPortal);
-        }
-        if (spiritTreeCb.isSelected()) {
-            //TODO("Implement")
-        }
-        java.util.List<PohTeleport> teleports = new ArrayList<>();
+    public Set<PohTeleport> getTeleports() {
+        Set<PohTeleport> teleports = new HashSet<>();
         if (mountedDigsiteCb.isSelected()) {
             teleports.addAll(Arrays.asList(MountedDigsite.values()));
         }
@@ -161,9 +152,6 @@ public class CheckboxPanel extends JPanel {
         if (mountedMythCapeCb.isSelected()) {
             teleports.addAll(Arrays.asList(MountedMythical.values()));
         }
-        allTransports.computeIfAbsent(exitPortal, p -> new HashSet<>()).addAll(teleports.stream().map(
-                t -> new PohTransport(exitPortal, t)
-        ).collect(Collectors.toList()));
-
+        return teleports;
     }
 }

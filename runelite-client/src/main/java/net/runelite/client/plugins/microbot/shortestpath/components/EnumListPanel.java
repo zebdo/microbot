@@ -238,12 +238,11 @@ public class EnumListPanel<T extends Enum<T>> extends JPanel {
                 .collect(Collectors.toList());
     }
 
-    public Map<WorldPoint, Set<Transport>> addTransports(WorldPoint exitPortal, Map<WorldPoint, Set<Transport>> allTransports) {
-        java.util.List<PohTeleport> teleports = new ArrayList<>();
+    public Set<PohTeleport> getTeleports() {
+        Set<PohTeleport> teleports = new HashSet<>();
         for (int i = 0; i < selectedModel.getSize(); i++) {
             teleports.add((PohTeleport) selectedModel.get(i));
         }
-        allTransports.computeIfAbsent(exitPortal, p -> new HashSet<>()).addAll(teleports.stream().map(t -> new PohTransport(exitPortal, t)).collect(Collectors.toList()));
-        return allTransports;
+        return teleports;
     }
 }

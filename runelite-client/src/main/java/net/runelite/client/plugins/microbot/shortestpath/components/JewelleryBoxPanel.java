@@ -1,22 +1,16 @@
 package net.runelite.client.plugins.microbot.shortestpath.components;
 
 
-import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathConfig;
-import net.runelite.client.plugins.microbot.shortestpath.Transport;
-import net.runelite.client.plugins.microbot.util.poh.PohTransport;
-import net.runelite.client.plugins.microbot.util.poh.data.JewelleryBox;
 import net.runelite.client.plugins.microbot.util.poh.data.JewelleryBoxType;
+import net.runelite.client.plugins.microbot.util.poh.data.PohTeleport;
 
 import javax.swing.*;
 import javax.swing.border.TitledBorder;
 import java.awt.*;
 import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin.CONFIG_GROUP;
 
@@ -70,13 +64,9 @@ public class JewelleryBoxPanel extends JPanel {
         Microbot.getConfigManager().setConfiguration(CONFIG_GROUP, JEWELLERY_BOX, config);
     }
 
-    public Map<WorldPoint, Set<Transport>> addTransports(WorldPoint exitPortal, Map<WorldPoint, Set<Transport>> allTransports) {
+    public Set<PohTeleport> getTeleports() {
         JewelleryBoxType jewelleryBoxType = (JewelleryBoxType) jewelleryBoxCmb.getSelectedItem();
-        if (jewelleryBoxType != JewelleryBoxType.NONE) {
-            List<JewelleryBox> teleports = jewelleryBoxType.getAvailableTeleports();
-            allTransports.computeIfAbsent(exitPortal, p -> new HashSet<>()).addAll(teleports.stream().map(t -> new PohTransport(exitPortal, t)).collect(Collectors.toList()));
-        }
-        return allTransports;
+        return jewelleryBoxType == null ? Set.of() : new HashSet<>(jewelleryBoxType.getAvailableTeleports());
     }
 }
 

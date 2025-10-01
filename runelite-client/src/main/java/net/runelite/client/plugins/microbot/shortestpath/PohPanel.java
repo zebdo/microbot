@@ -6,16 +6,22 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.shortestpath.components.CheckboxPanel;
 import net.runelite.client.plugins.microbot.shortestpath.components.EnumListPanel;
 import net.runelite.client.plugins.microbot.shortestpath.components.JewelleryBoxPanel;
+import net.runelite.client.plugins.microbot.util.cache.Rs2PohCache;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
+import net.runelite.client.plugins.microbot.util.poh.PohTransport;
 import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
 import net.runelite.client.plugins.microbot.util.poh.data.NexusPortal;
 import net.runelite.client.plugins.microbot.util.poh.data.PohPortal;
+import net.runelite.client.plugins.microbot.util.poh.data.PohTeleport;
 import net.runelite.client.ui.PluginPanel;
 
 import javax.swing.*;
 import java.awt.*;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class PohPanel extends PluginPanel {
 
@@ -142,18 +148,41 @@ public class PohPanel extends PluginPanel {
      * Creates a Set with all available PoH transports directly extracted from cached data
      * Excludes things like Fairy rings and spirit trees as they are based on existing data
      *
-     * @return Set with all cached PoH transports present in Cache flattened down
+     * @return allTransports map with all cached PoH transports added in
      */
-    public static Map<WorldPoint, Set<Transport>> getAvailablePohTransportsMap(Map<WorldPoint, Set<Transport>> allTransports) {
+    public static Map<WorldPoint, Set<Transport>> getAvailableTransports(Map<WorldPoint, Set<Transport>> allTransports) {
         HouseStyle style = HouseStyle.getStyle();
         if (style == null) return allTransports;
+        Set<PohTeleport> pohTeleports = new HashSet<>();
+        Map<WorldPoint, Set<Transport>> pohTransports = new HashMap<>();
         WorldPoint exitPortal = style.getPohExitWorldPoint();
 
-        instance.checkboxPanel.addTransports(exitPortal, allTransports);
-        instance.portalPanel.addTransports(exitPortal, allTransports);
-        instance.nexusPanel.addTransports(exitPortal, allTransports);
-        instance.jewelleryBoxPanel.addTransports(exitPortal, allTransports);
-        return allTransports;
+        pohTeleports.addAll(instance.checkboxPanel.getTeleports());
+        pohTeleports.addAll(instance.portalPanel.getTeleports());
+        pohTeleports.addAll(instance.nexusPanel.getTeleports());
+        pohTeleports.addAll(instance.jewelleryBoxPanel.getTeleports());
+
+        if (instance.checkboxPanel.fairyRingCb.isSelected()) {
+            Map<WorldPoint, Set<Transport>> fairyRings = Rs2PohCache.createFairyRingMap(exitPortal, allTransports);
+            for (var entry : fairyRings.entrySet()) {
+                pohTransports
+                        .computeIfAbsent(entry.getKey(), k -> new HashSet<>())
+                        .addAll(entry.getValue());
+            }
+        }
+        if (instance.checkboxPanel.spiritTreeCb.isSelected()) {
+            Map<WorldPoint, Set<Transport>> spiritTrees = Rs2PohCache.createSpiritTreeMap(exitPortal, allTransports);
+            for (var entry : spiritTrees.entrySet()) {
+                pohTransports
+                        .computeIfAbsent(entry.getKey(), k -> new HashSet<>())
+                        .addAll(entry.getValue());
+            }
+        }
+        pohTransports.computeIfAbsent(exitPortal, p -> new HashSet<>()).addAll(pohTeleports.stream().map(
+                t -> new PohTransport(exitPortal, t)
+        ).collect(Collectors.toList()));
+
+        return pohTransports;
     }
 
 }
