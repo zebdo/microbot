@@ -1,8 +1,14 @@
 ![image](https://github.com/user-attachments/assets/7c08e053-c84f-41f8-bc97-f55130100419)
 
-[![Donate](https://img.shields.io/badge/Donate-%E2%9D%A4-ff69b4?style=for-the-badge)](https://www.paypal.com/paypalme/MicrobotBE?country.x=BE)
-[![YouTube](https://img.shields.io/badge/YouTube-Subscribe-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://www.youtube.com/@themicrobot)
-[![Website](https://img.shields.io/badge/Microbot-Website-0A66C2?style=for-the-badge&logo=google-chrome&logoColor=white)](https://themicrobot.com)
+<a href="https://www.paypal.com/paypalme/MicrobotBE?country.x=BE" target="_blank">
+  <img src="https://img.shields.io/badge/Donate-%E2%9D%A4-ff69b4?style=for-the-badge">
+</a>
+<a href="https://www.youtube.com/@themicrobot" target="_blank">
+  <img src="https://img.shields.io/badge/YouTube-Subscribe-FF0000?style=for-the-badge&logo=youtube&logoColor=white">
+</a>
+<a href="https://themicrobot.com" target="_blank">
+  <img src="https://img.shields.io/badge/Microbot-Website-0A66C2?style=for-the-badge&logo=google-chrome&logoColor=white">
+</a>
 
 
 # Microbot
