@@ -46,6 +46,8 @@ public enum Icon
 	EXPANDED("expanded.png"),
 	ICON_BACKGROUND("icon_background.png"),
 	INFO_ICON("info_icon.png"),
+	QUEST_ICON_OFF("quest_icon_off.png"),
+	QUEST_ICON_ON("quest_icon_on.png"),
 	QUEST_ICON("quest_icon.png"),
 	QUEST_STEP_ARROW("quest_step_arrow.png"),
 	QUEST_STEP_ARROW_45("quest_step_arrow_45.png"),

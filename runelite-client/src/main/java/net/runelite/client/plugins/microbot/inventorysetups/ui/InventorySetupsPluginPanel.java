@@ -24,6 +24,7 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupUtilities;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
@@ -49,7 +50,6 @@ import java.util.Set;
 import net.runelite.client.plugins.microbot.inventorysetups.serialization.InventorySetupPortable;
 import lombok.Getter;
 import lombok.Setter;
-import net.runelite.api.InventoryID;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
@@ -804,8 +804,8 @@ public class InventorySetupsPluginPanel extends PluginPanel
 			return;
 		}
 
-		final List<InventorySetupsItem> inv = plugin.getNormalizedContainer(InventoryID.INVENTORY);
-		final List<InventorySetupsItem> eqp = plugin.getNormalizedContainer(InventoryID.EQUIPMENT);
+		final List<InventorySetupsItem> inv = plugin.getNormalizedContainer(InterfaceID.INVENTORY);
+		final List<InventorySetupsItem> eqp = plugin.getNormalizedContainer(InterfaceID.EQUIPMENT);
 
 		highlightContainerPanel(inv, inventoryPanel);
 		highlightContainerPanel(eqp, equipmentPanel);
@@ -830,13 +830,13 @@ public class InventorySetupsPluginPanel extends PluginPanel
 
 	public void highlightInventory()
 	{
-		final List<InventorySetupsItem> inv = plugin.getNormalizedContainer(InventoryID.INVENTORY);
+		final List<InventorySetupsItem> inv = plugin.getNormalizedContainer(InterfaceID.INVENTORY);
 		highlightContainerPanel(inv, inventoryPanel);
 	}
 
 	public void highlightEquipment()
 	{
-		final List<InventorySetupsItem> eqp = plugin.getNormalizedContainer(InventoryID.EQUIPMENT);
+		final List<InventorySetupsItem> eqp = plugin.getNormalizedContainer(InterfaceID.EQUIPMENT);
 		highlightContainerPanel(eqp, equipmentPanel);
 	}
 
