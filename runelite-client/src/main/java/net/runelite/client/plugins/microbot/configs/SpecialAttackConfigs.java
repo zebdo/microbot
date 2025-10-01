@@ -85,7 +85,7 @@ public class SpecialAttackConfigs {
 
     public boolean useSpecWeapon(String name, int specEnergy, boolean is2H) {
         if (name.isEmpty()) return false;
-        if (Rs2Equipment.isWearingShield() && is2H && Rs2Inventory.isFull()) return false;
+        if (Rs2Equipment.isWearing(EquipmentInventorySlot.SHIELD) && is2H && Rs2Inventory.isFull()) return false;
 
         if (currentEquipment == null) {
             currentEquipment = new ArrayList<>();
