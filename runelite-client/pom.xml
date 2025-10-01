@@ -71,11 +71,6 @@
 			<version>0.152</version>
 		</dependency>
 		<dependency>
-			<groupId>com.microsoft.signalr</groupId>
-			<artifactId>signalr</artifactId>
-			<version>7.0.4</version>
-		</dependency>
-		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-core</artifactId>
 			<version>2.13.5</version>
