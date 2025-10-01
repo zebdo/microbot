@@ -92,22 +92,22 @@ public class PohPanel extends PluginPanel {
 
         // Portals list
         gbc.gridy = 0;
-        portalPanel = new EnumListPanel<>(config, PohPortal.class, "Portal Room");
+        portalPanel = new EnumListPanel<>(PohPortal.class, "Portal Room");
         root.add(portalPanel, gbc);
 
         // Nexus panel
         gbc.gridy++;
-        nexusPanel = new EnumListPanel<>(config, NexusPortal.class, "Nexus Teleport");
+        nexusPanel = new EnumListPanel<>(NexusPortal.class, "Nexus Teleport");
         root.add(nexusPanel, gbc);
 
         // Booleans section
         gbc.gridy++;
-        checkboxPanel = new CheckboxPanel(config);
+        checkboxPanel = new CheckboxPanel();
         root.add(checkboxPanel, gbc);
 
         // Dropdowns section
         gbc.gridy++;
-        jewelleryBoxPanel = new JewelleryBoxPanel(config);
+        jewelleryBoxPanel = new JewelleryBoxPanel();
         root.add(jewelleryBoxPanel, gbc);
 
         // Add a filler component to push content to the top and allow proper stretching
@@ -152,7 +152,7 @@ public class PohPanel extends PluginPanel {
      */
     public static Map<WorldPoint, Set<Transport>> getAvailableTransports(Map<WorldPoint, Set<Transport>> allTransports) {
         HouseStyle style = HouseStyle.getStyle();
-        if (style == null) return allTransports;
+        if (style == null || instance == null) return allTransports;
         Set<PohTeleport> pohTeleports = new HashSet<>();
         Map<WorldPoint, Set<Transport>> pohTransports = new HashMap<>();
         WorldPoint exitPortal = style.getPohExitWorldPoint();

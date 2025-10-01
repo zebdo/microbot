@@ -208,21 +208,21 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
         panel = injector.getInstance(ShortestPathPanel.class);
         pohPanel = new PohPanel(config);
         final BufferedImage icon = ImageUtil.loadImageResource(ShortestPathPlugin.class, "panel_icon.png");
-        final BufferedImage pohIcon = ImageUtil.loadImageResource(ShortestPathPlugin.class, "poh_icon.png");
         navButton = NavigationButton.builder()
                 .tooltip("Web Walker")
                 .icon(icon)
                 .priority(8)
                 .panel(panel)
                 .build();
+        clientToolbar.addNavigation(navButton);
 
+        final BufferedImage pohIcon = ImageUtil.loadImageResource(ShortestPathPlugin.class, "poh_icon.png");
         pohNavButton = NavigationButton.builder()
                 .tooltip("Poh Web Config")
                 .icon(pohIcon)
                 .priority(9)
                 .panel(pohPanel)
                 .build();
-        clientToolbar.addNavigation(navButton);
         clientToolbar.addNavigation(pohNavButton);
 
         Rs2Walker.setConfig(config);
@@ -251,13 +251,14 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
         overlayManager.remove(pathMapTooltipOverlay);
         overlayManager.remove(debugOverlayPanel);
         clientToolbar.removeNavigation(navButton);
+        clientToolbar.removeNavigation(pohNavButton);
         navButton = null;
+        pohNavButton = null;
         if (panel != null) {
             panel.disposeTimers();
         }
         panel = null;
-
-        pohNavButton = null;
+        PohPanel.instance = null;
         pohPanel = null;
 
         shortestPathScript.shutdown();

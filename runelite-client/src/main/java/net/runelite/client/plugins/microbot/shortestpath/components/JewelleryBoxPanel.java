@@ -2,7 +2,6 @@ package net.runelite.client.plugins.microbot.shortestpath.components;
 
 
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.shortestpath.ShortestPathConfig;
 import net.runelite.client.plugins.microbot.util.poh.data.JewelleryBoxType;
 import net.runelite.client.plugins.microbot.util.poh.data.PohTeleport;
 
@@ -20,7 +19,7 @@ public class JewelleryBoxPanel extends JPanel {
 
     private JComboBox<JewelleryBoxType> jewelleryBoxCmb;
 
-    public JewelleryBoxPanel(ShortestPathConfig config) {
+    public JewelleryBoxPanel() {
         setBorder(new TitledBorder("Jewellery Box"));
         GridBagConstraints gbc = new GridBagConstraints();
         gbc.gridx = 0;

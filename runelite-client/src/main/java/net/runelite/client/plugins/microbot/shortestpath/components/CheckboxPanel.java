@@ -32,10 +32,7 @@ public class CheckboxPanel extends JPanel {
     public final JCheckBox spiritTreeCb;
     private final JCheckBox wildernessObeliskCb;
 
-    private final ShortestPathConfig config;
-
-    public CheckboxPanel(ShortestPathConfig config) {
-        this.config = config;
+    public CheckboxPanel() {
         setBorder(new TitledBorder("House Features"));
         GridBagLayout layout = new GridBagLayout();
         setLayout(layout);
@@ -78,6 +75,7 @@ public class CheckboxPanel extends JPanel {
         gbc.gridy++;
         wildernessObeliskCb = new JCheckBox("Wilderness obelisk");
         wildernessObeliskCb.setEnabled(false);
+        wildernessObeliskCb.setVisible(false);
         add(wildernessObeliskCb, gbc);
 
         hookListeners();
