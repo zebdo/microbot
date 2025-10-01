@@ -3,27 +3,13 @@ package net.runelite.client.plugins.microbot.util.bank;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.EquipmentInventorySlot;
-
-import java.util.List;
-import java.util.stream.Collectors;
-import net.runelite.api.GameObject;
-import net.runelite.api.InventoryID;
-import net.runelite.api.ItemComposition;
-import net.runelite.api.MenuAction;
-import net.runelite.api.NPC;
-import net.runelite.api.Player;
-import net.runelite.api.ScriptID;
-import net.runelite.api.SpriteID;
-import net.runelite.api.TileObject;
-import net.runelite.api.VarClientInt;
-import net.runelite.api.WallObject;
+import net.runelite.api.*;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
-import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.RuneScapeProfileType;
@@ -35,6 +21,7 @@ import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
+import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializationManager;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -50,7 +37,6 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
-import net.runelite.client.plugins.microbot.util.cache.serialization.CacheSerializationManager;
 import net.runelite.client.plugins.microbot.util.security.Encryption;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.settings.Rs2Settings;
@@ -1208,13 +1194,6 @@ public class Rs2Bank {
         return withdrawOne(name, false);
     }
 
-    @Deprecated(since="Use withdrawOne & sleep")
-    public static boolean withdrawOne(String name, int sleepTime) {
-        final boolean success = withdrawOne(name, false);
-        sleep(sleepTime);
-        return success;
-    }
-
     /**
      * withdraw one item identified by its id.
      *
@@ -2164,16 +2143,6 @@ public class Rs2Bank {
     }
 
     /**
-     * Use bank or chest
-     *
-     * @return true if bank is opened
-     */
-    @Deprecated(since="Use openBank")
-    public static boolean useBank() {
-        return openBank();
-    }
-
-    /**
      * Updates the bank items in memory based on the provided event.
      * Thread-safe method called from the client thread via event handler.
      *
@@ -2827,7 +2796,7 @@ public class Rs2Bank {
     public static boolean withdrawLootItems(String npcName, List<String> itemsToNotSell) {
         boolean isAtGe = Rs2GrandExchange.walkToGrandExchange();
         if (isAtGe) {
-            boolean isBankOpen = Rs2Bank.useBank();
+            boolean isBankOpen = Rs2Bank.openBank();
             if (!isBankOpen) return false;
         }
         Rs2Bank.depositAll();

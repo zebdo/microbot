@@ -169,7 +169,7 @@ public enum DepositBoxLocation {
                 if (!isMember()) return false;
                 // Requires Lunar Diplomacy & Seal of passage OR Dream Mentor
                 if (Rs2Player.getQuestState(Quest.DREAM_MENTOR) != QuestState.FINISHED) {
-                    return Rs2Player.getQuestState(Quest.LUNAR_DIPLOMACY) == QuestState.FINISHED && Rs2Equipment.hasEquipped(ItemID.SEAL_OF_PASSAGE);
+                    return Rs2Player.getQuestState(Quest.LUNAR_DIPLOMACY) == QuestState.FINISHED && Rs2Equipment.isWearing(ItemID.SEAL_OF_PASSAGE);
                 } else {
                     return Rs2Player.getQuestState(Quest.DREAM_MENTOR) == QuestState.FINISHED;
                 }

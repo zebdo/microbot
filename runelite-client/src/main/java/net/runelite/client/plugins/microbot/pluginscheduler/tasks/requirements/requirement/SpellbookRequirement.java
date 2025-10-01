@@ -346,7 +346,7 @@ public class SpellbookRequirement extends Requirement {
                 log.info("Seal of passage in inventory, equipping it for Lunar Isle access");
                 // equip the seal of passage
                 if (Rs2Inventory.interact(ItemID.LUNAR_SEAL_OF_PASSAGE, "Wear")) {
-                    boolean equipped = sleepUntil(() -> Rs2Equipment.hasEquipped(ItemID.LUNAR_SEAL_OF_PASSAGE), 3000);
+                    boolean equipped = sleepUntil(() -> Rs2Equipment.isWearing(ItemID.LUNAR_SEAL_OF_PASSAGE), 3000);
                     if (equipped) {
                         log.info("Successfully equipped seal of passage for Lunar Isle access");
                         return true;
@@ -407,7 +407,7 @@ public class SpellbookRequirement extends Requirement {
                 
                 // equip the seal of passage
                 if (Rs2Inventory.interact(ItemID.LUNAR_SEAL_OF_PASSAGE, "Wear")) {
-                    boolean equipped = sleepUntil(() -> Rs2Equipment.hasEquipped(ItemID.LUNAR_SEAL_OF_PASSAGE), 3000);
+                    boolean equipped = sleepUntil(() -> Rs2Equipment.isWearing(ItemID.LUNAR_SEAL_OF_PASSAGE), 3000);
                     if (equipped) {
                         log.info("Successfully equipped seal of passage for Lunar Isle access");
                         return true;

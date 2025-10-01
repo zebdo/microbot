@@ -226,9 +226,9 @@ public class Rs2Player {
      * Wait for walking
      */
     public static void waitForWalking() {
-        boolean result = sleepUntilTrue(Rs2Player::isWalking, 100, 5000);
+        boolean result = sleepUntilTrue(Rs2Player::isMoving, 100, 5000);
         if (!result) return;
-        sleepUntil(() -> !Rs2Player.isWalking());
+        sleepUntil(() -> !Rs2Player.isMoving());
     }
 
     /**
@@ -239,9 +239,9 @@ public class Rs2Player {
      *             If the player does not start walking within this time, the method exits early.
      */
     public static void waitForWalking(int time) {
-        boolean result = sleepUntilTrue(Rs2Player::isWalking, 100, time);
+        boolean result = sleepUntilTrue(Rs2Player::isMoving, 100, time);
         if (!result) return;
-        sleepUntil(() -> !Rs2Player.isWalking(), time);
+        sleepUntil(() -> !Rs2Player.isMoving(), time);
     }
 
     /**
@@ -338,17 +338,6 @@ public class Rs2Player {
     }
 
     /**
-     * Checks if the player is currently walking.
-     *
-     * @return {@code true} if the player is moving, {@code false} otherwise.
-     * @deprecated Since version 1.7.2, use {@link #isMoving()} instead.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean isWalking() {
-        return Rs2Player.isMoving();
-    }
-
-    /**
      * Checks if the player is currently moving based on their pose animation.
      * A player is considered moving if their pose animation is different from their idle pose animation.
      *
@@ -417,15 +406,6 @@ public class Rs2Player {
         return false;
     }
 
-
-    @Deprecated(since = "Use the Rs2Combat.specState method", forRemoval = true)
-    public static void toggleSpecialAttack(int energyRequired) {
-        int currentSpecEnergy = Microbot.getClient().getVarpValue(VarPlayer.SPECIAL_ATTACK_PERCENT);
-        if (currentSpecEnergy >= energyRequired && (Microbot.getClient().getVarpValue(VarPlayer.SPECIAL_ATTACK_ENABLED) == 0)) {
-            Rs2Widget.clickWidget("special attack");
-        }
-    }
-
     /**
      * Toggles the player's run energy on or off.
      *
@@ -460,10 +440,8 @@ public class Rs2Player {
      */
     public static void logout() {
         if (!Microbot.isLoggedIn()) return;
-        if (Rs2Tab.getCurrentTab() != InterfaceTab.LOGOUT) {
-            Rs2Tab.switchToLogout();
-            sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.LOGOUT);
-        }
+
+        Rs2Tab.switchTo(InterfaceTab.LOGOUT);
 
         Widget currentWorldWidget = Rs2Widget.getWidget(69, 3);
         if (currentWorldWidget != null) {
@@ -684,22 +662,6 @@ public class Rs2Player {
     }
 
     /**
-     * Retrieves a list of players around the player.
-     *
-     * @return A list of {@code Rs2PlayerModel} objects representing nearby players, excluding the local player.
-     * @deprecated Since 1.7.2, use {@link #getPlayers(Predicate)} for better filtering support.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static List<Player> getPlayers() {
-        return Microbot.getClient()
-                .getTopLevelWorldView()
-                .players()
-                .stream()
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-    }
-
-    /**
      * Get a stream of players around you, optionally filtered by a predicate.
      *
      * @param predicate A condition to filter players (optional).
@@ -791,21 +753,6 @@ public class Rs2Player {
     }
 
     /**
-     * Calculates the player's health as a percentage.
-     *
-     * <p>This method converts a {@link Player} object into an {@link Rs2PlayerModel}
-     * before calculating health percentage.</p>
-     *
-     * @param player The {@link Player} to calculate health for.
-     * @return The health percentage (0-100), or {@code -1} if health information is unavailable.
-     * @deprecated Since 1.7.2, use {@link #calculateHealthPercentage(Rs2PlayerModel)} for consistency and improved type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static int calculateHealthPercentage(Player player) {
-        return calculateHealthPercentage(new Rs2PlayerModel(player));
-    }
-
-    /**
      * Retrieves a map of the player's equipped items, mapping {@link KitType} to their corresponding item IDs.
      *
      * @param rs2Player The {@link Rs2PlayerModel} representing the player whose equipment is to be retrieved.
@@ -820,18 +767,6 @@ public class Rs2Player {
         }
 
         return equipmentMap;
-    }
-
-    /**
-     * Retrieves a map of the player's equipped items by converting a {@link Player} object into an {@link Rs2PlayerModel}.
-     *
-     * @param player The {@link Player} whose equipment is to be retrieved.
-     * @return A {@code Map<KitType, Integer>} containing the equipment slot types as keys and the corresponding item IDs as values.
-     * @deprecated Since 1.7.2, use {@link #getPlayerEquipmentIds(Rs2PlayerModel)} for consistency and better type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static Map<KitType, Integer> getPlayerEquipmentIds(Player player) {
-        return getPlayerEquipmentIds(new Rs2PlayerModel(player));
     }
 
 
@@ -856,18 +791,6 @@ public class Rs2Player {
         return equipmentMap;
     }
 
-    /**
-     * Retrieves a map of the player's equipped items by converting a {@link Player} object into an {@link Rs2PlayerModel}.
-     *
-     * @param player The {@link Player} whose equipment names are to be retrieved.
-     * @return A {@code Map<KitType, String>} containing the equipment slot types as keys and the corresponding item names as values.
-     * @deprecated Since 1.7.2, use {@link #getPlayerEquipmentNames(Rs2PlayerModel)} for consistency and better type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static Map<KitType, String> getPlayerEquipmentNames(Player player) {
-        return getPlayerEquipmentNames(new Rs2PlayerModel(player));
-    }
-
 
     /**
      * Checks if a player has a specific item equipped by its item ID.
@@ -882,20 +805,6 @@ public class Rs2Player {
         return equipment.values().stream()
                 .anyMatch(equippedItemId -> equippedItemId == itemId);
     }
-
-    /**
-     * Checks if a player has a specific item equipped by its item ID.
-     * Converts a {@link Player} object into an {@link Rs2PlayerModel} before performing the check.
-     *
-     * @param player The {@link Player} whose equipment is being checked.
-     * @param itemId The ID of the item to check for.
-     * @return {@code true} if the player has the specified item equipped, {@code false} otherwise.
-     * @deprecated Since 1.7.2, use {@link #hasPlayerEquippedItem(Rs2PlayerModel, int)} for consistency and better type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean hasPlayerEquippedItem(Player player, int itemId) {
-        return hasPlayerEquippedItem(new Rs2PlayerModel(player), itemId);
-    }
     
     /**
      * Checks if a player has any of the specified items equipped by their item IDs.
@@ -909,20 +818,6 @@ public class Rs2Player {
 
         return equipment.values().stream()
                 .anyMatch(equippedItemId -> Arrays.stream(itemIds).anyMatch(id -> id == equippedItemId));
-    }
-
-    /**
-     * Checks if a player has any of the specified items equipped by their item IDs.
-     * Converts a {@link Player} object into an {@link Rs2PlayerModel} before performing the check.
-     *
-     * @param player  The {@link Player} whose equipment is being checked.
-     * @param itemIds An array of item IDs to check for.
-     * @return {@code true} if the player has any of the specified items equipped, {@code false} otherwise.
-     * @deprecated Since 1.7.2, use {@link #hasPlayerEquippedItem(Rs2PlayerModel, int[])} for consistency and better type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean hasPlayerEquippedItem(Player player, int[] itemIds) {
-        return hasPlayerEquippedItem(new Rs2PlayerModel(player), itemIds);
     }
 
 
@@ -940,20 +835,6 @@ public class Rs2Player {
                 .anyMatch(equippedItem -> equippedItem.equalsIgnoreCase(itemName));
     }
 
-    /**
-     * Checks if a player has a specific item equipped by its name.
-     * Converts a {@link Player} object into an {@link Rs2PlayerModel} before performing the check.
-     *
-     * @param player   The {@link Player} whose equipment is being checked.
-     * @param itemName The name of the item to check for.
-     * @return {@code true} if the player has the specified item equipped, {@code false} otherwise.
-     * @deprecated Since 1.7.2, use {@link #hasPlayerEquippedItem(Rs2PlayerModel, String)} for consistency and better type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean hasPlayerEquippedItem(Player player, String itemName) {
-        return hasPlayerEquippedItem(new Rs2PlayerModel(player), itemName);
-    }
-
 
     /**
      * Checks if a player has any of the specified items equipped by their names.
@@ -967,20 +848,6 @@ public class Rs2Player {
 
         return equipment.values().stream()
                 .anyMatch(equippedItem -> itemNames.stream().anyMatch(equippedItem::equalsIgnoreCase));
-    }
-
-    /**
-     * Checks if a player has any of the specified items equipped by their names.
-     * Converts a {@link Player} object into an {@link Rs2PlayerModel} before performing the check.
-     *
-     * @param player    The {@link Player} whose equipment is being checked.
-     * @param itemNames A list of item names to check for.
-     * @return {@code true} if the player has any of the specified items equipped, {@code false} otherwise.
-     * @deprecated Since 1.7.2, use {@link #hasPlayerEquippedItem(Rs2PlayerModel, List)} for consistency and better type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean hasPlayerEquippedItem(Player player, List<String> itemNames) {
-        return hasPlayerEquippedItem(new Rs2PlayerModel(player), itemNames);
     }
 
 
@@ -1017,17 +884,6 @@ public class Rs2Player {
     }
 
     /**
-     * Get the raw local player instance.
-     *
-     * @return The raw {@link Player} object.
-     * @deprecated Since 1.7.2, use {@link #getLocalPlayer()} instead.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static Player getLocalPlayer(boolean raw) {
-        return Microbot.getClient().getLocalPlayer();
-    }
-
-    /**
      * Checks if the player is in combat based on recent activity.
      *
      * @return True if the player is in combat, false otherwise.
@@ -1044,21 +900,6 @@ public class Rs2Player {
      */
     public static List<Rs2PlayerModel> getPlayersInCombatLevelRange() {
         return getPlayersMatchingCombatCriteria().collect(Collectors.toList());
-    }
-
-    /**
-     * Gets a list of Player objects around the local player within the combat level range 
-     * and wilderness level where they can attack and be attacked.
-     *
-     * @param raw If true, returns a list of raw Player objects instead of Rs2PlayerModel.
-     * @return A list of Player objects within the combat range and attackable wilderness levels.
-     * @deprecated Since 1.7.2, use {@link #getPlayersInCombatLevelRange()} instead.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static List<Player> getPlayersInCombatLevelRange(boolean raw) {
-        return getPlayersMatchingCombatCriteria()
-                .map(Rs2PlayerModel::getPlayer)
-                .collect(Collectors.toList());
     }
 
     /**
@@ -1121,19 +962,6 @@ public class Rs2Player {
      */
     public static Rs2WorldPoint getRs2WorldPoint() {
         return new Rs2WorldPoint(getWorldLocation());
-    }
-
-    /**
-     * Checks if the player is within a specified distance of a given {@link WorldPoint}.
-     *
-     * @param worldPoint The {@link WorldPoint} to check proximity to.
-     * @param radius   The radius (in tiles) around the {@code worldPoint} to check.
-     * @return {@code true} if the player is within the specified distance, {@code false} otherwise.
-     * @deprecated Since 1.9.6, use {@link #isInArea(WorldPoint, int)} for better naming consistency.
-     */
-    @Deprecated(since = "1.9.6", forRemoval = true)
-    public static boolean isNearArea(WorldPoint worldPoint, int radius) {
-        return isInArea(worldPoint, radius);
     }
 
     /**
@@ -1818,20 +1646,6 @@ public class Rs2Player {
     }
 
     /**
-     * Invokes the "attack" action on the specified player.
-     *
-     * <p>This method converts a {@link Player} object into an {@link Rs2PlayerModel} before invoking the attack action.</p>
-     *
-     * @param player The {@link Player} to attack.
-     * @return {@code true} if the action was invoked successfully, {@code false} otherwise.
-     * @deprecated Since 1.7.2, use {@link #attack(Rs2PlayerModel)} for consistency and improved type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean attack(Player player) {
-        return attack(new Rs2PlayerModel(player));
-    }
-
-    /**
      * Invokes the "walk here" action to move to the same location as the specified player.
      *
      * <p>This method interacts with the specified {@link Rs2PlayerModel} to initiate movement to their position.</p>
@@ -1841,20 +1655,6 @@ public class Rs2Player {
      */
     public static boolean walkUnder(Rs2PlayerModel rs2Player) {
         return invokeMenu(rs2Player, "walk here");
-    }
-
-    /**
-     * Invokes the "walk here" action to move to the same location as the specified player.
-     *
-     * <p>This method converts a {@link Player} object into an {@link Rs2PlayerModel} before invoking the movement action.</p>
-     *
-     * @param player The {@link Player} under whose position to walk.
-     * @return {@code true} if the action was invoked successfully, {@code false} otherwise.
-     * @deprecated Since 1.7.2, use {@link #walkUnder(Rs2PlayerModel)} for consistency and improved type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean walkUnder(Player player) {
-        return walkUnder(new Rs2PlayerModel(player));
     }
 
     /**
@@ -1870,20 +1670,6 @@ public class Rs2Player {
     }
 
     /**
-     * Invokes the "trade with" action on the specified player.
-     *
-     * <p>This method converts a {@link Player} object into an {@link Rs2PlayerModel} before invoking the trade action.</p>
-     *
-     * @param player The {@link Player} to trade with.
-     * @return {@code true} if the action was invoked successfully, {@code false} otherwise.
-     * @deprecated Since 1.7.2, use {@link #trade(Rs2PlayerModel)} for consistency and improved type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean trade(Player player) {
-        return trade(new Rs2PlayerModel(player));
-    }
-
-    /**
      * Invokes the "follow" action on the specified player.
      *
      * <p>This method interacts with the specified {@link Rs2PlayerModel} to initiate following them.</p>
@@ -1893,20 +1679,6 @@ public class Rs2Player {
      */
     public static boolean follow(Rs2PlayerModel rs2Player) {
         return invokeMenu(rs2Player, "follow");
-    }
-
-    /**
-     * Invokes the "follow" action on the specified player.
-     *
-     * <p>This method converts a {@link Player} object into an {@link Rs2PlayerModel} before invoking the follow action.</p>
-     *
-     * @param player The {@link Player} to follow.
-     * @return {@code true} if the action was invoked successfully, {@code false} otherwise.
-     * @deprecated Since 1.7.2, use {@link #follow(Rs2PlayerModel)} for consistency and improved type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean follow(Player player) {
-        return follow(new Rs2PlayerModel(player));
     }
 
     /**
@@ -1922,20 +1694,6 @@ public class Rs2Player {
     }
 
     /**
-     * Invokes the "cast" action on the specified player.
-     *
-     * <p>This method converts a {@link Player} object into an {@link Rs2PlayerModel} before invoking the cast action.</p>
-     *
-     * @param player The {@link Player} to cast on.
-     * @return {@code true} if the action was invoked successfully, {@code false} otherwise.
-     * @deprecated Since 1.7.2, use {@link #cast(Rs2PlayerModel)} for consistency and improved type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean cast(Player player) {
-        return cast(new Rs2PlayerModel(player));
-    }
-
-    /**
      * Selects the "USE" option on a player for an item that is already selected via {@code Rs2Inventory.use(item)}.
      *
      * <p>This method interacts with the specified {@link Rs2PlayerModel} to use the selected item on them.</p>
@@ -1945,20 +1703,6 @@ public class Rs2Player {
      */
     public static boolean use(Rs2PlayerModel rs2Player) {
         return invokeMenu(rs2Player, "use");
-    }
-
-    /**
-     * Selects the "USE" option on a player for an item that is already selected via {@code Rs2Inventory.use(item)}.
-     *
-     * <p>This method converts a {@link Player} object into an {@link Rs2PlayerModel} before invoking the use action.</p>
-     *
-     * @param player The {@link Player} to use the item on.
-     * @return {@code true} if the action was invoked successfully, {@code false} otherwise.
-     * @deprecated Since 1.7.2, use {@link #use(Rs2PlayerModel)} for consistency and improved type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean use(Player player) {
-        return use(new Rs2PlayerModel(player));
     }
     
     /**
@@ -1971,20 +1715,6 @@ public class Rs2Player {
      */
     public static boolean challenge(Rs2PlayerModel rs2Player) {
         return invokeMenu(rs2Player, "challenge");
-    }
-
-    /**
-     * Selects the "CHALLENGE" option on a player for Soul Wars.
-     *
-     * <p>This method converts a {@link Player} object into an {@link Rs2PlayerModel} before invoking the challenge action.</p>
-     *
-     * @param player The {@link Player} to challenge.
-     * @return {@code true} if the action was invoked successfully, {@code false} otherwise.
-     * @deprecated Since 1.7.2, use {@link #challenge(Rs2PlayerModel)} for consistency and improved type handling.
-     */
-    @Deprecated(since = "1.7.2", forRemoval = true)
-    public static boolean challenge(Player player) {
-        return challenge(new Rs2PlayerModel(player));
     }
 
     /**

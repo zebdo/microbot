@@ -24,33 +24,11 @@
  */
 package net.runelite.client.plugins.microbot.inventorysetups.ui;
 
-import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupUtilities;
-import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
-import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsItem;
-import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsPanelViewID;
-import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
-import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.CONFIG_KEY_PANEL_VIEW;
-import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.CONFIG_KEY_SECTION_MODE;
-import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.CONFIG_KEY_UNASSIGNED_MAXIMIZED;
-import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.TUTORIAL_LINK;
-
-import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSection;
-import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSlotID;
-import net.runelite.client.plugins.microbot.inventorysetups.InventorySetupsSortingID;
-
-import java.awt.*;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
-
-import net.runelite.client.plugins.microbot.inventorysetups.serialization.InventorySetupPortable;
 import lombok.Getter;
 import lombok.Setter;
-import net.runelite.api.InventoryID;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.plugins.microbot.inventorysetups.*;
+import net.runelite.client.plugins.microbot.inventorysetups.serialization.InventorySetupPortable;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
@@ -58,22 +36,21 @@ import net.runelite.client.ui.components.PluginErrorPanel;
 import net.runelite.client.util.ImageUtil;
 import net.runelite.client.util.LinkBrowser;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.ImageIcon;
-import javax.swing.JLabel;
-import javax.swing.JMenuItem;
-import javax.swing.JPanel;
-import javax.swing.JPopupMenu;
-import javax.swing.JScrollPane;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.border.EmptyBorder;
+import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
+import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
+
+import static net.runelite.api.gameval.InventoryID.INV;
+import static net.runelite.api.gameval.InventoryID.WORN;
+import static net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin.*;
 
 // The main panel of the plugin that contains all viewing components
 public class InventorySetupsPluginPanel extends PluginPanel
@@ -804,8 +781,8 @@ public class InventorySetupsPluginPanel extends PluginPanel
 			return;
 		}
 
-		final List<InventorySetupsItem> inv = plugin.getNormalizedContainer(InventoryID.INVENTORY);
-		final List<InventorySetupsItem> eqp = plugin.getNormalizedContainer(InventoryID.EQUIPMENT);
+		final List<InventorySetupsItem> inv = plugin.getNormalizedContainer(INV);
+		final List<InventorySetupsItem> eqp = plugin.getNormalizedContainer(WORN);
 
 		highlightContainerPanel(inv, inventoryPanel);
 		highlightContainerPanel(eqp, equipmentPanel);
@@ -830,13 +807,13 @@ public class InventorySetupsPluginPanel extends PluginPanel
 
 	public void highlightInventory()
 	{
-		final List<InventorySetupsItem> inv = plugin.getNormalizedContainer(InventoryID.INVENTORY);
+		final List<InventorySetupsItem> inv = plugin.getNormalizedContainer(INV);
 		highlightContainerPanel(inv, inventoryPanel);
 	}
 
 	public void highlightEquipment()
 	{
-		final List<InventorySetupsItem> eqp = plugin.getNormalizedContainer(InventoryID.EQUIPMENT);
+		final List<InventorySetupsItem> eqp = plugin.getNormalizedContainer(WORN);
 		highlightContainerPanel(eqp, equipmentPanel);
 	}
 

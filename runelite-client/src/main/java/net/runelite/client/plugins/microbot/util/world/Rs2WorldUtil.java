@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import io.reactivex.rxjava3.annotations.Nullable;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepGaussian;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
@@ -50,7 +49,6 @@ public class Rs2WorldUtil {
      * @param worldId The world ID to check accessibility for
      * @return true if the player can access the world, false otherwise
      */
-    @Nullable
     public static boolean canAccessWorld(int worldId) {
         try {
             if (worldId == -1){

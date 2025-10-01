@@ -33,8 +33,8 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Menu;
 import net.runelite.api.*;
 import net.runelite.api.events.*;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.widgets.ComponentID;
-import net.runelite.api.widgets.InterfaceID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.config.ConfigManager;
@@ -426,7 +426,7 @@ public class MInventorySetupsPlugin extends Plugin
 			{
 				clientThread.invokeLater(() ->
 				{
-					boolean bankOpen = client.getItemContainer(InventoryID.BANK) != null;
+					boolean bankOpen = client.getItemContainer(net.runelite.api.gameval.InventoryID.BANK) != null;
 					if (config.persistHotKeysOutsideBank())
 					{
 						registerHotkeys();
@@ -546,7 +546,7 @@ public class MInventorySetupsPlugin extends Plugin
 	public void onMenuEntryAdded(MenuEntryAdded event)
 	{
 
-		Widget bankWidget = client.getWidget(ComponentID.BANK_TITLE_BAR);
+		Widget bankWidget = client.getWidget(net.runelite.api.gameval.InterfaceID.Bankmain.TITLE);
 		if (bankWidget == null || bankWidget.isHidden())
 		{
 			return;
@@ -561,7 +561,7 @@ public class MInventorySetupsPlugin extends Plugin
 		// add item to additional filtered items
 		else if (panel.getCurrentSelectedSetup() != null
 				&& bankTagsService.getActiveLayout() == null // If there is an active layout, then the real item behind the fake layout item may be added. So just disallow this menu.
-				&& event.getActionParam1() == ComponentID.BANK_ITEM_CONTAINER
+				&& event.getActionParam1() == net.runelite.api.gameval.InterfaceID.Bankmain.UNIVERSE
 				&& client.isKeyPressed(KeyCode.KC_SHIFT)
 				&& event.getOption().equals("Examine"))
 		{
@@ -865,7 +865,7 @@ public class MInventorySetupsPlugin extends Plugin
 	@Subscribe
 	private void onWidgetClosed(WidgetClosed event)
 	{
-		if (event.getGroupId() == InterfaceID.BANK )
+		if (event.getGroupId() == net.runelite.api.gameval.InterfaceID.BANKMAIN )
 		{
 			if (!config.persistHotKeysOutsideBank())
 			{
@@ -883,7 +883,7 @@ public class MInventorySetupsPlugin extends Plugin
 	@Subscribe
 	public void onWidgetLoaded(WidgetLoaded event)
 	{
-		if (event.getGroupId() == InterfaceID.BANK)
+		if (event.getGroupId() == InterfaceID.BANKMAIN)
 		{
 			if (!config.persistHotKeysOutsideBank())
 			{
@@ -954,7 +954,7 @@ public class MInventorySetupsPlugin extends Plugin
 
 		clientThread.invokeLater(() ->
 		{
-			List<InventorySetupsItem> inv = getNormalizedContainer(InventoryID.INVENTORY);
+			List<InventorySetupsItem> inv = getNormalizedContainer(InterfaceID.INVENTORY);
 
 			for (int i = 0; i < inv.size(); i++) {
 				InventorySetupsItem item = inv.get(i);
@@ -962,7 +962,7 @@ public class MInventorySetupsPlugin extends Plugin
 				item.setLocked(isLocked);
 			}
 
-			List<InventorySetupsItem> eqp = getNormalizedContainer(InventoryID.EQUIPMENT);
+			List<InventorySetupsItem> eqp = getNormalizedContainer(net.runelite.api.gameval.InventoryID.WORN);
 			List<InventorySetupsItem> runePouchData = ammoHandler.getRunePouchDataIfInContainer(inv);
 			List<InventorySetupsItem> boltPouchData = ammoHandler.getBoltPouchDataIfInContainer(inv);
 			List<InventorySetupsItem> quiverData = ammoHandler.getQuiverDataIfInSetup(inv, eqp);
@@ -1014,8 +1014,8 @@ public class MInventorySetupsPlugin extends Plugin
 
 		clientThread.invokeLater(() ->
 		{
-			List<InventorySetupsItem> inv = getNormalizedContainer(InventoryID.INVENTORY);
-			List<InventorySetupsItem> eqp = getNormalizedContainer(InventoryID.EQUIPMENT);
+			List<InventorySetupsItem> inv = getNormalizedContainer(net.runelite.api.gameval.InventoryID.INV);
+			List<InventorySetupsItem> eqp = getNormalizedContainer(net.runelite.api.gameval.InventoryID.WORN);
 
 			List<InventorySetupsItem> runePouchData = ammoHandler.getRunePouchDataIfInContainer(inv);
 			List<InventorySetupsItem> boltPouchData = ammoHandler.getBoltPouchDataIfInContainer(inv);
@@ -1418,8 +1418,8 @@ public class MInventorySetupsPlugin extends Plugin
 		// must be on client thread to get names
 		clientThread.invokeLater(() ->
 		{
-			List<InventorySetupsItem> inv = getNormalizedContainer(InventoryID.INVENTORY);
-			List<InventorySetupsItem> eqp = getNormalizedContainer(InventoryID.EQUIPMENT);
+			List<InventorySetupsItem> inv = getNormalizedContainer(net.runelite.api.gameval.InventoryID.INV);
+			List<InventorySetupsItem> eqp = getNormalizedContainer(net.runelite.api.gameval.InventoryID.WORN);
 
 			// copy over fuzzy attributes
 			for (int i = 0; i < inv.size(); i++)
@@ -2058,17 +2058,17 @@ public class MInventorySetupsPlugin extends Plugin
 		switch (id)
 		{
 			case INVENTORY:
-				return getNormalizedContainer(InventoryID.INVENTORY);
+				return getNormalizedContainer(net.runelite.api.gameval.InventoryID.INV);
 			case EQUIPMENT:
-				return getNormalizedContainer(InventoryID.EQUIPMENT);
+				return getNormalizedContainer(net.runelite.api.gameval.InventoryID.WORN);
 			default:
 				return ammoHandler.getNormalizedSpecialContainer(id);
 		}
 	}
 
-	public List<InventorySetupsItem> getNormalizedContainer(final InventoryID id)
+	public List<InventorySetupsItem> getNormalizedContainer(final int id)
 	{
-		assert id == InventoryID.INVENTORY || id == InventoryID.EQUIPMENT : "invalid inventory ID";
+		assert id == net.runelite.api.gameval.InventoryID.INV || id == net.runelite.api.gameval.InventoryID.WORN : "invalid inventory ID";
 
 		final ItemContainer container = client.getItemContainer(id);
 
@@ -2080,7 +2080,7 @@ public class MInventorySetupsPlugin extends Plugin
 			items = container.getItems();
 		}
 
-		int size = id == InventoryID.INVENTORY ? NUM_INVENTORY_ITEMS : NUM_EQUIPMENT_ITEMS;
+		int size = id == net.runelite.api.gameval.InventoryID.INV ? NUM_INVENTORY_ITEMS : NUM_EQUIPMENT_ITEMS;
 
 		for (int i = 0; i < size; i++)
 		{

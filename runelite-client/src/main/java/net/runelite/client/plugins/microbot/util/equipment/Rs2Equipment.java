@@ -52,40 +52,6 @@ public class Rs2Equipment {
         equipmentItems = Collections.unmodifiableList(_equipmentItems);
     }
 
-    @Deprecated(since = "Use interact", forRemoval = true)
-    public static boolean useCapeAction(int itemId, String action) {
-        Rs2ItemModel item = get(itemId);
-        if (item == null) {
-            Microbot.status = "Cape is missing in the equipment slot";
-            return false;
-        }
-
-        invokeMenu(item, action);
-        return true;
-    }
-
-    @Deprecated(since = "Use interact", forRemoval = true)
-    public static boolean useRingAction(JewelleryLocationEnum jewelleryLocationEnum) {
-        if (!isWearing(EquipmentInventorySlot.RING)) {
-            Microbot.status = "Amulet is missing in the equipment slot";
-            return false;
-        }
-        Microbot.doInvoke(new NewMenuEntry(-1, 25362456, MenuAction.CC_OP.getId(), jewelleryLocationEnum.getIdentifier(), -1, "Equip"),
-                new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
-        return true;
-    }
-
-    @Deprecated(since = "Use interact", forRemoval = true)
-    public static boolean useAmuletAction(JewelleryLocationEnum jewelleryLocationEnum) {
-        if (!isWearing(EquipmentInventorySlot.AMULET) || !hasEquippedContains(jewelleryLocationEnum.getTooltip())) {
-            Microbot.status = "Amulet is missing in the equipment slot";
-            return false;
-        }
-        Microbot.doInvoke(new NewMenuEntry(-1, 25362449, MenuAction.CC_OP.getId(), jewelleryLocationEnum.getIdentifier(), -1, "Equip"),
-                new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
-        return true;
-    }
-
     public static Stream<Rs2ItemModel> all() {
         final List<Rs2ItemModel> items = items();
         if (items == null) return Stream.empty();
@@ -150,81 +116,6 @@ public class Rs2Equipment {
         return all(names).findFirst().orElse(null);
     }
 
-    /**
-     * Checks if the equipment contains an item that matches the specified predicate.
-     *
-     * @param predicate The predicate to apply.
-     * @return True if the equipment contains an item that matches the predicate, false otherwise.
-     */
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean contains(Predicate<Rs2ItemModel> predicate) {
-        return get(predicate) != null;
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean hasEquipped(String itemName) {
-        return isWearing(itemName,true);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean hasEquippedContains(String itemName) {
-        return isWearing(itemName,false);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean hasEquipped(int id) {
-        return isWearing(id);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean hasEquippedSlot(EquipmentInventorySlot slot) {
-        return isWearing(slot);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean isEquipped(String name, EquipmentInventorySlot slot) {
-        return isEquipped(name, slot, false);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean isEquipped(int id, EquipmentInventorySlot slot) {
-        final Rs2ItemModel item = get(slot);
-        return item != null && item.getId() == id;
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean isEquipped(String name, EquipmentInventorySlot slot, boolean exact) {
-        final Rs2ItemModel item = get(slot);
-        if (item == null) return false;
-        return exact ? item.getName().equalsIgnoreCase(name) : item.getName().toLowerCase().contains(name.toLowerCase());
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean hasGuthanWeaponEquiped() {
-        return isEquipped("guthan's warspear", EquipmentInventorySlot.WEAPON);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean hasGuthanBodyEquiped() {
-        return isEquipped("guthan's platebody", EquipmentInventorySlot.BODY);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean hasGuthanLegsEquiped() {
-        return isEquipped("guthan's chainskirt", EquipmentInventorySlot.LEGS);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean hasGuthanHelmEquiped() {
-        return isEquipped("guthan's helm", EquipmentInventorySlot.HEAD);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean isWearingFullGuthan() {
-        return hasGuthanBodyEquiped() && hasGuthanWeaponEquiped() &&
-                hasGuthanHelmEquiped() && hasGuthanLegsEquiped();
-    }
-
     public static boolean isWearing() {
         return get() != null;
     }
@@ -276,11 +167,6 @@ public class Rs2Equipment {
 
     public static boolean isWearing(String[] names, EquipmentInventorySlot[] searchSlots) {
         return isWearing(names, false, searchSlots);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean isWearing(List<String> names, boolean exact, List<EquipmentInventorySlot> ignoreSlots) {
-        return isWearing(names.toArray(String[]::new), exact, ignoreSlots.toArray(EquipmentInventorySlot[]::new), false);
     }
 
     private static boolean unEquip(Rs2ItemModel item) {
@@ -412,16 +298,6 @@ public class Rs2Equipment {
 
     public static boolean interact(String[] names, String action) {
         return interact(names, action, false);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean isWearingShield() {
-        return isWearing(EquipmentInventorySlot.SHIELD);
-    }
-
-    @Deprecated(since = "Use isWearing", forRemoval = true)
-    public static boolean isNaked() {
-        return !isWearing();
     }
 
     public static void invokeMenu(Rs2ItemModel rs2Item, String action) {

@@ -714,11 +714,6 @@ public class Microbot {
         return isPluginEnabled(getPlugin(name));
     }
 
-    @Deprecated(since = "1.6.2 - Use Rs2Player variant")
-    public static QuestState getQuestState(Quest quest) {
-        return getClientThread().runOnClientThreadOptional(() -> quest.getState(client)).orElse(null);
-    }
-
     public static void writeVersionToFile(String version) throws IOException {
         try (BufferedWriter writer = new BufferedWriter(new FileWriter(VERSION_FILE_PATH))) {
             writer.write(version);
