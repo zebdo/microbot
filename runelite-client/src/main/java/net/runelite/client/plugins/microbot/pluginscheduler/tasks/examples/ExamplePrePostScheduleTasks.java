@@ -12,11 +12,9 @@ import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
-import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
-
 import java.util.concurrent.CompletableFuture;
 
-import javax.net.ssl.KeyManager;
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 /**
  * Example implementation showing how to extend {@link AbstractPrePostScheduleTasks}
@@ -164,7 +162,7 @@ public class ExamplePrePostScheduleTasks extends AbstractPrePostScheduleTasks {
         Rs2Bank.depositAll();
         sleepUntil(() -> Rs2Inventory.isEmpty(), 5000);
         Rs2Bank.depositEquipment();
-        sleepUntil(() -> Rs2Equipment.isNaked(), 5000);
+        sleepUntil(() -> !Rs2Equipment.isWearing(), 5000);
         
         // TODO: Add your plugin's specific equipment and item withdrawal logic here
         // Example:

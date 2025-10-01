@@ -91,6 +91,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
+import static net.runelite.api.gameval.InventoryID.INV;
 import static net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsRunePouchPanel.RUNE_POUCH_AMOUNT_VARBITS;
 import static net.runelite.client.plugins.microbot.inventorysetups.ui.InventorySetupsRunePouchPanel.RUNE_POUCH_RUNE_VARBITS;
 import static net.runelite.client.plugins.microbot.util.bank.Rs2Bank.isLockedSlot;
@@ -954,7 +955,7 @@ public class MInventorySetupsPlugin extends Plugin
 
 		clientThread.invokeLater(() ->
 		{
-			List<InventorySetupsItem> inv = getNormalizedContainer(InterfaceID.INVENTORY);
+			List<InventorySetupsItem> inv = getNormalizedContainer(INV);
 
 			for (int i = 0; i < inv.size(); i++) {
 				InventorySetupsItem item = inv.get(i);
@@ -1014,7 +1015,7 @@ public class MInventorySetupsPlugin extends Plugin
 
 		clientThread.invokeLater(() ->
 		{
-			List<InventorySetupsItem> inv = getNormalizedContainer(net.runelite.api.gameval.InventoryID.INV);
+			List<InventorySetupsItem> inv = getNormalizedContainer(INV);
 			List<InventorySetupsItem> eqp = getNormalizedContainer(net.runelite.api.gameval.InventoryID.WORN);
 
 			List<InventorySetupsItem> runePouchData = ammoHandler.getRunePouchDataIfInContainer(inv);
@@ -1418,7 +1419,7 @@ public class MInventorySetupsPlugin extends Plugin
 		// must be on client thread to get names
 		clientThread.invokeLater(() ->
 		{
-			List<InventorySetupsItem> inv = getNormalizedContainer(net.runelite.api.gameval.InventoryID.INV);
+			List<InventorySetupsItem> inv = getNormalizedContainer(INV);
 			List<InventorySetupsItem> eqp = getNormalizedContainer(net.runelite.api.gameval.InventoryID.WORN);
 
 			// copy over fuzzy attributes
@@ -2058,7 +2059,7 @@ public class MInventorySetupsPlugin extends Plugin
 		switch (id)
 		{
 			case INVENTORY:
-				return getNormalizedContainer(net.runelite.api.gameval.InventoryID.INV);
+				return getNormalizedContainer(INV);
 			case EQUIPMENT:
 				return getNormalizedContainer(net.runelite.api.gameval.InventoryID.WORN);
 			default:
@@ -2068,7 +2069,7 @@ public class MInventorySetupsPlugin extends Plugin
 
 	public List<InventorySetupsItem> getNormalizedContainer(final int id)
 	{
-		assert id == net.runelite.api.gameval.InventoryID.INV || id == net.runelite.api.gameval.InventoryID.WORN : "invalid inventory ID";
+		assert id == INV || id == net.runelite.api.gameval.InventoryID.WORN : "invalid inventory ID";
 
 		final ItemContainer container = client.getItemContainer(id);
 
@@ -2080,7 +2081,7 @@ public class MInventorySetupsPlugin extends Plugin
 			items = container.getItems();
 		}
 
-		int size = id == net.runelite.api.gameval.InventoryID.INV ? NUM_INVENTORY_ITEMS : NUM_EQUIPMENT_ITEMS;
+		int size = id == INV ? NUM_INVENTORY_ITEMS : NUM_EQUIPMENT_ITEMS;
 
 		for (int i = 0; i < size; i++)
 		{

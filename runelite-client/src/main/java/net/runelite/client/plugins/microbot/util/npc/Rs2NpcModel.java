@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.util.npc;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
+import net.runelite.api.HeadIcon;
 import net.runelite.api.NPC;
 import net.runelite.api.NPCComposition;
 import net.runelite.api.NpcOverrides;
@@ -11,8 +12,6 @@ import net.runelite.client.plugins.microbot.util.ActorModel;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
-import java.util.Objects;
-import java.util.function.BiPredicate;
 import java.util.function.Predicate;
 
 @Getter
@@ -163,5 +162,32 @@ public class Rs2NpcModel extends ActorModel implements NPC
 			return exact ? Arrays.stream(names).anyMatch(name::equalsIgnoreCase) :
 					Arrays.stream(names).anyMatch(s -> name.contains(s.toLowerCase()));
 		};
+	}
+
+	/**
+	 * Gets the overhead prayer icon of the NPC, if any.
+	 * @return
+	 */
+	public HeadIcon getHeadIcon() {
+		if (runeliteNpc == null) {
+			return null;
+		}
+
+		if (runeliteNpc.getOverheadSpriteIds() == null) {
+			Microbot.log("Failed to find the correct overhead prayer.");
+			return null;
+		}
+
+		for (int i = 0; i < runeliteNpc.getOverheadSpriteIds().length; i++) {
+			int overheadSpriteId = runeliteNpc.getOverheadSpriteIds()[i];
+
+			if (overheadSpriteId == -1) continue;
+
+			return HeadIcon.values()[overheadSpriteId];
+		}
+
+		Microbot.log("Found overheadSpriteIds: " + Arrays.toString(runeliteNpc.getOverheadSpriteIds()) + " but failed to find valid overhead prayer.");
+
+		return null;
 	}
 }

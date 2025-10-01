@@ -64,7 +64,13 @@ public class Rs2Tab {
         if (tab == InterfaceTab.NOTHING_SELECTED && Microbot.getVarbitValue(VarbitID.RESIZABLE_STONE_ARRANGEMENT) == 0)
             return false;
 
-        Rs2Keyboard.keyPress(tab.getHotkey());
+        int hotkey = tab.getHotkey();
+        if (hotkey == -1) {
+            log.warn("Tab {} does not have a hotkey assigned, cannot switch to it.", tab.getName());
+            return false;
+        } else {
+            Rs2Keyboard.keyPress(hotkey);
+        }
 
         return sleepUntil(() -> isCurrentTab(tab));
     }

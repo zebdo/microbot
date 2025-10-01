@@ -59,35 +59,6 @@ public class ClientThread
 	}
 
 	/**
-	 * Run a method on the client thread, returning the result.
-	 * @param method
-	 * @return
-	 * @param <T>
-	 */
-	@SneakyThrows
-	@Deprecated(since = "1.7.9", forRemoval = true)
-	public <T> T runOnClientThread(Callable<T> method) {
-		if (client.isClientThread()) {
-			return method.call();
-		}
-		final FutureTask<T> task = new FutureTask<>(method);
-		invoke(task);
-		try {
-			return task.get(10000, TimeUnit.MILLISECONDS);
-		} catch (InterruptedException | TimeoutException | ExecutionException e) {
-			if (e instanceof InterruptedException) {
-                Thread.currentThread().interrupt();
-				return null;
-            }
-			task.cancel(true);
-			if (!Microbot.isDebug()) {
-				log.error("Exception during task execution: {}: {}\n{}", e.getClass().getSimpleName(), e.getMessage(),e);
-			}
-			return null;
-		}
-	}
-
-	/**
 	 * Run a method on the client thread, returning an optional of the result.
 	 * @param method
 	 * @return
