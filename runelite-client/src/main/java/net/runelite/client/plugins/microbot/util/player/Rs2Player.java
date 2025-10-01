@@ -226,9 +226,9 @@ public class Rs2Player {
      * Wait for walking
      */
     public static void waitForWalking() {
-        boolean result = sleepUntilTrue(Rs2Player::isWalking, 100, 5000);
+        boolean result = sleepUntilTrue(Rs2Player::isMoving, 100, 5000);
         if (!result) return;
-        sleepUntil(() -> !Rs2Player.isWalking());
+        sleepUntil(() -> !Rs2Player.isMoving());
     }
 
     /**
@@ -239,9 +239,9 @@ public class Rs2Player {
      *             If the player does not start walking within this time, the method exits early.
      */
     public static void waitForWalking(int time) {
-        boolean result = sleepUntilTrue(Rs2Player::isWalking, 100, time);
+        boolean result = sleepUntilTrue(Rs2Player::isMoving, 100, time);
         if (!result) return;
-        sleepUntil(() -> !Rs2Player.isWalking(), time);
+        sleepUntil(() -> !Rs2Player.isMoving(), time);
     }
 
     /**
@@ -440,10 +440,8 @@ public class Rs2Player {
      */
     public static void logout() {
         if (!Microbot.isLoggedIn()) return;
-        if (Rs2Tab.getCurrentTab() != InterfaceTab.LOGOUT) {
-            Rs2Tab.switchToLogout();
-            sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.LOGOUT);
-        }
+
+        Rs2Tab.switchTo(InterfaceTab.LOGOUT);
 
         Widget currentWorldWidget = Rs2Widget.getWidget(69, 3);
         if (currentWorldWidget != null) {
