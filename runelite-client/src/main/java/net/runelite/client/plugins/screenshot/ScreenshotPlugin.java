@@ -50,10 +50,9 @@ import net.runelite.client.ui.ClientUI;
 import net.runelite.client.ui.DrawManager;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.Overlay;
+import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.*;
 import org.apache.commons.lang3.StringUtils;
-import net.runelite.client.ui.overlay.Overlay;
-import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
 import java.awt.*;
@@ -154,7 +153,8 @@ public class ScreenshotPlugin extends Plugin
 
 	@Inject
 	private Client client;
-
+	@Inject
+	private OverlayManager overlayManager;
 	@Inject
 	private ClientUI clientUi;
 
