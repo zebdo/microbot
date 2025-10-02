@@ -433,7 +433,17 @@ public class Rs2RunePouch
 			{
 				final int widgetIndex = RUNEPOUCH_LOADOUT_WIDGETS.get(entry.getKey());
 				Widget parentLoadoutWidget = Rs2Widget.getWidget(BANK_PARENT_ID, widgetIndex);
+				if (parentLoadoutWidget == null || parentLoadoutWidget.getStaticChildren() == null)
+				{
+					Microbot.log("Failed to find loadout widget for index: " + widgetIndex, Level.WARNING);
+					break;
+				}
 				Widget loadWidget = Rs2Widget.findWidget("Load", List.of(parentLoadoutWidget.getStaticChildren()));
+				if (loadWidget == null)
+				{
+					Microbot.log("Failed to find 'Load' child widget in loadout index: " + widgetIndex, Level.WARNING);
+					break;
+				}
 				Rectangle loadBounds = loadWidget.getBounds();
 				NewMenuEntry menuEntry = new NewMenuEntry("Load", "", 1, MenuAction.CC_OP, -1, loadWidget.getId(), false);
 				Microbot.doInvoke(menuEntry, loadBounds != null && Rs2UiHelper.isRectangleWithinCanvas(loadBounds) ? loadBounds : Rs2UiHelper.getDefaultRectangle());
