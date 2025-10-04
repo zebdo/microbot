@@ -2008,7 +2008,6 @@ public class Rs2Walker {
      * @param range        an int of range to which the boundaries will be drawn in a square,
      * @return true if the player's current location is within the specified area, false otherwise
      */
-    @Deprecated(since = "1.5.5", forRemoval = true)
     public static boolean isInArea(WorldPoint centerOfArea, int range) {
         WorldPoint seCorner = new WorldPoint(centerOfArea.getX() + range, centerOfArea.getY() - range, centerOfArea.getPlane());
         WorldPoint nwCorner = new WorldPoint(centerOfArea.getX() - range, centerOfArea.getY() + range, centerOfArea.getPlane());
