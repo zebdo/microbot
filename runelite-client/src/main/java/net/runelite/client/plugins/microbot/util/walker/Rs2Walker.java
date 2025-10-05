@@ -1562,7 +1562,7 @@ public class Rs2Walker {
                         if (handleTeleportSpell(transport)) {
                             sleepUntil(() -> !Rs2Player.isAnimating());
                             sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
-                            Rs2Tab.switchToInventoryTab();
+                            Rs2Tab.switchTo(InterfaceTab.INVENTORY);
                             break;
                         }
                     }
@@ -2137,7 +2137,7 @@ public class Rs2Walker {
         }
 
         if (Rs2Tab.getCurrentTab() != InterfaceTab.CHAT) {
-            Rs2Tab.switchToGroupingTab();
+            Rs2Tab.switchTo(InterfaceTab.CHAT);
             sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.CHAT);
         }
 
