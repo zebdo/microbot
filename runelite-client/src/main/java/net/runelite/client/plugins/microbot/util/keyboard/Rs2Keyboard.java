@@ -78,10 +78,8 @@ public final class Rs2Keyboard {
 	 */
 	private static void sendKey(int id, int keyCode, char keyChar) {
 		if (isMinimized()) {
-			System.out.println("sending minimized keystrokes");
 			dispatchDirect(id, keyCode, keyChar); // works while minimized
 		} else {
-			System.out.println("sending normalized keystrokes");
 			postNormal(id, keyCode, keyChar);
 		}
 	}
