@@ -2,141 +2,188 @@ package net.runelite.client.plugins.microbot.util.keyboard;
 
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.Global;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 
-import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
+import static java.awt.event.KeyEvent.CHAR_UNDEFINED;
+
 /**
- * Utility class for simulating keyboard input
+ * Utility class for simulating keyboard input.
  */
-public final class Rs2Keyboard {
-	private Rs2Keyboard() {}
+public class Rs2Keyboard
+{
 
 	/**
-	 * Get the game canvas
-	 * @return
+	 * Gets the current game canvas.
+	 *
+	 * @return the game canvas
 	 */
-	private static Canvas canvas() {
+	private static Canvas getCanvas()
+	{
 		return Microbot.getClient().getCanvas();
 	}
 
 	/**
-	 * Get the game frame
-	 * @return
+	 * Executes a given action with the canvas temporarily made focusable if it wasn't already.
+	 * This ensures key events are properly dispatched to the game client.
+	 *
+	 * @param action the code to run while the canvas is focusable
 	 */
-	private static Frame frame() {
-		Window w = SwingUtilities.getWindowAncestor(canvas());
-		if (w instanceof Frame) {
-			return (Frame) w;
+	private static void withFocusCanvas(Runnable action)
+	{
+		Canvas canvas = getCanvas();
+		boolean originalFocus = canvas.isFocusable();
+		if (!originalFocus) canvas.setFocusable(true);
+
+		try
+		{
+			action.run();
 		}
-		return null;
-	}
-
-	/**
-	 * Check if the game is iconified (minimized)
-	 * @return
-	 */
-	private static boolean isMinimized() {
-		Frame f = frame();
-		return f != null && (f.getExtendedState() & Frame.ICONIFIED) != 0;
-	}
-
-	/**
-	 * Directly dispatch a KeyEvent to the canvas
-	 * @param id
-	 * @param keyCode
-	 * @param keyChar
-	 */
-	private static void dispatchDirect(int id, int keyCode, char keyChar) {
-		long now = System.currentTimeMillis();
-		KeyEvent e = new KeyEvent(canvas(), id, now, 0, keyCode, keyChar);
-		canvas().dispatchEvent(e);
-	}
-
-	/**
-	 * Post a KeyEvent to the system event queue
-	 * @param id
-	 * @param keyCode
-	 * @param keyChar
-	 */
-	private static void postNormal(int id, int keyCode, char keyChar) {
-		long now = System.currentTimeMillis();
-		KeyEvent e = new KeyEvent(canvas(), id, now, 0, keyCode, keyChar);
-		if (SwingUtilities.isEventDispatchThread()) {
-			canvas().dispatchEvent(e);
-		} else {
-			Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(e);
+		finally
+		{
+			if (!originalFocus) canvas.setFocusable(false);
 		}
 	}
 
 	/**
-	 * Send a key event, choosing the method based on whether the game is minimized
-	 * @param id
-	 * @param keyCode
-	 * @param keyChar
+	 * Dispatches a low-level KeyEvent to the canvas after a specified delay.
+	 *
+	 * @param id       the KeyEvent type (e.g. KEY_TYPED, KEY_PRESSED, etc.)
+	 * @param keyCode  the key code from {@link KeyEvent}
+	 * @param keyChar  the character to type, if applicable
+	 * @param delay    the delay in milliseconds before the event time is set
 	 */
-	private static void sendKey(int id, int keyCode, char keyChar) {
-		if (isMinimized()) {
-			dispatchDirect(id, keyCode, keyChar); // works while minimized
-		} else {
-			postNormal(id, keyCode, keyChar);
-		}
+	private static void dispatchKeyEvent(int id, int keyCode, char keyChar, int delay)
+	{
+		KeyEvent event = new KeyEvent(
+				getCanvas(),
+				id,
+				System.currentTimeMillis() + delay,
+				0,
+				keyCode,
+				keyChar
+		);
+		getCanvas().dispatchEvent(event);
 	}
 
 	/**
-	 * Hold down a key
-	 * @param keyCode
+	 * Types out a string character-by-character using KEY_TYPED events.
+	 * Each character is sent with a short randomized delay and sleep between characters.
+	 *
+	 * @param word the string to type into the game
 	 */
-	public static void keyHold(int keyCode) {
-		sendKey(KeyEvent.KEY_PRESSED, keyCode, KeyEvent.CHAR_UNDEFINED);
+	public static void typeString(final String word)
+	{
+		withFocusCanvas(() -> {
+			for (char c : word.toCharArray())
+			{
+				int delay = Rs2Random.between(20, 200);
+				dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, c, delay);
+				Global.sleep(100, 200);
+			}
+		});
 	}
 
 	/**
-	 * Release a held key
-	 * @param keyCode
+	 * Simulates pressing a single character using a KEY_TYPED event.
+	 *
+	 * @param key the character to press
 	 */
-	public static void keyRelease(int keyCode) {
-		sendKey(KeyEvent.KEY_RELEASED, keyCode, KeyEvent.CHAR_UNDEFINED);
+	public static void keyPress(final char key)
+	{
+		withFocusCanvas(() -> {
+			int delay = Rs2Random.between(20, 200);
+			dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, key, delay);
+		});
 	}
 
 	/**
-	 * Press and release a key
-	 * @param keyCode
+	 * Simulates holding the Shift key using a KEY_PRESSED event.
 	 */
-	public static void keyPress(int keyCode) {
-		sendKey(KeyEvent.KEY_PRESSED, keyCode, KeyEvent.CHAR_UNDEFINED);
-		Global.sleep(10, 20);
-		sendKey(KeyEvent.KEY_RELEASED, keyCode, KeyEvent.CHAR_UNDEFINED);
+	public static void holdShift()
+	{
+		withFocusCanvas(() -> {
+			int delay = Rs2Random.between(20, 200);
+			dispatchKeyEvent(KeyEvent.KEY_PRESSED, KeyEvent.VK_SHIFT, CHAR_UNDEFINED, delay);
+		});
 	}
 
 	/**
-	 * Type a character (for text input)
-	 * @param ch
+	 * Simulates releasing the Shift key using a KEY_RELEASED event.
 	 */
-	public static void typeChar(char ch) {
-		sendKey(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, ch);
+	public static void releaseShift()
+	{
+		withFocusCanvas(() -> {
+			int delay = Rs2Random.between(20, 200);
+			dispatchKeyEvent(KeyEvent.KEY_RELEASED, KeyEvent.VK_SHIFT, CHAR_UNDEFINED, delay);
+		});
 	}
 
 	/**
-	 * Type a string (for text input)
-	 * @param s
+	 * Simulates holding down a key using a KEY_PRESSED event.
+	 *
+	 * @param key the key code from {@link KeyEvent}
 	 */
-	public static void typeString(String s) {
-		for (int i = 0; i < s.length(); i++) {
-			typeChar(s.charAt(i));
-			Global.sleep(30, 80);
-		}
+	public static void keyHold(int key)
+	{
+		withFocusCanvas(() ->
+				dispatchKeyEvent(KeyEvent.KEY_PRESSED, key, CHAR_UNDEFINED, 0)
+		);
 	}
 
 	/**
-	 * Press the Enter key
+	 * Simulates releasing a key using a KEY_RELEASED event.
+	 *
+	 * @param key the key code from {@link KeyEvent}
 	 */
-	public static void enter() {
-		sendKey(KeyEvent.KEY_PRESSED, KeyEvent.VK_ENTER, KeyEvent.CHAR_UNDEFINED);
-		Global.sleep(10, 20);
-		sendKey(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, '\n');
-		Global.sleep(5, 10);
-		sendKey(KeyEvent.KEY_RELEASED, KeyEvent.VK_ENTER, KeyEvent.CHAR_UNDEFINED);
+	public static void keyRelease(int key)
+	{
+		withFocusCanvas(() -> {
+			int delay = Rs2Random.between(20, 200);
+			dispatchKeyEvent(KeyEvent.KEY_RELEASED, key, CHAR_UNDEFINED, delay);
+		});
+	}
+
+	/**
+	 * Simulates pressing and releasing a key in quick succession.
+	 *
+	 * @param key the key code from {@link KeyEvent}
+	 */
+	public static void keyPress(int key)
+	{
+		keyHold(key);
+		keyRelease(key);
+	}
+
+	/**
+	 * Simulates pressing the Enter key.
+	 * If the player is not logged in, this uses KEY_TYPED to avoid auto-login triggers.
+	 */
+	public static void enter()
+	{
+		keyPress(KeyEvent.VK_ENTER);
+		dispatchKeyEvent(KeyEvent.KEY_RELEASED, KeyEvent.VK_ENTER, CHAR_UNDEFINED, 10);
+
+		// This is to make sure the enter event gets released, because for some reason it
+		// stays pressed and auto logs for jagex accounts
+		resetEnter();
+
+	}
+
+	/**
+	 * Sends a KEY_TYPED event for the Enter key to ensure it is released.
+	 */
+	private static void resetEnter() {
+		KeyEvent event3 = new KeyEvent(
+				getCanvas(),
+				KeyEvent.KEY_TYPED,
+				System.currentTimeMillis() + 10,
+				0,
+				KeyEvent.VK_UNDEFINED,
+				'\n'
+		);
+		getCanvas().dispatchEvent(event3);
 	}
 }
