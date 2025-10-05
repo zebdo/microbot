@@ -54,10 +54,6 @@ public class Rs2InventorySetup {
 			inventorySetup = MInventorySetupsPlugin.getInventorySetups().stream().filter(Objects::nonNull).filter(x -> x.getName().equals("default")).findFirst().orElse(null);
 		}
 		_mainScheduler = mainScheduler;
-        if (inventorySetup == null) {
-            Microbot.showMessage("Inventory load with name " + name + " not found!", 10);
-			Microbot.pauseAllScripts.compareAndSet(false, true);
-        }
     }
 
     /**
