@@ -325,6 +325,7 @@ public class MInventorySetupsPlugin extends Plugin
 			{
 				dataManager.loadConfig();
 				SwingUtilities.invokeLater(() -> panel.redrawOverviewPanel(true));
+				addInventorySetup("default");
 			});
 
 			return true;
