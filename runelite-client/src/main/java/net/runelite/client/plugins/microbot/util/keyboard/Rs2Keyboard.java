@@ -8,120 +8,135 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 
 /**
- * Utility class for simulating keyboard input.
+ * Utility class for simulating keyboard input
  */
 public final class Rs2Keyboard {
-	/**
-	 * Private constructor to prevent instantiation.
-	 */
 	private Rs2Keyboard() {}
 
 	/**
-	 * Get the game canvas.
+	 * Get the game canvas
 	 * @return
 	 */
-	private static Canvas canvas() { return Microbot.getClient().getCanvas(); }
+	private static Canvas canvas() {
+		return Microbot.getClient().getCanvas();
+	}
 
 	/**
-	 * Run an action with the canvas focused, restoring previous focus state afterwards.
-	 * @param action
+	 * Get the game frame
+	 * @return
 	 */
-	private static void withFocusedCanvas(Runnable action) {
-		Canvas c = canvas();
-		boolean wasFocusable = c.isFocusable();
-		boolean hadFocus = c.isFocusOwner();
-		if (!wasFocusable) c.setFocusable(true);
-		if (!hadFocus)     c.requestFocusInWindow();
-		try { action.run(); }
-		finally {
-			if (!wasFocusable) c.setFocusable(false);
+	private static Frame frame() {
+		Window w = SwingUtilities.getWindowAncestor(canvas());
+		if (w instanceof Frame) {
+			return (Frame) w;
 		}
+		return null;
 	}
 
 	/**
-	 * Post an event to the AWT event queue.
-	 * @param e
+	 * Check if the game is iconified (minimized)
+	 * @return
 	 */
-	private static void post(KeyEvent e) {
-		// Safe from any thread; posts into AWT event queue
-		Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(e);
+	private static boolean isMinimized() {
+		Frame f = frame();
+		return f != null && (f.getExtendedState() & Frame.ICONIFIED) != 0;
 	}
 
 	/**
-	 * Fire a keyboard event on the canvas.
+	 * Directly dispatch a KeyEvent to the canvas
 	 * @param id
 	 * @param keyCode
 	 * @param keyChar
 	 */
-	private static void fire(int id, int keyCode, char keyChar) {
+	private static void dispatchDirect(int id, int keyCode, char keyChar) {
+		long now = System.currentTimeMillis();
+		KeyEvent e = new KeyEvent(canvas(), id, now, 0, keyCode, keyChar);
+		canvas().dispatchEvent(e);
+	}
+
+	/**
+	 * Post a KeyEvent to the system event queue
+	 * @param id
+	 * @param keyCode
+	 * @param keyChar
+	 */
+	private static void postNormal(int id, int keyCode, char keyChar) {
 		long now = System.currentTimeMillis();
 		KeyEvent e = new KeyEvent(canvas(), id, now, 0, keyCode, keyChar);
 		if (SwingUtilities.isEventDispatchThread()) {
-			// Dispatch directly if on EDT
 			canvas().dispatchEvent(e);
 		} else {
-			post(e);
+			Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(e);
 		}
 	}
 
 	/**
-	 * Type a string into the focused canvas, one character at a time.
-	 * @param s
+	 * Send a key event, choosing the method based on whether the game is minimized
+	 * @param id
+	 * @param keyCode
+	 * @param keyChar
 	 */
-	public static void typeString(String s) {
-		withFocusedCanvas(() -> {
-			for (char ch : s.toCharArray()) {
-				// For printable characters, send TYPED only
-				fire(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, ch);
-				Global.sleep(30, 80);
-			}
-		});
+	private static void sendKey(int id, int keyCode, char keyChar) {
+		if (isMinimized()) {
+			dispatchDirect(id, keyCode, keyChar); // works while minimized
+		} else {
+			postNormal(id, keyCode, keyChar);
+		}
 	}
 
 	/**
-	 * Hold a key down on the focused canvas.
+	 * Hold down a key
 	 * @param keyCode
 	 */
 	public static void keyHold(int keyCode) {
-		withFocusedCanvas(() -> fire(KeyEvent.KEY_PRESSED, keyCode, KeyEvent.CHAR_UNDEFINED));
+		sendKey(KeyEvent.KEY_PRESSED, keyCode, KeyEvent.CHAR_UNDEFINED);
 	}
 
 	/**
-	 * Release a key on the focused canvas.
+	 * Release a held key
 	 * @param keyCode
 	 */
 	public static void keyRelease(int keyCode) {
-		withFocusedCanvas(() -> fire(KeyEvent.KEY_RELEASED, keyCode, KeyEvent.CHAR_UNDEFINED));
+		sendKey(KeyEvent.KEY_RELEASED, keyCode, KeyEvent.CHAR_UNDEFINED);
 	}
 
 	/**
-	 * Press (hold and release) a key on the focused canvas.
+	 * Press and release a key
 	 * @param keyCode
 	 */
 	public static void keyPress(int keyCode) {
-		withFocusedCanvas(() -> {
-			fire(KeyEvent.KEY_PRESSED, keyCode, KeyEvent.CHAR_UNDEFINED);
-			Global.sleep(20, 40); // real delay to preserve ordering
-			fire(KeyEvent.KEY_RELEASED, keyCode, KeyEvent.CHAR_UNDEFINED);
-		});
+		sendKey(KeyEvent.KEY_PRESSED, keyCode, KeyEvent.CHAR_UNDEFINED);
+		Global.sleep(10, 20);
+		sendKey(KeyEvent.KEY_RELEASED, keyCode, KeyEvent.CHAR_UNDEFINED);
 	}
 
 	/**
-	 * Press (hold and release) a key on the focused canvas, with a character.
+	 * Type a character (for text input)
+	 * @param ch
 	 */
-	public static void holdShift()    { keyHold(KeyEvent.VK_SHIFT); }
-	public static void releaseShift() { keyRelease(KeyEvent.VK_SHIFT); }
+	public static void typeChar(char ch) {
+		sendKey(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, ch);
+	}
 
 	/**
-	 * Press (hold and release) the Enter key on the focused canvas.
+	 * Type a string (for text input)
+	 * @param s
+	 */
+	public static void typeString(String s) {
+		for (int i = 0; i < s.length(); i++) {
+			typeChar(s.charAt(i));
+			Global.sleep(30, 80);
+		}
+	}
+
+	/**
+	 * Press the Enter key
 	 */
 	public static void enter() {
-		withFocusedCanvas(() -> {
-			fire(KeyEvent.KEY_PRESSED,  KeyEvent.VK_ENTER, KeyEvent.CHAR_UNDEFINED);
-			Global.sleep(20, 40);
-			fire(KeyEvent.KEY_TYPED,    KeyEvent.VK_UNDEFINED, '\n');
-			Global.sleep(5, 10);
-			fire(KeyEvent.KEY_RELEASED, KeyEvent.VK_ENTER, KeyEvent.CHAR_UNDEFINED);
-		});
+		sendKey(KeyEvent.KEY_PRESSED, KeyEvent.VK_ENTER, KeyEvent.CHAR_UNDEFINED);
+		Global.sleep(10, 20);
+		sendKey(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, '\n');
+		Global.sleep(5, 10);
+		sendKey(KeyEvent.KEY_RELEASED, KeyEvent.VK_ENTER, KeyEvent.CHAR_UNDEFINED);
 	}
 }
