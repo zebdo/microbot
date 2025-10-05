@@ -6,7 +6,6 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.shortestpath.components.CheckboxPanel;
 import net.runelite.client.plugins.microbot.shortestpath.components.EnumListPanel;
 import net.runelite.client.plugins.microbot.shortestpath.components.JewelleryBoxPanel;
-import net.runelite.client.plugins.microbot.util.cache.Rs2PohCache;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
 import net.runelite.client.plugins.microbot.util.poh.PohTransport;
 import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
@@ -22,6 +21,9 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
+
+import static net.runelite.client.plugins.microbot.shortestpath.TransportType.FAIRY_RING;
+import static net.runelite.client.plugins.microbot.shortestpath.TransportType.SPIRIT_TREE;
 
 public class PohPanel extends PluginPanel {
 
@@ -163,7 +165,7 @@ public class PohPanel extends PluginPanel {
         pohTeleports.addAll(instance.jewelleryBoxPanel.getTeleports());
 
         if (instance.checkboxPanel.fairyRingCb.isSelected()) {
-            Map<WorldPoint, Set<Transport>> fairyRings = Rs2PohCache.createFairyRingMap(exitPortal, allTransports);
+            Map<WorldPoint, Set<Transport>> fairyRings = createFairyRingMap(exitPortal, allTransports);
             for (var entry : fairyRings.entrySet()) {
                 pohTransports
                         .computeIfAbsent(entry.getKey(), k -> new HashSet<>())
@@ -171,7 +173,7 @@ public class PohPanel extends PluginPanel {
             }
         }
         if (instance.checkboxPanel.spiritTreeCb.isSelected()) {
-            Map<WorldPoint, Set<Transport>> spiritTrees = Rs2PohCache.createSpiritTreeMap(exitPortal, allTransports);
+            Map<WorldPoint, Set<Transport>> spiritTrees = createSpiritTreeMap(exitPortal, allTransports);
             for (var entry : spiritTrees.entrySet()) {
                 pohTransports
                         .computeIfAbsent(entry.getKey(), k -> new HashSet<>())
@@ -183,6 +185,77 @@ public class PohPanel extends PluginPanel {
         ).collect(Collectors.toList()));
 
         return pohTransports;
+    }
+
+
+    /**
+     * Connecting the PoH Fairy ring to all other fairy rings and vise versa
+     *
+     * @param pohFairyRing  position of the PoH fairy ring (exitPortal until mapping inside Poh)
+     * @param transportsMap map from which currently present fairy rings are found
+     * @return new map with PoH fairy rings transports added
+     */
+    public static Map<WorldPoint, Set<Transport>> createFairyRingMap(
+            WorldPoint pohFairyRing,
+            Map<WorldPoint, Set<Transport>> transportsMap
+    ) {
+        //Only used to build actual transports (needs ORIGIN and DESTINATION same)
+        Transport pohFairyTransport = new Transport(pohFairyRing, pohFairyRing, "DIQ", FAIRY_RING, true, 5);
+        return createTransportsToPoh(pohFairyTransport, transportsMap);
+    }
+
+    /**
+     * Connecting the PoH spirit tree to all other spirit tree and vise versa
+     *
+     * @param pohSpiritTree position of the PoH spirit tree (exitPortal until mapping inside Poh)
+     * @param transportsMap map from which currently present spirit tree transports are found
+     * @return new map with PoH fairy spirit tree transports added
+     */
+    public static Map<WorldPoint, Set<Transport>> createSpiritTreeMap(
+            WorldPoint pohSpiritTree,
+            Map<WorldPoint, Set<Transport>> transportsMap
+    ) {
+        //Only used to build actual transports (needs ORIGIN and DESTINATION same)
+        Transport pohSpiritTransport = new Transport(pohSpiritTree, pohSpiritTree, "C: Your house", SPIRIT_TREE, true, 5);
+        return createTransportsToPoh(pohSpiritTransport, transportsMap);
+    }
+
+    /**
+     * Uses a template (PoH) transport to connect all transports to
+     * other transports of the same type, both by adding routes from the PoH transport to
+     * the existing transports and vice versa.
+     *
+     * @param pohTempTransport the transport object representing the PoH transport to be connected.
+     *                         The TransportType is used to filter for existing transports
+     *                         The origin and destination are used to build the connecting transport
+     * @param transportsMap a map of existing transports, where each key represents a WorldPoint
+     *                      and the value is a set of transports originating or terminating at
+     *                      that point
+     * @return a new map containing the updated set of transports where connections have been
+     *         added between the provided PoH transport and existing transports of the same type
+     */
+    public static Map<WorldPoint, Set<Transport>> createTransportsToPoh(Transport pohTempTransport, Map<WorldPoint, Set<Transport>> transportsMap) {
+        WorldPoint pohExitPortal = pohTempTransport.getOrigin();
+        TransportType type = pohTempTransport.getType();
+        Map<WorldPoint, Set<Transport>> newTransportsMap = new HashMap<>();
+        transportsMap.entrySet().stream()
+                .filter(e -> e.getValue().stream().anyMatch(t -> t.getType() == type)).findFirst().ifPresent(e -> {
+                    WorldPoint existingRingPoint = e.getKey();
+                    for (Transport existingRingTransport : new HashSet<>(e.getValue())) {
+                        if (existingRingTransport.getType() != type) continue;
+                        // add from poh
+                        newTransportsMap
+                                .computeIfAbsent(pohExitPortal, k -> new HashSet<>())
+                                .add(new Transport(pohTempTransport, existingRingTransport));
+
+                        // add to poh
+                        newTransportsMap
+                                .computeIfAbsent(existingRingPoint, k -> new HashSet<>())
+                                .add(new Transport(existingRingTransport, pohTempTransport));
+                    }
+                });
+
+        return newTransportsMap;
     }
 
 }

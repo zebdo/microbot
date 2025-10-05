@@ -71,7 +71,7 @@ public class LocationOverlay extends OverlayPanel {
 
         panelComponent.getChildren().add(LineComponent.builder()
                 .left("World")
-                .right(worldPoint.getX() + ", " + worldPoint.getY() + ", " + client.getPlane())
+                .right(worldPoint.getX() + ", " + worldPoint.getY() + ", " + worldPoint.getPlane())
                 .build());
 
         panelComponent.getChildren().add(LineComponent.builder()
