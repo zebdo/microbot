@@ -18,10 +18,12 @@ public class MicrobotPluginClassLoader extends URLClassLoader implements Reflect
     @Setter
     private MethodHandles.Lookup lookup;
 
-	private final ClassLoader parent;
+    private final File jarFile;
+    private final ClassLoader parent;
 
     public MicrobotPluginClassLoader(File jarFile, ClassLoader parent) throws IOException {
         super(new URL[]{jarFile.toURI().toURL()}, null);
+        this.jarFile = jarFile;
         this.parent = parent;
         ReflectUtil.installLookupHelper(this);
     }
