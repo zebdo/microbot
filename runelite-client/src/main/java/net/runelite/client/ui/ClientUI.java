@@ -569,13 +569,13 @@ public class ClientUI
 			questIconOff = net.runelite.client.plugins.microbot.questhelper.tools.Icon.QUEST_ICON_OFF.getImage();
 			questHelperNavBtn = toolbarPanel.add(
 				NavigationButton.builder()
-					.icon(configManager.getConfiguration(QuestHelperConfig.QUEST_HELPER_GROUP, "TurnOn", Boolean.class) ? questIconOff : questIconOn)
+					.icon(configManager.getConfiguration(QuestHelperConfig.QUEST_HELPER_GROUP, "TurnOn", Boolean.class) ? questIconOn : questIconOff)
 					.tooltip(configManager.getConfiguration(QuestHelperConfig.QUEST_HELPER_GROUP, "TurnOn", Boolean.class) ? "Disable 'Semi-Auto' Questing" : "Enable 'Semi-Auto' Questing")
 					.onClick(() ->
 					{
 						boolean isEnabled = configManager.getConfiguration(QuestHelperConfig.QUEST_HELPER_GROUP, "TurnOn", Boolean.class);
 						configManager.setConfiguration(QuestHelperConfig.QUEST_HELPER_GROUP, "TurnOn", !isEnabled);
-						questHelperNavBtn.setIcon(new ImageIcon(!isEnabled ? questIconOff : questIconOn ));
+						questHelperNavBtn.setIcon(new ImageIcon(!isEnabled ? questIconOn : questIconOff ));
 						questHelperNavBtn.setToolTipText(!isEnabled ? "Disable 'Semi-Auto' Questing" : "Enable 'Semi-Auto' Questing");
 						if (isEnabled) Rs2Walker.setTarget(null);
 					})
