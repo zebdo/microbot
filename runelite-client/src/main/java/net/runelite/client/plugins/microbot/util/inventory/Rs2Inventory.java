@@ -1892,13 +1892,13 @@ public class Rs2Inventory {
      */
     private static void invokeMenu(Rs2ItemModel rs2Item, String action, int providedIdentifier) {
         if (rs2Item == null) return;
-
         Rs2Tab.switchToInventoryTab();
         Microbot.status = action + " " + rs2Item.getName();
 
         int param0;
         int param1;
         int identifier = -1;
+        String target = rs2Item.getName();
         MenuAction menuAction = MenuAction.CC_OP;
         Widget[] inventoryWidgets;
         param0 = rs2Item.getSlot();
@@ -1939,7 +1939,16 @@ public class Rs2Inventory {
                     itemWidget.getActions() :
                     rs2Item.getInventoryActions();
 
-            identifier = providedIdentifier == -1 ? indexOfIgnoreCase(stripColTags(actions), action) + 1 : providedIdentifier;
+            int simpleIndex = indexOfIgnoreCase(stripColTags(actions), action);
+            if (simpleIndex != -1) {
+                identifier = simpleIndex + 1;
+            } else {
+                Map.Entry<String, Integer> subActionMap = rs2Item.getIndexOfSubAction(action);
+                // The main menu index depends on the inventory interface from which this item is interacted with
+                int mainMenuIndex = java.util.Arrays.asList(actions).indexOf(subActionMap.getKey()) + 1;
+                identifier = NewMenuEntry.findIdentifier(subActionMap.getValue() + 1, mainMenuIndex);
+                target = "";
+            }
         }
 
 
@@ -1951,7 +1960,7 @@ public class Rs2Inventory {
             menuAction = MenuAction.WIDGET_TARGET_ON_WIDGET;
         }
 
-        Microbot.doInvoke(new NewMenuEntry(action, param0, param1, menuAction.getId(), identifier, rs2Item.getId(), rs2Item.getName()), (itemBounds(rs2Item) == null) ? new Rectangle(1, 1) : itemBounds(rs2Item));
+        Microbot.doInvoke(new NewMenuEntry(action, param0, param1, menuAction.getId(), identifier, rs2Item.getId(), target), (itemBounds(rs2Item) == null) ? new Rectangle(1, 1) : itemBounds(rs2Item));
 
         if (action.equalsIgnoreCase("destroy")) {
             sleepUntil(() -> Rs2Widget.isWidgetVisible(584, 0));
