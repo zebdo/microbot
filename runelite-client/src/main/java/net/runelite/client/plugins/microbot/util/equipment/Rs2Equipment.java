@@ -15,12 +15,7 @@ import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import org.slf4j.event.Level;
 
 import java.awt.Rectangle;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Predicate;
 import java.util.stream.Stream;
 
@@ -313,6 +308,7 @@ public class Rs2Equipment {
         int param0 = -1;
         int param1 = -1;
         int identifier;
+        String target = rs2Item.getName();
         MenuAction menuAction = MenuAction.CC_OP;
         if (action.equalsIgnoreCase("remove")) {
             identifier = 1;
@@ -325,9 +321,20 @@ public class Rs2Equipment {
                     break;
                 }
             }
+            // We could not find the action in the equipment actions, so we try to find it in the sub-menu actions
             if (identifier == -1) {
-                Microbot.log("Item=" + rs2Item.getName() + " does not have action=" + action + ". Actions=" + Arrays.toString(actions.stream().filter(Objects::nonNull).toArray()), Level.ERROR);
-                return;
+                Map.Entry<String, Integer> subMenuEntry = rs2Item.getIndexOfSubAction(action);
+                if (subMenuEntry == null) {
+                    Microbot.log("Item=" + rs2Item.getName() + " does not have a subaction=" + action, Level.ERROR);
+                    return;
+                }
+                int mainMenuIndex = actions.indexOf(subMenuEntry.getKey());
+                if (mainMenuIndex < 0) {
+                    Microbot.log("Cannot find action=%s, in main actions=%s, mainMenuIndex=%s", subMenuEntry.getKey(), String.join(", ", actions), mainMenuIndex);
+                    return;
+                }
+                target = "";
+                identifier = NewMenuEntry.findIdentifier(subMenuEntry.getValue() + 1, mainMenuIndex + 2);
             }
         }
 
@@ -355,7 +362,7 @@ public class Rs2Equipment {
             param1 = 25362456;
         }
 
-        Microbot.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), identifier, -1, rs2Item.getName()), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
+        Microbot.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), identifier, -1, target), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
         //Rs2Reflection.invokeMenu(param0, param1, menuAction.getId(), identifier, rs2Item.id, action, target, -1, -1);
     }
 }

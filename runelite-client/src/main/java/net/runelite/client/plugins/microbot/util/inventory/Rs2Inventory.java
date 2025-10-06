@@ -1206,20 +1206,6 @@ public class Rs2Inventory {
     public static boolean interact(int id, String action) {
         return interact(get(id), action);
     }
-    /**
-     * Interacts with an item with the specified ID in the inventory using the specified action.
-     *
-     * @param id     The ID of the item to interact with.
-     * @param action The action to perform on the item.
-     *
-     * @return True if the interaction was successful, false otherwise.
-     */
-    public static boolean interact(int id, String action, int identifier) {
-        final Rs2ItemModel rs2Item = get(id);
-        if (rs2Item == null) return false;
-        invokeMenu(rs2Item, action, identifier);
-        return true;
-    }
 
     /**
      * Interacts with an item with the specified name in the inventory using the first available action.
@@ -1888,9 +1874,8 @@ public class Rs2Inventory {
      *
      * @param rs2Item            The current item to interact with.
      * @param action             The action to be used on the item.
-     * @param providedIdentifier The identifier to use; if -1, compute using the old logic.
      */
-    private static void invokeMenu(Rs2ItemModel rs2Item, String action, int providedIdentifier) {
+    private static void invokeMenu(Rs2ItemModel rs2Item, String action) {
         if (rs2Item == null) return;
         Rs2Tab.switchToInventoryTab();
         Microbot.status = action + " " + rs2Item.getName();
@@ -1943,10 +1928,15 @@ public class Rs2Inventory {
             if (simpleIndex != -1) {
                 identifier = simpleIndex + 1;
             } else {
+                // We could not find the action in the item widget's actions, so we try to find it in the sub-menu actions
                 Map.Entry<String, Integer> subActionMap = rs2Item.getIndexOfSubAction(action);
+                if (subActionMap == null) {
+                    Microbot.log("Item=" + rs2Item.getName() + " does not have action=" + action, Level.ERROR);
+                    return;
+                }
                 // The main menu index depends on the inventory interface from which this item is interacted with
-                int mainMenuIndex = java.util.Arrays.asList(actions).indexOf(subActionMap.getKey()) + 1;
-                identifier = NewMenuEntry.findIdentifier(subActionMap.getValue() + 1, mainMenuIndex);
+                int mainMenuIndex = java.util.Arrays.asList(actions).indexOf(subActionMap.getKey());
+                identifier = NewMenuEntry.findIdentifier(subActionMap.getValue() + 1, mainMenuIndex + 1);
                 target = "";
             }
         }
@@ -1968,16 +1958,6 @@ public class Rs2Inventory {
         }
     }
 
-
-    /**
-     * Method executes menu actions
-     *
-     * @param rs2Item Current item to interact with
-     * @param action  Action used on the item
-     */
-    private static void invokeMenu(Rs2ItemModel rs2Item, String action) {
-        invokeMenu(rs2Item, action, -1);
-    }
 
     public static Widget getInventory() {
         final int BANK_PIN_INVENTORY_ITEM_CONTAINER = 17563648;
