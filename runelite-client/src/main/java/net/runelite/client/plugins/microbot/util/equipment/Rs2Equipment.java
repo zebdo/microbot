@@ -330,7 +330,7 @@ public class Rs2Equipment {
                 }
                 int mainMenuIndex = actions.indexOf(subMenuEntry.getKey());
                 if (mainMenuIndex < 0) {
-                    Microbot.log("Cannot find action=%s, in main actions=%s, mainMenuIndex=%s", subMenuEntry.getKey(), String.join(", ", actions), mainMenuIndex);
+                    Microbot.log("Cannot find action=%s, in main actions=%s, mainMenuIndex=%s", subMenuEntry.getKey(), String.join(", ", actions), mainMenuIndex, Level.ERROR);
                     return;
                 }
                 target = "";
@@ -363,6 +363,5 @@ public class Rs2Equipment {
         }
 
         Microbot.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), identifier, -1, target), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
-        //Rs2Reflection.invokeMenu(param0, param1, menuAction.getId(), identifier, rs2Item.id, action, target, -1, -1);
     }
 }

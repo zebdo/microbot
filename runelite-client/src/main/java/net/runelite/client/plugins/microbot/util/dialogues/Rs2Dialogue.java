@@ -9,6 +9,7 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -84,7 +85,7 @@ public class Rs2Dialogue {
      *
      * @return true if the "Continue" option is visible in either sprite-based dialogue, false otherwise.
      */
-    
+
     private static boolean hasSpriteContinue() {
         return Rs2Widget.isWidgetVisible(InterfaceID.DIALOG_SPRITE, 0) || Rs2Widget.isWidgetVisible(InterfaceID.DIALOG_SPRITE, 3) || Rs2Widget.isWidgetVisible(InterfaceID.DIALOG_DOUBLE_SPRITE, 4);
     }
@@ -138,10 +139,10 @@ public class Rs2Dialogue {
     public static boolean hasSelectAnOption() {
         boolean isWidgetVisible = Rs2Widget.isWidgetVisible(InterfaceID.DIALOG_OPTION, 1);
         if (!isWidgetVisible) return false;
-        
+
         Widget widget = Rs2Widget.getWidget(InterfaceID.DIALOG_OPTION, 1);
         if (widget == null) return false;
-        
+
         return widget.getDynamicChildren() != null;
     }
 
@@ -338,6 +339,36 @@ public class Rs2Dialogue {
     }
 
     /**
+     * Attempts to click on a dialogue option based on the specified text(s). The method
+     * performs a partial matching depending on the provided parameter and will return
+     * whether the operation was successful.
+     *
+     * @param texts varargs parameter representing the*/
+    public static boolean clickOption(String... texts){
+        return clickOption(false, texts);
+    }
+
+    /**
+     * Attempts to click on a dialogue option based on the specified text(s). The method can
+     * perform an exact or partial matching depending on the provided parameter and will return
+     * whether the operation was successful.
+     *
+     * @param exact specifies whether the matching should be exact (true) or partial (false).
+     * @param texts varargs parameter representing the*/
+    public static boolean clickOption(boolean exact, String... texts){
+        if (!hasSelectAnOption()) return false;
+        List<Widget> options = getDialogueOptions();
+        if(options.isEmpty()) return false;
+
+        Widget dialogueOption = options.stream()
+                .filter(dialop -> exact ? Arrays.stream(texts).anyMatch(t -> dialop.getText().equalsIgnoreCase(t)) : Arrays.stream(texts).anyMatch(t -> dialop.getText().toLowerCase().contains(t.toLowerCase())))
+                .findFirst()
+                .orElse(null);
+        if (dialogueOption == null) return false;
+        return Rs2Widget.clickWidget(dialogueOption);
+    }
+
+    /**
      * Attempts to click on a dialogue option widget with the specified text.
      *
      * <p>This method searches for a widget that contains the specified option text within the dialogue.
@@ -449,7 +480,7 @@ public class Rs2Dialogue {
     public static boolean sleepUntilHasQuestion(String text) {
         return sleepUntilHasQuestion(text, false);
     }
-    
+
     /**
      * Checks if the combination dialogue widget is currently visible.
      *
@@ -597,11 +628,11 @@ public class Rs2Dialogue {
         if (!hasCombinationDialogue()) return false;
 
         Widget option = getCombinationOption(text, exact);
-        
+
         if (option == null) return false;
-        
+
         return Rs2Widget.clickWidget(option);
-        
+
     }
 
     /**
@@ -627,7 +658,7 @@ public class Rs2Dialogue {
      * Pauses the current thread until a specific combination dialogue option becomes available.
      *
      * <p>This method continuously checks for a combination dialogue option that matches the specified
-     * text. If an exact match is required, it will search for an option that exactly matches the text; 
+     * text. If an exact match is required, it will search for an option that exactly matches the text;
      * otherwise, it will look for an option containing the text.
      *
      * @param text  the text to search for within the combination dialogue options.
@@ -649,7 +680,7 @@ public class Rs2Dialogue {
     public static boolean sleepUntilHasCombinationOption(String text) {
         return sleepUntilHasCombinationOption(text, false);
     }
-    
+
     /**
      * Determines whether the game is currently in a cutscene.
      * <p>

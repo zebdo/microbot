@@ -174,7 +174,7 @@ public class Rs2ItemModel {
 
     /**
      * Retrieves the index of a sub-action from the sub-actions list, matching the given action.
-     *
+     * <p>
      * This method searches through the sub-actions of the item, attempting to find a match
      * for the specified action. If a match is found, it returns the corresponding main action
      * and index of the sub-action. If no match is found or if the sub-actions are unavailable,
@@ -182,7 +182,7 @@ public class Rs2ItemModel {
      *
      * @param action The action to search for in the sub-actions list. Case-insensitive comparison is used.
      * @return A Map.Entry containing the inventory action (String) and the index of the sub-action (Integer)
-     *         if a match is found; otherwise, returns a Map.Entry with null and -1.
+     * if a match is found; otherwise, returns a Map.Entry with null and -1.
      */
     public Map.Entry<String, Integer> getIndexOfSubAction(String action) {
         if (action == null) return Map.entry(null, -1);
@@ -567,5 +567,39 @@ public class Rs2ItemModel {
             addEquipmentActions(itemComposition);
             return true;
         });
+    }
+
+    /**
+     * Retrieves an inventory action that contains the specified substring, ignoring case sensitivity.
+     * Searches through all non-null inventory actions and returns the first match.
+     *
+     * @param partOfAction The substring to search for within the inventory actions. Case-insensitive comparison is used.
+     * @return The first matching inventory action that contains the specified substring, or null if no match is found.
+     */
+    public String getAction(String partOfAction) {
+        return Arrays.stream(getInventoryActions())
+                .filter(Objects::nonNull)
+                .filter(x -> x.toLowerCase().contains(partOfAction))
+                .findFirst().orElse(null);
+    }
+
+    /**
+     * Retrieves the most relevant action from a list of possible actions by matching them against
+     * the inventory actions of the item. The relevance is determined by the order of the given actions
+     * and their occurrence within the inventory actions.
+     *
+     * @param actions The list of actions to search for, provided as varargs. Null values will be ignored.
+     * @return The most relevant matching action from the inventory actions, or null if no match is found.
+     */
+    public String getActionFromList(List<String> actions) {
+        return Arrays.stream(getInventoryActions())
+                .filter(action -> action != null && actions.stream().anyMatch(keyword -> action.toLowerCase().contains(keyword.toLowerCase())))
+                .min(Comparator.comparingInt(action ->
+                        actions.stream()
+                                .filter(keyword -> action.toLowerCase().contains(keyword.toLowerCase()))
+                                .mapToInt(actions::indexOf)
+                                .findFirst()
+                                .orElse(Integer.MAX_VALUE)
+                )).orElse(null);
     }
 }
