@@ -32,7 +32,15 @@ public class Rs2Discord {
     public static boolean sendWebhookMessage(String bodyMessage, List<DiscordEmbed> embeds, List<String> files) {
         // Retrieve and validate the Discord Webhook URL
         String webHookUrl = Optional.ofNullable(getDiscordWebhookUrl())
+                .map(String::trim)
                 .filter(url -> !url.isEmpty())
+                .map(url -> {
+                    // Auto-fix URL if it doesn't have a scheme
+                    if (!url.startsWith("http://") && !url.startsWith("https://")) {
+                        return "https://" + url;
+                    }
+                    return url;
+                })
                 .orElseGet(() -> {
                     Microbot.log("The webhook URL is not configured in the RuneLite profile. Please check the configuration.");
                     return null;
@@ -69,19 +77,27 @@ public class Rs2Discord {
 
         RequestBody requestBody = builder.build();
 
-        // Build and execute the request
-        Request request = new Request.Builder()
-                .url(webHookUrl)
-                .post(requestBody)
-                .build();
+        try {
+            // Build and execute the request
+            Request request = new Request.Builder()
+                    .url(webHookUrl)
+                    .post(requestBody)
+                    .build();
 
-        try (Response response = httpClient.newCall(request).execute()) {
-            if (!response.isSuccessful()) {
-                Microbot.log("Failed to send Discord notification. Error Code: " + response.code());
+            try (Response response = httpClient.newCall(request).execute()) {
+                if (!response.isSuccessful()) {
+                    Microbot.log("Failed to send Discord notification. Error Code: " + response.code() 
+                            + " - URL marked as invalid: " + webHookUrl);
+                }
+                return response.isSuccessful();
             }
-            return response.isSuccessful();
+        } catch (IllegalArgumentException e) {
+            Microbot.log("Invalid Discord webhook URL format - URL marked as invalid: " + webHookUrl 
+                    + " - Error: " + e.getMessage());
+            return false;
         } catch (IOException e) {
-            Microbot.log("Error while sending Discord notification: " + e.getMessage());
+            Microbot.log("Error while sending Discord notification to URL: " + webHookUrl 
+                    + " - Error: " + e.getMessage());
             return false;
         }
     }

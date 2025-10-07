@@ -13,7 +13,6 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.shortestpath.*;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
-import net.runelite.client.plugins.microbot.util.cache.Rs2PohCache;
 import net.runelite.client.plugins.microbot.util.cache.Rs2SpiritTreeCache;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -24,7 +23,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
-
+import net.runelite.client.plugins.microbot.util.cache.Rs2SkillCache;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -302,7 +301,7 @@ public class PathfinderConfig {
         }
 
         // Add transports from PoH to somewhere in the world
-        for (var entry : Rs2PohCache.getAvailableTransportsMap(allTransports).entrySet()) {
+        for (var entry : PohPanel.getAvailableTransports(allTransports).entrySet()) {
             mergedTransports
                     .computeIfAbsent(entry.getKey(), k -> new HashSet<>())
                     .addAll(entry.getValue());
@@ -543,8 +542,14 @@ public class PathfinderConfig {
         int[] requiredLevels = transport.getSkillLevels();
         Skill[] skills = Skill.values();
         return IntStream.range(0, requiredLevels.length)
-                .filter(i -> requiredLevels[i] > 0)
-                .allMatch(i -> Microbot.getClient().getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
+            .filter(i -> requiredLevels[i] > 0)
+            .allMatch(i -> {
+                if (Microbot.isRs2CacheEnabled()) {
+                    return Rs2SkillCache.getBoostedSkillLevel(skills[i]) >= requiredLevels[i];
+                } else {
+                    return Microbot.getClient().getBoostedSkillLevel(skills[i]) >= requiredLevels[i];
+                }
+            });
     }
 
     /**
@@ -554,8 +559,14 @@ public class PathfinderConfig {
         int[] requiredLevels = restriction.getSkillLevels();
         Skill[] skills = Skill.values();
         return IntStream.range(0, requiredLevels.length)
-                .filter(i -> requiredLevels[i] > 0)
-                .allMatch(i -> Microbot.getClient().getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
+            .filter(i -> requiredLevels[i] > 0)
+            .allMatch(i -> {
+                if (Microbot.isRs2CacheEnabled()) {
+                    return Rs2SkillCache.getBoostedSkillLevel(skills[i]) >= requiredLevels[i];
+                } else {
+                    return Microbot.getClient().getBoostedSkillLevel(skills[i]) >= requiredLevels[i];
+                }
+            });
     }
 
     private void updateActionBasedOnQuestState(Transport transport) {
