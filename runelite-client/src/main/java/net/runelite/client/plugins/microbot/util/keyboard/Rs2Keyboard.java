@@ -2,12 +2,12 @@ package net.runelite.client.plugins.microbot.util.keyboard;
 
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.Global;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 
 import java.awt.*;
 import java.awt.event.KeyEvent;
 
 import static java.awt.event.KeyEvent.CHAR_UNDEFINED;
-import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 
 /**
  * Utility class for simulating keyboard input.
@@ -58,12 +58,12 @@ public class Rs2Keyboard
 	private static void dispatchKeyEvent(int id, int keyCode, char keyChar, int delay)
 	{
 		KeyEvent event = new KeyEvent(
-			getCanvas(),
-			id,
-			System.currentTimeMillis() + delay,
-			0,
-			keyCode,
-			keyChar
+				getCanvas(),
+				id,
+				System.currentTimeMillis() + delay,
+				0,
+				keyCode,
+				keyChar
 		);
 		getCanvas().dispatchEvent(event);
 	}
@@ -129,7 +129,7 @@ public class Rs2Keyboard
 	public static void keyHold(int key)
 	{
 		withFocusCanvas(() ->
-			dispatchKeyEvent(KeyEvent.KEY_PRESSED, key, CHAR_UNDEFINED, 0)
+				dispatchKeyEvent(KeyEvent.KEY_PRESSED, key, CHAR_UNDEFINED, 0)
 		);
 	}
 
@@ -163,12 +163,27 @@ public class Rs2Keyboard
 	 */
 	public static void enter()
 	{
-		// this is to avoid automatically login with jagex account when you are on the login screen
-		if (!Microbot.isLoggedIn()) {
-			dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, '\n', 0);
-			return;
-		}
-		
 		keyPress(KeyEvent.VK_ENTER);
+		dispatchKeyEvent(KeyEvent.KEY_RELEASED, KeyEvent.VK_ENTER, CHAR_UNDEFINED, 10);
+
+		// This is to make sure the enter event gets released, because for some reason it
+		// stays pressed and auto logs for jagex accounts
+		resetEnter();
+
+	}
+
+	/**
+	 * Sends a KEY_TYPED event for the Enter key to ensure it is released.
+	 */
+	private static void resetEnter() {
+		KeyEvent event3 = new KeyEvent(
+				getCanvas(),
+				KeyEvent.KEY_TYPED,
+				System.currentTimeMillis() + 10,
+				0,
+				KeyEvent.VK_UNDEFINED,
+				'\n'
+		);
+		getCanvas().dispatchEvent(event3);
 	}
 }

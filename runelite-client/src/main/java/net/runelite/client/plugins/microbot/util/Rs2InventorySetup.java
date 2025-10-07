@@ -1,16 +1,5 @@
 package net.runelite.client.plugins.microbot.util;
 
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.Comparator;
-import java.util.Optional;
-import java.util.Set;
-import java.util.function.Predicate;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Stream;
-import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -27,19 +16,20 @@ import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import org.slf4j.event.Level;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.ScheduledFuture;
+import java.util.function.Predicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
-import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 /**
  * Utility class for managing inventory setups in the Microbot plugin.
@@ -60,11 +50,10 @@ public class Rs2InventorySetup {
      */
     public Rs2InventorySetup(String name, ScheduledFuture<?> mainScheduler) {
         inventorySetup = MInventorySetupsPlugin.getInventorySetups().stream().filter(Objects::nonNull).filter(x -> x.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
-        _mainScheduler = mainScheduler;
         if (inventorySetup == null) {
-            Microbot.showMessage("Inventory load with name " + name + " not found!", 10);
-			Microbot.pauseAllScripts.compareAndSet(false, true);
-        }
+			inventorySetup = MInventorySetupsPlugin.getInventorySetups().stream().filter(Objects::nonNull).filter(x -> x.getName().equals("default")).findFirst().orElse(null);
+		}
+		_mainScheduler = mainScheduler;
     }
 
     /**
@@ -470,7 +459,7 @@ public class Rs2InventorySetup {
      * @return A list of valid inventory items.
      */
     public List<InventorySetupsItem> getInventoryItems() {
-        return inventorySetup.getInventory().stream().filter(x -> x.getId() != -1).collect(Collectors.toList());
+        return inventorySetup.getInventory().stream().filter(x ->  x != null && x.getId() != -1).collect(Collectors.toList());
     }
 
     /**
@@ -479,7 +468,7 @@ public class Rs2InventorySetup {
      * @return A list of valid equipment items.
      */
     public List<InventorySetupsItem> getEquipmentItems() {
-        return inventorySetup.getEquipment().stream().filter(x -> x.getId() != -1).collect(Collectors.toList());
+        return inventorySetup.getEquipment().stream().filter(x -> x != null && x.getId() != -1).collect(Collectors.toList());
     }
 
     /**
