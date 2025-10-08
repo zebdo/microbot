@@ -156,6 +156,15 @@ public class PohPanel extends PluginPanel {
         detectButton.setText("Detect available POH teleports");
     }
 
+    /**
+     * Retrieves a map of transports that take the player to the Player-Owned House (POH).
+     * This includes teleports and the external portal location of the house.
+     *
+     *
+     * @return A map where the key is the `WorldPoint` representing the origin of the transport
+     *         and the value is a set of `Transport` instances representing the available
+     *         methods of transportation to the inside of PoH.
+     */
     public static Map<WorldPoint, Set<Transport>> getTransportsToPoh() {
         HouseLocation location = HouseLocation.getHouseLocation();
         Map<WorldPoint, Set<Transport>> transportMap = new HashMap<>();
