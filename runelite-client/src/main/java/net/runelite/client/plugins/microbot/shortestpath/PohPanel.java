@@ -159,8 +159,11 @@ public class PohPanel extends PluginPanel {
     public static Map<WorldPoint, Set<Transport>> getTransportsToPoh() {
         HouseLocation location = HouseLocation.getHouseLocation();
         Map<WorldPoint, Set<Transport>> transportMap = new HashMap<>();
-        if (location == null) return transportMap;
+        if (location == null || instance == null) return transportMap;
         WorldPoint exitPortal = instance.tilePanel.getTile();
+        if (exitPortal == null) {
+            return transportMap;
+        }
         WorldPoint outsidePoint = location.getPortalLocation();
 
         transportMap.put(null, Set.of(
