@@ -58,7 +58,7 @@ public class DeathEvent implements BlockingEvent {
                 }
             }
         }
-        return false;
+        return !validate();
     }
 
     @Override

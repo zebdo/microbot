@@ -28,7 +28,7 @@ public class BankTutorialEvent implements BlockingEvent {
         Rs2Widget.clickWidget(closebankTutorialWidget);
         
         Global.sleepUntil(() -> !Rs2Widget.isWidgetVisible(BANK_TUTORIAL_BUTTON_COMPONENT_ID), 10000);
-        return true;
+        return !validate();
     }
 
     @Override

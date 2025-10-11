@@ -29,7 +29,7 @@ public class BankJagexPopupEvent implements BlockingEvent {
         
         Rs2Widget.clickWidget(notNowButton);
         Global.sleepUntil(() -> !Rs2Widget.isWidgetVisible(WANT_MORE_BANK_SPACE_COMPONENT_ID), 10000);
-        return true;
+        return !validate();
     }
 
     @Override

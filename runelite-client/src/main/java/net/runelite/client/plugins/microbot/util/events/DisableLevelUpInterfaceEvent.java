@@ -14,7 +14,11 @@ public class DisableLevelUpInterfaceEvent implements BlockingEvent {
 
     @Override
     public boolean execute() {
-        return Rs2Settings.disableLevelUpNotifications();
+        var result = Rs2Settings.disableLevelUpNotifications();
+        if (result) {
+            return true;
+        }
+        return !validate();
     }
 
     @Override

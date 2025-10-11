@@ -49,7 +49,7 @@ public class WelcomeScreenEvent implements BlockingEvent {
             log.info("WelcomeScreenEvent execute: Play button is null");
         }
 
-        return Global.sleepUntil(() -> !Rs2Widget.isWidgetVisible(InterfaceID.WelcomeScreen.PLAY), 10000);
+        return !validate();
     }
 
     @Override
