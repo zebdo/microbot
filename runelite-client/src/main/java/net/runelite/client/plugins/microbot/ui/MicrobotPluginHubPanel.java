@@ -67,7 +67,7 @@ import java.util.stream.Collectors;
 
 @Slf4j
 @Singleton
-public class MicrobotPluginHubPanel extends PluginPanel {
+public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
     private static final ImageIcon MISSING_ICON;
     private static final ImageIcon HELP_ICON;
     private static final ImageIcon CONFIGURE_ICON;
