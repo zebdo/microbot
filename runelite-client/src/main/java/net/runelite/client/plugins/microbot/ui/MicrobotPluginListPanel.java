@@ -45,7 +45,6 @@ import net.runelite.client.plugins.microbot.MicrobotConfig;
 import net.runelite.client.plugins.microbot.externalplugins.MicrobotPluginManager;
 import net.runelite.client.plugins.microbot.ui.search.MicrobotPluginSearch;
 import net.runelite.client.ui.ColorScheme;
-import net.runelite.client.ui.MultiplexingPluginPanel;
 import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.IconTextField;
 import net.runelite.client.util.Text;
@@ -68,7 +67,7 @@ import java.util.stream.Stream;
 
 @Slf4j
 @Singleton
-public class MicrobotPluginListPanel extends PluginPanel {
+public class MicrobotPluginListPanel extends MicrobotPluginPanel {
     private static final String RUNELITE_GROUP_NAME = MicrobotConfig.class.getAnnotation(ConfigGroup.class).value();
     private static final String PINNED_PLUGINS_CONFIG_KEY = "pinnedPlugins";
     private static final ImmutableList<String> CATEGORY_TAGS = ImmutableList.of(
@@ -92,7 +91,7 @@ public class MicrobotPluginListPanel extends PluginPanel {
     private final ExternalPluginManager externalPluginManager;
 
     @Getter
-    private final MultiplexingPluginPanel muxer;
+    private final MicrobotMultiplexingPluginPanel muxer;
 
     private final IconTextField searchBar;
     private final JScrollPane scrollPane;
@@ -115,14 +114,14 @@ public class MicrobotPluginListPanel extends PluginPanel {
         this.configPanelProvider = configPanelProvider;
         this.microbotPluginManager = microbotPluginManager;
 
-        muxer = new MultiplexingPluginPanel(this) {
+        muxer = new MicrobotMultiplexingPluginPanel(this) {
             @Override
-            protected void onAdd(PluginPanel p) {
+            protected void onAdd(MicrobotPluginPanel p) {
                 eventBus.register(p);
             }
 
             @Override
-            protected void onRemove(PluginPanel p) {
+            protected void onRemove(MicrobotPluginPanel p) {
                 eventBus.unregister(p);
             }
         };

@@ -1,14 +1,16 @@
 package net.runelite.client.plugins.microbot.shortestpath;
 
 
+import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.shortestpath.components.CheckboxPanel;
 import net.runelite.client.plugins.microbot.shortestpath.components.EnumListPanel;
+import net.runelite.client.plugins.microbot.shortestpath.components.ExitTilePanel;
 import net.runelite.client.plugins.microbot.shortestpath.components.JewelleryBoxPanel;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
 import net.runelite.client.plugins.microbot.util.poh.PohTransport;
-import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
+import net.runelite.client.plugins.microbot.util.poh.data.HouseLocation;
 import net.runelite.client.plugins.microbot.util.poh.data.NexusPortal;
 import net.runelite.client.plugins.microbot.util.poh.data.PohPortal;
 import net.runelite.client.plugins.microbot.util.poh.data.PohTeleport;
@@ -31,6 +33,7 @@ public class PohPanel extends PluginPanel {
     private EnumListPanel<NexusPortal> nexusPanel;
     private CheckboxPanel checkboxPanel;
     private JewelleryBoxPanel jewelleryBoxPanel;
+    private ExitTilePanel tilePanel;
 
     private JButton detectButton;
     private JScrollPane mainScrollPane;
@@ -92,6 +95,7 @@ public class PohPanel extends PluginPanel {
         gbc.anchor = GridBagConstraints.NORTHWEST;
         gbc.insets.set(4, 4, 4, 4);
 
+
         // Portals list
         gbc.gridy = 0;
         portalPanel = new EnumListPanel<>(PohPortal.class, "Portal Room");
@@ -111,6 +115,11 @@ public class PohPanel extends PluginPanel {
         gbc.gridy++;
         jewelleryBoxPanel = new JewelleryBoxPanel();
         root.add(jewelleryBoxPanel, gbc);
+
+        // Tile section
+        gbc.gridy++;
+        tilePanel = new ExitTilePanel();
+        root.add(tilePanel, gbc);
 
         // Add a filler component to push content to the top and allow proper stretching
         gbc.gridy++;
@@ -142,8 +151,39 @@ public class PohPanel extends PluginPanel {
         portalPanel.setAll(PohPortal.findPortalsInPoh());
         nexusPanel.setAll(NexusPortal.getAvailableTeleports());
         jewelleryBoxPanel.detectJewelleryBox();
+        tilePanel.detectTile();
         detectButton.setEnabled(true);
         detectButton.setText("Detect available POH teleports");
+    }
+
+    /**
+     * Retrieves a map of transports that take the player to the Player-Owned House (POH).
+     * This includes teleports and the external portal location of the house.
+     *
+     *
+     * @return A map where the key is the `WorldPoint` representing the origin of the transport
+     *         and the value is a set of `Transport` instances representing the available
+     *         methods of transportation to the inside of PoH.
+     */
+    public static Map<WorldPoint, Set<Transport>> getTransportsToPoh() {
+        HouseLocation location = HouseLocation.getHouseLocation();
+        Map<WorldPoint, Set<Transport>> transportMap = new HashMap<>();
+        if (location == null || instance == null) return transportMap;
+        WorldPoint exitPortal = instance.tilePanel.getTile();
+        if (exitPortal == null) {
+            return transportMap;
+        }
+        WorldPoint outsidePoint = location.getPortalLocation();
+
+        transportMap.put(null, Set.of(
+                new Transport(exitPortal, "Construction cape: Tele to POH", TransportType.TELEPORTATION_ITEM, true, 19, Set.of(Set.of(9789), Set.of(9790))),
+                new Transport(exitPortal, "Teleport to House", TransportType.TELEPORTATION_SPELL, true, 19, Map.of(Skill.MAGIC, 40)),
+                new Transport(exitPortal, "Teleport to House tablet: Inside", TransportType.TELEPORTATION_ITEM, true, 19, Set.of(Set.of(8013)))
+        ));
+        transportMap.put(outsidePoint, Set.of(
+                new Transport(outsidePoint, exitPortal, location.name() + " -> PoH", TransportType.TELEPORTATION_PORTAL, true, "Home", "Portal", location.getPortalId())
+        ));
+        return transportMap;
     }
 
     /**
@@ -153,11 +193,14 @@ public class PohPanel extends PluginPanel {
      * @return allTransports map with all cached PoH transports added in
      */
     public static Map<WorldPoint, Set<Transport>> getAvailableTransports(Map<WorldPoint, Set<Transport>> allTransports) {
-        HouseStyle style = HouseStyle.getStyle();
-        if (style == null || instance == null) return allTransports;
+        if (instance == null) return allTransports;
         Set<PohTeleport> pohTeleports = new HashSet<>();
         Map<WorldPoint, Set<Transport>> pohTransports = new HashMap<>();
-        WorldPoint exitPortal = style.getPohExitWorldPoint();
+        WorldPoint exitPortal = instance.tilePanel.getTile();
+        if (exitPortal == null) {
+            Microbot.log("Failed to load exit portal config");
+            return allTransports;
+        }
 
         pohTeleports.addAll(instance.checkboxPanel.getTeleports());
         pohTeleports.addAll(instance.portalPanel.getTeleports());
@@ -228,11 +271,11 @@ public class PohPanel extends PluginPanel {
      * @param pohTempTransport the transport object representing the PoH transport to be connected.
      *                         The TransportType is used to filter for existing transports
      *                         The origin and destination are used to build the connecting transport
-     * @param transportsMap a map of existing transports, where each key represents a WorldPoint
-     *                      and the value is a set of transports originating or terminating at
-     *                      that point
+     * @param transportsMap    a map of existing transports, where each key represents a WorldPoint
+     *                         and the value is a set of transports originating or terminating at
+     *                         that point
      * @return a new map containing the updated set of transports where connections have been
-     *         added between the provided PoH transport and existing transports of the same type
+     * added between the provided PoH transport and existing transports of the same type
      */
     public static Map<WorldPoint, Set<Transport>> createTransportsToPoh(Transport pohTempTransport, Map<WorldPoint, Set<Transport>> transportsMap) {
         WorldPoint pohExitPortal = pohTempTransport.getOrigin();

@@ -38,7 +38,7 @@ public class PluginPauseEvent implements BlockingEvent {
             // e.g. notifying about some game state, or we could think for "Rs2walker.setTarget(null); -> blocking all movement", but only one time
             // we could think of saving a reference of a script which paused the scripts, so only these script is allowed to run ? 
         }
-        return !PluginPauseEvent.isPaused.get();
+        return !validate();
     }
 
     @Override
