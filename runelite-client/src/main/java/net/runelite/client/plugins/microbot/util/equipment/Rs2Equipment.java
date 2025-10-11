@@ -6,12 +6,15 @@ import net.runelite.api.ItemComposition;
 import net.runelite.api.ItemContainer;
 import net.runelite.api.MenuAction;
 import net.runelite.api.events.ItemContainerChanged;
+import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
+import net.runelite.api.widgets.Widget;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
+import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import org.slf4j.event.Level;
 
 import java.awt.Rectangle;
@@ -330,32 +333,52 @@ public class Rs2Equipment {
                 return;
             }
         }
-
+        Rectangle rectangle = new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight());
         if (rs2Item.getSlot() == EquipmentInventorySlot.CAPE.getSlotIdx()) {
             param1 = 25362448;
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS,16);
         } else if (rs2Item.getSlot() == EquipmentInventorySlot.HEAD.getSlotIdx()) {
             param1 = 25362447;
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS,15);
         } else if (rs2Item.getSlot() == EquipmentInventorySlot.AMMO.getSlotIdx()) {
             param1 = 25362457;
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS,25);
         } else if (rs2Item.getSlot() == EquipmentInventorySlot.AMULET.getSlotIdx()) {
             param1 = 25362449;
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS,17);
         } else if (rs2Item.getSlot() == EquipmentInventorySlot.WEAPON.getSlotIdx()) {
             param1 = 25362450;
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS,18);
         } else if (rs2Item.getSlot() == EquipmentInventorySlot.BODY.getSlotIdx()) {
             param1 = 25362451;
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS,19);
         } else if (rs2Item.getSlot() == EquipmentInventorySlot.SHIELD.getSlotIdx()) {
             param1 = 25362452;
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS,20);
         } else if (rs2Item.getSlot() == EquipmentInventorySlot.LEGS.getSlotIdx()) {
             param1 = 25362453;
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS,21);
         } else if (rs2Item.getSlot() == EquipmentInventorySlot.GLOVES.getSlotIdx()) {
             param1 = 25362454;
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS,22);
         } else if (rs2Item.getSlot() == EquipmentInventorySlot.BOOTS.getSlotIdx()) {
             param1 = 25362455;
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS,23);
         } else if (rs2Item.getSlot() == EquipmentInventorySlot.RING.getSlotIdx()) {
             param1 = 25362456;
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS,24);
         }
-
-        Microbot.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), identifier, -1, rs2Item.getName()), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
+        Microbot.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), identifier, -1, rs2Item.getName()), rectangle);
         //Rs2Reflection.invokeMenu(param0, param1, menuAction.getId(), identifier, rs2Item.id, action, target, -1, -1);
+    }
+
+    private static Rectangle getSafeBounds(int interfaceId, int childId) {
+        Widget widget = Rs2Widget.getWidget(interfaceId, childId);
+        if (widget != null && widget.getBounds() != null) {
+            return widget.getBounds();
+        }
+        return new Rectangle(1, 1,
+                Microbot.getClient().getCanvasWidth(),
+                Microbot.getClient().getCanvasHeight());
     }
 }
