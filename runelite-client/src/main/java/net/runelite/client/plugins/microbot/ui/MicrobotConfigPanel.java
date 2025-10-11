@@ -107,6 +107,11 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
     private final MicrobotPluginToggleButton pluginToggle;
 
     private MicrobotPluginConfigurationDescriptor pluginConfig = null;
+    // add near other fields
+    private final JTextField searchField = new JTextField();
+    private final Map<JPanel, String> itemIndex = new HashMap<>();     // item panel -> lowercased name
+    private final Map<String, JPanel> sectionContentByKey = new HashMap<>(); // section key -> contents panel
+    private final Map<ConfigSectionDescriptor, JPanel> sectionPanelByDesc = new HashMap<>(); // whole section panel
 
     @Inject
     private MicrobotConfigPanel(
@@ -129,11 +134,7 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
         setLayout(new BorderLayout());
         setBackground(ColorScheme.DARK_GRAY_COLOR);
 
-        JPanel topPanel = new JPanel();
-        topPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
-        topPanel.setLayout(new BorderLayout(0, BORDER_OFFSET));
-        add(topPanel, BorderLayout.NORTH);
-
+        // --- initialize mainPanel first ---
         mainPanel = new MicrobotFixedWidthPanel();
         mainPanel.setBorder(new EmptyBorder(8, 10, 10, 10));
         mainPanel.setLayout(new DynamicGridLayout(0, 1, 0, 5));
@@ -147,21 +148,83 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
         scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_NEVER);
         add(scrollPane, BorderLayout.CENTER);
 
-        JButton topPanelBackButton = new JButton(BACK_ICON);
-        SwingUtil.removeButtonDecorations(topPanelBackButton);
-        topPanelBackButton.setPreferredSize(new Dimension(22, 0));
-        topPanelBackButton.setBorder(new EmptyBorder(0, 0, 0, 5));
-        topPanelBackButton.addActionListener(e -> pluginList.getMuxer().popState());
-        topPanelBackButton.setToolTipText("Back");
-        topPanel.add(topPanelBackButton, BorderLayout.WEST);
+        // --- topPanel construction ---
+        JPanel topPanel = new JPanel(new BorderLayout(0, BORDER_OFFSET));
+        topPanel.setBorder(new EmptyBorder(10, 10, 10, 10));
+        add(topPanel, BorderLayout.NORTH);
+
+        JPanel header = new JPanel(new BorderLayout());
+        JButton backBtn = new JButton(BACK_ICON);
+        SwingUtil.removeButtonDecorations(backBtn);
+        backBtn.setPreferredSize(new Dimension(22, 0));
+        backBtn.setBorder(new EmptyBorder(0, 0, 0, 5));
+        backBtn.addActionListener(e -> pluginList.getMuxer().popState());
+        backBtn.setToolTipText("Back");
 
         pluginToggle = new MicrobotPluginToggleButton();
-        topPanel.add(pluginToggle, BorderLayout.EAST);
         title = new JLabel();
         title.setForeground(Color.WHITE);
 
-        topPanel.add(title);
+        header.add(backBtn, BorderLayout.WEST);
+        header.add(title, BorderLayout.CENTER);
+        header.add(pluginToggle, BorderLayout.EAST);
+        topPanel.add(header, BorderLayout.NORTH);
 
+        // --- search field ---
+        searchField.setToolTipText("Filter settings");
+        searchField.putClientProperty("JTextField.placeholderText", "Search settings...");
+        searchField.getDocument().addDocumentListener(new javax.swing.event.DocumentListener() {
+            public void insertUpdate(javax.swing.event.DocumentEvent e) {
+                applyFilter();
+            }
+
+            public void removeUpdate(javax.swing.event.DocumentEvent e) {
+                applyFilter();
+            }
+
+            public void changedUpdate(javax.swing.event.DocumentEvent e) {
+                applyFilter();
+            }
+        });
+        searchField.setPreferredSize(new Dimension(10, 26));
+        topPanel.add(searchField, BorderLayout.CENTER);
+    }
+
+
+    private void applyFilter() {
+        String q = searchField.getText();
+        String needle = q == null ? "" : q.trim().toLowerCase(Locale.ROOT);
+
+        // show all if empty
+        boolean noFilter = needle.isEmpty();
+
+        // toggle each item
+        for (Map.Entry<JPanel, String> e : itemIndex.entrySet()) {
+            boolean match = noFilter || e.getValue().contains(needle);
+            e.getKey().setVisible(match);
+        }
+
+        // hide section contents with no visible children
+        for (Map.Entry<String, JPanel> e : sectionContentByKey.entrySet()) {
+            JPanel contents = e.getValue();
+            boolean anyVisible = false;
+            for (Component c : contents.getComponents()) {
+                if (c.isVisible()) {
+                    anyVisible = true;
+                    break;
+                }
+            }
+            contents.getParent().setVisible(anyVisible); // whole section panel
+            contents.setVisible(anyVisible);             // keep contents open when filtering
+
+            // auto-expand sections with matches
+            if (!anyVisible) continue;
+            // ensure expanded when filtering
+            if (!noFilter && !contents.isVisible()) contents.setVisible(true);
+        }
+
+        mainPanel.revalidate();
+        mainPanel.repaint();
     }
 
     void init(MicrobotPluginConfigurationDescriptor pluginConfig) {
@@ -211,16 +274,15 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
 
     private void rebuild() {
         mainPanel.removeAll();
-
+        itemIndex.clear();
+        sectionContentByKey.clear();
+        sectionPanelByDesc.clear();
 
         ConfigDescriptor cd = pluginConfig.getConfigDescriptor();
 
         final Map<String, JPanel> sectionWidgets = new HashMap<>();
         final Map<ConfigObject, JPanel> topLevelPanels = new TreeMap<>((a, b) ->
-                ComparisonChain.start()
-                        .compare(a.position(), b.position())
-                        .compare(a.name(), b.name())
-                        .result());
+                ComparisonChain.start().compare(a.position(), b.position()).compare(a.name(), b.name()).result());
 
         if (cd.getInformation() != null) {
             buildInformationPanel(cd.getInformation());
@@ -228,23 +290,20 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
 
         for (ConfigSectionDescriptor csd : cd.getSections()) {
             ConfigSection cs = csd.getSection();
-            final boolean isOpen = sectionExpandStates.getOrDefault(csd, !cs.closedByDefault());
+            boolean isOpen = sectionExpandStates.getOrDefault(csd, !cs.closedByDefault());
 
-            final JPanel section = new JPanel();
+            JPanel section = new JPanel();
             section.setLayout(new BoxLayout(section, BoxLayout.Y_AXIS));
             section.setMinimumSize(new Dimension(PANEL_WIDTH, 0));
 
-            final JPanel sectionHeader = new JPanel();
-            sectionHeader.setLayout(new BorderLayout());
+            JPanel sectionHeader = new JPanel(new BorderLayout());
             sectionHeader.setMinimumSize(new Dimension(PANEL_WIDTH, 0));
-            // For whatever reason, the header extends out by a single pixel when closed. Adding a single pixel of
-            // border on the right only affects the width when closed, fixing the issue.
             sectionHeader.setBorder(new CompoundBorder(
                     new MatteBorder(0, 0, 1, 0, ColorScheme.MEDIUM_GRAY_COLOR),
                     new EmptyBorder(0, 0, 3, 1)));
             section.add(sectionHeader, BorderLayout.NORTH);
 
-            final JButton sectionToggle = new JButton(isOpen ? SECTION_RETRACT_ICON : SECTION_EXPAND_ICON);
+            JButton sectionToggle = new JButton(isOpen ? SECTION_RETRACT_ICON : SECTION_EXPAND_ICON);
             sectionToggle.setPreferredSize(new Dimension(18, 0));
             sectionToggle.setBorder(new EmptyBorder(0, 0, 0, 5));
             sectionToggle.setToolTipText(isOpen ? "Retract" : "Expand");
@@ -252,14 +311,13 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
             sectionHeader.add(sectionToggle, BorderLayout.WEST);
 
             String name = cs.name();
-            final JLabel sectionName = new JLabel(name);
+            JLabel sectionName = new JLabel(name);
             sectionName.setForeground(ColorScheme.BRAND_ORANGE);
             sectionName.setFont(FontManager.getRunescapeBoldFont());
             sectionName.setToolTipText("<html>" + name + ":<br>" + cs.description() + "</html>");
             sectionHeader.add(sectionName, BorderLayout.CENTER);
 
-            final JPanel sectionContents = new JPanel();
-            sectionContents.setLayout(new DynamicGridLayout(0, 1, 0, 5));
+            JPanel sectionContents = new JPanel(new DynamicGridLayout(0, 1, 0, 5));
             sectionContents.setMinimumSize(new Dimension(PANEL_WIDTH, 0));
             sectionContents.setBorder(new CompoundBorder(
                     new MatteBorder(0, 0, 1, 0, ColorScheme.MEDIUM_GRAY_COLOR),
@@ -267,22 +325,23 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
             sectionContents.setVisible(isOpen);
             section.add(sectionContents, BorderLayout.SOUTH);
 
-            // Add listeners to each part of the header so that it's easier to toggle them
-            final MouseAdapter adapter = new MouseAdapter() {
+            MouseAdapter adapter = new MouseAdapter() {
                 @Override
                 public void mouseClicked(MouseEvent e) {
                     toggleSection(csd, sectionToggle, sectionContents);
                 }
             };
-            sectionToggle.addActionListener(actionEvent -> toggleSection(csd, sectionToggle, sectionContents));
+
+            sectionToggle.addActionListener(ev -> toggleSection(csd, sectionToggle, sectionContents));
             sectionName.addMouseListener(adapter);
             sectionHeader.addMouseListener(adapter);
 
             sectionWidgets.put(csd.getKey(), sectionContents);
+            sectionPanelByDesc.put(csd, section);
+            sectionContentByKey.put(csd.getKey(), sectionContents);
 
             topLevelPanels.put(csd, section);
         }
-
         for (ConfigItemDescriptor cid : cd.getItems()) {
             if (cid.getItem().hidden()) {
                 continue;
@@ -334,6 +393,7 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
             } else {
                 section.add(item);
             }
+            itemIndex.put(item, name.toLowerCase(Locale.ROOT));
         }
 
         topLevelPanels.values().forEach(mainPanel::add);
@@ -364,6 +424,7 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
         mainPanel.add(backButton);
 
         revalidate();
+        applyFilter();
     }
 
     private void buildInformationPanel(ConfigInformation ci) {
