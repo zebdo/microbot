@@ -172,12 +172,12 @@ public class MicrobotProfilePanel extends MicrobotPluginPanel {
         headerPanel.setOpaque(false);
 
         JLabel titleLabel = new JLabel("Profile Manager");
-        titleLabel.setFont(new Font("Arial", Font.BOLD, 18));
+        titleLabel.setFont(new Font("Roboto", Font.BOLD, 18));
         titleLabel.setForeground(TEXT_COLOR);
         titleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
-        JLabel subtitleLabel = new JLabel("Manage your RuneLite profiles with separate settings");
-        subtitleLabel.setFont(new Font("Arial", Font.PLAIN, 11));
+        JLabel subtitleLabel = new JLabel("Manage your microbot profiles");
+        subtitleLabel.setFont(new Font("Roboto", Font.PLAIN, 11));
         subtitleLabel.setForeground(new Color(160, 160, 160));
         subtitleLabel.setAlignmentX(Component.LEFT_ALIGNMENT);
 
@@ -798,7 +798,7 @@ public class MicrobotProfilePanel extends MicrobotPluginPanel {
 
             JLabel lblComponent = new JLabel(label);
             lblComponent.setForeground(new Color(180, 180, 180));
-            lblComponent.setFont(new Font("Arial", Font.PLAIN, 11));
+            lblComponent.setFont(new Font("Roboto", Font.PLAIN, 11));
             lblComponent.setPreferredSize(new Dimension(80, 20));
 
             panel.add(lblComponent, BorderLayout.WEST);
