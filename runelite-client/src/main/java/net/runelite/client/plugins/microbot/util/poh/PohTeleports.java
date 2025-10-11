@@ -16,7 +16,6 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.poh.data.HouseLocation;
-import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
 import net.runelite.client.plugins.microbot.util.poh.data.JewelleryBoxType;
 import net.runelite.client.plugins.microbot.util.poh.data.NexusPortal;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -236,24 +235,5 @@ public class PohTeleports {
 
     public static boolean isSpiritTree(TileObject tileObject) {
         return SPIRIT_TREE_IDS.stream().anyMatch(id -> id == tileObject.getId());
-    }
-
-    public static Map<WorldPoint, Set<Transport>> getTransportsToPoh() {
-        HouseStyle style = HouseStyle.getStyle();
-        HouseLocation location = HouseLocation.getHouseLocation();
-        Map<WorldPoint, Set<Transport>> transportMap = new HashMap<>();
-        if (style == null || location == null) return transportMap;
-        WorldPoint insidePoint = style.getPohExitWorldPoint();
-        WorldPoint outsidePoint = location.getPortalLocation();
-
-        transportMap.put(null, Set.of(
-                new Transport(insidePoint, "Construction cape: Tele to POH", TransportType.TELEPORTATION_ITEM, true, 19, Set.of(Set.of(9789), Set.of(9790))),
-                new Transport(insidePoint, "Teleport to House", TransportType.TELEPORTATION_SPELL, true, 19, Map.of(Skill.MAGIC, 40)),
-                new Transport(insidePoint, "Teleport to House tablet: Inside", TransportType.TELEPORTATION_ITEM, true, 19, Set.of(Set.of(8013)))
-        ));
-        transportMap.put(outsidePoint, Set.of(
-                new Transport(outsidePoint, insidePoint, location.name() + " -> PoH", TransportType.TELEPORTATION_PORTAL, true, "Home", "Portal", location.getPortalId())
-        ));
-        return transportMap;
     }
 }
