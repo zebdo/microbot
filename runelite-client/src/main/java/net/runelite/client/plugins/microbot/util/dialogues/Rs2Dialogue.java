@@ -473,7 +473,7 @@ public class Rs2Dialogue {
 
         List<Widget> options = new ArrayList<>();
         if (Rs2Widget.isWidgetVisible(270, 13)) {
-            for (Widget widget : Rs2Widget.getWidget(270, 13).getStaticChildren()) {
+            for (Widget widget : Rs2Widget.getWidget(270, 14).getStaticChildren()) {
                 if (widget != null && widget.getActions() != null && widget.getActions().length > 0) {
                     options.add(widget);
                 }
