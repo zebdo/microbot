@@ -119,7 +119,9 @@ public class BlockingEventManager
                 try {
                     if (event.validate()) {
                         hasValidEvents = true;
-                        if (pendingEvents.add(event)) {
+                        if (pendingEvents.contains(event) && eventQueue.isEmpty()) {
+                            eventQueue.offer(event);
+                        } else if (pendingEvents.add(event)) {
                             if (!eventQueue.offer(event)) {
                                 pendingEvents.remove(event);
                             }

@@ -4,7 +4,6 @@ import lombok.Getter;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.shortestpath.Transport;
 import net.runelite.client.plugins.microbot.shortestpath.TransportType;
-import net.runelite.client.plugins.microbot.util.poh.data.HouseStyle;
 import net.runelite.client.plugins.microbot.util.poh.data.PohTeleport;
 
 /**

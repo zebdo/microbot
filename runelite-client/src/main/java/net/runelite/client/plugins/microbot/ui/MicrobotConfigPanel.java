@@ -44,7 +44,6 @@ import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlug
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
-import net.runelite.client.ui.PluginPanel;
 import net.runelite.client.ui.components.ColorJButton;
 import net.runelite.client.ui.components.TitleCaseListCellRenderer;
 import net.runelite.client.ui.components.colorpicker.ColorPickerManager;
@@ -72,7 +71,7 @@ import java.util.List;
 import java.util.*;
 
 @Slf4j
-class MicrobotConfigPanel extends PluginPanel {
+class MicrobotConfigPanel extends MicrobotPluginPanel {
     private static final int SPINNER_FIELD_WIDTH = 6;
     private static final ImageIcon SECTION_EXPAND_ICON;
     private static final ImageIcon SECTION_RETRACT_ICON;

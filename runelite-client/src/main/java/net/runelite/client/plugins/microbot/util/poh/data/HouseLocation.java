@@ -38,40 +38,4 @@ public enum HouseLocation {
         }
         return null;
     }
-
-    public static String buildPortalMappingTSV() {
-        StringBuilder sb = new StringBuilder(
-                "Origin\tDestination\tisMembers\tmenuOption menuTarget objectID\tVarbits\tDisplay info\tDuration\n"
-        );
-
-        for (HouseLocation location : HouseLocation.values()) {
-            for (HouseStyle style : HouseStyle.values()) {
-
-                String origin = formatWorldPoint(location.getPortalLocation());
-                String destination = formatWorldPoint(style.getPohExitWorldPoint());
-
-                String isMembers = "Y";
-                String menu = "Home;Portal;" + location.getPortalId();
-
-                String varbits = String.format("%s=%s;%s=%s", VarbitID.POH_HOUSE_STYLE, style.getVarbitValue(), VarbitID.POH_HOUSE_LOCATION, location.getVarbitValue());
-
-                String displayInfo = location.name() + " -> PoH";
-                String duration = "1";
-
-                sb.append(origin).append("\t")
-                        .append(destination).append("\t")
-                        .append(isMembers).append("\t")
-                        .append(menu).append("\t")
-                        .append(varbits).append("\t")
-                        .append(displayInfo).append("\t")
-                        .append(duration).append("\n");
-            }
-        }
-
-        return sb.toString();
-    }
-
-    private static String formatWorldPoint(WorldPoint worldPoint) {
-        return worldPoint.getX() + " " + worldPoint.getY() + " " + worldPoint.getPlane();
-    }
 }

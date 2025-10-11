@@ -54,7 +54,7 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 @Slf4j
-class MicrobotNotificationPanel extends PluginPanel
+class MicrobotNotificationPanel extends MicrobotPluginPanel
 {
 	private final ConfigManager configManager;
 	private final ColorPickerManager colorPickerManager;
