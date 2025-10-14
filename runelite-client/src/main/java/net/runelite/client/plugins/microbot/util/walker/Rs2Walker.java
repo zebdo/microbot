@@ -1870,7 +1870,8 @@ public class Rs2Walker {
         String itemAction = rs2Item.getAction(destination);
 
         // Check if item has destination as sub-menu action
-        if (itemAction == null && rs2Item.getIndexOfSubAction(destination).getKey() != null) {
+        Map.Entry<String,Integer> sub = rs2Item.getIndexOfSubAction(destination);
+        if (itemAction == null && sub != null && sub.getKey() != null) {
             itemAction = destination;
         }
 

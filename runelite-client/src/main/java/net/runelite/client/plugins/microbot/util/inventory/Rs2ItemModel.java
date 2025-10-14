@@ -185,12 +185,12 @@ public class Rs2ItemModel {
      * if a match is found; otherwise, returns a Map.Entry with null and -1.
      */
     public Map.Entry<String, Integer> getIndexOfSubAction(String action) {
-        if (action == null) return Map.entry(null, -1);
+        if (action == null) return null;
         String alc = action.toLowerCase();
 
         String[][] subOps = getSubops();
         if (subOps == null) {
-            return Map.entry(null, -1);
+            return null;
         }
         for (int i = 0; i < subOps.length; i++) {
             String[] subOpsActions = subOps[i];
@@ -203,7 +203,7 @@ public class Rs2ItemModel {
             }
         }
 
-        return Map.entry(null, -1);
+        return null;
     }
 
     /**
