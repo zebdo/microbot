@@ -65,10 +65,10 @@ public class LocalPoint
 	}
 
 	@Nullable
-	@Deprecated
-	public static LocalPoint fromWorld(Client client, WorldPoint world)
+	public static LocalPoint fromWorld(Client client, WorldPoint point)
 	{
-		return fromWorld(client.getTopLevelWorldView(), world);
+		WorldView wv = client.findWorldViewFromWorldPoint(point);
+		return fromWorld(wv, point);
 	}
 
 	/**
@@ -147,7 +147,6 @@ public class LocalPoint
 	{
 		if (worldView != other.worldView)
 		{
-			assert false;
 			return Integer.MAX_VALUE;
 		}
 
@@ -158,6 +157,7 @@ public class LocalPoint
 	 * Test if this point is in the basic 104x104 tile scene.
 	 * @return
 	 */
+	@Deprecated
 	public boolean isInScene()
 	{
 		return x >= 0 && x < Perspective.SCENE_SIZE << Perspective.LOCAL_COORD_BITS
