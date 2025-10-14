@@ -1930,14 +1930,12 @@ public class Rs2Inventory {
             } else {
                 // We could not find the action in the item widget's actions, so we try to find it in the sub-menu actions
                 Map.Entry<String, Integer> subActionMap = rs2Item.getIndexOfSubAction(action);
-                if (subActionMap == null) {
-                    Microbot.log("Item=" + rs2Item.getName() + " does not have action=" + action, Level.ERROR);
-                    return;
+                if (subActionMap != null) {
+                    // The main menu index depends on the inventory interface from which this item is interacted with
+                    int mainMenuIndex = java.util.Arrays.asList(actions).indexOf(subActionMap.getKey());
+                    identifier = NewMenuEntry.findIdentifier(subActionMap.getValue() + 1, mainMenuIndex + 1);
+                    target = "";
                 }
-                // The main menu index depends on the inventory interface from which this item is interacted with
-                int mainMenuIndex = java.util.Arrays.asList(actions).indexOf(subActionMap.getKey());
-                identifier = NewMenuEntry.findIdentifier(subActionMap.getValue() + 1, mainMenuIndex + 1);
-                target = "";
             }
         }
 
