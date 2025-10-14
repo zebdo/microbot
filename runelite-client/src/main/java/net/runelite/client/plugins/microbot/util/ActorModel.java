@@ -27,6 +27,11 @@ public class ActorModel implements Actor
 	}
 
 	@Override
+	public LocalPoint getCameraFocus() {
+		return Microbot.getClientThread().runOnClientThreadOptional(actor::getCameraFocus).orElse(null);
+	}
+
+	@Override
 	public int getCombatLevel()
 	{
 		return Microbot.getClientThread().runOnClientThreadOptional(actor::getCombatLevel).orElse(0);
