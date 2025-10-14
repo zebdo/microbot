@@ -76,7 +76,7 @@ public class Rs2UiHelper {
         }
 
 
-        Shape clickbox = Microbot.getClientThread().runOnClientThreadOptional(() -> Perspective.getClickbox(Microbot.getClient(), actor.getModel(), actor.getCurrentOrientation(), lp.getX(), lp.getY(),
+        Shape clickbox = Microbot.getClientThread().runOnClientThreadOptional(() -> Perspective.getClickbox(Microbot.getClient(), Microbot.getClient().getTopLevelWorldView(), actor.getModel(), actor.getCurrentOrientation(), lp.getX(), lp.getY(),
                 Perspective.getTileHeight(Microbot.getClient(), lp, actor.getWorldLocation().getPlane())))
                 .orElse(null);
 

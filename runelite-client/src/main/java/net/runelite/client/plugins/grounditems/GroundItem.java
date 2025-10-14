@@ -30,6 +30,7 @@ import java.time.Instant;
 import javax.annotation.Nullable;
 import lombok.Builder;
 import lombok.Data;
+import net.runelite.api.ItemLayer;
 import static net.runelite.api.TileItem.OWNERSHIP_GROUP;
 import static net.runelite.api.TileItem.OWNERSHIP_NONE;
 import static net.runelite.api.TileItem.OWNERSHIP_OTHER;
@@ -47,6 +48,7 @@ public class GroundItem
 	private int itemId;
 	private String name;
 	private int quantity;
+	private ItemLayer itemLayer;
 	@Getter
 	private WorldPoint location;
 	private int height;
