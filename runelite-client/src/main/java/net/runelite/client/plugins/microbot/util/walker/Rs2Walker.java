@@ -1908,6 +1908,7 @@ public class Rs2Walker {
                 Rs2Dialogue.sleepUntilInDialogue();
                 return Rs2Dialogue.clickOption("Yes", "Okay");
             } else {
+                Rs2Player.waitForAnimation();
                 log.info("Unsure how to handle this itemTransport={} action={}", transport, itemAction);
             }
         }
