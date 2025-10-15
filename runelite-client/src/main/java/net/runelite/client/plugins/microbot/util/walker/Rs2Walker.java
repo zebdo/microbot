@@ -1855,7 +1855,7 @@ public class Rs2Walker {
         Rs2ItemModel rs2Item = Rs2Inventory.get(itemId);
         if (rs2Item == null) return false;
 
-        List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "open", "teleport", "rub", "break", "reminisce", "signal", "play", "commune", "squash");
+        List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "open", "teleport", "rub", "break", "reminisce", "signal", "play", "commune", "squash", "Weiss");
 
         // Return true when the item can be used to teleport to multiple places
         boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
