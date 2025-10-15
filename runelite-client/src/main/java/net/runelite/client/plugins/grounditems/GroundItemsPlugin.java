@@ -279,6 +279,9 @@ public class GroundItemsPlugin extends Plugin
 		ItemLayer layer = tile.getItemLayer();
 
 		GroundItem groundItem = buildGroundItem(layer, item);
+		//Quick fix for NPE
+		groundItem.setLocation(tile.getWorldLocation());
+		groundItem.setHeight(tile.getItemLayer().getHeight());
 		GroundItem existing = collectedGroundItems.get(tile.getWorldLocation(), item.getId());
 		if (existing != null)
 		{
