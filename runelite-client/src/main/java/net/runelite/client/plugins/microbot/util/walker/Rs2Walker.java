@@ -1855,15 +1855,14 @@ public class Rs2Walker {
         Rs2ItemModel rs2Item = Rs2Inventory.get(itemId);
         if (rs2Item == null) return false;
 
-        // A list of fallback keywords that can be used if no specific action is found
-        List<String> genericKeyWords = Arrays.asList("farm", "monastery", "lletya", "prifddinas", "rellekka", "waterbirth island", "neitiznot", "jatiszo",
-                "ver sinhaza", "darkmeyer", "slepe", "troll stronghold", "weiss", "ecto", "burgh", "duradel", "gem mine", "nardah", "kalphite cave", "Tele to POH", "inside", "outside",
-                "kourend woodland", "mount karuulm", "outside", "fishing guild", "otto's grotto", "stronghold slayer cave", "slayer tower", "fremennik", "tarn's lair", "dark beasts",
-                "invoke", "empty", "consume", "open", "teleport", "rub", "break", "reminisce", "signal", "play", "commune", "squash");
+        // A list of generic teleports that can be used if no parsable destination action is found
+        List<String> genericKeyWords = Arrays.asList(
+                "invoke", "empty", "consume", "open", "teleport", "rub", "break", "reminisce", "signal", "play", "commune", "squash"
+        );
 
         // Return true when the item can be used to teleport to multiple places
-        boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
-        String destination = hasMultipleDestination
+        boolean hasParsableDestination = transport.getDisplayInfo().contains(":");
+        String destination = hasParsableDestination
                 ? transport.getDisplayInfo().split(":")[1].trim().toLowerCase()
                 : transport.getDisplayInfo().trim().toLowerCase();
 
@@ -1880,7 +1879,7 @@ public class Rs2Walker {
         }
 
         // If there's only one destination with the item possible, a generic action will also work
-        if (itemAction == null && !hasMultipleDestination) {
+        if (itemAction == null && !hasParsableDestination) {
             itemAction = rs2Item.getActionFromList(genericKeyWords);
         }
 
@@ -2353,7 +2352,7 @@ public class Rs2Walker {
         return false;
     }
     /**
-     * interact with interfaces like spirit tree & xeric talisman etc...
+     * interact with interfaces like spirit tree etc...
      *
      * @param transport
      */
