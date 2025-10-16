@@ -27,12 +27,17 @@ package net.runelite.client.ui;
 import java.awt.BorderLayout;
 import java.awt.Color;
 import java.awt.Component;
+import java.awt.Dimension;
 import javax.annotation.Nullable;
 import javax.swing.JPanel;
 import net.runelite.api.Constants;
 
 final class ClientPanel extends JPanel
 {
+	private static final Dimension GAME_SIZE = new Dimension(Constants.GAME_FIXED_SIZE);
+
+	private final JPanel consoleContainer = new JPanel(new BorderLayout());
+
 	public ClientPanel(@Nullable Component client)
 	{
 		setSize(Constants.GAME_FIXED_SIZE);
@@ -40,6 +45,9 @@ final class ClientPanel extends JPanel
 		setPreferredSize(Constants.GAME_FIXED_SIZE);
 		setLayout(new BorderLayout());
 		setBackground(Color.black);
+		consoleContainer.setOpaque(false);
+		consoleContainer.setVisible(false);
+		add(consoleContainer, BorderLayout.SOUTH);
 
 		if (client == null)
 		{
@@ -47,5 +55,52 @@ final class ClientPanel extends JPanel
 		}
 
 		add(client, BorderLayout.CENTER);
+	}
+
+	void setConsole(Component console)
+	{
+		consoleContainer.removeAll();
+		if (console != null)
+		{
+			consoleContainer.add(console, BorderLayout.CENTER);
+		}
+		consoleContainer.revalidate();
+		consoleContainer.repaint();
+	}
+
+	void setConsoleVisible(boolean visible)
+	{
+		if (consoleContainer.isVisible() == visible)
+		{
+			return;
+		}
+		consoleContainer.setVisible(visible);
+		revalidate();
+		repaint();
+	}
+
+	boolean isConsoleVisible()
+	{
+		return consoleContainer.isVisible();
+	}
+
+	@Override
+	public Dimension getMinimumSize()
+	{
+		Dimension size = new Dimension(GAME_SIZE);
+		if (consoleContainer.isVisible())
+		{
+			Dimension consoleSize = consoleContainer.getPreferredSize();
+			size.height += consoleSize != null ? consoleSize.height : 0;
+		}
+		return size;
+	}
+
+	@Override
+	public Dimension getPreferredSize()
+	{
+		Dimension size = getMinimumSize();
+		size.width = Math.max(size.width, GAME_SIZE.width);
+		return size;
 	}
 }

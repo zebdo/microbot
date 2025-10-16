@@ -30,6 +30,8 @@ import com.formdev.flatlaf.util.SystemInfo;
 import com.google.common.base.Strings;
 import com.google.common.collect.Iterables;
 import com.google.inject.Inject;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
 import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -66,6 +68,7 @@ import net.runelite.client.util.OSType;
 import net.runelite.client.util.SwingUtil;
 import net.runelite.client.util.WinUtil;
 import net.runelite.client.util.*;
+import org.slf4j.LoggerFactory;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
@@ -81,6 +84,10 @@ import java.awt.*;
 import java.awt.desktop.QuitStrategy;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.PrintStream;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 import java.util.*;
@@ -149,6 +156,14 @@ public class ClientUI
 	private int recommendedMemoryLimit = 512;
 
 	private List<KeyListener> keyListeners;
+
+	private LogConsolePanel consolePanel;
+	private ConsoleLogAppender consoleLogAppender;
+	private PrintStream consolePrintStream;
+	private JButton consoleToggleButton;
+	private BufferedImage consoleIconOpen;
+	private BufferedImage consoleIconClosed;
+	private boolean consoleVisible;
 
 	@RequiredArgsConstructor
 	private static class HistoryEntry
@@ -364,6 +379,11 @@ public class ClientUI
 			content.setLayout(new Layout());
 
 			clientPanel = new ClientPanel(client);
+			consolePanel = new LogConsolePanel();
+			clientPanel.setConsole(consolePanel);
+			clientPanel.setConsoleVisible(false);
+			consoleVisible = false;
+			initializeConsoleLogging();
 			content.add(clientPanel);
 
 			sidebar = new JTabbedPane(JTabbedPane.RIGHT);
@@ -505,6 +525,16 @@ public class ClientUI
 			// Decorate window with custom chrome and titlebar if needed
 			withTitleBar = config.enableCustomChrome();
 			toolbarPanel = new ClientToolbarPanel(!withTitleBar);
+			consoleIconClosed = createConsoleIcon(false);
+			consoleIconOpen = createConsoleIcon(true);
+			consoleToggleButton = toolbarPanel.add(
+				NavigationButton.builder()
+					.priority(95)
+					.icon(consoleIconClosed)
+					.tooltip("Show console")
+					.onClick(this::toggleConsole)
+					.build(), false);
+			updateConsoleToggleButton();
 
 			sidebarOpenIcon = ImageUtil.loadImageResource(ClientUI.class, withTitleBar ? "open.png" : "open_rs.png");
 			sidebarCloseIcon = ImageUtil.flipImage(sidebarOpenIcon, true, false);
@@ -1137,6 +1167,93 @@ public class ClientUI
 		}
 	}
 
+	private void toggleConsole()
+	{
+		setConsoleVisible(!consoleVisible);
+	}
+
+	private void setConsoleVisible(boolean visible)
+	{
+		if (consolePanel == null || clientPanel == null || consoleVisible == visible)
+		{
+			return;
+		}
+
+		consoleVisible = visible;
+		clientPanel.setConsoleVisible(visible);
+		updateConsoleToggleButton();
+
+		if (content != null)
+		{
+			content.revalidate();
+			content.repaint();
+		}
+
+		if (frame != null)
+		{
+			frame.revalidateMinimumSize();
+		}
+	}
+
+	private void updateConsoleToggleButton()
+	{
+		if (consoleToggleButton == null)
+		{
+			return;
+		}
+
+		consoleToggleButton.setIcon(new ImageIcon(consoleVisible ? consoleIconOpen : consoleIconClosed));
+		consoleToggleButton.setToolTipText(consoleVisible ? "Hide console" : "Show console");
+	}
+
+
+	private void initializeConsoleLogging()
+	{
+		if (consolePanel == null || consoleLogAppender != null)
+		{
+			return;
+		}
+
+		OutputStream consoleStream = consolePanel.createOutputStream();
+		PrintStream originalOut = System.out;
+		TeeOutputStream teeStream = new TeeOutputStream(consoleStream, originalOut);
+
+		try
+		{
+			consolePrintStream = new PrintStream(teeStream, true, StandardCharsets.UTF_8);
+		}
+		catch (Exception ex)
+		{
+			consolePrintStream = new PrintStream(teeStream, true);
+		}
+
+		System.setOut(consolePrintStream);
+
+		LoggerContext loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+		consoleLogAppender = new ConsoleLogAppender(consolePanel::append);
+		consoleLogAppender.setContext(loggerContext);
+		consoleLogAppender.start();
+
+		Logger rootLogger = loggerContext.getLogger(Logger.ROOT_LOGGER_NAME);
+		rootLogger.addAppender(consoleLogAppender);
+	}
+
+	private BufferedImage createConsoleIcon(boolean active)
+	{
+		BufferedImage icon = new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB);
+		Graphics2D graphics = icon.createGraphics();
+		graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+		graphics.setColor(ColorScheme.DARK_GRAY_COLOR);
+		graphics.fillRoundRect(1, 3, 14, 10, 3, 3);
+		graphics.setColor(active ? ColorScheme.BRAND_ORANGE : ColorScheme.LIGHT_GRAY_COLOR);
+		graphics.drawRoundRect(1, 3, 14, 10, 3, 3);
+		graphics.setColor(ColorScheme.PROGRESS_COMPLETE_COLOR);
+		graphics.drawLine(3, 7, 12, 7);
+		graphics.drawLine(3, 10, 9, 10);
+		graphics.dispose();
+		return icon;
+	}
+
 	private void pushHistory()
 	{
 		selectedTabHistory.addLast(new HistoryEntry(sidebar.isVisible(), selectedTab));
@@ -1402,6 +1519,51 @@ public class ClientUI
 		});
 
 		return trayIcon;
+	}
+
+
+	private static final class TeeOutputStream extends OutputStream
+	{
+		private final OutputStream primary;
+		private final OutputStream secondary;
+
+		private TeeOutputStream(OutputStream primary, OutputStream secondary)
+		{
+			this.primary = primary;
+			this.secondary = secondary;
+		}
+
+		@Override
+		public void write(int b) throws IOException
+		{
+			if (primary != null)
+			{
+				primary.write(b);
+			}
+			if (secondary != null)
+			{
+				secondary.write(b);
+			}
+		}
+
+		@Override
+		public void flush() throws IOException
+		{
+			if (primary != null)
+			{
+				primary.flush();
+			}
+			if (secondary != null)
+			{
+				secondary.flush();
+			}
+		}
+
+		@Override
+		public void close() throws IOException
+		{
+			flush();
+		}
 	}
 
 	private class Layout implements LayoutManager2
