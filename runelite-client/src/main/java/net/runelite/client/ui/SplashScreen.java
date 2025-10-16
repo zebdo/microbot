@@ -304,16 +304,18 @@ public class SplashScreen extends JFrame implements ActionListener {
         errorDetails.setForeground(fgMuted);
         errorDetails.setBackground(new Color(0, 0, 0, 0));
 
-        JScrollPane errorScroll = new JScrollPane(errorDetails);
-        errorScroll.setBorder(BorderFactory.createCompoundBorder(
-                BorderFactory.createLineBorder(new Color(55, 55, 55)),
-                new EmptyBorder(PAD, PAD, PAD, PAD)
-        ));
-        errorScroll.setOpaque(false);
-        errorScroll.getViewport().setOpaque(false);
-        errorScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-        errorScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-        errorCard.add(errorScroll, BorderLayout.CENTER);
+JScrollPane errorScroll = new JScrollPane(errorDetails);
+errorScroll.setBorder(BorderFactory.createCompoundBorder(
+BorderFactory.createLineBorder(new Color(55, 55, 55)),
+new EmptyBorder(PAD, PAD, PAD, PAD)
+));
+errorScroll.setOpaque(false);
+errorScroll.getViewport().setOpaque(false);
+errorScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+errorScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+errorScroll.setPreferredSize(new Dimension(WIDTH - (PAD * 4), 220));
+errorScroll.setMinimumSize(new Dimension(0, 180));
+errorCard.add(errorScroll, BorderLayout.CENTER);
 
         JPanel errorButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         errorButtonPanel.setOpaque(false);
