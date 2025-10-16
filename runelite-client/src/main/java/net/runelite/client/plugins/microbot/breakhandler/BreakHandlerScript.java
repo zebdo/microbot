@@ -456,10 +456,6 @@ public class BreakHandlerScript extends Script {
             if (breakDuration <= 0 || config.breakEndNow()){
                 // Reset state to waiting for break if logged in unexpectedly
                 transitionToState(BreakHandlerState.BREAK_ENDING);
-            }else{
-                // If still logged in, reset break duration
-                setBreakDuration();
-                transitionToState( BreakHandlerState.LOGOUT_REQUESTED);
             }
         }
     }
