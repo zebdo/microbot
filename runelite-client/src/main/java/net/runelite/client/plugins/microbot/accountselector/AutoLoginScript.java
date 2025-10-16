@@ -235,23 +235,29 @@ public class AutoLoginScript extends Script {
      * Initiates intelligent login based on configuration.
      */
     private void initiateLogin(AutoLoginConfig config) {
+        if (!BreakHandlerScript.tryAcquireLoginLock()) {
+            log.debug("Login sequence currently locked by break handler; skipping auto login attempt");
+            return;
+        }
+
         try {
-            // start login watchdog if enabled and not already started
             if (config.enableLoginWatchdog() && loginWatchdogStartTime == null) {
                 loginWatchdogStartTime = Instant.now();
                 log.info("Login watchdog started for {} minutes", config.loginWatchdogTimeout());
             }
-            
+
+            if (Microbot.isLoggedIn()) {
+                return;
+            }
+
             int targetWorld = -1;
-            
             boolean membersOnly = config.membersOnly();
-            
-            // use world selection mode if no preferred world or preferred world not accessible
+
             if (targetWorld == -1) {
                 switch (config.worldSelectionMode()) {
                     case CURRENT_PREFERRED_WORLD:
                         boolean isAccessible = Rs2WorldUtil.canAccessWorld(config.world());
-                        
+
                         if (isAccessible) {
                             targetWorld = config.world();
                             log.info("Using preferred world: {}", targetWorld);
@@ -260,28 +266,28 @@ public class AutoLoginScript extends Script {
                             boolean isMemberFromProfile = activeProfile != null && activeProfile.isMember();
                             boolean isLocalPlayerAvailable = Microbot.getClient()!=null && Microbot.getClient().getLocalPlayer() != null;
                             boolean isMemberFromClient = Microbot.getClient()!=null && Microbot.getClient().getLocalPlayer() != null ? Rs2Player.isMember() : false;
-                            log.error("Preferred world {} is not accessible,\n\t ->check if we have member access set in profile(current value {}), or when logged in, have we member access ? (LocalPlayer? {}, isMember? {})", 
-                            config.usePreferredWorld(), isMemberFromProfile, isLocalPlayerAvailable, isMemberFromClient);                        
+                            log.error("Preferred world {} is not accessible,\n\t ->check if we have member access set in profile (current value {}), or when logged in, have we member access ? (LocalPlayer? {}, isMember? {})",
+                                config.usePreferredWorld(), isMemberFromProfile, isLocalPlayerAvailable, isMemberFromClient);
+
                         }
-                        // no specific world selection - use default login
                         break;
-                        
+
                     case RANDOM_WORLD:
                         targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
                             config.regionPreference().getWorldRegion(),
                             config.avoidEmptyWorlds(),
                             config.avoidOvercrowdedWorlds(),membersOnly);
                         break;
-                        
+
                     case BEST_POPULATION:
                         targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
                             false,
                             config.regionPreference().getWorldRegion(),
                             config.avoidEmptyWorlds(),
-                            config.avoidOvercrowdedWorlds(),                            
+                            config.avoidOvercrowdedWorlds(),
                             membersOnly);
                         break;
-                        
+
                     case BEST_PING:
                         targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
                             true,
@@ -291,7 +297,7 @@ public class AutoLoginScript extends Script {
                             membersOnly
                             );
                         break;
-                        
+
                     case REGIONAL_RANDOM:
                         targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
                             config.regionPreference().getWorldRegion(),
@@ -300,22 +306,20 @@ public class AutoLoginScript extends Script {
                             membersOnly
                             );
                         break;
-                        
+
                     default:
-                        // fallback to legacy behavior                        
-                        targetWorld = Login.getRandomWorld(Rs2Player.isMember());                        
+                        targetWorld = Login.getRandomWorld(Rs2Player.isMember());
                         if(!Rs2WorldUtil.canAccessWorld(targetWorld)) {
                             log.warn("Randomly selected world {} is not accessible, using default world {}", targetWorld, config.world());
                             targetWorld = config.world();
-                        }                                                
+                        }
                         break;
                 }
             }
-            
-            // perform login attempt and track retry state
+
             retryCount++;
             lastLoginAttemptTime = Instant.now();
-            
+
             if (targetWorld != -1) {
                 log.info("Attempting login to selected world: {} (attempt {})", targetWorld, retryCount);
                 new Login(targetWorld);
@@ -323,15 +327,16 @@ public class AutoLoginScript extends Script {
                 log.info("Using default login (current world or last used) (attempt {})", retryCount);
                 new Login();
             }
-            
-            
+
         } catch (Exception ex) {
             log.error("Error during intelligent login", ex);
             retryCount++;
             lastLoginAttemptTime = Instant.now();
+        } finally {
+            BreakHandlerScript.releaseLoginLock();
         }
     }
-    
+
     /**
      * Transitions to a new login state.
      */

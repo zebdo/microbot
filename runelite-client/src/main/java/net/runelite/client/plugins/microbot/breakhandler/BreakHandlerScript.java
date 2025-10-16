@@ -20,6 +20,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.ReentrantLock;
 import net.runelite.api.GameState;
 
 /**
@@ -102,7 +103,10 @@ public class BreakHandlerScript extends Script {
     private static volatile Instant loginWatchdogStartTime = null;
     @Getter
     private static volatile Instant extendedSleepStartTime = null;
-    
+    private static final ReentrantLock stateLock = new ReentrantLock();
+    private static final ReentrantLock loginSequenceLock = new ReentrantLock();
+    private static final AtomicBoolean controllerRunning = new AtomicBoolean(false);
+
     // Lock state management
     public static AtomicBoolean lockState = new AtomicBoolean(false);
     
@@ -118,6 +122,16 @@ public class BreakHandlerScript extends Script {
         }
     }
     
+    public static boolean tryAcquireLoginLock() {
+        return loginSequenceLock.tryLock();
+    }
+
+    public static void releaseLoginLock() {
+        if (loginSequenceLock.isHeldByCurrentThread()) {
+            loginSequenceLock.unlock();
+        }
+    }
+
     // UI and configuration
     private String originalWindowTitle = "";
     private BreakHandlerConfig config;
@@ -175,32 +189,53 @@ public class BreakHandlerScript extends Script {
      * Main entry point for the break handler script.
      */
     public boolean run(BreakHandlerConfig config) {
-        this.config = config;        
-        originalWindowTitle = ClientUI.getFrame().getTitle();        
-        // Initialize state and timing
-        currentState.set(BreakHandlerState.WAITING_FOR_BREAK);
-        stateChangeTime.set(Instant.now());
-        retryCount.set(0);        
-        initializeNextBreakTimer();        
+        if (!controllerRunning.compareAndSet(false, true)) {
+            log.warn("Break handler is already running; ignoring duplicate run request");
+            return false;
+        }
+
+        this.config = config;
+        originalWindowTitle = ClientUI.getFrame().getTitle();
+
+        stateLock.lock();
+        try {
+            currentState.set(BreakHandlerState.WAITING_FOR_BREAK);
+            stateChangeTime.set(Instant.now());
+            retryCount.set(0);
+            initializeNextBreakTimer();
+        } finally {
+            stateLock.unlock();
+        }
+
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 super.run();
-                
-                // check for ban detection first
-                checkForBan();
-                updatePlayerNameCache();
-                
-                // only continue with break handling if not banned
-                if (!isBanned) {
-                    processBreakHandlerStateMachine();
+
+                if (!stateLock.tryLock()) {
+                    log.trace("Skipping break handler tick because another thread holds the state lock");
+                    return;
+                }
+
+                try {
+                    // check for ban detection first
+                    checkForBan();
+                    updatePlayerNameCache();
+
+                    // only continue with break handling if not banned
+                    if (!isBanned) {
+                        processBreakHandlerStateMachine();
+                    }
+                } finally {
+                    stateLock.unlock();
                 }
             } catch (Exception ex) {
                 log.error("Error in break handler main loop", ex);
             }
         }, 0, SCHEDULER_INTERVAL_MS, TimeUnit.MILLISECONDS);
-        
+
         return true;
     }
+
 
     /**
      * Main state machine processor - handles all break-related state transitions.
@@ -404,39 +439,50 @@ public class BreakHandlerScript extends Script {
      * Attempting to logout, with retry logic.
      */
     private void handleLogoutRequestedState() {
-        if (!Microbot.isLoggedIn()) {     
-            retryCount.set(0);
-            log.debug("Logout successful");                    
-            transitionToState(BreakHandlerState.LOGGED_OUT);
+        if (!loginSequenceLock.tryLock()) {
+            log.debug("Login/logout sequence is currently locked; deferring logout request");
             return;
         }
-        int currentRetryCount = retryCount.get();
-        Instant currentStateChangeTime = stateChangeTime.get();
-        
-        if (currentRetryCount >= getMaxLogoutRetries()) {
-            log.warn("Max logout retries reached, continuing with logged-in break");
-            transitionToState(BreakHandlerState.INGAME_BREAK_ACTIVE);
-            return;
-        }
-        
-        // Check if enough time has passed for retry
-        if (currentRetryCount > 0 && Duration.between(currentStateChangeTime, Instant.now()).toMillis() < getLogoutRetryDelayMs()) {
-            long remainingTime = getLogoutRetryDelayMs() - Duration.between(currentStateChangeTime, Instant.now()).toMillis();
-            log.debug("Waiting for next logout retry ({} ms remaining)", remainingTime);
-            return;
-        }        
-        log.info("Attempting logout (attempt {}/{})", currentRetryCount + 1, getMaxLogoutRetries());
+
         try {
-            Rs2Player.logout();
-            // Don't immediately transition - wait for next cycle to check if logout was successful
-            retryCount.incrementAndGet();
-            stateChangeTime.set(Instant.now());                      
-            // Check on next cycle if we successfully logged out           
-            
-        } catch (Exception ex) {
-            log.error("Error during logout attempt", ex);
-            retryCount.incrementAndGet();
-            stateChangeTime.set(Instant.now());
+            if (!Microbot.isLoggedIn()) {
+                retryCount.set(0);
+                log.debug("Logout successful");
+                transitionToState(BreakHandlerState.LOGGED_OUT);
+                return;
+            }
+
+            int currentRetryCount = retryCount.get();
+            Instant currentStateChangeTime = stateChangeTime.get();
+
+            if (currentRetryCount >= getMaxLogoutRetries()) {
+                log.warn("Max logout retries reached, continuing with logged-in break");
+                transitionToState(BreakHandlerState.INGAME_BREAK_ACTIVE);
+                return;
+            }
+
+            if (currentRetryCount > 0 && Duration.between(currentStateChangeTime, Instant.now()).toMillis() < getLogoutRetryDelayMs()) {
+                long remainingTime = getLogoutRetryDelayMs() - Duration.between(currentStateChangeTime, Instant.now()).toMillis();
+                log.debug("Waiting for next logout retry ({} ms remaining)", remainingTime);
+                return;
+            }
+
+            if (!Microbot.isLoggedIn()) {
+                return;
+            }
+
+            log.info("Attempting logout (attempt {}/{})", currentRetryCount + 1, getMaxLogoutRetries());
+            try {
+                Rs2Player.logout();
+                retryCount.incrementAndGet();
+                stateChangeTime.set(Instant.now());
+            } catch (Exception ex) {
+                log.error("Error during logout attempt", ex);
+                retryCount.incrementAndGet();
+                stateChangeTime.set(Instant.now());
+            }
+        } finally {
+            loginSequenceLock.unlock();
         }
     }
 
@@ -481,99 +527,104 @@ public class BreakHandlerScript extends Script {
      * Break ended, attempting to login with intelligent world selection and watchdog.
      */
     private void handleLoginRequestedState() {
-        if (Microbot.isLoggedIn()) {
-            log.debug("Already logged in, proceeding to break ending");
-            loginWatchdogStartTime = null; // reset watchdog
-            transitionToState(BreakHandlerState.BREAK_ENDING);
+        if (!loginSequenceLock.tryLock()) {
+            log.debug("Login/logout sequence is currently locked; deferring login request");
             return;
         }
-        
-        // initialize login watchdog timer
-        if (loginWatchdogStartTime == null) {
-            loginWatchdogStartTime = Instant.now();
-            log.debug("Login watchdog started for {} minutes", config.loginWatchdogTimeout());
-        }
-        
-        boolean membersOnly = config.membersOnly();
-        log.info("Attempting intelligent login with world selection");
+
         try {
-            int targetWorld = -1;                       
-            // use world selection mode if no last world or last world not accessible
-            
-            switch (config.worldSelectionMode()) {
-                case CURRENT_PREFERRED_WORLD:
-                    if (preBreakWorld != -1) {
-                        boolean isAccessible = Rs2WorldUtil.canAccessWorld(preBreakWorld);
-                        if (isAccessible) {
-                            targetWorld = preBreakWorld;
-                            log.info("Using last world before break: {}", targetWorld);
-                        } else {
-                            log.warn("Last world {} is not accessible, falling back to world selection mode", preBreakWorld);
-                        }
-                    }
-        
-                    // no specific world selection - use default login
-                    break;
-                    
-                case RANDOM_WORLD:
-                    targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
-                        config.regionPreference().getWorldRegion(),
-                        config.avoidEmptyWorlds(),
-                        config.avoidOvercrowdedWorlds(),
-                        membersOnly);
-                    break;
-                    
-                case BEST_POPULATION:
-                    targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
-                        false,
-                        config.regionPreference().getWorldRegion(),
-                        config.avoidEmptyWorlds(),
-                        config.avoidOvercrowdedWorlds(),
-                        membersOnly
-                        );
-                    break;
-                    
-                case BEST_PING:
-                    targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
-                        true,
-                        config.regionPreference().getWorldRegion(),
-                        config.avoidEmptyWorlds(),
-                        config.avoidOvercrowdedWorlds(),
-                        membersOnly
-                        );
-                    break;
-                    
-                case REGIONAL_RANDOM:
-                    targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
-                        config.regionPreference().getWorldRegion(),
-                        config.avoidEmptyWorlds(),
-                        config.avoidOvercrowdedWorlds(),
-                        membersOnly
-                        );
-                    break;
-                    
-                default:
-                    // fallback to current world
-                    break;
-                }
-        
-            
-            // perform login attempt
-            if (targetWorld != -1) {
-                log.info("Attempting login to selected world: {}", targetWorld);
-                new Login(targetWorld);
-            } else {
-                log.info("Using default login (current world or last used)");
-                new Login();
+            if (Microbot.isLoggedIn()) {
+                log.debug("Already logged in, proceeding to break ending");
+                loginWatchdogStartTime = null; // reset watchdog
+                transitionToState(BreakHandlerState.BREAK_ENDING);
+                return;
             }
-            
-            // immediately transition to logging in state to prevent multiple login instances
-            transitionToState(BreakHandlerState.LOGGING_IN);
-            
-        } catch (Exception ex) {
-            log.error("Error initiating login", ex);
-            // still transition to prevent getting stuck in login requested state
-            transitionToState(BreakHandlerState.LOGGING_IN);
+
+            if (loginWatchdogStartTime == null) {
+                loginWatchdogStartTime = Instant.now();
+                log.debug("Login watchdog started for {} minutes", config.loginWatchdogTimeout());
+            }
+
+            boolean membersOnly = config.membersOnly();
+            log.info("Attempting intelligent login with world selection");
+            try {
+                int targetWorld = -1;
+
+                switch (config.worldSelectionMode()) {
+                    case CURRENT_PREFERRED_WORLD:
+                        if (preBreakWorld != -1) {
+                            boolean isAccessible = Rs2WorldUtil.canAccessWorld(preBreakWorld);
+                            if (isAccessible) {
+                                targetWorld = preBreakWorld;
+                                log.info("Using last world before break: {}", targetWorld);
+                            } else {
+                                log.warn("Last world {} is not accessible, falling back to world selection mode", preBreakWorld);
+                            }
+                        }
+                        break;
+
+                    case RANDOM_WORLD:
+                        targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+                            config.regionPreference().getWorldRegion(),
+                            config.avoidEmptyWorlds(),
+                            config.avoidOvercrowdedWorlds(),
+                            membersOnly);
+                        break;
+
+                    case BEST_POPULATION:
+                        targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
+                            false,
+                            config.regionPreference().getWorldRegion(),
+                            config.avoidEmptyWorlds(),
+                            config.avoidOvercrowdedWorlds(),
+                            membersOnly
+                            );
+                        break;
+
+                    case BEST_PING:
+                        targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
+                            true,
+                            config.regionPreference().getWorldRegion(),
+                            config.avoidEmptyWorlds(),
+                            config.avoidOvercrowdedWorlds(),
+                            membersOnly
+                            );
+                        break;
+
+                    case REGIONAL_RANDOM:
+                        targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+                            config.regionPreference().getWorldRegion(),
+                            config.avoidEmptyWorlds(),
+                            config.avoidOvercrowdedWorlds(),
+                            membersOnly
+                            );
+                        break;
+
+                    default:
+                        break;
+                }
+
+                if (Microbot.isLoggedIn()) {
+                    transitionToState(BreakHandlerState.BREAK_ENDING);
+                    return;
+                }
+
+                if (targetWorld != -1) {
+                    log.info("Attempting login to selected world: {}", targetWorld);
+                    new Login(targetWorld);
+                } else {
+                    log.info("Using default login (current world or last used)");
+                    new Login();
+                }
+
+                transitionToState(BreakHandlerState.LOGGING_IN);
+
+            } catch (Exception ex) {
+                log.error("Error initiating login", ex);
+                transitionToState(BreakHandlerState.LOGGING_IN);
+            }
+        } finally {
+            loginSequenceLock.unlock();
         }
     }
 
@@ -687,19 +738,34 @@ public class BreakHandlerScript extends Script {
      * This method is thread-safe and can be called from any thread.
      */
     private static void transitionToState(BreakHandlerState newState) {
+        if (!stateLock.isHeldByCurrentThread()) {
+            stateLock.lock();
+            try {
+                transitionToStateInternal(newState);
+            } finally {
+                stateLock.unlock();
+            }
+            return;
+        }
+
+        transitionToStateInternal(newState);
+    }
+
+    private static void transitionToStateInternal(BreakHandlerState newState) {
         BreakHandlerState oldState = currentState.get();
         if (oldState != newState) {
             log.debug("State transition: {} -> {}", oldState, newState);
             currentState.set(newState);
             stateChangeTime.set(Instant.now());
             retryCount.set(0);
-            
+
             // Reset safe condition wait time when leaving BREAK_REQUESTED
             if (newState != BreakHandlerState.BREAK_REQUESTED) {
                 safeConditionWaitStartTime = null;
             }
         }
     }
+
 
     /**
      * Checks if it's safe to break (not in combat, not interacting).
@@ -850,23 +916,33 @@ public class BreakHandlerScript extends Script {
 
     @Override
     public void shutdown() {
-        BreakHandlerState state = currentState.get();
-        if(scheduledFuture != null && !scheduledFuture.isDone()) {
-            scheduledFuture.cancel(true);
-        }        
-        log.info("Break handler shutting down. Current state: {}", state);
-        
-        // If we're in a break state, try to clean up gracefully
-        if (state == BreakHandlerState.LOGGED_OUT) {
-            log.info("Attempting to resume from logged out state");
-            transitionToState(BreakHandlerState.LOGIN_REQUESTED);
-        } else if (isBreakActive()) {
-            log.info("Attempting to end break gracefully");
-            transitionToState(BreakHandlerState.BREAK_ENDING);
-        }        
-        resetWindowTitle();
-        resumeFromBreak();
-        super.shutdown();
+        try {
+            if (scheduledFuture != null && !scheduledFuture.isDone()) {
+                scheduledFuture.cancel(true);
+            }
+
+            stateLock.lock();
+            try {
+                BreakHandlerState state = currentState.get();
+                log.info("Break handler shutting down. Current state: {}", state);
+
+                if (state == BreakHandlerState.LOGGED_OUT) {
+                    log.info("Attempting to resume from logged out state");
+                    transitionToState(BreakHandlerState.LOGIN_REQUESTED);
+                } else if (isBreakActive()) {
+                    log.info("Attempting to end break gracefully");
+                    transitionToState(BreakHandlerState.BREAK_ENDING);
+                }
+            } finally {
+                stateLock.unlock();
+            }
+
+            resetWindowTitle();
+            resumeFromBreak();
+            super.shutdown();
+        } finally {
+            controllerRunning.set(false);
+        }
     }
 
     /**
@@ -874,9 +950,14 @@ public class BreakHandlerScript extends Script {
      */
     public void reset() {
         log.info("Resetting break handler");
-        resetBreakState();
-        transitionToState(BreakHandlerState.WAITING_FOR_BREAK);
-        initializeNextBreakTimer();
+        stateLock.lock();
+        try {
+            resetBreakState();
+            transitionToState(BreakHandlerState.WAITING_FOR_BREAK);
+            initializeNextBreakTimer();
+        } finally {
+            stateLock.unlock();
+        }
     }
 
     /**
