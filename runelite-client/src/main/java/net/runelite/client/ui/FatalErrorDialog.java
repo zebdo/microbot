@@ -29,6 +29,8 @@ import java.awt.Color;
 import java.awt.Component;
 import java.awt.Dimension;
 import java.awt.Font;
+import java.awt.Toolkit;
+import java.awt.datatransfer.StringSelection;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
@@ -36,6 +38,7 @@ import java.net.ConnectException;
 import java.net.UnknownHostException;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
+import java.util.function.Supplier;
 import java.util.concurrent.atomic.AtomicBoolean;
 import javax.swing.BorderFactory;
 import javax.swing.BoxLayout;
@@ -45,6 +48,8 @@ import javax.swing.JDialog;
 import javax.swing.JLabel;
 import javax.swing.JPanel;
 import javax.swing.JTextArea;
+import javax.swing.JScrollPane;
+import javax.swing.ScrollPaneConstants;
 import javax.swing.border.EmptyBorder;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
@@ -61,6 +66,7 @@ public class FatalErrorDialog extends JDialog
 	private final JPanel rightColumn = new JPanel();
 	private final Font font = new Font(Font.DIALOG, Font.PLAIN, 12);
 	private final JLabel title;
+	private final JTextArea textArea;
 
 	public FatalErrorDialog(String message)
 	{
@@ -111,16 +117,25 @@ public class FatalErrorDialog extends JDialog
 		leftPane.add(title, BorderLayout.NORTH);
 
 		leftPane.setPreferredSize(new Dimension(400, 200));
-		JTextArea textArea = new JTextArea(message);
+		textArea = new JTextArea(message);
 		textArea.setFont(font);
 		textArea.setBackground(ColorScheme.DARKER_GRAY_COLOR);
 		textArea.setForeground(Color.LIGHT_GRAY);
-		textArea.setLineWrap(true);
-		textArea.setWrapStyleWord(true);
-		textArea.setBorder(new EmptyBorder(10, 10, 10, 10));
+		textArea.setLineWrap(false);
+		textArea.setWrapStyleWord(false);
 		textArea.setEditable(false);
 		textArea.setOpaque(false);
-		leftPane.add(textArea, BorderLayout.CENTER);
+		textArea.setCaretPosition(0);
+
+		JScrollPane scrollPane = new JScrollPane(textArea);
+		scrollPane.setBorder(new EmptyBorder(10, 10, 10, 10));
+		scrollPane.setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		scrollPane.getViewport().setBackground(ColorScheme.DARKER_GRAY_COLOR);
+		scrollPane.setOpaque(false);
+		scrollPane.getViewport().setOpaque(false);
+		scrollPane.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+		scrollPane.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+		leftPane.add(scrollPane, BorderLayout.CENTER);
 
 		pane.add(leftPane, BorderLayout.CENTER);
 
@@ -175,6 +190,41 @@ public class FatalErrorDialog extends JDialog
 		rightColumn.revalidate();
 
 		return this;
+	}
+
+	public FatalErrorDialog setContent(String message)
+	{
+		textArea.setText(message);
+		textArea.setCaretPosition(0);
+		return this;
+	}
+
+	public FatalErrorDialog addCopyButton(String message)
+	{
+		return addCopyButton(message, () -> textArea.getText());
+	}
+
+	public FatalErrorDialog addCopyButton(String message, Supplier<String> textSupplier)
+	{
+		return addButton(message, () -> copyToClipboard(textSupplier.get()));
+	}
+
+	private void copyToClipboard(String text)
+	{
+		if (text == null || text.isEmpty())
+		{
+			return;
+		}
+
+		try
+		{
+			StringSelection selection = new StringSelection(text);
+			Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
+		}
+		catch (IllegalStateException ex)
+		{
+			log.warn("Unable to copy text to clipboard", ex);
+		}
 	}
 
 	public FatalErrorDialog setTitle(String windowTitle, String header)

@@ -1855,11 +1855,14 @@ public class Rs2Walker {
         Rs2ItemModel rs2Item = Rs2Inventory.get(itemId);
         if (rs2Item == null) return false;
 
-        List<String> genericKeyWords = Arrays.asList("invoke", "empty", "consume", "open", "teleport", "rub", "break", "reminisce", "signal", "play", "commune", "squash");
+        // A list of generic teleports that can be used if no parsable destination action is found
+        List<String> genericKeyWords = Arrays.asList(
+                "invoke", "empty", "consume", "open", "teleport", "rub", "break", "reminisce", "signal", "play", "commune", "squash"
+        );
 
-        // Return true when the item can be used to teleport to multiple places
-        boolean hasMultipleDestination = transport.getDisplayInfo().contains(":");
-        String destination = hasMultipleDestination
+        // Return true when the item does not use a generic keyword to teleport to its destination
+        boolean hasParsableDestination = transport.getDisplayInfo().contains(":");
+        String destination = hasParsableDestination
                 ? transport.getDisplayInfo().split(":")[1].trim().toLowerCase()
                 : transport.getDisplayInfo().trim().toLowerCase();
 
@@ -1876,7 +1879,7 @@ public class Rs2Walker {
         }
 
         // If there's only one destination with the item possible, a generic action will also work
-        if (itemAction == null && !hasMultipleDestination) {
+        if (itemAction == null && !hasParsableDestination) {
             itemAction = rs2Item.getActionFromList(genericKeyWords);
         }
 
@@ -1908,6 +1911,7 @@ public class Rs2Walker {
                 Rs2Dialogue.sleepUntilInDialogue();
                 return Rs2Dialogue.clickOption("Yes", "Okay");
             } else {
+                Rs2Player.waitForAnimation();
                 log.info("Unsure how to handle this itemTransport={} action={}", transport, itemAction);
             }
         }
@@ -2348,7 +2352,7 @@ public class Rs2Walker {
         return false;
     }
     /**
-     * interact with interfaces like spirit tree & xeric talisman etc...
+     * interact with interfaces like spirit tree etc...
      *
      * @param transport
      */
