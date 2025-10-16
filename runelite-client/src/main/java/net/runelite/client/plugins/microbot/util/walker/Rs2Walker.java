@@ -1860,7 +1860,7 @@ public class Rs2Walker {
                 "invoke", "empty", "consume", "open", "teleport", "rub", "break", "reminisce", "signal", "play", "commune", "squash"
         );
 
-        // Return true when the item can be used to teleport to multiple places
+        // Return true when the item does not use a generic keyword to teleport to its destination
         boolean hasParsableDestination = transport.getDisplayInfo().contains(":");
         String destination = hasParsableDestination
                 ? transport.getDisplayInfo().split(":")[1].trim().toLowerCase()
