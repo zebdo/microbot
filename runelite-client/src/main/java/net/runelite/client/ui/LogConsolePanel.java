@@ -4,9 +4,7 @@
  */
 package net.runelite.client.ui;
 
-import java.awt.BorderLayout;
-import java.awt.Dimension;
-import java.awt.Font;
+import java.awt.*;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
@@ -40,7 +38,7 @@ final class LogConsolePanel extends JPanel
 		textArea.setWrapStyleWord(false);
 		textArea.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
 		textArea.setBackground(ColorScheme.DARK_GRAY_COLOR);
-		textArea.setForeground(ColorScheme.LIGHT_GRAY_COLOR);
+		textArea.setForeground(new Color(0, 255, 70));
 		textArea.setBorder(null);
 
 		DefaultCaret caret = (DefaultCaret) textArea.getCaret();
