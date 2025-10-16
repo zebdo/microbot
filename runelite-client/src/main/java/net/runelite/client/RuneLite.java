@@ -277,6 +277,8 @@ public class RuneLite
 			ClientUI.proxyMessage = " - Proxy enabled (detected IP " + ip + ")";
 		}
 
+
+
 		SplashScreen.stage(0, "Preparing RuneScape", "");
 
 		boolean startupFailed = false;
@@ -348,11 +350,11 @@ public class RuneLite
 			{
 				if (SplashScreen.isOpen())
 				{
-					SplashScreen.showError("RuneLite failed to start", crashSummary, crashDetails);
+					SplashScreen.showError("Microbot failed to start", crashSummary, crashDetails);
 				}
 				else
 				{
-					new FatalErrorDialog("RuneLite has encountered an unexpected error during startup.")
+					new FatalErrorDialog("Microbot has encountered an unexpected error during startup.")
 						.setContent(crashDetails)
 						.addCopyButton("Copy error details")
 						.addHelpButtons()

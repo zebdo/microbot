@@ -69,6 +69,8 @@ public class SplashScreen extends JFrame implements ActionListener {
     private final JTextArea errorDetails = new JTextArea();
     private final JLabel errorSummaryLabel = new JLabel();
     private final JButton copyErrorButton = new JButton("Copy error details");
+    // Promote errorScroll to a field so we can resize it dynamically when showing errors
+    private JScrollPane errorScroll;
     private final Timer timer;
     private boolean showingError;
 
@@ -270,7 +272,7 @@ public class SplashScreen extends JFrame implements ActionListener {
         factArea.setForeground(fgMuted);
         factArea.setBackground(new Color(0, 0, 0, 0));
         factArea.setText(getFact());
-        factArea.setPreferredSize(new Dimension(WIDTH - (PAD * 4), 160));
+        // Removed fixed preferred size to allow card to grow/shrink with container
         factCard.add(factArea, BorderLayout.CENTER);
 
         detailPanel.setOpaque(false);
@@ -298,24 +300,25 @@ public class SplashScreen extends JFrame implements ActionListener {
         errorDetails.setEditable(false);
         errorDetails.setFocusable(true);
         errorDetails.setOpaque(false);
-        errorDetails.setLineWrap(false);
-        errorDetails.setWrapStyleWord(false);
+        // Enable wrapping so long lines don't force horizontal scrolling, improving visibility
+        errorDetails.setLineWrap(true);
+        errorDetails.setWrapStyleWord(true);
         errorDetails.setFont(new Font(Font.MONOSPACED, Font.PLAIN, 12));
         errorDetails.setForeground(fgMuted);
         errorDetails.setBackground(new Color(0, 0, 0, 0));
 
-JScrollPane errorScroll = new JScrollPane(errorDetails);
-errorScroll.setBorder(BorderFactory.createCompoundBorder(
-BorderFactory.createLineBorder(new Color(55, 55, 55)),
-new EmptyBorder(PAD, PAD, PAD, PAD)
-));
-errorScroll.setOpaque(false);
-errorScroll.getViewport().setOpaque(false);
-errorScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
-errorScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
-errorScroll.setPreferredSize(new Dimension(WIDTH - (PAD * 4), 220));
-errorScroll.setMinimumSize(new Dimension(0, 180));
-errorCard.add(errorScroll, BorderLayout.CENTER);
+        // Replace local variable with field assignment
+        errorScroll = new JScrollPane(errorDetails);
+        errorScroll.setBorder(BorderFactory.createCompoundBorder(
+                BorderFactory.createLineBorder(new Color(55, 55, 55)),
+                new EmptyBorder(PAD, PAD, PAD, PAD)
+        ));
+        errorScroll.setOpaque(false);
+        errorScroll.getViewport().setOpaque(false);
+        errorScroll.setHorizontalScrollBarPolicy(ScrollPaneConstants.HORIZONTAL_SCROLLBAR_AS_NEEDED);
+        errorScroll.setVerticalScrollBarPolicy(ScrollPaneConstants.VERTICAL_SCROLLBAR_AS_NEEDED);
+        // Allow expansion without fixed preferred size
+        errorCard.add(errorScroll, BorderLayout.CENTER);
 
         JPanel errorButtonPanel = new JPanel(new FlowLayout(FlowLayout.RIGHT, 8, 0));
         errorButtonPanel.setOpaque(false);
@@ -414,12 +417,10 @@ errorCard.add(errorScroll, BorderLayout.CENTER);
         });
     }
 
-    public static void showError(String title, String summary, String details)
-    {
+    public static void showError(String title, String summary, String details) {
         SwingUtilities.invokeLater(() ->
         {
-            if (INSTANCE == null)
-            {
+            if (INSTANCE == null) {
                 return;
             }
 
@@ -456,8 +457,7 @@ errorCard.add(errorScroll, BorderLayout.CENTER);
         }
     }
 
-    private void displayError(@Nullable String title, @Nullable String summary, @Nullable String details)
-    {
+    private void displayError(@Nullable String title, @Nullable String summary, @Nullable String details) {
         showingError = true;
 
         String header = title == null || title.isEmpty() ? "Startup failed" : title;
@@ -482,23 +482,67 @@ errorCard.add(errorScroll, BorderLayout.CENTER);
         copyErrorButton.setEnabled(hasDetails);
 
         detailLayout.show(detailPanel, CARD_ERROR);
+        // Force layout updates so the error scroll area can claim available space
+        detailPanel.revalidate();
+        detailPanel.repaint();
+        // Optionally adjust frame height if content is larger than current height
+        SwingUtilities.invokeLater(() -> {
+            adjustErrorDetailsLayout();
+        });
     }
 
-    private void copyErrorDetails()
-    {
+    // Dynamically resize error area & frame based on content lines to improve visibility
+    private void adjustErrorDetailsLayout() {
+        if (errorDetails.getText().isEmpty()) {
+            return; // nothing to adjust
+        }
+        // Ensure the text area computes its preferred height for the current width (accounting for wrapping)
+        int availableWidth = detailPanel.getWidth();
+        if (availableWidth <= 0) {
+            availableWidth = WIDTH - (PAD * 2); // fallback before initial layout
+        }
+        // Temporarily set size hint to force preferred size calculation with wrapping
+        errorDetails.setSize(new Dimension(availableWidth - (PAD * 2), Integer.MAX_VALUE));
+        Dimension preferredTextSize = errorDetails.getPreferredSize();
+        int textHeight = preferredTextSize.height;
+
+        int summaryHeight = errorSummaryLabel.getPreferredSize().height;
+        int buttonHeight = copyErrorButton.getPreferredSize().height + PAD; // include padding
+        int desiredViewportHeight = Math.min(textHeight + PAD, 480); // cap viewport height
+        int desiredErrorAreaHeight = summaryHeight + desiredViewportHeight + buttonHeight + (PAD * 2);
+
+        int currentFrameHeight = getHeight();
+        int otherComponentsHeight = currentFrameHeight - detailPanel.getHeight();
+        if (otherComponentsHeight <= 0) {
+            otherComponentsHeight = 160; // heuristic fallback
+        }
+
+        int targetFrameHeight = otherComponentsHeight + desiredErrorAreaHeight;
+        int maxFrameHeight = 820; // cap frame height
+        targetFrameHeight = Math.min(targetFrameHeight, maxFrameHeight);
+
+        Dimension vpSize = new Dimension(WIDTH - (PAD * 2), desiredViewportHeight);
+        errorScroll.setPreferredSize(vpSize);
+        errorScroll.setMinimumSize(new Dimension(WIDTH - (PAD * 2), Math.min(200, desiredViewportHeight)));
+
+        detailPanel.revalidate();
+        detailPanel.repaint();
+
+        if (targetFrameHeight > currentFrameHeight) {
+            setSize(WIDTH, targetFrameHeight);
+        }
+    }
+
+    private void copyErrorDetails() {
         String text = errorDetails.getText();
-        if (text == null || text.isEmpty())
-        {
+        if (text == null || text.isEmpty()) {
             return;
         }
 
-        try
-        {
+        try {
             StringSelection selection = new StringSelection(text);
             Toolkit.getDefaultToolkit().getSystemClipboard().setContents(selection, selection);
-        }
-        catch (IllegalStateException ex)
-        {
+        } catch (IllegalStateException ex) {
             log.warn("Unable to copy error details", ex);
         }
     }
