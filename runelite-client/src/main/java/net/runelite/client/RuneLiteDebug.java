@@ -55,6 +55,7 @@ import net.runelite.client.ui.overlay.tooltip.TooltipOverlay;
 import net.runelite.client.ui.overlay.worldmap.WorldMapOverlay;
 import net.runelite.client.util.OSType;
 import net.runelite.client.util.ReflectUtil;
+import net.runelite.client.util.CrashReportFormatter;
 import net.runelite.http.api.RuneLiteAPI;
 import okhttp3.Cache;
 import okhttp3.OkHttpClient;
@@ -233,6 +234,7 @@ public class RuneLiteDebug {
 
         SplashScreen.stage(0, "Retrieving client", "");
 
+        boolean startupFailed = false;
         try {
             final RuntimeConfigLoader runtimeConfigLoader = new RuntimeConfigLoader(okHttpClient);
             final MicrobotClientLoader microbotClientLoader = new MicrobotClientLoader(okHttpClient, runtimeConfigLoader, (String) options.valueOf("jav_config"));
@@ -293,13 +295,29 @@ public class RuneLiteDebug {
             //This is done for a faster development cycle
 
         } catch (Exception e) {
+            startupFailed = true;
             log.error("Failure during startup", e);
+            final String crashSummary = CrashReportFormatter.summarize(e);
+            final String crashDetails = CrashReportFormatter.buildReport(e);
             SwingUtilities.invokeLater(() ->
-                    new FatalErrorDialog("RuneLite has encountered an unexpected error during startup.")
-                            .addHelpButtons()
-                            .open());
+                    {
+                        if (SplashScreen.isOpen())
+                        {
+                                SplashScreen.showError("RuneLite failed to start", crashSummary, crashDetails);
+                        }
+                        else
+                        {
+                                new FatalErrorDialog("RuneLite has encountered an unexpected error during startup.")
+                                        .setContent(crashDetails)
+                                        .addCopyButton("Copy error details")
+                                        .addHelpButtons()
+                                        .open();
+                        }
+                    });
         } finally {
-            SplashScreen.stop();
+            if (!startupFailed) {
+                SplashScreen.stop();
+            }
         }
     }
 
