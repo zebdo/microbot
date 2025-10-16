@@ -85,7 +85,7 @@
 # Necklace of Passage (1-5)										
 3114 3179 0		21146;21149;21151;21153;21155				Y	T	19	4	1. Necklace of passage: Wizards' Tower
 2428 3350 0		21146;21149;21151;21153;21155				Y	T	19	4	2. Necklace of passage: The Outpost
-3405 3158 0		21146;21149;21151;21153;21155				Y	T	19	4	3. Necklace of passage: Eagle's Eyrie
+3405 3158 0		21146;21149;21151;21153;21155				Y	T	19	4	3. Necklace of passage: Eagles' Eyrie
 										
 # Burning Amulet										
 3234 3634 0		21166;21169;21171;21173;21175				Y	T	19	4	1. Burning amulet: Chaos Temple
@@ -354,3 +354,9 @@
 3174 9898 0		30638				Y	T	19	4	1. Giantsoul Amulet: Bryophyta
 6208 6336 0		30638				Y	T	19	4	2. Giantsoul Amulet: Obor
 2952 9574 0		30638				Y	T	19	4	3. Giantsoul Amulet: Branda and Eldric
+
+#Ruins of Mokhaiotl
+1311 9497 0		31099;31101;31102;31103;31104;31105	The Final Dawn			Y	T	29	4	Mokhaiotl waystone: Channel
+
+#Varlemore Waystone
+1439 9564 0		29090;29092;29093;29094;29095;29096;29097	Perilous Moons			Y	Y	29	4	Calcified moth: Crush
