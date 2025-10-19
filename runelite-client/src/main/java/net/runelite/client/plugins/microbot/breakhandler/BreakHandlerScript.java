@@ -567,8 +567,8 @@ public class BreakHandlerScript extends Script {
             }
 
             if (!loginInitiated) {
-                log.debug("Login manager rejected new attempt (status: {}, active: {})",
-                    LoginManager.getLoginStatus(), LoginManager.isLoginAttemptActive());
+                log.debug("Login manager rejected new attempt (gameState: {}, attemptActive: {})",
+                    LoginManager.getGameState(), LoginManager.isLoginAttemptActive());
             }
 
             // immediately transition to logging in state to prevent multiple login instances
