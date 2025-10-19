@@ -46,7 +46,8 @@ import net.runelite.client.plugins.microbot.util.cache.Rs2CacheManager;
 import net.runelite.client.plugins.microbot.util.events.PluginPauseEvent;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
+import net.runelite.client.config.ConfigProfile;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
@@ -2381,7 +2382,8 @@ public class SchedulerPlugin extends Plugin {
             // net.runelite.client.plugins.microbot.util.security
             int currentLoginIndex = Microbot.getClient().getLoginIndex();
             boolean tryMemberWorld =  config.worldType() == 2 || config.worldType() == 1 ; // TODO get correct one
-            tryMemberWorld = Login.activeProfile.isMember();
+            ConfigProfile profile = LoginManager.getActiveProfile();
+            tryMemberWorld = profile != null && profile.isMember();
             if (currentLoginIndex == 4 || currentLoginIndex == 3) { // we are in the auth screen and cannot login
                 // 3 mean wrong authtifaction
                 return false; // we are in auth
@@ -2389,7 +2391,7 @@ public class SchedulerPlugin extends Plugin {
             if (currentLoginIndex == 34) { // we are not a member and cannot login
                 if (isAutoLoginEnabled() || config.autoLogInWorld() == 1) {                    
                     Microbot.getConfigManager().setConfiguration("AutoLoginConfig", "World",
-                            Login.getRandomWorld(false));
+                            LoginManager.getRandomWorld(false));
                 }
                 int loginScreenWidth = 804;
                 int startingWidth = (Microbot.getClient().getCanvasWidth() / 2) - (loginScreenWidth / 2);
@@ -2426,7 +2428,7 @@ public class SchedulerPlugin extends Plugin {
                 ConfigManager configManager = Microbot.getConfigManager();
                 if (configManager != null) {
                     configManager.setConfiguration("AutoLoginConfig", "World",
-                            Login.getRandomWorld(tryMemberWorld));                    
+                            LoginManager.getRandomWorld(tryMemberWorld));                    
                 }
                 // Give it a moment to initialize
                 try {
@@ -2435,10 +2437,10 @@ public class SchedulerPlugin extends Plugin {
                     Thread.currentThread().interrupt();
                 }
             } else {
-                int worldID = Login.getRandomWorld(tryMemberWorld);
+                int worldID = LoginManager.getRandomWorld(tryMemberWorld);
                 log.info("\n\tforced login by scheduler plugin \n\t-> currentLoginIndex: {} - member World {}? - world {}", currentLoginIndex,
                         tryMemberWorld, worldID);
-                new Login(worldID);
+                LoginManager.login(worldID);
             }
             return true;
         }).orElse(false);        

@@ -10,7 +10,7 @@ import net.runelite.client.plugins.microbot.util.events.PluginPauseEvent;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.world.Rs2WorldUtil;
 import net.runelite.client.ui.ClientUI;
@@ -456,6 +456,8 @@ public class BreakHandlerScript extends Script {
             if (breakDuration <= 0 || config.breakEndNow()){
                 // Reset state to waiting for break if logged in unexpectedly
                 transitionToState(BreakHandlerState.BREAK_ENDING);
+            } else {
+                resetBreakState();
             }
         }
     }
@@ -555,14 +557,20 @@ public class BreakHandlerScript extends Script {
         
             
             // perform login attempt
+            boolean loginInitiated;
             if (targetWorld != -1) {
                 log.info("Attempting login to selected world: {}", targetWorld);
-                new Login(targetWorld);
+                loginInitiated = LoginManager.login(targetWorld);
             } else {
                 log.info("Using default login (current world or last used)");
-                new Login();
+                loginInitiated = LoginManager.login();
             }
-            
+
+            if (!loginInitiated) {
+                log.debug("Login manager rejected new attempt (status: {}, active: {})",
+                    LoginManager.getLoginStatus(), LoginManager.isLoginAttemptActive());
+            }
+
             // immediately transition to logging in state to prevent multiple login instances
             transitionToState(BreakHandlerState.LOGGING_IN);
             

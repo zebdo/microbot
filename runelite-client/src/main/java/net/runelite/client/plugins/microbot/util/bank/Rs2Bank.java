@@ -38,7 +38,8 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.security.Encryption;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
+import net.runelite.client.config.ConfigProfile;
 import net.runelite.client.plugins.microbot.util.settings.Rs2Settings;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -2195,7 +2196,7 @@ public class Rs2Bank {
                 if (localPlayer != null && localPlayer.getName() != null) {
                     loadCache(newRsProfileKey);
                     log.debug("-load bank cache, bank items size: {}", rs2BankData.size());
-                    validLoadedCache.set(Microbot.loggedIn);
+                    validLoadedCache.set(LoginManager.isLoggedIn());
                 }
             }
         }
@@ -2533,11 +2534,16 @@ public class Rs2Bank {
     }
 
     public static boolean handleBankPin() {
-        final String encryptedBankPin = Login.activeProfile.getBankPin();
+        ConfigProfile activeProfile = LoginManager.getActiveProfile();
+        if (activeProfile == null) {
+            log.warn("No active profile configured for bank pin handling");
+            return !isBankPinWidgetVisible();
+        }
+        final String encryptedBankPin = activeProfile.getBankPin();
         if (encryptedBankPin == null || encryptedBankPin.isBlank() || encryptedBankPin.equalsIgnoreCase("**bankpin**"))
             return !isBankPinWidgetVisible();
         try {
-            return handleBankPin(Encryption.decrypt(Login.activeProfile.getBankPin()));
+            return handleBankPin(Encryption.decrypt(encryptedBankPin));
         } catch (Exception ex) {
             log.error("Error handling Bank Pin", ex);
             return false;

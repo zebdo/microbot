@@ -21,13 +21,14 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.grounditem.Rs2GroundItem;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
+import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -441,6 +442,9 @@ public class Rs2Player {
     public static void logout() {
         if (!Microbot.isLoggedIn()) return;
 
+        // Make sure jagex acount does not auto login
+        Rs2Keyboard.resetEnter();
+
         Rs2Tab.switchTo(InterfaceTab.LOGOUT);
 
         Widget currentWorldWidget = Rs2Widget.getWidget(69, 3);
@@ -555,13 +559,13 @@ public class Rs2Player {
             for (Rs2PlayerModel player : players) {
                 long detectionTime = playerDetectionTimes.getOrDefault(player.getId(), 0L);
                 if (currentTime - detectionTime >= time) {
-                    int randomWorld = Login.getRandomWorld(isMember());
+                    int randomWorld = LoginManager.getRandomWorld(isMember());
                     Microbot.hopToWorld(randomWorld);
                     return true;
                 }
             }
         } else if (players.size() >= amountOfPlayers) {
-            int randomWorld = Login.getRandomWorld(isMember());
+            int randomWorld = LoginManager.getRandomWorld(isMember());
             Microbot.hopToWorld(randomWorld);
             return true;
         }

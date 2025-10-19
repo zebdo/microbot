@@ -47,6 +47,7 @@ import net.runelite.client.plugins.microbot.util.mouse.Mouse;
 import net.runelite.client.plugins.microbot.util.mouse.VirtualMouse;
 import net.runelite.client.plugins.microbot.util.mouse.naturalmouse.NaturalMouse;
 import net.runelite.client.plugins.microbot.util.player.Rs2PlayerCache;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
 import net.runelite.client.ui.overlay.tooltip.TooltipManager;
@@ -67,7 +68,6 @@ import java.io.IOException;
 import java.lang.reflect.Field;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.*;
 import java.util.concurrent.Executors;
@@ -192,11 +192,6 @@ public class Microbot {
     @Getter
     private static Rs2ItemManager rs2ItemManager = new Rs2ItemManager();
 
-    public static boolean loggedIn = false;
-
-    @Setter
-    private static Instant loginTime;
-
     @Setter
     @Getter
     public static boolean isRs2CacheEnabled = false;
@@ -211,11 +206,7 @@ public class Microbot {
      * @return the {@link Duration} the account has been logged in
      */
     public static Duration getLoginTime() {
-        if (loginTime == null) {
-            return Duration.of(0, ChronoUnit.MILLIS);
-        }
-
-        return Duration.between(loginTime, Instant.now());
+        return LoginManager.getLoginDuration();
     }
 
     /**
@@ -280,10 +271,7 @@ public class Microbot {
     }
 
     public static boolean isLoggedIn() {
-        if (loggedIn) {
-            return true;
-        }
-        return false;
+        return LoginManager.isLoggedIn();
     }
 
     public static boolean isHopping() {
@@ -825,4 +813,3 @@ public class Microbot {
                 .collect(Collectors.toList());
     }
 }
-

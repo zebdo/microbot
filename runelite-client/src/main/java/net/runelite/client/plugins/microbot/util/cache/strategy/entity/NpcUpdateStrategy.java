@@ -135,7 +135,7 @@ public class NpcUpdateStrategy implements CacheUpdateStrategy<Integer, Rs2NpcMod
         periodicSceneScanTask = executorService.scheduleWithFixedDelay(() -> {
             try {
                 if (scanActive.compareAndSet(false, true)) {
-                    if (scanRequest.get() && Microbot.loggedIn) {
+                    if (scanRequest.get() && Microbot.isLoggedIn()) {
                         log.debug("Periodic NPC scene scan triggered");
                         performSceneScanInternal(cache);
                     }

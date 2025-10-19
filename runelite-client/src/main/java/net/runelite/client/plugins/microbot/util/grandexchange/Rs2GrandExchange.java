@@ -25,7 +25,8 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Encryption;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
+import net.runelite.client.config.ConfigProfile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import org.apache.commons.lang3.tuple.Pair;
@@ -125,11 +126,18 @@ public class Rs2GrandExchange {
             }
             Rs2Npc.interact(npc, "exchange");
             if (Rs2Bank.isBankPinWidgetVisible()) {
-                if ((Login.activeProfile.getBankPin() == null || Login.activeProfile.getBankPin().isEmpty()) || Login.activeProfile.getBankPin().equalsIgnoreCase("**bankpin**")) {
+                ConfigProfile activeProfile = LoginManager.getActiveProfile();
+                if (activeProfile == null) {
+                    log.warn("No active profile configured for bank pin entry");
                     return false;
                 }
 
-                Rs2Bank.handleBankPin(Encryption.decrypt(Login.activeProfile.getBankPin()));
+                String encryptedPin = activeProfile.getBankPin();
+                if ((encryptedPin == null || encryptedPin.isEmpty()) || encryptedPin.equalsIgnoreCase("**bankpin**")) {
+                    return false;
+                }
+
+                Rs2Bank.handleBankPin(Encryption.decrypt(encryptedPin));
             }
             return sleepUntil(Rs2GrandExchange::isOpen, 5000);
         } catch (Exception ex) {

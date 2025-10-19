@@ -30,7 +30,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLite;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -78,10 +78,10 @@ public class ProfileManager {
             lockChannel = lockOut.getChannel();
             lockChannel.lock();
             profiles = new ArrayList<>(load());
-            if (ConfigManager.getConfigProfileName() != null && Login.activeProfile == null)
-                Login.activeProfile = profiles.stream().filter(x -> x.getName().equals(ConfigManager.getConfigProfileName())).findFirst().orElse(null);
-            else if (Login.activeProfile == null)
-                Login.activeProfile = profiles.stream().filter(ConfigProfile::isActive).findFirst().orElse(null);
+            if (ConfigManager.getConfigProfileName() != null && LoginManager.getActiveProfile() == null)
+                LoginManager.setActiveProfile(profiles.stream().filter(x -> x.getName().equals(ConfigManager.getConfigProfileName())).findFirst().orElse(null));
+            else if (LoginManager.getActiveProfile() == null)
+                LoginManager.setActiveProfile(profiles.stream().filter(ConfigProfile::isActive).findFirst().orElse(null));
         }
 
         private List<ConfigProfile> load() {

@@ -31,6 +31,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.ui.ClientToolbar;
 import net.runelite.client.ui.NavigationButton;
 import net.runelite.client.ui.overlay.Overlay;
@@ -301,13 +302,10 @@ public class MicrobotPlugin extends Plugin
 		   // Region-based login detection logic
 		   final Client client = Microbot.getClient();
 		   if (client != null) {
-				@SuppressWarnings("deprecation")
-				int[] currentRegions = client.getMapRegions();
-				int[] lastRegions = Microbot.getLastKnownRegions();
-				boolean regionsChanged = (currentRegions != null && (lastRegions == null || !Arrays.equals(currentRegions, lastRegions)));
-				boolean wasLoggedIn = Microbot.loggedIn;								
+				int[] currentRegions = client.getTopLevelWorldView().getMapRegions();
+				boolean wasLoggedIn = LoginManager.isLoggedIn();
 				if (!wasLoggedIn) {
-					Microbot.setLoginTime(Instant.now());
+					LoginManager.markLoggedIn();
 					Rs2RunePouch.fullUpdate();
 					if (microbotConfig.isRs2CacheEnabled()) {
 						Rs2CacheManager.registerEventHandlers();
@@ -316,7 +314,7 @@ public class MicrobotPlugin extends Plugin
 				if (currentRegions != null) {
 					Microbot.setLastKnownRegions(currentRegions.clone());
 				}
-				Microbot.loggedIn = true;
+				LoginManager.markLoggedIn();
 		   }
 	   }
 	   if (gameStateChanged.getGameState() == GameState.HOPPING || gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.CONNECTION_LOST)
@@ -324,7 +322,7 @@ public class MicrobotPlugin extends Plugin
 		   // Clear all cache states when logging out through Rs2CacheManager		   		   
 		   //Rs2CacheManager.emptyCacheState(); // should not be nessary here, handled in ClientShutdown event, 
 		   // and we also handle correct cache loading in onRuneScapeProfileChanged event
-		   Microbot.loggedIn = false;
+		   LoginManager.markLoggedOut();
 		   if (microbotConfig.isRs2CacheEnabled()) {
 			   Rs2CacheManager.unregisterEventHandlers();
 		   }

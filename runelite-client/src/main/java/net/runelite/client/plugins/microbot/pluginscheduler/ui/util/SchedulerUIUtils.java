@@ -3,7 +3,7 @@ package net.runelite.client.plugins.microbot.pluginscheduler.ui.util;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.pluginscheduler.SchedulerConfig;
 import net.runelite.client.plugins.microbot.pluginscheduler.model.PluginScheduleEntry;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.ui.ColorScheme;
 
 import javax.swing.*;
@@ -90,7 +90,7 @@ public class SchedulerUIUtils {
                 // User wants to switch to free worlds
                 if (Microbot.getConfigManager() != null) {
                     Microbot.getConfigManager().setConfiguration("AutoLoginConfig", "World",
-                            Login.getRandomWorld(false));
+                            LoginManager.getRandomWorld(false));
                     Microbot.getConfigManager().setConfiguration("PluginScheduler", "worldType", 0);
                 }
                 // Notify caller that user chose to switch to free worlds

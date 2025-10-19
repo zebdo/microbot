@@ -47,7 +47,7 @@ import net.runelite.client.events.*;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.inventorysetups.ConfigInventorySetupDataManager;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.util.ColorUtil;
 import net.runelite.client.util.RunnableExceptionLogger;
 import net.runelite.http.api.config.ConfigPatch;
@@ -145,7 +145,7 @@ public class ConfigManager
 
 	public void switchProfile(ConfigProfile newProfile)
 	{
-		Login.activeProfile = newProfile;
+		LoginManager.setActiveProfile(newProfile);
 
 		if (newProfile.getId() == profile.getId())
 		{

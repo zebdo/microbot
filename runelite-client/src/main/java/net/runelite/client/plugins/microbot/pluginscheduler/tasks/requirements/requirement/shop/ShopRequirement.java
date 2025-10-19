@@ -50,7 +50,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.shop.models.Rs2ShopItem;
 import net.runelite.client.plugins.microbot.util.shop.models.Rs2ShopType;
@@ -1241,7 +1241,7 @@ public class ShopRequirement extends Requirement {
                     
                     if (useNextWorld || worldHoppingConfig.isUseSequentialWorlds()) {
                         // Try specific world selection first
-                        int world = Login.getNextWorld(Rs2Player.isMember());
+                        int world = LoginManager.getNextWorld(Rs2Player.isMember());
                         if (world != -1 && !excludedWorlds.contains(world)) {
                             hopSuccess = Rs2WorldUtil.hopWorld(scheduledFuture, world, successiveWorldHopAttempts, worldHoppingConfig);
                             if (!hopSuccess) {
@@ -1440,7 +1440,7 @@ public class ShopRequirement extends Requirement {
                     
                     if (useNextWorld || worldHoppingConfig.isUseSequentialWorlds()) {
                         // Try specific world selection first
-                        int world = Login.getNextWorld(Rs2Player.isMember());
+                        int world = LoginManager.getNextWorld(Rs2Player.isMember());
                         if (world != -1 && !excludedWorlds.contains(world)) {
                             hopSuccess = Rs2WorldUtil.hopWorld(scheduledFuture, world, successiveWorldHopAttempts, worldHoppingConfig);
                             if (!hopSuccess) {

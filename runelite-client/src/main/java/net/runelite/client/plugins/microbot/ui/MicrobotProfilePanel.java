@@ -15,7 +15,7 @@ import net.runelite.client.events.ProfileChanged;
 import net.runelite.client.events.RuneScapeProfileChanged;
 import net.runelite.client.events.SessionClose;
 import net.runelite.client.events.SessionOpen;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.screenmarkers.ScreenMarkerPlugin;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.components.DragAndDropReorderPane;
@@ -252,7 +252,7 @@ public class MicrobotProfilePanel extends MicrobotPluginPanel {
                 return;
             }
             try {
-                new Login();
+                LoginManager.login();
             } catch (Exception e) {
             }
             card.setActive(true);
@@ -738,7 +738,7 @@ public class MicrobotProfilePanel extends MicrobotPluginPanel {
                                 try {
                                     ExecutorService executor = Executors.newFixedThreadPool(1);
                                     executor.submit(() -> {
-                                        new Login();
+                                        LoginManager.login();
                                     });
                                 } catch (Exception e) {
                                 }

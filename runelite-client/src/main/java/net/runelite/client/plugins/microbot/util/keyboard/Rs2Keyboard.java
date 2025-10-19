@@ -175,7 +175,7 @@ public class Rs2Keyboard
 	/**
 	 * Sends a KEY_TYPED event for the Enter key to ensure it is released.
 	 */
-	private static void resetEnter() {
+	public static void resetEnter() {
 		KeyEvent event3 = new KeyEvent(
 				getCanvas(),
 				KeyEvent.KEY_TYPED,
