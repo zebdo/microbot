@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.util.security;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
@@ -33,12 +34,6 @@ import static net.runelite.client.plugins.microbot.util.Global.sleep;
 @Slf4j
 public final class LoginManager {
 
-	public enum LoginStatus {
-		LOGGED_OUT,
-		LOGGING_IN,
-		LOGGED_IN
-	}
-
 	private static final int MAX_PLAYER_COUNT = 1950;
 	private static final Object LOGIN_LOCK = new Object();
 	private static final AtomicBoolean LOGIN_ATTEMPT_ACTIVE = new AtomicBoolean(false);
@@ -49,33 +44,24 @@ public final class LoginManager {
 	@Getter
 	private static Instant lastLogoutTimestamp = null;
 
-	@Getter
+    /**
+     * -- SETTER --
+     *  Updates the active RuneLite profile used for credentials.
+     */
+    @Setter
+    @Getter
 	public static ConfigProfile activeProfile = null;
 
 	private LoginManager() {
 		// Utility class
 	}
 
-	/**
-	 * Updates the active RuneLite profile used for credentials.
+    /**
+	 * Returns the current RuneLite client GameState or UNKNOWN if client not available.
 	 */
-	public static void setActiveProfile(ConfigProfile profile) {
-		activeProfile = profile;
-	}
-
-	/**
-	 * Returns the current login status derived from the client game state and active attempt flag.
-	 */
-	public static LoginStatus getLoginStatus() {
+	public static GameState getGameState() {
 		Client client = Microbot.getClient();
-		GameState state = client != null ? client.getGameState() : null;
-		if (state == GameState.LOGGED_IN) {
-			return LoginStatus.LOGGED_IN;
-		}
-		if (LOGIN_ATTEMPT_ACTIVE.get()) {
-			return LoginStatus.LOGGING_IN;
-		}
-		return LoginStatus.LOGGED_OUT;
+		return client != null ? client.getGameState() : GameState.UNKNOWN;
 	}
 
 	/**
@@ -270,7 +256,7 @@ public final class LoginManager {
 		List<World> worlds = worldResult.getWorlds();
 		boolean isInSeasonalWorld;
 		if (Microbot.getClient() != null && Microbot.getClient().getWorldType() != null) {
-			isInSeasonalWorld = Microbot.getClient().getWorldType().contains(WorldType.SEASONAL);
+			isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
 		} else {
 			isInSeasonalWorld = false;
 		}
@@ -332,7 +318,7 @@ public final class LoginManager {
 		List<World> worlds = worldResult.getWorlds();
 		boolean isInSeasonalWorld;
 		if (Microbot.getClient() != null && Microbot.getClient().getWorldType() != null) {
-			isInSeasonalWorld = Microbot.getClient().getWorldType().contains(WorldType.SEASONAL);
+			isInSeasonalWorld = Microbot.getClient().getWorldType().contains(net.runelite.api.WorldType.SEASONAL);
 		} else {
 			isInSeasonalWorld = false;
 		}

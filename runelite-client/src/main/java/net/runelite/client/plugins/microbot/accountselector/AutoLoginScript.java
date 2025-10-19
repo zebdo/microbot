@@ -327,8 +327,8 @@ public class AutoLoginScript extends Script {
             }
 
             if (!loginInitiated) {
-                log.debug("AutoLogin detected rejected attempt (status: {}, active: {})",
-                    LoginManager.getLoginStatus(), LoginManager.isLoginAttemptActive());
+                log.debug("AutoLogin detected rejected attempt (gameState: {}, attemptActive: {})",
+                    LoginManager.getGameState(), LoginManager.isLoginAttemptActive());
             }
             
             
