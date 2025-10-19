@@ -16,6 +16,7 @@ import java.util.stream.Collectors;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleep;
 
+@Deprecated
 public class Login {
 
     public static ConfigProfile activeProfile = null;
