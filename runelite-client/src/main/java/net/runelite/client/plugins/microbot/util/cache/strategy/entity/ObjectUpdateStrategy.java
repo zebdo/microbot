@@ -81,7 +81,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
     @Override
     public void handleEvent(final Object event, final CacheOperations<String, Rs2ObjectModel> cache) {
   
-        if (executorService == null || executorService.isShutdown() || !Microbot.loggedIn || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
+        if (executorService == null || executorService.isShutdown() || !Microbot.isLoggedIn() || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
             log.warn("ObjectUpdateStrategy is shut down, ignoring event: {}", event.getClass().getSimpleName());
             return; // Don't process events if shut down
         }
@@ -190,7 +190,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
         periodicSceneScanTask = executorService.scheduleWithFixedDelay(() -> {
             try {
                 if (scanActive.compareAndSet(false,true)){ 
-                    if (scanRequest.get() && Microbot.loggedIn) { // Only perform scan if request is set and not already active
+                    if (scanRequest.get() && Microbot.isLoggedIn()) { // Only perform scan if request is set and not already active
                         log.debug("Performing scheduled scene scan");
                         performSceneScanInternal(cache);
                     }
@@ -216,8 +216,8 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
         
         try {
             long currentTime = System.currentTimeMillis();               
-            log.debug("Performing scene scan (last scan: {}, current time: {}) , loggedin: {}",  lastSceneScan, currentTime, Microbot.loggedIn);
-            if (!Microbot.loggedIn || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
+            log.debug("Performing scene scan (last scan: {}, current time: {}) , loggedin: {}",  lastSceneScan, currentTime, Microbot.isLoggedIn());
+            if (!Microbot.isLoggedIn() || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
                 log.warn("Cannot perform scene scan - not logged in");
                 scanActive.set(false);
                 return;
@@ -663,7 +663,7 @@ public class ObjectUpdateStrategy implements CacheUpdateStrategy<String, Rs2Obje
     public void onAttach(CacheOperations<String, Rs2ObjectModel> cache) {
         log.debug("ObjectUpdateStrategy attached to cache");
         // Start periodic scene scanning if logged in
-        if (Microbot.loggedIn && lastGameState == GameState.LOGGED_IN) {
+        if (Microbot.isLoggedIn() && lastGameState == GameState.LOGGED_IN) {
             //schedulePeriodicSceneScan(cache, 30); // Every 30 seconds
         }
     }

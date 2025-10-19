@@ -265,7 +265,7 @@ public class Rs2CacheManager implements AutoCloseable {
      */
     public static void triggerSceneScansForAllCaches() {
         try {
-            if (!Microbot.loggedIn || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
+            if (!Microbot.isLoggedIn() || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
                 log.debug("Cannot trigger scene scans - not logged in");
                 return;
             }

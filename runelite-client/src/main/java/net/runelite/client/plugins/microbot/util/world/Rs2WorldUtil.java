@@ -10,7 +10,7 @@ import net.runelite.client.config.ConfigProfile;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import java.util.Collections;
 import java.util.Comparator;
@@ -71,7 +71,7 @@ public class Rs2WorldUtil {
                 return false;
             }
             boolean isMemberAccount = Rs2WorldUtil.isMemberAccount();        
-            ConfigProfile activeProfile = Login.activeProfile;            
+            ConfigProfile activeProfile = LoginManager.getActiveProfile();            
             if(!Microbot.isLoggedIn() ){
                 if(activeProfile != null){                    
                     return isWorldAccessible(targetWorld, isMemberAccount, false);
@@ -92,7 +92,7 @@ public class Rs2WorldUtil {
         }
     }
     public static boolean isMemberAccount(){
-        ConfigProfile activeProfile = Login.activeProfile;
+        ConfigProfile activeProfile = LoginManager.getActiveProfile();
          // try to get membership status from cached varplayer data
         if(Microbot.getClient() != null &&  Microbot.getClient().getLocalPlayer() != null){
             boolean isPlayerMember =  Rs2Player.isMember();                            
@@ -131,9 +131,10 @@ public class Rs2WorldUtil {
     private static int getPorfileMemberShipDays() {
         try {
           
-            String profileName = Login.activeProfile != null ? Login.activeProfile.getName() : null;            
-            long memberExpireDays = Login.activeProfile != null ? Login.activeProfile.getMemberExpireDays() : 0;
-            long memberExpireDaysTimeStemp = Login.activeProfile != null ? Login.activeProfile.getMemberExpireDaysTimeStemp() : 0;
+            ConfigProfile activeProfile = LoginManager.getActiveProfile();
+            String profileName = activeProfile != null ? activeProfile.getName() : null;            
+            long memberExpireDays = activeProfile != null ? activeProfile.getMemberExpireDays() : 0;
+            long memberExpireDaysTimeStemp = activeProfile != null ? activeProfile.getMemberExpireDaysTimeStemp() : 0;
             if( memberExpireDays == 0 && memberExpireDaysTimeStemp == 0){
                 log.warn("No membership expiry data set in profile: {} (memberExpireDays: {}, memberExpireDaysTimeStemp: {})", 
                 profileName, memberExpireDays, memberExpireDaysTimeStemp);
@@ -172,7 +173,7 @@ public class Rs2WorldUtil {
     /**
      * Determines if a specific world is accessible based on player membership status,
      * seasonal world status, and world type restrictions.
-     * Uses the same filtering logic as Login.getRandomWorld() for consistency.
+     * Uses the same filtering logic as LoginManager.getRandomWorld() for consistency.
      * 
      * @param world The world to check
      * @param isPlayerMember Whether the player is a member
@@ -180,7 +181,7 @@ public class Rs2WorldUtil {
      * @return true if the world is accessible, false otherwise
      */
     public static boolean isWorldAccessible(World world, boolean isPlayerMember, boolean isInSeasonalWorld) {
-        // Check for restricted world types (same as Login.java filtering)
+        // Check for restricted world types (same as LoginManager filtering)
         if (world.getTypes().contains(WorldType.PVP) ||
             world.getTypes().contains(WorldType.HIGH_RISK) ||
             world.getTypes().contains(WorldType.BOUNTY) ||
@@ -205,7 +206,7 @@ public class Rs2WorldUtil {
             return false;
         }
         
-        // Check seasonal world compatibility (strict matching as in Login.java)
+        // Check seasonal world compatibility (strict matching as in LoginManager)
         if (isInSeasonalWorld != world.getTypes().contains(WorldType.SEASONAL)) {
             log.debug("World {} seasonal type mismatch (player in seasonal: {}, world seasonal: {})",
                      world.getId(), isInSeasonalWorld, world.getTypes().contains(WorldType.SEASONAL));
@@ -429,7 +430,7 @@ public class Rs2WorldUtil {
     
     /**
      * Enhanced world hopping utility that finds the best world and handles retries.
-     * This method addresses the issues in the current Login.java implementation by:
+     * This method addresses the issues in the current LoginManager implementation by:
      * 1. Properly respecting membership status and current region  
      * 2. Using retry mechanism with different world selection
      * 3. Checking world accessibility before attempting hops
@@ -499,7 +500,7 @@ public class Rs2WorldUtil {
     
     /**
      * Finds the best accessible world for the player, excluding problematic worlds.
-     * This method improves upon Login.java by:
+     * This method improves upon LoginManager by:
      * - Properly filtering by membership and region
      * - Excluding previously failed worlds
      * - Preferring lower population worlds for better performance
@@ -1298,14 +1299,14 @@ public class Rs2WorldUtil {
             if (targetWorld == -1) {
                 log.warn("Failed to find suitable world for login");
                 // fallback to default login without world specification
-                new Login();
+                LoginManager.login();
                 return true; // let default login handle world selection
             }
             
             log.info("Performing intelligent login to world: {}", targetWorld);
             
             // use Login constructor with specific world
-            new Login(targetWorld);
+            LoginManager.login(targetWorld);
             
             // wait for login to complete
             boolean loginSuccess = sleepUntil(() -> Microbot.isLoggedIn(), 10000);

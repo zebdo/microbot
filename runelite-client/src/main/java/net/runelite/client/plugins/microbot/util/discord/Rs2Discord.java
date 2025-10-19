@@ -5,7 +5,7 @@ import net.runelite.client.config.ConfigProfile;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.discord.models.DiscordEmbed;
 import net.runelite.client.plugins.microbot.util.discord.models.DiscordPayload;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import okhttp3.*;
 
 import java.awt.*;
@@ -129,7 +129,7 @@ public class Rs2Discord {
      * @return String
      */
     private static String getDiscordWebhookUrl() {
-        return Optional.ofNullable(Login.activeProfile)
+        return Optional.ofNullable(LoginManager.getActiveProfile())
                 .map(ConfigProfile::getDiscordWebhookUrl)
                 .orElse(null);
     }

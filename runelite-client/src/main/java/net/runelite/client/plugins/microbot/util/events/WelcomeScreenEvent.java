@@ -10,6 +10,8 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
+import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
+
 @Slf4j
 public class WelcomeScreenEvent implements BlockingEvent {
     
@@ -45,6 +47,7 @@ public class WelcomeScreenEvent implements BlockingEvent {
         if (playWidget != null && isPlayWidgetVisible && wasUpdateRibbonHandled && wasNewsBannerHandled) {
             log.info("WelcomeScreenEvent execute: Clicking play button.");
             Rs2Widget.clickWidget(playWidget);
+            sleepUntil(() -> !validate());
         } else {
             log.info("WelcomeScreenEvent execute: Play button is null");
         }

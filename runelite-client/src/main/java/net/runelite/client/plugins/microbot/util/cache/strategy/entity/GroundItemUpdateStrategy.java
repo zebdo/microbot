@@ -57,7 +57,7 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
     
     @Override
     public void handleEvent(Object event, CacheOperations<String, Rs2GroundItemModel> cache) {
-        if (executorService == null || executorService.isShutdown() || !Microbot.loggedIn || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
+        if (executorService == null || executorService.isShutdown() || !Microbot.isLoggedIn() || Microbot.getClient() == null || Microbot.getClient().getLocalPlayer() == null) {
             log.warn("GroundItemUpdateStrategy is shut down or not logged in, ignoring event: {}", event.getClass().getSimpleName());
             return; // Don't process events if shut down
         }
@@ -149,7 +149,7 @@ public class GroundItemUpdateStrategy implements CacheUpdateStrategy<String, Rs2
         periodicSceneScanTask = executorService.scheduleWithFixedDelay(() -> {
             try {
                 if (scanActive.compareAndSet(false, true)) {
-                    if (scanRequest.get() && Microbot.loggedIn) {
+                    if (scanRequest.get() && Microbot.isLoggedIn()) {
                         log.debug("Periodic ground item scene scan triggered");
                         performSceneScanInternal(cache);
                     }

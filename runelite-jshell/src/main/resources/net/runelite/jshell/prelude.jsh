@@ -59,7 +59,7 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2Npc;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
-import net.runelite.client.plugins.microbot.util.security.Login;
+import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 var $PANEL = net.runelite.jshell.ShellPanel.INSTANCE;
@@ -90,4 +90,3 @@ static <T> void subscribe(Class<T> eventType, Consumer<T> subscriber)
 var client = inject(Client.class);
 var clientThread = inject(ClientThread.class);
 var configManager = inject(ConfigManager.class);
-
