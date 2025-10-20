@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.client.config.ConfigProfile;
+import net.runelite.client.config.ProfileManager;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.util.WorldUtil;
@@ -41,16 +42,21 @@ public final class LoginManager {
 
 	@Getter
 	private static Instant lastLoginTimestamp = null;
-	@Getter
-	private static Instant lastLogoutTimestamp = null;
 
-    /**
-     * -- SETTER --
-     *  Updates the active RuneLite profile used for credentials.
-     */
+
     @Setter
-    @Getter
 	public static ConfigProfile activeProfile = null;
+
+	public static ConfigProfile getActiveProfile() {
+		try (ProfileManager.Lock lock = Microbot.getProfileManager().lock())
+		{
+			var profile = lock.getProfiles().stream().filter(ConfigProfile::isActive).findFirst().orElse(null);
+			if (profile == null) {
+				profile = lock.getProfiles().get(0);
+			}
+			return profile;
+		}
+	}
 
 	private LoginManager() {
 		// Utility class
