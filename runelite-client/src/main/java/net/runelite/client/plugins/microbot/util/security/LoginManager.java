@@ -101,7 +101,6 @@ public final class LoginManager {
 	 */
 	public static void markLoggedOut() {
 		LOGIN_ATTEMPT_ACTIVE.set(false);
-		lastLogoutTimestamp = Instant.now();
 	}
 
 	/**
