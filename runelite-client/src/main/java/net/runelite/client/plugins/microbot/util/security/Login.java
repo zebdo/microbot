@@ -19,15 +19,14 @@ import static net.runelite.client.plugins.microbot.util.Global.sleep;
 @Deprecated
 public class Login {
 
-    public static ConfigProfile activeProfile = null;
     private static final int MAX_PLAYER_COUNT = 1950;
 
     public Login() {
-        this(Microbot.getClient().getWorld() > 300 ? Microbot.getClient().getWorld() : getRandomWorld(activeProfile.isMember()));
+        this(Microbot.getClient().getWorld() > 300 ? Microbot.getClient().getWorld() : getRandomWorld(LoginManager.getActiveProfile().isMember()));
     }
 
     public Login(int world) {
-        this(activeProfile.getName(), activeProfile.getPassword(), world);
+        this(LoginManager.getActiveProfile().getName(), LoginManager.getActiveProfile().getPassword(), world);
     }
 
     public Login(String username, String password) {
