@@ -117,7 +117,7 @@ public final class LoginManager {
 	 * Attempts a login using the active profile and an intelligent world selection.
 	 */
 	public static boolean login() {
-		if (activeProfile == null) {
+		if (getActiveProfile() == null) {
 			log.warn("No active profile available for login");
 			return false;
 		}
@@ -127,19 +127,19 @@ public final class LoginManager {
 			return false;
 		}
 		int currentWorld = client.getWorld();
-		int targetWorld = currentWorld > 300 ? currentWorld : getRandomWorld(activeProfile.isMember());
-		return login(activeProfile.getName(), activeProfile.getPassword(), targetWorld);
+		int targetWorld = currentWorld > 300 ? currentWorld : getRandomWorld(getActiveProfile().isMember());
+		return login(getActiveProfile().getName(), getActiveProfile().getPassword(), targetWorld);
 	}
 
 	/**
 	 * Attempts a login using the active profile into a specific world.
 	 */
 	public static boolean login(int worldId) {
-		if (activeProfile == null) {
+		if (getActiveProfile() == null) {
 			log.warn("No active profile available for world specific login");
 			return false;
 		}
-		return login(activeProfile.getName(), activeProfile.getPassword(), worldId);
+		return login(getActiveProfile().getName(), getActiveProfile().getPassword(), worldId);
 	}
 
 	/**
