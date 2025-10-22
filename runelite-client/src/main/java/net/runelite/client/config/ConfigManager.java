@@ -729,6 +729,7 @@ public class ConfigManager
 
 			this.profile = profile;
 			configProfile = new ConfigData(ProfileManager.profileConfigFile(profile));
+			LoginManager.setActiveProfile(profile);
 		}
 
 		eventBus.post(new ProfileChanged());

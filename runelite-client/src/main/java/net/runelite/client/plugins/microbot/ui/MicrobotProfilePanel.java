@@ -43,8 +43,6 @@ import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.*;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 
 @Slf4j
@@ -251,10 +249,6 @@ public class MicrobotProfilePanel extends MicrobotPluginPanel {
                 reload();
                 return;
             }
-            try {
-                LoginManager.login();
-            } catch (Exception e) {
-            }
             card.setActive(true);
         });
     }
@@ -381,6 +375,10 @@ public class MicrobotProfilePanel extends MicrobotPluginPanel {
     }
 
     private void switchToProfile(long id) {
+        switchToProfile(id, false);
+    }
+
+    private void switchToProfile(long id, boolean loginAfterSwitch) {
         ConfigProfile profile;
         try (ProfileManager.Lock lock = profileManager.lock()) {
             profile = lock.findProfile(id);
@@ -397,7 +395,24 @@ public class MicrobotProfilePanel extends MicrobotPluginPanel {
             lock.dirty();
         }
 
-        executor.submit(() -> configManager.switchProfile(profile));
+        final ConfigProfile selectedProfile = profile;
+        executor.submit(() -> {
+            configManager.switchProfile(selectedProfile);
+
+            if (loginAfterSwitch) {
+                initiateLogin();
+            }
+        });
+    }
+
+    private void initiateLogin() {
+        executor.submit(() -> {
+            try {
+                LoginManager.login();
+            } catch (Exception ex) {
+                log.error("Unable to login with active profile", ex);
+            }
+        });
     }
 
     private void setRsProfileDefaultProfile(long id) {
@@ -539,7 +554,7 @@ public class MicrobotProfilePanel extends MicrobotPluginPanel {
 
             activate = new JButton(ARROW_RIGHT_ICON);
             activate.setDisabledIcon(ARROW_RIGHT_ICON);
-            activate.addActionListener(ev -> switchToProfile(profile.getId()));
+            activate.addActionListener(ev -> switchToProfile(profile.getId(), true));
             SwingUtil.removeButtonDecorations(activate);
             activate.setPreferredSize(new Dimension(32, 32));
 
@@ -733,15 +748,9 @@ public class MicrobotProfilePanel extends MicrobotPluginPanel {
                     if (disabled(ev)) {
                         if (ev.getClickCount() == 2) {
                             if (!active) {
-                                switchToProfile(profile.getId());
+                                switchToProfile(profile.getId(), true);
                             } else {
-                                try {
-                                    ExecutorService executor = Executors.newFixedThreadPool(1);
-                                    executor.submit(() -> {
-                                        LoginManager.login();
-                                    });
-                                } catch (Exception e) {
-                                }
+                                initiateLogin();
                             }
                         } else {
                             setExpanded(!expanded);
