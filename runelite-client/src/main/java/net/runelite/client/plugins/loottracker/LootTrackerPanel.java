@@ -136,7 +136,7 @@ public class LootTrackerPanel extends PluginPanel
 	private final JButton collapseBtn = new JButton();
 
 	// Aggregate of all kills
-	public final LinkedHashMap<LootTrackerRecord, LootTrackerRecord> aggregateRecords = new LinkedHashMap<>(16, 0.75f, true);
+	private final LinkedHashMap<LootTrackerRecord, LootTrackerRecord> aggregateRecords = new LinkedHashMap<>(16, 0.75f, true);
 	// Individual records for the individual kills this session
 	private final Deque<LootTrackerRecord> sessionRecords = new ArrayDeque<>();
 	private final List<LootTrackerBox> boxes = new ArrayList<>();
