@@ -552,16 +552,14 @@ public class Microbot {
         }
     }
 
+    @Deprecated(since = "Use LootTrackerPlugin.getAggregateLootRecords()", forRemoval = true)
     public static List<LootTrackerRecord> getAggregateLootRecords() {
-        return LootTrackerPlugin.panel.aggregateRecords;
+        return new ArrayList<>();
     }
 
+    @Deprecated(since = "Use LootTrackerPlugin.getAggregateLootRecords()", forRemoval = true)
     public static LootTrackerRecord getAggregateLootRecords(String npcName) {
-        return getAggregateLootRecords()
-                .stream()
-                .filter(x -> x.getTitle().equalsIgnoreCase(npcName))
-                .findFirst()
-                .orElse(null);
+        return null;
     }
 
     /**
@@ -571,24 +569,9 @@ public class Microbot {
      * @param npcName name of the npc to get the loot records for
      * @return total GE value of the loot records
      */
+    @Deprecated(since = "Use LootTrackerPlugin.getAggregateLootRecords()", forRemoval = true)
     public static long getAggregateLootRecordsTotalGevalue(String npcName) {
-        LootTrackerRecord record = getAggregateLootRecords(npcName);
-        if (record == null) {
-            return 0;
-        }
-
-        long totalGeValue = 0;
-        try {
-            LootTrackerItem[] items = record.getItems();
-            for (LootTrackerItem item : items) {
-                ;
-                totalGeValue += item.getTotalGePrice();
-            }
-        } catch (Exception e) {
-            log.error("Error calculating total GE value", e);
-        }
-
-        return totalGeValue;
+        return 0;
     }
 
     /**
