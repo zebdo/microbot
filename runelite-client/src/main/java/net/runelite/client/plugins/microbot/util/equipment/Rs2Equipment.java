@@ -319,7 +319,7 @@ public class Rs2Equipment {
             identifier = -1;
             List<String> actions = rs2Item.getEquipmentActions();
             for (int i = 0; i < actions.size(); i++) {
-                if (action.equalsIgnoreCase(actions.get(i))) {
+                if (actions.get(i).toLowerCase().contains(action.toLowerCase())) {
                     identifier = i + 2;
                     break;
                 }
