@@ -724,12 +724,11 @@ public class ConfigManager
 				log.info("Creating profile: {} ({})", profile.getName(), profile.getId());
 			}
 
-			// synced profile need to be fetched if outdated
+			// synced profautoogile need to be fetched if outdated
 			syncRemote(lock, profile, remoteProfiles);
 
 			this.profile = profile;
 			configProfile = new ConfigData(ProfileManager.profileConfigFile(profile));
-			LoginManager.setActiveProfile(profile);
 		}
 
 		eventBus.post(new ProfileChanged());

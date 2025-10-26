@@ -48,14 +48,8 @@ public final class LoginManager {
 	public static ConfigProfile activeProfile = null;
 
 	public static ConfigProfile getActiveProfile() {
-		try (ProfileManager.Lock lock = Microbot.getProfileManager().lock())
-		{
-			var profile = lock.getProfiles().stream().filter(ConfigProfile::isActive).findFirst().orElse(null);
-			if (profile == null) {
-				profile = lock.getProfiles().get(0);
-			}
-			return profile;
-		}
+        return Microbot.getConfigManager().getProfile();
+
 	}
 
 	private LoginManager() {
@@ -121,6 +115,7 @@ public final class LoginManager {
 			log.warn("No active profile available for login");
 			return false;
 		}
+		System.out.println(getActiveProfile());
 		Client client = Microbot.getClient();
 		if (client == null) {
 			log.warn("Cannot login - client is not initialised");
