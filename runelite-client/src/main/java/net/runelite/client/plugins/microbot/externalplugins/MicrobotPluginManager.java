@@ -1098,18 +1098,19 @@ public class MicrobotPluginManager {
         String pluginName = plugin.getClass().getSimpleName();
 
         try {
-            if (pluginManager.isPluginEnabled(plugin)) {
-                pluginManager.setPluginEnabled(plugin, false);
-            }
-
             if (pluginManager.isPluginActive(plugin)) {
-                SwingUtilities.invokeAndWait(() -> {
-                    try {
-                        pluginManager.stopPlugin(plugin);
-                    } catch (PluginInstantiationException e) {
-                        log.warn("Error stopping plugin {}: {}", pluginName, e.getMessage());
-                    }
-                });
+                if (SwingUtilities.isEventDispatchThread()) {
+                    pluginManager.stopPlugin(plugin);
+                    return;
+                } else  {
+                    SwingUtilities.invokeAndWait(() -> {
+                        try {
+                            pluginManager.stopPlugin(plugin);
+                        } catch (PluginInstantiationException e) {
+                            log.warn("Error stopping plugin {}: {}", pluginName, e.getMessage());
+                        }
+                    });
+                }
             }
             pluginManager.remove(plugin);
         } catch (Exception e) {
