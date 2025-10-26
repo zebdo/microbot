@@ -23,15 +23,15 @@ import java.util.concurrent.TimeUnit;
  */
 @Slf4j
 public class AutoLoginScript extends Script {
-    
+
     // ban detection constants
     private static final int BANNED_LOGIN_INDEX = 14;
-    
+
     // ban detection state
     public static boolean isBanned = false;
     private static String lastKnownPlayerName = "";
     private boolean wasLoggedIn = false;
-    
+
     // Login state management
     private enum LoginState {
         WAITING_FOR_LOGIN_SCREEN,
@@ -39,7 +39,7 @@ public class AutoLoginScript extends Script {
         LOGIN_EXTENDED_SLEEP,
         ERROR
     }
-    
+
     private LoginState loginState = LoginState.WAITING_FOR_LOGIN_SCREEN;
     private int retryCount = 0;
     private Instant loginWatchdogStartTime = null;
@@ -50,17 +50,16 @@ public class AutoLoginScript extends Script {
 
     public boolean run(AutoLoginConfig autoLoginConfig) {
         log.info("Starting AutoLogin script with world selection");
-        
+
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!super.run()) return;
                 if (BreakHandlerScript.isBreakActive() || BreakHandlerScript.isMicroBreakActive()) return;
 
-
                 // check for ban detection first
                 checkForBan();
                 updatePlayerNameCache();
-                
+
                 // only continue with login if not banned
                 if (!isBanned) {
                     processAutoLoginStateMachine(autoLoginConfig);
@@ -73,7 +72,7 @@ public class AutoLoginScript extends Script {
         }, 0, 600, TimeUnit.MILLISECONDS);
         return true;
     }
-    
+
     /**
      * Main state machine for auto login processing.
      */
@@ -94,7 +93,7 @@ public class AutoLoginScript extends Script {
                 return;
         }
     }
-    
+
     /**
      * State: WAITING_FOR_LOGIN_SCREEN
      * Monitoring for login screen to appear.
@@ -105,15 +104,12 @@ public class AutoLoginScript extends Script {
             resetLoginState();
             return;
         }
-      
-       
-        if (Microbot.getClient()!=null && Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN) {
-            log.info("Login screen detected, initiating login");
-            initiateLogin(config);
-            transitionToState(LoginState.ATTEMPTING_LOGIN);
-        }
+
+        log.info("Login screen detected, initiating login");
+        initiateLogin(config);
+        transitionToState(LoginState.ATTEMPTING_LOGIN);
     }
-    
+
     /**
      * State: ATTEMPTING_LOGIN
      * Currently attempting to log in with watchdog monitoring.
@@ -125,7 +121,7 @@ public class AutoLoginScript extends Script {
             transitionToState(LoginState.WAITING_FOR_LOGIN_SCREEN);
             return;
         }
-        
+
         // check login watchdog timeout if enabled
         if (config.enableLoginWatchdog() && loginWatchdogStartTime != null) {
             long watchdogTime = Duration.between(loginWatchdogStartTime, Instant.now()).toMinutes();
@@ -136,7 +132,7 @@ public class AutoLoginScript extends Script {
                 return;
             }
         }
-        
+
         // check if enough time has passed for retry
         if (lastLoginAttemptTime != null) {
             long timeSinceLastAttempt = Duration.between(lastLoginAttemptTime, Instant.now()).toSeconds();
@@ -144,7 +140,7 @@ public class AutoLoginScript extends Script {
                 return; // wait for retry delay
             }
         }
-        
+
         // check retry limit
         if (retryCount >= config.maxLoginRetries()) {
             if (config.enableLoginWatchdog()) {
@@ -157,9 +153,9 @@ public class AutoLoginScript extends Script {
             }
             return;
         }
-        
+
         // check if still on login screen
-        if (Microbot.getClient()!=null && Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN) {
+        if (Microbot.getClient() != null && Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN) {
             log.info("Retrying login attempt {} of {}", retryCount + 1, config.maxLoginRetries());
             int currentLoginIndex = Microbot.getClient().getLoginIndex();
             if (Microbot.getClient().getLoginIndex() == 3 || Microbot.getClient().getLoginIndex() == 24) { // you were disconnected from the server.
@@ -171,7 +167,7 @@ public class AutoLoginScript extends Script {
                 log.error("Authentication failed, please check credentials");
                 handleGeneralFailure("Authentication failed - invalid credentials");
                 transitionToState(LoginState.ERROR);
-                return;                
+                return;
             }
             if (currentLoginIndex == 34) { // we are not a member and cannot login
                 log.error("Account is not a member, cannot login to members world");
@@ -186,18 +182,18 @@ public class AutoLoginScript extends Script {
                 transitionToState(LoginState.ERROR);
                 return;
             }
-            
+
             // we have to find out  other indexes that mean we cannot login
             initiateLogin(config);
         } else {
-          
-           
+
+
             // not on login screen anymore, return to waiting
             resetLoginState();
             transitionToState(LoginState.WAITING_FOR_LOGIN_SCREEN);
         }
     }
-    
+
     /**
      * State: LOGIN_EXTENDED_SLEEP
      * Extended sleep state after login failures.
@@ -209,13 +205,13 @@ public class AutoLoginScript extends Script {
             transitionToState(LoginState.WAITING_FOR_LOGIN_SCREEN);
             return;
         }
-        
+
         if (extendedSleepStartTime == null) {
             extendedSleepStartTime = Instant.now();
             log.info("Extended sleep started for {} minutes", config.extendedSleepDuration());
             return;
         }
-        
+
         // check if extended sleep period is complete
         long sleepTime = Duration.between(extendedSleepStartTime, Instant.now()).toMinutes();
         if (sleepTime >= config.extendedSleepDuration()) {
@@ -231,7 +227,7 @@ public class AutoLoginScript extends Script {
             }
         }
     }
-    
+
     /**
      * Initiates intelligent login based on configuration.
      */
@@ -242,81 +238,81 @@ public class AutoLoginScript extends Script {
                 loginWatchdogStartTime = Instant.now();
                 log.info("Login watchdog started for {} minutes", config.loginWatchdogTimeout());
             }
-            
+
             int targetWorld = -1;
-            
+
             boolean membersOnly = config.membersOnly();
-            
+
             // use world selection mode if no preferred world or preferred world not accessible
             if (targetWorld == -1) {
                 switch (config.worldSelectionMode()) {
                     case CURRENT_PREFERRED_WORLD:
                         boolean isAccessible = Rs2WorldUtil.canAccessWorld(config.world());
-                        
+
                         if (isAccessible) {
                             targetWorld = config.world();
                             log.info("Using preferred world: {}", targetWorld);
                         } else {
                             ConfigProfile activeProfile = LoginManager.getActiveProfile();
                             boolean isMemberFromProfile = activeProfile != null && activeProfile.isMember();
-                            boolean isLocalPlayerAvailable = Microbot.getClient()!=null && Microbot.getClient().getLocalPlayer() != null;
-                            boolean isMemberFromClient = Microbot.getClient()!=null && Microbot.getClient().getLocalPlayer() != null ? Rs2Player.isMember() : false;
-                            log.error("Preferred world {} is not accessible,\n\t ->check if we have member access set in profile(current value {}), or when logged in, have we member access ? (LocalPlayer? {}, isMember? {})", 
-                            config.usePreferredWorld(), isMemberFromProfile, isLocalPlayerAvailable, isMemberFromClient);                        
+                            boolean isLocalPlayerAvailable = Microbot.getClient() != null && Microbot.getClient().getLocalPlayer() != null;
+                            boolean isMemberFromClient = Microbot.getClient() != null && Microbot.getClient().getLocalPlayer() != null ? Rs2Player.isMember() : false;
+                            log.error("Preferred world {} is not accessible,\n\t ->check if we have member access set in profile(current value {}), or when logged in, have we member access ? (LocalPlayer? {}, isMember? {})",
+                                    config.usePreferredWorld(), isMemberFromProfile, isLocalPlayerAvailable, isMemberFromClient);
                         }
                         // no specific world selection - use default login
                         break;
-                        
+
                     case RANDOM_WORLD:
                         targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
-                            config.regionPreference().getWorldRegion(),
-                            config.avoidEmptyWorlds(),
-                            config.avoidOvercrowdedWorlds(),membersOnly);
+                                config.regionPreference().getWorldRegion(),
+                                config.avoidEmptyWorlds(),
+                                config.avoidOvercrowdedWorlds(), membersOnly);
                         break;
-                        
+
                     case BEST_POPULATION:
                         targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
-                            false,
-                            config.regionPreference().getWorldRegion(),
-                            config.avoidEmptyWorlds(),
-                            config.avoidOvercrowdedWorlds(),                            
-                            membersOnly);
+                                false,
+                                config.regionPreference().getWorldRegion(),
+                                config.avoidEmptyWorlds(),
+                                config.avoidOvercrowdedWorlds(),
+                                membersOnly);
                         break;
-                        
+
                     case BEST_PING:
                         targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
-                            true,
-                            config.regionPreference().getWorldRegion(),
-                            config.avoidEmptyWorlds(),
-                            config.avoidOvercrowdedWorlds(),
-                            membersOnly
-                            );
+                                true,
+                                config.regionPreference().getWorldRegion(),
+                                config.avoidEmptyWorlds(),
+                                config.avoidOvercrowdedWorlds(),
+                                membersOnly
+                        );
                         break;
-                        
+
                     case REGIONAL_RANDOM:
                         targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
-                            config.regionPreference().getWorldRegion(),
-                            config.avoidEmptyWorlds(),
-                            config.avoidOvercrowdedWorlds(),
-                            membersOnly
-                            );
+                                config.regionPreference().getWorldRegion(),
+                                config.avoidEmptyWorlds(),
+                                config.avoidOvercrowdedWorlds(),
+                                membersOnly
+                        );
                         break;
-                        
+
                     default:
                         // fallback to legacy behavior                        
-                        targetWorld = LoginManager.getRandomWorld(Rs2Player.isMember());                        
-                        if(!Rs2WorldUtil.canAccessWorld(targetWorld)) {
+                        targetWorld = LoginManager.getRandomWorld(Rs2Player.isMember());
+                        if (!Rs2WorldUtil.canAccessWorld(targetWorld)) {
                             log.warn("Randomly selected world {} is not accessible, using default world {}", targetWorld, config.world());
                             targetWorld = config.world();
-                        }                                                
+                        }
                         break;
                 }
             }
-            
+
             // perform login attempt and track retry state
             retryCount++;
             lastLoginAttemptTime = Instant.now();
-            
+
             boolean loginInitiated;
             if (targetWorld != -1) {
                 log.info("Attempting login to selected world: {} (attempt {})", targetWorld, retryCount);
@@ -328,17 +324,17 @@ public class AutoLoginScript extends Script {
 
             if (!loginInitiated) {
                 log.debug("AutoLogin detected rejected attempt (gameState: {}, attemptActive: {})",
-                    LoginManager.getGameState(), LoginManager.isLoginAttemptActive());
+                        LoginManager.getGameState(), LoginManager.isLoginAttemptActive());
             }
-            
-            
+
+
         } catch (Exception ex) {
             log.error("Error during intelligent login", ex);
             retryCount++;
             lastLoginAttemptTime = Instant.now();
         }
     }
-    
+
     /**
      * Transitions to a new login state.
      */
@@ -348,7 +344,7 @@ public class AutoLoginScript extends Script {
             loginState = newState;
         }
     }
-    
+
     /**
      * Resets login state variables.
      */
@@ -360,17 +356,17 @@ public class AutoLoginScript extends Script {
         lastExtendedSleepLoggedMinute = -1;
         loginState = LoginState.WAITING_FOR_LOGIN_SCREEN;
     }
-    
+
     /**
      * checks for ban screen during login attempt or when logged out
      */
     private void checkForBan() {
         GameState gameState = Microbot.getClient().getGameState();
-        
+
         // detect ban screen on login screen
         boolean banDetected = gameState == GameState.LOGIN_SCREEN
                 && Microbot.getClient().getLoginIndex() == BANNED_LOGIN_INDEX;
-        
+
         if (banDetected && !isBanned) {
             isBanned = true;
             handleBanDetection();
@@ -382,7 +378,7 @@ public class AutoLoginScript extends Script {
      */
     private void updatePlayerNameCache() {
         boolean currentlyLoggedIn = Microbot.isLoggedIn();
-        
+
         // detect fresh login - update player name cache
         if (currentlyLoggedIn && !wasLoggedIn) {
             Rs2PlayerModel localPlayer = Rs2Player.getLocalPlayer();
@@ -391,7 +387,7 @@ public class AutoLoginScript extends Script {
                 log.info("Updated cached player name: {}", lastKnownPlayerName);
             }
         }
-        
+
         wasLoggedIn = currentlyLoggedIn;
     }
 
@@ -400,10 +396,10 @@ public class AutoLoginScript extends Script {
      */
     private void handleBanDetection() {
         log.info("Ban screen detected for player: {}", lastKnownPlayerName);
-        
+
         // send discord notification if webhook is configured
         sendBanDiscordNotification();
-        
+
         // shutdown auto login plugin
         shutdownPlugin();
     }
@@ -413,10 +409,10 @@ public class AutoLoginScript extends Script {
      */
     private void handleGeneralFailure(String failureReason) {
         log.info("Login failure detected for player: {} - {}", lastKnownPlayerName, failureReason);
-        
+
         // send discord notification if webhook is configured
         sendFailureDiscordNotification(failureReason);
-        
+
         // shutdown auto login plugin after failure
         shutdownPlugin();
     }
@@ -434,11 +430,11 @@ public class AutoLoginScript extends Script {
             fields.add(Rs2Discord.createField("Source", "AutoLogin", true));
 
             boolean success = Rs2Discord.sendNotificationWithFields(
-                "🚫 Account Ban Detected",
-                "Ban screen detected during login attempt.",
-                0xDC143C, // crimson red
-                fields,
-                "AutoLogin Ban Detection"
+                    "🚫 Account Ban Detected",
+                    "Ban screen detected during login attempt.",
+                    0xDC143C, // crimson red
+                    fields,
+                    "AutoLogin Ban Detection"
             );
 
             if (success) {
@@ -476,18 +472,18 @@ public class AutoLoginScript extends Script {
         try {
             log.info("Shutting down {} plugin due to failure detection", AutoLoginPlugin.class.getSimpleName());
             Microbot.stopPlugin(AutoLoginPlugin.class);
-            
+
         } catch (Exception ex) {
             log.error("Error shutting down {} plugin", AutoLoginPlugin.class.getSimpleName(), ex);
         }
     }
-    
+
     @Override
     public void shutdown() {
         log.info("Auto login script shutting down");
 
         resetLoginState();
         super.shutdown();
-        
+
     }
 }
