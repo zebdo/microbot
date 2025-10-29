@@ -65,6 +65,10 @@ import java.awt.geom.AffineTransform;
 import java.awt.image.BufferedImage;
 import java.awt.image.DataBufferInt;
 import java.nio.*;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.CountDownLatch;
 
 @PluginDescriptor(
 	name = "GPU",
@@ -159,7 +163,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	private int cameraX, cameraY, cameraZ;
 	private int cameraYaw, cameraPitch;
 	private int minLevel, level, maxLevel;
-	private Set<Integer> hideRoofIds;
+    public Set<Integer> hideRoofIds;
 
 	private VAOList vaoO;
 	private VAOList vaoA;
