@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2018, Adam <Adam@sigterm.info>
+ * Copyright (c) 2025, Adam <Adam@sigterm.info>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -22,61 +22,82 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
+package net.runelite.client.callback;
 
-#define PI 3.1415926535897932384626433832795f
-#define UNIT PI / 1024.0f
+import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
+import javax.inject.Singleton;
+import net.runelite.api.Renderable;
+import net.runelite.api.Scene;
+import net.runelite.api.Tile;
+import net.runelite.api.TileObject;
 
-layout(std140) uniform uniforms {
-  float cameraYaw;
-  float cameraPitch;
-  int centerX;
-  int centerY;
-  int zoom;
-  float cameraX;
-  float cameraY;
-  float cameraZ;
-};
+@Singleton
+public class RenderCallbackManager
+{
+	private final List<RenderCallback> callbacks = new CopyOnWriteArrayList<>();
 
-struct modelinfo {
-  int offset;   // offset into vertex buffer
-  int toffset;  // offset into texture buffer
-  int size;     // length in faces
-  int idx;      // write idx in target buffer
-  int flags;    // buffer, hillskew, plane, orientation
-  int x;        // scene position x
-  int y;        // scene position y
-  int z;        // scene position z
-};
+	public void register(RenderCallback cb)
+	{
+		callbacks.add(cb);
+	}
 
-struct vert {
-  vec3 pos;
-  int ahsl;
-};
+	public void unregister(RenderCallback cb)
+	{
+		callbacks.remove(cb);
+	}
 
-layout(std430, binding = 0) readonly buffer modelbuffer_in {
-  modelinfo ol[];
-};
+	public boolean drawEntity(Renderable renderable, boolean ui)
+	{
+		if (callbacks.isEmpty())
+		{
+			return true;
+		}
 
-layout(std430, binding = 1) readonly buffer vertexbuffer_in {
-  vert vb[];
-};
+		for (var cb : callbacks)
+		{
+			if (!cb.drawEntity(renderable, ui))
+			{
+				return false;
+			}
+		}
 
-layout(std430, binding = 2) readonly buffer tempvertexbuffer_in {
-  vert tempvb[];
-};
+		return true;
+	}
 
-layout(std430, binding = 3) writeonly buffer vertex_out {
-  vert vout[];
-};
+	public boolean drawTile(Scene scene, Tile tile)
+	{
+		if (callbacks.isEmpty())
+		{
+			return true;
+		}
 
-layout(std430, binding = 4) writeonly buffer uv_out {
-  vec4 uvout[];
-};
+		for (var cb : callbacks)
+		{
+			if (!cb.drawTile(scene, tile))
+			{
+				return false;
+			}
+		}
 
-layout(std430, binding = 5) readonly buffer texturebuffer_in {
-  vec4 texb[];
-};
+		return true;
+	}
 
-layout(std430, binding = 6) readonly buffer temptexturebuffer_in {
-  vec4 temptexb[];
-};
+	public boolean drawObject(Scene scene, TileObject object)
+	{
+		if (callbacks.isEmpty())
+		{
+			return true;
+		}
+
+		for (var cb : callbacks)
+		{
+			if (!cb.drawObject(scene, object))
+			{
+				return false;
+			}
+		}
+
+		return true;
+	}
+}
