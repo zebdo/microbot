@@ -1167,6 +1167,11 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			return;
 		}
 
+		if (!renderCallbackManager.drawObject(scene, gameObject))
+		{
+			return;
+		}
+
 		int size = m.getFaceCount() * 3 * VAO.VERT_SIZE;
 		if (gameObject.getRenderable() instanceof Player || m.getFaceTransparencies() != null)
 		{
