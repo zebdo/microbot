@@ -593,7 +593,7 @@ public class TreeRun extends ComplexStateQuestHelper
 		brimhavenFruitTreePatchCheckHealth = new ObjectStep(this, ObjectID.FARMING_FRUIT_TREE_PATCH_3, new WorldPoint(2765, 3213, 0),
 			"Check the health of the fruit tree planted in Brimhaven.");
 		brimhavenFruitTreePatchCheckHealth.addWidgetHighlightWithTextRequirement(187, 3, "Brimhaven", true);
-		brimhavenFruitTreePatchCheckHealth.addWidgetHighlight(InterfaceID.SailingMenu.BRIMHAVEN_MARKER);
+		brimhavenFruitTreePatchCheckHealth.addWidgetHighlight(InterfaceID.SailingMenu.CONTENT);
 		catherbyFruitTreePatchCheckHealth = new ObjectStep(this, ObjectID.FARMING_FRUIT_TREE_PATCH_4, new WorldPoint(2860, 3433, 0),
 			"Check the health of the fruit tree planted in Catherby.");
 		catherbyFruitTreePatchCheckHealth.addTeleport(catherbyTeleport);

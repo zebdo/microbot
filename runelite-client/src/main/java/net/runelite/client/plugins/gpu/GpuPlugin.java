@@ -49,7 +49,11 @@ import net.runelite.client.ui.ClientUI;
 import net.runelite.client.ui.DrawManager;
 import net.runelite.rlawt.AWTContext;
 import org.lwjgl.opengl.GL;
-import static org.lwjgl.opengl.GL43C.*;
+import static org.lwjgl.opengl.GL33C.*;
+import static org.lwjgl.opengl.GL43C.GL_DEBUG_SOURCE_API;
+import static org.lwjgl.opengl.GL43C.GL_DEBUG_TYPE_OTHER;
+import static org.lwjgl.opengl.GL43C.GL_DEBUG_TYPE_PERFORMANCE;
+import static org.lwjgl.opengl.GL43C.glDebugMessageControl;
 import static org.lwjgl.opengl.GL45C.GL_ZERO_TO_ONE;
 import static org.lwjgl.opengl.GL45C.glClipControl;
 import org.lwjgl.opengl.GLCapabilities;
@@ -169,6 +173,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	private VAOList vaoA;
 	private VAOList vaoPO;
 
+	private SceneUploader clientUploader, mapUploader;
+
 	static class SceneContext
 	{
 		final int sizeX, sizeZ;
@@ -231,6 +237,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	private int uniFogDepth;
 	private int uniDrawDistance;
 	private int uniExpandedMapLoadingChunks;
+	private int uniSmoothBanding;
 	private int uniWorldProj;
 	private static int uniEntityProj;
 	static int uniEntityTint;
@@ -253,6 +260,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	{
 		root = new SceneContext(NUM_ZONES, NUM_ZONES);
 		subs = new SceneContext[MAX_WORLDVIEWS];
+		clientUploader = new SceneUploader(renderCallbackManager);
+		mapUploader = new SceneUploader(renderCallbackManager);
 		clientThread.invoke(() ->
 		{
 			try
@@ -288,9 +297,9 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				log.info("Using device: {}", glGetString(GL_RENDERER));
 				log.info("Using driver: {}", glGetString(GL_VERSION));
 
-				if (!glCapabilities.OpenGL31)
+				if (!glCapabilities.OpenGL33)
 				{
-					throw new RuntimeException("OpenGL 3.1 is required but not available");
+					throw new RuntimeException("OpenGL 3.3 is required but not available");
 				}
 
 				lwjglInitted = true;
@@ -562,6 +571,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		uniWorldProj = glGetUniformLocation(glProgram, "worldProj");
 		uniEntityProj = glGetUniformLocation(glProgram, "entityProj");
 		uniEntityTint = glGetUniformLocation(glProgram, "entityTint");
+		uniSmoothBanding = glGetUniformLocation(glProgram, "smoothBanding");
 		uniBrightness = glGetUniformLocation(glProgram, "brightness");
 		uniUseFog = glGetUniformLocation(glProgram, "useFog");
 		uniFogColor = glGetUniformLocation(glProgram, "fogColor");
@@ -860,7 +870,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		// Clear scene
 		int sky = client.getSkyboxColor();
 		glClearColor((sky >> 16 & 0xFF) / 255f, (sky >> 8 & 0xFF) / 255f, (sky & 0xFF) / 255f, 1f);
-		glClearDepthf(0f);
+		glClearDepth(0d);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 		// Setup anisotropic filtering
@@ -914,6 +924,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		// Brightness happens to also be stored in the texture provider, so we use that
 		TextureProvider textureProvider = client.getTextureProvider();
 		glUniform1f(uniBrightness, (float) textureProvider.getBrightness());
+		glUniform1f(uniSmoothBanding, config.smoothBanding() ? 0f : 1f);
 		glUniform1f(uniTextureLightMode, config.brightTextures() ? 1f : 0f);
 		if (client.getGameState() == GameState.LOGGED_IN)
 		{
@@ -1048,9 +1059,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			z.multizoneLocs(scene, zx - offset, zz - offset, cameraX, cameraZ, ctx.zones);
 		}
 
-		glDepthMask(false);
 		z.renderAlpha(zx - offset, zz - offset, cameraYaw, cameraPitch, minLevel, this.level, maxLevel, level, hideRoofIds);
-		glDepthMask(true);
 
 		checkGLErrors();
 	}
@@ -1073,7 +1082,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 
 			if (scene.getWorldViewId() == -1)
 			{
-				glProgramUniform3i(glProgram, uniBase, 0, 0, 0);
+				glUniform3i(uniBase, 0, 0, 0);
 
 				var vaos = vaoO.unmap();
 				for (VAO vao : vaos)
@@ -1083,20 +1092,23 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				}
 
 				vaos = vaoPO.unmap();
-				glDepthMask(false);
-				for (VAO vao : vaos)
+				if (!vaos.isEmpty())
 				{
-					vao.draw();
-				}
-				glDepthMask(true);
+					glDepthMask(false);
+					for (VAO vao : vaos)
+					{
+						vao.draw();
+					}
+					glDepthMask(true);
 
-				glColorMask(false, false, false, false);
-				for (VAO vao : vaos)
-				{
-					vao.draw();
-					vao.reset();
+					glColorMask(false, false, false, false);
+					for (VAO vao : vaos)
+					{
+						vao.draw();
+						vao.reset();
+					}
+					glColorMask(true, true, true, true);
 				}
-				glColorMask(true, true, true, true);
 			}
 		}
 		else if (pass == DrawCallbacks.PASS_ALPHA)
@@ -1159,7 +1171,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	}
 
 	@Override
-	public void drawTemp(Projection worldProjection, Scene scene, GameObject gameObject, Model m)
+	public void drawTemp(Projection worldProjection, Scene scene, GameObject gameObject, Model m, int orient, int x, int y, int z)
 	{
 		SceneContext ctx = context(scene);
 		if (ctx == null)
@@ -1172,20 +1184,21 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			return;
 		}
 
+		Renderable renderable = gameObject.getRenderable();
 		int size = m.getFaceCount() * 3 * VAO.VERT_SIZE;
-		if (gameObject.getRenderable() instanceof Player || m.getFaceTransparencies() != null)
+		if (renderable instanceof Player || m.getFaceTransparencies() != null)
 		{
 			// opaque player faces have their own vao and are drawn in a separate pass from normal opaque faces
 			// because they are not depth tested. transparent player faces don't need their own vao because normal
 			// transparent faces are already not depth tested
-			VAO o = gameObject.getRenderable() instanceof Player ? vaoPO.get(size) : vaoO.get(size);
+			VAO o = renderable instanceof Player ? vaoPO.get(size) : vaoO.get(size);
 			VAO a = vaoA.get(size);
 
 			int start = a.vbo.vb.position();
 			m.calculateBoundsCylinder();
 			try
 			{
-				facePrioritySorter.uploadSortedModel(worldProjection, m, gameObject.getModelOrientation(), gameObject.getX(), gameObject.getZ(), gameObject.getY(), o.vbo.vb, a.vbo.vb);
+				facePrioritySorter.uploadSortedModel(worldProjection, m, orient, x, y, z, o.vbo.vb, a.vbo.vb);
 			}
 			catch (Exception ex)
 			{
@@ -1199,13 +1212,13 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				int zx = (gameObject.getX() >> 10) + offset;
 				int zz = (gameObject.getY() >> 10) + offset;
 				Zone zone = ctx.zones[zx][zz];
-				zone.addTempAlphaModel(a.vao, start, end, gameObject.getPlane(), gameObject.getX() & 1023, gameObject.getZ() - gameObject.getRenderable().getModelHeight() /* to render players over locs */, gameObject.getY() & 1023);
+				zone.addTempAlphaModel(a.vao, start, end, gameObject.getPlane(), x & 1023, y - renderable.getModelHeight() /* to render players over locs */, z & 1023);
 			}
 		}
 		else
 		{
 			VAO o = vaoO.get(size);
-			SceneUploader.uploadTempModel(m, gameObject.getModelOrientation(), gameObject.getX(), gameObject.getZ(), gameObject.getY(), o.vbo.vb);
+			SceneUploader.uploadTempModel(m, orient, x, y, z, o.vbo.vb);
 		}
 	}
 
@@ -1261,8 +1274,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				zone = ctx.zones[x][z] = new Zone();
 
 				Scene scene = wv.getScene();
-				SceneUploader sceneUploader = injector.getInstance(SceneUploader.class);
-				sceneUploader.zoneSize(scene, zone, x, z);
+				clientUploader.zoneSize(scene, zone, x, z);
 
 				VBO o = null, a = null;
 				int sz = zone.sizeO * Zone.VERT_SIZE * 3;
@@ -1283,7 +1295,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 
 				zone.init(o, a);
 
-				sceneUploader.uploadZone(scene, zone, x, z);
+				clientUploader.uploadZone(scene, zone, x, z);
 
 				zone.unmap();
 				zone.initialized = true;
@@ -1349,7 +1361,9 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			{
 				// if texture upload is successful, compute and set texture animations
 				float[] texAnims = textureManager.computeTextureAnimations(textureProvider);
-				glProgramUniform2fv(glProgram, uniTextureAnimations, texAnims);
+				glUseProgram(glProgram);
+				glUniform2fv(uniTextureAnimations, texAnims);
+				glUseProgram(0);
 			}
 		}
 
@@ -1641,7 +1655,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		}
 
 		// size the zones which require upload
-		SceneUploader sceneUploader = injector.getInstance(SceneUploader.class);
 		Stopwatch sw = Stopwatch.createStarted();
 		int len = 0, lena = 0;
 		int reused = 0, newzones = 0;
@@ -1654,7 +1667,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 				{
 					assert zone.glVao == 0;
 					assert zone.glVaoA == 0;
-					sceneUploader.zoneSize(scene, zone, x, z);
+					mapUploader.zoneSize(scene, zone, x, z);
 					len += zone.sizeO;
 					lena += zone.sizeA;
 					newzones++;
@@ -1727,7 +1740,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 
 				if (!zone.initialized)
 				{
-					sceneUploader.uploadZone(scene, zone, x, z);
+					mapUploader.uploadZone(scene, zone, x, z);
 				}
 			}
 		}
@@ -1828,13 +1841,12 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		final SceneContext ctx = new SceneContext(worldView.getSizeX() >> 3, worldView.getSizeY() >> 3);
 		subs[worldViewId] = ctx;
 
-		SceneUploader sceneUploader = injector.getInstance(SceneUploader.class);
 		for (int x = 0; x < ctx.sizeX; ++x)
 		{
 			for (int z = 0; z < ctx.sizeZ; ++z)
 			{
 				Zone zone = ctx.zones[x][z];
-				sceneUploader.zoneSize(scene, zone, x, z);
+				mapUploader.zoneSize(scene, zone, x, z);
 			}
 		}
 
@@ -1886,7 +1898,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			{
 				Zone zone = ctx.zones[x][z];
 
-				sceneUploader.uploadZone(scene, zone, x, z);
+				mapUploader.uploadZone(scene, zone, x, z);
 			}
 		}
 	}
