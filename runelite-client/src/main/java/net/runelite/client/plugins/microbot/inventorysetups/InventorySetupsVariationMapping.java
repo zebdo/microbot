@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+import static net.runelite.api.GraphicID.CANNONBALL;
 import static net.runelite.api.ItemID.*;
 
 import com.google.common.collect.ImmutableMap;
