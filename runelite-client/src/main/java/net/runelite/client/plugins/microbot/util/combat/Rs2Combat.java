@@ -1,29 +1,30 @@
 package net.runelite.client.plugins.microbot.util.combat;
 
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
+import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
-import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.combat.weapons.*;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.magic.Rs2CombatSpells;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
-import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
-import java.util.concurrent.Callable;
 
 import static net.runelite.client.plugins.microbot.Microbot.log;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntilTrue;
 
+@Slf4j
 public class Rs2Combat {
 
     /**
@@ -55,7 +56,7 @@ public class Rs2Combat {
         if (!Rs2Magic.canCast(combatSpell.getMagicAction())) return false;
         if (Rs2Magic.getCurrentAutoCastSpell() == combatSpell && Microbot.getVarbitValue(Varbits.DEFENSIVE_CASTING_MODE) == (useDefensiveCast ? 1 : 0)) return true;
         
-        Rs2Tab.switchToCombatOptionsTab();
+        Rs2Tab.switchTo(InterfaceTab.COMBAT);
         sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.COMBAT);
 
         Widget autoCastWidget = useDefensiveCast
@@ -79,17 +80,21 @@ public class Rs2Combat {
     /**
      * Sets the auto retaliate state
      *
-     * @param state boolean, true for enabled, false for disabled
+     * @param enable boolean, true for enabled, false for disabled
      * @return boolean, whether the action succeeded
      */
-    public static boolean setAutoRetaliate(boolean state) {
-        Widget widget = Microbot.getClient().getWidget(WidgetInfo.COMBAT_AUTO_RETALIATE);
-        if (widget == null) return false;
-        if (state == isSelected(widget.getId() + 2)) return true;
+    public static boolean setAutoRetaliate(boolean enable) {
+        final int expectedVarPlayerValue = enable ? 0 : 1;
+        if (Microbot.getVarbitPlayerValue(VarPlayerID.OPTION_NODEF) == expectedVarPlayerValue) return true;
 
-        Microbot.getMouse().click(widget.getBounds());
-        Global.sleep(600, 1000);
-        return true;
+        Rs2Tab.switchTo(InterfaceTab.COMBAT);
+        if (!sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.COMBAT && Rs2Widget.getWidget(InterfaceID.CombatInterface.RETALIATE) != null, 2_000)) {
+            log.warn("Failed to {} auto retaliate could not find widget", enable ? "enable" : "disable");
+            return false;
+        }
+        Rs2Widget.clickWidget(InterfaceID.CombatInterface.RETALIATE);
+
+        return sleepUntil(() -> Microbot.getVarbitPlayerValue(VarPlayerID.OPTION_NODEF) == expectedVarPlayerValue, 2_000);
     }
 
     /**
@@ -120,8 +125,7 @@ public class Rs2Combat {
      * @return
      */
     public static int getSpecEnergy() {
-        int currentSpecEnergy = Microbot.getClient().getVarpValue(VarPlayer.SPECIAL_ATTACK_PERCENT);
-        return currentSpecEnergy;
+        return Microbot.getVarbitPlayerValue(VarPlayerID.SA_ENERGY);
     }
 
     /**
@@ -156,14 +160,9 @@ public class Rs2Combat {
         return Rs2Widget.getChildWidgetSpriteID(widgetId, 0) == 1150;
     }
 
+    @Deprecated(since = "use setAutoRetaliate")
     public static boolean enableAutoRetialiate() {
-        if (Microbot.getVarbitPlayerValue(172) == 1) {
-            Rs2Tab.switchToCombatOptionsTab();
-            sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.COMBAT, 2000);
-            Rs2Widget.clickWidget(38862879);
-        }
-
-        return Microbot.getVarbitPlayerValue(172) == 0;
+        return setAutoRetaliate(true);
     }
 
     public static boolean inCombat() {
@@ -234,8 +233,8 @@ public class Rs2Combat {
      * @return the human-readable attack style name (e.g., "Slash", "Magic")
      */
     public static String getWeaponAttackStyle() {
-        final int attackStyleVarbit = Microbot.getVarbitPlayerValue(VarPlayer.ATTACK_STYLE);
-        final int weaponTypeVarbit = Microbot.getVarbitValue(Varbits.EQUIPPED_WEAPON_TYPE);
+        final int attackStyleVarbit = Microbot.getVarbitPlayerValue(VarPlayerID.COM_MODE);
+        final int weaponTypeVarbit = Microbot.getVarbitValue(VarbitID.COMBAT_WEAPON_CATEGORY);
         int weaponStyleEnum = Microbot.getEnum(EnumID.WEAPON_STYLES).getIntValue(weaponTypeVarbit);
         int[] weaponStyleStructs = Microbot.getEnum(weaponStyleEnum).getIntVals();
         StructComposition attackStylesStruct = Microbot.getStructComposition(weaponStyleStructs[attackStyleVarbit]);
