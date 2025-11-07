@@ -93,7 +93,8 @@ public class Rs2Prayer {
 
 		Rectangle prayerBounds = withMouse ? getPrayerBounds(prayer) : Rs2UiHelper.getDefaultRectangle();
 
-		Microbot.doInvoke(menuEntry, prayerBounds);
+        Microbot.doInvoke(menuEntry, prayerBounds);
+        // Microbot.getClient().menuAction(-1, prayer.getIndex(), MenuAction.CC_OP, 1, -1, "Activate", "Activate");
 	}
 
 	/**
