@@ -180,6 +180,7 @@ public class MasterPanel extends PluginPanel {
     public void setupResetButton() {
         resetButton.addActionListener(e -> {
             Rs2Antiban.resetAntibanSettings(true);
+            Rs2AntibanSettings.saveToProfile();
             loadSettings();
         });
     }

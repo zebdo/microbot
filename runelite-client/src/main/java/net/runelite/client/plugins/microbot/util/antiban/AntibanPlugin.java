@@ -160,6 +160,7 @@ public class AntibanPlugin extends Plugin {
                 .panel(panel)
                 .build();
         Rs2AntibanSettings.reset();
+        Rs2AntibanSettings.loadFromProfile();
         validateAndSetBreakDurations();
 
         Timer timer = new Timer();
@@ -190,6 +191,8 @@ public class AntibanPlugin extends Plugin {
     @Subscribe
     public void onProfileChanged(ProfileChanged event) {
         Rs2Antiban.resetAntibanSettings();
+        Rs2AntibanSettings.loadFromProfile();
+        validateAndSetBreakDurations();
     }
 
     @Subscribe

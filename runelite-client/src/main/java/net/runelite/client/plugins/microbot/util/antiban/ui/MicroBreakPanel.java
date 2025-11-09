@@ -75,18 +75,30 @@ public class MicroBreakPanel extends JPanel {
 
     private void setupActionListeners() {
         isMicroBreakActive.addActionListener(e -> Rs2AntibanSettings.microBreakActive = isMicroBreakActive.isSelected());
-        takeMicroBreaks.addActionListener(e -> Rs2AntibanSettings.takeMicroBreaks = takeMicroBreaks.isSelected());
+        takeMicroBreaks.addActionListener(e -> {
+            Rs2AntibanSettings.takeMicroBreaks = takeMicroBreaks.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
         microBreakDurationLow.addChangeListener(e -> {
             Rs2AntibanSettings.microBreakDurationLow = microBreakDurationLow.getValue();
             microBreakDurationLowLabel.setText("Micro Break Duration Low (min): " + microBreakDurationLow.getValue());
+            if (!microBreakDurationLow.getValueIsAdjusting()) {
+                Rs2AntibanSettings.saveToProfile();
+            }
         });
         microBreakDurationHigh.addChangeListener(e -> {
             Rs2AntibanSettings.microBreakDurationHigh = microBreakDurationHigh.getValue();
             microBreakDurationHighLabel.setText("Micro Break Duration High (min): " + microBreakDurationHigh.getValue());
+            if (!microBreakDurationHigh.getValueIsAdjusting()) {
+                Rs2AntibanSettings.saveToProfile();
+            }
         });
         microBreakChance.addChangeListener(e -> {
             Rs2AntibanSettings.microBreakChance = microBreakChance.getValue() / 100.0;
             microBreakChanceLabel.setText("Micro Break Chance (%): " + microBreakChance.getValue());
+            if (!microBreakChance.getValueIsAdjusting()) {
+                Rs2AntibanSettings.saveToProfile();
+            }
         });
     }
 

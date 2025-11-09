@@ -57,12 +57,30 @@ public class GeneralPanel extends JPanel {
     }
 
     private void setupActionListeners() {
-        isEnabled.addActionListener(e -> Rs2AntibanSettings.antibanEnabled = isEnabled.isSelected());
-        universalAntiban.addActionListener(e -> Rs2AntibanSettings.universalAntiban = universalAntiban.isSelected());
-        useContextualVariability.addActionListener(e -> Rs2AntibanSettings.contextualVariability = useContextualVariability.isSelected());
-        devDebug.addActionListener(e -> Rs2AntibanSettings.devDebug = devDebug.isSelected());
-        overwriteScriptSetting.addActionListener(e -> Rs2AntibanSettings.overwriteScriptSettings = overwriteScriptSetting.isSelected());
-        universalAntibanSettings.addActionListener(e -> Rs2Antiban.antibanSetupTemplates.applyUniversalAntibanSetup());
+        isEnabled.addActionListener(e -> {
+            Rs2AntibanSettings.antibanEnabled = isEnabled.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        universalAntiban.addActionListener(e -> {
+            Rs2AntibanSettings.universalAntiban = universalAntiban.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        useContextualVariability.addActionListener(e -> {
+            Rs2AntibanSettings.contextualVariability = useContextualVariability.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        devDebug.addActionListener(e -> {
+            Rs2AntibanSettings.devDebug = devDebug.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        overwriteScriptSetting.addActionListener(e -> {
+            Rs2AntibanSettings.overwriteScriptSettings = overwriteScriptSetting.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        universalAntibanSettings.addActionListener(e -> {
+            Rs2Antiban.antibanSetupTemplates.applyUniversalAntibanSetup();
+            Rs2AntibanSettings.saveToProfile();
+        });
     }
 
     public void updateValues() {
