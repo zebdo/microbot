@@ -1,5 +1,11 @@
 package net.runelite.client.plugins.microbot.util.antiban;
 
+import com.google.gson.Gson;
+import com.google.gson.JsonSyntaxException;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.config.ConfigManager;
+import net.runelite.client.plugins.microbot.Microbot;
+
 /**
  * Provides configuration settings for the anti-ban system used by various plugins within the bot framework.
  *
@@ -73,7 +79,199 @@ package net.runelite.client.plugins.microbot.util.antiban;
  * </pre>
  */
 
+@Slf4j
 public class Rs2AntibanSettings {
+    private static final String CONFIG_GROUP = "MicrobotAntiban";
+    private static final String CONFIG_KEY = "settings";
+    private static final Gson GSON = new Gson();
+
+    private Rs2AntibanSettings() {
+        throw new IllegalStateException("Utility class");
+    }
+
+    private static class PersistentSettings {
+        private Boolean antibanEnabled;
+        private Boolean usePlayStyle;
+        private Boolean randomIntervals;
+        private Boolean simulateFatigue;
+        private Boolean simulateAttentionSpan;
+        private Boolean behavioralVariability;
+        private Boolean nonLinearIntervals;
+        private Boolean profileSwitching;
+        private Boolean timeOfDayAdjust;
+        private Boolean simulateMistakes;
+        private Boolean naturalMouse;
+        private Boolean moveMouseOffScreen;
+        private Boolean moveMouseRandomly;
+        private Boolean contextualVariability;
+        private Boolean dynamicIntensity;
+        private Boolean dynamicActivity;
+        private Boolean devDebug;
+        private Boolean overwriteScriptSettings;
+        private Boolean takeMicroBreaks;
+        private Boolean playSchedule;
+        private Boolean universalAntiban;
+        private Integer microBreakDurationLow;
+        private Integer microBreakDurationHigh;
+        private Double actionCooldownChance;
+        private Double microBreakChance;
+        private Double moveMouseRandomlyChance;
+        private Double moveMouseOffScreenChance;
+    }
+
+    public static void saveToProfile() {
+        ConfigManager configManager = Microbot.getConfigManager();
+        if (configManager == null) {
+            log.debug("ConfigManager not available, skipping antiban settings save");
+            return;
+        }
+
+        PersistentSettings settings = snapshot();
+        try {
+            configManager.setConfiguration(CONFIG_GROUP, CONFIG_KEY, GSON.toJson(settings));
+        } catch (Exception ex) {
+            log.warn("Unable to save antiban settings to profile", ex);
+        }
+    }
+
+    public static void loadFromProfile() {
+        ConfigManager configManager = Microbot.getConfigManager();
+        if (configManager == null) {
+            log.debug("ConfigManager not available, skipping antiban settings load");
+            return;
+        }
+
+        String json = configManager.getConfiguration(CONFIG_GROUP, CONFIG_KEY);
+        if (json == null || json.isEmpty()) {
+            return;
+        }
+
+        try {
+            PersistentSettings settings = GSON.fromJson(json, PersistentSettings.class);
+            if (settings != null) {
+                apply(settings);
+            }
+        } catch (JsonSyntaxException ex) {
+            log.warn("Unable to parse antiban settings from profile", ex);
+        }
+    }
+
+    private static PersistentSettings snapshot() {
+        PersistentSettings settings = new PersistentSettings();
+        settings.antibanEnabled = antibanEnabled;
+        settings.usePlayStyle = usePlayStyle;
+        settings.randomIntervals = randomIntervals;
+        settings.simulateFatigue = simulateFatigue;
+        settings.simulateAttentionSpan = simulateAttentionSpan;
+        settings.behavioralVariability = behavioralVariability;
+        settings.nonLinearIntervals = nonLinearIntervals;
+        settings.profileSwitching = profileSwitching;
+        settings.timeOfDayAdjust = timeOfDayAdjust;
+        settings.simulateMistakes = simulateMistakes;
+        settings.naturalMouse = naturalMouse;
+        settings.moveMouseOffScreen = moveMouseOffScreen;
+        settings.moveMouseRandomly = moveMouseRandomly;
+        settings.contextualVariability = contextualVariability;
+        settings.dynamicIntensity = dynamicIntensity;
+        settings.dynamicActivity = dynamicActivity;
+        settings.devDebug = devDebug;
+        settings.overwriteScriptSettings = overwriteScriptSettings;
+        settings.takeMicroBreaks = takeMicroBreaks;
+        settings.playSchedule = playSchedule;
+        settings.universalAntiban = universalAntiban;
+        settings.microBreakDurationLow = microBreakDurationLow;
+        settings.microBreakDurationHigh = microBreakDurationHigh;
+        settings.actionCooldownChance = actionCooldownChance;
+        settings.microBreakChance = microBreakChance;
+        settings.moveMouseRandomlyChance = moveMouseRandomlyChance;
+        settings.moveMouseOffScreenChance = moveMouseOffScreenChance;
+        return settings;
+    }
+
+    private static void apply(PersistentSettings settings) {
+        if (settings.antibanEnabled != null) {
+            antibanEnabled = settings.antibanEnabled;
+        }
+        if (settings.usePlayStyle != null) {
+            usePlayStyle = settings.usePlayStyle;
+        }
+        if (settings.randomIntervals != null) {
+            randomIntervals = settings.randomIntervals;
+        }
+        if (settings.simulateFatigue != null) {
+            simulateFatigue = settings.simulateFatigue;
+        }
+        if (settings.simulateAttentionSpan != null) {
+            simulateAttentionSpan = settings.simulateAttentionSpan;
+        }
+        if (settings.behavioralVariability != null) {
+            behavioralVariability = settings.behavioralVariability;
+        }
+        if (settings.nonLinearIntervals != null) {
+            nonLinearIntervals = settings.nonLinearIntervals;
+        }
+        if (settings.profileSwitching != null) {
+            profileSwitching = settings.profileSwitching;
+        }
+        if (settings.timeOfDayAdjust != null) {
+            timeOfDayAdjust = settings.timeOfDayAdjust;
+        }
+        if (settings.simulateMistakes != null) {
+            simulateMistakes = settings.simulateMistakes;
+        }
+        if (settings.naturalMouse != null) {
+            naturalMouse = settings.naturalMouse;
+        }
+        if (settings.moveMouseOffScreen != null) {
+            moveMouseOffScreen = settings.moveMouseOffScreen;
+        }
+        if (settings.moveMouseRandomly != null) {
+            moveMouseRandomly = settings.moveMouseRandomly;
+        }
+        if (settings.contextualVariability != null) {
+            contextualVariability = settings.contextualVariability;
+        }
+        if (settings.dynamicIntensity != null) {
+            dynamicIntensity = settings.dynamicIntensity;
+        }
+        if (settings.dynamicActivity != null) {
+            dynamicActivity = settings.dynamicActivity;
+        }
+        if (settings.devDebug != null) {
+            devDebug = settings.devDebug;
+        }
+        if (settings.overwriteScriptSettings != null) {
+            overwriteScriptSettings = settings.overwriteScriptSettings;
+        }
+        if (settings.takeMicroBreaks != null) {
+            takeMicroBreaks = settings.takeMicroBreaks;
+        }
+        if (settings.playSchedule != null) {
+            playSchedule = settings.playSchedule;
+        }
+        if (settings.universalAntiban != null) {
+            universalAntiban = settings.universalAntiban;
+        }
+        if (settings.microBreakDurationLow != null) {
+            microBreakDurationLow = settings.microBreakDurationLow;
+        }
+        if (settings.microBreakDurationHigh != null) {
+            microBreakDurationHigh = settings.microBreakDurationHigh;
+        }
+        if (settings.actionCooldownChance != null) {
+            actionCooldownChance = settings.actionCooldownChance;
+        }
+        if (settings.microBreakChance != null) {
+            microBreakChance = settings.microBreakChance;
+        }
+        if (settings.moveMouseRandomlyChance != null) {
+            moveMouseRandomlyChance = settings.moveMouseRandomlyChance;
+        }
+        if (settings.moveMouseOffScreenChance != null) {
+            moveMouseOffScreenChance = settings.moveMouseOffScreenChance;
+        }
+    }
+
     public static boolean actionCooldownActive = false;
     public static boolean microBreakActive = false;
     public static boolean antibanEnabled = true;

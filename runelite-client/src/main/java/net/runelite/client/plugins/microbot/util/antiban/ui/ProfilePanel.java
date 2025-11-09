@@ -41,9 +41,18 @@ public class ProfilePanel extends JPanel {
     }
 
     private void setupActionListeners() {
-        enableProfileSwitching.addActionListener(e -> Rs2AntibanSettings.profileSwitching = enableProfileSwitching.isSelected());
-        adjustForTimeOfDay.addActionListener(e -> Rs2AntibanSettings.timeOfDayAdjust = adjustForTimeOfDay.isSelected());
-        simulatePlaySchedule.addActionListener(e -> Rs2AntibanSettings.playSchedule = simulatePlaySchedule.isSelected());
+        enableProfileSwitching.addActionListener(e -> {
+            Rs2AntibanSettings.profileSwitching = enableProfileSwitching.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        adjustForTimeOfDay.addActionListener(e -> {
+            Rs2AntibanSettings.timeOfDayAdjust = adjustForTimeOfDay.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        simulatePlaySchedule.addActionListener(e -> {
+            Rs2AntibanSettings.playSchedule = simulatePlaySchedule.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
 
     }
 
