@@ -976,6 +976,28 @@ public class Rs2Walker {
         return worldPoint.distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation());
     }
 
+    /**
+     * Checks if the given WorldPoint is located on Zeah (Great Kourend).
+     * Zeah is defined by X coordinates between 1152 and 1983.
+     *
+     * @param point The WorldPoint to check
+     * @return true if the point is on Zeah, false otherwise
+     */
+    public static boolean isOnZeah(WorldPoint point) {
+        if (point == null) return false;
+        return point.getX() >= 1152 && point.getX() <= 1983;
+    }
+
+    /**
+     * Checks if the player has visited Zeah (Great Kourend).
+     * This is determined by the ZEAH_PLAYERHASVISITED varbit (4897).
+     *
+     * @return true if the player has visited Zeah, false otherwise
+     */
+    public static boolean hasVisitedZeah() {
+        return Microbot.getVarbitValue(VarbitID.ZEAH_PLAYERHASVISITED) == 1;
+    }
+
     private static boolean handleRockfall(List<WorldPoint> path, int index) {
         if (ShortestPathPlugin.getPathfinder() == null) return false;
 
@@ -1546,7 +1568,13 @@ public class Rs2Walker {
                         }
                     }
 
+                    // Skip teleportation items to Zeah if player hasn't visited Zeah yet
                     if (transport.getType() == TransportType.TELEPORTATION_ITEM) {
+                        if (isOnZeah(transport.getDestination()) && !hasVisitedZeah()) {
+                            log.debug("Skipping teleport to Zeah location {} - player hasn't visited Zeah yet",
+                                    transport.getDestination());
+                            continue;
+                        }
                         if (handleTeleportItem(transport)) {
                             sleepUntil(() -> !Rs2Player.isAnimating());
                             sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
@@ -1554,7 +1582,13 @@ public class Rs2Walker {
                         }
                     }
 
+                    // Skip teleportation spells to Zeah if player hasn't visited Zeah yet
                     if (transport.getType() == TransportType.TELEPORTATION_SPELL) {
+                        if (isOnZeah(transport.getDestination()) && !hasVisitedZeah()) {
+                            log.debug("Skipping teleport spell to Zeah location {} - player hasn't visited Zeah yet",
+                                    transport.getDestination());
+                            continue;
+                        }
                         if (handleTeleportSpell(transport)) {
                             sleepUntil(() -> !Rs2Player.isAnimating());
                             sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
