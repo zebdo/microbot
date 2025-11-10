@@ -6,7 +6,9 @@ import net.runelite.api.Skill;
 import net.runelite.api.annotations.Component;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
+import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.MicrobotConfig;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
@@ -77,23 +79,41 @@ public class Rs2Prayer {
 	/**
 	 * Invokes a prayer action
 	 * Creates a menu entry and executes it with the appropriate bounds.
+	 * If the config option "Prayer Invokes Without Mouse" is enabled and withMouse is false,
+	 * uses direct menuAction instead of mouse simulation.
 	 *
 	 * @param prayer the prayer to invoke
 	 * @param withMouse true to use mouse clicks with prayer bounds
 	 */
 	private static void invokePrayer(Rs2PrayerEnum prayer, boolean withMouse) {
-		NewMenuEntry menuEntry = new NewMenuEntry(
-			-1,
-			prayer.getIndex(),
-			MenuAction.CC_OP.getId(),
-			1,
-			-1,
-			"Activate"
-		);
+		// Check if the config option for prayer invokes without mouse is enabled
+		boolean prayerInvokesWithoutMouse = false;
+		try {
+			ConfigManager configManager = Microbot.getInjector().getInstance(ConfigManager.class);
+			Boolean configValue = configManager.getConfiguration(MicrobotConfig.configGroup, "prayerInvokesWithoutMouse", Boolean.class);
+			prayerInvokesWithoutMouse = configValue != null && configValue;
+		} catch (Exception e) {
+			log.debug("Failed to get prayer invokes without mouse config, using default", e);
+		}
 
-		Rectangle prayerBounds = withMouse ? getPrayerBounds(prayer) : Rs2UiHelper.getDefaultRectangle();
+		// If config is enabled and not using mouse, use direct menuAction
+		if (prayerInvokesWithoutMouse && !withMouse) {
+			Microbot.getClient().menuAction(-1, prayer.getIndex(), MenuAction.CC_OP, 1, -1, "Activate", "Activate");
+		} else {
+			// Use the existing approach with NewMenuEntry and doInvoke
+			NewMenuEntry menuEntry = new NewMenuEntry(
+				-1,
+				prayer.getIndex(),
+				MenuAction.CC_OP.getId(),
+				1,
+				-1,
+				"Activate"
+			);
 
-		Microbot.doInvoke(menuEntry, prayerBounds);
+			Rectangle prayerBounds = withMouse ? getPrayerBounds(prayer) : Rs2UiHelper.getDefaultRectangle();
+
+			Microbot.doInvoke(menuEntry, prayerBounds);
+		}
 	}
 
 	/**
@@ -219,20 +239,38 @@ public class Rs2Prayer {
 	/**
 	 * Invokes the quick prayer orb action
 	 * Creates a menu entry for the quick prayer orb and executes it.
+	 * If the config option "Prayer Invokes Without Mouse" is enabled and withMouse is false,
+	 * uses direct menuAction instead of mouse simulation.
 	 *
 	 * @param withMouse true to use mouse with orb bounds
 	 */
 	private static void invokeQuickPrayer(boolean withMouse) {
-		NewMenuEntry entry = new NewMenuEntry(
-			-1,
-			QUICK_PRAYER_ORB_COMPONENT_ID,
-			MenuAction.CC_OP.getId(),
-			1,
-			-1,
-			"Quick-prayers"
-		);
+		// Check if the config option for prayer invokes without mouse is enabled
+		boolean prayerInvokesWithoutMouse = false;
+		try {
+			ConfigManager configManager = Microbot.getInjector().getInstance(ConfigManager.class);
+			Boolean configValue = configManager.getConfiguration(MicrobotConfig.configGroup, "prayerInvokesWithoutMouse", Boolean.class);
+			prayerInvokesWithoutMouse = configValue != null && configValue;
+		} catch (Exception e) {
+			log.debug("Failed to get prayer invokes without mouse config, using default", e);
+		}
 
-		Microbot.doInvoke(entry, withMouse ? getQuickPrayerOrbBounds() : Rs2UiHelper.getDefaultRectangle());
+		// If config is enabled and not using mouse, use direct menuAction
+		if (prayerInvokesWithoutMouse && !withMouse) {
+			Microbot.getClient().menuAction(-1, QUICK_PRAYER_ORB_COMPONENT_ID, MenuAction.CC_OP, 1, -1, "Quick-prayers", "Quick-prayers");
+		} else {
+			// Use the existing approach with NewMenuEntry and doInvoke
+			NewMenuEntry entry = new NewMenuEntry(
+				-1,
+				QUICK_PRAYER_ORB_COMPONENT_ID,
+				MenuAction.CC_OP.getId(),
+				1,
+				-1,
+				"Quick-prayers"
+			);
+
+			Microbot.doInvoke(entry, withMouse ? getQuickPrayerOrbBounds() : Rs2UiHelper.getDefaultRectangle());
+		}
 	}
 
 	/**

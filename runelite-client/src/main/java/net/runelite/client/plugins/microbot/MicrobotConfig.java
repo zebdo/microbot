@@ -157,5 +157,16 @@ public interface MicrobotConfig extends Config
 		return false;
 	}
 
+	@ConfigItem(
+		keyName = "prayerInvokesWithoutMouse",
+		name = "Prayer Invokes Without Mouse",
+		description = "Enable or disable prayer invokes without mouse movement (uses direct menu action)",
+		position = 3,
+		section = generalSection
+	)
+	default boolean prayerInvokesWithoutMouse() {
+		return false;
+	}
+
 
 }
