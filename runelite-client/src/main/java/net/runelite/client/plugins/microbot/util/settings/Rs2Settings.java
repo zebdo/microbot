@@ -81,7 +81,7 @@ public class Rs2Settings
 			return false;
 		}
 
-		// MenuEntryImpl(getOption=Toggle, getTarget=, getIdentifier=1, getType=CC_OP, getParam0=8, getParam1=8781843, getItemId=-1, isForceLeftClick=false, getWorldViewId=-1, isDeprioritized=false)
+		// MenuEntryImpl(getOption=Toggle, getTarget=, getIdentifier=1, getType=CC_OP, getParam0=8, getParam1=8781844, getItemId=-1, isForceLeftClick=false, getWorldViewId=-1, isDeprioritized=false)
 		NewMenuEntry menuEntry = new NewMenuEntry("Toggle", "", 1, MenuAction.CC_OP, 8, widget.getId(), false);
 		Microbot.doInvoke(menuEntry, Rs2UiHelper.getDefaultRectangle());
 		boolean success = sleepUntil(Rs2Settings::isDropShiftSettingEnabled);
@@ -244,8 +244,8 @@ public class Rs2Settings
 		Widget widget = Rs2Widget.getWidget(SETTINGS_CLICKABLE);
 		if (widget == null) return false;
 
-		// MenuEntryImpl(getOption=Toggle, getTarget=, getIdentifier=1, getType=CC_OP, getParam0=34, getParam1=8781844, getItemId=-1, isForceLeftClick=false, getWorldViewId=-1, isDeprioritized=false)
-		NewMenuEntry menuEntry = new NewMenuEntry("Toggle", "", 1, MenuAction.CC_OP, 34, widget.getId(), false);
+		// MenuEntryImpl(getOption=Toggle, getTarget=, getIdentifier=1, getType=CC_OP, getParam0=35, getParam1=8781844, getItemId=-1, isForceLeftClick=false, getWorldViewId=-1, isDeprioritized=false)
+		NewMenuEntry menuEntry = new NewMenuEntry("Toggle", "", 1, MenuAction.CC_OP, 35, widget.getId(), false);
 		Microbot.doInvoke(menuEntry, Rs2UiHelper.getDefaultRectangle());
 		boolean success = sleepUntil(() -> !isWorldSwitcherConfirmationEnabled());
 
