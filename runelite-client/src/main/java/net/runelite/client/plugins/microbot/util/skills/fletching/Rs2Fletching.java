@@ -416,7 +416,7 @@ public class Rs2Fletching {
      * drop fletched items by name
      */
     public static void dropFletchedItems(String itemName) {
-        Rs2Inventory.dropAll(rsitem -> rsitem.getName().contains(itemName), InteractOrder.ZIGZAG);
+        Rs2Inventory.dropAll(rsitem -> rsitem.getName().toLowerCase().contains(itemName.toLowerCase()), InteractOrder.ZIGZAG);
         log.info("dropped fletched items: {}", itemName);
     }
     

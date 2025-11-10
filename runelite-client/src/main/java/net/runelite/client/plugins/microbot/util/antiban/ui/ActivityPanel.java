@@ -49,14 +49,38 @@ public class ActivityPanel extends JPanel {
     }
 
     private void setupActionListeners() {
-        usePlayStyle.addActionListener(e -> Rs2AntibanSettings.usePlayStyle = usePlayStyle.isSelected());
-        useRandomIntervals.addActionListener(e -> Rs2AntibanSettings.randomIntervals = useRandomIntervals.isSelected());
-        simulateFatigue.addActionListener(e -> Rs2AntibanSettings.simulateFatigue = simulateFatigue.isSelected());
-        simulateAttentionSpan.addActionListener(e -> Rs2AntibanSettings.simulateAttentionSpan = simulateAttentionSpan.isSelected());
-        useBehavioralVariability.addActionListener(e -> Rs2AntibanSettings.behavioralVariability = useBehavioralVariability.isSelected());
-        useNonLinearIntervals.addActionListener(e -> Rs2AntibanSettings.nonLinearIntervals = useNonLinearIntervals.isSelected());
-        dynamicActivityIntensity.addActionListener(e -> Rs2AntibanSettings.dynamicIntensity = dynamicActivityIntensity.isSelected());
-        dynamicActivity.addActionListener(e -> Rs2AntibanSettings.dynamicActivity = dynamicActivity.isSelected());
+        usePlayStyle.addActionListener(e -> {
+            Rs2AntibanSettings.usePlayStyle = usePlayStyle.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        useRandomIntervals.addActionListener(e -> {
+            Rs2AntibanSettings.randomIntervals = useRandomIntervals.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        simulateFatigue.addActionListener(e -> {
+            Rs2AntibanSettings.simulateFatigue = simulateFatigue.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        simulateAttentionSpan.addActionListener(e -> {
+            Rs2AntibanSettings.simulateAttentionSpan = simulateAttentionSpan.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        useBehavioralVariability.addActionListener(e -> {
+            Rs2AntibanSettings.behavioralVariability = useBehavioralVariability.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        useNonLinearIntervals.addActionListener(e -> {
+            Rs2AntibanSettings.nonLinearIntervals = useNonLinearIntervals.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        dynamicActivityIntensity.addActionListener(e -> {
+            Rs2AntibanSettings.dynamicIntensity = dynamicActivityIntensity.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        dynamicActivity.addActionListener(e -> {
+            Rs2AntibanSettings.dynamicActivity = dynamicActivity.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
 
     }
 

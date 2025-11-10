@@ -89,17 +89,35 @@ public class MousePanel extends JPanel
 
     private void setupActionListeners()
     {
-        useNaturalMouse.addActionListener(e -> Rs2AntibanSettings.naturalMouse = useNaturalMouse.isSelected());
-        simulateMistakes.addActionListener(e -> Rs2AntibanSettings.simulateMistakes = simulateMistakes.isSelected());
-        moveMouseOffScreen.addActionListener(e -> Rs2AntibanSettings.moveMouseOffScreen = moveMouseOffScreen.isSelected());
+        useNaturalMouse.addActionListener(e -> {
+            Rs2AntibanSettings.naturalMouse = useNaturalMouse.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        simulateMistakes.addActionListener(e -> {
+            Rs2AntibanSettings.simulateMistakes = simulateMistakes.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
+        moveMouseOffScreen.addActionListener(e -> {
+            Rs2AntibanSettings.moveMouseOffScreen = moveMouseOffScreen.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
         moveMouseOffScreenChance.addChangeListener(e -> {
             Rs2AntibanSettings.moveMouseOffScreenChance = moveMouseOffScreenChance.getValue() / 100.0;
             moveMouseOffScreenChanceLabel.setText("Move Mouse Off Screen (%): " + moveMouseOffScreenChance.getValue());
+            if (!moveMouseOffScreenChance.getValueIsAdjusting()) {
+                Rs2AntibanSettings.saveToProfile();
+            }
         });
-        moveMouseRandomly.addActionListener(e -> Rs2AntibanSettings.moveMouseRandomly = moveMouseRandomly.isSelected());
+        moveMouseRandomly.addActionListener(e -> {
+            Rs2AntibanSettings.moveMouseRandomly = moveMouseRandomly.isSelected();
+            Rs2AntibanSettings.saveToProfile();
+        });
         moveMouseRandomlyChance.addChangeListener(e -> {
             Rs2AntibanSettings.moveMouseRandomlyChance = moveMouseRandomlyChance.getValue() / 100.0;
             moveMouseRandomlyChanceLabel.setText("Random Mouse Movement (%): " + moveMouseRandomlyChance.getValue());
+            if (!moveMouseRandomlyChance.getValueIsAdjusting()) {
+                Rs2AntibanSettings.saveToProfile();
+            }
         });
 
         // 3) When mouseSpeedSlider changes, update the ActivityIntensity
