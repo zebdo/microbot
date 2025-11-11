@@ -219,13 +219,12 @@ public class PrayerHotkeyOverlay extends Overlay
                         int spriteId = option.getSpriteId(isActive);
                         if (spriteId >= 0)
                         {
-                                SpritePixels sprite = spriteManager.getSprite(spriteId, 0);
-                                if (sprite != null)
+                                BufferedImage Image = spriteManager.getSprite(spriteId, 0);
+                                if (Image != null)
                                 {
-                                        BufferedImage image = sprite.toBufferedImage();
-                                        int imgX = bounds.x + (bounds.width - image.getWidth()) / 2;
-                                        int imgY = bounds.y + (bounds.height - image.getHeight()) / 2;
-                                        graphics.drawImage(image, imgX, imgY, null);
+                                    int imgX = bounds.x + (bounds.width - Image.getWidth()) / 2;
+                                    int imgY = bounds.y + (bounds.height - Image.getHeight()) / 2;
+                                    graphics.drawImage(Image, imgX, imgY, null);
                                 }
                         }
                 }
