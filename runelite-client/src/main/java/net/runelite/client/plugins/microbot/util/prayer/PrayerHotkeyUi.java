@@ -156,11 +156,11 @@ public class PrayerHotkeyUi
                         return true;
                 }
 
-                Widget chatWidget = getChatWidget();
-                if (chatWidget == null || chatWidget.isHidden())
-                {
-                        destroy();
-                        return false;
+               Widget chatWidget = getChatWidget();
+               if (chatWidget == null || chatWidget.isHidden())
+               {
+                       destroy();
+                       return false;
                 }
 
                 if (container != null && container.getParent() == chatWidget && !container.isHidden())
@@ -477,15 +477,33 @@ public class PrayerHotkeyUi
                 selectionLabel.setText(String.format("Hotkey %d: %s", selectedSlot + 1, option.getDisplayName()));
         }
 
-        private Widget getChatWidget()
-        {
-                Widget widget = client.getWidget(WidgetInfo.CHATBOX_TRANSPARENT_BACKGROUND);
-                if (widget == null)
-                {
-                        widget = client.getWidget(WidgetInfo.CHATBOX);
-                }
-                return widget;
-        }
+       private Widget getChatWidget()
+       {
+               Widget widget = client.getWidget(WidgetInfo.CHATBOX_PARENT);
+               if (isLayer(widget))
+               {
+                       return widget;
+               }
+
+               widget = client.getWidget(WidgetInfo.RESIZABLE_VIEWPORT_CHATBOX_PARENT);
+               if (isLayer(widget))
+               {
+                       return widget;
+               }
+
+               widget = client.getWidget(WidgetInfo.RESIZABLE_VIEWPORT_BOTTOM_LINE_CHATBOX_PARENT);
+               if (isLayer(widget))
+               {
+                       return widget;
+               }
+
+               return null;
+       }
+
+       private boolean isLayer(Widget widget)
+       {
+               return widget != null && widget.getType() == WidgetType.LAYER;
+       }
 
         private void destroy()
         {
