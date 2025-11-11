@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.runelite.api.Prayer;
 import net.runelite.api.gameval.SpriteID;
+import net.runelite.client.util.Text;
 
 @Getter
 @RequiredArgsConstructor
@@ -82,5 +83,20 @@ public enum PrayerHotkeyOption
         public int getSpriteId(boolean active)
         {
                 return active ? activeSpriteId : inactiveSpriteId;
+        }
+
+        public String getDisplayName()
+        {
+                if (this == NONE)
+                {
+                        return "Empty";
+                }
+
+                if (prayer != null)
+                {
+                        return Text.titleCase(prayer);
+                }
+
+                return Text.titleCase(this);
         }
 }

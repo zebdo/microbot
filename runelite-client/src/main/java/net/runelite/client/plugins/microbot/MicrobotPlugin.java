@@ -29,6 +29,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.overlay.GembagOverlay;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.prayer.PrayerHotkeyOverlay;
+import net.runelite.client.plugins.microbot.util.prayer.PrayerHotkeyUi;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -104,6 +105,8 @@ public class MicrobotPlugin extends Plugin
         private PouchOverlay pouchOverlay;
         @Inject
         private PrayerHotkeyOverlay prayerHotkeyOverlay;
+        @Inject
+        private PrayerHotkeyUi prayerHotkeyUi;
 	@Inject
 	private EventBus eventBus;
 	private GameChatAppender gameChatAppender;
@@ -192,6 +195,7 @@ public class MicrobotPlugin extends Plugin
                         overlayManager.add(prayerHotkeyOverlay);
                         microbotOverlay.cacheButton.hookMouseListener();
                         prayerHotkeyOverlay.hookMouseListener();
+                        prayerHotkeyUi.start();
                 }
         }
 
@@ -203,6 +207,7 @@ public class MicrobotPlugin extends Plugin
                 overlayManager.remove(prayerHotkeyOverlay);
                 microbotOverlay.cacheButton.unhookMouseListener();
                 prayerHotkeyOverlay.unhookMouseListener();
+                prayerHotkeyUi.stop();
                 clientToolbar.removeNavigation(navButton);
                 if (gameChatAppender.isStarted()) gameChatAppender.stop();
                 microbotVersionChecker.shutdown();

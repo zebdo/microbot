@@ -6,12 +6,10 @@ import net.runelite.api.GameState;
 import net.runelite.api.SpritePixels;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
-import net.runelite.client.config.ConfigManager;
 import net.runelite.client.game.SpriteManager;
 import net.runelite.client.input.MouseAdapter;
 import net.runelite.client.input.MouseListener;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.MicrobotConfig;
 import net.runelite.client.plugins.microbot.MicrobotPlugin;
 import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayLayer;
@@ -35,7 +33,7 @@ import java.awt.image.BufferedImage;
 @Singleton
 public class PrayerHotkeyOverlay extends Overlay
 {
-        private static final int SLOT_COUNT = 5;
+        private static final int SLOT_COUNT = PrayerHotkeyAssignments.SLOT_COUNT;
         private static final int SLOT_SIZE = 34;
         private static final int SLOT_GAP = 4;
         private static final int SLOT_CORNER_RADIUS = 6;
@@ -43,10 +41,9 @@ public class PrayerHotkeyOverlay extends Overlay
         private static final Font LABEL_FONT = new Font("Arial", Font.BOLD, 11);
         private static final Stroke BORDER_STROKE = new BasicStroke(1.2f);
 
-        private final MicrobotConfig config;
-        private final ConfigManager configManager;
         private final Client client;
         private final SpriteManager spriteManager;
+        private final PrayerHotkeyAssignments assignments;
         private final Rectangle[] slotBounds = new Rectangle[SLOT_COUNT];
 
         private final MouseListener mouseListener = new MouseAdapter()
@@ -111,7 +108,7 @@ public class PrayerHotkeyOverlay extends Overlay
         private boolean renderedLastFrame;
 
         @Inject
-        PrayerHotkeyOverlay(MicrobotPlugin plugin, MicrobotConfig config, ConfigManager configManager, Client client, SpriteManager spriteManager)
+        PrayerHotkeyOverlay(MicrobotPlugin plugin, Client client, SpriteManager spriteManager, PrayerHotkeyAssignments assignments)
         {
                 super(plugin);
                 setPosition(OverlayPosition.DYNAMIC);
@@ -119,10 +116,9 @@ public class PrayerHotkeyOverlay extends Overlay
                 setLayer(OverlayLayer.ABOVE_WIDGETS);
                 drawAfterInterface(WidgetInfo.CHATBOX.getGroupId());
 
-                this.config = config;
-                this.configManager = configManager;
                 this.client = client;
                 this.spriteManager = spriteManager;
+                this.assignments = assignments;
         }
 
         @Override
@@ -254,21 +250,7 @@ public class PrayerHotkeyOverlay extends Overlay
 
         private PrayerHotkeyOption getOptionForSlot(int slotIndex)
         {
-                switch (slotIndex)
-                {
-                        case 0:
-                                return config.prayerHotkey1();
-                        case 1:
-                                return config.prayerHotkey2();
-                        case 2:
-                                return config.prayerHotkey3();
-                        case 3:
-                                return config.prayerHotkey4();
-                        case 4:
-                                return config.prayerHotkey5();
-                        default:
-                                return PrayerHotkeyOption.NONE;
-                }
+                return assignments.getSlot(slotIndex);
         }
 
         private void togglePrayer(PrayerHotkeyOption option)
@@ -290,34 +272,7 @@ public class PrayerHotkeyOverlay extends Overlay
 
         private void clearSlot(int slotIndex)
         {
-                if (configManager == null)
-                {
-                        return;
-                }
-
-                String key;
-                switch (slotIndex)
-                {
-                        case 0:
-                                key = MicrobotConfig.keyPrayerHotkey1;
-                                break;
-                        case 1:
-                                key = MicrobotConfig.keyPrayerHotkey2;
-                                break;
-                        case 2:
-                                key = MicrobotConfig.keyPrayerHotkey3;
-                                break;
-                        case 3:
-                                key = MicrobotConfig.keyPrayerHotkey4;
-                                break;
-                        case 4:
-                                key = MicrobotConfig.keyPrayerHotkey5;
-                                break;
-                        default:
-                                return;
-                }
-
-                configManager.setConfiguration(MicrobotConfig.configGroup, key, PrayerHotkeyOption.NONE);
+                assignments.clearSlot(slotIndex);
         }
 
         private int findSlotIndex(Point canvasPoint)

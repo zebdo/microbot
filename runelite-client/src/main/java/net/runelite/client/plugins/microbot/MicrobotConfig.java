@@ -7,7 +7,6 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
-import net.runelite.client.plugins.microbot.util.prayer.PrayerHotkeyOption;
 
 @ConfigGroup(MicrobotConfig.configGroup)
 public interface MicrobotConfig extends Config
@@ -123,78 +122,6 @@ public interface MicrobotConfig extends Config
 	)
         default boolean enableMenuEntryLogging() {
                 return false;
-        }
-
-        @ConfigSection(
-                name = "Prayer Hotkeys",
-                description = "Configure the prayers shown on the chat hotkey overlay",
-                position = 3
-        )
-        String prayerHotkeySection = "prayerHotkeySection";
-
-        String keyPrayerHotkey1 = "prayerHotkey1";
-        @ConfigItem(
-                keyName = keyPrayerHotkey1,
-                name = "Hotkey 1 Prayer",
-                description = "Prayer shown on the first chat hotkey slot",
-                section = prayerHotkeySection,
-                position = 0
-        )
-        default PrayerHotkeyOption prayerHotkey1()
-        {
-                return PrayerHotkeyOption.NONE;
-        }
-
-        String keyPrayerHotkey2 = "prayerHotkey2";
-        @ConfigItem(
-                keyName = keyPrayerHotkey2,
-                name = "Hotkey 2 Prayer",
-                description = "Prayer shown on the second chat hotkey slot",
-                section = prayerHotkeySection,
-                position = 1
-        )
-        default PrayerHotkeyOption prayerHotkey2()
-        {
-                return PrayerHotkeyOption.NONE;
-        }
-
-        String keyPrayerHotkey3 = "prayerHotkey3";
-        @ConfigItem(
-                keyName = keyPrayerHotkey3,
-                name = "Hotkey 3 Prayer",
-                description = "Prayer shown on the third chat hotkey slot",
-                section = prayerHotkeySection,
-                position = 2
-        )
-        default PrayerHotkeyOption prayerHotkey3()
-        {
-                return PrayerHotkeyOption.NONE;
-        }
-
-        String keyPrayerHotkey4 = "prayerHotkey4";
-        @ConfigItem(
-                keyName = keyPrayerHotkey4,
-                name = "Hotkey 4 Prayer",
-                description = "Prayer shown on the fourth chat hotkey slot",
-                section = prayerHotkeySection,
-                position = 3
-        )
-        default PrayerHotkeyOption prayerHotkey4()
-        {
-                return PrayerHotkeyOption.NONE;
-        }
-
-        String keyPrayerHotkey5 = "prayerHotkey5";
-        @ConfigItem(
-                keyName = keyPrayerHotkey5,
-                name = "Hotkey 5 Prayer",
-                description = "Prayer shown on the fifth chat hotkey slot",
-                section = prayerHotkeySection,
-                position = 4
-        )
-        default PrayerHotkeyOption prayerHotkey5()
-        {
-                return PrayerHotkeyOption.NONE;
         }
 
         String keyEnableCache = "enableRs2Cache";
