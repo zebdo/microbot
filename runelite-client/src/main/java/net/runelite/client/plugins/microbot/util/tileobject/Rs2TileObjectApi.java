@@ -5,6 +5,7 @@ import net.runelite.api.Player;
 import net.runelite.api.Tile;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -97,5 +98,28 @@ public class Rs2TileObjectApi {
         return stream
                 .min(Comparator.comparingInt(o -> o.getWorldLocation().distanceTo(playerLoc)))
                 .orElse(null);
+    }
+
+    /**
+     * Clicks on the specified tile object with no specific action.
+     * Delegates to Rs2GameObject.clickObject.
+     *
+     * @param object the tile object to click
+     * @return true if the interaction was successful, false otherwise
+     */
+    public static boolean clickObject(Rs2TileObjectModel object) {
+        return Rs2GameObject.clickObject(object, "");
+    }
+
+    /**
+     * Clicks on the specified tile object with the specified action.
+     * Delegates to Rs2GameObject.clickObject.
+     *
+     * @param object the tile object to click
+     * @param action the action to perform (e.g., "Open", "Climb")
+     * @return true if the interaction was successful, false otherwise
+     */
+    public static boolean clickObject(Rs2TileObjectModel object, String action) {
+        return Rs2GameObject.clickObject(object, action);
     }
 }
