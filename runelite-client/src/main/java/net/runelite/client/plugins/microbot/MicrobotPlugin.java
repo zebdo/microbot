@@ -28,6 +28,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.overlay.GembagOverlay;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.prayer.InventoryPrayerIconManager;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -181,23 +182,26 @@ public class MicrobotPlugin extends Plugin
 			initializeCacheSystem();
 		}
 
-		if (overlayManager != null)
-		{
-			overlayManager.add(microbotOverlay);
-			overlayManager.add(gembagOverlay);
-			overlayManager.add(pouchOverlay);
-			microbotOverlay.cacheButton.hookMouseListener();
-		}
-	}
+                if (overlayManager != null)
+                {
+                        overlayManager.add(microbotOverlay);
+                        overlayManager.add(gembagOverlay);
+                        overlayManager.add(pouchOverlay);
+                        microbotOverlay.cacheButton.hookMouseListener();
+                }
 
-	protected void shutDown()
-	{
-		overlayManager.remove(microbotOverlay);
-		overlayManager.remove(gembagOverlay);
-		overlayManager.remove(pouchOverlay);
-		microbotOverlay.cacheButton.unhookMouseListener();
-		clientToolbar.removeNavigation(navButton);
-		if (gameChatAppender.isStarted()) gameChatAppender.stop();
+                InventoryPrayerIconManager.initialize();
+        }
+
+        protected void shutDown()
+        {
+                overlayManager.remove(microbotOverlay);
+                overlayManager.remove(gembagOverlay);
+                overlayManager.remove(pouchOverlay);
+                microbotOverlay.cacheButton.unhookMouseListener();
+                clientToolbar.removeNavigation(navButton);
+                if (gameChatAppender.isStarted()) gameChatAppender.stop();
+                InventoryPrayerIconManager.shutdown();
 		microbotVersionChecker.shutdown();
 		
 		// Shutdown the cache system
@@ -456,22 +460,25 @@ public class MicrobotPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onWidgetLoaded(WidgetLoaded event)
-	{
-		Rs2RunePouch.onWidgetLoaded(event);
-		
-		// Mark that widget layout has changed for cache invalidation
-		widgetLayoutChanged = true;
-		log.debug("Widget {} loaded, layout changed", event.getGroupId());
-	}
+        public void onWidgetLoaded(WidgetLoaded event)
+        {
+                Rs2RunePouch.onWidgetLoaded(event);
+                InventoryPrayerIconManager.onWidgetLoaded(event);
 
-	@Subscribe
-	public void onWidgetClosed(WidgetClosed event)
-	{
-		// Mark that widget layout has changed for cache invalidation
-		widgetLayoutChanged = true;
-		log.debug("Widget {} closed, layout changed", event.getGroupId());
-	}
+                // Mark that widget layout has changed for cache invalidation
+                widgetLayoutChanged = true;
+                log.debug("Widget {} loaded, layout changed", event.getGroupId());
+        }
+
+        @Subscribe
+        public void onWidgetClosed(WidgetClosed event)
+        {
+                InventoryPrayerIconManager.onWidgetClosed(event);
+
+                // Mark that widget layout has changed for cache invalidation
+                widgetLayoutChanged = true;
+                log.debug("Widget {} closed, layout changed", event.getGroupId());
+        }
 
 	@Subscribe
 	public void onHitsplatApplied(HitsplatApplied event)
@@ -527,11 +534,12 @@ public class MicrobotPlugin extends Plugin
 	}
 
 	@Subscribe
-	public void onGameTick(GameTick event)
-	{		
-		// Cache loading is now handled properly during login/profile changes
-		// No need to call loadInitialCacheFromCurrentConfig on every tick
-	}
+        public void onGameTick(GameTick event)
+        {
+                // Cache loading is now handled properly during login/profile changes
+                // No need to call loadInitialCacheFromCurrentConfig on every tick
+                InventoryPrayerIconManager.onGameTick();
+        }
 
 	@Subscribe(priority = 100)
 	private void onClientShutdown(ClientShutdown e)
