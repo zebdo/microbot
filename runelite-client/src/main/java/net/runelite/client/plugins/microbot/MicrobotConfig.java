@@ -4,9 +4,13 @@ import ch.qos.logback.classic.Level;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import net.runelite.client.config.Config;
+import net.runelite.client.config.ConfigButton;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
+import net.runelite.client.plugins.microbot.util.prayer.PrayerHotkeyAssignments;
+import net.runelite.client.plugins.microbot.util.prayer.PrayerHotkeyConfigAccess;
+import net.runelite.client.plugins.microbot.util.prayer.PrayerHotkeyOption;
 
 @ConfigGroup(MicrobotConfig.configGroup)
 public interface MicrobotConfig extends Config
@@ -46,18 +50,104 @@ public interface MicrobotConfig extends Config
 		return true;
 	}
 
-	@ConfigSection(
-		name = "Logging",
-		description = "Game chat logging configuration",
-		position = 1
-	)
-	String loggingSection = "loggingSection";
-	@ConfigSection(
-			name = "Caching",
-			description = "Caching ingame data",
-			position = 2
-	)
-	String cacheSection = "cacheSection";
+        @ConfigSection(
+                name = "Logging",
+                description = "Game chat logging configuration",
+                position = 1
+        )
+        String loggingSection = "loggingSection";
+        @ConfigSection(
+                        name = "Caching",
+                        description = "Caching ingame data",
+                        position = 2
+        )
+        String cacheSection = "cacheSection";
+        @ConfigSection(
+                name = "Prayer Hotkeys",
+                description = "Configure the five Microbot prayer hotkey slots",
+                position = 3
+        )
+        String prayerHotkeysSection = "prayerHotkeysSection";
+
+        String keyPrayerHotkeyConfigure = "configurePrayerHotkeys";
+
+        @ConfigItem(
+                keyName = keyPrayerHotkeyConfigure,
+                name = "Configure hotkeys",
+                description = "Open the in-game selector to assign prayers to hotkey slots.",
+                position = 0,
+                section = prayerHotkeysSection
+        )
+        default ConfigButton openPrayerHotkeySelector()
+        {
+                return new ConfigButton("Open selector", PrayerHotkeyConfigAccess::openSelector);
+        }
+
+        String keyPrayerHotkeySlot1 = PrayerHotkeyAssignments.SLOT_KEY_PREFIX + "1";
+        String keyPrayerHotkeySlot2 = PrayerHotkeyAssignments.SLOT_KEY_PREFIX + "2";
+        String keyPrayerHotkeySlot3 = PrayerHotkeyAssignments.SLOT_KEY_PREFIX + "3";
+        String keyPrayerHotkeySlot4 = PrayerHotkeyAssignments.SLOT_KEY_PREFIX + "4";
+        String keyPrayerHotkeySlot5 = PrayerHotkeyAssignments.SLOT_KEY_PREFIX + "5";
+
+        @ConfigItem(
+                keyName = keyPrayerHotkeySlot1,
+                name = "Hotkey 1",
+                description = "Prayer triggered when hotkey slot 1 is clicked.",
+                position = 1,
+                section = prayerHotkeysSection
+        )
+        default PrayerHotkeyOption prayerHotkeySlot1()
+        {
+                return PrayerHotkeyOption.NONE;
+        }
+
+        @ConfigItem(
+                keyName = keyPrayerHotkeySlot2,
+                name = "Hotkey 2",
+                description = "Prayer triggered when hotkey slot 2 is clicked.",
+                position = 2,
+                section = prayerHotkeysSection
+        )
+        default PrayerHotkeyOption prayerHotkeySlot2()
+        {
+                return PrayerHotkeyOption.NONE;
+        }
+
+        @ConfigItem(
+                keyName = keyPrayerHotkeySlot3,
+                name = "Hotkey 3",
+                description = "Prayer triggered when hotkey slot 3 is clicked.",
+                position = 3,
+                section = prayerHotkeysSection
+        )
+        default PrayerHotkeyOption prayerHotkeySlot3()
+        {
+                return PrayerHotkeyOption.NONE;
+        }
+
+        @ConfigItem(
+                keyName = keyPrayerHotkeySlot4,
+                name = "Hotkey 4",
+                description = "Prayer triggered when hotkey slot 4 is clicked.",
+                position = 4,
+                section = prayerHotkeysSection
+        )
+        default PrayerHotkeyOption prayerHotkeySlot4()
+        {
+                return PrayerHotkeyOption.NONE;
+        }
+
+        @ConfigItem(
+                keyName = keyPrayerHotkeySlot5,
+                name = "Hotkey 5",
+                description = "Prayer triggered when hotkey slot 5 is clicked.",
+                position = 5,
+                section = prayerHotkeysSection
+        )
+        default PrayerHotkeyOption prayerHotkeySlot5()
+        {
+                return PrayerHotkeyOption.NONE;
+        }
 
 	String keyEnableGameChatLogging = "enableGameChatLogging";
 	@ConfigItem(
@@ -111,23 +201,23 @@ public interface MicrobotConfig extends Config
 		return false;
 	}
 
-	String keyEnableMenuEntryLogging = "enableMenuEntryLogging";
+        String keyEnableMenuEntryLogging = "enableMenuEntryLogging";
 
-	@ConfigItem(
-			keyName = keyEnableMenuEntryLogging,
-			name = "Enable Menu Entry Logging",
+        @ConfigItem(
+                        keyName = keyEnableMenuEntryLogging,
+                        name = "Enable Menu Entry Logging",
 			description = "Enable or disable logging menu entry clicked",
 			position = 4,
 			section = loggingSection
 	)
-	default boolean enableMenuEntryLogging() {
-		return false;
-	}
+        default boolean enableMenuEntryLogging() {
+                return false;
+        }
 
-	String keyEnableCache = "enableRs2Cache";
-	@ConfigItem(
-			keyName = keyEnableCache,
-			name = "Enable Microbot Cache",
+        String keyEnableCache = "enableRs2Cache";
+        @ConfigItem(
+                        keyName = keyEnableCache,
+                        name = "Enable Microbot Cache",
 			description = "This will cache ingame entities (npcs, objects,...) to improve performance",
 			position = 0,
 			section = cacheSection

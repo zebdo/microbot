@@ -65,6 +65,7 @@ import javax.swing.text.JTextComponent;
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.image.BufferedImage;
+import java.lang.reflect.Method;
 import java.lang.reflect.ParameterizedType;
 import java.util.List;
 import java.util.*;
@@ -355,6 +356,10 @@ class ConfigPanel extends PluginPanel
 			{
 				item.add(createNotification(cd, cid), BorderLayout.EAST);
 			}
+			else if (cid.getType() == ConfigButton.class)
+			{
+				item.add(createConfigButton(cid), BorderLayout.EAST);
+			}
 			else if (cid.getType() instanceof ParameterizedType)
 			{
 				ParameterizedType parameterizedType = (ParameterizedType) cid.getType();
@@ -602,7 +607,7 @@ class ConfigPanel extends PluginPanel
 		return dimensionPanel;
 	}
 
-	private JComboBox<Enum<?>> createComboBox(ConfigDescriptor cd, ConfigItemDescriptor cid)
+        private JComboBox<Enum<?>> createComboBox(ConfigDescriptor cd, ConfigItemDescriptor cid)
 	{
 		Class<? extends Enum> type = (Class<? extends Enum>) cid.getType();
 
@@ -692,14 +697,14 @@ class ConfigPanel extends PluginPanel
 		return panel;
 	}
 
-	private JList<Enum<?>> createList(ConfigDescriptor cd, ConfigItemDescriptor cid)
-	{
-		ParameterizedType parameterizedType = (ParameterizedType) cid.getType();
-		Class<? extends Enum> type = (Class<? extends Enum>) parameterizedType.getActualTypeArguments()[0];
-		Set<? extends Enum> set = configManager.getConfiguration(cd.getGroup().value(), null,
-			cid.getItem().keyName(), parameterizedType);
+        private JList<Enum<?>> createList(ConfigDescriptor cd, ConfigItemDescriptor cid)
+        {
+                ParameterizedType parameterizedType = (ParameterizedType) cid.getType();
+                Class<? extends Enum> type = (Class<? extends Enum>) parameterizedType.getActualTypeArguments()[0];
+                Set<? extends Enum> set = configManager.getConfiguration(cd.getGroup().value(), null,
+                        cid.getItem().keyName(), parameterizedType);
 
-		JList<Enum<?>> list = new JList<Enum<?>>(type.getEnumConstants()); // NOPMD: UseDiamondOperator
+                JList<Enum<?>> list = new JList<Enum<?>>(type.getEnumConstants()); // NOPMD: UseDiamondOperator
 		list.setCellRenderer(listCellRenderer);
 		list.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 		list.setLayoutOrientation(JList.VERTICAL);
@@ -717,8 +722,73 @@ class ConfigPanel extends PluginPanel
 			}
 		});
 
-		return list;
-	}
+                return list;
+        }
+
+		private JButton createConfigButton(ConfigItemDescriptor cid)
+		{
+			JButton button = new JButton();
+			button.setFocusable(false);
+			button.addActionListener(e ->
+			{
+				ConfigButton configButton = getConfigButtonValue(cid);
+				if (configButton != null)
+				{
+					configButton.press();
+				}
+			});
+
+			ConfigButton configButton = getConfigButtonValue(cid);
+			if (configButton != null)
+			{
+				button.setText(configButton.getLabel());
+			}
+			else
+			{
+				button.setText("Open");
+				button.setEnabled(false);
+			}
+
+			return button;
+		}
+
+		private ConfigButton getConfigButtonValue(ConfigItemDescriptor cid)
+		{
+			if (pluginConfig == null || pluginConfig.getConfig() == null)
+			{
+				return null;
+			}
+
+			Config config = pluginConfig.getConfig();
+			Class<?> configInterface = config.getClass().getInterfaces()[0];
+
+			for (Method method : configInterface.getDeclaredMethods())
+			{
+				ConfigItem item = method.getDeclaredAnnotation(ConfigItem.class);
+				if (item == null || method.getParameterCount() != 0)
+				{
+					continue;
+				}
+
+				if (!item.keyName().equals(cid.getItem().keyName()))
+				{
+					continue;
+				}
+
+				try
+				{
+					Object value = method.invoke(config);
+					return value instanceof ConfigButton ? (ConfigButton) value : null;
+				}
+				catch (ReflectiveOperationException ex)
+				{
+					log.warn("Unable to invoke config button {}", method.getName(), ex);
+					return null;
+				}
+			}
+
+			return null;
+		}
 
 	private void changeConfiguration(Component component, ConfigDescriptor cd, ConfigItemDescriptor cid)
 	{

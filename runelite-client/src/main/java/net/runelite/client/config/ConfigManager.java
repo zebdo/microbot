@@ -1199,6 +1199,11 @@ public class ConfigManager
 				continue;
 			}
 
+			if (method.getReturnType() == ConfigButton.class)
+			{
+				continue;
+			}
+
 			if (!method.isDefault())
 			{
 				if (override)
