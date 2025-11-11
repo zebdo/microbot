@@ -99,27 +99,4 @@ public class Rs2TileObjectApi {
                 .min(Comparator.comparingInt(o -> o.getWorldLocation().distanceTo(playerLoc)))
                 .orElse(null);
     }
-
-    /**
-     * Clicks on the specified tile object with no specific action.
-     * Delegates to Rs2GameObject.clickObject.
-     *
-     * @param object the tile object to click
-     * @return true if the interaction was successful, false otherwise
-     */
-    public static boolean clickObject(Rs2TileObjectModel object) {
-        return Rs2GameObject.clickObject(object, "");
-    }
-
-    /**
-     * Clicks on the specified tile object with the specified action.
-     * Delegates to Rs2GameObject.clickObject.
-     *
-     * @param object the tile object to click
-     * @param action the action to perform (e.g., "Open", "Climb")
-     * @return true if the interaction was successful, false otherwise
-     */
-    public static boolean clickObject(Rs2TileObjectModel object, String action) {
-        return Rs2GameObject.clickObject(object, action);
-    }
 }
