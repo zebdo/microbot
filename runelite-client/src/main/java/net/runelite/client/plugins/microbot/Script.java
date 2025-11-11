@@ -37,8 +37,6 @@ public abstract class Script extends Global implements IScript {
 		});
     protected ScheduledFuture<?> scheduledFuture;
     protected ScheduledFuture<?> mainScheduledFuture;
-	@Deprecated(since = "1.9.7 - Blocking events are now handling turning off the level up dialog", forRemoval = true)
-    public static boolean hasLeveledUp = false;
 
     public boolean isRunning() {
         return mainScheduledFuture != null && !mainScheduledFuture.isDone();
