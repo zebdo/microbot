@@ -28,7 +28,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.overlay.GembagOverlay;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.prayer.InventoryPrayerIconManager;
+import net.runelite.client.plugins.microbot.util.prayer.PrayerHotkeyOverlay;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -97,11 +97,13 @@ public class MicrobotPlugin extends Plugin
 	@Inject
 	private OverlayManager overlayManager;
 	@Inject
-	private MicrobotOverlay microbotOverlay;
-	@Inject
-	private GembagOverlay gembagOverlay;
-	@Inject
-	private PouchOverlay pouchOverlay;
+        private MicrobotOverlay microbotOverlay;
+        @Inject
+        private GembagOverlay gembagOverlay;
+        @Inject
+        private PouchOverlay pouchOverlay;
+        @Inject
+        private PrayerHotkeyOverlay prayerHotkeyOverlay;
 	@Inject
 	private EventBus eventBus;
 	private GameChatAppender gameChatAppender;
@@ -187,10 +189,10 @@ public class MicrobotPlugin extends Plugin
                         overlayManager.add(microbotOverlay);
                         overlayManager.add(gembagOverlay);
                         overlayManager.add(pouchOverlay);
+                        overlayManager.add(prayerHotkeyOverlay);
                         microbotOverlay.cacheButton.hookMouseListener();
+                        prayerHotkeyOverlay.hookMouseListener();
                 }
-
-                InventoryPrayerIconManager.initialize();
         }
 
         protected void shutDown()
@@ -198,11 +200,12 @@ public class MicrobotPlugin extends Plugin
                 overlayManager.remove(microbotOverlay);
                 overlayManager.remove(gembagOverlay);
                 overlayManager.remove(pouchOverlay);
+                overlayManager.remove(prayerHotkeyOverlay);
                 microbotOverlay.cacheButton.unhookMouseListener();
+                prayerHotkeyOverlay.unhookMouseListener();
                 clientToolbar.removeNavigation(navButton);
                 if (gameChatAppender.isStarted()) gameChatAppender.stop();
-                InventoryPrayerIconManager.shutdown();
-		microbotVersionChecker.shutdown();
+                microbotVersionChecker.shutdown();
 		
 		// Shutdown the cache system
 		shutdownCacheSystem();
@@ -463,8 +466,6 @@ public class MicrobotPlugin extends Plugin
         public void onWidgetLoaded(WidgetLoaded event)
         {
                 Rs2RunePouch.onWidgetLoaded(event);
-                InventoryPrayerIconManager.onWidgetLoaded(event);
-
                 // Mark that widget layout has changed for cache invalidation
                 widgetLayoutChanged = true;
                 log.debug("Widget {} loaded, layout changed", event.getGroupId());
@@ -473,8 +474,6 @@ public class MicrobotPlugin extends Plugin
         @Subscribe
         public void onWidgetClosed(WidgetClosed event)
         {
-                InventoryPrayerIconManager.onWidgetClosed(event);
-
                 // Mark that widget layout has changed for cache invalidation
                 widgetLayoutChanged = true;
                 log.debug("Widget {} closed, layout changed", event.getGroupId());
@@ -538,7 +537,6 @@ public class MicrobotPlugin extends Plugin
         {
                 // Cache loading is now handled properly during login/profile changes
                 // No need to call loadInitialCacheFromCurrentConfig on every tick
-                InventoryPrayerIconManager.onGameTick();
         }
 
 	@Subscribe(priority = 100)
