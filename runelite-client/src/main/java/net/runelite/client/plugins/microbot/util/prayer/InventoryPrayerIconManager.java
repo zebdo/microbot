@@ -18,6 +18,9 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Adds a Protect from Melee toggle inside the inventory panel.
  */
@@ -33,6 +36,16 @@ public final class InventoryPrayerIconManager
         private static int expandedPanelGroupId = -1;
         private static int expandedPanelChildId = -1;
         private static int expandedPanelOriginalWidth = -1;
+        private static InventoryLayout currentLayout = InventoryLayout.UNKNOWN;
+        private static final Map<Integer, Integer> expandedWidgetOriginalWidths = new HashMap<>();
+
+        private enum InventoryLayout
+        {
+                UNKNOWN,
+                FIXED,
+                RESIZABLE_CLASSIC,
+                RESIZABLE_BOTTOM_LINE
+        }
 
         /**
          * Attempts to build the inventory prayer icon and refresh its state.
@@ -235,35 +248,121 @@ public final class InventoryPrayerIconManager
                         return;
                 }
 
-                int requiredWidth = expandedPanelOriginalWidth + PANEL_EXPANSION;
-                if (panel.getOriginalWidth() < requiredWidth)
-                {
-                        panel.setOriginalWidth(requiredWidth);
-                        panel.revalidate();
-                }
+                expandWidgetBy(panel, PANEL_EXPANSION);
+                expandRelatedWidgets(PANEL_EXPANSION);
         }
 
         private static void restorePanelWidth()
         {
-                if (expandedPanelGroupId == -1 || expandedPanelChildId == -1 || expandedPanelOriginalWidth == -1)
+                Client client = Microbot.getClient();
+                if (client != null)
+                {
+                        if (!expandedWidgetOriginalWidths.isEmpty())
+                        {
+                                expandedWidgetOriginalWidths.forEach((widgetId, originalWidth) ->
+                                {
+                                        int groupId = widgetId >>> 16;
+                                        int childId = widgetId & 0xFFFF;
+                                        Widget widget = client.getWidget(groupId, childId);
+                                        if (widget != null && widget.getOriginalWidth() != originalWidth)
+                                        {
+                                                widget.setOriginalWidth(originalWidth);
+                                                widget.revalidate();
+                                        }
+                                });
+                        }
+                        else if (expandedPanelGroupId != -1 && expandedPanelChildId != -1 && expandedPanelOriginalWidth != -1)
+                        {
+                                Widget panel = client.getWidget(expandedPanelGroupId, expandedPanelChildId);
+                                if (panel != null && panel.getOriginalWidth() != expandedPanelOriginalWidth)
+                                {
+                                        panel.setOriginalWidth(expandedPanelOriginalWidth);
+                                        panel.revalidate();
+                                }
+                        }
+                }
+
+                expandedWidgetOriginalWidths.clear();
+                expandedPanelGroupId = -1;
+                expandedPanelChildId = -1;
+                expandedPanelOriginalWidth = -1;
+                currentLayout = InventoryLayout.UNKNOWN;
+        }
+
+        private static void expandRelatedWidgets(int expansion)
+        {
+                if (expansion <= 0)
                 {
                         return;
                 }
 
                 Client client = Microbot.getClient();
-                if (client != null)
+                if (client == null)
                 {
-                        Widget panel = client.getWidget(expandedPanelGroupId, expandedPanelChildId);
-                        if (panel != null && panel.getOriginalWidth() != expandedPanelOriginalWidth)
-                        {
-                                panel.setOriginalWidth(expandedPanelOriginalWidth);
-                                panel.revalidate();
-                        }
+                        return;
                 }
 
-                expandedPanelGroupId = -1;
-                expandedPanelChildId = -1;
-                expandedPanelOriginalWidth = -1;
+                WidgetInfo[] widgetInfos;
+                switch (currentLayout)
+                {
+                        case RESIZABLE_CLASSIC:
+                                widgetInfos = new WidgetInfo[]{
+                                        WidgetInfo.RESIZABLE_VIEWPORT_INTERFACE_CONTAINER,
+                                        WidgetInfo.RESIZABLE_VIEWPORT_INVENTORY_PARENT
+                                };
+                                break;
+                        case RESIZABLE_BOTTOM_LINE:
+                                widgetInfos = new WidgetInfo[]{
+                                        WidgetInfo.RESIZABLE_VIEWPORT_BOTTOM_LINE_INTERFACE_CONTAINER,
+                                        WidgetInfo.RESIZABLE_VIEWPORT_BOTTOM_LINE_INVENTORY_PARENT
+                                };
+                                break;
+                        case FIXED:
+                                widgetInfos = new WidgetInfo[]{
+                                        WidgetInfo.FIXED_VIEWPORT_INTERFACE_CONTAINER,
+                                        WidgetInfo.FIXED_VIEWPORT_ROOT_INTERFACE_CONTAINER
+                                };
+                                break;
+                        default:
+                                widgetInfos = null;
+                                break;
+                }
+
+                if (widgetInfos == null)
+                {
+                        return;
+                }
+
+                for (WidgetInfo info : widgetInfos)
+                {
+                        Widget widget = client.getWidget(info);
+                        expandWidgetBy(widget, expansion);
+                }
+        }
+
+        private static void expandWidgetBy(Widget widget, int expansion)
+        {
+                if (widget == null || expansion <= 0)
+                {
+                        return;
+                }
+
+                int widgetId = widget.getId();
+                if (widgetId == -1)
+                {
+                        return;
+                }
+
+                expandedWidgetOriginalWidths.putIfAbsent(widgetId, widget.getOriginalWidth());
+
+                int originalWidth = expandedWidgetOriginalWidths.get(widgetId);
+                int targetWidth = originalWidth + expansion;
+
+                if (widget.getOriginalWidth() != targetWidth)
+                {
+                        widget.setOriginalWidth(targetWidth);
+                        widget.revalidate();
+                }
         }
 
         private static boolean shouldOperate()
@@ -277,18 +376,32 @@ public final class InventoryPrayerIconManager
                 Client client = Microbot.getClient();
                 if (client == null)
                 {
+                        currentLayout = InventoryLayout.UNKNOWN;
                         return null;
                 }
 
                 Widget panel = client.getWidget(WidgetInfo.RESIZABLE_VIEWPORT_INVENTORY_CONTAINER);
-                if (panel == null)
+                if (panel != null)
                 {
-                        panel = client.getWidget(WidgetInfo.RESIZABLE_VIEWPORT_BOTTOM_LINE_INVENTORY_CONTAINER);
+                        currentLayout = InventoryLayout.RESIZABLE_CLASSIC;
+                        return panel;
                 }
-                if (panel == null)
+
+                panel = client.getWidget(WidgetInfo.RESIZABLE_VIEWPORT_BOTTOM_LINE_INVENTORY_CONTAINER);
+                if (panel != null)
                 {
-                        panel = client.getWidget(WidgetInfo.FIXED_VIEWPORT_INVENTORY_CONTAINER);
+                        currentLayout = InventoryLayout.RESIZABLE_BOTTOM_LINE;
+                        return panel;
                 }
-                return panel;
+
+                panel = client.getWidget(WidgetInfo.FIXED_VIEWPORT_INVENTORY_CONTAINER);
+                if (panel != null)
+                {
+                        currentLayout = InventoryLayout.FIXED;
+                        return panel;
+                }
+
+                currentLayout = InventoryLayout.UNKNOWN;
+                return null;
         }
 }
