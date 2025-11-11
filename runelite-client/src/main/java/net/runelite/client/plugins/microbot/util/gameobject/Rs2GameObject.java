@@ -1747,7 +1747,7 @@ public class Rs2GameObject {
         return clickObject(object, "");
     }
 
-    private static boolean clickObject(TileObject object, String action) {
+    public static boolean clickObject(TileObject object, String action) {
         if (object == null) return false;
         if (Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(object.getWorldLocation()) > 51) {
             Microbot.log("Object with id " + object.getId() + " is not close enough to interact with. Walking to the object....");
