@@ -1902,7 +1902,9 @@ public class Rs2GameObject {
         ObjectComposition objectComposition = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getObjectDefinition(id))
                 .orElse(null);
         if (objectComposition == null) return null;
-        return objectComposition.getImpostorIds() == null ? objectComposition : objectComposition.getImpostor();
+        return objectComposition.getImpostorIds() == null ?
+                objectComposition :
+                Microbot.getClientThread().runOnClientThreadOptional((objectComposition::getImpostor)).orElse(null);
     }
 
     public static boolean canWalkTo(TileObject tileObject, int distance) {
