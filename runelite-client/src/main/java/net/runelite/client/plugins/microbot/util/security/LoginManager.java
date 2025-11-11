@@ -121,8 +121,7 @@ public final class LoginManager {
 			log.warn("Cannot login - client is not initialised");
 			return false;
 		}
-		int currentWorld = client.getWorld();
-		int targetWorld = currentWorld > 300 ? currentWorld : getRandomWorld(getActiveProfile().isMember());
+		int targetWorld = getRandomWorld(getActiveProfile().isMember());
 		return login(getActiveProfile().getName(), getActiveProfile().getPassword(), targetWorld);
 	}
 

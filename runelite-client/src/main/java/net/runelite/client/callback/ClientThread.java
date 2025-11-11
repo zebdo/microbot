@@ -35,6 +35,7 @@ import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.*;
 import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 @Singleton
 @Slf4j
@@ -121,6 +122,40 @@ public class ClientThread
 
 		invokeLater(r);
 	}
+
+    public <T> T invoke(Supplier<T> supplier) {
+        if (client.isClientThread()) {
+            return supplier.get();
+        }
+
+        CompletableFuture<T> f = new CompletableFuture<>();
+        invoke(() -> {
+            try {
+                f.complete(supplier.get());
+            } catch (Throwable t) {
+                f.completeExceptionally(t);
+            }
+        });
+
+        try {
+            return f.get(10, TimeUnit.SECONDS); // configurable timeout
+        } catch (InterruptedException ie) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("Interrupted waiting for client thread", ie);
+        } catch (TimeoutException te) {
+            throw new RuntimeException("Timed out waiting for client thread", te);
+        } catch (ExecutionException ee) {
+            // unwrap original cause
+            Throwable cause = ee.getCause();
+            if (cause instanceof RuntimeException) {
+                throw (RuntimeException) cause;
+            }
+            if (cause instanceof Error) {
+                throw (Error) cause;
+            }
+            throw new RuntimeException(cause);
+        }
+    }
 
 	/**
 	 * Will run r on the game thread after this method returns
