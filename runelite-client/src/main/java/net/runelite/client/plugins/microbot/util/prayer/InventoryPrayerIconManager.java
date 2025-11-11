@@ -27,8 +27,12 @@ public final class InventoryPrayerIconManager
         private static final int ICON_SIZE = 26;
         private static final int ICON_OFFSET_X = 6;
         private static final int ICON_OFFSET_Y = 6;
+        private static final int PANEL_EXPANSION = ICON_SIZE + (ICON_OFFSET_X * 2);
 
         private static Widget iconWidget;
+        private static int expandedPanelGroupId = -1;
+        private static int expandedPanelChildId = -1;
+        private static int expandedPanelOriginalWidth = -1;
 
         /**
          * Attempts to build the inventory prayer icon and refresh its state.
@@ -122,6 +126,8 @@ public final class InventoryPrayerIconManager
 
                 removeIcon();
 
+                expandPanelWidth(panel);
+
                 Widget icon = panel.createChild(-1, WidgetType.GRAPHIC);
                 icon.setOriginalWidth(ICON_SIZE);
                 icon.setOriginalHeight(ICON_SIZE);
@@ -190,6 +196,8 @@ public final class InventoryPrayerIconManager
                         iconWidget.setHidden(true);
                         iconWidget = null;
                 }
+
+                restorePanelWidth();
         }
 
         private static void hideIcon()
@@ -198,6 +206,64 @@ public final class InventoryPrayerIconManager
                 {
                         iconWidget.setHidden(true);
                 }
+        }
+
+        private static void expandPanelWidth(Widget panel)
+        {
+                if (panel == null)
+                {
+                        return;
+                }
+
+                int groupId = panel.getId() >>> 16;
+                int childId = panel.getId() & 0xFFFF;
+
+                if (expandedPanelGroupId != -1 && (expandedPanelGroupId != groupId || expandedPanelChildId != childId))
+                {
+                        restorePanelWidth();
+                }
+
+                if (expandedPanelGroupId != groupId || expandedPanelChildId != childId)
+                {
+                        expandedPanelGroupId = groupId;
+                        expandedPanelChildId = childId;
+                        expandedPanelOriginalWidth = panel.getOriginalWidth();
+                }
+
+                if (expandedPanelOriginalWidth == -1)
+                {
+                        return;
+                }
+
+                int requiredWidth = expandedPanelOriginalWidth + PANEL_EXPANSION;
+                if (panel.getOriginalWidth() < requiredWidth)
+                {
+                        panel.setOriginalWidth(requiredWidth);
+                        panel.revalidate();
+                }
+        }
+
+        private static void restorePanelWidth()
+        {
+                if (expandedPanelGroupId == -1 || expandedPanelChildId == -1 || expandedPanelOriginalWidth == -1)
+                {
+                        return;
+                }
+
+                Client client = Microbot.getClient();
+                if (client != null)
+                {
+                        Widget panel = client.getWidget(expandedPanelGroupId, expandedPanelChildId);
+                        if (panel != null && panel.getOriginalWidth() != expandedPanelOriginalWidth)
+                        {
+                                panel.setOriginalWidth(expandedPanelOriginalWidth);
+                                panel.revalidate();
+                        }
+                }
+
+                expandedPanelGroupId = -1;
+                expandedPanelChildId = -1;
+                expandedPanelOriginalWidth = -1;
         }
 
         private static boolean shouldOperate()
