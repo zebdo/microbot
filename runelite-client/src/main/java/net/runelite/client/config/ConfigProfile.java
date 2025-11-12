@@ -36,14 +36,14 @@ public class ConfigProfile
 	@Getter
 	private final long id;
 	@Getter
-	@Setter(AccessLevel.PACKAGE)
-	private String name;
+	@Setter
+    public String name;
 	@Getter
-	@Setter(AccessLevel.PACKAGE)
-	private String password;
+	@Setter
+	public String password;
 	@Getter
-	@Setter(AccessLevel.PACKAGE)
-	private String bankPin;
+	@Setter
+    public String bankPin;
 	@Getter
 	@Setter
 	private long memberExpireDaysTimeStemp;
@@ -51,10 +51,10 @@ public class ConfigProfile
 	@Setter
 	private long memberExpireDays;
 	@Getter
-	@Setter(AccessLevel.PACKAGE)
-	private boolean isMember;
+	@Setter
+    public boolean isMember;
 	@Getter
-	@Setter(AccessLevel.PACKAGE)
+	@Setter
 	private String discordWebhookUrl;
 	@Getter
 	@Setter
