@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.api.tileobject;
 
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.IEntityQueryable;
 import net.runelite.client.plugins.microbot.api.tileobject.models.Rs2TileObjectModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -58,22 +59,36 @@ public final class Rs2TileObjectQueryable
 
     @Override
     public Rs2TileObjectModel withName(String name) {
-        return source.filter(x -> x.getName().toLowerCase() == name.toLowerCase()).findFirst().orElse(null);
+        return source.filter(x -> x.getName().equalsIgnoreCase(name)).findFirst().orElse(null);
     }
 
     @Override
     public Rs2TileObjectModel withNames(String... names) {
-        return null;
+        return Microbot.getClientThread().invoke(() -> source.filter(x -> {
+            for (String name : names) {
+                if (x.getName().equalsIgnoreCase(name)) {
+                    return true;
+                }
+            }
+            return false;
+        }).findFirst().orElse(null));
     }
 
     @Override
     public Rs2TileObjectModel withId(int id) {
-        return null;
+        return source.filter(x -> x.getId() == id).findFirst().orElse(null);
     }
 
     @Override
     public Rs2TileObjectModel withIds(int... ids) {
-        return null;
+        return source.filter(x -> {
+            for (int id : ids) {
+                if (x.getId() == id) {
+                    return true;
+                }
+            }
+            return false;
+        }).findFirst().orElse(null);
     }
 
     @Override
