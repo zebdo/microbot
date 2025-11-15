@@ -1747,7 +1747,7 @@ public class Rs2GameObject {
         return clickObject(object, "");
     }
 
-    private static boolean clickObject(TileObject object, String action) {
+    public static boolean clickObject(TileObject object, String action) {
         if (object == null) return false;
         if (Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(object.getWorldLocation()) > 51) {
             Microbot.log("Object with id " + object.getId() + " is not close enough to interact with. Walking to the object....");
@@ -1902,7 +1902,9 @@ public class Rs2GameObject {
         ObjectComposition objectComposition = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getObjectDefinition(id))
                 .orElse(null);
         if (objectComposition == null) return null;
-        return objectComposition.getImpostorIds() == null ? objectComposition : objectComposition.getImpostor();
+        return objectComposition.getImpostorIds() == null ?
+                objectComposition :
+                Microbot.getClientThread().runOnClientThreadOptional((objectComposition::getImpostor)).orElse(null);
     }
 
     public static boolean canWalkTo(TileObject tileObject, int distance) {

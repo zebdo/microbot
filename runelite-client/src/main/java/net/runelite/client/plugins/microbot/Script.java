@@ -3,20 +3,14 @@ package net.runelite.client.plugins.microbot;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.cache.Rs2CacheManager;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
-import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
-import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import org.jetbrains.annotations.NotNull;
 
-import java.time.Duration;
-import java.time.Instant;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -37,8 +31,6 @@ public abstract class Script extends Global implements IScript {
 		});
     protected ScheduledFuture<?> scheduledFuture;
     protected ScheduledFuture<?> mainScheduledFuture;
-	@Deprecated(since = "1.9.7 - Blocking events are now handling turning off the level up dialog", forRemoval = true)
-    public static boolean hasLeveledUp = false;
 
     public boolean isRunning() {
         return mainScheduledFuture != null && !mainScheduledFuture.isDone();
@@ -46,17 +38,6 @@ public abstract class Script extends Global implements IScript {
 
     @Getter
     protected static WorldPoint initialPlayerLocation;
-    public Instant startTime;
-
-    /**
-     * Get the total runtime of the script
-     *
-     * @return the total runtime of the script
-     */
-    public Duration getRunTime() {
-        if (startTime == null) return Duration.ofSeconds(0);
-        return Duration.between(startTime, Instant.now());
-    }
 
     public void shutdown() {
         if (mainScheduledFuture != null && !mainScheduledFuture.isDone()) {
@@ -73,14 +54,9 @@ public abstract class Script extends Global implements IScript {
         if (scheduledFuture != null && !scheduledFuture.isDone()) {
             scheduledFuture.cancel(true);
         }
-        startTime = null;
     }
 
     public boolean run() {
-        if (startTime == null) {
-            startTime = Instant.now();
-            //init - things that have to be checked once can be added here
-        }
         //Avoid executing any blocking events if the player hasn't finished Tutorial Island
         if (Microbot.isLoggedIn() && !Rs2Player.hasCompletedTutorialIsland())
             return true;
@@ -108,18 +84,5 @@ public abstract class Script extends Global implements IScript {
             }
         }
         return true;
-    }
-
-    @Deprecated(since = "1.6.9 - Use Rs2Keyboard.keyPress", forRemoval = true)
-    public void keyPress(char c) {
-        Rs2Keyboard.keyPress(c);
-    }
-
-    @Deprecated(since = "Use Rs2Player.logout()", forRemoval = true)
-    public void logout() {
-        Rs2Tab.switchToLogout();
-        sleepUntil(() -> Rs2Tab.getCurrentTab() == InterfaceTab.LOGOUT);
-        sleep(600, 1000);
-        Rs2Widget.clickWidget("Click here to logout");
     }
 }
