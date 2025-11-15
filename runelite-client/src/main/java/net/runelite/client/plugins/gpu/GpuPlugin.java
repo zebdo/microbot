@@ -130,7 +130,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 
 	static final Shader PROGRAM = new Shader()
 		.add(GL_VERTEX_SHADER, "vert.glsl")
-		.add(GL_GEOMETRY_SHADER, "geom.glsl")
 		.add(GL_FRAGMENT_SHADER, "frag.glsl");
 
 	static final Shader UI_PROGRAM = new Shader()
@@ -664,9 +663,18 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		uniformBuffer = null;
 		Zone.freeBuffer();
 
-		vaoO.free();
-		vaoA.free();
-		vaoPO.free();
+		if (vaoO != null)
+		{
+			vaoO.free();
+		}
+		if (vaoA != null)
+		{
+			vaoA.free();
+		}
+		if (vaoPO != null)
+		{
+			vaoPO.free();
+		}
 		vaoO = vaoA = vaoPO = null;
 	}
 
@@ -1032,6 +1040,8 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		checkGLErrors();
 	}
 
+	private static final int ALPHA_ZSORT_CLOSE = 2048;
+
 	@Override
 	public void drawZoneAlpha(Projection entityProjection, Scene scene, int level, int zx, int zz)
 	{
@@ -1053,13 +1063,17 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		}
 
 		int offset = scene.getWorldViewId() == -1 ? (SCENE_OFFSET >> 3) : 0;
+		int dx = cameraX - ((zx - offset) << 10);
+		int dz = cameraZ - ((zz - offset) << 10);
+		boolean close = dx * dx + dz * dz < ALPHA_ZSORT_CLOSE * ALPHA_ZSORT_CLOSE;
+
 		if (level == 0)
 		{
 			z.alphaSort(zx - offset, zz - offset, cameraX, cameraY, cameraZ);
 			z.multizoneLocs(scene, zx - offset, zz - offset, cameraX, cameraZ, ctx.zones);
 		}
 
-		z.renderAlpha(zx - offset, zz - offset, cameraYaw, cameraPitch, minLevel, this.level, maxLevel, level, hideRoofIds);
+		z.renderAlpha(zx - offset, zz - offset, cameraYaw, cameraPitch, minLevel, this.level, maxLevel, level, hideRoofIds, !close);
 
 		checkGLErrors();
 	}
@@ -1450,7 +1464,9 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		else
 		{
 			glDpiAwareViewport(0, 0, canvasWidth, canvasHeight);
-			glUniform2i(uniTexTargetDimensions, canvasWidth, canvasHeight);
+			final GraphicsConfiguration graphicsConfiguration = clientUI.getGraphicsConfiguration();
+			final AffineTransform t = graphicsConfiguration.getDefaultTransform();
+			glUniform2i(uniTexTargetDimensions, getScaledValue(t.getScaleX(), canvasWidth), getScaledValue(t.getScaleY(), canvasHeight));
 		}
 
 		// Set the sampling function used when stretching the UI.
