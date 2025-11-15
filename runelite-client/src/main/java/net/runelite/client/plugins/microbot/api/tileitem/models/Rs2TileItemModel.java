@@ -1,15 +1,24 @@
 package net.runelite.client.plugins.microbot.api.tileitem.models;
 
+import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
 
+import java.awt.*;
 import java.util.function.Supplier;
 
+@Slf4j
 public class Rs2TileItemModel implements TileItem {
 
+    @Getter
     private final Tile tile;
+    @Getter
     private final TileItem tileItem;
 
     public Rs2TileItemModel(Tile tileObject, TileItem tileItem) {
@@ -165,5 +174,86 @@ public class Rs2TileItemModel implements TileItem {
             int price = Microbot.getItemManager().getItemPrice(itemComposition.getId());
             return price * tileItem.getQuantity();
         });
+    }
+
+
+    public boolean hasLineOfSight() {
+        WorldPoint worldPoint = Rs2Player.getWorldLocation();
+        if (worldPoint == null) {
+            return false;
+        }
+        return Microbot.getClientThread().invoke((Supplier<Boolean>) () ->
+                tile.getWorldLocation()
+                        .toWorldArea()
+                        .hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), worldPoint.toWorldArea()));
+    }
+
+    public boolean click() {
+        return click("");
+    }
+
+    public boolean click(String action) {
+        try {
+            int param0;
+            int param1;
+            int identifier;
+            String target;
+            MenuAction menuAction = MenuAction.CANCEL;
+            ItemComposition item;
+
+            item = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getItemDefinition(getId())).orElse(null);
+            if (item == null) return false;
+            identifier = getId();
+
+            LocalPoint localPoint = getLocalLocation();
+            if (localPoint == null) return false;
+
+            param0 = localPoint.getSceneX();
+            target = "<col=ff9040>" + getName();
+            param1 = localPoint.getSceneY();
+
+            String[] groundActions = Rs2Reflection.getGroundItemActions(item);
+
+            int index = -1;
+            if (action.isEmpty()) {
+                action = groundActions[0];
+            } else {
+                for (int i = 0; i < groundActions.length; i++) {
+                    String groundAction = groundActions[i];
+                    if (groundAction == null || !groundAction.equalsIgnoreCase(action)) continue;
+                    index = i;
+                }
+            }
+
+            if (Microbot.getClient().isWidgetSelected()) {
+                menuAction = MenuAction.WIDGET_TARGET_ON_GROUND_ITEM;
+            } else if (index == 0) {
+                menuAction = MenuAction.GROUND_ITEM_FIRST_OPTION;
+            } else if (index == 1) {
+                menuAction = MenuAction.GROUND_ITEM_SECOND_OPTION;
+            } else if (index == 2) {
+                menuAction = MenuAction.GROUND_ITEM_THIRD_OPTION;
+            } else if (index == 3) {
+                menuAction = MenuAction.GROUND_ITEM_FOURTH_OPTION;
+            } else if (index == 4) {
+                menuAction = MenuAction.GROUND_ITEM_FIFTH_OPTION;
+            }
+            LocalPoint localPoint1 = getLocalLocation();
+            if (localPoint1 != null) {
+                Polygon canvas = Perspective.getCanvasTilePoly(Microbot.getClient(), localPoint1);
+                if (canvas != null) {
+                    Microbot.doInvoke(new NewMenuEntry(action, param0, param1, menuAction.getId(), identifier, -1, target),
+                            canvas.getBounds());
+                }
+            } else {
+                Microbot.doInvoke(new NewMenuEntry(action, param0, param1, menuAction.getId(), identifier, -1, target),
+                        new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
+
+            }
+        } catch (Exception ex) {
+            Microbot.log(ex.getMessage());
+            ex.printStackTrace();
+        }
+        return true;
     }
 }

@@ -6,6 +6,7 @@ import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.tileitem.models.Rs2TileItemModel;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -16,8 +17,7 @@ import java.util.stream.Stream;
 @Singleton
 public class Rs2TileItemCache {
 
-    private static int lastUpdateGroundItems = 0;
-    private static List<Rs2TileItemModel> groundItems = new ArrayList<>();
+    private static final List<Rs2TileItemModel> groundItems = new ArrayList<>();
 
     @Inject
     public Rs2TileItemCache(EventBus eventBus) {
@@ -35,17 +35,7 @@ public class Rs2TileItemCache {
      * @return Stream of Rs2GroundItemModel
      */
     public static Stream<Rs2TileItemModel> getGroundItemsStream() {
-
-        if (lastUpdateGroundItems >= Microbot.getClient().getTickCount()) {
-            return groundItems.stream();
-        }
-
-        // Use the existing ground item cache
-        List<Rs2TileItemModel> result = new ArrayList<>();
-
-        groundItems = result;
-        lastUpdateGroundItems = Microbot.getClient().getTickCount();
-        return result.stream();
+        return groundItems.stream().filter(x -> x.getWorldLocation().getPlane() == Rs2Player.getWorldLocation().getPlane());
     }
 
     @Subscribe
