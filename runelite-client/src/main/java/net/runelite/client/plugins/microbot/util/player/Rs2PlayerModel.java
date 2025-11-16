@@ -5,11 +5,12 @@ import lombok.Getter;
 import net.runelite.api.HeadIcon;
 import net.runelite.api.Player;
 import net.runelite.api.PlayerComposition;
+import net.runelite.client.plugins.microbot.api.IEntity;
 import net.runelite.client.plugins.microbot.util.ActorModel;
+import org.apache.commons.lang3.NotImplementedException;
 
 @Getter
-public class Rs2PlayerModel extends ActorModel implements Player
-{
+public class Rs2PlayerModel extends ActorModel implements Player, IEntity {
 
 	private final Player player;
 
@@ -25,7 +26,7 @@ public class Rs2PlayerModel extends ActorModel implements Player
 		return player.getId();
 	}
 
-	@Override
+    @Override
 	public PlayerComposition getPlayerComposition()
 	{
 		return player.getPlayerComposition();
@@ -84,4 +85,14 @@ public class Rs2PlayerModel extends ActorModel implements Player
 	{
 		return 0;
 	}
+
+    @Override
+    public boolean click() {
+        throw new NotImplementedException("click() not implemented yet for Rs2PlayerModel");
+    }
+
+    @Override
+    public boolean click(String action) {
+        throw new NotImplementedException("click() not implemented yet for Rs2PlayerModel");
+    }
 }

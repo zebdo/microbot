@@ -36,12 +36,6 @@ public class PlayerApiExample {
         // Example 6: Find a player by multiple IDs
         Rs2PlayerModel playerByIds = cache.query().withIds(12345, 67890, 11111);
 
-        // Example 7: Include local player in query
-        Rs2PlayerModel localPlayer = cache.query()
-                .includeLocalPlayer()
-                .where(player -> player.getPlayer() != null)
-                .first();
-
         // Example 8: Find all friends
         List<Rs2PlayerModel> friends = cache.query()
                 .where(Rs2PlayerModel::isFriend)
@@ -103,8 +97,8 @@ public class PlayerApiExample {
                 .findFirst()
                 .orElse(null);
 
-        // Example 19: Get all players including local player
-        List<Rs2PlayerModel> allPlayersIncludingMe = Rs2PlayerCache.getPlayersStream(true)
+        // Example 19: Get all players
+        List<Rs2PlayerModel> allPlayersIncludingMe = Rs2PlayerCache.getPlayersStream()
                 .collect(Collectors.toList());
 
         // Example 20: Find players by partial name match

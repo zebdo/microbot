@@ -42,7 +42,7 @@ import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.mouse.Mouse;
 import net.runelite.client.plugins.microbot.util.mouse.VirtualMouse;
 import net.runelite.client.plugins.microbot.util.mouse.naturalmouse.NaturalMouse;
-import net.runelite.client.plugins.microbot.util.player.Rs2PlayerCache;
+import net.runelite.client.plugins.microbot.api.playerstate.Rs2PlayerStateCache;
 import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
@@ -190,7 +190,7 @@ public class Microbot {
 
     @Inject
     @Getter
-    private static Rs2PlayerCache rs2PlayerCache;
+    private static Rs2PlayerStateCache rs2PlayerStateCache;
 
     /**
      * Get the total runtime of the script
@@ -215,11 +215,11 @@ public class Microbot {
     }
 
     public static int getVarbitValue(@Varbit int varbit) {
-        return rs2PlayerCache.getVarbitValue(varbit);
+        return rs2PlayerStateCache.getVarbitValue(varbit);
     }
 
     public static int getVarbitPlayerValue(@Varp int varpId) {
-        return rs2PlayerCache.getVarpValue(varpId);
+        return rs2PlayerStateCache.getVarpValue(varpId);
     }
 
     public static EnumComposition getEnum(int id) {

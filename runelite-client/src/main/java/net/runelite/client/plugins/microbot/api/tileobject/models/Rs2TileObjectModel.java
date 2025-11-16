@@ -6,6 +6,7 @@ import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.api.IEntity;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -19,7 +20,7 @@ import java.awt.*;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 
-public class Rs2TileObjectModel implements TileObject {
+public class Rs2TileObjectModel implements TileObject, IEntity {
 
     public Rs2TileObjectModel(GameObject gameObject) {
         this.tileObject = gameObject;
@@ -148,6 +149,10 @@ public class Rs2TileObjectModel implements TileObject {
             }
             return composition;
         });
+    }
+
+    public boolean click() {
+        return click("");
     }
 
     /**
