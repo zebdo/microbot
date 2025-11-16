@@ -2,7 +2,7 @@ package net.runelite.client.plugins.microbot.api.player;
 
 import net.runelite.client.plugins.microbot.api.AbstractEntityQueryable;
 import net.runelite.client.plugins.microbot.api.IEntityQueryable;
-import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
+import net.runelite.client.plugins.microbot.api.player.models.Rs2PlayerModel;
 
 import java.util.stream.Stream;
 
