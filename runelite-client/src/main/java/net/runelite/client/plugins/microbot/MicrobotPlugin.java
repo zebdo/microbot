@@ -291,12 +291,69 @@ public class MicrobotPlugin extends Plugin
 	   }
 	   if (gameStateChanged.getGameState() == GameState.HOPPING || gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.CONNECTION_LOST)
 	   {
-		   // Clear all cache states when logging out through Rs2CacheManager		   		   
-		   //Rs2CacheManager.emptyCacheState(); // should not be nessary here, handled in ClientShutdown event, 
+		   // Clear all cache states when logging out through Rs2CacheManager
+		   //Rs2CacheManager.emptyCacheState(); // should not be nessary here, handled in ClientShutdown event,
 		   // and we also handle correct cache loading in onRuneScapeProfileChanged event
 		   LoginManager.markLoggedOut();
 		   Microbot.setLastKnownRegions(null);
+
+		   // Auto-fill credentials from active profile on login screen
+		   if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN)
+		   {
+			   prefillCredentialsFromActiveProfile();
+		   }
 	   }
+	}
+
+	/**
+	 * Pre-fills username and password from the active profile when reaching the login screen.
+	 * This automatically populates the login fields, saving the user from manually entering credentials.
+	 */
+	private void prefillCredentialsFromActiveProfile()
+	{
+		try
+		{
+			final Client client = Microbot.getClient();
+			if (client == null)
+			{
+				return;
+			}
+
+			net.runelite.client.config.ConfigProfile activeProfile = LoginManager.getActiveProfile();
+			if (activeProfile == null)
+			{
+				log.debug("No active profile available for credential auto-fill");
+				return;
+			}
+
+			// Set username
+			String username = activeProfile.getName();
+			if (username != null && !username.isBlank())
+			{
+				client.setUsername(username);
+				log.debug("Auto-filled username from active profile: {}", username);
+			}
+
+			// Set password (decrypt first)
+			String encryptedPassword = activeProfile.getPassword();
+			if (encryptedPassword != null && !encryptedPassword.isBlank())
+			{
+				try
+				{
+					String decryptedPassword = net.runelite.client.plugins.microbot.util.security.Encryption.decrypt(encryptedPassword);
+					client.setPassword(decryptedPassword);
+					log.debug("Auto-filled password from active profile");
+				}
+				catch (Exception e)
+				{
+					log.warn("Unable to decrypt stored password for auto-fill", e);
+				}
+			}
+		}
+		catch (Exception e)
+		{
+			log.error("Error during credential auto-fill", e);
+		}
 	}
 
 	@Subscribe
