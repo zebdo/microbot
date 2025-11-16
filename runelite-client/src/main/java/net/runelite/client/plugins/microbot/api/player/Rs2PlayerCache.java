@@ -6,6 +6,7 @@ import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -19,26 +20,21 @@ public class Rs2PlayerCache {
     }
 
     /**
-     * Get all players in the current scene (excluding local player)
+     * Get all players in the current scene
      * @return Stream of Rs2PlayerModel
      */
     public static Stream<Rs2PlayerModel> getPlayersStream() {
-        return getPlayersStream(false);
-    }
-
-    /**
-     * Get all players in the current scene
-     * @param includeLocalPlayer whether to include the local player in the results
-     * @return Stream of Rs2PlayerModel
-     */
-    public static Stream<Rs2PlayerModel> getPlayersStream(boolean includeLocalPlayer) {
 
         if (lastUpdatePlayers >= Microbot.getClient().getTickCount()) {
             return players.stream();
         }
 
         // Get all players using the existing Rs2Player utility
-        List<Rs2PlayerModel> result = Rs2Player.getPlayers(player -> true, includeLocalPlayer).collect(Collectors.toList());
+        List<Rs2PlayerModel> result = Microbot.getClient().getTopLevelWorldView().players()
+                .stream()
+                .filter(Objects::nonNull)
+                .map(Rs2PlayerModel::new)
+                .collect(Collectors.toList());
 
         players = result;
         lastUpdatePlayers = Microbot.getClient().getTickCount();

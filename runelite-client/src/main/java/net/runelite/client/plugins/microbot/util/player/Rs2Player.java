@@ -1422,7 +1422,7 @@ public class Rs2Player {
      * @return The {@link QuestState} representing the player's progress in the quest.
      */
     public static QuestState getQuestState(Quest quest) {
-        return Microbot.getRs2PlayerCache().getQuestState(quest);
+        return Microbot.getRs2PlayerStateCache().getQuestState(quest);
     }
 
     /**

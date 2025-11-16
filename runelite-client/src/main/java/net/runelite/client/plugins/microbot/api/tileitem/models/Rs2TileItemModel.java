@@ -6,6 +6,7 @@ import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.api.IEntity;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
@@ -14,7 +15,7 @@ import java.awt.*;
 import java.util.function.Supplier;
 
 @Slf4j
-public class Rs2TileItemModel implements TileItem {
+public class Rs2TileItemModel implements TileItem, IEntity {
 
     @Getter
     private final Tile tile;

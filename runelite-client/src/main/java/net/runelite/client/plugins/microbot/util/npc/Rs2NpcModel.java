@@ -8,7 +8,9 @@ import net.runelite.api.NPCComposition;
 import net.runelite.api.NpcOverrides;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.api.IEntity;
 import net.runelite.client.plugins.microbot.util.ActorModel;
+import org.apache.commons.lang3.NotImplementedException;
 import org.jetbrains.annotations.Nullable;
 
 import java.util.Arrays;
@@ -16,7 +18,7 @@ import java.util.function.Predicate;
 
 @Getter
 @EqualsAndHashCode(callSuper = true) // Ensure equality checks include ActorModel fields
-public class Rs2NpcModel extends ActorModel implements NPC
+public class Rs2NpcModel extends ActorModel implements NPC, IEntity
 {
 
 	private final NPC runeliteNpc;
@@ -33,7 +35,8 @@ public class Rs2NpcModel extends ActorModel implements NPC
 		return runeliteNpc.getId();
 	}
 
-	@Override
+
+    @Override
 	public int getIndex()
 	{
 		return runeliteNpc.getIndex();
@@ -190,4 +193,14 @@ public class Rs2NpcModel extends ActorModel implements NPC
 
 		return null;
 	}
+
+    @Override
+    public boolean click() {
+        throw new NotImplementedException("click() not implemented yet for Rs2NpcModel");
+    }
+
+    @Override
+    public boolean click(String action) {
+        throw new NotImplementedException("click() not implemented yet for Rs2NpcModel");
+    }
 }
