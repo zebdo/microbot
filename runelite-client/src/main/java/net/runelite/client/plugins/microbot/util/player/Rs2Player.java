@@ -49,6 +49,7 @@ import java.util.stream.Stream;
 import static net.runelite.api.MenuAction.CC_OP;
 import static net.runelite.client.plugins.microbot.util.Global.*;
 
+@Deprecated(since = "2.1.0 - Use Rs2PlayerCache/Rs2PlayerQueryable", forRemoval = true)
 public class Rs2Player {
     static int VENOM_VALUE_CUTOFF = -38;
     private static int antiFireTime = -1;
