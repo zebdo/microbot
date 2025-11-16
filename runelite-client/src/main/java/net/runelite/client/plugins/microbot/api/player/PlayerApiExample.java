@@ -1,6 +1,6 @@
 package net.runelite.client.plugins.microbot.api.player;
 
-import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
+import net.runelite.client.plugins.microbot.api.player.models.Rs2PlayerModel;
 
 import java.util.List;
 import java.util.stream.Collectors;

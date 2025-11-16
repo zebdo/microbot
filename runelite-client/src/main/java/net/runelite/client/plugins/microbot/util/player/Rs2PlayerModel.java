@@ -10,7 +10,7 @@ import net.runelite.client.plugins.microbot.util.ActorModel;
 import org.apache.commons.lang3.NotImplementedException;
 
 @Getter
-public class Rs2PlayerModel extends ActorModel implements Player, IEntity {
+public class Rs2PlayerModel extends ActorModel implements Player {
 
 	private final Player player;
 
@@ -85,14 +85,4 @@ public class Rs2PlayerModel extends ActorModel implements Player, IEntity {
 	{
 		return 0;
 	}
-
-    @Override
-    public boolean click() {
-        throw new NotImplementedException("click() not implemented yet for Rs2PlayerModel");
-    }
-
-    @Override
-    public boolean click(String action) {
-        throw new NotImplementedException("click() not implemented yet for Rs2PlayerModel");
-    }
 }

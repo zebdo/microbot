@@ -18,7 +18,7 @@ import java.util.function.Predicate;
 
 @Getter
 @EqualsAndHashCode(callSuper = true) // Ensure equality checks include ActorModel fields
-public class Rs2NpcModel extends ActorModel implements NPC, IEntity
+public class Rs2NpcModel extends ActorModel implements NPC
 {
 
 	private final NPC runeliteNpc;
@@ -193,14 +193,4 @@ public class Rs2NpcModel extends ActorModel implements NPC, IEntity
 
 		return null;
 	}
-
-    @Override
-    public boolean click() {
-        throw new NotImplementedException("click() not implemented yet for Rs2NpcModel");
-    }
-
-    @Override
-    public boolean click(String action) {
-        throw new NotImplementedException("click() not implemented yet for Rs2NpcModel");
-    }
 }
