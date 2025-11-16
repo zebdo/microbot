@@ -1,6 +1,6 @@
 package net.runelite.client.plugins.microbot.api.npc;
 
-import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
+import net.runelite.client.plugins.microbot.api.npc.models.Rs2NpcModel;
 
 import java.util.List;
 
