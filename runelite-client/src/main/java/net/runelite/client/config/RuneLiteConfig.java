@@ -59,6 +59,26 @@ public interface RuneLiteConfig extends Config
 	)
 	String overlaySettings = "overlaySettings";
 
+	@ConfigSection(
+		name = "Appearance",
+		description = "Settings relating to the client's appearance and theme.",
+		position = 3
+	)
+	String appearanceSettings = "appearanceSettings";
+
+	@ConfigItem(
+		keyName = "theme",
+		name = "Theme",
+		description = "Select the UI theme for the client.",
+		warning = "Please restart your client after changing this setting",
+		position = 0,
+		section = appearanceSettings
+	)
+	default net.runelite.client.ui.Theme theme()
+	{
+		return net.runelite.client.ui.Theme.DEFAULT;
+	}
+
 	@ConfigItem(
 		keyName = "gameSize",
 		name = "Game size",

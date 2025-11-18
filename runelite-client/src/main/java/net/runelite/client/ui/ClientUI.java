@@ -308,6 +308,11 @@ public class ClientUI
 			// Set some sensible swing defaults
 			setupDefaults();
 
+			// Initialize theme from config before setting up LAF
+			Theme selectedTheme = config.theme();
+			ColorScheme.setTheme(selectedTheme);
+			ColorScheme.updateColors();
+
 			RuneLiteLAF.setup();
 
 			// Create main window
