@@ -59,7 +59,21 @@ public abstract class PluginPanel extends JPanel implements Activatable
 			setLayout(new DynamicGridLayout(0, 1, 0, 3));
 			setBackground(ColorScheme.DARK_GRAY_COLOR);
 
-			final JPanel northPanel = new JPanel();
+			final JPanel northPanel = new JPanel()
+			{
+				@Override
+				protected void paintComponent(Graphics g)
+				{
+					super.paintComponent(g);
+					// Add Christmas decorations to panel
+					if (ColorScheme.getTheme() == Theme.CHRISTMAS)
+					{
+						Graphics2D g2d = (Graphics2D) g;
+						ChristmasDecorator.paintChristmasLights(g2d, getWidth(), getHeight());
+						ChristmasDecorator.paintSnowAccumulation(g2d, getWidth());
+					}
+				}
+			};
 			northPanel.setLayout(new BorderLayout());
 			northPanel.add(this, BorderLayout.NORTH);
 			northPanel.setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -79,6 +93,20 @@ public abstract class PluginPanel extends JPanel implements Activatable
 		{
 			scrollPane = null;
 			wrappedPanel = this;
+		}
+	}
+
+	@Override
+	protected void paintComponent(Graphics g)
+	{
+		super.paintComponent(g);
+
+		// Add Christmas decorations to panel
+		if (ColorScheme.getTheme() == Theme.CHRISTMAS)
+		{
+			Graphics2D g2d = (Graphics2D) g;
+			ChristmasDecorator.paintChristmasLights(g2d, getWidth(), getHeight());
+			ChristmasDecorator.paintSnowAccumulation(g2d, getWidth());
 		}
 	}
 

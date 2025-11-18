@@ -32,8 +32,12 @@ import java.awt.Composite;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.Rectangle;
+import javax.swing.AbstractButton;
 import javax.swing.JComponent;
 import javax.swing.plaf.ComponentUI;
+import net.runelite.client.ui.ChristmasDecorator;
+import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.Theme;
 
 public class RuneLiteToggleButtonUI extends FlatToggleButtonUI
 {
@@ -53,6 +57,21 @@ public class RuneLiteToggleButtonUI extends FlatToggleButtonUI
 	}
 
 	@Override
+	public void paint(Graphics g, JComponent c)
+	{
+		super.paint(g, c);
+
+		// Add Christmas decorations if Christmas theme is active
+		if (ColorScheme.getTheme() == Theme.CHRISTMAS)
+		{
+			Graphics2D g2d = (Graphics2D) g.create();
+			// Add snowflakes to toggle buttons
+			ChristmasDecorator.paintSnowflakes(g2d, c.getWidth(), c.getHeight(), 2);
+			g2d.dispose();
+		}
+	}
+
+	@Override
 	protected void paintIcon(Graphics g, JComponent c, Rectangle iconRect)
 	{
 		if (rolloverIconAlpha != 1.0f && RuneLiteButtonUI.useRolloverEffect(c))
@@ -68,9 +87,38 @@ public class RuneLiteToggleButtonUI extends FlatToggleButtonUI
 			{
 				g2d.setComposite(composite);
 			}
+			// Add holly decoration for selected toggle buttons
+			if (ColorScheme.getTheme() == Theme.CHRISTMAS && c instanceof AbstractButton)
+			{
+				AbstractButton button = (AbstractButton) c;
+				if (button.isSelected() && iconRect.width > 0)
+				{
+					Graphics2D g2dHolly = (Graphics2D) g.create();
+					ChristmasDecorator.paintHolly(g2dHolly,
+						iconRect.x + iconRect.width + 5,
+						iconRect.y + iconRect.height / 2,
+						8);
+					g2dHolly.dispose();
+				}
+			}
 			return;
 		}
 
 		super.paintIcon(g, c, iconRect);
+
+		// Add holly decoration for selected toggle buttons in Christmas theme
+		if (ColorScheme.getTheme() == Theme.CHRISTMAS && c instanceof AbstractButton)
+		{
+			AbstractButton button = (AbstractButton) c;
+			if (button.isSelected() && iconRect.width > 0)
+			{
+				Graphics2D g2d = (Graphics2D) g.create();
+				ChristmasDecorator.paintHolly(g2d,
+					iconRect.x + iconRect.width + 5,
+					iconRect.y + iconRect.height / 2,
+					8);
+				g2d.dispose();
+			}
+		}
 	}
 }

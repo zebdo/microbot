@@ -37,6 +37,9 @@ import javax.swing.ButtonModel;
 import javax.swing.Icon;
 import javax.swing.JComponent;
 import javax.swing.plaf.ComponentUI;
+import net.runelite.client.ui.ChristmasDecorator;
+import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.Theme;
 
 public class RuneLiteButtonUI extends FlatButtonUI
 {
@@ -53,6 +56,21 @@ public class RuneLiteButtonUI extends FlatButtonUI
 	protected RuneLiteButtonUI(boolean shared)
 	{
 		super(shared);
+	}
+
+	@Override
+	public void paint(Graphics g, JComponent c)
+	{
+		super.paint(g, c);
+
+		// Add Christmas decorations if Christmas theme is active
+		if (ColorScheme.getTheme() == Theme.CHRISTMAS)
+		{
+			Graphics2D g2d = (Graphics2D) g.create();
+			// Add snowflakes to buttons
+			ChristmasDecorator.paintSnowflakes(g2d, c.getWidth(), c.getHeight(), 3);
+			g2d.dispose();
+		}
 	}
 
 	@Override

@@ -36,6 +36,9 @@ import javax.swing.AbstractButton;
 import javax.swing.JComponent;
 import javax.swing.LookAndFeel;
 import javax.swing.plaf.ComponentUI;
+import net.runelite.client.ui.ChristmasDecorator;
+import net.runelite.client.ui.ColorScheme;
+import net.runelite.client.ui.Theme;
 
 public class RuneLiteCheckBoxUI extends FlatCheckBoxUI
 {
@@ -81,9 +84,38 @@ public class RuneLiteCheckBoxUI extends FlatCheckBoxUI
 			{
 				g2d.setComposite(composite);
 			}
+			// Add Christmas tree for selected checkboxes
+			if (ColorScheme.getTheme() == Theme.CHRISTMAS && c instanceof AbstractButton)
+			{
+				AbstractButton button = (AbstractButton) c;
+				if (button.isSelected())
+				{
+					Graphics2D g2dTree = (Graphics2D) g.create();
+					ChristmasDecorator.paintChristmasTree(g2dTree,
+						iconRect.x + iconRect.width / 2,
+						iconRect.y + iconRect.height / 4,
+						iconRect.height / 2);
+					g2dTree.dispose();
+				}
+			}
 			return;
 		}
 
 		super.paintIcon(g, c, iconRect);
+
+		// Add Christmas tree for selected checkboxes in Christmas theme
+		if (ColorScheme.getTheme() == Theme.CHRISTMAS && c instanceof AbstractButton)
+		{
+			AbstractButton button = (AbstractButton) c;
+			if (button.isSelected())
+			{
+				Graphics2D g2d = (Graphics2D) g.create();
+				ChristmasDecorator.paintChristmasTree(g2d,
+					iconRect.x + iconRect.width / 2,
+					iconRect.y + iconRect.height / 4,
+					iconRect.height / 2);
+				g2d.dispose();
+			}
+		}
 	}
 }
