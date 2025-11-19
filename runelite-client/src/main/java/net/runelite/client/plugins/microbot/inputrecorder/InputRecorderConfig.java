@@ -4,6 +4,8 @@ import net.runelite.client.config.Config;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.Keybind;
+import net.runelite.client.config.ModifierlessKeybind;
 
 @ConfigGroup("inputrecorder")
 public interface InputRecorderConfig extends Config {
@@ -28,6 +30,14 @@ public interface InputRecorderConfig extends Config {
             position = 2
     )
     String replaySection = "replay";
+
+    @ConfigSection(
+            name = "Hotkeys",
+            description = "Configure keyboard shortcuts",
+            position = 3,
+            closedByDefault = true
+    )
+    String hotkeysSection = "hotkeys";
 
     // ===== Recording Settings =====
 
@@ -231,5 +241,40 @@ public interface InputRecorderConfig extends Config {
     )
     default boolean replayVerboseLogging() {
         return false;
+    }
+
+    // ===== Hotkeys =====
+
+    @ConfigItem(
+            keyName = "toggleRecordingHotkey",
+            name = "Toggle Recording",
+            description = "Hotkey to start/stop recording",
+            section = hotkeysSection,
+            position = 0
+    )
+    default Keybind toggleRecordingHotkey() {
+        return Keybind.NOT_SET;
+    }
+
+    @ConfigItem(
+            keyName = "pauseRecordingHotkey",
+            name = "Pause/Resume Recording",
+            description = "Hotkey to pause/resume the current recording",
+            section = hotkeysSection,
+            position = 1
+    )
+    default Keybind pauseRecordingHotkey() {
+        return Keybind.NOT_SET;
+    }
+
+    @ConfigItem(
+            keyName = "discardSessionHotkey",
+            name = "Discard Session",
+            description = "Hotkey to discard the current recording without saving",
+            section = hotkeysSection,
+            position = 2
+    )
+    default Keybind discardSessionHotkey() {
+        return Keybind.NOT_SET;
     }
 }

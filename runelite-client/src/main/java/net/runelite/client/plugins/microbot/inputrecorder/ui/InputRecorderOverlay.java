@@ -56,7 +56,7 @@ public class InputRecorderOverlay extends OverlayPanel {
         panelComponent.getChildren().clear();
 
         // Title
-        if (isRecording) {
+        if (isRecording && session != null) {
             panelComponent.getChildren().add(TitleComponent.builder()
                     .text("Input Recorder")
                     .color(session.isPaused() ? Color.YELLOW : Color.GREEN)

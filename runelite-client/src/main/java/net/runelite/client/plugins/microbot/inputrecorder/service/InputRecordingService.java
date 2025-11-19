@@ -60,6 +60,9 @@ public class InputRecordingService {
 
     private int currentGameTick = 0;
 
+    // Constants
+    private static final String MICROBOT_EVENT_SOURCE = "Microbot";
+
     // Mouse movement compression
     private Point lastRecordedMousePosition;
     private long lastMouseMoveTimestamp = 0;
@@ -68,9 +71,9 @@ public class InputRecordingService {
 
     // Keyboard state tracking
     private final Set<Integer> pressedKeys = new HashSet<>();
-    private boolean shiftPressed = false;
-    private boolean ctrlPressed = false;
-    private boolean altPressed = false;
+    private volatile boolean shiftPressed = false;
+    private volatile boolean ctrlPressed = false;
+    private volatile boolean altPressed = false;
 
     // Event queue for thread-safe recording
     private final Queue<RecordedMenuAction> pendingActions = new ConcurrentLinkedQueue<>();
@@ -194,6 +197,12 @@ public class InputRecordingService {
             return;
         }
 
+        if (currentSession.getPausedAt() == null) {
+            log.warn("Cannot resume: pausedAt timestamp is null");
+            currentSession.setPaused(false);
+            return;
+        }
+
         long pauseDuration = System.currentTimeMillis() - currentSession.getPausedAt();
         currentSession.setTotalPausedMs(currentSession.getTotalPausedMs() + pauseDuration);
         currentSession.setPaused(false);
@@ -266,7 +275,7 @@ public class InputRecordingService {
         mouseListener = new MouseAdapter() {
             @Override
             public void mousePressed(MouseEvent e) {
-                if (isRecording() && e.getSource().equals("Microbot")) {
+                if (isRecording() && MICROBOT_EVENT_SOURCE.equals(e.getSource())) {
                     // Don't record synthetic Microbot events
                     return;
                 }
@@ -275,7 +284,7 @@ public class InputRecordingService {
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                if (isRecording() && e.getSource().equals("Microbot")) {
+                if (isRecording() && MICROBOT_EVENT_SOURCE.equals(e.getSource())) {
                     return;
                 }
                 onMouseReleased(e);
@@ -496,7 +505,7 @@ public class InputRecordingService {
     }
 
     private void updateModifierState(int keyCode, boolean pressed) {
-        if (keyCode == KeyEvent.VK_SHIFT || keyCode == KeyEvent.VK_SHIFT) {
+        if (keyCode == KeyEvent.VK_SHIFT) {
             shiftPressed = pressed;
         } else if (keyCode == KeyEvent.VK_CONTROL) {
             ctrlPressed = pressed;
@@ -565,10 +574,9 @@ public class InputRecordingService {
         // Extract world coordinates if applicable
         if (menuAction == MenuAction.WALK) {
             Scene scene = client.getTopLevelWorldView().getScene();
-            int sceneX = entry.getParam0();
-            int sceneY = entry.getParam1();
-
             if (scene != null) {
+                int sceneX = entry.getParam0();
+                int sceneY = entry.getParam1();
                 int baseX = client.getTopLevelWorldView().getBaseX();
                 int baseY = client.getTopLevelWorldView().getBaseY();
                 builder.worldX(baseX + sceneX)

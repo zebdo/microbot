@@ -93,6 +93,49 @@ public class InputRecorderPlugin extends Plugin {
 
     private boolean wasLoggedIn = false;
 
+    // Hotkey listeners
+    private final HotkeyListener toggleRecordingHotkey = new HotkeyListener(() -> config.toggleRecordingHotkey())
+    {
+        @Override
+        public void hotkeyPressed()
+        {
+            if (recordingService.isRecording()) {
+                handleStopRecording();
+            } else {
+                handleStartRecording();
+            }
+        }
+    };
+
+    private final HotkeyListener pauseRecordingHotkey = new HotkeyListener(() -> config.pauseRecordingHotkey())
+    {
+        @Override
+        public void hotkeyPressed()
+        {
+            if (recordingService.isRecording()) {
+                if (recordingService.getCurrentSession().isPaused()) {
+                    recordingService.resumeRecording();
+                    log.info("Recording resumed");
+                } else {
+                    recordingService.pauseRecording();
+                    log.info("Recording paused");
+                }
+            }
+        }
+    };
+
+    private final HotkeyListener discardSessionHotkey = new HotkeyListener(() -> config.discardSessionHotkey())
+    {
+        @Override
+        public void hotkeyPressed()
+        {
+            if (recordingService.isRecording()) {
+                recordingService.discardSession();
+                log.info("Recording session discarded");
+            }
+        }
+    };
+
     /**
      * Provides the plugin configuration
      */
@@ -105,7 +148,7 @@ public class InputRecorderPlugin extends Plugin {
      * Plugin startup - register event handlers and hotkeys
      */
     @Override
-    protected void startUp() throws AWTException {
+    protected void startUp() {
         log.info("Input Recorder plugin started");
 
         // Register the recording service with event bus
@@ -156,51 +199,9 @@ public class InputRecorderPlugin extends Plugin {
      * Registers keyboard hotkeys for recording control
      */
     private void registerHotkeys() {
-        // Ctrl+Shift+R: Start/Stop Recording
-        keyManager.registerKeyListener(new HotkeyListener(() -> {
-            if (recordingService.isRecording()) {
-                handleStopRecording();
-            } else {
-                handleStartRecording();
-            }
-        }) {
-            @Override
-            public boolean isPressed() {
-                return client.isKeyPressed(17) && client.isKeyPressed(16) && client.isKeyPressed(82);
-            }
-        });
-
-        // Ctrl+Shift+P: Pause/Resume Recording
-        keyManager.registerKeyListener(new HotkeyListener(() -> {
-            if (recordingService.isRecording()) {
-                if (recordingService.getCurrentSession().isPaused()) {
-                    recordingService.resumeRecording();
-                    log.info("Recording resumed");
-                } else {
-                    recordingService.pauseRecording();
-                    log.info("Recording paused");
-                }
-            }
-        }) {
-            @Override
-            public boolean isPressed() {
-                return client.isKeyPressed(17) && client.isKeyPressed(16) && client.isKeyPressed(80);
-            }
-        });
-
-        // Ctrl+Shift+D: Discard current session
-        keyManager.registerKeyListener(new HotkeyListener(() -> {
-            if (recordingService.isRecording()) {
-                recordingService.discardSession();
-                log.info("Recording session discarded");
-            }
-        }) {
-            @Override
-            public boolean isPressed() {
-                return client.isKeyPressed(17) && client.isKeyPressed(16) && client.isKeyPressed(68);
-            }
-        });
-
+        keyManager.registerKeyListener(toggleRecordingHotkey);
+        keyManager.registerKeyListener(pauseRecordingHotkey);
+        keyManager.registerKeyListener(discardSessionHotkey);
         log.debug("Hotkeys registered");
     }
 
@@ -208,8 +209,9 @@ public class InputRecorderPlugin extends Plugin {
      * Unregisters all hotkeys
      */
     private void unregisterHotkeys() {
-        // KeyManager doesn't have explicit unregister in this version
-        // Hotkeys are automatically cleaned up on plugin shutdown
+        keyManager.unregisterKeyListener(toggleRecordingHotkey);
+        keyManager.unregisterKeyListener(pauseRecordingHotkey);
+        keyManager.unregisterKeyListener(discardSessionHotkey);
         log.debug("Hotkeys unregistered");
     }
 

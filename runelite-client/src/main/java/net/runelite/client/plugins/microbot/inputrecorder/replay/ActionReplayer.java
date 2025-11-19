@@ -38,10 +38,10 @@ public class ActionReplayer {
     private Client client;
 
     @Getter
-    private boolean isReplaying = false;
+    private volatile boolean isReplaying = false;
 
     @Getter
-    private boolean isPaused = false;
+    private volatile boolean isPaused = false;
 
     private Thread replayThread;
     private final AtomicBoolean shouldStop = new AtomicBoolean(false);
@@ -288,7 +288,12 @@ public class ActionReplayer {
                 clickPoint = new Point(action.getMouseX(), action.getMouseY());
             } else {
                 // Use current mouse position as fallback
-                clickPoint = client.getMouseCanvasPosition();
+                Point mousePos = client.getMouseCanvasPosition();
+                if (mousePos == null) {
+                    log.warn("Cannot execute menu action: mouse position is null and no recorded position available");
+                    return false;
+                }
+                clickPoint = mousePos;
             }
 
             // Validate target exists (for certain action types)
@@ -297,7 +302,12 @@ public class ActionReplayer {
             }
 
             // Execute via Microbot's mouse system
-            VirtualMouse mouse = (VirtualMouse) Microbot.getMouse();
+            Mouse baseMouse = Microbot.getMouse();
+            if (!(baseMouse instanceof VirtualMouse)) {
+                log.error("Cannot execute menu action: mouse is not VirtualMouse instance");
+                return false;
+            }
+            VirtualMouse mouse = (VirtualMouse) baseMouse;
             mouse.click(clickPoint, action.getMouseButton() != null && action.getMouseButton() == 3, entry);
 
             return true;
@@ -373,7 +383,12 @@ public class ActionReplayer {
             return false;
         }
 
-        VirtualMouse mouse = (VirtualMouse) Microbot.getMouse();
+        Mouse baseMouse = Microbot.getMouse();
+        if (!(baseMouse instanceof VirtualMouse)) {
+            log.warn("Cannot execute mouse move: mouse is not VirtualMouse instance");
+            return false;
+        }
+        VirtualMouse mouse = (VirtualMouse) baseMouse;
         mouse.move(new Point(action.getMouseX(), action.getMouseY()));
         return true;
     }
@@ -395,7 +410,12 @@ public class ActionReplayer {
             return false;
         }
 
-        VirtualMouse mouse = (VirtualMouse) Microbot.getMouse();
+        Mouse baseMouse = Microbot.getMouse();
+        if (!(baseMouse instanceof VirtualMouse)) {
+            log.warn("Cannot execute mouse scroll: mouse is not VirtualMouse instance");
+            return false;
+        }
+        VirtualMouse mouse = (VirtualMouse) baseMouse;
         Point scrollPoint = new Point(action.getMouseX(), action.getMouseY());
 
         int scrollAmount = action.getParam0() != null ? action.getParam0() : 1;

@@ -266,7 +266,7 @@ public class InputRecordingSession {
                 if (lastX != null && lastY != null) {
                     int dx = action.getMouseX() - lastX;
                     int dy = action.getMouseY() - lastY;
-                    mouseDistance += Math.sqrt(dx * dx + dy * dy);
+                    mouseDistance += (long) Math.sqrt(dx * dx + dy * dy);
                 }
                 lastX = action.getMouseX();
                 lastY = action.getMouseY();
