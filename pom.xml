@@ -28,7 +28,7 @@
 
 	<groupId>net.runelite</groupId>
 	<artifactId>runelite-parent</artifactId>
-	<version>1.12.5.2</version>
+	<version>1.12.6</version>
 	<packaging>pom</packaging>
 
 	<name>RuneLite</name>
@@ -92,6 +92,7 @@
 			<url>https://repo.runelite.net</url>
 			<snapshots>
 				<enabled>true</enabled>
+                <updatePolicy>always</updatePolicy>
 			</snapshots>
 		</repository>
 		<repository>

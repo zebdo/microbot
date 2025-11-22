@@ -37,7 +37,7 @@ import net.runelite.api.Player;
 import net.runelite.api.Projectile;
 import net.runelite.api.Renderable;
 import net.runelite.api.Scene;
-import net.runelite.api.WorldView;
+import net.runelite.api.WorldEntity;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.SpotanimID;
 import net.runelite.client.callback.Hooks;
@@ -303,15 +303,13 @@ public class EntityHiderPlugin extends Plugin
 			}
 
 			Scene scene = (Scene) renderable;
-			Player local = client.getLocalPlayer();
-			WorldView wv = local.getWorldView();
-
-			if (scene.getWorldViewId() == wv.getId())
+			WorldEntity we = client.getTopLevelWorldView().worldEntities().byIndex(scene.getWorldViewId());
+			if (we.getOwnerType() == WorldEntity.OWNER_TYPE_OTHER_PLAYER)
 			{
-				return true;
+				return false;
 			}
 
-			return false;
+			return true;
 		}
 
 		return true;
