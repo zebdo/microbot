@@ -17,8 +17,10 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.sailing.Rs2Sailing;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import org.apache.commons.lang3.tuple.Triple;
 
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
@@ -226,7 +228,8 @@ public class Rs2GameObject {
 
 	@Deprecated
     public static TileObject findObjectById(int id) {
-        return getAll(o -> o.getId() == id).stream().findFirst().orElse(null);
+        var list = getAll(o -> o.getId() == id);
+        return list.stream().filter(x -> x.getId() == id).findFirst().orElse(null);
     }
 
     @Deprecated
@@ -524,11 +527,8 @@ public class Rs2GameObject {
     }
 
 	public static <T extends TileObject> List<TileObject> getAll(Predicate<? super T> predicate, int distance) {
-		Player player = Microbot.getClient().getLocalPlayer();
-		if (player == null) {
-			return Collections.emptyList();
-		}
-		return getAll(predicate, player.getWorldLocation(), distance);
+        var worldPoint =  Microbot.getClientThread().invoke(Rs2Sailing::getPlayerBoatLocation);
+		return getAll(predicate, worldPoint, distance);
 	}
 
 	public static <T extends TileObject> List<TileObject> getAll(Predicate<? super T> predicate, WorldPoint anchor) {
@@ -717,11 +717,7 @@ public class Rs2GameObject {
     }
 
     public static List<TileObject> getTileObjects(Predicate<TileObject> predicate, WorldPoint anchor, int distance) {
-        Player player = Microbot.getClient().getLocalPlayer();
-        if (player == null) {
-            return Collections.emptyList();
-        }
-        LocalPoint anchorLocal = LocalPoint.fromWorld(player.getWorldView(), anchor);
+        LocalPoint anchorLocal = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), anchor);
         if (anchorLocal == null) {
             return Collections.emptyList();
         }
@@ -913,11 +909,7 @@ public class Rs2GameObject {
     }
 
     public static List<GameObject> getGameObjects(Predicate<GameObject> predicate, WorldPoint anchor, int distance) {
-        Player player = Microbot.getClient().getLocalPlayer();
-        if (player == null) {
-            return Collections.emptyList();
-        }
-        LocalPoint anchorLocal = LocalPoint.fromWorld(player.getWorldView(), anchor);
+        LocalPoint anchorLocal = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), anchor);
         if (anchorLocal == null) {
             return Collections.emptyList();
         }
@@ -1103,11 +1095,7 @@ public class Rs2GameObject {
     }
 
     public static List<GroundObject> getGroundObjects(Predicate<GroundObject> predicate, WorldPoint anchor, int distance) {
-        Player player = Microbot.getClient().getLocalPlayer();
-        if (player == null) {
-            return Collections.emptyList();
-        }
-        LocalPoint anchorLocal = LocalPoint.fromWorld(player.getWorldView(), anchor);
+        LocalPoint anchorLocal = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), anchor);
         if (anchorLocal == null) {
             return Collections.emptyList();
         }
@@ -1115,7 +1103,7 @@ public class Rs2GameObject {
     }
 
     public static List<GroundObject> getGroundObjects(Predicate<GroundObject> predicate, LocalPoint anchorLocal, int distance) {
-        return getSceneObjects(GROUNDOBJECT_EXTRACTOR, predicate, anchorLocal, distance);
+       return getSceneObjects(GROUNDOBJECT_EXTRACTOR, predicate, anchorLocal, distance);
     }
 
     public static WallObject getWallObject(int id) {
@@ -1526,47 +1514,75 @@ public class Rs2GameObject {
 
     // private methods
     private static <T extends TileObject> Stream<T> getSceneObjects(Function<Tile, Collection<? extends T>> extractor) {
-        Player player = Microbot.getClient().getLocalPlayer();
-        if (player == null) return Stream.empty();
+        var triple = Microbot.getClientThread().invoke(() -> {
+            Player player = Microbot.getClient().getLocalPlayer();
 
-        Scene scene = player.getWorldView().getScene();
-        Tile[][][] tiles = scene.getTiles();
-        if (tiles == null) return Stream.empty();
+            var worldView = player.getWorldView();
 
-        List<T> result = new ArrayList<>();
-        int z = player.getWorldView().getPlane();
+            Scene scene;
+            if (worldView != null) {
+                scene = player.getWorldView().getScene();
+            } else {
+                scene = Rs2Sailing.isOnBoat()
+                        ? Microbot.getClient().getTopLevelWorldView().getScene()
+                        : player.getWorldView().getScene();
+            }
 
-        for (int x = 0; x < Constants.SCENE_SIZE; x++) {
-            for (int y = 0; y < Constants.SCENE_SIZE; y++) {
-                Tile tile = tiles[z][x][y];
-                if (tile == null) continue;
 
-                Collection<? extends T> objs = extractor.apply(tile);
-                if (objs != null) {
-                    for (T obj : objs) {
-                        if (obj == null) continue;
 
-                        if (obj instanceof GameObject) {
-                            GameObject gameObject = (GameObject) obj;
-                            if (gameObject.getSceneMinLocation().equals(tile.getSceneLocation())) {
-                                result.add(obj);
-                            }
-                        } else {
-                            if (obj.getLocalLocation().equals(tile.getLocalLocation())) {
-                                result.add(obj);
+            Tile[][][] tiles = scene.getTiles();
+            if (tiles == null) {
+                return Triple.of(null, null, 0);
+            }
+
+            int z = Rs2Sailing.isOnBoat() ? 3 : player.getWorldView().getPlane();
+
+            return Triple.of(scene, tiles, z);
+        });
+
+        var result = new ArrayList<T>();
+        Tile[][][] tiles = (Tile[][][]) triple.getMiddle();
+        int z = triple.getRight();
+
+        int sceneSize = Rs2Sailing.isOnBoat() ? 7 : Constants.SCENE_SIZE;
+
+        for (int x = 0; x < sceneSize; x++) {
+            for (int y = 0; y < sceneSize; y++) {
+                for (int h = 0; h < z; h++) {
+                    Tile tile = tiles[h][x][y];
+                    if (tile == null) continue;
+
+                    Collection<? extends T> objs = extractor.apply(tile);
+                    if (objs != null) {
+                        for (T obj : objs) {
+                            if (obj == null) continue;
+
+                            if (obj instanceof GameObject) {
+                                GameObject gameObject = (GameObject) obj;
+                                if (gameObject.getSceneMinLocation().equals(tile.getSceneLocation())) {
+                                    result.add(obj);
+                                }
+                            } else {
+                                if (obj.getLocalLocation().equals(tile.getLocalLocation())) {
+                                    result.add(obj);
+                                }
                             }
                         }
                     }
                 }
             }
         }
-
         return result.stream();
     }
 
     private static <T extends TileObject> List<T> getSceneObjects(Function<Tile, Collection<? extends T>> extractor, Predicate<T> predicate, LocalPoint anchorLocal, int distance) {
         if (distance > Rs2LocalPoint.worldToLocalDistance(Constants.SCENE_SIZE)) {
             distance = Rs2LocalPoint.worldToLocalDistance(Constants.SCENE_SIZE);
+        }
+
+        if (Rs2Sailing.isOnBoat()) {
+            return  getSceneObjects(extractor)
+                    .collect(Collectors.toList());
         }
 
         return getSceneObjects(extractor)
@@ -1749,7 +1765,7 @@ public class Rs2GameObject {
 
     public static boolean clickObject(TileObject object, String action) {
         if (object == null) return false;
-        if (Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(object.getWorldLocation()) > 51) {
+        if (!Rs2Sailing.isOnBoat() && Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(object.getWorldLocation()) > 51) {
             Microbot.log("Object with id " + object.getId() + " is not close enough to interact with. Walking to the object....");
             Rs2Walker.walkTo(object.getWorldLocation());
             return false;
@@ -1836,8 +1852,26 @@ public class Rs2GameObject {
                 sleepUntil(() -> Rs2Equipment.get(EquipmentInventorySlot.WEAPON) == null && Rs2Equipment.get(EquipmentInventorySlot.SHIELD) == null);
             }
 
+/*            if (object.getWorldView().getId() != -1) {
+                param0 = 3;
+                param1 = 4;
+            }*/
 
-            Microbot.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), object.getId(), -1, action, objComp.getName(), object), Rs2UiHelper.getObjectClickbox(object));
+            int worldViewId = -1;
+
+            if (object.getWorldView().getId() != -1) {
+                var worldView =Microbot.getClientThread().invoke(() ->  Microbot.getClient().getLocalPlayer().getWorldView());
+                if (worldView == null) {
+                    worldViewId = Microbot.getClient().getTopLevelWorldView().getId();
+                } else {
+                    worldViewId = worldView
+                            .getId();
+                }
+
+            }
+
+
+            Microbot.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), object.getId(), -1, action, objComp.getName(), object, worldViewId), Rs2UiHelper.getObjectClickbox(object));
 // MenuEntryImpl(getOption=Use, getTarget=Barrier, getIdentifier=43700, getType=GAME_OBJECT_THIRD_OPTION, getParam0=53, getParam1=51, getItemId=-1, isForceLeftClick=true, getWorldViewId=-1, isDeprioritized=false)
             //Rs2Reflection.invokeMenu(param0, param1, menuAction.getId(), object.getId(),-1, "", "", -1, -1);
 
