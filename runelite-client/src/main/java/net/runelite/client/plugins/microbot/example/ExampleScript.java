@@ -9,6 +9,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.sailing.data.BoatPathFollower;
@@ -42,7 +43,9 @@ public class ExampleScript extends Script {
             try {
                 if (!Microbot.isLoggedIn()) return;
 
-                Rs2Walker.walkFastCanvas(BankLocation.GRAND_EXCHANGE.getWorldPoint());
+                Rs2Bank.openBank();
+
+                Rs2Bank.withdrawAll("coins");
 
             } catch (Exception ex) {
                 log.error("Error test loop", ex);
