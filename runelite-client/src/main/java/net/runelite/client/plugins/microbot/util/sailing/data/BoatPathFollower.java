@@ -69,4 +69,11 @@ public class BoatPathFollower {
         Rs2Sailing.unsetSails();
         // e.g. clear some flag, stop the script, whatever your framework uses
     }
+
+    /**
+     * Returns the current waypoint index in the path.
+     */
+    public int getCurrentWaypointIndex() {
+        return currentIndex;
+    }
 }

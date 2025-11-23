@@ -130,6 +130,9 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
     private DebugOverlayPanel debugOverlayPanel;
 
     @Inject
+    private SailingPathOverlay sailingPathOverlay;
+
+    @Inject
     private ETAOverlayPanel etaOverlayPanel;
 
     @Inject
@@ -158,6 +161,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
     private Point lastMenuOpenedPoint;
     private ShortestPathPanel panel;
     private PohPanel pohPanel;
+    @Getter
     private SailingPanel sailingPanel;
     @Getter
     @Setter
@@ -251,6 +255,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
         if (config.drawDebugPanel()) {
             overlayManager.add(debugOverlayPanel);
         }
+        overlayManager.add(sailingPathOverlay);
         keyManager.registerKeyListener(this);
     }
 
@@ -261,6 +266,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
         overlayManager.remove(pathMapOverlay);
         overlayManager.remove(pathMapTooltipOverlay);
         overlayManager.remove(debugOverlayPanel);
+        overlayManager.remove(sailingPathOverlay);
         clientToolbar.removeNavigation(navButton);
         clientToolbar.removeNavigation(pohNavButton);
         clientToolbar.removeNavigation(sailingNavButton);

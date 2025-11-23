@@ -53,6 +53,10 @@ public class SailingPanel extends PluginPanel
     private PortPaths currentManualPath;
     private boolean currentManualReverse;
 
+    // Debug overlay
+    private boolean debugOverlayEnabled = false;
+    private List<WorldPoint> currentPath = null;
+
     public SailingPanel()
     {
         super();
@@ -106,9 +110,16 @@ public class SailingPanel extends PluginPanel
         stopButton.addActionListener(e -> stopNavigation());
         buttonPanel.add(stopButton);
 
+        // Debug overlay checkbox
+        JCheckBox debugCheckbox = new JCheckBox("Show Path Overlay");
+        debugCheckbox.setSelected(debugOverlayEnabled);
+        debugCheckbox.setAlignmentX(Component.CENTER_ALIGNMENT);
+        debugCheckbox.addActionListener(e -> debugOverlayEnabled = debugCheckbox.isSelected());
+
         panel.add(statusLabel);
         panel.add(Box.createRigidArea(new Dimension(0, 5)));
         panel.add(buttonPanel);
+        panel.add(debugCheckbox);
 
         return panel;
     }
@@ -582,6 +593,9 @@ public class SailingPanel extends PluginPanel
         Microbot.log("Starting sailing navigation from " + start.getName() + " to " + end.getName());
         Microbot.log("Path has " + fullPath.size() + " waypoints, reverse=" + reverse);
 
+        // Store path for debug overlay
+        currentPath = fullPath;
+
         // Create the path follower
         activePathFollower = new BoatPathFollower(fullPath);
 
@@ -667,6 +681,9 @@ public class SailingPanel extends PluginPanel
         Microbot.log("Starting sailing navigation to: " + task.taskName);
         Microbot.log("Path has " + fullPath.size() + " waypoints, reverse=" + reverse);
 
+        // Store path for debug overlay
+        currentPath = fullPath;
+
         // Create the path follower
         activePathFollower = new BoatPathFollower(fullPath);
 
@@ -716,6 +733,7 @@ public class SailingPanel extends PluginPanel
         activePathFollower = null;
         currentTask = null;
         currentManualPath = null;
+        currentPath = null;
 
         // Stop the boat sails
         if (Rs2Sailing.isOnBoat() && Rs2Sailing.isNavigating())
@@ -770,5 +788,33 @@ public class SailingPanel extends PluginPanel
             refreshTimer = null;
         }
         stopNavigation();
+    }
+
+    /**
+     * Returns whether the debug overlay is enabled.
+     */
+    public boolean isDebugOverlayEnabled()
+    {
+        return debugOverlayEnabled;
+    }
+
+    /**
+     * Returns the current navigation path.
+     */
+    public List<WorldPoint> getCurrentPath()
+    {
+        return currentPath;
+    }
+
+    /**
+     * Returns the current waypoint index from the path follower.
+     */
+    public int getCurrentWaypointIndex()
+    {
+        if (activePathFollower != null)
+        {
+            return activePathFollower.getCurrentWaypointIndex();
+        }
+        return 0;
     }
 }
