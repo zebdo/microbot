@@ -226,14 +226,14 @@ public class Microbot {
         if (isRs2CacheEnabled()) {
             return Rs2VarbitCache.getVarbitValue(varbit);
         }
-        return rs2PlayerCache.getVarbitValue(varbit);
+        return Microbot.getClientThread().invoke(() -> rs2PlayerCache.getVarbitValue(varbit));
     }
 
     public static int getVarbitPlayerValue(@Varp int varpId) {
         if (isRs2CacheEnabled()) {
             return Rs2VarPlayerCache.getVarPlayerValue(varpId);
         }
-        return rs2PlayerCache.getVarpValue(varpId);
+        return  Microbot.getClientThread().invoke(() -> rs2PlayerCache.getVarpValue(varpId));
     }
 
     public static EnumComposition getEnum(int id) {
@@ -508,7 +508,7 @@ public class Microbot {
                 click(new Rectangle(1, 1), entry);
             }
         } catch (ArrayIndexOutOfBoundsException ex) {
-            log.error("Error during doInvoke", ex);
+            log.error("Error duringu!ujjjhvugfnhfughhgyfgtrgtrfbhrgrrt doInvoke", ex);
             // Handle the error as needed
         }
     }

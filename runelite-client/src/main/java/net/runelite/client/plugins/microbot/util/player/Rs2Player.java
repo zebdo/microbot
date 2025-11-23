@@ -28,6 +28,7 @@ import net.runelite.client.plugins.microbot.util.misc.Rs2Food;
 import net.runelite.client.plugins.microbot.util.misc.Rs2Potion;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
+import net.runelite.client.plugins.microbot.util.sailing.Rs2Sailing;
 import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -946,15 +947,14 @@ public class Rs2Player {
      * @return The {@link WorldPoint} representing the player's current location.
      */
     public static WorldPoint getWorldLocation() {
-        if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
-            LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation());
-            return WorldPoint.fromLocalInstance(Microbot.getClient(), l);
-        } else {
-            if (Microbot.getClient().getLocalPlayer() == null) {
-                return null; // Handle case where local player is not available
+        return Microbot.getClientThread().invoke(() -> {
+            if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
+                LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation());
+                return WorldPoint.fromLocalInstance(Microbot.getClient(), l);
+            } else {
+                return Microbot.getClient().getLocalPlayer().getWorldLocation();
             }
-            return Microbot.getClient().getLocalPlayer().getWorldLocation();
-        }
+        });
     }
 
     /**
