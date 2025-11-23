@@ -47,6 +47,7 @@ public class NewMenuEntry implements MenuEntry {
         this.target = "";
         this.forceLeftClick = false;
         this.itemId = itemId;
+        this.worldViewId = -1;
     }
 
     public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, int worldViewId) {
