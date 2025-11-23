@@ -8,29 +8,12 @@ import java.awt.FlowLayout;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
-import java.util.Comparator;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
-import javax.swing.BorderFactory;
-import javax.swing.Box;
-import javax.swing.BoxLayout;
-import javax.swing.DefaultListCellRenderer;
-import javax.swing.ImageIcon;
-import javax.swing.JButton;
-import javax.swing.JComboBox;
-import javax.swing.JLabel;
-import javax.swing.JList;
-import javax.swing.JPanel;
-import javax.swing.JScrollPane;
-import javax.swing.JTabbedPane;
-import javax.swing.SwingConstants;
-import javax.swing.SwingUtilities;
+import javax.swing.*;
 import javax.swing.border.Border;
 import javax.swing.border.TitledBorder;
 
@@ -342,70 +325,124 @@ public class SailingPanel extends PluginPanel
 
     private void refreshTaskList()
     {
-        SwingUtilities.invokeLater(() -> {
-            // Update status
-            boolean onBoat = Rs2Sailing.isOnBoat();
-            boolean navigating = Rs2Sailing.isNavigating();
+        new SwingWorker<RefreshResult, Void>()
+        {
+            @Override
+            protected RefreshResult doInBackground()
+            {
+                boolean onBoat = Rs2Sailing.isOnBoat();
+                boolean navigating = Rs2Sailing.isNavigating();
 
-            if (currentTask != null && sailingFuture != null && !sailingFuture.isDone())
-            {
-                statusLabel.setText("<html><center>Sailing to: <b>" + currentTask.taskName + "</b></center></html>");
-                statusLabel.setForeground(new Color(0, 150, 0));
-            }
-            else if (currentManualPath != null && sailingFuture != null && !sailingFuture.isDone())
-            {
-                String dest = currentManualReverse
-                    ? currentManualPath.getStart().getName()
-                    : currentManualPath.getEnd().getName();
-                statusLabel.setText("<html><center>Sailing to: <b>" + dest + "</b></center></html>");
-                statusLabel.setForeground(new Color(0, 150, 0));
-            }
-            else if (onBoat && navigating)
-            {
-                statusLabel.setText("On boat - At helm (Ready)");
-                statusLabel.setForeground(new Color(0, 150, 0));
-            }
-            else if (onBoat)
-            {
-                statusLabel.setText("On boat - Not at helm");
-                statusLabel.setForeground(new Color(200, 150, 0));
-            }
-            else
-            {
-                statusLabel.setText("Not on a boat");
-                statusLabel.setForeground(Color.RED);
-            }
+                Map<PortTaskVarbits, Integer> activeTasks = Rs2Sailing.getPortTasksVarbits();
 
-            // Get active port tasks
-            Map<PortTaskVarbits, Integer> activeTasks = Rs2Sailing.getPortTasksVarbits();
-
-            tasksPanel.removeAll();
-
-            if (activeTasks.isEmpty())
-            {
-                JLabel noTasksLabel = new JLabel("<html><center>No active port tasks found.<br><br>Visit a port notice board<br>to get delivery tasks.</center></html>");
-                noTasksLabel.setHorizontalAlignment(SwingConstants.CENTER);
-                noTasksLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
-                tasksPanel.add(Box.createVerticalGlue());
-                tasksPanel.add(noTasksLabel);
-                tasksPanel.add(Box.createVerticalGlue());
-            }
-            else
-            {
-                for (Map.Entry<PortTaskVarbits, Integer> entry : activeTasks.entrySet())
+                java.util.List<PortTaskData> taskDataList = new ArrayList<>();
+                if (activeTasks != null && !activeTasks.isEmpty())
                 {
-                    PortTaskData taskData = Rs2Sailing.getPortTaskData(entry.getValue());
-                    if (taskData != null)
+                    for (Map.Entry<PortTaskVarbits, Integer> entry : activeTasks.entrySet())
+                    {
+                        PortTaskData taskData = Rs2Sailing.getPortTaskData(entry.getValue());
+                        if (taskData != null)
+                        {
+                            taskDataList.add(taskData);
+                        }
+                    }
+                }
+
+                return new RefreshResult(onBoat, navigating, taskDataList);
+            }
+
+            @Override
+            protected void done()
+            {
+                RefreshResult result;
+                try
+                {
+                    result = get();
+                }
+                catch (Exception ex)
+                {
+                    ex.printStackTrace();
+                    return;
+                }
+
+                boolean onBoat = result.onBoat;
+                boolean navigating = result.navigating;
+                java.util.List<PortTaskData> taskDataList = result.tasks;
+
+                // Status label logic (unchanged)
+                if (currentTask != null && sailingFuture != null && !sailingFuture.isDone())
+                {
+                    statusLabel.setText("<html><center>Sailing to: <b>" + currentTask.taskName + "</b></center></html>");
+                    statusLabel.setForeground(new Color(0, 150, 0));
+                }
+                else if (currentManualPath != null && sailingFuture != null && !sailingFuture.isDone())
+                {
+                    String dest = currentManualReverse
+                            ? currentManualPath.getStart().getName()
+                            : currentManualPath.getEnd().getName();
+                    statusLabel.setText("<html><center>Sailing to: <b>" + dest + "</b></center></html>");
+                    statusLabel.setForeground(new Color(0, 150, 0));
+                }
+                else if (onBoat && navigating)
+                {
+                    statusLabel.setText("On boat - At helm (Ready)");
+                    statusLabel.setForeground(new Color(0, 150, 0));
+                }
+                else if (onBoat)
+                {
+                    statusLabel.setText("On boat - Not at helm");
+                    statusLabel.setForeground(new Color(200, 150, 0));
+                }
+                else
+                {
+                    statusLabel.setText("Not on a boat");
+                    statusLabel.setForeground(Color.RED);
+                }
+
+                tasksPanel.removeAll();
+
+                if (taskDataList.isEmpty())
+                {
+                    JLabel noTasksLabel = new JLabel(
+                            "<html><center>No active port tasks found.<br><br>" +
+                                    "Visit a port notice board<br>to get delivery tasks.</center></html>"
+                    );
+                    noTasksLabel.setHorizontalAlignment(SwingConstants.CENTER);
+                    noTasksLabel.setAlignmentX(Component.CENTER_ALIGNMENT);
+                    tasksPanel.add(Box.createVerticalGlue());
+                    tasksPanel.add(noTasksLabel);
+                    tasksPanel.add(Box.createVerticalGlue());
+                }
+                else
+                {
+                    for (PortTaskData taskData : taskDataList)
                     {
                         tasksPanel.add(createTaskPanel(taskData));
                         tasksPanel.add(Box.createRigidArea(new Dimension(0, 5)));
                     }
                 }
-            }
 
-            tasksPanel.revalidate();
-            tasksPanel.repaint();
-        });
+                tasksPanel.revalidate();
+                tasksPanel.repaint();
+            }
+        }.execute();
+    }
+
+    /**
+     * Simple DTO for background result
+     */
+    private static final class RefreshResult
+    {
+        final boolean onBoat;
+        final boolean navigating;
+        final java.util.List<PortTaskData> tasks;
+
+        RefreshResult(boolean onBoat, boolean navigating, java.util.List<PortTaskData> tasks)
+        {
+            this.onBoat = onBoat;
+            this.navigating = navigating;
+            this.tasks = tasks;
+        }
     }
 
     private JPanel createTaskPanel(PortTaskData task)
