@@ -330,7 +330,6 @@ public class SailingPanel extends PluginPanel
             @Override
             protected RefreshResult doInBackground()
             {
-                // Heavy / non-UI work here
                 boolean onBoat = Rs2Sailing.isOnBoat();
                 boolean navigating = Rs2Sailing.isNavigating();
 
@@ -366,7 +365,6 @@ public class SailingPanel extends PluginPanel
                     return;
                 }
 
-                // From here on: EDT-only (safe to touch Swing)
                 boolean onBoat = result.onBoat;
                 boolean navigating = result.navigating;
                 java.util.List<PortTaskData> taskDataList = result.tasks;
@@ -401,7 +399,6 @@ public class SailingPanel extends PluginPanel
                     statusLabel.setForeground(Color.RED);
                 }
 
-                // Rebuild task panel
                 tasksPanel.removeAll();
 
                 if (taskDataList.isEmpty())
