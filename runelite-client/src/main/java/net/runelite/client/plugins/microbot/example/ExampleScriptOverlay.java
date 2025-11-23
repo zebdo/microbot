@@ -22,15 +22,6 @@ public class ExampleScriptOverlay extends Overlay {
 
     @Override
     public Dimension render(Graphics2D graphics) {
-        List<Point> points = script.getLastTestPoints();
-        if (points != null) {
-            graphics.setColor(Color.RED);
-            for (Point p : points) {
-                if (p != null) {
-                    graphics.fillOval(p.getX() - 3, p.getY() - 3, 6, 6);
-                }
-            }
-        }
         return null;
     }
 }
