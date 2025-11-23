@@ -1354,7 +1354,6 @@ public enum PortPaths
             PortLocation.PANDEMONIUM,
             PortLocation.CAIRN_ISLE,
             // Sailing >= 42, used in 1 task
-            // TODO: Can you sail around storm tempor?
             new RelativeMove(0, 16),
             new RelativeMove(-109, 109),
             new RelativeMove(0, 39),
