@@ -11,11 +11,9 @@ import java.awt.Graphics2D;
 import java.util.List;
 
 public class ExampleScriptOverlay extends Overlay {
-    private final ExampleScript script;
 
     @Inject
-    public ExampleScriptOverlay(ExampleScript script) {
-        this.script = script;
+    public ExampleScriptOverlay() {
         setPosition(OverlayPosition.DYNAMIC);
         setLayer(OverlayLayer.ABOVE_SCENE);
     }

@@ -9,6 +9,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.sailing.data.BoatPathFollower;
 import net.runelite.client.plugins.microbot.util.sailing.data.PortPaths;
 
@@ -38,6 +39,10 @@ public class ExampleScript extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
+
+                var w = Rs2Player.getWorldLocation();
+
+                System.out.println(w);
 
             } catch (Exception ex) {
                 log.error("Error test loop", ex);

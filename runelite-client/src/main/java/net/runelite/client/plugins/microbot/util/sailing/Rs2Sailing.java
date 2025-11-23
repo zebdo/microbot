@@ -106,8 +106,6 @@ public class Rs2Sailing {
             SAILING_MOORING_GRIMSTONE
     };
 
-    public static boolean ignoreBoatWorldView = false;
-
     public static Heading currentHeading = Heading.SOUTH;
 
     public static BoatType getBoatType() {

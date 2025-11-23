@@ -542,9 +542,6 @@ public class Rs2GameObject {
         List<TileObject> all = new ArrayList<>();
         all.addAll(fetchGameObjects(predicate, anchor, distance));
 		all.addAll(fetchTileObjects(predicate, anchor, distance));
-        all.addAll(fetchGroundObjects(predicate, anchor, distance));
-        //temp fix
-        Rs2Sailing.ignoreBoatWorldView = false;
         return all;
     }
 
@@ -1109,7 +1106,7 @@ public class Rs2GameObject {
     }
 
     public static List<GroundObject> getGroundObjects(Predicate<GroundObject> predicate, LocalPoint anchorLocal, int distance) {
-       var result = getSceneObjects(GROUNDOBJECT_EXTRACTOR, predicate, anchorLocal, distance);
+//       var result = getSceneObjects(GROUNDOBJECT_EXTRACTOR, predicate, anchorLocal, distance);
        return result;
     }
 
@@ -1720,10 +1717,6 @@ public class Rs2GameObject {
 	private static <T extends TileObject> List<T> fetchTileObjects(Predicate<? super T> predicate, WorldPoint anchor, int distance) {
 		return (List<T>) getTileObjects((Predicate<TileObject>) predicate, anchor, distance);
 	}
-
-    private static <T extends TileObject> List<T> fetchGroundObjects(Predicate<? super T> predicate, WorldPoint anchor, int distance) {
-        return (List<T>) getGroundObjects((Predicate<GroundObject>) predicate, anchor, distance);
-    }
 
 	@SuppressWarnings("unchecked")
 	private static <T extends TileObject> List<T> fetchGameObjects(Predicate<? super T> predicate, WorldPoint anchor, int distance) {
