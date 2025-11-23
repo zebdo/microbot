@@ -508,7 +508,7 @@ public class Microbot {
                 click(new Rectangle(1, 1), entry);
             }
         } catch (ArrayIndexOutOfBoundsException ex) {
-            log.error("Error duringu!ujjjhvugfnhfughhgyfgtrgtrfbhrgrrt doInvoke", ex);
+            log.error("Error during doInvoke", ex);
             // Handle the error as needed
         }
     }
