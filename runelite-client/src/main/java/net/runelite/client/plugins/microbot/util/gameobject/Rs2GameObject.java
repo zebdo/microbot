@@ -1548,7 +1548,7 @@ public class Rs2GameObject {
 
         for (int x = 0; x < sceneSize; x++) {
             for (int y = 0; y < sceneSize; y++) {
-                for (int h = 0; h < z; h++) {
+                for (int h = 0; h <= z; h++) {
                     Tile tile = tiles[h][x][y];
                     if (tile == null) continue;
 
