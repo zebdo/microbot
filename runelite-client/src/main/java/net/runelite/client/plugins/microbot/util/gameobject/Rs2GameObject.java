@@ -120,9 +120,6 @@ public class Rs2GameObject {
     }
 
     public static boolean interact(int id) {
-        if (Arrays.stream(Rs2Sailing.ganpgplank_disembark).anyMatch(x -> x == id)) {
-            Rs2Sailing.ignoreBoatWorldView = true;
-        }
         TileObject object = findObjectById(id);
         return clickObject(object);
     }
@@ -1106,8 +1103,7 @@ public class Rs2GameObject {
     }
 
     public static List<GroundObject> getGroundObjects(Predicate<GroundObject> predicate, LocalPoint anchorLocal, int distance) {
-//       var result = getSceneObjects(GROUNDOBJECT_EXTRACTOR, predicate, anchorLocal, distance);
-       return result;
+       return getSceneObjects(GROUNDOBJECT_EXTRACTOR, predicate, anchorLocal, distance);
     }
 
     public static WallObject getWallObject(int id) {
@@ -1541,13 +1537,6 @@ public class Rs2GameObject {
 
             int z = Rs2Sailing.isOnBoat() ? 3 : player.getWorldView().getPlane();
 
-            //temp fix
-            if (Rs2Sailing.ignoreBoatWorldView ) {
-                scene = Microbot.getClient().getTopLevelWorldView().getScene();
-                tiles = scene.getTiles();
-                z = Microbot.getClient().getTopLevelWorldView().getPlane();
-            }
-
             return Triple.of(scene, tiles, z);
         });
 
@@ -1555,7 +1544,7 @@ public class Rs2GameObject {
         Tile[][][] tiles = (Tile[][][]) triple.getMiddle();
         int z = triple.getRight();
 
-        int sceneSize = Rs2Sailing.isOnBoat() && !Rs2Sailing.ignoreBoatWorldView ? 7 : Constants.SCENE_SIZE;
+        int sceneSize = Rs2Sailing.isOnBoat() ? 7 : Constants.SCENE_SIZE;
 
         for (int x = 0; x < sceneSize; x++) {
             for (int y = 0; y < sceneSize; y++) {
