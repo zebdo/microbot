@@ -122,14 +122,36 @@ public final class LoginManager {
             return false;
         }
 
-        if (getActiveProfile().isMember() && !isCurrentWorldMembers() ||
-                !getActiveProfile().isMember() && isCurrentWorldMembers()) {
-            int targetWorld = getRandomWorld(getActiveProfile().isMember());
-            return login(getActiveProfile().getName(), getActiveProfile().getPassword(), targetWorld);
+        // Get the selected world from profile
+        Integer selectedWorld = getActiveProfile().getSelectedWorld();
+        int targetWorld;
+
+        if (selectedWorld != null) {
+            if (selectedWorld == -1) {
+                // Random Members World
+                targetWorld = getRandomWorld(true);
+                log.info("Using random members world for login: {}", targetWorld);
+            } else if (selectedWorld == -2) {
+                // Random F2P World
+                targetWorld = getRandomWorld(false);
+                log.info("Using random F2P world for login: {}", targetWorld);
+            } else {
+                // Specific world selected
+                targetWorld = selectedWorld;
+                log.info("Using profile-selected world for login: {}", targetWorld);
+            }
+        } else {
+            // Fallback to old behavior if no world is selected
+            if (getActiveProfile().isMember() && !isCurrentWorldMembers() ||
+                    !getActiveProfile().isMember() && isCurrentWorldMembers()) {
+                targetWorld = getRandomWorld(getActiveProfile().isMember());
+            } else {
+                targetWorld = Microbot.getClient().getWorld();
+            }
+            log.info("Using fallback world selection for login: {}", targetWorld);
         }
 
-        return login(getActiveProfile().getName(), getActiveProfile().getPassword(), Microbot.getClient().getWorld());
-
+        return login(getActiveProfile().getName(), getActiveProfile().getPassword(), targetWorld);
     }
 
     /**
