@@ -38,10 +38,15 @@ public class ExampleScript extends Script {
      * Main entry point for the performance test script.
      */
     public boolean run() {
-        var boatPathFollower = new BoatPathFollower(PortPaths.PORT_SARIM_PANDEMONIUM.getFullPath(true));
+        //var boatPathFollower = new BoatPathFollower(PortPaths.PORT_SARIM_PANDEMONIUM.getFullPath(true));
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
+
+                WorldPoint worldPoint = WorldPoint.fromRegion(Microbot.getClient().getLocalPlayer().getWorldLocation().getRegionID(),
+                        35,
+                        34,
+                        Microbot.getClient().getTopLevelWorldView().getPlane());
 
                 Rs2Bank.openBank();
 
