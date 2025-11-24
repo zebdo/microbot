@@ -5,6 +5,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
+import net.runelite.client.ui.overlay.OverlayManager;
 
 import javax.inject.Inject;
 import java.awt.*;
@@ -19,17 +20,21 @@ import java.awt.*;
 public class ExamplePlugin extends Plugin {
     @Inject
     ExampleScript exampleScript;
+    @Inject
+    ExampleScriptOverlay exampleScriptOverlay;
+    @Inject
+    OverlayManager overlayManager;
 
 
     @Override
     protected void startUp() throws AWTException {
-
+        overlayManager.add(exampleScriptOverlay);
         exampleScript.run();
     }
 
-
-
+    @Override
     protected void shutDown() {
+        overlayManager.remove(exampleScriptOverlay);
         exampleScript.shutdown();
     }
 

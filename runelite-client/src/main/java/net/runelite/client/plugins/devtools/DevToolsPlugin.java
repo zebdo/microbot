@@ -220,6 +220,7 @@ public class DevToolsPlugin extends Plugin
 	private DevToolsButton uiDefaultsInspector;
 	private DevToolsButton mouseClick;
 	private DevToolsButton mouseMovement;
+	private DevToolsButton worldEntities;
 	private NavigationButton navButton;
 
 	//custom devtools from microbot
@@ -279,6 +280,8 @@ public class DevToolsPlugin extends Plugin
 		mouseClick = new DevToolsButton("Bot Clicks");
 		mouseMovement = new DevToolsButton("Bot Mouse");
 		mouseMovement.setActive(true);
+
+		worldEntities = new DevToolsButton("World Entities");
 
 		overlayManager.add(overlay);
 		overlayManager.add(locationOverlay);
