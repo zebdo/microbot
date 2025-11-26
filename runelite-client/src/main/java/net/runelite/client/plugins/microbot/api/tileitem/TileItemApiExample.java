@@ -26,16 +26,16 @@ public class TileItemApiExample {
         Rs2TileItemModel nearestItemWithinRange = cache.query().nearest(10);
 
         // Example 3: Find a ground item by name
-        Rs2TileItemModel coins = cache.query().withName("Coins");
+        Rs2TileItemModel coins = cache.query().withName("Coins").nearest();
 
         // Example 4: Find a ground item by multiple names
-        Rs2TileItemModel loot = cache.query().withNames("Dragon bones", "Dragon scale", "Dragon dagger");
+        Rs2TileItemModel loot = cache.query().withNames("Dragon bones", "Dragon scale", "Dragon dagger").nearest();
 
         // Example 5: Find a ground item by ID
-        Rs2TileItemModel itemById = cache.query().withId(995); // Coins
+        Rs2TileItemModel itemById = cache.query().withId(995).nearest(); // Coins
 
         // Example 6: Find a ground item by multiple IDs
-        Rs2TileItemModel itemByIds = cache.query().withIds(995, 526, 537); // Coins, Bones, Dragon bones
+        Rs2TileItemModel itemByIds = cache.query().withIds(995, 526, 537).nearest(); // Coins, Bones, Dragon bones
 
         // Example 7: Get all ground items worth more than 1000 gp
         List<Rs2TileItemModel> valuableItems = cache.query()

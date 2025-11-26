@@ -25,16 +25,16 @@ public class PlayerApiExample {
         Rs2PlayerModel nearestPlayerWithinRange = cache.query().nearest(10);
 
         // Example 3: Find a player by name
-        Rs2PlayerModel playerByName = cache.query().withName("PlayerName");
+        Rs2PlayerModel playerByName = cache.query().withName("PlayerName").nearest();
 
         // Example 4: Find a player by multiple names
-        Rs2PlayerModel anyOfThesePlayers = cache.query().withNames("Player1", "Player2", "Player3");
+        Rs2PlayerModel anyOfThesePlayers = cache.query().withNames("Player1", "Player2", "Player3").nearest();
 
         // Example 5: Find a player by ID
-        Rs2PlayerModel playerById = cache.query().withId(12345);
+        Rs2PlayerModel playerById = cache.query().withId(12345).nearest();
 
         // Example 6: Find a player by multiple IDs
-        Rs2PlayerModel playerByIds = cache.query().withIds(12345, 67890, 11111);
+        Rs2PlayerModel playerByIds = cache.query().withIds(12345, 67890, 11111).nearest();
 
         // Example 8: Find all friends
         List<Rs2PlayerModel> friends = cache.query()

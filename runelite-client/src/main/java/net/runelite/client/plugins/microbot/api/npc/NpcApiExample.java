@@ -24,16 +24,16 @@ public class NpcApiExample {
         Rs2NpcModel nearestNpcWithinRange = cache.query().nearest(10);
 
         // Example 3: Find an NPC by name
-        Rs2NpcModel goblin = cache.query().withName("Goblin");
+        Rs2NpcModel goblin = cache.query().withName("Goblin").nearest();
 
         // Example 4: Find an NPC by multiple names
-        Rs2NpcModel enemy = cache.query().withNames("Goblin", "Guard", "Dark wizard");
+        Rs2NpcModel enemy = cache.query().withNames("Goblin", "Guard", "Dark wizard").nearest();
 
         // Example 5: Find an NPC by ID
-        Rs2NpcModel npcById = cache.query().withId(1234);
+        Rs2NpcModel npcById = cache.query().withId(1234).nearest();
 
         // Example 6: Find an NPC by multiple IDs
-        Rs2NpcModel npcByIds = cache.query().withIds(1234, 5678, 9012);
+        Rs2NpcModel npcByIds = cache.query().withIds(1234, 5678, 9012).nearest();
 
         // Example 7: Get all NPCs with a custom filter
         Rs2NpcModel attackingNpc = cache.query()

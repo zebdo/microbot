@@ -50,7 +50,6 @@ import java.util.stream.Stream;
 import static net.runelite.api.MenuAction.CC_OP;
 import static net.runelite.client.plugins.microbot.util.Global.*;
 
-@Deprecated(since = "2.1.0 - Use Rs2PlayerCache/Rs2PlayerQueryable", forRemoval = true)
 public class Rs2Player {
     static int VENOM_VALUE_CUTOFF = -38;
     private static int antiFireTime = -1;
@@ -672,6 +671,7 @@ public class Rs2Player {
      * @param predicate A condition to filter players (optional).
      * @return A stream of Rs2PlayerModel objects representing nearby players.
      */
+    @Deprecated(since = "2.1.0 - Use Rs2PlayerCache/Rs2PlayerQueryable", forRemoval = true)
     public static Stream<Rs2PlayerModel> getPlayers(Predicate<Rs2PlayerModel> predicate) {
         return getPlayers(predicate, false);
     }
@@ -683,6 +683,7 @@ public class Rs2Player {
      * @param includeLocalPlayer a flag on whether to include the local player within the stream
      * @return A stream of Rs2PlayerModel objects representing nearby players.
      */
+    @Deprecated(since = "2.1.0 - Use Rs2PlayerCache/Rs2PlayerQueryable", forRemoval = true)
     public static Stream<Rs2PlayerModel> getPlayers(Predicate<Rs2PlayerModel> predicate, boolean includeLocalPlayer) {
         List<Rs2PlayerModel> players = Optional.of(Microbot.getClient().getTopLevelWorldView().players()
                         .stream()
@@ -704,6 +705,7 @@ public class Rs2Player {
      *                   If {@code false}, checks if the player name contains the given string.
      * @return The first matching {@code Rs2PlayerModel}, or {@code null} if no player is found.
      */
+    @Deprecated(since = "2.1.0 - Use Rs2PlayerCache/Rs2PlayerQueryable", forRemoval = true)
     public static Rs2PlayerModel getPlayer(String playerName, boolean exact) {
         return getPlayers(player -> {
             String name = player.getName();
@@ -719,6 +721,7 @@ public class Rs2Player {
      * @return The first matching {@code Rs2PlayerModel}, or {@code null} if no player is found.
      *         Uses {@code getPlayer(playerName, false)} to perform a case-insensitive partial match.
      */
+    @Deprecated(since = "2.1.0 - Use Rs2PlayerCache/Rs2PlayerQueryable", forRemoval = true)
     public static Rs2PlayerModel getPlayer(String playerName) {
         return getPlayer(playerName, false);
     }
@@ -728,6 +731,7 @@ public class Rs2Player {
      *
      * @return a list of players that are in combat
      */
+    @Deprecated(since = "2.1.0 - Use Rs2PlayerCache/Rs2PlayerQueryable", forRemoval = true)
     public static List<Rs2PlayerModel> getPlayersInCombat() {
         return getPlayers(player -> player.getHealthRatio() != -1).collect(Collectors.toList());
     }
