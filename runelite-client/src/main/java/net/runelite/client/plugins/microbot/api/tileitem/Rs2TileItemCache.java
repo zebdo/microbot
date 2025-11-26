@@ -3,9 +3,9 @@ package net.runelite.client.plugins.microbot.api.tileitem;
 import net.runelite.api.Player;
 import net.runelite.api.Tile;
 import net.runelite.api.TileItem;
+import net.runelite.api.WorldView;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.tileitem.models.Rs2TileItemModel;
-import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import javax.inject.Singleton;
 import java.util.ArrayList;
@@ -28,7 +28,7 @@ public class Rs2TileItemCache {
     }
 
     /**
-     * Get all ground items in the current scene.
+     * Get all ground items in the current scene across all world views.
      * Refreshes the cache once per game tick by polling all tiles.
      * This ensures reliability even when ItemSpawned/ItemDespawned events don't fire.
      *
@@ -45,20 +45,24 @@ public class Rs2TileItemCache {
 
         List<Rs2TileItemModel> result = new ArrayList<>();
 
-        // Get all tiles in current plane
-        var tileValues = Microbot.getClient().getTopLevelWorldView().getScene().getTiles()[Microbot.getClient().getTopLevelWorldView().getPlane()];
+        for (var id : Microbot.getWorldViewIds()) {
+            WorldView worldView = Microbot.getClient().getWorldView(id);
+            if (worldView == null) {
+                continue;
+            }
 
-        for (Tile[] tileRow : tileValues) {
-            for (Tile tile : tileRow) {
-                if (tile == null) continue;
+            Tile[][] tiles = worldView.getScene().getTiles()[worldView.getPlane()];
+            for (Tile[] tileRow : tiles) {
+                for (Tile tile : tileRow) {
+                    if (tile == null) continue;
 
-                List<TileItem> items = tile.getGroundItems();
-                if (items == null || items.isEmpty()) continue;
+                    List<TileItem> items = tile.getGroundItems();
+                    if (items == null || items.isEmpty()) continue;
 
-                // Add all items from this tile to the result
-                for (TileItem item : items) {
-                    if (item != null) {
-                        result.add(new Rs2TileItemModel(tile, item));
+                    for (TileItem item : items) {
+                        if (item != null) {
+                            result.add(new Rs2TileItemModel(tile, item));
+                        }
                     }
                 }
             }

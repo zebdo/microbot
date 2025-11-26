@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.api.player;
 
+import net.runelite.api.WorldView;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.player.models.Rs2PlayerModel;
 
@@ -28,15 +29,24 @@ public class Rs2PlayerCache {
             return players.stream();
         }
 
-        // Get all players using the existing Rs2Player utility
-        List<Rs2PlayerModel> result = Microbot.getClient().getTopLevelWorldView().players()
-                .stream()
-                .filter(Objects::nonNull)
-                .map(Rs2PlayerModel::new)
-                .collect(Collectors.toList());
+        List<Rs2PlayerModel> result = new ArrayList<>();
+
+        for (var id : Microbot.getWorldViewIds()) {
+            WorldView worldView = Microbot.getClient().getWorldView(id);
+            if (worldView == null) {
+                continue;
+            }
+            // Get all players using the existing Rs2Player utility
+            players.addAll(worldView.players()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .map(Rs2PlayerModel::new)
+                    .collect(Collectors.toList()));
+        }
+
 
         players = result;
         lastUpdatePlayers = Microbot.getClient().getTickCount();
-        return result.stream();
+        return players.stream();
     }
 }

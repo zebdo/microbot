@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.api.tileobject;
 import net.runelite.api.GameObject;
 import net.runelite.api.Player;
 import net.runelite.api.Tile;
+import net.runelite.api.WorldView;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.tileobject.models.Rs2TileObjectModel;
 
@@ -21,6 +22,7 @@ public class Rs2TileObjectCache {
 
     /**
      * Get all tile objects in the current scene
+     *
      * @return Stream of Rs2TileObjectModel
      */
     public static Stream<Rs2TileObjectModel> getObjectsStream() {
@@ -34,32 +36,36 @@ public class Rs2TileObjectCache {
 
         List<Rs2TileObjectModel> result = new ArrayList<>();
 
-        var tileValues = Microbot.getClient().getTopLevelWorldView().getScene().getTiles()[Microbot.getClient().getTopLevelWorldView().getPlane()];
+        for (var id : Microbot.getWorldViewIds()) {
+            WorldView worldView = Microbot.getClient().getWorldView(id);
+            if (worldView == null) {
+                continue;
+            }
+            var tileValues = Microbot.getClient().getTopLevelWorldView().getScene().getTiles()[worldView.getPlane()];
+            for (Tile[] tileValue : tileValues) {
+                for (Tile tile : tileValue) {
+                    if (tile == null) continue;
 
-        for (Tile[] tileValue : tileValues) {
-            for (Tile tile : tileValue) {
-                if (tile == null) continue;
-
-                if (tile.getGameObjects() != null) {
-                    for (GameObject gameObject : tile.getGameObjects()) {
-                        if (gameObject == null) continue;
-                        if (gameObject.getSceneMinLocation().equals(tile.getSceneLocation())) {
-                            result.add(new Rs2TileObjectModel(gameObject));
+                    if (tile.getGameObjects() != null) {
+                        for (GameObject gameObject : tile.getGameObjects()) {
+                            if (gameObject == null) continue;
+                            if (gameObject.getSceneMinLocation().equals(tile.getSceneLocation())) {
+                                result.add(new Rs2TileObjectModel(gameObject));
+                            }
                         }
                     }
-                }
-                if (tile.getGroundObject() != null) {
-                    result.add(new Rs2TileObjectModel(tile.getGroundObject()));
-                }
-                if (tile.getWallObject() != null) {
-                    result.add(new Rs2TileObjectModel(tile.getWallObject()));
-                }
-                if (tile.getDecorativeObject() != null)  {
-                    result.add(new Rs2TileObjectModel(tile.getDecorativeObject()));
+                    if (tile.getGroundObject() != null) {
+                        result.add(new Rs2TileObjectModel(tile.getGroundObject()));
+                    }
+                    if (tile.getWallObject() != null) {
+                        result.add(new Rs2TileObjectModel(tile.getWallObject()));
+                    }
+                    if (tile.getDecorativeObject() != null) {
+                        result.add(new Rs2TileObjectModel(tile.getDecorativeObject()));
+                    }
                 }
             }
         }
-
         tileObjects = result;
         lastUpdateObjects = Microbot.getClient().getTickCount();
         return result.stream();

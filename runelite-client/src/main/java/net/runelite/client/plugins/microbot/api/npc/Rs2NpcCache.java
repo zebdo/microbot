@@ -1,10 +1,12 @@
 package net.runelite.client.plugins.microbot.api.npc;
 
+import net.runelite.api.WorldView;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.npc.models.Rs2NpcModel;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -18,7 +20,7 @@ public class Rs2NpcCache {
     }
 
     /**
-     * Get all NPCs in the current scene
+     * Get all NPCs in the current scene across all world views
      *
      * @return Stream of Rs2NpcModel
      */
@@ -28,11 +30,20 @@ public class Rs2NpcCache {
             return npcs.stream();
         }
 
-        List<Rs2NpcModel> result = Microbot.getClientThread().invoke(() -> Microbot
-                .getClient()
-                .getTopLevelWorldView()
-                .npcs().stream().map(Rs2NpcModel::new)
-                .collect(Collectors.toList()));
+        List<Rs2NpcModel> result = new ArrayList<>();
+
+        for (var id : Microbot.getWorldViewIds()) {
+            WorldView worldView = Microbot.getClient().getWorldView(id);
+            if (worldView == null) {
+                continue;
+            }
+
+            result.addAll(worldView.npcs()
+                    .stream()
+                    .filter(Objects::nonNull)
+                    .map(Rs2NpcModel::new)
+                    .collect(Collectors.toList()));
+        }
 
         npcs = result;
         lastUpdateNpcs = Microbot.getClient().getTickCount();

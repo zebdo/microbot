@@ -48,10 +48,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.*;
 import java.util.List;
-import java.util.Objects;
 
 @PluginDescriptor(
 	name = PluginDescriptor.Default + "Microbot",
@@ -599,4 +597,16 @@ public class MicrobotPlugin extends Plugin
 
 		return result;
 	}
+
+    @Subscribe
+    public void onWorldViewLoaded(WorldViewLoaded event)
+    {
+        Microbot.getWorldViewIds().add(event.getWorldView().getId());
+    }
+
+    @Subscribe
+    public void onWorldViewUnloaded(WorldViewUnloaded event)
+    {
+        Microbot.getWorldViewIds().remove(event.getWorldView().getId());
+    }
 }
