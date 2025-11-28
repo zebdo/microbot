@@ -27,6 +27,10 @@ package net.runelite.client.plugins.microbot.externalplugins;
 import com.google.gson.annotations.SerializedName;
 import lombok.Data;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 /**
  * Represents a plugin in the Microbot Plugin Hub
  */
@@ -83,16 +87,21 @@ public class MicrobotPluginManifest {
      */
     private String cardUrl;
 
-	/**
-	 * Flag indicating the plugin is disabled. (optional)
-	 * This is used for plugins that are no longer functional or have been deprecated.
-	 */
-	private boolean disable;
+    /**
+     * Flag indicating the plugin is disabled. (optional)
+     * This is used for plugins that are no longer functional or have been deprecated.
+     */
+    private boolean disable;
 
-	/**
+    /**
      * Tags for the plugin (optional)
      */
     private String[] tags;
+
+    /**
+     * Complete version list pulled from the Microbot Nexus repository.
+     */
+    private List<String> availableVersions = Collections.emptyList();
 
     /**
      * Gets a warning message for this plugin, if any
@@ -126,5 +135,20 @@ public class MicrobotPluginManifest {
             return authors[0];
         }
         return String.join(", ", authors);
+    }
+
+    /**
+     * Ensures callers always receive an immutable list of versions.
+     */
+    public List<String> getAvailableVersions() {
+        return availableVersions == null ? Collections.emptyList() : availableVersions;
+    }
+
+    public void setAvailableVersions(List<String> versions) {
+        if (versions == null || versions.isEmpty()) {
+            this.availableVersions = Collections.emptyList();
+            return;
+        }
+        this.availableVersions = Collections.unmodifiableList(new ArrayList<>(versions));
     }
 }

@@ -24,6 +24,7 @@
  */
 package net.runelite.client.plugins.microbot.ui;
 
+import com.google.common.base.Strings;
 import com.google.common.html.HtmlEscapers;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -246,9 +247,30 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
             author.setToolTipText(authorTooltip);
             author.setHorizontalAlignment(JLabel.LEFT);
             author.setBorder(new EmptyBorder(0, 0, 0, 5));
+            List<String> availableVersions = manifest.getAvailableVersions();
             JLabel version = new JLabel(currentVersion);
             version.setFont(FontManager.getRunescapeSmallFont());
-            version.setToolTipText(currentVersion);
+            if (availableVersions.isEmpty()) {
+                version.setToolTipText(currentVersion);
+            } else {
+                String joinedVersions = availableVersions.stream()
+                        .collect(Collectors.joining(", "));
+                String tooltip = "<html>Installed: " + HtmlEscapers.htmlEscaper().escape(currentVersion) +
+                        "<br/>Available: " + HtmlEscapers.htmlEscaper().escape(joinedVersions) + "</html>";
+                version.setToolTipText(tooltip);
+            }
+            String suggestedVersion = !Strings.isNullOrEmpty(manifest.getVersion()) ? manifest.getVersion() : currentVersion;
+            if (Strings.isNullOrEmpty(suggestedVersion)) {
+                suggestedVersion = "unknown";
+            }
+            String storedVersion = microbotPluginManager.getInstalledPluginVersion(manifest.getInternalName()).orElse(null);
+            String initialSelectedVersion = installed ? storedVersion : null;
+            final VersionActionDropdown versionDropdown = new VersionActionDropdown(
+                    manifest,
+                    availableVersions,
+                    initialSelectedVersion,
+                    suggestedVersion,
+                    installed);
 
             String descriptionText = manifest.getDescription();
 
@@ -292,109 +314,14 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
                 configure.setVisible(false);
             }
 
-            JButton addrm = new JButton();
-            if (!installed) {
-                addrm.setText("Install");
-                addrm.setBackground(new Color(0x28BE28));
-                addrm.addActionListener(l -> {
-                    // Check version compatibility before installing
-                    if (!Rs2UiHelper.isClientVersionCompatible(manifest.getMinClientVersion())) {
-                        String _currentMicrobotVersion = RuneLiteProperties.getMicrobotVersion();
-                        String requiredVersion = manifest.getMinClientVersion();
-
-                        String message = String.format(
-                                "Cannot install plugin '%s'.\n\n" +
-                                        "Required client version: %s\n" +
-                                        "Current client version: %s\n\n" +
-                                        "Please update your Microbot client to install this plugin.",
-                                manifest.getDisplayName(),
-                                requiredVersion != null ? requiredVersion : "Unknown",
-                                _currentMicrobotVersion != null ? _currentMicrobotVersion : "Unknown"
-                        );
-                        // Create a custom dialog
-                        JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(this), "Version Incompatibility", true);
-                        dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
-                        dialog.setResizable(false);
-                        dialog.setIconImages(Arrays.asList(ClientUI.ICON_128, ClientUI.ICON_16));
-
-                        JPanel messagePanel = new JPanel(new BorderLayout(10, 0));
-                        messagePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
-
-                        JLabel iconLabel = new JLabel(UIManager.getIcon("OptionPane.warningIcon"));
-                        iconLabel.setVerticalAlignment(SwingConstants.TOP);
-                        messagePanel.add(iconLabel, BorderLayout.WEST);
-
-                        JLabel messageLabel = new JLabel("<html>" + message.replace("\n", "<br>") + "</html>");
-                        messageLabel.setHorizontalAlignment(SwingConstants.LEFT);
-                        messagePanel.add(messageLabel, BorderLayout.CENTER);
-
-                        JButton okButton = new JButton("OK");
-                        okButton.setPreferredSize(new Dimension(67, 22));
-                        okButton.setBackground(ColorScheme.BRAND_ORANGE);
-                        okButton.setForeground(ColorScheme.DARKER_GRAY_COLOR);
-                        okButton.setBorder(BorderFactory.createCompoundBorder(
-                                BorderFactory.createEmptyBorder(1, 1, 1, 1),
-                                BorderFactory.createLineBorder(ColorScheme.MEDIUM_GRAY_COLOR, 1)
-                        ));
-                        okButton.setFocusPainted(false);
-                        okButton.setFont(okButton.getFont().deriveFont(Font.BOLD));
-                        okButton.addActionListener(e -> dialog.dispose());
-
-                        JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
-                        buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 20, 20));
-                        buttonPanel.add(okButton);
-
-                        dialog.setLayout(new BorderLayout());
-                        dialog.add(messagePanel, BorderLayout.CENTER);
-                        dialog.add(buttonPanel, BorderLayout.SOUTH);
-
-                        dialog.pack();
-                        dialog.setLocationRelativeTo(this);
-                        dialog.setVisible(true);
-                        return;
-                    }
-
-                    addrm.setText("Installing");
-                    addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                    microbotPluginManager.installPlugin(manifest);
-                });
-            } else if (installed) {
-                // Check if update is available
-                boolean updateAvailable = false;
-                if (!loadedPlugins.isEmpty()) {
-                    Plugin loadedPlugin = loadedPlugins.iterator().next();
-                    PluginDescriptor descriptor = loadedPlugin.getClass().getAnnotation(PluginDescriptor.class);
-                    String loadedVersion = descriptor != null ? descriptor.version() : "0";
-                    String manifestVersion = manifest.getVersion();
-
-                    updateAvailable = !loadedVersion.equals(manifestVersion);
-                }
-
-                if (updateAvailable) {
-                    addrm.setText("Update");
-                    addrm.setBackground(new Color(0x1E90FF)); // Dodger Blue
-                    addrm.addActionListener(l -> {
-                        addrm.setText("Updating");
-                        addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                        microbotPluginManager.updatePlugin(manifest);
-						reloadPluginList();
-                    });
-                } else {
-                    addrm.setText("Remove");
-                    addrm.setBackground(new Color(0xBE2828));
-                    addrm.addActionListener(l -> {
-                        addrm.setText("Removing");
-                        addrm.setBackground(ColorScheme.MEDIUM_GRAY_COLOR);
-                        microbotPluginManager.removePlugin(manifest);
-                    });
-                }
-            } else {
-                addrm.setText("Unavailable");
-                addrm.setBackground(Color.GRAY);
-                addrm.setEnabled(false);
-            }
-            addrm.setBorder(new LineBorder(addrm.getBackground().darker()));
-            addrm.setFocusPainted(false);
+            GroupLayout.SequentialGroup bottomRow = layout.createSequentialGroup()
+                    .addComponent(version, 0, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
+                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
+                    .addComponent(versionDropdown, GroupLayout.PREFERRED_SIZE, 165, GroupLayout.PREFERRED_SIZE)
+                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE);
+            bottomRow.addComponent(help, 0, 24, 24)
+                    .addComponent(configure, 0, 24, 24)
+                    .addGap(5);
 
             layout.setHorizontalGroup(layout.createSequentialGroup()
                     .addGroup(layout.createParallelGroup()
@@ -407,15 +334,15 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
                                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED)
                                     .addComponent(author))
                             .addComponent(description, 0, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-                            .addGroup(layout.createSequentialGroup()
-                                    .addComponent(version, 0, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-                                    .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.PREFERRED_SIZE, 100)
-                                    .addComponent(help, 0, 24, 24)
-                                    .addComponent(configure, 0, 24, 24)
-                                    .addComponent(addrm, 0, 57, GroupLayout.PREFERRED_SIZE)
-                                    .addGap(5))));
+                            .addGroup(bottomRow)));
 
             int lineHeight = description.getFontMetrics(description.getFont()).getHeight();
+            GroupLayout.ParallelGroup bottomRowVertical = layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
+                    .addComponent(version, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
+                    .addComponent(versionDropdown, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
+                    .addComponent(help, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
+                    .addComponent(configure, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT);
+
             layout.setVerticalGroup(layout.createParallelGroup()
                     .addComponent(badge, GroupLayout.Alignment.TRAILING)
                     .addComponent(icon, HEIGHT, GroupLayout.DEFAULT_SIZE, HEIGHT + lineHeight)
@@ -427,11 +354,7 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
                             .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
                             .addComponent(description, lineHeight, GroupLayout.PREFERRED_SIZE, lineHeight * 2)
                             .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.PREFERRED_SIZE, Short.MAX_VALUE)
-                            .addGroup(layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
-                                    .addComponent(version, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
-                                    .addComponent(help, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
-                                    .addComponent(configure, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
-                                    .addComponent(addrm, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT))
+                            .addGroup(bottomRowVertical)
                             .addGap(5)));
         }
 
@@ -440,11 +363,256 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
             return manifest.getDisplayName();
         }
 
-        @Override
-        public int installs() {
-            return userCount;
-        }
-    }
+		@Override
+		public int installs() {
+			return userCount;
+		}
+
+		private final class VersionActionDropdown extends JButton
+		{
+			private final MicrobotPluginManifest manifest;
+			private final List<String> versions;
+			private final String suggestedVersion;
+			private boolean installed;
+			private String selectedVersion;
+
+			private VersionActionDropdown(MicrobotPluginManifest manifest, List<String> availableVersions,
+				String initialSelectedVersion, String suggestedVersion, boolean installed)
+			{
+				this.manifest = manifest;
+				this.installed = installed;
+				this.suggestedVersion = suggestedVersion;
+				this.selectedVersion = Strings.emptyToNull(initialSelectedVersion);
+				this.versions = buildVersionList(availableVersions, suggestedVersion, this.selectedVersion);
+				setFont(FontManager.getRunescapeSmallFont());
+				setFocusPainted(false);
+				setBorder(new LineBorder(ColorScheme.DARKER_GRAY_COLOR.brighter()));
+				setToolTipText("Select a version or action");
+				updateButtonLabel();
+				updateButtonColor();
+				addActionListener(e -> showMenu());
+			}
+
+			private List<String> buildVersionList(List<String> availableVersions, String suggested, String selected)
+			{
+				LinkedHashSet<String> unique = new LinkedHashSet<>();
+				if (!Strings.isNullOrEmpty(selected))
+				{
+					unique.add(selected);
+				}
+				if (!Strings.isNullOrEmpty(suggested))
+				{
+					unique.add(suggested);
+				}
+				if (availableVersions != null)
+				{
+					for (String version : availableVersions)
+					{
+						if (!Strings.isNullOrEmpty(version))
+						{
+							unique.add(version);
+						}
+					}
+				}
+				return new ArrayList<>(unique);
+			}
+
+			private void showMenu()
+			{
+				JPopupMenu menu = new JPopupMenu();
+				ButtonGroup versionGroup = new ButtonGroup();
+				for (String version : versions)
+				{
+					JRadioButtonMenuItem item = new JRadioButtonMenuItem(version, version.equals(selectedVersion));
+					item.addActionListener(ev -> setSelectedVersion(version, true));
+					versionGroup.add(item);
+					menu.add(item);
+				}
+
+				if (installed)
+				{
+					menu.addSeparator();
+					menu.add(createActionItem("Remove", true, this::removePlugin));
+				}
+
+				menu.show(this, 0, getHeight());
+			}
+
+			private JMenuItem createActionItem(String label, boolean enabled, Runnable action)
+			{
+				JMenuItem item = new JMenuItem(label);
+				item.setEnabled(enabled);
+				if ("Remove".equalsIgnoreCase(label))
+				{
+					item.setForeground(new Color(0xBE2828));
+				}
+				item.addActionListener(ev -> action.run());
+				return item;
+			}
+
+			private void setSelectedVersion(String version, boolean triggerInstall)
+			{
+				selectedVersion = version;
+				updateButtonLabel();
+				updateButtonColor();
+				if (triggerInstall)
+				{
+					performInstallOrUpdate();
+				}
+			}
+
+			private void updateButtonLabel()
+			{
+				if (!Strings.isNullOrEmpty(selectedVersion))
+				{
+					setText("Version: " + selectedVersion);
+				}
+				else if (!Strings.isNullOrEmpty(suggestedVersion))
+				{
+					setText("Select version (" + suggestedVersion + ")");
+				}
+				else
+				{
+					setText("Select version");
+				}
+			}
+
+			private void updateButtonColor()
+			{
+				Color color;
+				Color textColor = Color.BLACK;
+				if (!installed)
+				{
+					color = ColorScheme.DARKER_GRAY_COLOR;
+					textColor = Color.WHITE;
+				}
+				else if (hasUpdateAvailable())
+				{
+					color = ColorScheme.BRAND_ORANGE;
+				}
+				else
+				{
+					color = new Color(0x28BE28);
+				}
+				setOpaque(true);
+				setBackground(color);
+				setForeground(textColor);
+			}
+
+			private boolean hasUpdateAvailable()
+			{
+				return installed
+						&& !Strings.isNullOrEmpty(manifest.getVersion())
+						&& (Strings.isNullOrEmpty(selectedVersion) || !manifest.getVersion().equals(selectedVersion));
+			}
+
+			private void performInstallOrUpdate()
+			{
+				if (Strings.isNullOrEmpty(selectedVersion))
+				{
+					return;
+				}
+
+				if (!installed)
+				{
+					installSelectedVersion();
+				}
+				else
+				{
+					updateSelectedVersion();
+				}
+			}
+
+			private void installSelectedVersion()
+			{
+				if (!ensureClientVersionCompatible())
+				{
+					return;
+				}
+				microbotPluginManager.installPlugin(manifest, selectedVersion);
+				installed = true;
+				updateButtonColor();
+			}
+
+			private void updateSelectedVersion()
+			{
+				if (!ensureClientVersionCompatible())
+				{
+					return;
+				}
+				microbotPluginManager.updatePlugin(manifest, selectedVersion);
+				MicrobotPluginHubPanel.this.reloadPluginList();
+			}
+
+			private void removePlugin()
+			{
+				microbotPluginManager.removePlugin(manifest);
+				installed = false;
+				selectedVersion = null;
+				updateButtonLabel();
+				updateButtonColor();
+			}
+
+			private boolean ensureClientVersionCompatible()
+			{
+				if (Rs2UiHelper.isClientVersionCompatible(manifest.getMinClientVersion()))
+				{
+					return true;
+				}
+
+				String current = RuneLiteProperties.getMicrobotVersion();
+				String required = manifest.getMinClientVersion();
+				String message = String.format(
+					"Cannot install plugin '%s'.\n\nRequired client version: %s\nCurrent client version: %s\n\nPlease update your Microbot client to use this plugin.",
+					manifest.getDisplayName(),
+					required != null ? required : "Unknown",
+					current != null ? current : "Unknown"
+				);
+
+				JDialog dialog = new JDialog((Frame) SwingUtilities.getWindowAncestor(MicrobotPluginHubPanel.this),
+					"Version Incompatibility", true);
+				dialog.setDefaultCloseOperation(JDialog.DISPOSE_ON_CLOSE);
+				dialog.setResizable(false);
+				dialog.setIconImages(Arrays.asList(ClientUI.ICON_128, ClientUI.ICON_16));
+
+				JPanel messagePanel = new JPanel(new BorderLayout(10, 0));
+				messagePanel.setBorder(BorderFactory.createEmptyBorder(20, 20, 10, 20));
+
+				JLabel iconLabel = new JLabel(UIManager.getIcon("OptionPane.warningIcon"));
+				iconLabel.setVerticalAlignment(SwingConstants.TOP);
+				messagePanel.add(iconLabel, BorderLayout.WEST);
+
+				JLabel messageLabel = new JLabel("<html>" + message.replace("\n", "<br>") + "</html>");
+				messageLabel.setHorizontalAlignment(SwingConstants.LEFT);
+				messagePanel.add(messageLabel, BorderLayout.CENTER);
+
+				JButton okButton = new JButton("OK");
+				okButton.setPreferredSize(new Dimension(67, 22));
+				okButton.setBackground(ColorScheme.BRAND_ORANGE);
+				okButton.setForeground(ColorScheme.DARKER_GRAY_COLOR);
+				okButton.setBorder(BorderFactory.createCompoundBorder(
+					BorderFactory.createEmptyBorder(1, 1, 1, 1),
+					BorderFactory.createLineBorder(ColorScheme.MEDIUM_GRAY_COLOR, 1)
+				));
+				okButton.setFocusPainted(false);
+				okButton.setFont(okButton.getFont().deriveFont(Font.BOLD));
+				okButton.addActionListener(e -> dialog.dispose());
+
+				JPanel buttonPanel = new JPanel(new FlowLayout(FlowLayout.CENTER));
+				buttonPanel.setBorder(BorderFactory.createEmptyBorder(0, 20, 20, 20));
+				buttonPanel.add(okButton);
+
+				dialog.setLayout(new BorderLayout());
+				dialog.add(messagePanel, BorderLayout.CENTER);
+				dialog.add(buttonPanel, BorderLayout.SOUTH);
+
+				dialog.pack();
+				dialog.setLocationRelativeTo(MicrobotPluginHubPanel.this);
+				dialog.setVisible(true);
+				return false;
+			}
+		}
+	}
 
     private final MicrobotTopLevelConfigPanel topLevelConfigPanel;
     private final MicrobotPluginManager microbotPluginManager;

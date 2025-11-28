@@ -24,6 +24,7 @@
  */
 package net.runelite.client.plugins.microbot.externalplugins;
 
+import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
 import com.google.gson.JsonSyntaxException;
@@ -32,19 +33,33 @@ import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
+import org.w3c.dom.Document;
+import org.w3c.dom.NodeList;
+import org.xml.sax.InputSource;
+import org.xml.sax.SAXException;
 
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
+import javax.xml.parsers.DocumentBuilder;
+import javax.xml.parsers.DocumentBuilderFactory;
+import javax.xml.parsers.ParserConfigurationException;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.StringReader;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 @Slf4j
 public class MicrobotPluginClient
 {
     private static final HttpUrl MICROBOT_PLUGIN_HUB_URL = HttpUrl.parse("https://chsami.github.io/Microbot-Hub/");
+    private static final HttpUrl MICROBOT_PLUGIN_REPOSITORY_URL = HttpUrl.parse(
+        "https://nexus.microbot.cloud/repository/microbot-plugins/net/runelite/client/plugins/microbot/"
+    );
     private static final String PLUGINS_JSON_PATH = "plugins.json";
     
     private final OkHttpClient okHttpClient;
@@ -112,8 +127,21 @@ public class MicrobotPluginClient
     /**
      * Returns the URL for downloading a plugin JAR
      */
-    public HttpUrl getJarURL(MicrobotPluginManifest manifest)
+    public HttpUrl getJarURL(MicrobotPluginManifest manifest, String versionOverride)
     {
+        String artifactId = manifest.getInternalName();
+        String version = !Strings.isNullOrEmpty(versionOverride) ? versionOverride : manifest.getVersion();
+        if (MICROBOT_PLUGIN_REPOSITORY_URL != null && !Strings.isNullOrEmpty(artifactId) && !Strings.isNullOrEmpty(version))
+        {
+            String artifactPath = sanitizeArtifactId(artifactId);
+            String fileName = artifactPath + "-" + version + ".jar";
+            return MICROBOT_PLUGIN_REPOSITORY_URL.newBuilder()
+                .addPathSegment(artifactPath)
+                .addPathSegment(version)
+                .addPathSegment(fileName)
+                .build();
+        }
+
         return HttpUrl.parse(manifest.getUrl());
     }
 
@@ -125,5 +153,77 @@ public class MicrobotPluginClient
         // This would need to be implemented if your backend supports tracking download counts
         // For now, we'll return an empty map
         return Map.of();
+    }
+
+    /**
+     * Fetches the list of published versions for the given plugin from the Microbot Nexus repository.
+     */
+    public List<String> fetchAvailableVersions(String internalName) throws IOException
+    {
+        if (internalName == null || internalName.isEmpty() || MICROBOT_PLUGIN_REPOSITORY_URL == null)
+        {
+            return Collections.emptyList();
+        }
+
+        HttpUrl metadataUrl = MICROBOT_PLUGIN_REPOSITORY_URL.newBuilder()
+            .addPathSegment(sanitizeArtifactId(internalName))
+            .addPathSegment("maven-metadata.xml")
+            .build();
+
+        Request request = new Request.Builder()
+            .url(metadataUrl)
+            .header("Cache-Control", "no-cache")
+            .build();
+
+        try (Response res = okHttpClient.newCall(request).execute())
+        {
+            if (res.body() == null || res.code() != 200)
+            {
+                throw new IOException("Failed to fetch metadata for " + internalName + ": HTTP " + res.code());
+            }
+
+            String xml = res.body().string();
+            return parseVersionList(xml);
+        }
+        catch (ParserConfigurationException | SAXException ex)
+        {
+            throw new IOException("Unable to parse metadata for " + internalName, ex);
+        }
+    }
+
+    private List<String> parseVersionList(String xml) throws ParserConfigurationException, IOException, SAXException
+    {
+        if (xml == null || xml.isEmpty())
+        {
+            return Collections.emptyList();
+        }
+
+        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
+        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
+        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
+        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
+        factory.setXIncludeAware(false);
+        factory.setExpandEntityReferences(false);
+
+        DocumentBuilder builder = factory.newDocumentBuilder();
+        Document document = builder.parse(new InputSource(new StringReader(xml)));
+        NodeList versionNodes = document.getElementsByTagName("version");
+        List<String> versions = new ArrayList<>(versionNodes.getLength());
+
+        for (int i = 0; i < versionNodes.getLength(); i++)
+        {
+            String text = versionNodes.item(i).getTextContent();
+            if (text != null && !text.isBlank())
+            {
+                versions.add(text.trim());
+            }
+        }
+
+        return versions;
+    }
+
+    private String sanitizeArtifactId(String artifactId)
+    {
+        return artifactId == null ? "" : artifactId.toLowerCase(Locale.ROOT);
     }
 }

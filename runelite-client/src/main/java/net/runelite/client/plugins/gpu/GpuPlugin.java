@@ -77,7 +77,6 @@ import java.util.concurrent.CountDownLatch;
 @PluginDescriptor(
 	name = "GPU",
 	description = "Offloads rendering to GPU",
-	enabledByDefault = true,
 	tags = {"fog", "draw distance"},
 	loadInSafeMode = false
 )
@@ -108,9 +107,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 
 	@Inject
 	private RegionManager regionManager;
-
-	@Inject
-	private FacePrioritySorter facePrioritySorter;
 
 	@Inject
 	private DrawManager drawManager;
@@ -173,6 +169,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 	private VAOList vaoPO;
 
 	private SceneUploader clientUploader, mapUploader;
+	private FacePrioritySorter facePrioritySorter;
 
 	static class SceneContext
 	{
@@ -261,6 +258,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		subs = new SceneContext[MAX_WORLDVIEWS];
 		clientUploader = new SceneUploader(renderCallbackManager);
 		mapUploader = new SceneUploader(renderCallbackManager);
+		facePrioritySorter = new FacePrioritySorter(clientUploader);
 		clientThread.invoke(() ->
 		{
 			try
@@ -1098,26 +1096,29 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 			{
 				glUniform3i(uniBase, 0, 0, 0);
 
-				var vaos = vaoO.unmap();
-				for (VAO vao : vaos)
+				int sz = vaoO.unmap();
+				for (int i = 0; i < sz; ++i)
 				{
+					VAO vao = vaoO.vaos.get(i);
 					vao.draw();
 					vao.reset();
 				}
 
-				vaos = vaoPO.unmap();
-				if (!vaos.isEmpty())
+				sz = vaoPO.unmap();
+				if (sz > 0)
 				{
 					glDepthMask(false);
-					for (VAO vao : vaos)
+					for (int i = 0; i < sz; ++i)
 					{
+						VAO vao = vaoPO.vaos.get(i);
 						vao.draw();
 					}
 					glDepthMask(true);
 
 					glColorMask(false, false, false, false);
-					for (VAO vao : vaos)
+					for (int i = 0; i < sz; ++i)
 					{
+						VAO vao = vaoPO.vaos.get(i);
 						vao.draw();
 						vao.reset();
 					}
@@ -1158,7 +1159,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		if (m.getFaceTransparencies() == null)
 		{
 			VAO o = vaoO.get(size);
-			SceneUploader.uploadTempModel(m, orient, x, y, z, o.vbo.vb);
+			clientUploader.uploadTempModel(m, orient, x, y, z, o.vbo.vb);
 		}
 		else
 		{
@@ -1239,7 +1240,7 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		else
 		{
 			VAO o = vaoO.get(size);
-			SceneUploader.uploadTempModel(m, orient, x, y, z, o.vbo.vb);
+			clientUploader.uploadTempModel(m, orient, x, y, z, o.vbo.vb);
 		}
 	}
 
@@ -1607,7 +1608,6 @@ public class GpuPlugin extends Plugin implements DrawCallbacks
 		Zone[][] newZones = new Zone[SCENE_ZONES][SCENE_ZONES];
 		final GameState gameState = client.getGameState();
 		if (prev.isInstance() == scene.isInstance()
-			&& prev.getRoofRemovalMode() == scene.getRoofRemovalMode()
 			&& gameState == GameState.LOGGED_IN)
 		{
 			int[][][] prevTemplates = prev.getInstanceTemplateChunks();
