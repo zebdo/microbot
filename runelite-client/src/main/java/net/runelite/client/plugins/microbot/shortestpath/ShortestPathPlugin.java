@@ -130,6 +130,9 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
     private DebugOverlayPanel debugOverlayPanel;
 
     @Inject
+    private SailingPathOverlay sailingPathOverlay;
+
+    @Inject
     private ETAOverlayPanel etaOverlayPanel;
 
     @Inject
@@ -159,11 +162,13 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
     private ShortestPathPanel panel;
     private PohPanel pohPanel;
     @Getter
+    private SailingPanel sailingPanel;
+    @Getter
     @Setter
     public static WorldMapPoint marker;
     @Setter
     public static volatile WorldPoint lastLocation = new WorldPoint(0, 0, 0);
-    private NavigationButton navButton, pohNavButton;
+    private NavigationButton navButton, pohNavButton, sailingNavButton;
     private Shape minimapClipFixed;
     private Shape minimapClipResizeable;
     private BufferedImage minimapSpriteFixed;
@@ -225,6 +230,16 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
                 .build();
         clientToolbar.addNavigation(pohNavButton);
 
+        sailingPanel = new SailingPanel();
+        final BufferedImage sailingIcon = ImageUtil.loadImageResource(ShortestPathPlugin.class, "sailing_icon.png");
+        sailingNavButton = NavigationButton.builder()
+                .tooltip("Sailing Navigation")
+                .icon(sailingIcon)
+                .priority(10)
+                .panel(sailingPanel)
+                .build();
+        clientToolbar.addNavigation(sailingNavButton);
+
         Rs2Walker.setConfig(config);
         shortestPathScript = new ShortestPathScript();
         shortestPathScript.run(config);
@@ -240,6 +255,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
         if (config.drawDebugPanel()) {
             overlayManager.add(debugOverlayPanel);
         }
+        overlayManager.add(sailingPathOverlay);
         keyManager.registerKeyListener(this);
     }
 
@@ -250,16 +266,23 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
         overlayManager.remove(pathMapOverlay);
         overlayManager.remove(pathMapTooltipOverlay);
         overlayManager.remove(debugOverlayPanel);
+        overlayManager.remove(sailingPathOverlay);
         clientToolbar.removeNavigation(navButton);
         clientToolbar.removeNavigation(pohNavButton);
+        clientToolbar.removeNavigation(sailingNavButton);
         navButton = null;
         pohNavButton = null;
+        sailingNavButton = null;
         if (panel != null) {
             panel.disposeTimers();
         }
         panel = null;
         PohPanel.instance = null;
         pohPanel = null;
+        if (sailingPanel != null) {
+            sailingPanel.dispose();
+        }
+        sailingPanel = null;
 
         shortestPathScript.shutdown();
 

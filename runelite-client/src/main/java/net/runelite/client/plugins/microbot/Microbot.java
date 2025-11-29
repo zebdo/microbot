@@ -233,7 +233,7 @@ public class Microbot {
         if (isRs2CacheEnabled()) {
             return Rs2VarPlayerCache.getVarPlayerValue(varpId);
         }
-        return rs2PlayerCache.getVarpValue(varpId);
+        return  rs2PlayerCache.getVarpValue(varpId);
     }
 
     public static EnumComposition getEnum(int id) {

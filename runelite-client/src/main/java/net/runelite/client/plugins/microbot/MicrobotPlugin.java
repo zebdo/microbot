@@ -29,6 +29,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.overlay.GembagOverlay;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
+import net.runelite.client.plugins.microbot.util.sailing.Rs2Sailing;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.security.LoginManager;
@@ -356,12 +357,14 @@ public class MicrobotPlugin extends Plugin
 		{
 			MenuEntry entry =
 				Microbot.getClient().getMenu().createMenuEntry(-1)
+                    .setItemId(0)
 					.setOption(Microbot.targetMenu.getOption())
 					.setTarget(Microbot.targetMenu.getTarget())
 					.setIdentifier(Microbot.targetMenu.getIdentifier())
 					.setType(Microbot.targetMenu.getType())
 					.setParam0(Microbot.targetMenu.getParam0())
 					.setParam1(Microbot.targetMenu.getParam1())
+                    .setWorldViewId(Microbot.targetMenu.getWorldViewId())
 					.setForceLeftClick(false);
 
 			if (Microbot.targetMenu.getItemId() > 0)
@@ -401,6 +404,7 @@ public class MicrobotPlugin extends Plugin
 		}
 		Microbot.getPouchScript().onChatMessage(event);
 		Rs2Gembag.onChatMessage(event);
+        Rs2Sailing.handleChatMessage(event);
 	}
 
 	@Subscribe

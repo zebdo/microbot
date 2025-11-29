@@ -28,6 +28,7 @@ public class NewMenuEntry implements MenuEntry {
     private Actor actor;
     private TileObject gameObject;
     private Widget widget;
+    private int worldViewId = -1;
 
     private NewMenuEntry(int param0, int param1, MenuAction type, int identifier) {
         this.param0 = param0;
@@ -46,6 +47,11 @@ public class NewMenuEntry implements MenuEntry {
         this.target = "";
         this.forceLeftClick = false;
         this.itemId = itemId;
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, int worldViewId) {
+        this(param0, param1, opcode, identifier, itemId, target);
+        this.setWorldViewId(worldViewId);
     }
 
     public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, Actor actor, String option) {
@@ -68,6 +74,12 @@ public class NewMenuEntry implements MenuEntry {
         this.forceLeftClick = false;
         this.itemId = itemId;
         this.gameObject = gameObject;
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String option, String target, TileObject gameObject, int worldViewId) {
+        this(param0, param1, opcode, identifier, itemId, option, target, gameObject);
+        this.forceLeftClick = false;
+        this.setWorldViewId(worldViewId);
     }
 
     public NewMenuEntry(String option, String target, int identifier, MenuAction type, int param0, int param1, boolean forceLeftClick) {
@@ -125,12 +137,13 @@ public class NewMenuEntry implements MenuEntry {
 
     @Override
     public int getWorldViewId() {
-        return 0;
+        return worldViewId;
     }
 
     @Override
     public MenuEntry setWorldViewId(int worldViewId) {
-        return null;
+        this.worldViewId = worldViewId;
+        return this;
     }
 
     public boolean isDeprioritized() {
