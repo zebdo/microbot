@@ -88,11 +88,11 @@ public class Rs2PlayerModel extends ActorModel implements Player, IEntity {
 
     @Override
     public boolean click() {
-        throw new NotImplementedException("click() not implemented yet for Rs2PlayerModel");
+        throw new NotImplementedException("click() not implemented yet for Rs2PlayerModel - player interactions are not well-defined in the current codebase");
     }
 
     @Override
     public boolean click(String action) {
-        throw new NotImplementedException("click() not implemented yet for Rs2PlayerModel");
+        throw new NotImplementedException("click(String action) not implemented yet for Rs2PlayerModel - player interactions are not well-defined in the current codebase");
     }
 }

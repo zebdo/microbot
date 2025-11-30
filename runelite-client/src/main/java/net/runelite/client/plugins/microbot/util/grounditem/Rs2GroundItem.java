@@ -109,12 +109,28 @@ public class Rs2GroundItem {
             if (localPoint1 != null) {
                 Polygon canvas = Perspective.getCanvasTilePoly(Microbot.getClient(), localPoint1);
                 if (canvas != null) {
-                    Microbot.doInvoke(new NewMenuEntry(action, param0, param1, menuAction.getId(), identifier, -1, target),
-                            canvas.getBounds());
+                    Microbot.doInvoke(new NewMenuEntry()
+                            .option(action)
+                            .param0(param0)
+                            .param1(param1)
+                            .opcode(menuAction.getId())
+                            .identifier(identifier)
+                            .itemId(-1)
+                            .target(target)
+                            ,
+                canvas.getBounds());
                 }
             } else {
-                Microbot.doInvoke(new NewMenuEntry(action, param0, param1, menuAction.getId(), identifier, -1, target),
-                        new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
+                Microbot.doInvoke(new NewMenuEntry()
+                        .option(action)
+                        .param0(param0)
+                        .param1(param1)
+                        .opcode(menuAction.getId())
+                        .identifier(identifier)
+                        .itemId(-1)
+                        .target(target)
+                        ,
+                new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
 
             }
         } catch (Exception ex) {

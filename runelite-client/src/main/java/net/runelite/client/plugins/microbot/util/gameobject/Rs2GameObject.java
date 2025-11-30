@@ -1880,7 +1880,18 @@ public class Rs2GameObject {
             }
 
 
-            Microbot.doInvoke(new NewMenuEntry(param0, param1, menuAction.getId(), object.getId(), -1, action, objComp.getName(), object, worldViewId), Rs2UiHelper.getObjectClickbox(object));
+            Microbot.doInvoke(new NewMenuEntry()
+                    .param0(param0)
+                    .param1(param1)
+                    .opcode(menuAction.getId())
+                    .identifier(object.getId())
+                    .itemId(-1)
+                    .option(action)
+                    .target(objComp.getName())
+                    .gameObject(object)
+                    .worldViewId(worldViewId)
+                    ,
+                Rs2UiHelper.getObjectClickbox(object));
 // MenuEntryImpl(getOption=Use, getTarget=Barrier, getIdentifier=43700, getType=GAME_OBJECT_THIRD_OPTION, getParam0=53, getParam1=51, getItemId=-1, isForceLeftClick=true, getWorldViewId=-1, isDeprioritized=false)
             //Rs2Reflection.invokeMenu(param0, param1, menuAction.getId(), object.getId(),-1, "", "", -1, -1);
 

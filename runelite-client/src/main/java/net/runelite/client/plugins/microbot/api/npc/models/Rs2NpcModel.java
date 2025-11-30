@@ -196,11 +196,11 @@ public class Rs2NpcModel extends ActorModel implements NPC, IEntity
 
     @Override
     public boolean click() {
-        throw new NotImplementedException("click() not implemented yet for Rs2NpcModel");
+        return net.runelite.client.plugins.microbot.util.npc.Rs2Npc.interact(this);
     }
 
     @Override
     public boolean click(String action) {
-        throw new NotImplementedException("click() not implemented yet for Rs2NpcModel");
+        return net.runelite.client.plugins.microbot.util.npc.Rs2Npc.interact(this, action);
     }
 }

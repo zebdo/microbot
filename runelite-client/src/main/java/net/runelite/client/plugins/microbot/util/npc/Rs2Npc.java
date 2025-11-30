@@ -714,8 +714,17 @@ public class Rs2Npc {
                 Rs2Camera.turnTo(npc);
             }
 
-            Microbot.doInvoke(new NewMenuEntry(0, 0, menuAction.getId(), npc.getIndex(), -1, npc.getName(), npc, action),
-                    Rs2UiHelper.getActorClickbox(npc));
+            Microbot.doInvoke(new NewMenuEntry()
+                    .param0(0)
+                    .param1(0)
+                    .opcode(menuAction.getId())
+                    .identifier(npc.getIndex())
+                    .itemId(-1)
+                    .target(npc.getName())
+                    .actor(npc)
+                    .option(action)
+                    ,
+                Rs2UiHelper.getActorClickbox(npc));
             return true;
 
         } catch (Exception ex) {

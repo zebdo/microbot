@@ -450,10 +450,22 @@ public class Rs2Player {
         Widget currentWorldWidget = Rs2Widget.getWidget(69, 3);
         if (currentWorldWidget != null) {
             // From World Switcher
-            Microbot.doInvoke(new NewMenuEntry(-1, 4522009, CC_OP.getId(), 1, -1, "Logout"), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
+            Microbot.doInvoke(new NewMenuEntry()
+                    .param0(-1)
+                    .param1(4522009)
+                    .opcode(CC_OP.getId())
+                    .identifier(1)
+                    .itemId(-1)
+                    .option("Logout"), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
         } else {
             // From red logout button
-            Microbot.doInvoke(new NewMenuEntry(-1, 11927560, CC_OP.getId(), 1, -1, "Logout"), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
+            Microbot.doInvoke(new NewMenuEntry()
+                    .param0(-1)
+                    .param1(11927560)
+                    .opcode(CC_OP.getId())
+                    .identifier(1)
+                    .itemId(-1)
+                    .option("Logout"), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
         }
     }
 
@@ -1754,7 +1766,14 @@ public class Rs2Player {
 
         // Invoke the menu entry using the selected action
         Microbot.doInvoke(
-                new NewMenuEntry(0, 0, menuAction.getId(), rs2Player.getId(), -1, rs2Player.getName(), rs2Player),
+                new NewMenuEntry()
+                        .param0(0)
+                        .param1(0)
+                        .opcode(menuAction.getId())
+                        .identifier(rs2Player.getId())
+                        .itemId(-1)
+                        .target(rs2Player.getName())
+                        .actor(rs2Player),
                 Rs2UiHelper.getActorClickbox(rs2Player)
         );
 

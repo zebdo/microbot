@@ -127,7 +127,13 @@ public class Rs2Bank {
             itemBoundingBox = itemBounds(rs2Item);
         }
 
-        Microbot.doInvoke(new NewMenuEntry(rs2Item.getSlot(), container, MenuAction.CC_OP.getId(), identifier, rs2Item.getId(), rs2Item.getName()), (itemBoundingBox == null) ? new Rectangle(1, 1) : itemBoundingBox);
+        Microbot.doInvoke(new NewMenuEntry()
+                .param0(rs2Item.getSlot())
+                .param1(container)
+                .opcode(MenuAction.CC_OP.getId())
+                .identifier(identifier)
+                .itemId(rs2Item.getId())
+                .target(rs2Item.getName()), (itemBoundingBox == null) ? new Rectangle(1, 1) : itemBoundingBox);
         // MenuEntryImpl(getOption=Wear, getTarget=<col=ff9040>Amulet of glory(4)</col>, getIdentifier=9, getType=CC_OP_LOW_PRIORITY, getParam0=1, getParam1=983043, getItemId=1712, isForceLeftClick=false, isDeprioritized=false)
         // Rs2Reflection.invokeMenu(rs2Item.slot, container, MenuAction.CC_OP.getId(), identifier, rs2Item.id, "Withdraw-1", rs2Item.name, -1, -1);
     }

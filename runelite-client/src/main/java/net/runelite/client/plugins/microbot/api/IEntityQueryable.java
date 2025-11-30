@@ -4,7 +4,7 @@ import net.runelite.api.coords.WorldPoint;
 import java.util.List;
 import java.util.function.Predicate;
 
-public interface IEntityQueryable<Q extends IEntityQueryable<Q, E>, E> {
+public interface IEntityQueryable<Q extends IEntityQueryable<Q, E>, E extends IEntity> {
     Q where(Predicate<E> predicate);
     Q within(int distance);
     Q within(WorldPoint anchor, int distance);
@@ -22,4 +22,40 @@ public interface IEntityQueryable<Q extends IEntityQueryable<Q, E>, E> {
     E nearestOnClientThread(int maxDistance);
     E nearestOnClientThread(WorldPoint anchor, int maxDistance);
     List<E> toListOnClientThread();
+
+    default boolean interact() {
+        E entity = nearest();
+        if (entity == null) return false;
+        return entity.click();
+    }
+
+    default boolean interact(String action) {
+        E entity = nearest();
+        if (entity == null) return false;
+        return entity.click(action);
+    }
+
+    default boolean interact(String action, int maxDistance) {
+        E entity = nearest(maxDistance);
+        if (entity == null) return false;
+        return entity.click(action);
+    }
+
+    default boolean interact(int id) {
+        E entity = ((Q) this).withId(id).nearest();
+        if (entity == null) return false;
+        return entity.click();
+    }
+
+    default boolean interact(int id, String action) {
+        E entity = ((Q) this).withId(id).nearest();
+        if (entity == null) return false;
+        return entity.click(action);
+    }
+
+    default boolean interact(int id, String action, int maxDistance) {
+        E entity = ((Q) this).withId(id).nearest(maxDistance);
+        if (entity == null) return false;
+        return entity.click(action);
+    }
 }
