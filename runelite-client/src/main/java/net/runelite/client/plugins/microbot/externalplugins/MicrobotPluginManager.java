@@ -1078,7 +1078,7 @@ public class MicrobotPluginManager {
         }
         clearInstalledPluginVersion(internalName);
 
-        log.info("Added plugin {} to installed list", manifest.getDisplayName());
+        log.info("Removed plugin {} from installed list", manifest.getDisplayName());
         eventBus.post(new ExternalPluginsChanged());
     }
 
