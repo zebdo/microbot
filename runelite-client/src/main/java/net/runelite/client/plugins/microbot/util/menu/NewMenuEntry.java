@@ -28,7 +28,7 @@ public class NewMenuEntry implements MenuEntry {
     private Actor actor;
     private TileObject gameObject;
     private Widget widget;
-    private int worldViewId;
+    private int worldViewId = -1;
 
     private NewMenuEntry(int param0, int param1, MenuAction type, int identifier) {
         this.param0 = param0;
@@ -47,7 +47,6 @@ public class NewMenuEntry implements MenuEntry {
         this.target = "";
         this.forceLeftClick = false;
         this.itemId = itemId;
-        this.worldViewId = -1;
     }
 
     public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, int worldViewId) {

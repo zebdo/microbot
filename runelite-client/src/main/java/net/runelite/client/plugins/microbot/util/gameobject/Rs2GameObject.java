@@ -27,6 +27,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.function.Function;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -528,7 +529,14 @@ public class Rs2GameObject {
     }
 
 	public static <T extends TileObject> List<TileObject> getAll(Predicate<? super T> predicate, int distance) {
-        var worldPoint =  Microbot.getClientThread().invoke(Rs2Sailing::getPlayerBoatLocation);
+        Supplier<Boolean> s = Rs2Sailing::isOnBoat;
+        var isOnBoat =  Microbot.getClientThread().invoke(s);
+        WorldPoint worldPoint;
+        if (!isOnBoat) {
+            worldPoint = Microbot.getClient().getLocalPlayer().getWorldLocation();
+        } else {
+            worldPoint = Rs2Sailing.getPlayerBoatLocation();
+        }
 		return getAll(predicate, worldPoint, distance);
 	}
 
@@ -1549,7 +1557,7 @@ public class Rs2GameObject {
 
         for (int x = 0; x < sceneSize; x++) {
             for (int y = 0; y < sceneSize; y++) {
-                for (int h = 0; h < z; h++) {
+                for (int h = 0; h <= z; h++) {
                     Tile tile = tiles[h][x][y];
                     if (tile == null) continue;
 
