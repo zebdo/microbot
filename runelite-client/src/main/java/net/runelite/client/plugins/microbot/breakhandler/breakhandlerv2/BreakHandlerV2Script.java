@@ -71,7 +71,6 @@ public class BreakHandlerV2Script extends Script {
      * Run the break handler script
      */
     public boolean run(BreakHandlerV2Config config) {
-        System.out.println("[DEBUG] run() called on instance #" + instanceId + " (hash: " + System.identityHashCode(this) + ")");
         this.config = config;
         BreakHandlerV2State.setState(BreakHandlerV2State.WAITING_FOR_BREAK);
 
@@ -515,7 +514,8 @@ public class BreakHandlerV2Script extends Script {
         switch (config.worldSelectionMode()) {
             case CURRENT_PREFERRED_WORLD:
                 targetWorld = preBreakWorld != -1 ? preBreakWorld :
-                    Rs2WorldUtil.getRandomAccessibleWorld(
+                    Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+                        region,
                         config.avoidEmptyWorlds(),
                         config.avoidOvercrowdedWorlds(),
                         membersOnly
@@ -523,7 +523,8 @@ public class BreakHandlerV2Script extends Script {
                 break;
 
             case RANDOM_WORLD:
-                targetWorld = Rs2WorldUtil.getRandomAccessibleWorld(
+                targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+                    region,
                     config.avoidEmptyWorlds(),
                     config.avoidOvercrowdedWorlds(),
                     membersOnly
