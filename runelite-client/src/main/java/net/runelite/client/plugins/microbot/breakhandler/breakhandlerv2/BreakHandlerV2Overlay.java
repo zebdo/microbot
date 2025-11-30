@@ -29,6 +29,7 @@ public class BreakHandlerV2Overlay extends OverlayPanel {
         this.config = config;
         this.script = script;
         setPosition(OverlayPosition.TOP_LEFT);
+        panelComponent.setPreferredSize(new Dimension(300, 300));
     }
 
     @Override
@@ -38,6 +39,7 @@ public class BreakHandlerV2Overlay extends OverlayPanel {
             if (config.hideOverlay()) {
                 return null;
             }
+
 
             panelComponent.getChildren().clear();
 
