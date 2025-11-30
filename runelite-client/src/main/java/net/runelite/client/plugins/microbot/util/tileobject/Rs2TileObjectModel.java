@@ -8,7 +8,6 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
-import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -138,6 +137,16 @@ public class Rs2TileObjectModel implements TileObject {
     @Override
     public @Nullable Shape getClickbox() {
         return tileObject.getClickbox();
+    }
+
+    @Override
+    public @Nullable String getOpOverride(int index) {
+        return tileObject.getOpOverride(index);
+    }
+
+    @Override
+    public boolean isOpShown(int index) {
+        return tileObject.isOpShown(index);
     }
 
     public ObjectComposition getObjectComposition() {
