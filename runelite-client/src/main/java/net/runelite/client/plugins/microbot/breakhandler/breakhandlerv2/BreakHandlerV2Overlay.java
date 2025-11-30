@@ -28,7 +28,6 @@ public class BreakHandlerV2Overlay extends OverlayPanel {
         super();
         this.config = config;
         this.script = script;
-        System.out.println("[DEBUG] BreakHandlerV2Overlay created with script instance hash: " + System.identityHashCode(script));
         setPosition(OverlayPosition.TOP_LEFT);
     }
 
