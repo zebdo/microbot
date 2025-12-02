@@ -12,10 +12,12 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.security.Login;
 import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.world.Rs2WorldUtil;
+import net.runelite.client.ui.ClientUI;
 import net.runelite.http.api.worlds.WorldRegion;
 
 import javax.inject.Singleton;
 import java.awt.Color;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.concurrent.TimeUnit;
@@ -52,6 +54,7 @@ public class BreakHandlerV2Script extends Script {
     private int preBreakWorld = -1;
     private ConfigProfile activeProfile;
     private boolean unexpectedLogoutDetected = false;
+    private String originalWindowTitle = "";
 
     // Break duration in milliseconds
     private long currentBreakDuration = 0;
@@ -77,16 +80,18 @@ public class BreakHandlerV2Script extends Script {
         // Initialize next break time immediately to prevent null values in overlay
         scheduleNextBreak();
         log.info("[BreakHandlerV2] Initial break scheduled for {}", nextBreakTime);
-
+        // Load active profile
+        loadActiveProfile();
+        originalWindowTitle = ClientUI.getFrame().getTitle();
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!super.run()) return;
 
-                // Load active profile
-                loadActiveProfile();
+
 
                 // Detect unexpected logout while waiting for break
                 detectUnexpectedLogout();
+                updateWindowTitle();
 
                 // Main state machine
                 switch (BreakHandlerV2State.getCurrentState()) {
@@ -523,8 +528,7 @@ public class BreakHandlerV2Script extends Script {
                 break;
 
             case RANDOM_WORLD:
-                targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
-                    region,
+                targetWorld = Rs2WorldUtil.getRandomAccessibleWorld(
                     config.avoidEmptyWorlds(),
                     config.avoidOvercrowdedWorlds(),
                     membersOnly
@@ -632,7 +636,6 @@ public class BreakHandlerV2Script extends Script {
      * Get time until next break in seconds
      */
     public long getTimeUntilBreak() {
-        System.out.println("[DEBUG] getTimeUntilBreak() called on instance #" + instanceId + " (hash: " + System.identityHashCode(this) + "), nextBreakTime: " + nextBreakTime);
         if (nextBreakTime == null) {
             return -1;
         }
@@ -667,5 +670,34 @@ public class BreakHandlerV2Script extends Script {
         unexpectedLogoutDetected = false;
         loginRetryCount = 0;
         safetyCheckAttempts = 0;
+    }
+
+    private void updateWindowTitle() {
+        BreakHandlerV2State state = BreakHandlerV2State.getCurrentState();
+
+        if (getBreakTimeRemaining() > 0) {
+            ClientUI.getFrame().setTitle(originalWindowTitle + " - " + state.toString() + ": " +
+                    formatDuration(Duration.ofSeconds(Math.max(0, getBreakTimeRemaining()))));
+        }
+    }
+
+    /**
+     * Formats a duration with header text.
+     */
+    public static String formatDuration(Duration duration, String header) {
+        return String.format(header + " %s", formatDuration(duration));
+    }
+
+    /**
+     * Formats a duration into HH:MM:SS format.
+     */
+    public static String formatDuration(Duration duration) {
+        if (duration == null || duration.isNegative() || duration.isZero()) {
+            return "00:00:00";
+        }
+        long hours = duration.toHours();
+        long minutes = duration.toMinutes() % 60;
+        long seconds = duration.getSeconds() % 60;
+        return String.format("%02d:%02d:%02d", hours, minutes, seconds);
     }
 }
