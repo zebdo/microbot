@@ -140,6 +140,7 @@ public class Rs2TileObjectModel implements TileObject {
         return tileObject.getClickbox();
     }
 
+
     @Override
     public @Nullable String getOpOverride(int index) {
         return "";
@@ -150,7 +151,7 @@ public class Rs2TileObjectModel implements TileObject {
         return false;
     }
 
-    public ObjectComposition getObjectComposition() {
+	  public ObjectComposition getObjectComposition() {
         return Microbot.getClientThread().invoke(() -> {
             ObjectComposition composition = Microbot.getClient().getObjectDefinition(tileObject.getId());
             if(composition.getImpostorIds() != null)
