@@ -140,19 +140,18 @@ public class Rs2TileObjectModel implements TileObject {
         return tileObject.getClickbox();
     }
 
-	@Override
-	public @Nullable String getOpOverride(int index)
-	{
-		return tileObject.getOpOverride(index);
-	}
 
-	@Override
-	public boolean isOpShown(int index)
-	{
-		return tileObject.isOpShown(index);
-	}
+    @Override
+    public @Nullable String getOpOverride(int index) {
+        return "";
+    }
 
-	public ObjectComposition getObjectComposition() {
+    @Override
+    public boolean isOpShown(int index) {
+        return false;
+    }
+
+	  public ObjectComposition getObjectComposition() {
         return Microbot.getClientThread().invoke(() -> {
             ObjectComposition composition = Microbot.getClient().getObjectDefinition(tileObject.getId());
             if(composition.getImpostorIds() != null)
