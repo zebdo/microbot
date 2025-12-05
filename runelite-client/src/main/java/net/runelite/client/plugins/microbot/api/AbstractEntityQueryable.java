@@ -130,8 +130,25 @@ public abstract class AbstractEntityQueryable<
     }
 
     @Override
+    public E firstReachable() {
+        return source.filter(x -> !x.isReachable()).findFirst().orElse(null);
+    }
+
+    @Override
     public E nearest() {
         return nearest(Integer.MAX_VALUE);
+    }
+
+    @Override
+    public E nearestReachable() {
+        source = source.filter(x -> !x.isReachable());
+        return nearest(Integer.MAX_VALUE);
+    }
+
+    @Override
+    public E nearestReachable(int maxDistance) {
+        source = source.filter(x -> !x.isReachable());
+        return nearest(maxDistance);
     }
 
     @Override
@@ -185,6 +202,43 @@ public abstract class AbstractEntityQueryable<
 
     public List<E> toListOnClientThread() {
         return Microbot.getClientThread().invoke(() -> toList());
+    }
+
+    public boolean interact() {
+        E entity = nearestReachable();
+        if (entity == null) return false;
+
+        return entity.click();
+    }
+
+    public boolean interact(String action) {
+        E entity = nearestReachable();
+        if (entity == null) return false;
+        return entity.click(action);
+    }
+
+    public boolean interact(String action, int maxDistance) {
+        E entity = nearestReachable(maxDistance);
+        if (entity == null) return false;
+        return entity.click(action);
+    }
+
+    public boolean interact(int id) {
+        E entity = this.withId(id).nearestReachable();
+        if (entity == null) return false;
+        return entity.click();
+    }
+
+    public boolean interact(int id, String action) {
+        E entity = this.withId(id).nearestReachable();
+        if (entity == null) return false;
+        return entity.click(action);
+    }
+
+    public boolean interact(int id, String action, int maxDistance) {
+        E entity = this.withId(id).nearestReachable(maxDistance);
+        if (entity == null) return false;
+        return entity.click(action);
     }
 }
 

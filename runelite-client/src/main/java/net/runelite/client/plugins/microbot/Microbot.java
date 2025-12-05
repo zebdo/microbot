@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot;
 
 import com.google.inject.Injector;
+import it.unimi.dsi.fastutil.ints.IntSet;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;

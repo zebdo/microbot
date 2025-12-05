@@ -271,8 +271,6 @@ public class Rs2TileObjectModel implements TileObject {
                     .gameObject(tileObject)
                     ,
                 Rs2UiHelper.getObjectClickbox(tileObject));
-// MenuEntryImpl(getOption=Use, getTarget=Barrier, getIdentifier=43700, getType=GAME_OBJECT_THIRD_OPTION, getParam0=53, getParam1=51, getItemId=-1, isForceLeftClick=true, getWorldViewId=-1, isDeprioritized=false)
-            //Rs2Reflection.invokeMenu(param0, param1, menuAction.getId(), object.getId(),-1, "", "", -1, -1);
 
         } catch (Exception ex) {
             Microbot.log("Failed to interact with object " + ex.getMessage());

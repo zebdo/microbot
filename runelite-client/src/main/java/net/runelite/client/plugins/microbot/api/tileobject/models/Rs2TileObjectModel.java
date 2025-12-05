@@ -95,11 +95,10 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
     public String getName() {
         return Microbot.getClientThread().invoke(() -> {
             ObjectComposition composition = Microbot.getClient().getObjectDefinition(tileObject.getId());
-            if(composition.getImpostorIds() != null)
-            {
+            if (composition.getImpostorIds() != null) {
                 composition = composition.getImpostor();
             }
-            if(composition == null)
+            if (composition == null)
                 return null;
             return Rs2UiHelper.stripColTags(composition.getName());
         });
@@ -153,8 +152,7 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
     public ObjectComposition getObjectComposition() {
         return Microbot.getClientThread().invoke(() -> {
             ObjectComposition composition = Microbot.getClient().getObjectDefinition(tileObject.getId());
-            if(composition.getImpostorIds() != null)
-            {
+            if (composition.getImpostorIds() != null) {
                 composition = composition.getImpostor();
             }
             return composition;
@@ -266,16 +264,16 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
 
 
             Microbot.doInvoke(new NewMenuEntry()
-                    .param0(param0)
-                    .param1(param1)
-                    .opcode(menuAction.getId())
-                    .identifier(getId())
-                    .itemId(-1)
-                    .option(action)
-                    .target(objName)
-                    .gameObject(tileObject)
+                            .param0(param0)
+                            .param1(param1)
+                            .opcode(menuAction.getId())
+                            .identifier(getId())
+                            .itemId(-1)
+                            .option(action)
+                            .target(objName)
+                            .gameObject(tileObject)
                     ,
-                Rs2UiHelper.getObjectClickbox(tileObject));
+                    Rs2UiHelper.getObjectClickbox(tileObject));
 // MenuEntryImpl(getOption=Use, getTarget=Barrier, getIdentifier=43700, getType=GAME_OBJECT_THIRD_OPTION, getParam0=53, getParam1=51, getItemId=-1, isForceLeftClick=true, getWorldViewId=-1, isDeprioritized=false)
             //Rs2Reflection.invokeMenu(param0, param1, menuAction.getId(), object.getId(),-1, "", "", -1, -1);
 

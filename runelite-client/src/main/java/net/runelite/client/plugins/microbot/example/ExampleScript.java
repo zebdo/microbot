@@ -1,13 +1,16 @@
 package net.runelite.client.plugins.microbot.example;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.api.npc.Rs2NpcCache;
 import net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemCache;
 import net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectCache;
+import net.runelite.client.plugins.microbot.shortestpath.WorldPointUtil;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.api.player.Rs2PlayerCache;
+import net.runelite.client.plugins.microbot.util.reachable.Rs2Reachable;
 
 import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
@@ -37,33 +40,22 @@ public class ExampleScript extends Script {
     /**
      * Main entry point for the performance test script.
      */
+    private static final WorldPoint HOPPER_DEPOSIT_DOWN = new WorldPoint(3748, 5672, 0);
+
     public boolean run() {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!Microbot.isLoggedIn()) return;
 
-                long startTime = System.currentTimeMillis();
-                var groundItems = rs2TileItemCache.query().toList();
-                var objects = rs2TileObjectCache.query().toList();
-                var rs2Players = rs2PlayerCache.query().toList();
-                var rs2Npcs = rs2NpcCache.query().toList();
 
-                //groundItems.get(0).click("Take");
-                long endTime = System.currentTimeMillis();
-                long totalTime = endTime - startTime;
-                System.out.println("fetched " + rs2Players.size() + " players and " + rs2Npcs.size() + " npcs.");
-                System.out.println("fetched " + objects.size() + " objects.");
-                System.out.println("fetched " + groundItems.size() + " ground items.");
-                System.out.println("Player location: " + Rs2Player.getWorldLocation());
-                System.out.println("fetched " + groundItems.size() + " ground items.");
-                System.out.println("all in time: " + totalTime + " ms");
-                /*var tree = rs2TileObjectCache.query().within(Rs2Player.getWorldLocation(), 20).withName("Tree");
+                rs2TileObjectCache.query().withIds(26661, 26662, 26663, 26664).interact("Mine");
 
-                tree.click();
+                var tiles = Rs2Reachable.getReachableTiles(Rs2Player.getWorldLocation());
 
-                System.out.println(tree.getId());
-                System.out.println(tree.getName());
-                */
+                var pack = WorldPointUtil.packWorldPoint(new WorldPoint(3725, 5651, 0));
+
+                System.out.println(tiles.contains(pack));
+
 
             } catch (Exception ex) {
                 log.error("Error in performance test loop", ex);

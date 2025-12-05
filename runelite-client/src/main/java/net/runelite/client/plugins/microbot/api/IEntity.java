@@ -2,6 +2,7 @@ package net.runelite.client.plugins.microbot.api;
 
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.plugins.microbot.util.reachable.Rs2Reachable;
 
 public interface IEntity {
     int getId();
@@ -10,4 +11,7 @@ public interface IEntity {
     LocalPoint getLocalLocation();
     boolean click();
     boolean click(String action);
+    default boolean isReachable() {
+        return Rs2Reachable.isReachable(getWorldLocation());
+    }
 }
