@@ -1,11 +1,11 @@
 package net.runelite.client.plugins.microbot.util.sailing.data;
 
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.client.plugins.microbot.util.sailing.Rs2Sailing;
+import net.runelite.client.plugins.microbot.api.boat.Rs2Boat;
 
 import java.util.List;
 
-import static net.runelite.client.plugins.microbot.util.sailing.Rs2Sailing.sailTo;
+import static net.runelite.client.plugins.microbot.api.boat.Rs2Boat.sailTo;
 
 public class BoatPathFollower {
     private final List<WorldPoint> path;
@@ -19,7 +19,7 @@ public class BoatPathFollower {
     }
 
     public boolean loop() {
-        if (!Rs2Sailing.isOnBoat()) {
+        if (!Rs2Boat.isOnBoat()) {
             return false;
         }
 
@@ -29,7 +29,7 @@ public class BoatPathFollower {
             return true;
         }
 
-        WorldPoint boat = Rs2Sailing.getPlayerBoatLocation();
+        WorldPoint boat = Rs2Boat.getPlayerBoatLocation();
         if (boat == null) {
             return false;
         }
@@ -48,7 +48,7 @@ public class BoatPathFollower {
     }
 
     private int findStartingIndex() {
-        WorldPoint boat = Rs2Sailing.getPlayerBoatLocation();
+        WorldPoint boat = Rs2Boat.getPlayerBoatLocation();
         if (boat == null) return 0;
 
         int bestIndex = 0;
@@ -66,7 +66,7 @@ public class BoatPathFollower {
     }
 
     private void stopFollowing() {
-        Rs2Sailing.unsetSails();
+        Rs2Boat.unsetSails();
         // e.g. clear some flag, stop the script, whatever your framework uses
     }
 

@@ -137,7 +137,7 @@ public class NewMenuEntry implements MenuEntry {
     }
 
     @Override
-    public MenuEntry setWorldViewId(int worldViewId) {
+    public NewMenuEntry setWorldViewId(int worldViewId) {
         this.worldViewId = worldViewId;
         return this;
     }

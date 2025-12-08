@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.api;
 
+import net.runelite.api.WorldView;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.util.reachable.Rs2Reachable;

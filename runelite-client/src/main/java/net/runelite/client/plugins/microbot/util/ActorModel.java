@@ -8,6 +8,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.api.boat.Rs2Boat;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;

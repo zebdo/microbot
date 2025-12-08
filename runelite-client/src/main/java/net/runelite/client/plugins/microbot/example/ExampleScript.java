@@ -1,12 +1,14 @@
 package net.runelite.client.plugins.microbot.example;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.api.npc.Rs2NpcCache;
 import net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemCache;
 import net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectCache;
+import net.runelite.client.plugins.microbot.api.tileobject.models.TileObjectType;
 import net.runelite.client.plugins.microbot.shortestpath.WorldPointUtil;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.api.player.Rs2PlayerCache;
@@ -14,6 +16,7 @@ import net.runelite.client.plugins.microbot.util.reachable.Rs2Reachable;
 
 import javax.inject.Inject;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 /**
  * Performance test script for measuring GameObject composition retrieval speed.
@@ -47,20 +50,25 @@ public class ExampleScript extends Script {
             try {
                 if (!Microbot.isLoggedIn()) return;
 
+/*
+                if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
+                    LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation());
+                    System.out.println("was here");
+                     WorldPoint.fromLocalInstance(Microbot.getClient(), l);
+                } else {
+                    System.out.println("was here lol");
+                    // this needs to ran on client threaad if we are on the sea
+                   var a =  Microbot.getClient().getLocalPlayer().getWorldLocation();
+                    System.out.println(a);
+                }*/
 
-                rs2TileObjectCache.query().withIds(26661, 26662, 26663, 26664).interact("Mine");
-
-                var tiles = Rs2Reachable.getReachableTiles(Rs2Player.getWorldLocation());
-
-                var pack = WorldPointUtil.packWorldPoint(new WorldPoint(3725, 5651, 0));
-
-                System.out.println(tiles.contains(pack));
+              rs2TileObjectCache.query().withIds(60493).nearest().click("Deploy");
 
 
             } catch (Exception ex) {
                 log.error("Error in performance test loop", ex);
             }
-        }, 0, 5000, TimeUnit.MILLISECONDS);
+        }, 0, 1000, TimeUnit.MILLISECONDS);
 
         return true;
     }

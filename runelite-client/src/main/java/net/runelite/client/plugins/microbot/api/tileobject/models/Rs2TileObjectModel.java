@@ -7,6 +7,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.IEntity;
+import net.runelite.client.plugins.microbot.api.boat.Rs2Boat;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -16,6 +17,7 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
+import java.util.Objects;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
@@ -89,7 +91,34 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
 
     @Override
     public @NotNull WorldPoint getWorldLocation() {
-        return tileObject.getWorldLocation();
+        if (Rs2Boat.isOnBoat()) {
+            return Objects.requireNonNull(Microbot.getClientThread().invoke(() -> {
+                LocalPoint localPoint = LocalPoint.fromWorld(
+                        getWorldView(),
+                        this.tileObject.getWorldLocation()
+                );
+
+                var mainWorldProjection =
+                        getWorldView()
+                                .getMainWorldProjection();
+
+                if (mainWorldProjection == null) {
+                    return this.tileObject.getWorldLocation();
+                }
+
+                float[] projection = mainWorldProjection
+                        .project(localPoint.getX(), 0, localPoint.getY());
+
+                return Microbot.getClientThread().invoke(() -> WorldPoint.fromLocal(
+                        Microbot.getClient().getTopLevelWorldView(),
+                        (int) projection[0],
+                        (int) projection[2],
+                        0
+                ));
+            }));
+        } else {
+            return this.tileObject.getWorldLocation();
+        }
     }
 
     public String getName() {
@@ -171,12 +200,6 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
      * @return true if the interaction was successful, false otherwise
      */
     public boolean click(String action) {
-        if (Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(getWorldLocation()) > 51) {
-            Microbot.log("Object with id " + getId() + " is not close enough to interact with. Walking to the object....");
-            Rs2Walker.walkTo(getWorldLocation());
-            return false;
-        }
-
         try {
 
             int param0;
@@ -271,6 +294,7 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
                             .itemId(-1)
                             .option(action)
                             .target(objName)
+                            .setWorldViewId(getWorldView().getId())
                             .gameObject(tileObject)
                     ,
                     Rs2UiHelper.getObjectClickbox(tileObject));

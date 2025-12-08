@@ -177,18 +177,6 @@ public class Rs2TileItemModel implements TileItem, IEntity {
         });
     }
 
-
-    public boolean hasLineOfSight() {
-        WorldPoint worldPoint = Rs2Player.getWorldLocation();
-        if (worldPoint == null) {
-            return false;
-        }
-        return Microbot.getClientThread().invoke((Supplier<Boolean>) () ->
-                tile.getWorldLocation()
-                        .toWorldArea()
-                        .hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), worldPoint.toWorldArea()));
-    }
-
     public boolean click() {
         return click("");
     }

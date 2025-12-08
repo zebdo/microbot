@@ -19,7 +19,7 @@ import javax.swing.border.TitledBorder;
 
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.util.sailing.Rs2Sailing;
+import net.runelite.client.plugins.microbot.api.boat.Rs2Boat;
 import net.runelite.client.plugins.microbot.util.sailing.data.BoatPathFollower;
 import net.runelite.client.plugins.microbot.util.sailing.data.PortLocation;
 import net.runelite.client.plugins.microbot.util.sailing.data.PortPaths;
@@ -341,17 +341,17 @@ public class SailingPanel extends PluginPanel
             @Override
             protected RefreshResult doInBackground()
             {
-                boolean onBoat = Rs2Sailing.isOnBoat();
-                boolean navigating = Rs2Sailing.isNavigating();
+                boolean onBoat = Rs2Boat.isOnBoat();
+                boolean navigating = Rs2Boat.isNavigating();
 
-                Map<PortTaskVarbits, Integer> activeTasks = Rs2Sailing.getPortTasksVarbits();
+                Map<PortTaskVarbits, Integer> activeTasks = Rs2Boat.getPortTasksVarbits();
 
                 java.util.List<PortTaskData> taskDataList = new ArrayList<>();
                 if (activeTasks != null && !activeTasks.isEmpty())
                 {
                     for (Map.Entry<PortTaskVarbits, Integer> entry : activeTasks.entrySet())
                     {
-                        PortTaskData taskData = Rs2Sailing.getPortTaskData(entry.getValue());
+                        PortTaskData taskData = Rs2Boat.getPortTaskData(entry.getValue());
                         if (taskData != null)
                         {
                             taskDataList.add(taskData);
@@ -537,7 +537,7 @@ public class SailingPanel extends PluginPanel
             return;
         }
 
-        if (!Rs2Sailing.isOnBoat())
+        if (!Rs2Boat.isOnBoat())
         {
             Microbot.showMessage("You must be on a boat to navigate!");
             return;
@@ -557,7 +557,7 @@ public class SailingPanel extends PluginPanel
         WorldPoint startLocation = start.getNavigationLocation();
 
         // Check if player is close enough to start location
-        WorldPoint boatLocation = Rs2Sailing.getPlayerBoatLocation();
+        WorldPoint boatLocation = Rs2Boat.getPlayerBoatLocation();
         if (boatLocation == null)
         {
             Microbot.showMessage("Could not determine boat location.");
@@ -604,7 +604,7 @@ public class SailingPanel extends PluginPanel
         sailingFuture = sailingExecutor.scheduleWithFixedDelay(() -> {
             try
             {
-                if (!Rs2Sailing.isOnBoat())
+                if (!Rs2Boat.isOnBoat())
                 {
                     Microbot.log("No longer on boat, stopping navigation.");
                     stopNavigation();
@@ -630,7 +630,7 @@ public class SailingPanel extends PluginPanel
 
     private void startNavigation(PortTaskData task)
     {
-        if (!Rs2Sailing.isOnBoat())
+        if (!Rs2Boat.isOnBoat())
         {
             Microbot.showMessage("You must be on a boat to navigate!");
             return;
@@ -645,7 +645,7 @@ public class SailingPanel extends PluginPanel
             : path.getStart().getNavigationLocation();
 
         // Check if player is close enough to start location
-        WorldPoint boatLocation = Rs2Sailing.getPlayerBoatLocation();
+        WorldPoint boatLocation = Rs2Boat.getPlayerBoatLocation();
         if (boatLocation == null)
         {
             Microbot.showMessage("Could not determine boat location.");
@@ -692,7 +692,7 @@ public class SailingPanel extends PluginPanel
         sailingFuture = sailingExecutor.scheduleWithFixedDelay(() -> {
             try
             {
-                if (!Rs2Sailing.isOnBoat())
+                if (!Rs2Boat.isOnBoat())
                 {
                     Microbot.log("No longer on boat, stopping navigation.");
                     stopNavigation();
@@ -736,9 +736,9 @@ public class SailingPanel extends PluginPanel
         currentPath = null;
 
         // Stop the boat sails
-        if (Rs2Sailing.isOnBoat() && Rs2Sailing.isNavigating())
+        if (Rs2Boat.isOnBoat() && Rs2Boat.isNavigating())
         {
-            Rs2Sailing.unsetSails();
+            Rs2Boat.unsetSails();
         }
 
         Microbot.log("Sailing navigation stopped.");

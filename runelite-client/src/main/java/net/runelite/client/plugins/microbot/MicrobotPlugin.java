@@ -27,7 +27,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.overlay.GembagOverlay;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
-import net.runelite.client.plugins.microbot.util.sailing.Rs2Sailing;
+import net.runelite.client.plugins.microbot.api.boat.Rs2Boat;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.plugins.microbot.util.security.LoginManager;
@@ -428,7 +428,7 @@ public class MicrobotPlugin extends Plugin
 		}
 		Microbot.getPouchScript().onChatMessage(event);
 		Rs2Gembag.onChatMessage(event);
-        Rs2Sailing.handleChatMessage(event);
+        Rs2Boat.handleChatMessage(event);
 	}
 
 	@Subscribe

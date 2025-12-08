@@ -41,7 +41,7 @@ public class Rs2TileObjectCache {
             if (worldView == null) {
                 continue;
             }
-            var tileValues = Microbot.getClient().getTopLevelWorldView().getScene().getTiles()[worldView.getPlane()];
+            var tileValues = Microbot.getClient().getWorldView(worldView.getId()).getScene().getTiles()[worldView.getPlane()];
             for (Tile[] tileValue : tileValues) {
                 for (Tile tile : tileValue) {
                     if (tile == null) continue;

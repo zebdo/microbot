@@ -5,8 +5,11 @@ import lombok.Getter;
 import net.runelite.api.HeadIcon;
 import net.runelite.api.Player;
 import net.runelite.api.PlayerComposition;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.AnimationID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.IEntity;
+import net.runelite.client.plugins.microbot.api.boat.Rs2Boat;
 import net.runelite.client.plugins.microbot.util.ActorModel;
 import org.apache.commons.lang3.NotImplementedException;
 
@@ -25,6 +28,16 @@ public class Rs2PlayerModel extends ActorModel implements Player, IEntity {
     {
         super(player);
         this.player = player;
+    }
+
+    @Override
+    public WorldPoint getWorldLocation()
+    {
+        if (Rs2Boat.isOnBoat()) {
+            return Rs2Boat.getPlayerBoatLocation();
+        } else {
+            return super.getWorldLocation();
+        }
     }
 
     @Override
@@ -102,4 +115,12 @@ public class Rs2PlayerModel extends ActorModel implements Player, IEntity {
     public boolean click(String action) {
         throw new NotImplementedException("click(String action) not implemented yet for Rs2PlayerModel - player interactions are not well-defined in the current codebase");
     }
+
+
+    //TODO: We need a method that will search the name of the animation in the list of ids
+    // example: "salvage" as animation name and compare it against the player.getAnimation() id
+
+/*    public boolean isSalvaging() {
+        return player.getAnimation() ==
+    }*/
 }
