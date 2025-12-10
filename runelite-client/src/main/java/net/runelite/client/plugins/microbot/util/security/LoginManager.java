@@ -41,14 +41,17 @@ public final class LoginManager {
 	private static final AtomicReference<Instant> LAST_LOGIN_ATTEMPT = new AtomicReference<>(null);
 	private static final AtomicReference<GameState> LAST_KNOWN_GAME_STATE = new AtomicReference<>(GameState.UNKNOWN);
 
-	@Getter
-	private static AtomicReference<Instant> lastLoginTimestamp = new AtomicReference<>(null);
+	private static final AtomicReference<Instant> lastLoginTimestamp = new AtomicReference<>(null);
 
     @Setter
 	public static ConfigProfile activeProfile = null;
 
 	public static ConfigProfile getActiveProfile() {
         return Microbot.getConfigManager().getProfile();
+	}
+
+	public static Instant getLastLoginTimestamp() {
+		return lastLoginTimestamp.get();
 	}
 
 	public static GameState getLastKnownGameState() {
@@ -108,10 +111,10 @@ public final class LoginManager {
 	 * Returns the duration the account has been logged in for. Equivalent to Microbot.getLoginTime().
 	 */
 	public static Duration getLoginDuration() {
-		if (lastLoginTimestamp.get() == null || !isLoggedIn()) {
+		if (getLastLoginTimestamp() == null || !isLoggedIn()) {
 			return Duration.of(0, ChronoUnit.MILLIS);
 		}
-		return Duration.between(lastLoginTimestamp.get(), Instant.now());
+		return Duration.between(getLastLoginTimestamp(), Instant.now());
 	}
 
 	/**
