@@ -50,7 +50,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
-import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -304,7 +303,7 @@ public class MicrobotPlugin extends Plugin
 		   final Client client = Microbot.getClient();
 		   if (client != null) {
 				int[] currentRegions = client.getTopLevelWorldView().getMapRegions();
-				boolean wasLoggedIn = LoginManager.isLoggedIn();
+				boolean wasLoggedIn = LoginManager.getLastKnownGameState() == GameState.LOGGED_IN;
 				if (!wasLoggedIn) {
 					LoginManager.markLoggedIn();
 					Rs2RunePouch.fullUpdate();
@@ -315,7 +314,6 @@ public class MicrobotPlugin extends Plugin
 				if (currentRegions != null) {
 					Microbot.setLastKnownRegions(currentRegions.clone());
 				}
-				LoginManager.markLoggedIn();
 		   }
 	   }
 	   if (gameStateChanged.getGameState() == GameState.HOPPING || gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.CONNECTION_LOST)
@@ -329,6 +327,8 @@ public class MicrobotPlugin extends Plugin
 		   }
 		   Microbot.setLastKnownRegions(null);
 	   }
+	   // update last known game state to track login/logout transitions
+	   LoginManager.setLastKnownGameState(gameStateChanged.getGameState());
 	}
 
 	@Subscribe
