@@ -39,21 +39,28 @@ public final class LoginManager {
 	private static final Object LOGIN_LOCK = new Object();
 	private static final AtomicBoolean LOGIN_ATTEMPT_ACTIVE = new AtomicBoolean(false);
 	private static final AtomicReference<Instant> LAST_LOGIN_ATTEMPT = new AtomicReference<>(null);
+	private static final AtomicReference<GameState> LAST_KNOWN_GAME_STATE = new AtomicReference<>(GameState.UNKNOWN);
 
 	@Getter
-	private static Instant lastLoginTimestamp = null;
-
+	private static AtomicReference<Instant> lastLoginTimestamp = new AtomicReference<>(null);
 
     @Setter
 	public static ConfigProfile activeProfile = null;
 
 	public static ConfigProfile getActiveProfile() {
         return Microbot.getConfigManager().getProfile();
+	}
 
+	public static GameState getLastKnownGameState() {
+		return LAST_KNOWN_GAME_STATE.get();
+	}
+
+	public static void setLastKnownGameState(GameState gameState) {
+		LAST_KNOWN_GAME_STATE.set(gameState);
 	}
 
 	private LoginManager() {
-		// Utility class
+		throw new IllegalStateException("Unable to instantiate utility class");
 	}
 
     /**
@@ -86,7 +93,7 @@ public final class LoginManager {
 		// Only set timestamp if client reports logged in.
 		if (isLoggedIn()) {
 			LOGIN_ATTEMPT_ACTIVE.set(false);
-			lastLoginTimestamp = Instant.now();
+			lastLoginTimestamp.set(Instant.now());
 		}
 	}
 
@@ -101,10 +108,10 @@ public final class LoginManager {
 	 * Returns the duration the account has been logged in for. Equivalent to Microbot.getLoginTime().
 	 */
 	public static Duration getLoginDuration() {
-		if (lastLoginTimestamp == null || !isLoggedIn()) {
+		if (lastLoginTimestamp.get() == null || !isLoggedIn()) {
 			return Duration.of(0, ChronoUnit.MILLIS);
 		}
-		return Duration.between(lastLoginTimestamp, Instant.now());
+		return Duration.between(lastLoginTimestamp.get(), Instant.now());
 	}
 
 	/**
