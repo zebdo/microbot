@@ -75,7 +75,7 @@ public class BreakHandlerV2Script extends Script {
      */
     public boolean run(BreakHandlerV2Config config) {
         this.config = config;
-        BreakHandlerV2State.setState(BreakHandlerV2State.WAITING_FOR_BREAK);
+        BreakHandlerV2State.setState(BreakHandlerV2State.LOGIN_REQUESTED);
 
         // Initialize next break time immediately to prevent null values in overlay
         scheduleNextBreak();
@@ -85,8 +85,7 @@ public class BreakHandlerV2Script extends Script {
         originalWindowTitle = ClientUI.getFrame().getTitle();
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
-                if (!super.run()) return;
-
+                if (!super.run() && !config.autoLogin() && BreakHandlerV2State.getCurrentState() != BreakHandlerV2State.LOGIN_REQUESTED) return;
 
 
                 // Detect unexpected logout while waiting for break
@@ -403,9 +402,9 @@ public class BreakHandlerV2Script extends Script {
             return;
         }
 
-        // Check for timeout (60 seconds)
+        // Check for timeout (10 seconds)
         if (loginAttemptTime != null &&
-            Instant.now().isAfter(loginAttemptTime.plusSeconds(60))) {
+            Instant.now().isAfter(loginAttemptTime.plusSeconds(10))) {
             log.warn("[BreakHandlerV2] Login timeout, retrying");
             transitionToState(BreakHandlerV2State.LOGIN_REQUESTED);
         }

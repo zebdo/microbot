@@ -438,6 +438,7 @@ public final class DBTableID
 			public static final int HALLOWEEN_2024 = 3935;
 			public static final int XMAS_2024 = 4228;
 			public static final int BIRTHDAY_2025 = 4318;
+			public static final int XMAS_2025 = 4968;
 			public static final int EASTER_2025 = 5107;
 			public static final int HALLOWEEN_2025 = 6989;
 		}
@@ -1957,9 +1958,9 @@ public final class DBTableID
 			public static final int CLUEHELPER_HOTCOLD_MASTER_VARLAMORE_SUNSET = 3488;
 			public static final int CLUEHELPER_HOTCOLD_MASTER_VARLAMORE_BAZAAR = 3489;
 			public static final int CLUEHELPER_HOTCOLD_MASTER_VARLAMORE_ALDARIN_THEATRE = 3689;
+			public static final int CLUEHELPER_HOTCOLD_MASTER_SAIL_BUCCANEERS_HAVEN = 4963;
 			public static final int CLUEHELPER_HOTCOLD_MASTER_VARLAMORE_RAINFOREST_CENTRE = 5182;
 			public static final int CLUEHELPER_HOTCOLD_MASTER_SAIL_GREAT_CONCH = 7051;
-			public static final int CLUEHELPER_HOTCOLD_MASTER_SAIL_ISLE_OF_SERPENTS = 7052;
 			public static final int CLUEHELPER_HOTCOLD_MASTER_SAIL_DRUMSTICK_ISLE = 7053;
 		}
 	}
@@ -3078,6 +3079,7 @@ public final class DBTableID
 			public static final int CLUEHELPER_TARGET_COORD_0_26_50_30_47 = 3810;
 			public static final int CLUEHELPER_TARGET_COORD_0_25_51_10_38 = 3811;
 			public static final int CLUEHELPER_TARGET_COORD_1_25_83_40_54 = 3936;
+			public static final int CLUEHELPER_TARGET_COORD_0_32_57_30_17 = 4964;
 			public static final int CLUEHELPER_TARGET_COORD_VARLAMORE_RAINFOREST_CENTRE = 5172;
 			public static final int CLUEHELPER_TARGET_COORD_0_20_51_41_59 = 5173;
 			public static final int CLUEHELPER_TARGET_COORD_0_58_60_52_60 = 6152;
@@ -3089,7 +3091,6 @@ public final class DBTableID
 			public static final int CLUEHELPER_TARGET_COORD_0_32_49_33_48 = 7064;
 			public static final int CLUEHELPER_TARGET_COORD_0_30_63_26_42 = 7065;
 			public static final int CLUEHELPER_TARGET_COORD_0_50_36_49_45 = 7066;
-			public static final int CLUEHELPER_TARGET_COORD_0_29_37_0_47 = 7067;
 			public static final int CLUEHELPER_TARGET_COORD_0_33_55_27_42 = 7068;
 			public static final int CLUEHELPER_TARGET_COORD_0_32_40_21_48 = 7069;
 		}
@@ -5724,6 +5725,7 @@ public final class DBTableID
 			public static final int MUSIC_THE_HEIST = 3971;
 			public static final int MUSIC_HEAVY_SECURITY = 3972;
 			public static final int MUSIC_THE_PLUNDERED_TOMB = 3973;
+			public static final int MUSIC_CHRISTMAS_2025 = 4969;
 			public static final int MUSIC_YAMA_COMBAT = 5154;
 			public static final int MUSIC_TLATI_RAINFOREST = 5377;
 			public static final int MUSIC_AUBURN_VALLEY_1 = 5378;
@@ -6559,6 +6561,21 @@ public final class DBTableID
 			public static final int HUEY_SPECIAL_ATTACK_P2 = 3777;
 			public static final int HUEY_SPECIAL_ATTACK_P3 = 3778;
 			public static final int HUEY_SPECIAL_ATTACK_P4 = 3779;
+		}
+	}
+
+	public static final class DynamicBuildersDemoSets
+	{
+		public static final int ID = 76;
+
+		/**
+		 * (struct, integer, integer, string, boolean)
+		 */
+		public static final int COL_BUTTON_STYLES = 0;
+
+		public static final class Row
+		{
+			public static final int DYNAMIC_BUILDERS_DEMO = 4965;
 		}
 	}
 
@@ -14898,6 +14915,8 @@ public final class DBTableID
 
 		public static final class Row
 		{
+			public static final int PORT_TASK_RELLEKKA_COURIER_19 = 4966;
+			public static final int PORT_TASK_RELLEKKA_COURIER_20 = 4967;
 			public static final int PORT_TASK_PORT_SARIM_COURIER_0 = 8664;
 			public static final int PORT_TASK_PORT_SARIM_COURIER_1 = 8665;
 			public static final int PORT_TASK_PORT_SARIM_COURIER_2 = 8666;

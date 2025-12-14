@@ -48,6 +48,8 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.*;
 import java.util.List;
 
@@ -277,7 +279,7 @@ public class MicrobotPlugin extends Plugin
 		   final Client client = Microbot.getClient();
 		   if (client != null) {
 				int[] currentRegions = client.getTopLevelWorldView().getMapRegions();
-				boolean wasLoggedIn = LoginManager.isLoggedIn();
+				boolean wasLoggedIn = LoginManager.getLastKnownGameState() == GameState.LOGGED_IN;
 				if (!wasLoggedIn) {
 					LoginManager.markLoggedIn();
 					Rs2RunePouch.fullUpdate();
@@ -285,7 +287,6 @@ public class MicrobotPlugin extends Plugin
 				if (currentRegions != null) {
 					Microbot.setLastKnownRegions(currentRegions.clone());
 				}
-				LoginManager.markLoggedIn();
 		   }
 	   }
 	   if (gameStateChanged.getGameState() == GameState.HOPPING || gameStateChanged.getGameState() == GameState.LOGIN_SCREEN || gameStateChanged.getGameState() == GameState.CONNECTION_LOST)
@@ -295,64 +296,9 @@ public class MicrobotPlugin extends Plugin
 		   // and we also handle correct cache loading in onRuneScapeProfileChanged event
 		   LoginManager.markLoggedOut();
 		   Microbot.setLastKnownRegions(null);
-
-		   // Auto-fill credentials from active profile on login screen
-		   if (gameStateChanged.getGameState() == GameState.LOGIN_SCREEN)
-		   {
-			   prefillCredentialsFromActiveProfile();
-		   }
 	   }
-	}
-
-	/**
-	 * Pre-fills username and password from the active profile when reaching the login screen.
-	 * This automatically populates the login fields, saving the user from manually entering credentials.
-	 */
-	private void prefillCredentialsFromActiveProfile()
-	{
-		try
-		{
-			final Client client = Microbot.getClient();
-			if (client == null)
-			{
-				return;
-			}
-
-			net.runelite.client.config.ConfigProfile activeProfile = LoginManager.getActiveProfile();
-			if (activeProfile == null)
-			{
-				log.debug("No active profile available for credential auto-fill");
-				return;
-			}
-
-			// Set username
-			String username = activeProfile.getName();
-			if (username != null && !username.isBlank())
-			{
-				client.setUsername(username);
-				log.debug("Auto-filled username from active profile: {}", username);
-			}
-
-			// Set password (decrypt first)
-			String encryptedPassword = activeProfile.getPassword();
-			if (encryptedPassword != null && !encryptedPassword.isBlank())
-			{
-				try
-				{
-					String decryptedPassword = net.runelite.client.plugins.microbot.util.security.Encryption.decrypt(encryptedPassword);
-					client.setPassword(decryptedPassword);
-					log.debug("Auto-filled password from active profile");
-				}
-				catch (Exception e)
-				{
-					log.warn("Unable to decrypt stored password for auto-fill", e);
-				}
-			}
-		}
-		catch (Exception e)
-		{
-			log.error("Error during credential auto-fill", e);
-		}
+	   // update last known game state to track login/logout transitions
+	   LoginManager.setLastKnownGameState(gameStateChanged.getGameState());
 	}
 
 	@Subscribe

@@ -35,26 +35,36 @@ import static net.runelite.client.plugins.microbot.util.Global.sleep;
 @Slf4j
 public final class LoginManager {
 
-    private static final int MAX_PLAYER_COUNT = 1950;
-    private static final Object LOGIN_LOCK = new Object();
-    private static final AtomicBoolean LOGIN_ATTEMPT_ACTIVE = new AtomicBoolean(false);
-    private static final AtomicReference<Instant> LAST_LOGIN_ATTEMPT = new AtomicReference<>(null);
+	private static final int MAX_PLAYER_COUNT = 1950;
+	private static final Object LOGIN_LOCK = new Object();
+	private static final AtomicBoolean LOGIN_ATTEMPT_ACTIVE = new AtomicBoolean(false);
+	private static final AtomicReference<Instant> LAST_LOGIN_ATTEMPT = new AtomicReference<>(null);
+	private static final AtomicReference<GameState> LAST_KNOWN_GAME_STATE = new AtomicReference<>(GameState.UNKNOWN);
 
-    @Getter
-    private static Instant lastLoginTimestamp = null;
-
+	private static final AtomicReference<Instant> lastLoginTimestamp = new AtomicReference<>(null);
 
     @Setter
     public static ConfigProfile activeProfile = null;
 
     public static ConfigProfile getActiveProfile() {
         return Microbot.getConfigManager().getProfile();
+	}
 
-    }
+	public static Instant getLastLoginTimestamp() {
+		return lastLoginTimestamp.get();
+	}
 
-    private LoginManager() {
-        // Utility class
-    }
+	public static GameState getLastKnownGameState() {
+		return LAST_KNOWN_GAME_STATE.get();
+	}
+
+	public static void setLastKnownGameState(GameState gameState) {
+		LAST_KNOWN_GAME_STATE.set(gameState);
+	}
+
+	private LoginManager() {
+		throw new IllegalStateException("Unable to instantiate utility class");
+	}
 
     /**
      * Returns the current RuneLite client GameState or UNKNOWN if client not available.
@@ -79,16 +89,16 @@ public final class LoginManager {
         return LOGIN_ATTEMPT_ACTIVE.get();
     }
 
-    /**
-     * Marks the client as logged in by updating timestamps. This should be called when GameState transitions.
-     */
-    public static void markLoggedIn() {
-        // Only set timestamp if client reports logged in.
-        if (isLoggedIn()) {
-            LOGIN_ATTEMPT_ACTIVE.set(false);
-            lastLoginTimestamp = Instant.now();
-        }
-    }
+	/**
+	 * Marks the client as logged in by updating timestamps. This should be called when GameState transitions.
+	 */
+	public static void markLoggedIn() {
+		// Only set timestamp if client reports logged in.
+		if (isLoggedIn()) {
+			LOGIN_ATTEMPT_ACTIVE.set(false);
+			lastLoginTimestamp.set(Instant.now());
+		}
+	}
 
     /**
      * Marks the client as logged out. Should be triggered whenever the game enters the login screen.
@@ -97,15 +107,15 @@ public final class LoginManager {
         LOGIN_ATTEMPT_ACTIVE.set(false);
     }
 
-    /**
-     * Returns the duration the account has been logged in for. Equivalent to Microbot.getLoginTime().
-     */
-    public static Duration getLoginDuration() {
-        if (lastLoginTimestamp == null || !isLoggedIn()) {
-            return Duration.of(0, ChronoUnit.MILLIS);
-        }
-        return Duration.between(lastLoginTimestamp, Instant.now());
-    }
+	/**
+	 * Returns the duration the account has been logged in for. Equivalent to Microbot.getLoginTime().
+	 */
+	public static Duration getLoginDuration() {
+		if (getLastLoginTimestamp() == null || !isLoggedIn()) {
+			return Duration.of(0, ChronoUnit.MILLIS);
+		}
+		return Duration.between(getLastLoginTimestamp(), Instant.now());
+	}
 
     /**
      * Attempts a login using the active profile and an intelligent world selection.
