@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.example;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.ObjectID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.api.npc.Rs2NpcCache;
@@ -10,11 +11,16 @@ import net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemCache;
 import net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectCache;
 import net.runelite.client.plugins.microbot.api.tileobject.models.TileObjectType;
 import net.runelite.client.plugins.microbot.shortestpath.WorldPointUtil;
+import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.api.player.Rs2PlayerCache;
+import net.runelite.client.plugins.microbot.util.player.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.reachable.Rs2Reachable;
 
 import javax.inject.Inject;
+import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
@@ -62,8 +68,39 @@ public class ExampleScript extends Script {
                     System.out.println(a);
                 }*/
 
-              rs2TileObjectCache.query().withIds(60493).nearest().click("Deploy");
+                var shipwreck = rs2TileObjectCache.query().where(x -> x.getId() == ObjectID.SAILING_LARGE_SHIPWRECK).within(10).nearest();
 
+                var inventoryCheck = Rs2Inventory.count() >= Rs2Random.between(24, 28);
+                if (inventoryCheck && Rs2Inventory.count("large salvage") > 0) {
+                    // Rs2Inventory.dropAll("large salvage");
+                    rs2TileObjectCache.query()
+                            .fromWorldView()
+                            .where(x -> x.getName() != null && x.getName().equalsIgnoreCase("salvaging station"))
+                            .where(x -> x.getWorldView().getId() == new Rs2PlayerModel().getWorldView().getId())
+                            .nearestOnClientThread()
+                            .click();
+                    sleepUntil(() -> Rs2Inventory.count("large salvage") == 0, 20000);
+                } else if (inventoryCheck) {
+                    dropJunk();
+                } else {
+                    var player = new Rs2PlayerModel();
+                    if (player.getAnimation() != -1) {
+                        log.info("Currently salvaging, waiting...");
+                        sleep(5000, 10000);
+                        return;
+                    }
+
+                    if (shipwreck == null) {
+                        log.info("No shipwreck found nearby");
+                        sleep(5000);
+                        dropJunk();
+                        return;
+                    }
+
+                    rs2TileObjectCache.query().fromWorldView().withIds(60493).nearest().click("Deploy");
+                    sleepUntil(() -> player.getAnimation() != -1, 5000);
+
+                }
 
             } catch (Exception ex) {
                 log.error("Error in performance test loop", ex);
@@ -71,5 +108,29 @@ public class ExampleScript extends Script {
         }, 0, 1000, TimeUnit.MILLISECONDS);
 
         return true;
+    }
+
+    private void dropJunk() {
+        var junkItems = new ArrayList<String>();
+        junkItems.add("gold ring");
+        junkItems.add("sapphire ring");
+        junkItems.add("emerald ring");
+        junkItems.add("ruby ring");
+        junkItems.add("diamond ring");
+        junkItems.add("casket");
+        junkItems.add("oyster pearl");
+        junkItems.add("oyster pearls");
+        junkItems.add("teak logs");
+        junkItems.add("steel nails");
+        junkItems.add("mithril nails");
+        junkItems.add("giant seaweed");
+        junkItems.add("mithril cannonball");
+        junkItems.add("adamant cannonball");
+        junkItems.add("elkhorn frag");
+        junkItems.add("plank");
+        junkItems.add("oak plank");
+        junkItems.add("hemp seed");
+        junkItems.add("flax seed");
+        Rs2Inventory.dropAll(junkItems.toArray(new String[0]));
     }
 }

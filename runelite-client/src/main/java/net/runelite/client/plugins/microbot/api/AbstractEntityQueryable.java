@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.api;
 
+import net.runelite.api.WorldView;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.player.models.Rs2PlayerModel;
@@ -25,6 +26,21 @@ public abstract class AbstractEntityQueryable<
     }
 
     protected abstract Stream<E> initialSource();
+
+    @SuppressWarnings("unchecked")
+    @Override
+    public Q fromWorldView() {
+        var worldView = new Rs2PlayerModel().getWorldView();
+        if (worldView == null) {
+            this.source = Stream.empty();
+            return (Q) this;
+        }
+
+        this.source = this.source
+                .filter(o -> o.getWorldView() != null && o.getWorldView().getId() == worldView.getId());
+
+        return (Q) this;
+    }
 
     @SuppressWarnings("unchecked")
     @Override
@@ -150,8 +166,10 @@ public abstract class AbstractEntityQueryable<
 
     @Override
     public E nearest(int maxDistance) {
-        WorldPoint playerLoc = new Rs2PlayerModel().getWorldLocation();
-        if (playerLoc == null) {
+        var player = new Rs2PlayerModel();
+        WorldPoint playerLoc = player.getWorldLocation();
+        WorldView worldView = player.getWorldView();
+        if (playerLoc == null || worldView == null) {
             return null;
         }
 

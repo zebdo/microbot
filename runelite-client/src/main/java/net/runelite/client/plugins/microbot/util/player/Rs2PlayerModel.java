@@ -5,6 +5,7 @@ import lombok.Getter;
 import net.runelite.api.HeadIcon;
 import net.runelite.api.Player;
 import net.runelite.api.PlayerComposition;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.IEntity;
 import net.runelite.client.plugins.microbot.util.ActorModel;
 import org.apache.commons.lang3.NotImplementedException;
@@ -13,6 +14,12 @@ import org.apache.commons.lang3.NotImplementedException;
 public class Rs2PlayerModel extends ActorModel implements Player {
 
 	private final Player player;
+
+	public Rs2PlayerModel()
+	{
+		super(Microbot.getClient().getLocalPlayer());
+		this.player = Microbot.getClient().getLocalPlayer();
+	}
 
 	public Rs2PlayerModel(final Player player)
 	{

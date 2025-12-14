@@ -1,4 +1,4 @@
-package net.runelite.client.plugins.microbot.util.sailing.data;
+package net.runelite.client.plugins.microbot.api.boat.data;
 
 import net.runelite.api.gameval.ObjectID;
 

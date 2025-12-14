@@ -8,7 +8,6 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.api.boat.Rs2Boat;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
@@ -71,13 +70,13 @@ public class ActorModel implements Actor
 	@Override
 	public WorldPoint getWorldLocation()
 	{
-		return actor.getWorldLocation();
+		return Microbot.getClientThread().invoke(actor::getWorldLocation);
 	}
 
 	@Override
 	public LocalPoint getLocalLocation()
 	{
-		return actor.getLocalLocation();
+		return Microbot.getClientThread().invoke(actor::getLocalLocation);
 	}
 
 	@Override
@@ -353,7 +352,7 @@ public class ActorModel implements Actor
 	@Override
 	public WorldArea getWorldArea()
 	{
-		return actor.getWorldArea();
+		return Microbot.getClientThread().invoke(actor::getWorldArea);
 	}
 
 	@Override

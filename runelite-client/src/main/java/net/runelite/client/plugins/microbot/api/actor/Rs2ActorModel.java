@@ -8,6 +8,7 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.api.IEntity;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
@@ -23,7 +24,7 @@ public class Rs2ActorModel implements Actor
     @Override
     public WorldView getWorldView()
     {
-        return actor.getWorldView();
+        return Microbot.getClientThread().invoke(actor::getWorldView);
     }
 
     @Override
@@ -70,6 +71,10 @@ public class Rs2ActorModel implements Actor
     @Override
     public WorldPoint getWorldLocation()
     {
+        if (getWorldView() != null && getWorldView().getId() != -1) {
+            return Microbot.getClientThread().invoke(this::projectActorLocationToMainWorld);
+        }
+
         return actor.getWorldLocation();
     }
 
@@ -431,5 +436,35 @@ public class Rs2ActorModel implements Actor
     public long getHash()
     {
         return actor.getHash();
+    }
+
+    public WorldPoint projectActorLocationToMainWorld() {
+        WorldPoint actorLocation = actor.getWorldLocation();
+        LocalPoint localPoint = LocalPoint.fromWorld(
+                getWorldView(),
+                actorLocation
+        );
+
+        if (localPoint == null)
+        {
+            return actorLocation;
+        }
+
+        var mainWorldProjection = getWorldView().getMainWorldProjection();
+
+        if (mainWorldProjection == null)
+        {
+            return actorLocation;
+        }
+
+        float[] projection = mainWorldProjection
+                .project(localPoint.getX(), 0, localPoint.getY());
+
+        return WorldPoint.fromLocal(
+                Microbot.getClient().getTopLevelWorldView(),
+                (int) projection[0],
+                (int) projection[2],
+                0
+        );
     }
 }

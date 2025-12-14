@@ -1,11 +1,13 @@
 package net.runelite.client.plugins.microbot.api;
 
+import net.runelite.api.WorldView;
 import net.runelite.api.coords.WorldPoint;
 
 import java.util.List;
 import java.util.function.Predicate;
 
 public interface IEntityQueryable<Q extends IEntityQueryable<Q, E>, E extends IEntity> {
+    Q fromWorldView();
     Q where(Predicate<E> predicate);
 
     Q within(int distance);

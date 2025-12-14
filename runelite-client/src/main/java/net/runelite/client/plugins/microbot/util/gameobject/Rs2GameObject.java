@@ -17,7 +17,7 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.api.boat.Rs2Boat;
+import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import org.apache.commons.lang3.tuple.Triple;
@@ -38,6 +38,7 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
  */
 @Deprecated(since = "2.1.0 - Use Rs2TileObjectQueryable instead", forRemoval = true)
 public class Rs2GameObject {
+    private Rs2BoatCache boatCache = new Rs2BoatCache();
 	/**
 	 * Extracts all {@link GameObject}s located on a given {@link Tile}.
 	 *
@@ -529,14 +530,7 @@ public class Rs2GameObject {
     }
 
 	public static <T extends TileObject> List<TileObject> getAll(Predicate<? super T> predicate, int distance) {
-        Supplier<Boolean> s = Rs2Boat::isOnBoat;
-        var isOnBoat =  Microbot.getClientThread().invoke(s);
-        WorldPoint worldPoint;
-        if (!isOnBoat) {
-            worldPoint = Microbot.getClient().getLocalPlayer().getWorldLocation();
-        } else {
-            worldPoint = Rs2Boat.getPlayerBoatLocation();
-        }
+        WorldPoint worldPoint = Microbot.getClient().getLocalPlayer().getWorldLocation();
 		return getAll(predicate, worldPoint, distance);
 	}
 
@@ -1526,25 +1520,14 @@ public class Rs2GameObject {
         var triple = Microbot.getClientThread().invoke(() -> {
             Player player = Microbot.getClient().getLocalPlayer();
 
-            var worldView = player.getWorldView();
-
-            Scene scene;
-            if (worldView != null) {
-                scene = player.getWorldView().getScene();
-            } else {
-                scene = Rs2Boat.isOnBoat()
-                        ? Microbot.getClient().getTopLevelWorldView().getScene()
-                        : player.getWorldView().getScene();
-            }
-
-
+            Scene scene = player.getWorldView().getScene();
 
             Tile[][][] tiles = scene.getTiles();
             if (tiles == null) {
                 return Triple.of(null, null, 0);
             }
 
-            int z = Rs2Boat.isOnBoat() ? 3 : player.getWorldView().getPlane();
+            int z = player.getWorldView().getPlane();
 
             return Triple.of(scene, tiles, z);
         });
@@ -1553,7 +1536,7 @@ public class Rs2GameObject {
         Tile[][][] tiles = (Tile[][][]) triple.getMiddle();
         int z = triple.getRight();
 
-        int sceneSize = Rs2Boat.isOnBoat() ? 7 : Constants.SCENE_SIZE;
+        int sceneSize = Constants.SCENE_SIZE;
 
         for (int x = 0; x < sceneSize; x++) {
             for (int y = 0; y < sceneSize; y++) {
@@ -1587,11 +1570,6 @@ public class Rs2GameObject {
     private static <T extends TileObject> List<T> getSceneObjects(Function<Tile, Collection<? extends T>> extractor, Predicate<T> predicate, LocalPoint anchorLocal, int distance) {
         if (distance > Rs2LocalPoint.worldToLocalDistance(Constants.SCENE_SIZE)) {
             distance = Rs2LocalPoint.worldToLocalDistance(Constants.SCENE_SIZE);
-        }
-
-        if (Rs2Boat.isOnBoat()) {
-            return  getSceneObjects(extractor)
-                    .collect(Collectors.toList());
         }
 
         return getSceneObjects(extractor)
@@ -1774,7 +1752,7 @@ public class Rs2GameObject {
 
     public static boolean clickObject(TileObject object, String action) {
         if (object == null) return false;
-        if (!Rs2Boat.isOnBoat() && Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(object.getWorldLocation()) > 51) {
+        if (Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo(object.getWorldLocation()) > 51) {
             Microbot.log("Object with id " + object.getId() + " is not close enough to interact with. Walking to the object....");
             Rs2Walker.walkTo(object.getWorldLocation());
             return false;

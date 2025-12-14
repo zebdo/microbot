@@ -10,6 +10,7 @@ public interface IEntity {
     String getName();
     WorldPoint getWorldLocation();
     LocalPoint getLocalLocation();
+    WorldView getWorldView();
     boolean click();
     boolean click(String action);
     default boolean isReachable() {

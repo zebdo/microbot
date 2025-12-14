@@ -1,82 +1,44 @@
 package net.runelite.client.plugins.microbot.api.npc.models;
 
-import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import net.runelite.api.HeadIcon;
-import net.runelite.api.NPC;
-import net.runelite.api.NPCComposition;
-import net.runelite.api.NpcOverrides;
+import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.*;
+import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.IEntity;
-import net.runelite.client.plugins.microbot.util.ActorModel;
-import org.apache.commons.lang3.NotImplementedException;
-import org.jetbrains.annotations.Nullable;
+import net.runelite.client.plugins.microbot.api.actor.Rs2ActorModel;
+import net.runelite.client.plugins.microbot.api.player.models.Rs2PlayerModel;
+import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
+import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
+import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
+import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 
 import java.util.Arrays;
 import java.util.function.Predicate;
+import java.util.stream.IntStream;
 
 @Getter
-@EqualsAndHashCode(callSuper = true) // Ensure equality checks include ActorModel fields
-public class Rs2NpcModel extends ActorModel implements NPC, IEntity
+@Slf4j
+public class Rs2NpcModel extends Rs2ActorModel implements IEntity
 {
 
-    private final NPC runeliteNpc;
+    private final NPC npc;
 
     public Rs2NpcModel(final NPC npc)
     {
         super(npc);
-        this.runeliteNpc = npc;
+        this.npc = npc;
     }
 
     @Override
     public int getId()
     {
-        return runeliteNpc.getId();
+        return npc.getId();
     }
 
-
-    @Override
-    public int getIndex()
-    {
-        return runeliteNpc.getIndex();
-    }
-
-    @Override
-    public NPCComposition getComposition()
-    {
-        return runeliteNpc.getComposition();
-    }
-
-    @Override
-    public @Nullable NPCComposition getTransformedComposition()
-    {
-        return runeliteNpc.getTransformedComposition();
-    }
-
-    @Override
-    public @Nullable NpcOverrides getModelOverrides()
-    {
-        return runeliteNpc.getModelOverrides();
-    }
-
-    @Override
-    public @Nullable NpcOverrides getChatheadOverrides()
-    {
-        return runeliteNpc.getChatheadOverrides();
-    }
-
-    @Override
-    public int @Nullable [] getOverheadArchiveIds()
-    {
-        return runeliteNpc.getOverheadArchiveIds();
-    }
-
-    @Override
-    public short @Nullable [] getOverheadSpriteIds()
-    {
-        return runeliteNpc.getOverheadSpriteIds();
-    }
 
     // Enhanced utility methods for cache operations
 
@@ -116,7 +78,7 @@ public class Rs2NpcModel extends ActorModel implements NPC, IEntity
      */
     public boolean isWithinDistance(WorldPoint anchor, int maxDistance) {
         if (anchor == null) return false;
-        return this.getWorldLocation().distanceTo(anchor) <= maxDistance;
+        return getWorldLocation().distanceTo(anchor) <= maxDistance;
     }
 
     /**
@@ -172,35 +134,163 @@ public class Rs2NpcModel extends ActorModel implements NPC, IEntity
      * @return
      */
     public HeadIcon getHeadIcon() {
-        if (runeliteNpc == null) {
+        if (npc == null) {
             return null;
         }
 
-        if (runeliteNpc.getOverheadSpriteIds() == null) {
+        if (npc.getOverheadSpriteIds() == null) {
             Microbot.log("Failed to find the correct overhead prayer.");
             return null;
         }
 
-        for (int i = 0; i < runeliteNpc.getOverheadSpriteIds().length; i++) {
-            int overheadSpriteId = runeliteNpc.getOverheadSpriteIds()[i];
+        for (int i = 0; i < npc.getOverheadSpriteIds().length; i++) {
+            int overheadSpriteId = npc.getOverheadSpriteIds()[i];
 
             if (overheadSpriteId == -1) continue;
 
             return HeadIcon.values()[overheadSpriteId];
         }
 
-        Microbot.log("Found overheadSpriteIds: " + Arrays.toString(runeliteNpc.getOverheadSpriteIds()) + " but failed to find valid overhead prayer.");
+        Microbot.log("Found overheadSpriteIds: " + Arrays.toString(npc.getOverheadSpriteIds()) + " but failed to find valid overhead prayer.");
 
         return null;
     }
 
+    public boolean hasLineOfSight() {
+        if (npc == null) return false;
+
+        final WorldPoint npcLoc = getWorldLocation();
+        if (npcLoc == null) return false;
+
+        final WorldPoint myLoc = new Rs2PlayerModel().getWorldLocation();
+        if (myLoc == null) return false;
+
+        if (npcLoc.equals(myLoc)) return true;
+
+        final WorldView wv = Microbot.getClient().getTopLevelWorldView();
+        return wv != null && npcLoc.toWorldArea().hasLineOfSightTo(wv, myLoc);
+    }
+
     @Override
     public boolean click() {
-        return net.runelite.client.plugins.microbot.util.npc.Rs2Npc.interact(this);
+        return click("");
     }
 
     @Override
     public boolean click(String action) {
-        return net.runelite.client.plugins.microbot.util.npc.Rs2Npc.interact(this, action);
+        if (npc == null) {
+            log.error("Error interacting with NPC for action '{}': NPC is null", action);
+            return false;
+        }
+
+        Microbot.status = action + " " + npc.getName();
+        try {
+            if (Microbot.isCantReachTargetDetectionEnabled && Microbot.cantReachTarget) {
+                if (!hasLineOfSight()) {
+                    if (Microbot.cantReachTargetRetries >= Rs2Random.between(3, 5)) {
+                        Microbot.pauseAllScripts.compareAndSet(false, true);
+                        Microbot.showMessage("Your bot tried to interact with an NPC for "
+                                + Microbot.cantReachTargetRetries + " times but failed. Please take a look at what is happening.");
+                        return false;
+                    }
+                    final WorldPoint npcWorldPoint = getWorldLocation();
+                    if (npcWorldPoint == null) {
+                        log.error("Error interacting with NPC '{}' for action '{}': WorldPoint is null", getName(), action);
+                        return false;
+                    }
+                    Rs2Walker.walkTo(Rs2Tile.getNearestWalkableTileWithLineOfSight(npcWorldPoint), 0);
+                    Microbot.pauseAllScripts.compareAndSet(true, false);
+                    Microbot.cantReachTargetRetries++;
+                    return false;
+                } else {
+                    Microbot.pauseAllScripts.compareAndSet(true, false);
+                    Microbot.cantReachTarget = false;
+                    Microbot.cantReachTargetRetries = 0;
+                }
+            }
+
+            final NPCComposition npcComposition = Microbot.getClientThread().runOnClientThreadOptional(
+                    () -> Microbot.getClient().getNpcDefinition(getId())).orElse(null);
+            if (npcComposition == null) {
+                log.error("Error interacting with NPC '{}' for action '{}': NPCComposition is null", getName(), action);
+                return false;
+            }
+
+            final String[] actions = npcComposition.getActions();
+            if (actions == null) {
+                log.error("Error interacting with NPC '{}' for action '{}': Actions are null", npc.getName(), action);
+                return false;
+            }
+
+            final int index;
+            if (action == null || action.isBlank()) {
+                index = IntStream.range(0, actions.length)
+                        .filter(i -> actions[i] != null && !actions[i].isEmpty())
+                        .findFirst().orElse(-1);
+            } else {
+                final String finalAction = action;
+                index = IntStream.range(0, actions.length)
+                        .filter(i -> actions[i] != null && actions[i].equalsIgnoreCase(finalAction))
+                        .findFirst().orElse(-1);
+            }
+
+            final MenuAction menuAction = getMenuAction(index);
+            if (menuAction == null) {
+                if (index == -1) {
+                    log.error("Error interacting with NPC '{}' for action '{}': Action not found. Actions={}", npc.getName(), action, actions);
+                } else {
+                    log.error("Error interacting with NPC '{}' for action '{}': Invalid Index={}. Actions={}", npc.getName(), action, index, actions);
+                }
+                return false;
+            }
+            action = menuAction == MenuAction.WIDGET_TARGET_ON_NPC ? "Use" : actions[index];
+
+            final LocalPoint localPoint = npc.getLocalLocation();
+            if (localPoint == null) {
+                log.error("Error interacting with NPC '{}' for action '{}': LocalPoint is null", npc.getName(), action);
+                return false;
+            }
+            if (!Rs2Camera.isTileOnScreen(localPoint)) {
+                Rs2Camera.turnTo(npc);
+            }
+
+            Microbot.doInvoke(new NewMenuEntry()
+                            .param0(0)
+                            .param1(0)
+                            .opcode(menuAction.getId())
+                            .identifier(npc.getIndex())
+                            .itemId(-1)
+                            .target(npc.getName())
+                            .actor(npc)
+                            .option(action)
+                    ,
+                    Rs2UiHelper.getActorClickbox(npc));
+            return true;
+
+        } catch (Exception ex) {
+            log.error("Error interacting with NPC '{}' for action '{}': ", npc.getName(), action, ex);
+            return false;
+        }
+    }
+
+    private MenuAction getMenuAction(int index) {
+        if (Microbot.getClient().isWidgetSelected()) {
+            return MenuAction.WIDGET_TARGET_ON_NPC;
+        }
+
+        switch (index) {
+            case 0:
+                return MenuAction.NPC_FIRST_OPTION;
+            case 1:
+                return MenuAction.NPC_SECOND_OPTION;
+            case 2:
+                return MenuAction.NPC_THIRD_OPTION;
+            case 3:
+                return MenuAction.NPC_FOURTH_OPTION;
+            case 4:
+                return MenuAction.NPC_FIFTH_OPTION;
+            default:
+                return null;
+        }
     }
 }

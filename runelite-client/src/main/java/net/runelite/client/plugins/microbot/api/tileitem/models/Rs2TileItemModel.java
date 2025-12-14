@@ -107,6 +107,11 @@ public class Rs2TileItemModel implements TileItem, IEntity {
         return tile.getLocalLocation();
     }
 
+    @Override
+    public WorldView getWorldView() {
+        return Microbot.getClient().getTopLevelWorldView();
+    }
+
     public boolean isNoted() {
         return Microbot.getClientThread().invoke((Supplier<Boolean>) () -> {
             ItemComposition itemComposition = Microbot.getClient().getItemDefinition(tileItem.getId());

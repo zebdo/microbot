@@ -45,24 +45,22 @@ public class Rs2TileItemCache {
 
         List<Rs2TileItemModel> result = new ArrayList<>();
 
-        for (var id : Microbot.getWorldViewIds()) {
-            WorldView worldView = Microbot.getClient().getWorldView(id);
-            if (worldView == null) {
-                continue;
-            }
+        WorldView worldView = Microbot.getClient().getTopLevelWorldView();
+        if (worldView == null) {
+            return Stream.empty();
+        }
 
-            Tile[][] tiles = worldView.getScene().getTiles()[worldView.getPlane()];
-            for (Tile[] tileRow : tiles) {
-                for (Tile tile : tileRow) {
-                    if (tile == null) continue;
+        Tile[][] tiles = worldView.getScene().getTiles()[worldView.getPlane()];
+        for (Tile[] tileRow : tiles) {
+            for (Tile tile : tileRow) {
+                if (tile == null) continue;
 
-                    List<TileItem> items = tile.getGroundItems();
-                    if (items == null || items.isEmpty()) continue;
+                List<TileItem> items = tile.getGroundItems();
+                if (items == null || items.isEmpty()) continue;
 
-                    for (TileItem item : items) {
-                        if (item != null) {
-                            result.add(new Rs2TileItemModel(tile, item));
-                        }
+                for (TileItem item : items) {
+                    if (item != null) {
+                        result.add(new Rs2TileItemModel(tile, item));
                     }
                 }
             }

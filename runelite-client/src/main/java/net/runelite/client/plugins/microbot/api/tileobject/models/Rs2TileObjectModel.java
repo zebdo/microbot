@@ -7,12 +7,11 @@ import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.IEntity;
-import net.runelite.client.plugins.microbot.api.boat.Rs2Boat;
+import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
-import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -91,34 +90,21 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
 
     @Override
     public @NotNull WorldPoint getWorldLocation() {
-        if (Rs2Boat.isOnBoat()) {
-            return Objects.requireNonNull(Microbot.getClientThread().invoke(() -> {
-                LocalPoint localPoint = LocalPoint.fromWorld(
-                        getWorldView(),
-                        this.tileObject.getWorldLocation()
-                );
+        WorldPoint worldLocation = tileObject.getWorldLocation();
 
-                var mainWorldProjection =
-                        getWorldView()
-                                .getMainWorldProjection();
-
-                if (mainWorldProjection == null) {
-                    return this.tileObject.getWorldLocation();
-                }
-
-                float[] projection = mainWorldProjection
-                        .project(localPoint.getX(), 0, localPoint.getY());
-
-                return Microbot.getClientThread().invoke(() -> WorldPoint.fromLocal(
-                        Microbot.getClient().getTopLevelWorldView(),
-                        (int) projection[0],
-                        (int) projection[2],
-                        0
-                ));
-            }));
-        } else {
-            return this.tileObject.getWorldLocation();
+        if (!(tileObject instanceof GameObject)) {
+            return worldLocation;
         }
+
+        GameObject go = (GameObject) tileObject;
+        WorldView wv = getWorldView();
+        Point sceneMin = go.getSceneMinLocation();
+
+        if (wv == null || sceneMin == null) {
+            return worldLocation;
+        }
+
+        return WorldPoint.fromScene(wv, sceneMin.getX(), sceneMin.getY(), wv.getPlane());
     }
 
     public String getName() {

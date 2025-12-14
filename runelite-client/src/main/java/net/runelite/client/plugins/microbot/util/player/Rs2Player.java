@@ -13,7 +13,7 @@ import net.runelite.api.kit.KitType;
 import net.runelite.api.widgets.Widget;
 import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.api.boat.Rs2Boat;
+import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
@@ -966,13 +966,8 @@ public class Rs2Player {
         if (Microbot.getClient().getTopLevelWorldView().getScene().isInstance()) {
             LocalPoint l = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation());
             return WorldPoint.fromLocalInstance(Microbot.getClient(), l);
-        } else {
-            if (Rs2Boat.isOnBoat()) {
-                return Rs2Boat.getPlayerBoatLocation();
-            } else {
-                return Microbot.getClient().getLocalPlayer().getWorldLocation();
-            }
         }
+        return Microbot.getClient().getLocalPlayer().getWorldLocation();
     }
 
     /**

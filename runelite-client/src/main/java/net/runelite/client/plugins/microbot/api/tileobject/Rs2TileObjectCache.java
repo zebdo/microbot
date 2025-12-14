@@ -6,6 +6,7 @@ import net.runelite.api.Tile;
 import net.runelite.api.WorldView;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.tileobject.models.Rs2TileObjectModel;
+import net.runelite.client.plugins.microbot.example.ExampleScript;
 
 import java.util.ArrayList;
 import java.util.List;
