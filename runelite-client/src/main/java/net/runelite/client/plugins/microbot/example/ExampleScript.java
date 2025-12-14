@@ -68,10 +68,10 @@ public class ExampleScript extends Script {
                     System.out.println(a);
                 }*/
 
-                var shipwreck = rs2TileObjectCache.query().where(x -> x.getId() == ObjectID.SAILING_LARGE_SHIPWRECK).within(10).nearest();
+                var shipwreck = rs2TileObjectCache.query().where(x -> x.getName() != null && x.getName().toLowerCase().contains("shipwreck")).within(10).nearestOnClientThread();
 
                 var inventoryCheck = Rs2Inventory.count() >= Rs2Random.between(24, 28);
-                if (inventoryCheck && Rs2Inventory.count("large salvage") > 0) {
+                if (inventoryCheck && Rs2Inventory.count("salvage") > 0) {
                     // Rs2Inventory.dropAll("large salvage");
                     rs2TileObjectCache.query()
                             .fromWorldView()
@@ -79,7 +79,7 @@ public class ExampleScript extends Script {
                             .where(x -> x.getWorldView().getId() == new Rs2PlayerModel().getWorldView().getId())
                             .nearestOnClientThread()
                             .click();
-                    sleepUntil(() -> Rs2Inventory.count("large salvage") == 0, 20000);
+                    sleepUntil(() -> Rs2Inventory.count("salvage") == 0, 20000);
                 } else if (inventoryCheck) {
                     dropJunk();
                 } else {
@@ -97,7 +97,7 @@ public class ExampleScript extends Script {
                         return;
                     }
 
-                    rs2TileObjectCache.query().fromWorldView().withIds(60493).nearest().click("Deploy");
+                    rs2TileObjectCache.query().fromWorldView().where(x -> x.getName() != null &&  x.getName().toLowerCase().contains("salvaging hook")).nearestOnClientThread().click("Deploy");
                     sleepUntil(() -> player.getAnimation() != -1, 5000);
 
                 }
@@ -131,6 +131,12 @@ public class ExampleScript extends Script {
         junkItems.add("oak plank");
         junkItems.add("hemp seed");
         junkItems.add("flax seed");
-        Rs2Inventory.dropAll(junkItems.toArray(new String[0]));
+        junkItems.add("ruby bracelet");
+        junkItems.add("emerald bracelet");
+        junkItems.add("mithril scimitar");
+        junkItems.add("mahogany repair kit");
+        junkItems.add("teak repair kit");
+        junkItems.add("rum");
+        Rs2Inventory.dropAll( junkItems.toArray(new String[0]));
     }
 }
