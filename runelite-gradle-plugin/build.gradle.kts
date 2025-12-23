@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Adam <Adam@sigterm.info>
+ * Copyright (c) 2024, LlemonDuck <napkinorton@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -22,25 +22,46 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.runelite.client.plugins.loottracker;
 
-import java.util.Collection;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import net.runelite.client.game.ItemStack;
-import net.runelite.http.api.loottracker.LootRecordType;
+plugins {
+    `java-gradle-plugin`
+    pmd
+}
 
-/**
- * Event published by the loot tracker when new loot is received
- */
-@Data
-@AllArgsConstructor
-public class LootReceived
-{
-	private String name;
-	private int combatLevel;
-	private LootRecordType type;
-	private Collection<ItemStack> items;
-	private int amount;
-	private Object metadata;
+dependencies {
+    implementation("net.runelite:cache:${project.version}")
+
+    implementation(libs.guava)
+    implementation(libs.tomlj)
+    implementation(libs.javapoet)
+}
+
+gradlePlugin {
+    plugins {
+        create("rl-assemble") {
+            id = "net.runelite.runelite-gradle-plugin.assemble"
+            implementationClass = "net.runelite.gradle.assemble.AssemblePlugin"
+        }
+        create("rl-component") {
+            id = "net.runelite.runelite-gradle-plugin.component"
+            implementationClass = "net.runelite.gradle.component.ComponentPlugin"
+        }
+        create("rl-index") {
+            id = "net.runelite.runelite-gradle-plugin.index"
+            implementationClass = "net.runelite.gradle.index.IndexPlugin"
+        }
+        create("rl-jarsign") {
+            id = "net.runelite.runelite-gradle-plugin.jarsign"
+            implementationClass = "net.runelite.gradle.jarsign.JarsignPlugin"
+        }
+    }
+}
+
+pmd {
+    toolVersion = "7.2.0"
+    ruleSetFiles("./pmd-ruleset.xml")
+    isConsoleOutput = true
+    incrementalAnalysis = true
+    isIgnoreFailures = false
+    threads = Runtime.getRuntime().availableProcessors()
 }
