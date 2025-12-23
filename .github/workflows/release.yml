@@ -63,7 +63,7 @@ jobs:
           key: ${{ secrets.PROD_SSH_KEY }}
           source: runelite-client/build/libs/microbot-*.jar
           target: /var/www/files/releases/microbot/stable/
-          strip_components: 2
+          strip_components: 3
 
       - name: Set up Maven settings
         run: |
