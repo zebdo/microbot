@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Adam <Adam@sigterm.info>
+ * Copyright (c) 2024, LlemonDuck <napkinorton@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -22,25 +22,23 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.runelite.client.plugins.loottracker;
+package net.runelite.gradle.index;
 
-import java.util.Collection;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import net.runelite.client.game.ItemStack;
-import net.runelite.http.api.loottracker.LootRecordType;
+import org.gradle.api.Plugin;
+import org.gradle.api.Project;
+import org.gradle.api.tasks.TaskProvider;
 
-/**
- * Event published by the loot tracker when new loot is received
- */
-@Data
-@AllArgsConstructor
-public class LootReceived
+public abstract class IndexPlugin implements Plugin<Project>
 {
-	private String name;
-	private int combatLevel;
-	private LootRecordType type;
-	private Collection<ItemStack> items;
-	private int amount;
-	private Object metadata;
+
+	@Override
+	public void apply(Project project)
+	{
+		TaskProvider<IndexTask> buildRs2asmIndex = project.getTasks()
+			.register("buildRs2asmIndex", IndexTask.class, (task) -> task.setGroup("build"));
+
+		project.getTasks()
+			.getByName("processResources")
+			.dependsOn(buildRs2asmIndex);
+	}
 }

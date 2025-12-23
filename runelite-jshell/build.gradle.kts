@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Adam <Adam@sigterm.info>
+ * Copyright (c) 2024, LlemonDuck <napkinorton@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -22,25 +22,40 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.runelite.client.plugins.loottracker;
 
-import java.util.Collection;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import net.runelite.client.game.ItemStack;
-import net.runelite.http.api.loottracker.LootRecordType;
+plugins {
+    java
+    `maven-publish`
+    alias(libs.plugins.lombok)
+}
 
-/**
- * Event published by the loot tracker when new loot is received
- */
-@Data
-@AllArgsConstructor
-public class LootReceived
-{
-	private String name;
-	private int combatLevel;
-	private LootRecordType type;
-	private Collection<ItemStack> items;
-	private int amount;
-	private Object metadata;
+lombok.version = libs.versions.lombok.get()
+
+java {
+    withJavadocJar()
+    withSourcesJar()
+}
+
+dependencies {
+    implementation(libs.slf4j.api)
+    implementation(libs.guava) {
+        exclude("com.google.code.findbugs", "jsr305")
+        exclude("com.google.errorprone", "error_prone_annotations")
+        exclude("com.google.j2objc", "j2objc-annotations")
+        exclude("org.codehaus.mojo", "animal-sniffer-annotations")
+    }
+    implementation(variantOf(libs.guice.core) { classifier("no_aop") }) {
+        exclude("com.google.guava", "guava")
+    }
+    implementation(libs.findbugs)
+    implementation(libs.fife.rsyntaxtextarea)
+    implementation(libs.fife.autocomplete)
+}
+
+publishing {
+    publications {
+        create<MavenPublication>("jshell") {
+            from(components["java"])
+        }
+    }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019, Adam <Adam@sigterm.info>
+ * Copyright (c) 2024, LlemonDuck <napkinorton@gmail.com>
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -22,25 +22,22 @@
  * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
-package net.runelite.client.plugins.loottracker;
 
-import java.util.Collection;
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import net.runelite.client.game.ItemStack;
-import net.runelite.http.api.loottracker.LootRecordType;
-
-/**
- * Event published by the loot tracker when new loot is received
- */
-@Data
-@AllArgsConstructor
-public class LootReceived
-{
-	private String name;
-	private int combatLevel;
-	private LootRecordType type;
-	private Collection<ItemStack> items;
-	private int amount;
-	private Object metadata;
+tasks.register("cleanAll") {
+    gradle.includedBuilds.forEach { build -> this@register.dependsOn(build.task(":clean")) }
+}
+tasks.register("buildAll") {
+    gradle.includedBuilds.forEach { build -> this@register.dependsOn(build.task(":build")) }
+}
+tasks.register("assembleAll") {
+    gradle.includedBuilds.forEach { build -> this@register.dependsOn(build.task(":assemble")) }
+}
+tasks.register("testAll") {
+    gradle.includedBuilds.forEach { build -> this@register.dependsOn(build.task(":test")) }
+}
+tasks.register("publishAll") {
+    this@register.dependsOn(gradle.includedBuild("cache").task(":publish"))
+    this@register.dependsOn(gradle.includedBuild("runelite-api").task(":publish"))
+    this@register.dependsOn(gradle.includedBuild("runelite-client").task(":publish"))
+    this@register.dependsOn(gradle.includedBuild("runelite-jshell").task(":publish"))
 }
