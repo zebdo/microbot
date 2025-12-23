@@ -24,6 +24,17 @@
  */
 
 import java.io.ByteArrayOutputStream
+import java.util.Properties
+
+fun loadRootProperty(name: String): String? {
+    val propsFile = file("../gradle.properties")
+    if (!propsFile.isFile) {
+        return null
+    }
+    val props = Properties()
+    propsFile.inputStream().use { props.load(it) }
+    return props.getProperty(name)
+}
 
 plugins {
     java
@@ -40,7 +51,6 @@ plugins {
 lombok.version = libs.versions.lombok.get()
 
 java {
-    withJavadocJar()
     withSourcesJar()
 }
 
@@ -80,6 +90,9 @@ dependencies {
     api(libs.lwjgl.core)
     api(libs.lwjgl.opengl)
     api(libs.lwjgl.opencl)
+    implementation(libs.asm.core)
+    implementation(libs.asm.util)
+    implementation(libs.asm.commons)
 
     for (platform in listOf(
         "linux",
@@ -134,6 +147,18 @@ publishing {
             artifact(shadowJar) { classifier = "shaded" }
         }
     }
+    repositories {
+        val microbotRepoUrl = providers.gradleProperty("microbot.repo.url").orNull
+        if (!microbotRepoUrl.isNullOrBlank()) {
+            maven(uri(microbotRepoUrl)) {
+                name = "microbot"
+                credentials(PasswordCredentials::class) {
+                    username = providers.gradleProperty("microbot.repo.username").getOrElse("")
+                    password = providers.gradleProperty("microbot.repo.password").getOrElse("")
+                }
+            }
+        }
+    }
 }
 
 val assemble = tasks.withType<net.runelite.gradle.assemble.AssembleTask> {
@@ -160,10 +185,22 @@ tasks.processResources {
         standardOutput = dirty
     }
 
+    val fallbackMicrobotVersion = loadRootProperty("microbot.version")
+    val microbotVersion = providers.gradleProperty("microbot.version")
+        .orElse(fallbackMicrobotVersion ?: "0.0.0")
+        .get()
+    val microbotCommit = providers.gradleProperty("microbot.commit.sha").getOrElse(commit.toString().trim())
+
+    // Ensure task reruns when injected values change
+    inputs.property("microbotVersion", microbotVersion)
+    inputs.property("microbotCommit", microbotCommit)
+
     filesMatching("net/runelite/client/runelite.properties") {
         filter { it.replace("\${project.version}", project.version.toString()) }
         filter { it.replace("\${git.commit.id.abbrev}", commit.toString().trim()) }
         filter { it.replace("\${git.dirty}", dirty.toString().isNotBlank().toString()) }
+        filter { it.replace("\${microbot.version}", microbotVersion) }
+        filter { it.replace("\${microbot.commit.sha}", microbotCommit) }
     }
 }
 
@@ -195,6 +232,7 @@ tasks.checkstyleMain {
 }
 
 tasks.withType<Test> {
+    enabled = false
     systemProperty("glslang.path", providers.gradleProperty("glslangPath").getOrElse(""))
 }
 

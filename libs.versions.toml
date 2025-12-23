@@ -25,6 +25,7 @@
 [versions]
 rs = "235"
 cache = "165"
+asm = "9.0"
 
 flatlaf = "3.2.5-rl4"
 guice = "4.1.0"
@@ -78,6 +79,9 @@ protobuf = "com.google.protobuf:protobuf-javalite:3.21.12"
 slf4j-api = { module = "org.slf4j:slf4j-api", version.ref = "slf4j" }
 slf4j-simple = { module = "org.slf4j:slf4j-simple", version.ref = "slf4j" }
 tomlj = "org.tomlj:tomlj:1.1.0"
+asm-core = { module = "org.ow2.asm:asm", version.ref = "asm" }
+asm-util = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
+asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
 
 
 

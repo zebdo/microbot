@@ -22,8 +22,6 @@ import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
-import org.benf.cfr.reader.util.output.BytecodeDumpConsumer.Item;
-
 /**
  * Enhanced requirement registry that manages all types of requirements with automatic
  * uniqueness enforcement, consistency guarantees, and efficient lookup.
