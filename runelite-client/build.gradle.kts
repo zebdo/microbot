@@ -36,6 +36,9 @@ fun loadRootProperty(name: String): String? {
     return props.getProperty(name)
 }
 
+val microbotVersionProvider = providers.gradleProperty("microbot.version")
+    .orElse(loadRootProperty("microbot.version") ?: "0.0.0")
+
 plugins {
     java
     `java-library`
@@ -185,10 +188,7 @@ tasks.processResources {
         standardOutput = dirty
     }
 
-    val fallbackMicrobotVersion = loadRootProperty("microbot.version")
-    val microbotVersion = providers.gradleProperty("microbot.version")
-        .orElse(fallbackMicrobotVersion ?: "0.0.0")
-        .get()
+    val microbotVersion = microbotVersionProvider.get()
     val microbotCommit = providers.gradleProperty("microbot.commit.sha").getOrElse(commit.toString().trim())
 
     // Ensure task reruns when injected values change
@@ -211,6 +211,15 @@ tasks.compileJava {
 tasks.jar {
     exclude("**/.clang-format")
 }
+
+val microbotReleaseJar = tasks.register<Copy>("microbotReleaseJar") {
+    dependsOn(shadowJar)
+    from(shadowJar.flatMap { it.archiveFile })
+    into(layout.buildDirectory.dir("libs"))
+    rename { "microbot-${microbotVersionProvider.get()}.jar" }
+}
+
+tasks.assemble { dependsOn(microbotReleaseJar) }
 
 pmd {
     toolVersion = "7.2.0"
