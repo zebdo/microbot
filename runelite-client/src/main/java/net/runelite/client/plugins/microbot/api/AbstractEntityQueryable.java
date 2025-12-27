@@ -144,7 +144,7 @@ public abstract class AbstractEntityQueryable<
 
     @Override
     public E firstReachable() {
-        return source.filter(x -> !x.isReachable()).findFirst().orElse(null);
+        return source.filter(IEntity::isReachable).findFirst().orElse(null);
     }
 
     @Override
@@ -154,13 +154,13 @@ public abstract class AbstractEntityQueryable<
 
     @Override
     public E nearestReachable() {
-        source = source.filter(x -> !x.isReachable());
+        source = source.filter(IEntity::isReachable);
         return nearest(Integer.MAX_VALUE);
     }
 
     @Override
     public E nearestReachable(int maxDistance) {
-        source = source.filter(x -> !x.isReachable());
+        source = source.filter(IEntity::isReachable);
         return nearest(maxDistance);
     }
 

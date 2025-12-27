@@ -12,7 +12,6 @@ import net.runelite.client.plugins.microbot.api.actor.Rs2ActorModel;
 import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
 import net.runelite.client.plugins.microbot.api.player.data.SalvagingAnimations;
 import net.runelite.client.plugins.microbot.util.ActorModel;
-import org.apache.commons.lang3.NotImplementedException;
 
 @Getter
 public class Rs2PlayerModel extends Rs2ActorModel implements IEntity {
@@ -44,14 +43,32 @@ public class Rs2PlayerModel extends Rs2ActorModel implements IEntity {
     }
 
 
+    /**
+     * Player interactions are not currently implemented.
+     * Player-to-player interactions in RuneScape are complex and context-dependent
+     * (PvP, trading, following, etc.) and require careful handling to avoid misuse.
+     *
+     * @return false (not implemented)
+     */
     @Override
     public boolean click() {
-        throw new NotImplementedException("click() not implemented yet for Rs2PlayerModel - player interactions are not well-defined in the current codebase");
+        return false;
     }
 
+    /**
+     * Player interactions are not currently implemented.
+     * Player-to-player interactions in RuneScape are complex and context-dependent
+     * (PvP, trading, following, etc.) and require careful handling to avoid misuse.
+     *
+     * For PvP interactions, consider using Rs2Combat utilities directly.
+     * For trading, use Rs2Trade utilities (if available).
+     *
+     * @param action the intended action (not implemented)
+     * @return false (not implemented)
+     */
     @Override
     public boolean click(String action) {
-        throw new NotImplementedException("click(String action) not implemented yet for Rs2PlayerModel - player interactions are not well-defined in the current codebase");
+        return false;
     }
 
     // Sailing stuff

@@ -36,14 +36,12 @@ public class Rs2PlayerCache {
             if (worldView == null) {
                 continue;
             }
-            // Get all players using the existing Rs2Player utility
-            players.addAll(worldView.players()
+            result.addAll(worldView.players()
                     .stream()
                     .filter(Objects::nonNull)
                     .map(Rs2PlayerModel::new)
                     .collect(Collectors.toList()));
         }
-
 
         players = result;
         lastUpdatePlayers = Microbot.getClient().getTickCount();

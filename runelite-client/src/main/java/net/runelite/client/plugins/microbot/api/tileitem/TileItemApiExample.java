@@ -90,7 +90,7 @@ public class TileItemApiExample {
                 .toList();
 
         // Example 20: Static method to get stream directly
-        Rs2TileItemModel firstItem = Rs2TileItemCache.getGroundItemsStream()
+        Rs2TileItemModel firstItem = Rs2TileItemCache.getTileItemsStream()
                 .filter(item -> item.getName() != null)
                 .findFirst()
                 .orElse(null);

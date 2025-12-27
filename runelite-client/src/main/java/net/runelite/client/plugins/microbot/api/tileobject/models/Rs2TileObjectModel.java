@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.api.tileobject.models;
 
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.Point;
 import net.runelite.api.coords.LocalPoint;
@@ -20,7 +21,7 @@ import java.util.Objects;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
-
+@Slf4j
 public class Rs2TileObjectModel implements TileObject, IEntity {
 
     public Rs2TileObjectModel(GameObject gameObject) {
@@ -249,7 +250,7 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
             }
 
             if (index == -1) {
-                Microbot.log("Failed to interact with object " + getId() + " " + action);
+                log.warn("Failed to interact with object {} - action '{}' not found", getId(), action);
             }
 
 
@@ -288,7 +289,7 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
             //Rs2Reflection.invokeMenu(param0, param1, menuAction.getId(), object.getId(),-1, "", "", -1, -1);
 
         } catch (Exception ex) {
-            Microbot.log("Failed to interact with object " + ex.getMessage());
+            log.error("Failed to interact with object: ", ex);
         }
 
         return true;
