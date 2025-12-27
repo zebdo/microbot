@@ -27,39 +27,41 @@ package net.runelite.client.plugins.microbot.externalplugins;
 import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 import com.google.gson.Gson;
+import com.google.gson.JsonArray;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonSyntaxException;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
-import org.w3c.dom.Document;
-import org.w3c.dom.NodeList;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 import javax.imageio.ImageIO;
 import javax.inject.Inject;
-import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
-import javax.xml.parsers.ParserConfigurationException;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 @Slf4j
 public class MicrobotPluginClient
 {
     private static final HttpUrl MICROBOT_PLUGIN_HUB_URL = HttpUrl.parse("https://chsami.github.io/Microbot-Hub/");
-    private static final HttpUrl MICROBOT_PLUGIN_REPOSITORY_URL = HttpUrl.parse(
-        "https://nexus.microbot.cloud/repository/microbot-plugins/net/runelite/client/plugins/microbot/"
+    private static final HttpUrl MICROBOT_PLUGIN_RELEASES_URL = HttpUrl.parse(
+        "https://github.com/chsami/Microbot-Hub/releases/download/"
     );
+    private static final HttpUrl MICROBOT_PLUGIN_RELEASES_API_URL = HttpUrl.parse(
+        "https://api.github.com/repos/chsami/Microbot-Hub/releases"
+    );
+    private static final String GITHUB_TOKEN_ENV = "GITHUB_TOKEN";
+    private static final String ASSET_EXTENSION = ".jar";
     private static final String PLUGINS_JSON_PATH = "plugins.json";
     
     private final OkHttpClient okHttpClient;
@@ -129,15 +131,22 @@ public class MicrobotPluginClient
      */
     public HttpUrl getJarURL(MicrobotPluginManifest manifest, String versionOverride)
     {
-        String artifactId = manifest.getInternalName();
+        String artifactId = resolveArtifactId(manifest);
         String version = !Strings.isNullOrEmpty(versionOverride) ? versionOverride : manifest.getVersion();
-        if (MICROBOT_PLUGIN_REPOSITORY_URL != null && !Strings.isNullOrEmpty(artifactId) && !Strings.isNullOrEmpty(version))
+
+        if (!Strings.isNullOrEmpty(manifest.getDownloadUrl()))
         {
-            String artifactPath = sanitizeArtifactId(artifactId);
-            String fileName = artifactPath + "-" + version + ".jar";
-            return MICROBOT_PLUGIN_REPOSITORY_URL.newBuilder()
-                .addPathSegment(artifactPath)
-                .addPathSegment(version)
+            return HttpUrl.parse(manifest.getDownloadUrl());
+        }
+
+        if (MICROBOT_PLUGIN_RELEASES_URL != null && !Strings.isNullOrEmpty(artifactId) && !Strings.isNullOrEmpty(version))
+        {
+            String releaseTag = !Strings.isNullOrEmpty(manifest.getReleaseTag())
+                ? manifest.getReleaseTag()
+                : "v" + version;
+            String fileName = buildAssetFileName(artifactId, version);
+            return MICROBOT_PLUGIN_RELEASES_URL.newBuilder()
+                .addPathSegment(releaseTag)
                 .addPathSegment(fileName)
                 .build();
         }
@@ -156,74 +165,170 @@ public class MicrobotPluginClient
     }
 
     /**
-     * Fetches the list of published versions for the given plugin from the Microbot Nexus repository.
+     * Fetches the list of published versions for the given plugin from GitHub releases.
      */
-    public List<String> fetchAvailableVersions(String internalName) throws IOException
+    public List<String> fetchAvailableVersions(MicrobotPluginManifest manifest) throws IOException
     {
-        if (internalName == null || internalName.isEmpty() || MICROBOT_PLUGIN_REPOSITORY_URL == null)
+        if (manifest == null)
         {
             return Collections.emptyList();
         }
 
-        HttpUrl metadataUrl = MICROBOT_PLUGIN_REPOSITORY_URL.newBuilder()
-            .addPathSegment(sanitizeArtifactId(internalName))
-            .addPathSegment("maven-metadata.xml")
+        String artifactId = resolveArtifactId(manifest);
+        if (Strings.isNullOrEmpty(artifactId) || MICROBOT_PLUGIN_RELEASES_API_URL == null)
+        {
+            return Collections.emptyList();
+        }
+
+        HttpUrl releasesUrl = MICROBOT_PLUGIN_RELEASES_API_URL.newBuilder()
+            .addQueryParameter("per_page", "100")
             .build();
 
-        Request request = new Request.Builder()
-            .url(metadataUrl)
-            .header("Cache-Control", "no-cache")
+        Request request = withGithubHeaders(new Request.Builder()
+            .url(releasesUrl)
+            .header("Cache-Control", "no-cache"))
             .build();
 
         try (Response res = okHttpClient.newCall(request).execute())
         {
             if (res.body() == null || res.code() != 200)
             {
-                throw new IOException("Failed to fetch metadata for " + internalName + ": HTTP " + res.code());
+                throw new IOException("Failed to fetch releases for " + artifactId + ": HTTP " + res.code());
             }
 
-            String xml = res.body().string();
-            return parseVersionList(xml);
-        }
-        catch (ParserConfigurationException | SAXException ex)
-        {
-            throw new IOException("Unable to parse metadata for " + internalName, ex);
-        }
-    }
-
-    private List<String> parseVersionList(String xml) throws ParserConfigurationException, IOException, SAXException
-    {
-        if (xml == null || xml.isEmpty())
-        {
-            return Collections.emptyList();
-        }
-
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setFeature("http://apache.org/xml/features/disallow-doctype-decl", true);
-        factory.setFeature("http://xml.org/sax/features/external-general-entities", false);
-        factory.setFeature("http://xml.org/sax/features/external-parameter-entities", false);
-        factory.setXIncludeAware(false);
-        factory.setExpandEntityReferences(false);
-
-        DocumentBuilder builder = factory.newDocumentBuilder();
-        Document document = builder.parse(new InputSource(new StringReader(xml)));
-        NodeList versionNodes = document.getElementsByTagName("version");
-        List<String> versions = new ArrayList<>(versionNodes.getLength());
-
-        for (int i = 0; i < versionNodes.getLength(); i++)
-        {
-            String text = versionNodes.item(i).getTextContent();
-            if (text != null && !text.isBlank())
+            JsonArray releases = gson.fromJson(res.body().string(), JsonArray.class);
+            if (releases == null || releases.size() == 0)
             {
-                versions.add(text.trim());
+                return Collections.emptyList();
             }
-        }
 
-        return versions;
+            Set<String> versions = new LinkedHashSet<>();
+            String normalizedArtifact = artifactId.toLowerCase(Locale.ROOT);
+
+            for (JsonElement releaseElem : releases)
+            {
+                if (!releaseElem.isJsonObject())
+                {
+                    continue;
+                }
+
+                JsonObject release = releaseElem.getAsJsonObject();
+                String tagName = getString(release, "tag_name");
+                JsonArray assets = release.getAsJsonArray("assets");
+                if (assets == null)
+                {
+                    continue;
+                }
+
+                for (JsonElement assetElem : assets)
+                {
+                    if (!assetElem.isJsonObject())
+                    {
+                        continue;
+                    }
+
+                    JsonObject asset = assetElem.getAsJsonObject();
+                    String assetName = getString(asset, "name");
+                    if (Strings.isNullOrEmpty(assetName))
+                    {
+                        continue;
+                    }
+
+                    if (matchesArtifact(assetName, normalizedArtifact))
+                    {
+                        String version = extractVersionFromAsset(assetName, normalizedArtifact);
+                        if (!Strings.isNullOrEmpty(version))
+                        {
+                            versions.add(version);
+                        }
+                        else if (!Strings.isNullOrEmpty(tagName))
+                        {
+                            versions.add(normalizeTag(tagName));
+                        }
+                    }
+                }
+            }
+
+            return new ArrayList<>(versions);
+        }
+        catch (JsonSyntaxException ex)
+        {
+            throw new IOException("Unable to parse releases for " + artifactId, ex);
+        }
     }
 
-    private String sanitizeArtifactId(String artifactId)
+    private Request.Builder withGithubHeaders(Request.Builder builder)
     {
-        return artifactId == null ? "" : artifactId.toLowerCase(Locale.ROOT);
+        builder.header("Accept", "application/vnd.github+json")
+            .header("User-Agent", "microbot-client");
+
+        String token = System.getenv(GITHUB_TOKEN_ENV);
+        if (!Strings.isNullOrEmpty(token))
+        {
+            builder.header("Authorization", "Bearer " + token);
+        }
+        return builder;
+    }
+
+    private String resolveArtifactId(MicrobotPluginManifest manifest)
+    {
+        if (manifest == null)
+        {
+            return "";
+        }
+
+        String artifactId = manifest.getArtifactId();
+        if (!Strings.isNullOrEmpty(artifactId))
+        {
+            return artifactId;
+        }
+
+        return manifest.getInternalName();
+    }
+
+    private String buildAssetFileName(String artifactId, String version)
+    {
+        return artifactId + "-" + version + ASSET_EXTENSION;
+    }
+
+    private boolean matchesArtifact(String assetName, String normalizedArtifact)
+    {
+        String lower = assetName.toLowerCase(Locale.ROOT);
+        return lower.startsWith(normalizedArtifact + "-") && lower.endsWith(ASSET_EXTENSION);
+    }
+
+    private String extractVersionFromAsset(String assetName, String normalizedArtifact)
+    {
+        String lower = assetName.toLowerCase(Locale.ROOT);
+        int prefixLength = normalizedArtifact.length() + 1; // hyphen
+        int suffixLength = ASSET_EXTENSION.length();
+        if (lower.length() <= prefixLength + suffixLength)
+        {
+            return null;
+        }
+
+        String versionPart = assetName.substring(prefixLength, assetName.length() - suffixLength);
+        return normalizeTag(versionPart);
+    }
+
+    private String normalizeTag(String tag)
+    {
+        if (Strings.isNullOrEmpty(tag))
+        {
+            return tag;
+        }
+
+        return tag.startsWith("v") && tag.length() > 1 ? tag.substring(1) : tag;
+    }
+
+    private String getString(JsonObject obj, String memberName)
+    {
+        if (obj == null || Strings.isNullOrEmpty(memberName) || !obj.has(memberName))
+        {
+            return null;
+        }
+
+        JsonElement elem = obj.get(memberName);
+        return elem != null && !elem.isJsonNull() ? elem.getAsString() : null;
     }
 }

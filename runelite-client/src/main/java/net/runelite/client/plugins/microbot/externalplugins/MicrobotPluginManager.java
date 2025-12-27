@@ -145,7 +145,7 @@ public class MicrobotPluginManager {
             for (MicrobotPluginManifest m : manifests) {
                 next.put(m.getInternalName(), m);
                 try {
-                    List<String> versions = microbotPluginClient.fetchAvailableVersions(m.getInternalName());
+                    List<String> versions = microbotPluginClient.fetchAvailableVersions(m);
                     m.setAvailableVersions(versions);
                 } catch (IOException ex) {
                     log.warn("Failed to fetch available versions for {}: {}", m.getInternalName(), ex.getMessage());

@@ -75,21 +75,3 @@ jobs:
           source: runelite-client/build/libs/microbot-*.jar
           target: /var/www/files/releases/microbot/nightly/
           strip_components: 2
-
-      - name: Set up Maven settings
-        run: |
-          mkdir -p ~/.m2
-          cat > ~/.m2/settings.xml <<EOL
-          <settings>
-          <servers>
-           <server>
-             <id>microbot-nightly</id>
-             <username>${{ secrets.NEXUS_USER }}</username>
-             <password>${{ secrets.NEXUS_PASSWORD }}</password>
-           </server>
-          </servers>
-          </settings>
-          EOL
-
-      - name: Deploy to Nexus
-        run: mvn deploy:deploy-file -DgroupId=com.microbot -DartifactId=client -Dversion=${{ steps.version.outputs.version }} -Dpackaging=jar -Dfile=runelite-client/build/libs/microbot-${{ steps.version.outputs.version }}.jar -DrepositoryId=microbot-nightly -Durl=https://nexus.microbot.cloud/repository/microbot-nightly/

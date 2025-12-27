@@ -63,6 +63,21 @@ public class MicrobotPluginManifest {
     private String version;
 
     /**
+     * Optional artifact identifier; defaults to {@link #internalName} when missing.
+     */
+    private String artifactId;
+
+    /**
+     * Optional fully qualified download URL overriding the default GitHub release pattern.
+     */
+    private String downloadUrl;
+
+    /**
+     * Optional GitHub release tag to use when building download URLs; falls back to "v" + version.
+     */
+    private String releaseTag;
+
+    /**
      * Minimum client version required for this plugin
      */
     private String minClientVersion;
