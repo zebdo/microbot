@@ -207,7 +207,7 @@ public class PluginManager {
                     SwingUtilities.invokeAndWait(() ->
                     {
                     runnable.run();
-                        
+
                     });
                 }
             } catch (InterruptedException | InvocationTargetException e) {
@@ -315,13 +315,15 @@ public class PluginManager {
                 continue;
             }
 
-            if (safeMode && !pluginDescriptor.loadInSafeMode()) {
-                log.debug("Disabling {} due to safe mode", clazz);
-                // also disable the plugin from autostarting later
-                configManager.unsetConfiguration(RuneLiteConfig.GROUP_NAME,
-                        (Strings.isNullOrEmpty(pluginDescriptor.configName()) ? clazz.getSimpleName() : pluginDescriptor.configName()).toLowerCase());
-                continue;
-            }
+			if (safeMode && !pluginDescriptor.loadInSafeMode())
+			{
+				log.debug("Disabling {} due to safe mode", clazz);
+				// also disable the plugin from autostarting later
+				configManager.setConfiguration(RuneLiteConfig.GROUP_NAME,
+					(Strings.isNullOrEmpty(pluginDescriptor.configName()) ? clazz.getSimpleName() : pluginDescriptor.configName()).toLowerCase(),
+					false);
+				continue;
+			}
 
             graph.addNode((Class<Plugin>) clazz);
         }
