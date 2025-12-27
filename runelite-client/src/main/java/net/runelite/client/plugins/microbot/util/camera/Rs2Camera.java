@@ -8,6 +8,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.plugins.camera.CameraPlugin;
 import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.api.player.models.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.util.Global;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
@@ -20,26 +21,30 @@ public class Rs2Camera {
     private static final NpcTracker NPC_TRACKER = new NpcTracker();
 
     public static int angleToTile(Actor t) {
-        int angle = (int) Math.toDegrees(Math.atan2(t.getWorldLocation().getY() - Microbot.getClient().getLocalPlayer().getWorldLocation().getY(),
-                t.getWorldLocation().getX() - Microbot.getClient().getLocalPlayer().getWorldLocation().getX()));
+        var playerLocation = new Rs2PlayerModel().getWorldLocation();
+        int angle = (int) Math.toDegrees(Math.atan2(t.getWorldLocation().getY() - playerLocation.getY(),
+                t.getWorldLocation().getX() - playerLocation.getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 
     public static int angleToTile(TileObject t) {
-        int angle = (int) Math.toDegrees(Math.atan2(t.getWorldLocation().getY() - Microbot.getClient().getLocalPlayer().getWorldLocation().getY(),
-                t.getWorldLocation().getX() - Microbot.getClient().getLocalPlayer().getWorldLocation().getX()));
+        var playerLocation = new Rs2PlayerModel().getWorldLocation();
+        int angle = (int) Math.toDegrees(Math.atan2(t.getWorldLocation().getY() - playerLocation.getY(),
+                t.getWorldLocation().getX() - playerLocation.getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 
     public static int angleToTile(LocalPoint localPoint) {
-        int angle = (int) Math.toDegrees(Math.atan2(localPoint.getY() - Microbot.getClient().getLocalPlayer().getLocalLocation().getY(),
-                localPoint.getX() - Microbot.getClient().getLocalPlayer().getLocalLocation().getX()));
+        var playerLocation = new Rs2PlayerModel().getWorldLocation();
+        int angle = (int) Math.toDegrees(Math.atan2(localPoint.getY() - playerLocation.getY(),
+                localPoint.getX() - playerLocation.getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 
     public static int angleToTile(WorldPoint worldPoint) {
-        int angle = (int) Math.toDegrees(Math.atan2(worldPoint.getY() - Rs2Player.getWorldLocation().getY(),
-                worldPoint.getX() - Rs2Player.getWorldLocation().getX()));
+        var playerLocation = new Rs2PlayerModel().getWorldLocation();
+        int angle = (int) Math.toDegrees(Math.atan2(worldPoint.getY() - playerLocation.getY(),
+                worldPoint.getX() - playerLocation.getX()));
         return angle >= 0 ? angle : 360 + angle;
     }
 

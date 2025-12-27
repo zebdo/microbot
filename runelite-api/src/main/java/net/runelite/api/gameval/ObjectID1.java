@@ -2,7 +2,7 @@
 package net.runelite.api.gameval;
 
 @SuppressWarnings("unused")
-class ObjectID1
+public class ObjectID1
 {
 
 	/**

@@ -37,7 +37,7 @@ public class ActorModel implements Actor
 		return Microbot.getClientThread().runOnClientThreadOptional(actor::getCombatLevel).orElse(0);
 	}
 
-	@Override
+    @Override
 	public @Nullable String getName()
 	{
 		return Microbot.getClientThread().runOnClientThreadOptional(actor::getName).orElse(null);
@@ -70,13 +70,13 @@ public class ActorModel implements Actor
 	@Override
 	public WorldPoint getWorldLocation()
 	{
-		return actor.getWorldLocation();
+		return Microbot.getClientThread().invoke(actor::getWorldLocation);
 	}
 
 	@Override
 	public LocalPoint getLocalLocation()
 	{
-		return actor.getLocalLocation();
+		return Microbot.getClientThread().invoke(actor::getLocalLocation);
 	}
 
 	@Override
@@ -352,7 +352,7 @@ public class ActorModel implements Actor
 	@Override
 	public WorldArea getWorldArea()
 	{
-		return actor.getWorldArea();
+		return Microbot.getClientThread().invoke(actor::getWorldArea);
 	}
 
 	@Override

@@ -98,6 +98,69 @@ public class NewMenuEntry implements MenuEntry {
     }
 
     public NewMenuEntry() {
+        this.option = "";
+        this.target = "";
+        this.itemId = -1;
+    }
+
+    public NewMenuEntry option(String option) {
+        this.option = option;
+        return this;
+    }
+
+    public NewMenuEntry target(String target) {
+        this.target = target;
+        return this;
+    }
+
+    public NewMenuEntry identifier(int identifier) {
+        this.identifier = identifier;
+        return this;
+    }
+
+    public NewMenuEntry type(MenuAction type) {
+        this.type = type;
+        return this;
+    }
+
+    public NewMenuEntry opcode(int opcode) {
+        this.type = MenuAction.of(opcode);
+        return this;
+    }
+
+    public NewMenuEntry param0(int param0) {
+        this.param0 = param0;
+        return this;
+    }
+
+    public NewMenuEntry param1(int param1) {
+        this.param1 = param1;
+        return this;
+    }
+
+    public NewMenuEntry forceLeftClick(boolean forceLeftClick) {
+        this.forceLeftClick = forceLeftClick;
+        return this;
+    }
+
+    public NewMenuEntry actor(Actor actor) {
+        this.actor = actor;
+        return this;
+    }
+
+    public NewMenuEntry gameObject(TileObject gameObject) {
+        this.gameObject = gameObject;
+        return this;
+    }
+
+    public NewMenuEntry widget(Widget widget) {
+        this.widget = widget;
+        return this;
+    }
+
+    public NewMenuEntry worldViewId(int worldViewId) {
+        this.worldViewId = worldViewId;
+        return this;
     }
 
     public MenuEntry setOption(String option) {
@@ -141,7 +204,7 @@ public class NewMenuEntry implements MenuEntry {
     }
 
     @Override
-    public MenuEntry setWorldViewId(int worldViewId) {
+    public NewMenuEntry setWorldViewId(int worldViewId) {
         this.worldViewId = worldViewId;
         return this;
     }
@@ -175,12 +238,16 @@ public class NewMenuEntry implements MenuEntry {
         return 0;
     }
 
+    public NewMenuEntry itemId(int itemId) {
+        this.itemId = itemId;
+        return this;
+    }
+
     @Override
     public MenuEntry setItemId(int itemId) {
         this.itemId = itemId;
         return this;
     }
-
 
     public MenuEntry setWidget(Widget widget) {
         this.widget = widget;
