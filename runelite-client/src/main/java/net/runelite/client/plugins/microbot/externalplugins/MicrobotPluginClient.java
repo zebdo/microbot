@@ -55,7 +55,7 @@ public class MicrobotPluginClient
 {
     private static final HttpUrl MICROBOT_PLUGIN_HUB_URL = HttpUrl.parse("https://chsami.github.io/Microbot-Hub/");
     private static final HttpUrl MICROBOT_PLUGIN_RELEASES_URL = HttpUrl.parse(
-        "https://github.com/chsami/Microbot-Hub/releases/download/"
+        "https://github.com/chsami/Microbot-Hub/releases/download/latest-release/"
     );
     private static final HttpUrl MICROBOT_PLUGIN_RELEASES_API_URL = HttpUrl.parse(
         "https://api.github.com/repos/chsami/Microbot-Hub/releases"
@@ -141,12 +141,8 @@ public class MicrobotPluginClient
 
         if (MICROBOT_PLUGIN_RELEASES_URL != null && !Strings.isNullOrEmpty(artifactId) && !Strings.isNullOrEmpty(version))
         {
-            String releaseTag = !Strings.isNullOrEmpty(manifest.getReleaseTag())
-                ? manifest.getReleaseTag()
-                : "v" + version;
             String fileName = buildAssetFileName(artifactId, version);
             return MICROBOT_PLUGIN_RELEASES_URL.newBuilder()
-                .addPathSegment(releaseTag)
                 .addPathSegment(fileName)
                 .build();
         }
@@ -167,17 +163,11 @@ public class MicrobotPluginClient
     /**
      * Fetches the list of published versions for the given plugin from GitHub releases.
      */
-    public List<String> fetchAvailableVersions(MicrobotPluginManifest manifest) throws IOException
+    public JsonArray fetchAllReleases() throws IOException
     {
-        if (manifest == null)
+        if (MICROBOT_PLUGIN_RELEASES_API_URL == null)
         {
-            return Collections.emptyList();
-        }
-
-        String artifactId = resolveArtifactId(manifest);
-        if (Strings.isNullOrEmpty(artifactId) || MICROBOT_PLUGIN_RELEASES_API_URL == null)
-        {
-            return Collections.emptyList();
+            return new JsonArray();
         }
 
         HttpUrl releasesUrl = MICROBOT_PLUGIN_RELEASES_API_URL.newBuilder()
@@ -193,68 +183,85 @@ public class MicrobotPluginClient
         {
             if (res.body() == null || res.code() != 200)
             {
-                throw new IOException("Failed to fetch releases for " + artifactId + ": HTTP " + res.code());
+                throw new IOException("Failed to fetch releases: HTTP " + res.code());
             }
 
             JsonArray releases = gson.fromJson(res.body().string(), JsonArray.class);
-            if (releases == null || releases.size() == 0)
-            {
-                return Collections.emptyList();
-            }
-
-            Set<String> versions = new LinkedHashSet<>();
-            String normalizedArtifact = artifactId.toLowerCase(Locale.ROOT);
-
-            for (JsonElement releaseElem : releases)
-            {
-                if (!releaseElem.isJsonObject())
-                {
-                    continue;
-                }
-
-                JsonObject release = releaseElem.getAsJsonObject();
-                String tagName = getString(release, "tag_name");
-                JsonArray assets = release.getAsJsonArray("assets");
-                if (assets == null)
-                {
-                    continue;
-                }
-
-                for (JsonElement assetElem : assets)
-                {
-                    if (!assetElem.isJsonObject())
-                    {
-                        continue;
-                    }
-
-                    JsonObject asset = assetElem.getAsJsonObject();
-                    String assetName = getString(asset, "name");
-                    if (Strings.isNullOrEmpty(assetName))
-                    {
-                        continue;
-                    }
-
-                    if (matchesArtifact(assetName, normalizedArtifact))
-                    {
-                        String version = extractVersionFromAsset(assetName, normalizedArtifact);
-                        if (!Strings.isNullOrEmpty(version))
-                        {
-                            versions.add(version);
-                        }
-                        else if (!Strings.isNullOrEmpty(tagName))
-                        {
-                            versions.add(normalizeTag(tagName));
-                        }
-                    }
-                }
-            }
-
-            return new ArrayList<>(versions);
+            return releases != null ? releases : new JsonArray();
         }
         catch (JsonSyntaxException ex)
         {
-            throw new IOException("Unable to parse releases for " + artifactId, ex);
+            throw new IOException("Unable to parse releases", ex);
         }
+    }
+
+    public List<String> parseVersionsFromReleases(MicrobotPluginManifest manifest, JsonArray releases) throws IOException
+    {
+        if (manifest == null || releases == null || releases.size() == 0)
+        {
+            return Collections.emptyList();
+        }
+
+        String artifactId = resolveArtifactId(manifest);
+        if (Strings.isNullOrEmpty(artifactId))
+        {
+            return Collections.emptyList();
+        }
+
+        Set<String> versions = new LinkedHashSet<>();
+        String normalizedArtifact = artifactId.toLowerCase(Locale.ROOT);
+
+        for (JsonElement releaseElem : releases)
+        {
+            if (!releaseElem.isJsonObject())
+            {
+                continue;
+            }
+
+            JsonObject release = releaseElem.getAsJsonObject();
+            String tagName = getString(release, "tag_name");
+            JsonArray assets = release.getAsJsonArray("assets");
+            if (assets == null)
+            {
+                continue;
+            }
+
+            for (JsonElement assetElem : assets)
+            {
+                if (!assetElem.isJsonObject())
+                {
+                    continue;
+                }
+
+                JsonObject asset = assetElem.getAsJsonObject();
+                String assetName = getString(asset, "name");
+                if (Strings.isNullOrEmpty(assetName))
+                {
+                    continue;
+                }
+
+                if (matchesArtifact(assetName, normalizedArtifact))
+                {
+                    String version = extractVersionFromAsset(assetName, normalizedArtifact);
+                    if (!Strings.isNullOrEmpty(version))
+                    {
+                        versions.add(version);
+                    }
+                    else if (!Strings.isNullOrEmpty(tagName))
+                    {
+                        versions.add(normalizeTag(tagName));
+                    }
+                }
+            }
+        }
+
+        return new ArrayList<>(versions);
+    }
+
+    public List<String> fetchAvailableVersions(MicrobotPluginManifest manifest) throws IOException
+    {
+        JsonArray releases = fetchAllReleases();
+        return parseVersionsFromReleases(manifest, releases);
     }
 
     private Request.Builder withGithubHeaders(Request.Builder builder)
