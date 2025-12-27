@@ -143,14 +143,26 @@ public class MicrobotPluginManager {
         try {
             List<MicrobotPluginManifest> manifests = microbotPluginClient.downloadManifest();
             Map<String, MicrobotPluginManifest> next = new HashMap<>(manifests.size());
+
+            com.google.gson.JsonArray allReleases = null;
+            try {
+                allReleases = microbotPluginClient.fetchAllReleases();
+                log.debug("Fetched {} releases from GitHub", allReleases.size());
+            } catch (IOException ex) {
+                log.warn("Failed to fetch GitHub releases: {}", ex.getMessage());
+                log.debug("Releases fetch error", ex);
+            }
+
             for (MicrobotPluginManifest m : manifests) {
                 next.put(m.getInternalName(), m);
-                try {
-                    List<String> versions = microbotPluginClient.fetchAvailableVersions(m);
-                    m.setAvailableVersions(versions);
-                } catch (IOException ex) {
-                    log.warn("Failed to fetch available versions for {}: {}", m.getInternalName(), ex.getMessage());
-                    log.debug("Version fetch error", ex);
+                if (allReleases != null) {
+                    try {
+                        List<String> versions = microbotPluginClient.parseVersionsFromReleases(m, allReleases);
+                        m.setAvailableVersions(versions);
+                    } catch (IOException ex) {
+                        log.warn("Failed to parse available versions for {}: {}", m.getInternalName(), ex.getMessage());
+                        log.debug("Version parse error", ex);
+                    }
                 }
             }
             boolean changed = !next.keySet().equals(manifestMap.keySet())
@@ -933,6 +945,8 @@ public class MicrobotPluginManager {
             Request request = new Request.Builder()
                     .url(jarUrl)
                     .build();
+
+            log.info("from url : " + jarUrl);
 
             try (Response response = clientWithoutProxy.newCall(request).execute()) {
                 if (!response.isSuccessful()) {
