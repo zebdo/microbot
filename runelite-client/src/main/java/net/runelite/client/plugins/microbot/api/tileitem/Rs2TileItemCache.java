@@ -17,7 +17,6 @@ import java.util.stream.Stream;
  * Uses polling-based approach to ensure reliability, as ItemSpawned/ItemDespawned events
  * are not always triggered consistently.
  */
-@Singleton
 public class Rs2TileItemCache {
 
     private static int lastUpdateTick = 0;

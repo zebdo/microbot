@@ -68,10 +68,14 @@ public class ExampleScript extends Script {
                     System.out.println(a);
                 }*/
 
-                var shipwreck = rs2TileObjectCache.query().where(x -> x.getName() != null && x.getName().toLowerCase().contains("shipwreck")).within(10).nearestOnClientThread();
+                var shipwreck = rs2TileObjectCache.query()
+                        .where(x -> x.getName() != null && x.getName().toLowerCase().contains("shipwreck"))
+                        .within(5)
+                        .nearestOnClientThread();
+                var player = new Rs2PlayerModel();
 
-                var inventoryCheck = Rs2Inventory.count() >= Rs2Random.between(24, 28);
-                if (inventoryCheck && Rs2Inventory.count("salvage") > 0) {
+                var isInvFull = Rs2Inventory.count() >= Rs2Random.between(24, 28);
+                if (isInvFull && Rs2Inventory.count("salvage") > 0 && player.getAnimation() == -1) {
                     // Rs2Inventory.dropAll("large salvage");
                     rs2TileObjectCache.query()
                             .fromWorldView()
@@ -79,11 +83,10 @@ public class ExampleScript extends Script {
                             .where(x -> x.getWorldView().getId() == new Rs2PlayerModel().getWorldView().getId())
                             .nearestOnClientThread()
                             .click();
-                    sleepUntil(() -> Rs2Inventory.count("salvage") == 0, 20000);
-                } else if (inventoryCheck) {
+                    sleepUntil(() -> Rs2Inventory.count("salvage") == 0, 60000);
+                } else if (isInvFull) {
                     dropJunk();
                 } else {
-                    var player = new Rs2PlayerModel();
                     if (player.getAnimation() != -1) {
                         log.info("Currently salvaging, waiting...");
                         sleep(5000, 10000);
@@ -137,6 +140,10 @@ public class ExampleScript extends Script {
         junkItems.add("mahogany repair kit");
         junkItems.add("teak repair kit");
         junkItems.add("rum");
+        junkItems.add("diamond bracelet");
+        junkItems.add("sapphire ring");
+        junkItems.add("emerald ring");
+        junkItems.add("emerald bracelet");
         Rs2Inventory.dropAll( junkItems.toArray(new String[0]));
     }
 }

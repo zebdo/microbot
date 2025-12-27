@@ -30,6 +30,73 @@ public class NewMenuEntry implements MenuEntry {
     private Widget widget;
     private int worldViewId = -1;
 
+    private NewMenuEntry(int param0, int param1, MenuAction type, int identifier) {
+        this.param0 = param0;
+        this.param1 = param1;
+        this.type = type;
+        this.identifier = identifier;
+    }
+
+    private NewMenuEntry(int param0, int param1, int opcode, int identifier) {
+        this(param0, param1, MenuAction.of(opcode), identifier);
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target) {
+        this(param0, param1, opcode, identifier);
+        this.option = target;
+        this.target = "";
+        this.forceLeftClick = false;
+        this.itemId = itemId;
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, int worldViewId) {
+        this(param0, param1, opcode, identifier, itemId, target);
+        this.setWorldViewId(worldViewId);
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, Actor actor, String option) {
+        this(param0, param1, opcode, identifier);
+        this.option = option;
+        this.target = target;
+        this.forceLeftClick = false;
+        this.itemId = itemId;
+        this.actor = actor;
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String target, Actor actor) {
+        this(param0, param1, opcode, identifier, itemId, target, actor, "Use");
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String option, String target, TileObject gameObject) {
+        this(param0, param1, opcode, identifier);
+        this.option = option;
+        this.target = target;
+        this.forceLeftClick = false;
+        this.itemId = itemId;
+        this.gameObject = gameObject;
+    }
+
+    public NewMenuEntry(int param0, int param1, int opcode, int identifier, int itemId, String option, String target, TileObject gameObject, int worldViewId) {
+        this(param0, param1, opcode, identifier, itemId, option, target, gameObject);
+        this.forceLeftClick = false;
+        this.setWorldViewId(worldViewId);
+    }
+
+    public NewMenuEntry(String option, String target, int identifier, MenuAction type, int param0, int param1, boolean forceLeftClick) {
+        this(param0, param1, type, identifier);
+        this.option = option;
+        this.target = target;
+        this.forceLeftClick = forceLeftClick;
+    }
+
+    public NewMenuEntry(String option, int param0, int param1, int opcode, int identifier, int itemId, String target) {
+        this(param0, param1, opcode, identifier);
+        this.option = option;
+        this.target = target;
+        this.forceLeftClick = false;
+        this.itemId = itemId;
+    }
+
     public NewMenuEntry() {
         this.option = "";
         this.target = "";

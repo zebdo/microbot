@@ -34,6 +34,8 @@ logback = "1.2.9"
 lwjgl = "3.3.2"
 slf4j = "1.7.25"
 antlr = "4.13.1"
+jackson = "2.17.2"
+fastutil = "8.5.12"
 
 
 [libraries]
@@ -56,6 +58,8 @@ fife-rsyntaxtextarea = "com.fifesoft:rsyntaxtextarea:3.1.2"
 fife-autocomplete = "com.fifesoft:autocomplete:3.1.1"
 findbugs = "com.google.code.findbugs:jsr305:3.0.2"
 gson = "com.google.code.gson:gson:2.8.5"
+jackson-databind = { module = "com.fasterxml.jackson.core:jackson-databind", version.ref = "jackson" }
+fastutil = { module = "it.unimi.dsi:fastutil", version.ref = "fastutil" }
 guava = "com.google.guava:guava:23.2-jre"
 guice-core = { module = "com.google.inject:guice", version.ref = "guice" }
 guice-testlib = { module = "com.google.inject.extensions:guice-testlib", version.ref = "guice" }
@@ -82,7 +86,6 @@ tomlj = "org.tomlj:tomlj:1.1.0"
 asm-core = { module = "org.ow2.asm:asm", version.ref = "asm" }
 asm-util = { module = "org.ow2.asm:asm-util", version.ref = "asm" }
 asm-commons = { module = "org.ow2.asm:asm-commons", version.ref = "asm" }
-
 
 
 [plugins]
