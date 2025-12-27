@@ -72,6 +72,7 @@ dependencies {
         exclude("org.slf4j", "slf4j-api")
     }
     api(libs.jopt)
+    implementation(libs.fastutil)
     api(libs.guava) {
         exclude("com.google.code.findbugs", "jsr305")
         exclude("com.google.errorprone", "error_prone_annotations")
@@ -82,6 +83,7 @@ dependencies {
         exclude("com.google.guava", "guava")
     }
     api(libs.gson)
+    implementation(libs.jackson.databind)
     api(libs.flatlaf.core)
     implementation(libs.flatlaf.extras)
     api(libs.commons.text)

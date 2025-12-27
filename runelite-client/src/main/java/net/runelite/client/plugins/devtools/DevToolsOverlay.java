@@ -497,7 +497,7 @@ class DevToolsOverlay extends Overlay {
 	{
 		if (tileObject != null)
 		{
-			OverlayUtil.renderTileOverlay(graphics, tileObject, "ID: " + tileObject.getId(), color);
+			OverlayUtil.renderTileOverlay(graphics, tileObject, "ID: " + tileObject.getId() + " wv:" + tileObject.getWorldView().getId(), color);
 		}
 	}
 
