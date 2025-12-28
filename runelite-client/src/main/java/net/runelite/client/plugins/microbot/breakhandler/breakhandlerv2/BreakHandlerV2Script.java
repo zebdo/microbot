@@ -506,95 +506,143 @@ public class BreakHandlerV2Script extends Script {
     /**
      * Select world based on configuration and profile
      */
-    private int selectWorld() {
-        boolean membersOnly = config.respectMemberStatus() &&
-                              activeProfile != null &&
-                              activeProfile.isMember();
+	private int selectWorld() {
+		boolean membersOnly = config.respectMemberStatus() &&
+		                      activeProfile != null &&
+		                      activeProfile.isMember();
 
-        WorldRegion region = config.regionPreference().getWorldRegion();
+		WorldRegion region = config.regionPreference().getWorldRegion();
+		Integer preferredWorld = resolveProfilePreferredWorld(region);
 
-        int targetWorld = -1;
+		int targetWorld = -1;
 
-        switch (config.worldSelectionMode()) {
-            case CURRENT_PREFERRED_WORLD:
-                targetWorld = preBreakWorld != -1 ? preBreakWorld :
-                    Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
-                        region,
-                        config.avoidEmptyWorlds(),
-                        config.avoidOvercrowdedWorlds(),
-                        membersOnly
-                    );
-                break;
+		switch (config.worldSelectionMode()) {
+			case CURRENT_PREFERRED_WORLD:
+				if (preferredWorld != null) {
+					targetWorld = preferredWorld;
+					break;
+				}
 
-            case RANDOM_WORLD:
-                targetWorld = Rs2WorldUtil.getRandomAccessibleWorld(
-                    config.avoidEmptyWorlds(),
-                    config.avoidOvercrowdedWorlds(),
-                    membersOnly
-                );
-                break;
+				if (preBreakWorld != -1 && Rs2WorldUtil.canAccessWorld(preBreakWorld)) {
+					targetWorld = preBreakWorld;
+					break;
+				}
 
-            case REGIONAL_RANDOM:
-                targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
-                    region,
-                    config.avoidEmptyWorlds(),
-                    config.avoidOvercrowdedWorlds(),
-                    membersOnly
-                );
-                break;
+				targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+					region,
+					config.avoidEmptyWorlds(),
+					config.avoidOvercrowdedWorlds(),
+					membersOnly
+				);
+				break;
 
-            case BEST_POPULATION:
-                targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
-                    false, // by population, not ping
-                    region,
-                    config.avoidEmptyWorlds(),
-                    config.avoidOvercrowdedWorlds(),
-                    membersOnly
-                );
-                break;
+			case RANDOM_WORLD:
+				targetWorld = Rs2WorldUtil.getRandomAccessibleWorld(
+					config.avoidEmptyWorlds(),
+					config.avoidOvercrowdedWorlds(),
+					membersOnly
+				);
+				break;
 
-            case BEST_PING:
-                targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
-                    true, // by ping
-                    region,
-                    config.avoidEmptyWorlds(),
-                    config.avoidOvercrowdedWorlds(),
-                    membersOnly
-                );
-                break;
-        }
+			case REGIONAL_RANDOM:
+				targetWorld = Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+					region,
+					config.avoidEmptyWorlds(),
+					config.avoidOvercrowdedWorlds(),
+					membersOnly
+				);
+				break;
 
-        log.info("[BreakHandlerV2] Selected world: {} (mode: {}, members: {})",
-                 targetWorld, config.worldSelectionMode(), membersOnly);
+			case BEST_POPULATION:
+				targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
+					false, // by population, not ping
+					region,
+					config.avoidEmptyWorlds(),
+					config.avoidOvercrowdedWorlds(),
+					membersOnly
+				);
+				break;
 
-        return targetWorld;
-    }
+			case BEST_PING:
+				targetWorld = Rs2WorldUtil.getBestAccessibleWorldForLogin(
+					true, // by ping
+					region,
+					config.avoidEmptyWorlds(),
+					config.avoidOvercrowdedWorlds(),
+					membersOnly
+				);
+				break;
+		}
 
-    /**
-     * Schedule the next break
-     */
-    private void scheduleNextBreak() {
-        int minMinutes = config.minPlaytime();
-        int maxMinutes = config.maxPlaytime();
+		log.info("[BreakHandlerV2] Selected world: {} (mode: {}, members: {})",
+		         targetWorld, config.worldSelectionMode(), membersOnly);
 
-        int playtimeMinutes = Rs2Random.between(minMinutes, maxMinutes);
-        nextBreakTime = Instant.now().plus(playtimeMinutes, ChronoUnit.MINUTES);
+		return targetWorld;
+	}
 
-        log.info("[BreakHandlerV2] Next break in {} minutes", playtimeMinutes);
-    }
+	private Integer resolveProfilePreferredWorld(WorldRegion region) {
+		if (activeProfile == null || activeProfile.getSelectedWorld() == null) {
+			return null;
+		}
 
-    /**
-     * Calculate break duration
-     */
-    private long calculateBreakDuration() {
-        int minMinutes = config.minBreakDuration();
-        int maxMinutes = config.maxBreakDuration();
+		int selectedWorld = activeProfile.getSelectedWorld();
 
-        int breakMinutes = Rs2Random.between(minMinutes, maxMinutes);
-        log.info("[BreakHandlerV2] Break duration: {} minutes", breakMinutes);
+		// -1 = random members world, -2 = random F2P world
+		if (selectedWorld == -1) {
+			if (!config.respectMemberStatus() || activeProfile.isMember()) {
+				return Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+					region,
+					config.avoidEmptyWorlds(),
+					config.avoidOvercrowdedWorlds(),
+					true
+				);
+			}
+			log.warn("[BreakHandlerV2] Profile requests random members world but account is F2P");
+			return null;
+		}
 
-        return breakMinutes * 60000L; // Convert to milliseconds
-    }
+		if (selectedWorld == -2) {
+			return Rs2WorldUtil.getRandomAccessibleWorldFromRegion(
+				region,
+				config.avoidEmptyWorlds(),
+				config.avoidOvercrowdedWorlds(),
+				false
+			);
+		}
+
+		if (!Rs2WorldUtil.canAccessWorld(selectedWorld)) {
+			log.warn("[BreakHandlerV2] Profile preferred world {} is not accessible, falling back", selectedWorld);
+			return null;
+		}
+
+		return selectedWorld;
+	}
+
+	/**
+	 * Schedule the next break
+	 */
+	private void scheduleNextBreak() {
+		int minMinutes = config.minPlaytime();
+		int maxMinutes = config.maxPlaytime();
+
+		int playtimeMinutes = Rs2Random.between(minMinutes, maxMinutes);
+		nextBreakTime = Instant.now().plus(playtimeMinutes, ChronoUnit.MINUTES);
+
+		log.info("[BreakHandlerV2] Next break in {} minutes", playtimeMinutes);
+	}
+
+	/**
+	 * Calculate break duration
+	 */
+	private long calculateBreakDuration() {
+		int minMinutes = config.minBreakDuration();
+		int maxMinutes = config.maxBreakDuration();
+
+		int breakMinutes = Rs2Random.between(minMinutes, maxMinutes);
+		log.info("[BreakHandlerV2] Break duration: {} minutes", breakMinutes);
+
+		return breakMinutes * 60000L; // Convert to milliseconds
+	}
 
     /**
      * Transition to a new state
