@@ -50,11 +50,6 @@ plugins {
     id("net.runelite.runelite-gradle-plugin.index")
     id("net.runelite.runelite-gradle-plugin.jarsign")
 
-   //  application // <-- add this
-}
-
-/*application {
-    mainClass.set("net.runelite.client.RuneLite")
 }
 
 tasks.register<JavaExec>("runDebug") {
@@ -70,7 +65,7 @@ tasks.register<JavaExec>("runDebug") {
         // JDWP agent for debugger
         "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
     )
-}*/
+}
 
 lombok.version = libs.versions.lombok.get()
 
