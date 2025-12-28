@@ -5,8 +5,10 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.events.ItemContainerChanged;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.ComponentID;
 import net.runelite.api.widgets.Widget;
@@ -158,20 +160,56 @@ public class Rs2Bank {
      *
      * @return {@code true} if the bank interface is open, {@code false} otherwise.
      */
-    public static boolean isOpen() {
-        if (!handleBankPin()) return false;
-        return Rs2Widget.hasWidgetText("Rearrange mode", 12, 18, false);
-    }
+	public static boolean isOpen() {
+		if (!handleBankPin()) return false;
+		return Rs2Widget.hasWidgetText("Rearrange mode", 12, 18, false);
+	}
 
-    public static List<Rs2ItemModel> bankItems() {
-        return rs2BankData.getBankItems();
-    }
+	public static List<Rs2ItemModel> bankItems() {
+		return rs2BankData.getBankItems();
+	}
 
-    /**
-     * Closes the bank interface if it is open.
-     *
-     * @return true if the bank interface was open and successfully closed, true if already closed.
-     */
+	public static void updateLocalBank(ItemContainerChanged event) {
+		assert Microbot.getClient().isClientThread();
+
+		if (event.getContainerId() != InventoryID.BANK || event.getItemContainer() == null) {
+			return;
+		}
+
+		final Item[] items = event.getItemContainer().getItems();
+		if (items == null) {
+			rs2BankData.setEmpty();
+			return;
+		}
+
+		final List<Rs2ItemModel> bankItems = new ArrayList<>();
+		for (int slot = 0; slot < items.length; slot++) {
+			final Item item = items[slot];
+			if (item == null || item.getId() == -1) {
+				continue;
+			}
+
+			final ItemComposition itemComposition = Microbot.getClient().getItemDefinition(item.getId());
+			if (itemComposition.getPlaceholderTemplateId() > 0) {
+				continue;
+			}
+
+			bankItems.add(new Rs2ItemModel(item, itemComposition, slot));
+		}
+
+		if (bankItems.isEmpty()) {
+			rs2BankData.setEmpty();
+			return;
+		}
+
+		rs2BankData.set(bankItems);
+	}
+
+	/**
+	 * Closes the bank interface if it is open.
+	 *
+	 * @return true if the bank interface was open and successfully closed, true if already closed.
+	 */
     public static boolean closeBank() {
         if (!isOpen()) return true;
         if (Rs2Settings.isEscCloseInterfaceSettingEnabled()) {

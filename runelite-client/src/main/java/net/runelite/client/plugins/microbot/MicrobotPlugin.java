@@ -20,6 +20,7 @@ import net.runelite.client.plugins.microbot.pouch.PouchOverlay;
 import net.runelite.client.plugins.microbot.ui.MicrobotPluginConfigurationDescriptor;
 import net.runelite.client.plugins.microbot.ui.MicrobotPluginListPanel;
 import net.runelite.client.plugins.microbot.ui.MicrobotTopLevelConfigPanel;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -215,13 +216,17 @@ public class MicrobotPlugin extends Plugin
 	public void onItemContainerChanged(ItemContainerChanged event)
 	{
 		Microbot.getPouchScript().onItemContainerChanged(event);
-        if (event.getContainerId() == InventoryID.INV)
+		if (event.getContainerId() == InventoryID.INV)
 		{
 			Rs2Inventory.storeInventoryItemsInMemory(event);
 		}
 		else if (event.getContainerId() == InventoryID.WORN)
 		{
 			Rs2Equipment.storeEquipmentItemsInMemory(event);
+		}
+		else if (event.getContainerId() == InventoryID.BANK)
+		{
+			Rs2Bank.updateLocalBank(event);
 		}
 		else if (Arrays.stream(getShopContainerIds()).anyMatch(sid -> Objects.equals(event.getContainerId(), sid))) {
 			Rs2Shop.storeShopItemsInMemory(event, event.getContainerId());
