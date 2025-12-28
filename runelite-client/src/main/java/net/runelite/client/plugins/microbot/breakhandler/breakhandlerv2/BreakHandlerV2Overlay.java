@@ -66,17 +66,27 @@ public class BreakHandlerV2Overlay extends OverlayPanel {
                 .rightColor(Color.GRAY)
                 .build());
 
+            // Show play schedule info if enabled
+            if (config.usePlaySchedule()) {
+                panelComponent.getChildren().add(LineComponent.builder()
+                    .left("Schedule:")
+                    .right(config.playSchedule().name())
+                    .rightColor(Color.CYAN)
+                    .build());
+            }
+
             // Time until break or break remaining
             if (currentState == BreakHandlerV2State.WAITING_FOR_BREAK) {
                 long secondsUntilBreak = script.getTimeUntilBreak();
-                //if (secondsUntilBreak >= 0) {
+                if (secondsUntilBreak >= 0) {
                     String timeStr = formatDuration(secondsUntilBreak);
+                    String label = config.usePlaySchedule() ? "Schedule ends:" : "Next break:";
                     panelComponent.getChildren().add(LineComponent.builder()
-                        .left("Next break:")
+                        .left(label)
                         .right(timeStr)
                         .rightColor(Color.GREEN)
                         .build());
-                //}
+                }
             } else if (BreakHandlerV2State.isBreakActive()) {
                 long secondsRemaining = script.getBreakTimeRemaining();
                 if (secondsRemaining >= 0) {
