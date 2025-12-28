@@ -155,7 +155,19 @@ public class BreakHandlerV2Script extends Script {
      * Schedules next break and monitors for break time
      */
     private void handleWaitingForBreak() {
-        // Check if it's time for a break
+        // Handle play schedule logic - trigger break if outside scheduled hours
+        if (isOutsidePlaySchedule()) {
+            log.info("[BreakHandlerV2] Outside play schedule, requesting break");
+            transitionToState(BreakHandlerV2State.BREAK_REQUESTED);
+            return;
+        }
+
+        // When play schedule is enabled, skip regular breaks during scheduled hours
+        if (config.usePlaySchedule()) {
+            return;
+        }
+
+        // Check if it's time for a break (only when play schedule is disabled)
         if (nextBreakTime != null && Instant.now().isAfter(nextBreakTime)) {
             log.info("[BreakHandlerV2] Break time reached, requesting break");
             transitionToState(BreakHandlerV2State.BREAK_REQUESTED);
@@ -183,8 +195,12 @@ public class BreakHandlerV2Script extends Script {
             preBreakWorld = Microbot.getClient().getWorld();
         }
 
-        if (config.logoutOnBreak()) {
-            log.info("[BreakHandlerV2] Starting break (with logout)");
+        // Force logout if outside play schedule OR if logoutOnBreak is enabled
+        boolean shouldLogout = isOutsidePlaySchedule() || config.logoutOnBreak();
+
+        if (shouldLogout) {
+            String logoutReason = isOutsidePlaySchedule() ? "play schedule" : "configuration";
+            log.info("[BreakHandlerV2] Starting break (with logout - {})", logoutReason);
             transitionToState(BreakHandlerV2State.INITIATING_BREAK);
         } else {
             log.info("[BreakHandlerV2] Starting break (no logout - scripts paused)");
@@ -442,8 +458,10 @@ public class BreakHandlerV2Script extends Script {
         // Schedule next break
         scheduleNextBreak();
 
-        sendDiscordNotification("Break Ended",
-            "Next break scheduled for " + nextBreakTime);
+        String breakMessage = nextBreakTime != null
+                ? "Next break scheduled for " + nextBreakTime
+                : "Using play schedule: " + config.playSchedule().displayString();
+        sendDiscordNotification("Break Ended", breakMessage);
 
         transitionToState(BreakHandlerV2State.WAITING_FOR_BREAK);
     }
@@ -622,6 +640,20 @@ public class BreakHandlerV2Script extends Script {
 	 * Schedule the next break
 	 */
 	private void scheduleNextBreak() {
+		if (config.usePlaySchedule()) {
+			if (!config.playSchedule().isOutsideSchedule()) {
+				Duration timeUntilEnd = config.playSchedule().timeUntilScheduleEnds();
+				nextBreakTime = Instant.now().plus(timeUntilEnd);
+				log.info("[BreakHandlerV2] Play schedule active ({}), break when schedule ends in {} minutes",
+						config.playSchedule().name(), timeUntilEnd.toMinutes());
+			} else {
+				nextBreakTime = null;
+				log.info("[BreakHandlerV2] Outside play schedule ({}), currently on break",
+						config.playSchedule().name());
+			}
+			return;
+		}
+
 		int minMinutes = config.minPlaytime();
 		int maxMinutes = config.maxPlaytime();
 
@@ -635,6 +667,15 @@ public class BreakHandlerV2Script extends Script {
 	 * Calculate break duration
 	 */
 	private long calculateBreakDuration() {
+		// If outside play schedule, break until next play time
+		if (isOutsidePlaySchedule()) {
+			Duration timeUntilPlaySchedule = config.playSchedule().timeUntilNextSchedule();
+			long durationMs = timeUntilPlaySchedule.toMillis();
+			log.info("[BreakHandlerV2] Play schedule break duration: {} minutes (until next scheduled play time)",
+					durationMs / 60000);
+			return durationMs;
+		}
+
 		int minMinutes = config.minBreakDuration();
 		int maxMinutes = config.maxBreakDuration();
 
@@ -697,6 +738,13 @@ public class BreakHandlerV2Script extends Script {
             return -1;
         }
         return Instant.now().until(breakEndTime, ChronoUnit.SECONDS);
+    }
+
+    /**
+     * Checks if currently outside play schedule hours.
+     */
+    private boolean isOutsidePlaySchedule() {
+        return config.usePlaySchedule() && config.playSchedule().isOutsideSchedule();
     }
 
     @Override

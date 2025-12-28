@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.breakhandler.breakhandlerv2;
 
 import net.runelite.client.config.*;
+import net.runelite.client.plugins.microbot.util.antiban.enums.PlaySchedule;
 import net.runelite.client.plugins.microbot.util.world.RegionPreference;
 import net.runelite.client.plugins.microbot.util.world.WorldSelectionMode;
 
@@ -237,6 +238,36 @@ public interface BreakHandlerV2Config extends Config {
     )
     default boolean notifyOnLoginFail() {
         return true;
+    }
+
+    // ========== PLAY SCHEDULE SECTION ==========
+    @ConfigSection(
+        name = "Play Schedule",
+        description = "Options related to using a play schedule",
+        position = 5
+    )
+    String playScheduleSettings = "playScheduleSettings";
+
+    @ConfigItem(
+        keyName = "usePlaySchedule",
+        name = "Use Play Schedule",
+        description = "Enable or disable the use of a play schedule. When enabled, the bot will only run during the scheduled hours.",
+        position = 0,
+        section = playScheduleSettings
+    )
+    default boolean usePlaySchedule() {
+        return false;
+    }
+
+    @ConfigItem(
+        keyName = "playSchedule",
+        name = "Play Schedule",
+        description = "Select the play schedule to use. The bot will take breaks outside of these hours.",
+        position = 1,
+        section = playScheduleSettings
+    )
+    default PlaySchedule playSchedule() {
+        return PlaySchedule.MEDIUM_DAY;
     }
 
     // ========== OVERLAY SETTINGS ==========

@@ -67,6 +67,47 @@ tasks.register<JavaExec>("runDebug") {
     )
 }
 
+tasks.register<Test>("runDebugTests") {
+    group = "verification"
+    description = "Run tests with JDWP debug on port 5005 (attach debugger before tests run)"
+
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+
+    jvmArgs(
+        "-Dfile.encoding=UTF-8",
+        "-Duser.timezone=Europe/Brussels",
+        "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
+    )
+
+    useJUnit()
+
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+    }
+}
+
+tasks.register<Test>("runTests") {
+    group = "verification"
+    description = "Run tests with proper timezone (no debug)"
+
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+
+    jvmArgs(
+        "-Dfile.encoding=UTF-8",
+        "-Duser.timezone=Europe/Brussels"
+    )
+
+    useJUnit()
+
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+    }
+}
+
 lombok.version = libs.versions.lombok.get()
 
 java {
@@ -259,7 +300,7 @@ tasks.checkstyleMain {
 }
 
 tasks.withType<Test> {
-    enabled = false
+    enabled = true
     systemProperty("glslang.path", providers.gradleProperty("glslangPath").getOrElse(""))
 }
 

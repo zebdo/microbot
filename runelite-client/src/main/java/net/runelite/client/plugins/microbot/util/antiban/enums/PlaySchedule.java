@@ -86,6 +86,22 @@ public enum PlaySchedule {
         }
     }
 
+    public Duration timeUntilScheduleEnds() {
+        LocalTime currentTime = LocalTime.now();
+        if (isOutsideSchedule()) {
+            return Duration.ZERO;
+        }
+        return Duration.between(currentTime, endTime);
+    }
+
+    public LocalTime getStartTime() {
+        return startTime;
+    }
+
+    public LocalTime getEndTime() {
+        return endTime;
+    }
+
     
     /**
      * Returns a string representation of the PlaySchedule, including the start and end times,
