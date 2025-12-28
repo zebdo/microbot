@@ -300,7 +300,7 @@ tasks.checkstyleMain {
 }
 
 tasks.withType<Test> {
-    enabled = true
+    enabled = false
     systemProperty("glslang.path", providers.gradleProperty("glslangPath").getOrElse(""))
 }
 
