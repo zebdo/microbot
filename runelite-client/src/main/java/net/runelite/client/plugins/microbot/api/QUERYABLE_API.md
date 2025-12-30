@@ -67,10 +67,12 @@ NPC banker = Rs2Npc.getNpcs().stream()
 
 ```java
 // Clean, readable, and concise
-Rs2NpcModel banker = new Rs2NpcQueryable()
-    .withName("Banker")
-    .where(npc -> !npc.isInteracting())
-    .nearest();
+@Inject private Rs2NpcCache npcCache;
+
+Rs2NpcModel banker = npcCache.query()
+        .withName("Banker")
+        .where(npc -> !npc.isInteracting())
+        .nearest();
 ```
 
 **Benefits:**
@@ -103,6 +105,15 @@ public interface IEntity {
 - `Rs2TileItemModel` - Ground items
 - `Rs2TileObjectModel` - Game objects
 
+**Example setup (used throughout examples):**
+```java
+@Inject private Rs2NpcCache npcCache;
+@Inject private Rs2PlayerCache playerCache;
+@Inject private Rs2TileItemCache tileItemCache;
+@Inject private Rs2TileObjectCache tileObjectCache;
+// Use <cache>.query() to build queries.
+```
+
 ### 2. Queryable Interface
 
 All queryables implement `IEntityQueryable<Q, E>`:
@@ -129,7 +140,7 @@ public interface IEntityQueryable<Q, E> {
 Methods return the queryable itself, allowing chaining:
 
 ```java
-new Rs2NpcQueryable()
+npcCache.query()
     .withName("Guard")           // Filter by name
     .where(npc -> !npc.isInteracting())  // Add custom filter
     .within(15)                  // Within 15 tiles
@@ -142,9 +153,11 @@ Queries are not executed until a terminal operation is called:
 
 ```java
 // No execution yet - just building the query
-Rs2NpcQueryable query = new Rs2NpcQueryable()
-    .withName("Guard")
-    .within(10);
+@Inject private Rs2NpcCache npcCache;
+
+Rs2NpcQueryable query = npcCache.query()
+        .withName("Guard")
+        .within(10);
 
 // NOW it executes
 Rs2NpcModel guard = query.nearest();  // Terminal operation
@@ -154,20 +167,25 @@ Rs2NpcModel guard = query.nearest();  // Terminal operation
 
 ## Getting Started
 
+Always inject the corresponding cache and call `query()` from it to build queries against the per-tick cache.
+
 ### Basic Query Structure
 
 Every query follows this pattern:
 
 ```java
-// 1. Create queryable
-new Rs2NpcQueryable()
+// 1. Inject the cache for the entity type
+@Inject private Rs2NpcCache npcCache;
+
+// 2. Create queryable from the cache
+npcCache.query()
     
-// 2. Add filters (optional, chainable)
+// 3. Add filters (optional, chainable)
     .withName("name")
     .where(entity -> condition)
     .within(distance)
     
-// 3. Execute with terminal operation
+// 4. Execute with terminal operation
     .nearest();  // or first(), toList(), etc.
 ```
 
@@ -175,30 +193,38 @@ new Rs2NpcQueryable()
 
 **Find nearest NPC by name:**
 ```java
-Rs2NpcModel banker = new Rs2NpcQueryable()
-    .withName("Banker")
-    .nearest();
+@Inject private Rs2NpcCache npcCache;
+
+Rs2NpcModel banker = npcCache.query()
+        .withName("Banker")
+        .nearest();
 ```
 
 **Find nearest ground item:**
 ```java
-Rs2TileItemModel coins = new Rs2TileItemQueryable()
-    .withName("Coins")
-    .nearest();
+@Inject private Rs2TileItemCache tileItemCache;
+
+Rs2TileItemModel coins = tileItemCache.query()
+        .withName("Coins")
+        .nearest();
 ```
 
 **Find nearest player:**
 ```java
-Rs2PlayerModel player = new Rs2PlayerQueryable()
-    .withName("PlayerName")
-    .nearest();
+@Inject private Rs2PlayerCache playerCache;
+
+Rs2PlayerModel player = playerCache.query()
+        .withName("PlayerName")
+        .nearest();
 ```
 
 **Find nearest tree (tile object):**
 ```java
-Rs2TileObjectModel tree = new Rs2TileObjectQueryable()
-    .withName("Tree")
-    .nearest();
+@Inject private Rs2TileObjectCache tileObjectCache;
+
+Rs2TileObjectModel tree = tileObjectCache.query()
+        .withName("Tree")
+        .nearest();
 ```
 
 ---
@@ -209,25 +235,25 @@ Rs2TileObjectModel tree = new Rs2TileObjectQueryable()
 
 **Import:**
 ```java
-import net.runelite.client.plugins.microbot.api.npc.Rs2NpcQueryable;
+import net.runelite.client.plugins.microbot.api.npc.Rs2NpcCache;
 import net.runelite.client.plugins.microbot.api.npc.models.Rs2NpcModel;
 ```
 
 **Basic Usage:**
 ```java
 // Find nearest banker
-Rs2NpcModel banker = new Rs2NpcQueryable()
+Rs2NpcModel banker = npcCache.query()
     .withName("Banker")
     .nearest();
 
 // Find all guards within 10 tiles
-List<Rs2NpcModel> guards = new Rs2NpcQueryable()
+List<Rs2NpcModel> guards = npcCache.query()
     .withName("Guard")
     .within(10)
     .toList();
 
 // Find nearest non-interacting cow
-Rs2NpcModel cow = new Rs2NpcQueryable()
+Rs2NpcModel cow = npcCache.query()
     .withName("Cow")
     .where(npc -> !npc.isInteracting())
     .nearest();
@@ -249,24 +275,24 @@ npc.interact("Bank")       // Alternative interact method
 
 **Import:**
 ```java
-import net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemQueryable;
+import net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemCache;
 import net.runelite.client.plugins.microbot.api.tileitem.models.Rs2TileItemModel;
 ```
 
 **Basic Usage:**
 ```java
 // Find nearest coins
-Rs2TileItemModel coins = new Rs2TileItemQueryable()
+Rs2TileItemModel coins = tileItemCache.query()
     .withName("Coins")
     .nearest();
 
 // Find valuable items
-List<Rs2TileItemModel> loot = new Rs2TileItemQueryable()
+List<Rs2TileItemModel> loot = tileItemCache.query()
     .where(item -> item.getTotalValue() > 1000)
     .toList();
 
 // Find nearest lootable item
-Rs2TileItemModel lootable = new Rs2TileItemQueryable()
+Rs2TileItemModel lootable = tileItemCache.query()
     .where(Rs2TileItemModel::isLootAble)
     .nearest();
 ```
@@ -293,23 +319,23 @@ item.pickup()              // Pick up item
 
 **Import:**
 ```java
-import net.runelite.client.plugins.microbot.api.player.Rs2PlayerQueryable;
+import net.runelite.client.plugins.microbot.api.player.Rs2PlayerCache;
 import net.runelite.client.plugins.microbot.api.player.models.Rs2PlayerModel;
 ```
 
 **Basic Usage:**
 ```java
 // Find nearest player
-Rs2PlayerModel player = new Rs2PlayerQueryable()
+Rs2PlayerModel player = playerCache.query()
     .nearest();
 
 // Find player by name
-Rs2PlayerModel target = new Rs2PlayerQueryable()
+Rs2PlayerModel target = playerCache.query()
     .withName("PlayerName")
     .nearest();
 
 // Find all friends nearby
-List<Rs2PlayerModel> friends = new Rs2PlayerQueryable()
+List<Rs2PlayerModel> friends = playerCache.query()
     .where(Rs2PlayerModel::isFriend)
     .within(20)
     .toList();
@@ -333,24 +359,24 @@ player.isInteracting()     // Is interacting?
 
 **Import:**
 ```java
-import net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectQueryable;
+import net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectCache;
 import net.runelite.client.plugins.microbot.api.tileobject.models.Rs2TileObjectModel;
 ```
 
 **Basic Usage:**
 ```java
 // Find nearest tree
-Rs2TileObjectModel tree = new Rs2TileObjectQueryable()
+Rs2TileObjectModel tree = tileObjectCache.query()
     .withName("Tree")
     .nearest();
 
 // Find nearest bank booth
-Rs2TileObjectModel bank = new Rs2TileObjectQueryable()
+Rs2TileObjectModel bank = tileObjectCache.query()
     .withName("Bank booth")
     .nearest();
 
 // Find all rocks within 15 tiles
-List<Rs2TileObjectModel> rocks = new Rs2TileObjectQueryable()
+List<Rs2TileObjectModel> rocks = tileObjectCache.query()
     .where(obj -> obj.getName() != null && 
                   obj.getName().contains("rocks"))
     .within(15)
@@ -378,7 +404,7 @@ These execute the query and return results:
 Returns the nearest entity to the player.
 
 ```java
-Rs2NpcModel npc = new Rs2NpcQueryable()
+Rs2NpcModel npc = npcCache.query()
     .withName("Guard")
     .nearest();
 ```
@@ -387,7 +413,7 @@ Rs2NpcModel npc = new Rs2NpcQueryable()
 Returns the nearest entity within max distance from player.
 
 ```java
-Rs2NpcModel npc = new Rs2NpcQueryable()
+Rs2NpcModel npc = npcCache.query()
     .withName("Guard")
     .nearest(10);  // Within 10 tiles
 ```
@@ -397,7 +423,7 @@ Returns the nearest entity to a specific point.
 
 ```java
 WorldPoint location = new WorldPoint(3100, 3500, 0);
-Rs2NpcModel npc = new Rs2NpcQueryable()
+Rs2NpcModel npc = npcCache.query()
     .withName("Guard")
     .nearest(location, 5);
 ```
@@ -406,7 +432,7 @@ Rs2NpcModel npc = new Rs2NpcQueryable()
 Returns the first matching entity (not necessarily nearest).
 
 ```java
-Rs2NpcModel npc = new Rs2NpcQueryable()
+Rs2NpcModel npc = npcCache.query()
     .withName("Guard")
     .first();
 ```
@@ -415,7 +441,7 @@ Rs2NpcModel npc = new Rs2NpcQueryable()
 Finds nearest entity with exact name (case-insensitive).
 
 ```java
-Rs2NpcModel banker = new Rs2NpcQueryable()
+Rs2NpcModel banker = npcCache.query()
     .withName("Banker");  // Terminal operation
 ```
 
@@ -423,7 +449,7 @@ Rs2NpcModel banker = new Rs2NpcQueryable()
 Finds nearest entity matching any of the names.
 
 ```java
-Rs2NpcModel npc = new Rs2NpcQueryable()
+Rs2NpcModel npc = npcCache.query()
     .withNames("Banker", "Bank clerk", "Bank assistant");
 ```
 
@@ -431,7 +457,7 @@ Rs2NpcModel npc = new Rs2NpcQueryable()
 Finds nearest entity with specific ID.
 
 ```java
-Rs2NpcModel npc = new Rs2NpcQueryable()
+Rs2NpcModel npc = npcCache.query()
     .withId(1234);
 ```
 
@@ -439,7 +465,7 @@ Rs2NpcModel npc = new Rs2NpcQueryable()
 Finds nearest entity matching any of the IDs.
 
 ```java
-Rs2NpcModel npc = new Rs2NpcQueryable()
+Rs2NpcModel npc = npcCache.query()
     .withIds(1234, 5678, 9012);
 ```
 
@@ -447,7 +473,7 @@ Rs2NpcModel npc = new Rs2NpcQueryable()
 Returns all matching entities as a list.
 
 ```java
-List<Rs2NpcModel> guards = new Rs2NpcQueryable()
+List<Rs2NpcModel> guards = npcCache.query()
     .withName("Guard")
     .toList();
 ```
@@ -460,7 +486,7 @@ These filter entities and return the queryable for chaining:
 Adds a custom filter using a lambda expression.
 
 ```java
-new Rs2NpcQueryable()
+npcCache.query()
     .where(npc -> npc.getHealthRatio() > 0)
     .where(npc -> !npc.isInteracting())
     .nearest();
@@ -470,7 +496,7 @@ new Rs2NpcQueryable()
 Filters entities within distance from player.
 
 ```java
-new Rs2NpcQueryable()
+npcCache.query()
     .withName("Guard")
     .within(10)
     .toList();
@@ -481,7 +507,7 @@ Filters entities within distance from a specific point.
 
 ```java
 WorldPoint location = new WorldPoint(3100, 3500, 0);
-new Rs2NpcQueryable()
+npcCache.query()
     .withName("Guard")
     .within(location, 15)
     .toList();
@@ -494,7 +520,7 @@ new Rs2NpcQueryable()
 ### Pattern 1: Find Nearest Non-Interacting NPC
 
 ```java
-Rs2NpcModel cow = new Rs2NpcQueryable()
+Rs2NpcModel cow = npcCache.query()
     .withName("Cow")
     .where(npc -> !npc.isInteracting())
     .nearest();
@@ -507,7 +533,7 @@ if (cow != null) {
 ### Pattern 2: Find Valuable Loot
 
 ```java
-Rs2TileItemModel loot = new Rs2TileItemQueryable()
+Rs2TileItemModel loot = tileItemCache.query()
     .where(item -> item.getTotalGeValue() >= 5000)
     .where(Rs2TileItemModel::isLootAble)
     .nearest(10);
@@ -520,7 +546,7 @@ if (loot != null) {
 ### Pattern 3: Find Multiple NPCs
 
 ```java
-List<Rs2NpcModel> guards = new Rs2NpcQueryable()
+List<Rs2NpcModel> guards = npcCache.query()
     .withName("Guard")
     .where(npc -> !npc.isInteracting())
     .within(15)
@@ -534,7 +560,7 @@ for (Rs2NpcModel guard : guards) {
 ### Pattern 4: Find by Multiple Names
 
 ```java
-Rs2NpcModel banker = new Rs2NpcQueryable()
+Rs2NpcModel banker = npcCache.query()
     .withNames("Banker", "Bank clerk", "Bank assistant");
 
 if (banker != null) {
@@ -545,7 +571,7 @@ if (banker != null) {
 ### Pattern 5: Complex Query with Multiple Filters
 
 ```java
-Rs2NpcModel target = new Rs2NpcQueryable()
+Rs2NpcModel target = npcCache.query()
     .withName("Goblin")
     .where(npc -> !npc.isInteracting())
     .where(npc -> npc.getHealthRatio() > 0)
@@ -557,7 +583,7 @@ Rs2NpcModel target = new Rs2NpcQueryable()
 ### Pattern 6: Find Nearest Object by Partial Name
 
 ```java
-Rs2TileObjectModel tree = new Rs2TileObjectQueryable()
+Rs2TileObjectModel tree = tileObjectCache.query()
     .where(obj -> obj.getName() != null && 
                   obj.getName().toLowerCase().contains("tree"))
     .nearest();
@@ -566,7 +592,7 @@ Rs2TileObjectModel tree = new Rs2TileObjectQueryable()
 ### Pattern 7: Find Items About to Despawn
 
 ```java
-List<Rs2TileItemModel> despawning = new Rs2TileItemQueryable()
+List<Rs2TileItemModel> despawning = tileItemCache.query()
     .where(item -> item.willDespawnWithin(30))  // 30 seconds
     .where(item -> item.getTotalValue() > 1000)
     .toList();
@@ -575,7 +601,7 @@ List<Rs2TileItemModel> despawning = new Rs2TileItemQueryable()
 ### Pattern 8: Find Friends Nearby
 
 ```java
-List<Rs2PlayerModel> friends = new Rs2PlayerQueryable()
+List<Rs2PlayerModel> friends = playerCache.query()
     .where(Rs2PlayerModel::isFriend)
     .within(20)
     .toList();
@@ -584,7 +610,7 @@ List<Rs2PlayerModel> friends = new Rs2PlayerQueryable()
 ### Pattern 9: Find Low Health Enemies
 
 ```java
-Rs2NpcModel weakEnemy = new Rs2NpcQueryable()
+Rs2NpcModel weakEnemy = npcCache.query()
     .withName("Goblin")
     .where(npc -> npc.getHealthRatio() > 0 && 
                   npc.getHealthRatio() < 10)  // Low health
@@ -594,7 +620,7 @@ Rs2NpcModel weakEnemy = new Rs2NpcQueryable()
 ### Pattern 10: Find Specific Object by ID
 
 ```java
-Rs2TileObjectModel altar = new Rs2TileObjectQueryable()
+Rs2TileObjectModel altar = tileObjectCache.query()
     .withId(409)  // Altar object ID
     .nearest();
 ```
@@ -614,7 +640,7 @@ Predicate<Rs2NpcModel> notBusy = npc -> !npc.isInteracting();
 Predicate<Rs2NpcModel> notAnimating = npc -> npc.getAnimation() == -1;
 
 // Use them
-Rs2NpcModel target = new Rs2NpcQueryable()
+Rs2NpcModel target = npcCache.query()
     .withName("Cow")
     .where(isAlive)
     .where(notBusy)
@@ -629,7 +655,7 @@ Rs2NpcModel target = new Rs2NpcQueryable()
 Predicate<Rs2NpcModel> attackable = 
     npc -> !npc.isInteracting() && npc.getHealthRatio() > 0;
 
-Rs2NpcModel target = new Rs2NpcQueryable()
+Rs2NpcModel target = npcCache.query()
     .withName("Goblin")
     .where(attackable)
     .nearest();
@@ -638,7 +664,7 @@ Rs2NpcModel target = new Rs2NpcQueryable()
 Predicate<Rs2TileItemModel> valuableOrStackable =
     item -> item.getTotalValue() > 1000 || item.isStackable();
 
-Rs2TileItemModel loot = new Rs2TileItemQueryable()
+Rs2TileItemModel loot = tileItemCache.query()
     .where(valuableOrStackable)
     .nearest();
 ```
@@ -649,7 +675,7 @@ Rs2TileItemModel loot = new Rs2TileItemQueryable()
 // Find nearest NPC within specific range
 WorldPoint homeBase = new WorldPoint(3100, 3500, 0);
 
-Rs2NpcModel nearbyEnemy = new Rs2NpcQueryable()
+Rs2NpcModel nearbyEnemy = npcCache.query()
     .withName("Goblin")
     .within(homeBase, 10)  // Within 10 tiles of home base
     .nearest(homeBase, 10);  // Get nearest to home base
@@ -659,7 +685,7 @@ Rs2NpcModel nearbyEnemy = new Rs2NpcQueryable()
 
 ```java
 // Get 5 nearest guards
-List<Rs2NpcModel> guards = new Rs2NpcQueryable()
+List<Rs2NpcModel> guards = npcCache.query()
     .withName("Guard")
     .toList()
     .stream()
@@ -674,7 +700,7 @@ List<Rs2NpcModel> guards = new Rs2NpcQueryable()
 Always check for null results:
 
 ```java
-Rs2NpcModel banker = new Rs2NpcQueryable()
+Rs2NpcModel banker = npcCache.query()
     .withName("Banker")
     .nearest();
 
@@ -690,7 +716,7 @@ if (banker != null) {
 ```java
 // Wait until target NPC appears
 Rs2NpcModel target = sleepUntilNotNull(() -> 
-    new Rs2NpcQueryable()
+    npcCache.query()
         .withName("Banker")
         .nearest(),
     5000, 600  // 5 second timeout, check every 600ms
@@ -710,7 +736,7 @@ if (target != null) {
 **1. Use specific filters early:**
 ```java
 // Good - filters by name first
-new Rs2NpcQueryable()
+npcCache.query()
     .withName("Guard")
     .where(npc -> !npc.isInteracting())
     .nearest();
@@ -719,7 +745,7 @@ new Rs2NpcQueryable()
 **2. Limit search radius:**
 ```java
 // Good - only searches within 10 tiles
-new Rs2NpcQueryable()
+npcCache.query()
     .withName("Guard")
     .within(10)
     .nearest();
@@ -728,7 +754,7 @@ new Rs2NpcQueryable()
 **3. Cache results when possible:**
 ```java
 // Good - query once, use multiple times
-List<Rs2NpcModel> guards = new Rs2NpcQueryable()
+List<Rs2NpcModel> guards = npcCache.query()
     .withName("Guard")
     .toList();
 
@@ -740,7 +766,7 @@ for (Rs2NpcModel guard : guards) {
 **4. Use method references:**
 ```java
 // Good - cleaner and potentially faster
-new Rs2TileItemQueryable()
+tileItemCache.query()
     .where(Rs2TileItemModel::isLootAble)
     .nearest();
 ```
@@ -751,7 +777,7 @@ new Rs2TileItemQueryable()
 ```java
 // Bad - queries on every iteration
 while (true) {
-    Rs2NpcModel npc = new Rs2NpcQueryable()
+    Rs2NpcModel npc = npcCache.query()
         .withName("Guard")
         .nearest();
     // ...
@@ -760,7 +786,7 @@ while (true) {
 
 // Good - reasonable interval
 while (true) {
-    Rs2NpcModel npc = new Rs2NpcQueryable()
+    Rs2NpcModel npc = npcCache.query()
         .withName("Guard")
         .nearest();
     // ...
@@ -771,13 +797,13 @@ while (true) {
 **2. Don't use expensive operations in predicates:**
 ```java
 // Bad - calls API repeatedly in filter
-new Rs2NpcQueryable()
+npcCache.query()
     .where(npc -> someExpensiveApiCall(npc))
     .nearest();
 
 // Good - call API once, cache result
 boolean shouldFilter = someExpensiveApiCall();
-new Rs2NpcQueryable()
+npcCache.query()
     .where(npc -> shouldFilter)
     .nearest();
 ```
@@ -785,13 +811,13 @@ new Rs2NpcQueryable()
 **3. Don't create unnecessary lists:**
 ```java
 // Bad - creates full list just to get one item
-Rs2NpcModel npc = new Rs2NpcQueryable()
+Rs2NpcModel npc = npcCache.query()
     .withName("Guard")
     .toList()
     .get(0);
 
 // Good - gets first directly
-Rs2NpcModel npc = new Rs2NpcQueryable()
+Rs2NpcModel npc = npcCache.query()
     .withName("Guard")
     .first();
 ```
@@ -815,14 +841,14 @@ List<NPC> npcs = Rs2Npc.getNpcs(NpcID.GUARD);
 **Queryable:**
 ```java
 // New way
-Rs2NpcModel npc = new Rs2NpcQueryable()
+Rs2NpcModel npc = npcCache.query()
     .withName("Banker");
 
-Rs2NpcModel nearest = new Rs2NpcQueryable()
+Rs2NpcModel nearest = npcCache.query()
     .withName("Guard")
     .nearest();
 
-List<Rs2NpcModel> npcs = new Rs2NpcQueryable()
+List<Rs2NpcModel> npcs = npcCache.query()
     .withId(NpcID.GUARD)
     .toList();
 ```
@@ -839,11 +865,11 @@ TileItem nearest = Rs2GroundItem.getNearestItem("Dragon bones");
 **Queryable:**
 ```java
 // New way
-Rs2TileItemModel item = new Rs2TileItemQueryable()
+Rs2TileItemModel item = tileItemCache.query()
     .withName("Coins")
     .first();
 
-Rs2TileItemModel nearest = new Rs2TileItemQueryable()
+Rs2TileItemModel nearest = tileItemCache.query()
     .withName("Dragon bones")
     .nearest();
 ```
@@ -860,11 +886,11 @@ TileObject nearest = Rs2GameObject.findObjectById(1234);
 **Queryable:**
 ```java
 // New way
-Rs2TileObjectModel tree = new Rs2TileObjectQueryable()
+Rs2TileObjectModel tree = tileObjectCache.query()
     .withName("Tree")
     .nearest();
 
-Rs2TileObjectModel nearest = new Rs2TileObjectQueryable()
+Rs2TileObjectModel nearest = tileObjectCache.query()
     .withId(1234)
     .nearest();
 ```
@@ -877,7 +903,7 @@ Rs2TileObjectModel nearest = new Rs2TileObjectQueryable()
 NPC banker = Rs2Npc.getNpc("Banker");
 
 // After
-Rs2NpcModel banker = new Rs2NpcQueryable().withName("Banker");
+Rs2NpcModel banker = npcCache.query().withName("Banker");
 ```
 
 **Step 2:** Add filters if needed:
@@ -890,7 +916,7 @@ NPC cow = Rs2Npc.getNpcs().stream()
     .orElse(null);
 
 // After
-Rs2NpcModel cow = new Rs2NpcQueryable()
+Rs2NpcModel cow = npcCache.query()
     .withName("Cow")
     .where(npc -> !npc.isInteracting())
     .nearest();
@@ -919,7 +945,7 @@ if (banker != null) {
 
 ```java
 // Find nearest attackable enemy
-Rs2NpcModel enemy = new Rs2NpcQueryable()
+Rs2NpcModel enemy = npcCache.query()
     .withName("Goblin")
     .where(npc -> !npc.isInteracting())
     .where(npc -> npc.getHealthRatio() > 0)
@@ -935,7 +961,7 @@ if (enemy != null && !Rs2Player.isInCombat()) {
 
 ```java
 // Find valuable loot
-Rs2TileItemModel loot = new Rs2TileItemQueryable()
+Rs2TileItemModel loot = tileItemCache.query()
     .where(Rs2TileItemModel::isLootAble)
     .where(item -> item.getTotalGeValue() >= 5000)
     .nearest(15);
@@ -950,7 +976,7 @@ if (loot != null) {
 
 ```java
 // Find nearest available tree
-Rs2TileObjectModel tree = new Rs2TileObjectQueryable()
+Rs2TileObjectModel tree = tileObjectCache.query()
     .where(obj -> obj.getName() != null && 
                   obj.getName().equals("Oak tree"))
     .nearest(10);
@@ -965,7 +991,7 @@ if (tree != null && !Rs2Player.isAnimating()) {
 
 ```java
 // Find nearest bank
-Rs2TileObjectModel bank = new Rs2TileObjectQueryable()
+Rs2TileObjectModel bank = tileObjectCache.query()
     .withNames("Bank booth", "Bank chest", "Bank")
     .nearest(20);
 
@@ -1000,8 +1026,8 @@ if (bank != null && !Rs2Bank.isOpen()) {
 3. **Check filters:**
 ```java
 // Simplify query to find the issue
-Rs2NpcModel test1 = new Rs2NpcQueryable().withName("Banker");
-Rs2NpcModel test2 = new Rs2NpcQueryable().withName("Banker").where(filter);
+Rs2NpcModel test1 = npcCache.query().withName("Banker");
+Rs2NpcModel test2 = npcCache.query().withName("Banker").where(filter);
 // If test1 works but test2 doesn't, your filter is too restrictive
 ```
 
@@ -1009,7 +1035,7 @@ Rs2NpcModel test2 = new Rs2NpcQueryable().withName("Banker").where(filter);
 ```java
 // Wait for entity to appear
 Rs2NpcModel npc = sleepUntilNotNull(() -> 
-    new Rs2NpcQueryable().withName("Banker").nearest(),
+    npcCache.query().withName("Banker").nearest(),
     5000, 600
 );
 ```
@@ -1028,7 +1054,7 @@ Rs2NpcModel npc = sleepUntilNotNull(() ->
 2. **Cache results:**
 ```java
 // Query once per game tick, not every iteration
-List<Rs2NpcModel> npcs = new Rs2NpcQueryable()
+List<Rs2NpcModel> npcs = npcCache.query()
     .withName("Guard")
     .toList();
 ```
@@ -1048,7 +1074,7 @@ List<Rs2NpcModel> npcs = new Rs2NpcQueryable()
 
 1. **Check null:**
 ```java
-Rs2NpcModel npc = new Rs2NpcQueryable().withName("Banker");
+Rs2NpcModel npc = npcCache.query().withName("Banker");
 if (npc != null) {  // Always check
     npc.click("Bank");
 }
@@ -1097,19 +1123,19 @@ if (npc != null && npc.getWorldLocation() != null) {
 
 ```java
 // NPCs
-import net.runelite.client.plugins.microbot.api.npc.Rs2NpcQueryable;
+import net.runelite.client.plugins.microbot.api.npc.Rs2NpcCache;
 import net.runelite.client.plugins.microbot.api.npc.models.Rs2NpcModel;
 
 // Ground Items
-import net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemQueryable;
+import net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemCache;
 import net.runelite.client.plugins.microbot.api.tileitem.models.Rs2TileItemModel;
 
 // Players
-import net.runelite.client.plugins.microbot.api.player.Rs2PlayerQueryable;
+import net.runelite.client.plugins.microbot.api.player.Rs2PlayerCache;
 import net.runelite.client.plugins.microbot.api.player.models.Rs2PlayerModel;
 
 // Tile Objects
-import net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectQueryable;
+import net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectCache;
 import net.runelite.client.plugins.microbot.api.tileobject.models.Rs2TileObjectModel;
 ```
 
@@ -1117,19 +1143,19 @@ import net.runelite.client.plugins.microbot.api.tileobject.models.Rs2TileObjectM
 
 ```java
 // Find nearest NPC
-new Rs2NpcQueryable().withName("Banker").nearest();
+npcCache.query().withName("Banker").nearest();
 
 // Find ground item
-new Rs2TileItemQueryable().withName("Coins").nearest();
+tileItemCache.query().withName("Coins").nearest();
 
 // Find player
-new Rs2PlayerQueryable().withName("PlayerName").nearest();
+playerCache.query().withName("PlayerName").nearest();
 
 // Find object
-new Rs2TileObjectQueryable().withName("Tree").nearest();
+tileObjectCache.query().withName("Tree").nearest();
 
 // Complex query
-new Rs2NpcQueryable()
+npcCache.query()
     .withName("Guard")
     .where(npc -> !npc.isInteracting())
     .within(10)
@@ -1150,4 +1176,3 @@ new Rs2NpcQueryable()
 **Last Updated:** November 18, 2025  
 **Microbot Version:** 2.1.0  
 **For questions or issues, please visit our Discord community.**
-

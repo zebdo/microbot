@@ -15,44 +15,58 @@ This directory contains the new Queryable API for interacting with game entities
 
 ## 🚀 Quick Start
 
+Inject the cache for the entity type you want to query, then call `query()` from that cache.
+
 ### NPCs
 ```java
-import net.runelite.client.plugins.microbot.api.npc.Rs2NpcQueryable;
+import javax.inject.Inject;
+import net.runelite.client.plugins.microbot.api.npc.Rs2NpcCache;
 import net.runelite.client.plugins.microbot.api.npc.models.Rs2NpcModel;
 
-Rs2NpcModel banker = new Rs2NpcQueryable()
-    .withName("Banker")
-    .nearest();
+@Inject private Rs2NpcCache npcCache;
+
+Rs2NpcModel banker = npcCache.query()
+        .withName("Banker")
+        .nearest();
 ```
 
 ### Ground Items
 ```java
-import net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemQueryable;
+import javax.inject.Inject;
+import net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemCache;
 import net.runelite.client.plugins.microbot.api.tileitem.models.Rs2TileItemModel;
 
-Rs2TileItemModel coins = new Rs2TileItemQueryable()
-    .withName("Coins")
-    .nearest();
+@Inject private Rs2TileItemCache tileItemCache;
+
+Rs2TileItemModel coins = tileItemCache.query()
+        .withName("Coins")
+        .nearest();
 ```
 
 ### Players
 ```java
-import net.runelite.client.plugins.microbot.api.player.Rs2PlayerQueryable;
+import javax.inject.Inject;
+import net.runelite.client.plugins.microbot.api.player.Rs2PlayerCache;
 import net.runelite.client.plugins.microbot.api.player.models.Rs2PlayerModel;
 
-Rs2PlayerModel player = new Rs2PlayerQueryable()
-    .withName("PlayerName")
-    .nearest();
+@Inject private Rs2PlayerCache playerCache;
+
+Rs2PlayerModel player = playerCache.query()
+        .withName("PlayerName")
+        .nearest();
 ```
 
 ### Tile Objects
 ```java
-import net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectQueryable;
+import javax.inject.Inject;
+import net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectCache;
 import net.runelite.client.plugins.microbot.api.tileobject.models.Rs2TileObjectModel;
 
-Rs2TileObjectModel tree = new Rs2TileObjectQueryable()
-    .withName("Tree")
-    .nearest();
+@Inject private Rs2TileObjectCache tileObjectCache;
+
+Rs2TileObjectModel tree = tileObjectCache.query()
+        .withName("Tree")
+        .nearest();
 ```
 
 ## 📂 Directory Structure
@@ -142,4 +156,3 @@ Check the `*ApiExample.java` files in each subdirectory for complete examples:
 
 **Last Updated:** November 18, 2025  
 **Microbot Version:** 2.1.0
-
