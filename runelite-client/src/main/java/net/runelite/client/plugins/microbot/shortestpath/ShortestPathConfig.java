@@ -624,4 +624,67 @@ public interface ShortestPathConfig extends Config {
     default int maxSimilarTransportDistance() {
         return 0;
     }
+
+	@ConfigSection(
+			name = "Spirit tree teleports",
+			description = "Toggle which spirit tree destinations to use",
+			position = 5,
+			closedByDefault = true
+	)
+	String sectionSpiritTrees = "sectionSpiritTrees";
+
+	@ConfigItem(
+			keyName = "spiritTreeEtceteria",
+			name = "Etceteria",
+			description = "Use the spirit tree teleport to Etceteria",
+			position = 0,
+			section = sectionSpiritTrees
+	)
+	default boolean spiritTreeEtceteria() {
+		return true;
+	}
+
+	@ConfigItem(
+			keyName = "spiritTreeBrimhaven",
+			name = "Brimhaven",
+			description = "Use the spirit tree teleport to Brimhaven",
+			position = 1,
+			section = sectionSpiritTrees
+	)
+	default boolean spiritTreeBrimhaven() {
+		return true;
+	}
+
+	@ConfigItem(
+			keyName = "spiritTreePortSarim",
+			name = "Port Sarim",
+			description = "Use the spirit tree teleport to Port Sarim",
+			position = 2,
+			section = sectionSpiritTrees
+	)
+	default boolean spiritTreePortSarim() {
+		return true;
+	}
+
+	@ConfigItem(
+			keyName = "spiritTreeHosidius",
+			name = "Hosidius",
+			description = "Use the spirit tree teleport to Hosidius",
+			position = 3,
+			section = sectionSpiritTrees
+	)
+	default boolean spiritTreeHosidius() {
+		return true;
+	}
+
+	@ConfigItem(
+			keyName = "spiritTreeFarmingGuild",
+			name = "Farming Guild",
+			description = "Use the spirit tree teleport to the Farming Guild",
+			position = 4,
+			section = sectionSpiritTrees
+	)
+	default boolean spiritTreeFarmingGuild() {
+		return true;
+	}
 }

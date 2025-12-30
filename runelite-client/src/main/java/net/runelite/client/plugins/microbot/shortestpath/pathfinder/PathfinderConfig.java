@@ -43,12 +43,17 @@ public class PathfinderConfig {
     private static final WorldArea FEROX_ENCLAVE_1 = new WorldArea(3123, 3622, 2, 10, 0);
     private static final WorldArea FEROX_ENCLAVE_2 = new WorldArea(3125, 3617, 16, 23, 0);
     private static final WorldArea FEROX_ENCLAVE_3 = new WorldArea(3138, 3636, 18, 10, 0);
-    private static final WorldArea FEROX_ENCLAVE_4 = new WorldArea(3141, 3625, 14, 11, 0);
-    private static final WorldArea FEROX_ENCLAVE_5 = new WorldArea(3141, 3619, 7, 6, 0);
-    private static final WorldArea NOT_WILDERNESS_1 = new WorldArea(2997, 3525, 34, 9, 0);
-    private static final WorldArea NOT_WILDERNESS_2 = new WorldArea(3005, 3534, 21, 10, 0);
-    private static final WorldArea NOT_WILDERNESS_3 = new WorldArea(3000, 3534, 5, 5, 0);
-    private static final WorldArea NOT_WILDERNESS_4 = new WorldArea(3031, 3525, 2, 2, 0);
+	private static final WorldArea FEROX_ENCLAVE_4 = new WorldArea(3141, 3625, 14, 11, 0);
+	private static final WorldArea FEROX_ENCLAVE_5 = new WorldArea(3141, 3619, 7, 6, 0);
+	private static final WorldArea NOT_WILDERNESS_1 = new WorldArea(2997, 3525, 34, 9, 0);
+	private static final WorldArea NOT_WILDERNESS_2 = new WorldArea(3005, 3534, 21, 10, 0);
+	private static final WorldArea NOT_WILDERNESS_3 = new WorldArea(3000, 3534, 5, 5, 0);
+	private static final WorldArea NOT_WILDERNESS_4 = new WorldArea(3031, 3525, 2, 2, 0);
+	private static final WorldPoint SPIRIT_TREE_ETCETERIA = new WorldPoint(2613, 3855, 0);
+	private static final WorldPoint SPIRIT_TREE_BRIMHAVEN = new WorldPoint(2800, 3203, 0);
+	private static final WorldPoint SPIRIT_TREE_PORT_SARIM = new WorldPoint(3058, 3257, 0);
+	private static final WorldPoint SPIRIT_TREE_HOSIDIUS = new WorldPoint(1693, 3540, 0);
+	private static final WorldPoint SPIRIT_TREE_FARMING_GUILD = new WorldPoint(1251, 3750, 0);
 
     private final SplitFlagMap mapData;
     private final ThreadLocal<CollisionMap> map;
@@ -97,7 +102,12 @@ public class PathfinderConfig {
             useTeleportationPortals,
             useTeleportationSpells,
             useMagicCarpets,
-            useWildernessObelisks;
+            useWildernessObelisks,
+            useSpiritTreeEtceteria,
+            useSpiritTreeBrimhaven,
+            useSpiritTreePortSarim,
+            useSpiritTreeHosidius,
+            useSpiritTreeFarmingGuild;
     //START microbot variables
     @Getter
     private volatile int distanceBeforeUsingTeleport;
@@ -160,6 +170,11 @@ public class PathfinderConfig {
         usePoh = ShortestPathPlugin.override("usePoh", config.usePoh());
         useQuetzals = ShortestPathPlugin.override("useQuetzals", config.useQuetzals());
         useSpiritTrees = ShortestPathPlugin.override("useSpiritTrees", config.useSpiritTrees());
+        useSpiritTreeEtceteria = ShortestPathPlugin.override("spiritTreeEtceteria", config.spiritTreeEtceteria());
+        useSpiritTreeBrimhaven = ShortestPathPlugin.override("spiritTreeBrimhaven", config.spiritTreeBrimhaven());
+        useSpiritTreePortSarim = ShortestPathPlugin.override("spiritTreePortSarim", config.spiritTreePortSarim());
+        useSpiritTreeHosidius = ShortestPathPlugin.override("spiritTreeHosidius", config.spiritTreeHosidius());
+        useSpiritTreeFarmingGuild = ShortestPathPlugin.override("spiritTreeFarmingGuild", config.spiritTreeFarmingGuild());
         useTeleportationItems = ShortestPathPlugin.override("useTeleportationItems", config.useTeleportationItems());
         useTeleportationMinigames = ShortestPathPlugin.override("useTeleportationMinigames", config.useTeleportationMinigames());
         useTeleportationLevers = ShortestPathPlugin.override("useTeleportationLevers", config.useTeleportationLevers());
@@ -462,6 +477,10 @@ public class PathfinderConfig {
             log.debug("Transport ( O: {} D: {} ) requires members world", transport.getOrigin(), transport.getDestination());
             return false;
         }
+        if (transport.getType() == TransportType.SPIRIT_TREE && !isSpiritTreeDestinationEnabled(transport)) {
+            log.debug("Transport ( O: {} D: {} ) is a spirit tree route but the destination is disabled", transport.getOrigin(), transport.getDestination());
+            return false;
+        }
         // If you don't meet level requirements
         if (!hasRequiredLevels(transport)) {
             log.debug("Transport ( O: {} D: {} ) requires skill levels {}", transport.getOrigin(), transport.getDestination(), Arrays.toString(transport.getSkillLevels()));
@@ -558,6 +577,29 @@ public class PathfinderConfig {
                 transport.setAction("Talk-to");
             }
         }
+    }
+
+    private boolean isSpiritTreeDestinationEnabled(Transport transport) {
+        WorldPoint destination = transport.getDestination();
+        if (destination == null) {
+            return true;
+        }
+        if (destination.equals(SPIRIT_TREE_ETCETERIA)) {
+            return useSpiritTreeEtceteria;
+        }
+        if (destination.equals(SPIRIT_TREE_BRIMHAVEN)) {
+            return useSpiritTreeBrimhaven;
+        }
+        if (destination.equals(SPIRIT_TREE_PORT_SARIM)) {
+            return useSpiritTreePortSarim;
+        }
+        if (destination.equals(SPIRIT_TREE_HOSIDIUS)) {
+            return useSpiritTreeHosidius;
+        }
+        if (destination.equals(SPIRIT_TREE_FARMING_GUILD)) {
+            return useSpiritTreeFarmingGuild;
+        }
+        return true;
     }
 
     private boolean isFeatureEnabled(Transport transport) {
