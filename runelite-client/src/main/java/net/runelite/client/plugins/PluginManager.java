@@ -218,10 +218,17 @@ public class PluginManager {
             SplashScreen.stage(.80, 1, null, "Starting plugins", loaded, scannedPlugins.size(), false);
         }
 
-        for (Plugin plugin : plugins) {
-            ReflectUtil.queueInjectorAnnotationCacheInvalidation(plugin.injector);
-        }
-    }
+		for (Plugin plugin : plugins) {
+			try {
+				ReflectUtil.queueInjectorAnnotationCacheInvalidation(plugin.injector);
+			} catch(Exception e) {
+				log.error("Unable to start plugin {}", plugin.getClass().getSimpleName(), e);
+				activePlugins.remove(plugin);
+				remove(plugin);
+				setPluginEnabled(plugin, false);
+			}
+		}
+	}
 
     /**
      * Loads core RuneLite plugins, excluding any Microbot-related plugins.
