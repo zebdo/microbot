@@ -163,7 +163,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
     public static WorldMapPoint marker;
     @Setter
     public static volatile WorldPoint lastLocation = new WorldPoint(0, 0, 0);
-    private NavigationButton navButton, pohNavButton, sailingNavButton;
+    private NavigationButton navButton, pohNavButton;
     private Shape minimapClipFixed;
     private Shape minimapClipResizeable;
     private BufferedImage minimapSpriteFixed;
@@ -225,8 +225,6 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
                 .build();
         clientToolbar.addNavigation(pohNavButton);
 
-        clientToolbar.addNavigation(sailingNavButton);
-
         Rs2Walker.setConfig(config);
         shortestPathScript = new ShortestPathScript();
         shortestPathScript.run(config);
@@ -254,10 +252,8 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
         overlayManager.remove(debugOverlayPanel);
         clientToolbar.removeNavigation(navButton);
         clientToolbar.removeNavigation(pohNavButton);
-        clientToolbar.removeNavigation(sailingNavButton);
         navButton = null;
         pohNavButton = null;
-        sailingNavButton = null;
         if (panel != null) {
             panel.disposeTimers();
         }
