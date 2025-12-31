@@ -87,10 +87,10 @@ public class FarmingRegion implements Comparable<FarmingRegion>
 	public String toString()
 	{
 		String sb = "FarmingRegion{name='" + name + '\'' +
-			", regionID=" + regionID +
-			", definite=" + definite +
-			", patches=" + patches.length +
-			'}';
+				", regionID=" + regionID +
+				", definite=" + definite +
+				", patches=" + patches.length +
+				'}';
 		return sb;
 	}
 

@@ -43,10 +43,7 @@ import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
-import net.runelite.api.gameval.ObjectID;
-import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.api.gameval.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -182,7 +179,7 @@ public class KourendEasy extends ComplexStateQuestHelper
 		inCastleF1 = new ZoneRequirement(castleF1);
 		inCastleF2 = new ZoneRequirement(castleF2);
 
-		houseInKourend = new VarbitRequirement(2187, 8);
+		houseInKourend = new VarbitRequirement(VarbitID.POH_HOUSE_LOCATION, 8);
 	}
 
 	@Override

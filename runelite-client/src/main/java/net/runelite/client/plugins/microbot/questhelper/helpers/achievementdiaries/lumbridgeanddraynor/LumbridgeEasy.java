@@ -46,10 +46,7 @@ import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
-import net.runelite.api.gameval.ObjectID;
-import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.api.gameval.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -156,7 +153,7 @@ public class LumbridgeEasy extends ComplexStateQuestHelper
 		notIron = new VarplayerRequirement(VarPlayerID.LUMB_DRAY_ACHIEVEMENT_DIARY, false, 11);
 		notEnterHAM = new VarplayerRequirement(VarPlayerID.LUMB_DRAY_ACHIEVEMENT_DIARY, false, 12);
 
-		addedRopeToHole = new VarbitRequirement(279, 1);
+		addedRopeToHole = new VarbitRequirement(VarbitID.SWAMP_CAVES_ROPED_ENTRANCE, 1);
 
 		lightSource = new ItemRequirement("Light source", ItemCollections.LIGHT_SOURCES).showConditioned(notKillCaveBug).isNotConsumed();
 		rope = new ItemRequirement("Rope", ItemID.ROPE).showConditioned(notKillCaveBug);
@@ -210,7 +207,7 @@ public class LumbridgeEasy extends ComplexStateQuestHelper
 
 	public void setupSteps()
 	{
-		drayAgi = new ObjectStep(this, 11404, new WorldPoint(3103, 3279, 0),
+		drayAgi = new ObjectStep(this, ObjectID.ROOFTOPS_DRAYNOR_WALLCLIMB, new WorldPoint(3103, 3279, 0),
 			"Complete a lap of the Draynor Rooftop Course.");
 
 		moveToDraySewer = new ObjectStep(this, ObjectID.VAMPIRE_TRAP2, new WorldPoint(3118, 3244, 0),
@@ -242,7 +239,7 @@ public class LumbridgeEasy extends ComplexStateQuestHelper
 		killCaveBug = new NpcStep(this, NpcID.SWAMP_CAVE_BUG, new WorldPoint(3151, 9574, 0),
 			"Kill a Cave Bug.", true, combatGear, lightSource);
 
-		moveToWaterAltar = new ObjectStep(this, 34815, new WorldPoint(3185, 3165, 0),
+		moveToWaterAltar = new ObjectStep(this, ObjectID.WATERTEMPLE_RUINED, new WorldPoint(3185, 3165, 0),
 			"Enter the water altar in Lumbridge Swamp.", waterAccessOrAbyss.highlighted(), runeEss);
 		moveToWaterAltar.addIcon(ItemID.WATER_TALISMAN);
 		waterRune = new ObjectStep(this, ObjectID.WATER_ALTAR, new WorldPoint(2716, 4836, 0),

@@ -38,7 +38,6 @@ public class WidgetHighlight extends AbstractWidgetHighlight
 {
 	@Getter
 	protected final int interfaceID;
-
 	@Getter
 	protected final int childChildId;
 

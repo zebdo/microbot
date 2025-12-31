@@ -26,6 +26,7 @@ package net.runelite.client.plugins.microbot.questhelper.helpers.quests.templeof
 
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
 import net.runelite.client.plugins.microbot.questhelper.steps.ObjectStep;
+import net.runelite.client.plugins.microbot.questhelper.steps.tools.DefinedPoint;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
@@ -114,7 +115,7 @@ public class RuneEnergyStep extends ObjectStep
 		alternateObjectIDs.clear();
 
 		alternateObjectIDs.add(useList[currentPos].id);
-		worldPoint = useList[currentPos].wp;
+		definedPoint = DefinedPoint.of(useList[currentPos].wp);
 
 		loadObjects();
 	}

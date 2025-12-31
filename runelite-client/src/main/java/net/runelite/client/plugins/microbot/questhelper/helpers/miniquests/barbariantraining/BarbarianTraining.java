@@ -41,7 +41,6 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.npc.DialogR
 import net.runelite.client.plugins.microbot.questhelper.requirements.player.SkillRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.quest.QuestRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.runelite.RuneliteRequirement;
-import net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicHelper;
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicType;
 import net.runelite.client.plugins.microbot.questhelper.requirements.widget.WidgetTextRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.zone.Zone;
@@ -118,7 +117,7 @@ public class BarbarianTraining extends BasicQuestHelper
 		// Fishing
 		fishingSteps = new ConditionalStep(this, talkToOttoAboutFishing);
 		fishingSteps.addStep(caughtBarbarianFish, talkToOttoAfterFish);
-		fishingSteps.addStep(and(taskedWithFishing, barbFishingRod.alsoCheckBank(questBank)), catchFish);
+		fishingSteps.addStep(and(taskedWithFishing, barbFishingRod.alsoCheckBank()), catchFish);
 		fishingSteps.addStep(taskedWithFishing, searchBed);
 		fishingSteps.setLockingCondition(finishedFishing);
 
@@ -127,7 +126,7 @@ public class BarbarianTraining extends BasicQuestHelper
 		herbloreSteps.addStep(madePotion, talkToOttoAfterPotion);
 		herbloreSteps.addStep(and(taskedWithHerblore, roe), useRoeOnAttackPotion);
 		herbloreSteps.addStep(and(taskedWithHerblore, fish), dissectFish);
-		herbloreSteps.addStep(and(taskedWithHerblore, barbFishingRod.alsoCheckBank(questBank)), fishForHerblore);
+		herbloreSteps.addStep(and(taskedWithHerblore, barbFishingRod.alsoCheckBank()), fishForHerblore);
 		herbloreSteps.addStep(taskedWithHerblore, getBarbRodForHerblore);
 		herbloreSteps.setLockingCondition(finishedHerblore);
 
@@ -157,8 +156,8 @@ public class BarbarianTraining extends BasicQuestHelper
 		firemakingSteps.setLockingCondition(finishedFiremaking);
 
 		pyreSteps = new ConditionalStep(this, talkToOttoAboutPyre);
-		pyreSteps.addStep(LogicHelper.and(sacrificedRemains), talkToOttoAfterPyre);
-		pyreSteps.addStep(and(taskedWithPyre, chewedBones.alsoCheckBank(questBank)), useLogOnPyre);
+		pyreSteps.addStep(and(sacrificedRemains), talkToOttoAfterPyre);
+		pyreSteps.addStep(and(taskedWithPyre, chewedBones.alsoCheckBank()), useLogOnPyre);
 		pyreSteps.addStep(and(taskedWithPyre, chewedBonesNearby), pickupChewedBones);
 		pyreSteps.addStep(and(taskedWithPyre, inAncientCavernArrivalRoom), enterWhirlpool);
 		pyreSteps.addStep(and(taskedWithPyre, inAncientCavernF0), goUpToMithrilDragons);
@@ -179,14 +178,14 @@ public class BarbarianTraining extends BasicQuestHelper
 		spearAndHastaeSteps.setLockingCondition(finishedHasta);
 
 		ConditionalStep allSteps = new ConditionalStep(this, fishingSteps);
-		allSteps.addStep(LogicHelper.nor(finishedFishing), fishingSteps);
-		allSteps.addStep(LogicHelper.nor(finishedHerblore), herbloreSteps);
-		allSteps.addStep(LogicHelper.nor(finishedHarpoon), harpoonSteps);
-		allSteps.addStep(LogicHelper.nor(finishedSeedPlanting), seedSteps);
-		allSteps.addStep(LogicHelper.nor(finishedPotSmashing), potSmashingSteps);
-		allSteps.addStep(LogicHelper.nor(finishedFiremaking), firemakingSteps);
+		allSteps.addStep(nor(finishedFishing), fishingSteps);
+		allSteps.addStep(nor(finishedHerblore), herbloreSteps);
+		allSteps.addStep(nor(finishedHarpoon), harpoonSteps);
+		allSteps.addStep(nor(finishedSeedPlanting), seedSteps);
+		allSteps.addStep(nor(finishedPotSmashing), potSmashingSteps);
+		allSteps.addStep(nor(finishedFiremaking), firemakingSteps);
 		allSteps.addStep(nand(finishedSpear, finishedHasta), spearAndHastaeSteps);
-		allSteps.addStep(LogicHelper.nor(finishedPyre), pyreSteps);
+		allSteps.addStep(nor(finishedPyre), pyreSteps);
 		allSteps.addDialogSteps("Let's talk about my training.", "I seek more knowledge.");
 		allSteps.setCheckAllChildStepsOnListenerCall(true);
 
@@ -632,7 +631,7 @@ public class BarbarianTraining extends BasicQuestHelper
 		talkToOttoAboutHastae.addDialogStep("Tell me more about the use of spears.");
 		makeBronzeHasta = new ObjectStep(this, ObjectID.BRUT_ANVIL, new WorldPoint(2502, 3485, 0),
 			"Make a bronze hasta on the anvil south of Otto.", bronzeBar, logs, hammer);
-		makeBronzeHasta.addWidgetHighlightWithItemIdRequirement(270, 15, 11421, true);
+		makeBronzeHasta.addWidgetHighlightWithItemIdRequirement(270, 15, ItemID.BRUT_BRONZE_SPEAR_DUMMY, true);
 		talkToOttoAfterMakingHasta = new NpcStep(this, NpcID.BRUT_OTTO, new WorldPoint(2500, 3488, 0),
 			"Talk to Otto in his hut north-west of Baxtorian Falls.");
 		talkToOttoAfterMakingHasta.addDialogStep("I've created a hasta!");

@@ -32,7 +32,6 @@ import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestUtil;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemOnTileRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
-import net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicHelper;
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.Operation;
 import net.runelite.client.plugins.microbot.questhelper.requirements.var.VarbitRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.widget.WidgetTextRequirement;
@@ -91,9 +90,9 @@ public class SucellusSteps extends ConditionalStep
 		addStep(and(oddKeyDoorUnlocked, or(inDukeBossArena, inDukeEntrance)), talkToAssassinAfterDuke);
 		addStep(and(oddKey, or(inDukeBossArena, inDukeEntrance)), enterRoomWestOfDuke);
 		addStep(and(inDukeEntrance, killedDuke), retrieveKeyFromDoor);
-		addStep(LogicHelper.and(oddKeyNearby), pickUpOddKey);
-		addStep(LogicHelper.and(inDukeBossArena), defeatDuke);
-		addStep(LogicHelper.and(inDukeEntrance), enterDukeBossArea);
+		addStep(and(oddKeyNearby), pickUpOddKey);
+		addStep(and(inDukeBossArena), defeatDuke);
+		addStep(and(inDukeEntrance), enterDukeBossArea);
 		addStep(and(inPrisonF2, dukeArenaUnlocked), enterDukeArena);
 		addStep(and(inPrisonF2, defeatedJhallan), talkToAssassinAfterJhallanFight);
 		addStep(and(inPrisonF2, inJhallanFight), survive3Mins);
@@ -272,7 +271,7 @@ public class SucellusSteps extends ConditionalStep
 		gotGear = new VarbitRequirement(VarbitID.DT2_GHORROCK, 50, Operation.GREATER_EQUAL);
 		talkedToAssassinWithGear = new VarbitRequirement(VarbitID.DT2_GHORROCK, 52, Operation.GREATER_EQUAL);
 
-		unlockedSECrevice = new VarbitRequirement(15177, 1);
+		unlockedSECrevice = new VarbitRequirement(VarbitID.DT2_GHORROCK_SHORTCUT_1, 1);
 
 		inJhallanFight = new VarbitRequirement(VarbitID.DT2_GHORROCK, 54, Operation.GREATER_EQUAL);
 		defeatedJhallan = new VarbitRequirement(VarbitID.DT2_GHORROCK, 56, Operation.GREATER_EQUAL);
@@ -288,7 +287,7 @@ public class SucellusSteps extends ConditionalStep
 		// Global state 70->72
 		oddKeyNearby = new ItemOnTileRequirement(oddKey);
 
-		oddKeyDoorUnlocked = new VarbitRequirement(15179, 1);
+		oddKeyDoorUnlocked = new VarbitRequirement(VarbitID.DT2_GHORROCK_ASYLUM_GATE, 1);
 
 		talkedToAssassinAfterDuke = new VarbitRequirement(VarbitID.DT2_GHORROCK, 66, Operation.GREATER_EQUAL);
 
@@ -574,7 +573,7 @@ public class SucellusSteps extends ConditionalStep
 			"Talk to the assassin.");
 		goLightFirecrackers = new ObjectStep(getQuestHelper(), ObjectID.DT2_GHORROCK_FIRECRACKER_PACK, new WorldPoint(2972, 6367, 2),
 			"Get a full inventory of food, and return to the refugee camp in the south-eastern room. " +
-				"Light the firecrackers there. Once you do, you'll need to survive Jhallan attacking you for 3 minutes.");
+				"Light the firecrackers there. Once you do, you'll need to survive Jhallan attacking you for 2 minutes.");
 		((ObjectStep) goLightFirecrackers).setLinePoints(Arrays.asList(
 			new WorldPoint(2905, 6375, 2),
 			new WorldPoint(2905, 6348, 2),
@@ -593,7 +592,7 @@ public class SucellusSteps extends ConditionalStep
 
 		goLightFirecrackersThroughCrevice = new ObjectStep(getQuestHelper(), ObjectID.DT2_GHORROCK_FIRECRACKER_PACK, new WorldPoint(2972, 6367, 2),
 			"Get a full inventory of food, and return to the refugee camp in the south-eastern room. " +
-				"Light the firecrackers there. Once you do, you'll need to survive Jhallan attacking you for 3 minutes.");
+				"Light the firecrackers there. Once you do, you'll need to survive Jhallan attacking you for 2 minutes.");
 		((ObjectStep) goLightFirecrackersThroughCrevice).setLinePoints(Arrays.asList(
 			new WorldPoint(2905, 6375, 2),
 			new WorldPoint(2905, 6348, 2),
@@ -608,7 +607,7 @@ public class SucellusSteps extends ConditionalStep
 
 		goLightFirecrackers.addSubSteps(goLightFirecrackersThroughCrevice);
 		survive3Mins = new NpcStep(getQuestHelper(), NpcID.DT2_JHALLAN_CUTSCENE, new WorldPoint(2975, 6362, 2),
-			"Survive Jhallan's attacks for 3 minutes. Protect from Mage, keep your health high, and avoid the shadow attacks.");
+			"Survive Jhallan's attacks for 2 minutes. Protect from Mage, keep your health high, and avoid the shadow attacks.");
 		((NpcStep) survive3Mins).addAlternateNpcs(NpcID.SOTN_JHALLAN_GHORROCK, NpcID.SOTN_JHALLAN_CUTSCENE, NpcID.DT2_JHALLAN_COMBAT, NpcID.DT2_JHALLAN_CHASE);
 
 		talkToAssassinAfterJhallanFight = new NpcStep(getQuestHelper(), NpcID.DT2_ASSASSIN_GHORROCK_VIS, new WorldPoint(2978, 6371, 2),

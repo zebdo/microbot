@@ -176,8 +176,8 @@ public class TheDigSite extends BasicQuestHelper
 		steps.put(7, explodeWall);
 
 		ConditionalStep completeQuest = new ConditionalStep(this, goDownForTablet);
-		completeQuest.addStep(new Conditions(tablet.alsoCheckBank(questBank), inUndergroundTemple2), goUpWithTablet);
-		completeQuest.addStep(new Conditions(tablet.alsoCheckBank(questBank)), useTabletOnExpert);
+		completeQuest.addStep(new Conditions(tablet.alsoCheckBank(), inUndergroundTemple2), goUpWithTablet);
+		completeQuest.addStep(new Conditions(tablet.alsoCheckBank()), useTabletOnExpert);
 		completeQuest.addStep(inUndergroundTemple2, takeTablet);
 		steps.put(8, completeQuest);
 
@@ -286,7 +286,7 @@ public class TheDigSite extends BasicQuestHelper
 			new DialogRequirement("You got all the questions correct, well done!"),
 			new DialogRequirement("Great, I'm getting good at this."));
 
-		talkedToGuide = new VarbitRequirement(2544, 1);
+		talkedToGuide = new VarbitRequirement(VarbitID.ITDIGSITETEA, 1);
 		tea = tea.hideConditioned(talkedToGuide);
 
 
@@ -361,20 +361,20 @@ public class TheDigSite extends BasicQuestHelper
 
 		// 2550 = 1, gotten invite
 		// 3644 = 1, gotten invite
-		givenTalismanIn = new VarbitRequirement(2550, 1);
-		rope1Added = new VarbitRequirement(2545, 1);
-		rope2Added = new VarbitRequirement(2546, 1);
+		givenTalismanIn = new VarbitRequirement(VarbitID.ITEXPERTLETTER, 1);
+		rope1Added = new VarbitRequirement(VarbitID.ITDIGSITEWINCH1, 1);
+		rope2Added = new VarbitRequirement(VarbitID.ITDIGSITEWINCH2, 1);
 
 		// 45 - 54
 		hasTeddy = new Conditions(LogicType.OR, teddybear, talkedToFemaleStudent);
 		hasSkull = new Conditions(LogicType.OR, skull, talkedToGreenStudent);
 		hasSpecialCup = new Conditions(LogicType.OR, specialCup, talkedToOrangeStudent);
-		letterStamped = new VarbitRequirement(2552, 1);
+		letterStamped = new VarbitRequirement(VarbitID.ITCURATORLETTER, 1);
 
 
-		searchedBricks = new VarbitRequirement(2549, 1);
+		searchedBricks = new VarbitRequirement(VarbitID.ITDIGSITEHINT, 1);
 		openPowderChestNearby = new ObjectCondition(ObjectID.DIGCHESTOPEN);
-		openedBarrel = new VarbitRequirement(2547, 1);
+		openedBarrel = new VarbitRequirement(VarbitID.ITDIGSITEBARREL, 1);
 
 		hasKeyOrPowderOrMixtures = new Conditions(LogicType.OR,
 			key, powder, nitrate, mixedChemicals, mixedChemicals2, chemicalCompound, openPowderChestNearby);
@@ -437,7 +437,7 @@ public class TheDigSite extends BasicQuestHelper
 		digForTalisman = new ObjectStep(this, ObjectID.DIGDUGUPSOIL2, new WorldPoint(3374, 3438, 0), "Dig in the north east dig spot in the Digsite until you get a talisman.",
 			trowelHighlighted, specimenJar, specimenBrush);
 		digForTalisman.addIcon(ItemID.TROWEL);
-		talkToExpert = new NpcStep(this, NpcID.ARCHAEOLOGICAL_EXPERT, new WorldPoint(3357, 3334, 0), "Talk Archaeological expert in the Exam Centre.", talisman);
+		talkToExpert = new NpcStep(this, NpcID.ARCHAEOLOGICAL_EXPERT, new WorldPoint(3357, 3334, 0), "Talk to the Archaeological expert in the Exam Centre.", talisman);
 
 		useInvitationOnWorkman = new NpcStep(this, NpcID.DIGWORKMAN1, new WorldPoint(3360, 3415, 0), "Use the invitation on any workman.", true, invitation);
 		useInvitationOnWorkman.addIcon(ItemID.DIGEXPERTSCROLL);

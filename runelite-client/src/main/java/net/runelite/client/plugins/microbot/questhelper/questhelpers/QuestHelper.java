@@ -30,7 +30,6 @@ import com.google.inject.Injector;
 import com.google.inject.Module;
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperConfig;
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
-import net.runelite.client.plugins.microbot.questhelper.bank.QuestBank;
 import net.runelite.client.plugins.microbot.questhelper.panel.PanelDetails;
 import net.runelite.client.plugins.microbot.questhelper.questinfo.ExternalQuestResources;
 import net.runelite.client.plugins.microbot.questhelper.questinfo.HelperConfig;
@@ -39,6 +38,7 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.questhelper.rewards.*;
 import net.runelite.client.plugins.microbot.questhelper.runeliteobjects.extendedruneliteobjects.RuneliteObjectManager;
+import net.runelite.client.plugins.microbot.questhelper.steps.DetailedQuestStep;
 import net.runelite.client.plugins.microbot.questhelper.steps.OwnerStep;
 import net.runelite.client.plugins.microbot.questhelper.steps.QuestStep;
 import lombok.Getter;
@@ -70,9 +70,6 @@ public abstract class QuestHelper implements Module, QuestDebugRenderer
 	@Inject
 	protected RuneliteObjectManager runeliteObjectManager;
 
-	@Inject
-	protected QuestBank questBank;
-
 	@Getter
 	@Setter
 	protected QuestHelperConfig config;
@@ -99,6 +96,8 @@ public abstract class QuestHelper implements Module, QuestDebugRenderer
 	@Getter
 	@Setter
 	protected List<Integer> sidebarOrder;
+
+	protected QuestState lastQuestState;
 
 	@Override
 	public void configure(Binder binder)
@@ -130,6 +129,13 @@ public abstract class QuestHelper implements Module, QuestDebugRenderer
 		if (step != null)
 		{
 			currentStep = step;
+			currentStep.startUp();
+			eventBus.register(currentStep);
+		}
+		else if (!hasQuestStateBecomeFinished() && getState(client) == QuestState.FINISHED)
+		{
+			currentStep = new DetailedQuestStep(this, "Quest completed!");
+			instantiateStep(currentStep);
 			currentStep.startUp();
 			eventBus.register(currentStep);
 		}
@@ -223,6 +229,15 @@ public abstract class QuestHelper implements Module, QuestDebugRenderer
 	public int getVar()
 	{
 		return quest.getVar(client);
+	}
+
+	public boolean hasQuestStateBecomeFinished()
+	{
+		var currentQuestState = getState(client);
+		if (lastQuestState == null) lastQuestState = currentQuestState;
+		boolean questStateEnteredFinished = currentQuestState == QuestState.FINISHED && lastQuestState != QuestState.FINISHED;
+		lastQuestState = currentQuestState;
+		return questStateEnteredFinished;
 	}
 
 	public void makeWorldOverlayHint(Graphics2D graphics, QuestHelperPlugin plugin)

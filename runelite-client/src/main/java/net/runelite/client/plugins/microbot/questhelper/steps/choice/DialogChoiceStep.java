@@ -4,6 +4,7 @@ import net.runelite.client.plugins.microbot.questhelper.QuestHelperConfig;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Map;
 import java.util.regex.Pattern;
 
 public class DialogChoiceStep extends WidgetChoiceStep
@@ -40,5 +41,12 @@ public class DialogChoiceStep extends WidgetChoiceStep
 	{
 		super(config, choice, 219, 1);
 		shouldNumber = true;
+	}
+
+	public DialogChoiceStep(QuestHelperConfig config, int varbitId, Map<Integer, String> valueToAnswer)
+	{
+		super(config, 219, 1, varbitId, valueToAnswer);
+		shouldNumber = true;
+
 	}
 }

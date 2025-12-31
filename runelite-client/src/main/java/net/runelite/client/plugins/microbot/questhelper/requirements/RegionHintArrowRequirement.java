@@ -24,10 +24,10 @@
  */
 package net.runelite.client.plugins.microbot.questhelper.requirements;
 
-import net.runelite.client.plugins.microbot.questhelper.requirements.zone.Zone;
-import net.runelite.client.plugins.microbot.questhelper.steps.tools.QuestPerspective;
 import net.runelite.api.Client;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.plugins.microbot.questhelper.requirements.zone.Zone;
+import net.runelite.client.plugins.microbot.questhelper.steps.tools.QuestPerspective;
 
 public class RegionHintArrowRequirement extends SimpleRequirement
 {
@@ -53,7 +53,7 @@ public class RegionHintArrowRequirement extends SimpleRequirement
 			return false;
 		}
 
-		WorldPoint wp = QuestPerspective.getInstanceWorldPointFromReal(client, hintArrowPoint);
+		WorldPoint wp = QuestPerspective.getWorldPointConsideringWorldView(client, client.getTopLevelWorldView(), hintArrowPoint);
 		if (wp == null)
 		{
 			return false;

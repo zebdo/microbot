@@ -29,7 +29,6 @@ import net.runelite.client.plugins.microbot.questhelper.panel.PanelDetails;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.BasicQuestHelper;
 import net.runelite.client.plugins.microbot.questhelper.requirements.conditional.Conditions;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
-import static net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicHelper.and;
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.Operation;
 import net.runelite.client.plugins.microbot.questhelper.requirements.var.VarbitRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.widget.WidgetTextRequirement;
@@ -38,24 +37,17 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.zone.ZoneRe
 import net.runelite.client.plugins.microbot.questhelper.rewards.ExperienceReward;
 import net.runelite.client.plugins.microbot.questhelper.rewards.ItemReward;
 import net.runelite.client.plugins.microbot.questhelper.rewards.QuestPointReward;
-import net.runelite.client.plugins.microbot.questhelper.steps.ConditionalStep;
-import net.runelite.client.plugins.microbot.questhelper.steps.DetailedQuestStep;
-import net.runelite.client.plugins.microbot.questhelper.steps.NpcStep;
-import net.runelite.client.plugins.microbot.questhelper.steps.ObjectStep;
-import net.runelite.client.plugins.microbot.questhelper.steps.PuzzleWrapperStep;
-import net.runelite.client.plugins.microbot.questhelper.steps.QuestStep;
-import net.runelite.client.plugins.microbot.questhelper.steps.WidgetStep;
+import net.runelite.client.plugins.microbot.questhelper.steps.*;
+import net.runelite.api.Skill;
+import net.runelite.api.coords.WorldPoint;
+import net.runelite.api.gameval.*;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import net.runelite.api.Skill;
-import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.InterfaceID;
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
-import net.runelite.api.gameval.ObjectID;
-import net.runelite.api.gameval.VarbitID;
+
+import static net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicHelper.and;
 
 public class MisthalinMystery extends BasicQuestHelper
 {
@@ -190,11 +182,11 @@ public class MisthalinMystery extends BasicQuestHelper
 		playedAnyKey = new VarbitRequirement(VarbitID.MISTMYST_PIANO_ATTEMPTS, 1, Operation.GREATER_EQUAL);
 		inPianoWidget = new WidgetTextRequirement(554, 20, "C");
 		inGemWidget = new WidgetTextRequirement(555, 1, 1, "Gemstone switch panel");
-		selectedSaphire = and(new VarbitRequirement(4051, 1), new VarbitRequirement(4050, 1));
-		selectedDiamond = and(new VarbitRequirement(4052, 1), new VarbitRequirement(4050, 2));
-		selectedZenyte = and(new VarbitRequirement(4053, 1), new VarbitRequirement(4050, 3));
-		selectedEmerald = and(new VarbitRequirement(4054, 1), new VarbitRequirement(4050, 4));
-		selectedOnyx = and(new VarbitRequirement(4055, 1), new VarbitRequirement(4050, 5));
+		selectedSaphire = and(new VarbitRequirement(VarbitID.MISTMYST_SAPPHIRE_SWITCHED, 1), new VarbitRequirement(VarbitID.MISTMYST_SWITCH_ATTEMPTS, 1));
+		selectedDiamond = and(new VarbitRequirement(VarbitID.MISTMYST_DIAMOND_SWITCHED, 1), new VarbitRequirement(VarbitID.MISTMYST_SWITCH_ATTEMPTS, 2));
+		selectedZenyte = and(new VarbitRequirement(VarbitID.MISTMYST_ZENYTE_SWITCHED, 1), new VarbitRequirement(VarbitID.MISTMYST_SWITCH_ATTEMPTS, 3));
+		selectedEmerald = and(new VarbitRequirement(VarbitID.MISTMYST_EMERALD_SWITCHED, 1), new VarbitRequirement(VarbitID.MISTMYST_SWITCH_ATTEMPTS, 4));
+		selectedOnyx = and(new VarbitRequirement(VarbitID.MISTMYST_ONYX_SWITCHED, 1), new VarbitRequirement(VarbitID.MISTMYST_SWITCH_ATTEMPTS, 5));
 		selectAnyGem = new VarbitRequirement(VarbitID.MISTMYST_SWITCH_ATTEMPTS, 1, Operation.GREATER_EQUAL);
 
 		bucket = new ItemRequirement("Bucket", ItemID.BUCKET_EMPTY);

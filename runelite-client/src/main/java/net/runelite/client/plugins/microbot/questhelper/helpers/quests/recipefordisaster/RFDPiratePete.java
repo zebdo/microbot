@@ -53,6 +53,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.gameval.VarbitID;
 
 import java.util.*;
 
@@ -119,8 +120,8 @@ public class RFDPiratePete extends BasicQuestHelper
 
 		ConditionalStep goLearnHowToMakeFishCake = new ConditionalStep(this, goDivingAgain);
 		goLearnHowToMakeFishCake.addStep(new Conditions(fishCake, inDiningRoom), useCakeOnPete);
-		goLearnHowToMakeFishCake.addStep(new Conditions(fishCake.alsoCheckBank(questBank)), enterDiningRoomAgain);
-		goLearnHowToMakeFishCake.addStep(new Conditions(rawFishCake.alsoCheckBank(questBank)), cookCake);
+		goLearnHowToMakeFishCake.addStep(new Conditions(fishCake.alsoCheckBank()), enterDiningRoomAgain);
+		goLearnHowToMakeFishCake.addStep(new Conditions(rawFishCake.alsoCheckBank()), cookCake);
 		goLearnHowToMakeFishCake.addStep(new Conditions(hasKelp, hasCrabMeat, inUnderWater), climbAnchor);
 		goLearnHowToMakeFishCake.addStep(new Conditions(hasKelp, inUnderWater, hasEnoughRocks), killCrab);
 		goLearnHowToMakeFishCake.addStep(new Conditions(hasKelp, inUnderWater), pickUpRocksAgain);
@@ -135,7 +136,7 @@ public class RFDPiratePete extends BasicQuestHelper
 
 		ConditionalStep savePete = new ConditionalStep(this, useCrabOnKelp);
 		savePete.addStep(new Conditions(fishCake, inDiningRoom), useCakeOnPete);
-		savePete.addStep(new Conditions(fishCake.alsoCheckBank(questBank)), enterDiningRoomAgain);
+		savePete.addStep(new Conditions(fishCake.alsoCheckBank()), enterDiningRoomAgain);
 		savePete.addStep(new Conditions(rawFishCake), cookCake);
 		steps.put(100, savePete);
 
@@ -199,16 +200,16 @@ public class RFDPiratePete extends BasicQuestHelper
 	public void setupConditions()
 	{
 		inDiningRoom = new ZoneRequirement(diningRoom);
-		walkingUnderwater = new VarbitRequirement(1871, 1);
+		walkingUnderwater = new VarbitRequirement(VarbitID.HUNDRED_PIRATE_UNDERWATER_ONFLOOR, 1);
 
 		askedCookOptions = new Conditions(
-			new VarbitRequirement(1873, 1),
-			new VarbitRequirement(1876, 1),
-			new VarbitRequirement(1877, 1));
+			new VarbitRequirement(VarbitID.HUNDRED_PIRATE_MEAT_INTRO, 1),
+			new VarbitRequirement(VarbitID.HUNDRED_PIRATE_CRUMB_INTRO, 1),
+			new VarbitRequirement(VarbitID.HUNDRED_PIRATE_COD_INTRO, 1));
 
 		inUnderWater = new ZoneRequirement(underwater);
 
-		hasEnoughRocks = new VarbitRequirement(1869, 5);
+		hasEnoughRocks = new VarbitRequirement(VarbitID.HUNDRED_PIRATE_ROCKS, 5);
 
 		hasCrabMeat = new Conditions(LogicType.OR, crabMeat, groundCrabMeatHighlighted);
 		hasKelp = new Conditions(LogicType.OR, kelp, groundKelpHighlighted);
@@ -257,7 +258,7 @@ public class RFDPiratePete extends BasicQuestHelper
 		grindKelp = new DetailedQuestStep(this, "Use a pestle and mortar on the kelp.", pestleHighlighted, kelpHighlighted);
 		grindCrab = new DetailedQuestStep(this, "Use a pestle and mortar on the crab.", pestleHighlighted, crabMeatHighlighted);
 		climbAnchor = new ObjectStep(this, ObjectID.ANCHOR_MIDDLE, new WorldPoint(2963, 9477, 1), "Climb the anchor to the south to return to the surface.");
-		talkToCookAgain = new NpcStep(this, NpcID.POH_SERVANT_COOK_WOMAN, new WorldPoint(3209, 3215, 0),
+		talkToCookAgain = new NpcStep(this, NpcID.COOK, new WorldPoint(3209, 3215, 0),
 			"Talk to the Lumbridge Cook about Pirate Pete again.", groundCod, groundCrabMeatHighlighted, groundKelpHighlighted, breadcrumbs);
 		talkToCookAgain.addDialogStep("Protecting the Pirate");
 		useCrabOnKelp = new DetailedQuestStep(this, "Use the ingredients together to make the cake.", groundCrabMeatHighlighted, groundKelpHighlighted, groundCod, breadcrumbs);
@@ -365,6 +366,6 @@ public class RFDPiratePete extends BasicQuestHelper
 	@Override
 	public boolean isCompleted()
 	{
-		return (client.getVarbitValue(1895) >= 110 || client.getVarbitValue(QuestVarbits.QUEST_RECIPE_FOR_DISASTER.getId()) < 3);
+		return (client.getVarbitValue(VarbitID._100_PIRATE_QUEST_VAR) >= 110 || client.getVarbitValue(QuestVarbits.QUEST_RECIPE_FOR_DISASTER.getId()) < 3);
 	}
 }

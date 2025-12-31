@@ -34,7 +34,6 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRe
 import net.runelite.client.plugins.microbot.questhelper.requirements.npc.NpcRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.player.InInstanceRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.quest.QuestRequirement;
-import net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicHelper;
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.Operation;
 import net.runelite.client.plugins.microbot.questhelper.requirements.var.VarbitRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.var.VarplayerRequirement;
@@ -141,13 +140,13 @@ public class TwilightsPromise extends BasicQuestHelper
 		findPubKnights.addStep(pubKnightFollowing, takePubKnightsToFountain);
 
 		ConditionalStep findBazaarKnight = new ConditionalStep(this, talkToBazaarKnight);
-		findBazaarKnight.addStep(stolenAmulet.alsoCheckBank(questBank), returnAmulet);
+		findBazaarKnight.addStep(stolenAmulet.alsoCheckBank(), returnAmulet);
 		findBazaarKnight.addStep(talkedToBazaarKnight, pickpocketCitizen);
 
 		ConditionalStep findKnights = new ConditionalStep(this, findColosseumKnight);
-		findKnights.addStep(LogicHelper.nor(finishedBazaarKnight), findBazaarKnight);
-		findKnights.addStep(LogicHelper.nor(finishedCothonKnight), findCothonKnight);
-		findKnights.addStep(LogicHelper.nor(finishedPubKnights), findPubKnights);
+		findKnights.addStep(nor(finishedBazaarKnight), findBazaarKnight);
+		findKnights.addStep(nor(finishedCothonKnight), findCothonKnight);
+		findKnights.addStep(nor(finishedPubKnights), findPubKnights);
 
 		steps.put(14, findKnights);
 		steps.put(16, findKnights);
@@ -160,7 +159,7 @@ public class TwilightsPromise extends BasicQuestHelper
 
 
 		ConditionalStep goReadLetter = new ConditionalStep(this, goUpHQ);
-		goReadLetter.addStep(incriminatingLetter.alsoCheckBank(questBank), readLetter);
+		goReadLetter.addStep(incriminatingLetter.alsoCheckBank(), readLetter);
 		goReadLetter.addStep(inHQ2, searchHQChest);
 		goReadLetter.addStep(inHQ1, goUpHQ2);
 		steps.put(24, goReadLetter);
@@ -222,7 +221,7 @@ public class TwilightsPromise extends BasicQuestHelper
 
 	private void setupConditions()
 	{
-		beenToVarlamore = new VarbitRequirement(9650, 1);
+		beenToVarlamore = new VarbitRequirement(VarbitID.VARLAMORE_VISITED, 1);
 		inCrypt = new ZoneRequirement(crypt);
 		inColosseumUnderground = new ZoneRequirement(colosseumUnderground);
 		inColosseum = new ZoneRequirement(colosseum);

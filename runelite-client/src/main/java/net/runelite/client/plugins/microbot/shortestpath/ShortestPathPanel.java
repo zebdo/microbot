@@ -691,7 +691,7 @@ public class ShortestPathPanel extends PluginPanel
 			// Extract WorldPoint from DetailedQuestStep
 			if (activeStep instanceof DetailedQuestStep)
 			{
-				return ((DetailedQuestStep) activeStep).getWorldPoint();
+				return ((DetailedQuestStep) activeStep).getDefinedPoint().getWorldPoint();
 			}
 		}
 		catch (Exception e)

@@ -45,8 +45,8 @@ import net.runelite.client.chat.QueuedMessage;
 import net.runelite.client.game.chatbox.ChatboxPanelManager;
 
 import java.awt.*;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
@@ -157,11 +157,11 @@ public class ExtendedRuneliteObject
 
 		this.worldPoint = worldPoint;
 
-		List<LocalPoint> localPoints = QuestPerspective.getInstanceLocalPointFromReal(client, worldPoint);
-		if (localPoints.isEmpty()) return;
+		if (!updateRuneLiteObjectLocation(worldPoint))
+		{
+			return;
+		}
 
-		// Set it to first found local point
-		runeliteObject.setLocation(localPoints.get(0), client.getTopLevelWorldView().getPlane());
 		activate();
 	}
 
@@ -188,10 +188,10 @@ public class ExtendedRuneliteObject
 
 	public Shape getClickbox()
 	{
-		if (QuestPerspective.getInstanceLocalPointFromReal(client, worldPoint).isEmpty()) return null;
+		if (QuestPerspective.resolveLocalPointForWorldPoint(client, worldPoint, null) == null) return null;
 
 		return Perspective.getClickbox(client,
-			client.getTopLevelWorldView(),
+			client.getWorldView(getRuneliteObject().getWorldView()),
 			getRuneliteObject().getModel(),
 			getRuneliteObject().getOrientation(),
 			getRuneliteObject().getLocation().getX(),
@@ -220,11 +220,7 @@ public class ExtendedRuneliteObject
 	public void setWorldPoint(WorldPoint worldPoint)
 	{
 		this.worldPoint = worldPoint;
-		List<LocalPoint> localPoints = QuestPerspective.getInstanceLocalPointFromReal(client, worldPoint);
-		if (localPoints.isEmpty()) return;
-
-		// Set it to first found local point
-		this.runeliteObject.setLocation(localPoints.get(0), client.getTopLevelWorldView().getPlane());
+		updateRuneLiteObjectLocation(worldPoint);
 	}
 
 	public void setScaledModel(int[] model, int xScale, int yScale, int zScale)
@@ -663,5 +659,20 @@ public class ExtendedRuneliteObject
 //			runeliteObject.setAnimation(client.loadAnimation(animation));
 		}
 		return isFacingPlayer;
+	}
+
+	private boolean updateRuneLiteObjectLocation(WorldPoint worldPoint)
+	{
+		LocalPoint localPoint = QuestPerspective.resolveLocalPointForWorldPoint(client, worldPoint, null);
+		if (localPoint == null)
+		{
+			return false;
+		}
+
+		WorldView worldView = client.getWorldView(localPoint.getWorldView());
+		int plane = worldView != null ? worldView.getPlane() : client.getTopLevelWorldView().getPlane();
+
+		runeliteObject.setLocation(localPoint, plane);
+		return true;
 	}
 }

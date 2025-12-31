@@ -105,10 +105,10 @@ public class MyArmsBigAdventure extends BasicQuestHelper
 		steps.put(50, goTalkToBurntmeat);
 
 		ConditionalStep getGout = new ConditionalStep(this, useBucketOnPot);
-		getGout.addStep(new Conditions(goutLump.alsoCheckBank(questBank), inStrongholdFloor1), talkToArmWithLump);
-		getGout.addStep(new Conditions(goutLump.alsoCheckBank(questBank), inStrongholdFloor2), goDownToArmWithLump);
-		getGout.addStep(new Conditions(goutLump.alsoCheckBank(questBank), inPrison), goUpToArmWithLump);
-		getGout.addStep(goutLump.alsoCheckBank(questBank), enterStrongholdWithLump);
+		getGout.addStep(new Conditions(goutLump.alsoCheckBank(), inStrongholdFloor1), talkToArmWithLump);
+		getGout.addStep(new Conditions(goutLump.alsoCheckBank(), inStrongholdFloor2), goDownToArmWithLump);
+		getGout.addStep(new Conditions(goutLump.alsoCheckBank(), inPrison), goUpToArmWithLump);
+		getGout.addStep(goutLump.alsoCheckBank(), enterStrongholdWithLump);
 
 		steps.put(60, getGout);
 
@@ -279,15 +279,15 @@ public class MyArmsBigAdventure extends BasicQuestHelper
 		inPrison = new ZoneRequirement(prison);
 		onRoof = new ZoneRequirement(roof);
 
-		added3Dung = new VarbitRequirement(2791, 3);
-		added7Comp = new VarbitRequirement(2792, 7);
+		added3Dung = new VarbitRequirement(VarbitID.MYARM_DUNG, 3);
+		added7Comp = new VarbitRequirement(VarbitID.MYARM_SUPERCOMPOST, 7);
 
-		givenHardy = new VarbitRequirement(2794, 1);
-		usedRake = new VarbitRequirement(2799, 6);
-		givenCompost = new VarbitRequirement(2799, 7);
+		givenHardy = new VarbitRequirement(VarbitID.MYARM_TUBERS, 1);
+		usedRake = new VarbitRequirement(VarbitID.MYARM_FAKEPATCH, 6);
+		givenCompost = new VarbitRequirement(VarbitID.MYARM_FAKEPATCH, 7);
 
 		givenDibber = new VarbitRequirement(VarbitID.MYARM_FAKEPATCH, 9, Operation.GREATER_EQUAL);
-		givenCure = new VarbitRequirement(2798, 1);
+		givenCure = new VarbitRequirement(VarbitID.MYARM_BARNABYSWAP, 1);
 
 		hasRakeHeadAndHandle = new Conditions(rakeHead, rakeHandle);
 		rakeHeadNearby = new ItemOnTileRequirement(rakeHead);

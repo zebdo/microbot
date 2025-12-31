@@ -32,6 +32,7 @@ import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.questhelper.steps.DetailedQuestStep;
+import net.runelite.client.plugins.microbot.questhelper.steps.tools.DefinedPoint;
 import lombok.NonNull;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.coords.LocalPoint;
@@ -39,6 +40,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.ItemID;
+import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.ui.overlay.OverlayUtil;
@@ -82,8 +84,6 @@ public class MageArenaBossStep extends DetailedQuestStep
 
 	int currentVar = 0;
 
-	final int BOSS_MOVING_TIMER_VARBIT = 6062;
-
 	public MageArenaBossStep(QuestHelper questHelper, ItemRequirement staff, String bossName,
 							 String abilityDetail, ItemRequirement... requirements)
 	{
@@ -115,7 +115,7 @@ public class MageArenaBossStep extends DetailedQuestStep
 				.left("Possible locations:")
 				.build());
 		}
-		else if (digLocations.size() < 1)
+		else if (digLocations.isEmpty())
 		{
 			if (!foundLocation)
 			{
@@ -151,7 +151,7 @@ public class MageArenaBossStep extends DetailedQuestStep
 	public void onVarbitChanged(VarbitChanged varbitChanged)
 	{
 		super.onVarbitChanged(varbitChanged);
-		int newState = client.getVarbitValue(BOSS_MOVING_TIMER_VARBIT);
+		int newState = client.getVarbitValue(VarbitID.MA2_TIMER_REMAINING);
 
 		// If the position of the bosses changes, reset
 		if (newState > currentVar)
@@ -166,7 +166,7 @@ public class MageArenaBossStep extends DetailedQuestStep
 
 	public void resetState()
 	{
-		setWorldPoint(null);
+		setWorldPoint(DefinedPoint.of(null));
 		Set<MageArenaSpawnLocation> locations =
 			Arrays.stream(MageArenaSpawnLocation.values())
 			.collect(Collectors.toSet());
@@ -186,12 +186,12 @@ public class MageArenaBossStep extends DetailedQuestStep
 	{
 		super.makeWorldOverlayHint(graphics, plugin);
 
-		if (worldPoint == null)
+		if (definedPoint == null)
 		{
 			return;
 		}
 
-		LocalPoint localLocation = LocalPoint.fromWorld(client, worldPoint);
+		LocalPoint localLocation = LocalPoint.fromWorld(client, definedPoint.getWorldPoint());
 
 		if (localLocation == null)
 		{
@@ -245,7 +245,7 @@ public class MageArenaBossStep extends DetailedQuestStep
 		}
 		else
 		{
-			this.setWorldPoint(null);
+			this.setWorldPoint(DefinedPoint.of(null));
 		}
 
 	}
@@ -254,7 +254,7 @@ public class MageArenaBossStep extends DetailedQuestStep
 	public void startUp()
 	{
 		super.startUp();
-		currentVar = client.getVarbitValue(BOSS_MOVING_TIMER_VARBIT);
+		currentVar = client.getVarbitValue(VarbitID.MA2_TIMER_REMAINING);
 		Set<MageArenaSpawnLocation> locations =
 			Arrays.stream(MageArenaSpawnLocation.values())
 			.collect(Collectors.toSet());
@@ -269,7 +269,7 @@ public class MageArenaBossStep extends DetailedQuestStep
 	public void shutDown()
 	{
 		super.shutDown();
-		this.setWorldPoint(null);
+		this.setWorldPoint(DefinedPoint.of(null));
 	}
 
 	private BufferedImage getSymbolLocation()

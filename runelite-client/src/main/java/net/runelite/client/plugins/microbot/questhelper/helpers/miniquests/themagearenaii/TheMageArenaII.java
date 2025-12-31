@@ -46,6 +46,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.gameval.VarbitID;
 
 import java.util.*;
 
@@ -84,12 +85,12 @@ public class TheMageArenaII extends BasicQuestHelper
 		goKillMinions.addStep(demonsHeart, enterCavernWithHeart);
 		goKillMinions.addStep(new Conditions(givenHand, givenRoots), locateFollowerZammy);
 
-		goKillMinions.addStep(new Conditions(inCavern, entRoots.alsoCheckBank(questBank)), giveKolodionRoots);
-		goKillMinions.addStep(entRoots.alsoCheckBank(questBank), enterCavernWithRoots);
+		goKillMinions.addStep(new Conditions(inCavern, entRoots.alsoCheckBank()), giveKolodionRoots);
+		goKillMinions.addStep(entRoots.alsoCheckBank(), enterCavernWithRoots);
 		goKillMinions.addStep(givenHand, locateFollowerGuthix);
 
-		goKillMinions.addStep(new Conditions(inCavern, justicarsHand.alsoCheckBank(questBank)), giveKolodionHand);
-		goKillMinions.addStep(justicarsHand.alsoCheckBank(questBank), enterCavernWithHand);
+		goKillMinions.addStep(new Conditions(inCavern, justicarsHand.alsoCheckBank()), giveKolodionHand);
+		goKillMinions.addStep(justicarsHand.alsoCheckBank(), enterCavernWithHand);
 		steps.put(2, goKillMinions);
 
 		ConditionalStep goImbueCape = new ConditionalStep(this, enterCavernAfterMinions);
@@ -141,9 +142,9 @@ public class TheMageArenaII extends BasicQuestHelper
 	{
 		inCavern = new ZoneRequirement(cavern);
 
-		givenHand = new VarbitRequirement(6063, 1);
-		givenRoots = new VarbitRequirement(6064, 1);
-		givenHeart = new VarbitRequirement(6065, 1);
+		givenHand = new VarbitRequirement(VarbitID.MA2_SARADOMIN_COMPONENT, 1);
+		givenRoots = new VarbitRequirement(VarbitID.MA2_GUTHIX_COMPONENT, 1);
+		givenHeart = new VarbitRequirement(VarbitID.MA2_ZAMORAK_COMPONENT, 1);
 		// Handed in hand:
 		// 6066, 6063 0->1
 		// 6066 varies 0->7 (3 bits)

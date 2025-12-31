@@ -32,10 +32,11 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.ManualRequi
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.conditional.Conditions;
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicType;
+import net.runelite.client.plugins.microbot.questhelper.steps.choice.DialogChoiceStep;
+import lombok.Getter;
 import lombok.NonNull;
 import net.runelite.client.ui.overlay.components.PanelComponent;
 
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -47,6 +48,9 @@ public class PuzzleWrapperStep extends ConditionalStep
 {
 	public static String DEFAULT_TEXT = "If you want help with this, enable 'Show Puzzle Solutions' in the Quest Helper configuration settings.";
 	final QuestHelperConfig questHelperConfig;
+
+	@Getter
+	final QuestStep solvingStep;
 	final QuestStep noSolvingStep;
 	ManualRequirement shouldHideHiddenPuzzleHintInSidebar = new ManualRequirement();
 
@@ -54,6 +58,7 @@ public class PuzzleWrapperStep extends ConditionalStep
 	{
 		super(questHelper, step, "", requirements);
 		this.text = hiddenStep.getText();
+		this.solvingStep = step;
 		this.noSolvingStep = hiddenStep;
 		this.questHelperConfig = questHelper.getConfig();
 		addStep(not(new ConfigRequirement(questHelper.getConfig()::solvePuzzles)), noSolvingStep);
@@ -172,9 +177,9 @@ public class PuzzleWrapperStep extends ConditionalStep
 	}
 
 	@Override
-	public QuestStep addDialogConsideringLastLineCondition(String dialogString, String choiceValue)
+	public QuestStep addDialogStep(DialogChoiceStep dialogStep)
 	{
-		steps.get(null).addDialogConsideringLastLineCondition(dialogString, choiceValue);
+		steps.get(null).addDialogStep(dialogStep);
 		return this;
 	}
 

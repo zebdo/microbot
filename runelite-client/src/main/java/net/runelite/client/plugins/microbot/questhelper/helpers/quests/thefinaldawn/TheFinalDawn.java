@@ -50,9 +50,6 @@ import net.runelite.client.plugins.microbot.questhelper.rewards.ItemReward;
 import net.runelite.client.plugins.microbot.questhelper.rewards.QuestPointReward;
 import net.runelite.client.plugins.microbot.questhelper.rewards.UnlockReward;
 import net.runelite.client.plugins.microbot.questhelper.steps.*;
-
-import java.util.*;
-
 import net.runelite.client.plugins.microbot.questhelper.steps.tools.QuestPerspective;
 import net.runelite.client.plugins.microbot.questhelper.steps.widget.WidgetHighlight;
 import net.runelite.api.QuestState;
@@ -63,6 +60,8 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.gameval.*;
 import net.runelite.client.eventbus.Subscribe;
+
+import java.util.*;
 
 import static net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicHelper.*;
 
@@ -517,7 +516,7 @@ public class TheFinalDawn extends BasicQuestHelper
 
 		for (WorldPoint wp : wps)
 		{
-			List<LocalPoint> localPoints = QuestPerspective.getInstanceLocalPointFromReal(client, wp);
+			List<LocalPoint> localPoints = QuestPerspective.getLocalPointsFromWorldPointInInstance(client.getTopLevelWorldView(), wp);
 
 			if (localPoints.isEmpty()) return -1;
 
@@ -743,7 +742,7 @@ public class TheFinalDawn extends BasicQuestHelper
 		notInspectedSkeleton = not(new VarbitRequirement(VarbitID.VMQ4_FINAL_CHAMBER_TABLET_INSPECT, 1));
 		notInspectedDoor = not(new VarbitRequirement(VarbitID.VMQ4_FINAL_CHAMBER_DOOR_INSPECT, 1));
 		quetzalMadeSalvagerOverlook = new VarbitRequirement(VarbitID.QUETZAL_SALVAGEROVERLOOK, 1);
-		hasAtesAndActivatedTeleport = and(pendant.alsoCheckBank(questBank), new VarbitRequirement(VarbitID.PENDANT_OF_ATES_TWILIGHT_FOUND, 1, Operation.GREATER_EQUAL));
+		hasAtesAndActivatedTeleport = and(pendant.alsoCheckBank(), new VarbitRequirement(VarbitID.PENDANT_OF_ATES_TWILIGHT_FOUND, 1, Operation.GREATER_EQUAL));
 	}
 
 	public void setupSteps()

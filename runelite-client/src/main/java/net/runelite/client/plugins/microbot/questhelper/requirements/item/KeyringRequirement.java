@@ -31,11 +31,9 @@ import lombok.Getter;
 import net.runelite.api.Client;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.client.config.ConfigManager;
-import net.runelite.client.util.Text;
 
 import java.awt.*;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 // TODO: Convert this to be a TrackedContainer instead?
 public class KeyringRequirement extends ItemRequirement
@@ -89,7 +87,6 @@ public class KeyringRequirement extends ItemRequirement
 		newItem.setDisplayMatchedItemName(isDisplayMatchedItemName());
 		newItem.setConditionToHide(getConditionToHide());
 		newItem.setShouldCheckBank(isShouldCheckBank());
-		newItem.setQuestBank(getQuestBank());
 		newItem.setTooltip(getTooltip());
 		newItem.setUrlSuffix(getUrlSuffix());
 

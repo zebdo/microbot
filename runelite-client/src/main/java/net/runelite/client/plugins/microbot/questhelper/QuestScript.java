@@ -239,7 +239,7 @@ public class QuestScript extends Script {
             if (requirement instanceof ItemRequirement) {
                 var itemRequirement = (ItemRequirement) requirement;
 
-                if (itemRequirement.isEquip() && Rs2Inventory.contains(itemRequirement.getAllIds().stream().mapToInt(i -> i).toArray())
+                if (itemRequirement.mustBeEquipped() && Rs2Inventory.contains(itemRequirement.getAllIds().stream().mapToInt(i -> i).toArray())
                         && itemRequirement.getAllIds().stream().noneMatch(Rs2Equipment::isWearing)) {
                     Rs2Inventory.wear(itemRequirement.getAllIds().stream().filter(Rs2Inventory::contains).findFirst().orElse(-1));
                     return true;
@@ -345,8 +345,8 @@ public class QuestScript extends Script {
         } else if (npc != null && (!Rs2Npc.hasLineOfSight(npc) || !Rs2Npc.canWalkTo(npc, 10))) {
             Rs2Walker.walkTo(npc.getWorldLocation(), 2);
         } else {
-            if (step.getWorldPoint().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) > 3) {
-                Rs2Walker.walkTo(step.getWorldPoint(), 2);
+            if (step.getDefinedPoint().getWorldPoint().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) > 3) {
+                Rs2Walker.walkTo(step.getDefinedPoint().getWorldPoint(), 2);
                 return false;
             }
         }
@@ -389,10 +389,10 @@ public class QuestScript extends Script {
         /**
          * TODO: rework this block of code to handle walking closer to an object before interacting with it
          */
-        if (step.getWorldPoint() != null && Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo2D(step.getWorldPoint()) > 1
+        if (step.getDefinedPoint().getWorldPoint() != null && Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo2D(step.getDefinedPoint().getWorldPoint()) > 1
                 && !Rs2GameObject.canWalkTo(object, 10)) {
             WorldPoint targetTile = null;
-            WorldPoint stepLocation = object == null ? step.getWorldPoint() : object.getWorldLocation();
+            WorldPoint stepLocation = object == null ? step.getDefinedPoint().getWorldPoint() : object.getWorldLocation();
             int radius = 0;
             while (targetTile == null) {
                 if (mainScheduledFuture.isCancelled())
@@ -413,7 +413,7 @@ public class QuestScript extends Script {
 
             if (ShortestPathPlugin.getPathfinder() != null) {
                 var path = ShortestPathPlugin.getPathfinder().getPath();
-                if (path.get(path.size() - 1).distanceTo(step.getWorldPoint()) <= 1)
+                if (path.get(path.size() - 1).distanceTo(step.getDefinedPoint().getWorldPoint()) <= 1)
                     return false;
             } else
                 return false;
@@ -440,10 +440,10 @@ public class QuestScript extends Script {
     }
 
     private boolean applyDigStep(DigStep step) {
-        if (!Rs2Walker.walkTo(step.getWorldPoint()))
+        if (!Rs2Walker.walkTo(step.getDefinedPoint().getWorldPoint()))
             return false;
-        else if (!Rs2Player.getWorldLocation().equals(step.getWorldPoint()))
-            Rs2Walker.walkFastCanvas(step.getWorldPoint());
+        else if (!Rs2Player.getWorldLocation().equals(step.getDefinedPoint().getWorldPoint()))
+            Rs2Walker.walkFastCanvas(step.getDefinedPoint().getWorldPoint());
         else {
             Rs2Inventory.interact(ItemID.SPADE, "Dig");
             return true;
@@ -514,10 +514,10 @@ public class QuestScript extends Script {
         if (conditionalStep instanceof NpcStep) return false;
 
         if (conditionalStep.getIconItemID() != -1
-                && conditionalStep.getWorldPoint() != null
-                && !conditionalStep.getWorldPoint().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Rs2Player.getWorldLocation())) {
-            if (Rs2Tile.areSurroundingTilesWalkable(conditionalStep.getWorldPoint(), 1, 1)) {
-                WorldPoint nearestUnreachableWalkableTile = Rs2Tile.getNearestWalkableTileWithLineOfSight(conditionalStep.getWorldPoint());
+                && conditionalStep.getDefinedPoint().getWorldPoint() != null
+                && !conditionalStep.getDefinedPoint().getWorldPoint().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Rs2Player.getWorldLocation())) {
+            if (Rs2Tile.areSurroundingTilesWalkable(conditionalStep.getDefinedPoint().getWorldPoint(), 1, 1)) {
+                WorldPoint nearestUnreachableWalkableTile = Rs2Tile.getNearestWalkableTileWithLineOfSight(conditionalStep.getDefinedPoint().getWorldPoint());
                 if (nearestUnreachableWalkableTile != null) {
                     return Rs2Walker.walkTo(nearestUnreachableWalkableTile, 0);
                 }
@@ -538,14 +538,14 @@ public class QuestScript extends Script {
                     continue;
                 }
 
-                if (!Rs2Inventory.contains(itemRequirement.getAllIds().stream().mapToInt(i -> i).toArray()) && conditionalStep.getWorldPoint() != null) {
-                    if (Rs2Walker.canReach(conditionalStep.getWorldPoint()) &&
-                            (conditionalStep.getWorldPoint().distanceTo(Rs2Player.getWorldLocation()) < 2)
-                            || conditionalStep.getWorldPoint().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation().toWorldArea())
-                            && Rs2Camera.isTileOnScreen(LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), conditionalStep.getWorldPoint()))) {
+                if (!Rs2Inventory.contains(itemRequirement.getAllIds().stream().mapToInt(i -> i).toArray()) && conditionalStep.getDefinedPoint().getWorldPoint() != null) {
+                    if (Rs2Walker.canReach(conditionalStep.getDefinedPoint().getWorldPoint()) &&
+                            (conditionalStep.getDefinedPoint().getWorldPoint().distanceTo(Rs2Player.getWorldLocation()) < 2)
+                            || conditionalStep.getDefinedPoint().getWorldPoint().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation().toWorldArea())
+                            && Rs2Camera.isTileOnScreen(LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), conditionalStep.getDefinedPoint().getWorldPoint()))) {
                         Rs2GroundItem.loot(itemRequirement.getId());
                     } else {
-                        Rs2Walker.walkTo(conditionalStep.getWorldPoint(), 2);
+                        Rs2Walker.walkTo(conditionalStep.getDefinedPoint().getWorldPoint(), 2);
                     }
                     return true;
                 } else if (!Rs2Inventory.contains(itemRequirement.getAllIds().stream().mapToInt(i -> i).toArray())) {
@@ -555,11 +555,11 @@ public class QuestScript extends Script {
             }
         }
 
-        if (!usingItems && conditionalStep.getWorldPoint() != null && !Rs2Walker.walkTo(conditionalStep.getWorldPoint()))
+        if (!usingItems && conditionalStep.getDefinedPoint().getWorldPoint() != null && !Rs2Walker.walkTo(conditionalStep.getDefinedPoint().getWorldPoint()))
             return true;
 
-        if (conditionalStep.getIconItemID() != -1 && conditionalStep.getWorldPoint() != null
-                && conditionalStep.getWorldPoint().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Rs2Player.getWorldLocation())) {
+        if (conditionalStep.getIconItemID() != -1 && conditionalStep.getDefinedPoint().getWorldPoint() != null
+                && conditionalStep.getDefinedPoint().getWorldPoint().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Rs2Player.getWorldLocation())) {
             if (conditionalStep.getQuestHelper().getQuest() == QuestHelperQuest.ZOGRE_FLESH_EATERS) {
                 if (conditionalStep.getIconItemID() == 4836) { // strange potion
                     Rs2GroundItem.interact(ItemID.CUP_OF_TEA_4838, "", 20);

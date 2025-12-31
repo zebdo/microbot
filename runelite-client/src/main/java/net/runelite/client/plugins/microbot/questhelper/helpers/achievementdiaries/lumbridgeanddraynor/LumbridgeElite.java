@@ -48,12 +48,8 @@ import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.client.plugins.microbot.questhelper.steps.emote.QuestEmote;
 import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
-import net.runelite.api.VarPlayer;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
-import net.runelite.api.gameval.ObjectID;
-import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.api.gameval.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -132,7 +128,7 @@ public class LumbridgeElite extends ComplexStateQuestHelper
 		notWaterRunes = new VarplayerRequirement(VarPlayerID.LUMB_DRAY_ACHIEVEMENT_DIARY2, false, 8);
 		notQCEmote = new VarplayerRequirement(VarPlayerID.LUMB_DRAY_ACHIEVEMENT_DIARY2, false, 9);
 
-		allQuests = new VarComparisonRequirement(VarType.VARP, VarPlayer.QUEST_POINTS, VarType.VARBIT, 1782, Operation.EQUAL, "All quests completed");
+		allQuests = new VarComparisonRequirement(VarType.VARP, VarPlayerID.QP, VarType.VARBIT, VarbitID.QP_MAX, Operation.EQUAL, "All quests completed");
 
 		lockpick = new ItemRequirement("Lockpick", ItemID.LOCKPICK).showConditioned(notRichChest).isNotConsumed();
 		crossbow = new ItemRequirement("Crossbow", ItemCollections.CROSSBOWS).showConditioned(notMovario).isNotConsumed();
@@ -187,7 +183,7 @@ public class LumbridgeElite extends ComplexStateQuestHelper
 		qcEmote = new EmoteStep(this, QuestEmote.SKILL_CAPE, new WorldPoint(3088, 3253, 0),
 			"Perform the skill cape emote with the quest cape equipped.", qcCape.equipped());
 
-		moveToWater = new ObjectStep(this, 34815, new WorldPoint(3185, 3165, 0),
+		moveToWater = new ObjectStep(this, ObjectID.WATERTEMPLE_RUINED, new WorldPoint(3185, 3165, 0),
 			"Enter the water altar.", waterAccessOrAbyss.highlighted(), essence.quantity(28));
 		waterRunes = new ObjectStep(this, ObjectID.WATER_ALTAR, new WorldPoint(2716, 4836, 0),
 			"Craft water runes.", essence.quantity(28));
@@ -246,10 +242,10 @@ public class LumbridgeElite extends ComplexStateQuestHelper
 		reqs.add(new ComplexRequirement(LogicType.OR, "76 Runecraft or 57 with Raiments of the Eye set",
 			new SkillRequirement(Skill.RUNECRAFT, 76, true, "76 Runecraft"),
 			new ItemRequirements("57 with Raiments of the Eye set",
-				new ItemRequirement("Hat", ItemCollections.EYE_HAT).alsoCheckBank(questBank),
-				new ItemRequirement("Top", ItemCollections.EYE_TOP).alsoCheckBank(questBank),
-				new ItemRequirement("Bottom", ItemCollections.EYE_BOTTOM).alsoCheckBank(questBank),
-				new ItemRequirement("Boot", ItemID.BOOTS_OF_THE_EYE)).alsoCheckBank(questBank)
+				new ItemRequirement("Hat", ItemCollections.EYE_HAT).alsoCheckBank(),
+				new ItemRequirement("Top", ItemCollections.EYE_TOP).alsoCheckBank(),
+				new ItemRequirement("Bottom", ItemCollections.EYE_BOTTOM).alsoCheckBank(),
+				new ItemRequirement("Boot", ItemID.BOOTS_OF_THE_EYE)).alsoCheckBank()
 		));
 		reqs.add(new SkillRequirement(Skill.SMITHING, 88, true));
 		reqs.add(new SkillRequirement(Skill.STRENGTH, 70, true));

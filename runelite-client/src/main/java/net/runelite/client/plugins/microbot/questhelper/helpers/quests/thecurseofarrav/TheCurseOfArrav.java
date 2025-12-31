@@ -50,11 +50,11 @@ import net.runelite.client.plugins.microbot.questhelper.rewards.UnlockReward;
 import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
-import net.runelite.api.annotations.Varbit;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.gameval.VarbitID;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -71,9 +71,6 @@ import static net.runelite.client.plugins.microbot.questhelper.requirements.util
 @SuppressWarnings("FieldCanBeLocal")
 public class TheCurseOfArrav extends BasicQuestHelper
 {
-	static final @Varbit int VARBIT_SOUTH_LEVER_STATE = 11482;
-	static final @Varbit int VARBIT_NORTH_LEVER_STATE = 11481;
-
 	// Required items
 	private ItemRequirement dwellberries3;
 	private ItemRequirement ringOfLife;
@@ -302,12 +299,12 @@ public class TheCurseOfArrav extends BasicQuestHelper
 	@Override
 	protected void setupRequirements()
 	{
-		haveUsedKeyOnSouthLever = new VarbitRequirement(VARBIT_SOUTH_LEVER_STATE, 1, Operation.GREATER_EQUAL);
-		haveFlippedSouthLever = new VarbitRequirement(VARBIT_SOUTH_LEVER_STATE, 2);
-		haveUsedKeyOnNorthLever = new VarbitRequirement(VARBIT_NORTH_LEVER_STATE, 1, Operation.GREATER_EQUAL);
-		haveFlippedNorthLever = new VarbitRequirement(VARBIT_NORTH_LEVER_STATE, 2);
+		haveUsedKeyOnSouthLever = new VarbitRequirement(VarbitID.COA_MASTABA_LEVER_2, 1, Operation.GREATER_EQUAL);
+		haveFlippedSouthLever = new VarbitRequirement(VarbitID.COA_MASTABA_LEVER_2, 2);
+		haveUsedKeyOnNorthLever = new VarbitRequirement(VarbitID.COA_MASTABA_LEVER_1, 1, Operation.GREATER_EQUAL);
+		haveFlippedNorthLever = new VarbitRequirement(VarbitID.COA_MASTABA_LEVER_1, 2);
 		haveKilledGolem = new QuestRequirement(QuestHelperQuest.THE_CURSE_OF_ARRAV, 12);
-		finishedTilePuzzle = new VarbitRequirement(11483, 1);
+		finishedTilePuzzle = new VarbitRequirement(VarbitID.COA_FLOOR_PUZZLE_DISABLED, 1);
 		haveMadeCanopicJar = new QuestRequirement(QuestHelperQuest.THE_CURSE_OF_ARRAV, 18);
 		haveMinedAFullPath = new QuestRequirement(QuestHelperQuest.THE_CURSE_OF_ARRAV, 30);
 		haveUsedPlans = new QuestRequirement(QuestHelperQuest.THE_CURSE_OF_ARRAV, 38);
