@@ -39,6 +39,11 @@ public class Rs2NpcModel extends Rs2ActorModel implements IEntity
         return npc.getId();
     }
 
+    public int getIndex()
+    {
+        return npc.getIndex();
+    }
+
 
     // Enhanced utility methods for cache operations
 
