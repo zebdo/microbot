@@ -53,6 +53,7 @@ public class WidgetHighlight extends AbstractWidgetHighlight
 	protected String requiredText;
 
 	@Nullable
+	@Getter
 	private String nameToCheckFor = null;
 
 

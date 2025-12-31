@@ -11,6 +11,7 @@ import net.runelite.client.plugins.microbot.Script;
 import net.runelite.client.plugins.microbot.questhelper.logic.PiratesTreasure;
 import net.runelite.client.plugins.microbot.questhelper.logic.QuestRegistry;
 import net.runelite.client.plugins.microbot.questhelper.questinfo.QuestHelperQuest;
+import net.runelite.client.plugins.microbot.questhelper.managers.QuestContainerManager;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.questhelper.steps.*;
@@ -39,13 +40,18 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
+import org.slf4j.event.Level;
 
 public class QuestScript extends Script {
     public static double version = 0.3;
 
+    private static final long MISSING_REQUIREMENT_NOTIFY_INTERVAL_MS = 10_000L;
+    private static final Map<Integer, Long> lastMissingRequirementNotice = new HashMap<>();
 
     public static List<ItemRequirement> itemRequirements = new ArrayList<>();
 
@@ -121,9 +127,13 @@ public class QuestScript extends Script {
                                     return;
                                 }
                             } else {
-                                Rs2Widget.clickWidget(widget.getId());
-                                if (Rs2Shop.isOpen() && getQuestHelperPlugin().getSelectedQuest().getQuest().getId() == Quest.PIRATES_TREASURE.getId()) {
-                                    Rs2Shop.buyItemOptimally("karamjan rum", 1);
+                                if (widgetHighlight.getNameToCheckFor() != null && !widgetHighlight.getNameToCheckFor().isEmpty()) {
+                                    Rs2Widget.clickWidget(widgetHighlight.getNameToCheckFor());
+                                } else {
+                                    Rs2Widget.clickWidget(widget.getId());
+                                    if (Rs2Shop.isOpen() && getQuestHelperPlugin().getSelectedQuest().getQuest().getId() == Quest.PIRATES_TREASURE.getId()) {
+                                        Rs2Shop.buyItemOptimally("karamjan rum", 1);
+                                    }
                                 }
                                 return;
                             }
@@ -189,16 +199,20 @@ public class QuestScript extends Script {
                         return;
                     }
 
-                    if (questStep instanceof DetailedQuestStep && handleRequirements((DetailedQuestStep) questStep)) {
-                        sleep(500, 1000);
-                        return;
-                    }
+					if (questStep instanceof DetailedQuestStep && handleRequirements((DetailedQuestStep) questStep)) {
+						sleep(500, 1000);
+						return;
+					}
 
-                    /**
-                     * This portion is needed when using item on another item in your inventory.
-                     * If we do not prioritize this, the script will think we are missing items
-                     */
-                    if (questStep instanceof DetailedQuestStep && !(questStep instanceof NpcStep || questStep instanceof ObjectStep || questStep instanceof DigStep)) {
+					if (questStep instanceof DetailedQuestStep && handleMissingItemRequirements((DetailedQuestStep) questStep)) {
+						return;
+					}
+
+					/**
+					 * This portion is needed when using item on another item in your inventory.
+					 * If we do not prioritize this, the script will think we are missing items
+					 */
+					if (questStep instanceof DetailedQuestStep && !(questStep instanceof NpcStep || questStep instanceof ObjectStep || questStep instanceof DigStep)) {
                         boolean result = applyDetailedQuestStep((DetailedQuestStep) getQuestHelperPlugin().getSelectedQuest().getCurrentStep().getActiveStep());
                         if (result) {
                             sleepUntil(() -> Rs2Player.isInteracting() || Rs2Player.isMoving() || Rs2Player.isAnimating() || Rs2Dialogue.isInDialogue(), 500);
@@ -232,34 +246,117 @@ public class QuestScript extends Script {
         return true;
     }
 
-    private boolean handleRequirements(DetailedQuestStep questStep) {
-        var requirements = questStep.getRequirements();
+	private boolean handleRequirements(DetailedQuestStep questStep) {
+		var requirements = questStep.getRequirements();
 
-        for (var requirement : requirements) {
-            if (requirement instanceof ItemRequirement) {
-                var itemRequirement = (ItemRequirement) requirement;
+		for (var requirement : requirements) {
+			if (requirement instanceof ItemRequirement) {
+				var itemRequirement = (ItemRequirement) requirement;
 
-                if (itemRequirement.mustBeEquipped() && Rs2Inventory.contains(itemRequirement.getAllIds().stream().mapToInt(i -> i).toArray())
-                        && itemRequirement.getAllIds().stream().noneMatch(Rs2Equipment::isWearing)) {
-                    Rs2Inventory.wear(itemRequirement.getAllIds().stream().filter(Rs2Inventory::contains).findFirst().orElse(-1));
-                    return true;
-                }
-            }
-        }
+				if (itemRequirement.mustBeEquipped()) {
+					if (!hasItemRequirementOnPlayer(itemRequirement)) {
+						notifyMissingRequirement(itemRequirement);
+						continue;
+					}
 
-        return false;
-    }
+					if (itemRequirement.getAllIds().stream().noneMatch(Rs2Equipment::isWearing)) {
+						Rs2Inventory.wear(itemRequirement.getAllIds().stream().filter(Rs2Inventory::contains).findFirst().orElse(-1));
+						return true;
+					}
+				}
+			}
+		}
 
-    @Override
-    public void shutdown() {
-        super.shutdown();
-        reset();
-    }
+		return false;
+	}
+
+	private boolean handleMissingItemRequirements(DetailedQuestStep questStep) {
+		for (Requirement requirement : questStep.getRequirements()) {
+			if (!(requirement instanceof ItemRequirement)) {
+				continue;
+			}
+
+			ItemRequirement itemRequirement = (ItemRequirement) requirement;
+
+			if (itemRequirement.mustBeEquipped()
+					&& Rs2Inventory.contains(itemRequirement.getAllIds().stream().mapToInt(i -> i).toArray())
+					&& itemRequirement.getAllIds().stream().noneMatch(Rs2Equipment::isWearing)) {
+				Rs2Inventory.wear(itemRequirement.getAllIds().stream().filter(Rs2Inventory::contains).findFirst().orElse(-1));
+				return true;
+			}
+
+			if (hasItemRequirementOnPlayer(itemRequirement)) {
+				continue;
+			}
+
+			return attemptToAcquireRequirementItem(questStep, itemRequirement);
+		}
+
+		return false;
+	}
+
+	private boolean hasItemRequirementOnPlayer(ItemRequirement itemRequirement) {
+		if (itemRequirement.mustBeEquipped()) {
+			return itemRequirement.checkContainers(QuestContainerManager.getEquippedData());
+		}
+
+		return itemRequirement.checkContainers(
+				QuestContainerManager.getEquippedData(),
+				QuestContainerManager.getInventoryData());
+	}
+
+	private boolean attemptToAcquireRequirementItem(DetailedQuestStep questStep, ItemRequirement itemRequirement) {
+		notifyMissingRequirement(itemRequirement);
+
+		WorldPoint worldPoint = questStep.getDefinedPoint() != null ? questStep.getDefinedPoint().getWorldPoint() : null;
+		int targetItemId = itemRequirement.getAllIds().stream().findFirst().orElse(itemRequirement.getId());
+
+		if (worldPoint != null) {
+			if ((Rs2Walker.canReach(worldPoint) && worldPoint.distanceTo(Rs2Player.getWorldLocation()) < 2)
+					|| worldPoint.toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation().toWorldArea())
+					&& Rs2Camera.isTileOnScreen(LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), worldPoint))) {
+				Rs2GroundItem.loot(targetItemId);
+			} else {
+				Rs2Walker.walkTo(worldPoint, 2);
+			}
+		} else {
+			Rs2GroundItem.loot(targetItemId);
+		}
+
+		return true;
+	}
+
+	private void notifyMissingRequirement(ItemRequirement itemRequirement) {
+		int key = itemRequirement.getAllIds().stream().findFirst().orElse(itemRequirement.getId());
+		long now = System.currentTimeMillis();
+		Long lastNotified = lastMissingRequirementNotice.get(key);
+
+		if (lastNotified != null && now - lastNotified < MISSING_REQUIREMENT_NOTIFY_INTERVAL_MS) {
+			return;
+		}
+
+		lastMissingRequirementNotice.put(key, now);
+
+		String itemName = itemRequirement.getName() != null && !itemRequirement.getName().isEmpty()
+				? itemRequirement.getName()
+				: "Item " + key;
+		int quantity = Math.max(itemRequirement.getQuantity(), 1);
+
+		Microbot.status = "Missing: " + itemName;
+		Microbot.log(String.format("Quest helper missing required item: %s x%d", itemName, quantity), Level.WARN);
+	}
+
+	@Override
+	public void shutdown() {
+		super.shutdown();
+		reset();
+	}
 
     public static void reset() {
         itemsMissing = new ArrayList<>();
         itemRequirements = new ArrayList<>();
         grandExchangeItems = new ArrayList<>();
+        lastMissingRequirementNotice.clear();
     }
 
     public boolean applyStep(QuestStep step) {
@@ -529,31 +626,20 @@ public class QuestScript extends Script {
             if (requirement instanceof ItemRequirement) {
                 ItemRequirement itemRequirement = (ItemRequirement) requirement;
 
-                if (itemRequirement.shouldHighlightInInventory(Microbot.getClient())
-                        && Rs2Inventory.contains(itemRequirement.getAllIds().stream().mapToInt(i -> i).toArray())) {
-                    var itemId = itemRequirement.getAllIds().stream().filter(Rs2Inventory::contains).findFirst().orElse(-1);
-                    Rs2Inventory.interact(itemId, chooseCorrectItemOption(conditionalStep, itemId));
-                    sleep(100, 200);
-                    usingItems = true;
-                    continue;
-                }
+				if (itemRequirement.shouldHighlightInInventory(Microbot.getClient())
+						&& Rs2Inventory.contains(itemRequirement.getAllIds().stream().mapToInt(i -> i).toArray())) {
+					var itemId = itemRequirement.getAllIds().stream().filter(Rs2Inventory::contains).findFirst().orElse(-1);
+					Rs2Inventory.interact(itemId, chooseCorrectItemOption(conditionalStep, itemId));
+					sleep(100, 200);
+					usingItems = true;
+					continue;
+				}
 
-                if (!Rs2Inventory.contains(itemRequirement.getAllIds().stream().mapToInt(i -> i).toArray()) && conditionalStep.getDefinedPoint().getWorldPoint() != null) {
-                    if (Rs2Walker.canReach(conditionalStep.getDefinedPoint().getWorldPoint()) &&
-                            (conditionalStep.getDefinedPoint().getWorldPoint().distanceTo(Rs2Player.getWorldLocation()) < 2)
-                            || conditionalStep.getDefinedPoint().getWorldPoint().toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation().toWorldArea())
-                            && Rs2Camera.isTileOnScreen(LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), conditionalStep.getDefinedPoint().getWorldPoint()))) {
-                        Rs2GroundItem.loot(itemRequirement.getId());
-                    } else {
-                        Rs2Walker.walkTo(conditionalStep.getDefinedPoint().getWorldPoint(), 2);
-                    }
-                    return true;
-                } else if (!Rs2Inventory.contains(itemRequirement.getAllIds().stream().mapToInt(i -> i).toArray())) {
-                    Rs2GroundItem.loot(itemRequirement.getId());
-                    return true;
-                }
-            }
-        }
+				if (!hasItemRequirementOnPlayer(itemRequirement)) {
+					return attemptToAcquireRequirementItem(conditionalStep, itemRequirement);
+				}
+			}
+		}
 
         if (!usingItems && conditionalStep.getDefinedPoint().getWorldPoint() != null && !Rs2Walker.walkTo(conditionalStep.getDefinedPoint().getWorldPoint()))
             return true;
