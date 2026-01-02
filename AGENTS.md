@@ -1,6 +1,10 @@
 # Microbot API Guide (for Claude)
 
-Short notes for writing automation scripts with the Microbot plugin inside RuneLite.
+## Scope & Paths
+- Primary plugin code: `runelite-client/src/main/java/net/runelite/client/plugins/microbot`.
+- Queryable API docs: `.../microbot/api/QUERYABLE_API.md`; quick read: `api/README.md`.
+- Keep new scripts inside the microbot plugin; share helpers under `microbot/util`.
+- Config UI for microbot plugins is rendered via `plugins/microbot/ui/MicrobotConfigPanel` (not the default RuneLite config panel); put config UI changes there.
 
 ## Paths & Builds
 - Plugin sources live in `runelite-client/src/main/java/net/runelite/client/plugins/microbot`.
