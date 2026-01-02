@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.mouserecorder;
 
 import net.runelite.client.config.Config;
+import net.runelite.client.config.ConfigButton;
 import net.runelite.client.config.ConfigGroup;
 import net.runelite.client.config.ConfigItem;
 import net.runelite.client.config.ConfigSection;
@@ -82,26 +83,14 @@ public interface MouseMacroRecorderConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "clearRecording",
-		name = "Clear recording",
-		description = "Reset the current recording",
+		keyName = "openRecordingsFolder",
+		name = "Open recordings folder",
+		description = "Open the folder containing JSONL mouse macro recordings",
 		position = 5,
 		section = recordingSection
 	)
-	default boolean clearRecording()
+	default ConfigButton openRecordingsFolder()
 	{
-		return false;
-	}
-
-	@ConfigItem(
-		keyName = "exportJson",
-		name = "Export JSON to clipboard",
-		description = "Copy the current recording to clipboard as JSON",
-		position = 6,
-		section = recordingSection
-	)
-	default boolean exportJson()
-	{
-		return false;
+		return new ConfigButton();
 	}
 }

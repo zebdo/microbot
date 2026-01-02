@@ -6,6 +6,7 @@ Guidance for AI agents building Microbot scripts with the new `microbot/api` que
 - Primary plugin code: `runelite-client/src/main/java/net/runelite/client/plugins/microbot`.
 - Queryable API docs: `.../microbot/api/QUERYABLE_API.md`; quick read: `api/README.md`.
 - Keep new scripts inside the microbot plugin; share helpers under `microbot/util`.
+- Config UI for microbot plugins is rendered via `plugins/microbot/ui/MicrobotConfigPanel` (not the default RuneLite config panel); put config UI changes there.
 
 ## Build & Test
 - Fast build: `mvn -pl runelite-client -am package` (jar in `runelite-client/target/`).

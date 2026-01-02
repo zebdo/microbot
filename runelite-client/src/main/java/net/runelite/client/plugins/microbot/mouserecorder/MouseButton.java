@@ -1,9 +1,8 @@
 package net.runelite.client.plugins.microbot.mouserecorder;
 
-public enum MouseMacroEventType
+public enum MouseButton
 {
-	MOVE,
-	DOWN,
-	UP,
-	SCROLL
+	LEFT,
+	MIDDLE,
+	RIGHT
 }

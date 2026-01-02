@@ -10,6 +10,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a multi-module Maven project with Java 11 as the target version. The main automation code lives in `runelite-client/src/main/java/net/runelite/client/plugins/microbot/`.
 
+**Config UI note:** Microbot plugins use the custom `MicrobotConfigPanel` (under `plugins/microbot/ui`) for config rendering. Any Microbot config UI tweaks—buttons, layouts, or controls—belong there rather than RuneLite’s default config panel.
+
 ---
 
 ## Build and Test Commands
