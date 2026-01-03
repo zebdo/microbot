@@ -40,9 +40,9 @@ import net.runelite.client.ui.overlay.components.PanelComponent;
 
 import javax.inject.Inject;
 import java.awt.*;
+import java.util.*;
 import java.util.List;
 import java.util.Queue;
-import java.util.*;
 
 @Slf4j
 public class DoorPuzzleStep extends DetailedQuestStep

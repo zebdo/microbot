@@ -41,6 +41,7 @@ import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.microbot.MicrobotConfigManager;
 import net.runelite.client.plugins.microbot.inventorysetups.InventorySetup;
 import net.runelite.client.plugins.microbot.inventorysetups.MInventorySetupsPlugin;
+import net.runelite.client.plugins.microbot.mouserecorder.MouseMacroRecorderPlugin;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.DynamicGridLayout;
 import net.runelite.client.ui.FontManager;
@@ -358,7 +359,10 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
                 configEntryName.setToolTipText("<html>" + name + ":<br>" + description + "</html>");
             }
             MicrobotPluginListItem.addLabelPopupMenu(configEntryName, createResetMenuItem(pluginConfig, cid));
-            item.add(configEntryName, BorderLayout.CENTER);
+            boolean isButtonItem = cid.getType() == ConfigButton.class;
+            if (!isButtonItem) {
+                item.add(configEntryName, BorderLayout.CENTER);
+            }
 
             if (cid.getType() == boolean.class) {
                 item.add(createCheckbox(cd, cid), BorderLayout.EAST);
@@ -368,6 +372,8 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
                 item.add(createDoubleSpinner(cd, cid), BorderLayout.EAST);
             } else if (cid.getType() == String.class) {
                 item.add(createTextField(cd, cid), BorderLayout.SOUTH);
+            } else if (cid.getType() == ConfigButton.class) {
+                item.add(createActionButton(cd, cid), BorderLayout.CENTER);
             } else if (cid.getType() == Color.class) {
                 item.add(createColorPicker(cd, cid), BorderLayout.EAST);
             } else if (cid.getType() == Dimension.class) {
@@ -764,6 +770,19 @@ class MicrobotConfigPanel extends MicrobotPluginPanel {
         });
 
         return list;
+    }
+
+    private JButton createActionButton(ConfigDescriptor cd, ConfigItemDescriptor cid) {
+        JButton button = new JButton(cid.getItem().name());
+        button.addActionListener(e -> {
+            ConfigButton next = new ConfigButton(UUID.randomUUID().toString());
+            configManager.setConfiguration(cd.getGroup().value(), cid.getItem().keyName(), next);
+            if (MouseMacroRecorderPlugin.CONFIG_GROUP.equals(cd.getGroup().value())
+                    && "openRecordingsFolder".equals(cid.getItem().keyName())) {
+                MouseMacroRecorderPlugin.openRecordingsFolderStatic();
+            }
+        });
+        return button;
     }
 
     private void changeConfiguration(Component component, ConfigDescriptor cd, ConfigItemDescriptor cid) {

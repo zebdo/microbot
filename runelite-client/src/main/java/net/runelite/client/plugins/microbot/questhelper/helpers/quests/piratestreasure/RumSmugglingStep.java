@@ -32,23 +32,21 @@ import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement
 import net.runelite.client.plugins.microbot.questhelper.requirements.conditional.Conditions;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.npc.DialogRequirement;
-import static net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicHelper.and;
 import net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicType;
 import net.runelite.client.plugins.microbot.questhelper.requirements.widget.WidgetTextRequirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.zone.Zone;
 import net.runelite.client.plugins.microbot.questhelper.requirements.zone.ZoneRequirement;
-import net.runelite.client.plugins.microbot.questhelper.steps.ConditionalStep;
-import net.runelite.client.plugins.microbot.questhelper.steps.DetailedQuestStep;
-import net.runelite.client.plugins.microbot.questhelper.steps.NpcStep;
-import net.runelite.client.plugins.microbot.questhelper.steps.ObjectStep;
-import net.runelite.client.plugins.microbot.questhelper.steps.QuestStep;
-import java.util.ArrayList;
-import java.util.List;
+import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
+
+import java.util.ArrayList;
+import java.util.List;
+
+import static net.runelite.client.plugins.microbot.questhelper.requirements.util.LogicHelper.and;
 
 public class RumSmugglingStep extends ConditionalStep
 {
@@ -187,11 +185,11 @@ public class RumSmugglingStep extends ConditionalStep
 		talkToLuthas.addDialogStep("Could you offer me employment on your plantation?");
 		talkToLuthas.addDialogStep("Will you pay me for another crate full?");
 
-		addRumToCrate = new ObjectStep(getQuestHelper(), ObjectID.BANANACRATE, new WorldPoint(2943, 3151, 0),
+		addRumToCrate = new ObjectStep(getQuestHelper(), ObjectID.BANANACRATE, new WorldPoint(2939, 3149, 0),
 			"Put the Karamjan rum into the crate.", karamjanRum.highlighted(), pt.tenBananas);
 		addRumToCrate.addIcon(ItemID.KARAMJA_RUM);
 
-		addBananasToCrate = new ObjectStep(getQuestHelper(), ObjectID.BANANACRATE, new WorldPoint(2943, 3151, 0),
+		addBananasToCrate = new ObjectStep(getQuestHelper(), ObjectID.BANANACRATE, new WorldPoint(2939, 3149, 0),
 			"Right-click fill the rest of the crate with bananas, then talk to Luthas.", pt.tenBananas);
 
 		talkToLuthasAgain = new NpcStep(getQuestHelper(), NpcID.LUTHAS, new WorldPoint(2938, 3154, 0),
@@ -203,6 +201,8 @@ public class RumSmugglingStep extends ConditionalStep
 		talkToCustomsOfficer.addDialogStep("Can I journey on this ship?");
 		talkToCustomsOfficer.addDialogStep("Search away, I have nothing to hide.");
 		talkToCustomsOfficer.addDialogStep("Ok.");
+		talkToCustomsOfficer.addDialogStep("Search away. I have nothing to hide.");
+		talkToCustomsOfficer.addDialogStep("Okay.");
 
 		getWhiteApron = new DetailedQuestStep(getQuestHelper(), new WorldPoint(3016, 3229, 0),
 			"Grab the white apron from the Fishing Shop.", whiteApronHanging);

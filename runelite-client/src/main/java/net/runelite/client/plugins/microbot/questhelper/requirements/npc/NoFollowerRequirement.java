@@ -28,6 +28,7 @@ package net.runelite.client.plugins.microbot.questhelper.requirements.npc;
 
 import net.runelite.client.plugins.microbot.questhelper.requirements.AbstractRequirement;
 import net.runelite.api.Client;
+import net.runelite.api.gameval.VarPlayerID;
 
 import javax.annotation.Nonnull;
 
@@ -43,7 +44,7 @@ public class NoFollowerRequirement extends AbstractRequirement
 	@Override
 	public boolean check(Client client)
 	{
-		return client.getVarpValue(447) == -1;
+		return client.getVarpValue(VarPlayerID.FOLLOWER_NPC) == -1;
 	}
 
 	@Nonnull

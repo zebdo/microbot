@@ -29,13 +29,14 @@ import com.google.inject.Inject;
 import com.google.inject.Singleton;
 import net.runelite.client.plugins.microbot.questhelper.steps.widget.WidgetDetails;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.*;
 import net.runelite.api.Menu;
 import net.runelite.api.Point;
-import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.*;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.api.gameval.SpriteID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.callback.ClientThread;
 import net.runelite.client.callback.Hooks;
@@ -53,8 +54,8 @@ import net.runelite.client.ui.overlay.OverlayUtil;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.function.Consumer;
 
 // This will hold all RuneliteObjects
@@ -81,7 +82,12 @@ public class RuneliteObjectManager
 	Point clickPos;
 	int redClickAnimationFrame = 0;
 	int bufferRedClickAnimation = 0;
-	int[] redClick = new int[]{SpriteID.RED_CLICK_ANIMATION_1, SpriteID.RED_CLICK_ANIMATION_2, SpriteID.RED_CLICK_ANIMATION_3, SpriteID.RED_CLICK_ANIMATION_4};
+	int[] redClick = new int[]{
+		SpriteID.CrossInterface.RED_CLICK_ANIMATION_1,
+		SpriteID.CrossInterface.RED_CLICK_ANIMATION_2,
+		SpriteID.CrossInterface.RED_CLICK_ANIMATION_3,
+		SpriteID.CrossInterface.RED_CLICK_ANIMATION_4
+	};
 	final int ANIMATION_PERIOD = 5;
 
 	ExtendedRuneliteObject lastInteractedWithRuneliteObject;

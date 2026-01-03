@@ -1,95 +1,33 @@
-# Microbot Agent Guide
-
-Guidance for AI agents building Microbot scripts with the new `microbot/api` queryable layer.
+# Microbot API Guide (for Claude)
 
 ## Scope & Paths
 - Primary plugin code: `runelite-client/src/main/java/net/runelite/client/plugins/microbot`.
 - Queryable API docs: `.../microbot/api/QUERYABLE_API.md`; quick read: `api/README.md`.
 - Keep new scripts inside the microbot plugin; share helpers under `microbot/util`.
+- Config UI for microbot plugins is rendered via `plugins/microbot/ui/MicrobotConfigPanel` (not the default RuneLite config panel); put config UI changes there.
 
-## Build & Test
-- Fast build: `mvn -pl runelite-client -am package` (jar in `runelite-client/target/`).
-- Unit tests: `mvn -pl runelite-client test`.
-- CI parity: `./ci/build.sh` (runs `mvn verify --settings ci/settings.xml`).
+## Paths & Builds
+- Plugin sources live in `runelite-client/src/main/java/net/runelite/client/plugins/microbot`.
+- The queryable API lives in `.../microbot/api`; full guide: `.../microbot/api/QUERYABLE_API.md`.
+- Quick builds: `mvn -pl runelite-client -am package`; tests: `mvn -pl runelite-client test`.
 
-## Style Rules
-- Java 11 target, tabs for indentation, braces match `MicrobotPlugin.java`, prefer <120 chars/line.
-- Name types in UpperCamelCase, members in lowerCamelCase; configs prefixed with plugin name (e.g., `ExampleConfig`).
+## Queryable API Quick Reference
+Prefer the queryable API over legacy util calls.
 
-## Script Pattern
-Pair a RuneLite `Plugin` with a `Script` that runs on a background thread; never sleep on the client thread.
+## Interaction & Timing Tips
+- Never sleep on the RuneLite client thread; use the script thread with `sleep(...)` / `sleepUntil(...)`.
+- After interactions, wait for state changes (e.g., `Rs2Bank.isOpen()`, `Rs2Player.isAnimating()`).
+- Limit search radius with `.within(...)` to reduce overhead, and cache query results when reusing in a loop.
 
-```java
-@PluginDescriptor(name = "Gathering Demo")
-public class GatheringPlugin extends Plugin {
-	@Inject private GatheringScript script;
-	@Override protected void startUp() { script.run(); }
-	@Override protected void shutDown() { script.shutdown(); }
-}
+## Helpful References
+- Example templates: `runelite-client/src/main/java/net/runelite/client/plugins/microbot/example/`.
+- API examples: `api/*/` directories contain `*ApiExample.java` files for NPCs, tile items, players, and objects.
+- Core utilities (legacy but still useful): `microbot/util` (e.g., `Rs2Inventory`, `Rs2Bank`, `Rs2Walker`).
 
-@Slf4j
-public class GatheringScript extends Script {
-	@Override
-	public boolean run() {
-		mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
-			try {
-				if (!Microbot.isLoggedIn() || !super.run()) return;
-
-				Rs2TileObjectModel tree = new Rs2TileObjectQueryable()
-					.withName("Tree")
-					.where(obj -> !Rs2Player.isAnimating())
-					.nearest();
-
-				if (tree != null) {
-					tree.click("Chop down");
-					sleepUntil(() -> Rs2Player.isAnimating(), 3000);
-				}
-			} catch (Exception e) {
-				log.error("Loop error", e);
-			}
-		}, 0, 600, TimeUnit.MILLISECONDS); // ~1 tick
-		return true;
-	}
-}
-```
-
-## Queryable API Cheatsheet
-- **NPCs**
-	```java
-	Rs2NpcModel banker = new Rs2NpcQueryable()
-		.withNames("Banker", "Bank clerk")
-		.where(npc -> !npc.isInteracting())
-		.nearest(15);
-	if (banker != null) banker.click("Bank");
-	```
-- **Ground items**
-	```java
-	Rs2TileItemModel loot = new Rs2TileItemQueryable()
-		.where(Rs2TileItemModel::isLootAble)
-		.where(item -> item.getTotalGeValue() >= 3000)
-		.nearest(10);
-	if (loot != null) loot.pickup();
-	```
-- **Tile objects**
-	```java
-	Rs2TileObjectModel bankChest = new Rs2TileObjectQueryable()
-		.withNames("Bank chest", "Bank booth")
-		.nearest(20);
-	if (bankChest != null && !Rs2Bank.isOpen()) {
-		bankChest.click("Bank");
-		sleepUntil(Rs2Bank::isOpen, 5000);
-	}
-	```
-- **Players**
-	```java
-	Rs2PlayerModel ally = new Rs2PlayerQueryable()
-		.where(Rs2PlayerModel::isFriend)
-		.within(20)
-		.nearest();
-	```
-
-## Safety & Timing
-- Always guard logic with `Microbot.isLoggedIn()` and `super.run()`; bail early when paused.
-- Use `sleep`/`sleepUntil` only on script threads; wrap client access with `Microbot.getClientThread().runOnClientThread(...)` when needed.
-- Wait for state changes after interactions (`Rs2Bank.isOpen()`, `Rs2Player.isAnimating()`, inventory/bank counts).
-- Limit query radius with `.within(...)` to reduce overhead and cache results inside a loop when reused.
+## QuestScript Loop (Quest Helper)
+- `QuestScript.run(config, plugin)` sets a 400–1000ms fixed-delay loop; exits early if quest helper is toggled off, not logged in, paused (`super.run()`), or no quest is selected, and waits out player animations.
+- Captures the active `QuestStep`, marks when dialogue starts, auto-chooses matching dialogue options, and clicks highlighted widgets (special shop buy for Pirate's Treasure).
+- Runs quest-specific logic via `QuestRegistry.getQuest(...).executeCustomLogic()` (Pirate's Treasure gets the plugin injected).
+- While incomplete: handles dialogue quirks (Cook's Assistant/Pirate's Treasure), exits cutscenes, clears walk targets when talking, and manages reachability flags.
+- Requirement phase: equips required items, warns on missing items (rate-limited), and attempts to acquire them by looting nearby or walking toward the defined point; prioritizes item-on-item detailed steps before other step types.
+- Dispatch order: `ConditionalStep` → `NpcStep` → `ObjectStep` → `DigStep` → `PuzzleStep`; per-type handlers choose the correct menu action, manage line-of-sight and walkable tiles, and call `sleepUntil` to wait for movement/animation/interactions before looping.

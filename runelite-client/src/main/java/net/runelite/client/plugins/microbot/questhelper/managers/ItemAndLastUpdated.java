@@ -31,7 +31,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Item;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 import java.util.concurrent.Callable;
 
 @Slf4j

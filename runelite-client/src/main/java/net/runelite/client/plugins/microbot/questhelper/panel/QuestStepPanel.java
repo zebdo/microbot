@@ -24,12 +24,12 @@
  */
 package net.runelite.client.plugins.microbot.questhelper.panel;
 
+import lombok.Getter;
+import net.runelite.api.Client;
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
 import net.runelite.client.plugins.microbot.questhelper.managers.QuestManager;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
 import net.runelite.client.plugins.microbot.questhelper.steps.QuestStep;
-import lombok.Getter;
-import net.runelite.api.Client;
 import net.runelite.client.ui.ColorScheme;
 import net.runelite.client.ui.FontManager;
 import net.runelite.client.util.SwingUtil;

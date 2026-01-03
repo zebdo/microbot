@@ -108,7 +108,7 @@ public class TheLostTribe extends BasicQuestHelper
 		steps.put(8, goTalkToDukeAfterEmote);
 
 		ConditionalStep revealSigmund = new ConditionalStep(this, goGetKey);
-		revealSigmund.addStep(silverware.alsoCheckBank(questBank), goToDukeWithSilverware);
+		revealSigmund.addStep(silverware.alsoCheckBank(), goToDukeWithSilverware);
 		revealSigmund.addStep(foundRobes, goIntoHamLair);
 		revealSigmund.addStep(key, goOpenRobeChest);
 		steps.put(9, revealSigmund);
@@ -163,8 +163,8 @@ public class TheLostTribe extends BasicQuestHelper
 		foundRobes = new VarbitRequirement(VarbitID.LOST_TRIBE_HAM, 1, Operation.GREATER_EQUAL);
 		foundSilverwareOrToldOnSigmund = new VarbitRequirement(VarbitID.LOST_TRIBE_HAM, 3, Operation.GREATER_EQUAL);
 
-		hansKnows = new VarbitRequirement(537, 0);
-		bobKnows = new VarbitRequirement(537, 1);
+		hansKnows = new VarbitRequirement(VarbitID.LOST_TRIBE_CONTACT, 0);
+		bobKnows = new VarbitRequirement(VarbitID.LOST_TRIBE_CONTACT, 1);
 
 		// 537 0->2->0, Hans
 		// 537 0->1, Bob
@@ -188,7 +188,7 @@ public class TheLostTribe extends BasicQuestHelper
 		talkToBob = new NpcStep(this, NpcID.TWOCATS_BOB_CUTSCENE, new WorldPoint(3231, 3203, 0), "Talk to Bob in the south of Lumbridge.");
 		talkToBob.addDialogStep("Do you know what happened in the castle cellar?");
 
-		talkToAllAboutCellar = new NpcStep(this, NpcID.POH_SERVANT_COOK_WOMAN, "Talk to the Cook, Hans, Father Aereck, and Bob in Lumbridge until one tells you about seeing a goblin.");
+		talkToAllAboutCellar = new NpcStep(this, NpcID.COOK, "Talk to the Cook, Hans, Father Aereck, and Bob in Lumbridge until one tells you about seeing a goblin.");
 		((NpcStep)(talkToAllAboutCellar)).addAlternateNpcs(NpcID.FATHER_AERECK);
 		talkToAllAboutCellar.addDialogSteps("Do you know what happened in the castle cellar?");
 		talkToAllAboutCellar.addSubSteps(talkToHans, talkToBob);

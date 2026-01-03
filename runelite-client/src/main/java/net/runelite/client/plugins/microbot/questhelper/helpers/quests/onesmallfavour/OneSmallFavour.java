@@ -48,6 +48,7 @@ import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.gameval.VarbitID;
 
 import java.util.*;
 
@@ -197,7 +198,7 @@ public class OneSmallFavour extends BasicQuestHelper
 		fightSlagilith.addStep(slagilithNearby, killSlagilith);
 		fightSlagilith.addStep(inScrollSpot, readScroll);
 		fightSlagilith.addStep(inGoblinCave, standNextToSculpture);
-		fightSlagilith.addStep(pigeonCages5.alsoCheckBank(questBank), enterGoblinCaveAgain);
+		fightSlagilith.addStep(pigeonCages5.alsoCheckBank(), enterGoblinCaveAgain);
 
 		steps.put(145, fightSlagilith);
 		steps.put(150, fightSlagilith);
@@ -206,7 +207,7 @@ public class OneSmallFavour extends BasicQuestHelper
 		freePetra.addStep(petraNearby, talkToPetra);
 		freePetra.addStep(inScrollSpot, readScroll);
 		freePetra.addStep(inGoblinCave, standNextToSculpture);
-		freePetra.addStep(pigeonCages5.alsoCheckBank(questBank), enterGoblinCaveAgain);
+		freePetra.addStep(pigeonCages5.alsoCheckBank(), enterGoblinCaveAgain);
 
 		steps.put(152, freePetra);
 		steps.put(155, freePetra);
@@ -467,27 +468,27 @@ public class OneSmallFavour extends BasicQuestHelper
 		inDwarvenMine = new ZoneRequirement(dwarvenMine);
 		inGoblinCave = new ZoneRequirement(goblinCave);
 
-		lamp1Empty = new VarbitRequirement(6225, 1);
-		lamp2Empty = new VarbitRequirement(6226, 1);
-		lamp3Empty = new VarbitRequirement(6227, 1);
-		lamp4Empty = new VarbitRequirement(6228, 1);
-		lamp5Empty = new VarbitRequirement(6229, 1);
-		lamp6Empty = new VarbitRequirement(6230, 1);
-		lamp7Empty = new VarbitRequirement(6231, 1);
-		lamp8Empty = new VarbitRequirement(6232, 1);
+		lamp1Empty = new VarbitRequirement(VarbitID.JADELIGHT1_TAKEN, 1);
+		lamp2Empty = new VarbitRequirement(VarbitID.TOPAZLIGHT1_TAKEN, 1);
+		lamp3Empty = new VarbitRequirement(VarbitID.OPALLIGHT1_TAKEN, 1);
+		lamp4Empty = new VarbitRequirement(VarbitID.SAPPHIRELIGHT1_TAKEN, 1);
+		lamp5Empty = new VarbitRequirement(VarbitID.JADELIGHT2_TAKEN, 1);
+		lamp6Empty = new VarbitRequirement(VarbitID.TOPAZLIGHT2_TAKEN, 1);
+		lamp7Empty = new VarbitRequirement(VarbitID.OPALLIGHT2_TAKEN, 1);
+		lamp8Empty = new VarbitRequirement(VarbitID.SAPPHIRELIGHT2_TAKEN, 1);
 
-		allEmpty = new VarbitRequirement(244, 255);
+		allEmpty = new VarbitRequirement(VarbitID.CHECKLANDINGLIGHTS, 255);
 
-		lamp1Full = new VarbitRequirement(6233, 1);
-		lamp2Full = new VarbitRequirement(6234, 1);
-		lamp3Full = new VarbitRequirement(6235, 1);
-		lamp4Full = new VarbitRequirement(6236, 1);
-		lamp5Full = new VarbitRequirement(6237, 1);
-		lamp6Full = new VarbitRequirement(6238, 1);
-		lamp7Full = new VarbitRequirement(6239, 1);
-		lamp8Full = new VarbitRequirement(6240, 1);
+		lamp1Full = new VarbitRequirement(VarbitID.JADELIGHT1_FIXED, 1);
+		lamp2Full = new VarbitRequirement(VarbitID.TOPAZLIGHT1_FIXED, 1);
+		lamp3Full = new VarbitRequirement(VarbitID.OPALLIGHT1_FIXED, 1);
+		lamp4Full = new VarbitRequirement(VarbitID.SAPPHIRELIGHT1_FIXED, 1);
+		lamp5Full = new VarbitRequirement(VarbitID.JADELIGHT2_FIXED, 1);
+		lamp6Full = new VarbitRequirement(VarbitID.TOPAZLIGHT2_FIXED, 1);
+		lamp7Full = new VarbitRequirement(VarbitID.OPALLIGHT2_FIXED, 1);
+		lamp8Full = new VarbitRequirement(VarbitID.SAPPHIRELIGHT2_FIXED, 1);
 
-		allFull = new VarbitRequirement(6241, 255);
+		allFull = new VarbitRequirement(VarbitID.FIXEDLANDINGLIGHTS, 255);
 
 		slagilithNearby = new NpcCondition(NpcID.SLAGILITH);
 		inScrollSpot = new ZoneRequirement(scrollSpot);
@@ -496,13 +497,13 @@ public class OneSmallFavour extends BasicQuestHelper
 
 		petraNearby = new NpcCondition(NpcID.FAVOUR_PETRA);
 
-		addedOrnaments = new VarbitRequirement(255, 1);
-		addedDirectionals = new VarbitRequirement(254, 1);
-		addedWeathervanePillar = new VarbitRequirement(253, 1);
+		addedOrnaments = new VarbitRequirement(VarbitID.ORNAMENTFIXED, 1);
+		addedDirectionals = new VarbitRequirement(VarbitID.DIRECTIONALSFIXED, 1);
+		addedWeathervanePillar = new VarbitRequirement(VarbitID.ROTATINGPILLARFIXED, 1);
 
-		hasOrUsedDirectionals = new Conditions(LogicType.OR, addedDirectionals, directionals.alsoCheckBank(questBank));
-		hasOrUsedOrnament = new Conditions(LogicType.OR, addedOrnaments, ornament.alsoCheckBank(questBank));
-		hasOrUsedWeathervanePillar = new Conditions(LogicType.OR, addedWeathervanePillar, weathervanePillar.alsoCheckBank(questBank));
+		hasOrUsedDirectionals = new Conditions(LogicType.OR, addedDirectionals, directionals.alsoCheckBank());
+		hasOrUsedOrnament = new Conditions(LogicType.OR, addedOrnaments, ornament.alsoCheckBank());
+		hasOrUsedWeathervanePillar = new Conditions(LogicType.OR, addedWeathervanePillar, weathervanePillar.alsoCheckBank());
 	}
 
 	public void setupSteps()
@@ -510,7 +511,7 @@ public class OneSmallFavour extends BasicQuestHelper
 		talkToYanni = new NpcStep(this, NpcID.SHILOANTIQUES, new WorldPoint(2836, 2983, 0), "Talk to Yanni Salika in Shilo Village. CKR fairy ring or take cart from Brimhaven.");
 		talkToYanni.addDialogStep("Yes.");
 		talkToYanni.addDialogSteps("Is there anything else interesting to do around here?", "Ok, see you in a tick!");
-		talkToJungleForester = new NpcStep(this, new int[]{NpcID.JUNGLEFORESTER_F, NpcID.JUNGLEFORESTER_M}, new WorldPoint(2861, 2942, 0), "Talk to a Jungle Forester south of Shilo Village.", true, bluntAxe);
+		talkToJungleForester = new NpcStep(this, new int[]{NpcID.JUNGLEFORESTER_F, NpcID.JUNGLEFORESTER_M}, new WorldPoint(2861, 2942, 0), "Talk to a Jungle Forester south of Shilo Village.", true);
 		talkToJungleForester.addDialogSteps("I'll get going then!", "I need to talk to you about red mahogany.");
 		talkToJungleForester.addDialogStep("Okay, I'll take your axe to get it sharpened.");
 		talkToBrian = new NpcStep(this, NpcID.BRIAN, new WorldPoint(3027, 3249, 0), "Talk to Brian in the Port Sarim axe shop.", bluntAxe);
@@ -594,7 +595,7 @@ public class OneSmallFavour extends BasicQuestHelper
 		talkToBleemadge.addSubSteps(talkToBleemadgeNoTea);
 
 		talkToArhein = new NpcStep(this, NpcID.ARHEIN, new WorldPoint(2804, 3432, 0), "Talk to Arhein in Catherby.");
-		talkToArhein.addDialogStep("I need to talk T.R.A.S.H to you.");
+		talkToArhein.addDialogStep("I need to talk T.R.A.S.H. to you.");
 		talkToArhein.addDialogStep("Yes, Ok, I'll do it!");
 
 		talkToPhantuwti = new NpcStep(this, NpcID.FAVOUR_PHANTUWTI_FARSIGHT, new WorldPoint(2702, 3473, 0), "Talk to Phantuwti in the south west house of Seers' Village.");
@@ -731,6 +732,7 @@ public class OneSmallFavour extends BasicQuestHelper
 		finishWithPhantuwti.addDialogStep("I've fixed the weather vane!");
 
 		returnToArhein = new NpcStep(this, NpcID.ARHEIN, new WorldPoint(2804, 3432, 0), "Talk to Arhein in Catherby.", weatherReport);
+		returnToArhein.addDialogStep("What did you want me to do again?");
 		returnToArhein.addDialogStep("I have the weather report for you.");
 
 		returnToBleemadge = new NpcStep(this, NpcID.PILOT_WHITE_WOLF_BASE, new WorldPoint(2847, 3498, 0), "Right-click talk to Captain Bleemadge on White Wolf Mountain.");

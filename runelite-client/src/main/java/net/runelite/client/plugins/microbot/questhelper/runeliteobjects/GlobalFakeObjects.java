@@ -25,18 +25,9 @@
 package net.runelite.client.plugins.microbot.questhelper.runeliteobjects;
 
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperConfig;
-import net.runelite.client.plugins.microbot.questhelper.questinfo.PlayerQuests;
-import net.runelite.client.plugins.microbot.questhelper.requirements.runelite.PlayerQuestStateRequirement;
-import net.runelite.client.plugins.microbot.questhelper.requirements.util.Operation;
-import net.runelite.client.plugins.microbot.questhelper.runeliteobjects.extendedruneliteobjects.ReplacedNpc;
 import net.runelite.client.plugins.microbot.questhelper.runeliteobjects.extendedruneliteobjects.RuneliteObjectManager;
-import net.runelite.client.plugins.microbot.questhelper.runeliteobjects.extendedruneliteobjects.WidgetReplacement;
-import net.runelite.client.plugins.microbot.questhelper.steps.widget.WidgetDetails;
 import lombok.Setter;
 import net.runelite.api.Client;
-import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.InterfaceID;
-import net.runelite.api.gameval.NpcID;
 import net.runelite.client.config.ConfigManager;
 
 public class GlobalFakeObjects
@@ -46,9 +37,8 @@ public class GlobalFakeObjects
 
 	public static void createNpcs(Client client, RuneliteObjectManager runeliteObjectManager, ConfigManager configManager, QuestHelperConfig questHelperConfig)
 	{
-		if (initialized || !questHelperConfig.showRuneliteObjects()) return;
+		if (initialized) return;
 		initialized = true;
-		createHopleez(runeliteObjectManager, client, configManager);
 		Cheerer.createCheerers(runeliteObjectManager, client, configManager);
 	}
 
@@ -57,17 +47,5 @@ public class GlobalFakeObjects
 		if (!initialized) return;
 		runeliteObjectManager.removeGroupAndSubgroups("global");
 		initialized = false;
-	}
-
-	private static void createHopleez(RuneliteObjectManager runeliteObjectManager, Client client, ConfigManager configManager)
-	{
-		ReplacedNpc replacedHopleez = runeliteObjectManager.createReplacedNpc(client.getNpcDefinition(NpcID.ZEAH_DEFENCE_PURE).getModels(), new WorldPoint(3235, 3215, 0), NpcID.HATIUS_LUMBRIDGE_DIARY);
-		replacedHopleez.setName("Hopleez");
-		replacedHopleez.setFace(7481);
-		replacedHopleez.setExamine("He was here first.");
-		replacedHopleez.addExamineAction(runeliteObjectManager);
-		replacedHopleez.setDisplayRequirement(new PlayerQuestStateRequirement(configManager, PlayerQuests.COOKS_HELPER, 4, Operation.GREATER_EQUAL));
-		replacedHopleez.addWidgetReplacement(new WidgetReplacement(new WidgetDetails(InterfaceID.ChatLeft.TEXT), "Hatius Cosaintus", "Hopleez"));
-		replacedHopleez.addWidgetReplacement(new WidgetReplacement(new WidgetDetails(InterfaceID.Objectbox.TEXT), "Hatius", "Hopleez"));
 	}
 }

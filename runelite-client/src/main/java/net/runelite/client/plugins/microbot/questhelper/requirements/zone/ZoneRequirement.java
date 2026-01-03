@@ -50,7 +50,7 @@ public class ZoneRequirement extends AbstractRequirement
 	 * Check if the player is either in the specified zone.
 	 *
 	 * @param displayText display text
-	 * @param zone the zone to check
+	 * @param zone        the zone to check
 	 */
 	public ZoneRequirement(String displayText, Zone zone)
 	{
@@ -60,9 +60,9 @@ public class ZoneRequirement extends AbstractRequirement
 	/**
 	 * Check if the player is either in, or not in, the specified zone.
 	 *
-	 * @param displayText display text
+	 * @param displayText    display text
 	 * @param checkNotInZone true to negate this requirement check (i.e. it will check if the player is NOT in the zone)
-	 * @param zone the zone to check
+	 * @param zone           the zone to check
 	 */
 	public ZoneRequirement(String displayText, boolean checkNotInZone, Zone zone)
 	{
@@ -106,8 +106,7 @@ public class ZoneRequirement extends AbstractRequirement
 		Player player = client.getLocalPlayer();
 		if (player != null && zones != null)
 		{
-			WorldPoint location = WorldPoint.fromLocalInstance(client, player.getLocalLocation());
-			boolean inZone = zones.stream().anyMatch(z -> z.contains(location));
+			boolean inZone = zones.stream().anyMatch(z -> z.contains(client, player.getLocalLocation()));
 			return inZone == checkInZone;
 		}
 		return false;

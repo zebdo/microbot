@@ -49,10 +49,7 @@ import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
-import net.runelite.api.gameval.ObjectID;
-import net.runelite.api.gameval.VarPlayerID;
+import net.runelite.api.gameval.*;
 
 import java.util.*;
 
@@ -173,8 +170,8 @@ public class TrollStronghold extends BasicQuestHelper
 		prisonKeyNearby = new ItemOnTileRequirement(ItemID.TROLL_KEY_PRISON);
 		cellKey1Nearby = new ItemOnTileRequirement(cellKey1);
 		cellKey2Nearby = new ItemOnTileRequirement(cellKey2);
-		freedEadgar = new VarbitRequirement(0, 1);
-		freedGodric = new VarplayerRequirement(317, 40);
+		freedEadgar = new VarbitRequirement(VarbitID.TROLL_FREED_EADGAR, 1);
+		freedGodric = new VarplayerRequirement(VarPlayerID.TROLL_QUEST, 40);
 	}
 
 	public void setupSteps()

@@ -36,8 +36,8 @@ import net.runelite.api.Client;
 import net.runelite.api.Item;
 
 import java.awt.*;
-import java.util.List;
 import java.util.*;
+import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 
@@ -335,13 +335,13 @@ public class ItemRequirements extends ItemRequirement
 	public ItemRequirement copy()
 	{
 		ItemRequirements newItem = new ItemRequirements(getLogicType(), getName(), getItemRequirements());
-		newItem.setEquip(equip);
+		newItem.setMustBeEquipped(mustBeEquipped);
 		newItem.addAlternates(alternateItems);
 		newItem.setDisplayItemId(getDisplayItemId());
 		newItem.setHighlightInInventory(highlightInInventory);
 		newItem.setDisplayMatchedItemName(isDisplayMatchedItemName());
 		newItem.setConditionToHide(getConditionToHide());
-		newItem.setQuestBank(getQuestBank());
+		newItem.setShouldCheckBank(isShouldCheckBank());
 		newItem.setTooltip(tooltip);
 		newItem.additionalOptions = additionalOptions;
 
@@ -381,19 +381,19 @@ public class ItemRequirements extends ItemRequirement
 		}
 		newItem.itemRequirements.clear();
 		newItem.itemRequirements.addAll(newReqs);
-		newItem.equip = true;
+		newItem.mustBeEquipped = true;
 		return newItem;
 	}
 
 	/**
 	 * Sets the equip flag for all aggregated item requirements.
 	 *
-	 * @param shouldEquip {@code true} to mark the items as equipped; {@code false} otherwise.
+	 * @param mustBeEquipped {@code true} to mark the items as equipped; {@code false} otherwise.
 	 */
 	@Override
-	public void setEquip(boolean shouldEquip)
+	public void setMustBeEquipped(boolean mustBeEquipped)
 	{
-		equip = shouldEquip;
+		this.mustBeEquipped = mustBeEquipped;
 	}
 
 	/**

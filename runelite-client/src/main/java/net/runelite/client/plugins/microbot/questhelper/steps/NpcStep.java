@@ -31,16 +31,16 @@ import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.steps.overlay.DirectionArrow;
+import net.runelite.client.plugins.microbot.questhelper.steps.tools.DefinedPoint;
 import net.runelite.client.plugins.microbot.questhelper.steps.tools.QuestPerspective;
 import lombok.Setter;
-import net.runelite.api.Point;
 import net.runelite.api.*;
+import net.runelite.api.Point;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.NpcChanged;
 import net.runelite.api.events.NpcDespawned;
 import net.runelite.api.events.NpcSpawned;
-import net.runelite.api.gameval.NpcID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.ui.overlay.OverlayUtil;
 import net.runelite.client.util.ColorUtil;
@@ -50,7 +50,6 @@ import java.awt.*;
 import java.awt.geom.Line2D;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 import java.util.function.Function;
 
@@ -64,8 +63,8 @@ public class NpcStep extends DetailedQuestStep
 	protected final int npcID;
 	protected final List<Integer> alternateNpcIDs = new ArrayList<>();
 
-	@Getter
 	@Setter
+	@Getter
 	protected boolean allowMultipleHighlights;
 
 	@Getter
@@ -158,9 +157,18 @@ public class NpcStep extends DetailedQuestStep
 		this(questHelper, npcID, null, text, allowMultipleHighlights, requirements);
 	}
 
+	public NpcStep(QuestHelper questHelper, int npcID, DefinedPoint definedPoint, String text, Requirement... requirements)
+	{
+		super(questHelper, definedPoint, text, requirements);
+		this.npcID = npcID;
+	}
+
 	public NpcStep copy()
 	{
-		NpcStep newStep = new NpcStep(getQuestHelper(), npcID, worldPoint, null, requirements, recommended);
+		NpcStep newStep = new NpcStep(getQuestHelper(), npcID, definedPoint, null);
+		newStep.setRequirements(requirements);
+		newStep.setRecommended(recommended);
+
 		if (text != null)
 		{
 			newStep.setText(text);
@@ -193,6 +201,12 @@ public class NpcStep extends DetailedQuestStep
 	public void scanForNpcs()
 	{
 		for (NPC npc : client.getTopLevelWorldView().npcs())
+		{
+			addNpcToListGivenMatchingID(npc, this::npcPassesChecks, npcs);
+		}
+		var playerWorldView = client.getLocalPlayer().getWorldView();
+		if (playerWorldView == null || playerWorldView.npcs() == null) return;
+		for (NPC npc : playerWorldView.npcs())
 		{
 			addNpcToListGivenMatchingID(npc, this::npcPassesChecks, npcs);
 		}
@@ -263,21 +277,26 @@ public class NpcStep extends DetailedQuestStep
 	{
 		if (condition.apply(npc))
 		{
-			WorldPoint npcPoint = WorldPoint.fromLocalInstance(client, npc.getLocalLocation());
-			if (npcs.size() == 0)
+			var npcPoint = npc.getLocalLocation();
+			if (npcPoint == null)
 			{
-				if (worldPoint == null)
+				return;
+			}
+
+			if (npcs.isEmpty())
+			{
+				if (definedPoint == null)
 				{
 					list.add(npc);
 				}
-				else if (npcPoint.distanceTo(worldPoint) < maxRoamRange)
+				else if (definedPoint.distanceTo(client, npcPoint) < maxRoamRange)
 				{
 					list.add(npc);
 				}
 			}
 			else if (allowMultipleHighlights)
 			{
-				if (worldPoint == null || npcPoint.distanceTo(worldPoint) < maxRoamRange)
+				if (definedPoint == null || definedPoint.distanceTo(client, npcPoint) < maxRoamRange)
 				{
 					list.add(npc);
 				}
@@ -301,7 +320,7 @@ public class NpcStep extends DetailedQuestStep
 		// This MAY for some NPCs which have alternate version (The Kendal) require re-consideration
 		if (allIds().contains(newNpcId))
 		{
-			if (npcs.size() == 0 || allowMultipleHighlights)
+			if (npcs.isEmpty() || allowMultipleHighlights)
 			{
 				npcs.add(npcChanged.getNpc());
 			}
@@ -315,13 +334,10 @@ public class NpcStep extends DetailedQuestStep
 
 		super.makeWorldOverlayHint(graphics, plugin);
 
-		if (worldPoint != null)
+		if (definedPoint != null)
 		{
-			Collection<WorldPoint> localWorldPoints = QuestPerspective.toLocalInstanceFromReal(client, worldPoint);
-			if (localWorldPoints.isEmpty())
-			{
-				return;
-			}
+			WorldPoint localWorldPoint = QuestPerspective.getWorldPointConsideringWorldView(client, client.getTopLevelWorldView(), definedPoint.getWorldPoint());
+			if (localWorldPoint == null) return;
 		}
 
 		Color configColor = getQuestHelper().getConfig().targetOverlayColor();
@@ -399,7 +415,7 @@ public class NpcStep extends DetailedQuestStep
 	{
 		if (questHelper.getConfig().showMiniMapArrow())
 		{
-			if (npcs.size() == 0)
+			if (npcs.isEmpty())
 			{
 				super.renderArrow(graphics);
 			}

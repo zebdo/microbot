@@ -52,6 +52,7 @@ Everything that will help you make scripts is under the **util** folder
 ### [Rs2MiniMap](api/Rs2MiniMap.md)
 ### [Rs2Widget](api/Rs2Widget.md)
 ### [Rs2Tile](api/Rs2Tile.md)
+### [MouseMacroRecorder](api/MouseMacroRecorder.md)
 
 ---
 
@@ -215,4 +216,3 @@ Coming soon!
 ---
 
 **Are you stuck? Join our [Discord](https://discord.gg/zaGrfqFEWE) server.**
-

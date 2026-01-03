@@ -49,10 +49,7 @@ import net.runelite.client.plugins.microbot.questhelper.rewards.UnlockReward;
 import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.InterfaceID;
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
-import net.runelite.api.gameval.ObjectID;
+import net.runelite.api.gameval.*;
 
 import java.util.*;
 
@@ -117,8 +114,8 @@ public class TheFremennikTrials extends BasicQuestHelper
 		steps.put(0, talkToBrundt);
 
 		olafTask = new ConditionalStep(this, talkToOlaf);
-		olafTask.addStep(enchantedLyre.alsoCheckBank(questBank), performMusic);
-		olafTask.addStep(new Conditions(hasStartedOlaf, lyre.alsoCheckBank(questBank)), enchantLyre);
+		olafTask.addStep(enchantedLyre.alsoCheckBank(), performMusic);
+		olafTask.addStep(new Conditions(hasStartedOlaf, lyre.alsoCheckBank()), enchantLyre);
 		olafTask.addStep(new Conditions(goldenWool, lyreUnstrung), makeLyre);
 		olafTask.addStep(new Conditions(goldenFleece, lyreUnstrung), spinWool);
 		olafTask.addStep(new Conditions(goldenFleece, branch), fletchLyre);
@@ -139,9 +136,9 @@ public class TheFremennikTrials extends BasicQuestHelper
 		manniTask.addStep(new Conditions(hasPlacedStrangeObject, alcoholFreeBeer), getKegOfBeer);
 		manniTask.addStep(new Conditions(hasPlacedStrangeObject), getAlcoholFreeBeer);
 		manniTask.addStep(new Conditions(talkedToManni, litStrangeObject, alcoholFreeBeer, isNearPipe), useStrangeObjectOnPipe);
-		manniTask.addStep(new Conditions(talkedToManni, strangeObject.alsoCheckBank(questBank), alcoholFreeBeer, isNearPipe), useStrangeObject);
-		manniTask.addStep(new Conditions(talkedToManni, strangeObject.alsoCheckBank(questBank), alcoholFreeBeer), prepareToUseStrangeObject);
-		manniTask.addStep(new Conditions(talkedToManni, strangeObject.alsoCheckBank(questBank)), getAlcoholFreeBeer);
+		manniTask.addStep(new Conditions(talkedToManni, strangeObject.alsoCheckBank(), alcoholFreeBeer, isNearPipe), useStrangeObject);
+		manniTask.addStep(new Conditions(talkedToManni, strangeObject.alsoCheckBank(), alcoholFreeBeer), prepareToUseStrangeObject);
+		manniTask.addStep(new Conditions(talkedToManni, strangeObject.alsoCheckBank()), getAlcoholFreeBeer);
 		manniTask.addStep(new Conditions(talkedToManni, beer), getStrangeObject);
 		manniTask.addStep(talkedToManni, pickUpBeer);
 		manniTask.setLockingCondition(finishedManniTask);
@@ -403,7 +400,7 @@ public class TheFremennikTrials extends BasicQuestHelper
 				new DialogRequirement("I see... okay, well, bye!"),
 				new DialogRequirement("Human call itself Askeladden!")
 			));
-		gottenRock = new VarbitRequirement(6486, 1);
+		gottenRock = new VarbitRequirement(VarbitID.ASKELLADEN_HASOP, 1);
 
 		petRockInCauldron = new RuneliteRequirement(configManager, "fremmytrialsaddedpetrock",
 			new ChatMessageRequirement("You put your pet rock into the cauldron.")

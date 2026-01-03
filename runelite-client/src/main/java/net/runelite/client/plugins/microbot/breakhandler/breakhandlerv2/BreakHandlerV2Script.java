@@ -90,6 +90,7 @@ public class BreakHandlerV2Script extends Script {
 
                 // Detect unexpected logout while waiting for break
                 detectUnexpectedLogout();
+                enforceLogoutDuringActiveBreak();
                 updateWindowTitle();
 
                 // Main state machine
@@ -518,6 +519,26 @@ public class BreakHandlerV2Script extends Script {
                         "Player logged out with " + (secondsUntilBreak / 60) + " minutes until break.\nAuto-login is disabled.");
                 }
             }
+        }
+    }
+
+    /**
+     * Ensures we are logged out while a break timer is active.
+     */
+    private void enforceLogoutDuringActiveBreak() {
+        long breakRemainingSeconds = getBreakTimeRemaining();
+
+        if (breakRemainingSeconds <= 0 || !Microbot.isLoggedIn()) {
+            return;
+        }
+
+        BreakHandlerV2State state = BreakHandlerV2State.getCurrentState();
+
+        if (state != BreakHandlerV2State.LOGOUT_REQUESTED &&
+            state != BreakHandlerV2State.INITIATING_BREAK) {
+            log.warn("[BreakHandlerV2] Break active ({}s remaining) but player is logged in; forcing logout",
+                breakRemainingSeconds);
+            transitionToState(BreakHandlerV2State.LOGOUT_REQUESTED);
         }
     }
 

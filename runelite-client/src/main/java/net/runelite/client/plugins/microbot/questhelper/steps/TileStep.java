@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.questhelper.steps;
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
+import net.runelite.client.plugins.microbot.questhelper.steps.tools.DefinedPoint;
 import net.runelite.api.Perspective;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldPoint;
@@ -15,7 +16,7 @@ public class TileStep extends DetailedQuestStep
 	public TileStep(QuestHelper questHelper, WorldPoint worldPoint, String text, Requirement... requirements)
 	{
 		super(questHelper, text, requirements);
-		this.worldPoint = worldPoint;
+		this.definedPoint = DefinedPoint.of(worldPoint);
 	}
 
 	@Override
@@ -23,7 +24,7 @@ public class TileStep extends DetailedQuestStep
 	{
 		super.makeWorldOverlayHint(graphics, plugin);
 
-		LocalPoint lp = LocalPoint.fromWorld(client, worldPoint);
+		LocalPoint lp = definedPoint.resolveLocalPoint(client);
 		if (lp == null)
 		{
 			return;

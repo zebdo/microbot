@@ -39,8 +39,8 @@ import java.util.function.BiConsumer;
 
 public class WidgetStep extends DetailedQuestStep
 {
-	@Getter
 	@Setter
+	@Getter
 	protected List<WidgetDetails> widgetDetails = new ArrayList<>();
 
 	protected List<BiConsumer<Graphics2D, QuestHelperPlugin>> extraWidgetOverlayHintFunctions = new ArrayList<>();

@@ -24,12 +24,12 @@
  */
 package net.runelite.client.plugins.microbot.questhelper.helpers.quests.observatoryquest;
 
-import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
-import net.runelite.client.plugins.microbot.questhelper.questinfo.QuestVarPlayer;
-import net.runelite.client.plugins.microbot.questhelper.steps.NpcStep;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.VarbitChanged;
 import net.runelite.api.gameval.NpcID;
+import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
+import net.runelite.client.plugins.microbot.questhelper.questinfo.QuestVarPlayer;
+import net.runelite.client.plugins.microbot.questhelper.steps.NpcStep;
 
 import java.util.HashMap;
 

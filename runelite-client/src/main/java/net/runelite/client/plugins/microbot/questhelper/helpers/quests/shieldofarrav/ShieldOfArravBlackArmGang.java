@@ -41,11 +41,7 @@ import net.runelite.client.plugins.microbot.questhelper.rewards.ItemReward;
 import net.runelite.client.plugins.microbot.questhelper.rewards.QuestPointReward;
 import net.runelite.client.plugins.microbot.questhelper.steps.*;
 import net.runelite.api.coords.WorldPoint;
-import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.NpcID;
-import net.runelite.api.gameval.ObjectID;
-import net.runelite.api.gameval.VarPlayerID;
-import net.runelite.api.gameval.VarbitID;
+import net.runelite.api.gameval.*;
 
 import java.util.*;
 
@@ -86,16 +82,16 @@ public class ShieldOfArravBlackArmGang extends BasicQuestHelper
 		gettingTheCrossbows.addStep(twoPhoenixCrossbow, returnToKatrine);
 		gettingTheCrossbows.addStep(new Conditions(weaponMasterAlive, inStoreRoom), killWeaponsMaster);
 		gettingTheCrossbows.addStep(inStoreRoom, pickupTwoCrossbows);
-		gettingTheCrossbows.addStep(storeRoomKey.alsoCheckBank(questBank), goUpToWeaponStore);
+		gettingTheCrossbows.addStep(storeRoomKey.alsoCheckBank(), goUpToWeaponStore);
 
 		steps.put(2, gettingTheCrossbows);
 
 		ConditionalStep completeQuest = new ConditionalStep(this, goUpstairsInBase);
-		completeQuest.addStep(certificate.alsoCheckBank(questBank), talkToRoald);
-		completeQuest.addStep(new Conditions(certificateHalf.alsoCheckBank(questBank), phoenixCertificateHalf.alsoCheckBank(questBank)), combineCertificate);
-		completeQuest.addStep(certificateHalf.alsoCheckBank(questBank), tradeCertificateHalf);
-		completeQuest.addStep(new Conditions(shieldHalf.alsoCheckBank(questBank), isUpstairsInBase), goDownstairsInBase);
-		completeQuest.addStep(shieldHalf.alsoCheckBank(questBank), talkToHaig);
+		completeQuest.addStep(certificate.alsoCheckBank(), talkToRoald);
+		completeQuest.addStep(new Conditions(certificateHalf.alsoCheckBank(), phoenixCertificateHalf.alsoCheckBank()), combineCertificate);
+		completeQuest.addStep(certificateHalf.alsoCheckBank(), tradeCertificateHalf);
+		completeQuest.addStep(new Conditions(shieldHalf.alsoCheckBank(), isUpstairsInBase), goDownstairsInBase);
+		completeQuest.addStep(shieldHalf.alsoCheckBank(), talkToHaig);
 		completeQuest.addStep(new Conditions(isUpstairsInBase, cupboardOpen), getShieldFromCupboard1);
 		completeQuest.addStep(isUpstairsInBase, getShieldFromCupboard);
 
@@ -185,7 +181,7 @@ public class ShieldOfArravBlackArmGang extends BasicQuestHelper
 		talkToHaig = new NpcStep(this, NpcID.CURATOR, new WorldPoint(3255, 3449, 0), "Talk to Curator Haig in the Varrock Museum.", shieldHalf);
 		talkToHaig.addSubSteps(goDownstairsInBase);
 
-		talkToRoald = new NpcStep(this, NpcID.SUROK_KING, new WorldPoint(3222, 3473, 0), "Talk to King Roald in Varrock Castle to finish the quest.", certificate);
+		talkToRoald = new NpcStep(this, NpcID.KING_ROALD, new WorldPoint(3222, 3473, 0), "Talk to King Roald in Varrock Castle to finish the quest.", certificate);
 
 	}
 

@@ -28,6 +28,7 @@ import net.runelite.client.plugins.microbot.questhelper.QuestHelperConfig;
 import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.events.ConfigChanged;
+
 import java.util.function.Consumer;
 
 public class FarmingConfigChangeHandler
