@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.api.boat.models;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
@@ -16,6 +17,7 @@ import net.runelite.client.plugins.microbot.api.boat.data.PortTaskData;
 import net.runelite.client.plugins.microbot.api.boat.data.PortTaskVarbits;
 import net.runelite.client.plugins.microbot.api.player.models.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
+import net.runelite.client.plugins.microbot.shortestpath.WorldPointUtil;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
@@ -104,6 +106,7 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
 		SAILING_MOORING_GRIMSTONE
 	};
 
+    @Getter
 	private  Heading currentHeading = Heading.SOUTH;
 
 
@@ -521,19 +524,27 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
         }
     }
 
-    public  int getDirection(WorldPoint target)
+    public int getDirection(WorldPoint target)
     {
-        double angle = getAngle(target);
+        WorldPoint current = getPlayerBoatLocation();
+        int deltaX = target.getX() - current.getX();
+        int deltaY = target.getY() - current.getY();
 
-        double rotated = 270.0 - angle;
-
-        rotated %= 360.0;
-        if (rotated < 0)
-        {
-            rotated += 360.0;
+        if (deltaX == 0 && deltaY == 0) {
+            return Heading.SOUTH.getValue();
         }
 
-        return (int) Math.round(rotated / 22.5) & 0xF;
+        double angleDegrees = Math.toDegrees(Math.atan2(deltaY, deltaX));
+        double headingDegrees = (270.0 - angleDegrees + 360.0) % 360.0;
+        int headingValue = (int) ((headingDegrees + 11.25) / 22.5) & 0xF;
+
+        for (Heading heading : Heading.values()) {
+            if (heading.getValue() == headingValue) {
+                return heading.getValue();
+            }
+        }
+
+        return Heading.SOUTH.getValue();
     }
 
     private  double getAngle(WorldPoint target)

@@ -1,11 +1,15 @@
 package net.runelite.client.plugins.microbot;
 
+import com.google.common.base.Strings;
 import com.google.gson.Gson;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.RuneLiteProperties;
+import net.runelite.http.api.RuneLiteAPI;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
+import okhttp3.RequestBody;
 import okhttp3.Response;
 import okhttp3.ResponseBody;
 
@@ -24,12 +28,15 @@ public class MicrobotApi {
 
     private final OkHttpClient client;
     private final Gson gson;
+    private final String pluginTelemetryToken;
 
     private final String microbotApiUrl = "https://microbot.cloud/api";
     @Inject
     MicrobotApi(OkHttpClient client, Gson gson) {
         this.client = client;
         this.gson = gson;
+
+        this.pluginTelemetryToken = "zeifkdsjqfiedfb15181==";
     }
 
     /**
@@ -53,6 +60,48 @@ public class MicrobotApi {
         } catch (JsonParseException | IllegalArgumentException ex) // UUID.fromString can throw IllegalArgumentException
         {
             throw new IOException(ex);
+        }
+    }
+
+    /**
+     * Increments the install counter for the given plugin.
+     *
+     * @param internalName plugin internal name
+     * @param displayName display name
+     * @param version version installed
+     */
+    public void increasePluginInstall(String internalName, String displayName, String version)
+    {
+        if (Strings.isNullOrEmpty(internalName)) {
+            return;
+        }
+
+        if (Strings.isNullOrEmpty(pluginTelemetryToken)) {
+            log.debug("Skipping plugin telemetry for {}: missing token", internalName);
+            return;
+        }
+
+        JsonObject payload = new JsonObject();
+        payload.addProperty("pluginName", Strings.nullToEmpty(internalName));
+        payload.addProperty("internalName", internalName);
+        payload.addProperty("pluginInternalName", internalName);
+        if (!Strings.isNullOrEmpty(version)) {
+            payload.addProperty("version", version);
+            payload.addProperty("pluginVersion", version);
+        }
+
+        Request request = new Request.Builder()
+                .url(microbotApiUrl + "/plugintelemetry/plugin-install/increase")
+                .header("X-Plugin-Telemetry-Token", pluginTelemetryToken)
+                .post(RequestBody.create(RuneLiteAPI.JSON, gson.toJson(payload)))
+                .build();
+
+        try (Response response = client.newCall(request).execute()) {
+            if (!response.isSuccessful()) {
+                log.debug("Plugin telemetry call failed for {}: HTTP {}", internalName, response.code());
+            }
+        } catch (IOException ex) {
+            log.debug("Plugin telemetry call failed for {}", internalName, ex);
         }
     }
 

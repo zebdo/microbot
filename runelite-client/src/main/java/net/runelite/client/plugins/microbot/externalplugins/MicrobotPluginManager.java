@@ -47,6 +47,7 @@ import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ClientShutdown;
 import net.runelite.client.events.ExternalPluginsChanged;
 import net.runelite.client.plugins.*;
+import net.runelite.client.plugins.microbot.MicrobotApi;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.ui.SplashScreen;
@@ -94,6 +95,7 @@ public class MicrobotPluginManager {
     private final PluginManager pluginManager;
     private final Gson gson;
     private final ConfigManager configManager;
+    private final MicrobotApi microbotApi;
 
     private final Map<String, URLClassLoader> loaders = new ConcurrentHashMap<>();
 
@@ -115,7 +117,8 @@ public class MicrobotPluginManager {
             ScheduledExecutorService executor,
             PluginManager pluginManager,
             Gson gson,
-            ConfigManager configManager
+            ConfigManager configManager,
+            MicrobotApi microbotApi
     ) {
         this.okHttpClient = okHttpClient;
         this.microbotPluginClient = microbotPluginClient;
@@ -124,6 +127,7 @@ public class MicrobotPluginManager {
         this.pluginManager = pluginManager;
         this.gson = gson;
         this.configManager = configManager;
+        this.microbotApi = microbotApi;
 
         PLUGIN_DIR.mkdirs();
     }
@@ -1027,6 +1031,7 @@ public class MicrobotPluginManager {
         if (result) {
             //verifiy hash inside loadSidePlugin doesn't work
             loadSideLoadPlugin(internalName);
+            sendPluginInstallTelemetry(manifest, versionOverride);
         }
 
         log.info("Added plugin {} to installed list", manifest.getDisplayName());
@@ -1094,6 +1099,16 @@ public class MicrobotPluginManager {
 
         log.info("Removed plugin {} from installed list", manifest.getDisplayName());
         eventBus.post(new ExternalPluginsChanged());
+    }
+
+    private void sendPluginInstallTelemetry(MicrobotPluginManifest manifest, @Nullable String versionOverride)
+    {
+        if (manifest == null) {
+            return;
+        }
+
+        String version = Strings.isNullOrEmpty(versionOverride) ? manifest.getVersion() : versionOverride;
+        microbotApi.increasePluginInstall(manifest.getInternalName(), manifest.getDisplayName(), version);
     }
 
     /**
