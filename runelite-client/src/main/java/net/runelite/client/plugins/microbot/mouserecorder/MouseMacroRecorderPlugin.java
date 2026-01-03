@@ -291,24 +291,8 @@ public class MouseMacroRecorderPlugin extends Plugin implements MouseListener, M
 
 	private boolean recordEvent()
 	{
-		if (!recording)
-		{
-			return false;
-		}
-
-		synchronized (lock)
-		{
-			if (events.size() >= config.maxRecordedEvents())
-			{
-				recording = false;
-				closeJsonlWriterLocked();
-				log.info("Mouse macro recorder hit max events ({}), stopping.", config.maxRecordedEvents());
-				return false;
-			}
-		}
-
-		return true;
-	}
+        return recording;
+    }
 
 	private void recordEvent(
 		MouseMacroEventType type,

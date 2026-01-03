@@ -70,23 +70,10 @@ public interface MouseMacroRecorderConfig extends Config
 	}
 
 	@ConfigItem(
-		keyName = "maxRecordedEvents",
-		name = "Max recorded events",
-		description = "Stop recording after reaching this many events",
-		position = 4,
-		section = recordingSection
-	)
-	@Range(min = 100, max = 50000)
-	default int maxRecordedEvents()
-	{
-		return 10000;
-	}
-
-	@ConfigItem(
 		keyName = "openRecordingsFolder",
 		name = "Open recordings folder",
 		description = "Open the folder containing JSONL mouse macro recordings",
-		position = 5,
+		position = 4,
 		section = recordingSection
 	)
 	default ConfigButton openRecordingsFolder()
