@@ -284,46 +284,68 @@ The cache system is a sophisticated event-driven data access layer that maintain
 | `Rs2SkillCache` | AUTOMATIC_INVALIDATION | Yes | Skill levels/XP |
 | `Rs2QuestCache` | AUTOMATIC_INVALIDATION | Yes | Quest states |
 
-### New Queryable API (Recommended)
+### Cache & Queryable API (Recommended)
 
 **📚 Complete Documentation:** See `api/QUERYABLE_API.md` for comprehensive guide
 
-**File References:**
-- `api/QUERYABLE_API.md` - Complete API documentation and examples
-- `api/IEntityQueryable.java` - Generic queryable interface
-- `api/npc/Rs2NpcQueryable.java` - NPC queries
-- `api/tileitem/Rs2TileItemQueryable.java` - Ground item queries
-- `api/player/Rs2PlayerQueryable.java` - Player queries
-- `api/tileobject/Rs2TileObjectQueryable.java` - Tile object queries
+All caches are singletons accessed via `Microbot.getRs2XxxCache()`. Each cache provides a `query()` method that returns a fluent queryable interface.
 
-**Pattern:**
+**IMPORTANT:** Never instantiate queryables directly (e.g., `new Rs2NpcQueryable()`). Always use the cache's `query()` method:
+
+**Available Caches:**
+| Cache | Accessor | Query Method |
+|-------|----------|--------------|
+| NPC Cache | `Microbot.getRs2NpcCache()` | `.query()` |
+| Player Cache | `Microbot.getRs2PlayerCache()` | `.query()` |
+| Tile Item Cache | `Microbot.getRs2TileItemCache()` | `.query()` |
+| Tile Object Cache | `Microbot.getRs2TileObjectCache()` | `.query()` |
+| Boat Cache | `Microbot.getRs2BoatCache()` | `.getLocalBoat()` |
+
+**Correct Usage Pattern:**
 ```java
-// Fluent query builder for NPCs
-Rs2NpcModel banker = new Rs2NpcQueryable()
+// ✅ CORRECT - Use cache.query() method
+Rs2NpcModel banker = Microbot.getRs2NpcCache().query()
     .withName("Banker")
     .where(npc -> !npc.isInteracting())
     .nearest(10);
 
-// Ground items
-Rs2ItemModel loot = new GroundItemQueryable()
+// ✅ CORRECT - Ground items via cache
+Rs2TileItemModel loot = Microbot.getRs2TileItemCache().query()
     .withName("Dragon bones")
     .where(item -> item.getValue() > 1000)
     .nearest();
 
-// Tile objects (new API)
-Rs2TileObjectModel tree = Rs2TileObjectApi.getNearest(tile ->
-    tile.getName() != null &&
-    tile.getName().toLowerCase().contains("tree")
-);
+// ✅ CORRECT - Tile objects via cache
+Rs2TileObjectModel tree = Microbot.getRs2TileObjectCache().query()
+    .withName("Oak tree")
+    .nearest();
 tree.click("Chop down");
+
+// ✅ CORRECT - Direct stream access when needed
+Rs2NpcModel firstNpc = Microbot.getRs2NpcCache().getStream()
+    .filter(npc -> npc.getName() != null)
+    .findFirst()
+    .orElse(null);
 ```
 
-### Legacy Direct Cache Access
+**❌ WRONG - Never do this:**
+```java
+// ❌ WRONG - Don't instantiate queryables directly
+Rs2NpcModel npc = new Rs2NpcQueryable().withName("Banker").nearest();
+
+// ❌ WRONG - Don't use deprecated static methods
+Rs2NpcModel npc = Rs2NpcCache.getNpcsStream().findFirst().orElse(null);
+```
+
+### Legacy Direct Cache Access (Deprecated)
 
 ```java
-// Still supported but queryable API is preferred
-List<Rs2NpcModel> npcs = Rs2NpcCache.getNpcs();
-Rs2NpcModel npc = Rs2NpcCache.getNpc(npcId);
+// ⚠️ DEPRECATED - Static methods are deprecated and will be removed
+// Use Microbot.getRs2XxxCache().getStream() instead
+Rs2NpcCache.getNpcsStream()      // deprecated
+Rs2PlayerCache.getPlayersStream() // deprecated
+Rs2TileItemCache.getTileItemsStream() // deprecated
+Rs2TileObjectCache.getObjectsStream() // deprecated
 ```
 
 ---
@@ -519,37 +541,37 @@ while (!Rs2Bank.isOpen() && attempts < 3) {
 }
 ```
 
-### 3. API Usage: New vs Legacy
+### 3. API Usage: Cache Queryable API
 
-**PREFER Queryable API Over Legacy Direct Access**
+**ALWAYS use cache.query() - NEVER instantiate queryables directly**
 
 ```java
-// LEGACY - Old pattern (still works) ⚠️
+// ❌ LEGACY - Old pattern (deprecated)
 NPC npc = Rs2Npc.getNpc("Banker");
 TileObject tree = Rs2GameObject.findObject("Tree");
-List<NPC> guards = Rs2Npc.getNpcs().stream()
-    .filter(n -> n.getName().equals("Guard"))
-    .collect(Collectors.toList());
 
-// NEW - Queryable API (RECOMMENDED) ✅
-Rs2NpcModel banker = new Rs2NpcQueryable()
+// ❌ WRONG - Don't instantiate queryables directly
+Rs2NpcModel banker = new Rs2NpcQueryable().withName("Banker").nearest();
+
+// ✅ CORRECT - Use cache.query() method
+Rs2NpcModel banker = Microbot.getRs2NpcCache().query()
     .withName("Banker")
     .nearest();
 
-Rs2TileObjectModel tree = Rs2TileObjectApi.getNearest(obj ->
-    obj.getName() != null && obj.getName().contains("Tree")
-);
+Rs2TileObjectModel tree = Microbot.getRs2TileObjectCache().query()
+    .withName("Tree")
+    .nearest();
 
-Rs2NpcModel guard = new Rs2NpcQueryable()
+Rs2NpcModel guard = Microbot.getRs2NpcCache().query()
     .withName("Guard")
     .where(npc -> !npc.isInteracting())
     .nearest(15);
 ```
 
-**Benefits of Queryable API:**
-- More readable and maintainable
-- Better performance (cached queries)
+**Benefits of Cache Queryable API:**
+- Singleton caches ensure consistent state
 - Fluent interface for complex filters
+- Tick-based caching for performance
 - Type-safe operations
 
 ### 4. Error Handling

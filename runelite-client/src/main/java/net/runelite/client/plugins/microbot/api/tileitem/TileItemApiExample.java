@@ -1,23 +1,23 @@
 package net.runelite.client.plugins.microbot.api.tileitem;
 
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.tileitem.models.Rs2TileItemModel;
 
-import javax.inject.Inject;
 import java.util.List;
 
 /**
- * Example usage of the Ground Item API
- * This demonstrates how to query ground items using the new API structure:
- * - Rs2GroundItemCache: Caches ground items for efficient querying
- * - Rs2GroundItemQueryable: Provides a fluent interface for filtering and querying ground items
+ * Example usage of the Ground Item Cache & Queryable API
+ *
+ * IMPORTANT: Always use Microbot.getRs2TileItemCache().query() to create queries.
+ * Never instantiate Rs2TileItemQueryable directly.
+ *
+ * - Rs2TileItemCache: Singleton cache accessed via Microbot.getRs2TileItemCache()
+ * - query(): Returns a fluent queryable interface for filtering ground items
  */
 public class TileItemApiExample {
 
-    @Inject
-    Rs2TileItemCache cache;
-
     public void examples() {
-        // Create a new cache instance
+        Rs2TileItemCache cache = Microbot.getRs2TileItemCache();
 
         // Example 1: Get the nearest ground item
         Rs2TileItemModel nearestItem = cache.query().nearest();
@@ -89,8 +89,8 @@ public class TileItemApiExample {
                 .where(Rs2TileItemModel::isMembers)
                 .toList();
 
-        // Example 20: Static method to get stream directly
-        Rs2TileItemModel firstItem = Rs2TileItemCache.getTileItemsStream()
+        // Example 20: Direct stream access when needed
+        Rs2TileItemModel firstItem = cache.getStream()
                 .filter(item -> item.getName() != null)
                 .findFirst()
                 .orElse(null);

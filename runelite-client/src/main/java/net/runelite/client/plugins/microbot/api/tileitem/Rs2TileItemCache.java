@@ -1,9 +1,13 @@
 package net.runelite.client.plugins.microbot.api.tileitem;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import net.runelite.api.Client;
 import net.runelite.api.Player;
 import net.runelite.api.Tile;
 import net.runelite.api.TileItem;
 import net.runelite.api.WorldView;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.tileitem.models.Rs2TileItemModel;
 
@@ -16,10 +20,20 @@ import java.util.stream.Stream;
  * Uses polling-based approach to ensure reliability, as ItemSpawned/ItemDespawned events
  * are not always triggered consistently.
  */
-public class Rs2TileItemCache {
+@Singleton
+public final class Rs2TileItemCache {
 
-    private static int lastUpdateTick = 0;
-    private static List<Rs2TileItemModel> tileItems = new ArrayList<>();
+    private final Client client;
+    private final ClientThread clientThread;
+
+    private int lastUpdateTick = 0;
+    private List<Rs2TileItemModel> tileItems = new ArrayList<>();
+
+    @Inject
+    public Rs2TileItemCache(Client client, ClientThread clientThread) {
+        this.client = client;
+        this.clientThread = clientThread;
+    }
 
     public Rs2TileItemQueryable query() {
         return new Rs2TileItemQueryable();
@@ -32,18 +46,18 @@ public class Rs2TileItemCache {
      *
      * @return Stream of Rs2TileItemModel
      */
-    public static Stream<Rs2TileItemModel> getTileItemsStream() {
-        if (lastUpdateTick >= Microbot.getClient().getTickCount()) {
+    public Stream<Rs2TileItemModel> getStream() {
+        if (lastUpdateTick >= client.getTickCount()) {
             return tileItems.stream();
         }
 
-        Player player = Microbot.getClient().getLocalPlayer();
+        Player player = client.getLocalPlayer();
         if (player == null) return Stream.empty();
 
         List<Rs2TileItemModel> result = new ArrayList<>();
 
         for (var id : Microbot.getWorldViewIds()) {
-            WorldView worldView = Microbot.getClient().getWorldView(id);
+            WorldView worldView = client.getWorldView(id);
             if (worldView == null) {
                 continue;
             }
@@ -66,7 +80,15 @@ public class Rs2TileItemCache {
         }
 
         tileItems = result;
-        lastUpdateTick = Microbot.getClient().getTickCount();
+        lastUpdateTick = client.getTickCount();
         return result.stream();
+    }
+
+    /**
+     * @deprecated Use {@link Microbot#getRs2TileItemCache()}.getStream() instead
+     */
+    @Deprecated(since = "2.1.8", forRemoval = true)
+    public static Stream<Rs2TileItemModel> getTileItemsStream() {
+        return Microbot.getRs2TileItemCache().getStream();
     }
 }

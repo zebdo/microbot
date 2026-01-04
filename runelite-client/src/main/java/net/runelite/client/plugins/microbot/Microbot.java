@@ -43,7 +43,12 @@ import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.mouse.Mouse;
 import net.runelite.client.plugins.microbot.util.mouse.VirtualMouse;
 import net.runelite.client.plugins.microbot.util.mouse.naturalmouse.NaturalMouse;
+import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
+import net.runelite.client.plugins.microbot.api.npc.Rs2NpcCache;
+import net.runelite.client.plugins.microbot.api.player.Rs2PlayerCache;
 import net.runelite.client.plugins.microbot.api.playerstate.Rs2PlayerStateCache;
+import net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemCache;
+import net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectCache;
 import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import net.runelite.client.ui.overlay.infobox.InfoBoxManager;
@@ -189,6 +194,27 @@ public class Microbot {
     @Inject
     @Getter
     private static Rs2PlayerStateCache rs2PlayerStateCache;
+
+    @Inject
+    @Getter
+    private static Rs2NpcCache rs2NpcCache;
+
+    @Inject
+    @Getter
+    private static Rs2PlayerCache rs2PlayerCache;
+
+    @Inject
+    @Getter
+    private static Rs2TileItemCache rs2TileItemCache;
+
+    @Inject
+    @Getter
+    private static Rs2TileObjectCache rs2TileObjectCache;
+
+    @Inject
+    @Getter
+    private static Rs2BoatCache rs2BoatCache;
+
     @Getter
     private static final Set<Integer> worldViewIds = ConcurrentHashMap.newKeySet();
     /**
