@@ -446,7 +446,7 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
         {
             return false;
         }
-        Microbot.getRs2TileObjectCache().query().withIds(SAIL_IDS).interact("trim");
+        Microbot.getRs2TileObjectCache().query().fromWorldView().withIds(SAIL_IDS).interact("trim");
         return sleepUntil(() -> Microbot.isGainingExp, 5000);
     }
 
