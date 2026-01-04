@@ -106,9 +106,6 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
 		SAILING_MOORING_GRIMSTONE
 	};
 
-    @Getter
-	private  Heading currentHeading = Heading.SOUTH;
-
 
     @Override
     public WorldView getWorldView()
@@ -547,6 +544,12 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
         return Heading.SOUTH.getValue();
     }
 
+    public Heading getCurrentHeading() {
+        int orientation = getOrientation();
+        int headingValue = ((orientation + 64) / 128) & 0xF;
+        return Heading.getHeading(headingValue);
+    }
+
     private  double getAngle(WorldPoint target)
     {
         WorldPoint worldPoint = getWorldLocation();
@@ -564,11 +567,10 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
 
     public  void setHeading(Heading heading)
     {
-        if (heading == currentHeading)
+        if (heading == getCurrentHeading())
         {
             return;
         }
-        currentHeading = heading;
         var menuEntry = new NewMenuEntry()
                 .option("Set-Heading")
                 .target("")
