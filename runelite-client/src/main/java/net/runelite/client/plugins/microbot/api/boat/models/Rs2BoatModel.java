@@ -1,6 +1,5 @@
 package net.runelite.client.plugins.microbot.api.boat.models;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.*;
 import net.runelite.api.coords.LocalPoint;
@@ -10,15 +9,11 @@ import net.runelite.api.gameval.VarPlayerID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.IEntity;
-import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
 import net.runelite.client.plugins.microbot.api.boat.data.BoatType;
 import net.runelite.client.plugins.microbot.api.boat.data.Heading;
 import net.runelite.client.plugins.microbot.api.boat.data.PortTaskData;
 import net.runelite.client.plugins.microbot.api.boat.data.PortTaskVarbits;
-import net.runelite.client.plugins.microbot.api.player.models.Rs2PlayerModel;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
-import net.runelite.client.plugins.microbot.shortestpath.WorldPointUtil;
-import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
@@ -27,88 +22,72 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static net.runelite.api.gameval.AnimationID.*;
 import static net.runelite.api.gameval.ObjectID1.*;
-import static net.runelite.client.plugins.microbot.util.Global.sleep;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
 @Slf4j
 public class Rs2BoatModel implements WorldEntity, IEntity {
 
-    protected final WorldEntity boat;
+    private static final int[] GANGPLANK_IDS = {
+            59831, 59832, 59833, 59834, 59835, 59836, 59837, 59838, 59839, 59840,
+            59841, 59842, 59843, 59844, 59845, 59846, 59847, 59848, 59849, 59850,
+            59851, 59852, 59853, 59854, 59855, 59856, 59857, 59858, 59859, 59860,
+            59861, 59862, 59863, 59864, 59865, 59866
+    };
 
+    private static final int[] SAIL_IDS = {
+            SAILING_BOAT_SAIL_KANDARIN_1X3_WOOD, SAILING_BOAT_SAIL_KANDARIN_1X3_OAK,
+            SAILING_BOAT_SAIL_KANDARIN_1X3_TEAK, SAILING_BOAT_SAIL_KANDARIN_1X3_MAHOGANY,
+            SAILING_BOAT_SAIL_KANDARIN_1X3_CAMPHOR, SAILING_BOAT_SAIL_KANDARIN_1X3_IRONWOOD,
+            SAILING_BOAT_SAIL_KANDARIN_1X3_ROSEWOOD, SAILING_BOAT_SAIL_KANDARIN_2X5_WOOD,
+            SAILING_BOAT_SAIL_KANDARIN_2X5_OAK, SAILING_BOAT_SAIL_KANDARIN_2X5_TEAK,
+            SAILING_BOAT_SAIL_KANDARIN_2X5_MAHOGANY, SAILING_BOAT_SAIL_KANDARIN_2X5_CAMPHOR,
+            SAILING_BOAT_SAIL_KANDARIN_2X5_IRONWOOD, SAILING_BOAT_SAIL_KANDARIN_2X5_ROSEWOOD,
+            SAILING_BOAT_SAIL_KANDARIN_3X8_WOOD, SAILING_BOAT_SAIL_KANDARIN_3X8_OAK,
+            SAILING_BOAT_SAIL_KANDARIN_3X8_TEAK, SAILING_BOAT_SAIL_KANDARIN_3X8_MAHOGANY,
+            SAILING_BOAT_SAIL_KANDARIN_3X8_CAMPHOR, SAILING_BOAT_SAIL_KANDARIN_3X8_IRONWOOD,
+            SAILING_BOAT_SAIL_KANDARIN_3X8_ROSEWOOD, SAILING_BOAT_SAILS_COLOSSAL_REGULAR
+    };
+
+    private static final int[] CARGO_HOLD_IDS = {
+            SAILING_BOAT_CARGO_HOLD_REGULAR_RAFT, SAILING_BOAT_CARGO_HOLD_REGULAR_RAFT_OPEN,
+            SAILING_BOAT_CARGO_HOLD_OAK_RAFT, SAILING_BOAT_CARGO_HOLD_OAK_RAFT_OPEN,
+            SAILING_BOAT_CARGO_HOLD_TEAK_RAFT, SAILING_BOAT_CARGO_HOLD_TEAK_RAFT_OPEN,
+            SAILING_BOAT_CARGO_HOLD_MAHOGANY_RAFT, SAILING_BOAT_CARGO_HOLD_MAHOGANY_RAFT_OPEN,
+            SAILING_BOAT_CARGO_HOLD_CAMPHOR_RAFT, SAILING_BOAT_CARGO_HOLD_CAMPHOR_RAFT_OPEN,
+            SAILING_BOAT_CARGO_HOLD_IRONWOOD_RAFT, SAILING_BOAT_CARGO_HOLD_IRONWOOD_RAFT_OPEN,
+            SAILING_BOAT_CARGO_HOLD_ROSEWOOD_RAFT, SAILING_BOAT_CARGO_HOLD_ROSEWOOD_RAFT_OPEN,
+            SAILING_BOAT_CARGO_HOLD_REGULAR_2X5, SAILING_BOAT_CARGO_HOLD_REGULAR_2X5_OPEN,
+            SAILING_BOAT_CARGO_HOLD_OAK_2X5, SAILING_BOAT_CARGO_HOLD_OAK_2X5_OPEN,
+            SAILING_BOAT_CARGO_HOLD_TEAK_2X5, SAILING_BOAT_CARGO_HOLD_TEAK_2X5_OPEN,
+            SAILING_BOAT_CARGO_HOLD_MAHOGANY_2X5, SAILING_BOAT_CARGO_HOLD_MAHOGANY_2X5_OPEN,
+            SAILING_BOAT_CARGO_HOLD_CAMPHOR_2X5, SAILING_BOAT_CARGO_HOLD_CAMPHOR_2X5_OPEN,
+            SAILING_BOAT_CARGO_HOLD_IRONWOOD_2X5, SAILING_BOAT_CARGO_HOLD_IRONWOOD_2X5_OPEN,
+            SAILING_BOAT_CARGO_HOLD_ROSEWOOD_2X5, SAILING_BOAT_CARGO_HOLD_ROSEWOOD_2X5_OPEN,
+            SAILING_BOAT_CARGO_HOLD_REGULAR_LARGE, SAILING_BOAT_CARGO_HOLD_REGULAR_LARGE_OPEN,
+            SAILING_BOAT_CARGO_HOLD_OAK_LARGE, SAILING_BOAT_CARGO_HOLD_OAK_LARGE_OPEN,
+            SAILING_BOAT_CARGO_HOLD_TEAK_LARGE, SAILING_BOAT_CARGO_HOLD_TEAK_LARGE_OPEN,
+            SAILING_BOAT_CARGO_HOLD_MAHOGANY_LARGE, SAILING_BOAT_CARGO_HOLD_MAHOGANY_LARGE_OPEN,
+            SAILING_BOAT_CARGO_HOLD_CAMPHOR_LARGE, SAILING_BOAT_CARGO_HOLD_CAMPHOR_LARGE_OPEN,
+            SAILING_BOAT_CARGO_HOLD_IRONWOOD_LARGE, SAILING_BOAT_CARGO_HOLD_IRONWOOD_LARGE_OPEN,
+            SAILING_BOAT_CARGO_HOLD_ROSEWOOD_LARGE, SAILING_BOAT_CARGO_HOLD_ROSEWOOD_LARGE_OPEN
+    };
+
+    private static final int MOVE_MODE_STANDING_STILL = 0;
+    private static final int MOVE_MODE_FORWARD = 2;
+    private static final int MOVE_MODE_BACKWARD = 3;
+
+    private static final int SAILING_BOAT_RAFT = 8110;
+    private static final int SAILING_BOAT_SKIFF = 8111;
+    private static final int SAILING_BOAT_SLOOP = 8112;
+    private static final int SAILING_BOAT_WILL_ANNE = 8113;
+
+    protected final WorldEntity boat;
 
     public Rs2BoatModel(WorldEntity boat)
     {
         this.boat = boat;
     }
-
-	// Temp fix for disembark plank ids
-	public  final int[] GANGPLANK_DISEMBARK = {
-		SAILING_GANGPLANK_PORT_SARIM,
-		SAILING_GANGPLANK_THE_PANDEMONIUM,
-		SAILING_GANGPLANK_LANDS_END,
-		SAILING_GANGPLANK_MUSA_POINT,
-		SAILING_GANGPLANK_HOSIDIUS,
-		SAILING_GANGPLANK_RIMMINGTON,
-		SAILING_GANGPLANK_CATHERBY,
-		SAILING_GANGPLANK_PORT_PISCARILIUS,
-		SAILING_GANGPLANK_BRIMHAVEN,
-		SAILING_GANGPLANK_ARDOUGNE,
-		SAILING_GANGPLANK_PORT_KHAZARD,
-		SAILING_GANGPLANK_WITCHAVEN,
-		SAILING_GANGPLANK_ENTRANA,
-		SAILING_GANGPLANK_CIVITAS_ILLA_FORTIS,
-		SAILING_GANGPLANK_CORSAIR_COVE,
-		SAILING_GANGPLANK_CAIRN_ISLE,
-		SAILING_GANGPLANK_SUNSET_COAST,
-		SAILING_GANGPLANK_THE_SUMMER_SHORE,
-		SAILING_GANGPLANK_ALDARIN,
-		SAILING_GANGPLANK_RUINS_OF_UNKAH,
-		SAILING_GANGPLANK_VOID_KNIGHTS_OUTPOST,
-		SAILING_GANGPLANK_PORT_ROBERTS,
-		SAILING_GANGPLANK_RED_ROCK,
-		SAILING_GANGPLANK_RELLEKKA,
-		SAILING_GANGPLANK_ETCETERIA,
-		SAILING_GANGPLANK_PORT_TYRAS,
-		SAILING_GANGPLANK_DEEPFIN_POINT,
-		SAILING_GANGPLANK_JATIZSO,
-		SAILING_GANGPLANK_NEITIZNOT,
-		SAILING_GANGPLANK_PRIFDDINAS,
-		SAILING_GANGPLANK_PISCATORIS,
-		SAILING_GANGPLANK_LUNAR_ISLE,
-		SAILING_MOORING_ISLE_OF_SOULS,
-		SAILING_MOORING_WATERBIRTH_ISLAND,
-		SAILING_MOORING_WEISS,
-		SAILING_MOORING_DOGNOSE_ISLAND,
-		SAILING_MOORING_REMOTE_ISLAND,
-		SAILING_MOORING_THE_LITTLE_PEARL,
-		SAILING_MOORING_THE_ONYX_CREST,
-		SAILING_MOORING_LAST_LIGHT,
-		SAILING_MOORING_CHARRED_ISLAND,
-		SAILING_MOORING_VATRACHOS_ISLAND,
-		SAILING_MOORING_ANGLERS_RETREAT,
-		SAILING_MOORING_MINOTAURS_REST,
-		SAILING_MOORING_ISLE_OF_BONES,
-		SAILING_MOORING_TEAR_OF_THE_SOUL,
-		SAILING_MOORING_WINTUMBER_ISLAND,
-		SAILING_MOORING_THE_CROWN_JEWEL,
-		SAILING_MOORING_RAINBOWS_END,
-		SAILING_MOORING_SUNBLEAK_ISLAND,
-		SAILING_MOORING_SHIMMERING_ATOLL,
-		SAILING_MOORING_LAGUNA_AURORAE,
-		SAILING_MOORING_CHINCHOMPA_ISLAND,
-		SAILING_MOORING_LLEDRITH_ISLAND,
-		SAILING_MOORING_YNYSDAIL,
-		SAILING_MOORING_BUCCANEERS_HAVEN,
-		SAILING_MOORING_DRUMSTICK_ISLE,
-		SAILING_MOORING_BRITTLE_ISLE,
-		SAILING_MOORING_GRIMSTONE
-	};
-
-    @Getter
-	private  Heading currentHeading = Heading.SOUTH;
-
 
     @Override
     public WorldView getWorldView()
@@ -214,39 +193,37 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
 
     public BoatType getBoatType()
     {
-        if (Microbot.getVarbitPlayerValue(VarPlayerID.SAILING_SIDEPANEL_BOAT_TYPE) == 8110)
+        int boatTypeValue = Microbot.getVarbitPlayerValue(VarPlayerID.SAILING_SIDEPANEL_BOAT_TYPE);
+        switch (boatTypeValue)
         {
-            return BoatType.RAFT;
-        }
-        return BoatType.RAFT;
-    }
-
-    public  int getSteeringForBoatType()
-    {
-        switch (getBoatType())
-        {
-            case RAFT:
-                return SAILING_BOAT_STEERING_KANDARIN_1X3_WOOD;
-            case SKIFF:
-                // Return SKIFF steering object ID
-            case SLOOP:
-                // Return SLOOP steering object ID
+            case SAILING_BOAT_SKIFF:
+                return BoatType.SKIFF;
+            case SAILING_BOAT_SLOOP:
+                return BoatType.SLOOP;
+            case SAILING_BOAT_WILL_ANNE:
+                return BoatType.WILL_ANNE;
+            case SAILING_BOAT_RAFT:
             default:
-                return SAILING_BOAT_STEERING_KANDARIN_1X3_WOOD;
+                return BoatType.RAFT;
         }
     }
 
-    public  boolean isOnBoat()
+    public int getSteeringForBoatType()
+    {
+        return SAILING_BOAT_STEERING_KANDARIN_1X3_WOOD;
+    }
+
+    public boolean isOnBoat()
     {
         return boat != null;
     }
 
-    public  boolean isNavigating()
+    public boolean isNavigating()
     {
         return Microbot.getVarbitValue(VarbitID.SAILING_SIDEPANEL_PLAYER_AT_HELM) == 1;
     }
 
-    public  boolean navigate()
+    public boolean navigate()
     {
         if (!isOnBoat())
         {
@@ -258,12 +235,12 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
             return true;
         }
 
-        Rs2GameObject.interact(getSteeringForBoatType(), "Navigate");
+        Microbot.getRs2TileObjectCache().query().withId(getSteeringForBoatType()).interact("Navigate");
         sleepUntil(() -> isNavigating(), 5000);
         return isNavigating();
     }
 
-    public  WorldPoint getPlayerBoatLocation()
+    public WorldPoint getPlayerBoatLocation()
     {
         if (boat == null)
         {
@@ -305,167 +282,56 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
         });
     }
 
-    public  boolean boardBoat()
+    public boolean boardBoat()
     {
         if (isOnBoat())
         {
             return true;
         }
-
-        int[] SAILING_GANGPLANKS = {
-                59831,
-                59832,
-                59833,
-                59834,
-                59835,
-                59836,
-                59837,
-                59838,
-                59839,
-                59840,
-                59841,
-                59842,
-                59843,
-                59844,
-                59845,
-                59846,
-                59847,
-                59848,
-                59849,
-                59850,
-                59851,
-                59852,
-                59853,
-                59854,
-                59855,
-                59856,
-                59857,
-                59858,
-                59859,
-                59860,
-                59861,
-                59862,
-                59863,
-                59864,
-                59865,
-                59866
-        };
-        Rs2GameObject.interact(SAILING_GANGPLANKS, "Board");
+        Microbot.getRs2TileObjectCache().query().withIds(GANGPLANK_IDS).interact("Board");
         sleepUntil(() -> isOnBoat(), 5000);
         return isOnBoat();
     }
 
-    public  boolean disembarkBoat()
+    public boolean disembarkBoat()
     {
         if (!isOnBoat())
         {
             return true;
         }
-        int[] SAILING_GANGPLANKS = {
-                59831,
-                59832,
-                59833,
-                59834,
-                59835,
-                59836,
-                59837,
-                59838,
-                59839,
-                59840,
-                59841,
-                59842,
-                59843,
-                59844,
-                59845,
-                59846,
-                59847,
-                59848,
-                59849,
-                59850,
-                59851,
-                59852,
-                59853,
-                59854,
-                59855,
-                59856,
-                59857,
-                59858,
-                59859,
-                59860,
-                59861,
-                59862,
-                59863,
-                59864,
-                59865,
-                59866
-        };
-        WorldView wv = Microbot.getClient().getTopLevelWorldView();
-
-        Scene scene = wv.getScene();
-        Tile[][][] tiles = scene.getTiles();
-
-        int z = wv.getPlane();
-
-        for (int x = 0; x < tiles[z].length; ++x)
-        {
-            for (int y = 0; y < tiles[z][x].length; ++y)
-            {
-                Tile tile = tiles[z][x][y];
-
-                if (tile == null)
-                {
-                    continue;
-                }
-
-                Player player = Microbot.getClient().getLocalPlayer();
-                if (player == null)
-                {
-                    continue;
-                }
-
-                if (tile.getGroundObject() == null)
-                {
-                    continue;
-                }
-
-                if (Arrays.stream(SAILING_GANGPLANKS).anyMatch(id -> id == tile.getGroundObject().getId()))
-                {
-                    Rs2GameObject.clickObject(tile.getGroundObject(), "Disembark");
-                    sleepUntil(() -> !isOnBoat(), 5000);
-                }
-            }
-        }
-        Rs2GameObject.interact(SAILING_GANGPLANKS, "disembark");
+        Microbot.getRs2TileObjectCache().query().withIds(GANGPLANK_IDS).interact("Disembark");
         sleepUntil(() -> !isOnBoat(), 5000);
         return !isOnBoat();
     }
 
-    public  boolean isMovingForward()
+    private int getMoveMode()
     {
-        final int movingForward = 2;
-        return Microbot.getVarbitValue(VarbitID.SAILING_SIDEPANEL_BOAT_MOVE_MODE) == movingForward;
+        return Microbot.getVarbitValue(VarbitID.SAILING_SIDEPANEL_BOAT_MOVE_MODE);
     }
 
-    public  boolean isMovingBackward()
+    public boolean isMovingForward()
     {
-        final int movingBackward = 3;
-        return Microbot.getVarbitValue(VarbitID.SAILING_SIDEPANEL_BOAT_MOVE_MODE) == movingBackward;
+        return getMoveMode() == MOVE_MODE_FORWARD;
     }
 
-    public  boolean isStandingStill()
+    public boolean isMovingBackward()
     {
-        final int standingStill = 0;
-        return Microbot.getVarbitValue(VarbitID.SAILING_SIDEPANEL_BOAT_MOVE_MODE) == standingStill;
+        return getMoveMode() == MOVE_MODE_BACKWARD;
     }
 
-    public  boolean clickSailButton()
+    public boolean isStandingStill()
+    {
+        return getMoveMode() == MOVE_MODE_STANDING_STILL;
+    }
+
+    public boolean clickSailButton()
     {
         var widget = Rs2Widget.getWidget(InterfaceID.SailingSidepanel.FACILITIES_ROWS);
         var setSailButton = widget.getDynamicChildren()[0];
         return Rs2Widget.clickWidget(setSailButton);
     }
 
-    public  void setSails()
+    public void setSails()
     {
         if (!isNavigating())
         {
@@ -479,7 +345,7 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
         }
     }
 
-    public  void unsetSails()
+    public void unsetSails()
     {
         if (!isNavigating())
         {
@@ -493,7 +359,7 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
         }
     }
 
-    public  void sailTo(WorldPoint target)
+    public void sailTo(WorldPoint target)
     {
         if (!isOnBoat())
         {
@@ -530,45 +396,29 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
         int deltaX = target.getX() - current.getX();
         int deltaY = target.getY() - current.getY();
 
-        if (deltaX == 0 && deltaY == 0) {
+        if (deltaX == 0 && deltaY == 0)
+        {
             return Heading.SOUTH.getValue();
         }
 
         double angleDegrees = Math.toDegrees(Math.atan2(deltaY, deltaX));
         double headingDegrees = (270.0 - angleDegrees + 360.0) % 360.0;
-        int headingValue = (int) ((headingDegrees + 11.25) / 22.5) & 0xF;
-
-        for (Heading heading : Heading.values()) {
-            if (heading.getValue() == headingValue) {
-                return heading.getValue();
-            }
-        }
-
-        return Heading.SOUTH.getValue();
+        return (int) ((headingDegrees + 11.25) / 22.5) & 0xF;
     }
 
-    private  double getAngle(WorldPoint target)
+    public Heading getCurrentHeading()
     {
-        WorldPoint worldPoint = getWorldLocation();
-        int playerX = worldPoint.getX();
-        int playerY = worldPoint.getY();
-
-        int targetX = target.getX();
-        int targetY = target.getY();
-
-        double dx = targetX - playerX;
-        double dy = targetY - playerY;
-
-        return Math.toDegrees(Math.atan2(dy, dx));
+        int orientation = getOrientation();
+        int headingValue = ((orientation + 64) / 128) & 0xF;
+        return Heading.getHeading(headingValue);
     }
 
-    public  void setHeading(Heading heading)
+    public void setHeading(Heading heading)
     {
-        if (heading == currentHeading)
+        if (heading == getCurrentHeading())
         {
             return;
         }
-        currentHeading = heading;
         var menuEntry = new NewMenuEntry()
                 .option("Set-Heading")
                 .target("")
@@ -592,90 +442,21 @@ public class Rs2BoatModel implements WorldEntity, IEntity {
 
     public boolean trimSails()
     {
-        sleep(2500, 3500);
         if (!isOnBoat())
         {
             return false;
         }
-        final int[] SAIL_IDS = {
-                SAILING_BOAT_SAIL_KANDARIN_1X3_WOOD,
-                SAILING_BOAT_SAIL_KANDARIN_1X3_OAK,
-                SAILING_BOAT_SAIL_KANDARIN_1X3_TEAK,
-                SAILING_BOAT_SAIL_KANDARIN_1X3_MAHOGANY,
-                SAILING_BOAT_SAIL_KANDARIN_1X3_CAMPHOR,
-                SAILING_BOAT_SAIL_KANDARIN_1X3_IRONWOOD,
-                SAILING_BOAT_SAIL_KANDARIN_1X3_ROSEWOOD,
-                SAILING_BOAT_SAIL_KANDARIN_2X5_WOOD,
-                SAILING_BOAT_SAIL_KANDARIN_2X5_OAK,
-                SAILING_BOAT_SAIL_KANDARIN_2X5_TEAK,
-                SAILING_BOAT_SAIL_KANDARIN_2X5_MAHOGANY,
-                SAILING_BOAT_SAIL_KANDARIN_2X5_CAMPHOR,
-                SAILING_BOAT_SAIL_KANDARIN_2X5_IRONWOOD,
-                SAILING_BOAT_SAIL_KANDARIN_2X5_ROSEWOOD,
-                SAILING_BOAT_SAIL_KANDARIN_3X8_WOOD,
-                SAILING_BOAT_SAIL_KANDARIN_3X8_OAK,
-                SAILING_BOAT_SAIL_KANDARIN_3X8_TEAK,
-                SAILING_BOAT_SAIL_KANDARIN_3X8_MAHOGANY,
-                SAILING_BOAT_SAIL_KANDARIN_3X8_CAMPHOR,
-                SAILING_BOAT_SAIL_KANDARIN_3X8_IRONWOOD,
-                SAILING_BOAT_SAIL_KANDARIN_3X8_ROSEWOOD,
-                SAILING_BOAT_SAILS_COLOSSAL_REGULAR
-        };
-        Rs2GameObject.interact(SAIL_IDS, "trim");
+        Microbot.getRs2TileObjectCache().query().fromWorldView().withIds(SAIL_IDS).interact("trim");
         return sleepUntil(() -> Microbot.isGainingExp, 5000);
     }
 
-    public  boolean openCargo()
+    public boolean openCargo()
     {
         if (!isOnBoat())
         {
             return false;
         }
-        final int[] SAILING_BOAT_CARGO_HOLDS = {
-                SAILING_BOAT_CARGO_HOLD_REGULAR_RAFT,
-                SAILING_BOAT_CARGO_HOLD_REGULAR_RAFT_OPEN,
-                SAILING_BOAT_CARGO_HOLD_OAK_RAFT,
-                SAILING_BOAT_CARGO_HOLD_OAK_RAFT_OPEN,
-                SAILING_BOAT_CARGO_HOLD_TEAK_RAFT,
-                SAILING_BOAT_CARGO_HOLD_TEAK_RAFT_OPEN,
-                SAILING_BOAT_CARGO_HOLD_MAHOGANY_RAFT,
-                SAILING_BOAT_CARGO_HOLD_MAHOGANY_RAFT_OPEN,
-                SAILING_BOAT_CARGO_HOLD_CAMPHOR_RAFT,
-                SAILING_BOAT_CARGO_HOLD_CAMPHOR_RAFT_OPEN,
-                SAILING_BOAT_CARGO_HOLD_IRONWOOD_RAFT,
-                SAILING_BOAT_CARGO_HOLD_IRONWOOD_RAFT_OPEN,
-                SAILING_BOAT_CARGO_HOLD_ROSEWOOD_RAFT,
-                SAILING_BOAT_CARGO_HOLD_ROSEWOOD_RAFT_OPEN,
-                SAILING_BOAT_CARGO_HOLD_REGULAR_2X5,
-                SAILING_BOAT_CARGO_HOLD_REGULAR_2X5_OPEN,
-                SAILING_BOAT_CARGO_HOLD_OAK_2X5,
-                SAILING_BOAT_CARGO_HOLD_OAK_2X5_OPEN,
-                SAILING_BOAT_CARGO_HOLD_TEAK_2X5,
-                SAILING_BOAT_CARGO_HOLD_TEAK_2X5_OPEN,
-                SAILING_BOAT_CARGO_HOLD_MAHOGANY_2X5,
-                SAILING_BOAT_CARGO_HOLD_MAHOGANY_2X5_OPEN,
-                SAILING_BOAT_CARGO_HOLD_CAMPHOR_2X5,
-                SAILING_BOAT_CARGO_HOLD_CAMPHOR_2X5_OPEN,
-                SAILING_BOAT_CARGO_HOLD_IRONWOOD_2X5,
-                SAILING_BOAT_CARGO_HOLD_IRONWOOD_2X5_OPEN,
-                SAILING_BOAT_CARGO_HOLD_ROSEWOOD_2X5,
-                SAILING_BOAT_CARGO_HOLD_ROSEWOOD_2X5_OPEN,
-                SAILING_BOAT_CARGO_HOLD_REGULAR_LARGE,
-                SAILING_BOAT_CARGO_HOLD_REGULAR_LARGE_OPEN,
-                SAILING_BOAT_CARGO_HOLD_OAK_LARGE,
-                SAILING_BOAT_CARGO_HOLD_OAK_LARGE_OPEN,
-                SAILING_BOAT_CARGO_HOLD_TEAK_LARGE,
-                SAILING_BOAT_CARGO_HOLD_TEAK_LARGE_OPEN,
-                SAILING_BOAT_CARGO_HOLD_MAHOGANY_LARGE,
-                SAILING_BOAT_CARGO_HOLD_MAHOGANY_LARGE_OPEN,
-                SAILING_BOAT_CARGO_HOLD_CAMPHOR_LARGE,
-                SAILING_BOAT_CARGO_HOLD_CAMPHOR_LARGE_OPEN,
-                SAILING_BOAT_CARGO_HOLD_IRONWOOD_LARGE,
-                SAILING_BOAT_CARGO_HOLD_IRONWOOD_LARGE_OPEN,
-                SAILING_BOAT_CARGO_HOLD_ROSEWOOD_LARGE,
-                SAILING_BOAT_CARGO_HOLD_ROSEWOOD_LARGE_OPEN
-        };
-        return Rs2GameObject.interact(SAILING_BOAT_CARGO_HOLDS, "open");
+        return Microbot.getRs2TileObjectCache().query().withIds(CARGO_HOLD_IDS).interact("open");
     }
 
     public Map<PortTaskVarbits, Integer> getPortTasksVarbits()

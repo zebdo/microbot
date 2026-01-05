@@ -1,21 +1,23 @@
 package net.runelite.client.plugins.microbot.api.npc;
 
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.npc.models.Rs2NpcModel;
 
 import java.util.List;
 
 /**
- * Example usage of the NPC API
+ * Example usage of the NPC Cache & Queryable API
  *
- * This demonstrates how to query NPCs using the new API structure:
- * - Rs2NpcCache: Caches NPCs for efficient querying
- * - Rs2NpcQueryable: Provides a fluent interface for filtering and querying NPCs
+ * IMPORTANT: Always use Microbot.getRs2NpcCache().query() to create queries.
+ * Never instantiate Rs2NpcQueryable directly.
+ *
+ * - Rs2NpcCache: Singleton cache accessed via Microbot.getRs2NpcCache()
+ * - query(): Returns a fluent queryable interface for filtering NPCs
  */
 public class NpcApiExample {
 
     public static void examples() {
-        // Create a new cache instance
-        Rs2NpcCache cache = new Rs2NpcCache();
+        Rs2NpcCache cache = Microbot.getRs2NpcCache();
 
         // Example 1: Get the nearest NPC
         Rs2NpcModel nearestNpc = cache.query().nearest();
@@ -62,8 +64,8 @@ public class NpcApiExample {
                 .where(Rs2NpcModel::isMoving)
                 .toList();
 
-        // Example 12: Static method to get stream directly
-        Rs2NpcModel firstNpc = Rs2NpcCache.getNpcsStream()
+        // Example 12: Direct stream access when needed
+        Rs2NpcModel firstNpc = cache.getStream()
                 .filter(npc -> npc.getName() != null)
                 .findFirst()
                 .orElse(null);

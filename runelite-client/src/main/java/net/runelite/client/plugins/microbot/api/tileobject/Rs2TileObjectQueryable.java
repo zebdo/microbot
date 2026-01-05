@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.api.tileobject;
 
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.AbstractEntityQueryable;
 import net.runelite.client.plugins.microbot.api.IEntityQueryable;
 import net.runelite.client.plugins.microbot.api.tileobject.models.Rs2TileObjectModel;
@@ -15,6 +16,6 @@ public final class Rs2TileObjectQueryable extends AbstractEntityQueryable<Rs2Til
 
     @Override
     protected Stream<Rs2TileObjectModel> initialSource() {
-        return Rs2TileObjectCache.getObjectsStream();
+        return Microbot.getRs2TileObjectCache().getStream();
     }
 }

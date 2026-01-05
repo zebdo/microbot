@@ -11,8 +11,31 @@
 - The queryable API lives in `.../microbot/api`; full guide: `.../microbot/api/QUERYABLE_API.md`.
 - Quick builds: `mvn -pl runelite-client -am package`; tests: `mvn -pl runelite-client test`.
 
-## Queryable API Quick Reference
-Prefer the queryable API over legacy util calls.
+## Cache & Queryable API
+
+**CRITICAL:** Never instantiate queryables directly. Always use the cache's `query()` method:
+
+```java
+// ❌ WRONG - Don't instantiate queryables directly
+Rs2NpcModel npc = new Rs2NpcQueryable().withName("Banker").nearest();
+
+// ✅ CORRECT - Use cache.query() method
+Rs2NpcModel npc = Microbot.getRs2NpcCache().query()
+    .withName("Banker")
+    .nearest();
+
+// ✅ CORRECT - Other caches
+Rs2TileObjectModel tree = Microbot.getRs2TileObjectCache().query().withName("Tree").nearest();
+Rs2TileItemModel item = Microbot.getRs2TileItemCache().query().withName("Bones").nearest();
+Rs2PlayerModel player = Microbot.getRs2PlayerCache().query().withName("PlayerName").first();
+```
+
+Available singleton caches via `Microbot.getRs2XxxCache()`:
+- `Rs2NpcCache` - NPCs
+- `Rs2PlayerCache` - Other players
+- `Rs2TileItemCache` - Ground items
+- `Rs2TileObjectCache` - Game objects
+- `Rs2BoatCache` - Sailing boats
 
 ## Interaction & Timing Tips
 - Never sleep on the RuneLite client thread; use the script thread with `sleep(...)` / `sleepUntil(...)`.

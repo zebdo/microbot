@@ -4,4 +4,5 @@ public enum BoatType {
     RAFT,
     SKIFF,
     SLOOP,
+    WILL_ANNE
 }

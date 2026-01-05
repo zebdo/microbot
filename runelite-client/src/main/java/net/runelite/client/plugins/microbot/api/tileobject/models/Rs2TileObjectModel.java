@@ -17,7 +17,6 @@ import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.awt.*;
-import java.util.Objects;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 
@@ -173,6 +172,29 @@ public class Rs2TileObjectModel implements TileObject, IEntity {
             }
             return composition;
         });
+    }
+
+    @Override
+    public boolean isReachable() {
+        WorldView objectWorldView = getWorldView();
+        if (objectWorldView == null) {
+            return false;
+        }
+
+        WorldView playerWorldView = Microbot.getClientThread().runOnClientThreadOptional(() -> {
+            Player player = Microbot.getClient().getLocalPlayer();
+            return player != null ? player.getWorldView() : null;
+        }).orElse(null);
+
+        if (playerWorldView == null) {
+            return false;
+        }
+
+        if (objectWorldView.getId() == playerWorldView.getId()) {
+            return true;
+        }
+
+        return IEntity.super.isReachable();
     }
 
     public boolean click() {

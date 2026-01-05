@@ -1,9 +1,13 @@
 package net.runelite.client.plugins.microbot.api.tileobject;
 
+import com.google.inject.Inject;
+import com.google.inject.Singleton;
+import net.runelite.api.Client;
 import net.runelite.api.GameObject;
 import net.runelite.api.Player;
 import net.runelite.api.Tile;
 import net.runelite.api.WorldView;
+import net.runelite.client.callback.ClientThread;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.tileobject.models.Rs2TileObjectModel;
 
@@ -11,10 +15,20 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class Rs2TileObjectCache {
+@Singleton
+public final class Rs2TileObjectCache {
 
-    private static int lastUpdateObjects = 0;
-    private static List<Rs2TileObjectModel> tileObjects = new ArrayList<>();
+    private final Client client;
+    private final ClientThread clientThread;
+
+    private int lastUpdateObjects = 0;
+    private List<Rs2TileObjectModel> tileObjects = new ArrayList<>();
+
+    @Inject
+    public Rs2TileObjectCache(Client client, ClientThread clientThread) {
+        this.client = client;
+        this.clientThread = clientThread;
+    }
 
     public Rs2TileObjectQueryable query() {
         return new Rs2TileObjectQueryable();
@@ -25,23 +39,22 @@ public class Rs2TileObjectCache {
      *
      * @return Stream of Rs2TileObjectModel
      */
-    public static Stream<Rs2TileObjectModel> getObjectsStream() {
-
-        if (lastUpdateObjects >= Microbot.getClient().getTickCount()) {
+    public Stream<Rs2TileObjectModel> getStream() {
+        if (lastUpdateObjects >= client.getTickCount()) {
             return tileObjects.stream();
         }
 
-        Player player = Microbot.getClient().getLocalPlayer();
+        Player player = client.getLocalPlayer();
         if (player == null) return Stream.empty();
 
         List<Rs2TileObjectModel> result = new ArrayList<>();
 
         for (var id : Microbot.getWorldViewIds()) {
-            WorldView worldView = Microbot.getClient().getWorldView(id);
+            WorldView worldView = client.getWorldView(id);
             if (worldView == null) {
                 continue;
             }
-            var tileValues = Microbot.getClient().getWorldView(worldView.getId()).getScene().getTiles()[worldView.getPlane()];
+            var tileValues = client.getWorldView(worldView.getId()).getScene().getTiles()[worldView.getPlane()];
             for (Tile[] tileValue : tileValues) {
                 for (Tile tile : tileValue) {
                     if (tile == null) continue;
@@ -67,7 +80,15 @@ public class Rs2TileObjectCache {
             }
         }
         tileObjects = result;
-        lastUpdateObjects = Microbot.getClient().getTickCount();
+        lastUpdateObjects = client.getTickCount();
         return result.stream();
+    }
+
+    /**
+     * @deprecated Use {@link Microbot#getRs2TileObjectCache()}.getStream() instead
+     */
+    @Deprecated(since = "2.1.8", forRemoval = true)
+    public static Stream<Rs2TileObjectModel> getObjectsStream() {
+        return Microbot.getRs2TileObjectCache().getStream();
     }
 }

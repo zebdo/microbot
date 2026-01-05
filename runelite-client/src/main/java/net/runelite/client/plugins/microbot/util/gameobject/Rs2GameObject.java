@@ -17,7 +17,6 @@ import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
-import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
 import net.runelite.client.plugins.microbot.util.tile.Rs2Tile;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import org.apache.commons.lang3.tuple.Triple;
@@ -38,7 +37,6 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
  */
 @Deprecated(since = "2.1.0 - Use Rs2TileObjectQueryable instead", forRemoval = true)
 public class Rs2GameObject {
-    private Rs2BoatCache boatCache = new Rs2BoatCache();
 	/**
 	 * Extracts all {@link GameObject}s located on a given {@link Tile}.
 	 *
