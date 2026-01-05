@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Microbot** is a Runeescape automation framework built on top of the RuneLite client. It provides a plugin-based architecture where automation scripts run as background threads, interacting with the game through a comprehensive utility system, event-driven cache management, and a plugin scheduler.
+**Microbot** is a RuneScape automation framework built on top of the RuneLite client. It provides a plugin-based architecture where automation scripts run as background threads, interacting with the game through a comprehensive utility system and event-driven cache management.
 
-This is a multi-module Maven project with Java 11 as the target version. The main automation code lives in `runelite-client/src/main/java/net/runelite/client/plugins/microbot/`.
+This is a multi-module Gradle project with Java 11 as the target version. The main automation code lives in `runelite-client/src/main/java/net/runelite/client/plugins/microbot/`.
 
 **Config UI note:** Microbot plugins use the custom `MicrobotConfigPanel` (under `plugins/microbot/ui`) for config rendering. Any Microbot config UI tweaks—buttons, layouts, or controls—belong there rather than RuneLite’s default config panel.
 
@@ -391,17 +391,6 @@ Rs2PlayerCache.getPlayersStream()     // deprecated → Microbot.getRs2PlayerCac
 Rs2TileItemCache.getTileItemsStream() // deprecated → Microbot.getRs2TileItemCache().getStream()
 Rs2TileObjectCache.getObjectsStream() // deprecated → Microbot.getRs2TileObjectCache().getStream()
 ```
-
----
-
-### Condition System
-
-**File References:**
-- `pluginscheduler/condition/time/TimeCondition.java`
-- `pluginscheduler/condition/location/LocationCondition.java`
-- `pluginscheduler/condition/resource/ResourceCondition.java`
-
-Conditions define when plugins should start/stop based on time, location, resources, or custom logic.
 
 ---
 
