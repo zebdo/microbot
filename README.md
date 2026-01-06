@@ -10,19 +10,31 @@
   <img src="https://img.shields.io/badge/Microbot-Website-0A66C2?style=for-the-badge&logo=google-chrome&logoColor=white">
 </a>
 
-
 # Microbot
-This is a **fun side project** inspired by **Old School RuneScape**.  
-The main motivation? To learn, share, and help other people program by building tools, scripts, and experiments around one of the most nostalgic games ever made.  
+Microbot is a fun Old School RuneScape side project built on RuneLite. It focuses on learning and sharing automation scripts, not enterprise software.
 
-Think of it less like “serious enterprise software” and more like a playground where the game is coding itself.  
+- Core plugin: `runelite-client/src/main/java/net/runelite/client/plugins/microbot`
+- Queryable API docs: `runelite-client/src/main/java/net/runelite/client/plugins/microbot/api/QUERYABLE_API.md` (quick read: `api/README.md`)
+- Helpers/utilities: `microbot/util` inside the plugin tree
 
-If you’ve ever thought *“what if I could learn programming while messing around with RuneScape?”* — you’re in the right place.  
+## Installing & Running
+- Download shaded releases from the GitHub releases page (see `docs/installation.md` for step‑by‑step and launcher notes).
+- Linux/macOS/Windows: run the shaded JAR with Java 17+ (`java -jar client-<version>-SNAPSHOT-shaded.jar`), or swap it into RuneLite/Bolt as described in `docs/installation.md`.
+- Stuck? Join the Discord below.
+
+## Building from Source
+- Quick compile: `./gradlew :runelite-client:compileJava`
+- Full build: `./gradlew build`
+- Main sources are included builds defined in `settings.gradle.kts` (cache, runelite-api, runelite-client, runelite-jshell).
+- Development setup guide: `docs/development.md`
+
+## Developing Scripts
+- New scripts belong in the microbot plugin folder: `runelite-client/src/main/java/net/runelite/client/plugins/microbot`.
+- Share reusable helpers under `microbot/util`.
+- Use the Queryable API caches via `Microbot.getRs2XxxCache().query()`; do not instantiate caches/queryables directly. See `api/QUERYABLE_API.md` and examples under `api/*/*ApiExample.java`.
+- Example scripts live in `runelite-client/src/main/java/net/runelite/client/plugins/microbot/example/`.
 
 ## Discord
-
 [![Discord Banner 1](https://discord.com/api/guilds/1087718903985221642/widget.png?style=banner1)](https://discord.gg/zaGrfqFEWE)
 
-
-If you have any questions, please join our [Discord](https://discord.gg/zaGrfqFEWE) server.
-
+If you have any questions, please join our [Discord](https://discord.gg/zaGrfqFEWE) server. 
