@@ -56,8 +56,13 @@ public class BreakHandlerV2Script extends Script {
     private boolean unexpectedLogoutDetected = false;
     private String originalWindowTitle = "";
 
+    // Persisted break keys
+    private static final String PERSISTED_BREAK_END_KEY = "persistedBreakEnd";
+    private static final String PERSISTED_BREAK_LOGOUT_KEY = "persistedBreakLogout";
+
     // Break duration in milliseconds
     private long currentBreakDuration = 0;
+    private boolean logoutBreakActive = false;
 
     // Login retry backoff constants
     private static final int MAX_LOGIN_ATTEMPTS = 10;
@@ -75,13 +80,15 @@ public class BreakHandlerV2Script extends Script {
      */
     public boolean run(BreakHandlerV2Config config) {
         this.config = config;
-        BreakHandlerV2State.setState(BreakHandlerV2State.LOGIN_REQUESTED);
+        BreakHandlerV2State.setState(BreakHandlerV2State.WAITING_FOR_BREAK);
 
         // Initialize next break time immediately to prevent null values in overlay
         scheduleNextBreak();
         log.info("[BreakHandlerV2] Initial break scheduled for {}", nextBreakTime);
         // Load active profile
         loadActiveProfile();
+        restorePersistedBreakState();
+        initializeBreakIfOutsideSchedule();
         originalWindowTitle = ClientUI.getFrame().getTitle();
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
@@ -163,8 +170,12 @@ public class BreakHandlerV2Script extends Script {
             return;
         }
 
-        // When play schedule is enabled, skip regular breaks during scheduled hours
+        // When play schedule is enabled, take a break as soon as the schedule window ends
         if (config.usePlaySchedule()) {
+            if (nextBreakTime != null && Instant.now().isAfter(nextBreakTime)) {
+                log.info("[BreakHandlerV2] Play schedule window ended, requesting break");
+                transitionToState(BreakHandlerV2State.BREAK_REQUESTED);
+            }
             return;
         }
 
@@ -205,14 +216,7 @@ public class BreakHandlerV2Script extends Script {
             transitionToState(BreakHandlerV2State.INITIATING_BREAK);
         } else {
             log.info("[BreakHandlerV2] Starting break (no logout - scripts paused)");
-            currentBreakDuration = calculateBreakDuration();
-            breakEndTime = Instant.now().plus(currentBreakDuration, ChronoUnit.MILLIS);
-
-            sendDiscordNotification("Break Started",
-                "Duration: " + (currentBreakDuration / 60000) + " minutes (no logout)");
-
-            // Pause all scripts and stay in this state until break ends
-            Microbot.pauseAllScripts.set(true);
+            beginPauseBreak();
         }
     }
 
@@ -223,8 +227,8 @@ public class BreakHandlerV2Script extends Script {
     private void handleInitiatingBreak() {
         if (!Microbot.isLoggedIn()) {
             log.info("[BreakHandlerV2] Already logged out, transitioning to LOGGED_OUT");
-            currentBreakDuration = calculateBreakDuration();
-            breakEndTime = Instant.now().plus(currentBreakDuration, ChronoUnit.MILLIS);
+            setBreakTimer(true);
+            sendBreakStartedNotification(true);
             safetyCheckAttempts = 0; // Reset counter
             transitionToState(BreakHandlerV2State.LOGGED_OUT);
             return;
@@ -268,13 +272,7 @@ public class BreakHandlerV2Script extends Script {
         }
 
         // Proceed to logout
-        currentBreakDuration = calculateBreakDuration();
-        breakEndTime = Instant.now().plus(currentBreakDuration, ChronoUnit.MILLIS);
-
-        sendDiscordNotification("Break Started",
-            "Type: Logout break\nDuration: " + (currentBreakDuration / 60000) + " minutes");
-
-        transitionToState(BreakHandlerV2State.LOGOUT_REQUESTED);
+        beginLogoutBreak();
     }
 
     /**
@@ -284,6 +282,7 @@ public class BreakHandlerV2Script extends Script {
     private void handleLogoutRequested() {
         if (!Microbot.isLoggedIn()) {
             log.info("[BreakHandlerV2] Logout successful");
+            persistBreakState(true);
             transitionToState(BreakHandlerV2State.LOGGED_OUT);
             return;
         }
@@ -305,6 +304,11 @@ public class BreakHandlerV2Script extends Script {
         if (breakEndTime == null) {
             log.error("[BreakHandlerV2] Break end time not set, resetting");
             transitionToState(BreakHandlerV2State.WAITING_FOR_BREAK);
+            return;
+        }
+
+        if (isOutsidePlaySchedule()) {
+            extendBreakUntilSchedule();
             return;
         }
 
@@ -415,6 +419,7 @@ public class BreakHandlerV2Script extends Script {
             log.info("[BreakHandlerV2] Login successful");
             sendDiscordNotification("Login Successful",
                 "Logged into world " + Microbot.getClient().getWorld());
+            clearPersistedBreakState();
             transitionToState(BreakHandlerV2State.BREAK_ENDING);
             return;
         }
@@ -463,6 +468,7 @@ public class BreakHandlerV2Script extends Script {
                 ? "Next break scheduled for " + nextBreakTime
                 : "Using play schedule: " + config.playSchedule().displayString();
         sendDiscordNotification("Break Ended", breakMessage);
+        clearPersistedBreakState();
 
         transitionToState(BreakHandlerV2State.WAITING_FOR_BREAK);
     }
@@ -528,7 +534,7 @@ public class BreakHandlerV2Script extends Script {
     private void enforceLogoutDuringActiveBreak() {
         long breakRemainingSeconds = getBreakTimeRemaining();
 
-        if (breakRemainingSeconds <= 0 || !Microbot.isLoggedIn()) {
+        if (breakRemainingSeconds <= 0 || !Microbot.isLoggedIn() || !logoutBreakActive) {
             return;
         }
 
@@ -786,6 +792,7 @@ public class BreakHandlerV2Script extends Script {
         unexpectedLogoutDetected = false;
         loginRetryCount = 0;
         safetyCheckAttempts = 0;
+        logoutBreakActive = false;
     }
 
     private void updateWindowTitle() {
@@ -795,6 +802,109 @@ public class BreakHandlerV2Script extends Script {
             ClientUI.getFrame().setTitle(originalWindowTitle + " - " + state.toString() + ": " +
                     formatDuration(Duration.ofSeconds(Math.max(0, getBreakTimeRemaining()))));
         }
+    }
+
+    /**
+     * Rehydrates a persisted break if one is saved and still active.
+     */
+    private void restorePersistedBreakState() {
+        if (Microbot.getConfigManager() == null) {
+            return;
+        }
+
+        Long savedEnd = Microbot.getConfigManager().getConfiguration(BreakHandlerV2Config.configGroup, PERSISTED_BREAK_END_KEY, Long.class);
+        Boolean savedLogout = Microbot.getConfigManager().getConfiguration(BreakHandlerV2Config.configGroup, PERSISTED_BREAK_LOGOUT_KEY, Boolean.class);
+
+        if (savedEnd == null) {
+            return;
+        }
+
+        Instant persistedEnd = Instant.ofEpochMilli(savedEnd);
+        if (persistedEnd.isAfter(Instant.now())) {
+            breakEndTime = persistedEnd;
+            logoutBreakActive = Boolean.TRUE.equals(savedLogout);
+            log.info("[BreakHandlerV2] Restored active break until {}", breakEndTime);
+
+            if (Boolean.TRUE.equals(savedLogout)) {
+                if (Microbot.isLoggedIn()) {
+                    transitionToState(BreakHandlerV2State.INITIATING_BREAK);
+                } else {
+                    transitionToState(BreakHandlerV2State.LOGGED_OUT);
+                }
+            } else {
+                Microbot.pauseAllScripts.set(true);
+                transitionToState(BreakHandlerV2State.BREAK_REQUESTED);
+            }
+        } else {
+            clearPersistedBreakState();
+        }
+    }
+
+    /**
+     * Starts a break immediately if the current time is outside the configured play schedule.
+     */
+    private void initializeBreakIfOutsideSchedule() {
+        if (!isOutsidePlaySchedule()) {
+            return;
+        }
+
+        setBreakTimer(true);
+        sendBreakStartedNotification(true);
+        log.info("[BreakHandlerV2] Outside play schedule on startup, enforcing break until {}", breakEndTime);
+
+        if (Microbot.isLoggedIn()) {
+            transitionToState(BreakHandlerV2State.INITIATING_BREAK);
+        } else {
+            transitionToState(BreakHandlerV2State.LOGGED_OUT);
+        }
+    }
+
+    private void persistBreakState(boolean logoutBreak) {
+        if (Microbot.getConfigManager() == null || breakEndTime == null) {
+            return;
+        }
+        logoutBreakActive = logoutBreak;
+        Microbot.getConfigManager().setConfiguration(BreakHandlerV2Config.configGroup, PERSISTED_BREAK_END_KEY, breakEndTime.toEpochMilli());
+        Microbot.getConfigManager().setConfiguration(BreakHandlerV2Config.configGroup, PERSISTED_BREAK_LOGOUT_KEY, logoutBreak);
+    }
+
+    private void clearPersistedBreakState() {
+        if (Microbot.getConfigManager() == null) {
+            return;
+        }
+        logoutBreakActive = false;
+        Microbot.getConfigManager().unsetConfiguration(BreakHandlerV2Config.configGroup, PERSISTED_BREAK_END_KEY);
+        Microbot.getConfigManager().unsetConfiguration(BreakHandlerV2Config.configGroup, PERSISTED_BREAK_LOGOUT_KEY);
+    }
+
+    private void extendBreakUntilSchedule() {
+        setBreakTimer(true);
+        log.info("[BreakHandlerV2] Still outside play schedule; staying logged out until {}", breakEndTime);
+    }
+
+    private void beginPauseBreak() {
+        setBreakTimer(false);
+        sendBreakStartedNotification(false);
+        Microbot.pauseAllScripts.set(true);
+    }
+
+    private void beginLogoutBreak() {
+        setBreakTimer(true);
+        sendBreakStartedNotification(true);
+        transitionToState(BreakHandlerV2State.LOGOUT_REQUESTED);
+    }
+
+    private void setBreakTimer(boolean logoutBreak) {
+        currentBreakDuration = calculateBreakDuration();
+        breakEndTime = Instant.now().plus(currentBreakDuration, ChronoUnit.MILLIS);
+        persistBreakState(logoutBreak);
+    }
+
+    private void sendBreakStartedNotification(boolean logoutBreak) {
+        String message = logoutBreak
+            ? "Type: Logout break\nDuration: " + (currentBreakDuration / 60000) + " minutes"
+            : "Duration: " + (currentBreakDuration / 60000) + " minutes (no logout)";
+        sendDiscordNotification("Break Started", message);
     }
 
     /**
