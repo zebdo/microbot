@@ -506,6 +506,8 @@ public class CollisionMapDumper {
         MELZARS_MAZE_RED_DOOR_2596(2596),
         MELZARS_MAZE_YELLOW_DOOR_2598(2598),
 
+        MINING_GUILD_DOOR_30364(30364),
+
         // MEMBERS_GATE_1727(1727), // Taverley, Falador, Brimhaven, Wilderness, Edgeville Dungeon
         // MEMBERS_GATE_1728(1728), // Taverley, Falador, Brimhaven, Wilderness, Edgeville Dungeon
 
