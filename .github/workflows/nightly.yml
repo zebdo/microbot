@@ -36,7 +36,7 @@ jobs:
       - name: Build Shaded JAR
         run: |
           COMMIT_SHA=$(git rev-parse --short HEAD)
-          ./gradlew :runelite-client:shadowJar -Pmicrobot.commit.sha=$COMMIT_SHA
+          ./gradlew :client:shadowJar -Pmicrobot.commit.sha=$COMMIT_SHA
 
       - name: Read microbot.version from Gradle
         id: version
