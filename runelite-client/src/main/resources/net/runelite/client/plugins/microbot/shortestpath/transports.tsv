@@ -4768,7 +4768,9 @@
 											
 # mining guild											
 3021 9739 0	3021 3339 0	Climb-up;Ladder;17385									
-3021 3339 0	3021 9739 0	Climb-down;Ladder;30367									
+3021 3339 0	3021 9739 0	Climb-down;Ladder;30367	60 Mining
+3046 9757 0	3046 9756 0	Open;Door;30364	60 Mining
+3046 9756 0	3046 9757 0	Open;Door;30364	60 Mining
 											
 # portal to gotr											
 3104 9573 0	3615 9470 0	Enter;Portal;43841									

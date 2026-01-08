@@ -201,7 +201,7 @@ public class WidgetOverlay extends Overlay
 	{
 		if (widget == null || widget.isHidden())
 		{
-			parentBounds.setBounds(new Rectangle());
+			parentBounds.setBounds(0, 0, 0, 0);
 			return parentBounds;
 		}
 

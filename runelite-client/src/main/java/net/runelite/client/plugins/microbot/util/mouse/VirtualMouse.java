@@ -82,7 +82,6 @@ public class VirtualMouse extends Mouse {
                 Microbot.naturalMouse.moveTo(point.getX(), point.getY());
 
                 if (Rs2UiHelper.hasActor(entry)) {
-                    log.info("Actor found: " + entry.getActor().getName());
                     Rectangle rectangle = Rs2UiHelper.getActorClickbox(entry.getActor());
                     if (!Rs2UiHelper.isMouseWithinRectangle(rectangle)) {
                         newPoint = Rs2UiHelper.getClickingPoint(rectangle, true);
@@ -91,7 +90,6 @@ public class VirtualMouse extends Mouse {
                 }
 
                 if (Rs2UiHelper.isGameObject(entry)) {
-                    log.info("Game Object found: " + entry.getGameObject().toString());
                     Rectangle rectangle = Rs2UiHelper.getObjectClickbox(entry.getGameObject());
                     if (!Rs2UiHelper.isMouseWithinRectangle(rectangle)) {
                         newPoint = Rs2UiHelper.getClickingPoint(rectangle, true);

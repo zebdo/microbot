@@ -6,9 +6,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**Microbot** is a Runeescape automation framework built on top of the RuneLite client. It provides a plugin-based architecture where automation scripts run as background threads, interacting with the game through a comprehensive utility system, event-driven cache management, and a plugin scheduler.
+**Microbot** is a RuneScape automation framework built on top of the RuneLite client. It provides a plugin-based architecture where automation scripts run as background threads, interacting with the game through a comprehensive utility system and event-driven cache management.
 
-This is a multi-module Maven project with Java 11 as the target version. The main automation code lives in `runelite-client/src/main/java/net/runelite/client/plugins/microbot/`.
+This is a multi-module Gradle project with Java 11 as the target version. The main automation code lives in `runelite-client/src/main/java/net/runelite/client/plugins/microbot/`.
 
 **Config UI note:** Microbot plugins use the custom `MicrobotConfigPanel` (under `plugins/microbot/ui`) for config rendering. Any Microbot config UI tweaks—buttons, layouts, or controls—belong there rather than RuneLite’s default config panel.
 
@@ -19,29 +19,27 @@ This is a multi-module Maven project with Java 11 as the target version. The mai
 ### Building the Project
 
 ```bash
-# Build only the client module (faster, recommended for development)
-mvn -pl runelite-client -am package
+# Compile only (fastest, recommended for development)
+./gradlew :runelite-client:compileJava
 
-# This produces: runelite-client/target/microbot-<version>.jar
+# Full build with tests
+./gradlew build
 
-# Compile only (no packaging)
-mvn -pl runelite-client -am compile
+# Build without tests (faster)
+./gradlew build -x test
 
-# Run all tests
-mvn -pl runelite-client test
-
-# Full CI build (includes glslangValidator fetch)
-./ci/build.sh
-
-# Skip tests during packaging (faster builds)
-mvn -pl runelite-client -am package -DskipTests
+# Clean build
+./gradlew clean build
 ```
 
 ### Running the Client
 
 ```bash
-# Launch locally built client
-java -jar runelite-client/target/microbot-<version>.jar
+# Run from Gradle
+./gradlew :runelite-client:run
+
+# Or launch the built jar
+java -jar runelite-client/build/libs/microbot-<version>.jar
 ```
 
 ### Working Directory
@@ -288,18 +286,37 @@ The cache system is a sophisticated event-driven data access layer that maintain
 
 **📚 Complete Documentation:** See `api/QUERYABLE_API.md` for comprehensive guide
 
-All caches are singletons accessed via `Microbot.getRs2XxxCache()`. Each cache provides a `query()` method that returns a fluent queryable interface.
+#### Singleton Architecture
 
-**IMPORTANT:** Never instantiate queryables directly (e.g., `new Rs2NpcQueryable()`). Always use the cache's `query()` method:
+All caches are `@Singleton` classes injected via Guice and exposed through `Microbot` static getters:
+
+```java
+@Singleton
+public final class Rs2NpcCache {
+    @Inject
+    public Rs2NpcCache(Client client, ClientThread clientThread) { ... }
+
+    public Stream<Rs2NpcModel> getStream() { ... }
+    public Rs2NpcQueryable query() { return new Rs2NpcQueryable(); }
+}
+```
+
+Each cache provides:
+- `getStream()` - Direct access to the underlying stream
+- `query()` - Returns a fluent queryable interface for filtering
+
+#### Usage Rules
+
+**CRITICAL:** Never instantiate caches or queryables directly. Always access via `Microbot.getRs2XxxCache()`:
 
 **Available Caches:**
-| Cache | Accessor | Query Method |
-|-------|----------|--------------|
-| NPC Cache | `Microbot.getRs2NpcCache()` | `.query()` |
-| Player Cache | `Microbot.getRs2PlayerCache()` | `.query()` |
-| Tile Item Cache | `Microbot.getRs2TileItemCache()` | `.query()` |
-| Tile Object Cache | `Microbot.getRs2TileObjectCache()` | `.query()` |
-| Boat Cache | `Microbot.getRs2BoatCache()` | `.getLocalBoat()` |
+| Cache | Accessor | Methods |
+|-------|----------|---------|
+| `Rs2NpcCache` | `Microbot.getRs2NpcCache()` | `.query()`, `.getStream()` |
+| `Rs2PlayerCache` | `Microbot.getRs2PlayerCache()` | `.query()`, `.getStream()` |
+| `Rs2TileItemCache` | `Microbot.getRs2TileItemCache()` | `.query()`, `.getStream()` |
+| `Rs2TileObjectCache` | `Microbot.getRs2TileObjectCache()` | `.query()`, `.getStream()` |
+| `Rs2BoatCache` | `Microbot.getRs2BoatCache()` | `.getLocalBoat()`, `.getBoat(player)` |
 
 **Correct Usage Pattern:**
 ```java
@@ -326,10 +343,20 @@ Rs2NpcModel firstNpc = Microbot.getRs2NpcCache().getStream()
     .filter(npc -> npc.getName() != null)
     .findFirst()
     .orElse(null);
+
+// ✅ CORRECT - Boat cache (direct methods, no queryable)
+Rs2BoatModel boat = Microbot.getRs2BoatCache().getLocalBoat();
+if (boat != null) {
+    boat.trimSails();
+    boat.navigate();
+}
 ```
 
 **❌ WRONG - Never do this:**
 ```java
+// ❌ WRONG - Don't instantiate caches
+Rs2NpcCache cache = new Rs2NpcCache();
+
 // ❌ WRONG - Don't instantiate queryables directly
 Rs2NpcModel npc = new Rs2NpcQueryable().withName("Banker").nearest();
 
@@ -337,27 +364,33 @@ Rs2NpcModel npc = new Rs2NpcQueryable().withName("Banker").nearest();
 Rs2NpcModel npc = Rs2NpcCache.getNpcsStream().findFirst().orElse(null);
 ```
 
+#### Boat World View Support
+
+When on a boat, objects exist in a different world view. Use `.fromWorldView()` to query the player's current world view:
+
+```java
+// Query objects in the boat's world view
+var sails = Microbot.getRs2TileObjectCache().query()
+    .fromWorldView()
+    .withName("Sails")
+    .nearest();
+
+// Reachability is automatically handled for same world view
+if (sails != null && sails.isReachable()) {
+    sails.click("Trim");
+}
+```
+
 ### Legacy Direct Cache Access (Deprecated)
 
 ```java
-// ⚠️ DEPRECATED - Static methods are deprecated and will be removed
+// ⚠️ DEPRECATED - Static methods are deprecated and will be removed in future versions
 // Use Microbot.getRs2XxxCache().getStream() instead
-Rs2NpcCache.getNpcsStream()      // deprecated
-Rs2PlayerCache.getPlayersStream() // deprecated
-Rs2TileItemCache.getTileItemsStream() // deprecated
-Rs2TileObjectCache.getObjectsStream() // deprecated
+Rs2NpcCache.getNpcsStream()           // deprecated → Microbot.getRs2NpcCache().getStream()
+Rs2PlayerCache.getPlayersStream()     // deprecated → Microbot.getRs2PlayerCache().getStream()
+Rs2TileItemCache.getTileItemsStream() // deprecated → Microbot.getRs2TileItemCache().getStream()
+Rs2TileObjectCache.getObjectsStream() // deprecated → Microbot.getRs2TileObjectCache().getStream()
 ```
-
----
-
-### Condition System
-
-**File References:**
-- `pluginscheduler/condition/time/TimeCondition.java`
-- `pluginscheduler/condition/location/LocationCondition.java`
-- `pluginscheduler/condition/resource/ResourceCondition.java`
-
-Conditions define when plugins should start/stop based on time, location, resources, or custom logic.
 
 ---
 

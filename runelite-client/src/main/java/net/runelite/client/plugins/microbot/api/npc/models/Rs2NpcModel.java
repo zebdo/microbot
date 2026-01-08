@@ -188,7 +188,9 @@ public class Rs2NpcModel extends Rs2ActorModel implements IEntity
             return false;
         }
 
-        Microbot.status = action + " " + npc.getName();
+        var npcName = getName();
+
+        Microbot.status = action + " " + npcName;
         try {
             if (Microbot.isCantReachTargetDetectionEnabled && Microbot.cantReachTarget) {
                 if (!hasLineOfSight()) {
@@ -200,7 +202,7 @@ public class Rs2NpcModel extends Rs2ActorModel implements IEntity
                     }
                     final WorldPoint npcWorldPoint = getWorldLocation();
                     if (npcWorldPoint == null) {
-                        log.error("Error interacting with NPC '{}' for action '{}': WorldPoint is null", getName(), action);
+                        log.error("Error interacting with NPC '{}' for action '{}': WorldPoint is null", npcName, action);
                         return false;
                     }
                     Rs2Walker.walkTo(Rs2Tile.getNearestWalkableTileWithLineOfSight(npcWorldPoint), 0);
@@ -217,13 +219,13 @@ public class Rs2NpcModel extends Rs2ActorModel implements IEntity
             final NPCComposition npcComposition = Microbot.getClientThread().runOnClientThreadOptional(
                     () -> Microbot.getClient().getNpcDefinition(getId())).orElse(null);
             if (npcComposition == null) {
-                log.error("Error interacting with NPC '{}' for action '{}': NPCComposition is null", getName(), action);
+                log.error("Error interacting with NPC '{}' for action '{}': NPCComposition is null", npcName, action);
                 return false;
             }
 
             final String[] actions = npcComposition.getActions();
             if (actions == null) {
-                log.error("Error interacting with NPC '{}' for action '{}': Actions are null", npc.getName(), action);
+                log.error("Error interacting with NPC '{}' for action '{}': Actions are null", npcName, action);
                 return false;
             }
 
@@ -242,17 +244,17 @@ public class Rs2NpcModel extends Rs2ActorModel implements IEntity
             final MenuAction menuAction = getMenuAction(index);
             if (menuAction == null) {
                 if (index == -1) {
-                    log.error("Error interacting with NPC '{}' for action '{}': Action not found. Actions={}", npc.getName(), action, actions);
+                    log.error("Error interacting with NPC '{}' for action '{}': Action not found. Actions={}", npcName, action, actions);
                 } else {
-                    log.error("Error interacting with NPC '{}' for action '{}': Invalid Index={}. Actions={}", npc.getName(), action, index, actions);
+                    log.error("Error interacting with NPC '{}' for action '{}': Invalid Index={}. Actions={}", npcName, action, index, actions);
                 }
                 return false;
             }
             action = menuAction == MenuAction.WIDGET_TARGET_ON_NPC ? "Use" : actions[index];
 
-            final LocalPoint localPoint = npc.getLocalLocation();
+            final LocalPoint localPoint = getLocalLocation();
             if (localPoint == null) {
-                log.error("Error interacting with NPC '{}' for action '{}': LocalPoint is null", npc.getName(), action);
+                log.error("Error interacting with NPC '{}' for action '{}': LocalPoint is null", npcName, action);
                 return false;
             }
             if (!Rs2Camera.isTileOnScreen(localPoint)) {
@@ -263,9 +265,9 @@ public class Rs2NpcModel extends Rs2ActorModel implements IEntity
                             .param0(0)
                             .param1(0)
                             .opcode(menuAction.getId())
-                            .identifier(npc.getIndex())
+                            .identifier(getIndex())
                             .itemId(-1)
-                            .target(npc.getName())
+                            .target(npcName)
                             .actor(npc)
                             .option(action)
                     ,
@@ -273,7 +275,7 @@ public class Rs2NpcModel extends Rs2ActorModel implements IEntity
             return true;
 
         } catch (Exception ex) {
-            log.error("Error interacting with NPC '{}' for action '{}': ", npc.getName(), action, ex);
+            log.error("Error interacting with NPC '{}' for action '{}': ", npcName, action, ex);
             return false;
         }
     }
