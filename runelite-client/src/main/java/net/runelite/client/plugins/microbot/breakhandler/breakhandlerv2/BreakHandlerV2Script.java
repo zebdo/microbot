@@ -14,6 +14,8 @@ import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.world.Rs2WorldUtil;
 import net.runelite.client.ui.ClientUI;
 import net.runelite.http.api.worlds.WorldRegion;
+import net.runelite.client.plugins.Plugin;
+import net.runelite.client.plugins.microbot.breakhandler.breakhandlerv2.MicrobotPluginChoice;
 
 import javax.inject.Singleton;
 import java.awt.Color;
@@ -55,6 +57,9 @@ public class BreakHandlerV2Script extends Script {
     private ConfigProfile activeProfile;
     private boolean unexpectedLogoutDetected = false;
     private String originalWindowTitle = "";
+    private boolean pluginStopTriggered = false;
+    private boolean pluginRestartPending = false;
+    private MicrobotPluginChoice stoppedPluginChoice = MicrobotPluginChoice.NONE;
 
     // Persisted break keys
     private static final String PERSISTED_BREAK_END_KEY = "persistedBreakEnd";
@@ -93,6 +98,10 @@ public class BreakHandlerV2Script extends Script {
         mainScheduledFuture = scheduledExecutorService.scheduleWithFixedDelay(() -> {
             try {
                 if (!super.run() && !config.autoLogin() && BreakHandlerV2State.getCurrentState() != BreakHandlerV2State.LOGIN_REQUESTED) return;
+
+                // Ensure previously stopped plugin is restarted once we're logged back in, even if the state machine
+                // hasn't reached BREAK_ENDING yet (e.g., manual login after extended sleep).
+                attemptPluginRestartIfLoggedIn();
 
 
                 // Detect unexpected logout while waiting for break
@@ -191,6 +200,8 @@ public class BreakHandlerV2Script extends Script {
      * Initiates break based on configuration
      */
     private void handleBreakRequested() {
+        stopConfiguredPluginIfNeeded();
+
         // If breakEndTime is already set, we're in a no-logout break waiting for it to end
         if (breakEndTime != null) {
             // Check if break is over
@@ -225,6 +236,8 @@ public class BreakHandlerV2Script extends Script {
      * Performs safety checks before logout with backoff retry
      */
     private void handleInitiatingBreak() {
+        stopConfiguredPluginIfNeeded();
+
         if (!Microbot.isLoggedIn()) {
             log.info("[BreakHandlerV2] Already logged out, transitioning to LOGGED_OUT");
             setBreakTimer(true);
@@ -450,6 +463,8 @@ public class BreakHandlerV2Script extends Script {
     private void handleBreakEnding() {
         log.info("[BreakHandlerV2] Break cycle complete");
 
+        startConfiguredPluginIfNeeded();
+
         // Reset variables
         breakEndTime = null;
         loginAttemptTime = null;
@@ -457,6 +472,9 @@ public class BreakHandlerV2Script extends Script {
         safetyCheckAttempts = 0;
         preBreakWorld = -1;
         unexpectedLogoutDetected = false;
+        pluginStopTriggered = false;
+        pluginRestartPending = false;
+        stoppedPluginChoice = MicrobotPluginChoice.NONE;
 
         // Unpause scripts
         Microbot.pauseAllScripts.set(false);
@@ -552,6 +570,13 @@ public class BreakHandlerV2Script extends Script {
      * Select world based on configuration and profile
      */
 	private int selectWorld() {
+		// When world switching is disabled, reuse whatever world is already selected
+		if (config.ignoreWorldSwitching()) {
+			int currentWorld = Microbot.getClient() != null ? Microbot.getClient().getWorld() : -1;
+			log.info("[BreakHandlerV2] World switching ignored; reusing current selected world {}", currentWorld);
+			return currentWorld > 0 ? currentWorld : -1; // -1 skips setWorld(), leaving client selection unchanged
+		}
+
 		boolean membersOnly = config.respectMemberStatus() &&
 		                      activeProfile != null &&
 		                      activeProfile.isMember();
@@ -713,6 +738,71 @@ public class BreakHandlerV2Script extends Script {
 	}
 
     /**
+     * Stops a configured Microbot plugin once per break cycle.
+     */
+    private void stopConfiguredPluginIfNeeded() {
+        if (pluginStopTriggered || config == null) {
+            return;
+        }
+
+        MicrobotPluginChoice choice = config.pluginToStop();
+        if (choice == null || choice == MicrobotPluginChoice.NONE) {
+            return;
+        }
+
+        Class<? extends Plugin> pluginClass = choice.getPluginClass();
+        if (pluginClass == null) {
+            log.warn("[BreakHandlerV2] Selected plugin {} has no mapped class; skipping stop request", choice);
+            pluginStopTriggered = true;
+            return;
+        }
+
+        Plugin pluginInstance = Microbot.getPlugin(pluginClass);
+        boolean wasEnabled = Microbot.isPluginEnabled(pluginInstance);
+
+        boolean stopped = Microbot.stopPlugin(pluginClass);
+        log.info("[BreakHandlerV2] Stop request for {} -> {}", choice, stopped ? "stopped/closed" : "not active");
+
+        pluginStopTriggered = true;
+        if (wasEnabled) {
+            pluginRestartPending = true;
+            stoppedPluginChoice = choice;
+        }
+    }
+
+    /**
+     * Starts previously stopped plugin after break ends.
+     */
+    private void startConfiguredPluginIfNeeded() {
+        if (!pluginRestartPending || stoppedPluginChoice == null || stoppedPluginChoice == MicrobotPluginChoice.NONE) {
+            return;
+        }
+
+        Class<? extends Plugin> pluginClass = stoppedPluginChoice.getPluginClass();
+        if (pluginClass != null) {
+            boolean started = Microbot.startPlugin(pluginClass);
+            log.info("[BreakHandlerV2] Restart request for {} -> {}", stoppedPluginChoice, started ? "started" : "not started");
+        }
+
+        pluginRestartPending = false;
+        stoppedPluginChoice = MicrobotPluginChoice.NONE;
+    }
+
+    /**
+     * Safely attempts to restart the configured plugin when the client is logged in.
+     */
+    private void attemptPluginRestartIfLoggedIn() {
+        if (!pluginRestartPending || !Microbot.isLoggedIn()) {
+            return;
+        }
+        // Don't restart while a break (or its login flow) is still active
+        if (BreakHandlerV2State.isBreakActive()) {
+            return;
+        }
+        startConfiguredPluginIfNeeded();
+    }
+
+    /**
      * Transition to a new state
      */
     private void transitionToState(BreakHandlerV2State newState) {
@@ -793,6 +883,9 @@ public class BreakHandlerV2Script extends Script {
         loginRetryCount = 0;
         safetyCheckAttempts = 0;
         logoutBreakActive = false;
+        pluginStopTriggered = false;
+        pluginRestartPending = false;
+        stoppedPluginChoice = MicrobotPluginChoice.NONE;
     }
 
     private void updateWindowTitle() {
@@ -824,6 +917,7 @@ public class BreakHandlerV2Script extends Script {
             breakEndTime = persistedEnd;
             logoutBreakActive = Boolean.TRUE.equals(savedLogout);
             log.info("[BreakHandlerV2] Restored active break until {}", breakEndTime);
+            stopConfiguredPluginIfNeeded();
 
             if (Boolean.TRUE.equals(savedLogout)) {
                 if (Microbot.isLoggedIn()) {
@@ -849,6 +943,7 @@ public class BreakHandlerV2Script extends Script {
         }
 
         setBreakTimer(true);
+        stopConfiguredPluginIfNeeded();
         sendBreakStartedNotification(true);
         log.info("[BreakHandlerV2] Outside play schedule on startup, enforcing break until {}", breakEndTime);
 
