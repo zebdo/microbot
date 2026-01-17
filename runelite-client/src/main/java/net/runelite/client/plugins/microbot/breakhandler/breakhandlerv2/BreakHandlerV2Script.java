@@ -795,6 +795,10 @@ public class BreakHandlerV2Script extends Script {
         if (!pluginRestartPending || !Microbot.isLoggedIn()) {
             return;
         }
+        // Don't restart while a break (or its login flow) is still active
+        if (BreakHandlerV2State.isBreakActive()) {
+            return;
+        }
         startConfiguredPluginIfNeeded();
     }
 
