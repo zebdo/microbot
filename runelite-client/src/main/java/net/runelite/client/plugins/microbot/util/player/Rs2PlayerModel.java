@@ -40,12 +40,6 @@ public class Rs2PlayerModel extends ActorModel implements Player {
 	}
 
 	@Override
-	public Polygon[] getPolygons()
-	{
-		return player.getPolygons();
-	}
-
-	@Override
 	public int getTeam()
 	{
 		return player.getTeam();
