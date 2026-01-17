@@ -27,6 +27,7 @@ package net.runelite.api;
 import com.jagex.oldscape.pub.OAuthApi;
 import java.awt.Canvas;
 import java.awt.Dimension;
+import java.io.FileDescriptor;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -2436,4 +2437,7 @@ public interface Client extends OAuthApi, GameEngine
 	 */
 	@Nonnull
 	WorldView findWorldViewFromWorldPoint(WorldPoint point);
+
+	@Nullable
+	FileDescriptor getSocketFD();
 }
