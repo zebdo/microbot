@@ -99,6 +99,10 @@ public class BreakHandlerV2Script extends Script {
             try {
                 if (!super.run() && !config.autoLogin() && BreakHandlerV2State.getCurrentState() != BreakHandlerV2State.LOGIN_REQUESTED) return;
 
+                // Ensure previously stopped plugin is restarted once we're logged back in, even if the state machine
+                // hasn't reached BREAK_ENDING yet (e.g., manual login after extended sleep).
+                attemptPluginRestartIfLoggedIn();
+
 
                 // Detect unexpected logout while waiting for break
                 detectUnexpectedLogout();
@@ -782,6 +786,16 @@ public class BreakHandlerV2Script extends Script {
 
         pluginRestartPending = false;
         stoppedPluginChoice = MicrobotPluginChoice.NONE;
+    }
+
+    /**
+     * Safely attempts to restart the configured plugin when the client is logged in.
+     */
+    private void attemptPluginRestartIfLoggedIn() {
+        if (!pluginRestartPending || !Microbot.isLoggedIn()) {
+            return;
+        }
+        startConfiguredPluginIfNeeded();
     }
 
     /**
