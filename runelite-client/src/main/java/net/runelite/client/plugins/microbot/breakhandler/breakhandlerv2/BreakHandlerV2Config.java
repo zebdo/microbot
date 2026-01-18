@@ -4,7 +4,7 @@ import net.runelite.client.config.*;
 import net.runelite.client.plugins.microbot.util.antiban.enums.PlaySchedule;
 import net.runelite.client.plugins.microbot.util.world.RegionPreference;
 import net.runelite.client.plugins.microbot.util.world.WorldSelectionMode;
-import net.runelite.client.plugins.microbot.breakhandler.breakhandlerv2.MicrobotPluginChoice;
+import net.runelite.client.plugins.microbot.breakhandler.breakhandlerv2.PluginStopOption;
 
 @ConfigGroup(BreakHandlerV2Config.configGroup)
 public interface BreakHandlerV2Config extends Config {
@@ -99,12 +99,36 @@ public interface BreakHandlerV2Config extends Config {
     @ConfigItem(
         keyName = "pluginToStop",
         name = "Stop Plugin On Break",
-        description = "Select a Microbot plugin to stop automatically when a break begins.",
+        description = "Select a Microbot or Plugin Hub plugin to stop automatically when a break begins.",
         position = 2,
         section = breakBehaviorOptions
     )
-    default MicrobotPluginChoice pluginToStop() {
-        return MicrobotPluginChoice.NONE;
+    default String pluginToStop() {
+        return PluginStopOption.NONE_VALUE;
+    }
+
+    @ConfigItem(
+        keyName = "stopPluginLeadSeconds",
+        name = "Stop Lead Time (sec)",
+        description = "Stop the selected plugin this many seconds before a break starts.",
+        position = 3,
+        section = breakBehaviorOptions
+    )
+    @Range(min = 0, max = 300)
+    default int stopPluginLeadSeconds() {
+        return 0;
+    }
+
+    @ConfigItem(
+        keyName = "startPluginDelaySeconds",
+        name = "Restart Delay (sec)",
+        description = "Wait this many seconds after a break ends before restarting the stopped plugin.",
+        position = 4,
+        section = breakBehaviorOptions
+    )
+    @Range(min = 0, max = 300)
+    default int startPluginDelaySeconds() {
+        return 0;
     }
 
     // ========== LOGIN & WORLD SECTION ==========
