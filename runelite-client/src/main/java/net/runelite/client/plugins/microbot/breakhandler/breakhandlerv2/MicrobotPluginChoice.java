@@ -33,6 +33,37 @@ public enum MicrobotPluginChoice {
         this.pluginClass = pluginClass;
     }
 
+    /**
+     * Returns the fully qualified class name for this choice, or {@code null} for NONE.
+     */
+    public String getClassName() {
+        return pluginClass != null ? pluginClass.getName() : null;
+    }
+
+    /**
+     * Attempts to resolve a stored configuration value (enum name, display name, or class name)
+     * back to a {@link MicrobotPluginChoice}.
+     *
+     * @param value persisted config value
+     * @return optional matching choice
+     */
+    public static java.util.Optional<MicrobotPluginChoice> fromConfigValue(String value) {
+        if (value == null) {
+            return java.util.Optional.empty();
+        }
+
+        for (MicrobotPluginChoice choice : values()) {
+            if (choice.name().equalsIgnoreCase(value)
+                || choice.displayName.equalsIgnoreCase(value)
+                || (choice.pluginClass != null && choice.pluginClass.getName().equalsIgnoreCase(value))
+                || (choice.pluginClass != null && choice.pluginClass.getSimpleName().equalsIgnoreCase(value))) {
+                return java.util.Optional.of(choice);
+            }
+        }
+
+        return java.util.Optional.empty();
+    }
+
     @Override
     public String toString() {
         return displayName;
