@@ -466,9 +466,10 @@ public class BreakHandlerScript extends Script {
      * In micro break state (no logout), waiting for duration to complete.
      */
     private void handleLoginBreakActiveState() {
-        // Check if micro break should end
-        if ((breakDuration <= 0 && !Rs2AntibanSettings.microBreakActive) || config.breakEndNow()) {
-            log.debug("Micro break completed");
+        // Check if in-game break (micro break or no-logout break) should end
+        if (breakDuration <= 0 || config.breakEndNow()) {
+            String breakType = Rs2AntibanSettings.microBreakActive ? "Micro break" : "In-game break";
+            log.debug("{} completed", breakType);
             transitionToState(BreakHandlerState.BREAK_ENDING);
         }
     }
