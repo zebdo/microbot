@@ -2348,7 +2348,7 @@ public class Rs2Bank {
 
     public static boolean setWithdrawAs(boolean noted) {
         if (isWithdrawAs(noted)) return true;
-        int target = noted ? InterfaceID.Bankmain.NOTE : InterfaceID.Bankmain.ITEM;
+        int target = noted ? InterfaceID.Bankmain.NOTE : InterfaceID.Bankmain.QUANTITY1_TEXT;
         boolean clicked = Rs2Widget.clickWidget(target);
         if (!clicked) return false;
         return sleepUntil(() -> isWithdrawAs(noted));
