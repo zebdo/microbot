@@ -11,6 +11,7 @@ public enum SpecialAttackWeaponEnum {
     ABYSSAL_TENTACLE("abyssal tentacle", 500, false),
     ABYSSAL_WHIP("abyssal whip", 500, false),
     ANCIENT_MACE("ancient mace", 1000, true),
+    ARKAN_BLADE("arkan blade",300,false),
     ARMADYL_CROSSBOW("armadyl crossbow", 400, false),
     ARMADYL_GODSWORD("armadyl godsword", 500, true),
     BANDOS_GODSWORD("bandos godsword", 500, true),
