@@ -11,6 +11,7 @@ import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 @Getter
@@ -128,7 +129,9 @@ public enum BankLocation {
                 boolean isWearingCraftingGuild = (Rs2Equipment.isWearing("brown apron") || Rs2Equipment.isWearing("golden apron")) ||
                         (Rs2Equipment.isWearing("max cape") || Rs2Equipment.isWearing("max hood")) ||
                         (Rs2Equipment.isWearing("crafting cape") || Rs2Equipment.isWearing("crafting hood"));
-                return isWearingCraftingGuild && (hasMaxedCrafting || hasFaladorHardDiary);
+                // Also check if crafting cape is in inventory (can equip it to teleport and enter)
+                boolean hasCraftingCapeInInventory = Rs2Inventory.contains("crafting cape") || Rs2Inventory.contains("crafting cape(t)");
+                return (isWearingCraftingGuild || hasCraftingCapeInInventory) && (hasMaxedCrafting || hasFaladorHardDiary);
             case LUMBRIDGE_BASEMENT:
                 return Rs2Player.getQuestState(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST) == QuestState.FINISHED;
             case COOKS_GUILD:
