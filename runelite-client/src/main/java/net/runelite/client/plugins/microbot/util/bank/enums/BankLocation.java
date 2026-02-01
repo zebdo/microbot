@@ -273,7 +273,7 @@ public enum BankLocation {
                 // Requires sailing level 67 + Bank to be made
                 return Rs2Player.getSkillRequirement(Skill.SAILING, 67, false);
             case DEEPFIN_MINE_EAST:
-                // Requires sailing level 68 + Bank to be made
+                // Requires sailing level 67 + Bank to be made
                 return Rs2Player.getSkillRequirement(Skill.SAILING, 67, false);
             default:
                 return true;
