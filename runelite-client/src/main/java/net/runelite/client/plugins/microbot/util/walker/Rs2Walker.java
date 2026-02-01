@@ -1605,9 +1605,8 @@ public class Rs2Walker {
                     }
 
                     if (object != null) {
-                        System.out.println("Object Type: " + Rs2GameObject.getObjectType(object));
-
-                        if (!(object instanceof GroundObject)) {
+                        // Skip reachability check for GroundObjects and Magic Mushtrees
+                        if (!(object instanceof GroundObject) && !MagicMushtree.isMagicMushtree(transport.getObjectId())) {
                             if (!Rs2Tile.isTileReachable(transport.getOrigin())) {
                                 break;
                             }
@@ -1810,6 +1809,11 @@ public class Rs2Walker {
             Rs2Dialogue.clickOption(transport.getDisplayInfo(), true);
             sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo2D(transport.getDestination()) < OFFSET, 10000);
             return true;
+        }
+
+        // Handle Magic Mushtree (Fossil Island Mycelium Transportation System)
+        if (MagicMushtree.isMagicMushtree(tileObject)) {
+            return MagicMushtree.handleTransport(transport);
         }
         return false;
     }

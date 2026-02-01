@@ -35,7 +35,7 @@ public enum MountedDigsite implements PohTeleport {
             return false;
         }
         if (pendant.getId() == objectId) {
-            //The correct id for the object means it has the right left click option, so we can just use that.
+            // The correct id for the object means it has the right left click option, so we can just use that.
             return Rs2GameObject.interact(pendant, destinationName);
         }
         Widget widget = getWidget();
@@ -47,6 +47,10 @@ public enum MountedDigsite implements PohTeleport {
             }
         }
         return Rs2Widget.clickWidget(destinationName);
+    }
+
+    private static Widget getWidget() {
+        return Rs2Widget.getWidget(InterfaceID.MENU, 3);
     }
 
     public static final Integer[] IDS = {ObjectID.POH_AMULET_DIGSITE, ObjectID.POH_AMULET_DIG_LITHKREN, ObjectID.POH_AMULET_DIG_FOSSIL, ObjectID.POH_AMULET_DIG_DIGSITE};
@@ -61,10 +65,6 @@ public enum MountedDigsite implements PohTeleport {
             if (objId == go.getId()) return true;
         }
         return false;
-    }
-
-    private static Widget getWidget() {
-        return Rs2Widget.getWidget(InterfaceID.MENU, 3);
     }
 
     @Override
