@@ -1492,7 +1492,24 @@
 3666 3809 0	3685 3756 0	Jump on;Rubber cap mushroom;30606									
 3663 3808 0	3685 3756 0	Jump on;Rubber cap mushroom;30606									
 3664 3808 0	3685 3756 0	Jump on;Rubber cap mushroom;30606									
-3665 3808 0	3685 3756 0	Jump on;Rubber cap mushroom;30606									
+3665 3808 0	3685 3756 0	Jump on;Rubber cap mushroom;30606
+# Magic Mushtree - Fossil Island Mycelium Transportation System
+# House on the Hill mushtree (ID 30920)
+3764 3880 1	3760 3758 0	Use;Magic Mushtree;30920
+3764 3880 1	3676 3755 0	Use;Magic Mushtree;30920
+3764 3880 1	3676 3871 0	Use;Magic Mushtree;30920
+# Verdant Valley mushtree (ID 30924)
+3758 3756 0	3764 3879 1	Use;Magic Mushtree;30924
+3758 3756 0	3676 3755 0	Use;Magic Mushtree;30924
+3758 3756 0	3676 3871 0	Use;Magic Mushtree;30924
+# Sticky Swamp mushtree (ID 30924)
+3677 3755 0	3764 3879 1	Use;Magic Mushtree;30924
+3677 3755 0	3760 3758 0	Use;Magic Mushtree;30924
+3677 3755 0	3676 3871 0	Use;Magic Mushtree;30924
+# Mushroom Meadow mushtree (ID 30924)
+3674 3871 0	3764 3879 1	Use;Magic Mushtree;30924
+3674 3871 0	3760 3758 0	Use;Magic Mushtree;30924
+3674 3871 0	3676 3755 0	Use;Magic Mushtree;30924
 3768 3868 1	3768 3868 0	Climb-down;Trapdoor;30725									
 3768 3868 0	3768 3868 1	Climb-up;Ladder;30727									
 3767 3868 1	3768 3868 0	Climb-down;Trapdoor;30725									

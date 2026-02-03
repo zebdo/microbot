@@ -11,6 +11,7 @@ import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
+import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 @Getter
@@ -38,6 +39,9 @@ public enum BankLocation {
     CRAFTING_GUILD(new WorldPoint(2936, 3281, 0), true),
 	DARKFROST(new WorldPoint(1527, 3292, 0), true),
     DARKMEYER(new WorldPoint(3604, 3366, 0), true),
+    DEEPFIN_POINT(new WorldPoint(1935, 2755,0), true),
+    DEEPFIN_MINE_MID(new WorldPoint(2011, 9186,0), true),
+    DEEPFIN_MINE_EAST(new WorldPoint(2094, 9197,0), true),
     DORGESH_KAAN_BANK(new WorldPoint(2702, 5350, 0), true),
     DRAYNOR_VILLAGE(new WorldPoint(3093, 3245, 0), false),
     DUEL_ARENA(new WorldPoint(3381, 3268, 0), true),
@@ -98,7 +102,8 @@ public enum BankLocation {
     SHILO_VILLAGE(new WorldPoint(2852, 2954, 0), true),
     SOPHANEM(new WorldPoint(2799, 5169, 0), true),
     SULPHUR_MINE(new WorldPoint(1453, 3858, 0), true),
-	TAL_TEKLAN(new WorldPoint(1243, 3121, 0), true),
+	SUNBLEAK_ISLAND(new WorldPoint(2195, 2314, 0), true),
+    TAL_TEKLAN(new WorldPoint(1243, 3121, 0), true),
     TREE_GNOME_STRONGHOLD_NIEVE(new WorldPoint(2445, 3424, 1), true),
     TZHAAR(new WorldPoint(2446, 5178, 0), true),
     VARLAMORE_EAST(new WorldPoint(1780, 3094, 0), true),
@@ -128,7 +133,9 @@ public enum BankLocation {
                 boolean isWearingCraftingGuild = (Rs2Equipment.isWearing("brown apron") || Rs2Equipment.isWearing("golden apron")) ||
                         (Rs2Equipment.isWearing("max cape") || Rs2Equipment.isWearing("max hood")) ||
                         (Rs2Equipment.isWearing("crafting cape") || Rs2Equipment.isWearing("crafting hood"));
-                return isWearingCraftingGuild && (hasMaxedCrafting || hasFaladorHardDiary);
+                // Also check if crafting cape is in inventory (can equip it to teleport and enter)
+                boolean hasCraftingCapeInInventory = Rs2Inventory.contains("crafting cape") || Rs2Inventory.contains("crafting cape(t)");
+                return (isWearingCraftingGuild || hasCraftingCapeInInventory) && (hasMaxedCrafting || hasFaladorHardDiary);
             case LUMBRIDGE_BASEMENT:
                 return Rs2Player.getQuestState(Quest.RECIPE_FOR_DISASTER__ANOTHER_COOKS_QUEST) == QuestState.FINISHED;
             case COOKS_GUILD:
@@ -259,6 +266,18 @@ public enum BankLocation {
             case PRIFDDINAS_SOUTH:
                 // Requires Song of the elves to be completed
                 return Rs2Player.getQuestState(Quest.SONG_OF_THE_ELVES) == QuestState.FINISHED;
+            case SUNBLEAK_ISLAND:
+                // Requires sailing level 72
+                return Rs2Player.getSkillRequirement(Skill.SAILING, 72, false);
+            case DEEPFIN_POINT:
+                // Requires sailing level 67
+                return Rs2Player.getSkillRequirement(Skill.SAILING, 67, false);
+            case DEEPFIN_MINE_MID:
+                // Requires sailing level 67 + Bank to be made
+                return Rs2Player.getSkillRequirement(Skill.SAILING, 67, false);
+            case DEEPFIN_MINE_EAST:
+                // Requires sailing level 67 + Bank to be made
+                return Rs2Player.getSkillRequirement(Skill.SAILING, 67, false);
             default:
                 return true;
         }
