@@ -78,6 +78,11 @@ public class Rs2TileItemModel implements TileItem, IEntity {
     }
 
     @Override
+    public int getRenderMode() {
+        return tileItem.getRenderMode();
+    }
+
+    @Override
     public Node getNext() {
         return tileItem.getNext();
     }

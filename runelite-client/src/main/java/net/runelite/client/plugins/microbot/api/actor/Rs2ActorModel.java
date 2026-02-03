@@ -403,6 +403,11 @@ public class Rs2ActorModel implements Actor
     }
 
     @Override
+    public int getRenderMode() {
+        return actor.getRenderMode();
+    }
+
+    @Override
     public Model getModel()
     {
         return actor.getModel();
