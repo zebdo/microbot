@@ -14,6 +14,10 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Orchestrates detection and execution of blocking events that must run before scripts continue.
+ * Maintains a prioritized list, periodically validates them with backoff, and runs at most one at a time on a dedicated executor.
+ */
 @Slf4j
 public class BlockingEventManager
 {
@@ -150,6 +154,10 @@ public class BlockingEventManager
     /**
      * If an event is already running, returns true immediately.
      * Otherwise poll the queue; if we get an event, mark running and execute.
+     */
+    /**
+     * Returns {@code true} if a blocking event is currently running or one was dequeued and scheduled.
+     * Called from {@link net.runelite.client.plugins.microbot.Script#run()} to pause script loops until blockers finish.
      */
     public boolean shouldBlockAndProcess()
     {

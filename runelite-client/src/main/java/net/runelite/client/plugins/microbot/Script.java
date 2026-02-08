@@ -16,21 +16,28 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+/**
+ * Base class for Microbot automation scripts.
+ * Provides scheduling helpers, guards against client-thread misuse, and common shutdown/reset logic.
+ */
 @Slf4j
 public abstract class Script extends Global implements IScript {
-	protected ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10,
-		new ThreadFactory() {
-			private final AtomicInteger threadNumber = new AtomicInteger(1);
-			@Override
-			public Thread newThread(@NotNull Runnable r) {
-				Thread t = new Thread(r);
-				t.setName(Script.this.getClass().getSimpleName() + "-" + threadNumber.getAndIncrement());
-				return t;
-			}
-		});
+    protected ScheduledExecutorService scheduledExecutorService = Executors.newScheduledThreadPool(10,
+        new ThreadFactory() {
+            private final AtomicInteger threadNumber = new AtomicInteger(1);
+            @Override
+            public Thread newThread(@NotNull Runnable r) {
+                Thread t = new Thread(r);
+                t.setName(Script.this.getClass().getSimpleName() + "-" + threadNumber.getAndIncrement());
+                return t;
+            }
+        });
     protected ScheduledFuture<?> scheduledFuture;
     protected ScheduledFuture<?> mainScheduledFuture;
 
+    /**
+     * Indicates whether the main scheduled script loop is still active.
+     */
     public boolean isRunning() {
         return mainScheduledFuture != null && !mainScheduledFuture.isDone();
     }
@@ -38,6 +45,10 @@ public abstract class Script extends Global implements IScript {
     @Getter
     protected static WorldPoint initialPlayerLocation;
 
+    /**
+     * Cancel scheduled tasks, clear shared state, and reset helpers.
+     * Safe to call multiple times; no-ops if already shut down.
+     */
     public void shutdown() {
         if (mainScheduledFuture != null && !mainScheduledFuture.isDone()) {
             mainScheduledFuture.cancel(true);
@@ -55,6 +66,11 @@ public abstract class Script extends Global implements IScript {
         }
     }
 
+    /**
+     * Default pre-loop guard invoked by script schedulers.
+     * Returns {@code false} to pause a loop when a blocking event is executing, scripts are paused,
+     * tutorial island is incomplete, or the current thread is interrupted.
+     */
     public boolean run() {
         //Avoid executing any blocking events if the player hasn't finished Tutorial Island
         if (Microbot.isLoggedIn() && !Rs2Player.hasCompletedTutorialIsland())

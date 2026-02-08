@@ -1,0 +1,7 @@
+- [Architecture](ARCHITECTURE.md)
+- [Decision Records](decisions/adr-0001-record-architecture-decisions.md)
+- [Development Setup](development.md)
+- [Installation](installation.md)
+- [API Overview](api/README.md)
+- [Queryable API Guide](../runelite-client/src/main/java/net/runelite/client/plugins/microbot/api/QUERYABLE_API.md)
+- [Gallery](gallery.md)

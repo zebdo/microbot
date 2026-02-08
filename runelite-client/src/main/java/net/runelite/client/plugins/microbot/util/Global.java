@@ -59,10 +59,18 @@ public class Global {
         return sleepUntilNotNull(method, timeoutMillis, 100);
     }
 
+    /**
+     * Polls until the supplied condition becomes true or timeout elapses.
+     * Must not be invoked on the client thread; callers should run on script/executor threads.
+     */
     public static boolean sleepUntil(BooleanSupplier awaitedCondition) {
         return sleepUntil(awaitedCondition, 5000);
     }
 
+    /**
+     * Polls until the supplied condition becomes true or the given duration elapses.
+     * No-op on the client thread to avoid blocking RuneLite.
+     */
     public static boolean sleepUntil(BooleanSupplier awaitedCondition, int time) {
         if (Microbot.getClient().isClientThread()) return false;
         boolean done = false;
@@ -147,6 +155,9 @@ public class Global {
         return false;
     }
 
+    /**
+     * Polls a condition on the client thread until true or timeout, without blocking the client thread itself.
+     */
     public static void sleepUntilOnClientThread(BooleanSupplier awaitedCondition) {
         sleepUntilOnClientThread(awaitedCondition, Rs2Random.between(2500, 5000));
     }
