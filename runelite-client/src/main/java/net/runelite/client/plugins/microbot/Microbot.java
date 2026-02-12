@@ -293,6 +293,10 @@ public class Microbot {
         return idx == GameState.HOPPING;
     }
 
+    /**
+     * Attempts to hop to the specified world, handling confirmation dialogs and guarding against unsafe states
+     * (interacting player, existing hop, invalid world). Returns {@code true} if a hop is initiated.
+     */
     public static boolean hopToWorld(int worldNumber) {
         if (!Microbot.isLoggedIn()) {
             return false;
