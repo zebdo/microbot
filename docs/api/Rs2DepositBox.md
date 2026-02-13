@@ -9,7 +9,7 @@ The `Rs2DepositBox` class provides utility methods for interacting with deposit 
 
 ### `bankItemsAndWalkBackToOriginalPosition`
 - **Signature**: `public static boolean bankItemsAndWalkBackToOriginalPosition(List<String> itemNames, WorldPoint initialPlayerLocation)`
-- **Description**: Banks items if the inventory is full and returns to the initial player location.
+- **Description**: Banks items if the inventory does not have enough empty slots. Will walk back to the initial player location.
 
 ### `bankItemsAndWalkBackToOriginalPosition`
 - **Signature**: `public static boolean bankItemsAndWalkBackToOriginalPosition(List<String> itemNames, WorldPoint initialPlayerLocation, int emptySlotCount)`
