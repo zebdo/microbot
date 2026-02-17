@@ -533,6 +533,7 @@ public class ClientUI
 					.icon(consoleIconClosed)
 					.tooltip("Show console")
 					.onClick(this::toggleConsole)
+					.popup(Map.of("Clear", () -> consolePanel.clear()))
 					.build(), false);
 			updateConsoleToggleButton();
 
