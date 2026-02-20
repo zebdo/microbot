@@ -67,6 +67,18 @@ final class LogConsolePanel extends JPanel
 		}
 	}
 
+	void clear()
+	{
+		if (SwingUtilities.isEventDispatchThread())
+		{
+			textArea.setText("");
+		}
+		else
+		{
+			SwingUtilities.invokeLater(() -> textArea.setText(""));
+		}
+	}
+
 	OutputStream createOutputStream()
 	{
 		return new ConsoleOutputStream();
