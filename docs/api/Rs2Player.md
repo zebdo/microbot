@@ -60,6 +60,10 @@ The `Rs2Player` class is responsible for managing the player's state and interac
 ### `isInMulti`
 - **Returns**: `boolean` - True if the player is in a multi-combat area.
 
+### `isInPoh`
+- **Returns**: `boolean` - True if the player is currently inside a Player Owned House (POH).
+- **Description**: Detects POH by checking that the current scene is an instanced region and that the `POH_HOUSE_LOCATION` varbit is non-zero. Using both conditions distinguishes the POH from other instanced regions such as the Gauntlet or Hallowed Sepulchre.
+
 ### `logoutIfPlayerDetected`
 - **Parameters**:
   - `amountOfPlayers`: `int` - Amount of players to detect before logging out.

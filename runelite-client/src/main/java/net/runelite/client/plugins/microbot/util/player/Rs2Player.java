@@ -1115,6 +1115,24 @@ public class Rs2Player {
                 == 1;
     }
 
+    /**
+     * Checks if the player is currently inside their Player Owned House (POH).
+     *
+     * <p>This is detected by verifying two conditions:</p>
+     * <ul>
+     *     <li>The current scene is an instanced region (all POHs are instanced).</li>
+     *     <li>The {@link VarbitID#POH_HOUSE_LOCATION} varbit is non-zero, which is
+     *         set whenever the player is inside a POH. This distinguishes the POH from
+     *         other instanced regions such as the Gauntlet or Hallowed Sepulchre.</li>
+     * </ul>
+     *
+     * @return {@code true} if the player is inside a POH, {@code false} otherwise.
+     */
+    public static boolean isInPoh() {
+        return Microbot.getClient().getTopLevelWorldView().getScene().isInstance()
+                && Microbot.getVarbitValue(VarbitID.POH_HOUSE_LOCATION) > 0;
+    }
+
     public static boolean drinkPrayerPotion() {
         int maxPrayer = getRealSkillLevel(Skill.PRAYER);
         int maxHerblore = getRealSkillLevel(Skill.HERBLORE);
