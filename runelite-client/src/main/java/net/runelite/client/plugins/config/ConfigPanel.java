@@ -30,6 +30,20 @@ import com.google.common.collect.ComparisonChain;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Ints;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.client.config.ConfigDescriptor;
+import net.runelite.client.config.ConfigGroup;
+import net.runelite.client.config.ConfigItem;
+import net.runelite.client.config.ConfigItemDescriptor;
+import net.runelite.client.config.ConfigManager;
+import net.runelite.client.config.ConfigObject;
+import net.runelite.client.config.ConfigSection;
+import net.runelite.client.config.ConfigSectionDescriptor;
+import net.runelite.client.config.FontType;
+import net.runelite.client.config.Keybind;
+import net.runelite.client.config.ModifierlessKeybind;
+import net.runelite.client.config.Notification;
+import net.runelite.client.config.Range;
+import net.runelite.client.config.Units;
 import net.runelite.client.config.*;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.events.ExternalPluginsChanged;
@@ -100,6 +114,7 @@ class ConfigPanel extends PluginPanel
 	private final ExternalPluginManager externalPluginManager;
 	private final ColorPickerManager colorPickerManager;
 	private final Provider<NotificationPanel> notificationPanelProvider;
+	private final Provider<FontPanel> fontPanelProvider;
 
 	private final TitleCaseListCellRenderer listCellRenderer = new TitleCaseListCellRenderer();
 
@@ -116,7 +131,8 @@ class ConfigPanel extends PluginPanel
 		PluginManager pluginManager,
 		ExternalPluginManager externalPluginManager,
 		ColorPickerManager colorPickerManager,
-		Provider<NotificationPanel> notificationPanelProvider
+		Provider<NotificationPanel> notificationPanelProvider,
+		Provider<FontPanel> fontPanelProvider
 	)
 	{
 		super(false);
@@ -127,6 +143,7 @@ class ConfigPanel extends PluginPanel
 		this.externalPluginManager = externalPluginManager;
 		this.colorPickerManager = colorPickerManager;
 		this.notificationPanelProvider = notificationPanelProvider;
+		this.fontPanelProvider = fontPanelProvider;
 
 		setLayout(new BorderLayout());
 		setBackground(ColorScheme.DARK_GRAY_COLOR);
@@ -354,6 +371,10 @@ class ConfigPanel extends PluginPanel
 			else if (cid.getType() == Notification.class)
 			{
 				item.add(createNotification(cd, cid), BorderLayout.EAST);
+			}
+			else if (cid.getType() == FontType.class)
+			{
+				item.add(createFont(cd, cid), BorderLayout.EAST);
 			}
 			else if (cid.getType() instanceof ParameterizedType)
 			{
@@ -689,6 +710,27 @@ class ConfigPanel extends PluginPanel
 
 		// button visibility is tied to the checkbox
 		button.setVisible(checkbox.isSelected());
+		return panel;
+	}
+
+	private JPanel createFont(ConfigDescriptor cd, ConfigItemDescriptor cid)
+	{
+		JPanel panel = new JPanel();
+		panel.setLayout(new BorderLayout());
+
+		JButton button = new JButton(ConfigPanel.CONFIG_ICON);
+		SwingUtil.removeButtonDecorations(button);
+		button.setPreferredSize(new Dimension(25, 0));
+		button.addActionListener(l ->
+		{
+			var muxer = pluginList.getMuxer();
+			var fontPanel = fontPanelProvider.get();
+			fontPanel.init(cd, cid);
+			muxer.pushState(fontPanel);
+		});
+		panel.add(button, BorderLayout.WEST);
+
+		button.setVisible(true);
 		return panel;
 	}
 

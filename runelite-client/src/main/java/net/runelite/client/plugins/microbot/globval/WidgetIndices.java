@@ -760,19 +760,19 @@ public class WidgetIndices {
         // 36
         public static final int CONTAINER = 37;
         // 38 - 40 gap
-        public static final int TITLE = 41;
-        public static final int FULL_INPUT = 42;
-        // 43 - 49 gap
-        public static final int GE_SEARCH_RESULTS = 50;
-        // 51 - 52 gap
-        public static final int MESSAGES_CONTAINER = 53;
-        public static final int TRANSPARENT_BACKGROUND_LINES_CONTAINER = 54;
-        public static final int INPUT_LABEL = 55;
-        public static final int MESSAGE_LINES_CONTAINER = 56;
-        public static final int FIRST_MESSAGE_LABEL = 57;
-        public static final int LAST_MESSAGE_LABEL = 556;
-        public static final int SCROLLBAR_CONTAINER = 557;
-        public static final int DIALOG_CONTAINER = 559;
+        public static final int TITLE = 42;
+        public static final int FULL_INPUT = 43;
+        // 44 - 50 gap
+        public static final int GE_SEARCH_RESULTS = 51;
+        // 52 - 53 gap
+        public static final int MESSAGES_CONTAINER = 54;
+        public static final int TRANSPARENT_BACKGROUND_LINES_CONTAINER = 55;
+        public static final int INPUT_LABEL = 56;
+        public static final int MESSAGE_LINES_CONTAINER = 57;
+        public static final int FIRST_MESSAGE_LABEL = 58;
+        public static final int LAST_MESSAGE_LABEL = 557;
+        public static final int SCROLLBAR_CONTAINER = 558;
+        public static final int DIALOG_CONTAINER = 560;
     }
 
     /**
