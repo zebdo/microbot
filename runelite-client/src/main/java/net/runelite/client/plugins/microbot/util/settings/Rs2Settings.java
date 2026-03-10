@@ -162,7 +162,7 @@ public class Rs2Settings
 
 	public static boolean isLevelUpNotificationsEnabled()
 	{
-		return Microbot.getVarbitValue(VarbitID.OPTION_LEVEL_UP_MESSAGE_DISABLED) == 1;
+		return Microbot.getVarbitValue(VarbitID.OPTION_LEVEL_UP_MESSAGE_DISABLED) == 0;
 	}
 
 	public static boolean disableLevelUpNotifications(boolean closeInterface)
