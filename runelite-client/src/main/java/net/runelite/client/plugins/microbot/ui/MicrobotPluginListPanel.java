@@ -25,6 +25,7 @@
 package net.runelite.client.plugins.microbot.ui;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.html.HtmlEscapers;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.client.config.Config;
@@ -282,6 +283,9 @@ public class MicrobotPluginListPanel extends MicrobotPluginPanel {
     }
 
     void startPlugin(Plugin plugin) {
+        microbotPluginManager.getOutdatedPluginUpdate(plugin)
+                .ifPresent(this::showOutdatedPluginNotification);
+
         pluginManager.setPluginEnabled(plugin, true);
 
         try {
@@ -309,6 +313,25 @@ public class MicrobotPluginListPanel extends MicrobotPluginPanel {
         }
 
         return Text.fromCSV(config);
+    }
+
+    private void showOutdatedPluginNotification(MicrobotPluginManager.OutdatedPluginUpdate outdatedPluginUpdate) {
+        String message = "<html>\""
+                + HtmlEscapers.htmlEscaper().escape(outdatedPluginUpdate.getDisplayName())
+                + "\" is out of date.<br><br>Installed version: "
+                + HtmlEscapers.htmlEscaper().escape(outdatedPluginUpdate.getInstalledVersion())
+                + "<br>Latest version: "
+                + HtmlEscapers.htmlEscaper().escape(outdatedPluginUpdate.getLatestVersion())
+                + "<br><br>Update it from the <strong>Microbot Plugin Hub</strong> to get the latest fixes.</html>";
+
+        JOptionPane.showMessageDialog(
+                this,
+                message,
+                "Microbot Plugin Update Available",
+                JOptionPane.INFORMATION_MESSAGE
+        );
+
+        microbotPluginManager.rememberOutdatedPluginUpdateNotification(outdatedPluginUpdate);
     }
 
     void savePinnedPlugins() {

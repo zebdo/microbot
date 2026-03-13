@@ -87,6 +87,8 @@ public class MicrobotPluginManager {
     private static final File PLUGIN_DIR = new File(RuneLite.RUNELITE_DIR, "microbot-plugins");
     private static final String INSTALLED_VERSION_GROUP = "microbotPluginVersions";
     private static final String INSTALLED_VERSION_KEY_PREFIX = "plugin.";
+    private static final String UPDATE_NOTIFICATION_GROUP = "microbotPluginUpdateNotifications";
+    private static final String UPDATE_NOTIFICATION_KEY_PREFIX = "plugin.";
 
     private final OkHttpClient okHttpClient;
     private final MicrobotPluginClient microbotPluginClient;
@@ -1244,6 +1246,54 @@ public class MicrobotPluginManager {
         return lookupInstalledPluginVersion(internalName).map(InstalledPluginVersion::getVersion);
     }
 
+    public Optional<OutdatedPluginUpdate> getOutdatedPluginUpdate(Plugin plugin) {
+        MicrobotPluginManifest manifest = getPluginManifest(plugin);
+        if (manifest == null) {
+            return Optional.empty();
+        }
+
+        String internalName = manifest.getInternalName();
+        String latestVersion = manifest.getVersion();
+        String installedVersion = getInstalledPluginVersion(internalName)
+                .orElseGet(() -> {
+                    PluginDescriptor descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);
+                    return descriptor == null ? null : descriptor.version();
+                });
+
+        if (Strings.isNullOrEmpty(internalName)
+                || Strings.isNullOrEmpty(installedVersion)
+                || Strings.isNullOrEmpty(latestVersion)
+                || latestVersion.equals(installedVersion)) {
+            return Optional.empty();
+        }
+
+        String notificationKey = UPDATE_NOTIFICATION_KEY_PREFIX + internalName;
+        String notifiedVersion = configManager.getConfiguration(UPDATE_NOTIFICATION_GROUP, notificationKey);
+        if (latestVersion.equals(notifiedVersion)) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new OutdatedPluginUpdate(
+                internalName,
+                Strings.isNullOrEmpty(manifest.getDisplayName()) ? internalName : manifest.getDisplayName(),
+                installedVersion,
+                latestVersion
+        ));
+    }
+
+    public void rememberOutdatedPluginUpdateNotification(OutdatedPluginUpdate outdatedPluginUpdate) {
+        if (outdatedPluginUpdate == null || Strings.isNullOrEmpty(outdatedPluginUpdate.getInternalName())
+                || Strings.isNullOrEmpty(outdatedPluginUpdate.getLatestVersion())) {
+            return;
+        }
+
+        configManager.setConfiguration(
+                UPDATE_NOTIFICATION_GROUP,
+                UPDATE_NOTIFICATION_KEY_PREFIX + outdatedPluginUpdate.getInternalName(),
+                outdatedPluginUpdate.getLatestVersion()
+        );
+    }
+
     private void rememberInstalledPluginVersion(String internalName, String version, String sha256) {
         if (Strings.isNullOrEmpty(internalName) || Strings.isNullOrEmpty(version) || Strings.isNullOrEmpty(sha256)) {
             return;
@@ -1278,6 +1328,36 @@ public class MicrobotPluginManager {
 
         public String getSha256() {
             return sha256;
+        }
+    }
+
+    public static final class OutdatedPluginUpdate {
+        private final String internalName;
+        private final String displayName;
+        private final String installedVersion;
+        private final String latestVersion;
+
+        private OutdatedPluginUpdate(String internalName, String displayName, String installedVersion, String latestVersion) {
+            this.internalName = internalName;
+            this.displayName = displayName;
+            this.installedVersion = installedVersion;
+            this.latestVersion = latestVersion;
+        }
+
+        public String getInternalName() {
+            return internalName;
+        }
+
+        public String getDisplayName() {
+            return displayName;
+        }
+
+        public String getInstalledVersion() {
+            return installedVersion;
+        }
+
+        public String getLatestVersion() {
+            return latestVersion;
         }
     }
 }
