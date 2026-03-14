@@ -199,6 +199,11 @@ public abstract class AbstractEntityQueryable<
         return source.collect(Collectors.toList());
     }
 
+    @Override
+    public int count() {
+        return (int) source.count();
+    }
+
     public E firstOnClientThread() {
         return Microbot.getClientThread().invoke(() -> first());
     }
