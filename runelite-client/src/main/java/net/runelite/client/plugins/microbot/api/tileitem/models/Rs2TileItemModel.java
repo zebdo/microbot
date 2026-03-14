@@ -154,7 +154,8 @@ public class Rs2TileItemModel implements TileItem, IEntity {
     }
 
     public boolean isDespawned() {
-        return getDespawnTime() > Microbot.getClient().getTickCount();
+        int despawnTime = getDespawnTime();
+        return despawnTime != -1 && despawnTime <= Microbot.getClient().getTickCount();
     }
 
     public int getTotalGeValue() {
@@ -189,6 +190,15 @@ public class Rs2TileItemModel implements TileItem, IEntity {
 
     public boolean click() {
         return click("");
+    }
+
+    /**
+     * Picks up this ground item (equivalent to clicking "Take").
+     *
+     * @return true if the interaction was dispatched successfully
+     */
+    public boolean pickup() {
+        return click("Take");
     }
 
     public boolean click(String action) {
