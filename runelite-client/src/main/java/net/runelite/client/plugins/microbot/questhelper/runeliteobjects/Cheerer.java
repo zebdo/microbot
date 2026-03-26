@@ -45,6 +45,10 @@ public class Cheerer
 	public static void createCheerers(RuneliteObjectManager runeliteObjectManager, Client client, ConfigManager configManager)
 	{
 		cheerers.clear();
+		if (client.getLocalPlayer() == null)
+		{
+			return;
+		}
 		createWOM(runeliteObjectManager, client);
 		createZoinkwiz(runeliteObjectManager, client);
 	}

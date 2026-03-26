@@ -822,6 +822,10 @@ public class RuneliteObjectManager
 		{
 			redClickAnimationFrame++;
 		}
+		if (client.getLocalPlayer() == null)
+		{
+			return;
+		}
 		WorldPoint playerPosition = WorldPoint.fromLocalInstance(client, client.getLocalPlayer().getLocalLocation());
 		runeliteObjectGroups.forEach((groupID, extendedRuneliteObjectGroup) -> {
 			for (ExtendedRuneliteObject extendedRuneliteObject : extendedRuneliteObjectGroup.extendedRuneliteObjects)
