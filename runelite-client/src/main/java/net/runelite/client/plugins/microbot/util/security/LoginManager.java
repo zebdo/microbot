@@ -271,6 +271,12 @@ public final class LoginManager {
         Rs2Keyboard.keyPress(KeyEvent.VK_ENTER);
     }
 
+    @com.google.common.annotations.VisibleForTesting
+    public static void submitLoginForTest() {
+        triggerLoginScreen();
+        submitLogin();
+    }
+
     private static void handleBlockingDialogs(Client client) {
         if (client == null) {
             return;

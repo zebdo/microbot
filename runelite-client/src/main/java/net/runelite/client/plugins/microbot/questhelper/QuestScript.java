@@ -319,7 +319,7 @@ public class QuestScript extends Script {
 
 		if (worldPoint != null) {
 			if ((Rs2Walker.canReach(worldPoint) && worldPoint.distanceTo(Rs2Player.getWorldLocation()) < 2)
-					|| worldPoint.toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Microbot.getClient().getLocalPlayer().getWorldLocation().toWorldArea())
+					|| worldPoint.toWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), Rs2Player.getWorldLocation().toWorldArea())
 					&& Rs2Camera.isTileOnScreen(LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), worldPoint))) {
 				lootGroundItem(targetItemId, 10);
 			} else {
@@ -464,7 +464,7 @@ public class QuestScript extends Script {
         } else if (npc != null && (!npc.hasLineOfSight() || !Rs2Walker.canReach(npc.getWorldLocation()))) {
             Rs2Walker.walkTo(npc.getWorldLocation(), 2);
         } else {
-            if (step.getDefinedPoint().getWorldPoint().distanceTo(Microbot.getClient().getLocalPlayer().getWorldLocation()) > 3) {
+            if (step.getDefinedPoint().getWorldPoint().distanceTo(Rs2Player.getWorldLocation()) > 3) {
                 Rs2Walker.walkTo(step.getDefinedPoint().getWorldPoint(), 2);
                 return false;
             }
@@ -517,7 +517,7 @@ public class QuestScript extends Script {
             return false;
         }
 
-        if (step.getDefinedPoint().getWorldPoint() != null && Microbot.getClient().getLocalPlayer().getWorldLocation().distanceTo2D(step.getDefinedPoint().getWorldPoint()) > 1
+        if (step.getDefinedPoint().getWorldPoint() != null && Rs2Player.getWorldLocation().distanceTo2D(step.getDefinedPoint().getWorldPoint()) > 1
                 && (object == null || !Rs2Walker.canReach(object.getWorldLocation()))) {
             WorldPoint targetTile = null;
             WorldPoint stepLocation = object == null ? step.getDefinedPoint().getWorldPoint() : object.getWorldLocation();
@@ -641,7 +641,7 @@ public class QuestScript extends Script {
 		}
 
 		WorldArea objectArea = object.getWorldLocation().toWorldArea();
-		WorldArea playerArea = Microbot.getClient().getLocalPlayer().getWorldLocation().toWorldArea();
+		WorldArea playerArea = Rs2Player.getWorldLocation().toWorldArea();
 
 		return Microbot.getClient().getTopLevelWorldView() != null
 				&& playerArea.hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), objectArea);
