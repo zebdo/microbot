@@ -11,13 +11,17 @@ import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.tree.*;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.awt.event.KeyEvent;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+@Slf4j
 public class Rs2Reflection {
     @SneakyThrows
     public static void invokeMenu(int param0, int param1, int opcode, int identifier, int itemId, String option, String target, int canvasX, int canvasY)
@@ -103,77 +107,112 @@ public class Rs2Reflection {
         System.out.println("[INVOKE] => param0: " + param0 + " param1: " + param1 + " opcode: " + opcode + " id: " + identifier + " itemid: " + itemId);
     }
 
-    private static volatile Field evField;
-    private static volatile Field aqField;
-    private static volatile Field ajField;
-
-    private static String[] extractActions(java.util.ArrayList<?> list) {
-        String[] actions = new String[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            Object element = list.get(i);
-            if (element instanceof String) {
-                actions[i] = (String) element;
-            } else if (element != null) {
-                try {
-                    if (ajField == null) {
-                        for (Field f : element.getClass().getDeclaredFields()) {
-                            if (f.getName().equals("aj") && f.getType() == String.class) {
-                                ajField = f;
-                                break;
-                            }
-                        }
-                    }
-                    if (ajField != null) {
-                        ajField.setAccessible(true);
-                        Object val = ajField.get(element);
-                        ajField.setAccessible(false);
-                        actions[i] = val instanceof String ? (String) val : null;
-                    }
-                } catch (Exception ignored) {
-                }
-            }
-        }
-        return actions;
-    }
+    private static volatile Field cachedOuterField;
+    private static volatile Field cachedListField;
+    private static volatile Field cachedStringField;
 
     @SneakyThrows
     public static String[] getGroundItemActions(ItemComposition item) {
-        if (evField != null && aqField != null) {
-            evField.setAccessible(true);
-            Object ev = evField.get(item);
-            evField.setAccessible(false);
-            if (ev != null) {
-                aqField.setAccessible(true);
-                Object aq = aqField.get(ev);
-                aqField.setAccessible(false);
-                if (aq instanceof java.util.ArrayList) {
-                    return extractActions((java.util.ArrayList<?>) aq);
-                }
+        if (cachedOuterField != null && cachedListField != null) {
+            try {
+                return extractWithCache(item);
+            } catch (Exception e) {
+                log.warn("Ground item action cache invalidated, re-discovering");
+                cachedOuterField = null;
+                cachedListField = null;
+                cachedStringField = null;
             }
         }
 
         for (Class<?> clazz = item.getClass(); clazz != null && clazz != Object.class; clazz = clazz.getSuperclass()) {
-            for (Field field : clazz.getDeclaredFields()) {
-                if (!field.getName().equals("ev")) continue;
-                field.setAccessible(true);
-                Object value = field.get(item);
-                field.setAccessible(false);
-                if (value == null || !value.getClass().getName().equals("oo")) continue;
-                for (Field innerField : value.getClass().getDeclaredFields()) {
-                    if (!innerField.getName().equals("aq")) continue;
-                    innerField.setAccessible(true);
-                    Object innerValue = innerField.get(value);
-                    innerField.setAccessible(false);
-                    if (innerValue instanceof java.util.ArrayList) {
-                        evField = field;
-                        aqField = innerField;
-                        return extractActions((java.util.ArrayList<?>) innerValue);
+            for (Field outerField : clazz.getDeclaredFields()) {
+                Class<?> type = outerField.getType();
+                if (type.isPrimitive() || type == String.class || type.isArray()
+                        || type.getName().startsWith("java.") || type.getName().startsWith("net.runelite.")) continue;
+
+                outerField.setAccessible(true);
+                Object outerValue = outerField.get(item);
+                outerField.setAccessible(false);
+                if (outerValue == null) continue;
+
+                for (Field listField : outerValue.getClass().getDeclaredFields()) {
+                    if (listField.getType() != ArrayList.class) continue;
+
+                    listField.setAccessible(true);
+                    Object listObj = listField.get(outerValue);
+                    listField.setAccessible(false);
+                    if (!(listObj instanceof ArrayList)) continue;
+
+                    ArrayList<?> list = (ArrayList<?>) listObj;
+                    if (list.isEmpty()) continue;
+
+                    Object first = null;
+                    for (Object el : list) {
+                        if (el != null) { first = el; break; }
                     }
+                    if (first == null) continue;
+
+                    if (first instanceof String) {
+                        cachedOuterField = outerField;
+                        cachedListField = listField;
+                        cachedStringField = null;
+                        return toStringArray(list);
+                    }
+
+                    Field stringField = null;
+                    for (Field f : first.getClass().getDeclaredFields()) {
+                        if (f.getType() == String.class) { stringField = f; break; }
+                    }
+                    if (stringField == null) continue;
+
+                    cachedOuterField = outerField;
+                    cachedListField = listField;
+                    cachedStringField = stringField;
+                    return extractFromBeans(list, stringField);
                 }
             }
         }
 
         return new String[]{};
+    }
+
+    private static String[] extractWithCache(ItemComposition item) throws Exception {
+        cachedOuterField.setAccessible(true);
+        Object outer = cachedOuterField.get(item);
+        cachedOuterField.setAccessible(false);
+        if (outer == null) return new String[]{};
+
+        cachedListField.setAccessible(true);
+        Object listObj = cachedListField.get(outer);
+        cachedListField.setAccessible(false);
+        if (!(listObj instanceof ArrayList)) return new String[]{};
+
+        ArrayList<?> list = (ArrayList<?>) listObj;
+        if (cachedStringField == null) return toStringArray(list);
+        return extractFromBeans(list, cachedStringField);
+    }
+
+    private static String[] toStringArray(ArrayList<?> list) {
+        String[] result = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            Object el = list.get(i);
+            result[i] = el instanceof String ? (String) el : null;
+        }
+        return result;
+    }
+
+    private static String[] extractFromBeans(ArrayList<?> list, Field stringField) throws Exception {
+        String[] result = new String[list.size()];
+        stringField.setAccessible(true);
+        for (int i = 0; i < list.size(); i++) {
+            Object bean = list.get(i);
+            if (bean != null) {
+                Object val = stringField.get(bean);
+                result[i] = val instanceof String ? (String) val : null;
+            }
+        }
+        stringField.setAccessible(false);
+        return result;
     }
 
     @SneakyThrows
