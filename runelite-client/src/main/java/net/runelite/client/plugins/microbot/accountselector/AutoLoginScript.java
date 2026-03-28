@@ -244,32 +244,26 @@ public class AutoLoginScript extends Script {
             boolean membersOnly = config.membersOnly();
 
             if (config.usePreferredWorld() && config.world() > 0) {
-                if (Rs2WorldUtil.canAccessWorld(config.world())) {
-                    targetWorld = config.world();
-                    log.info("Using preferred world: {}", targetWorld);
-                } else {
-                    log.warn("Preferred world {} is not accessible, falling back to world selection mode", config.world());
-                }
+                targetWorld = config.world();
+                log.info("Using preferred world from config: {}", targetWorld);
             }
 
             // use world selection mode if no preferred world or preferred world not accessible
             if (targetWorld == -1) {
                 switch (config.worldSelectionMode()) {
                     case CURRENT_PREFERRED_WORLD:
-                        boolean isAccessible = Rs2WorldUtil.canAccessWorld(config.world());
-
-                        if (isAccessible) {
+                        if (config.world() > 0) {
                             targetWorld = config.world();
-                            log.info("Using preferred world: {}", targetWorld);
+                            log.info("Using preferred world from config: {}", targetWorld);
                         } else {
-                            ConfigProfile activeProfile = LoginManager.getActiveProfile();
-                            boolean isMemberFromProfile = activeProfile != null && activeProfile.isMember();
-                            boolean isLocalPlayerAvailable = Microbot.getClient() != null && Microbot.getClient().getLocalPlayer() != null;
-                            boolean isMemberFromClient = Microbot.getClient() != null && Microbot.getClient().getLocalPlayer() != null ? Rs2Player.isMember() : false;
-                            log.error("Preferred world {} is not accessible,\n\t ->check if we have member access set in profile(current value {}), or when logged in, have we member access ? (LocalPlayer? {}, isMember? {})",
-                                    config.usePreferredWorld(), isMemberFromProfile, isLocalPlayerAvailable, isMemberFromClient);
+                            ConfigProfile cpProfile = LoginManager.getActiveProfile();
+                            if (cpProfile != null && cpProfile.getSelectedWorld() != null && cpProfile.getSelectedWorld() > 0) {
+                                targetWorld = cpProfile.getSelectedWorld();
+                                log.info("Using preferred world from profile: {}", targetWorld);
+                            } else {
+                                log.warn("No preferred world configured for CURRENT_PREFERRED_WORLD mode");
+                            }
                         }
-                        // no specific world selection - use default login
                         break;
 
                     case RANDOM_WORLD:

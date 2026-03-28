@@ -1625,8 +1625,6 @@ public class Rs2Bank {
 
             if (isOpen()) return true;
 
-            final Player Rs2Player = Microbot.getClient().getLocalPlayer();
-            if (Rs2Player == null) return false;
             WorldPoint anchor = Rs2Player.getWorldLocation();
 
             List<TileObject> candidates = Stream.of(
@@ -1672,8 +1670,6 @@ public class Rs2Bank {
 
             if (collectionBoxIsOpen()) return true;
 
-            Player Rs2Player = Microbot.getClient().getLocalPlayer();
-            if (Rs2Player == null) return false;
             WorldPoint anchor = Rs2Player.getWorldLocation();
 
             List<TileObject> candidates = Stream.of(
