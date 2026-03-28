@@ -243,6 +243,15 @@ public class AutoLoginScript extends Script {
 
             boolean membersOnly = config.membersOnly();
 
+            if (config.usePreferredWorld() && config.world() > 0) {
+                if (Rs2WorldUtil.canAccessWorld(config.world())) {
+                    targetWorld = config.world();
+                    log.info("Using preferred world: {}", targetWorld);
+                } else {
+                    log.warn("Preferred world {} is not accessible, falling back to world selection mode", config.world());
+                }
+            }
+
             // use world selection mode if no preferred world or preferred world not accessible
             if (targetWorld == -1) {
                 switch (config.worldSelectionMode()) {

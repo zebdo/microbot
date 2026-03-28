@@ -42,6 +42,7 @@ import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.eventbus.Subscribe;
 import net.runelite.client.game.ItemManager;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.ui.overlay.OverlayUtil;
 import net.runelite.client.ui.overlay.components.LineComponent;
 import net.runelite.client.ui.overlay.components.PanelComponent;
@@ -184,7 +185,7 @@ public class EnchantedKeyDigStep extends DetailedQuestStep
 			return false;
 		}
 
-		final WorldPoint localWorld = player.getWorldLocation();
+		final WorldPoint localWorld = Rs2Player.getWorldLocation();
 
 		if (localWorld == null)
 		{

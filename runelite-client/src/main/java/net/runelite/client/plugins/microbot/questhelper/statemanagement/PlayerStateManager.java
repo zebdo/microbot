@@ -41,6 +41,7 @@ import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.config.ConfigManager;
 import net.runelite.client.eventbus.EventBus;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
@@ -124,7 +125,7 @@ public class PlayerStateManager
 		Player player = client.getLocalPlayer();
 		if (player != null)
 		{
-			WorldPoint newPos = player.getWorldLocation();
+			WorldPoint newPos = Rs2Player.getWorldLocation();
 			if (newPos != null && lastPlayerPos != null)
 			{
 				if (newPos.distanceTo(lastPlayerPos) != 0)
