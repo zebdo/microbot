@@ -226,6 +226,7 @@ public class Rs2TileItemModel implements TileItem, IEntity {
             int index = -1;
             if (action.isEmpty()) {
                 action = groundActions[0];
+                index = 0;
             } else {
                 for (int i = 0; i < groundActions.length; i++) {
                     String groundAction = groundActions[i];
