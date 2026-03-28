@@ -16,7 +16,6 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Collectors;
 
 public class Rs2Reflection {
@@ -104,18 +103,76 @@ public class Rs2Reflection {
         System.out.println("[INVOKE] => param0: " + param0 + " param1: " + param1 + " opcode: " + opcode + " id: " + identifier + " itemid: " + itemId);
     }
 
-    @SneakyThrows
-    public static String[] getGroundItemActions(ItemComposition item) {
-        List<Field> fields = Arrays.stream(item.getClass().getFields()).filter(x -> x.getType().isArray()).collect(Collectors.toList());
-        for (Field field : fields) {
-            if (field.getType().getComponentType().getName().equals("java.lang.String")) {
-                String[] actions = (String[]) field.get(item);
-                if (Arrays.stream(actions).anyMatch(x -> x != null && x.equalsIgnoreCase("take"))) {
-                    field.setAccessible(true);
-                    return actions;
+    private static volatile Field evField;
+    private static volatile Field aqField;
+    private static volatile Field ajField;
+
+    private static String[] extractActions(java.util.ArrayList<?> list) {
+        String[] actions = new String[list.size()];
+        for (int i = 0; i < list.size(); i++) {
+            Object element = list.get(i);
+            if (element instanceof String) {
+                actions[i] = (String) element;
+            } else if (element != null) {
+                try {
+                    if (ajField == null) {
+                        for (Field f : element.getClass().getDeclaredFields()) {
+                            if (f.getName().equals("aj") && f.getType() == String.class) {
+                                ajField = f;
+                                break;
+                            }
+                        }
+                    }
+                    if (ajField != null) {
+                        ajField.setAccessible(true);
+                        Object val = ajField.get(element);
+                        ajField.setAccessible(false);
+                        actions[i] = val instanceof String ? (String) val : null;
+                    }
+                } catch (Exception ignored) {
                 }
             }
         }
+        return actions;
+    }
+
+    @SneakyThrows
+    public static String[] getGroundItemActions(ItemComposition item) {
+        if (evField != null && aqField != null) {
+            evField.setAccessible(true);
+            Object ev = evField.get(item);
+            evField.setAccessible(false);
+            if (ev != null) {
+                aqField.setAccessible(true);
+                Object aq = aqField.get(ev);
+                aqField.setAccessible(false);
+                if (aq instanceof java.util.ArrayList) {
+                    return extractActions((java.util.ArrayList<?>) aq);
+                }
+            }
+        }
+
+        for (Class<?> clazz = item.getClass(); clazz != null && clazz != Object.class; clazz = clazz.getSuperclass()) {
+            for (Field field : clazz.getDeclaredFields()) {
+                if (!field.getName().equals("ev")) continue;
+                field.setAccessible(true);
+                Object value = field.get(item);
+                field.setAccessible(false);
+                if (value == null || !value.getClass().getName().equals("oo")) continue;
+                for (Field innerField : value.getClass().getDeclaredFields()) {
+                    if (!innerField.getName().equals("aq")) continue;
+                    innerField.setAccessible(true);
+                    Object innerValue = innerField.get(value);
+                    innerField.setAccessible(false);
+                    if (innerValue instanceof java.util.ArrayList) {
+                        evField = field;
+                        aqField = innerField;
+                        return extractActions((java.util.ArrayList<?>) innerValue);
+                    }
+                }
+            }
+        }
+
         return new String[]{};
     }
 

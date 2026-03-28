@@ -44,6 +44,7 @@ import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameTick;
 import net.runelite.api.gameval.*;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
 import java.util.*;
 
@@ -416,7 +417,7 @@ public class AgilityDungeonSteps extends DetailedOwnerStep
 		{
 			return;
 		}
-		WorldPoint currentPosition = player.getWorldLocation();
+		WorldPoint currentPosition = Rs2Player.getWorldLocation();
 		for (int i = 0; i < fifthSectionMap.length; i++)
 		{
 			MM2Route[] pathsFromNode = fifthSectionMap[i].getPaths();

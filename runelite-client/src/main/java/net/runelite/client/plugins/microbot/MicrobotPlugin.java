@@ -179,6 +179,7 @@ public class MicrobotPlugin extends Plugin
 			overlayManager.add(gembagOverlay);
 			overlayManager.add(pouchOverlay);
 		}
+
 	}
 
 	protected void shutDown()
@@ -502,7 +503,7 @@ public class MicrobotPlugin extends Plugin
 
 	@Subscribe
 	public void onGameTick(GameTick event)
-	{		
+	{
 		// Cache loading is now handled properly during login/profile changes
 		// No need to call loadInitialCacheFromCurrentConfig on every tick
 	}

@@ -33,6 +33,7 @@ import net.runelite.client.plugins.microbot.questhelper.tools.QuestWidgets;
 import net.runelite.api.*;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.InterfaceID;
+import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.util.Text;
 
 import javax.inject.Inject;
@@ -130,7 +131,7 @@ public class QuestMenuHandler
 			return;
 		}
 
-		WorldPoint location = player.getWorldLocation();
+		WorldPoint location = Rs2Player.getWorldLocation();
 		QuestHelperQuest questToStart = PHOENIX_START_ZONE.contains(location) ?
 			QuestHelperQuest.SHIELD_OF_ARRAV_PHOENIX_GANG :
 			QuestHelperQuest.SHIELD_OF_ARRAV_BLACK_ARM_GANG;
