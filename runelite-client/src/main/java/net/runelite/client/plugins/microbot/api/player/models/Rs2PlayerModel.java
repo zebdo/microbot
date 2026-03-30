@@ -72,8 +72,8 @@ public class Rs2PlayerModel extends Rs2ActorModel implements IEntity {
     }
 
     // Sailing stuff
-    public  boolean isSalvaging() {
-        int anim = new Rs2PlayerModel().getAnimation();
+    public boolean isSalvaging() {
+        int anim = getAnimation();
         for (int id : SalvagingAnimations.SALVAGING_ANIMATIONS) {
             if (anim == id) {
                 return true;
