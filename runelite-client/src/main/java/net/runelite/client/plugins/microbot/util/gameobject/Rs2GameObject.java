@@ -7,7 +7,7 @@ import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.gameval.ItemID;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.util.Rs2Cache;
+import net.runelite.client.plugins.microbot.api.playerstate.Rs2PlayerStateCache;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
@@ -1563,7 +1563,7 @@ public class Rs2GameObject {
     }
 
 	private static LocalPoint localPointFromWorldSafe(WorldPoint anchor) {
-		WorldView worldView = Rs2Cache.LOCAL_PLAYER_WORLD_VIEW.getValue();
+		WorldView worldView = Microbot.getRs2PlayerStateCache().getLocalPlayerWorldView();
 		if (worldView == null) {
 			return null;
 		}
