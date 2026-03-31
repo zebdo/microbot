@@ -15,7 +15,7 @@ import net.runelite.api.widgets.WidgetInfo;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
 import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
-import net.runelite.client.plugins.microbot.util.Rs2Cache;
+import net.runelite.client.plugins.microbot.api.playerstate.Rs2PlayerStateCache;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
@@ -996,7 +996,7 @@ public class Rs2Player {
 	 * @return The {@link WorldPoint} representing the player's current location.
 	 */
 	public static WorldPoint getWorldLocation() {
-		return Rs2Cache.LOCAL_PLAYER_POSITION.getValue();
+		return Microbot.getRs2PlayerStateCache().getLocalPlayerPosition();
 	}
 
 	/**
@@ -1005,7 +1005,7 @@ public class Rs2Player {
 	 * @return The {@link WorldView} representing the player's current world view, or {@code null} if unavailable.
 	 */
 	public static WorldView getWorldView() {
-		return Rs2Cache.LOCAL_PLAYER_WORLD_VIEW.getValue();
+		return Microbot.getRs2PlayerStateCache().getLocalPlayerWorldView();
 	}
 
     /**
