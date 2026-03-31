@@ -1005,7 +1005,7 @@ public class Rs2Player {
 	 * @return The {@link WorldView} representing the player's current world view, or {@code null} if unavailable.
 	 */
 	public static WorldView getWorldView() {
-		return Microbot.getClient().getTopLevelWorldView();
+		return Rs2Cache.LOCAL_PLAYER_WORLD_VIEW.getValue();
 	}
 
     /**

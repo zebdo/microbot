@@ -1563,11 +1563,11 @@ public class Rs2GameObject {
     }
 
 	private static LocalPoint localPointFromWorldSafe(WorldPoint anchor) {
-		if(Rs2Cache.LOCAL_PLAYER_WORLD_VIEW.getValue() == null){
+		WorldView worldView = Rs2Cache.LOCAL_PLAYER_WORLD_VIEW.getValue();
+		if (worldView == null) {
 			return null;
 		}
-
-		return LocalPoint.fromWorld(Rs2Cache.LOCAL_PLAYER_WORLD_VIEW.<WorldView>getValue(), anchor);
+		return LocalPoint.fromWorld(worldView, anchor);
 	}
 
     public static Optional<String> getCompositionName(TileObject obj) {

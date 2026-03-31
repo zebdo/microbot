@@ -3,8 +3,8 @@ package net.runelite.client.plugins.microbot.util;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 
-import java.util.EnumMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
@@ -30,7 +30,7 @@ public enum Rs2Cache {
     // Internal state
     // ---------------------------------------------------------------------------
 
-    private static final Map<Rs2Cache, Entry> CACHE = new EnumMap<>(Rs2Cache.class);
+    private static final Map<Rs2Cache, Entry> CACHE = new ConcurrentHashMap<>();
 
     private final Supplier<Object> populator;
 
