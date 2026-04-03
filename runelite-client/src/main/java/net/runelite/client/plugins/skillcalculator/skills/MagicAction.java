@@ -38,6 +38,7 @@ import java.util.stream.Collectors;
 @Getter
 public enum MagicAction implements SkillAction
 {
+	LUMBRIDGE_HOME_TELEPORT("Lumbridge Home Teleport", 0, 0, SpriteID.SPELL_LUMBRIDGE_HOME_TELEPORT, false, Rs2Spellbook.MODERN),
 	WIND_STRIKE("Wind Strike", 1, 5.5f, SpriteID.SPELL_WIND_STRIKE, false, Rs2Spellbook.MODERN),
 	CONFUSE("Confuse", 3, 13, SpriteID.SPELL_CONFUSE, false, Rs2Spellbook.MODERN),
 	ENCHANT_OPAL_BOLT("Enchant Opal Bolt", 4, 9, SpriteID.SPELL_ENCHANT_CROSSBOW_BOLT, true, Rs2Spellbook.MODERN),
