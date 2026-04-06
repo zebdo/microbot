@@ -315,7 +315,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
     }
 
     public boolean isNearPath(WorldPoint location) {
-        if (pathfinder == null || pathfinder.getPath() == null || pathfinder.getPath().isEmpty() ||
+        if (pathfinder == null || !pathfinder.isDone() || pathfinder.getPath() == null || pathfinder.getPath().isEmpty() ||
                 config.recalculateDistance() < 0 || lastLocation.equals(lastLocation = location)) {
             return true;
         }
@@ -507,7 +507,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
                     }
                 }
                 WorldPoint selectedTile = getSelectedWorldPoint();
-                if (pathfinder.getPath() != null) {
+                if (pathfinder.isDone() && pathfinder.getPath() != null) {
                     for (WorldPoint tile : pathfinder.getPath()) {
                         if (tile.equals(selectedTile)) {
                             addMenuEntry(event, CLEAR, PATH, 1);
