@@ -228,7 +228,7 @@ public final class LoginManager {
             return;
         }
         int loginIndex = client.getLoginIndex();
-        if (loginIndex == 3 || loginIndex == 24) {
+        if (loginIndex == 3 || loginIndex == 24 || loginIndex == 34 || loginIndex == 4 || loginIndex == 14) {
             int loginScreenWidth = 804;
             int startingWidth = (client.getCanvasWidth() / 2) - (loginScreenWidth / 2);
             Microbot.getMouse().click(365 + startingWidth, 308);
