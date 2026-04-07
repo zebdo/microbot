@@ -21,6 +21,9 @@ public enum TransportType {
     TELEPORTATION_SPELL,
     WILDERNESS_OBELISK,
     MAGIC_CARPET,
+    HOT_AIR_BALLOON,
+    MAGIC_MUSHTREE,
+    SEASONAL_TRANSPORT,
     NPC;
 
     /*

@@ -16,9 +16,6 @@ import java.awt.*;
 import java.util.List;
 
 public class PathMinimapOverlay extends Overlay {
-    private static final int TILE_WIDTH = 2;
-    private static final int TILE_HEIGHT = 2;
-
     private final Client client;
     private final ShortestPathPlugin plugin;
     private final ShortestPathConfig config;
@@ -40,7 +37,7 @@ public class PathMinimapOverlay extends Overlay {
 		}
 
         final Pathfinder pathfinder = ShortestPathPlugin.getPathfinder();
-        if (pathfinder == null || !pathfinder.isDone()) return null;
+        if (pathfinder == null) return null;
 
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
         graphics.setClip(plugin.getMinimapClipArea());
@@ -72,12 +69,15 @@ public class PathMinimapOverlay extends Overlay {
                 continue;
             }
 
-            renderMinimapRect(client, graphics, posOnMinimap, TILE_WIDTH, TILE_HEIGHT, color);
+            renderMinimapRect(client, graphics, posOnMinimap, color);
         }
     }
 
-    public static void renderMinimapRect(Client client, Graphics2D graphics, Point center, int width, int height, Color color) {
-        double angle = client.getCameraYawTarget() * Math.PI / 1024.0d;
+    public static void renderMinimapRect(Client client, Graphics2D graphics, Point center, Color color) {
+        double angle = client.getCameraYawTarget() * Perspective.UNIT;
+        double tileSize = client.getMinimapZoom();
+        int width = (int) Math.round(tileSize);
+        int height = (int) Math.round(tileSize);
 
         graphics.setColor(color);
         graphics.rotate(angle, center.getX(), center.getY());

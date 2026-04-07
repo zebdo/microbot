@@ -830,6 +830,10 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
             minimapSpriteResizeable = null;
         }
 
+        if (minimapWidget == null || minimapWidget.isHidden()) {
+            return null;
+        }
+
         if (client.isResized()) {
             if (minimapClipResizeable != null) {
                 return minimapClipResizeable;

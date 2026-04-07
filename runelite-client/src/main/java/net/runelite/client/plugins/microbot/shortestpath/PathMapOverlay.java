@@ -82,10 +82,11 @@ public class PathMapOverlay extends Overlay {
             }
         }
 
-        if (ShortestPathPlugin.getPathfinder() != null && ShortestPathPlugin.getPathfinder().isDone()) {
+        if (ShortestPathPlugin.getPathfinder() != null) {
+            Color colour = ShortestPathPlugin.getPathfinder().isDone() ? plugin.colourPath : plugin.colourPathCalculating;
             List<WorldPoint> path = ShortestPathPlugin.getPathfinder().getPath();
             for (int i = 0; i < path.size(); i++) {
-                graphics.setColor(plugin.colourPath);
+                graphics.setColor(colour);
                 WorldPoint point = path.get(i);
                 WorldPoint last = (i > 0) ? path.get(i - 1) : point;
                 if (point.distanceTo(last) > 1) {

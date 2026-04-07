@@ -118,7 +118,7 @@ public class PathTileOverlay extends Overlay {
         }
 
         final Pathfinder pathfinder = ShortestPathPlugin.getPathfinder();
-        if (plugin.drawTiles && pathfinder != null && pathfinder.isDone()) {
+        if (plugin.drawTiles && pathfinder != null) {
             final List<WorldPoint> path = pathfinder.getPath();
 
             int counter = 0;

@@ -1,6 +1,8 @@
 package net.runelite.client.plugins.microbot.shortestpath;
 
 import net.runelite.api.Client;
+import net.runelite.api.Player;
+import net.runelite.api.WorldEntity;
 import net.runelite.api.WorldView;
 import net.runelite.api.coords.LocalPoint;
 import net.runelite.api.coords.WorldArea;
@@ -148,6 +150,17 @@ public class WorldPointUtil {
                 return packWorldPoint(chunkX + (CHUNK_SIZE - 1 - y), chunkY + x, z);
         }
         return packWorldPoint(originalX, originalY, z);
+    }
+
+    public static int fromLocalInstance(Client client, Player localPlayer) {
+        WorldView worldView = localPlayer.getWorldView();
+        int worldViewId = worldView.getId();
+        boolean isOnBoat = worldViewId != WorldView.TOPLEVEL;
+        if (isOnBoat) {
+            WorldEntity worldEntity = client.getTopLevelWorldView().worldEntities().byIndex(worldViewId);
+            return fromLocalInstance(client, worldEntity.getLocalLocation());
+        }
+        return fromLocalInstance(client, localPlayer.getLocalLocation());
     }
 
     public static int fromLocalInstance(Client client, LocalPoint localPoint) {

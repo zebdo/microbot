@@ -246,6 +246,39 @@ public interface ShortestPathConfig extends Config {
     }
 
     @ConfigItem(
+            keyName = "useHotAirBalloons",
+            name = "Use Hot Air Balloons",
+            description = "Whether to include hot air balloons in the path.",
+            position = 19,
+            section = sectionSettings
+    )
+    default boolean useHotAirBalloons() {
+        return false;
+    }
+
+    @ConfigItem(
+            keyName = "useMagicMushtrees",
+            name = "Use Magic Mushtrees",
+            description = "Whether to include magic mushtrees in the path.",
+            position = 19,
+            section = sectionSettings
+    )
+    default boolean useMagicMushtrees() {
+        return true;
+    }
+
+    @ConfigItem(
+            keyName = "useSeasonalTransports",
+            name = "Use Seasonal Transports",
+            description = "Whether to include seasonal transports (e.g. clue compass) in the path.",
+            position = 19,
+            section = sectionSettings
+    )
+    default boolean useSeasonalTransports() {
+        return false;
+    }
+
+    @ConfigItem(
             keyName = "usePoh",
             name = "Use Player-owned-house Teleports",
             description = "Whether to include teleportation through the PoH",
