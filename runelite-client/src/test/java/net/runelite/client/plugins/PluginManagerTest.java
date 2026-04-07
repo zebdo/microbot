@@ -150,7 +150,6 @@ public class PluginManagerTest
 		var expected = pluginClasses.stream()
 			.map(cl -> cl.getAnnotation(PluginDescriptor.class))
 			.filter(Objects::nonNull)
-			.filter(pd -> !pd.developerPlugin())
 			.count();
 		assertEquals(expected, plugins.size());
 	}

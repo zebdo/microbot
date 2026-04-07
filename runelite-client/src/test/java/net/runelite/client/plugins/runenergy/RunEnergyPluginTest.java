@@ -27,20 +27,22 @@ package net.runelite.client.plugins.runenergy;
 import com.google.inject.Guice;
 import com.google.inject.testing.fieldbinder.Bind;
 import com.google.inject.testing.fieldbinder.BoundFieldModule;
+import java.lang.reflect.Field;
 import javax.inject.Inject;
 import net.runelite.api.ChatMessageType;
 import net.runelite.api.Client;
 import net.runelite.api.Skill;
 import net.runelite.api.ItemContainer;
+import net.runelite.api.Varbits;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.ScriptCallbackEvent;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.InventoryID;
 import net.runelite.api.gameval.ItemID;
-import net.runelite.api.gameval.VarbitID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.chat.ChatMessageManager;
 import net.runelite.client.config.ConfigManager;
+import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.ui.overlay.OverlayManager;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
@@ -79,10 +81,18 @@ public class RunEnergyPluginTest
 	Client client;
 
 	@Before
-	public void before()
+	public void before() throws Exception
 	{
 		Guice.createInjector(BoundFieldModule.of(this)).injectMembers(this);
 		when(configManager.getRSProfileConfiguration(RunEnergyConfig.GROUP_NAME, "ringOfEnduranceCharges", Integer.class)).thenReturn(1);
+
+		Field clientField = Microbot.class.getDeclaredField("client");
+		clientField.setAccessible(true);
+		clientField.set(null, client);
+
+		Field configManagerField = Microbot.class.getDeclaredField("configManager");
+		configManagerField.setAccessible(true);
+		configManagerField.set(null, configManager);
 	}
 
 	@Test
@@ -148,13 +158,13 @@ public class RunEnergyPluginTest
 		ItemContainer equipment = mock(ItemContainer.class);
 		when(client.getItemContainer(InventoryID.WORN)).thenReturn(equipment);
 		when(equipment.count(ItemID.RING_OF_ENDURANCE)).thenReturn(1);
-		when(client.getVarbitValue(VarbitID.STAMINA_ACTIVE)).thenReturn(1);
+		when(client.getVarbitValue(Varbits.RUN_SLOWED_DEPLETION_ACTIVE)).thenReturn(1);
 		when(client.getEnergy()).thenReturn(10000);
 		when(client.getBoostedSkillLevel(Skill.AGILITY)).thenReturn(99);
-		assertEquals("500s", runEnergyPlugin.getEstimatedRunTimeRemaining(true));
+		assertEquals("498s", runEnergyPlugin.getEstimatedRunTimeRemaining(true));
 
-		when(client.getVarbitValue(VarbitID.STAMINA_ACTIVE)).thenReturn(0);
+		when(client.getVarbitValue(Varbits.RUN_SLOWED_DEPLETION_ACTIVE)).thenReturn(0);
 		when(configManager.getRSProfileConfiguration(RunEnergyConfig.GROUP_NAME, "ringOfEnduranceCharges", Integer.class)).thenReturn(512);
-		assertEquals("2:57", runEnergyPlugin.getEstimatedRunTimeRemaining(false));
+		assertEquals("2:55", runEnergyPlugin.getEstimatedRunTimeRemaining(false));
 	}
 }

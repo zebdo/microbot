@@ -48,6 +48,7 @@ import net.runelite.api.widgets.Widget;
 import net.runelite.client.config.RuneLiteConfig;
 import net.runelite.client.ui.ClientUI;
 import net.runelite.client.ui.DrawManager;
+import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.util.ImageCapture;
 import static org.junit.Assert.assertEquals;
 import org.junit.Before;
@@ -111,6 +112,10 @@ public class ScreenshotPluginTest
 	@Mock
 	@Bind
 	private ImageCapture imageCapture;
+
+	@Mock
+	@Bind
+	private OverlayManager overlayManager;
 
 	@Before
 	public void before()
