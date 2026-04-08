@@ -45,7 +45,9 @@ Ground Items:
   ground-items pickup <name>             Pick up nearest ground item
 
 Movement:
-  walk <x> <y> [plane]                   Walk to coordinates
+  walk <x> <y> [plane] [--wait] [--timeout SECONDS]
+                                         Walk to coordinates (non-blocking by default;
+                                         --wait blocks until arrival or timeout, default 30s)
 
 Banking:
   bank                                   Bank status (open/closed, items)
@@ -309,9 +311,32 @@ case "$1" in
         ;;
 
     walk)
-        [[ $# -lt 3 ]] && { echo '{"error":"Usage: microbot-cli walk <x> <y> [plane]"}'; exit 1; }
-        plane="${4:-0}"
-        do_post "${BASE}/walk" "{\"x\":$2,\"y\":$3,\"plane\":${plane}}"
+        [[ $# -lt 3 ]] && { echo '{"error":"Usage: microbot-cli walk <x> <y> [plane] [--wait] [--timeout SECONDS]"}'; exit 1; }
+        walk_x="$2"
+        walk_y="$3"
+        walk_plane=0
+        walk_wait="false"
+        walk_timeout=30
+        shift 3
+        if [[ $# -gt 0 ]] && [[ "$1" != --* ]]; then
+            walk_plane="$1"
+            shift
+        fi
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --wait) walk_wait="true"; shift ;;
+                --timeout) walk_timeout="$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
+        walk_body="{\"x\":${walk_x},\"y\":${walk_y},\"plane\":${walk_plane},\"wait\":${walk_wait},\"timeout\":${walk_timeout}}"
+        if [[ "$walk_wait" == "true" ]]; then
+            curl_timeout=$((walk_timeout + 5))
+            curl -sf --max-time "$curl_timeout" -X POST -H "Content-Type: application/json" -d "$walk_body" "${BASE}/walk" 2>/dev/null \
+                || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
+        else
+            do_post "${BASE}/walk" "$walk_body"
+        fi
         ;;
 
     bank)

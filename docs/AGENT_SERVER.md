@@ -328,18 +328,57 @@ Body: `{"name": "Dragon bones"}` or `{"id": 536}`
 
 #### POST /walk
 
-Body: `{"x": 3100, "y": 3500, "plane": 0}` (plane defaults to 0)
+Body: `{"x": 3100, "y": 3500, "plane": 0, "wait": false, "timeout": 30}`
+
+| Field | Default | Description |
+|-------|---------|-------------|
+| `x`, `y` | required | Destination world coordinates |
+| `plane` | `0` | Destination plane |
+| `wait` | `false` | If `true`, blocks until the walk arrives or `timeout` elapses. If `false`, returns immediately after kicking the walk off on a background thread. |
+| `timeout` | `30` (max `600`) | Seconds to wait when `wait=true` |
+
+Walking is non-blocking by default — long routes used to exceed the CLI's curl timeout and produce broken-pipe errors. Poll `/state` to check the player's position, or pass `--wait` to block.
 
 ```bash
 ./microbot-cli walk 3100 3500
 ./microbot-cli walk 3100 3500 1
+./microbot-cli walk 3100 3500 --wait --timeout 120
 ```
+
+Non-blocking response:
 
 ```json
 {
-  "success": true,
   "destination": {"x": 3100, "y": 3500, "plane": 0},
+  "success": true,
+  "walking": true,
+  "message": "Walk initiated",
+  "playerPosition": {"x": 3200, "y": 3400, "plane": 0}
+}
+```
+
+Blocking response (`wait=true`):
+
+```json
+{
+  "destination": {"x": 3100, "y": 3500, "plane": 0},
+  "success": true,
+  "walking": false,
+  "state": "ARRIVED",
   "playerPosition": {"x": 3100, "y": 3500, "plane": 0}
+}
+```
+
+Blocking timeout response:
+
+```json
+{
+  "destination": {"x": 3100, "y": 3500, "plane": 0},
+  "success": false,
+  "walking": true,
+  "timedOut": true,
+  "message": "Walk did not complete within 30s; still in progress",
+  "playerPosition": {"x": 3150, "y": 3450, "plane": 0}
 }
 ```
 
