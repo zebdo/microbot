@@ -51,12 +51,19 @@ public class ObjectHandler extends AgentHandler {
 
 		Map<String, String> params = parseQuery(exchange.getRequestURI());
 		String name = params.get("name");
+		String nameContains = params.get("nameContains");
+		int id = getIntParam(params, "id", -1);
 		int maxDistance = getIntParam(params, "maxDistance", 20);
 		int limit = getIntParam(params, "limit", defaultLimit);
 
 		var query = Microbot.getRs2TileObjectCache().query();
+		if (id >= 0) {
+			query = query.withId(id);
+		}
 		if (name != null && !name.isEmpty()) {
 			query = query.withName(name);
+		} else if (nameContains != null && !nameContains.isEmpty()) {
+			query = query.withNameContains(nameContains);
 		}
 		query = query.within(maxDistance);
 

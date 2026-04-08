@@ -96,6 +96,23 @@ public abstract class AbstractEntityQueryable<
 
     @SuppressWarnings("unchecked")
     @Override
+    public Q withNameContains(String substring) {
+        if (substring == null || substring.isEmpty()) {
+            this.source = Stream.empty();
+            return (Q) this;
+        }
+
+        String needle = substring.toLowerCase();
+        this.source = this.source.filter(x -> {
+            String n = x.getName();
+            return n != null && n.toLowerCase().contains(needle);
+        });
+
+        return (Q) this;
+    }
+
+    @SuppressWarnings("unchecked")
+    @Override
     public Q withNames(String... names) {
         if (names == null || names.length == 0) {
             this.source = Stream.empty();

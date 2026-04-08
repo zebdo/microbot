@@ -33,15 +33,15 @@ Inventory:
   inventory drop <name> [--all]          Drop item(s)
 
 NPCs:
-  npcs [--name Guard] [--distance 20] [--limit N]
+  npcs [--name Guard] [--name-contains Guar] [--id 3265] [--distance 20] [--limit N]
   npcs interact <name> <action>          Interact with nearest NPC
 
 Objects:
-  objects [--name "Oak tree"] [--distance 20] [--limit N]
+  objects [--name "Oak tree"] [--name-contains Oak] [--id 1278] [--distance 20] [--limit N]
   objects interact <name> <action>       Interact with nearest object
 
 Ground Items:
-  ground-items [--name Bones] [--distance 20] [--limit N]
+  ground-items [--name Bones] [--name-contains Bone] [--id 526] [--distance 20] [--limit N]
   ground-items pickup <name>             Pick up nearest ground item
 
 Movement:
@@ -119,13 +119,15 @@ build_query() {
 }
 
 parse_named_args() {
-    NAME_OUT="" DISTANCE_OUT="" LIMIT_OUT=""
+    NAME_OUT="" DISTANCE_OUT="" LIMIT_OUT="" ID_OUT="" NAME_CONTAINS_OUT=""
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --name) NAME_OUT="$2"; shift 2 ;;
+            --name-contains) NAME_CONTAINS_OUT="$2"; shift 2 ;;
+            --id) ID_OUT="$2"; shift 2 ;;
             --distance) DISTANCE_OUT="$2"; shift 2 ;;
             --limit) LIMIT_OUT="$2"; shift 2 ;;
-            *) shift ;;
+            *) echo "{\"error\":\"Unknown flag: $1\"}" >&2; shift ;;
         esac
     done
 }
@@ -258,7 +260,7 @@ case "$1" in
         [[ $# -lt 2 ]] || [[ "$2" == --* ]] && {
             shift
             parse_named_args "$@"
-            q=$(build_query "name" "${NAME_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
+            q=$(build_query "name" "${NAME_OUT}" "nameContains" "${NAME_CONTAINS_OUT}" "id" "${ID_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
             do_get "${BASE}/npcs${q}"
             exit 0
         }
@@ -277,7 +279,7 @@ case "$1" in
         [[ $# -lt 2 ]] || [[ "$2" == --* ]] && {
             shift
             parse_named_args "$@"
-            q=$(build_query "name" "${NAME_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
+            q=$(build_query "name" "${NAME_OUT}" "nameContains" "${NAME_CONTAINS_OUT}" "id" "${ID_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
             do_get "${BASE}/objects${q}"
             exit 0
         }
@@ -296,7 +298,7 @@ case "$1" in
         [[ $# -lt 2 ]] || [[ "$2" == --* ]] && {
             shift
             parse_named_args "$@"
-            q=$(build_query "name" "${NAME_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
+            q=$(build_query "name" "${NAME_OUT}" "nameContains" "${NAME_CONTAINS_OUT}" "id" "${ID_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
             do_get "${BASE}/ground-items${q}"
             exit 0
         }
