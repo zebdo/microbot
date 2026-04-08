@@ -71,10 +71,9 @@ public class AgentServerPlugin extends Plugin {
 		try {
 			server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
 		} catch (java.net.BindException e) {
-			log.warn("Port {} already in use, killing existing process", port);
-			killProcessOnPort(port);
-			Thread.sleep(500);
-			server = HttpServer.create(new InetSocketAddress("127.0.0.1", port), 0);
+			log.warn("Agent server port {} is already in use (likely another Microbot client). Skipping agent server startup for this instance.", port);
+			stopServer();
+			return;
 		}
 
 		server.setExecutor(executor);
@@ -141,21 +140,4 @@ public class AgentServerPlugin extends Plugin {
 		}
 	}
 
-	private void killProcessOnPort(int port) {
-		try {
-			String os = System.getProperty("os.name", "").toLowerCase();
-			ProcessBuilder pb;
-			if (os.contains("win")) {
-				pb = new ProcessBuilder("cmd", "/c",
-						"for /f \"tokens=5\" %a in ('netstat -aon ^| findstr :" + port + "') do taskkill /PID %a /F");
-			} else {
-				pb = new ProcessBuilder("bash", "-c", "fuser -k " + port + "/tcp 2>/dev/null || lsof -ti:" + port + " | xargs kill 2>/dev/null");
-			}
-			Process p = pb.start();
-			p.waitFor(5, TimeUnit.SECONDS);
-			log.info("Killed process on port {}", port);
-		} catch (Exception e) {
-			log.warn("Failed to kill process on port {}: {}", port, e.getMessage());
-		}
-	}
 }
