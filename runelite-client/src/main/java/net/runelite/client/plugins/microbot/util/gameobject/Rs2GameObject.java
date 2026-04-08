@@ -1478,6 +1478,9 @@ public class Rs2GameObject {
     private static <T extends TileObject> Stream<T> getSceneObjects(Function<Tile, Collection<? extends T>> extractor) {
         var triple = Microbot.getClientThread().invoke(() -> {
             Player player = Microbot.getClient().getLocalPlayer();
+            if (player == null || player.getWorldView() == null) {
+                return Triple.of(null, null, 0);
+            }
 
             Scene scene = player.getWorldView().getScene();
 
@@ -1494,6 +1497,9 @@ public class Rs2GameObject {
         var result = new ArrayList<T>();
         Tile[][][] tiles = (Tile[][][]) triple.getMiddle();
         int z = triple.getRight();
+        if (tiles == null) {
+            return result.stream();
+        }
 
         int sceneSize = Constants.SCENE_SIZE;
 
