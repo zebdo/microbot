@@ -1178,7 +1178,7 @@ public class Rs2Player {
 
         if (hasPotion("moonlight moth mix")) {
             restoreAmount = 22;
-        } else if (hasPotion("moonlight potion")) {
+        } else if (hasPotion("moonlight potion") || hasPotion("moonlight moth")) {
             int prayerRestore = (maxPrayer / 4) + 7;
             int herbloreRestore = (int) Math.floor((maxHerblore * 3.0 / 10.0)) + 7;
             restoreAmount = Math.max(prayerRestore, herbloreRestore);

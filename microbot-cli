@@ -33,19 +33,21 @@ Inventory:
   inventory drop <name> [--all]          Drop item(s)
 
 NPCs:
-  npcs [--name Guard] [--distance 20] [--limit N]
+  npcs [--name Guard] [--name-contains Guar] [--id 3265] [--distance 20] [--limit N]
   npcs interact <name> <action>          Interact with nearest NPC
 
 Objects:
-  objects [--name "Oak tree"] [--distance 20] [--limit N]
+  objects [--name "Oak tree"] [--name-contains Oak] [--id 1278] [--distance 20] [--limit N]
   objects interact <name> <action>       Interact with nearest object
 
 Ground Items:
-  ground-items [--name Bones] [--distance 20] [--limit N]
+  ground-items [--name Bones] [--name-contains Bone] [--id 526] [--distance 20] [--limit N]
   ground-items pickup <name>             Pick up nearest ground item
 
 Movement:
-  walk <x> <y> [plane]                   Walk to coordinates
+  walk <x> <y> [plane] [--wait] [--timeout SECONDS]
+                                         Walk to coordinates (non-blocking by default;
+                                         --wait blocks until arrival or timeout, default 30s)
 
 Banking:
   bank                                   Bank status (open/closed, items)
@@ -117,13 +119,15 @@ build_query() {
 }
 
 parse_named_args() {
-    NAME_OUT="" DISTANCE_OUT="" LIMIT_OUT=""
+    NAME_OUT="" DISTANCE_OUT="" LIMIT_OUT="" ID_OUT="" NAME_CONTAINS_OUT=""
     while [[ $# -gt 0 ]]; do
         case "$1" in
             --name) NAME_OUT="$2"; shift 2 ;;
+            --name-contains) NAME_CONTAINS_OUT="$2"; shift 2 ;;
+            --id) ID_OUT="$2"; shift 2 ;;
             --distance) DISTANCE_OUT="$2"; shift 2 ;;
             --limit) LIMIT_OUT="$2"; shift 2 ;;
-            *) shift ;;
+            *) echo "{\"error\":\"Unknown flag: $1\"}" >&2; shift ;;
         esac
     done
 }
@@ -256,7 +260,7 @@ case "$1" in
         [[ $# -lt 2 ]] || [[ "$2" == --* ]] && {
             shift
             parse_named_args "$@"
-            q=$(build_query "name" "${NAME_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
+            q=$(build_query "name" "${NAME_OUT}" "nameContains" "${NAME_CONTAINS_OUT}" "id" "${ID_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
             do_get "${BASE}/npcs${q}"
             exit 0
         }
@@ -275,7 +279,7 @@ case "$1" in
         [[ $# -lt 2 ]] || [[ "$2" == --* ]] && {
             shift
             parse_named_args "$@"
-            q=$(build_query "name" "${NAME_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
+            q=$(build_query "name" "${NAME_OUT}" "nameContains" "${NAME_CONTAINS_OUT}" "id" "${ID_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
             do_get "${BASE}/objects${q}"
             exit 0
         }
@@ -294,7 +298,7 @@ case "$1" in
         [[ $# -lt 2 ]] || [[ "$2" == --* ]] && {
             shift
             parse_named_args "$@"
-            q=$(build_query "name" "${NAME_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
+            q=$(build_query "name" "${NAME_OUT}" "nameContains" "${NAME_CONTAINS_OUT}" "id" "${ID_OUT}" "maxDistance" "${DISTANCE_OUT}" "limit" "${LIMIT_OUT}")
             do_get "${BASE}/ground-items${q}"
             exit 0
         }
@@ -309,9 +313,32 @@ case "$1" in
         ;;
 
     walk)
-        [[ $# -lt 3 ]] && { echo '{"error":"Usage: microbot-cli walk <x> <y> [plane]"}'; exit 1; }
-        plane="${4:-0}"
-        do_post "${BASE}/walk" "{\"x\":$2,\"y\":$3,\"plane\":${plane}}"
+        [[ $# -lt 3 ]] && { echo '{"error":"Usage: microbot-cli walk <x> <y> [plane] [--wait] [--timeout SECONDS]"}'; exit 1; }
+        walk_x="$2"
+        walk_y="$3"
+        walk_plane=0
+        walk_wait="false"
+        walk_timeout=30
+        shift 3
+        if [[ $# -gt 0 ]] && [[ "$1" != --* ]]; then
+            walk_plane="$1"
+            shift
+        fi
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --wait) walk_wait="true"; shift ;;
+                --timeout) walk_timeout="$2"; shift 2 ;;
+                *) shift ;;
+            esac
+        done
+        walk_body="{\"x\":${walk_x},\"y\":${walk_y},\"plane\":${walk_plane},\"wait\":${walk_wait},\"timeout\":${walk_timeout}}"
+        if [[ "$walk_wait" == "true" ]]; then
+            curl_timeout=$((walk_timeout + 5))
+            curl -sf --max-time "$curl_timeout" -X POST -H "Content-Type: application/json" -d "$walk_body" "${BASE}/walk" 2>/dev/null \
+                || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
+        else
+            do_post "${BASE}/walk" "$walk_body"
+        fi
         ;;
 
     bank)

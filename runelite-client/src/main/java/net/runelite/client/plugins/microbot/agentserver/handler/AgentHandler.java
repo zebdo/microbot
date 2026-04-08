@@ -43,9 +43,39 @@ public abstract class AgentHandler implements HttpHandler {
 		try {
 			handleRequest(exchange);
 		} catch (Exception e) {
+			if (isClientDisconnect(e)) {
+				log.debug("Client disconnected before {} response could be sent", exchange.getRequestURI());
+				return;
+			}
 			log.error("Error handling {}", exchange.getRequestURI(), e);
-			sendJson(exchange, 500, errorResponse("Internal server error: " + e.getMessage()));
+			try {
+				sendJson(exchange, 500, errorResponse("Internal server error: " + e.getMessage()));
+			} catch (IOException ioe) {
+				if (!isClientDisconnect(ioe)) {
+					throw ioe;
+				}
+				log.debug("Client disconnected before error response could be sent for {}", exchange.getRequestURI());
+			}
 		}
+	}
+
+	protected static boolean isClientDisconnect(Throwable t) {
+		while (t != null) {
+			if (t instanceof java.io.IOException) {
+				String msg = t.getMessage();
+				if (msg != null) {
+					String lower = msg.toLowerCase();
+					if (lower.contains("broken pipe")
+							|| lower.contains("connection reset")
+							|| lower.contains("connection closed")
+							|| lower.contains("insufficient bytes written")) {
+						return true;
+					}
+				}
+			}
+			t = t.getCause();
+		}
+		return false;
 	}
 
 	protected void requireGet(HttpExchange exchange) throws HttpMethodException {

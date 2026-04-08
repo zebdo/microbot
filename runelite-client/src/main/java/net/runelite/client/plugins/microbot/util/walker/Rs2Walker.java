@@ -2299,9 +2299,6 @@ public class Rs2Walker {
                     return Arrays.stream(composition.getActions()).filter(Objects::nonNull).noneMatch(currentAction::equals) && !Rs2Player.isAnimating();
                 }, 300, 10000);
             case "Paddle Canoe":
-                @Component final int DESTINATION_MAP_PARENT = 42401792; // 647.3
-                @Component final int DESTINATION_LIST = 42401795; // 647.13
-
                 if (!Rs2GameObject.interact(transport.getObjectId(), "Paddle Canoe")) {
                     log.error("Failed to interact with canoe station");
                     return false;
@@ -2313,15 +2310,24 @@ public class Rs2Walker {
                 sleepUntil(Rs2Player::isMoving, 2000);
                 sleepUntilTrue(() -> !Rs2Player.isMoving(), 100, 30000);
 
-                boolean isDestinationMapVisible = sleepUntilTrue(() -> Rs2Widget.isWidgetVisible(DESTINATION_MAP_PARENT), 100, 10000);
+                // OSRS update moved the canoe destination map from group 647 to
+                // CanoeMapLum (953) for the river Lum chain. CanoeMapDougne (952)
+                // is for a different chain not currently used by canoes.tsv.
+                boolean isDestinationMapVisible = sleepUntilTrue(
+                        () -> Rs2Widget.isWidgetVisible(InterfaceID.CanoeMapLum.MAIN_MAP),
+                        100, 10000);
                 if (!isDestinationMapVisible) {
-                    log.error("Destination map is not visible within timeout period");
+                    log.error("Canoe destination map (CanoeMapLum) not visible within timeout period");
                     return false;
                 }
 
-                Widget destinationListWidget = Rs2Widget.getWidget(DESTINATION_LIST);
+                Widget destinationListWidget = Rs2Widget.getWidget(InterfaceID.CanoeMapLum.DESTINATIONS);
                 if (destinationListWidget == null) return false;
                 Widget destination = Rs2Widget.findWidget("Travel to " + displayInfo, List.of(destinationListWidget), false);
+                if (destination == null) {
+                    log.error("Could not find canoe destination widget for: {}", displayInfo);
+                    return false;
+                }
                 Rs2Widget.clickWidget(destination);
 
                 Rs2Dialogue.waitForCutScene(100, 15000);
