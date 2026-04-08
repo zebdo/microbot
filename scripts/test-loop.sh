@@ -42,6 +42,21 @@ IMPORTANT RULES:
    Use the CLI to observe actual game state (widgets, inventory, position) and take screenshots
    to visually confirm. Reading a config file or checking a boolean is NOT verification.
 
+3. IF YOU NOTICE A BUG IN THE MICROBOT CLI API, FIX IT BEFORE CONTINUING. While using the
+   microbot-cli, if a command returns wrong data, crashes, hangs, mis-parses arguments, has
+   broken output formatting, or otherwise behaves incorrectly, STOP using the CLI to verify
+   your original goal. First:
+   - Locate the offending CLI command source (typically under runelite-client/.../agentserver/
+     or the microbot-cli script + its server-side handler).
+   - Fix the bug at the root cause — do not work around it, do not switch to a different CLI
+     command just to bypass it, and do not silently tolerate the broken behavior.
+   - Recompile (./gradlew :client:compileJava), relaunch the client, and confirm the CLI
+     command now works.
+   - Only then resume verifying your original goal.
+   Reason: a broken CLI poisons every subsequent verification step in the loop. Leaving it
+   broken means future iterations (and other agents) will hit the same bug. Fixing it once
+   pays for itself immediately.
+
 You have up to $MAX_ITER iterations to achieve the goal.
 
 ## Step-by-step workflow
