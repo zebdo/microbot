@@ -17,3 +17,4 @@ fi
 
 export ORG_GRADLE_PROJECT_glslangPath="$GLSLANG_DIR/bin/glslangValidator"
 ./gradlew --build-cache ':buildAll'
+./gradlew --build-cache ':client:runUnitTests'

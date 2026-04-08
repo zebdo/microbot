@@ -36,6 +36,7 @@ import net.runelite.client.config.RuneLiteConfig;
 import net.runelite.client.game.ItemManager;
 import net.runelite.client.plugins.banktags.tabs.TabInterface;
 import net.runelite.client.plugins.cluescrolls.ClueScrollService;
+import javax.inject.Named;
 import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -84,6 +85,10 @@ public class BankTagsPluginTest
 	@Mock
 	@Bind
 	private ChatMessageManager chatMessageManager;
+
+	@Bind
+	@Named("developerMode")
+	boolean developerMode;
 
 	@Inject
 	private TagManager tagManager;

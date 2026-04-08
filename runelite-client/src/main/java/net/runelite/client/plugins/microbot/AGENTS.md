@@ -231,6 +231,8 @@ sleepUntil(() -> !Rs2Player.isAnimating());
 
 **File Reference:** `util/Global.java`
 
+> ⚠️ **Non-negotiable rule:** Never use static sleeps like `sleep(12000)` to wait for game state. Always use conditional dynamic sleeps: `sleepUntil(BooleanSupplier awaitedCondition)` (optionally with a timeout as a safety net). Static delays are race-prone; conditional waits self-document the awaited state and are robust to latency/animation variation. Short fixed `sleep(600)` calls for tick pacing or `sleep(100, 300)` for anti-ban jitter are fine — the rule is about waiting on state, not adding small randomized delays.
+
 ```java
 // Basic sleep with random variation
 sleep(600);              // ~1 game tick
@@ -897,6 +899,7 @@ default int eatHealthPercent() { return 50; }  // Sensible default
 
 ### 11. Common Pitfalls to Avoid
 
+❌ **Static sleeps for game state** - `sleep(12000)` is race-prone; use `sleepUntil(BooleanSupplier)` instead
 ❌ **Sleeping on client thread** - Will freeze the game
 ❌ **Not waiting after interactions** - Actions will fail
 ❌ **Ignoring return values** - Can't detect failures
@@ -2276,6 +2279,7 @@ public interface MyConfig extends Config {
 - Call `super.run()` in script loop
 
 ❌ **DON'T:**
+- Never use static sleeps like `sleep(12000)` to wait for game state — use `sleepUntil(BooleanSupplier)` instead
 - Never sleep on client thread
 - Don't ignore return values from interactions
 - Don't use tight loops without sleep

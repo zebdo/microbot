@@ -2302,7 +2302,16 @@ public class Rs2Walker {
                 @Component final int DESTINATION_MAP_PARENT = 42401792; // 647.3
                 @Component final int DESTINATION_LIST = 42401795; // 647.13
 
-                Rs2GameObject.interact(transport.getObjectId(), "Paddle Canoe");
+                if (!Rs2GameObject.interact(transport.getObjectId(), "Paddle Canoe")) {
+                    log.error("Failed to interact with canoe station");
+                    return false;
+                }
+
+                // Wait for the player to actually walk to the canoe station and stop moving
+                // before checking for the destination map widget. The interact call only
+                // queues the click; the player still has to walk there.
+                sleepUntil(Rs2Player::isMoving, 2000);
+                sleepUntilTrue(() -> !Rs2Player.isMoving(), 100, 30000);
 
                 boolean isDestinationMapVisible = sleepUntilTrue(() -> Rs2Widget.isWidgetVisible(DESTINATION_MAP_PARENT), 100, 10000);
                 if (!isDestinationMapVisible) {

@@ -29,12 +29,13 @@ public class Pathfinder implements Runnable {
     private final VisitedTiles visited;
 
     private volatile List<WorldPoint> path = Collections.emptyList();
-    private boolean pathNeedsUpdate = false;
+    private volatile boolean pathNeedsUpdate = false;
     private volatile Node bestLastNode;
     /**
      * Teleportation transports are updated when this changes.
      * Can be either:
-     * 20 = all teleports can be used (e.g. Varrock Teleport)
+     * 0 = all teleports can be used (e.g. Chronicle)
+     * 20 = most teleports can be used (e.g. Varrock Teleport)
      * 30 = some teleports can be used (e.g. Amulet of Glory)
      * 31 = no teleports can be used
      */
@@ -86,10 +87,6 @@ public class Pathfinder implements Runnable {
     }
 
     public List<WorldPoint> getPath() {
-        if (!done && !cancelled) throw new IllegalStateException("Pathfinder is not done");
-        if (cancelled) {
-            log.warn("Getting cancelled path");
-        }
         Node lastNode = bestLastNode; // For thread safety, read bestLastNode once
         if (lastNode == null) {
             return path;
@@ -148,12 +145,12 @@ public class Pathfinder implements Runnable {
                 if (wildernessLevel > 0) {
                     boolean update = false;
 
-                    if (wildernessLevel > 29 && !config.isInLevel29Wilderness(node.packedPosition)) {
-                        wildernessLevel = 29;
+                    if (wildernessLevel > 30 && !config.isInLevel30Wilderness(node.packedPosition)) {
+                        wildernessLevel = 30;
                         update = true;
                     }
-                    if (wildernessLevel > 19 && !config.isInLevel19Wilderness(node.packedPosition)) {
-                        wildernessLevel = 19;
+                    if (wildernessLevel > 20 && !config.isInLevel20Wilderness(node.packedPosition)) {
+                        wildernessLevel = 20;
                         update = true;
                     }
                     if (wildernessLevel > 0 && !PathfinderConfig.isInWilderness(node.packedPosition)) {

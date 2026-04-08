@@ -12,6 +12,14 @@ This is a multi-module Gradle project with Java 11 as the target version. The ma
 
 **Config UI note:** Microbot plugins use the custom `MicrobotConfigPanel` (under `plugins/microbot/ui`) for config rendering. Any Microbot config UI tweaks—buttons, layouts, or controls—belong there rather than RuneLite’s default config panel.
 
+**Agentic Testing Loop:** See `docs/AGENTIC_TESTING_LOOP.md` for the autonomous test-fix-rebuild architecture. The inner harness (`microbot/testing/`) writes structured JSON + screenshots; the outer loop (`claude -p` via OAuth session) drives the feedback cycle — no API key needed.
+
+**Microbot CLI (Runtime Agent Control):** See `docs/MICROBOT_CLI.md` for the CLI that lets AI agents interact with the running game client in real time. The CLI communicates with the embedded Agent Server plugin (`agentserver/`) over HTTP, exposing inventory, NPCs, objects, banking, walking, dialogues, widgets, and more. For the full HTTP API reference and server internals, see `docs/AGENT_SERVER.md`.
+
+**Agent Server** is enabled by default. Login via CLI: `./microbot-cli login now --world 381 --timeout 60`.
+
+**In-Game Settings:** Always use the settings search bar instead of navigating tabs. Tab indices shift on game updates (the "Interfaces" tab was removed). Flow: open Settings tab (548:52) → "All Settings" → Search (134:11) → type setting name via `./microbot-cli keyboard type "level-up"` → click the option via `./microbot-cli widgets click --text "Show level only"`. Verify via `./microbot-cli varbit <id>`. See `util/settings/CLAUDE.md` for widget debugging details.
+
 ---
 
 ## Build and Test Commands
@@ -44,9 +52,9 @@ java -jar runelite-client/build/libs/microbot-<version>.jar
 
 ### Working Directory
 
-The repository root is `/home/mimosa/IdeaProjects/microbot/GameObjects/`. Plugin code is located at:
+Plugin code is located under the repository at:
 ```
-/home/mimosa/IdeaProjects/microbot/GameObjects/runelite-client/src/main/java/net/runelite/client/plugins/microbot/
+runelite-client/src/main/java/net/runelite/client/plugins/microbot/
 ```
 
 ---
@@ -230,6 +238,8 @@ sleepUntil(() -> !Rs2Player.isAnimating());
 ### Sleep and Timing Utilities
 
 **File Reference:** `util/Global.java`
+
+> ⚠️ **Non-negotiable rule:** Never use static sleeps like `sleep(12000)` to wait for game state. Always use conditional dynamic sleeps: `sleepUntil(BooleanSupplier awaitedCondition)` (optionally with a timeout as a safety net). Static delays are race-prone; conditional waits self-document the awaited state and are robust to latency/animation variation. Short fixed `sleep(600)` calls for tick pacing or `sleep(100, 300)` for anti-ban jitter are fine — the rule is about waiting on state, not adding small randomized delays.
 
 ```java
 // Basic sleep with random variation
@@ -897,6 +907,7 @@ default int eatHealthPercent() { return 50; }  // Sensible default
 
 ### 11. Common Pitfalls to Avoid
 
+❌ **Static sleeps for game state** - `sleep(12000)` is race-prone; use `sleepUntil(BooleanSupplier)` instead
 ❌ **Sleeping on client thread** - Will freeze the game
 ❌ **Not waiting after interactions** - Actions will fail
 ❌ **Ignoring return values** - Can't detect failures
@@ -1916,6 +1927,8 @@ microbot/                                    # Main automation framework
 ## Additional Resources
 
 - **Queryable API Guide**: See `api/QUERYABLE_API.md` for complete queryable API documentation
+- **Microbot CLI**: See `docs/MICROBOT_CLI.md` for the runtime agent CLI (query game state, interact with entities, manage inventory/bank, walk, handle dialogues)
+- **Agent Server API**: See `docs/AGENT_SERVER.md` for the full HTTP API reference, handler architecture, and server internals
 - **Discord**: https://discord.gg/zaGrfqFEWE
 - **Website**: https://themicrobot.com
 - **Example Scripts**: Browse plugins in the microbot package for real-world examples
@@ -2276,6 +2289,7 @@ public interface MyConfig extends Config {
 - Call `super.run()` in script loop
 
 ❌ **DON'T:**
+- Never use static sleeps like `sleep(12000)` to wait for game state — use `sleepUntil(BooleanSupplier)` instead
 - Never sleep on client thread
 - Don't ignore return values from interactions
 - Don't use tight loops without sleep

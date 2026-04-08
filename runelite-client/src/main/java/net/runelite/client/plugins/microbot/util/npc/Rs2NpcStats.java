@@ -193,53 +193,6 @@ public final class Rs2NpcStats {
                     case "defence_ranged":
                         builder.defenceRanged(in.nextInt());
                         break;
-                    case "drops":
-                        in.beginArray();
-                        while (in.hasNext()) {
-                            in.beginObject();
-                            int dropId = -1;
-                            String dropName = null;
-                            boolean dropMembers = false;
-                            String dropQuantity = null;
-                            boolean dropNoted = false;
-                            float dropRarity = -1;
-                            int dropRolls = -1;
-                            while (in.hasNext()) {
-                                switch (in.nextName()) {
-                                    case "id":
-                                        dropId = in.nextInt();
-                                        break;
-                                    case "name":
-                                        dropName = in.nextString();
-                                        break;
-                                    case "members":
-                                        dropMembers = in.nextBoolean();
-                                        break;
-                                    case "quantity":
-                                        if (in.peek() == JsonToken.NULL) {
-                                            in.nextNull();
-                                            dropQuantity = null;
-                                        } else
-                                            dropQuantity = in.nextString();
-                                        break;
-                                    case "noted":
-                                        dropNoted = in.nextBoolean();
-                                        break;
-                                    case "rarity":
-                                        dropRarity = (float) in.nextDouble();
-                                        break;
-                                    case "rolls":
-                                        dropRolls = in.nextInt();
-                                        break;
-                                    default:
-                                        in.skipValue();
-                                }
-                            }
-                            in.endObject();
-                            builder.drops(Collections.singletonList(new Drop(dropId, dropName, dropMembers, dropQuantity, dropNoted, dropRarity, dropRolls)));
-                        }
-                        in.endArray();
-                        break;
                     default:
                         in.skipValue();
                 }
@@ -292,7 +245,6 @@ public final class Rs2NpcStats {
     private final int defenceCrush;
     private final int defenceMagic;
     private final int defenceRanged;
-    private final List<Drop> drops;
 
     public Rs2NpcStats(
             int id, String name, String lastUpdated, boolean incomplete, boolean members,
@@ -304,7 +256,7 @@ public final class Rs2NpcStats {
             int attackLevel, int strengthLevel, int defenceLevel, int magicLevel, int rangedLevel,
             int attackBonus, int strengthBonus, int attackMagic, int magicBonus, int attackRanged,
             int rangedBonus, int defenceStab, int defenceSlash, int defenceCrush, int defenceMagic,
-            int defenceRanged, List<Drop> drops) {
+            int defenceRanged) {
 
         this.id = id;
         this.name = name;
@@ -349,7 +301,6 @@ public final class Rs2NpcStats {
         this.defenceCrush = defenceCrush;
         this.defenceMagic = defenceMagic;
         this.defenceRanged = defenceRanged;
-        this.drops = drops;
     }
 
     public static Builder builder() {
@@ -402,7 +353,6 @@ public final class Rs2NpcStats {
                 ", defenceCrush=" + defenceCrush +
                 ", defenceMagic=" + defenceMagic +
                 ", defenceRanged=" + defenceRanged +
-                ", drops=" + drops +
                 '}';
     }
 
@@ -578,37 +528,10 @@ public final class Rs2NpcStats {
         return defenceRanged;
     }
 
-    public List<Drop> getDrops() {
-        return drops;
-    }
-
     public double calculateXpModifier() {
         double averageLevel = Math.floor((this.attackLevel + this.strengthLevel + this.defenceLevel + this.hitpoints) / 4);
         double averageDefBonus = Math.floor((this.defenceStab + this.defenceSlash + this.defenceCrush) / 3);
         return 1.0 + Math.floor(averageLevel * (averageDefBonus + (double) this.strengthBonus + (double) this.attackBonus) / 5120.0) / 40.0;
-    }
-
-    // Define the Drop class similarly to the original
-    public static final class Drop {
-        private final int id;
-        private final String name;
-        private final boolean members;
-        private final String quantity;
-        private final boolean noted;
-        private final float rarity;
-        private final int rolls;
-
-        public Drop(int id, String name, boolean members, String quantity, boolean noted, float rarity, int rolls) {
-            this.id = id;
-            this.name = name;
-            this.members = members;
-            this.quantity = quantity;
-            this.noted = noted;
-            this.rarity = rarity;
-            this.rolls = rolls;
-        }
-
-        // Add getter methods for Drop fields here
     }
 
     public static final class Builder {
@@ -655,7 +578,6 @@ public final class Rs2NpcStats {
         private int defenceCrush;
         private int defenceMagic;
         private int defenceRanged;
-        private List<Drop> drops;
 
         // Builder methods for all fields
         public Builder id(int id) {
@@ -873,11 +795,6 @@ public final class Rs2NpcStats {
             return this;
         }
 
-        public Builder drops(List<Drop> drops) {
-            this.drops = drops;
-            return this;
-        }
-
         public Rs2NpcStats build() {
             return new Rs2NpcStats(
                     id, name, lastUpdated, incomplete, members, releaseDate, combatLevel, size, hitpoints, maxHit,
@@ -885,7 +802,7 @@ public final class Rs2NpcStats {
                     category, slayerMonster, slayerLevel, slayerXp, slayerMasters, duplicate, examine, wikiName, wikiUrl,
                     attackLevel, strengthLevel, defenceLevel, magicLevel, rangedLevel, attackBonus, strengthBonus,
                     attackMagic, magicBonus, attackRanged, rangedBonus, defenceStab, defenceSlash, defenceCrush,
-                    defenceMagic, defenceRanged, drops
+                    defenceMagic, defenceRanged
             );
         }
     }

@@ -16,10 +16,12 @@ public class DefaultMouseMotionNature extends MouseMotionNature {
     public static final int REACTION_TIME_VARIATION_MS = 120;
 
     public DefaultMouseMotionNature() {
-        try {
-            setSystemCalls(new DefaultSystemCalls(new Robot()));
-        } catch (AWTException e) {
-            throw new RuntimeException(e);
+        if (!GraphicsEnvironment.isHeadless()) {
+            try {
+                setSystemCalls(new DefaultSystemCalls(new Robot()));
+            } catch (AWTException e) {
+                throw new RuntimeException(e);
+            }
         }
 
         setDeviationProvider(new SinusoidalDeviationProvider(DEFAULT_SLOPE_DIVIDER));

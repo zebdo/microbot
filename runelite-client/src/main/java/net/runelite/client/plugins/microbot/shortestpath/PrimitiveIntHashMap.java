@@ -144,7 +144,7 @@ public class PrimitiveIntHashMap<V> {
 
     private IntNode<V>[] growBucket(int bucketIndex) {
         IntNode<V>[] oldBucket = buckets[bucketIndex];
-        IntNode<V>[] newBucket = createBucket(oldBucket.length * 2);
+        IntNode<V>[] newBucket = createBucket(Math.min(oldBucket.length, Integer.MAX_VALUE / 2 - 4) * 2);
         System.arraycopy(oldBucket, 0, newBucket, 0, oldBucket.length);
         buckets[bucketIndex] = newBucket;
         return newBucket;
@@ -207,7 +207,7 @@ public class PrimitiveIntHashMap<V> {
 
                     if (bInd >= newBucket.length) {
                         growBucket(bucketIndex)[newBucket.length] = oldBucket[ind];
-                        return;
+                        continue;
                     }
                 }
             }

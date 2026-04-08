@@ -45,16 +45,20 @@ public class BreakHandlerV2PlayScheduleTest {
 
     @Test
     public void testCalculateBreakDurationWhenOutsidePlaySchedule() {
+        PlaySchedule outsideSchedule = findScheduleOutsideCurrentTime();
         lenient().when(config.usePlaySchedule()).thenReturn(true);
-        lenient().when(config.playSchedule()).thenReturn(PlaySchedule.MEDIUM_AFTERNOON);
+        lenient().when(config.playSchedule()).thenReturn(outsideSchedule);
 
-        if (isOutsidePlaySchedule(config)) {
-            long duration = calculateBreakDuration(config);
-            Duration expectedDuration = config.playSchedule().timeUntilNextSchedule();
+        assertTrue("Selected schedule should be outside current time",
+                isOutsidePlaySchedule(config));
 
-            assertEquals("Break duration should match time until next schedule",
-                    expectedDuration.toMillis(), duration);
-        }
+        long durationBefore = config.playSchedule().timeUntilNextSchedule().toMillis();
+        long duration = calculateBreakDuration(config);
+        long durationAfter = config.playSchedule().timeUntilNextSchedule().toMillis();
+
+        assertTrue("Break duration should be positive", duration > 0);
+        assertTrue("Break duration should be within the time window of the two measurements",
+                duration >= durationAfter && duration <= durationBefore);
     }
 
     @Test
@@ -412,5 +416,14 @@ public class BreakHandlerV2PlayScheduleTest {
 
     private boolean shouldSkipRegularBreaks(BreakHandlerV2Config config) {
         return config.usePlaySchedule() && !config.playSchedule().isOutsideSchedule();
+    }
+
+    private PlaySchedule findScheduleOutsideCurrentTime() {
+        for (PlaySchedule schedule : PlaySchedule.values()) {
+            if (schedule.isOutsideSchedule()) {
+                return schedule;
+            }
+        }
+        throw new IllegalStateException("No schedule is outside the current time");
     }
 }

@@ -29,19 +29,24 @@ public class Rs2Settings
 
 	static final int SETTINGS_INTERFACE = InterfaceID.Settings.UNIVERSE;
 	static final int SETTINGS_CLICKABLE = 8781844;
+	static final int SETTINGS_CLICKABLE_ALT = 8781843;
 	static final int SETTINGS_CATEGORIES = 8781848;
 	static final int ALL_SETTINGS_BUTTON = 7602208;
 
 	public static boolean openSettings()
 	{
-		boolean isSettingsInterfaceVisible = Rs2Widget.isWidgetVisible(SETTINGS_INTERFACE);
-		if (!isSettingsInterfaceVisible)
+		if (Rs2Widget.isWidgetVisible(SETTINGS_INTERFACE))
 		{
-			Rs2Tab.switchTo(InterfaceTab.SETTINGS);
-			Rs2Widget.clickWidget(ALL_SETTINGS_BUTTON);
-			sleepUntil(() -> Rs2Widget.isWidgetVisible(SETTINGS_INTERFACE));
+			return true;
 		}
-		return true;
+		Rs2Tab.switchTo(InterfaceTab.SETTINGS);
+		if (!sleepUntil(() -> Rs2Widget.isWidgetVisible(ALL_SETTINGS_BUTTON), 3000))
+		{
+			return false;
+		}
+		sleepGaussian(400, 100);
+		Rs2Widget.clickWidget("All Settings", true);
+		return sleepUntil(() -> Rs2Widget.isWidgetVisible(SETTINGS_INTERFACE), 5000);
 	}
 
 	public static boolean isDropShiftSettingEnabled()
@@ -128,7 +133,7 @@ public class Rs2Settings
 			return false;
 		}
 		sleepGaussian(800, 100);
-		Widget widget = Rs2Widget.getWidget(SETTINGS_CLICKABLE);
+		Widget widget = Rs2Widget.getWidget(SETTINGS_CLICKABLE_ALT);
 		if (widget == null)
 		{
 			return false;
@@ -171,33 +176,53 @@ public class Rs2Settings
 		{
 			return true;
 		}
-		if (!openSettings())
+		return setLevelUpNotificationOption("Disabled", () -> !isLevelUpNotificationsEnabled(), closeInterface);
+	}
+
+	public static boolean disableLevelUpNotifications()
+	{
+		return disableLevelUpNotifications(true);
+	}
+
+	public static boolean enableLevelUpNotifications(boolean closeInterface)
+	{
+		if (isLevelUpNotificationsEnabled())
 		{
-			return false;
+			return true;
 		}
-		if (!switchToSettingsTab("Interfaces"))
+		return setLevelUpNotificationOption("Show level only", Rs2Settings::isLevelUpNotificationsEnabled, closeInterface);
+	}
+
+	public static boolean enableLevelUpNotifications()
+	{
+		return enableLevelUpNotifications(true);
+	}
+
+	private static boolean setLevelUpNotificationOption(String optionText, java.util.function.BooleanSupplier successCondition, boolean closeInterface)
+	{
+		Widget dropdownWidget = openSettingsSearch("level-up", "Select", "Toggle");
+		if (dropdownWidget == null)
 		{
-			return false;
-		}
-		sleepGaussian(800, 100);
-		Widget widget = Rs2Widget.getWidget(SETTINGS_CLICKABLE);
-		if (widget == null)
-		{
+			closeSettingsMenu();
 			return false;
 		}
 
-		// MenuEntryImpl(getOption=Toggle, getTarget=, getIdentifier=1, getType=CC_OP, getParam0=14, getParam1=8781843, getItemId=-1, isForceLeftClick=false, getWorldViewId=-1, isDeprioritized=false)
-		NewMenuEntry menuEntry = new NewMenuEntry()
-				.option("Toggle")
-				.target("")
-				.identifier(1)
-				.type(MenuAction.CC_OP)
-				.param0(14)
-				.param1(widget.getId())
-				.forceLeftClick(false)
-				;
-		Microbot.doInvoke(menuEntry, Rs2UiHelper.getDefaultRectangle());
-		boolean success = sleepUntil(() -> !isLevelUpNotificationsEnabled());
+		Rs2Widget.clickWidget(dropdownWidget);
+		sleepGaussian(600, 100);
+
+		if (!sleepUntil(() -> Rs2Widget.isWidgetVisible(InterfaceID.Settings.DROPDOWN_PANEL), 3000))
+		{
+			closeSettingsMenu();
+			return false;
+		}
+
+		if (!Rs2Widget.clickWidget(optionText, true))
+		{
+			closeSettingsMenu();
+			return false;
+		}
+
+		boolean success = sleepUntil(successCondition::getAsBoolean, 3000);
 
 		if (closeInterface)
 		{
@@ -207,9 +232,62 @@ public class Rs2Settings
 		return success;
 	}
 
-	public static boolean disableLevelUpNotifications()
+	/**
+	 * Opens the settings search bar, types the term, and waits for a matching clickable to appear.
+	 * Returns the matched clickable widget so callers can reuse it without rescanning.
+	 */
+	private static Widget openSettingsSearch(String searchTerm, String... matchingActions)
 	{
-		return disableLevelUpNotifications(true);
+		if (!openSettings())
+		{
+			return null;
+		}
+
+		Widget searchButton = Rs2Widget.getWidget(InterfaceID.Settings.SEARCHBAR_IMAGE);
+		if (searchButton == null)
+		{
+			return null;
+		}
+
+		Rs2Widget.clickWidget(searchButton);
+		if (!sleepUntil(() -> Rs2Widget.isWidgetVisible(InterfaceID.Settings.SEARCH_TEXT), 3000))
+		{
+			return null;
+		}
+		sleepGaussian(300, 50);
+
+		Rs2Keyboard.typeString(searchTerm);
+		sleepGaussian(800, 100);
+
+		Widget[] holder = new Widget[1];
+		boolean found = sleepUntil(() -> {
+			holder[0] = findSettingsSearchClickable(matchingActions);
+			return holder[0] != null;
+		}, 3000);
+		return found ? holder[0] : null;
+	}
+
+	private static Widget findSettingsSearchClickable(String... matchingActions)
+	{
+		return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+			Widget clickable = Microbot.getClient().getWidget(SETTINGS_CLICKABLE);
+			if (clickable == null || clickable.getDynamicChildren() == null) return null;
+
+			for (Widget child : clickable.getDynamicChildren())
+			{
+				if (child == null || child.isHidden()) continue;
+				String[] actions = child.getActions();
+				if (actions == null) continue;
+				for (String a : actions)
+				{
+					for (String wanted : matchingActions)
+					{
+						if (wanted.equals(a)) return child;
+					}
+				}
+			}
+			return null;
+		}).orElse(null);
 	}
 
 	public static void turnOffMusic()
@@ -375,7 +453,6 @@ public class Rs2Settings
 			"Controls", 3,
 			"Display", 4,
 			"Gameplay", 5,
-			"Interfaces", 6,
 			"Warnings", 7
 		);
 

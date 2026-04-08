@@ -574,6 +574,9 @@ public class Transport {
         addTransports(transports, "teleportation_spells.tsv", TransportType.TELEPORTATION_SPELL);
         addTransports(transports, "wilderness_obelisks.tsv", TransportType.WILDERNESS_OBELISK);
         addTransports(transports, "magic_carpets.tsv", TransportType.MAGIC_CARPET);
+        addTransports(transports, "hot_air_balloons.tsv", TransportType.HOT_AIR_BALLOON, 7);
+        addTransports(transports, "magic_mushtrees.tsv", TransportType.MAGIC_MUSHTREE, 5);
+        addTransports(transports, "seasonal_transports.tsv", TransportType.SEASONAL_TRANSPORT);
         addTransports(transports, "npcs.tsv", TransportType.NPC);
         System.out.println("Loaded " + transports.size() + " transports");
         return transports;

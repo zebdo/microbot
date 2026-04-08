@@ -34,12 +34,12 @@ import static net.runelite.client.plugins.microbot.shortestpath.TransportType.TE
 
 @Slf4j
 public class PathfinderConfig {
-    private static final WorldArea WILDERNESS_ABOVE_GROUND = new WorldArea(2944, 3523, 448, 448, 0);
-    private static final WorldArea WILDERNESS_ABOVE_GROUND_LEVEL_19 = new WorldArea(2944, 3672, 448, 448, 0);
-    private static final WorldArea WILDERNESS_ABOVE_GROUND_LEVEL_29 = new WorldArea(2944, 3752, 448, 448, 0);
-    private static final WorldArea WILDERNESS_UNDERGROUND = new WorldArea(2944, 9918, 320, 442, 0);
-    private static final WorldArea WILDERNESS_UNDERGROUND_LEVEL_19 = new WorldArea(2944, 10067, 320, 442, 0);
-    private static final WorldArea WILDERNESS_UNDERGROUND_LEVEL_29 = new WorldArea(2944, 10147, 320, 442, 0);
+    private static final WorldArea WILDERNESS_ABOVE_GROUND = new WorldArea(2944, 3525, 448, 448, 0);
+    private static final WorldArea WILDERNESS_ABOVE_GROUND_LEVEL_20 = new WorldArea(2944, 3680, 448, 448, 0);
+    private static final WorldArea WILDERNESS_ABOVE_GROUND_LEVEL_30 = new WorldArea(2944, 3760, 448, 448, 0);
+    private static final WorldArea WILDERNESS_UNDERGROUND = new WorldArea(2944, 9918, 518, 458, 0);
+    private static final WorldArea WILDERNESS_UNDERGROUND_LEVEL_20 = new WorldArea(2944, 10075, 320, 442, 0);
+    private static final WorldArea WILDERNESS_UNDERGROUND_LEVEL_30 = new WorldArea(2944, 10155, 320, 442, 0);
     private static final WorldArea FEROX_ENCLAVE_1 = new WorldArea(3123, 3622, 2, 10, 0);
     private static final WorldArea FEROX_ENCLAVE_2 = new WorldArea(3125, 3617, 16, 23, 0);
     private static final WorldArea FEROX_ENCLAVE_3 = new WorldArea(3138, 3636, 18, 10, 0);
@@ -102,6 +102,9 @@ public class PathfinderConfig {
             useTeleportationPortals,
             useTeleportationSpells,
             useMagicCarpets,
+            useHotAirBalloons,
+            useMagicMushtrees,
+            useSeasonalTransports,
             useWildernessObelisks,
             useSpiritTreeEtceteria,
             useSpiritTreeBrimhaven,
@@ -182,6 +185,9 @@ public class PathfinderConfig {
         useTeleportationSpells = ShortestPathPlugin.override("useTeleportationSpells", config.useTeleportationSpells());
         useWildernessObelisks = ShortestPathPlugin.override("useWildernessObelisks", config.useWildernessObelisks());
         useMagicCarpets = ShortestPathPlugin.override("useMagicCarpets", config.useMagicCarpets());
+        useHotAirBalloons = ShortestPathPlugin.override("useHotAirBalloons", config.useHotAirBalloons());
+        useMagicMushtrees = ShortestPathPlugin.override("useMagicMushtrees", config.useMagicMushtrees());
+        useSeasonalTransports = ShortestPathPlugin.override("useSeasonalTransports", config.useSeasonalTransports());
         distanceBeforeUsingTeleport = ShortestPathPlugin.override("distanceBeforeUsingTeleports", config.distanceBeforeUsingTeleport());
 
         //START microbot variables
@@ -432,15 +438,14 @@ public class PathfinderConfig {
                 && !isInWilderness(packedPosition) && isInWilderness(packedNeighborPosition);
     }
 
-    public boolean isInLevel19Wilderness(int packedPoint) {
-        return WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_ABOVE_GROUND_LEVEL_19) == 0
-                || WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_UNDERGROUND_LEVEL_19) == 0;
+    public boolean isInLevel20Wilderness(int packedPoint) {
+        return WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_ABOVE_GROUND_LEVEL_20) == 0
+                || WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_UNDERGROUND_LEVEL_20) == 0;
     }
 
-    public boolean isInLevel29Wilderness(int packedPoint) {
-        return WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_ABOVE_GROUND_LEVEL_29) == 0
-                || WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_UNDERGROUND_LEVEL_29) == 0;
-
+    public boolean isInLevel30Wilderness(int packedPoint) {
+        return WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_ABOVE_GROUND_LEVEL_30) == 0
+                || WorldPointUtil.distanceToArea(packedPoint, WILDERNESS_UNDERGROUND_LEVEL_30) == 0;
     }
 
     private boolean completedQuests(Transport transport) {
@@ -665,6 +670,12 @@ public class PathfinderConfig {
                 return useTeleportationSpells;
             case MAGIC_CARPET:
                 return useMagicCarpets;
+            case HOT_AIR_BALLOON:
+                return useHotAirBalloons;
+            case MAGIC_MUSHTREE:
+                return useMagicMushtrees;
+            case SEASONAL_TRANSPORT:
+                return useSeasonalTransports;
             case WILDERNESS_OBELISK:
                 return useWildernessObelisks;
             default:
