@@ -163,14 +163,11 @@ public class Rs2Npc {
             return Collections.emptyList();
         }
         
-        LocalPoint playerLocation = localPlayer.getLocalLocation();
-        
         return getNpcsForPlayer(x -> {
             String npcName = x.getName();
             if (npcName == null || npcName.isEmpty()) return false;
             return (exact ? npcName.equalsIgnoreCase(name) : npcName.toLowerCase().contains(name.toLowerCase()));
-        }).sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(playerLocation)))
-          .collect(Collectors.toList());
+        }).collect(Collectors.toList());
     }
 
     /**

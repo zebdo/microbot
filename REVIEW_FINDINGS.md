@@ -622,7 +622,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Remove the `.sorted(...)` from lines 384-386 and 413-415 in both `getAttackableNpcs` overloads. Since `.filter()` only removes elements and never reorders them, the stream arriving at `.sorted()` is already distance-ordered, so removing the second sort is safe and correct.
 - **Impact:** Eliminates a redundant O(n log n) sort and an unsafe client-thread read in every `getAttackableNpcs` call; combat scripts that call this each tick (to pick a new target) will benefit on every iteration.
 
-### `getNpcsForPlayer(String, boolean)` sorts an already-sorted stream a second time
+### [DONE] `getNpcsForPlayer(String, boolean)` sorts an already-sorted stream a second time
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/npc/Rs2Npc.java:168-173`
 - **Type:** simplification
 - **Found:** iter 4
