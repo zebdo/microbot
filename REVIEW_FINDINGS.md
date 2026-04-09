@@ -510,7 +510,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Delete `hasItemContinue()` entirely and remove its call from `hasContinue()`. `hasSpriteContinue()` already covers the `DIALOG_SPRITE, 0` case.
 - **Impact:** Removes one redundant `isWidgetVisible` call from every `hasContinue()` invocation; dead code removed.
 
-### `validateAndSetBreakDurations()` runs three bounds-checks on every game tick despite settings only changing on user action
+### [DONE] `validateAndSetBreakDurations()` runs three bounds-checks on every game tick despite settings only changing on user action
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/antiban/AntibanPlugin.java:257`, `AntibanPlugin.java:411-429`
 - **Type:** performance
 - **Found:** iter 11

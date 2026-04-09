@@ -258,8 +258,6 @@ public class AntibanPlugin extends Plugin {
             idleTicks = 0;
         }
 
-        validateAndSetBreakDurations();
-
         handleMicroBreakIntegration();
 
         if (Rs2Antiban.isMining()) {

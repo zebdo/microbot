@@ -83,6 +83,7 @@ public class MicroBreakPanel extends JPanel {
             Rs2AntibanSettings.microBreakDurationLow = microBreakDurationLow.getValue();
             microBreakDurationLowLabel.setText("Micro Break Duration Low (min): " + microBreakDurationLow.getValue());
             if (!microBreakDurationLow.getValueIsAdjusting()) {
+                AntibanPlugin.validateAndSetBreakDurations();
                 Rs2AntibanSettings.saveToProfile();
             }
         });
@@ -90,6 +91,7 @@ public class MicroBreakPanel extends JPanel {
             Rs2AntibanSettings.microBreakDurationHigh = microBreakDurationHigh.getValue();
             microBreakDurationHighLabel.setText("Micro Break Duration High (min): " + microBreakDurationHigh.getValue());
             if (!microBreakDurationHigh.getValueIsAdjusting()) {
+                AntibanPlugin.validateAndSetBreakDurations();
                 Rs2AntibanSettings.saveToProfile();
             }
         });
