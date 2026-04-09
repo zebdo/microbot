@@ -747,7 +747,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Remove the `exited` field and the two assignments. If tracking entered/exited state is genuinely needed in the future, add a getter and document its contract.
 - **Impact:** Removes dead state; makes the code's intent clearer.
 
-### `takeMicroBreakByChance()` uses `Math.random()` instead of the project's `Rs2Random.diceFractional()`
+### [DONE] `takeMicroBreakByChance()` uses `Math.random()` instead of the project's `Rs2Random.diceFractional()`
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/antiban/Rs2Antiban.java:349`
 - **Type:** simplification
 - **Found:** iter 11
