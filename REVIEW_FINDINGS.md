@@ -304,7 +304,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add a null guard matching `getHealth()`: `if (s == null) return -1;`. Remove `Microbot.log(s.toString())` entirely (it has no diagnostic value in production and is not guarded by a log-level check).
 - **Impact:** Prevents `NullPointerException` crashes in combat scripts targeting NPCs absent from the stats map; eliminates per-tick log spam in any script that calls `getAttackSpeed` in its main loop.
 
-### `walkWithStateInternal` runs BFS collision check on every `walkTo` call even when target is far away
+### [DONE] `walkWithStateInternal` runs BFS collision check on every `walkTo` call even when target is far away
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/walker/Rs2Walker.java:129-136`
 - **Type:** performance
 - **Found:** iter 3
