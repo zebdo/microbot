@@ -494,7 +494,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace lines 199–200 with: `Widget[] dynamicWidgetOptions = dialogueOption.getDynamicChildren(); if (dynamicWidgetOptions == null || dynamicWidgetOptions.length == 0 || dynamicWidgetOptions[0] == null) return false;`
 - **Impact:** Prevents script-thread crashes in any plugin calling `hasDialogueOptionTitle` while a dialogue option interface is opening, closing, or partially loaded; costs one null/length guard to fix.
 
-### `getDialogueOption()` and `getCombinationOption()` each traverse their option list twice per call
+### [DONE] `getDialogueOption()` and `getCombinationOption()` each traverse their option list twice per call
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/dialogues/Rs2Dialogue.java:253`, `Rs2Dialogue.java:257`, `Rs2Dialogue.java:599`, `Rs2Dialogue.java:601`
 - **Type:** simplification
 - **Found:** iter 12

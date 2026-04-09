@@ -250,16 +250,13 @@ public class Rs2Dialogue {
      * @return the widget representing the matching dialogue option, or null if no match is found.
      */
     public static Widget getDialogueOption(String text, boolean exact) {
-        if (!hasSelectAnOption() || getDialogueOptions().isEmpty()) return null;
+        List<Widget> options = getDialogueOptions();
+        if (!hasSelectAnOption() || options.isEmpty()) return null;
 
-        Widget dialogueOption;
-
-        dialogueOption = getDialogueOptions().stream()
+        return options.stream()
                 .filter(dialop -> exact ? dialop.getText().equalsIgnoreCase(text) : dialop.getText().toLowerCase().contains(text.toLowerCase()))
                 .findFirst()
                 .orElse(null);
-
-        return dialogueOption;
     }
 
     /**
@@ -596,9 +593,10 @@ public class Rs2Dialogue {
      * @return the widget matching the specified text, or null if no match is found.
      */
     public static Widget getCombinationOption(String text, boolean exact) {
-        if (!hasCombinationDialogue() || getCombinationOptions().isEmpty()) return null;
+        List<Widget> options = getCombinationOptions();
+        if (!hasCombinationDialogue() || options.isEmpty()) return null;
 
-        return getCombinationOptions().stream()
+        return options.stream()
                 .filter(widget -> {
                     String widgetName = Rs2UiHelper.stripColTags(widget.getName());
                     return exact ? widgetName.equalsIgnoreCase(text) : widgetName.toLowerCase().contains(text.toLowerCase());
