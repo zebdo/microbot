@@ -574,7 +574,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add a null guard immediately after line 106's widget fetch: `Widget spellbook = Rs2Widget.getWidget(218, 3); if (spellbook == null || spellbook.getStaticChildren() == null) return false;` and replace the inline dereference accordingly.
 - **Impact:** Prevents NPE crashes in any script that calls `cast(MagicAction)` during interface transitions; mirrors the guard already present in `quickCanCast`.
 
-### `getRs2Staff` and `getRs2Tome` do O(n) linear enum scans on every equipment rune check
+### [DONE] `getRs2Staff` and `getRs2Tome` do O(n) linear enum scans on every equipment rune check
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/magic/Rs2Magic.java:419-429`
 - **Type:** performance
 - **Found:** iter 8

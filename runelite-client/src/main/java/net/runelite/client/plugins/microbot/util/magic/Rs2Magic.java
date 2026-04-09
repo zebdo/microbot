@@ -419,15 +419,11 @@ public class Rs2Magic {
     }
     
     public static Rs2Staff getRs2Staff(int itemID) {
-        return Stream.of(Rs2Staff.values())
-                .filter(staff -> staff.getItemID() == itemID)
-                .findAny().orElse(Rs2Staff.NONE);
+        return Rs2Staff.byItemId(itemID);
     }
 
     public static Rs2Tome getRs2Tome(int itemID) {
-        return Stream.of(Rs2Tome.values())
-                .filter(tome -> tome.getItemID() == itemID)
-                .findAny().orElse(Rs2Tome.NONE);
+        return Rs2Tome.byItemId(itemID);
     }
 
     public static List<Rs2Staff> findStavesByRunes(List<Runes> runes) {

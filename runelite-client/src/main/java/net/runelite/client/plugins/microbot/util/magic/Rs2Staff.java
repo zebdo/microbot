@@ -4,8 +4,12 @@ import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import net.runelite.api.gameval.ItemID;
 
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @Getter
 @RequiredArgsConstructor
@@ -40,4 +44,12 @@ public enum Rs2Staff {
 
     private final int itemID;
     private final List<Runes> runes;
+
+    private static final Map<Integer, Rs2Staff> BY_ITEM_ID = Arrays.stream(values())
+            .filter(s -> s != NONE)
+            .collect(Collectors.toMap(Rs2Staff::getItemID, Function.identity()));
+
+    static Rs2Staff byItemId(int itemID) {
+        return BY_ITEM_ID.getOrDefault(itemID, NONE);
+    }
 }
