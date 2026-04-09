@@ -189,6 +189,7 @@ public class Rs2Bank {
 		}
 
 		rs2BankData.set(bankItems);
+		updateTabCounts();
 	}
 
 	/**
@@ -2764,9 +2765,6 @@ public class Rs2Bank {
      * @return the tab number containing the item, or -1 if the slot ID is invalid
      */
     public static int getItemTabForBankItem(int itemSlotId) {
-        // Update tab counts before checking which tab the item is in
-        updateTabCounts();
-
         // Get the total number of items in the bank
         int totalItemsInBank = getBankItemCount();
 

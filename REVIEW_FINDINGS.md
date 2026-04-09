@@ -678,7 +678,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Implement each as a single pass: collect the present item IDs (or lowercased names) into a `Set`, then check all required IDs/names against the set in O(1) each. For example: `Set<Integer> present = inventoryItems.stream().map(Rs2ItemModel::getId).collect(toSet()); return Arrays.stream(ids).allMatch(present::contains);`
 - **Impact:** Reduces K inventory scans to 1 for every `containsAll` call; most noticeable when scripts check for 4–6 supplies simultaneously on every tick.
 
-### `updateTabCounts()` issues 9 varbit reads on every bank-item interaction
+### [DONE] `updateTabCounts()` issues 9 varbit reads on every bank-item interaction
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/bank/Rs2Bank.java:2722-2731` (updateTabCounts), `Rs2Bank.java:2764-2778` (getItemTabForBankItem), `Rs2Bank.java:109-114` (invokeMenu call site)
 - **Type:** performance
 - **Found:** iter 1
