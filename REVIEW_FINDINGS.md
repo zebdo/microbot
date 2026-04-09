@@ -723,7 +723,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Convert the varargs to a `Set` once before building the predicate. For example: `Set<Integer> idSet = new HashSet<>(Arrays.asList(ids)); return depositAll(x -> idSet.contains(x.getId()));`. An equivalent `Set<String>` fix applies to the name overloads.
 - **Impact:** Reduces N stream allocations to 0 per `depositAllExcept` call (N = inventory size); trivial fix that harmonises with the same recommendation already made for `disableAllPrayersExcept` in iter 9.
 
-### `Rs2Shop` contains 17 `System.out.println` calls that bypass the `@Slf4j` logger and produce unfiltered stdout noise
+### [DONE] `Rs2Shop` contains 17 `System.out.println` calls that bypass the `@Slf4j` logger and produce unfiltered stdout noise
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/shop/Rs2Shop.java:152,155,181,184,236-237,245,258-259,264,268,288,301,304,316,328,384,414`
 - **Type:** simplification
 - **Found:** iter 16
