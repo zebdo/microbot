@@ -662,7 +662,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace the chain with a `private static final Map<Integer, int[]> SLOT_PARAMS` populated in a static initialiser: keys are `EquipmentInventorySlot.X.getSlotIdx()`, values are `int[]{param1, childId}`. The body of `invokeMenu` then becomes a single `int[] params = SLOT_PARAMS.getOrDefault(rs2Item.getSlot(), null)` lookup followed by a null check.
 - **Impact:** O(1) lookup instead of O(11) linear scan; adding or changing a slot mapping requires touching only the static map, not the method body.
 
-### `getFirstEmptySlot()` accesses raw client API off the client thread
+### [DONE] `getFirstEmptySlot()` accesses raw client API off the client thread
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/inventory/Rs2Inventory.java:1050-1056`
 - **Type:** performance
 - **Found:** iter 1

@@ -38,6 +38,7 @@ import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static net.runelite.client.plugins.microbot.Microbot.log;
@@ -1055,12 +1056,7 @@ public class Rs2Inventory {
      * @return The index of the first empty slot, or -1 if none are found.
      */
     public static int getFirstEmptySlot() {
-        // TODO: might be broken
-        if (isFull()) return -1;
-        for (int i = 0; i < inventory().getItems().length; i++) {
-            if (inventory().getItems()[i].getId() == -1) return i;
-        }
-        return -1;
+        return IntStream.range(0, CAPACITY).filter(i -> inventoryItems.stream().noneMatch(x -> x.getSlot() == i)).findFirst().orElse(-1);
     }
 
     /**
