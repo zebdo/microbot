@@ -37,7 +37,7 @@ public class BreakHandlerV2Script extends Script {
 
     public BreakHandlerV2Script() {
         instanceId = ++instanceCounter;
-        System.out.println("[DEBUG] BreakHandlerV2Script instance #" + instanceId + " created. Hash: " + System.identityHashCode(this));
+        log.debug("[BreakHandlerV2] Script instance #{} created (hash={})", instanceId, System.identityHashCode(this));
     }
 
     @Getter

@@ -827,7 +827,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace lines 285–291 with: `return dialogueOptions.stream().anyMatch(w -> exact ? w.getText().equalsIgnoreCase(text) : w.getText().toLowerCase().contains(text.toLowerCase()));`. Removes the intermediate list allocation entirely.
 - **Impact:** Removes one transient `List<String>` allocation per `hasDialogueOption` call; every script polling for dialogue options (e.g. `sleepUntilHasDialogueOption`) benefits on each check iteration.
 
-### `BreakHandlerV2Script` constructor uses `System.out.println` for a debug log, bypassing SLF4J
+### [DONE] `BreakHandlerV2Script` constructor uses `System.out.println` for a debug log, bypassing SLF4J
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/breakhandler/breakhandlerv2/BreakHandlerV2Script.java:39`
 - **Type:** simplification
