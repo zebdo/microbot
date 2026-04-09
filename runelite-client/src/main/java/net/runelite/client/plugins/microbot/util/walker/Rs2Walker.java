@@ -917,8 +917,7 @@ public class Rs2Walker {
             }
         }
 
-        log.info("\n\nFound " + transportList.size() + " transports for path from " +
-                path.get(0) + " to " + path.get(path.size() - 1));
+        log.info("\n\nFound {} transports for path from {} to {}", transportList.size(), path.get(0), path.get(path.size() - 1));
 
         // Apply filtering and requirement setup if requested
         if (applyFiltering) {

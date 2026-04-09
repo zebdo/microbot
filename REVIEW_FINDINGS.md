@@ -795,7 +795,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Change line 1682 from `return fetchTileObjects(predicate, anchor, Constants.SCENE_SIZE)` to `return fetchGameObjects(predicate, anchor, Constants.SCENE_SIZE)`.
 - **Impact:** Eliminates a latent correctness bug; costs one line to fix.
 
-### `getTransportsForPath` builds string argument for `log.info` unconditionally
+### [DONE] `getTransportsForPath` builds string argument for `log.info` unconditionally
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/walker/Rs2Walker.java:921-922`
 - **Type:** performance
 - **Found:** iter 3
