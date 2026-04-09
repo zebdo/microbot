@@ -424,7 +424,7 @@ public class Rs2GameObject {
             return hasAction(comp, "Bank", false) || hasAction(comp, "Collect", false);
         };
 
-        return getGameObjects(o -> Arrays.stream(Rs2BankID.bankIds).anyMatch(bid -> o.getId() == bid), maxSearchRadius).stream()
+        return getGameObjects(o -> Rs2BankID.BANK_ID_SET.contains(o.getId()), maxSearchRadius).stream()
                 .filter(bankableFilter)
                 .findFirst()
                 .orElse(null);
@@ -449,15 +449,16 @@ public class Rs2GameObject {
             if (comp == null) return false;
             return hasAction(comp, "Deposit", false);
         };
-        return getGameObjects(o -> Arrays.stream(Rs2BankID.bankIds).anyMatch(bid -> o.getId() == bid), maxSearchRadius).stream()
+        return getGameObjects(o -> Rs2BankID.BANK_ID_SET.contains(o.getId()), maxSearchRadius).stream()
                 .filter(depositableFilter)
                 .findFirst()
                 .orElse(null);
     }
 
+    private static final Set<Integer> GRAND_EXCHANGE_BOOTH_IDS = new HashSet<>(Arrays.asList(10060, 30389));
+
     public static WallObject findGrandExchangeBooth(int maxSearchRadius) {
-        Integer[] grandExchangeBoothIds = new Integer[]{10060, 30389};
-        return getWallObjects(o -> Arrays.stream(grandExchangeBoothIds).anyMatch(gid -> o.getId() == gid) && Rs2Tile.isTileReachable(o.getWorldLocation()), maxSearchRadius).stream()
+        return getWallObjects(o -> GRAND_EXCHANGE_BOOTH_IDS.contains(o.getId()) && Rs2Tile.isTileReachable(o.getWorldLocation()), maxSearchRadius).stream()
                 .findFirst()
                 .orElse(null);
     }

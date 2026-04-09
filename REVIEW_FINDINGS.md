@@ -590,7 +590,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Pre-apply the base filter once: at the start of `loot()` (or when the first `add*()` call is made), snapshot `getGroundItems().values().stream().filter(baseRangeAndOwnershipFilter(params)).collect(toList())` into a `Builder` field. Each subsequent `collect()` call then filters that pre-built list rather than re-scanning the table. Cache `Rs2Player.getWorldLocation()` once per `loot()` call instead of once per `collect()` call.
 - **Impact:** Reduces M full table scans to 1 per `loot()` invocation (M = number of `addXxx()` calls); combat and slayer scripts that call `Rs2LootEngine.with(params).addByNames().addCoins().addUntradables().loot()` every loop tick benefit on every iteration.
 
-### `findBank` and `findDepositBox` create a stream over a 600-element `Integer[]` for every game object in the scene
+### [DONE] `findBank` and `findDepositBox` create a stream over a 600-element `Integer[]` for every game object in the scene
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/gameobject/Rs2GameObject.java:423`, `Rs2GameObject.java:448`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/gameobject/Rs2BankID.java:4`
 - **Type:** performance
 - **Found:** iter 5

@@ -1,5 +1,9 @@
 package net.runelite.client.plugins.microbot.util.gameobject;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 public class Rs2BankID {
     public static Integer[] bankIds = new Integer[]{
             75, 76, 103, 104, 170, 171, 172, 173, 375, 376, 377, 378, 379, 590, 591, 961,
@@ -44,4 +48,5 @@ public class Rs2BankID {
             54376, 54377, 54515, 54516, 54672, 54736, 54737, 54741, 54742, 54773, 54774, 54933, 54934, 55085, 55199, 55235, 55236, 57330,
             58627, 58628, 58629, 58630, 58128 // Charred Island, Sunbleak, and Deepfin bank chests
     };
+    public static final Set<Integer> BANK_ID_SET = new HashSet<>(Arrays.asList(bankIds));
 }
