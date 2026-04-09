@@ -264,7 +264,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** In `Rs2PrayerEnum.java`, replace `VarbitID.PRAYER_EAGLEEYE` with `VarbitID.PRAYER_DEADEYE` on line 33, and `VarbitID.PRAYER_MYSTICMIGHT` with `VarbitID.PRAYER_MYSTICVIGOUR` on line 35. The correct interface-component indices (line 33's `InterfaceID.Prayerbook.PRAYER21` and line 35's `InterfaceID.Prayerbook.PRAYER24`) and quick-prayer indices also need verification against the game's prayer panel layout for these unlock-gated prayers.
 - **Impact:** Corrects silent wrong-prayer-state reads for any script using `DEAD_EYE` or `MYSTIC_VIGOUR`; without the fix, toggling Deadeye will also report success whenever Eagle Eye happens to be active.
 
-### `addInventoryRunes` performs 22 full inventory scans per rune-availability check
+### [DONE] `addInventoryRunes` performs 22 full inventory scans per rune-availability check
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/magic/Rs2Magic.java:446-449`
 - **Type:** performance
 - **Found:** iter 8

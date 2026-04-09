@@ -443,8 +443,11 @@ public class Rs2Magic {
     }
 
     private static Map<Runes, Integer> addInventoryRunes(Map<Runes, Integer> runes) {
-        for (Runes rune : Runes.values()) {
-            runes.merge(rune, Rs2Inventory.itemQuantity(rune.getItemId()), Rs2Magic::limitSum);
+        for (Rs2ItemModel item : Rs2Inventory.all()) {
+            Runes rune = Runes.byItemId(item.getId());
+            if (rune != null) {
+                runes.merge(rune, item.getQuantity(), Rs2Magic::limitSum);
+            }
         }
         return runes;
     }
