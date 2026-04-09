@@ -831,10 +831,9 @@ public class Rs2Widget {
             }
         }
         
-        if (widget.getActions() != null) {
-            String[] actions = widget.getActions();
-
-            for (String action : widget.getActions()) {
+        String[] actions = widget.getActions();
+        if (actions != null) {
+            for (String action : actions) {
                 if (action != null) {
                     String cleanAction = Rs2UiHelper.stripColTags(action);
                     if (exact ? cleanAction.equalsIgnoreCase(text) : 

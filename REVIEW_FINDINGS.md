@@ -763,7 +763,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace both lines with `return sleepUntil(() -> findWidget(text, null, false) != null);`. `sleepUntil` already returns a boolean indicating whether the condition was met.
 - **Impact:** Removes one full widget-tree traversal per `sleepUntilHasWidget` call; every script that polls for UI elements (dialogue boxes, processing interfaces) benefits.
 
-### `matchesWildCardText` declares a local `actions` variable it never uses, calling `widget.getActions()` three times
+### [DONE] `matchesWildCardText` declares a local `actions` variable it never uses, calling `widget.getActions()` three times
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/widget/Rs2Widget.java:832-835`
 - **Type:** simplification
 - **Found:** iter 10
