@@ -2126,7 +2126,8 @@ public class Rs2Bank {
     public static boolean isNearBank(int distance) {
         WorldPoint playerLocation = Rs2Player.getWorldLocation();
         return Arrays.stream(BankLocation.values())
-                .anyMatch(b -> b.getWorldPoint().distanceTo2D(playerLocation) <= distance);
+                .anyMatch(b -> b.getWorldPoint().getPlane() == playerLocation.getPlane()
+                        && b.getWorldPoint().distanceTo2D(playerLocation) <= distance);
     }
 
     /**

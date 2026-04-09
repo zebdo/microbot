@@ -51,7 +51,6 @@ public abstract class Script extends Global implements IScript {
      * Safe to call multiple times; no-ops if already shut down.
      */
     public void shutdown() {
-        scheduledExecutorService.shutdownNow();
         if (mainScheduledFuture != null && !mainScheduledFuture.isDone()) {
             mainScheduledFuture.cancel(true);
             ShortestPathPlugin.exit();

@@ -86,8 +86,10 @@ public class Rs2Tab {
 
         int varcIntIndex = tab.getVarcIntIndex();
         if (varcIntIndex != -1) {
-            Microbot.getClientThread().invokeLater(() ->
-                Microbot.getClient().runScript(TAB_SWITCH_SCRIPT, varcIntIndex));
+            Microbot.getClientThread().runOnClientThreadOptional(() -> {
+                Microbot.getClient().runScript(TAB_SWITCH_SCRIPT, varcIntIndex);
+                return true;
+            });
         } else {
             int hotkey = tab.getHotkey();
             if (hotkey == -1) {

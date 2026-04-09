@@ -692,11 +692,11 @@ public class Rs2Inventory {
         final Map<Integer, Long> priceMap = Microbot.getClientThread().runOnClientThreadOptional(() -> {
             Map<Integer, Long> map = new HashMap<>();
             for (Rs2ItemModel item : inventorySnapshot) {
-                map.put(item.getId(), (long) Microbot.getItemManager().getItemPrice(item.getId()) * item.getQuantity());
+                map.put(item.getSlot(), (long) Microbot.getItemManager().getItemPrice(item.getId()) * item.getQuantity());
             }
             return map;
         }).orElse(Collections.emptyMap());
-        final Predicate<Rs2ItemModel> price = item -> priceMap.getOrDefault(item.getId(), 0L) >= gpValue;
+        final Predicate<Rs2ItemModel> price = item -> priceMap.getOrDefault(item.getSlot(), 0L) >= gpValue;
         return dropAllExcept(ignore.or(price));
     }
 
