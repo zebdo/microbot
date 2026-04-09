@@ -88,10 +88,10 @@ public class BreakHandlerScript extends Script {
     }
 
     // Core break timing variables
-    public static int breakIn = -1;
-    public static int breakDuration = -1;
-    public static Duration setBreakDurationTime = Duration.ZERO;
-    public static int totalBreaks = 0;
+    public static volatile int breakIn = -1;
+    public static volatile int breakDuration = -1;
+    public static volatile Duration setBreakDurationTime = Duration.ZERO;
+    public static volatile int totalBreaks = 0;
     
     // State management - Thread-safe using atomic references
     private static final AtomicReference<BreakHandlerState> currentState = new AtomicReference<>(BreakHandlerState.WAITING_FOR_BREAK);

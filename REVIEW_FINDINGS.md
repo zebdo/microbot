@@ -172,7 +172,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Wrap both reads in a single `runOnClientThreadOptional` lambda that reads `getGameState()` and `getLoginIndex()` together: `Optional<Integer> loginIdx = Microbot.getClientThread().runOnClientThreadOptional(() -> client.getGameState() == GameState.LOGIN_SCREEN ? client.getLoginIndex() : -1); if (loginIdx.orElse(-1) == BANNED_LOGIN_INDEX) { ... }`. Apply the same pattern for `getWorld()` at line 360.
 - **Impact:** Prevents false-positive ban detection during normal login sequences that would silently shut down the break handler plugin and halt all scripts for a non-banned player.
 
-### `breakIn`, `breakDuration`, and `totalBreaks` are non-volatile static fields shared between the scheduler thread and the game render thread
+### [DONE] `breakIn`, `breakDuration`, and `totalBreaks` are non-volatile static fields shared between the scheduler thread and the game render thread
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/breakhandler/BreakHandlerScript.java:89-93`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/breakhandler/BreakHandlerOverlay.java:46,77,82`
 - **Type:** performance
