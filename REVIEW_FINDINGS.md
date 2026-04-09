@@ -403,7 +403,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** In both `updateWindowTitle()` and `resetWindowTitle()`, wrap the `setTitle` call with `SwingUtilities.invokeLater(() -> ClientUI.getFrame().setTitle(...))`. `invokeLater` returns immediately, so it does not block the scheduler thread.
 - **Impact:** Eliminates a Swing threading violation that can cause intermittent visual glitches or exceptions during title updates; costs one `SwingUtilities.invokeLater` wrapper per method.
 
-### `BreakHandlerV2Script.handleInitiatingBreak()` and `handleLogoutRequested()` call `sleep()` inside the `scheduleWithFixedDelay` callback, blocking the executor thread for 2–5 seconds
+### [DONE] `BreakHandlerV2Script.handleInitiatingBreak()` and `handleLogoutRequested()` call `sleep()` inside the `scheduleWithFixedDelay` callback, blocking the executor thread for 2–5 seconds
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/breakhandler/breakhandlerv2/BreakHandlerV2Script.java:277` (`handleInitiatingBreak`), `BreakHandlerV2Script.java:308` (`handleLogoutRequested`)
 - **Type:** performance

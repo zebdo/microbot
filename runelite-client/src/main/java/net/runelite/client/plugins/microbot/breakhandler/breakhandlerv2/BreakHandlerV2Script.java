@@ -274,7 +274,6 @@ public class BreakHandlerV2Script extends Script {
                 } else {
                     log.debug("[BreakHandlerV2] Waiting for safe conditions... (attempt {}/{})",
                              safetyCheckAttempts, MAX_SAFETY_CHECK_ATTEMPTS);
-                    sleep(SAFETY_CHECK_DELAY_MS);
                     return; // Stay in this state and check again
                 }
             } else {
@@ -305,7 +304,6 @@ public class BreakHandlerV2Script extends Script {
         try {
             log.info("[BreakHandlerV2] Attempting logout...");
             Rs2Player.logout();
-            sleep(2000, 3000);
         } catch (Exception ex) {
             log.error("[BreakHandlerV2] Error during logout", ex);
         }
