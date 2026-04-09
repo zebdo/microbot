@@ -145,18 +145,13 @@ public class Rs2Shop {
         Microbot.status = "Buying " + quantity + " " + itemName;
         try {
             Rs2ItemModel rs2Item = shopItems.stream()
-                    .filter(item -> item.getName().equalsIgnoreCase(itemName))
+                    .filter(item -> item.getName().equalsIgnoreCase(itemName) && item.getQuantity() > 0)
                     .findFirst().orElse(null);
+            if (rs2Item == null) return false;
             String actionAndQuantity = "Buy " + quantity;
             System.out.println(actionAndQuantity);
-            // Check if the item is in stock
-            if (hasStock(itemName)) {
-                System.out.println("We Have Stock of " + itemName);
-                invokeMenu(rs2Item, actionAndQuantity);
-            } else {
-                return false;
-            }
-
+            System.out.println("We Have Stock of " + itemName);
+            invokeMenu(rs2Item, actionAndQuantity);
         } catch (Exception ex) {
             Microbot.logStackTrace("Rs2Shop", ex);
         }
@@ -174,18 +169,13 @@ public class Rs2Shop {
         Microbot.status = "Buying " + quantity + " item with ID " + itemId;
         try {
             Rs2ItemModel rs2Item = shopItems.stream()
-                    .filter(item -> item.getId() == itemId)
+                    .filter(item -> item.getId() == itemId && item.getQuantity() > 0)
                     .findFirst().orElse(null);
+            if (rs2Item == null) return false;
             String actionAndQuantity = "Buy " + quantity;
             System.out.println(actionAndQuantity);
-            // Check if the item is in stock
-            if (hasStock(itemId)) {
-                System.out.println("We Have Stock of item with ID " + itemId);
-                invokeMenu(rs2Item, actionAndQuantity);
-            } else {
-                return false;
-            }
-
+            System.out.println("We Have Stock of item with ID " + itemId);
+            invokeMenu(rs2Item, actionAndQuantity);
         } catch (Exception ex) {
             Microbot.logStackTrace("Rs2Shop", ex);
         }
@@ -366,7 +356,7 @@ public class Rs2Shop {
         int identifier = 3;
         MenuAction menuAction = MenuAction.CC_OP;
         // Determine param0 (item slot in the shop)
-        param0 = getSlot(rs2Item.getName()) + 1; // Use the getSlot method to get the slot number
+        param0 = rs2Item.getSlot() + 1;
         System.out.println(param0);
 
         // Shop Inventory
@@ -443,6 +433,6 @@ public class Rs2Shop {
      * @return Rectangle of the item
      */
     private static Rectangle itemBounds(Rs2ItemModel rs2Item) {
-        return Rs2Widget.getWidget(19660816).getDynamicChildren()[getSlot(rs2Item.getName())+1].getBounds();
+        return Rs2Widget.getWidget(19660816).getDynamicChildren()[rs2Item.getSlot()+1].getBounds();
     }
 }

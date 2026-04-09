@@ -430,7 +430,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Wrap the `hasLineOfSight` computation inside `hasRequirements()` in a `Microbot.getClientThread().runOnClientThreadOptional(...)` call, or move it to execute once per `getNearestDepositBox` invocation (on the client thread) before the filter, caching which locations are currently in line-of-sight. Alternatively, move the LOS check to only run when the player is in a known restricted area (e.g. near a guild), since most constants' `hasRequirements` does not need LOS.
 - **Impact:** Removes 65 unsafe off-client-thread client reads per `walkToDepositBox` call; prevents a potential `NullPointerException` from `getLocalPlayer()` returning null during world hops or login transitions.
 
-### `buyItem` performs four separate linear scans of `shopItems` per call via `stream`, `hasStock`, `getSlot`, and `itemBounds`
+### [DONE] `buyItem` performs four separate linear scans of `shopItems` per call via `stream`, `hasStock`, `getSlot`, and `itemBounds`
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/shop/Rs2Shop.java:148-156`, `Rs2Shop.java:340-350`, `Rs2Shop.java:383`, `Rs2Shop.java:460`
 - **Type:** performance
 - **Found:** iter 16
