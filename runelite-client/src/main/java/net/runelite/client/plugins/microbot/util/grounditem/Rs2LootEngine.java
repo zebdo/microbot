@@ -30,6 +30,7 @@ public final class Rs2LootEngine {
         private final LootingParameters params;
         private Consumer<GroundItem> lootAction = gi -> {};
         private final Map<String, List<GroundItem>> candidateBuckets = new LinkedHashMap<>();
+        private List<GroundItem> candidatePool = null;
 
         private Builder(LootingParameters params) {
             this.params = Objects.requireNonNull(params, "params");
@@ -153,17 +154,13 @@ public final class Rs2LootEngine {
             final List<GroundItem> toLoot = new ArrayList<>(unique.values());
             toLoot.sort(Comparator.comparingInt(gi -> gi.getLocation().distanceTo(me)));
 
+            final Set<String> targetKeys = unique.keySet();
             return runWhilePaused(() -> {
                 for (GroundItem gi : toLoot) {
                     if (gi.getQuantity() < params.getMinQuantity()) continue;
                     if (!ensureSpaceFor(gi, params)) continue;
                     lootAction.accept(gi);
                 }
-                // Validate only items we targeted in this pass
-                final Set<String> targetKeys = candidateBuckets.values().stream()
-                        .flatMap(List::stream)
-                        .map(Rs2LootEngine::uniqueKey)
-                        .collect(Collectors.toSet());
                 return getGroundItems().values().stream()
                         .noneMatch(gi -> targetKeys.contains(uniqueKey(gi)));
             });
@@ -171,11 +168,14 @@ public final class Rs2LootEngine {
 
         /** Internal collector that applies base filters, delayed gate, and per-item prechecks. */
         private void collect(String label, Predicate<GroundItem> itemPredicate, Set<String> ignoredLower) {
-            final Predicate<GroundItem> base = baseRangeAndOwnershipFilter(params);
-            final Predicate<GroundItem> combined = base.and(itemPredicate);
+            if (candidatePool == null) {
+                candidatePool = getGroundItems().values().stream()
+                        .filter(baseRangeAndOwnershipFilter(params))
+                        .collect(Collectors.toList());
+            }
 
-            List<GroundItem> groundItems = getGroundItems().values().stream()
-                    .filter(combined)
+            List<GroundItem> groundItems = candidatePool.stream()
+                    .filter(itemPredicate)
                     .collect(Collectors.toList());
 
             if (groundItems.size() < params.getMinItems()) {

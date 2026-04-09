@@ -582,7 +582,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add `private static final Map<Integer, Rs2Staff> BY_ITEM_ID = Arrays.stream(values()).filter(s -> s != NONE).collect(Collectors.toMap(Rs2Staff::getItemID, Function.identity()))` to `Rs2Staff`, and an equivalent map to `Rs2Tome`. Replace the stream scan in `getRs2Staff` and `getRs2Tome` with a single `BY_ITEM_ID.getOrDefault(itemID, NONE)` lookup.
 - **Impact:** Reduces each lookup from O(n enum entries) to O(1); every magic script that checks rune availability per tick (alching, runecrafting, combat spell selection) benefits on every loop iteration.
 
-### `Rs2LootEngine.Builder.collect()` re-scans the full ground items table and re-applies the base distance filter on every `addXxx()` call
+### [DONE] `Rs2LootEngine.Builder.collect()` re-scans the full ground items table and re-applies the base distance filter on every `addXxx()` call
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/grounditem/Rs2LootEngine.java:173-203` (collect), `Rs2LootEngine.java:167-168` (loot validation scan)
 - **Type:** performance
 - **Found:** iter 7
