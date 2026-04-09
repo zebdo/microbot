@@ -1,7 +1,6 @@
 package net.runelite.client.plugins.microbot.util.farming;
 
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -234,18 +233,6 @@ public class Rs2Farming {
      */
     public static boolean hasRequiredFarmingLevel(int requiredLevel) {
         return Rs2Player.getRealSkillLevel(Skill.FARMING) >= requiredLevel;
-    }
-
-    /**
-     * Check if player has completed required quests for farming
-     *
-     * @param questState The required quest state
-     * @return true if quest requirement is met
-     */
-    public static boolean hasQuestRequirement(QuestState questState) {
-        // This would need to be implemented based on specific quest requirements
-        // For now, return true as a placeholder
-        return true;
     }
 
     /**

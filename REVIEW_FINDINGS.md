@@ -412,7 +412,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Remove both `sleep()` calls. For `handleInitiatingBreak`, rely on the already-tracked `safetyCheckAttempts` counter and the 1000ms scheduler interval as the wait mechanism (the method re-enters naturally). For `handleLogoutRequested`, the existing retry-delay logic already defers via `stateChangeTime`; the `sleep(2000, 3000)` after calling `Rs2Player.logout()` is redundant because the next scheduler cycle checks `Microbot.isLoggedIn()` anyway.
 - **Impact:** Keeps the executor thread unblocked during safety checks and logout attempts; allows ban detection, watchdog expiry, and other state transitions to proceed on schedule while waiting for safe conditions.
 
-### `Rs2Farming.hasQuestRequirement(QuestState)` is a permanently unimplemented placeholder that always returns `true`
+### [DONE] `Rs2Farming.hasQuestRequirement(QuestState)` is a permanently unimplemented placeholder that always returns `true`
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/farming/Rs2Farming.java:231-234`
 - **Type:** simplification
