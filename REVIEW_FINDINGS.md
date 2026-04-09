@@ -154,7 +154,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Promote the four arrays to `private static final ThreadLocal<int[][]>` / `ThreadLocal<int[]>` fields (or, since `pathTo()` is only called on the client thread in the URGENT case and the script thread elsewhere, a pair of static `int[][]` scratch fields with a guard flag). Initialize them once and reset only the cells that were modified during each BFS by tracking the set of visited (x, y) pairs. Alternatively, use a flat `int[128*128]` layout instead of `int[128][128]` to improve cache locality and halve the allocation object count.
 - **Impact:** Removes ~163 KB per BFS call from the GC heap; at 20 NPCs per combat tick, this saves ~3.2 MB/tick that would otherwise trigger minor GC pauses and game stutter.
 
-### `getCurrentTab()` throws `IllegalStateException` on any VarcInt outside 0–13, crashing script threads that poll it in `sleepUntil` predicates
+### [DONE] `getCurrentTab()` throws `IllegalStateException` on any VarcInt outside 0–13, crashing script threads that poll it in `sleepUntil` predicates
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/tabs/Rs2Tab.java:50-54`
 - **Type:** simplification

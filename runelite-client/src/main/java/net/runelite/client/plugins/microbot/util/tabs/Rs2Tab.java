@@ -50,7 +50,7 @@ public class Rs2Tab {
             case -1:
                 return InterfaceTab.NOTHING_SELECTED;
             default:
-                throw new IllegalStateException("Unexpected value: " + varcIntValue);
+                return InterfaceTab.NOTHING_SELECTED;
         }
     }
 
