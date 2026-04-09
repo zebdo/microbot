@@ -14,7 +14,8 @@ public class MicrobotPluginSearch
         String q = query == null ? "" : query.toLowerCase();
 
         return searchablePlugins.stream()
-                .filter(plugin -> plugin.getSearchableName().toLowerCase().contains(q))
+                .filter(plugin -> plugin.getSearchableName().toLowerCase().contains(q)
+                        || plugin.getKeywords().stream().anyMatch(k -> k.toLowerCase().contains(q)))
                 .sorted(Comparator.comparing(SearchablePlugin::isPinned, Comparator.reverseOrder())
                         .thenComparing(SearchablePlugin::getSearchableName))
                 .collect(Collectors.toList());

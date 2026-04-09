@@ -696,7 +696,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 
 ## LOW
 
-### `MicrobotPluginSearch.search()` ignores `getKeywords()` and only filters by display name, making author and tag searches return nothing
+### [DONE] `MicrobotPluginSearch.search()` ignores `getKeywords()` and only filters by display name, making author and tag searches return nothing
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/ui/search/MicrobotPluginSearch.java:16-17`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/ui/MicrobotPluginHubPanel.java:223-229`
 - **Type:** feature
