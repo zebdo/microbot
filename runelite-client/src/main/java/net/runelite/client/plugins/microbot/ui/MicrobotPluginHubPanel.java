@@ -827,6 +827,10 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
                         Collectors.toCollection(LinkedHashSet::new)
                 ));
 
+        Set<String> installedNames = installed.stream()
+                .map(im -> im.getClass().getSimpleName().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+
         // Build PluginItem list by looping over manifests
         plugins = manifestByName.entrySet().stream()
                 .map(e -> {
@@ -836,7 +840,7 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 
                     Collection<Plugin> group = pluginsByName.getOrDefault(key, Collections.emptySet());
                     int count = pluginCounts.getOrDefault(simpleName, -1);
-                    boolean isInstalled = installed.stream().anyMatch(im -> im.getClass().getSimpleName().equalsIgnoreCase(simpleName));
+                    boolean isInstalled = simpleName != null && installedNames.contains(simpleName.toLowerCase(Locale.ROOT));
 
                     return new PluginItem(m, group, count, isInstalled);
                 })

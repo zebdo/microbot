@@ -322,7 +322,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 
 ## MEDIUM
 
-### `reloadPluginList` checks `isInstalled` with an O(N×M) stream scan inside the manifest map loop
+### [DONE] `reloadPluginList` checks `isInstalled` with an O(N×M) stream scan inside the manifest map loop
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/ui/MicrobotPluginHubPanel.java:831-843`, `MicrobotPluginHubPanel.java:811`
 - **Type:** performance
