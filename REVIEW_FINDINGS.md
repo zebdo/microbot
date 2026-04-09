@@ -819,7 +819,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace with `items(item -> item.getId() == id).reduce((a, b) -> b).orElse(null)` — no allocation needed.
 - **Impact:** Removes one transient array allocation per call; minor but shows up in high-frequency scripts that use `useLast()` in a tight loop.
 
-### `hasDialogueOption(String, boolean)` allocates an intermediate `List<String>` that is consumed by a single `anyMatch` call
+### [DONE] `hasDialogueOption(String, boolean)` allocates an intermediate `List<String>` that is consumed by a single `anyMatch` call
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/dialogues/Rs2Dialogue.java:284-291`
 - **Type:** simplification
 - **Found:** iter 12

@@ -269,13 +269,7 @@ public class Rs2Dialogue {
     public static boolean hasDialogueOption(String text, boolean exact) {
         if (!hasSelectAnOption()) return false;
         List<Widget> dialogueOptions = Rs2Dialogue.getDialogueOptions();
-        List<String> dialogueText = dialogueOptions.stream().map(Widget::getText).collect(Collectors.toList());
-
-        if (exact) {
-            return dialogueText.stream().anyMatch(dialtxt -> dialtxt.equalsIgnoreCase(text));
-        } else {
-            return dialogueText.stream().anyMatch(dialtxt -> dialtxt.toLowerCase().contains(text.toLowerCase()));
-        }
+        return dialogueOptions.stream().anyMatch(w -> exact ? w.getText().equalsIgnoreCase(text) : w.getText().toLowerCase().contains(text.toLowerCase()));
     }
 
     /**
