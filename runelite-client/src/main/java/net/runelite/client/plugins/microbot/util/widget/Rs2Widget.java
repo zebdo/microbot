@@ -122,8 +122,11 @@ public class Rs2Widget {
     }
 
     public static int getChildWidgetSpriteID(int id, int childId) {
-        return Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getWidget(id, childId).getSpriteId())
-                .orElse(0);
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+            Widget w = Microbot.getClient().getWidget(id, childId);
+            if (w == null) return -1;
+            return w.getSpriteId();
+        }).orElse(-1);
     }
 
     public static String getChildWidgetText(int id, int childId) {

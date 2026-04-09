@@ -534,7 +534,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add a null check: `Widget child = widget.getChild(childId); if (child == null) return false; Microbot.getMouse().click(child.getBounds());`. Remove the duplicate semicolon.
 - **Impact:** Prevents NPE crashes in any script that calls `clickChildWidget` while an interface is being opened or closed; costs two lines to fix.
 
-### `getChildWidgetSpriteID` silently swallows NPE on null widget, making zero indistinguishable from "not found"
+### [DONE] `getChildWidgetSpriteID` silently swallows NPE on null widget, making zero indistinguishable from "not found"
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/widget/Rs2Widget.java:124-127`
 - **Type:** simplification
 - **Found:** iter 10
