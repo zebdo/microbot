@@ -103,7 +103,9 @@ public class Rs2Magic {
             Rs2Widget.clickWidget(14286852);
         }
 
-        Widget widget = Arrays.stream(Rs2Widget.getWidget(218, 3).getStaticChildren()).filter(x -> x.getSpriteId() == magicSpell.getSprite()).findFirst().orElse(null);
+        Widget spellbook = Rs2Widget.getWidget(218, 3);
+        if (spellbook == null || spellbook.getStaticChildren() == null) return false;
+        Widget widget = Arrays.stream(spellbook.getStaticChildren()).filter(x -> x.getSpriteId() == magicSpell.getSprite()).findFirst().orElse(null);
 
         return widget != null;
     }

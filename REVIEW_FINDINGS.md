@@ -566,7 +566,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace lines 558-562 with an operation on a defensive copy: `final Map<Runes, Integer> diff = new HashMap<>(reqRunes); diff.replaceAll(...); diff.keySet().removeIf(...); return diff;`. The `reqRunes` parameter is then left unmodified.
 - **Impact:** Prevents silent correctness bugs for any plugin author who reuses a rune-requirement map across multiple `hasRequiredRunes`/`getMissingRunes` calls; costs one `HashMap` allocation per call.
 
-### `canCast(MagicAction)` dereferences spellbook widget without a null guard
+### [DONE] `canCast(MagicAction)` dereferences spellbook widget without a null guard
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/magic/Rs2Magic.java:106`
 - **Type:** simplification
 - **Found:** iter 8
