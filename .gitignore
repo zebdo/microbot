@@ -44,6 +44,7 @@ target/
 
 ### Test loop artifacts ###
 logs/
+REVIEW_FINDINGS.md.bak
 
 ### Stray Node lockfiles (this is a Java/Gradle project) ###
 node_modules/
