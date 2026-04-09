@@ -33,8 +33,7 @@ public class Rs2Widget {
     }
 
     public static boolean sleepUntilHasWidget(String text) {
-        sleepUntil(() -> findWidget(text, null, false) != null);
-        return findWidget(text, null, false) != null;
+        return sleepUntil(() -> findWidget(text, null, false) != null);
     }
 
     public static boolean clickWidget(String text, Optional<Integer> widgetId, int childId, boolean exact) {

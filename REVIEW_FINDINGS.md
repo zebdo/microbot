@@ -755,7 +755,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace `Math.random() < Rs2AntibanSettings.microBreakChance` with `Rs2Random.diceFractional(Rs2AntibanSettings.microBreakChance)` to match the usage pattern in `actionCooldown()` on line 276.
 - **Impact:** Eliminates an inconsistent RNG call; one-line fix that harmonises the antiban system's randomness source.
 
-### `sleepUntilHasWidget` traverses the full widget tree twice for one boolean result
+### [DONE] `sleepUntilHasWidget` traverses the full widget tree twice for one boolean result
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/widget/Rs2Widget.java:35-38`
 - **Type:** simplification
 - **Found:** iter 10
