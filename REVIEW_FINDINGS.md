@@ -394,7 +394,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** In `switchTo()`, replace `Rs2Keyboard.keyPress(hotkey)` with a client-thread invocation of `Microbot.getClient().runScript(TAB_SWITCH_SCRIPT, varcIntIndex)` where `varcIntIndex` is the tab's 0-based VarcInt value (add `getVarcIntIndex()` to `InterfaceTab` returning the integer that `getCurrentTab()`'s switch maps back to for each constant). Fall back to the F-key path only if the script invocation fails. This eliminates the hotkey varbit read entirely.
 - **Impact:** Makes `switchTo()` work for all players regardless of F-key configuration; silently broken script behaviours (tab not opening, `setAutoCast` returning false) in setups without F-keys would be fixed; removes dead `TAB_SWITCH_SCRIPT` constant.
 
-### `updateWindowTitle()` calls `JFrame.setTitle()` from the scheduler thread — Swing EDT violation on every second
+### [DONE] `updateWindowTitle()` calls `JFrame.setTitle()` from the scheduler thread — Swing EDT violation on every second
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/breakhandler/BreakHandlerScript.java:836-846` (`updateWindowTitle`), `BreakHandlerScript.java:788` (`resetWindowTitle`), `BreakHandlerScript.java:384-385` (`handleClientShutdown`)
 - **Type:** simplification

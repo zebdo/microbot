@@ -13,6 +13,7 @@ import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.world.Rs2WorldUtil;
 import net.runelite.client.ui.ClientUI;
+import javax.swing.SwingUtilities;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Optional;
@@ -384,7 +385,7 @@ public class BreakHandlerScript extends Script {
             updateBreakStatistics();
             
             // Clean shutdown of the client
-            ClientUI.getFrame().setTitle(originalWindowTitle + " - Shutting Down");
+            SwingUtilities.invokeLater(() -> ClientUI.getFrame().setTitle(originalWindowTitle + " - Shutting Down"));
             if (scheduledFuture != null && !scheduledFuture.isDone()) {
                 scheduledFuture.cancel(true);
             }
@@ -787,7 +788,7 @@ public class BreakHandlerScript extends Script {
      * Resets window title to original.
      */
     private void resetWindowTitle() {
-        ClientUI.getFrame().setTitle(originalWindowTitle);
+        SwingUtilities.invokeLater(() -> ClientUI.getFrame().setTitle(originalWindowTitle));
     }
 
     /**
@@ -837,13 +838,15 @@ public class BreakHandlerScript extends Script {
      */
     private void updateWindowTitle() {
         BreakHandlerState state = currentState.get();
-        
+
         if (state == BreakHandlerState.LOGGED_OUT || state == BreakHandlerState.INGAME_BREAK_ACTIVE) {
             String breakType = state == BreakHandlerState.INGAME_BREAK_ACTIVE ? "In Game Break(Microbreak)" : "Break";
-            ClientUI.getFrame().setTitle(originalWindowTitle + " - " + breakType + ": " + 
-                                       formatDuration(Duration.ofSeconds(Math.max(0, breakDuration))));
+            String title = originalWindowTitle + " - " + breakType + ": " +
+                           formatDuration(Duration.ofSeconds(Math.max(0, breakDuration)));
+            SwingUtilities.invokeLater(() -> ClientUI.getFrame().setTitle(title));
         } else if (isBreakActive()) {
-            ClientUI.getFrame().setTitle(originalWindowTitle + " - " + state.toString().replace("_", " "));
+            String title = originalWindowTitle + " - " + state.toString().replace("_", " ");
+            SwingUtilities.invokeLater(() -> ClientUI.getFrame().setTitle(title));
         }
     }
 
