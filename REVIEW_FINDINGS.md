@@ -630,7 +630,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Remove the `.sorted(Comparator.comparingInt(value -> value.getLocalLocation().distanceTo(playerLocation)))` call at line 172. The method already returns a correctly ordered stream without it.
 - **Impact:** Removes one unnecessary O(n log n) sort from every `getNpcsForPlayer(String, boolean)` call; scripts that use this to track which NPCs are attacking the player call it on every tick.
 
-### `getClosestTileIndex` makes two stream passes over `path` when one suffices
+### [DONE] `getClosestTileIndex` makes two stream passes over `path` when one suffices
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/walker/Rs2Walker.java:1253-1258`
 - **Type:** performance
 - **Found:** iter 3

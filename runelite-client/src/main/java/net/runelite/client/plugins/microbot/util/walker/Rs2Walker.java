@@ -1254,14 +1254,11 @@ public class Rs2Walker {
                 .min(Comparator.comparingInt(a -> _tiles.getOrDefault(a, Integer.MAX_VALUE)))
                 .orElse(null);
 
-        boolean noMatchingTileFound = path.stream()
-                .allMatch(a -> _tiles.getOrDefault(a, Integer.MAX_VALUE) == Integer.MAX_VALUE);
-
         /**
          * Check if the startPoint is null or no matching tile is found
          * If either condition is true, proceed to find the closest index in the path list.
          */
-        if (startPoint == null || noMatchingTileFound) {
+        if (startPoint == null || _tiles.getOrDefault(startPoint, Integer.MAX_VALUE) == Integer.MAX_VALUE) {
             Optional<Integer> closestIndexOptional = IntStream.range(0, path.size())
                     .boxed()
                     .min(Comparator.comparingInt(i -> Rs2Player.getWorldLocation().distanceTo(path.get(i))));
