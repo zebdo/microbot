@@ -337,8 +337,8 @@ public class Rs2GrandExchange {
             return false;
         }
 
-        Predicate<GrandExchangeRequest> DEFAULT_PREDICATE = gxr -> gxr.getItemName() != null && !gxr.getItemName().isBlank() && request.getQuantity() > 0;
-        Predicate<GrandExchangeRequest> PRICE_PREDICATE = gxr -> gxr.getPrice() > 0;
+        Predicate<GrandExchangeRequest> DEFAULT_PREDICATE = gxr -> gxr.getItemName() != null && !gxr.getItemName().isBlank() && gxr.getQuantity() > 0;
+        Predicate<GrandExchangeRequest> PRICE_PREDICATE = gxr -> gxr.getPrice() > 0 || gxr.getPercent() != 0;
 
         switch (request.getAction()) {
             case BUY:
@@ -778,6 +778,7 @@ public class Rs2GrandExchange {
             GrandExchangeRequest request = GrandExchangeRequest.builder()
                     .action(GrandExchangeAction.SELL)
                     .itemName(item.getName())
+                    .quantity(item.getQuantity())
                     .percent(-5)
                     .build();
 

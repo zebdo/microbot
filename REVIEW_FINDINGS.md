@@ -216,7 +216,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Delete lines 369-381 entirely (the `itemComposition` fetch and the `identifier`-from-actions loop). The switch at lines 387-417 already sets the correct `identifier` for every handled action without needing the item composition. If shop sell actions are later added, scope the composition fetch inside those new cases only.
 - **Impact:** Eliminates one blocking `runOnClientThreadOptional` round-trip from every `buyItem` call and removes a `NullPointerException` crash in the buy path when item definitions are temporarily unavailable.
 
-### `sellInventory()` always fails `isValidRequest()` — the SELL request it builds has `quantity=0` and `price=0`, which the validator rejects, making the method silently non-functional
+### [DONE] `sellInventory()` always fails `isValidRequest()` — the SELL request it builds has `quantity=0` and `price=0`, which the validator rejects, making the method silently non-functional
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/grandexchange/Rs2GrandExchange.java:765-786`, `Rs2GrandExchange.java:334-353`
 - **Type:** simplification
 - **Found:** iter 15
