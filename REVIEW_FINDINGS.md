@@ -646,7 +646,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace the `path.contains` + `path.indexOf` pair at lines 865-867 with a single `int destIndex = path.indexOf(transport.getDestination()); if (destIndex != -1)`. At line 905, reuse the `indexOfDestination` variable already computed at line 896 instead of calling `path.indexOf` again.
 - **Impact:** Eliminates 2-3 redundant O(n) list scans per transport evaluated during route planning; each scan on a 300-tile path costs ~300 `WorldPoint.equals` comparisons.
 
-### `equipment()` public method bypasses the thread-safe cache
+### [DONE] `equipment()` public method bypasses the thread-safe cache
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/equipment/Rs2Equipment.java:28-30`
 - **Type:** performance
 - **Found:** iter 2

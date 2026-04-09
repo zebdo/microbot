@@ -25,7 +25,14 @@ import java.util.stream.Stream;
 public class Rs2Equipment {
     private static volatile List<Rs2ItemModel> equipmentItems = Collections.emptyList();
 
+    /**
+     * @deprecated Use {@link #items()} for thread-safe access to cached equipment.
+     * If raw {@link ItemContainer} access is required, call this method only from
+     * the client thread (wrap with {@code Microbot.getClientThread().invoke(...)}).
+     */
+    @Deprecated
     public static ItemContainer equipment() {
+        assert Microbot.getClient().isClientThread();
         return Microbot.getClient().getItemContainer(InventoryID.WORN);
     }
 
