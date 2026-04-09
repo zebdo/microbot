@@ -1398,7 +1398,15 @@ public class Rs2Player {
 
         if (potion == null) return false;
 
-        return Rs2Inventory.interact(potion, "drink");
+        String action = Arrays.stream(potion.getInventoryActions())
+                .filter(a -> a != null && a.equalsIgnoreCase("drink"))
+                .findFirst()
+                .orElseGet(() -> Arrays.stream(potion.getInventoryActions())
+                        .filter(a -> a != null && a.equalsIgnoreCase("release"))
+                        .findFirst()
+                        .orElse("drink"));
+
+        return Rs2Inventory.interact(potion, action);
     }
     
     /**
