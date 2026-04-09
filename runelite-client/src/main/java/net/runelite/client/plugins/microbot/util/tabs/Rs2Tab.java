@@ -1,6 +1,7 @@
 package net.runelite.client.plugins.microbot.util.tabs;
 
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.events.VarClientIntChanged;
 import net.runelite.api.gameval.InterfaceID;
 import net.runelite.api.gameval.VarClientID;
 import net.runelite.api.gameval.VarbitID;
@@ -15,43 +16,62 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
 @Slf4j
 public class Rs2Tab {
     private static final int TAB_SWITCH_SCRIPT = 915;
+    private static volatile InterfaceTab cachedTab = InterfaceTab.NOTHING_SELECTED;
+
+    public static void onVarClientIntChanged(VarClientIntChanged event) {
+        if (event.getIndex() != VarClientID.TOPLEVEL_PANEL) return;
+        int value = Microbot.getClient().getVarcIntValue(VarClientID.TOPLEVEL_PANEL);
+        switch (value) {
+            case 0:
+                cachedTab = InterfaceTab.COMBAT;
+                break;
+            case 1:
+                cachedTab = InterfaceTab.SKILLS;
+                break;
+            case 2:
+                cachedTab = InterfaceTab.QUESTS;
+                break;
+            case 3:
+                cachedTab = InterfaceTab.INVENTORY;
+                break;
+            case 4:
+                cachedTab = InterfaceTab.EQUIPMENT;
+                break;
+            case 5:
+                cachedTab = InterfaceTab.PRAYER;
+                break;
+            case 6:
+                cachedTab = InterfaceTab.MAGIC;
+                break;
+            case 7:
+                cachedTab = InterfaceTab.FRIENDS;
+                break;
+            case 8:
+                cachedTab = InterfaceTab.LOGOUT;
+                break;
+            case 9:
+                cachedTab = InterfaceTab.SETTINGS;
+                break;
+            case 10:
+                cachedTab = InterfaceTab.MUSIC;
+                break;
+            case 11:
+                cachedTab = InterfaceTab.CHAT;
+                break;
+            case 12:
+                cachedTab = InterfaceTab.ACC_MAN;
+                break;
+            case 13:
+                cachedTab = InterfaceTab.EMOTES;
+                break;
+            default:
+                cachedTab = InterfaceTab.NOTHING_SELECTED;
+                break;
+        }
+    }
 
     public static InterfaceTab getCurrentTab() {
-        final int varcIntValue = Microbot.getClient().getVarcIntValue(VarClientID.TOPLEVEL_PANEL);
-        switch (varcIntValue) {
-            case 0:
-                return InterfaceTab.COMBAT;
-            case 1:
-                return InterfaceTab.SKILLS;
-            case 2:
-                return InterfaceTab.QUESTS;
-            case 3:
-                return InterfaceTab.INVENTORY;
-            case 4:
-                return InterfaceTab.EQUIPMENT;
-            case 5:
-                return InterfaceTab.PRAYER;
-            case 6:
-                return InterfaceTab.MAGIC;
-            case 7:
-                return InterfaceTab.FRIENDS;
-            case 8:
-                return InterfaceTab.LOGOUT;
-            case 9:
-                return InterfaceTab.SETTINGS;
-            case 10:
-                return InterfaceTab.MUSIC;
-            case 11:
-                return InterfaceTab.CHAT;
-            case 12:
-                return InterfaceTab.ACC_MAN;
-            case 13:
-                return InterfaceTab.EMOTES;
-            case -1:
-                return InterfaceTab.NOTHING_SELECTED;
-            default:
-                return InterfaceTab.NOTHING_SELECTED;
-        }
+        return cachedTab;
     }
 
     public static boolean isCurrentTab(InterfaceTab tab) {

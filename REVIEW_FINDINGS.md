@@ -376,7 +376,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add a client-thread guard to `fromWorldInstance()`: check `Microbot.getClient().isClientThread()` and, if not on the client thread, dispatch via `runOnClientThreadOptional`. Since both `CollisionMap` and the walker call this synchronously (they need the result before continuing), `runOnClientThreadOptional` with blocking semantics is appropriate. Alternatively, have the pathfinder snapshot `instanceTemplateChunks` once at the start of each pathfinding run (on the client thread) and pass the snapshot into `CollisionMap`/`SplitFlagMap`.
 - **Impact:** Prevents silent coordinate corruption in instanced areas (POH, raids, dungeons) that can cause scripts to interact with objects in the wrong room; fixes an unsafe read from both the background pathfinding thread and the walker's script thread.
 
-### `getCurrentTab()` reads VarcInt directly from the game client off the client thread; most callers are script threads
+### [DONE] `getCurrentTab()` reads VarcInt directly from the game client off the client thread; most callers are script threads
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/tabs/Rs2Tab.java:20`, callers: `Rs2Combat.java:60,91`, `Rs2Walker.java:2165,2167`, `Rs2Inventory.java:1384,2108`, `Rs2Prayer.java:67`, `Rs2Magic.java:87,125,127,269`, `Rs2SpellBookSettings.java:46`
 - **Type:** performance
