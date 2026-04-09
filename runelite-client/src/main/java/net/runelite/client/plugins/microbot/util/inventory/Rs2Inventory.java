@@ -737,8 +737,7 @@ public class Rs2Inventory {
      * @return The last item that matches the ID, or null if not found.
      */
     public static Rs2ItemModel getLast(int id) {
-        final Rs2ItemModel[] items = items(item -> item.getId() == id).toArray(Rs2ItemModel[]::new);
-        return items.length == 0 ? null : items[items.length-1];
+        return items(item -> item.getId() == id).reduce((a, b) -> b).orElse(null);
     }
 
     /**

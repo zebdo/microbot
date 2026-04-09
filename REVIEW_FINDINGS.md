@@ -811,7 +811,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add `private static final EquipmentInventorySlot[] ALL_SLOTS = EquipmentInventorySlot.values();` and use it in both call sites instead of `EquipmentInventorySlot.values()`.
 - **Impact:** Removes one transient array allocation per worn-container event and per `isWearing` call that uses the `areSearchSlots` overload; minor but costs nothing to fix.
 
-### `getLast(int id)` materialises filtered stream into a full array to read one element
+### [DONE] `getLast(int id)` materialises filtered stream into a full array to read one element
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/inventory/Rs2Inventory.java:725-728`
 - **Type:** simplification
 - **Found:** iter 1
