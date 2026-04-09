@@ -272,7 +272,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace the loop with a single-pass approach: snapshot `Rs2Inventory.all()` once, then for each item call `Runes.byItemId(item.getId())` (the static map already exists at `Runes.java:57`) to look up its rune type in O(1), and accumulate quantities directly. This reduces 22 inventory scans to 1 per `addInventoryRunes` call.
 - **Impact:** Reduces 22 inventory stream passes to 1 per rune-check call; every magic script that calls `canCast`, `hasRequiredRunes`, or `getMissingRunes` on every tick benefits directly.
 
-### `lootItemBasedOnValue` and `isItemBasedOnValueOnGround` dispatch one blocking client-thread call per ground item for price lookup
+### [DONE] `lootItemBasedOnValue` and `isItemBasedOnValueOnGround` dispatch one blocking client-thread call per ground item for price lookup
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/grounditem/Rs2GroundItem.java:251-253`, `Rs2GroundItem.java:463-465`
 - **Type:** performance
 - **Found:** iter 7
