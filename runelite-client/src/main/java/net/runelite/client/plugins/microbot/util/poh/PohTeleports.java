@@ -234,10 +234,10 @@ public class PohTeleports {
     }
 
     public static boolean isFairyRing(TileObject tileObject) {
-        return FAIRY_RING_IDS.stream().anyMatch(id -> id == tileObject.getId());
+        return FAIRY_RING_IDS.contains(tileObject.getId());
     }
 
     public static boolean isSpiritTree(TileObject tileObject) {
-        return SPIRIT_TREE_IDS.stream().anyMatch(id -> id == tileObject.getId());
+        return SPIRIT_TREE_IDS.contains(tileObject.getId());
     }
 }

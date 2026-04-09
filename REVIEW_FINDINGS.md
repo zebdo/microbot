@@ -705,7 +705,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** In `search()`, extend the filter predicate: `plugin.getSearchableName().toLowerCase().contains(q) || plugin.getKeywords().stream().anyMatch(k -> k.toLowerCase().contains(q))`. Convert `q` to lowercase once before the stream (already done at line 14) and reuse it. The `getKeywords()` call is already part of the `SearchablePlugin` contract.
 - **Impact:** Allows users to find plugins by typing an author name, a tag, or a keyword from the description; currently typing anything other than the exact display name returns nothing.
 
-### `PohPortal.getPohPortal()`, `PohTeleports.isFairyRing()`, and `PohTeleports.isSpiritTree()` use linear scans where an O(1) map/set lookup is possible
+### [DONE] `PohPortal.getPohPortal()`, `PohTeleports.isFairyRing()`, and `PohTeleports.isSpiritTree()` use linear scans where an O(1) map/set lookup is possible
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/poh/data/PohPortal.java:142-153`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/poh/PohTeleports.java:232-237`
 - **Type:** simplification
