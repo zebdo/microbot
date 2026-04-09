@@ -210,7 +210,7 @@ public class Rs2NpcManager {
      */
     public static int getAttackSpeed(int npcId) {
         Rs2NpcStats s = statsMap.get(npcId);
-        Microbot.log(s.toString());
+        if (s == null) return -1;
         return s.getAttackSpeed() != -1 ? s.getAttackSpeed() : -1;
     }
 

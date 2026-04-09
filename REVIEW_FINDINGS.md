@@ -296,7 +296,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add a `private static final Map<String, List<Integer>> NAME_TO_IDS_CACHE = new ConcurrentHashMap<>()` and wrap the body of `getObjectIdsByName` with `NAME_TO_IDS_CACHE.computeIfAbsent(name, k -> { ... })`. The scan runs once per unique name and the result is reused on all subsequent calls.
 - **Impact:** Reduces 127 000 reflective field reads per tick to a single `HashMap.get` for any name queried more than once; all name-based object searches in every script benefit immediately.
 
-### `Rs2NpcManager.getAttackSpeed()` crashes with NullPointerException on unknown NPC ID and logs unconditionally
+### [DONE] `Rs2NpcManager.getAttackSpeed()` crashes with NullPointerException on unknown NPC ID and logs unconditionally
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/npc/Rs2NpcManager.java:212-214`
 - **Type:** performance
 - **Found:** iter 4
