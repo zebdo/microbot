@@ -312,7 +312,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Compute `distToTarget` first (move line 132 above line 129) and guard the BFS with `if (distToTarget <= distance)`: only then run `getReachableTilesFromTile`. The second arrival condition (`!walkableCheck && distToTarget <= distance`) already uses `distToTarget` directly and never needed the BFS anyway.
 - **Impact:** Eliminates a per-tick BFS allocation and expansion for the entire duration of any walk; scripts that call `walkTo` in a polling loop (virtually all of them) will see this on every iteration until the final few tiles.
 
-### `isNearBank(int)` triggers full pathfinder run when no bank object is in the scene
+### [DONE] `isNearBank(int)` triggers full pathfinder run when no bank object is in the scene
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/bank/Rs2Bank.java:2127-2129`, `Rs2Bank.java:1957-2039`
 - **Type:** performance
 - **Found:** iter 1
