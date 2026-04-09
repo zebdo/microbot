@@ -12,6 +12,7 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.coords.Rs2LocalPoint;
+import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldArea;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -325,11 +326,11 @@ public class Rs2GameObject {
             return true;
         };
 
+        Rs2WorldPoint playerLocation = Rs2Player.getRs2WorldPoint();
         return getGameObjects(filter, anchorPoint, distance)
                 .stream()
                 .min(Comparator.comparingInt(o ->
-                        Rs2Player.getRs2WorldPoint()
-                                .distanceToPath(o.getWorldLocation())))
+                        Rs2WorldPoint.quickDistance(playerLocation.getWorldPoint(), o.getWorldLocation())))
                 .orElse(null);
     }
 

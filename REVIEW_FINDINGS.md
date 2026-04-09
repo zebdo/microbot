@@ -136,7 +136,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Eliminate the duplicate scan by extracting the shared result: `private static final List<Integer> POH_SPIRIT_RING_IDS = Rs2GameObject.getObjectIdsByName("poh_spirit_ring")`. Build `FAIRY_RING_IDS` and `SPIRIT_TREE_IDS` as `private static final Set<Integer>` that append to `POH_SPIRIT_RING_IDS` without re-scanning. This reduces 4 class-load reflection scans to 3 and prevents the non-`final` mutation risk.
 - **Impact:** Eliminates one redundant 127,000-field reflection scan from the POH class-load path; also prevents an `ExceptionInInitializerError` that would make `PohTeleports` (and every class that imports it) permanently unloadable if the reflection call fails during startup.
 
-### `distanceToPath()` in stream `.min()` comparators reads scene tiles from the script thread and runs N sequential BFS searches
+### [DONE] `distanceToPath()` in stream `.min()` comparators reads scene tiles from the script thread and runs N sequential BFS searches
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/npc/Rs2Npc.java:1227`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/gameobject/Rs2GameObject.java:330-332`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/tile/Rs2Tile.java:687`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/coords/Rs2WorldPoint.java:53-91`
 - **Type:** performance

@@ -684,7 +684,7 @@ public abstract class Rs2Tile implements Tile {
 
         // Find the nearest walkable interact point to the player
         WorldPoint nearestPoint = walkablePoints.stream()
-                .min(Comparator.comparingInt(playerLocation::distanceToPath))
+                .min(Comparator.comparingInt(wp -> Rs2WorldPoint.quickDistance(playerLocation.getWorldPoint(), wp)))
                 .orElse(null);
 
         return new Rs2WorldPoint(nearestPoint);

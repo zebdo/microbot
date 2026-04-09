@@ -1228,7 +1228,10 @@ public class Rs2Npc {
                 .filter(value -> value.getComposition() != null
                         && value.getComposition().getActions() != null
                         && Arrays.asList(value.getComposition().getActions()).contains(action))
-                .min(Comparator.comparingInt(value -> playerLocation.distanceToPath(isInstance ? Rs2WorldPoint.toLocalInstance(value.getWorldLocation()) : value.getWorldLocation())))
+                .min(Comparator.comparingInt(value -> {
+                    WorldPoint wp = isInstance ? Rs2WorldPoint.toLocalInstance(value.getWorldLocation()) : value.getWorldLocation();
+                    return wp == null ? Integer.MAX_VALUE : Rs2WorldPoint.quickDistance(playerLocation.getWorldPoint(), wp);
+                }))
                 .orElse(null);
     }
 
