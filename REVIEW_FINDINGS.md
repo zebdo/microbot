@@ -163,7 +163,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Change the `default` case on line 53 from `throw new IllegalStateException(...)` to `return InterfaceTab.NOTHING_SELECTED;`. The sentinel value is the correct semantic ("no recognised tab is open") and callers already handle it.
 - **Impact:** Prevents script thread crashes whenever the game transitions through an unexpected tab state; every script that polls tab state in a `sleepUntil` loop (combat options, inventory open, magic spellbook, walker) is currently vulnerable.
 
-### `checkForBan()` reads `getGameState()` and `getLoginIndex()` from the scheduler thread, risking false-positive ban detection
+### [DONE] `checkForBan()` reads `getGameState()` and `getLoginIndex()` from the scheduler thread, risking false-positive ban detection
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/breakhandler/BreakHandlerScript.java:910-914`, `BreakHandlerScript.java:360`
 - **Type:** simplification

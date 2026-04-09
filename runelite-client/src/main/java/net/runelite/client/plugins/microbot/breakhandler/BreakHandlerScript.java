@@ -15,6 +15,7 @@ import net.runelite.client.plugins.microbot.util.world.Rs2WorldUtil;
 import net.runelite.client.ui.ClientUI;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -357,7 +358,8 @@ public class BreakHandlerScript extends Script {
         Rs2Walker.setTarget(null);
 
         // Remember the world we were in before the break
-        preBreakWorld = Microbot.getClient().getWorld();
+        preBreakWorld = Microbot.getClientThread().runOnClientThreadOptional(
+                () -> Microbot.getClient().getWorld()).orElse(0);
 
         // Determine next state based on break type
         setBreakDuration();
@@ -907,12 +909,12 @@ public class BreakHandlerScript extends Script {
      * checks for ban screen during login attempt or when logged out
      */
     private void checkForBan() {
-        GameState gameState = Microbot.getClient().getGameState();
-        
-        // detect ban screen on login screen
-        boolean banDetected = gameState == GameState.LOGIN_SCREEN
-                && Microbot.getClient().getLoginIndex() == BANNED_LOGIN_INDEX;
-        
+        Optional<Integer> loginIdx = Microbot.getClientThread().runOnClientThreadOptional(
+                () -> Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN
+                        ? Microbot.getClient().getLoginIndex()
+                        : -1);
+        boolean banDetected = loginIdx.orElse(-1) == BANNED_LOGIN_INDEX;
+
         if (banDetected && !isBanned) {
             isBanned = true;
             handleBanDetection();
