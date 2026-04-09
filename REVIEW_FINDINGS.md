@@ -478,7 +478,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Cache the factory in a `private volatile MouseMotionFactory cachedFactory` field. Invalidate the cache (set to `null`) whenever `ActivityIntensity`, `simulateFatigue`, or `simulateMistakes` changes. In `getFactory()`, return the cached instance if non-null; otherwise build and cache a new one. This reduces per-move allocation from ~10 objects to zero for the duration of any activity.
 - **Impact:** Removes ~10 object allocations per mouse move; scripts with natural mouse enabled produce 2–10 moves per click, so this saves dozens of allocations per game interaction — directly reduces GC pressure during click-heavy scripts.
 
-### `VirtualMouse.scheduledExecutorService` is sized at 10 threads for a serial-only click dispatch path
+### [DONE] `VirtualMouse.scheduledExecutorService` is sized at 10 threads for a serial-only click dispatch path
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/mouse/VirtualMouse.java:30`
 - **Type:** simplification
 - **Found:** iter 13

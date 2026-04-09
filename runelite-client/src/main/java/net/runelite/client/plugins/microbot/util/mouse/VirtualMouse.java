@@ -27,7 +27,7 @@ public class VirtualMouse extends Mouse {
     @Inject
     public VirtualMouse() {
         super();
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(10);
+        this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         //getCanvas().setFocusable(false);
     }
 
@@ -262,6 +262,10 @@ public class VirtualMouse extends Mouse {
         MouseEvent event = new MouseEvent(Microbot.getClient().getCanvas(), MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, point.getX(), point.getY(), 0, false);
         event.setSource("Microbot");
         getCanvas().dispatchEvent(event);
+    }
+
+    public void shutdown() {
+        scheduledExecutorService.shutdownNow();
     }
 
     // New drag method
