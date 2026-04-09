@@ -1,7 +1,6 @@
 package net.runelite.client.plugins.microbot.util.shop;
 
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.ItemComposition;
 import net.runelite.api.MenuAction;
 import net.runelite.api.NPCComposition;
 import net.runelite.api.events.ItemContainerChanged;
@@ -366,19 +365,6 @@ public class Rs2Shop {
         int param1;
         int identifier = 3;
         MenuAction menuAction = MenuAction.CC_OP;
-        ItemComposition itemComposition = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getItemDefinition(rs2Item.getId()))
-                .orElse(null);
-        if (!action.isEmpty()) {
-            String[] actions;
-            actions = itemComposition.getInventoryActions();
-
-            for (int i = 0; i < actions.length; i++) {
-                if (action.equalsIgnoreCase(actions[i])) {
-                    identifier = i + 2;
-                    break;
-                }
-            }
-        }
         // Determine param0 (item slot in the shop)
         param0 = getSlot(rs2Item.getName()) + 1; // Use the getSlot method to get the slot number
         System.out.println(param0);

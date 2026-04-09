@@ -208,7 +208,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** After each `invokeMenu(6, item)` call inside the loop, add `sleepUntil(() -> !Rs2Inventory.hasItem(item.getId()), 2500)` to wait for that item to leave the inventory before depositing the next. This serialises deposits and confirms each one before proceeding.
 - **Impact:** Ensures all matched items are actually deposited; without the fix, scripts using `depositAllExcept` or `depositAll(String...)` with multiple distinct item types will silently leave most items in the inventory.
 
-### `invokeMenu` dispatches a wasted `runOnClientThreadOptional` on every buy action and NPEs if the item definition is unavailable
+### [DONE] `invokeMenu` dispatches a wasted `runOnClientThreadOptional` on every buy action and NPEs if the item definition is unavailable
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/shop/Rs2Shop.java:369-381`, `Rs2Shop.java:387-417`
 - **Type:** simplification
 - **Found:** iter 16
