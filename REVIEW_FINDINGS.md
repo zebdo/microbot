@@ -614,7 +614,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Wrap both reads in `runOnClientThreadOptional`: fetch the spec varbit and the widget sprite ID together in a single client-thread call and return them as an `Optional<int[]>`. Replace the hard `throw` in `getSpecState()` with an `Optional.empty()` result (return `false` as the default if the widget is unavailable instead of crashing).
 - **Impact:** Prevents intermittent `RuntimeException` crashes in any combat script that calls `setSpecState` when interface updates are in flight; also removes an unsafe off-thread widget read from a method called on every spec-check tick.
 
-### `getAttackableNpcs()` re-sorts an already-sorted stream and reads client state off the client thread
+### [DONE] `getAttackableNpcs()` re-sorts an already-sorted stream and reads client state off the client thread
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/npc/Rs2Npc.java:381-387`, `Rs2Npc.java:406-416`
 - **Type:** performance
 - **Found:** iter 4
