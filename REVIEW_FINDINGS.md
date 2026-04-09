@@ -66,7 +66,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace line 461 with a null-safe alternative: `GameObject depositBoxObj = Rs2GameObject.findDepositBox(maxObjectSearchRadius); List<TileObject> bankObjs = depositBoxObj != null ? List.of(depositBoxObj) : List.of();`. The empty list causes the `byObject` optional to be empty and falls through correctly to the pathfinder, which is the intended behaviour.
 - **Impact:** Prevents a `NullPointerException` that crashes any script using `walkToDepositBox()` or `walkToAndUseDepositBox()` when the player is not already standing next to a deposit box; this is the normal starting state for every deposit-box script.
 
-### `shopItems` is a non-volatile static field written by the client thread and read by script threads, allowing stale list references to be observed indefinitely
+### [DONE] `shopItems` is a non-volatile static field written by the client thread and read by script threads, allowing stale list references to be observed indefinitely
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/shop/Rs2Shop.java:32`, `Rs2Shop.java:329`
 - **Type:** performance
 - **Found:** iter 16

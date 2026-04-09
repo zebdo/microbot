@@ -29,7 +29,7 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntilOnClien
 public class Rs2Shop {
     public static final int SHOP_INVENTORY_ITEM_CONTAINER = 19660800;
     public static final int SHOP_CLOSE_BUTTON = 196960801;
-    public static List<Rs2ItemModel> shopItems = new ArrayList<Rs2ItemModel>();
+    public static volatile List<Rs2ItemModel> shopItems = new ArrayList<Rs2ItemModel>();
 
 
     /**
