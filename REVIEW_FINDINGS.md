@@ -446,7 +446,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Delete the `.sorted(...)` at line 123. Replace `.sorted(...).findFirst()` with `.findFirst()`. The nearest NPC is already the first element after `getNpcs`'s internal sort.
 - **Impact:** Removes one O(n log n) sort per `openShop` / `getNearestShopNpc` call; mirrors the same fix already recommended for `getAttackableNpcs` and `getNpcsForPlayer` in iter 4.
 
-### `setQuantity` and `setPrice` dereference widget bounds without null-checking the widget returned by `GrandExchangeWidget`
+### [DONE] `setQuantity` and `setPrice` dereference widget bounds without null-checking the widget returned by `GrandExchangeWidget`
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/grandexchange/Rs2GrandExchange.java:591-592`, `Rs2GrandExchange.java:620-621`
 - **Type:** simplification
 - **Found:** iter 15
