@@ -454,7 +454,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** In `setQuantity`, add `if (quantityButtonX == null) { log.warn("Quantity button not found"); tries++; continue; }` after line 591. In `setPrice`, add `if (pricePerItemButtonX == null) return;` after line 620. Both callers already handle the failure case (retry loops or returning early).
 - **Impact:** Prevents NPE crashes in the buy/sell offer path during GE interface load; costs two null checks to fix.
 
-### `enter()` dispatches `KEY_RELEASED` for VK_ENTER twice, sending an orphaned release event to the game client
+### [DONE] `enter()` dispatches `KEY_RELEASED` for VK_ENTER twice, sending an orphaned release event to the game client
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/keyboard/Rs2Keyboard.java:166-167`
 - **Type:** simplification
 - **Found:** iter 14

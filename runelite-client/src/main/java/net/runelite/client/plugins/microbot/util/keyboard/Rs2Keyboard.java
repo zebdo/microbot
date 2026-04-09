@@ -164,7 +164,6 @@ public class Rs2Keyboard
 	public static void enter()
 	{
 		keyPress(KeyEvent.VK_ENTER);
-		dispatchKeyEvent(KeyEvent.KEY_RELEASED, KeyEvent.VK_ENTER, CHAR_UNDEFINED, 10);
 
 		// This is to make sure the enter event gets released, because for some reason it
 		// stays pressed and auto logs for jagex accounts
