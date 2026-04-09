@@ -686,7 +686,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Read the 9 tab-count varbits once when the bank opens (e.g. inside `updateLocalBank` on `ItemContainerChanged`) and store them in `bankTabCounts`. Add a dirty flag or simply re-read them only when a tab-open or tab-close event is detected. `getItemTabForBankItem` should then read the pre-populated array without calling `updateTabCounts`.
 - **Impact:** Cuts 9 varbit reads from every single bank item interaction; noticeable when rapidly withdrawing or depositing multiple stacks.
 
-### `makeInventorySpace()` re-scans the full inventory inside its deposit loop
+### [DONE] `makeInventorySpace()` re-scans the full inventory inside its deposit loop
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/bank/Rs2Bank.java:738-787`
 - **Type:** performance
 - **Found:** iter 1
