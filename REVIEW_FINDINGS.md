@@ -462,7 +462,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Delete line 167 (`dispatchKeyEvent(KeyEvent.KEY_RELEASED, KeyEvent.VK_ENTER, CHAR_UNDEFINED, 10)`). The VK_ENTER KEY_RELEASED is already dispatched by `keyRelease` inside `keyPress`. Keep `resetEnter()` at line 171 — it dispatches the `KEY_TYPED '\n'` that actually prevents the Jagex-account auto-login, which is the real workaround documented in the comment.
 - **Impact:** Removes a spurious unmatched KEY_RELEASED from every `enter()` call; affects GE price-setting, bank withdraw, deposit-box quantity, and login sequences — anywhere a quantity or text is typed and confirmed.
 
-### `resetEnter()` bypasses `withFocusCanvas`, the only public method that does not guard canvas focus
+### [DONE] `resetEnter()` bypasses `withFocusCanvas`, the only public method that does not guard canvas focus
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/keyboard/Rs2Keyboard.java:178-188`
 - **Type:** simplification
 - **Found:** iter 14
