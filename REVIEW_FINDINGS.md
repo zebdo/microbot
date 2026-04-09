@@ -518,7 +518,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Remove the `validateAndSetBreakDurations()` call from line 257 of `onGameTick()`. The two existing call sites in `startUp()` and `onProfileChanged()` are sufficient; add a third call inside the UI panel's save handler when the user commits new break-duration values.
 - **Impact:** Removes 3 integer comparisons from every game tick (~100/minute) for every player running any script; trivially free to fix.
 
-### `FieldUtil.java` is dead code that uses `sun.misc.Unsafe` internal API
+### [DONE] `FieldUtil.java` is dead code that uses `sun.misc.Unsafe` internal API
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/antiban/FieldUtil.java:1-27`
 - **Type:** simplification
 - **Found:** iter 11
