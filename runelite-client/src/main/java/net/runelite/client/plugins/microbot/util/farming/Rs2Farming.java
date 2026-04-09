@@ -155,11 +155,9 @@ public class Rs2Farming {
      * @return List of patches that are ready (harvestable, diseased, dead, or empty)
      */
     public static List<FarmingPatch> getReadyPatches(List<FarmingPatch> patches) {
+        Map<FarmingPatch, CropState> states = batchPredictAll(patches);
         return patches.stream()
-                .filter(patch -> {
-                    CropState state = predictPatchState(patch);
-                    return state != CropState.GROWING;
-                })
+                .filter(patch -> states.get(patch) != CropState.GROWING)
                 .collect(Collectors.toList());
     }
 
@@ -170,9 +168,10 @@ public class Rs2Farming {
      * @return List of patches ready for harvest
      */
     public static List<FarmingPatch> getHarvestablePatches(List<FarmingPatch> patches) {
+        Map<FarmingPatch, CropState> states = batchPredictAll(patches);
         return patches.stream()
                 .filter(patch -> {
-                    CropState state = predictPatchState(patch);
+                    CropState state = states.get(patch);
                     return state == CropState.HARVESTABLE || state == CropState.UNCHECKED;
                 })
                 .collect(Collectors.toList());
@@ -185,9 +184,10 @@ public class Rs2Farming {
      * @return List of patches needing attention
      */
     public static List<FarmingPatch> getPatchesNeedingAttention(List<FarmingPatch> patches) {
+        Map<FarmingPatch, CropState> states = batchPredictAll(patches);
         return patches.stream()
                 .filter(patch -> {
-                    CropState state = predictPatchState(patch);
+                    CropState state = states.get(patch);
                     return state == CropState.DISEASED || state == CropState.DEAD;
                 })
                 .collect(Collectors.toList());
@@ -200,11 +200,9 @@ public class Rs2Farming {
      * @return List of empty patches
      */
     public static List<FarmingPatch> getEmptyPatches(List<FarmingPatch> patches) {
+        Map<FarmingPatch, CropState> states = batchPredictAll(patches);
         return patches.stream()
-                .filter(patch -> {
-                    CropState state = predictPatchState(patch);
-                    return state == CropState.EMPTY;
-                })
+                .filter(patch -> states.get(patch) == CropState.EMPTY)
                 .collect(Collectors.toList());
     }
 

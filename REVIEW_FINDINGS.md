@@ -190,7 +190,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Hoist both the patch list fetch and the state prediction out of the per-tree loop. Add a `Map<FarmingPatch, CropState> batchPredictAll(List<FarmingPatch>)` method to `Rs2Farming` that calls `runOnClientThreadOptional` once and returns states for all patches. `getAvailableForTravel()` fetches `getSpiritTreePatches()` once, calls `batchPredictAll`, then evaluates each `SpiritTree` against the pre-built map without any further client-thread dispatch.
 - **Impact:** Reduces 10 sequential blocking client-thread round-trips to 2 (one for patch list, one for all states); any spirit tree teleport script calling `getAvailableForTravel()` currently blocks the script thread for up to 10 × 10 s on a slow client thread.
 
-### `getReadyPatches`, `getHarvestablePatches`, `getPatchesNeedingAttention`, and `getEmptyPatches` each dispatch N sequential blocking client-thread round-trips for N patches
+### [DONE] `getReadyPatches`, `getHarvestablePatches`, `getPatchesNeedingAttention`, and `getEmptyPatches` each dispatch N sequential blocking client-thread round-trips for N patches
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/farming/Rs2Farming.java:141-193`, `Rs2Farming.java:127-132`
 - **Type:** performance
