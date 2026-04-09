@@ -836,7 +836,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace with `log.debug("[BreakHandlerV2] Script instance #{} created (hash={})", instanceId, System.identityHashCode(this))`.
 - **Impact:** Removes unconditional stdout noise on break handler startup; one-line fix.
 
-### `toggleAllLocks()` calls `findLockedSlots()` a second time needlessly
+### [DONE] `toggleAllLocks()` calls `findLockedSlots()` a second time needlessly
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/bank/Rs2Bank.java:3138-3144`
 - **Type:** simplification
 - **Found:** iter 1

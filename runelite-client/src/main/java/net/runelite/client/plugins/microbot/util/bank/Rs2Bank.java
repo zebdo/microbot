@@ -3139,7 +3139,7 @@ public class Rs2Bank {
             log.debug("No locked slots to toggle.");
             return false;
         }
-        boolean anyUnlocked = !findLockedSlots().isEmpty();
+        boolean anyUnlocked = false;
         for (int slot : lockedSlots) {
             Rs2ItemModel item = Rs2Inventory.getItemInSlot(slot);
             if (item == null) {
