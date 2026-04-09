@@ -486,7 +486,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace `Executors.newScheduledThreadPool(10)` with `Executors.newSingleThreadScheduledExecutor()`. This guarantees serial dispatch, eliminates 9 idle threads, and prevents the interleaving correctness issue. Add a `shutdown()` method that calls `scheduledExecutorService.shutdownNow()` and wire it into any future `VirtualMouse` teardown.
 - **Impact:** Reduces idle thread count from 10 to 1; prevents concurrent `handleClick` interleaving; costs one word to fix.
 
-### `hasDialogueOptionTitle()` crashes with `ArrayIndexOutOfBoundsException` (or NPE) when the dynamic children array is null or empty
+### [DONE] `hasDialogueOptionTitle()` crashes with `ArrayIndexOutOfBoundsException` (or NPE) when the dynamic children array is null or empty
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/dialogues/Rs2Dialogue.java:199-200`
 - **Type:** simplification
 - **Found:** iter 12
