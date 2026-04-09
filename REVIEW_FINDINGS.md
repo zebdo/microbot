@@ -280,7 +280,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Batch the price lookups: replace both methods with a single `runOnClientThreadOptional` lambda that iterates `getAll(range)` once, builds a `Map<Integer, Long>` of `itemId → price * quantity`, then returns it. The subsequent `findFirst`/`anyMatch` reads from the pre-built map with no further client-thread dispatch.
 - **Impact:** Reduces N blocking client-thread round-trips to 1 per call (N = ground items in range); prevents the script thread from sequentially stalling for up to N × 10 s on a slow client thread.
 
-### `WeaponsGenerator.generate()` rebuilds the full weapons `HashMap` on every `getAttackRange()` call
+### [DONE] `WeaponsGenerator.generate()` rebuilds the full weapons `HashMap` on every `getAttackRange()` call
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/combat/Rs2Combat.java:197`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/combat/weapons/WeaponsGenerator.java:19-27`
 - **Type:** performance
 - **Found:** iter 6

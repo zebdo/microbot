@@ -27,6 +27,8 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntilTrue;
 @Slf4j
 public class Rs2Combat {
 
+    private static final Map<Integer, Weapon> WEAPONS_MAP = WeaponsGenerator.generate();
+
     /**
      * Sets the attack style
      *
@@ -194,7 +196,7 @@ public class Rs2Combat {
      */
     public static int getAttackRange(boolean includeManualCast, boolean includeSpecialAttack) {
         final Rs2ItemModel equippedWeapon = Rs2Equipment.get(EquipmentInventorySlot.WEAPON);
-        final Map<Integer, Weapon> weaponsMap = WeaponsGenerator.generate();
+        final Map<Integer, Weapon> weaponsMap = WEAPONS_MAP;
 
         if (equippedWeapon == null || !weaponsMap.containsKey(equippedWeapon.getId())) {
             return 1;
