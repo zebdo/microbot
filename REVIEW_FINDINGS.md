@@ -470,7 +470,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace the body of `resetEnter()` with `withFocusCanvas(() -> dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, '\n', 10))`. This eliminates the inline `KeyEvent` construction, reuses the existing `dispatchKeyEvent` helper, and restores the canvas-focus guard.
 - **Impact:** Closes a correctness gap where the anti-auto-login workaround silently fails on canvases with non-default focus settings; one-line fix that also removes 7 lines of duplicated key-event construction.
 
-### `NaturalMouse.getFactory()` allocates a new factory, speed manager, and 5–8 `Flow` objects on every mouse move
+### [DONE] `NaturalMouse.getFactory()` allocates a new factory, speed manager, and 5–8 `Flow` objects on every mouse move
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/mouse/naturalmouse/NaturalMouse.java:81-82`, `naturalmouse/util/FactoryTemplates.java:116-146`
 - **Type:** performance
 - **Found:** iter 13
