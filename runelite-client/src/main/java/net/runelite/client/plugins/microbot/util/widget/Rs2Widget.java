@@ -232,15 +232,14 @@ public class Rs2Widget {
     public static Widget searchChildren(String text, Widget child, boolean exact) {
         if (matchesText(child, text, exact)) return child;
 
-        List<Widget[]> childGroups = Stream.of(child.getChildren(), child.getNestedChildren(), child.getDynamicChildren(), child.getStaticChildren())
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
+        Widget[][] childGroups = {child.getChildren(), child.getNestedChildren(), child.getDynamicChildren(), child.getStaticChildren()};
         for (Widget[] childGroup : childGroups) {
             if (childGroup != null) {
-                for (Widget nestedChild : Arrays.stream(childGroup).filter(w -> w != null && !w.isHidden()).collect(Collectors.toList())) {
-                    Widget found = searchChildren(text, nestedChild, exact);
-                    if (found != null) return found;
+                for (Widget nestedChild : childGroup) {
+                    if (nestedChild != null && !nestedChild.isHidden()) {
+                        Widget found = searchChildren(text, nestedChild, exact);
+                        if (found != null) return found;
+                    }
                 }
             }
         }
@@ -324,15 +323,14 @@ public class Rs2Widget {
     public static Widget searchChildren(int spriteId, Widget child) {
         if (matchesSpriteId(child, spriteId)) return child;
 
-        List<Widget[]> childGroups = Stream.of(child.getChildren(), child.getNestedChildren(), child.getDynamicChildren(), child.getStaticChildren())
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
+        Widget[][] childGroups = {child.getChildren(), child.getNestedChildren(), child.getDynamicChildren(), child.getStaticChildren()};
         for (Widget[] childGroup : childGroups) {
             if (childGroup != null) {
-                for (Widget nestedChild : Arrays.stream(childGroup).filter(w -> w != null && !w.isHidden()).collect(Collectors.toList())) {
-                    Widget found = searchChildren(spriteId, nestedChild);
-                    if (found != null) return found;
+                for (Widget nestedChild : childGroup) {
+                    if (nestedChild != null && !nestedChild.isHidden()) {
+                        Widget found = searchChildren(spriteId, nestedChild);
+                        if (found != null) return found;
+                    }
                 }
             }
         }

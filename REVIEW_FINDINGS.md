@@ -248,7 +248,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Promote `timer` to an instance field (`private Timer panelRefreshTimer`), assign it in `startUp()`, and call `panelRefreshTimer.cancel(); panelRefreshTimer = null;` in `shutDown()`. This stops the task, releases the `MasterPanel` reference, and allows the panel to be GC'd.
 - **Impact:** Prevents a timer-thread leak and a `MasterPanel` memory leak that occur every time the Antiban plugin is restarted (e.g. when the user toggles it off and on); removes continuous 600 ms EDT work after shutdown.
 
-### `searchChildren` allocates a `List<Widget[]>` and a `List<Widget>` per widget node visited during tree traversal
+### [DONE] `searchChildren` allocates a `List<Widget[]>` and a `List<Widget>` per widget node visited during tree traversal
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/widget/Rs2Widget.java:235-241` (text search), `Rs2Widget.java:327-333` (sprite search)
 - **Type:** performance
 - **Found:** iter 10
