@@ -558,7 +558,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Before the add loop (line 178), add a removal loop: `for (Rs2PrayerEnum existing : Rs2PrayerEnum.values()) { if (isQuickPrayerSet(existing) && !Arrays.asList(prayers).contains(existing)) { /* invoke toggle-off for existing */ } }`. This ensures the resulting set of quick prayers exactly matches the input array.
 - **Impact:** Prevents unexpected accumulation of stale quick prayers; any script that dynamically reconfigures quick prayers between phases (e.g. melee phase → range phase in raids) will produce correct quick-prayer state after the first call.
 
-### `getMissingRunes` silently mutates the caller's input map
+### [DONE] `getMissingRunes` silently mutates the caller's input map
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/magic/Rs2Magic.java:555-563`
 - **Type:** simplification
 - **Found:** iter 8

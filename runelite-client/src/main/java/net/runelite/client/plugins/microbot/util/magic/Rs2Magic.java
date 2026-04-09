@@ -559,10 +559,11 @@ public class Rs2Magic {
         if (reqRunes.isEmpty()) return reqRunes;
 
         final Map<Runes, Integer> runes = getRunes(runeFilter);
-        reqRunes.replaceAll((key, value) -> Math.max(0,value-runes.getOrDefault(key, 0)));
-        reqRunes.keySet().removeIf(e -> reqRunes.get(e) <= 0);
+        final Map<Runes, Integer> diff = new HashMap<>(reqRunes);
+        diff.replaceAll((key, value) -> Math.max(0, value - runes.getOrDefault(key, 0)));
+        diff.keySet().removeIf(e -> diff.get(e) <= 0);
 
-        return reqRunes;
+        return diff;
     }
 
     public static Map<Runes, Integer> getMissingRunes(Map<Runes, Integer> reqRunes) {
