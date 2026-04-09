@@ -173,12 +173,9 @@ public class Rs2Combat {
         Player player = Microbot.getClient().getLocalPlayer();
         if (player == null) return false;
 
-        Actor interactingActor = Microbot.getClientThread().runOnClientThreadOptional(player::getInteracting).orElse(null);
-        if (interactingActor == null) return false;
-
         return Microbot.getClientThread().runOnClientThreadOptional(() -> {
-                    if (interactingActor.getCombatLevel() < 1) return false;
-
+                    Actor interactingActor = player.getInteracting();
+                    if (interactingActor == null || interactingActor.getCombatLevel() < 1) return false;
                     return player.getAnimation() != -1 || player.isInteracting();
                 })
                 .orElse(false);

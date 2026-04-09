@@ -598,7 +598,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add `public static final Set<Integer> BANK_ID_SET = new HashSet<>(Arrays.asList(bankIds))` to `Rs2BankID`, then replace both predicates with `o -> Rs2BankID.BANK_ID_SET.contains(o.getId())`. An identical fix applies to the local `grandExchangeBoothIds` array in `findGrandExchangeBooth` (line 455).
 - **Impact:** Reduces per-object predicate cost from O(600) to O(1); noticeable on every call to `openBank()` or any code that calls `findBank()` / `findDepositBox()`.
 
-### `inCombat()` dispatches two sequential blocking client-thread tasks when one suffices
+### [DONE] `inCombat()` dispatches two sequential blocking client-thread tasks when one suffices
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/combat/Rs2Combat.java:174-182`
 - **Type:** performance
 - **Found:** iter 6
