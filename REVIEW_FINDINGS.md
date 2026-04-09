@@ -127,7 +127,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add `scheduledExecutorService.shutdownNow()` at the start of `Script.shutdown()` (before the `mainScheduledFuture` null check). Change the `ThreadFactory` to set `t.setDaemon(true)` so that orphaned threads (if the executor is somehow not shut down) at least do not block JVM exit.
 - **Impact:** Prevents 10 non-daemon thread leaks per stop+start cycle of any plugin that creates a new script instance; stops non-daemon threads from preventing JVM exit; `ShortestPathPlugin` is the confirmed instance, but any plugin following the "new instance each time" pattern is affected.
 
-### `PohTeleports` static initializers trigger four `getObjectIdsByName` calls at class load, scanning `"poh_spirit_ring"` twice
+### [DONE] `PohTeleports` static initializers trigger four `getObjectIdsByName` calls at class load, scanning `"poh_spirit_ring"` twice
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/poh/PohTeleports.java:207-222`
 - **Type:** performance

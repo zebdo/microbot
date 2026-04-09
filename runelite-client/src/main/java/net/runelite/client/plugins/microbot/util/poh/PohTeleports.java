@@ -204,19 +204,18 @@ public class PohTeleports {
         return true;
     }
 
-    private static List<Integer> FAIRY_RING_IDS = fairyRingIds();
-    private static List<Integer> SPIRIT_TREE_IDS = spiritTreeIds();
+    private static final List<Integer> POH_SPIRIT_RING_IDS = Rs2GameObject.getObjectIdsByName("poh_spirit_ring");
+    private static final Set<Integer> FAIRY_RING_IDS = fairyRingIds();
+    private static final Set<Integer> SPIRIT_TREE_IDS = spiritTreeIds();
 
-    private static List<Integer> fairyRingIds() {
-        List<Integer> ids = new ArrayList<>();
-        ids.addAll(Rs2GameObject.getObjectIdsByName("poh_spirit_ring"));
+    private static Set<Integer> fairyRingIds() {
+        Set<Integer> ids = new LinkedHashSet<>(POH_SPIRIT_RING_IDS);
         ids.addAll(Rs2GameObject.getObjectIdsByName("poh_fairy_ring"));
         return ids;
     }
 
-    private static List<Integer> spiritTreeIds() {
-        List<Integer> ids = new ArrayList<>();
-        ids.addAll(Rs2GameObject.getObjectIdsByName("poh_spirit_ring"));
+    private static Set<Integer> spiritTreeIds() {
+        Set<Integer> ids = new LinkedHashSet<>(POH_SPIRIT_RING_IDS);
         ids.addAll(Rs2GameObject.getObjectIdsByName("poh_spirit_tree"));
         return ids;
     }
