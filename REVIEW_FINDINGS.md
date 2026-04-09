@@ -421,7 +421,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Either implement the method by delegating to `Rs2Player.getQuestState(Quest)` with a matching enum value, or delete it entirely (as no internal code calls it) so plugin authors are not misled into using a no-op helper. If the method is retained, its signature should accept a `Quest` enum value rather than a `QuestState` (you check what state a quest *is*, not whether it equals a target state, from within this layer).
 - **Impact:** Removes a silently broken public API that lets any quest-gated farming action proceed on accounts that have not completed required quests; deleting or correctly implementing it prevents subtle script logic errors.
 
-### `hasRequirements()` reads `getLocalPlayer()` and `getTopLevelWorldView()` off the client thread 65 times per `getNearestDepositBox` call
+### [DONE] `hasRequirements()` reads `getLocalPlayer()` and `getTopLevelWorldView()` off the client thread 65 times per `getNearestDepositBox` call
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/depositbox/DepositBoxLocation.java:92`, `Rs2DepositBox.java:451`
 - **Type:** performance

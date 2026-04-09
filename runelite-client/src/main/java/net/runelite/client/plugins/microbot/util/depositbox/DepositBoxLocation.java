@@ -89,7 +89,11 @@ public enum DepositBoxLocation {
     }
     
     public boolean hasRequirements() {
-        boolean hasLineOfSight = Microbot.getClient().getLocalPlayer().getWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), worldPoint);
+        boolean hasLineOfSight = Microbot.getClientThread().runOnClientThreadOptional(() -> {
+            Player localPlayer = Microbot.getClient().getLocalPlayer();
+            if (localPlayer == null) return false;
+            return localPlayer.getWorldArea().hasLineOfSightTo(Microbot.getClient().getTopLevelWorldView(), worldPoint);
+        }).orElse(false);
         switch (this) {
             case CRAFTING_GUILD:
                 boolean hasFaladorHardDiary = Microbot.getVarbitValue(Varbits.DIARY_FALADOR_HARD) == 1;
