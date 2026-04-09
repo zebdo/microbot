@@ -322,7 +322,8 @@ public class Rs2Inventory {
      * @return True if the inventory contains all the specified IDs, false otherwise.
      */
     public static boolean containsAll(int... ids) {
-        return Arrays.stream(ids).allMatch(Rs2Inventory::contains);
+        Set<Integer> present = inventoryItems.stream().map(Rs2ItemModel::getId).collect(Collectors.toSet());
+        return Arrays.stream(ids).allMatch(present::contains);
     }
 
     /**
@@ -333,7 +334,12 @@ public class Rs2Inventory {
      * @return True if the inventory contains all the specified names, false otherwise.
      */
     public static boolean containsAll(String... names) {
-        return Arrays.stream(names).allMatch(Rs2Inventory::contains);
+        Set<String> present = inventoryItems.stream()
+                .map(Rs2ItemModel::getName)
+                .filter(Objects::nonNull)
+                .map(String::toLowerCase)
+                .collect(Collectors.toSet());
+        return Arrays.stream(names).allMatch(name -> present.contains(name.toLowerCase()));
     }
 
     /**

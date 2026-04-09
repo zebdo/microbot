@@ -670,7 +670,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace the entire loop body with a check of which slot indices 0–27 are absent from the cached `inventoryItems` list: `IntStream.range(0, CAPACITY).filter(i -> inventoryItems.stream().noneMatch(x -> x.getSlot() == i)).findFirst().orElse(-1)`. Remove the `// TODO` comment.
 - **Impact:** Makes the method thread-safe and reliable; currently it silently returns -1 (no empty slot found) from script threads, causing downstream logic to fail.
 
-### `containsAll(int/String)` performs N full inventory scans for N items
+### [DONE] `containsAll(int/String)` performs N full inventory scans for N items
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/inventory/Rs2Inventory.java:323-335`
 - **Type:** performance
 - **Found:** iter 1
