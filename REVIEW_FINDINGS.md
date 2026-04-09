@@ -256,7 +256,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace the `Stream.of(...).filter(...).collect(toList())` block with direct null-checked array accesses: `Widget[][] groups = {child.getChildren(), child.getNestedChildren(), child.getDynamicChildren(), child.getStaticChildren()};`. Replace `Arrays.stream(childGroup).filter(...).collect(toList())` inner loop with a direct `for (Widget w : group) { if (w != null && !w.isHidden()) { ... } }`. Zero allocations per node visited.
 - **Impact:** Eliminates ~250 transient `List` allocations per `findWidget` call across a typical interface; every plugin that uses text-based widget interaction benefits on every call.
 
-### `Rs2PrayerEnum.DEAD_EYE` and `MYSTIC_VIGOUR` track the wrong active-state varbits
+### [DONE] `Rs2PrayerEnum.DEAD_EYE` and `MYSTIC_VIGOUR` track the wrong active-state varbits
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/prayer/Rs2PrayerEnum.java:33-35`
 - **Type:** simplification
 - **Found:** iter 9
