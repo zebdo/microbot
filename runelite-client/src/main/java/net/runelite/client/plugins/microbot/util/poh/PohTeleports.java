@@ -123,6 +123,11 @@ public class PohTeleports {
 
         Widget widget = Rs2Widget.findWidget(jewelleryLocationEnum.getDestination().toLowerCase(), Arrays.stream(mainWidget.getStaticChildren()).collect(Collectors.toList()));
 
+        if (widget == null) {
+            Microbot.log(jewelleryLocationEnum.getDestination() + " widget not found in jewellery box");
+            return false;
+        }
+
         boolean isTeleportDisabled = widget.getText().contains("<str>");
 
         if (isTeleportDisabled) {

@@ -349,7 +349,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** In `Script.run()`, replace `Microbot.getClient().getEnergy()` with `Microbot.getVarbitPlayerValue(VarPlayer.RUNNING_ENERGY_STORED)` which routes through `rs2PlayerStateCache` and is explicitly safe from any thread. Update `Rs2Player.getRunEnergy()` identically. Both callers then divide by 100 to get the percentage.
 - **Impact:** Aligns the run-energy read in every script's main loop with the framework's thread-safety contract; removes the last raw-client-API read from `Script.run()`, which is called by every running script on every tick.
 
-### `interactWithJewelleryBoxWidget` dereferences `widget.getText()` with no null guard, crashing any `useJewelleryBox()` call for an unconfigured destination
+### [DONE] `interactWithJewelleryBoxWidget` dereferences `widget.getText()` with no null guard, crashing any `useJewelleryBox()` call for an unconfigured destination
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/poh/PohTeleports.java:124-126`
 - **Type:** simplification
