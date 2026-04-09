@@ -396,6 +396,8 @@ public class Rs2Prayer {
 
         if (auguryUnlocked && prayerLevel >= Rs2PrayerEnum.AUGURY.getLevel())
             return Rs2PrayerEnum.AUGURY;
+        if (isMysticVigourUnlocked() && prayerLevel >= Rs2PrayerEnum.MYSTIC_VIGOUR.getLevel())
+            return Rs2PrayerEnum.MYSTIC_VIGOUR;
         if (prayerLevel >= Rs2PrayerEnum.MYSTIC_MIGHT.getLevel())
             return Rs2PrayerEnum.MYSTIC_MIGHT;
         if (prayerLevel >= Rs2PrayerEnum.MYSTIC_LORE.getLevel())
@@ -412,6 +414,8 @@ public class Rs2Prayer {
 
         if (rigourUnlocked && prayerLevel >= Rs2PrayerEnum.RIGOUR.getLevel())
             return Rs2PrayerEnum.RIGOUR;
+        if (isDeadeyeUnlocked() && prayerLevel >= Rs2PrayerEnum.DEAD_EYE.getLevel())
+            return Rs2PrayerEnum.DEAD_EYE;
         if (prayerLevel >= Rs2PrayerEnum.EAGLE_EYE.getLevel())
             return Rs2PrayerEnum.EAGLE_EYE;
         if (prayerLevel >= Rs2PrayerEnum.HAWK_EYE.getLevel())

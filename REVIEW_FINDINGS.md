@@ -542,7 +542,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add an explicit null check inside the lambda: `Widget w = Microbot.getClient().getWidget(id, childId); if (w == null) return -1; return w.getSpriteId();` and change `.orElse(0)` to `.orElse(-1)`. Callers can then reliably distinguish "widget absent" from "sprite ID is 0."
 - **Impact:** Eliminates a silent correctness bug for any caller testing widget sprite state during interface transitions; `-1` as a sentinel is already used elsewhere in the RuneLite API for absent sprites.
 
-### `getBestRangePrayer` and `getBestMagePrayer` silently ignore Deadeye and Mystic Vigour even when unlocked
+### [DONE] `getBestRangePrayer` and `getBestMagePrayer` silently ignore Deadeye and Mystic Vigour even when unlocked
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/prayer/Rs2Prayer.java:393-423`
 - **Type:** feature
 - **Found:** iter 9
