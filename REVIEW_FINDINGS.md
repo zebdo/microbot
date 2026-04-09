@@ -739,7 +739,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Hoist to a single local variable at the top of the method: `Canvas canvas = getCanvas(); KeyEvent event = new KeyEvent(canvas, id, System.currentTimeMillis() + delay, 0, keyCode, keyChar); canvas.dispatchEvent(event);`. This also makes the source and dispatch target visibly the same object.
 - **Impact:** Removes one redundant `getCanvas()` call per key event dispatch; costs one local variable to fix.
 
-### `private boolean exited` in `VirtualMouse` is set but never read — dead state
+### [DONE] `private boolean exited` in `VirtualMouse` is set but never read — dead state
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/mouse/VirtualMouse.java:25`, `VirtualMouse.java:248`, `VirtualMouse.java:255`
 - **Type:** simplification
 - **Found:** iter 13

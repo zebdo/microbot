@@ -22,7 +22,6 @@ import static net.runelite.client.plugins.microbot.util.Global.sleep;
 public class VirtualMouse extends Mouse {
 
     private final ScheduledExecutorService scheduledExecutorService;
-    private boolean exited = true;
 
     @Inject
     public VirtualMouse() {
@@ -248,14 +247,12 @@ public class VirtualMouse extends Mouse {
         MouseEvent event = new MouseEvent(Microbot.getClient().getCanvas(), MouseEvent.MOUSE_EXITED, System.currentTimeMillis(), 0, point.getX(), point.getY(), 0, false);
         event.setSource("Microbot");
         getCanvas().dispatchEvent(event);
-        exited = true;
     }
 
     private synchronized void entered(Point point) {
         MouseEvent event = new MouseEvent(Microbot.getClient().getCanvas(), MouseEvent.MOUSE_ENTERED, System.currentTimeMillis(), 0, point.getX(), point.getY(), 0, false);
         event.setSource("Microbot");
         getCanvas().dispatchEvent(event);
-        exited = false;
     }
 
     private synchronized void moved(Point point) {
