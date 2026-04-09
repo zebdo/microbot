@@ -26,6 +26,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -39,6 +40,8 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
  */
 @Deprecated(since = "2.1.0 - Use Rs2TileObjectQueryable instead", forRemoval = true)
 public class Rs2GameObject {
+	private static final Map<String, List<Integer>> NAME_TO_IDS_CACHE = new ConcurrentHashMap<>();
+
 	/**
 	 * Extracts all {@link GameObject}s located on a given {@link Tile}.
 	 *
@@ -1878,28 +1881,32 @@ public class Rs2GameObject {
         }
     }
 
-    @SneakyThrows
     public static List<Integer> getObjectIdsByName(String name) {
-        List<Integer> ids = new ArrayList<>();
-        String lowerName = name.toLowerCase();
+        return NAME_TO_IDS_CACHE.computeIfAbsent(name, k -> {
+            List<Integer> ids = new ArrayList<>();
+            String lowerName = k.toLowerCase();
 
-        Class<?>[] classesToScan = {
-                net.runelite.api.ObjectID.class,
-                net.runelite.api.gameval.ObjectID.class,
-                net.runelite.client.plugins.microbot.util.gameobject.ObjectID.class
-        };
+            Class<?>[] classesToScan = {
+                    net.runelite.api.ObjectID.class,
+                    net.runelite.api.gameval.ObjectID.class,
+                    net.runelite.client.plugins.microbot.util.gameobject.ObjectID.class
+            };
 
-        for (Class<?> clazz : classesToScan) {
-            for (Field f : clazz.getFields()) {
-                if (f.getType() != int.class) continue;
+            for (Class<?> clazz : classesToScan) {
+                for (Field f : clazz.getFields()) {
+                    if (f.getType() != int.class) continue;
 
-                if (f.getName().toLowerCase().contains(lowerName)) {
-                    f.setAccessible(true);
-                    ids.add(f.getInt(null));
+                    if (f.getName().toLowerCase().contains(lowerName)) {
+                        try {
+                            f.setAccessible(true);
+                            ids.add(f.getInt(null));
+                        } catch (IllegalAccessException ignored) {
+                        }
+                    }
                 }
             }
-        }
-        return ids;
+            return ids;
+        });
     }
 
     @Nullable

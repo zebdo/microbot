@@ -288,7 +288,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add `private static final Map<Integer, Weapon> WEAPONS = WeaponsGenerator.generate()` as a class-level field in `WeaponsGenerator` (or in `Rs2Combat`). Replace the `final Map<Integer, Weapon> weaponsMap = WeaponsGenerator.generate()` call at `Rs2Combat.java:197` with a reference to the cached field.
 - **Impact:** Reduces 3 `HashMap` allocations and 200+ `Weapon` instantiations to zero on every `getAttackRange()` call after the first; all combat scripts and NPC range checks benefit on every tick.
 
-### `getObjectIdsByName` scans 127,000+ constant fields via reflection on every name-based object lookup, with no caching
+### [DONE] `getObjectIdsByName` scans 127,000+ constant fields via reflection on every name-based object lookup, with no caching
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/gameobject/Rs2GameObject.java:1881-1902`, `Rs2GameObject.java:1603`
 - **Type:** performance
 - **Found:** iter 5
