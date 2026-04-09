@@ -8,8 +8,9 @@ import net.runelite.client.plugins.microbot.util.gameobject.Rs2GameObject;
 import net.runelite.client.plugins.worldmap.TeleportLocationData;
 
 import java.util.ArrayList;
-import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Getter
 public enum PohPortal implements PohTeleport {
@@ -139,23 +140,29 @@ public enum PohPortal implements PohTeleport {
         return Rs2GameObject.interact(portal, "enter");
     }
 
+    private static final Map<Integer, PohPortal> BY_OBJECT_ID;
+
+    static {
+        BY_OBJECT_ID = new HashMap<>();
+        for (PohPortal p : PohPortal.values()) {
+            for (int id : p.objectIds) {
+                BY_OBJECT_ID.put(id, p);
+            }
+        }
+    }
+
     public static PohPortal getPohPortal(GameObject portal) {
         if (portal == null) {
             return null;
         }
-        int objId = portal.getId();
-        for (PohPortal pohPortal : PohPortal.values()) {
-            if (Arrays.stream(pohPortal.objectIds).anyMatch((id) -> id == objId)) {
-                return pohPortal;
-            }
-        }
-        return null;
+        return BY_OBJECT_ID.get(portal.getId());
     }
 
     public static List<PohPortal> findPortalsInPoh() {
         List<PohPortal> portals = new ArrayList<>();
-        for (PohPortal portal : PohPortal.values()) {
-            if (portal.getPortal() != null) {
+        for (GameObject obj : Rs2GameObject.getGameObjects(o -> BY_OBJECT_ID.containsKey(o.getId()))) {
+            PohPortal portal = BY_OBJECT_ID.get(obj.getId());
+            if (portal != null && !portals.contains(portal)) {
                 portals.add(portal);
             }
         }

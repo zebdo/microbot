@@ -358,7 +358,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add `if (widget == null) { Microbot.log(jewelleryLocationEnum.getDestination() + " widget not found in jewellery box"); return false; }` immediately after line 124. This matches the guard already present in `interactWithPortalNexusWidget`.
 - **Impact:** Prevents NPE crashes in any script using `useJewelleryBox()` when the jewellery box is not configured for the requested destination or the interface is still loading; costs one null check to fix.
 
-### `PohPortal.findPortalsInPoh()` makes 29 individual full-scene scans to find at most 3 portals
+### [DONE] `PohPortal.findPortalsInPoh()` makes 29 individual full-scene scans to find at most 3 portals
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/poh/data/PohPortal.java:155-163`, `PohPortal.java:122-124`
 - **Type:** performance
