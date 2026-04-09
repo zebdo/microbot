@@ -367,7 +367,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Invert the scan: collect all game objects in the scene that match any `PohPortal` ID in one pass — `Rs2GameObject.getGameObjects(o -> BY_OBJECT_ID.containsKey(o.getId()))` — then map each found object to its `PohPortal` via a pre-built `Map<Integer, PohPortal> BY_OBJECT_ID`. This is 1 scene scan instead of 29.
 - **Impact:** Reduces 29 full-scene scans to 1 per `findPortalsInPoh()` call; any script or pathfinder that enumerates POH portals to build transport options benefits directly.
 
-### `Rs2LocalPoint.fromWorldInstance()` reads instance template chunks directly off the client thread from background callers
+### [DONE] `Rs2LocalPoint.fromWorldInstance()` reads instance template chunks directly off the client thread from background callers
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/coords/Rs2LocalPoint.java:18-23`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/coords/Rs2WorldPoint.java:132-140`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/walker/Rs2Walker.java:1048,1051,1070`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/shortestpath/pathfinder/CollisionMap.java:191`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/shortestpath/pathfinder/SplitFlagMap.java:52`
 - **Type:** performance
