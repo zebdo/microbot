@@ -99,7 +99,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace the `Rs2GameObject.getObjectIdsByName("poh_spirit_ring")` call at line 204 with a hardcoded `List.of()` (matching all other enum constants that list known object IDs) and add a comment with the object IDs once confirmed. If the IDs are genuinely unknown, keep `List.of()` as a placeholder rather than doing reflection at class-load time.
 - **Impact:** Eliminates a class-load time `ExceptionInInitializerError` risk that makes the entire `SpiritTree` enum unloadable if the reflection fails; removes a 127 000-field scan from the plugin startup path; prevents stale frozen ID lists from silently breaking spirit tree object detection after game updates.
 
-### `dropAllExcept(int gpValue)` dispatches one blocking client-thread call per inventory item
+### [DONE] `dropAllExcept(int gpValue)` dispatches one blocking client-thread call per inventory item
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/inventory/Rs2Inventory.java:682-686`
 - **Type:** performance
 - **Found:** iter 1
