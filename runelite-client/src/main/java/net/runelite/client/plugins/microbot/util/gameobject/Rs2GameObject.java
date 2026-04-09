@@ -1684,7 +1684,7 @@ public class Rs2GameObject {
 
 	@SuppressWarnings("unchecked")
 	private static <T extends TileObject> List<T> fetchGameObjects(Predicate<? super T> predicate, WorldPoint anchor) {
-		return fetchTileObjects(predicate, anchor, Constants.SCENE_SIZE);
+		return fetchGameObjects(predicate, anchor, Constants.SCENE_SIZE);
 	}
 
     @SuppressWarnings("unchecked")

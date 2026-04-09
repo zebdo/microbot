@@ -787,7 +787,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace `LocalPoint localPoint1 = LocalPoint.fromWorld(Microbot.getClient(), groundItem.location)` at line 108 with `LocalPoint localPoint1 = localPoint` (reuse the value already computed at line 79).
 - **Impact:** Removes one redundant `LocalPoint.fromWorld` resolution per ground item interaction; costs one word to fix.
 
-### `fetchGameObjects(Predicate, WorldPoint)` silently calls `fetchTileObjects` due to a copy-paste error
+### [DONE] `fetchGameObjects(Predicate, WorldPoint)` silently calls `fetchTileObjects` due to a copy-paste error
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/gameobject/Rs2GameObject.java:1681-1683`
 - **Type:** simplification
 - **Found:** iter 5
