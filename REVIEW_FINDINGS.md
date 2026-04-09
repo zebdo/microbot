@@ -714,7 +714,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add `private static final Map<Integer, PohPortal> BY_OBJECT_ID` built once at class load from all (portal, id) pairs across `PohPortal.values()`. Replace the loop+stream in `getPohPortal` with `return BY_OBJECT_ID.get(objId)`. Convert `FAIRY_RING_IDS` and `SPIRIT_TREE_IDS` to `Set<Integer>` fields and use `.contains(tileObject.getId())` in `isFairyRing` and `isSpiritTree`, eliminating the per-check stream allocation.
 - **Impact:** Reduces `getPohPortal` from up to 29 stream allocations + 116 comparisons to a single hash map lookup; reduces each per-tile predicate from a stream allocation + linear scan to a `Set.contains` check; every call to `getFairyRings()`, `getSpiritTree()`, and transport builder portal lookups benefits.
 
-### `depositAllExcept` and three other varargs overloads rebuild a stream over the exclusion array for every inventory item evaluated
+### [DONE] `depositAllExcept` and three other varargs overloads rebuild a stream over the exclusion array for every inventory item evaluated
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/depositbox/Rs2DepositBox.java:147`, `Rs2DepositBox.java:158`, `Rs2DepositBox.java:214`, `Rs2DepositBox.java:225`
 - **Type:** simplification

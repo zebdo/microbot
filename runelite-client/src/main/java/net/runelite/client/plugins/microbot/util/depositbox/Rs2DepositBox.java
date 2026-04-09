@@ -145,7 +145,8 @@ public class Rs2DepositBox {
      * @return {@code true} if at least one item was deposited, {@code false} otherwise
      */
     public static boolean depositAllExcept(Integer... ids) {
-        return depositAll(x -> Arrays.stream(ids).noneMatch(id -> id == x.getId()));
+        Set<Integer> idSet = new HashSet<>(Arrays.asList(ids));
+        return depositAll(x -> !idSet.contains(x.getId()));
     }
 
 
@@ -156,7 +157,8 @@ public class Rs2DepositBox {
      * @return {@code true} if at least one item was deposited, {@code false} otherwise
      */
     public static boolean depositAllExcept(String... names) {
-        return depositAll(x -> Arrays.stream(names).noneMatch(name -> x.getName().equalsIgnoreCase(name)));
+        Set<String> nameSet = Arrays.stream(names).map(String::toLowerCase).collect(Collectors.toSet());
+        return depositAll(x -> !nameSet.contains(x.getName().toLowerCase()));
     }
 
     /**
@@ -212,7 +214,8 @@ public class Rs2DepositBox {
      * @return {@code true} if any items were deposited, {@code false} otherwise
      */
     public static boolean depositAll(Integer... ids) {
-        return depositAll(x -> Arrays.stream(ids).anyMatch(id -> id == x.getId()));
+        Set<Integer> idSet = new HashSet<>(Arrays.asList(ids));
+        return depositAll(x -> idSet.contains(x.getId()));
     }
 
 
@@ -223,7 +226,8 @@ public class Rs2DepositBox {
      * @return {@code true} if any items were deposited, {@code false} otherwise
      */
     public static boolean depositAll(String... names) {
-        return depositAll(x -> Arrays.stream(names).anyMatch(name -> x.getName().equalsIgnoreCase(name)));
+        Set<String> nameSet = Arrays.stream(names).map(String::toLowerCase).collect(Collectors.toSet());
+        return depositAll(x -> nameSet.contains(x.getName().toLowerCase()));
     }
 
     /**
