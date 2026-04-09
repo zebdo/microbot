@@ -340,7 +340,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** In the `.map()` step at lines 192-209, fetch `PluginDescriptor descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class)` once at the top of the lambda and replace the two filter predicates with pre-fetched values by pushing the filter logic into the map+filter step: replace the two `.filter()` calls with a single `.filter(p -> { PluginDescriptor d = p.getClass().getAnnotation(PluginDescriptor.class); return !d.hidden() && (isMicrobotPkg || d.isExternal()); })` that reads the annotation once and checks both conditions.
 - **Impact:** Eliminates two redundant reflective annotation lookups per plugin per rebuild; one-pass approach also makes the filtering and mapping logic cohesive and easier to extend.
 
-### `Script.run()` reads `Microbot.getClient().getEnergy()` from the script thread, bypassing the thread-safe `Rs2PlayerStateCache`
+### [DONE] `Script.run()` reads `Microbot.getClient().getEnergy()` from the script thread, bypassing the thread-safe `Rs2PlayerStateCache`
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/Script.java:89`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/player/Rs2Player.java:1662`
 - **Type:** performance

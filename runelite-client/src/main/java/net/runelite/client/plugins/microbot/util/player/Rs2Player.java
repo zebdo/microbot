@@ -1667,7 +1667,7 @@ public class Rs2Player {
      * @return The player's run energy as an integer percentage (0-100).
      */
     public static int getRunEnergy() {
-        return Microbot.getClient().getEnergy() / 100;
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getEnergy()).orElse(0) / 100;
     }
 
     /**
