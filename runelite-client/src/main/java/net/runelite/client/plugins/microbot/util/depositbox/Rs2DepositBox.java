@@ -132,6 +132,7 @@ public class Rs2DepositBox {
         for (Rs2ItemModel item : items) {
             if (item == null) continue;
             invokeMenu(6, item);
+            sleepUntil(() -> !Rs2Inventory.hasItem(item.getId()), 2500);
             result = true;
         }
         return result;

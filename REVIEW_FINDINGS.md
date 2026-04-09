@@ -199,7 +199,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Batch the prediction: add a `Map<FarmingPatch, CropState> predictAllPatchStates(List<FarmingPatch> patches)` helper that calls `runOnClientThreadOptional` once with a lambda that iterates all patches and returns the full map. Rewrite the four filter methods to call `predictAllPatchStates` once and filter the returned map, with no additional client-thread dispatch per patch.
 - **Impact:** Reduces N blocking round-trips to 1 per filter call (N = number of patches checked); every farming herb-run or tree-run script that checks patch readiness per loop tick benefits directly.
 
-### `depositAll(Predicate)` fires successive `invokeMenu` calls for each matching item without waiting, silently losing all but the first deposit
+### [DONE] `depositAll(Predicate)` fires successive `invokeMenu` calls for each matching item without waiting, silently losing all but the first deposit
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/depositbox/Rs2DepositBox.java:134`, `Rs2DepositBox.java:147`, `Rs2DepositBox.java:157-159`, `Rs2DepositBox.java:213-215`
 - **Type:** simplification
