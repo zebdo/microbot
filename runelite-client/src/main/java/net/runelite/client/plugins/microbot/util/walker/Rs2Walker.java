@@ -862,9 +862,9 @@ public class Rs2Walker {
                         transport.getType() == TransportType.TELEPORTATION_SPELL)
                 {
                     // For teleportation, we assume origin is null and simply check if the destination exists in the path.
-                    if (path.contains(transport.getDestination())) {
+                    int destIndex = path.indexOf(transport.getDestination());
+                    if (destIndex != -1) {
                         transportList.add(transport);
-                        int destIndex = path.indexOf(transport.getDestination());
                         // Advance the current index to the destination tile (or at least one forward)
                         currentIndex = destIndex > currentIndex ? destIndex : currentIndex + 1;
                         foundTransport = true;
@@ -890,10 +890,10 @@ public class Rs2Walker {
 
                     // For non-teleportation transports, ensure both origin and destination exist in the path
                     // and that the destination comes after the origin.
+                    int indexOfDestination = path.indexOf(transport.getDestination());
                     if (transport.getType() != TransportType.TELEPORTATION_ITEM &&
                             transport.getType() != TransportType.TELEPORTATION_SPELL) {
                         int indexOfOrigin = path.indexOf(transport.getOrigin());
-                        int indexOfDestination = path.indexOf(transport.getDestination());
                         if (indexOfOrigin == -1 || indexOfDestination == -1 || indexOfDestination < indexOfOrigin) {
                             continue;
                         }
@@ -902,8 +902,7 @@ public class Rs2Walker {
                     // If the current path point equals the transport's origin then add it.
                     if (currentPoint.equals(origin)) {
                         transportList.add(transport);
-                        int destIndex = path.indexOf(transport.getDestination());
-                        currentIndex = destIndex > currentIndex ? destIndex : currentIndex + 1;
+                        currentIndex = indexOfDestination > currentIndex ? indexOfDestination : currentIndex + 1;
                         foundTransport = true;
                         break;
                     }

@@ -638,7 +638,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Delete lines 1257-1258 and replace the `if (startPoint == null || noMatchingTileFound)` condition on line 1264 with `if (startPoint == null || _tiles.getOrDefault(startPoint, Integer.MAX_VALUE) == Integer.MAX_VALUE)`.
 - **Impact:** Saves one O(path.length) stream pass on every `processWalk` invocation; path lists can be 100-500 elements long for cross-region walks.
 
-### `getTransportsForPath` scans `path` twice for the same teleport destination
+### [DONE] `getTransportsForPath` scans `path` twice for the same teleport destination
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/walker/Rs2Walker.java:865-867`, `Rs2Walker.java:895-905`
 - **Type:** performance
 - **Found:** iter 3
