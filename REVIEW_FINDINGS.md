@@ -118,7 +118,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Wrap the call at line 908: `SwingUtilities.invokeLater(this::reloadPluginList)`. This matches the pattern already used in `MicrobotPluginListPanel` and is a one-line fix.
 - **Impact:** Eliminates a Swing threading violation that fires on every plugin install/update/remove action from the plugin hub; mirrors the already-correct pattern in the sibling panel class.
 
-### `Script.scheduledExecutorService` is a 10-thread non-daemon pool never shut down in `shutdown()`, leaking OS threads on plugin restart
+### [DONE] `Script.scheduledExecutorService` is a 10-thread non-daemon pool never shut down in `shutdown()`, leaking OS threads on plugin restart
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/Script.java:25-34`, `Script.java:52-66`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/shortestpath/ShortestPathPlugin.java:229`
 - **Type:** performance
