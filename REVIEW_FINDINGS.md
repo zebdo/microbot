@@ -109,7 +109,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 
 ## HIGH
 
-### `MicrobotPluginHubPanel.onExternalPluginsChanged` calls `reloadPluginList()` from the client thread, violating Swing's single-thread rule
+### [DONE] `MicrobotPluginHubPanel.onExternalPluginsChanged` calls `reloadPluginList()` from the client thread, violating Swing's single-thread rule
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/ui/MicrobotPluginHubPanel.java:906-909`, `MicrobotPluginHubPanel.java:762-768`
 - **Type:** simplification

@@ -905,7 +905,7 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 
     @Subscribe
     private void onExternalPluginsChanged(ExternalPluginsChanged ev) {
-        reloadPluginList();
+        SwingUtilities.invokeLater(this::reloadPluginList);
     }
 
     // A utility class copied from the original PluginHubPanel
