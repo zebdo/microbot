@@ -39,6 +39,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.util.List;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
@@ -60,8 +61,8 @@ public class Rs2GrandExchange {
     private static final String WIKI_MAPPING_URL = "https://prices.runescape.wiki/api/v1/osrs/mapping";
 
     // Caches for different data types
-    private static final Map<Integer, WikiPrice> priceCache = new HashMap<>();
-    private static final Map<Integer, ItemMappingData> mappingCache = new HashMap<>();
+    private static final Map<Integer, WikiPrice> priceCache = new ConcurrentHashMap<>();
+    private static final Map<Integer, ItemMappingData> mappingCache = new ConcurrentHashMap<>();
     private static final long PRICE_CACHE_DURATION = 60000; // 1 minutes
 
     /**

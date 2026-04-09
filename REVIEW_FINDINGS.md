@@ -74,7 +74,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add `volatile` to the field declaration: `public static volatile List<Rs2ItemModel> shopItems = new ArrayList<>();`. No other changes are needed — `volatile` guarantees that the reference assignment on the client thread is immediately visible to all script threads.
 - **Impact:** Prevents script threads from polling a stale shop item list indefinitely; any shop-buying script that calls `hasStock()` or `waitForShopChanges()` after the shop opens can currently observe the pre-open empty list forever.
 
-### `priceCache` and `mappingCache` are unsynchronized `HashMap` instances written by the script thread and HTTP async executor concurrently
+### [DONE] `priceCache` and `mappingCache` are unsynchronized `HashMap` instances written by the script thread and HTTP async executor concurrently
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/grandexchange/Rs2GrandExchange.java:63-64`, `Rs2GrandExchange.java:1216-1224`, `Rs2GrandExchange.java:1497-1506`
 - **Type:** performance
 - **Found:** iter 15
