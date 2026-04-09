@@ -502,7 +502,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** In both methods, call the list-builder once and store the result: `List<Widget> options = getDialogueOptions(); if (options.isEmpty()) return null;` then use `options.stream()...` for the search. Eliminates the redundant widget traversal.
 - **Impact:** Halves the number of dialogue widget list builds per `getDialogueOption`/`getCombinationOption` call; every `clickOption(String)`, `keyPressForDialogueOption(String)`, and `clickCombinationOption` call benefits.
 
-### `hasItemContinue()` is fully subsumed by `hasSpriteContinue()`, causing `DIALOG_SPRITE child 0` to be checked twice on every `hasContinue()` call
+### [DONE] `hasItemContinue()` is fully subsumed by `hasSpriteContinue()`, causing `DIALOG_SPRITE child 0` to be checked twice on every `hasContinue()` call
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/dialogues/Rs2Dialogue.java:47-49`, `Rs2Dialogue.java:89-91`, `Rs2Dialogue.java:109-111`
 - **Type:** simplification
 - **Found:** iter 12

@@ -45,7 +45,7 @@ public class Rs2Dialogue {
      */
     public static boolean hasContinue() {
         return hasNPCContinue() || hasPlayerContinue() || hasDeathContinue() ||
-                hasSpriteContinue() || hasTutContinue() || hasItemContinue() ||
+                hasSpriteContinue() || hasTutContinue() ||
                 hasBarrowsContinue() || hasSpellFilterContinue();
     }
 
@@ -98,16 +98,6 @@ public class Rs2Dialogue {
      */
     private static boolean hasTutContinue() {
         return Rs2Widget.isWidgetVisible(229, 0) || Rs2Widget.isWidgetVisible(229, 2);
-    }
-
-    /**
-     * Checks if there is a "click here to continue" option for an item
-     * This includes items given when doing quests for example
-     *
-     * @return true if the "Continue" option is visible in the item dialogue, false otherwise.
-     */
-    private static boolean hasItemContinue() {
-        return Rs2Widget.isWidgetVisible(InterfaceID.DIALOG_SPRITE, 0);
     }
 
     /**
