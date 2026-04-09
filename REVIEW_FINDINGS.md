@@ -232,7 +232,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Declare `private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build()` once at class level and reference it in all methods. Add `.timeout(Duration.ofSeconds(10))` to each `HttpRequest.Builder` chain. This replaces 8 per-call allocations with zero and bounds all network waits to 10 seconds.
 - **Impact:** Eliminates 1–4 heavyweight `HttpClient` allocations per price-check call; prevents the script thread from hanging indefinitely on network failure during `sellInventory`, `sellLoot`, or any price-adaptive GE operation.
 
-### `move(Rectangle)` and `move(Polygon)` don't update `lastMove`, causing NaturalMouse to compute movement from the wrong start position
+### [DONE] `move(Rectangle)` and `move(Polygon)` don't update `lastMove`, causing NaturalMouse to compute movement from the wrong start position
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/mouse/VirtualMouse.java:157-173`, `NaturalMouse.java:67-71`
 - **Type:** simplification
 - **Found:** iter 13
