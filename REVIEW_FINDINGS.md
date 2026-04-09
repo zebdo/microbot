@@ -438,7 +438,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Combine into a single pass at the start of `buyItem`: `Rs2ItemModel rs2Item = shopItems.stream().filter(item -> item.getName().equalsIgnoreCase(itemName) && item.getQuantity() > 0).findFirst().orElse(null); if (rs2Item == null) return false;`. Pass `rs2Item.getSlot()` directly into `invokeMenu` and `itemBounds` instead of re-searching by name. This eliminates the separate `hasStock` and two `getSlot` calls.
 - **Impact:** Reduces four O(n) list scans to one per `buyItem` call; `buyItemOptimally` calls `buyItem` repeatedly (up to 50 times for 50-quantity purchases), making the savings proportional to the desired quantity.
 
-### `getNearestShopNpc` re-sorts an already-distance-sorted stream
+### [DONE] `getNearestShopNpc` re-sorts an already-distance-sorted stream
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/shop/Rs2Shop.java:94`, `Rs2Shop.java:123`
 - **Type:** simplification
 - **Found:** iter 16

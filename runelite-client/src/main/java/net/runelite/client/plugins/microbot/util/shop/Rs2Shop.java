@@ -119,7 +119,6 @@ public class Rs2Shop {
                         return false;
                     }
                 })
-                .sorted((npc1, npc2) -> Integer.compare(npc1.getDistanceFromPlayer(), npc2.getDistanceFromPlayer()))
                 .findFirst()
                 .orElse(null);
     }
