@@ -731,7 +731,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace each `System.out.println(...)` with the appropriate `log.debug(...)` or `log.warn(...)` call. Trace-level messages (e.g., "Checking if item X is in stock") should be `log.debug`; warnings (e.g., "X isn't in stock") can remain as `log.warn`. Remove the redundant "Amount of items in the shop" prints (already implied by the check failing).
 - **Impact:** Eliminates stdout pollution on every shop interaction; allows operators to suppress shop diagnostics via log configuration without code changes.
 
-### `dispatchKeyEvent` calls `getCanvas()` twice for a single event dispatch
+### [DONE] `dispatchKeyEvent` calls `getCanvas()` twice for a single event dispatch
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/keyboard/Rs2Keyboard.java:61-68`
 - **Type:** simplification
 - **Found:** iter 14

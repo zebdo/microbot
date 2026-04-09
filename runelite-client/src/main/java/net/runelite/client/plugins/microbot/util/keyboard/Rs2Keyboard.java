@@ -57,15 +57,9 @@ public class Rs2Keyboard
 	 */
 	private static void dispatchKeyEvent(int id, int keyCode, char keyChar, int delay)
 	{
-		KeyEvent event = new KeyEvent(
-				getCanvas(),
-				id,
-				System.currentTimeMillis() + delay,
-				0,
-				keyCode,
-				keyChar
-		);
-		getCanvas().dispatchEvent(event);
+		Canvas canvas = getCanvas();
+		KeyEvent event = new KeyEvent(canvas, id, System.currentTimeMillis() + delay, 0, keyCode, keyChar);
+		canvas.dispatchEvent(event);
 	}
 
 	/**
