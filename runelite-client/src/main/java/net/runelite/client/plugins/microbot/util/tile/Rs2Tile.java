@@ -42,6 +42,11 @@ public abstract class Rs2Tile implements Tile {
 
     private static final int FLAG_DATA_SIZE = 104;
 
+    private static final ThreadLocal<int[][]> DIRECTIONS_TL = ThreadLocal.withInitial(() -> new int[128][128]);
+    private static final ThreadLocal<int[][]> DISTANCES_TL = ThreadLocal.withInitial(() -> new int[128][128]);
+    private static final ThreadLocal<int[]> BUFFER_X_TL = ThreadLocal.withInitial(() -> new int[4096]);
+    private static final ThreadLocal<int[]> BUFFER_Y_TL = ThreadLocal.withInitial(() -> new int[4096]);
+
     /**
      * Initializes the tile executor
      * This will handle the removal of dangerous tiles after a certain amount of time
@@ -1079,19 +1084,15 @@ public abstract class Rs2Tile implements Tile {
             return null;
         }
 
-        int[][] directions = new int[128][128];
-        int[][] distances = new int[128][128];
-        int[] bufferX = new int[4096];
-        int[] bufferY = new int[4096];
+        int[][] directions = DIRECTIONS_TL.get();
+        int[][] distances = DISTANCES_TL.get();
+        int[] bufferX = BUFFER_X_TL.get();
+        int[] bufferY = BUFFER_Y_TL.get();
 
-        // Initialise directions and distances
         for (int i = 0; i < 128; ++i)
         {
-            for (int j = 0; j < 128; ++j)
-            {
-                directions[i][j] = 0;
-                distances[i][j] = Integer.MAX_VALUE;
-            }
+            Arrays.fill(directions[i], 0);
+            Arrays.fill(distances[i], Integer.MAX_VALUE);
         }
 
         Point p1 = source.getSceneLocation();

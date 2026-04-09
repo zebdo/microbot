@@ -145,7 +145,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace `distanceToPath()` in all three `.min()` comparators with `Rs2WorldPoint.quickDistance()` (already defined at Rs2WorldPoint.java:157 — Chebyshev distance, O(1), no client state read). Chebyshev distance is a valid approximation for the nearest-entity comparator; exact path distance is only needed for the binary reachability check (handled separately by the URGENT finding above).
 - **Impact:** Eliminates K BFS searches and K unsafe scene reads per call to `getNearestNpcWithAction`, `getReachableGameObject`, or `getNearestWalkableInteractPoint`; every script using these to find nearby entities benefits on every invocation.
 
-### `Rs2Tile.pathTo()` allocates and initialises two 128×128 grids per call, causing severe GC pressure in combat scripts
+### [DONE] `Rs2Tile.pathTo()` allocates and initialises two 128×128 grids per call, causing severe GC pressure in combat scripts
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/tile/Rs2Tile.java:1082-1095`
 - **Type:** performance
