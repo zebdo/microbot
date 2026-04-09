@@ -34,6 +34,7 @@ import org.apache.commons.lang3.tuple.Pair;
 import java.awt.*;
 import java.io.StringReader;
 import java.net.URI;
+import java.time.Duration;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
@@ -64,6 +65,7 @@ public class Rs2GrandExchange {
     private static final Map<Integer, WikiPrice> priceCache = new ConcurrentHashMap<>();
     private static final Map<Integer, ItemMappingData> mappingCache = new ConcurrentHashMap<>();
     private static final long PRICE_CACHE_DURATION = 60000; // 1 minutes
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(5)).build();
 
     /**
      * close the grand exchange interface
@@ -1185,13 +1187,13 @@ public class Rs2GrandExchange {
 
 
     public static int getOfferPrice(int itemId) {
-        HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(GE_TRACKER_API_URL + itemId))
+                .timeout(Duration.ofSeconds(10))
                 .build();
 
         try {
-            String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            String jsonResponse = HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
                     .join();
 
@@ -1253,13 +1255,13 @@ public class Rs2GrandExchange {
      */
     private static WikiPrice getWikiPrices(int itemId) {
         try {
-            HttpClient httpClient = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(WIKI_API_URL + itemId))
                     .header("User-Agent", "OSRS - Price Fetcher")
+                    .timeout(Duration.ofSeconds(10))
                     .build();
 
-            String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            String jsonResponse = HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
                     .join();
 
@@ -1387,14 +1389,14 @@ public class Rs2GrandExchange {
                 urlBuilder.append("&timestamp=").append(fromTimestamp);
             }
 
-            HttpClient httpClient = HttpClient.newHttpClient();
             String finalUrl = urlBuilder.toString();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(finalUrl))
                     .header("User-Agent", "Time Series Price Analysis")
+                    .timeout(Duration.ofSeconds(10))
                     .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
                 JsonParser parser = new JsonParser();
@@ -1518,13 +1520,13 @@ public class Rs2GrandExchange {
      */
     private static ItemMappingData fetchItemMappingData(int itemId) {
         try {
-            HttpClient httpClient = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder()
                     .uri(URI.create(WIKI_MAPPING_URL))
                     .header("User-Agent", "OSRS Item Mapping Fetcher")
+                    .timeout(Duration.ofSeconds(10))
                     .build();
 
-            HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
                 JsonParser parser = new JsonParser();
@@ -1576,13 +1578,13 @@ public class Rs2GrandExchange {
     }
 
     public static int getSellPrice(int itemId) {
-        HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(GE_TRACKER_API_URL + itemId))
+                .timeout(Duration.ofSeconds(10))
                 .build();
 
         try {
-            String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            String jsonResponse = HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
                     .join();
 
@@ -1598,13 +1600,13 @@ public class Rs2GrandExchange {
     }
 
     public static int getPrice(int itemId) {
-        HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(GE_TRACKER_API_URL + itemId))
+                .timeout(Duration.ofSeconds(10))
                 .build();
 
         try {
-            String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            String jsonResponse = HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
                     .join();
 
@@ -1627,13 +1629,13 @@ public class Rs2GrandExchange {
     }
 
     public static int getBuyingVolume(int itemId) {
-        HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(GE_TRACKER_API_URL + itemId))
+                .timeout(Duration.ofSeconds(10))
                 .build();
 
         try {
-            String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            String jsonResponse = HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
                     .join();
 
@@ -1649,13 +1651,13 @@ public class Rs2GrandExchange {
     }
 
     public static int getSellingVolume(int itemId) {
-        HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest request = HttpRequest.newBuilder()
                 .uri(URI.create(GE_TRACKER_API_URL + itemId))
+                .timeout(Duration.ofSeconds(10))
                 .build();
 
         try {
-            String jsonResponse = httpClient.sendAsync(request, HttpResponse.BodyHandlers.ofString())
+            String jsonResponse = HTTP_CLIENT.sendAsync(request, HttpResponse.BodyHandlers.ofString())
                     .thenApply(HttpResponse::body)
                     .join();
 

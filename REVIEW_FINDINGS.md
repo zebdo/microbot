@@ -224,7 +224,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** For `isValidRequest`, relax the SELL case to allow `price == 0` when `percent != 0` (percent-based pricing is a valid sell strategy). Also change `request.getQuantity()` to `gxr.getQuantity()` in `DEFAULT_PREDICATE` to fix the closure bug. In `sellInventory()`, either set `quantity` to the item's stack count in the inventory, or document that `quantity=0` means "use game default" and skip the quantity check in the SELL validator.
 - **Impact:** Makes `sellInventory()` and `sellLoot()` functional — currently every call silently no-ops after building and discarding a request object per inventory item; any script using these methods to sell GE loot is broken.
 
-### Six GE price methods each allocate a new `HttpClient` per call and block the calling thread indefinitely with no timeout
+### [DONE] Six GE price methods each allocate a new `HttpClient` per call and block the calling thread indefinitely with no timeout
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/grandexchange/Rs2GrandExchange.java:1186-1194`, `Rs2GrandExchange.java:1253-1262`, `Rs2GrandExchange.java:1388-1395`, `Rs2GrandExchange.java:1519-1525`, `Rs2GrandExchange.java:1577-1585`, `Rs2GrandExchange.java:1598-1606`, `Rs2GrandExchange.java:1627-1635`, `Rs2GrandExchange.java:1649-1657`
 - **Type:** performance
 - **Found:** iter 15
