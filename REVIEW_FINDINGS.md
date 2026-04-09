@@ -654,7 +654,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Deprecate `equipment()` in favour of `items()` with a Javadoc note ("@deprecated Use {@link #items()} for thread-safe access to cached equipment"). If raw `ItemContainer` access is genuinely needed (e.g. for quantity checks not surfaced by `Rs2ItemModel`), rename the method to `equipmentUnsafe()` and add an `assert Microbot.getClient().isClientThread()` guard.
 - **Impact:** Prevents silent correctness bugs in any plugin that reads `equipment()` off the client thread; mirrors the fix already applied to `Rs2Inventory.getFirstEmptySlot()`.
 
-### `invokeMenu` uses an 11-branch if-else chain to map equipment slots to widget params
+### [DONE] `invokeMenu` uses an 11-branch if-else chain to map equipment slots to widget params
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/equipment/Rs2Equipment.java:344-377`
 - **Type:** simplification
 - **Found:** iter 2

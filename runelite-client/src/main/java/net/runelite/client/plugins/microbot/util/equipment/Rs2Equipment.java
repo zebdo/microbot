@@ -25,6 +25,23 @@ import java.util.stream.Stream;
 public class Rs2Equipment {
     private static volatile List<Rs2ItemModel> equipmentItems = Collections.emptyList();
 
+    private static final Map<Integer, int[]> SLOT_PARAMS;
+
+    static {
+        SLOT_PARAMS = new HashMap<>();
+        SLOT_PARAMS.put(EquipmentInventorySlot.CAPE.getSlotIdx(),   new int[]{25362448, 16});
+        SLOT_PARAMS.put(EquipmentInventorySlot.HEAD.getSlotIdx(),   new int[]{25362447, 15});
+        SLOT_PARAMS.put(EquipmentInventorySlot.AMMO.getSlotIdx(),   new int[]{25362457, 25});
+        SLOT_PARAMS.put(EquipmentInventorySlot.AMULET.getSlotIdx(), new int[]{25362449, 17});
+        SLOT_PARAMS.put(EquipmentInventorySlot.WEAPON.getSlotIdx(), new int[]{25362450, 18});
+        SLOT_PARAMS.put(EquipmentInventorySlot.BODY.getSlotIdx(),   new int[]{25362451, 19});
+        SLOT_PARAMS.put(EquipmentInventorySlot.SHIELD.getSlotIdx(), new int[]{25362452, 20});
+        SLOT_PARAMS.put(EquipmentInventorySlot.LEGS.getSlotIdx(),   new int[]{25362453, 21});
+        SLOT_PARAMS.put(EquipmentInventorySlot.GLOVES.getSlotIdx(), new int[]{25362454, 22});
+        SLOT_PARAMS.put(EquipmentInventorySlot.BOOTS.getSlotIdx(),  new int[]{25362455, 23});
+        SLOT_PARAMS.put(EquipmentInventorySlot.RING.getSlotIdx(),   new int[]{25362456, 24});
+    }
+
     /**
      * @deprecated Use {@link #items()} for thread-safe access to cached equipment.
      * If raw {@link ItemContainer} access is required, call this method only from
@@ -348,39 +365,10 @@ public class Rs2Equipment {
             }
         }
         Rectangle rectangle = new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight());
-        if (rs2Item.getSlot() == EquipmentInventorySlot.CAPE.getSlotIdx()) {
-            param1 = 25362448;
-            rectangle = getSafeBounds(InterfaceID.WORNITEMS,16);
-        } else if (rs2Item.getSlot() == EquipmentInventorySlot.HEAD.getSlotIdx()) {
-            param1 = 25362447;
-            rectangle = getSafeBounds(InterfaceID.WORNITEMS,15);
-        } else if (rs2Item.getSlot() == EquipmentInventorySlot.AMMO.getSlotIdx()) {
-            param1 = 25362457;
-            rectangle = getSafeBounds(InterfaceID.WORNITEMS,25);
-        } else if (rs2Item.getSlot() == EquipmentInventorySlot.AMULET.getSlotIdx()) {
-            param1 = 25362449;
-            rectangle = getSafeBounds(InterfaceID.WORNITEMS,17);
-        } else if (rs2Item.getSlot() == EquipmentInventorySlot.WEAPON.getSlotIdx()) {
-            param1 = 25362450;
-            rectangle = getSafeBounds(InterfaceID.WORNITEMS,18);
-        } else if (rs2Item.getSlot() == EquipmentInventorySlot.BODY.getSlotIdx()) {
-            param1 = 25362451;
-            rectangle = getSafeBounds(InterfaceID.WORNITEMS,19);
-        } else if (rs2Item.getSlot() == EquipmentInventorySlot.SHIELD.getSlotIdx()) {
-            param1 = 25362452;
-            rectangle = getSafeBounds(InterfaceID.WORNITEMS,20);
-        } else if (rs2Item.getSlot() == EquipmentInventorySlot.LEGS.getSlotIdx()) {
-            param1 = 25362453;
-            rectangle = getSafeBounds(InterfaceID.WORNITEMS,21);
-        } else if (rs2Item.getSlot() == EquipmentInventorySlot.GLOVES.getSlotIdx()) {
-            param1 = 25362454;
-            rectangle = getSafeBounds(InterfaceID.WORNITEMS,22);
-        } else if (rs2Item.getSlot() == EquipmentInventorySlot.BOOTS.getSlotIdx()) {
-            param1 = 25362455;
-            rectangle = getSafeBounds(InterfaceID.WORNITEMS,23);
-        } else if (rs2Item.getSlot() == EquipmentInventorySlot.RING.getSlotIdx()) {
-            param1 = 25362456;
-            rectangle = getSafeBounds(InterfaceID.WORNITEMS,24);
+        int[] slotParams = SLOT_PARAMS.get(rs2Item.getSlot());
+        if (slotParams != null) {
+            param1 = slotParams[0];
+            rectangle = getSafeBounds(InterfaceID.WORNITEMS, slotParams[1]);
         }
 
         Microbot.doInvoke(new NewMenuEntry()
