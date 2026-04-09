@@ -771,7 +771,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Remove the unused `String[] actions = widget.getActions();` assignment (line 833). Replace the for-each loop at line 835 with `String[] actions = widget.getActions(); for (String action : actions)` (assign once, null-check already done on line 832, use the variable in the loop).
 - **Impact:** Removes two redundant `widget.getActions()` calls per widget evaluated in `findWidgetsWithAction`; costs one line to fix.
 
-### `disableAllPrayersExcept` allocates a new `List` wrapper on every stream predicate evaluation and `getPrayerPoints()` is missing
+### [DONE] `disableAllPrayersExcept` allocates a new `List` wrapper on every stream predicate evaluation and `getPrayerPoints()` is missing
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/prayer/Rs2Prayer.java:322-325`, `Rs2Prayer.java` (no `getPrayerPoints` method)
 - **Type:** simplification
 - **Found:** iter 9

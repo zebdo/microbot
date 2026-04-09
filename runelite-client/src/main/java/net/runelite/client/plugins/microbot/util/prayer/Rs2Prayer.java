@@ -15,6 +15,8 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.awt.*;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
@@ -318,6 +320,10 @@ public class Rs2Prayer {
             .forEach(prayer -> Rs2Prayer.toggle(prayer, false, withMouse));
     }
 
+    public static int getPrayerPoints() {
+        return Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER);
+    }
+
     /**
      * Disables all active prayers except the ones specified in the array.
      * @param prayersToKeep array of prayers to keep active
@@ -332,9 +338,10 @@ public class Rs2Prayer {
      * @param withMouse whether to use mouse clicks for disabling prayers
      */
     public static void disableAllPrayersExcept(Rs2PrayerEnum[] prayersToKeep, boolean withMouse) {
+        Set<Rs2PrayerEnum> keepSet = new HashSet<>(Arrays.asList(prayersToKeep));
         Arrays.stream(Rs2PrayerEnum.values())
             .filter(Rs2Prayer::isPrayerActive)
-            .filter(prayer -> !Arrays.asList(prayersToKeep).contains(prayer))
+            .filter(prayer -> !keepSet.contains(prayer))
             .forEach(prayer -> Rs2Prayer.toggle(prayer, false, withMouse));
     }
 
