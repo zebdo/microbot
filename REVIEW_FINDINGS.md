@@ -57,7 +57,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Remove `distanceToPath()` from the `getNpcs(predicate)` filter. Instead, replace the predicate's reachability check with a simple BFS from the player once (outside `runOnClientThreadOptional`) that returns the set of all reachable scene tiles; then `distanceToPath` is replaced with `reachableTiles.contains(npc.getSceneLocation())` — an O(1) lookup. Alternatively, move the `reachable` filter to a post-hoc `.filter()` on the stream returned by `getNpcs()`, which runs on the script thread at least not blocking game rendering.
 - **Impact:** Eliminates N client-thread BFS allocations per combat tick; with 20 NPCs each requiring a 163 KB BFS, this removes ~3.2 MB/tick of client-thread garbage and the associated GC stalls that stutter the game.
 
-### `getNearestDepositBox` crashes with NPE via `List.of(null)` whenever no deposit box is in the visible scene
+### [DONE] `getNearestDepositBox` crashes with NPE via `List.of(null)` whenever no deposit box is in the visible scene
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/depositbox/Rs2DepositBox.java:461`, `Rs2DepositBox.java:419-431`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/gameobject/Rs2GameObject.java:451`
 - **Type:** simplification

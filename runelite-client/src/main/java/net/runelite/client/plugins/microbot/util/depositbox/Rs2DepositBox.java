@@ -458,7 +458,8 @@ public class Rs2DepositBox {
         }
 
         if (Objects.equals(Rs2Player.getWorldLocation(), worldPoint)) {
-            List<TileObject> bankObjs = List.of(Rs2GameObject.findDepositBox(maxObjectSearchRadius));
+            GameObject depositBoxObj = Rs2GameObject.findDepositBox(maxObjectSearchRadius);
+            List<TileObject> bankObjs = depositBoxObj != null ? List.of(depositBoxObj) : List.of();
 
             Optional<DepositBoxLocation> byObject = bankObjs.stream()
                     .map(obj -> {
