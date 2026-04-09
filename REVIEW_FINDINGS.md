@@ -90,7 +90,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add `if (playStyle == null) return;` at the start of `renderAntibanOverlayComponents` (before line 451), or move the entire `progressBarComponent` initialisation block inside the existing `if (playStyle != null)` check at line 484. Either approach eliminates both the NPE and the wasted allocation.
 - **Impact:** Prevents EDT crashes in any plugin that calls `renderAntibanOverlayComponents` before the antiban activity is configured; the overlay currently throws silently into the overlay manager's exception handler and renders blank.
 
-### `SpiritTree.POH_SPIRIT_RING` invokes 127 000-field reflection scan during enum class initialization, freezing an incorrect result forever
+### [DONE] `SpiritTree.POH_SPIRIT_RING` invokes 127 000-field reflection scan during enum class initialization, freezing an incorrect result forever
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/farming/SpiritTree.java:204`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/gameobject/Rs2GameObject.java:1881-1902`
 - **Type:** performance

@@ -201,7 +201,7 @@ public enum SpiritTree {
             List.of(Quest.TREE_GNOME_VILLAGE, Quest.THE_GRAND_TREE, Quest.FAIRYTALE_II__CURE_A_QUEEN),
             95, // Requires 95 Construction
             VarbitID.POH_SPIRIT_TREE_UPROOTED, // TODO Must be checkedPOH Spirit Tree varbit (combined tree/ring uses same varbit)
-            Rs2GameObject.getObjectIdsByName("poh_spirit_ring"),
+            List.of(),
             new int[] {-1}, // Region must be player's own house 
             "Your house"
     );
