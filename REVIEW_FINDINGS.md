@@ -803,7 +803,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Switch to parameterised logging: `log.info("\n\nFound {} transports for path from {} to {}", transportList.size(), path.get(0), path.get(path.size() - 1))`. SLF4J then defers object-to-string conversion until it is certain a handler will consume the message.
 - **Impact:** Avoids two `WorldPoint.toString()` calls and at least one string allocation per route-planning call; most visible in builds that suppress INFO logs (production runs).
 
-### `EquipmentInventorySlot.values()` array cloned on every `storeEquipmentItemsInMemory` and `isWearing` call
+### [DONE] `EquipmentInventorySlot.values()` array cloned on every `storeEquipmentItemsInMemory` and `isWearing` call
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/equipment/Rs2Equipment.java:44`, `Rs2Equipment.java:162`
 - **Type:** performance
 - **Found:** iter 2

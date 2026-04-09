@@ -25,6 +25,8 @@ import java.util.stream.Stream;
 public class Rs2Equipment {
     private static volatile List<Rs2ItemModel> equipmentItems = Collections.emptyList();
 
+    private static final EquipmentInventorySlot[] ALL_SLOTS = EquipmentInventorySlot.values();
+
     private static final Map<Integer, int[]> SLOT_PARAMS;
 
     static {
@@ -65,7 +67,7 @@ public class Rs2Equipment {
         if (itemContainer == null) return;
 
         List<Rs2ItemModel> _equipmentItems = new ArrayList<>();
-        for (int i = 0; i < Math.min(itemContainer.getItems().length, EquipmentInventorySlot.values().length); i++) {
+        for (int i = 0; i < Math.min(itemContainer.getItems().length, ALL_SLOTS.length); i++) {
             Item item = itemContainer.getItems()[i];
             if (item.getId() == -1) continue;
             ItemComposition itemComposition = Microbot.getClient().getItemDefinition(item.getId());
@@ -183,7 +185,7 @@ public class Rs2Equipment {
 
     public static boolean isWearing(String[] names, boolean exact, EquipmentInventorySlot[] slots, boolean areSearchSlots) {
         final EquipmentInventorySlot[] searchSlots = areSearchSlots ? slots :
-                getOthers(EquipmentInventorySlot.values(), slots).toArray(EquipmentInventorySlot[]::new);
+                getOthers(ALL_SLOTS, slots).toArray(EquipmentInventorySlot[]::new);
         return isWearing(names, exact, searchSlots);
     }
 
