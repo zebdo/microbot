@@ -175,6 +175,19 @@ public class Rs2Prayer {
 
         sleepUntil(() -> !Rs2Widget.isHidden(QUICK_PRAYER_SELECT_COMPONENT_ID));
 
+        for (Rs2PrayerEnum existing : Rs2PrayerEnum.values()) {
+            if (isQuickPrayerSet(existing) && !Arrays.asList(prayers).contains(existing)) {
+                Microbot.doInvoke(new NewMenuEntry()
+                        .option(existing.getName())
+                        .param0(existing.getQuickPrayerIndex())
+                        .param1(QUICK_PRAYER_SELECT_COMPONENT_ID)
+                        .opcode(MenuAction.CC_OP.getId())
+                        .identifier(1)
+                        .itemId(-1)
+                        .target("Toggle"), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
+            }
+        }
+
         for (Rs2PrayerEnum prayer : prayers) {
             if(isQuickPrayerSet(prayer)) continue;
             Microbot.doInvoke(new NewMenuEntry()

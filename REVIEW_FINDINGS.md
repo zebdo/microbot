@@ -550,7 +550,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** In `getBestRangePrayer()`, add a check at the top (before the Rigour check) for `isDeadeyeUnlocked() && prayerLevel >= Rs2PrayerEnum.DEAD_EYE.getLevel()` returning `DEAD_EYE`. In `getBestMagePrayer()`, add an equivalent check for `isMysticVigourUnlocked() && prayerLevel >= Rs2PrayerEnum.MYSTIC_VIGOUR.getLevel()` returning `MYSTIC_VIGOUR` (or position it between Augury and Mystic Might based on unlock tier).
 - **Impact:** Ensures prayer-selecting scripts activate the strongest available prayer rather than silently falling back to an inferior tier; affects any player who has completed the unlock requirements for Deadeye or Mystic Vigour.
 
-### `setQuickPrayers` accumulates quick prayers instead of replacing them
+### [DONE] `setQuickPrayers` accumulates quick prayers instead of replacing them
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/prayer/Rs2Prayer.java:163-199`
 - **Type:** simplification
 - **Found:** iter 9
