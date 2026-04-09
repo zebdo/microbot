@@ -606,7 +606,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Merge both lambdas into a single `runOnClientThreadOptional`: fetch `player.getInteracting()` inside the lambda, null-check it there, check `combatLevel`, and return `player.getAnimation() != -1 || player.isInteracting()` in one pass. This halves the number of client-thread round-trips from 2 to 1 per `inCombat()` call.
 - **Impact:** Halves the client-thread scheduling overhead for every `inCombat()` call; combat scripts calling this in their main polling loop benefit on every tick.
 
-### `getSpecState()` reads a client widget directly off the client thread with a hard crash on null
+### [DONE] `getSpecState()` reads a client widget directly off the client thread with a hard crash on null
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/combat/Rs2Combat.java:147-151`, `Rs2Combat.java:108-113`
 - **Type:** performance
 - **Found:** iter 6

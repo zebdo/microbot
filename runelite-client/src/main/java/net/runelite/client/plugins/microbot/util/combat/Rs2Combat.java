@@ -107,7 +107,9 @@ public class Rs2Combat {
      * @return boolean, whether the action succeeded
      */
     public static boolean setSpecState(boolean state, int specialAttackEnergyRequired) {
-        int currentSpecEnergy = Microbot.getClient().getVarpValue(VarPlayer.SPECIAL_ATTACK_PERCENT);
+        int currentSpecEnergy = Microbot.getClientThread().runOnClientThreadOptional(
+                () -> Microbot.getClient().getVarpValue(VarPlayer.SPECIAL_ATTACK_PERCENT)
+        ).orElse(0);
         if (Rs2Widget.isHidden(10485795)) return false;
         if (currentSpecEnergy < specialAttackEnergyRequired) return false;
         if (state == getSpecState()) return true;
@@ -146,10 +148,11 @@ public class Rs2Combat {
      * @return boolean, whether the spec is enabled
      */
     public static boolean getSpecState() {
-        Widget widget = Microbot.getClient().getWidget(WidgetInfo.MINIMAP_SPEC_ORB.getId() + 4);
-        if (widget == null) throw new RuntimeException("Somehow the spec orb is null!");
-
-        return widget.getSpriteId() == 1608;
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+            Widget widget = Microbot.getClient().getWidget(WidgetInfo.MINIMAP_SPEC_ORB.getId() + 4);
+            if (widget == null) return false;
+            return widget.getSpriteId() == 1608;
+        }).orElse(false);
     }
 
     /**
