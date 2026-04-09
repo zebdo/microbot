@@ -779,7 +779,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** For `disableAllPrayersExcept`: convert `prayersToKeep` to a `Set<Rs2PrayerEnum>` once before the stream: `Set<Rs2PrayerEnum> keepSet = new HashSet<>(Arrays.asList(prayersToKeep));` and use `!keepSet.contains(prayer)` in the predicate. For the missing helper: add `public static int getPrayerPoints() { return Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER); }` to `Rs2Prayer`.
 - **Impact:** Eliminates up to 30 redundant `List` allocations per `disableAllPrayersExcept` call; adds the documented convenience method so plugin authors don't need to access the raw client API for a basic check.
 
-### `interact(InteractModel, String)` computes `LocalPoint.fromWorld` twice for the same location
+### [DONE] `interact(InteractModel, String)` computes `LocalPoint.fromWorld` twice for the same location
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/grounditem/Rs2GroundItem.java:79`, `Rs2GroundItem.java:108`
 - **Type:** simplification
 - **Found:** iter 7

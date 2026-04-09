@@ -105,7 +105,7 @@ public class Rs2GroundItem {
             } else if (index == 4) {
                 menuAction = MenuAction.GROUND_ITEM_FIFTH_OPTION;
             }
-            LocalPoint localPoint1 = LocalPoint.fromWorld(Microbot.getClient(), groundItem.location);
+            LocalPoint localPoint1 = localPoint;
             if (localPoint1 != null) {
                 Polygon canvas = Perspective.getCanvasTilePoly(Microbot.getClient(), localPoint1);
                 if (canvas != null) {
