@@ -84,11 +84,16 @@ public class Rs2Tab {
         if (tab == InterfaceTab.NOTHING_SELECTED && Microbot.getVarbitValue(VarbitID.RESIZABLE_STONE_ARRANGEMENT) == 0)
             return false;
 
-        int hotkey = tab.getHotkey();
-        if (hotkey == -1) {
-            log.warn("Tab {} does not have a hotkey assigned, cannot switch to it.", tab.getName());
-            return false;
+        int varcIntIndex = tab.getVarcIntIndex();
+        if (varcIntIndex != -1) {
+            Microbot.getClientThread().invokeLater(() ->
+                Microbot.getClient().runScript(TAB_SWITCH_SCRIPT, varcIntIndex));
         } else {
+            int hotkey = tab.getHotkey();
+            if (hotkey == -1) {
+                log.warn("Tab {} does not have a hotkey assigned, cannot switch to it.", tab.getName());
+                return false;
+            }
             Rs2Keyboard.keyPress(hotkey);
         }
 

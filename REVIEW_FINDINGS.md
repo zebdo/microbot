@@ -385,7 +385,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Maintain a `private static volatile InterfaceTab cachedTab = InterfaceTab.NOTHING_SELECTED` field and subscribe to `VarClientChanged` events for `VarClientID.TOPLEVEL_PANEL` to update it on the client thread. `getCurrentTab()` then returns `cachedTab` with no client API call. All existing callers become safe automatically.
 - **Impact:** Eliminates an unsafe off-client-thread client read from the hot path of every tab-check call across nine utility classes; brings `Rs2Tab` in line with the threading model used by the equipment, shop, and inventory caches.
 
-### `switchTo()` silently fails for players with no F-key bindings; `TAB_SWITCH_SCRIPT = 915` is declared but never used
+### [DONE] `switchTo()` silently fails for players with no F-key bindings; `TAB_SWITCH_SCRIPT = 915` is declared but never used
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/tabs/Rs2Tab.java:17,67-73`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/globval/enums/InterfaceTab.java:38-57`
 - **Type:** feature

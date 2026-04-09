@@ -13,27 +13,29 @@ import java.awt.event.KeyEvent;
  */
 @AllArgsConstructor
 public enum InterfaceTab {
-    COMBAT("Combat Options", VarbitID.STONE_COMBAT_KEY),
-    SKILLS("Skills", VarbitID.STONE_STATS_KEY),
-    QUESTS("Quest List", VarbitID.STONE_JOURNAL_KEY),
-    INVENTORY("Inventory", VarbitID.STONE_INV_KEY),
-    EQUIPMENT("Worn Equipment", VarbitID.STONE_WORN_KEY),
-    PRAYER("Prayer", VarbitID.STONE_PRAYER_KEY),
-    MAGIC("Magic", VarbitID.STONE_MAGIC_KEY),
-    FRIENDS("Friends List", VarbitID.STONE_FRIENDS_KEY),
-    SETTINGS("Settings", VarbitID.STONE_OPTIONS1_KEY),
-    MUSIC("Music Player", VarbitID.STONE_MUSIC_KEY),
-    LOGOUT("Logout", VarbitID.STONE_LOGOUT_KEY),
-    CHAT("Chat Channel", VarbitID.STONE_CLANCHAT_KEY),
-    ACC_MAN("Account Management", VarbitID.STONE_ACCOUNT_KEY),
-    EMOTES("Emotes", VarbitID.STONE_OPTIONS2_KEY),
+    COMBAT("Combat Options", VarbitID.STONE_COMBAT_KEY, 0),
+    SKILLS("Skills", VarbitID.STONE_STATS_KEY, 1),
+    QUESTS("Quest List", VarbitID.STONE_JOURNAL_KEY, 2),
+    INVENTORY("Inventory", VarbitID.STONE_INV_KEY, 3),
+    EQUIPMENT("Worn Equipment", VarbitID.STONE_WORN_KEY, 4),
+    PRAYER("Prayer", VarbitID.STONE_PRAYER_KEY, 5),
+    MAGIC("Magic", VarbitID.STONE_MAGIC_KEY, 6),
+    FRIENDS("Friends List", VarbitID.STONE_FRIENDS_KEY, 7),
+    SETTINGS("Settings", VarbitID.STONE_OPTIONS1_KEY, 9),
+    MUSIC("Music Player", VarbitID.STONE_MUSIC_KEY, 10),
+    LOGOUT("Logout", VarbitID.STONE_LOGOUT_KEY, 8),
+    CHAT("Chat Channel", VarbitID.STONE_CLANCHAT_KEY, 11),
+    ACC_MAN("Account Management", VarbitID.STONE_ACCOUNT_KEY, 12),
+    EMOTES("Emotes", VarbitID.STONE_OPTIONS2_KEY, 13),
     // bogus widget info
-    NOTHING_SELECTED("NothingSelected", -1);
+    NOTHING_SELECTED("NothingSelected", -1, -1);
 
     @Getter
     private final String name;
     @Getter
     private final int hotkeyVarbit;
+    @Getter
+    private final int varcIntIndex;
 
     public int getHotkey() {
         // special case for nothing selected
