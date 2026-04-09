@@ -186,9 +186,6 @@ public class Microbot {
     private static final BlockingEventManager blockingEventManager = new BlockingEventManager();
 
     @Getter
-    private static HashMap<String, Integer> scriptRuntimes = new HashMap<>();
-
-    @Getter
     private static Rs2ItemManager rs2ItemManager = new Rs2ItemManager();
 
     @Inject

@@ -844,7 +844,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Delete line 3144 and initialise `anyUnlocked` to `false`, setting it to `true` inside the loop whenever `toggleItemLock(item)` succeeds.
 - **Impact:** Removes one redundant full bank-inventory widget scan per `toggleAllLocks()` call.
 
-### `Microbot.scriptRuntimes` is an allocated but permanently-empty `HashMap` exposed via `@Getter` — dead allocation
+### [DONE] `Microbot.scriptRuntimes` is an allocated but permanently-empty `HashMap` exposed via `@Getter` — dead allocation
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/Microbot.java:189`
 - **Type:** simplification
