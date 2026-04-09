@@ -23,6 +23,7 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -395,8 +396,31 @@ public enum SpiritTree {
      * @return List of spirit trees available for transportation
      */
     public static List<SpiritTree> getAvailableForTravel() {
+        List<FarmingPatch> patches = Rs2Farming.getSpiritTreePatches();
+        Map<FarmingPatch, CropState> states = Rs2Farming.batchPredictAll(patches);
         return Arrays.stream(values())
-                .filter(SpiritTree::isAvailableForTravel)
+                .filter(tree -> {
+                    if (!tree.requiredQuests.stream().allMatch(q -> Rs2Player.getQuestState(q) == QuestState.FINISHED)) {
+                        return false;
+                    }
+                    if (tree.type != SpiritTreeType.FARMABLE) {
+                        return true;
+                    }
+                    if (!Rs2Farming.hasRequiredFarmingLevel(tree.requiredSkillLevel)) {
+                        return false;
+                    }
+                    if (tree.varbitId == -1) {
+                        return false;
+                    }
+                    Optional<FarmingPatch> patch = patches.stream()
+                            .filter(p -> p.getLocation().distanceTo(tree.location) < 10)
+                            .findFirst();
+                    if (patch.isEmpty()) {
+                        return false;
+                    }
+                    CropState state = states.get(patch.get());
+                    return state == CropState.HARVESTABLE;
+                })
                 .collect(Collectors.toList());
     }
 

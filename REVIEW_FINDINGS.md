@@ -181,7 +181,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Add `volatile` to the four field declarations at lines 89–92: `public static volatile int breakIn = -1; public static volatile int breakDuration = -1; public static volatile Duration setBreakDurationTime = Duration.ZERO; public static volatile int totalBreaks = 0;`. No other changes are needed — `volatile` on primitive fields guarantees visibility across threads without locking overhead.
 - **Impact:** Ensures the overlay always displays the current countdown values; without the fix, the break timer shown to the user can freeze at a wrong value, making it impossible to tell when the next break will occur or how long the current break has remaining.
 
-### `SpiritTree.getAvailableForTravel()` dispatches 10 sequential blocking client-thread round-trips for 5 farmable trees
+### [DONE] `SpiritTree.getAvailableForTravel()` dispatches 10 sequential blocking client-thread round-trips for 5 farmable trees
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/farming/SpiritTree.java:397-401`, `SpiritTree.java:261-277`, `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/farming/Rs2Farming.java:83-87`, `Rs2Farming.java:127-132`
 - **Type:** performance

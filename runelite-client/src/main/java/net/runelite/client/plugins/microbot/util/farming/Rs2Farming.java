@@ -14,7 +14,9 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.timetracking.Tab;
 
 import javax.inject.Singleton;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -130,6 +132,20 @@ public class Rs2Farming {
         return Microbot.getClientThread().runOnClientThreadOptional(() -> {
             return farmingHandler.predictPatch(patch);
         }).orElse(null);
+    }
+
+    public static Map<FarmingPatch, CropState> batchPredictAll(List<FarmingPatch> patches) {
+        ensureFarmingHandlerInitialized();
+        if (patches.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+            Map<FarmingPatch, CropState> result = new HashMap<>();
+            for (FarmingPatch patch : patches) {
+                result.put(patch, farmingHandler.predictPatch(patch));
+            }
+            return result;
+        }).orElse(java.util.Collections.emptyMap());
     }
 
     /**
