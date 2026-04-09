@@ -526,7 +526,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Delete `FieldUtil.java` entirely. It is unreachable code that carries a JDK-internal API dependency with no benefit.
 - **Impact:** Eliminates one source of `--add-opens` / internal-API compiler warnings and removes a class that could be accidentally invoked by a future refactor.
 
-### `clickChildWidget` calls `widget.getChild(childId).getBounds()` with no null check on the child
+### [DONE] `clickChildWidget` calls `widget.getChild(childId).getBounds()` with no null check on the child
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/widget/Rs2Widget.java:144-148`
 - **Type:** simplification
 - **Found:** iter 10
