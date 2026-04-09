@@ -331,7 +331,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Before the `.stream().map()` at line 831, build `Set<String> installedNames = installed.stream().map(im -> im.getClass().getSimpleName().toLowerCase(Locale.ROOT)).collect(Collectors.toSet())`. Replace line 839 with `boolean isInstalled = installedNames.contains(simpleName.toLowerCase(Locale.ROOT))`. This reduces the total cost from O(N×M) to O(N+M).
 - **Impact:** Reduces a quadratic scan to linear in the plugin hub rebuild path; with 200 manifests and 50 installed plugins, cuts from 10,000 comparisons to 250 per panel activation.
 
-### `rebuildPluginList` calls `getAnnotation(PluginDescriptor.class)` three times per plugin via two filter predicates and one map step
+### [DONE] `rebuildPluginList` calls `getAnnotation(PluginDescriptor.class)` three times per plugin via two filter predicates and one map step
 
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/ui/MicrobotPluginListPanel.java:179-194`
 - **Type:** simplification
