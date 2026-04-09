@@ -82,7 +82,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** Replace `new HashMap<>()` with `new ConcurrentHashMap<>()` for both `priceCache` and `mappingCache`. No other changes needed — all operations are single-key reads/writes that `ConcurrentHashMap` handles correctly without additional locking.
 - **Impact:** Eliminates a potential infinite-loop / data-corruption hazard in any concurrent price-checking scenario; costs two characters per declaration to fix.
 
-### `renderAntibanOverlayComponents` dereferences `playStyle` before its null guard, causing NPE on every overlay render before `setActivity()` is called
+### [DONE] `renderAntibanOverlayComponents` dereferences `playStyle` before its null guard, causing NPE on every overlay render before `setActivity()` is called
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/antiban/Rs2Antiban.java:455`
 - **Type:** simplification
 - **Found:** iter 11

@@ -448,6 +448,7 @@ public class Rs2Antiban {
      */
 
     public static void renderAntibanOverlayComponents(PanelComponent panelComponent) {
+        if (playStyle == null) return;
         final ProgressBarComponent progressBarComponent = new ProgressBarComponent();
         progressBarComponent.setBackgroundColor(Color.DARK_GRAY);
         progressBarComponent.setForegroundColor(ColorUtil.fromHex("#cc8400"));
