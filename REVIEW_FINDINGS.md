@@ -240,7 +240,7 @@ the expected impact. Once a finding is implemented, prefix its title with
 - **Fix:** In `move(Rectangle rect)`, compute the target point before dispatching: `Point pt = new Point((int) rect.getCenterX(), (int) rect.getCenterY()); setLastMove(pt);` before (or after) the event dispatch. Apply the same fix to `move(Polygon polygon)` using the polygon's centre point. Both already compute the target coordinates and just need one additional `setLastMove` call.
 - **Impact:** Corrects naturalMouse movement paths after any rectangle or polygon move, restoring the human-like cursor trajectory that antiban depends on; affects every plugin that uses object/NPC click (which derives click bounds as `Rectangle` or `Polygon`).
 
-### `AntibanPlugin` `Timer` created in `startUp()` is never cancelled in `shutDown()`, leaking a daemon thread and keeping the panel alive
+### [DONE] `AntibanPlugin` `Timer` created in `startUp()` is never cancelled in `shutDown()`, leaking a daemon thread and keeping the panel alive
 - **File(s):** `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/antiban/AntibanPlugin.java:178-184`, `AntibanPlugin.java:191-196`
 - **Type:** performance
 - **Found:** iter 11
