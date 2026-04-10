@@ -35,6 +35,8 @@ public class SettingsHandler extends AgentHandler {
 			handleLevelUp(exchange);
 		} else if ("/config".equals(subPath)) {
 			handleConfig(exchange);
+		} else if ("/plugin".equals(subPath)) {
+			handlePluginConfig(exchange);
 		} else {
 			sendJson(exchange, 404, errorResponse("Unknown sub-path: " + subPath));
 		}
@@ -140,6 +142,76 @@ public class SettingsHandler extends AgentHandler {
 		response.put("key", key);
 		response.put("configKey", configKey);
 		response.put("value", value);
+		response.put("success", true);
+		sendJson(exchange, 200, response);
+	}
+
+	private void handlePluginConfig(HttpExchange exchange) throws IOException {
+		ConfigManager configManager = Microbot.getConfigManager();
+		if (configManager == null) {
+			sendJson(exchange, 500, errorResponse("ConfigManager not available"));
+			return;
+		}
+
+		if ("GET".equals(exchange.getRequestMethod())) {
+			Map<String, String> params = parseQuery(exchange.getRequestURI());
+			String group = params.get("group");
+			String key = params.get("key");
+
+			if (group == null || group.isEmpty()) {
+				sendJson(exchange, 400, errorResponse("Required query parameter: group"));
+				return;
+			}
+
+			if (key == null || key.isEmpty()) {
+				sendJson(exchange, 400, errorResponse("Required query parameters: group, key"));
+				return;
+			}
+
+			String value = configManager.getConfiguration(group, key);
+			Map<String, Object> response = new LinkedHashMap<>();
+			response.put("group", group);
+			response.put("key", key);
+			response.put("value", value);
+			sendJson(exchange, 200, response);
+			return;
+		}
+
+		try {
+			requirePost(exchange);
+		} catch (HttpMethodException e) {
+			sendJson(exchange, 405, errorResponse(e.getMessage()));
+			return;
+		}
+
+		Map<String, Object> request;
+		try {
+			request = readJsonBody(exchange);
+		} catch (Exception e) {
+			sendJson(exchange, 400, errorResponse("Invalid JSON body"));
+			return;
+		}
+
+		String group = (String) request.get("group");
+		String key = (String) request.get("key");
+		Object value = request.get("value");
+
+		if (group == null || group.isEmpty() || key == null || key.isEmpty()) {
+			sendJson(exchange, 400, errorResponse("Required: group, key, value"));
+			return;
+		}
+
+		if (value == null) {
+			configManager.unsetConfiguration(group, key);
+		} else {
+			configManager.setConfiguration(group, key, value.toString());
+		}
+
+		String current = configManager.getConfiguration(group, key);
+		Map<String, Object> response = new LinkedHashMap<>();
+		response.put("group", group);
+		response.put("key", key);
+		response.put("value", current);
 		response.put("success", true);
 		sendJson(exchange, 200, response);
 	}

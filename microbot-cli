@@ -72,6 +72,7 @@ Scripts:
   scripts start --name <name>            Start plugin by display name
   scripts stop --class <className>       Stop a running plugin
   scripts status --class <className>     Plugin runtime status
+  scripts health [--class <c>|--name <n>]  Loop heartbeat (stall detection)
   scripts results --class <className>    Get test results
   scripts results post --class <c> --data <json>  Submit test results
 
@@ -83,6 +84,10 @@ Keyboard:
 
 Settings:
   settings search <term>                   Open settings, search, and show results
+
+Plugin Config (any @ConfigGroup, no allowlist):
+  plugin-config get <group> <key>          Read a plugin config value
+  plugin-config set <group> <key> <value>  Write a plugin config value
 
 Screenshot:
   screenshot                               Get screenshot as PNG (binary)
@@ -486,6 +491,26 @@ case "$1" in
                     exit 1
                 fi
                 ;;
+            health)
+                shift 2
+                class_name="" name=""
+                while [[ $# -gt 0 ]]; do
+                    case "$1" in
+                        --class) class_name="$2"; shift 2 ;;
+                        --name) name="$2"; shift 2 ;;
+                        *) shift ;;
+                    esac
+                done
+                if [[ -n "$class_name" ]]; then
+                    q=$(build_query "className" "$class_name")
+                    do_get "${BASE}/scripts/health${q}"
+                elif [[ -n "$name" ]]; then
+                    q=$(build_query "name" "$name")
+                    do_get "${BASE}/scripts/health${q}"
+                else
+                    do_get "${BASE}/scripts/health"
+                fi
+                ;;
             results)
                 shift 2
                 if [[ $# -ge 1 ]] && [[ "$1" == "post" ]]; then
@@ -610,6 +635,25 @@ case "$1" in
             curl -sf --max-time "$TIMEOUT" -o "${1:-screenshot.png}" "${BASE}/screenshot" 2>/dev/null || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
             echo "{\"success\":true,\"path\":\"$(pwd)/${1:-screenshot.png}\"}"
         fi
+        ;;
+
+    plugin-config)
+        [[ $# -lt 2 ]] && { echo '{"error":"Usage: microbot-cli plugin-config get <group> <key> | set <group> <key> <value>"}'; exit 1; }
+        case "$2" in
+            get)
+                [[ $# -lt 4 ]] && { echo '{"error":"Usage: microbot-cli plugin-config get <group> <key>"}'; exit 1; }
+                q=$(build_query "group" "$3" "key" "$4")
+                do_get "${BASE}/settings/plugin${q}"
+                ;;
+            set)
+                [[ $# -lt 5 ]] && { echo '{"error":"Usage: microbot-cli plugin-config set <group> <key> <value>"}'; exit 1; }
+                escaped_group=$(json_escape "$3")
+                escaped_key=$(json_escape "$4")
+                escaped_value=$(json_escape "$5")
+                do_post "${BASE}/settings/plugin" "{\"group\":\"${escaped_group}\",\"key\":\"${escaped_key}\",\"value\":\"${escaped_value}\"}"
+                ;;
+            *) echo '{"error":"Unknown plugin-config command. Use: get, set"}'; exit 1 ;;
+        esac
         ;;
 
     client-thread|ct)

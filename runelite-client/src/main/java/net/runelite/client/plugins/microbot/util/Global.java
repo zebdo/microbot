@@ -175,8 +175,42 @@ public class Global {
         }
     }
 
+    @Deprecated
     public boolean sleepUntilTick(int ticksToWait) {
-        int startTick = Microbot.getClient().getTickCount();
-        return Global.sleepUntil(() -> Microbot.getClient().getTickCount() >= startTick + ticksToWait, ticksToWait * 600 + 2000);
+        return sleepTicks(ticksToWait);
+    }
+
+    public static boolean sleepUntilNextTick() {
+        if (Microbot.getClient().isClientThread()) return false;
+        GameTickBroadcaster broadcaster = Microbot.getGameTickBroadcaster();
+        if (broadcaster == null) return false;
+        try {
+            return broadcaster.awaitNextTick();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    public static boolean sleepUntilNextTick(long timeoutMs) {
+        if (Microbot.getClient().isClientThread()) return false;
+        GameTickBroadcaster broadcaster = Microbot.getGameTickBroadcaster();
+        if (broadcaster == null) return false;
+        try {
+            return broadcaster.awaitNextTick(timeoutMs);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    public static boolean sleepTicks(int ticks) {
+        if (Microbot.getClient().isClientThread()) return false;
+        for (int i = 0; i < ticks; i++) {
+            if (!sleepUntilNextTick()) {
+                return false;
+            }
+        }
+        return true;
     }
 }

@@ -53,6 +53,9 @@ public class ScriptHandler extends AgentHandler {
 			case "/results":
 				handleResults(exchange);
 				break;
+			case "/health":
+				handleHealth(exchange);
+				break;
 			default:
 				sendJson(exchange, 404, errorResponse("Unknown endpoint: " + BASE_PATH + sub));
 		}
@@ -303,6 +306,49 @@ public class ScriptHandler extends AgentHandler {
 		} else {
 			sendJson(exchange, 405, errorResponse("Use GET or POST"));
 		}
+	}
+
+	private void handleHealth(HttpExchange exchange) throws IOException {
+		try {
+			requireGet(exchange);
+		} catch (HttpMethodException e) {
+			sendJson(exchange, 405, errorResponse(e.getMessage()));
+			return;
+		}
+
+		Map<String, String> params = parseQuery(exchange.getRequestURI());
+		String className = params.get("className");
+		String name = params.get("name");
+
+		if ((className == null || className.isEmpty()) && (name == null || name.isEmpty())) {
+			Map<String, Object> result = new LinkedHashMap<>();
+			result.put("scripts", ScriptHeartbeatRegistry.getAllHealth());
+			sendJson(exchange, 200, result);
+			return;
+		}
+
+		if (className == null || className.isEmpty()) {
+			Plugin plugin = findPluginByName(name);
+			if (plugin == null) {
+				sendJson(exchange, 404, errorResponse("Plugin not found: " + name));
+				return;
+			}
+			className = plugin.getClass().getName();
+		}
+
+		Map<String, Object> health = ScriptHeartbeatRegistry.getHealth(className);
+		if (health == null) {
+			Map<String, Object> result = new LinkedHashMap<>();
+			result.put("scriptClassName", className);
+			result.put("loopCount", 0);
+			result.put("lastHeartbeatAt", null);
+			result.put("stalledMs", null);
+			result.put("status", "NO_HEARTBEAT");
+			sendJson(exchange, 200, result);
+			return;
+		}
+
+		sendJson(exchange, 200, health);
 	}
 
 	private PluginManager getPluginManager() {
