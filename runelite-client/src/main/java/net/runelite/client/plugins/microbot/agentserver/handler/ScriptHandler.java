@@ -409,6 +409,6 @@ public class ScriptHandler extends AgentHandler {
 	}
 
 	private boolean isMicrobotPlugin(Plugin plugin) {
-		return plugin.getClass().getPackage().getName().toLowerCase().contains("microbot");
+		return plugin.getClass().getPackageName().toLowerCase().contains("microbot");
 	}
 }
