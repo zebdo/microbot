@@ -12,6 +12,7 @@ import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.bank.enums.BankLocation;
 import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.coords.Rs2LocalPoint;
+import net.runelite.client.plugins.microbot.util.coords.Rs2WorldPoint;
 import net.runelite.client.plugins.microbot.util.coords.Rs2WorldArea;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -25,6 +26,7 @@ import org.apache.commons.lang3.tuple.Triple;
 import javax.annotation.Nullable;
 import java.lang.reflect.Field;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.function.Supplier;
@@ -38,6 +40,8 @@ import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
  */
 @Deprecated(since = "2.1.0 - Use Rs2TileObjectQueryable instead", forRemoval = true)
 public class Rs2GameObject {
+	private static final Map<String, List<Integer>> NAME_TO_IDS_CACHE = new ConcurrentHashMap<>();
+
 	/**
 	 * Extracts all {@link GameObject}s located on a given {@link Tile}.
 	 *
@@ -325,11 +329,11 @@ public class Rs2GameObject {
             return true;
         };
 
+        Rs2WorldPoint playerLocation = Rs2Player.getRs2WorldPoint();
         return getGameObjects(filter, anchorPoint, distance)
                 .stream()
                 .min(Comparator.comparingInt(o ->
-                        Rs2Player.getRs2WorldPoint()
-                                .distanceToPath(o.getWorldLocation())))
+                        Rs2WorldPoint.quickDistance(playerLocation.getWorldPoint(), o.getWorldLocation())))
                 .orElse(null);
     }
 
@@ -420,7 +424,7 @@ public class Rs2GameObject {
             return hasAction(comp, "Bank", false) || hasAction(comp, "Collect", false);
         };
 
-        return getGameObjects(o -> Arrays.stream(Rs2BankID.bankIds).anyMatch(bid -> o.getId() == bid), maxSearchRadius).stream()
+        return getGameObjects(o -> Rs2BankID.BANK_ID_SET.contains(o.getId()), maxSearchRadius).stream()
                 .filter(bankableFilter)
                 .findFirst()
                 .orElse(null);
@@ -445,15 +449,16 @@ public class Rs2GameObject {
             if (comp == null) return false;
             return hasAction(comp, "Deposit", false);
         };
-        return getGameObjects(o -> Arrays.stream(Rs2BankID.bankIds).anyMatch(bid -> o.getId() == bid), maxSearchRadius).stream()
+        return getGameObjects(o -> Rs2BankID.BANK_ID_SET.contains(o.getId()), maxSearchRadius).stream()
                 .filter(depositableFilter)
                 .findFirst()
                 .orElse(null);
     }
 
+    private static final Set<Integer> GRAND_EXCHANGE_BOOTH_IDS = new HashSet<>(Arrays.asList(10060, 30389));
+
     public static WallObject findGrandExchangeBooth(int maxSearchRadius) {
-        Integer[] grandExchangeBoothIds = new Integer[]{10060, 30389};
-        return getWallObjects(o -> Arrays.stream(grandExchangeBoothIds).anyMatch(gid -> o.getId() == gid) && Rs2Tile.isTileReachable(o.getWorldLocation()), maxSearchRadius).stream()
+        return getWallObjects(o -> GRAND_EXCHANGE_BOOTH_IDS.contains(o.getId()) && Rs2Tile.isTileReachable(o.getWorldLocation()), maxSearchRadius).stream()
                 .findFirst()
                 .orElse(null);
     }
@@ -1679,7 +1684,7 @@ public class Rs2GameObject {
 
 	@SuppressWarnings("unchecked")
 	private static <T extends TileObject> List<T> fetchGameObjects(Predicate<? super T> predicate, WorldPoint anchor) {
-		return fetchTileObjects(predicate, anchor, Constants.SCENE_SIZE);
+		return fetchGameObjects(predicate, anchor, Constants.SCENE_SIZE);
 	}
 
     @SuppressWarnings("unchecked")
@@ -1877,28 +1882,32 @@ public class Rs2GameObject {
         }
     }
 
-    @SneakyThrows
     public static List<Integer> getObjectIdsByName(String name) {
-        List<Integer> ids = new ArrayList<>();
-        String lowerName = name.toLowerCase();
+        return NAME_TO_IDS_CACHE.computeIfAbsent(name, k -> {
+            List<Integer> ids = new ArrayList<>();
+            String lowerName = k.toLowerCase();
 
-        Class<?>[] classesToScan = {
-                net.runelite.api.ObjectID.class,
-                net.runelite.api.gameval.ObjectID.class,
-                net.runelite.client.plugins.microbot.util.gameobject.ObjectID.class
-        };
+            Class<?>[] classesToScan = {
+                    net.runelite.api.ObjectID.class,
+                    net.runelite.api.gameval.ObjectID.class,
+                    net.runelite.client.plugins.microbot.util.gameobject.ObjectID.class
+            };
 
-        for (Class<?> clazz : classesToScan) {
-            for (Field f : clazz.getFields()) {
-                if (f.getType() != int.class) continue;
+            for (Class<?> clazz : classesToScan) {
+                for (Field f : clazz.getFields()) {
+                    if (f.getType() != int.class) continue;
 
-                if (f.getName().toLowerCase().contains(lowerName)) {
-                    f.setAccessible(true);
-                    ids.add(f.getInt(null));
+                    if (f.getName().toLowerCase().contains(lowerName)) {
+                        try {
+                            f.setAccessible(true);
+                            ids.add(f.getInt(null));
+                        } catch (IllegalAccessException ignored) {
+                        }
+                    }
                 }
             }
-        }
-        return ids;
+            return ids;
+        });
     }
 
     @Nullable

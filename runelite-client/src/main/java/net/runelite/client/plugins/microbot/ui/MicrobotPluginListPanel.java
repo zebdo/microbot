@@ -179,16 +179,14 @@ public class MicrobotPluginListPanel extends MicrobotPluginPanel {
         Predicate<Plugin> isMicrobotPlugin = plugin ->
                 plugin.getClass().getPackage().getName().toLowerCase().contains("microbot");
 
-        // Might add a different check later if needed, but for now, we consider external plugins as those
-        Predicate<Plugin> isExternalPlugin = plugin ->
-                plugin.getClass().getAnnotation(PluginDescriptor.class).isExternal();
-
         // populate pluginList with all non-hidden plugins
         pluginList = Stream.concat(
                         fakePlugins.stream(),
                         pluginManager.getPlugins().stream()
-                                .filter(plugin -> !plugin.getClass().getAnnotation(PluginDescriptor.class).hidden())
-                                .filter(isMicrobotPlugin.or(isExternalPlugin))
+                                .filter(plugin -> {
+                                    PluginDescriptor d = plugin.getClass().getAnnotation(PluginDescriptor.class);
+                                    return !d.hidden() && (isMicrobotPlugin.test(plugin) || d.isExternal());
+                                })
                                 .map(plugin ->
                                 {
                                     PluginDescriptor descriptor = plugin.getClass().getAnnotation(PluginDescriptor.class);

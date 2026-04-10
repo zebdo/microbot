@@ -44,6 +44,7 @@ import net.runelite.client.plugins.microbot.util.mouse.Mouse;
 import net.runelite.client.plugins.microbot.util.mouse.VirtualMouse;
 import net.runelite.client.plugins.microbot.util.mouse.naturalmouse.NaturalMouse;
 import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
+import net.runelite.client.plugins.microbot.util.GameTickBroadcaster;
 import net.runelite.client.plugins.microbot.api.npc.Rs2NpcCache;
 import net.runelite.client.plugins.microbot.api.player.Rs2PlayerCache;
 import net.runelite.client.plugins.microbot.api.playerstate.Rs2PlayerStateCache;
@@ -186,9 +187,6 @@ public class Microbot {
     private static final BlockingEventManager blockingEventManager = new BlockingEventManager();
 
     @Getter
-    private static HashMap<String, Integer> scriptRuntimes = new HashMap<>();
-
-    @Getter
     private static Rs2ItemManager rs2ItemManager = new Rs2ItemManager();
 
     @Inject
@@ -214,6 +212,10 @@ public class Microbot {
     @Inject
     @Getter
     private static Rs2BoatCache rs2BoatCache;
+
+    @Inject
+    @Getter
+    private static GameTickBroadcaster gameTickBroadcaster;
 
     @Getter
     private static final Set<Integer> worldViewIds = ConcurrentHashMap.newKeySet();

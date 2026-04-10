@@ -22,7 +22,12 @@ Microbot is a RuneLite-based Old School RuneScape client fork with an always-on 
 - Fast sanity: `./gradlew :client:compileJava`
 - Full build (all included builds): `./gradlew buildAll`
 - Assemble shaded client: `./gradlew :client:assemble` (creates `runelite-client/build/libs/*-shaded.jar` and `microbot-<version>.jar`)
-- Tests are disabled by default via Gradle config; enable/selectively run if you add tests (`./gradlew :client:runTests` or `runDebugTests`).
+- Most Test tasks are disabled by default via the global `tasks.withType<Test>` filter. The allow-listed runners are:
+  - `./gradlew :client:runUnitTests` — CI-safe unit tests (no client, no login). Includes the `ClientThreadGuardrailTest`; will fail your PR if you call a client-thread-only API outside a `clientThread.invoke*()` lambda. See the Microbot CLI section below.
+  - `./gradlew :client:runTests` / `runDebugTests` — fuller test runs with timezone setup.
+  - `./gradlew :client:runIntegrationTest` — live-client integration tests (requires running game).
+  - `./gradlew :client:runClientThreadScanner` — manual bytecode scan; rewrites `docs/client-thread-manifest.md` and `docs/client-thread-lookup.tsv`.
+  - `./gradlew :client:regenerateClientThreadGuardrailBaseline` — regenerates the guardrail's allow-list of pre-existing violations after intentional refactors.
 
 ## Non-Negotiable Rules
 - Never instantiate caches or queryables directly; always use `Microbot.getRs2XxxCache().query()` or `.getStream()` (see `runelite-client/src/main/java/net/runelite/client/plugins/microbot/api/QUERYABLE_API.md`).
@@ -48,6 +53,11 @@ Microbot is a RuneLite-based Old School RuneScape client fork with an always-on 
 - Full HTTP API reference and handler architecture: `docs/AGENT_SERVER.md`.
 - The **Agent Server** plugin is enabled by default.
 - Exposes: inventory, NPCs, objects, ground items, walking, banking, dialogues, widgets, skills, game state, login, and script lifecycle.
+- **Client-thread tooling** (offline, no game required):
+  - **Lookup**: `./microbot-cli ct <method>` (alias for `client-thread`). Reads `docs/client-thread-lookup.tsv`, returns a verdict in ~10 ms. Examples: `./microbot-cli ct Player.getName`, `./microbot-cli ct getItem --like`. Verdict tags: `REQUIRED (asserted)`, `Strongly indicated (N signals)`, `Likely (single signal)`. Absence from the manifest does **not** prove a method is safe — see `docs/MICROBOT_CLI.md`.
+  - **Manifest**: `docs/client-thread-manifest.md` is the human-readable companion to the TSV. Diff it across RuneLite revisions to spot drift.
+  - **Scanner**: `./gradlew :client:runClientThreadScanner` regenerates both files from compiled bytecode.
+  - **Guardrail (CI)**: `ClientThreadGuardrailTest` runs as part of `:client:runUnitTests` and fails when an `Rs2*` utility (`util/`) or query API class (`api/`) calls a client-thread-only RuneLite API method outside a `clientThread.invoke*()` lambda. Pre-existing violations are allow-listed at `runelite-client/src/test/resources/threadsafety/client-thread-guardrail-baseline.txt`. To intentionally refactor: run `./gradlew :client:regenerateClientThreadGuardrailBaseline` and commit the diff.
 - Login control (`/login`): blocks until login succeeds or fails, detects errors (non-member on members world, bans, auth failures) via `loginIndex`/`loginError`. Auto-dismisses error dialogs on retry — no manual intervention needed. Use `./microbot-cli login now --world 381 --timeout 60` to login from the CLI (blocks until complete).
 - Keyboard input (`/keyboard`): type text or press keys (enter, escape, backspace) via `./microbot-cli keyboard type "text"` or `./microbot-cli keyboard enter`.
 - Script lifecycle (`/scripts`): start/stop plugins by class name, poll status, submit/retrieve test results. Designed for Microbot-Hub automated testing.
@@ -61,8 +71,16 @@ Microbot is a RuneLite-based Old School RuneScape client fork with an always-on 
 - Always verify changes via varbit: `./microbot-cli varbit <id>`.
 - See `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util/settings/CLAUDE.md` for detailed widget debugging docs.
 
+## Entity Gotchas (read before touching `Rs2*` interaction helpers)
+- Per-entity footgun guides live in `docs/entity-guides/`. Each file lists known pitfalls when working with one entity type (items, NPCs, objects, widgets, etc.) — captured from real bugs that escaped review because the bad assumption was invisible at the call site.
+- **Always check `docs/entity-guides/README.md` first** to find the relevant guide before implementing or modifying any utility under `runelite-client/.../microbot/util/<entity>/`.
+- Currently available:
+  - [`docs/entity-guides/items.md`](docs/entity-guides/items.md) — read before changing `Rs2Inventory`, `Rs2Bank`, `Rs2Equipment`, `Rs2GroundItem`, `Rs2Shop`, `Rs2DepositBox`, or any helper that maps item names to a hardcoded menu action.
+- When you fix a bug whose root cause was a hidden assumption about an entity, add a numbered gotcha to the relevant guide (or create the guide if it doesn't exist yet) so future agents don't repeat it.
+
 ## When Unsure
-- Start with `docs/ARCHITECTURE.md` and `docs/decisions/` for background.
+- **Code work in the Microbot plugin**: read `runelite-client/src/main/java/net/runelite/client/plugins/microbot/CLAUDE.md` (or its sibling `AGENTS.md`) — the canonical 2300-line guide to threading, Rs2* utilities, queryable API, and script lifecycle.
+- Background and architecture: `docs/ARCHITECTURE.md` and `docs/decisions/`.
 - Agentic testing: `docs/AGENTIC_TESTING_LOOP.md`.
 - Runtime agent CLI: `docs/MICROBOT_CLI.md`; HTTP API: `docs/AGENT_SERVER.md`.
 - API and script usage: `runelite-client/src/main/java/net/runelite/client/plugins/microbot/api/README.md` and `QUERYABLE_API.md`.

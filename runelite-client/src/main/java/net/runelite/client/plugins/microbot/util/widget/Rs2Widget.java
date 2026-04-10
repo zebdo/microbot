@@ -33,8 +33,7 @@ public class Rs2Widget {
     }
 
     public static boolean sleepUntilHasWidget(String text) {
-        sleepUntil(() -> findWidget(text, null, false) != null);
-        return findWidget(text, null, false) != null;
+        return sleepUntil(() -> findWidget(text, null, false) != null);
     }
 
     public static boolean clickWidget(String text, Optional<Integer> widgetId, int childId, boolean exact) {
@@ -122,8 +121,11 @@ public class Rs2Widget {
     }
 
     public static int getChildWidgetSpriteID(int id, int childId) {
-        return Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getWidget(id, childId).getSpriteId())
-                .orElse(0);
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+            Widget w = Microbot.getClient().getWidget(id, childId);
+            if (w == null) return -1;
+            return w.getSpriteId();
+        }).orElse(-1);
     }
 
     public static String getChildWidgetText(int id, int childId) {
@@ -142,9 +144,11 @@ public class Rs2Widget {
     }
 
     public static boolean clickChildWidget(int id, int childId) {
-        Widget widget = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getWidget(id)).orElse(null);;
+        Widget widget = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getWidget(id)).orElse(null);
         if (widget == null) return false;
-        Microbot.getMouse().click(widget.getChild(childId).getBounds());
+        Widget child = widget.getChild(childId);
+        if (child == null) return false;
+        Microbot.getMouse().click(child.getBounds());
         return true;
     }
 
@@ -232,15 +236,14 @@ public class Rs2Widget {
     public static Widget searchChildren(String text, Widget child, boolean exact) {
         if (matchesText(child, text, exact)) return child;
 
-        List<Widget[]> childGroups = Stream.of(child.getChildren(), child.getNestedChildren(), child.getDynamicChildren(), child.getStaticChildren())
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
+        Widget[][] childGroups = {child.getChildren(), child.getNestedChildren(), child.getDynamicChildren(), child.getStaticChildren()};
         for (Widget[] childGroup : childGroups) {
             if (childGroup != null) {
-                for (Widget nestedChild : Arrays.stream(childGroup).filter(w -> w != null && !w.isHidden()).collect(Collectors.toList())) {
-                    Widget found = searchChildren(text, nestedChild, exact);
-                    if (found != null) return found;
+                for (Widget nestedChild : childGroup) {
+                    if (nestedChild != null && !nestedChild.isHidden()) {
+                        Widget found = searchChildren(text, nestedChild, exact);
+                        if (found != null) return found;
+                    }
                 }
             }
         }
@@ -324,15 +327,14 @@ public class Rs2Widget {
     public static Widget searchChildren(int spriteId, Widget child) {
         if (matchesSpriteId(child, spriteId)) return child;
 
-        List<Widget[]> childGroups = Stream.of(child.getChildren(), child.getNestedChildren(), child.getDynamicChildren(), child.getStaticChildren())
-                .filter(Objects::nonNull)
-                .collect(Collectors.toList());
-
+        Widget[][] childGroups = {child.getChildren(), child.getNestedChildren(), child.getDynamicChildren(), child.getStaticChildren()};
         for (Widget[] childGroup : childGroups) {
             if (childGroup != null) {
-                for (Widget nestedChild : Arrays.stream(childGroup).filter(w -> w != null && !w.isHidden()).collect(Collectors.toList())) {
-                    Widget found = searchChildren(spriteId, nestedChild);
-                    if (found != null) return found;
+                for (Widget nestedChild : childGroup) {
+                    if (nestedChild != null && !nestedChild.isHidden()) {
+                        Widget found = searchChildren(spriteId, nestedChild);
+                        if (found != null) return found;
+                    }
                 }
             }
         }
@@ -829,10 +831,9 @@ public class Rs2Widget {
             }
         }
         
-        if (widget.getActions() != null) {
-            String[] actions = widget.getActions();
-
-            for (String action : widget.getActions()) {
+        String[] actions = widget.getActions();
+        if (actions != null) {
+            for (String action : actions) {
                 if (action != null) {
                     String cleanAction = Rs2UiHelper.stripColTags(action);
                     if (exact ? cleanAction.equalsIgnoreCase(text) : 

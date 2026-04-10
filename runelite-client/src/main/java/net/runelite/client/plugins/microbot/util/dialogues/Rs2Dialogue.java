@@ -45,7 +45,7 @@ public class Rs2Dialogue {
      */
     public static boolean hasContinue() {
         return hasNPCContinue() || hasPlayerContinue() || hasDeathContinue() ||
-                hasSpriteContinue() || hasTutContinue() || hasItemContinue() ||
+                hasSpriteContinue() || hasTutContinue() ||
                 hasBarrowsContinue() || hasSpellFilterContinue();
     }
 
@@ -98,16 +98,6 @@ public class Rs2Dialogue {
      */
     private static boolean hasTutContinue() {
         return Rs2Widget.isWidgetVisible(229, 0) || Rs2Widget.isWidgetVisible(229, 2);
-    }
-
-    /**
-     * Checks if there is a "click here to continue" option for an item
-     * This includes items given when doing quests for example
-     *
-     * @return true if the "Continue" option is visible in the item dialogue, false otherwise.
-     */
-    private static boolean hasItemContinue() {
-        return Rs2Widget.isWidgetVisible(InterfaceID.DIALOG_SPRITE, 0);
     }
 
     /**
@@ -197,7 +187,7 @@ public class Rs2Dialogue {
         Widget dialogueOption = Rs2Widget.getWidget(InterfaceID.DIALOG_OPTION, 1);
         if (dialogueOption == null) return false;
         Widget[] dynamicWidgetOptions = dialogueOption.getDynamicChildren();
-        if (dynamicWidgetOptions[0] == null) return false;
+        if (dynamicWidgetOptions == null || dynamicWidgetOptions.length == 0 || dynamicWidgetOptions[0] == null) return false;
 
         if (exact) {
             return dynamicWidgetOptions[0].getText().equalsIgnoreCase(text);
@@ -250,16 +240,13 @@ public class Rs2Dialogue {
      * @return the widget representing the matching dialogue option, or null if no match is found.
      */
     public static Widget getDialogueOption(String text, boolean exact) {
-        if (!hasSelectAnOption() || getDialogueOptions().isEmpty()) return null;
+        List<Widget> options = getDialogueOptions();
+        if (!hasSelectAnOption() || options.isEmpty()) return null;
 
-        Widget dialogueOption;
-
-        dialogueOption = getDialogueOptions().stream()
+        return options.stream()
                 .filter(dialop -> exact ? dialop.getText().equalsIgnoreCase(text) : dialop.getText().toLowerCase().contains(text.toLowerCase()))
                 .findFirst()
                 .orElse(null);
-
-        return dialogueOption;
     }
 
     /**
@@ -282,13 +269,7 @@ public class Rs2Dialogue {
     public static boolean hasDialogueOption(String text, boolean exact) {
         if (!hasSelectAnOption()) return false;
         List<Widget> dialogueOptions = Rs2Dialogue.getDialogueOptions();
-        List<String> dialogueText = dialogueOptions.stream().map(Widget::getText).collect(Collectors.toList());
-
-        if (exact) {
-            return dialogueText.stream().anyMatch(dialtxt -> dialtxt.equalsIgnoreCase(text));
-        } else {
-            return dialogueText.stream().anyMatch(dialtxt -> dialtxt.toLowerCase().contains(text.toLowerCase()));
-        }
+        return dialogueOptions.stream().anyMatch(w -> exact ? w.getText().equalsIgnoreCase(text) : w.getText().toLowerCase().contains(text.toLowerCase()));
     }
 
     /**
@@ -596,9 +577,10 @@ public class Rs2Dialogue {
      * @return the widget matching the specified text, or null if no match is found.
      */
     public static Widget getCombinationOption(String text, boolean exact) {
-        if (!hasCombinationDialogue() || getCombinationOptions().isEmpty()) return null;
+        List<Widget> options = getCombinationOptions();
+        if (!hasCombinationDialogue() || options.isEmpty()) return null;
 
-        return getCombinationOptions().stream()
+        return options.stream()
                 .filter(widget -> {
                     String widgetName = Rs2UiHelper.stripColTags(widget.getName());
                     return exact ? widgetName.equalsIgnoreCase(text) : widgetName.toLowerCase().contains(text.toLowerCase());

@@ -103,7 +103,9 @@ public class Rs2Magic {
             Rs2Widget.clickWidget(14286852);
         }
 
-        Widget widget = Arrays.stream(Rs2Widget.getWidget(218, 3).getStaticChildren()).filter(x -> x.getSpriteId() == magicSpell.getSprite()).findFirst().orElse(null);
+        Widget spellbook = Rs2Widget.getWidget(218, 3);
+        if (spellbook == null || spellbook.getStaticChildren() == null) return false;
+        Widget widget = Arrays.stream(spellbook.getStaticChildren()).filter(x -> x.getSpriteId() == magicSpell.getSprite()).findFirst().orElse(null);
 
         return widget != null;
     }
@@ -417,15 +419,11 @@ public class Rs2Magic {
     }
     
     public static Rs2Staff getRs2Staff(int itemID) {
-        return Stream.of(Rs2Staff.values())
-                .filter(staff -> staff.getItemID() == itemID)
-                .findAny().orElse(Rs2Staff.NONE);
+        return Rs2Staff.byItemId(itemID);
     }
 
     public static Rs2Tome getRs2Tome(int itemID) {
-        return Stream.of(Rs2Tome.values())
-                .filter(tome -> tome.getItemID() == itemID)
-                .findAny().orElse(Rs2Tome.NONE);
+        return Rs2Tome.byItemId(itemID);
     }
 
     public static List<Rs2Staff> findStavesByRunes(List<Runes> runes) {
@@ -443,8 +441,11 @@ public class Rs2Magic {
     }
 
     private static Map<Runes, Integer> addInventoryRunes(Map<Runes, Integer> runes) {
-        for (Runes rune : Runes.values()) {
-            runes.merge(rune, Rs2Inventory.itemQuantity(rune.getItemId()), Rs2Magic::limitSum);
+        for (Rs2ItemModel item : Rs2Inventory.all()) {
+            Runes rune = Runes.byItemId(item.getId());
+            if (rune != null) {
+                runes.merge(rune, item.getQuantity(), Rs2Magic::limitSum);
+            }
         }
         return runes;
     }
@@ -556,10 +557,11 @@ public class Rs2Magic {
         if (reqRunes.isEmpty()) return reqRunes;
 
         final Map<Runes, Integer> runes = getRunes(runeFilter);
-        reqRunes.replaceAll((key, value) -> Math.max(0,value-runes.getOrDefault(key, 0)));
-        reqRunes.keySet().removeIf(e -> reqRunes.get(e) <= 0);
+        final Map<Runes, Integer> diff = new HashMap<>(reqRunes);
+        diff.replaceAll((key, value) -> Math.max(0, value - runes.getOrDefault(key, 0)));
+        diff.keySet().removeIf(e -> diff.get(e) <= 0);
 
-        return reqRunes;
+        return diff;
     }
 
     public static Map<Runes, Integer> getMissingRunes(Map<Runes, Integer> reqRunes) {

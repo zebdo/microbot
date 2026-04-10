@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.shortestpath.ShortestPathPlugin;
 import net.runelite.client.plugins.microbot.util.Global;
+import net.runelite.client.plugins.microbot.agentserver.handler.ScriptHeartbeatRegistry;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
@@ -29,6 +30,7 @@ public abstract class Script extends Global implements IScript {
             public Thread newThread(@NotNull Runnable r) {
                 Thread t = new Thread(r);
                 t.setName(Script.this.getClass().getSimpleName() + "-" + threadNumber.getAndIncrement());
+                t.setDaemon(true);
                 return t;
             }
         });
@@ -50,6 +52,7 @@ public abstract class Script extends Global implements IScript {
      * Safe to call multiple times; no-ops if already shut down.
      */
     public void shutdown() {
+        ScriptHeartbeatRegistry.remove(this.getClass().getName());
         if (mainScheduledFuture != null && !mainScheduledFuture.isDone()) {
             mainScheduledFuture.cancel(true);
             ShortestPathPlugin.exit();
@@ -72,7 +75,8 @@ public abstract class Script extends Global implements IScript {
      * tutorial island is incomplete, or the current thread is interrupted.
      */
     public boolean run() {
-        //Avoid executing any blocking events if the player hasn't finished Tutorial Island
+        ScriptHeartbeatRegistry.recordHeartbeat(this.getClass().getName());
+
         if (Microbot.isLoggedIn() && !Rs2Player.hasCompletedTutorialIsland())
             return true;
 
@@ -86,7 +90,7 @@ public abstract class Script extends Global implements IScript {
             return false;
 
         if (Microbot.isLoggedIn()) {
-            boolean hasRunEnergy = Microbot.getClient().getEnergy() > Microbot.runEnergyThreshold;
+            boolean hasRunEnergy = Microbot.getClientThread().runOnClientThreadOptional(() -> Microbot.getClient().getEnergy()).orElse(0) > Microbot.runEnergyThreshold;
             if (Microbot.enableAutoRunOn && hasRunEnergy)
                 Rs2Player.toggleRunEnergy(true);
             if (!hasRunEnergy && Microbot.useStaminaPotsIfNeeded && Rs2Player.isMoving()) {

@@ -49,6 +49,9 @@ public class NaturalMouse {
             new Flow(FlowTemplates.random())
     );
 
+    private volatile MouseMotionFactory cachedFactory;
+    private volatile ActivityIntensity cachedIntensity;
+
     @Inject
     public NaturalMouse() {
         nature = new DefaultMouseMotionNature();
@@ -88,25 +91,33 @@ public class NaturalMouse {
     }
 
     public MouseMotionFactory getFactory() {
-        if (Rs2Antiban.getActivityIntensity() == ActivityIntensity.VERY_LOW) {
+        ActivityIntensity intensity = Rs2Antiban.getActivityIntensity();
+        if (cachedFactory != null && intensity == cachedIntensity) {
+            return cachedFactory;
+        }
+        MouseMotionFactory factory;
+        if (intensity == ActivityIntensity.VERY_LOW) {
             log.debug("Creating average computer user motion factory");
-            return FactoryTemplates.createAverageComputerUserMotionFactory(nature);
-        } else if (Rs2Antiban.getActivityIntensity() == ActivityIntensity.LOW) {
+            factory = FactoryTemplates.createAverageComputerUserMotionFactory(nature);
+        } else if (intensity == ActivityIntensity.LOW) {
             log.debug("Creating normal gamer motion factory");
-            return FactoryTemplates.createNormalGamerMotionFactory(nature);
-        } else if (Rs2Antiban.getActivityIntensity() == ActivityIntensity.MODERATE) {
+            factory = FactoryTemplates.createNormalGamerMotionFactory(nature);
+        } else if (intensity == ActivityIntensity.MODERATE) {
             log.debug("Creating fast gamer motion factory");
-            return FactoryTemplates.createFastGamerMotionFactory(nature);
-        } else if (Rs2Antiban.getActivityIntensity() == ActivityIntensity.HIGH) {
+            factory = FactoryTemplates.createFastGamerMotionFactory(nature);
+        } else if (intensity == ActivityIntensity.HIGH) {
             log.debug("Creating fast gamer motion factory");
-            return FactoryTemplates.createFastGamerMotionFactory(nature);
-        } else if (Rs2Antiban.getActivityIntensity() == ActivityIntensity.EXTREME) {
+            factory = FactoryTemplates.createFastGamerMotionFactory(nature);
+        } else if (intensity == ActivityIntensity.EXTREME) {
             log.debug("Creating super fast gamer motion factory");
-            return FactoryTemplates.createSuperFastGamerMotionFactory(nature);
+            factory = FactoryTemplates.createSuperFastGamerMotionFactory(nature);
         } else {
             log.debug("Default: Creating super fast gamer motion factory");
-            return FactoryTemplates.createSuperFastGamerMotionFactory(nature);
+            factory = FactoryTemplates.createSuperFastGamerMotionFactory(nature);
         }
+        cachedIntensity = intensity;
+        cachedFactory = factory;
+        return factory;
 
 //		var factory = new MouseMotionFactory();
 //		factory.setNature(nature);

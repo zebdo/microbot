@@ -57,15 +57,9 @@ public class Rs2Keyboard
 	 */
 	private static void dispatchKeyEvent(int id, int keyCode, char keyChar, int delay)
 	{
-		KeyEvent event = new KeyEvent(
-				getCanvas(),
-				id,
-				System.currentTimeMillis() + delay,
-				0,
-				keyCode,
-				keyChar
-		);
-		getCanvas().dispatchEvent(event);
+		Canvas canvas = getCanvas();
+		KeyEvent event = new KeyEvent(canvas, id, System.currentTimeMillis() + delay, 0, keyCode, keyChar);
+		canvas.dispatchEvent(event);
 	}
 
 	/**
@@ -164,7 +158,6 @@ public class Rs2Keyboard
 	public static void enter()
 	{
 		keyPress(KeyEvent.VK_ENTER);
-		dispatchKeyEvent(KeyEvent.KEY_RELEASED, KeyEvent.VK_ENTER, CHAR_UNDEFINED, 10);
 
 		// This is to make sure the enter event gets released, because for some reason it
 		// stays pressed and auto logs for jagex accounts
@@ -176,14 +169,6 @@ public class Rs2Keyboard
 	 * Sends a KEY_TYPED event for the Enter key to ensure it is released.
 	 */
 	public static void resetEnter() {
-		KeyEvent event3 = new KeyEvent(
-				getCanvas(),
-				KeyEvent.KEY_TYPED,
-				System.currentTimeMillis() + 10,
-				0,
-				KeyEvent.VK_UNDEFINED,
-				'\n'
-		);
-		getCanvas().dispatchEvent(event3);
+		withFocusCanvas(() -> dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, '\n', 10));
 	}
 }

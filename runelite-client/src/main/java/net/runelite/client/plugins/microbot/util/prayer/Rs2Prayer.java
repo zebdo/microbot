@@ -15,6 +15,8 @@ import net.runelite.client.plugins.microbot.util.widget.Rs2Widget;
 
 import java.awt.*;
 import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.stream.Stream;
 
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntil;
@@ -175,6 +177,19 @@ public class Rs2Prayer {
 
         sleepUntil(() -> !Rs2Widget.isHidden(QUICK_PRAYER_SELECT_COMPONENT_ID));
 
+        for (Rs2PrayerEnum existing : Rs2PrayerEnum.values()) {
+            if (isQuickPrayerSet(existing) && !Arrays.asList(prayers).contains(existing)) {
+                Microbot.doInvoke(new NewMenuEntry()
+                        .option(existing.getName())
+                        .param0(existing.getQuickPrayerIndex())
+                        .param1(QUICK_PRAYER_SELECT_COMPONENT_ID)
+                        .opcode(MenuAction.CC_OP.getId())
+                        .identifier(1)
+                        .itemId(-1)
+                        .target("Toggle"), new Rectangle(1, 1, Microbot.getClient().getCanvasWidth(), Microbot.getClient().getCanvasHeight()));
+            }
+        }
+
         for (Rs2PrayerEnum prayer : prayers) {
             if(isQuickPrayerSet(prayer)) continue;
             Microbot.doInvoke(new NewMenuEntry()
@@ -305,6 +320,10 @@ public class Rs2Prayer {
             .forEach(prayer -> Rs2Prayer.toggle(prayer, false, withMouse));
     }
 
+    public static int getPrayerPoints() {
+        return Microbot.getClient().getBoostedSkillLevel(Skill.PRAYER);
+    }
+
     /**
      * Disables all active prayers except the ones specified in the array.
      * @param prayersToKeep array of prayers to keep active
@@ -319,9 +338,10 @@ public class Rs2Prayer {
      * @param withMouse whether to use mouse clicks for disabling prayers
      */
     public static void disableAllPrayersExcept(Rs2PrayerEnum[] prayersToKeep, boolean withMouse) {
+        Set<Rs2PrayerEnum> keepSet = new HashSet<>(Arrays.asList(prayersToKeep));
         Arrays.stream(Rs2PrayerEnum.values())
             .filter(Rs2Prayer::isPrayerActive)
-            .filter(prayer -> !Arrays.asList(prayersToKeep).contains(prayer))
+            .filter(prayer -> !keepSet.contains(prayer))
             .forEach(prayer -> Rs2Prayer.toggle(prayer, false, withMouse));
     }
 
@@ -396,6 +416,8 @@ public class Rs2Prayer {
 
         if (auguryUnlocked && prayerLevel >= Rs2PrayerEnum.AUGURY.getLevel())
             return Rs2PrayerEnum.AUGURY;
+        if (isMysticVigourUnlocked() && prayerLevel >= Rs2PrayerEnum.MYSTIC_VIGOUR.getLevel())
+            return Rs2PrayerEnum.MYSTIC_VIGOUR;
         if (prayerLevel >= Rs2PrayerEnum.MYSTIC_MIGHT.getLevel())
             return Rs2PrayerEnum.MYSTIC_MIGHT;
         if (prayerLevel >= Rs2PrayerEnum.MYSTIC_LORE.getLevel())
@@ -412,6 +434,8 @@ public class Rs2Prayer {
 
         if (rigourUnlocked && prayerLevel >= Rs2PrayerEnum.RIGOUR.getLevel())
             return Rs2PrayerEnum.RIGOUR;
+        if (isDeadeyeUnlocked() && prayerLevel >= Rs2PrayerEnum.DEAD_EYE.getLevel())
+            return Rs2PrayerEnum.DEAD_EYE;
         if (prayerLevel >= Rs2PrayerEnum.EAGLE_EYE.getLevel())
             return Rs2PrayerEnum.EAGLE_EYE;
         if (prayerLevel >= Rs2PrayerEnum.HAWK_EYE.getLevel())

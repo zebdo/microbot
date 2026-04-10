@@ -123,6 +123,11 @@ public class PohTeleports {
 
         Widget widget = Rs2Widget.findWidget(jewelleryLocationEnum.getDestination().toLowerCase(), Arrays.stream(mainWidget.getStaticChildren()).collect(Collectors.toList()));
 
+        if (widget == null) {
+            Microbot.log(jewelleryLocationEnum.getDestination() + " widget not found in jewellery box");
+            return false;
+        }
+
         boolean isTeleportDisabled = widget.getText().contains("<str>");
 
         if (isTeleportDisabled) {
@@ -204,19 +209,18 @@ public class PohTeleports {
         return true;
     }
 
-    private static List<Integer> FAIRY_RING_IDS = fairyRingIds();
-    private static List<Integer> SPIRIT_TREE_IDS = spiritTreeIds();
+    private static final List<Integer> POH_SPIRIT_RING_IDS = Rs2GameObject.getObjectIdsByName("poh_spirit_ring");
+    private static final Set<Integer> FAIRY_RING_IDS = fairyRingIds();
+    private static final Set<Integer> SPIRIT_TREE_IDS = spiritTreeIds();
 
-    private static List<Integer> fairyRingIds() {
-        List<Integer> ids = new ArrayList<>();
-        ids.addAll(Rs2GameObject.getObjectIdsByName("poh_spirit_ring"));
+    private static Set<Integer> fairyRingIds() {
+        Set<Integer> ids = new LinkedHashSet<>(POH_SPIRIT_RING_IDS);
         ids.addAll(Rs2GameObject.getObjectIdsByName("poh_fairy_ring"));
         return ids;
     }
 
-    private static List<Integer> spiritTreeIds() {
-        List<Integer> ids = new ArrayList<>();
-        ids.addAll(Rs2GameObject.getObjectIdsByName("poh_spirit_ring"));
+    private static Set<Integer> spiritTreeIds() {
+        Set<Integer> ids = new LinkedHashSet<>(POH_SPIRIT_RING_IDS);
         ids.addAll(Rs2GameObject.getObjectIdsByName("poh_spirit_tree"));
         return ids;
     }
@@ -230,10 +234,10 @@ public class PohTeleports {
     }
 
     public static boolean isFairyRing(TileObject tileObject) {
-        return FAIRY_RING_IDS.stream().anyMatch(id -> id == tileObject.getId());
+        return FAIRY_RING_IDS.contains(tileObject.getId());
     }
 
     public static boolean isSpiritTree(TileObject tileObject) {
-        return SPIRIT_TREE_IDS.stream().anyMatch(id -> id == tileObject.getId());
+        return SPIRIT_TREE_IDS.contains(tileObject.getId());
     }
 }

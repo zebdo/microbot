@@ -126,6 +126,10 @@ tasks.register<Test>("runUnitTests") {
     group = "verification"
     description = "Run unit tests only (no client, no login) — safe for CI"
 
+    // ClientThreadGuardrailTest scans compiled .class files under runelite-{api,client}/build,
+    // so make sure the main sources are compiled before the test JVM forks.
+    dependsOn(":client:compileJava")
+
     testClassesDirs = sourceSets.test.get().output.classesDirs
     classpath = sourceSets.test.get().runtimeClasspath
 
@@ -135,11 +139,73 @@ tasks.register<Test>("runUnitTests") {
         "-ea"
     )
 
+    // Forward the baseline-regenerate flag to the test JVM so contributors can run
+    // `./gradlew :client:runUnitTests -Dmicrobot.guardrail.regenerate-baseline=true` ad-hoc.
+    System.getProperty("microbot.guardrail.regenerate-baseline")?.let {
+        systemProperty("microbot.guardrail.regenerate-baseline", it)
+    }
+
     exclude("**/Rs2ActorModelIntegrationTest.class")
     exclude("**/Rs2WalkerIntegrationTest.class")
     exclude("**/Rs2ReflectionGroundItemActionsIntegrationTest.class")
+    exclude("**/threadsafety/ClientThreadScannerTest.class")
 
     useJUnit()
+
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
+
+tasks.register<Test>("regenerateClientThreadGuardrailBaseline") {
+    group = "verification"
+    description = "Regenerate src/test/resources/threadsafety/client-thread-guardrail-baseline.txt from current sources"
+
+    dependsOn(":client:compileJava", ":client:compileTestJava")
+
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+
+    jvmArgs(
+        "-Dfile.encoding=UTF-8",
+        "-Duser.timezone=Europe/Brussels",
+        "-Dmicrobot.guardrail.regenerate-baseline=true"
+    )
+
+    include("**/threadsafety/ClientThreadGuardrailTest.class")
+
+    useJUnit()
+    outputs.upToDateWhen { false }
+
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
+
+tasks.register<Test>("runClientThreadScanner") {
+    group = "verification"
+    description = "Manually scan compiled bytecode for client-thread markers and emit docs/client-thread-manifest.md"
+    enabled = true
+
+    dependsOn(":client:compileJava", ":client:compileTestJava")
+
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+
+    jvmArgs(
+        "-Dfile.encoding=UTF-8",
+        "-Duser.timezone=Europe/Brussels",
+        "-Dmicrobot.scanner.enabled=true"
+    )
+
+    include("**/threadsafety/ClientThreadScannerTest.class")
+
+    useJUnit()
+    outputs.upToDateWhen { false }
 
     testLogging {
         events("passed", "skipped", "failed")
@@ -369,7 +435,7 @@ tasks.checkstyleMain {
 }
 
 tasks.withType<Test> {
-    if (name != "runIntegrationTest" && name != "runTests" && name != "runDebugTests" && name != "runUnitTests") {
+    if (name != "runIntegrationTest" && name != "runTests" && name != "runDebugTests" && name != "runUnitTests" && name != "runClientThreadScanner" && name != "regenerateClientThreadGuardrailBaseline") {
         enabled = false
     }
     systemProperty("glslang.path", providers.gradleProperty("glslangPath").getOrElse(""))

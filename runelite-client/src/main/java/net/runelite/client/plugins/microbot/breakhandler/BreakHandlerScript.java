@@ -13,8 +13,10 @@ import net.runelite.client.plugins.microbot.util.security.LoginManager;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.world.Rs2WorldUtil;
 import net.runelite.client.ui.ClientUI;
+import javax.swing.SwingUtilities;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -87,10 +89,10 @@ public class BreakHandlerScript extends Script {
     }
 
     // Core break timing variables
-    public static int breakIn = -1;
-    public static int breakDuration = -1;
-    public static Duration setBreakDurationTime = Duration.ZERO;
-    public static int totalBreaks = 0;
+    public static volatile int breakIn = -1;
+    public static volatile int breakDuration = -1;
+    public static volatile Duration setBreakDurationTime = Duration.ZERO;
+    public static volatile int totalBreaks = 0;
     
     // State management - Thread-safe using atomic references
     private static final AtomicReference<BreakHandlerState> currentState = new AtomicReference<>(BreakHandlerState.WAITING_FOR_BREAK);
@@ -357,7 +359,8 @@ public class BreakHandlerScript extends Script {
         Rs2Walker.setTarget(null);
 
         // Remember the world we were in before the break
-        preBreakWorld = Microbot.getClient().getWorld();
+        preBreakWorld = Microbot.getClientThread().runOnClientThreadOptional(
+                () -> Microbot.getClient().getWorld()).orElse(0);
 
         // Determine next state based on break type
         setBreakDuration();
@@ -382,7 +385,7 @@ public class BreakHandlerScript extends Script {
             updateBreakStatistics();
             
             // Clean shutdown of the client
-            ClientUI.getFrame().setTitle(originalWindowTitle + " - Shutting Down");
+            SwingUtilities.invokeLater(() -> ClientUI.getFrame().setTitle(originalWindowTitle + " - Shutting Down"));
             if (scheduledFuture != null && !scheduledFuture.isDone()) {
                 scheduledFuture.cancel(true);
             }
@@ -785,7 +788,7 @@ public class BreakHandlerScript extends Script {
      * Resets window title to original.
      */
     private void resetWindowTitle() {
-        ClientUI.getFrame().setTitle(originalWindowTitle);
+        SwingUtilities.invokeLater(() -> ClientUI.getFrame().setTitle(originalWindowTitle));
     }
 
     /**
@@ -835,13 +838,15 @@ public class BreakHandlerScript extends Script {
      */
     private void updateWindowTitle() {
         BreakHandlerState state = currentState.get();
-        
+
         if (state == BreakHandlerState.LOGGED_OUT || state == BreakHandlerState.INGAME_BREAK_ACTIVE) {
             String breakType = state == BreakHandlerState.INGAME_BREAK_ACTIVE ? "In Game Break(Microbreak)" : "Break";
-            ClientUI.getFrame().setTitle(originalWindowTitle + " - " + breakType + ": " + 
-                                       formatDuration(Duration.ofSeconds(Math.max(0, breakDuration))));
+            String title = originalWindowTitle + " - " + breakType + ": " +
+                           formatDuration(Duration.ofSeconds(Math.max(0, breakDuration)));
+            SwingUtilities.invokeLater(() -> ClientUI.getFrame().setTitle(title));
         } else if (isBreakActive()) {
-            ClientUI.getFrame().setTitle(originalWindowTitle + " - " + state.toString().replace("_", " "));
+            String title = originalWindowTitle + " - " + state.toString().replace("_", " ");
+            SwingUtilities.invokeLater(() -> ClientUI.getFrame().setTitle(title));
         }
     }
 
@@ -907,12 +912,12 @@ public class BreakHandlerScript extends Script {
      * checks for ban screen during login attempt or when logged out
      */
     private void checkForBan() {
-        GameState gameState = Microbot.getClient().getGameState();
-        
-        // detect ban screen on login screen
-        boolean banDetected = gameState == GameState.LOGIN_SCREEN
-                && Microbot.getClient().getLoginIndex() == BANNED_LOGIN_INDEX;
-        
+        Optional<Integer> loginIdx = Microbot.getClientThread().runOnClientThreadOptional(
+                () -> Microbot.getClient().getGameState() == GameState.LOGIN_SCREEN
+                        ? Microbot.getClient().getLoginIndex()
+                        : -1);
+        boolean banDetected = loginIdx.orElse(-1) == BANNED_LOGIN_INDEX;
+
         if (banDetected && !isBanned) {
             isBanned = true;
             handleBanDetection();

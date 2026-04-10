@@ -189,6 +189,7 @@ public class Rs2Bank {
 		}
 
 		rs2BankData.set(bankItems);
+		updateTabCounts();
 	}
 
 	/**
@@ -734,35 +735,33 @@ public class Rs2Bank {
         if (slotsNeeded <= 0) return true;
         if (!isOpen()) return false;
         
-        // get current inventory items sorted by quantity (descending) to maximize space freed
-        List<Rs2ItemModel> inventoryItems = Rs2Inventory.all().stream()
+        List<Map.Entry<Rs2ItemModel, Integer>> inventoryItems = Rs2Inventory.all().stream()
             .filter(Objects::nonNull)
             .collect(Collectors.groupingBy(Rs2ItemModel::getId))
             .values().stream()
             .map(items -> {
                 Rs2ItemModel first = items.get(0);
                 int totalQuantity = items.stream().mapToInt(Rs2ItemModel::getQuantity).sum();
-                return new Rs2ItemModel(first.getId(),  totalQuantity, first.getSlot());
+                return new java.util.AbstractMap.SimpleEntry<>(
+                        new Rs2ItemModel(first.getId(), totalQuantity, first.getSlot()),
+                        items.size());
             })
-            .sorted((a, b) -> Integer.compare(b.getQuantity(), a.getQuantity()))
+            .sorted((a, b) -> Integer.compare(b.getKey().getQuantity(), a.getKey().getQuantity()))
             .collect(Collectors.toList());
-        
+
         int slotsFreed = 0;
         StringBuilder sb = new StringBuilder();
         sb.append("Making inventory space - need ").append(slotsNeeded).append(" slots:\n");
-        
-        for (Rs2ItemModel item : inventoryItems) {
+
+        for (Map.Entry<Rs2ItemModel, Integer> entry : inventoryItems) {
             if (slotsFreed >= slotsNeeded) break;
-            
+
+            Rs2ItemModel item = entry.getKey();
             int itemId = item.getId();
             int quantity = Rs2Inventory.count(itemId);
-            
+
             if (quantity > 0) {
-                // calculate how many slots this item type occupies
-                int slotsUsedByItem = (int) Rs2Inventory.all().stream()
-                    .filter(Objects::nonNull)
-                    .filter(invItem -> invItem.getId() == itemId)
-                    .count();
+                int slotsUsedByItem = entry.getValue();
                 
                 // deposit the item
                 boolean deposited = depositX(itemId, quantity);
@@ -2125,7 +2124,10 @@ public class Rs2Bank {
      * @return true if Rs2Player location is less than distance away from the bank location
      */
     public static boolean isNearBank(int distance) {
-        return isNearBank(getNearestBank(), distance);
+        WorldPoint playerLocation = Rs2Player.getWorldLocation();
+        return Arrays.stream(BankLocation.values())
+                .anyMatch(b -> b.getWorldPoint().getPlane() == playerLocation.getPlane()
+                        && b.getWorldPoint().distanceTo2D(playerLocation) <= distance);
     }
 
     /**
@@ -2762,9 +2764,6 @@ public class Rs2Bank {
      * @return the tab number containing the item, or -1 if the slot ID is invalid
      */
     public static int getItemTabForBankItem(int itemSlotId) {
-        // Update tab counts before checking which tab the item is in
-        updateTabCounts();
-
         // Get the total number of items in the bank
         int totalItemsInBank = getBankItemCount();
 
@@ -3141,7 +3140,7 @@ public class Rs2Bank {
             log.debug("No locked slots to toggle.");
             return false;
         }
-        boolean anyUnlocked = !findLockedSlots().isEmpty();
+        boolean anyUnlocked = false;
         for (int slot : lockedSlots) {
             Rs2ItemModel item = Rs2Inventory.getItemInSlot(slot);
             if (item == null) {

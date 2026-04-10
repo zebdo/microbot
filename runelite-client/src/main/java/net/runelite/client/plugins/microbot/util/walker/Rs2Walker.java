@@ -126,10 +126,10 @@ public class Rs2Walker {
      * @return
      */
     private static WalkerState walkWithStateInternal(WorldPoint target, int distance) {
-        boolean reachableTileCheck = Rs2Tile.getReachableTilesFromTile(Rs2Player.getWorldLocation(), distance).containsKey(target);
+        int distToTarget = Rs2Player.getWorldLocation().distanceTo(target);
         LocalPoint localTarget = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), target);
         boolean walkableCheck = Rs2Tile.isWalkable(localTarget);
-        int distToTarget = Rs2Player.getWorldLocation().distanceTo(target);
+        boolean reachableTileCheck = distToTarget <= distance && Rs2Tile.getReachableTilesFromTile(Rs2Player.getWorldLocation(), distance).containsKey(target);
 
         if (reachableTileCheck || (!walkableCheck && distToTarget <= distance)) {
             return WalkerState.ARRIVED;
@@ -862,9 +862,9 @@ public class Rs2Walker {
                         transport.getType() == TransportType.TELEPORTATION_SPELL)
                 {
                     // For teleportation, we assume origin is null and simply check if the destination exists in the path.
-                    if (path.contains(transport.getDestination())) {
+                    int destIndex = path.indexOf(transport.getDestination());
+                    if (destIndex != -1) {
                         transportList.add(transport);
-                        int destIndex = path.indexOf(transport.getDestination());
                         // Advance the current index to the destination tile (or at least one forward)
                         currentIndex = destIndex > currentIndex ? destIndex : currentIndex + 1;
                         foundTransport = true;
@@ -890,10 +890,10 @@ public class Rs2Walker {
 
                     // For non-teleportation transports, ensure both origin and destination exist in the path
                     // and that the destination comes after the origin.
+                    int indexOfDestination = path.indexOf(transport.getDestination());
                     if (transport.getType() != TransportType.TELEPORTATION_ITEM &&
                             transport.getType() != TransportType.TELEPORTATION_SPELL) {
                         int indexOfOrigin = path.indexOf(transport.getOrigin());
-                        int indexOfDestination = path.indexOf(transport.getDestination());
                         if (indexOfOrigin == -1 || indexOfDestination == -1 || indexOfDestination < indexOfOrigin) {
                             continue;
                         }
@@ -902,8 +902,7 @@ public class Rs2Walker {
                     // If the current path point equals the transport's origin then add it.
                     if (currentPoint.equals(origin)) {
                         transportList.add(transport);
-                        int destIndex = path.indexOf(transport.getDestination());
-                        currentIndex = destIndex > currentIndex ? destIndex : currentIndex + 1;
+                        currentIndex = indexOfDestination > currentIndex ? indexOfDestination : currentIndex + 1;
                         foundTransport = true;
                         break;
                     }
@@ -918,8 +917,7 @@ public class Rs2Walker {
             }
         }
 
-        log.info("\n\nFound " + transportList.size() + " transports for path from " +
-                path.get(0) + " to " + path.get(path.size() - 1));
+        log.info("\n\nFound {} transports for path from {} to {}", transportList.size(), path.get(0), path.get(path.size() - 1));
 
         // Apply filtering and requirement setup if requested
         if (applyFiltering) {
@@ -1254,14 +1252,11 @@ public class Rs2Walker {
                 .min(Comparator.comparingInt(a -> _tiles.getOrDefault(a, Integer.MAX_VALUE)))
                 .orElse(null);
 
-        boolean noMatchingTileFound = path.stream()
-                .allMatch(a -> _tiles.getOrDefault(a, Integer.MAX_VALUE) == Integer.MAX_VALUE);
-
         /**
          * Check if the startPoint is null or no matching tile is found
          * If either condition is true, proceed to find the closest index in the path list.
          */
-        if (startPoint == null || noMatchingTileFound) {
+        if (startPoint == null || _tiles.getOrDefault(startPoint, Integer.MAX_VALUE) == Integer.MAX_VALUE) {
             Optional<Integer> closestIndexOptional = IntStream.range(0, path.size())
                     .boxed()
                     .min(Comparator.comparingInt(i -> Rs2Player.getWorldLocation().distanceTo(path.get(i))));

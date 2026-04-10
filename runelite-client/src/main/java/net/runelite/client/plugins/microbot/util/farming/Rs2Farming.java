@@ -1,7 +1,6 @@
 package net.runelite.client.plugins.microbot.util.farming;
 
 import lombok.extern.slf4j.Slf4j;
-import net.runelite.api.QuestState;
 import net.runelite.api.Skill;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
@@ -14,7 +13,9 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.timetracking.Tab;
 
 import javax.inject.Singleton;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -132,6 +133,20 @@ public class Rs2Farming {
         }).orElse(null);
     }
 
+    public static Map<FarmingPatch, CropState> batchPredictAll(List<FarmingPatch> patches) {
+        ensureFarmingHandlerInitialized();
+        if (patches.isEmpty()) {
+            return java.util.Collections.emptyMap();
+        }
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+            Map<FarmingPatch, CropState> result = new HashMap<>();
+            for (FarmingPatch patch : patches) {
+                result.put(patch, farmingHandler.predictPatch(patch));
+            }
+            return result;
+        }).orElse(java.util.Collections.emptyMap());
+    }
+
     /**
      * Get patches that are ready for action (not growing)
      *
@@ -139,11 +154,9 @@ public class Rs2Farming {
      * @return List of patches that are ready (harvestable, diseased, dead, or empty)
      */
     public static List<FarmingPatch> getReadyPatches(List<FarmingPatch> patches) {
+        Map<FarmingPatch, CropState> states = batchPredictAll(patches);
         return patches.stream()
-                .filter(patch -> {
-                    CropState state = predictPatchState(patch);
-                    return state != CropState.GROWING;
-                })
+                .filter(patch -> states.get(patch) != CropState.GROWING)
                 .collect(Collectors.toList());
     }
 
@@ -154,9 +167,10 @@ public class Rs2Farming {
      * @return List of patches ready for harvest
      */
     public static List<FarmingPatch> getHarvestablePatches(List<FarmingPatch> patches) {
+        Map<FarmingPatch, CropState> states = batchPredictAll(patches);
         return patches.stream()
                 .filter(patch -> {
-                    CropState state = predictPatchState(patch);
+                    CropState state = states.get(patch);
                     return state == CropState.HARVESTABLE || state == CropState.UNCHECKED;
                 })
                 .collect(Collectors.toList());
@@ -169,9 +183,10 @@ public class Rs2Farming {
      * @return List of patches needing attention
      */
     public static List<FarmingPatch> getPatchesNeedingAttention(List<FarmingPatch> patches) {
+        Map<FarmingPatch, CropState> states = batchPredictAll(patches);
         return patches.stream()
                 .filter(patch -> {
-                    CropState state = predictPatchState(patch);
+                    CropState state = states.get(patch);
                     return state == CropState.DISEASED || state == CropState.DEAD;
                 })
                 .collect(Collectors.toList());
@@ -184,11 +199,9 @@ public class Rs2Farming {
      * @return List of empty patches
      */
     public static List<FarmingPatch> getEmptyPatches(List<FarmingPatch> patches) {
+        Map<FarmingPatch, CropState> states = batchPredictAll(patches);
         return patches.stream()
-                .filter(patch -> {
-                    CropState state = predictPatchState(patch);
-                    return state == CropState.EMPTY;
-                })
+                .filter(patch -> states.get(patch) == CropState.EMPTY)
                 .collect(Collectors.toList());
     }
 
@@ -220,18 +233,6 @@ public class Rs2Farming {
      */
     public static boolean hasRequiredFarmingLevel(int requiredLevel) {
         return Rs2Player.getRealSkillLevel(Skill.FARMING) >= requiredLevel;
-    }
-
-    /**
-     * Check if player has completed required quests for farming
-     *
-     * @param questState The required quest state
-     * @return true if quest requirement is met
-     */
-    public static boolean hasQuestRequirement(QuestState questState) {
-        // This would need to be implemented based on specific quest requirements
-        // For now, return true as a placeholder
-        return true;
     }
 
     /**

@@ -106,6 +106,7 @@ public class AntibanPlugin extends Plugin {
      * Avoid spamming the user if they keep micro breaks on while the break handler is disabled.
      */
     private boolean warnedBreakHandlerDisabled;
+    private Timer panelRefreshTimer;
 
     /**
      * Remembers last micro-break state to detect transitions (start/end).
@@ -175,8 +176,8 @@ public class AntibanPlugin extends Plugin {
         Rs2AntibanSettings.loadFromProfile();
         validateAndSetBreakDurations();
 
-        Timer timer = new Timer();
-        timer.scheduleAtFixedRate(new TimerTask() {
+        panelRefreshTimer = new Timer();
+        panelRefreshTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 SwingUtilities.invokeLater(panel::loadSettings);
@@ -191,7 +192,10 @@ public class AntibanPlugin extends Plugin {
     protected void shutDown() {
         overlayManager.removeIf(overlay -> overlay instanceof AntibanOverlay);
         clientToolbar.removeNavigation(navButton);
-
+        if (panelRefreshTimer != null) {
+            panelRefreshTimer.cancel();
+            panelRefreshTimer = null;
+        }
         clearPauseFlags();
     }
 
@@ -253,8 +257,6 @@ public class AntibanPlugin extends Plugin {
             }
             idleTicks = 0;
         }
-
-        validateAndSetBreakDurations();
 
         handleMicroBreakIntegration();
 

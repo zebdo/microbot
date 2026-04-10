@@ -57,6 +57,8 @@ import javax.swing.event.DocumentListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.KeyEvent;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.io.File;
@@ -207,6 +209,8 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
         private boolean installed;
         private MicrobotPluginManifest manifest;
         private String latestVersion;
+        private VersionSelector versionSelector;
+        private JButton refreshButton;
 
         PluginItem(MicrobotPluginManifest manifest, Collection<Plugin> loadedPlugins, int userCount, boolean installed) {
             this.manifest = manifest;
@@ -264,7 +268,7 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
                     ? (!Strings.isNullOrEmpty(storedVersion) ? storedVersion : currentVersion)
                     : null;
             String initialSelectedVersion = installed ? installedVersion : null;
-            final VersionSelector versionSelector = new VersionSelector(
+            this.versionSelector = new VersionSelector(
                     manifest,
                     availableVersions,
                     initialSelectedVersion,
@@ -313,10 +317,22 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
                 configure.setVisible(false);
             }
 
+            this.refreshButton = new JButton("\u27F3");
+            refreshButton.setFont(refreshButton.getFont().deriveFont(Font.BOLD, 16f));
+            refreshButton.setForeground(PASTEL_ORANGE);
+            SwingUtil.removeButtonDecorations(refreshButton);
+            refreshButton.setBorder(null);
+            refreshButton.setMargin(new Insets(0, 0, 0, 0));
+            refreshButton.setFocusPainted(false);
+            refreshButton.setToolTipText("Update to latest version (" + latestVersion + ")");
+            refreshButton.setVisible(false);
+            refreshButton.addActionListener(ev -> versionSelector.updateSelectedVersion(latestVersion));
+
             GroupLayout.SequentialGroup bottomRow = layout.createSequentialGroup()
                     .addComponent(versionSelector, 100, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE);
-            bottomRow.addComponent(help, 0, 24, 24)
+            bottomRow.addComponent(refreshButton, 0, 24, 24)
+                    .addComponent(help, 0, 24, 24)
                     .addComponent(configure, 0, 24, 24)
                     .addGap(5);
 
@@ -336,6 +352,7 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
             int lineHeight = description.getFontMetrics(description.getFont()).getHeight();
             GroupLayout.ParallelGroup bottomRowVertical = layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                     .addComponent(versionSelector, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
+                    .addComponent(refreshButton, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
                     .addComponent(help, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
                     .addComponent(configure, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT);
 
@@ -354,6 +371,21 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
                             .addGap(5)));
 
             updateBorder(initialSelectedVersion);
+
+            MouseAdapter doubleClickInstall = new MouseAdapter() {
+                @Override
+                public void mouseClicked(MouseEvent e) {
+                    if (e.getClickCount() == 2 && SwingUtilities.isLeftMouseButton(e) && !PluginItem.this.installed) {
+                        versionSelector.installSelectedVersion(latestVersion);
+                    }
+                }
+            };
+            addMouseListener(doubleClickInstall);
+            icon.addMouseListener(doubleClickInstall);
+            pluginName.addMouseListener(doubleClickInstall);
+            author.addMouseListener(doubleClickInstall);
+            description.addMouseListener(doubleClickInstall);
+            badge.addMouseListener(doubleClickInstall);
         }
 
         @Override
@@ -368,17 +400,26 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 
 		private void updateBorder(String selectedVersion)
 		{
+			boolean outdated = installed
+				&& !Strings.isNullOrEmpty(latestVersion)
+				&& !latestVersion.equals(selectedVersion);
+
 			if (!installed)
 			{
 				setBorder(BorderFactory.createEmptyBorder(2, 2, 2, 2));
 			}
-			else if (!Strings.isNullOrEmpty(latestVersion) && latestVersion.equals(selectedVersion))
+			else if (outdated)
 			{
-				setBorder(BorderFactory.createLineBorder(PASTEL_GREEN, 2));
+				setBorder(BorderFactory.createLineBorder(PASTEL_ORANGE, 2));
 			}
 			else
 			{
-				setBorder(BorderFactory.createLineBorder(PASTEL_ORANGE, 2));
+				setBorder(BorderFactory.createLineBorder(PASTEL_GREEN, 2));
+			}
+
+			if (refreshButton != null)
+			{
+				refreshButton.setVisible(outdated);
 			}
 		}
 
@@ -786,6 +827,10 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
                         Collectors.toCollection(LinkedHashSet::new)
                 ));
 
+        Set<String> installedNames = installed.stream()
+                .map(im -> im.getClass().getSimpleName().toLowerCase(Locale.ROOT))
+                .collect(Collectors.toSet());
+
         // Build PluginItem list by looping over manifests
         plugins = manifestByName.entrySet().stream()
                 .map(e -> {
@@ -795,7 +840,7 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 
                     Collection<Plugin> group = pluginsByName.getOrDefault(key, Collections.emptySet());
                     int count = pluginCounts.getOrDefault(simpleName, -1);
-                    boolean isInstalled = installed.stream().anyMatch(im -> im.getClass().getSimpleName().equalsIgnoreCase(simpleName));
+                    boolean isInstalled = simpleName != null && installedNames.contains(simpleName.toLowerCase(Locale.ROOT));
 
                     return new PluginItem(m, group, count, isInstalled);
                 })
@@ -864,7 +909,7 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 
     @Subscribe
     private void onExternalPluginsChanged(ExternalPluginsChanged ev) {
-        reloadPluginList();
+        SwingUtilities.invokeLater(this::reloadPluginList);
     }
 
     // A utility class copied from the original PluginHubPanel

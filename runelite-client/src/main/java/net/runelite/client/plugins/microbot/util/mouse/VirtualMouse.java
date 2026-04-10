@@ -22,12 +22,11 @@ import static net.runelite.client.plugins.microbot.util.Global.sleep;
 public class VirtualMouse extends Mouse {
 
     private final ScheduledExecutorService scheduledExecutorService;
-    private boolean exited = true;
 
     @Inject
     public VirtualMouse() {
         super();
-        this.scheduledExecutorService = Executors.newScheduledThreadPool(10);
+        this.scheduledExecutorService = Executors.newSingleThreadScheduledExecutor();
         //getCanvas().setFocusable(false);
     }
 
@@ -155,7 +154,9 @@ public class VirtualMouse extends Mouse {
     }
 
     public Mouse move(Rectangle rect) {
-        MouseEvent mouseMove = new MouseEvent(Microbot.getClient().getCanvas(), MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, (int) rect.getCenterX(), (int) rect.getCenterY(), 0, false);
+        Point pt = new Point((int) rect.getCenterX(), (int) rect.getCenterY());
+        setLastMove(pt);
+        MouseEvent mouseMove = new MouseEvent(Microbot.getClient().getCanvas(), MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, pt.getX(), pt.getY(), 0, false);
         mouseMove.setSource("Microbot");
         getCanvas().dispatchEvent(mouseMove);
 
@@ -164,6 +165,7 @@ public class VirtualMouse extends Mouse {
 
     public Mouse move(Polygon polygon) {
         Point point = new Point((int) polygon.getBounds().getCenterX(), (int) polygon.getBounds().getCenterY());
+        setLastMove(point);
 
         MouseEvent mouseMove = new MouseEvent(getCanvas(), MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, point.getX(), point.getY(), 0, false);
         mouseMove.setSource("Microbot");
@@ -245,20 +247,22 @@ public class VirtualMouse extends Mouse {
         MouseEvent event = new MouseEvent(Microbot.getClient().getCanvas(), MouseEvent.MOUSE_EXITED, System.currentTimeMillis(), 0, point.getX(), point.getY(), 0, false);
         event.setSource("Microbot");
         getCanvas().dispatchEvent(event);
-        exited = true;
     }
 
     private synchronized void entered(Point point) {
         MouseEvent event = new MouseEvent(Microbot.getClient().getCanvas(), MouseEvent.MOUSE_ENTERED, System.currentTimeMillis(), 0, point.getX(), point.getY(), 0, false);
         event.setSource("Microbot");
         getCanvas().dispatchEvent(event);
-        exited = false;
     }
 
     private synchronized void moved(Point point) {
         MouseEvent event = new MouseEvent(Microbot.getClient().getCanvas(), MouseEvent.MOUSE_MOVED, System.currentTimeMillis(), 0, point.getX(), point.getY(), 0, false);
         event.setSource("Microbot");
         getCanvas().dispatchEvent(event);
+    }
+
+    public void shutdown() {
+        scheduledExecutorService.shutdownNow();
     }
 
     // New drag method

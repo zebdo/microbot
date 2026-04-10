@@ -346,7 +346,7 @@ public class Rs2Antiban {
             logDebug("MICRO BREAKS ARE DISABLED, cannot take micro break");
             return false;
         }
-        if (Math.random() < Rs2AntibanSettings.microBreakChance) {
+        if (Rs2Random.diceFractional(Rs2AntibanSettings.microBreakChance)) {
             Rs2AntibanSettings.microBreakActive = true;
             logDebug("Micro break triggered by antiban system");
             if (Rs2AntibanSettings.moveMouseOffScreen)
@@ -448,6 +448,7 @@ public class Rs2Antiban {
      */
 
     public static void renderAntibanOverlayComponents(PanelComponent panelComponent) {
+        if (playStyle == null) return;
         final ProgressBarComponent progressBarComponent = new ProgressBarComponent();
         progressBarComponent.setBackgroundColor(Color.DARK_GRAY);
         progressBarComponent.setForegroundColor(ColorUtil.fromHex("#cc8400"));
