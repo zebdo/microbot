@@ -92,6 +92,13 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
         CONFIGURE_ICON = new ImageIcon(configureIcon);
     }
 
+    private enum ActionState
+    {
+        DOWNLOAD,
+        REFRESH,
+        REMOVE
+    }
+
     private class PluginIcon extends JLabel {
         private boolean loadingStarted;
         private String iconUrl;
@@ -210,7 +217,6 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
         private MicrobotPluginManifest manifest;
         private String latestVersion;
         private VersionSelector versionSelector;
-        private JButton refreshButton;
 
         PluginItem(MicrobotPluginManifest manifest, Collection<Plugin> loadedPlugins, int userCount, boolean installed) {
             this.manifest = manifest;
@@ -317,22 +323,10 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
                 configure.setVisible(false);
             }
 
-            this.refreshButton = new JButton("\u27F3");
-            refreshButton.setFont(refreshButton.getFont().deriveFont(Font.BOLD, 16f));
-            refreshButton.setForeground(PASTEL_ORANGE);
-            SwingUtil.removeButtonDecorations(refreshButton);
-            refreshButton.setBorder(null);
-            refreshButton.setMargin(new Insets(0, 0, 0, 0));
-            refreshButton.setFocusPainted(false);
-            refreshButton.setToolTipText("Update to latest version (" + latestVersion + ")");
-            refreshButton.setVisible(false);
-            refreshButton.addActionListener(ev -> versionSelector.updateSelectedVersion(latestVersion));
-
             GroupLayout.SequentialGroup bottomRow = layout.createSequentialGroup()
                     .addComponent(versionSelector, 100, GroupLayout.PREFERRED_SIZE, GroupLayout.PREFERRED_SIZE)
                     .addPreferredGap(LayoutStyle.ComponentPlacement.RELATED, GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE);
-            bottomRow.addComponent(refreshButton, 0, 24, 24)
-                    .addComponent(help, 0, 24, 24)
+            bottomRow.addComponent(help, 0, 24, 24)
                     .addComponent(configure, 0, 24, 24)
                     .addGap(5);
 
@@ -352,7 +346,6 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
             int lineHeight = description.getFontMetrics(description.getFont()).getHeight();
             GroupLayout.ParallelGroup bottomRowVertical = layout.createParallelGroup(GroupLayout.Alignment.BASELINE)
                     .addComponent(versionSelector, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
-                    .addComponent(refreshButton, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
                     .addComponent(help, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT)
                     .addComponent(configure, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT, BOTTOM_LINE_HEIGHT);
 
@@ -416,11 +409,6 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 			{
 				setBorder(BorderFactory.createLineBorder(PASTEL_GREEN, 2));
 			}
-
-			if (refreshButton != null)
-			{
-				refreshButton.setVisible(outdated);
-			}
 		}
 
 		private void setInstalled(boolean installed, String selectedVersion)
@@ -433,14 +421,16 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 		{
 			private final MicrobotPluginManifest manifest;
 			private final JComboBox<String> comboBox;
-			private final JButton removeButton;
+			private final JButton actionButton;
 			private boolean installed;
+			private String installedVersion;
 
 			private VersionSelector(MicrobotPluginManifest manifest, List<String> availableVersions,
 				String initialSelectedVersion, String suggestedVersion, boolean installed)
 			{
 				this.manifest = manifest;
 				this.installed = installed;
+				this.installedVersion = installed ? initialSelectedVersion : null;
 
 				setLayout(new BorderLayout(2, 0));
 				setOpaque(false);
@@ -462,22 +452,89 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 				comboBox.addActionListener(e -> {
 					if (e.getActionCommand().equals("comboBoxChanged"))
 					{
-						performInstallOrUpdate();
+						refreshActionButton();
 					}
 				});
 
-				removeButton = new JButton("✕");
-				removeButton.setFont(FontManager.getRunescapeSmallFont());
-				removeButton.setForeground(new Color(0xBE2828));
-				removeButton.setPreferredSize(new Dimension(20, 16));
-				removeButton.setMargin(new Insets(0, 0, 0, 0));
-				removeButton.setFocusPainted(false);
-				removeButton.setToolTipText("Remove plugin");
-				removeButton.setVisible(installed);
-				removeButton.addActionListener(e -> removePlugin());
+				actionButton = new JButton();
+				actionButton.setFont(actionButton.getFont().deriveFont(Font.BOLD, 16f));
+				actionButton.setPreferredSize(new Dimension(24, 16));
+				actionButton.setMargin(new Insets(0, 0, 0, 0));
+				actionButton.setFocusPainted(false);
+				SwingUtil.removeButtonDecorations(actionButton);
+				actionButton.setBorder(null);
+				actionButton.addActionListener(e -> handleActionButtonClick());
 
 				add(comboBox, BorderLayout.CENTER);
-				add(removeButton, BorderLayout.EAST);
+				add(actionButton, BorderLayout.EAST);
+
+				refreshActionButton();
+			}
+
+			private ActionState determineState()
+			{
+				String selected = (String) comboBox.getSelectedItem();
+				if (!installed)
+				{
+					return ActionState.DOWNLOAD;
+				}
+				if (!Strings.isNullOrEmpty(selected) && !selected.equals(installedVersion))
+				{
+					return ActionState.DOWNLOAD;
+				}
+				if (!Strings.isNullOrEmpty(latestVersion) && !latestVersion.equals(installedVersion))
+				{
+					return ActionState.REFRESH;
+				}
+				return ActionState.REMOVE;
+			}
+
+			private void refreshActionButton()
+			{
+				ActionState state = determineState();
+				String selected = (String) comboBox.getSelectedItem();
+				switch (state)
+				{
+					case DOWNLOAD:
+						actionButton.setText("\u2B07");
+						actionButton.setForeground(PASTEL_GREEN);
+						actionButton.setToolTipText(Strings.isNullOrEmpty(selected)
+							? "Download plugin"
+							: "Download version " + selected);
+						break;
+					case REFRESH:
+						actionButton.setText("\u27F3");
+						actionButton.setForeground(PASTEL_ORANGE);
+						actionButton.setToolTipText("Update to latest version (" + latestVersion + ")");
+						break;
+					case REMOVE:
+					default:
+						actionButton.setText("\u2715");
+						actionButton.setForeground(new Color(0xBE2828));
+						actionButton.setToolTipText("Remove plugin");
+						break;
+				}
+			}
+
+			private void handleActionButtonClick()
+			{
+				ActionState state = determineState();
+				String selected = (String) comboBox.getSelectedItem();
+				switch (state)
+				{
+					case DOWNLOAD:
+						if (!Strings.isNullOrEmpty(selected))
+						{
+							installSelectedVersion(selected);
+						}
+						break;
+					case REFRESH:
+						updateSelectedVersion(latestVersion);
+						break;
+					case REMOVE:
+						removePlugin();
+						break;
+				}
 			}
 
 			private List<String> buildVersionList(List<String> availableVersions, String suggested, String selected)
@@ -504,24 +561,6 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 				return new ArrayList<>(unique);
 			}
 
-			private void performInstallOrUpdate()
-			{
-				String selectedVersion = (String) comboBox.getSelectedItem();
-				if (Strings.isNullOrEmpty(selectedVersion))
-				{
-					return;
-				}
-
-				if (!installed)
-				{
-					installSelectedVersion(selectedVersion);
-				}
-				else
-				{
-					updateSelectedVersion(selectedVersion);
-				}
-			}
-
 			private void installSelectedVersion(String version)
 			{
 				if (!ensureClientVersionCompatible())
@@ -530,8 +569,10 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 				}
 				microbotPluginManager.installPlugin(manifest, version);
 				installed = true;
-				removeButton.setVisible(true);
+				installedVersion = version;
 				setInstalled(true, version);
+				comboBox.setSelectedItem(version);
+				refreshActionButton();
 			}
 
 			private void updateSelectedVersion(String version)
@@ -541,7 +582,10 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 					return;
 				}
 				microbotPluginManager.updatePlugin(manifest, version);
+				installedVersion = version;
+				comboBox.setSelectedItem(version);
 				updateBorder(version);
+				refreshActionButton();
 				MicrobotPluginHubPanel.this.reloadPluginList();
 			}
 
@@ -549,8 +593,9 @@ public class MicrobotPluginHubPanel extends MicrobotPluginPanel {
 			{
 				microbotPluginManager.removePlugin(manifest);
 				installed = false;
-				removeButton.setVisible(false);
+				installedVersion = null;
 				setInstalled(false, null);
+				refreshActionButton();
 			}
 
 			private boolean ensureClientVersionCompatible()
