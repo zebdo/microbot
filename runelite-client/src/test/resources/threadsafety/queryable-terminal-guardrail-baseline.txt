@@ -6,13 +6,3 @@
 # Regenerate with: ./gradlew :client:regenerateQueryableTerminalBaseline
 # Lines starting with '#' are ignored.
 
-net.runelite.client.plugins.microbot.agentserver.handler.GroundItemHandler#handlePickup(HttpExchange): void  ->  net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemQueryable#nearest(): IEntity
-net.runelite.client.plugins.microbot.agentserver.handler.GroundItemHandler#handleQuery(HttpExchange): void  ->  net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemQueryable#toList(): List
-net.runelite.client.plugins.microbot.agentserver.handler.NpcHandler#handleInteract(HttpExchange): void  ->  net.runelite.client.plugins.microbot.api.npc.Rs2NpcQueryable#nearest(): IEntity
-net.runelite.client.plugins.microbot.agentserver.handler.NpcHandler#handleQuery(HttpExchange): void  ->  net.runelite.client.plugins.microbot.api.npc.Rs2NpcQueryable#toList(): List
-net.runelite.client.plugins.microbot.agentserver.handler.ObjectHandler#handleInteract(HttpExchange): void  ->  net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectQueryable#nearest(): IEntity
-net.runelite.client.plugins.microbot.agentserver.handler.ObjectHandler#handleQuery(HttpExchange): void  ->  net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectQueryable#toList(): List
-net.runelite.client.plugins.microbot.example.ExampleScript#lambda$checkNpcCache$19(): void  ->  net.runelite.client.plugins.microbot.api.npc.Rs2NpcQueryable#nearest(): IEntity
-net.runelite.client.plugins.microbot.example.ExampleScript#lambda$checkTileObjectCache$23(): void  ->  net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectQueryable#nearest(): IEntity
-net.runelite.client.plugins.microbot.questhelper.QuestScript#applyObjectStep(ObjectStep): boolean  ->  net.runelite.client.plugins.microbot.api.tileobject.Rs2TileObjectQueryable#toList(): List
-net.runelite.client.plugins.microbot.questhelper.QuestScript#lootGroundItem(int, int): boolean  ->  net.runelite.client.plugins.microbot.api.tileitem.Rs2TileItemQueryable#nearest(): IEntity
