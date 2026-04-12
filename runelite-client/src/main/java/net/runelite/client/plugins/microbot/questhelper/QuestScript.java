@@ -1153,7 +1153,7 @@ public class QuestScript extends Script {
 		Rs2TileItemModel item = new Rs2TileItemQueryable()
 				.withId(itemId)
 				.within(radius)
-				.nearestOnClientThread();
+				.nearest();
 
 		if (item == null) {
 			return false;
@@ -1296,7 +1296,7 @@ public class QuestScript extends Script {
         if (object != null && unreachableTarget) {
             var tileObjects = new Rs2TileObjectQueryable()
                     .where(x -> x.getTileObjectType() == TileObjectType.WALL)
-                    .toListOnClientThread();
+                    .toList();
 
             for (var tile : Rs2Tile.getWalkableTilesAroundTile(object.getWorldLocation(), unreachableTargetCheckDist)) {
                 if (tileObjects.stream().noneMatch(x -> x.getWorldLocation().equals(tile))) {

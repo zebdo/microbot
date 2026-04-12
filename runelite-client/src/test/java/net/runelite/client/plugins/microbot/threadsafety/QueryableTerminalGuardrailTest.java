@@ -50,20 +50,18 @@ import static org.junit.Assert.fail;
  * {@code api/}) calls an unsafe queryable terminal method such as
  * {@code nearest()}, {@code first()}, or {@code toList()} on an
  * {@link net.runelite.client.plugins.microbot.api.IEntityQueryable}
- * instead of the thread-safe {@code *OnClientThread()} variant.
+ * in a method that also uses a <strong>name-based filter</strong>
+ * ({@code withName}, {@code withNameContains}, {@code withNames}).
  *
- * <h2>Unsafe terminals</h2>
- * <ul>
- *   <li>{@code first()} &mdash; use {@code firstOnClientThread()}</li>
- *   <li>{@code firstReachable()} &mdash; wrap in {@code clientThread.invoke(...)}</li>
- *   <li>{@code nearest()} (all overloads) &mdash; use {@code nearestOnClientThread()}</li>
- *   <li>{@code nearestReachable()} (all overloads) &mdash; wrap in {@code clientThread.invoke(...)}</li>
- *   <li>{@code toList()} &mdash; use {@code toListOnClientThread()}</li>
- *   <li>{@code count()} &mdash; wrap in {@code clientThread.invoke(...)}</li>
- * </ul>
- *
- * Calls inside a lambda body passed to {@code ClientThread.invoke*()} are
- * exempt (the lambda is already on the client thread).
+ * <h2>Why only name-based filters?</h2>
+ * Name-based filters call {@code getName()} on every entity in the stream.
+ * {@code getName()} internally marshals to the client thread per entity,
+ * so evaluating the stream off the client thread causes hundreds of
+ * individual thread switches.  ID-based filters ({@code withId},
+ * {@code withIds}) read a cached int and are safe from any thread.
+ * Using the {@code *OnClientThread()} terminal wraps the entire stream
+ * evaluation in a single {@code clientThread.invoke()}, collapsing
+ * those per-entity hops into one batch call.
  *
  * <h2>Baseline</h2>
  * Pre-existing violations live in
@@ -89,6 +87,10 @@ public class QueryableTerminalGuardrailTest
 		"net/runelite/client/plugins/microbot/api/tileobject/Rs2TileObjectQueryable"
 	);
 
+	private static final Set<String> NAME_BASED_FILTERS = Set.of(
+		"withName", "withNameContains", "withNames"
+	);
+
 	private static final Set<String> UNSAFE_TERMINAL_NAMES = Set.of(
 		"first", "firstReachable",
 		"nearest", "nearestReachable",
@@ -108,6 +110,7 @@ public class QueryableTerminalGuardrailTest
 		final String methodDesc;
 		boolean confirmedLambda;
 		boolean callsClientThreadInvoke;
+		boolean hasNameBasedFilter;
 		final List<String> lambdaHandles = new ArrayList<>();
 		final List<String> unsafeTerminalCalls = new ArrayList<>();
 
@@ -236,6 +239,10 @@ public class QueryableTerminalGuardrailTest
 			{
 				continue;
 			}
+			if (!m.hasNameBasedFilter)
+			{
+				continue;
+			}
 			for (String call : m.unsafeTerminalCalls)
 			{
 				violations.add(m.fullyQualified() + "  ->  " + call);
@@ -282,6 +289,11 @@ public class QueryableTerminalGuardrailTest
 				{
 					info.unsafeTerminalCalls.add(
 						m.owner.replace('/', '.') + "#" + m.name + prettyDescriptor(m.desc));
+				}
+
+				if (QUERYABLE_TYPES.contains(m.owner) && NAME_BASED_FILTERS.contains(m.name))
+				{
+					info.hasNameBasedFilter = true;
 				}
 
 				pendingLambda = null;

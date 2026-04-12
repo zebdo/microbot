@@ -175,8 +175,8 @@ public class ExampleScript extends Script {
             assertNotNull(wp, "NPC world location is null");
         });
 
-        check("Rs2NpcCache.query().nearestOnClientThread() works", () -> {
-            Microbot.getRs2NpcCache().query().nearestOnClientThread();
+        check("Rs2NpcCache.query().nearest() works", () -> {
+            Microbot.getRs2NpcCache().query().nearest();
         });
     }
 
@@ -199,8 +199,8 @@ public class ExampleScript extends Script {
             assertTrue(obj.getId() > 0, "tile object ID is " + obj.getId());
         });
 
-        check("Rs2TileObjectCache.query().nearestOnClientThread() works", () -> {
-            Microbot.getRs2TileObjectCache().query().nearestOnClientThread();
+        check("Rs2TileObjectCache.query().nearest() works", () -> {
+            Microbot.getRs2TileObjectCache().query().nearest();
         });
     }
 
