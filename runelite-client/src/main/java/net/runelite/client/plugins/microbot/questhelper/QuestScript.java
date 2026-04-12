@@ -1345,7 +1345,6 @@ public class QuestScript extends Script {
         }
 
         if (object != null
-                && Rs2Player.getWorldLocation().distanceTo(object.getWorldLocation()) > 1
                 && !Rs2Tile.areSurroundingTilesWalkable(object.getWorldLocation(), 1, 1)) {
             Rs2Walker.walkTo(object.getWorldLocation());
             return false;
