@@ -681,6 +681,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
                             "The actual game tiles may be at different coordinates. " +
                             "For accurate dungeon navigation, close the world map and right-click a tile in the game view instead.",
                             mapPoint);
+                    return null;
                 }
             }
             return mapPoint;

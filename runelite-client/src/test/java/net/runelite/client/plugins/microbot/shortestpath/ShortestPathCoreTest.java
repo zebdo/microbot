@@ -177,8 +177,8 @@ public class ShortestPathCoreTest {
 	@Test
 	public void testCollisionMapBlockedTile() {
 		CollisionMap map = new CollisionMap(collisionMap);
-		boolean canMoveNorth = map.n(3222, 3218, 0);
-		assertNotNull("Collision map should return a boolean for any valid tile", (Boolean) canMoveNorth);
+		assertTrue("Lumbridge castle wall tile should block east movement", map.isBlocked(3213, 3222, 0));
+		assertFalse("Open Lumbridge courtyard tile should not be blocked", map.isBlocked(3222, 3218, 0));
 	}
 
 	// ========================
@@ -377,8 +377,6 @@ public class ShortestPathCoreTest {
 				Math.abs(endpoint.getY() - dungeonEntrance.getY()));
 		assertTrue("Should reach within 5 tiles of dungeon entrance, got dist=" + distToTarget +
 				" at " + endpoint, distToTarget <= 5);
-
-		System.out.println("Karamja → IoS Dungeon entrance: path=" + path.size() + " tiles, endpoint=" + endpoint);
 	}
 
 	@Test
@@ -392,15 +390,14 @@ public class ShortestPathCoreTest {
 
 		assertTrue("Pathfinder should complete", pf.isDone());
 		List<WorldPoint> path = pf.getPath();
+		assertFalse("Path should not be empty", path.isEmpty());
 
 		WorldPoint endpoint = path.get(path.size() - 1);
 		int distToTarget = Math.max(
 				Math.abs(endpoint.getX() - ironDragons.getX()),
 				Math.abs(endpoint.getY() - ironDragons.getY()));
-		assertTrue("Should reach within 15 tiles of iron dragons (limited dungeon collision data), got dist=" + distToTarget +
+		assertTrue("Should reach within 15 tiles of iron dragons, got dist=" + distToTarget +
 				" at " + endpoint, distToTarget <= 15);
-
-		System.out.println("Karamja → Iron Dragons: path=" + path.size() + " tiles, endpoint=" + endpoint);
 	}
 
 	@Test
@@ -414,15 +411,14 @@ public class ShortestPathCoreTest {
 
 		assertTrue("Pathfinder should complete", pf.isDone());
 		List<WorldPoint> path = pf.getPath();
+		assertFalse("Path should not be empty", path.isEmpty());
 
 		WorldPoint endpoint = path.get(path.size() - 1);
 		int distToTarget = Math.max(
 				Math.abs(endpoint.getX() - blueDragons.getX()),
 				Math.abs(endpoint.getY() - blueDragons.getY()));
-		assertTrue("Should reach within 30 tiles of blue dragons (limited dungeon collision data), got dist=" + distToTarget +
+		assertTrue("Should reach within 30 tiles of blue dragons, got dist=" + distToTarget +
 				" at " + endpoint, distToTarget <= 30);
-
-		System.out.println("Karamja → Blue Dragons: path=" + path.size() + " tiles, endpoint=" + endpoint);
 	}
 
 	// ========================
@@ -451,11 +447,11 @@ public class ShortestPathCoreTest {
 		PathfinderConfig config = createMinimalConfig();
 		CollisionMap map = config.getMap();
 
-		int targetX = 3222, targetY = 3218;
+		int startX = 3222, targetX = startX, targetY = 3218;
 		while (!map.isBlocked(targetX, targetY, 0)) {
 			targetX++;
 			if (targetX > 3300) {
-				return;
+				fail("No blocked tile found scanning x=" + startX + ".." + targetX + " y=" + targetY + " plane=0");
 			}
 		}
 
@@ -676,8 +672,8 @@ public class ShortestPathCoreTest {
 			f.setLong(config, 10000);
 
 			for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
+				config.getTransports().put(entry.getKey(), entry.getValue());
 				if (entry.getKey() != null) {
-					config.getTransports().put(entry.getKey(), entry.getValue());
 					config.getTransportsPacked().put(
 							WorldPointUtil.packWorldPoint(entry.getKey()), entry.getValue());
 				}
