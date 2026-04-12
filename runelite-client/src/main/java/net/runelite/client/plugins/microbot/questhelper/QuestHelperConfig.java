@@ -28,6 +28,7 @@ import net.runelite.client.plugins.microbot.questhelper.panel.questorders.QuestO
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestDetails;
 import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
 import lombok.Getter;
+import net.runelite.api.ItemID;
 import net.runelite.client.config.*;
 import net.runelite.client.util.Text;
 
@@ -252,6 +253,62 @@ public interface QuestHelperConfig extends Config
 	)
 	default boolean startStopQuestHelper() {
 		return true;
+	}
+
+	@Getter
+	enum ValeTotemsWoodType
+	{
+		ASK("Ask me", -1, List.of()),
+		OAK("Oak", ItemID.OAK_LOGS, List.of(
+			ItemID.OAK_SHIELD,
+			ItemID.OAK_SHORTBOW_U, ItemID.OAK_SHORTBOW,
+			ItemID.OAK_LONGBOW_U, ItemID.OAK_LONGBOW)),
+		WILLOW("Willow", ItemID.WILLOW_LOGS, List.of(
+			ItemID.WILLOW_SHIELD,
+			ItemID.WILLOW_SHORTBOW_U, ItemID.WILLOW_SHORTBOW,
+			ItemID.WILLOW_LONGBOW_U, ItemID.WILLOW_LONGBOW)),
+		MAPLE("Maple", ItemID.MAPLE_LOGS, List.of(
+			ItemID.MAPLE_SHIELD,
+			ItemID.MAPLE_SHORTBOW_U, ItemID.MAPLE_SHORTBOW,
+			ItemID.MAPLE_LONGBOW_U, ItemID.MAPLE_LONGBOW)),
+		YEW("Yew", ItemID.YEW_LOGS, List.of(
+			ItemID.YEW_SHIELD,
+			ItemID.YEW_SHORTBOW_U, ItemID.YEW_SHORTBOW,
+			ItemID.YEW_LONGBOW_U, ItemID.YEW_LONGBOW)),
+		MAGIC("Magic", ItemID.MAGIC_LOGS, List.of(
+			ItemID.MAGIC_SHIELD,
+			ItemID.MAGIC_SHORTBOW_U, ItemID.MAGIC_SHORTBOW,
+			ItemID.MAGIC_LONGBOW_U, ItemID.MAGIC_LONGBOW)),
+		REDWOOD("Redwood", ItemID.REDWOOD_LOGS, List.of(ItemID.REDWOOD_SHIELD));
+
+		private final String display;
+		private final int logId;
+		private final List<Integer> decorativeIds;
+
+		ValeTotemsWoodType(String display, int logId, List<Integer> decorativeIds)
+		{
+			this.display = display;
+			this.logId = logId;
+			this.decorativeIds = decorativeIds;
+		}
+
+		@Override
+		public String toString()
+		{
+			return display;
+		}
+	}
+
+	@ConfigItem(
+			keyName = "valeTotemsWoodType",
+			name = "Vale Totems wood type",
+			description = "Which wood type the quester should gather for the Vale Totems miniquest. " +
+					"Must match the wood you used to build the totem. " +
+					"Leave on 'Ask me' to be prompted the first time the quest runs.",
+			section = microbotSection
+	)
+	default ValeTotemsWoodType valeTotemsWoodType() {
+		return ValeTotemsWoodType.ASK;
 	}
 
 	@ConfigItem(

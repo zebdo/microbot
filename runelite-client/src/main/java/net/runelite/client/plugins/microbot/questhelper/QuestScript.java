@@ -13,6 +13,7 @@ import net.runelite.client.plugins.microbot.questhelper.logic.PiratesTreasure;
 import net.runelite.client.plugins.microbot.questhelper.logic.QuestRegistry;
 import net.runelite.client.plugins.microbot.questhelper.questinfo.QuestHelperQuest;
 import net.runelite.client.plugins.microbot.questhelper.managers.QuestContainerManager;
+import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
 import net.runelite.client.plugins.microbot.questhelper.requirements.Requirement;
 import net.runelite.client.plugins.microbot.questhelper.requirements.item.ItemRequirement;
 import net.runelite.client.plugins.microbot.questhelper.steps.*;
@@ -23,6 +24,8 @@ import net.runelite.client.plugins.microbot.util.camera.Rs2Camera;
 import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
 import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
+import net.runelite.client.plugins.microbot.util.grandexchange.Rs2GrandExchange;
+import net.runelite.client.plugins.microbot.util.grandexchange.models.WikiPrice;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.keyboard.Rs2Keyboard;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
@@ -49,7 +52,10 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+import javax.swing.JOptionPane;
+import javax.swing.SwingUtilities;
 import org.slf4j.event.Level;
 import net.runelite.api.coords.WorldArea;
 
@@ -64,6 +70,9 @@ public class QuestScript extends Script {
     public static List<ItemRequirement> itemsMissing = new ArrayList<>();
     public static List<ItemRequirement> grandExchangeItems = new ArrayList<>();
 
+    private static final AtomicBoolean valeTotemsPromptInFlight = new AtomicBoolean(false);
+    private static volatile QuestHelperConfig.ValeTotemsWoodType valeTotemsSessionWoodType;
+
     boolean unreachableTarget = false;
     int unreachableTargetCheckDist = 1;
 
@@ -71,6 +80,9 @@ public class QuestScript extends Script {
     private QuestHelperPlugin mQuestPlugin;
     private static Set<Integer> npcsHandled = new HashSet<>();
     private static Set<Long> objectsHandeled = new HashSet<>();
+
+    private int heldTrackingQuestId = -1;
+    private final Set<Integer> everHeldItemRequirementIds = new HashSet<>();
 
     QuestStep dialogueStartedStep = null;
 
@@ -277,7 +289,10 @@ public class QuestScript extends Script {
 	}
 
 	private boolean handleMissingItemRequirements(DetailedQuestStep questStep) {
-		for (Requirement requirement : questStep.getRequirements()) {
+		List<ItemRequirement> missing = new ArrayList<>();
+		List<ItemRequirement> needsUnnoting = new ArrayList<>();
+
+		for (Requirement requirement : collectAllItemRequirements(questStep)) {
 			if (!(requirement instanceof ItemRequirement)) {
 				continue;
 			}
@@ -295,10 +310,792 @@ public class QuestScript extends Script {
 				continue;
 			}
 
-			return attemptToAcquireRequirementItem(questStep, itemRequirement);
+			if (hasNotedVersionInInventory(itemRequirement)) {
+				needsUnnoting.add(itemRequirement);
+				continue;
+			}
+
+			missing.add(itemRequirement);
+		}
+
+		if (!needsUnnoting.isEmpty()) {
+			return unnoteItemsViaBank(needsUnnoting);
+		}
+
+		if (missing.isEmpty()) {
+			return false;
+		}
+
+		ItemRequirement nonTradable = missing.stream()
+				.filter(ir -> !isItemRequirementTradable(ir))
+				.findFirst()
+				.orElse(null);
+
+		if (nonTradable != null) {
+			return attemptToAcquireRequirementItem(questStep, nonTradable);
+		}
+
+		return acquireMissingTradableItems(missing);
+	}
+
+	private boolean acquireMissingTradableItems(List<ItemRequirement> missing) {
+		notifyMissingRequirement(missing.get(0));
+
+		List<ItemRequirement> actionable = new ArrayList<>();
+		for (ItemRequirement ir : missing) {
+			if (!hasMatchingGrandExchangeOffer(ir)) {
+				actionable.add(ir);
+			}
+		}
+
+		if (actionable.isEmpty()) {
+			if (!Rs2GrandExchange.isOpen()) {
+				Microbot.status = "Quest helper: heading to Grand Exchange for in-progress offers";
+				Rs2GrandExchange.walkToGrandExchange();
+				Rs2GrandExchange.openExchange();
+				sleepUntil(Rs2GrandExchange::isOpen, 15_000);
+				if (!Rs2GrandExchange.isOpen()) {
+					return true;
+				}
+			}
+
+			if (!Rs2GrandExchange.hasBoughtOffer()) {
+				Microbot.status = "Waiting for Grand Exchange offers to fill";
+				if (!sleepUntil(Rs2GrandExchange::hasBoughtOffer, 60_000)) {
+					stopQuesterWithReason(
+							"Grand Exchange offers for missing quest items did not fill within 60 seconds. "
+									+ "They may be underpriced or low supply — cancel them manually and retry.");
+					return true;
+				}
+			}
+
+			collectPurchasedItemsViaBank(missing);
+			return true;
+		}
+
+		if (!Rs2Bank.isOpen()) {
+			Microbot.status = "Quest helper: walking to bank for missing items";
+			Rs2Bank.walkToBankAndUseBank();
+			sleepUntil(Rs2Bank::isOpen, 15_000);
+			if (!Rs2Bank.isOpen()) {
+				return true;
+			}
+		}
+
+		List<ItemRequirement> fromBank = new ArrayList<>();
+		Map<ItemRequirement, Integer> bankWithdrawId = new HashMap<>();
+		List<ItemRequirement> toBuy = new ArrayList<>();
+
+		for (ItemRequirement ir : actionable) {
+			int needed = remainingQuantityNeeded(ir);
+			if (needed <= 0) {
+				continue;
+			}
+
+			int bestBankId = -1;
+			int bestBankCount = 0;
+			for (Integer id : ir.getAllIds()) {
+				if (id == null || id <= 0) {
+					continue;
+				}
+				int count = Rs2Bank.count(id);
+				if (count > bestBankCount) {
+					bestBankCount = count;
+					bestBankId = id;
+				}
+			}
+
+			if (bestBankCount >= needed) {
+				fromBank.add(ir);
+				bankWithdrawId.put(ir, bestBankId);
+			} else {
+				toBuy.add(ir);
+			}
+		}
+
+		long totalBuyCost = 0L;
+		Map<ItemRequirement, Integer> offerPrices = new HashMap<>();
+		Map<ItemRequirement, Integer> buyQuantities = new HashMap<>();
+		Map<ItemRequirement, Integer> buyPrimaryIds = new HashMap<>();
+
+		for (ItemRequirement ir : toBuy) {
+			int primaryId = tradablePrimaryId(ir);
+			if (primaryId == -1) {
+				Rs2Bank.closeBank();
+				stopQuesterWithReason("Quest item is not tradable on the Grand Exchange: " + ir.getName());
+				return true;
+			}
+
+			int basePrice = fetchInstabuyReferencePrice(primaryId);
+			if (basePrice <= 0) {
+				Rs2Bank.closeBank();
+				stopQuesterWithReason("Failed to fetch Grand Exchange price for: " + ir.getName());
+				return true;
+			}
+
+			int offerPrice = Math.max(1, (int) Math.ceil(basePrice * 1.2));
+			int qty = remainingQuantityNeeded(ir);
+			buyPrimaryIds.put(ir, primaryId);
+			offerPrices.put(ir, offerPrice);
+			buyQuantities.put(ir, qty);
+			totalBuyCost += (long) offerPrice * qty;
+		}
+
+		long invCoins = Rs2Inventory.itemQuantity(ItemID.COINS_995);
+		long bankCoins = Rs2Bank.count(ItemID.COINS_995);
+		long availableGp = invCoins + bankCoins;
+
+		if (availableGp < totalBuyCost) {
+			Rs2Bank.closeBank();
+			stopQuesterWithReason(String.format(
+					"Not enough gp to buy missing quest items (need %,d gp, have %,d gp)",
+					totalBuyCost, availableGp));
+			return true;
+		}
+
+		if (!toBuy.isEmpty()) {
+			int freeSlots = Rs2GrandExchange.getAvailableSlotsCount();
+			if (freeSlots < toBuy.size()) {
+				Rs2Bank.closeBank();
+				stopQuesterWithReason(String.format(
+						"Not enough free Grand Exchange slots for missing quest items (need %d, have %d)",
+						toBuy.size(), freeSlots));
+				return true;
+			}
+		}
+
+		if (!Rs2Bank.setWithdrawAsItem()) {
+			Rs2Bank.closeBank();
+			stopQuesterWithReason("Failed to set bank withdraw mode to Item. Toggle it manually and restart.");
+			return true;
+		}
+
+		for (ItemRequirement ir : fromBank) {
+			Integer idToWithdraw = bankWithdrawId.get(ir);
+			if (idToWithdraw == null || idToWithdraw <= 0) {
+				continue;
+			}
+			int qty = remainingQuantityNeeded(ir);
+			if (qty <= 0) {
+				continue;
+			}
+			Microbot.status = "Withdrawing " + ir.getName() + " x" + qty;
+			Rs2Bank.withdrawX(idToWithdraw, qty);
+			if (!sleepUntil(() -> hasItemRequirementOnPlayer(ir), 2_000)) {
+				Microbot.log("Quest helper: bank withdrawal for " + ir.getName() + " did not land in time",
+						Level.WARN);
+			}
+		}
+
+		if (!toBuy.isEmpty()) {
+			final long requiredCoins = totalBuyCost;
+			long currentInvCoins = Rs2Inventory.itemQuantity(ItemID.COINS_995);
+			if (requiredCoins > currentInvCoins) {
+				long coinsStillNeeded = requiredCoins - currentInvCoins;
+				int coinsToWithdraw = (int) Math.min(Integer.MAX_VALUE, coinsStillNeeded);
+				Microbot.status = "Withdrawing " + coinsToWithdraw + " gp for Grand Exchange";
+				Rs2Bank.withdrawX(ItemID.COINS_995, coinsToWithdraw);
+				sleepUntil(() -> Rs2Inventory.itemQuantity(ItemID.COINS_995) >= requiredCoins, 3_000);
+			}
+
+			long invCoinsAfter = Rs2Inventory.itemQuantity(ItemID.COINS_995);
+			if (invCoinsAfter < requiredCoins) {
+				Rs2Bank.closeBank();
+				stopQuesterWithReason(String.format(
+						"Bank withdrawal failed to supply enough coins (need %,d gp, have %,d gp in inventory)",
+						requiredCoins, invCoinsAfter));
+				return true;
+			}
+		}
+
+		Rs2Bank.closeBank();
+		sleepUntil(() -> !Rs2Bank.isOpen(), 3_000);
+
+		if (toBuy.isEmpty()) {
+			return true;
+		}
+
+		if (!Rs2GrandExchange.isOpen()) {
+			Microbot.status = "Quest helper: walking to Grand Exchange";
+			Rs2GrandExchange.walkToGrandExchange();
+			Rs2GrandExchange.openExchange();
+			sleepUntil(Rs2GrandExchange::isOpen, 15_000);
+			if (!Rs2GrandExchange.isOpen()) {
+				return true;
+			}
+		}
+
+		int placedOffers = 0;
+		for (ItemRequirement ir : toBuy) {
+			int offerPrice = offerPrices.getOrDefault(ir, 0);
+			int qty = buyQuantities.getOrDefault(ir, 0);
+			int primaryId = buyPrimaryIds.getOrDefault(ir, -1);
+			if (offerPrice <= 0 || qty <= 0 || primaryId == -1) {
+				continue;
+			}
+
+			String canonicalName = canonicalItemName(primaryId);
+			if (canonicalName == null || canonicalName.isEmpty() || "null".equalsIgnoreCase(canonicalName)) {
+				stopQuesterWithReason("Unable to resolve in-game name for: " + ir.getName());
+				return true;
+			}
+
+			Microbot.status = "Buying " + canonicalName + " x" + qty;
+			if (Rs2GrandExchange.buyItem(canonicalName, offerPrice, qty)) {
+				placedOffers++;
+			}
+			sleep(800, 1500);
+		}
+
+		if (placedOffers == 0) {
+			stopQuesterWithReason("Failed to place any Grand Exchange offers for missing quest items");
+			return true;
+		}
+
+		final int maxBuyAttempts = 5;
+		final int perAttemptWaitMs = 15_000;
+
+		for (int attempt = 1; attempt <= maxBuyAttempts; attempt++) {
+			Microbot.status = String.format(
+					"Waiting for Grand Exchange offers to fill (attempt %d/%d)",
+					attempt, maxBuyAttempts);
+
+			sleepUntil(() -> itemsStillBuying(toBuy, buyPrimaryIds).isEmpty(), perAttemptWaitMs);
+
+			List<ItemRequirement> stillPending = itemsStillBuying(toBuy, buyPrimaryIds);
+			if (stillPending.isEmpty()) {
+				break;
+			}
+
+			if (attempt >= maxBuyAttempts) {
+				Rs2GrandExchange.abortAllOffers(false);
+				stopQuesterWithReason(String.format(
+						"Grand Exchange offers did not fill after %d attempts with doubled prices. "
+								+ "Aborted all offers — check your inventory for any partially-filled items "
+								+ "and add more gp before restarting.",
+						maxBuyAttempts));
+				return true;
+			}
+
+			for (ItemRequirement ir : stillPending) {
+				int primaryId = buyPrimaryIds.getOrDefault(ir, -1);
+				if (primaryId == -1) {
+					continue;
+				}
+				String canonicalName = canonicalItemName(primaryId);
+				if (canonicalName == null || canonicalName.isEmpty()) {
+					continue;
+				}
+
+				long preAbortCoins = Rs2Inventory.itemQuantity(ItemID.COINS_995);
+
+				Microbot.status = "Cancelling unfilled " + canonicalName;
+				if (!Rs2GrandExchange.abortOffer(canonicalName, false)) {
+					Microbot.log("Quest helper: failed to abort offer for " + canonicalName
+							+ "; skipping retry for this item this round", Level.WARN);
+					continue;
+				}
+
+				sleepUntil(() -> Rs2Inventory.itemQuantity(ItemID.COINS_995) > preAbortCoins, 3_000);
+
+				int alreadyOnHand = inventoryQuantityIncludingNoted(ir);
+				int qtyNeeded = Math.max(0, ir.getQuantity() - alreadyOnHand);
+				if (qtyNeeded <= 0) {
+					Microbot.log("Quest helper: " + canonicalName
+							+ " already obtained after abort (have " + alreadyOnHand
+							+ "); skipping retry buy", Level.INFO);
+					buyQuantities.put(ir, 0);
+					continue;
+				}
+				buyQuantities.put(ir, qtyNeeded);
+
+				int currentPrice = offerPrices.getOrDefault(ir, 0);
+				long doubled = (long) currentPrice * 2L;
+				int newPrice = doubled > Integer.MAX_VALUE ? Integer.MAX_VALUE : (int) doubled;
+				offerPrices.put(ir, newPrice);
+
+				if (newPrice <= 0) {
+					continue;
+				}
+
+				long retryInvCoins = Rs2Inventory.itemQuantity(ItemID.COINS_995);
+				long costNeeded = (long) newPrice * (long) qtyNeeded;
+				if (retryInvCoins < costNeeded) {
+					Rs2GrandExchange.abortAllOffers(false);
+					stopQuesterWithReason(String.format(
+							"Not enough gp to retry %s at %,d gp each (need %,d, have %,d)",
+							canonicalName, newPrice, costNeeded, retryInvCoins));
+					return true;
+				}
+
+				Microbot.status = String.format(
+						"Retry %d/%d: buying %s x%d at %,d gp",
+						attempt + 1, maxBuyAttempts, canonicalName, qtyNeeded, newPrice);
+				if (!Rs2GrandExchange.buyItem(canonicalName, newPrice, qtyNeeded)) {
+					Microbot.log("Quest helper: retry buy for " + canonicalName + " failed to place",
+							Level.WARN);
+				}
+				sleep(800, 1500);
+			}
+		}
+
+		collectPurchasedItemsViaBank(toBuy);
+		return true;
+	}
+
+	private List<ItemRequirement> itemsStillBuying(List<ItemRequirement> toBuy,
+			Map<ItemRequirement, Integer> primaryIds) {
+		List<ItemRequirement> pending = new ArrayList<>();
+		GrandExchangeOffer[] offers = Microbot.getClient().getGrandExchangeOffers();
+		if (offers == null) {
+			return pending;
+		}
+
+		for (ItemRequirement ir : toBuy) {
+			int primaryId = primaryIds.getOrDefault(ir, -1);
+			if (primaryId == -1) {
+				continue;
+			}
+
+			for (GrandExchangeOffer offer : offers) {
+				if (offer == null) {
+					continue;
+				}
+				if (offer.getItemId() == primaryId
+						&& offer.getState() == GrandExchangeOfferState.BUYING) {
+					pending.add(ir);
+					break;
+				}
+			}
+		}
+		return pending;
+	}
+
+	private void collectPurchasedItemsViaBank(List<ItemRequirement> items) {
+		Microbot.status = "Collecting purchased quest items to bank";
+		Rs2GrandExchange.collectAllToBank();
+		sleep(800, 1200);
+
+		if (Rs2GrandExchange.isOpen()) {
+			Rs2GrandExchange.closeExchange();
+			sleepUntil(() -> !Rs2GrandExchange.isOpen(), 2_000);
+		}
+
+		if (!Rs2Bank.isOpen()) {
+			Microbot.status = "Opening bank to retrieve purchased quest items";
+			Rs2Bank.walkToBankAndUseBank();
+			sleepUntil(Rs2Bank::isOpen, 15_000);
+			if (!Rs2Bank.isOpen()) {
+				Microbot.log("Quest helper: failed to open bank after Grand Exchange collection", Level.WARN);
+				return;
+			}
+		}
+
+		if (!Rs2Bank.setWithdrawAsItem()) {
+			Rs2Bank.closeBank();
+			stopQuesterWithReason("Failed to set bank withdraw mode to Item after Grand Exchange collection. Toggle it manually and restart.");
+			return;
+		}
+
+		for (ItemRequirement ir : items) {
+			int qty = remainingQuantityNeeded(ir);
+			if (qty <= 0) {
+				continue;
+			}
+
+			int idToWithdraw = -1;
+			for (Integer id : ir.getAllIds()) {
+				if (id == null || id <= 0) {
+					continue;
+				}
+				if (Rs2Bank.count(id) > 0) {
+					idToWithdraw = id;
+					break;
+				}
+			}
+
+			if (idToWithdraw == -1) {
+				continue;
+			}
+
+			Microbot.status = "Withdrawing " + ir.getName() + " x" + qty;
+			Rs2Bank.withdrawX(idToWithdraw, qty);
+			if (!sleepUntil(() -> hasItemRequirementOnPlayer(ir), 2_000)) {
+				Microbot.log("Quest helper: purchased item " + ir.getName() + " did not land in inventory after bank withdrawal",
+						Level.WARN);
+			}
+		}
+
+		Rs2Bank.closeBank();
+		sleepUntil(() -> !Rs2Bank.isOpen(), 3_000);
+	}
+
+	private boolean isItemRequirementTradable(ItemRequirement itemRequirement) {
+		return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+			for (Integer id : itemRequirement.getAllIds()) {
+				if (id == null || id <= 0) {
+					continue;
+				}
+				ItemComposition def = Microbot.getClient().getItemDefinition(id);
+				if (def != null && def.isTradeable()) {
+					return true;
+				}
+			}
+			return false;
+		}).orElse(false);
+	}
+
+	private int tradablePrimaryId(ItemRequirement itemRequirement) {
+		return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+			for (Integer id : itemRequirement.getAllIds()) {
+				if (id == null || id <= 0) {
+					continue;
+				}
+				ItemComposition def = Microbot.getClient().getItemDefinition(id);
+				if (def != null && def.isTradeable()) {
+					return id;
+				}
+			}
+			return -1;
+		}).orElse(-1);
+	}
+
+	private int remainingQuantityNeeded(ItemRequirement itemRequirement) {
+		int onPlayer = itemRequirement.checkTotalMatchesInContainers(
+				QuestContainerManager.getEquippedData(),
+				QuestContainerManager.getInventoryData());
+		return Math.max(0, itemRequirement.getQuantity() - onPlayer);
+	}
+
+	private List<Requirement> collectAllItemRequirements(DetailedQuestStep questStep) {
+		List<Requirement> combined = new ArrayList<>(questStep.getRequirements());
+
+		Set<Integer> seenIds = new HashSet<>();
+		for (Requirement req : questStep.getRequirements()) {
+			if (req instanceof ItemRequirement) {
+				seenIds.add(((ItemRequirement) req).getId());
+			}
+		}
+
+		QuestHelper selectedQuest = getQuestHelperPlugin().getSelectedQuest();
+		if (selectedQuest != null) {
+			updateEverHeldItemTracking(selectedQuest);
+
+			List<ItemRequirement> questLevel = selectedQuest.getItemRequirements();
+			if (questLevel != null) {
+				for (ItemRequirement ir : questLevel) {
+					if (ir == null) {
+						continue;
+					}
+					if (!seenIds.add(ir.getId())) {
+						continue;
+					}
+					if (everHeldItemRequirementIds.contains(ir.getId())) {
+						continue;
+					}
+					combined.add(ir);
+				}
+			}
+		}
+
+		if (selectedQuest != null
+				&& selectedQuest.getQuest() != null
+				&& selectedQuest.getQuest().getId() == Quest.VALE_TOTEMS.getId()) {
+			combined = applyValeTotemsWoodType(combined);
+		}
+
+		return combined;
+	}
+
+	private void updateEverHeldItemTracking(QuestHelper selectedQuest) {
+		if (selectedQuest == null || selectedQuest.getQuest() == null) {
+			return;
+		}
+
+		int questId = selectedQuest.getQuest().getId();
+		if (questId != heldTrackingQuestId) {
+			heldTrackingQuestId = questId;
+			everHeldItemRequirementIds.clear();
+
+			QuestState state = null;
+			try {
+				state = selectedQuest.getQuest().getState(Microbot.getClient());
+			} catch (Exception ignored) {
+			}
+
+			if (state == QuestState.IN_PROGRESS) {
+				List<ItemRequirement> questLevel = selectedQuest.getItemRequirements();
+				if (questLevel != null) {
+					for (ItemRequirement ir : questLevel) {
+						if (ir != null) {
+							everHeldItemRequirementIds.add(ir.getId());
+						}
+					}
+				}
+			}
+		}
+
+		List<ItemRequirement> questLevel = selectedQuest.getItemRequirements();
+		if (questLevel == null) {
+			return;
+		}
+
+		for (ItemRequirement ir : questLevel) {
+			if (ir == null) {
+				continue;
+			}
+			if (everHeldItemRequirementIds.contains(ir.getId())) {
+				continue;
+			}
+			if (hasItemRequirementOnPlayer(ir)) {
+				everHeldItemRequirementIds.add(ir.getId());
+			}
+		}
+	}
+
+	private void promptValeTotemsWoodType() {
+		if (!valeTotemsPromptInFlight.compareAndSet(false, true)) {
+			return;
+		}
+
+		stopQuesterWithReason("Vale Totems: pick a wood type in the dialog to continue.");
+
+		SwingUtilities.invokeLater(() -> {
+			try {
+				QuestHelperConfig.ValeTotemsWoodType[] values = QuestHelperConfig.ValeTotemsWoodType.values();
+				List<QuestHelperConfig.ValeTotemsWoodType> selectable = new ArrayList<>();
+				for (QuestHelperConfig.ValeTotemsWoodType value : values) {
+					if (value != QuestHelperConfig.ValeTotemsWoodType.ASK) {
+						selectable.add(value);
+					}
+				}
+
+				Object[] options = selectable.stream().map(Object::toString).toArray();
+
+				int choice = JOptionPane.showOptionDialog(
+						null,
+						"Which wood type are you using for Vale Totems?\n\n" +
+								"This must match the logs you used to build the totem.\n" +
+								"The quester will source the matching logs and decorative items (shields/longbows/shortbows).",
+						"Vale Totems - Wood Type",
+						JOptionPane.DEFAULT_OPTION,
+						JOptionPane.QUESTION_MESSAGE,
+						null,
+						options,
+						options[0]);
+
+				if (choice >= 0 && choice < selectable.size()) {
+					QuestHelperConfig.ValeTotemsWoodType selected = selectable.get(choice);
+					valeTotemsSessionWoodType = selected;
+					Microbot.getConfigManager().setConfiguration(
+							QuestHelperConfig.QUEST_HELPER_GROUP, "TurnOn", true);
+					Microbot.status = "Vale Totems: using " + selected + " (this session)";
+					Microbot.log("Quest helper: Vale Totems wood type set to " + selected
+							+ " for this session (config stays on 'Ask me')", Level.INFO);
+				}
+			} finally {
+				valeTotemsPromptInFlight.set(false);
+			}
+		});
+	}
+
+	private List<Requirement> applyValeTotemsWoodType(List<Requirement> requirements) {
+		QuestHelperConfig.ValeTotemsWoodType configured = config.valeTotemsWoodType();
+		QuestHelperConfig.ValeTotemsWoodType woodType;
+
+		if (configured != null && configured != QuestHelperConfig.ValeTotemsWoodType.ASK) {
+			woodType = configured;
+		} else {
+			woodType = valeTotemsSessionWoodType;
+			if (woodType == null) {
+				promptValeTotemsWoodType();
+				return requirements;
+			}
+		}
+
+		if (woodType == QuestHelperConfig.ValeTotemsWoodType.OAK) {
+			return requirements;
+		}
+
+		List<Requirement> transformed = new ArrayList<>(requirements.size());
+		for (Requirement req : requirements) {
+			if (!(req instanceof ItemRequirement)) {
+				transformed.add(req);
+				continue;
+			}
+
+			ItemRequirement ir = (ItemRequirement) req;
+			List<Integer> allIds = ir.getAllIds();
+
+			if (allIds.contains(ItemID.OAK_LOGS)) {
+				transformed.add(new ItemRequirement(
+						woodType + " log", woodType.getLogId(), ir.getQuantity()));
+			} else if (allIds.contains(ItemID.OAK_SHIELD)
+					|| allIds.contains(ItemID.OAK_LONGBOW)
+					|| allIds.contains(ItemID.OAK_SHORTBOW)
+					|| allIds.contains(ItemID.OAK_LONGBOW_U)
+					|| allIds.contains(ItemID.OAK_SHORTBOW_U)) {
+				transformed.add(new ItemRequirement(
+						woodType + " shield/longbow/shortbow",
+						woodType.getDecorativeIds(),
+						ir.getQuantity()));
+			} else {
+				transformed.add(req);
+			}
+		}
+		return transformed;
+	}
+
+	private String canonicalItemName(int itemId) {
+		return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+			ItemComposition def = Microbot.getClient().getItemDefinition(itemId);
+			return def != null ? def.getName() : null;
+		}).orElse(null);
+	}
+
+	private int fetchInstabuyReferencePrice(int itemId) {
+		WikiPrice priceData = Rs2GrandExchange.getRealTimePrices(itemId);
+		if (priceData != null && priceData.buyPrice > 0) {
+			return priceData.buyPrice;
+		}
+		return Rs2GrandExchange.getPrice(itemId);
+	}
+
+	private int notedVariantId(int unnotedId) {
+		return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+			ItemComposition def = Microbot.getClient().getItemDefinition(unnotedId);
+			if (def == null) {
+				return -1;
+			}
+			if (def.getNote() == 799) {
+				return -1;
+			}
+			int linked = def.getLinkedNoteId();
+			return linked > 0 ? linked : -1;
+		}).orElse(-1);
+	}
+
+	private boolean hasNotedVersionInInventory(ItemRequirement itemRequirement) {
+		if (remainingQuantityNeeded(itemRequirement) <= 0) {
+			return false;
+		}
+		for (Integer id : itemRequirement.getAllIds()) {
+			if (id == null || id <= 0) {
+				continue;
+			}
+			int notedId = notedVariantId(id);
+			if (notedId > 0 && Rs2Inventory.itemQuantity(notedId) > 0) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private int inventoryQuantityIncludingNoted(ItemRequirement itemRequirement) {
+		int total = 0;
+		for (Integer id : itemRequirement.getAllIds()) {
+			if (id == null || id <= 0) {
+				continue;
+			}
+			total += Rs2Inventory.itemQuantity(id);
+			int notedId = notedVariantId(id);
+			if (notedId > 0) {
+				total += Rs2Inventory.itemQuantity(notedId);
+			}
+		}
+		return total;
+	}
+
+	private boolean unnoteItemsViaBank(List<ItemRequirement> items) {
+		if (!Rs2Bank.isOpen()) {
+			Microbot.status = "Quest helper: walking to bank to un-note items";
+			Rs2Bank.walkToBankAndUseBank();
+			sleepUntil(Rs2Bank::isOpen, 15_000);
+			if (!Rs2Bank.isOpen()) {
+				return true;
+			}
+		}
+
+		if (!Rs2Bank.setWithdrawAsItem()) {
+			Rs2Bank.closeBank();
+			stopQuesterWithReason("Failed to set bank withdraw mode to Item while un-noting quest items. Toggle it manually and restart.");
+			return true;
+		}
+
+		for (ItemRequirement ir : items) {
+			int needed = remainingQuantityNeeded(ir);
+			if (needed <= 0) {
+				continue;
+			}
+
+			for (Integer unnotedId : ir.getAllIds()) {
+				if (unnotedId == null || unnotedId <= 0) {
+					continue;
+				}
+				int notedId = notedVariantId(unnotedId);
+				if (notedId <= 0) {
+					continue;
+				}
+
+				int notesInInventory = Rs2Inventory.itemQuantity(notedId);
+				if (notesInInventory <= 0) {
+					continue;
+				}
+
+				Microbot.status = "Depositing noted " + ir.getName();
+				Rs2Bank.depositAll(notedId);
+				sleepUntil(() -> Rs2Inventory.itemQuantity(notedId) == 0, 2_000);
+
+				int toWithdraw = Math.min(notesInInventory, needed);
+				Microbot.status = "Withdrawing " + ir.getName() + " x" + toWithdraw;
+				Rs2Bank.withdrawX(unnotedId, toWithdraw);
+				if (!sleepUntil(() -> hasItemRequirementOnPlayer(ir), 2_000)) {
+					Microbot.log("Quest helper: un-note withdrawal for " + ir.getName() + " did not land in time",
+							Level.WARN);
+				}
+				break;
+			}
+		}
+
+		Rs2Bank.closeBank();
+		sleepUntil(() -> !Rs2Bank.isOpen(), 3_000);
+		return true;
+	}
+
+	private boolean hasMatchingGrandExchangeOffer(ItemRequirement itemRequirement) {
+		GrandExchangeOffer[] offers = Microbot.getClient().getGrandExchangeOffers();
+		if (offers == null) {
+			return false;
+		}
+
+		Set<Integer> ids = new HashSet<>();
+		for (Integer id : itemRequirement.getAllIds()) {
+			if (id != null && id > 0) {
+				ids.add(id);
+			}
+		}
+
+		for (GrandExchangeOffer offer : offers) {
+			if (offer == null) {
+				continue;
+			}
+			GrandExchangeOfferState state = offer.getState();
+			if ((state == GrandExchangeOfferState.BUYING || state == GrandExchangeOfferState.BOUGHT)
+					&& ids.contains(offer.getItemId())) {
+				return true;
+			}
 		}
 
 		return false;
+	}
+
+	private void stopQuesterWithReason(String reason) {
+		Microbot.status = reason;
+		Microbot.log("Quest helper stopped: " + reason, Level.ERROR);
+		if (Microbot.getConfigManager() != null) {
+			Microbot.getConfigManager().setConfiguration(
+					QuestHelperConfig.QUEST_HELPER_GROUP, "TurnOn", false);
+		}
 	}
 
 	private boolean hasItemRequirementOnPlayer(ItemRequirement itemRequirement) {
@@ -376,6 +1173,8 @@ public class QuestScript extends Script {
         itemRequirements = new ArrayList<>();
         grandExchangeItems = new ArrayList<>();
         lastMissingRequirementNotice.clear();
+        valeTotemsPromptInFlight.set(false);
+        valeTotemsSessionWoodType = null;
     }
 
     public boolean applyStep(QuestStep step) {
