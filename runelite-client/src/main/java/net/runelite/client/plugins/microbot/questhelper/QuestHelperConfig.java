@@ -255,6 +255,38 @@ public interface QuestHelperConfig extends Config
 		return true;
 	}
 
+	@ConfigItem(
+			keyName = "obtainMissingItems",
+			name = "Obtain Missing Items",
+			description = "Controls whether the quest helper automatically obtains missing items from the bank and Grand Exchange. 'Ask' will prompt you the first time items are needed.",
+			section = microbotSection,
+			position = 1
+	)
+	default ObtainMissingItemsOption obtainMissingItems() {
+		return ObtainMissingItemsOption.ASK;
+	}
+
+	@Getter
+	enum ObtainMissingItemsOption
+	{
+		ASK("Ask me"),
+		YES("Yes"),
+		NO("No");
+
+		private final String display;
+
+		ObtainMissingItemsOption(String display)
+		{
+			this.display = display;
+		}
+
+		@Override
+		public String toString()
+		{
+			return display;
+		}
+	}
+
 	@Getter
 	enum ValeTotemsWoodType
 	{

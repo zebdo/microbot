@@ -78,26 +78,21 @@ public class CollisionMap {
     private final List<Node> neighbors = new ArrayList<>(16);
     private final boolean[] traversable = new boolean[8];
 
-    public static final List<WorldPoint> ignoreCollision = Arrays.asList(
-            new WorldPoint(3142, 3457, 0),
-            new WorldPoint(3141, 3457, 0),
-            new WorldPoint(3142, 3457, 0),
-            new WorldPoint(3141, 3458, 0),
-            new WorldPoint(3141, 3456, 0),
-            new WorldPoint(3142, 3456, 0),
-            new WorldPoint(2744, 3153, 0),
-            new WorldPoint(2745, 3153, 0),
-            new WorldPoint(3674, 3882, 0),
-            new WorldPoint(3673, 3884, 0),
-            new WorldPoint(3673, 3885, 0),
-            new WorldPoint(3673, 3886, 0),
-            new WorldPoint(3672, 3888, 0),
-            new WorldPoint(3675, 3893, 0),
-            new WorldPoint(3678, 3893, 0),
-            new WorldPoint(3684, 3845, 0),
-            new WorldPoint(3670, 3836, 0),
-            new WorldPoint(3672, 3862, 0)
-    );
+    public static final Set<Integer> ignoreCollisionPacked;
+    static {
+        int[][] coords = {
+            {3142, 3457, 0}, {3141, 3457, 0}, {3142, 3457, 0}, {3141, 3458, 0},
+            {3141, 3456, 0}, {3142, 3456, 0}, {2744, 3153, 0}, {2745, 3153, 0},
+            {3674, 3882, 0}, {3673, 3884, 0}, {3673, 3885, 0}, {3673, 3886, 0},
+            {3672, 3888, 0}, {3675, 3893, 0}, {3678, 3893, 0}, {3684, 3845, 0},
+            {3670, 3836, 0}, {3672, 3862, 0}
+        };
+        Set<Integer> set = new HashSet<>(coords.length * 2);
+        for (int[] c : coords) {
+            set.add(WorldPointUtil.packWorldPoint(c[0], c[1], c[2]));
+        }
+        ignoreCollisionPacked = Collections.unmodifiableSet(set);
+    }
 
     private volatile int cachedRegionId = -1;
     private volatile long cachedRegionIdTime = 0;
@@ -125,7 +120,7 @@ public class CollisionMap {
 
         neighbors.clear();
 
-        Set<Transport> transports = config.getTransports().getOrDefault(WorldPointUtil.unpackWorldPoint(node.packedPosition), Collections.emptySet());
+        Set<Transport> transports = config.getTransportsPacked().getOrDefault(node.packedPosition, Collections.emptySet());
 
         // Transports are pre-filtered by PathfinderConfig.refreshTransports
         // Thus any transports in the list are guaranteed to be valid per the user's settings
@@ -177,7 +172,7 @@ public class CollisionMap {
             if (config.getRestrictedPointsPacked().contains(neighborPacked)) continue;
             if (config.getCustomRestrictions().contains(neighborPacked)) continue;
 
-            if (ignoreCollision.contains(new WorldPoint(x, y, z))) {
+            if (ignoreCollisionPacked.contains(node.packedPosition)) {
                 neighbors.add(new Node(neighborPacked, node));
                 continue;
             }
@@ -203,7 +198,7 @@ public class CollisionMap {
             } else if (Math.abs(d.x + d.y) == 1 && isBlocked(x + d.x, y + d.y, z)) {
                 // The transport starts from a blocked adjacent tile, e.g. fairy ring
                 // Only checks non-teleport transports (includes portals and levers, but not items and spells)
-                Set<Transport> neighborTransports = config.getTransports().getOrDefault(WorldPointUtil.unpackWorldPoint(neighborPacked), Collections.emptySet());
+                Set<Transport> neighborTransports = config.getTransportsPacked().getOrDefault(neighborPacked, Collections.emptySet());
                 for (Transport transport : neighborTransports) {
                     if (transport.getOrigin() == null || visited.get(transport.getOrigin())) {
                         continue;

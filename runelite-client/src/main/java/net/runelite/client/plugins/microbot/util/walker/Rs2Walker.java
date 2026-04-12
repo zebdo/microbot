@@ -72,6 +72,7 @@ public class Rs2Walker {
     public static ShortestPathConfig config;
     static int stuckCount = 0;
     static WorldPoint lastPosition;
+    static long lastMovedTimeMs = 0;
     static volatile WorldPoint currentTarget;
     static int nextWalkingDistance = 10;
 
@@ -126,12 +127,17 @@ public class Rs2Walker {
      * @return
      */
     private static WalkerState walkWithStateInternal(WorldPoint target, int distance) {
+        long walkStartMs = System.currentTimeMillis();
+
         int distToTarget = Rs2Player.getWorldLocation().distanceTo(target);
         LocalPoint localTarget = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), target);
         boolean walkableCheck = Rs2Tile.isWalkable(localTarget);
         boolean reachableTileCheck = distToTarget <= distance && Rs2Tile.getReachableTilesFromTile(Rs2Player.getWorldLocation(), distance).containsKey(target);
 
+        long arrivalCheckMs = System.currentTimeMillis() - walkStartMs;
+
         if (reachableTileCheck || (!walkableCheck && distToTarget <= distance)) {
+            log.info("[Walker] ARRIVED early. arrivalCheck={}ms, distToTarget={}", arrivalCheckMs, distToTarget);
             return WalkerState.ARRIVED;
         }
 
@@ -145,6 +151,7 @@ public class Rs2Walker {
         setTarget(target);
         ShortestPathPlugin.setReachedDistance(distance);
         stuckCount = 0;
+        lastMovedTimeMs = System.currentTimeMillis();
 
         if (Microbot.getClient().isClientThread()) {
             log.warn("Please do not call the walker from the main thread");
@@ -152,6 +159,9 @@ public class Rs2Walker {
         }
 
 		closeWorldMap();
+        long preProcessWalkMs = System.currentTimeMillis() - walkStartMs;
+        log.info("[Walker] walkWithStateInternal: arrivalCheck={}ms, setupTotal={}ms, distToTarget={}, target={}",
+                arrivalCheckMs, preProcessWalkMs, distToTarget, target);
         return processWalk(target, distance);
     }
 
@@ -171,9 +181,14 @@ public class Rs2Walker {
      * @param distance
      */
     private static WalkerState processWalk(WorldPoint target, int distance) {
+        return processWalk(target, distance, 0);
+    }
+
+    private static WalkerState processWalk(WorldPoint target, int distance, int partialRetries) {
         if (debug) {
             return WalkerState.EXIT;
         }
+        long processWalkStartMs = System.currentTimeMillis();
         try {
             if (!Microbot.isLoggedIn()) {
                 setTarget(null);
@@ -190,6 +205,7 @@ public class Rs2Walker {
                     return WalkerState.EXIT;
                 }
             }
+            long waitForPathfinderCreateMs = System.currentTimeMillis() - processWalkStartMs;
 
             if (!pathfinder.isDone()) {
                 boolean isDone = sleepUntilTrue(pathfinder::isDone, 100, 10_000);
@@ -198,6 +214,9 @@ public class Rs2Walker {
                     return WalkerState.EXIT;
                 }
             }
+            long waitForPathfinderDoneMs = System.currentTimeMillis() - processWalkStartMs;
+            log.info("[Walker] processWalk: waitForCreate={}ms, waitForDone={}ms (pathfinder total), target={}",
+                    waitForPathfinderCreateMs, waitForPathfinderDoneMs, target);
 
             if (ShortestPathPlugin.getMarker() == null) {
                 setTarget(null);
@@ -212,9 +231,16 @@ public class Rs2Walker {
                 dst = path.get(path.size()-1);
             }
 
+            boolean partialPath = false;
             if (dst == null || dst.distanceTo(target) > distance) {
-                setTarget(null);
-                return WalkerState.UNREACHABLE;
+                if (path != null && path.size() > 1) {
+                    log.info("[Walker] Path endpoint {} is {} tiles from target {}, walking partial path ({} tiles)",
+                            dst, dst.distanceTo(target), target, path.size());
+                    partialPath = true;
+                } else {
+                    setTarget(null);
+                    return WalkerState.UNREACHABLE;
+                }
             }
 
             if (path == null || path.isEmpty()) {
@@ -227,6 +253,13 @@ public class Rs2Walker {
             }
 
             checkIfStuck();
+            if (isStuckTooLong()) {
+                log.info("[Walker] Player has not moved for 10+ seconds, recalculating path");
+                lastMovedTimeMs = System.currentTimeMillis();
+                stuckCount = 0;
+                setTarget(target);
+                return processWalk(target, distance, partialRetries);
+            }
             if (stuckCount > 10) {
                 var moveableTiles = Rs2Tile.getReachableTilesFromTile(Rs2Player.getWorldLocation(), 5).keySet().toArray(new WorldPoint[0]);
                 if (moveableTiles.length > 0) {
@@ -375,8 +408,18 @@ public class Rs2Walker {
             if (finalDist < distance) {
                 setTarget(null);
                 return WalkerState.ARRIVED;
+            } else if (partialPath) {
+                if (partialRetries < 3) {
+                    log.info("[Walker] Walked partial path ({} tiles remaining), retrying from current position (attempt {}/3)",
+                            finalDist, partialRetries + 1);
+                    recalculatePath();
+                    return processWalk(target, distance, partialRetries + 1);
+                }
+                log.info("[Walker] Walked partial path, exhausted retries. final distance to target: {}", finalDist);
+                setTarget(null);
+                return WalkerState.UNREACHABLE;
             } else {
-                return processWalk(target, distance);
+                return processWalk(target, distance, partialRetries);
             }
         } catch (Exception ex) {
             if (ex instanceof InterruptedException) {
@@ -2090,7 +2133,12 @@ public class Rs2Walker {
             stuckCount++;
         } else {
             stuckCount = 0;
+            lastMovedTimeMs = System.currentTimeMillis();
         }
+    }
+
+    private static boolean isStuckTooLong() {
+        return lastMovedTimeMs > 0 && System.currentTimeMillis() - lastMovedTimeMs > 10_000;
     }
 
     /**

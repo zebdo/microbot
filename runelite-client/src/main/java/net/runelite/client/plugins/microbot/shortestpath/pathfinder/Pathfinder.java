@@ -130,7 +130,6 @@ public class Pathfinder implements Runnable {
             long bestHeuristic = Integer.MAX_VALUE;
             long cutoffDurationMillis = config.getCalculationCutoffMillis();
             long cutoffTimeMillis = System.currentTimeMillis() + cutoffDurationMillis;
-
             config.refreshTeleports(start, 31);
             while (!cancelled && (!boundary.isEmpty() || !pending.isEmpty())) {
                 Node node = boundary.peekFirst();

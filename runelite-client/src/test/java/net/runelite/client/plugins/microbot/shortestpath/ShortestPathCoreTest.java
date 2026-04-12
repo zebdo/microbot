@@ -177,8 +177,8 @@ public class ShortestPathCoreTest {
 	@Test
 	public void testCollisionMapBlockedTile() {
 		CollisionMap map = new CollisionMap(collisionMap);
-		boolean canMoveNorth = map.n(3222, 3218, 0);
-		assertNotNull("Collision map should return a boolean for any valid tile", (Boolean) canMoveNorth);
+		assertTrue("Lumbridge castle wall tile should be blocked", map.isBlocked(3210, 3222, 0));
+		assertFalse("Open Lumbridge courtyard tile should not be blocked", map.isBlocked(3222, 3218, 0));
 	}
 
 	// ========================
@@ -351,6 +351,241 @@ public class ShortestPathCoreTest {
 		List<WorldPoint> path = pf.getPath();
 		assertNotNull(path);
 		assertFalse("Path into wilderness should not be empty", path.isEmpty());
+	}
+
+	// ========================
+	// Isle of Souls Dungeon Route Tests
+	// ========================
+
+	@Test
+	public void testKaramjaToIsleOfSoulsDungeonEntrance() {
+		PathfinderConfig config = createConfigWithTransports();
+		WorldPoint karamja = new WorldPoint(2852, 3078, 0);
+		WorldPoint dungeonEntrance = new WorldPoint(2167, 9308, 0);
+
+		Pathfinder pf = new Pathfinder(config, karamja, dungeonEntrance);
+		pf.run();
+
+		assertTrue("Pathfinder should complete", pf.isDone());
+		List<WorldPoint> path = pf.getPath();
+		assertNotNull(path);
+		assertFalse("Path should not be empty", path.isEmpty());
+
+		WorldPoint endpoint = path.get(path.size() - 1);
+		int distToTarget = Math.max(
+				Math.abs(endpoint.getX() - dungeonEntrance.getX()),
+				Math.abs(endpoint.getY() - dungeonEntrance.getY()));
+		assertTrue("Should reach within 5 tiles of dungeon entrance, got dist=" + distToTarget +
+				" at " + endpoint, distToTarget <= 5);
+	}
+
+	@Test
+	public void testKaramjaToIronDragons() {
+		PathfinderConfig config = createConfigWithTransports();
+		WorldPoint karamja = new WorldPoint(2852, 3078, 0);
+		WorldPoint ironDragons = new WorldPoint(2154, 9294, 0);
+
+		Pathfinder pf = new Pathfinder(config, karamja, ironDragons);
+		pf.run();
+
+		assertTrue("Pathfinder should complete", pf.isDone());
+		List<WorldPoint> path = pf.getPath();
+		assertFalse("Path should not be empty", path.isEmpty());
+
+		WorldPoint endpoint = path.get(path.size() - 1);
+		int distToTarget = Math.max(
+				Math.abs(endpoint.getX() - ironDragons.getX()),
+				Math.abs(endpoint.getY() - ironDragons.getY()));
+		assertTrue("Should reach within 15 tiles of iron dragons, got dist=" + distToTarget +
+				" at " + endpoint, distToTarget <= 15);
+	}
+
+	@Test
+	public void testKaramjaToBlueDragons() {
+		PathfinderConfig config = createConfigWithTransports();
+		WorldPoint karamja = new WorldPoint(2852, 3078, 0);
+		WorldPoint blueDragons = new WorldPoint(2126, 9303, 0);
+
+		Pathfinder pf = new Pathfinder(config, karamja, blueDragons);
+		pf.run();
+
+		assertTrue("Pathfinder should complete", pf.isDone());
+		List<WorldPoint> path = pf.getPath();
+		assertFalse("Path should not be empty", path.isEmpty());
+
+		WorldPoint endpoint = path.get(path.size() - 1);
+		int distToTarget = Math.max(
+				Math.abs(endpoint.getX() - blueDragons.getX()),
+				Math.abs(endpoint.getY() - blueDragons.getY()));
+		assertTrue("Should reach within 30 tiles of blue dragons, got dist=" + distToTarget +
+				" at " + endpoint, distToTarget <= 30);
+	}
+
+	// ========================
+	// Pathfinder Performance Tests
+	// ========================
+
+	@Test
+	public void testShortPathDoesNotFloodEntireMap() {
+		PathfinderConfig config = createMinimalConfig();
+		WorldPoint src = new WorldPoint(3222, 3218, 0);
+		WorldPoint dst = new WorldPoint(3232, 3228, 0);
+
+		Pathfinder pf = new Pathfinder(config, src, dst);
+		pf.run();
+
+		assertTrue("Pathfinder should complete", pf.isDone());
+		Pathfinder.PathfinderStats stats = pf.getStats();
+		assertNotNull(stats);
+
+		assertTrue("Short path (~15 tiles) should check fewer than 50,000 nodes, got " + stats.getTotalNodesChecked(),
+				stats.getTotalNodesChecked() < 50_000);
+	}
+
+	@Test
+	public void testUnreachableTargetCompletesViaCutoff() {
+		PathfinderConfig config = createMinimalConfig();
+		CollisionMap map = config.getMap();
+
+		int startX = 3222, targetX = startX, targetY = 3218;
+		while (!map.isBlocked(targetX, targetY, 0)) {
+			targetX++;
+			if (targetX > 3300) {
+				fail("No blocked tile found scanning x=" + startX + ".." + targetX + " y=" + targetY + " plane=0");
+			}
+		}
+
+		Pathfinder pf = new Pathfinder(config,
+				new WorldPoint(3222, 3218, 0),
+				new WorldPoint(targetX, targetY, 0));
+		pf.run();
+
+		assertTrue("Pathfinder should complete even for blocked target", pf.isDone());
+		List<WorldPoint> path = pf.getPath();
+		assertNotNull("Path should not be null", path);
+		assertFalse("Should produce a partial path toward the blocked target", path.isEmpty());
+	}
+
+	@Test
+	public void testShortPathCompletesUnder500ms() {
+		PathfinderConfig config = createMinimalConfig();
+		Pathfinder pf = new Pathfinder(config,
+				new WorldPoint(3222, 3218, 0),
+				new WorldPoint(3260, 3230, 0));
+
+		pf.run();
+
+		assertTrue("Pathfinder should complete", pf.isDone());
+		Pathfinder.PathfinderStats stats = pf.getStats();
+		assertNotNull(stats);
+
+		long elapsedMs = stats.getElapsedTimeNanos() / 1_000_000;
+		assertTrue("Short path should complete under 500ms, took " + elapsedMs + "ms", elapsedMs < 500);
+	}
+
+	@Test
+	public void testLongPathCompletesUnder3Seconds() {
+		PathfinderConfig config = createMinimalConfig();
+		Pathfinder pf = new Pathfinder(config,
+				new WorldPoint(3222, 3218, 0),
+				new WorldPoint(3164, 3485, 0));
+
+		pf.run();
+
+		assertTrue("Pathfinder should complete", pf.isDone());
+		Pathfinder.PathfinderStats stats = pf.getStats();
+		assertNotNull(stats);
+
+		long elapsedMs = stats.getElapsedTimeNanos() / 1_000_000;
+		assertTrue("Long path (Lumbridge to GE) should complete under 3s, took " + elapsedMs + "ms",
+				elapsedMs < 3000);
+	}
+
+	@Test
+	public void testNearbyBlockedTargetResolvesFast() {
+		PathfinderConfig config = createMinimalConfig();
+		Pathfinder pf = new Pathfinder(config,
+				new WorldPoint(1369, 3368, 0),
+				new WorldPoint(1415, 3355, 0));
+
+		pf.run();
+
+		assertTrue("Pathfinder should complete", pf.isDone());
+		Pathfinder.PathfinderStats stats = pf.getStats();
+		assertNotNull(stats);
+
+		long elapsedMs = stats.getElapsedTimeNanos() / 1_000_000;
+		assertTrue("Nearby path (~46 tiles) should complete under 500ms, took " + elapsedMs + "ms",
+				elapsedMs < 500);
+		assertTrue("Nearby path should check under 150,000 nodes, got " + stats.getTotalNodesChecked(),
+				stats.getTotalNodesChecked() < 150_000);
+	}
+
+	@Test
+	public void testIsleOfSoulsDungeonEntranceIsWalkable() {
+		CollisionMap map = new CollisionMap(collisionMap);
+		assertFalse("IoS dungeon entrance (2167,9308) should be walkable",
+				map.isBlocked(2167, 9308, 0));
+	}
+
+	@Test
+	public void testDungeonPathToKnownReachableTile() {
+		PathfinderConfig config = createConfigWithTransports();
+		WorldPoint src = new WorldPoint(2167, 9308, 0);
+		WorldPoint dst = new WorldPoint(2165, 9294, 0);
+
+		Pathfinder pf = new Pathfinder(config, src, dst);
+		pf.run();
+
+		assertTrue("Pathfinder should complete", pf.isDone());
+		List<WorldPoint> path = pf.getPath();
+		assertFalse("Path to known reachable dungeon tile should not be empty", path.isEmpty());
+
+		WorldPoint endpoint = path.get(path.size() - 1);
+		int distToTarget = Math.max(
+				Math.abs(endpoint.getX() - dst.getX()),
+				Math.abs(endpoint.getY() - dst.getY()));
+		assertTrue("Should reach within 2 tiles of reachable dungeon target, got dist=" + distToTarget,
+				distToTarget <= 2);
+	}
+
+	@Test
+	public void testIgnoreCollisionPackedIsHashSetLookup() {
+		int packed = WorldPointUtil.packWorldPoint(3142, 3457, 0);
+		assertTrue("Known ignore-collision tile should be in the packed set",
+				CollisionMap.ignoreCollisionPacked.contains(packed));
+
+		int notIgnored = WorldPointUtil.packWorldPoint(3200, 3200, 0);
+		assertFalse("Random tile should not be in ignore set",
+				CollisionMap.ignoreCollisionPacked.contains(notIgnored));
+	}
+
+	private PathfinderConfig createConfigWithTransports() {
+		HashMap<WorldPoint, Set<Transport>> allTransports = Transport.loadAllFromResources();
+		PathfinderConfig config = new PathfinderConfig(
+				collisionMap,
+				allTransports,
+				Collections.emptyList(),
+				null,
+				null
+		);
+		try {
+			java.lang.reflect.Field f = PathfinderConfig.class.getDeclaredField("calculationCutoffMillis");
+			f.setAccessible(true);
+			f.setLong(config, 10000);
+
+			for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
+				if (entry.getKey() == null) {
+					continue;
+				}
+				config.getTransports().put(entry.getKey(), entry.getValue());
+				config.getTransportsPacked().put(
+						WorldPointUtil.packWorldPoint(entry.getKey()), entry.getValue());
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to configure transports", e);
+		}
+		return config;
 	}
 
 	private PathfinderConfig createMinimalConfig() {

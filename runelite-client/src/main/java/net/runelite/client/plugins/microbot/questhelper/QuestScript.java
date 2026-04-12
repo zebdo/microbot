@@ -73,6 +73,9 @@ public class QuestScript extends Script {
     private static final AtomicBoolean valeTotemsPromptInFlight = new AtomicBoolean(false);
     private static volatile QuestHelperConfig.ValeTotemsWoodType valeTotemsSessionWoodType;
 
+    private static final AtomicBoolean obtainItemsPromptInFlight = new AtomicBoolean(false);
+    private static volatile Boolean obtainItemsSessionChoice;
+
     boolean unreachableTarget = false;
     int unreachableTargetCheckDist = 1;
 
@@ -222,7 +225,7 @@ public class QuestScript extends Script {
 						return;
 					}
 
-					if (questStep instanceof DetailedQuestStep && handleMissingItemRequirements((DetailedQuestStep) questStep)) {
+					if (questStep instanceof DetailedQuestStep && shouldObtainMissingItems() && handleMissingItemRequirements((DetailedQuestStep) questStep)) {
 						return;
 					}
 
@@ -853,6 +856,47 @@ public class QuestScript extends Script {
 		}
 	}
 
+	private boolean shouldObtainMissingItems() {
+		if (Rs2Player.isIronman()) {
+			return false;
+		}
+		QuestHelperConfig.ObtainMissingItemsOption option = config.obtainMissingItems();
+		if (option == QuestHelperConfig.ObtainMissingItemsOption.YES) {
+			return true;
+		}
+		if (option == QuestHelperConfig.ObtainMissingItemsOption.NO) {
+			return false;
+		}
+		if (obtainItemsSessionChoice != null) {
+			return obtainItemsSessionChoice;
+		}
+		promptObtainMissingItems();
+		return false;
+	}
+
+	private void promptObtainMissingItems() {
+		if (!obtainItemsPromptInFlight.compareAndSet(false, true)) {
+			return;
+		}
+
+		SwingUtilities.invokeLater(() -> {
+			try {
+				int choice = JOptionPane.showConfirmDialog(
+						null,
+						"The quest helper has detected missing items.\n\n" +
+								"Would you like the quest helper to automatically obtain\n" +
+								"missing items from the bank and Grand Exchange?",
+						"Obtain Missing Items",
+						JOptionPane.YES_NO_OPTION,
+						JOptionPane.QUESTION_MESSAGE);
+
+				obtainItemsSessionChoice = (choice == JOptionPane.YES_OPTION);
+			} finally {
+				obtainItemsPromptInFlight.set(false);
+			}
+		});
+	}
+
 	private void promptValeTotemsWoodType() {
 		if (!valeTotemsPromptInFlight.compareAndSet(false, true)) {
 			return;
@@ -1175,6 +1219,8 @@ public class QuestScript extends Script {
         lastMissingRequirementNotice.clear();
         valeTotemsPromptInFlight.set(false);
         valeTotemsSessionWoodType = null;
+        obtainItemsPromptInFlight.set(false);
+        obtainItemsSessionChoice = null;
     }
 
     public boolean applyStep(QuestStep step) {
@@ -1358,6 +1404,9 @@ public class QuestScript extends Script {
             sleep(100);
             sleepUntil(() -> !Rs2Player.isMoving() && !Rs2Player.isAnimating());
             objectsHandeled.add(object.getHash());
+        } else if (object != null) {
+            Rs2Walker.walkTo(object.getWorldLocation(), 1);
+            return false;
         }
 
         return true;
