@@ -1344,6 +1344,13 @@ public class QuestScript extends Script {
                 return false;
         }
 
+        if (object != null
+                && Rs2Player.getWorldLocation().distanceTo(object.getWorldLocation()) > 1
+                && !Rs2Tile.areSurroundingTilesWalkable(object.getWorldLocation(), 1, 1)) {
+            Rs2Walker.walkTo(object.getWorldLocation());
+            return false;
+        }
+
         if (hasLineOfSightToObject(object) || object != null && (Rs2Camera.isTileOnScreen(object.getLocalLocation()) || object.getCanvasLocation() != null)) {
             Rs2Walker.setTarget(null);
 

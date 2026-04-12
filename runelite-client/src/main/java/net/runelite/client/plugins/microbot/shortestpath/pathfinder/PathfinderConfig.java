@@ -135,6 +135,11 @@ public class PathfinderConfig {
     // Used to include bank items when searching for item requirements
     private volatile boolean useBankItems = false;
 
+    private Set<Integer> refreshAvailableItemIds;
+    private int[] refreshBoostedLevels;
+    private Map<String, int[]> refreshCurrencyCache;
+    private static final Skill[] SKILLS = Skill.values();
+
     public PathfinderConfig(SplitFlagMap mapData, Map<WorldPoint, Set<Transport>> transports,
                             List<Restriction> restrictions,
                             Client client, ShortestPathConfig config) {
@@ -195,15 +200,21 @@ public class PathfinderConfig {
         //END microbot variables
 
         if (GameState.LOGGED_IN.equals(client.getGameState())) {
+            long t0 = System.currentTimeMillis();
             refreshTransports(target);
+            long t1 = System.currentTimeMillis();
             //START microbot variables
             refreshRestrictionData();
+            long t2 = System.currentTimeMillis();
 
             // Do not switch back to inventory tab if we are inside of the telekinetic room in Mage Training Arena
             if (Rs2Player.getWorldLocation().getRegionID() != 13463) {
                 Rs2Tab.switchTo(InterfaceTab.INVENTORY);
             }
+            long t3 = System.currentTimeMillis();
 
+            log.info("[PathfinderConfig] refresh: transports={}ms, restrictions={}ms, tabSwitch={}ms, total={}ms",
+                    t1 - t0, t2 - t1, t3 - t2, t3 - t0);
             //END microbot variables
         }
     }
@@ -278,15 +289,69 @@ public class PathfinderConfig {
         transportsPacked.clear();
         usableTeleports.clear();
 
-        // Check spirit tree farming states for farmable spirit trees
-        for (Map.Entry<WorldPoint, Set<Transport>> entry : createMergedList().entrySet()) {
+        long mergeStart = System.currentTimeMillis();
+        Map<WorldPoint, Set<Transport>> mergedList = createMergedList();
+        long mergeTime = System.currentTimeMillis() - mergeStart;
+
+        long cacheStart = System.currentTimeMillis();
+        refreshAvailableItemIds = new HashSet<>();
+        refreshCurrencyCache = new HashMap<>();
+        Rs2Inventory.items().forEach(item -> refreshAvailableItemIds.add(item.getId()));
+        Rs2Equipment.all().forEach(item -> refreshAvailableItemIds.add(item.getId()));
+        if (useBankItems) {
+            Rs2Bank.getAll().forEach(item -> refreshAvailableItemIds.add(item.getId()));
+        }
+
+        Set<Integer> varbitIds = new HashSet<>();
+        Set<Integer> varplayerIds = new HashSet<>();
+        for (Set<Transport> ts : mergedList.values()) {
+            for (Transport t : ts) {
+                t.getVarbits().forEach(v -> varbitIds.add(v.getVarbitId()));
+                t.getVarplayers().forEach(v -> varplayerIds.add(v.getVarplayerId()));
+            }
+        }
+
+        refreshBoostedLevels = new int[SKILLS.length];
+        Microbot.getClientThread().runOnClientThreadOptional(() -> {
+            for (int i = 0; i < SKILLS.length; i++) {
+                refreshBoostedLevels[i] = client.getBoostedSkillLevel(SKILLS[i]);
+            }
+            for (int id : varbitIds) {
+                Microbot.getVarbitValue(id);
+            }
+            for (int id : varplayerIds) {
+                Microbot.getVarbitPlayerValue(id);
+            }
+            return true;
+        });
+        long cacheTime = System.currentTimeMillis() - cacheStart;
+
+        long filterStart = System.currentTimeMillis();
+        int totalTransports = 0;
+        int checkedTransports = 0;
+        long useTransportTimeNanos = 0;
+        Map<TransportType, int[]> typeStats = new java.util.EnumMap<>(TransportType.class);
+
+        for (Map.Entry<WorldPoint, Set<Transport>> entry : mergedList.entrySet()) {
             WorldPoint point = entry.getKey();
             Set<Transport> usableTransports = new HashSet<>(entry.getValue().size());
             for (Transport transport : entry.getValue()) {
-                // Mutate action
+                totalTransports++;
                 updateActionBasedOnQuestState(transport);
 
-                if (!useTransport(transport)) continue;
+                long t0 = System.nanoTime();
+                boolean usable = useTransport(transport);
+                long elapsed = System.nanoTime() - t0;
+                useTransportTimeNanos += elapsed;
+
+                TransportType type = transport.getType();
+                int[] stats = typeStats.computeIfAbsent(type, k -> new int[]{0, 0, 0});
+                stats[0]++;
+                stats[2] += (int)(elapsed / 1_000);
+                if (usable) stats[1]++;
+
+                if (!usable) continue;
+                checkedTransports++;
                 if (point == null) {
                     usableTeleports.add(transport);
                 } else {
@@ -299,11 +364,27 @@ public class PathfinderConfig {
                 transportsPacked.put(WorldPointUtil.packWorldPoint(point), usableTransports);
             }
         }
+        long filterTime = System.currentTimeMillis() - filterStart;
 
-        // Filter similar transports based on distance when walk with banked transports is enabled
+        long similarStart = System.currentTimeMillis();
         if (useBankItems && config.maxSimilarTransportDistance() > 0) {
             filterSimilarTransports(target);
         }
+        long similarTime = System.currentTimeMillis() - similarStart;
+
+        refreshAvailableItemIds = null;
+        refreshBoostedLevels = null;
+        refreshCurrencyCache = null;
+
+        log.info("[refreshTransports] merge={}ms, cache={}ms, filter={}ms (useTransport={}ms), similar={}ms, total/usable={}/{}, teleports={}, varbits={}, varplayers={}",
+                mergeTime, cacheTime, filterTime, useTransportTimeNanos / 1_000_000, similarTime,
+                totalTransports, checkedTransports, usableTeleports.size(), varbitIds.size(), varplayerIds.size());
+
+        typeStats.entrySet().stream()
+                .sorted((a, b) -> Integer.compare(b.getValue()[2], a.getValue()[2]))
+                .limit(5)
+                .forEach(e -> log.info("[refreshTransports]   {} : count={}, usable={}, time={}ms",
+                        e.getKey(), e.getValue()[0], e.getValue()[1], e.getValue()[2] / 1000));
     }
 
 
@@ -510,11 +591,22 @@ public class PathfinderConfig {
         }
 
         // If you don't have the required currency & amount for transport
-        if (transport.getCurrencyAmount() > 0
-                && !Rs2Inventory.hasItemAmount(transport.getCurrencyName(), transport.getCurrencyAmount())
-                && !(ShortestPathPlugin.getPathfinderConfig().useBankItems && Rs2Bank.count(transport.getCurrencyName()) >= transport.getCurrencyAmount())) {
-            log.debug("Transport ( O: {} D: {} ) requires {} x {}", transport.getOrigin(), transport.getDestination(), transport.getCurrencyAmount(), transport.getCurrencyName());
-            return false;
+        if (transport.getCurrencyAmount() > 0) {
+            if (refreshCurrencyCache != null) {
+                int[] cached = refreshCurrencyCache.computeIfAbsent(transport.getCurrencyName(), name -> {
+                    int invCount = Rs2Inventory.count(name);
+                    int bankCount = useBankItems ? Rs2Bank.count(name) : 0;
+                    return new int[]{invCount, bankCount};
+                });
+                if (cached[0] < transport.getCurrencyAmount() && cached[1] < transport.getCurrencyAmount()) {
+                    log.debug("Transport ( O: {} D: {} ) requires {} x {}", transport.getOrigin(), transport.getDestination(), transport.getCurrencyAmount(), transport.getCurrencyName());
+                    return false;
+                }
+            } else if (!Rs2Inventory.hasItemAmount(transport.getCurrencyName(), transport.getCurrencyAmount())
+                    && !(useBankItems && Rs2Bank.count(transport.getCurrencyName()) >= transport.getCurrencyAmount())) {
+                log.debug("Transport ( O: {} D: {} ) requires {} x {}", transport.getOrigin(), transport.getDestination(), transport.getCurrencyAmount(), transport.getCurrencyName());
+                return false;
+            }
         }
 
         // Check if Teleports are globally disabled
@@ -557,10 +649,15 @@ public class PathfinderConfig {
      */
     private boolean hasRequiredLevels(Transport transport) {
         int[] requiredLevels = transport.getSkillLevels();
-        Skill[] skills = Skill.values();
+        if (refreshBoostedLevels != null) {
+            for (int i = 0; i < requiredLevels.length; i++) {
+                if (requiredLevels[i] > 0 && refreshBoostedLevels[i] < requiredLevels[i]) return false;
+            }
+            return true;
+        }
         return IntStream.range(0, requiredLevels.length)
             .filter(i -> requiredLevels[i] > 0)
-            .allMatch(i -> Microbot.getClient().getBoostedSkillLevel(skills[i]) >= requiredLevels[i]);
+            .allMatch(i -> Microbot.getClient().getBoostedSkillLevel(SKILLS[i]) >= requiredLevels[i]);
     }
 
     /**
@@ -701,6 +798,12 @@ public class PathfinderConfig {
     private boolean hasRequiredItems(Transport transport) {
         if (requiresChronicle(transport)) return hasChronicleCharges();
 
+        if (refreshAvailableItemIds != null) {
+            return transport.getItemIdRequirements()
+                    .stream()
+                    .flatMap(Collection::stream)
+                    .anyMatch(refreshAvailableItemIds::contains);
+        }
         return transport.getItemIdRequirements()
                 .stream()
                 .flatMap(Collection::stream)
