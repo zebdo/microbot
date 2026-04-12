@@ -933,8 +933,9 @@ public class Rs2GrandExchange {
      * F2P slots beyond index 2 are always reported as unavailable.
      *
      * @param slot the {@link GrandExchangeSlots} slot to check
-     * @return {@code true} if the slot is empty and usable; {@code false} if it holds an offer,
-     *         is out of the player's accessible slot range, or cannot be resolved
+     * @return {@code true} if the slot is empty and usable, or if the offers array is not yet
+     *         initialized; {@code false} if it holds an offer, is out of the player's accessible
+     *         slot range, or cannot be resolved
      */
     public static boolean isSlotAvailable(GrandExchangeSlots slot) {
         if (slot == null) {
@@ -945,7 +946,10 @@ public class Rs2GrandExchange {
         }
 
         GrandExchangeOffer[] offers = Microbot.getClient().getGrandExchangeOffers();
-        if (offers == null || slot.ordinal() >= offers.length) {
+        if (offers == null) {
+            return true;
+        }
+        if (slot.ordinal() >= offers.length) {
             return false;
         }
 
