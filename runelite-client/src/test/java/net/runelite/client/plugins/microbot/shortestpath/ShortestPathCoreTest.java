@@ -575,13 +575,12 @@ public class ShortestPathCoreTest {
 			f.setLong(config, 10000);
 
 			for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
-				if (entry.getKey() != null) {
-					config.getTransports().put(entry.getKey(), entry.getValue());
-					config.getTransportsPacked().put(
-							WorldPointUtil.packWorldPoint(entry.getKey()), entry.getValue());
-				} else {
-					config.getUsableTeleports().addAll(entry.getValue());
+				if (entry.getKey() == null) {
+					continue;
 				}
+				config.getTransports().put(entry.getKey(), entry.getValue());
+				config.getTransportsPacked().put(
+						WorldPointUtil.packWorldPoint(entry.getKey()), entry.getValue());
 			}
 		} catch (Exception e) {
 			throw new RuntimeException("Failed to configure transports", e);
