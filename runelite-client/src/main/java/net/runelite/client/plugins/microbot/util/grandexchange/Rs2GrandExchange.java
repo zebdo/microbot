@@ -928,21 +928,33 @@ public class Rs2GrandExchange {
     /**
      * Checks if a specified Grand Exchange slot is available for a new offer.
      * <p>
-     * A slot is considered available if its corresponding widget exists and the child widget
-     * at index 2 is hidden (indicating the slot is free).
+     * Reads the client's live offer state via {@link net.runelite.api.Client#getGrandExchangeOffers()},
+     * so this is accurate regardless of whether the Grand Exchange interface is currently open.
+     * F2P slots beyond index 2 are always reported as unavailable.
      *
      * @param slot the {@link GrandExchangeSlots} slot to check
-     * @return {@code true} if the slot is available; {@code false} if the slot is occupied or the widget is missing
+     * @return {@code true} if the slot is empty and usable, or if the offers array is not yet
+     *         initialized; {@code false} if it holds an offer, is out of the player's accessible
+     *         slot range, or cannot be resolved
      */
     public static boolean isSlotAvailable(GrandExchangeSlots slot) {
-        Widget parent = GrandExchangeWidget.getSlot(slot);
-        return Optional.ofNullable(parent)
-                .map(p -> {
-                    Widget child = p.getChild(2);
-                    if (child == null) return false;
-                    return child.isSelfHidden();
-                })
-                .orElse(false);
+        if (slot == null) {
+            return false;
+        }
+        if (slot.ordinal() >= getMaxSlots()) {
+            return false;
+        }
+
+        GrandExchangeOffer[] offers = Microbot.getClient().getGrandExchangeOffers();
+        if (offers == null) {
+            return true;
+        }
+        if (slot.ordinal() >= offers.length) {
+            return false;
+        }
+
+        GrandExchangeOffer offer = offers[slot.ordinal()];
+        return offer == null || offer.getState() == GrandExchangeOfferState.EMPTY;
     }
 
     /**

@@ -67,7 +67,7 @@ public class ObjectHandler extends AgentHandler {
 		}
 		query = query.within(maxDistance);
 
-		List<Rs2TileObjectModel> objects = query.toList();
+		List<Rs2TileObjectModel> objects = query.toListOnClientThread();
 
 		List<Map<String, Object>> serialized = objects.stream()
 				.limit(limit)
@@ -110,11 +110,11 @@ public class ObjectHandler extends AgentHandler {
 		if (name != null && !name.isEmpty()) {
 			obj = Microbot.getRs2TileObjectCache().query()
 					.withName(name)
-					.nearest();
+					.nearestOnClientThread();
 		} else if (idNum != null) {
 			obj = Microbot.getRs2TileObjectCache().query()
 					.withId(idNum.intValue())
-					.nearest();
+					.nearestOnClientThread();
 		} else {
 			sendJson(exchange, 400, errorResponse("Provide either name or id"));
 			return;

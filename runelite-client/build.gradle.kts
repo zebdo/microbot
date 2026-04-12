@@ -139,10 +139,13 @@ tasks.register<Test>("runUnitTests") {
         "-ea"
     )
 
-    // Forward the baseline-regenerate flag to the test JVM so contributors can run
+    // Forward the baseline-regenerate flags to the test JVM so contributors can run
     // `./gradlew :client:runUnitTests -Dmicrobot.guardrail.regenerate-baseline=true` ad-hoc.
     System.getProperty("microbot.guardrail.regenerate-baseline")?.let {
         systemProperty("microbot.guardrail.regenerate-baseline", it)
+    }
+    System.getProperty("microbot.queryable-guardrail.regenerate-baseline")?.let {
+        systemProperty("microbot.queryable-guardrail.regenerate-baseline", it)
     }
 
     exclude("**/Rs2ActorModelIntegrationTest.class")
@@ -175,6 +178,33 @@ tasks.register<Test>("regenerateClientThreadGuardrailBaseline") {
     )
 
     include("**/threadsafety/ClientThreadGuardrailTest.class")
+
+    useJUnit()
+    outputs.upToDateWhen { false }
+
+    testLogging {
+        events("passed", "skipped", "failed")
+        showStandardStreams = true
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    }
+}
+
+tasks.register<Test>("regenerateQueryableTerminalBaseline") {
+    group = "verification"
+    description = "Regenerate src/test/resources/threadsafety/queryable-terminal-guardrail-baseline.txt from current sources"
+
+    dependsOn(":client:compileJava", ":client:compileTestJava")
+
+    testClassesDirs = sourceSets.test.get().output.classesDirs
+    classpath = sourceSets.test.get().runtimeClasspath
+
+    jvmArgs(
+        "-Dfile.encoding=UTF-8",
+        "-Duser.timezone=Europe/Brussels",
+        "-Dmicrobot.queryable-guardrail.regenerate-baseline=true"
+    )
+
+    include("**/threadsafety/QueryableTerminalGuardrailTest.class")
 
     useJUnit()
     outputs.upToDateWhen { false }
@@ -435,7 +465,7 @@ tasks.checkstyleMain {
 }
 
 tasks.withType<Test> {
-    if (name != "runIntegrationTest" && name != "runTests" && name != "runDebugTests" && name != "runUnitTests" && name != "runClientThreadScanner" && name != "regenerateClientThreadGuardrailBaseline") {
+    if (name != "runIntegrationTest" && name != "runTests" && name != "runDebugTests" && name != "runUnitTests" && name != "runClientThreadScanner" && name != "regenerateClientThreadGuardrailBaseline" && name != "regenerateQueryableTerminalBaseline") {
         enabled = false
     }
     systemProperty("glslang.path", providers.gradleProperty("glslangPath").getOrElse(""))

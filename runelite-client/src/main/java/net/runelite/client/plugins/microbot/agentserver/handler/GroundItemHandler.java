@@ -67,7 +67,7 @@ public class GroundItemHandler extends AgentHandler {
 		}
 		query = query.within(maxDistance);
 
-		List<Rs2TileItemModel> items = query.toList();
+		List<Rs2TileItemModel> items = query.toListOnClientThread();
 
 		List<Map<String, Object>> serialized = items.stream()
 				.limit(limit)
@@ -104,11 +104,11 @@ public class GroundItemHandler extends AgentHandler {
 		if (name != null && !name.isEmpty()) {
 			item = Microbot.getRs2TileItemCache().query()
 					.withName(name)
-					.nearest();
+					.nearestOnClientThread();
 		} else if (idNum != null) {
 			item = Microbot.getRs2TileItemCache().query()
 					.withId(idNum.intValue())
-					.nearest();
+					.nearestOnClientThread();
 		} else {
 			sendJson(exchange, 400, errorResponse("Provide either name or id"));
 			return;

@@ -67,7 +67,7 @@ public class NpcHandler extends AgentHandler {
 		}
 		query = query.within(maxDistance);
 
-		List<Rs2NpcModel> npcs = query.toList();
+		List<Rs2NpcModel> npcs = query.toListOnClientThread();
 
 		List<Map<String, Object>> serialized = npcs.stream()
 				.limit(limit)
@@ -110,11 +110,11 @@ public class NpcHandler extends AgentHandler {
 		if (name != null && !name.isEmpty()) {
 			npc = Microbot.getRs2NpcCache().query()
 					.withName(name)
-					.nearest();
+					.nearestOnClientThread();
 		} else if (idNum != null) {
 			npc = Microbot.getRs2NpcCache().query()
 					.withId(idNum.intValue())
-					.nearest();
+					.nearestOnClientThread();
 		} else {
 			sendJson(exchange, 400, errorResponse("Provide either name or id"));
 			return;

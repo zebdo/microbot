@@ -1713,6 +1713,10 @@ Rs2Prayer.toggleQuickPrayer() with precise game tick timing.
 Closes #456
 ```
 
+### Versioning
+
+Whenever changes are made to the codebase, bump `microbot.version` in `gradle.properties` (at the repo root) as part of the same commit. Use a standalone `chore(gradle): update microbot version to X.Y.Z` commit when the version bump is the only intent, or include it alongside the functional change when tightly coupled. Follow semver: patch for fixes, minor for backwards-compatible features, major for breaking changes. Do NOT merge or release without this bump — downstream clients rely on the version string embedded in `runelite.properties` to detect new releases.
+
 ---
 
 ## Microbot Project Structure
