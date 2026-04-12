@@ -857,6 +857,9 @@ public class QuestScript extends Script {
 	}
 
 	private boolean shouldObtainMissingItems() {
+		if (Rs2Player.isIronman()) {
+			return false;
+		}
 		QuestHelperConfig.ObtainMissingItemsOption option = config.obtainMissingItems();
 		if (option == QuestHelperConfig.ObtainMissingItemsOption.YES) {
 			return true;
