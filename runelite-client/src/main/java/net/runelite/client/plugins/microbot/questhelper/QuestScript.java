@@ -1344,12 +1344,6 @@ public class QuestScript extends Script {
                 return false;
         }
 
-        if (object != null
-                && !Rs2Tile.areSurroundingTilesWalkable(object.getWorldLocation(), 1, 1)) {
-            Rs2Walker.walkTo(object.getWorldLocation());
-            return false;
-        }
-
         if (hasLineOfSightToObject(object) || object != null && (Rs2Camera.isTileOnScreen(object.getLocalLocation()) || object.getCanvasLocation() != null)) {
             Rs2Walker.setTarget(null);
 
@@ -1364,6 +1358,9 @@ public class QuestScript extends Script {
             sleep(100);
             sleepUntil(() -> !Rs2Player.isMoving() && !Rs2Player.isAnimating());
             objectsHandeled.add(object.getHash());
+        } else if (object != null) {
+            Rs2Walker.walkTo(object.getWorldLocation(), 1);
+            return false;
         }
 
         return true;
