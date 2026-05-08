@@ -6,6 +6,29 @@ PORT="${MICROBOT_PORT:-8081}"
 BASE="http://${HOST}:${PORT}"
 TIMEOUT="${MICROBOT_TIMEOUT:-30}"
 
+TOKEN_FILE="${MICROBOT_TOKEN_FILE:-${HOME}/.runelite/.agent-token}"
+LEGACY_TOKEN_FILES=(
+    "${HOME}/.runelite/microbot/agent-token"
+    "${HOME}/.microbot/agent-token"
+)
+AGENT_TOKEN="${MICROBOT_TOKEN:-}"
+if [[ -z "$AGENT_TOKEN" ]] && [[ -r "$TOKEN_FILE" ]]; then
+    AGENT_TOKEN="$(tr -d '\r\n' < "$TOKEN_FILE" 2>/dev/null || true)"
+fi
+if [[ -z "$AGENT_TOKEN" ]]; then
+    for legacy in "${LEGACY_TOKEN_FILES[@]}"; do
+        if [[ -r "$legacy" ]]; then
+            AGENT_TOKEN="$(tr -d '\r\n' < "$legacy" 2>/dev/null || true)"
+            [[ -n "$AGENT_TOKEN" ]] && break
+        fi
+    done
+fi
+
+AUTH_HEADER_ARGS=()
+if [[ -n "$AGENT_TOKEN" ]]; then
+    AUTH_HEADER_ARGS=(-H "X-Agent-Token: $AGENT_TOKEN")
+fi
+
 json_escape() {
     printf '%s' "$1" | sed 's/\\/\\\\/g; s/"/\\"/g; s/\t/\\t/g; s/\n/\\n/g'
 }
@@ -26,6 +49,7 @@ Game State:
   state                                  Current game state and player info
   skills [--name Attack]                 Skill levels and XP
   varbit <id>                            Read a varbit value
+  varp <id>                              Read a varp (player variable) value
 
 Inventory:
   inventory                              List inventory items
@@ -65,6 +89,10 @@ Dialogue:
 Login:
   login                                  Login status (game state, profile)
   login now [--world 360] [--timeout 60] Login using active profile (blocks until done)
+
+Profiles:
+  profile                                List all profiles with active indicator
+  profile switch <name>                  Switch active profile (used by next login)
 
 Scripts:
   scripts                                List all plugins with status
@@ -115,11 +143,11 @@ EOF
 }
 
 do_get() {
-    curl -sf --max-time "$TIMEOUT" "$1" 2>/dev/null || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
+    curl -sf --max-time "$TIMEOUT" "${AUTH_HEADER_ARGS[@]}" "$1" 2>/dev/null || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
 }
 
 do_post() {
-    curl -sf --max-time "$TIMEOUT" -X POST -H "Content-Type: application/json" -d "$2" "$1" 2>/dev/null || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
+    curl -sf --max-time "$TIMEOUT" "${AUTH_HEADER_ARGS[@]}" -X POST -H "Content-Type: application/json" -d "$2" "$1" 2>/dev/null || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
 }
 
 build_query() {
@@ -237,6 +265,11 @@ case "$1" in
         do_get "${BASE}/varbit?id=$2"
         ;;
 
+    varp)
+        [[ $# -lt 2 ]] && { echo '{"error":"Usage: microbot-cli varp <id>"}'; exit 1; }
+        do_get "${BASE}/varp?id=$2"
+        ;;
+
     state)
         do_get "${BASE}/state"
         ;;
@@ -352,7 +385,7 @@ case "$1" in
         walk_body="{\"x\":${walk_x},\"y\":${walk_y},\"plane\":${walk_plane},\"wait\":${walk_wait},\"timeout\":${walk_timeout}}"
         if [[ "$walk_wait" == "true" ]]; then
             curl_timeout=$((walk_timeout + 5))
-            curl -sf --max-time "$curl_timeout" -X POST -H "Content-Type: application/json" -d "$walk_body" "${BASE}/walk" 2>/dev/null \
+            curl -sf --max-time "$curl_timeout" "${AUTH_HEADER_ARGS[@]}" -X POST -H "Content-Type: application/json" -d "$walk_body" "${BASE}/walk" 2>/dev/null \
                 || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
         else
             do_post "${BASE}/walk" "$walk_body"
@@ -417,9 +450,21 @@ case "$1" in
                 if [[ -n "$world" ]]; then
                     body="{\"world\":${world},\"timeout\":${login_timeout}}"
                 fi
-                result=$(curl -s --max-time "$((login_timeout + 5))" -X POST -H "Content-Type: application/json" -d "$body" "${BASE}/login" 2>/dev/null) || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
+                result=$(curl -s --max-time "$((login_timeout + 5))" "${AUTH_HEADER_ARGS[@]}" -X POST -H "Content-Type: application/json" -d "$body" "${BASE}/login" 2>/dev/null) || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
                 echo "$result"
                 echo "$result" | grep -q '"success": *true' || exit 1
+                ;;
+            *) usage ;;
+        esac
+        ;;
+
+    profile)
+        [[ $# -lt 2 ]] && { do_get "${BASE}/profiles"; exit 0; }
+        case "$2" in
+            switch)
+                [[ $# -lt 3 ]] && { echo '{"error":"Usage: microbot-cli profile switch <name>"}'; exit 1; }
+                name=$(json_escape "$3")
+                do_post "${BASE}/profiles" "{\"name\":\"${name}\"}"
                 ;;
             *) usage ;;
         esac
@@ -632,7 +677,7 @@ case "$1" in
             q=$(build_query "save" "true" "label" "${label:-screenshot}" "dir" "${dir:-}")
             do_get "${BASE}/screenshot${q}"
         else
-            curl -sf --max-time "$TIMEOUT" -o "${1:-screenshot.png}" "${BASE}/screenshot" 2>/dev/null || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
+            curl -sf --max-time "$TIMEOUT" "${AUTH_HEADER_ARGS[@]}" -o "${1:-screenshot.png}" "${BASE}/screenshot" 2>/dev/null || { echo '{"error":"Connection refused - is the Agent Server plugin enabled?"}'; exit 1; }
             echo "{\"success\":true,\"path\":\"$(pwd)/${1:-screenshot.png}\"}"
         fi
         ;;

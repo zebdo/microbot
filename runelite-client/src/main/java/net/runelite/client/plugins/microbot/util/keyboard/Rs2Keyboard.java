@@ -73,9 +73,9 @@ public class Rs2Keyboard
 		withFocusCanvas(() -> {
 			for (char c : word.toCharArray())
 			{
-				int delay = Rs2Random.between(20, 200);
+				int delay = Rs2Random.logNormalBounded(20, 200);
 				dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, c, delay);
-				Global.sleep(100, 200);
+				Global.sleep(Rs2Random.logNormalBounded(100, 200));
 			}
 		});
 	}
@@ -88,7 +88,7 @@ public class Rs2Keyboard
 	public static void keyPress(final char key)
 	{
 		withFocusCanvas(() -> {
-			int delay = Rs2Random.between(20, 200);
+			int delay = Rs2Random.logNormalBounded(20, 200);
 			dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, key, delay);
 		});
 	}
@@ -99,7 +99,7 @@ public class Rs2Keyboard
 	public static void holdShift()
 	{
 		withFocusCanvas(() -> {
-			int delay = Rs2Random.between(20, 200);
+			int delay = Rs2Random.logNormalBounded(20, 200);
 			dispatchKeyEvent(KeyEvent.KEY_PRESSED, KeyEvent.VK_SHIFT, CHAR_UNDEFINED, delay);
 		});
 	}
@@ -110,7 +110,7 @@ public class Rs2Keyboard
 	public static void releaseShift()
 	{
 		withFocusCanvas(() -> {
-			int delay = Rs2Random.between(20, 200);
+			int delay = Rs2Random.logNormalBounded(20, 200);
 			dispatchKeyEvent(KeyEvent.KEY_RELEASED, KeyEvent.VK_SHIFT, CHAR_UNDEFINED, delay);
 		});
 	}
@@ -135,7 +135,7 @@ public class Rs2Keyboard
 	public static void keyRelease(int key)
 	{
 		withFocusCanvas(() -> {
-			int delay = Rs2Random.between(20, 200);
+			int delay = Rs2Random.logNormalBounded(20, 200);
 			dispatchKeyEvent(KeyEvent.KEY_RELEASED, key, CHAR_UNDEFINED, delay);
 		});
 	}
@@ -147,8 +147,40 @@ public class Rs2Keyboard
 	 */
 	public static void keyPress(int key)
 	{
-		keyHold(key);
-		keyRelease(key);
+		char typed = toTypedChar(key);
+		if (typed == CHAR_UNDEFINED)
+		{
+			keyHold(key);
+			keyRelease(key);
+			return;
+		}
+
+		withFocusCanvas(() -> {
+			dispatchKeyEvent(KeyEvent.KEY_PRESSED, key, typed, 0);
+			int delay = Rs2Random.logNormalBounded(20, 200);
+			dispatchKeyEvent(KeyEvent.KEY_TYPED, KeyEvent.VK_UNDEFINED, typed, delay);
+			int releaseDelay = Rs2Random.between(20, 200);
+			dispatchKeyEvent(KeyEvent.KEY_RELEASED, key, CHAR_UNDEFINED, releaseDelay);
+		});
+	}
+
+	/**
+	 * Maps a Java {@link KeyEvent} virtual-key code to the printable character it produces
+	 * when typed without modifiers. Returns {@link KeyEvent#CHAR_UNDEFINED} for non-printable keys.
+	 *
+	 * Needed because OSRS dialog option widgets react to {@code KEY_TYPED} char events,
+	 * not the raw {@code KEY_PRESSED}/{@code KEY_RELEASED} pair that {@code keyHold}/{@code keyRelease} emit.
+	 */
+	static char toTypedChar(int vk)
+	{
+		if (vk >= KeyEvent.VK_0 && vk <= KeyEvent.VK_9) return (char) ('0' + (vk - KeyEvent.VK_0));
+		if (vk >= KeyEvent.VK_A && vk <= KeyEvent.VK_Z) return (char) ('a' + (vk - KeyEvent.VK_A));
+		if (vk == KeyEvent.VK_SPACE) return ' ';
+		if (vk == KeyEvent.VK_ENTER) return '\n';
+		if (vk == KeyEvent.VK_TAB) return '\t';
+		if (vk == KeyEvent.VK_BACK_SPACE) return '\b';
+		if (vk == KeyEvent.VK_ESCAPE) return (char) 27;
+		return CHAR_UNDEFINED;
 	}
 
 	/**

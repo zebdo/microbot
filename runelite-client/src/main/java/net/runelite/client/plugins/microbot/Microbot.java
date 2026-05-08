@@ -38,6 +38,7 @@ import net.runelite.client.plugins.microbot.configs.SpecialAttackConfigs;
 import net.runelite.client.plugins.microbot.pouch.PouchScript;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
 import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
+import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
 import net.runelite.client.plugins.microbot.util.mouse.Mouse;
@@ -239,6 +240,56 @@ public class Microbot {
     public static boolean isDebug() {
         return java.lang.management.ManagementFactory.getRuntimeMXBean().
                 getInputArguments().toString().contains("-agentlib:jdwp");
+    }
+
+    public static boolean isTelemetryDisabled() {
+        if (Boolean.getBoolean("microbot.disableTelemetry")) {
+            return true;
+        }
+        try {
+            net.runelite.client.config.ConfigManager cm = configManager;
+            if (cm == null) return false;
+            String value = cm.getConfiguration(MicrobotConfig.configGroup, MicrobotConfig.keyDisableTelemetry);
+            return Boolean.parseBoolean(value);
+        } catch (Exception ex) {
+            return false;
+        }
+    }
+
+    private static final String INSTALL_SEED_KEY = "installSeed";
+    private static volatile Long cachedInstallSeed = null;
+
+    public static long getInstallSeed() {
+        Long cached = cachedInstallSeed;
+        if (cached != null) return cached;
+        synchronized (Microbot.class) {
+            if (cachedInstallSeed != null) return cachedInstallSeed;
+            long seed = 0L;
+            try {
+                net.runelite.client.config.ConfigManager cm = configManager;
+                if (cm != null) {
+                    String stored = cm.getConfiguration(MicrobotConfig.configGroup, INSTALL_SEED_KEY);
+                    if (stored != null && !stored.isEmpty()) {
+                        try {
+                            seed = Long.parseLong(stored);
+                        } catch (NumberFormatException ignored) {
+                        }
+                    }
+                    if (seed == 0L) {
+                        seed = new java.security.SecureRandom().nextLong();
+                        if (seed == 0L) seed = 1L;
+                        cm.setConfiguration(MicrobotConfig.configGroup, INSTALL_SEED_KEY, Long.toString(seed));
+                    }
+                }
+            } catch (Exception ignored) {
+            }
+            if (seed == 0L) {
+                seed = new java.security.SecureRandom().nextLong();
+                if (seed == 0L) seed = 1L;
+            }
+            cachedInstallSeed = seed;
+            return seed;
+        }
     }
 
     public static int getVarbitValue(@Varbit int varbit) {
@@ -541,7 +592,7 @@ public class Microbot {
         Point endPoint = Rs2UiHelper.getClickingPoint(end, true);
         mouse.drag(startPoint, endPoint);
         if (!Microbot.getClient().isClientThread()) {
-            sleep(50, 80);
+            sleep(Rs2Random.logNormalBounded(50, 80));
         }
     }
 
@@ -554,7 +605,7 @@ public class Microbot {
         }
 
         if (!Microbot.getClient().isClientThread()) {
-            sleep(50, 100);
+            sleep(Rs2Random.logNormalBounded(50, 100));
         }
     }
 
@@ -565,7 +616,7 @@ public class Microbot {
 
 
         if (!Microbot.getClient().isClientThread()) {
-            sleep(50, 80);
+            sleep(Rs2Random.logNormalBounded(50, 80));
         }
     }
 

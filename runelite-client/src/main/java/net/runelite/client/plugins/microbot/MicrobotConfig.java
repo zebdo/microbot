@@ -46,6 +46,19 @@ public interface MicrobotConfig extends Config
 		return true;
 	}
 
+	String keyHideRoofs = "hideRoofs";
+	@ConfigItem(
+		keyName = keyHideRoofs,
+		name = "Hide roofs",
+		description = "Automatically enable the hide roofs display setting",
+		position = 2,
+		section = generalSection
+	)
+	default boolean hideRoofs()
+	{
+		return true;
+	}
+
 	@ConfigSection(
 		name = "Logging",
 		description = "Game chat logging configuration",
@@ -171,5 +184,16 @@ public interface MicrobotConfig extends Config
 		return false;
 	}
 
-
+	String keyDisableTelemetry = "disableTelemetry";
+	@ConfigItem(
+		keyName = keyDisableTelemetry,
+		name = "Disable telemetry",
+		description = "Stop outbound calls to microbot.cloud (update check, random-fact splash, session ping). " +
+				"Equivalent to launching with -Dmicrobot.disableTelemetry=true.",
+		position = 6,
+		section = generalSection
+	)
+	default boolean disableTelemetry() {
+		return false;
+	}
 }

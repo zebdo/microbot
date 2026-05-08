@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.util.math;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Point;
 import net.runelite.client.plugins.microbot.util.Global;
+import net.runelite.client.plugins.microbot.util.antiban.SessionFatigue;
 
 import java.awt.*;
 import java.util.Random;
@@ -508,6 +509,48 @@ public class Rs2Random {
             value = 0;
         }
         return value;
+    }
+
+    private static final double REACTION_TIME_LOG_MEAN = 5.56;
+    private static final double REACTION_TIME_LOG_SIGMA = 0.30;
+    private static final int REACTION_TIME_MIN_MS = 120;
+    private static final int REACTION_TIME_MAX_MS = 2_200;
+
+    public static int reactionTime() {
+        return reactionTime(REACTION_TIME_LOG_MEAN, REACTION_TIME_LOG_SIGMA);
+    }
+
+    public static int reactionTime(double logMean, double logSigma) {
+        double g = ThreadLocalRandom.current().nextGaussian();
+        double sample = Math.exp(logMean + logSigma * g);
+        if (sample < REACTION_TIME_MIN_MS) sample = REACTION_TIME_MIN_MS;
+        if (sample > REACTION_TIME_MAX_MS) sample = REACTION_TIME_MAX_MS;
+        return SessionFatigue.applyTo((int) sample);
+    }
+
+    public static int reactionTime(int targetMedianMs) {
+        if (targetMedianMs <= 0) return SessionFatigue.applyTo(REACTION_TIME_MIN_MS);
+        return reactionTime(Math.log(targetMedianMs), REACTION_TIME_LOG_SIGMA);
+    }
+
+    /**
+     * Right-skewed log-normal sample bounded to {@code [min,max]}. Uses the geometric mean
+     * of the bounds as the median and picks sigma so roughly 95% of samples fall inside the range,
+     * then hard-clamps the tails to the bounds. Designed to replace uniform {@code between(min,max)}
+     * at sites that model micro-delays (keyboard gaps, mouse-button pauses, scroll timing) where
+     * a human histogram is right-skewed rather than rectangular.
+     */
+    public static int logNormalBounded(int min, int max) {
+        if (max <= min) return Math.max(min, max);
+        if (min <= 0) min = 1;
+        double logMin = Math.log(min);
+        double logMax = Math.log(max);
+        double mu = (logMin + logMax) / 2.0;
+        double sigma = (logMax - logMin) / 3.92; // ~95% inside [min,max]
+        double sample = Math.exp(mu + sigma * ThreadLocalRandom.current().nextGaussian());
+        if (sample < min) return min;
+        if (sample > max) return max;
+        return (int) sample;
     }
 
     enum EWaitDir {

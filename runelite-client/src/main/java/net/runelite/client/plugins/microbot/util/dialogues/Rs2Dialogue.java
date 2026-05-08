@@ -341,12 +341,17 @@ public class Rs2Dialogue {
         List<Widget> options = getDialogueOptions();
         if(options.isEmpty()) return false;
 
-        Widget dialogueOption = options.stream()
-                .filter(dialop -> exact ? Arrays.stream(texts).anyMatch(t -> dialop.getText().equalsIgnoreCase(t)) : Arrays.stream(texts).anyMatch(t -> dialop.getText().toLowerCase().contains(t.toLowerCase())))
-                .findFirst()
-                .orElse(null);
-        if (dialogueOption == null) return false;
-        return Rs2Widget.clickWidget(dialogueOption);
+        int matchIndex = -1;
+        for (int i = 0; i < options.size(); i++) {
+            Widget dialop = options.get(i);
+            boolean hit = exact
+                    ? Arrays.stream(texts).anyMatch(t -> dialop.getText().equalsIgnoreCase(t))
+                    : Arrays.stream(texts).anyMatch(t -> dialop.getText().toLowerCase().contains(t.toLowerCase()));
+            if (hit) { matchIndex = i; break; }
+        }
+        if (matchIndex < 0) return false;
+
+        return keyPressForDialogueOption(matchIndex + 1);
     }
 
     /**
@@ -377,10 +382,20 @@ public class Rs2Dialogue {
     public static boolean clickOption(String text, boolean exact) {
         if (!hasSelectAnOption()) return false;
 
-        Widget dialogueOption = getDialogueOption(text, exact);
-        if (dialogueOption == null) return false;
+        List<Widget> options = getDialogueOptions();
+        if (options.isEmpty()) return false;
 
-        return Rs2Widget.clickWidget(dialogueOption);
+        int matchIndex = -1;
+        for (int i = 0; i < options.size(); i++) {
+            Widget w = options.get(i);
+            boolean hit = exact
+                    ? w.getText().equalsIgnoreCase(text)
+                    : w.getText().toLowerCase().contains(text.toLowerCase());
+            if (hit) { matchIndex = i; break; }
+        }
+        if (matchIndex < 0) return false;
+
+        return keyPressForDialogueOption(matchIndex + 1);
     }
 
     /**
@@ -690,6 +705,26 @@ public class Rs2Dialogue {
             }
         }
         return false;
+    }
+
+    /**
+     * Detects a quest-start prompt (e.g. "Would you like to start the Cook's Assistant quest?")
+     * and clicks the "Yes" option. Matches case-insensitively on prefix + suffix + keyword
+     * so it catches the OSRS convention across quests without picking up unrelated prompts
+     * like "Would you like to start a fire?".
+     *
+     * @return true if a quest-start prompt was detected and Yes was clicked
+     */
+    public static boolean acceptQuestStartDialogue() {
+        String question = getQuestion();
+        if (question == null) return false;
+
+        String q = question.toLowerCase().trim();
+        if (!q.startsWith("would you like to start")) return false;
+        if (!q.contains("quest")) return false;
+        if (!q.endsWith("?")) return false;
+
+        return clickOption("Yes", false);
     }
 
 	/**
