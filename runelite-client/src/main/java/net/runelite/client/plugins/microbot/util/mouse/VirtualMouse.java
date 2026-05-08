@@ -4,7 +4,6 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Point;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
 import net.runelite.client.plugins.microbot.util.misc.Rs2UiHelper;
@@ -115,8 +114,7 @@ public class VirtualMouse extends Mouse {
     }
 
     private boolean shouldMoveNaturally(Point point) {
-        return Rs2AntibanSettings.naturalMouse
-                && point.getX() > 1
+        return point.getX() > 1
                 && point.getY() > 1
                 && Microbot.naturalMouse != null;
     }
