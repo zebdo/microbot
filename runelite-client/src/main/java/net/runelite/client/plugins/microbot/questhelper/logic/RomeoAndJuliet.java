@@ -48,8 +48,7 @@ public class RomeoAndJuliet extends BaseQuest {
             return true;
         }
 
-        WorldPoint playerLocation = Rs2peed
-        Player.getWorldLocation();
+        WorldPoint playerLocation = Rs2Player.getWorldLocation();
         if (playerLocation == null || playerLocation.getPlane() != 0) {
             return true;
         }

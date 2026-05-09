@@ -20,3 +20,22 @@ if (!clicked)
 **Where this applies:** `Rs2Walker`, `Rs2MiniMap`, and shortest-path walking loops.
 
 **Defensive check:** When debugging stalls, compare pathfinder logs with `./microbot-cli state`. A repeating valid path with an unchanged player position usually means the click layer failed after pathing succeeded.
+
+## 2. Probe raw path obstacles before declaring the walker stuck
+
+Path smoothing can collapse many adjacent raw path tiles into one minimap waypoint. Some doors and gates are not represented as blocking collision in the pathfinder map, so the smoothed segment may legally cross them while hiding the exact tile the object handler needs to inspect. Run nearby raw-path door/object checks as soon as the raw path is longer than the smoothed path and the obstacle is in scene range; do not wait for `stuckCount` to increment first.
+
+**Why this matters:** A walk from Varrock castle's upper floors toward Varrock fountain can descend correctly, then stall at the plane-1 castle door because the smoothed waypoint skips over the door tile and the normal per-segment door check never sees it.
+
+**Pattern to follow:**
+
+```java
+if (rawPath != null && path != null && rawPath.size() > path.size()
+        && handleNearbyRawPathSceneObjects(rawPath, HANDLER_RANGE)) {
+    doorOrTransportResult = true;
+}
+```
+
+**Where this applies:** `Rs2Walker`, `PathSmoother`, and shortest-path obstacle handling.
+
+**Defensive check:** When a path stalls beside a visible door while the pathfinder reports a complete route, compare raw and smoothed path lengths; if the raw path is longer, verify nearby raw-path obstacle probing happens before stall recovery.
