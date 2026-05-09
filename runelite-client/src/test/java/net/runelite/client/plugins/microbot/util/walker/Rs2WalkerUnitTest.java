@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.util.walker;
 
+import net.runelite.api.WallObject;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
 import org.junit.After;
@@ -227,6 +228,79 @@ public class Rs2WalkerUnitTest {
         int idx = Rs2Walker.findFurthestClickableIndex(path, 0, player, null, 14);
 
         assertEquals("null predicate must not NPE and must allow full scan", 2, idx);
+    }
+
+    @Test
+    public void interpolateClickableTarget_usesInterpolatedPointWhenUsable() {
+        WorldPoint player = new WorldPoint(3200, 3200, 0);
+        WorldPoint fallback = new WorldPoint(3206, 3200, 0);
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3200, 3200, 0),
+                fallback,
+                new WorldPoint(3220, 3200, 0));
+
+        WorldPoint target = Rs2Walker.interpolateClickableTarget(path, 2, player, fallback, 12, wp -> true);
+
+        assertEquals(new WorldPoint(3212, 3200, 0), target);
+    }
+
+    @Test
+    public void interpolateClickableTarget_fallsBackWhenInterpolatedPointUnusable() {
+        WorldPoint player = new WorldPoint(3200, 3200, 0);
+        WorldPoint fallback = new WorldPoint(3206, 3200, 0);
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3200, 3200, 0),
+                fallback,
+                new WorldPoint(3220, 3200, 0));
+
+        WorldPoint target = Rs2Walker.interpolateClickableTarget(path, 2, player, fallback, 12, wp -> false);
+
+        assertEquals("unusable interpolated tiles must not replace the known path waypoint",
+                fallback, target);
+    }
+
+    @Test
+    public void interpolateClickableTarget_shortensOutOfReachForwardWaypoint() {
+        WorldPoint player = new WorldPoint(3200, 3200, 0);
+        WorldPoint forward = new WorldPoint(3220, 3200, 0);
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3200, 3200, 0),
+                forward);
+
+        WorldPoint target = Rs2Walker.interpolateClickableTarget(path, 1, player, forward, 12, wp -> true);
+
+        assertEquals("out-of-minimap forward waypoints should be shortened to a clickable tile",
+                new WorldPoint(3212, 3200, 0), target);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Raw-path wall-door segment probing
+    // ---------------------------------------------------------------------------
+
+    @Test
+    public void wallDoorTouchesSegment_crossingDoorEdge_returnsTrue() {
+        WallObject door = mock(WallObject.class);
+        when(door.getWorldLocation()).thenReturn(new WorldPoint(3123, 3361, 0));
+        when(door.getOrientationA()).thenReturn(8); // south-facing door edge
+
+        assertTrue(Rs2Walker.wallDoorTouchesSegment(door,
+                new WorldPoint(3123, 3361, 0),
+                new WorldPoint(3123, 3360, 0)));
+        assertTrue(Rs2Walker.wallDoorTouchesSegment(door,
+                new WorldPoint(3123, 3360, 0),
+                new WorldPoint(3123, 3361, 0)));
+    }
+
+    @Test
+    public void wallDoorTouchesSegment_startingBesideDoorAndMovingAway_returnsFalse() {
+        WallObject door = mock(WallObject.class);
+        when(door.getWorldLocation()).thenReturn(new WorldPoint(3123, 3361, 0));
+        when(door.getOrientationA()).thenReturn(8); // door blocks 3123,3361 <-> 3123,3360
+
+        assertFalse("standing on the door's south neighbor and walking southwest must not re-open the door",
+                Rs2Walker.wallDoorTouchesSegment(door,
+                        new WorldPoint(3123, 3360, 0),
+                        new WorldPoint(3122, 3359, 0)));
     }
 
     // ---------------------------------------------------------------------------

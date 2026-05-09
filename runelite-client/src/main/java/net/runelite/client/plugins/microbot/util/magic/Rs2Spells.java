@@ -65,6 +65,7 @@ public enum Rs2Spells implements Spell {
             Runes.DEATH, 1,
             Runes.LAW, 1
     ), Rs2Spellbook.MODERN),
+    LUMBRIDGE_HOME_TELEPORT(MagicAction.LUMBRIDGE_HOME_TELEPORT, Map.of(), Rs2Spellbook.MODERN),
     VARROCK_TELEPORT(MagicAction.VARROCK_TELEPORT, Map.of(
             Runes.FIRE, 1,
             Runes.AIR, 3,

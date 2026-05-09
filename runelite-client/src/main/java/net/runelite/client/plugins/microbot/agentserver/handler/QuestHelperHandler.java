@@ -1,0 +1,140 @@
+package net.runelite.client.plugins.microbot.agentserver.handler;
+
+import com.google.gson.Gson;
+import com.sun.net.httpserver.HttpExchange;
+import java.io.IOException;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import net.runelite.client.plugins.PluginManager;
+import net.runelite.client.plugins.microbot.Microbot;
+import net.runelite.client.plugins.microbot.questhelper.QuestHelperConfig;
+import net.runelite.client.plugins.microbot.questhelper.QuestHelperPlugin;
+import net.runelite.client.plugins.microbot.questhelper.questhelpers.QuestHelper;
+import net.runelite.client.plugins.microbot.questhelper.steps.QuestStep;
+
+public class QuestHelperHandler extends AgentHandler
+{
+	private static final String BASE_PATH = "/quest-helper";
+
+	public QuestHelperHandler(Gson gson)
+	{
+		super(gson);
+	}
+
+	@Override
+	public String getPath()
+	{
+		return BASE_PATH;
+	}
+
+	@Override
+	protected void handleRequest(HttpExchange exchange) throws IOException
+	{
+		String sub = getSubPath(exchange, BASE_PATH);
+
+		switch (sub)
+		{
+			case "/status":
+				handleStatus(exchange);
+				break;
+			case "/start":
+				handleStart(exchange);
+				break;
+			default:
+				sendJson(exchange, 404, errorResponse("Unknown endpoint: " + BASE_PATH + sub));
+		}
+	}
+
+	private void handleStatus(HttpExchange exchange) throws IOException
+	{
+		try
+		{
+			requireGet(exchange);
+		}
+		catch (HttpMethodException e)
+		{
+			sendJson(exchange, 405, errorResponse(e.getMessage()));
+			return;
+		}
+
+		QuestHelperPlugin plugin = Microbot.getPlugin(QuestHelperPlugin.class);
+		if (plugin == null)
+		{
+			sendJson(exchange, 404, errorResponse("Quest Helper plugin not found"));
+			return;
+		}
+
+		Map<String, Object> result = new LinkedHashMap<>();
+		PluginManager pluginManager = Microbot.getPluginManager();
+		result.put("active", pluginManager != null && pluginManager.isActive(plugin));
+		result.put("enabled", pluginManager != null && pluginManager.isPluginEnabled(plugin));
+		result.put("turnOn", Microbot.getConfigManager()
+			.getConfiguration(QuestHelperConfig.QUEST_HELPER_GROUP, "TurnOn"));
+
+		QuestHelper selectedQuest = plugin.getSelectedQuest();
+		result.put("selected", selectedQuest != null);
+		if (selectedQuest != null)
+		{
+			result.put("questName", selectedQuest.getQuest().getName());
+			result.put("completed", Microbot.getClientThread()
+				.runOnClientThreadOptional(selectedQuest::isCompleted)
+				.orElse(false));
+
+			QuestStep currentStep = selectedQuest.getCurrentStep();
+			if (currentStep != null)
+			{
+				QuestStep activeStep = currentStep.getActiveStep();
+				result.put("stepText", activeStep != null ? activeStep.getText() : currentStep.getText());
+				result.put("stepClass", activeStep != null
+					? activeStep.getClass().getSimpleName()
+					: currentStep.getClass().getSimpleName());
+			}
+		}
+
+		sendJson(exchange, 200, result);
+	}
+
+	private void handleStart(HttpExchange exchange) throws IOException
+	{
+		try
+		{
+			requirePost(exchange);
+		}
+		catch (HttpMethodException e)
+		{
+			sendJson(exchange, 405, errorResponse(e.getMessage()));
+			return;
+		}
+
+		Map<String, Object> body = readJsonBody(exchange);
+		String name = (String) body.get("name");
+		if (name == null || name.isEmpty())
+		{
+			sendJson(exchange, 400, errorResponse("name is required"));
+			return;
+		}
+
+		QuestHelperPlugin plugin = Microbot.getPlugin(QuestHelperPlugin.class);
+		if (plugin == null)
+		{
+			sendJson(exchange, 404, errorResponse("Quest Helper plugin not found"));
+			return;
+		}
+
+		if (!plugin.startQuestHelper(name))
+		{
+			sendJson(exchange, 404, errorResponse("Quest helper not found: " + name));
+			return;
+		}
+
+		Microbot.getConfigManager().setRSProfileConfiguration(
+			QuestHelperConfig.QUEST_HELPER_GROUP,
+			"TurnOn",
+			true);
+
+		Map<String, Object> result = new LinkedHashMap<>();
+		result.put("success", true);
+		result.put("questName", name);
+		sendJson(exchange, 200, result);
+	}
+}

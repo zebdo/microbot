@@ -232,7 +232,14 @@ public class Rs2Walker {
         if (pathfinder != null && !pathfinder.isDone()) {
             return WalkerState.MOVING;
         }
-        setTarget(target);
+        boolean hasCurrentPath = pathfinder != null
+                && pathfinder.isDone()
+                && pathfinder.getTargets().contains(target);
+        if (!hasCurrentPath) {
+            setTarget(target);
+        } else {
+            currentTarget = target;
+        }
         ShortestPathPlugin.setReachedDistance(distance);
         stuckCount = 0;
         lastMovedTimeMs = System.currentTimeMillis();
@@ -243,6 +250,7 @@ public class Rs2Walker {
         }
 
 		closeWorldMap();
+        kickStartShortLocalWalk(target, distance);
         return processWalk(target, distance);
     }
 
@@ -272,14 +280,18 @@ public class Rs2Walker {
         try {
             if (!Microbot.isLoggedIn()) {
                 setTarget(null);
+                return WalkerState.EXIT;
+            }
+            if (isWalkCancelled(target)) {
+                return WalkerState.EXIT;
             }
 
             Pathfinder pathfinder = ShortestPathPlugin.getPathfinder();
             if (pathfinder == null) {
-                if (ShortestPathPlugin.getMarker() == null) {
-                    setTarget(null);
-                }
                 pathfinder = sleepUntilNotNull(ShortestPathPlugin::getPathfinder, 2_000);
+                if (isWalkCancelled(target)) {
+                    return WalkerState.EXIT;
+                }
                 if (pathfinder == null) {
                     setTarget(null);
                     return WalkerState.EXIT;
@@ -288,6 +300,9 @@ public class Rs2Walker {
 
             if (!pathfinder.isDone()) {
                 boolean isDone = sleepUntilTrue(pathfinder::isDone, 100, 10_000);
+                if (isWalkCancelled(target)) {
+                    return WalkerState.EXIT;
+                }
                 if (!isDone) {
                     setTarget(null);
                     return WalkerState.EXIT;
@@ -295,10 +310,10 @@ public class Rs2Walker {
             }
 
             if (ShortestPathPlugin.getMarker() == null) {
-                setTarget(null);
-                return WalkerState.EXIT;
+                restoreTargetMarker(target);
             }
 
+            final List<WorldPoint> rawPath = pathfinder.getPath();
             final List<WorldPoint> path = pathfinder.getWalkablePath();
             final WorldPoint dst;
             if (path == null || path.isEmpty()) {
@@ -330,6 +345,9 @@ public class Rs2Walker {
             }
 
             checkIfStuck();
+            if (isWalkCancelled(target)) {
+                return WalkerState.EXIT;
+            }
             if (isStuckTooLong()) {
                 long sinceMoved = System.currentTimeMillis() - lastMovedTimeMs;
                 long threshold = stallThresholdMs();
@@ -384,7 +402,7 @@ public class Rs2Walker {
             }
 
             // entering desert warning
-            if (Rs2Widget.clickWidget(565, 20)) {
+            if (Rs2Widget.isWidgetVisible(565, 20) && Rs2Widget.clickWidget(565, 20)) {
                 sleepUntil(() -> {
                     Widget checkBoxWidget = Rs2Widget.getWidget(565, 20);
                     if (checkBoxWidget == null) return false;
@@ -394,7 +412,7 @@ public class Rs2Walker {
             }
 
             // entering down ladder strong hold of security
-            if (Rs2Widget.clickWidget(579, 20)) {
+            if (Rs2Widget.isWidgetVisible(579, 20) && Rs2Widget.clickWidget(579, 20)) {
                 sleepUntil(() -> {
                     Widget checkBoxWidget = Rs2Widget.getWidget(579, 20);
                     if (checkBoxWidget == null) return false;
@@ -412,12 +430,31 @@ public class Rs2Walker {
             boolean inInstance = Microbot.getClient().getTopLevelWorldView().isInstance();
             String exitReason = "end-of-path";
             final int HANDLER_RANGE = 8;
-            for (int i = indexOfStartPoint; i < path.size(); i++) {
+            WalkerState directShortWalk = tryDirectShortWalk(target, distance, path, inInstance);
+            if (directShortWalk != WalkerState.MOVING) {
+                return directShortWalk;
+            }
+
+            if (rawPath != null && path != null
+                    && handleNearbyRawPathSceneObjects(rawPath, HANDLER_RANGE)) {
+                doorOrTransportResult = true;
+                exitReason = "raw-path-scene-object-handled";
+            }
+
+            if (!doorOrTransportResult
+                    && handleCurrentTileTransportTowardPath(rawPath, path, target)) {
+                doorOrTransportResult = true;
+                exitReason = "current-tile-transport-handled";
+            }
+
+            for (int i = indexOfStartPoint; !doorOrTransportResult && i < path.size(); i++) {
                 WorldPoint currentWorldPoint = path.get(i);
+                if (isWalkCancelled(target)) {
+                    return WalkerState.EXIT;
+                }
 
                 if (ShortestPathPlugin.getMarker() == null) {
-                    exitReason = "marker-null";
-                    break;
+                    restoreTargetMarker(target);
                 }
 
                 if (!isNearPath()) {
@@ -468,8 +505,8 @@ public class Rs2Walker {
                     }
                 }
 
-                boolean tileReachable = Rs2Tile.isTileReachable(currentWorldPoint);
-                if (!tileReachable && !inInstance) {
+                boolean tileWalkable = inInstance || isKnownWalkableOrUnloaded(currentWorldPoint);
+                if (!tileWalkable) {
                     continue;
                 }
                 nextWalkingDistance = Rs2Random.between(9, 12);
@@ -496,30 +533,40 @@ public class Rs2Walker {
                     // (door, gate, diagonal offset). Each interpolated click covers
                     // ~12 tiles, matching a human clicking the furthest visible tile.
                     if (targetIdx < i) {
-                        int backwardDistSq = euclideanSq(targetWp, playerLoc);
-                        int interpTarget = MINIMAP_REACH_EUCLIDEAN - 1;
-                        if (backwardDistSq < interpTarget * interpTarget) {
-                            WorldPoint beyond = path.get(i);
-                            int dxB = beyond.getX() - playerLoc.getX();
-                            int dyB = beyond.getY() - playerLoc.getY();
-                            double distB = Math.sqrt(dxB * dxB + dyB * dyB);
-                            if (distB > 1) {
-                                double scale = interpTarget / distB;
-                                targetWp = new WorldPoint(
-                                        playerLoc.getX() + (int) Math.round(dxB * scale),
-                                        playerLoc.getY() + (int) Math.round(dyB * scale),
-                                        playerLoc.getPlane());
-                                targetIdx = Math.max(indexOfStartPoint, i - 1);
-                            }
-                        }
+                        targetWp = interpolateClickableTarget(
+                                path,
+                                i,
+                                playerLoc,
+                                targetWp,
+                                MINIMAP_REACH_EUCLIDEAN - 1,
+                                wp -> inInstance || isKnownWalkableOrUnloaded(wp));
+                        targetIdx = Math.max(indexOfStartPoint, i - 1);
+                    } else if (euclideanSq(targetWp, playerLoc) > MINIMAP_REACH_EUCLIDEAN * MINIMAP_REACH_EUCLIDEAN) {
+                        targetWp = interpolateClickableTarget(
+                                path,
+                                i,
+                                playerLoc,
+                                targetWp,
+                                MINIMAP_REACH_EUCLIDEAN - 1,
+                                wp -> inInstance || isKnownWalkableOrUnloaded(wp));
                     }
 
                     WorldPoint posBefore = playerLoc;
-                    boolean clicked;
-                    if (inInstance) {
-                        clicked = Rs2Walker.walkMiniMap(targetWp);
-                    } else {
-                        clicked = Rs2Walker.walkMiniMap(getPointWithWallDistance(targetWp));
+                    WorldPoint clickTarget = inInstance ? targetWp : getPointWithWallDistance(targetWp);
+                    if (!inInstance && !Rs2Tile.isTileReachable(clickTarget)) {
+                        WorldPoint rawReachableTarget = findFurthestReachableRawPathPoint(rawPath, playerLoc,
+                                MINIMAP_REACH_EUCLIDEAN - 1);
+                        if (rawReachableTarget != null) {
+                            targetWp = rawReachableTarget;
+                            clickTarget = rawReachableTarget;
+                        }
+                    }
+                    boolean clicked = Rs2Walker.walkMiniMap(clickTarget);
+                    if (!clicked) {
+                        clicked = walkMiniMapToward(clickTarget, playerLoc, MINIMAP_REACH_EUCLIDEAN - 1);
+                    }
+                    if (isWalkCancelled(target)) {
+                        return WalkerState.EXIT;
                     }
                     if (clicked) {
                         final WorldPoint b = targetWp;
@@ -533,12 +580,38 @@ public class Rs2Walker {
                         final int progressCap = 16;
                         final long clickedAt = System.currentTimeMillis();
                         sleepUntil(() -> {
+                            if (isWalkCancelled(target)) return true;
                             long elapsed = System.currentTimeMillis() - clickedAt;
                             if (elapsed < 600) return false;
                             WorldPoint now = Rs2Player.getWorldLocation();
                             if (b.distanceTo2D(now) <= proximityWake) return true;
                             return before.distanceTo2D(now) >= progressCap;
                         }, 2000);
+                        WorldPoint afterClickWait = Rs2Player.getWorldLocation();
+                        if (afterClickWait != null && afterClickWait.equals(before) && !Rs2Player.isMoving()
+                                && walkReachableMiniMapToward(b, before, MINIMAP_REACH_EUCLIDEAN - 1)) {
+                            sleepUntil(() -> {
+                                if (isWalkCancelled(target)) return true;
+                                WorldPoint now = Rs2Player.getWorldLocation();
+                                return now != null && (b.distanceTo2D(now) <= proximityWake || !now.equals(before) || Rs2Player.isMoving());
+                            }, 2000);
+                        }
+                        if (isWalkCancelled(target)) {
+                            return WalkerState.EXIT;
+                        }
+
+                        if (!Rs2Player.isMoving()) {
+                            if (handleNearbyRawPathSceneObjects(rawPath, HANDLER_RANGE)) {
+                                doorOrTransportResult = true;
+                                exitReason = "post-click-raw-path-scene-object-handled";
+                                break;
+                            }
+                            if (handleCurrentTileTransportTowardPath(rawPath, path, target)) {
+                                doorOrTransportResult = true;
+                                exitReason = "post-click-current-tile-transport-handled";
+                                break;
+                            }
+                        }
                     }
                     // Keep stuck-detection honest: observed movement resets the movement timer.
                     // Without this, isStuckTooLong() fires after long successful walks because
@@ -552,7 +625,10 @@ public class Rs2Walker {
                     // loop wait for the player to walk closer before re-evaluating.
                     if (!clicked) {
                         exitReason = "click-failed-off-minimap";
-                        sleepUntil(() -> !Rs2Player.isMoving(), 2000);
+                        sleepUntil(() -> isWalkCancelled(target) || !Rs2Player.isMoving(), 2000);
+                        if (isWalkCancelled(target)) {
+                            return WalkerState.EXIT;
+                        }
                         break;
                     }
                     // Advance past intermediate tiles we've effectively walked over so the
@@ -567,22 +643,31 @@ public class Rs2Walker {
             // Exiting because the player left the path ("off-path-but-moving"/"not-near-path")
             // means the player is still walking somewhere else — don't clobber that destination.
             if (!doorOrTransportResult && "end-of-path".equals(exitReason)) {
+                if (isWalkCancelled(target)) {
+                    return WalkerState.EXIT;
+                }
                 if (!path.isEmpty()) {
                     var moveableTiles = Rs2Tile.getReachableTilesFromTile(path.get(path.size() - 1), Math.min(3, distance)).keySet().toArray(new WorldPoint[0]);
                     var finalTile = (config.randomizeFinalTile() && moveableTiles.length > 0) ? moveableTiles[Rs2Random.between(0, moveableTiles.length)] : path.get(path.size() - 1);
 
                     if (Rs2Tile.isTileReachable(finalTile) && Rs2Player.getWorldLocation().distanceTo(finalTile) >= distance) {
                         if (Rs2Walker.walkFastCanvas(finalTile)) {
-                            sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(finalTile) < 2, 3000);
+                            sleepUntil(() -> isWalkCancelled(target) || Rs2Player.getWorldLocation().distanceTo(finalTile) < 2, 3000);
+                            if (isWalkCancelled(target)) {
+                                return WalkerState.EXIT;
+                            }
                         }
                     }
                 }
             }
             int finalDist = Rs2Player.getWorldLocation().distanceTo(target);
-            if (finalDist < distance) {
+            if (finalDist <= distance) {
                 setTarget(null);
                 return WalkerState.ARRIVED;
             } else if (partialPath) {
+                if (isWalkCancelled(target)) {
+                    return WalkerState.EXIT;
+                }
                 if (partialRetries < 3) {
                     Telemetry.recordPartialRetry(partialRetries + 1, finalDist);
                     log.info("[Walker] Walked partial path ({} tiles remaining), retrying from current position (attempt {}/3)",
@@ -599,12 +684,15 @@ public class Rs2Walker {
                 if ("off-path-but-moving".equals(exitReason)) {
                     // Wait for the player to re-enter the path or to stop moving. Prevents a tight
                     // recursion loop that would spin on isNearPath() while the player is walking.
-                    sleepUntil(() -> isNearPath() || !Rs2Player.isMoving(), 2000);
+                    sleepUntil(() -> isWalkCancelled(target) || isNearPath() || !Rs2Player.isMoving(), 2000);
+                    if (isWalkCancelled(target)) {
+                        return WalkerState.EXIT;
+                    }
                 }
                 return processWalk(target, distance, partialRetries);
             }
         } catch (Exception ex) {
-            if (ex instanceof InterruptedException) {
+            if (ex instanceof InterruptedException || ex.getCause() instanceof InterruptedException) {
                 log.info("Pathfinder was interrupted, exiting: 397");
                 setTarget(null);
                 return WalkerState.EXIT;
@@ -699,6 +787,21 @@ public class Rs2Walker {
         }
 
         return target;
+    }
+
+    private static boolean isKnownWalkableOrUnloaded(WorldPoint target) {
+        if (target == null) {
+            return false;
+        }
+
+        LocalPoint localTarget = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), target);
+        return localTarget == null || Rs2Tile.isWalkable(localTarget);
+    }
+
+    private static boolean isWalkCancelled(WorldPoint target) {
+        WorldPoint activeTarget = currentTarget;
+        return target == null || activeTarget == null || !target.equals(activeTarget)
+                || Thread.currentThread().isInterrupted();
     }
 
     static boolean hasMinimapRelevantMovementFlag(LocalPoint point, int[][] flagMap) {
@@ -816,6 +919,95 @@ public class Rs2Walker {
 
     public static boolean walkMiniMap(WorldPoint worldPoint) {
         return walkMiniMap(worldPoint, 5);
+    }
+
+    static boolean walkMiniMapToward(WorldPoint target, WorldPoint playerLoc, int maxEuclidean) {
+        if (target == null || playerLoc == null || target.getPlane() != playerLoc.getPlane()) {
+            return false;
+        }
+
+        int dx = target.getX() - playerLoc.getX();
+        int dy = target.getY() - playerLoc.getY();
+        double distance = Math.sqrt(dx * dx + dy * dy);
+        if (distance <= 1) {
+            return false;
+        }
+
+        if (walkReachableMiniMapToward(target, playerLoc, maxEuclidean)) {
+            return true;
+        }
+
+        int cappedRadius = Math.max(2, maxEuclidean);
+        int[] radii = new int[] {cappedRadius, 10, 8, 6, 4};
+        for (int radius : radii) {
+            if (radius >= distance) {
+                continue;
+            }
+
+            double scale = radius / distance;
+            WorldPoint fallback = new WorldPoint(
+                    playerLoc.getX() + (int) Math.round(dx * scale),
+                    playerLoc.getY() + (int) Math.round(dy * scale),
+                    playerLoc.getPlane());
+            if (fallback.equals(playerLoc)) {
+                continue;
+            }
+            if (Rs2Walker.walkMiniMap(fallback)) {
+                log.info("[Walker] Minimap click target {} was outside clip; used fallback {}", target, fallback);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean walkReachableMiniMapToward(WorldPoint target, WorldPoint playerLoc, int maxEuclidean) {
+        int currentDistance = euclideanSq(playerLoc, target);
+        return Rs2Tile.getReachableTilesFromTile(playerLoc, Math.max(2, maxEuclidean)).keySet().stream()
+                .filter(tile -> tile != null
+                        && tile.getPlane() == playerLoc.getPlane()
+                        && !tile.equals(playerLoc)
+                        && euclideanSq(playerLoc, tile) <= maxEuclidean * maxEuclidean
+                        && euclideanSq(tile, target) < currentDistance)
+                .sorted(Comparator
+                        .comparingInt((WorldPoint tile) -> euclideanSq(tile, target))
+                        .thenComparing(Comparator.comparingInt((WorldPoint tile) -> euclideanSq(playerLoc, tile)).reversed()))
+                .filter(Rs2Walker::walkMiniMap)
+                .findFirst()
+                .map(tile -> {
+                    log.info("[Walker] Minimap click target {} was outside clip; used reachable fallback {}", target, tile);
+                    return true;
+                })
+                .orElse(false);
+    }
+
+    private static WorldPoint findFurthestReachableRawPathPoint(List<WorldPoint> rawPath,
+                                                                WorldPoint playerLoc,
+                                                                int maxEuclidean) {
+        if (rawPath == null || rawPath.isEmpty() || playerLoc == null) {
+            return null;
+        }
+        int closestRawIndex = getClosestTileIndex(rawPath);
+        if (closestRawIndex < 0) {
+            return null;
+        }
+
+        int maxSq = maxEuclidean * maxEuclidean;
+        Set<WorldPoint> reachable = Rs2Tile.getReachableTilesFromTile(playerLoc, Math.max(2, maxEuclidean)).keySet();
+        WorldPoint best = null;
+        for (int rawIndex = closestRawIndex; rawIndex < rawPath.size(); rawIndex++) {
+            WorldPoint candidate = rawPath.get(rawIndex);
+            if (candidate == null || candidate.getPlane() != playerLoc.getPlane()) {
+                break;
+            }
+            if (euclideanSq(candidate, playerLoc) > maxSq) {
+                break;
+            }
+            if (reachable.contains(candidate)) {
+                best = candidate;
+            }
+        }
+        return best;
     }
 
     /**
@@ -1335,10 +1527,221 @@ public class Rs2Walker {
         return false;
     }
 
+    private static WalkerState tryDirectShortWalk(WorldPoint target,
+                                                  int distance,
+                                                  List<WorldPoint> path,
+                                                  boolean inInstance) {
+        WorldPoint playerLoc = Rs2Player.getWorldLocation();
+        if (target == null || playerLoc == null || path == null || path.isEmpty()) {
+            return WalkerState.MOVING;
+        }
+
+        int initialDist = playerLoc.distanceTo(target);
+        if (initialDist <= distance) {
+            setTarget(null);
+            return WalkerState.ARRIVED;
+        }
+
+        final int directClickMaxDistance = 13;
+        if (playerLoc.getPlane() != target.getPlane() || initialDist > directClickMaxDistance) {
+            return WalkerState.MOVING;
+        }
+
+        WorldPoint end = path.get(path.size() - 1);
+        if (end == null || end.getPlane() != target.getPlane() || end.distanceTo(target) > distance) {
+            return WalkerState.MOVING;
+        }
+
+        if (!inInstance && !Rs2Tile.isWalkable(end)) {
+            return WalkerState.MOVING;
+        }
+        if (!inInstance && !Rs2Tile.isTileReachable(end)) {
+            return WalkerState.MOVING;
+        }
+
+        boolean clicked = walkMiniMap(end);
+        if (!clicked) {
+            clicked = walkMiniMapToward(end, playerLoc, directClickMaxDistance - 1);
+        }
+        if (!clicked) {
+            clicked = walkFastCanvas(end);
+        }
+        if (!clicked) {
+            return WalkerState.MOVING;
+        }
+
+        final WorldPoint before = playerLoc;
+        boolean moved = sleepUntil(() -> {
+            WorldPoint now = Rs2Player.getWorldLocation();
+            return now != null && (now.distanceTo(target) <= distance || !now.equals(before) || Rs2Player.isMoving());
+        }, 800);
+
+        if (!moved) {
+            clicked = walkFastCanvas(end);
+            if (!clicked) {
+                return WalkerState.MOVING;
+            }
+            sleepUntil(() -> {
+                WorldPoint now = Rs2Player.getWorldLocation();
+                return now != null && (now.distanceTo(target) <= distance || !now.equals(before) || Rs2Player.isMoving());
+            }, 800);
+        }
+
+        WorldPoint afterClick = Rs2Player.getWorldLocation();
+        if (afterClick != null && afterClick.distanceTo(target) <= distance) {
+            setTarget(null);
+            return WalkerState.ARRIVED;
+        }
+
+        sleepUntil(() -> {
+            WorldPoint now = Rs2Player.getWorldLocation();
+            return now != null && (now.distanceTo(target) <= distance || !Rs2Player.isMoving());
+        }, 4000);
+
+        WorldPoint afterWalk = Rs2Player.getWorldLocation();
+        if (afterWalk != null && afterWalk.distanceTo(target) <= distance) {
+            setTarget(null);
+            return WalkerState.ARRIVED;
+        }
+
+        return WalkerState.MOVING;
+    }
+
+    private static void kickStartShortLocalWalk(WorldPoint target, int distance) {
+        try {
+            WorldPoint playerLoc = Rs2Player.getWorldLocation();
+            if (target == null || playerLoc == null || playerLoc.getPlane() != target.getPlane()) {
+                return;
+            }
+
+            int initialDist = playerLoc.distanceTo(target);
+            if (initialDist <= distance || initialDist > 13) {
+                return;
+            }
+
+            LocalPoint localTarget = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), target);
+            if (localTarget == null || !Rs2Tile.isWalkable(localTarget)) {
+                return;
+            }
+
+            boolean clicked = walkMiniMap(target);
+            if (!clicked) {
+                walkMiniMapToward(target, playerLoc, 12);
+            }
+        } catch (Exception ex) {
+            log.debug("[Walker] short local kick-start failed: {}", ex.getMessage());
+        }
+    }
+
+    private static boolean handleNearbyRawPathSceneObjects(List<WorldPoint> rawPath, int handlerRange) {
+        if (rawPath == null || rawPath.size() < 2) {
+            return false;
+        }
+
+        if (Rs2Player.isMoving()) {
+            return false;
+        }
+
+        WorldPoint playerLoc = Rs2Player.getWorldLocation();
+        if (playerLoc == null) {
+            return false;
+        }
+
+        int rawStart = getClosestTileIndex(rawPath);
+        if (rawStart < 0) {
+            return false;
+        }
+
+        int start = Math.max(0, rawStart - 1);
+        int endExclusive = Math.min(rawPath.size() - 1, rawStart + 12);
+        for (int i = start; i < endExclusive; i++) {
+            WorldPoint currentWorldPoint = rawPath.get(i);
+            if (currentWorldPoint == null
+                    || currentWorldPoint.getPlane() != playerLoc.getPlane()
+                    || currentWorldPoint.distanceTo2D(playerLoc) > handlerRange) {
+                continue;
+            }
+
+            if (hasExplicitTransportStep(rawPath, i) && handleTransports(rawPath, i)) {
+                log.info("[Walker] Raw path transport handler resolved obstacle near {}", playerLoc);
+                return true;
+            }
+
+            if (handleDoors(rawPath, i, true)) {
+                log.info("[Walker] Raw path door handler resolved obstacle near {}", playerLoc);
+                return true;
+            }
+
+            if (handleRockfall(rawPath, i)) {
+                log.info("[Walker] Raw path rockfall handler resolved obstacle near {}", playerLoc);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static boolean handleCurrentTileTransportTowardPath(List<WorldPoint> rawPath, List<WorldPoint> path, WorldPoint target) {
+        if (Rs2Player.isMoving()) {
+            return false;
+        }
+
+        WorldPoint playerLoc = Rs2Player.getWorldLocation();
+        if (playerLoc == null) {
+            return false;
+        }
+
+        Set<Transport> transports = ShortestPathPlugin.getTransports().get(playerLoc);
+        if (transports == null || transports.isEmpty()) {
+            return false;
+        }
+
+        Set<WorldPoint> pathPoints = new HashSet<>();
+        addForwardPathPoints(pathPoints, rawPath, playerLoc);
+        addForwardPathPoints(pathPoints, path, playerLoc);
+
+        List<Transport> candidates = transports.stream()
+                .filter(t -> t.getDestination() != null)
+                .filter(t -> target == null
+                        || playerLoc.getPlane() != target.getPlane()
+                        || t.getDestination().getPlane() == target.getPlane())
+                .filter(t -> pathPoints.contains(t.getDestination())
+                        || (target != null && t.getDestination().distanceTo(target) < playerLoc.distanceTo(target)))
+                .sorted(Comparator
+                        .comparingInt((Transport t) -> pathPoints.contains(t.getDestination()) ? 0 : 1)
+                        .thenComparingInt(t -> target == null ? 0 : t.getDestination().distanceTo(target)))
+                .collect(Collectors.toList());
+
+        for (Transport transport : candidates) {
+            if (handleTransports(Arrays.asList(playerLoc, transport.getDestination()), 0)) {
+                log.info("[Walker] Current-tile transport handler resolved obstacle near {}", playerLoc);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static void addForwardPathPoints(Set<WorldPoint> pathPoints, List<WorldPoint> path, WorldPoint playerLoc) {
+        if (path == null || path.isEmpty() || playerLoc == null) {
+            return;
+        }
+
+        int closestIndex = IntStream.range(0, path.size())
+                .boxed()
+                .min(Comparator.comparingInt(i -> playerLoc.distanceTo(path.get(i))))
+                .orElse(0);
+        for (int i = closestIndex; i < path.size(); i++) {
+            pathPoints.add(path.get(i));
+        }
+    }
+
     // Session-local set of door tiles the walker detected as quest/stat-locked after a
     // failed interact. Cleared when the client restarts. Prevents infinite retry loops
     // through the same restricted door when the restriction isn't in restrictions.tsv.
     static final Set<WorldPoint> sessionBlacklistedDoors = ConcurrentHashMap.newKeySet();
+    private static final Map<WorldPoint, Long> recentlyOpenedStationaryDoors = new ConcurrentHashMap<>();
+    private static final long STATIONARY_DOOR_SUPPRESS_MS = 10_000;
 
     static boolean hasQuestLockKeywords(String text) {
         if (text == null || text.isEmpty()) return false;
@@ -1411,6 +1814,43 @@ public class Rs2Walker {
         return bestIdx;
     }
 
+    static WorldPoint interpolateClickableTarget(List<WorldPoint> path,
+                                                 int forwardIdx,
+                                                 WorldPoint playerLoc,
+                                                 WorldPoint fallbackWp,
+                                                 int targetEuclidean,
+                                                 java.util.function.Predicate<WorldPoint> isUsableClickTarget) {
+        if (path == null || playerLoc == null || fallbackWp == null
+                || forwardIdx < 0 || forwardIdx >= path.size()) {
+            return fallbackWp;
+        }
+
+        int fallbackDistSq = euclideanSq(fallbackWp, playerLoc);
+        if (fallbackDistSq == targetEuclidean * targetEuclidean) {
+            return fallbackWp;
+        }
+
+        WorldPoint beyond = path.get(forwardIdx);
+        int dxB = beyond.getX() - playerLoc.getX();
+        int dyB = beyond.getY() - playerLoc.getY();
+        double distB = Math.sqrt(dxB * dxB + dyB * dyB);
+        if (distB <= 1) {
+            return fallbackWp;
+        }
+
+        double scale = targetEuclidean / distB;
+        WorldPoint interpolated = new WorldPoint(
+                playerLoc.getX() + (int) Math.round(dxB * scale),
+                playerLoc.getY() + (int) Math.round(dyB * scale),
+                playerLoc.getPlane());
+
+        if (isUsableClickTarget == null || isUsableClickTarget.test(interpolated)) {
+            return interpolated;
+        }
+
+        return fallbackWp;
+    }
+
     private static int euclideanSq(WorldPoint a, WorldPoint b) {
         int dx = a.getX() - b.getX();
         int dy = a.getY() - b.getY();
@@ -1418,6 +1858,10 @@ public class Rs2Walker {
     }
 
     private static boolean handleDoors(List<WorldPoint> path, int index) {
+        return handleDoors(path, index, false);
+    }
+
+    private static boolean handleDoors(List<WorldPoint> path, int index, boolean allowSegmentProbe) {
         if (ShortestPathPlugin.getPathfinder() == null || index >= path.size() - 1) return false;
 
         // Skip any door whose tile was blacklisted after a prior quest-lock detection —
@@ -1462,6 +1906,14 @@ public class Rs2Walker {
             return false;
         }
 
+        if (hasExplicitTransportStep(path, index)) {
+            return false;
+        }
+
+        if (recentlyOpenedStationaryDoorOnSegment(fromWp, toWp)) {
+            return false;
+        }
+
         boolean diagonal = Math.abs(fromWp.getX() - toWp.getX()) > 0
                 && Math.abs(fromWp.getY() - toWp.getY()) > 0;
 
@@ -1482,6 +1934,9 @@ public class Rs2Walker {
             }
 
             for (WorldPoint probe : probes) {
+                if (recentlyOpenedStationaryDoorOnSegment(fromWp, toWp)) {
+                    return false;
+                }
                 boolean adjacentToPath = probe.distanceTo(fromWp) <= 1 || probe.distanceTo(toWp) <= 1;
                 WorldPoint playerLoc = Rs2Player.getWorldLocation();
                 if (!adjacentToPath || playerLoc == null || !Objects.equals(probe.getPlane(), playerLoc.getPlane())) continue;
@@ -1497,7 +1952,7 @@ public class Rs2Walker {
             }
         }
 
-        TileObject nearbyDoor = findDoorNearSegment(fromWp, toWp, doorActions);
+        TileObject nearbyDoor = allowSegmentProbe ? findDoorNearSegment(fromWp, toWp, doorActions) : null;
         if (nearbyDoor != null && tryHandleDoorObject(nearbyDoor, nearbyDoor.getWorldLocation(), fromWp, toWp, doorActions, true)) {
             return true;
         }
@@ -1510,6 +1965,9 @@ public class Rs2Walker {
         if (playerLoc == null || fromWp == null || toWp == null || fromWp.getPlane() != toWp.getPlane()) {
             return null;
         }
+        if (recentlyOpenedStationaryDoorOnSegment(fromWp, toWp)) {
+            return null;
+        }
 
         final int searchDistance = 10;
         return Rs2GameObject.getAll(o -> {
@@ -1519,9 +1977,10 @@ public class Rs2Walker {
                     if (loc.distanceTo2D(playerLoc) > searchDistance) return false;
                     if (sessionBlacklistedDoors.contains(loc)) return false;
                     if (!(o instanceof WallObject) && !(o instanceof GameObject)) return false;
+                    if (!isDoorOnSegment(o, fromWp, toWp)) return false;
                     ObjectComposition comp = Rs2GameObject.convertToObjectComposition(o);
                     if (!isDoorComposition(comp, doorActions)) return false;
-                    return isDoorOnSegment(o, fromWp, toWp);
+                    return true;
                 }, playerLoc, searchDistance).stream()
                 .min(Comparator.comparingInt(o -> o.getWorldLocation().distanceTo2D(playerLoc)))
                 .orElse(null);
@@ -1556,25 +2015,99 @@ public class Rs2Walker {
 
         if (!found) return false;
 
-        if (!handleDoorException(object, action)) {
-            WorldPoint posBefore = Rs2Player.getWorldLocation();
-            Rs2GameObject.interact(object, action);
-            Rs2Player.waitForWalking();
-            WorldPoint posAfter = Rs2Player.getWorldLocation();
-            boolean moved = posBefore != null && posAfter != null && !posBefore.equals(posAfter);
-            if (!moved && isQuestLockedDoorDialogue()) {
-                String dialogue = Rs2Dialogue.getDialogueText();
-                log.warn("[Walker] Door at {} ({} action={}) appears quest/stat-locked — dialogue=\"{}\" — blacklisting tile, refreshing restrictions, recalculating",
-                        probe, name, action, dialogue);
-                sessionBlacklistedDoors.add(probe);
-                Rs2Dialogue.clickContinue();
-                if (ShortestPathPlugin.pathfinderConfig != null) {
-                    ShortestPathPlugin.pathfinderConfig.refresh();
-                }
-                recalculatePath();
-            }
+        if (handleDoorException(object, action)) {
+            return true;
         }
-        return true;
+
+        WorldPoint posBefore = Rs2Player.getWorldLocation();
+        Rs2GameObject.interact(object, action);
+        waitForDoorInteractionProgress(fromWp, toWp);
+        WorldPoint posAfter = Rs2Player.getWorldLocation();
+        boolean moved = posBefore != null && posAfter != null && !posBefore.equals(posAfter);
+        if (moved) {
+            return true;
+        }
+        if (isQuestLockedDoorDialogue()) {
+            String dialogue = Rs2Dialogue.getDialogueText();
+            log.warn("[Walker] Door at {} ({} action={}) appears quest/stat-locked — dialogue=\"{}\" — blacklisting tile, refreshing restrictions, recalculating",
+                    probe, name, action, dialogue);
+            sessionBlacklistedDoors.add(probe);
+            Rs2Dialogue.clickContinue();
+            if (ShortestPathPlugin.pathfinderConfig != null) {
+                ShortestPathPlugin.pathfinderConfig.refresh();
+            }
+            recalculatePath();
+            return true;
+        }
+
+        if (doorStillHasAction(probe, doorActions, action)) {
+            return true;
+        }
+
+        markStationaryDoorOpened(probe);
+        return false;
+    }
+
+    private static boolean doorStillHasAction(WorldPoint probe, List<String> doorActions, String action) {
+        if (probe == null || action == null) {
+            return false;
+        }
+
+        WallObject wall = Rs2GameObject.getWallObject(o -> o.getWorldLocation().equals(probe), probe, 3);
+        TileObject object = wall != null
+                ? wall
+                : Rs2GameObject.getGameObject(o -> o.getWorldLocation().equals(probe), probe, 3);
+        if (object == null) {
+            return false;
+        }
+        ObjectComposition composition = Rs2GameObject.convertToObjectComposition(object);
+        String currentAction = getDoorAction(composition, doorActions);
+        return currentAction != null && currentAction.equalsIgnoreCase(action);
+    }
+
+    private static void markStationaryDoorOpened(WorldPoint doorTile) {
+        if (doorTile != null) {
+            recentlyOpenedStationaryDoors.put(doorTile, System.currentTimeMillis());
+        }
+    }
+
+    private static boolean recentlyOpenedStationaryDoorOnSegment(WorldPoint fromWp, WorldPoint toWp) {
+        if (fromWp == null || toWp == null) {
+            return false;
+        }
+        long now = System.currentTimeMillis();
+        recentlyOpenedStationaryDoors.entrySet().removeIf(entry -> now - entry.getValue() > STATIONARY_DOOR_SUPPRESS_MS);
+        return recentlyOpenedStationaryDoors.keySet().stream()
+                .anyMatch(door -> door != null
+                        && door.getPlane() == fromWp.getPlane()
+                        && (door.distanceTo2D(fromWp) <= 1 || door.distanceTo2D(toWp) <= 1));
+    }
+
+    private static boolean hasExplicitTransportStep(List<WorldPoint> path, int index) {
+        if (path == null || index < 0 || index >= path.size() - 1) {
+            return false;
+        }
+        Set<Transport> transports = ShortestPathPlugin.getTransports().get(path.get(index));
+        if (transports == null || transports.isEmpty()) {
+            return false;
+        }
+        WorldPoint destination = path.get(index + 1);
+        return transports.stream().anyMatch(t -> Objects.equals(t.getDestination(), destination));
+    }
+
+    private static void waitForDoorInteractionProgress(WorldPoint fromWp, WorldPoint toWp) {
+        final long startedAt = System.currentTimeMillis();
+        Rs2Player.waitForWalking();
+        sleepUntil(() -> {
+            WorldPoint now = Rs2Player.getWorldLocation();
+            if (now == null) {
+                return false;
+            }
+            if (toWp != null && now.distanceTo2D(toWp) <= 1) {
+                return true;
+            }
+            return !Rs2Player.isMoving() && System.currentTimeMillis() - startedAt > 1_200;
+        }, 5000);
     }
 
     private static boolean isDoorComposition(ObjectComposition comp, List<String> doorActions) {
@@ -1601,32 +2134,64 @@ public class Rs2Walker {
     private static boolean isDoorOnSegment(TileObject object, WorldPoint fromWp, WorldPoint toWp) {
         if (object == null || object.getWorldLocation() == null) return false;
         if (object instanceof WallObject) {
-            return wallDoorTouchesSegment((WallObject) object, fromWp, toWp)
-                    || isPointNearSegment(object.getWorldLocation(), fromWp, toWp, 1);
+            return wallDoorTouchesSegment((WallObject) object, fromWp, toWp);
         }
         return isPointNearSegment(object.getWorldLocation(), fromWp, toWp, 1);
     }
 
-    private static boolean wallDoorTouchesSegment(WallObject wall, WorldPoint fromWp, WorldPoint toWp) {
+    static boolean wallDoorTouchesSegment(WallObject wall, WorldPoint fromWp, WorldPoint toWp) {
         if (wall == null || wall.getWorldLocation() == null || fromWp == null || toWp == null) return false;
         if (wall.getWorldLocation().getPlane() != fromWp.getPlane() || fromWp.getPlane() != toWp.getPlane()) return false;
 
-        int orientation = wall.getOrientationA();
+        WorldPoint doorTile = wall.getWorldLocation();
+        WorldPoint blockedNeighbor = getWallDoorNeighborPoint(wall.getOrientationA(), doorTile);
+        if (blockedNeighbor == null) return false;
+
         int x = fromWp.getX();
         int y = fromWp.getY();
         int steps = 0;
+        WorldPoint previous = new WorldPoint(x, y, fromWp.getPlane());
         while (steps++ <= 64) {
-            WorldPoint point = new WorldPoint(x, y, fromWp.getPlane());
-            if (searchNeighborPoint(orientation, wall.getWorldLocation(), point)) {
-                return true;
-            }
             if (x == toWp.getX() && y == toWp.getY()) {
                 return false;
             }
             x += Integer.signum(toWp.getX() - x);
             y += Integer.signum(toWp.getY() - y);
+            WorldPoint next = new WorldPoint(x, y, fromWp.getPlane());
+            if (isDoorEdgeTransition(previous, next, doorTile, blockedNeighbor)) {
+                return true;
+            }
+            previous = next;
         }
         return false;
+    }
+
+    private static WorldPoint getWallDoorNeighborPoint(int orientation, WorldPoint point) {
+        switch (orientation) {
+            case 1:   // west
+                return point.dx(-1);
+            case 2:   // north
+                return point.dy(1);
+            case 4:   // east
+                return point.dx(1);
+            case 8:   // south
+                return point.dy(-1);
+            case 16:  // northwest
+                return point.dx(-1).dy(1);
+            case 32:  // northeast
+                return point.dx(1).dy(1);
+            case 64:  // southeast
+                return point.dx(1).dy(-1);
+            case 128: // southwest
+                return point.dx(-1).dy(-1);
+            default:
+                return null;
+        }
+    }
+
+    private static boolean isDoorEdgeTransition(WorldPoint a, WorldPoint b, WorldPoint doorTile, WorldPoint blockedNeighbor) {
+        return (a.equals(doorTile) && b.equals(blockedNeighbor))
+                || (a.equals(blockedNeighbor) && b.equals(doorTile));
     }
 
     private static boolean isPointNearSegment(WorldPoint point, WorldPoint fromWp, WorldPoint toWp, int distance) {
@@ -1876,6 +2441,23 @@ public class Rs2Walker {
         }
     }
 
+    private static void restoreTargetMarker(WorldPoint target) {
+        if (target == null || ShortestPathPlugin.getMarker() != null) {
+            return;
+        }
+
+        try {
+            ShortestPathPlugin.setMarker(new WorldMapPoint(target, ShortestPathPlugin.MARKER_IMAGE));
+            ShortestPathPlugin.getMarker().setName("Target");
+            ShortestPathPlugin.getMarker().setTarget(ShortestPathPlugin.getMarker().getWorldPoint());
+            ShortestPathPlugin.getMarker().setJumpOnClick(true);
+            Microbot.getWorldMapPointManager().add(ShortestPathPlugin.getMarker());
+            log.info("[Walker] Restored missing path target marker at {}", target);
+        } catch (Exception ex) {
+            log.debug("[Walker] Failed to restore target marker at {}", target, ex);
+        }
+    }
+
     /**
      * @param start
      * @param end
@@ -1952,6 +2534,10 @@ public class Rs2Walker {
      * @return
      */
     private static boolean handleTransports(List<WorldPoint> path, int indexOfStartPoint) {
+        if (path != null && indexOfStartPoint >= 0 && indexOfStartPoint < path.size() - 1
+                && recentlyOpenedStationaryDoorOnSegment(path.get(indexOfStartPoint), path.get(indexOfStartPoint + 1))) {
+            return false;
+        }
         Set<Transport> transports = ShortestPathPlugin.getTransports().get(path.get(indexOfStartPoint));
         if (transports == null || transports.isEmpty()) {
             return false;
@@ -2161,8 +2747,12 @@ public class Rs2Walker {
 
                     if (transport.getType() == TransportType.TELEPORTATION_SPELL) {
                         if (handleTeleportSpell(transport)) {
-                            sleepUntil(() -> !Rs2Player.isAnimating());
-                            sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
+                            if (isLumbridgeHomeTeleport(transport)) {
+                                sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET, 600, 35000);
+                            } else {
+                                sleepUntil(() -> !Rs2Player.isAnimating());
+                                sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
+                            }
                             Rs2Tab.switchTo(InterfaceTab.INVENTORY);
                             break;
                         }
@@ -2180,6 +2770,7 @@ public class Rs2Walker {
 
                     final int transportObjectId = transport.getObjectId();
                     final String transportAction = transport.getAction();
+                    final List<String> transportActions = getTransportActionOptions(transportAction);
                     // Climb-down transports have a closed-variant (trapdoor/manhole/grate/hatch)
                     // that shares the same tile but a different object ID. Infer the closed
                     // variant from ObjectComposition (any nearby object with an "Open" action
@@ -2193,7 +2784,9 @@ public class Rs2Walker {
                         Integer legacyClosed = OPEN_TO_CLOSED_MAPPINGS.get(transportObjectId);
                         return legacyClosed != null && o.getId() == legacyClosed;
                     }, transport.getOrigin(), 10).stream()
-                            .sorted(Comparator.comparingInt(o -> o.getWorldLocation().distanceTo(transport.getOrigin())))
+                            .sorted(Comparator
+                                    .comparingInt((TileObject o) -> resolveTransportObjectAction(o, transportActions).isPresent() ? 0 : 1)
+                                    .thenComparingInt(o -> o.getWorldLocation().distanceTo(transport.getOrigin())))
                             .collect(Collectors.toList());
 
                     if (objects.isEmpty() && allowClosedVariant) {
@@ -2236,8 +2829,7 @@ public class Rs2Walker {
                         ObjectComposition comp = Rs2GameObject.convertToObjectComposition(object);
                         if (comp != null && comp.getActions() != null) {
                             String[] actions = comp.getActions();
-                            boolean hasTransportAction = Arrays.stream(actions).filter(Objects::nonNull)
-                                    .anyMatch(a -> a.equalsIgnoreCase(transportAction));
+                            boolean hasTransportAction = resolveTransportObjectAction(actions, transportActions).isPresent();
                             boolean hasOpen = Arrays.stream(actions).filter(Objects::nonNull)
                                     .anyMatch(a -> a.equalsIgnoreCase("Open"));
                             if (!hasTransportAction && hasOpen) {
@@ -2250,8 +2842,7 @@ public class Rs2Walker {
                                     if (o.getId() == closedId) return false;
                                     ObjectComposition c = Rs2GameObject.convertToObjectComposition(o);
                                     if (c == null || c.getActions() == null) return false;
-                                    return Arrays.stream(c.getActions()).filter(Objects::nonNull)
-                                            .anyMatch(a -> a.equalsIgnoreCase(transportAction));
+                                    return resolveTransportObjectAction(c.getActions(), transportActions).isPresent();
                                 }, transport.getOrigin(), 3).stream()
                                         .min(Comparator.comparingInt(o -> o.getWorldLocation().distanceTo(transport.getOrigin())))
                                         .orElse(null);
@@ -2259,12 +2850,19 @@ public class Rs2Walker {
                             }
                         }
 
+                        String interactionAction = resolveTransportObjectAction(object, transportActions)
+                                .orElse(transportAction);
+                        if (!Objects.equals(interactionAction, transportAction)) {
+                            log.debug("[Walker] Using object action '{}' for transport action '{}' at {} (id={})",
+                                    interactionAction, transportAction, object.getWorldLocation(), object.getId());
+                        }
                         prepareTransportObjectForInteraction(object);
-                        if (!handleObject(transport, object)) {
+                        if (!handleObject(transport, object, interactionAction)) {
                             return false;
                         }
                         sleepUntil(() -> !Rs2Player.isAnimating());
-                        return sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
+                        int destinationTolerance = isAdjacentSamePlaneTransport(transport) ? 0 : OFFSET;
+                        return sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) <= destinationTolerance, 5000);
                     }
                 }
             }
@@ -2286,6 +2884,46 @@ public class Rs2Walker {
         return ((PohTransport)transport).execute();
     }
 
+    private static List<String> getTransportActionOptions(String action) {
+        if (action == null || action.isBlank()) {
+            return Collections.emptyList();
+        }
+
+        List<String> actions = new ArrayList<>();
+        actions.add(action);
+        if ("Bottom-floor".equalsIgnoreCase(action)) {
+            actions.add("Climb-down");
+            actions.add("Climb down");
+        } else if ("Top-floor".equalsIgnoreCase(action)) {
+            actions.add("Climb-up");
+            actions.add("Climb up");
+        }
+        return actions;
+    }
+
+    private static Optional<String> resolveTransportObjectAction(TileObject object, List<String> actionOptions) {
+        ObjectComposition comp = Rs2GameObject.convertToObjectComposition(object);
+        if (comp == null || comp.getActions() == null) {
+            return Optional.empty();
+        }
+        return resolveTransportObjectAction(comp.getActions(), actionOptions);
+    }
+
+    private static Optional<String> resolveTransportObjectAction(String[] objectActions, List<String> actionOptions) {
+        if (objectActions == null || actionOptions == null || actionOptions.isEmpty()) {
+            return Optional.empty();
+        }
+
+        for (String desired : actionOptions) {
+            for (String actual : objectActions) {
+                if (actual != null && desired.equalsIgnoreCase(Rs2UiHelper.stripColTags(actual))) {
+                    return Optional.of(actual);
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
     private static void prepareTransportObjectForInteraction(TileObject tileObject) {
         if (tileObject == null || tileObject.getLocalLocation() == null) {
             return;
@@ -2297,7 +2935,12 @@ public class Rs2Walker {
     }
 
     private static boolean handleObject(Transport transport, TileObject tileObject) {
-        Rs2GameObject.interact(tileObject, transport.getAction());
+        return handleObject(transport, tileObject, transport.getAction());
+    }
+
+    private static boolean handleObject(Transport transport, TileObject tileObject, String action) {
+        WorldPoint before = Rs2Player.getWorldLocation();
+        Rs2GameObject.interact(tileObject, action);
         if (handleObjectExceptions(transport, tileObject)) return true;
         if (transport.getDestination().getPlane() == Rs2Player.getWorldLocation().getPlane()) {
             if (transport.getType() == TransportType.AGILITY_SHORTCUT) {
@@ -2315,6 +2958,24 @@ public class Rs2Walker {
             } else {
                 Rs2Player.waitForWalking();
                 Rs2Dialogue.clickOption("Yes please"); //shillo village cart
+                if (isAdjacentSamePlaneTransport(transport)) {
+                    sleepUntil(() -> {
+                        WorldPoint now = Rs2Player.getWorldLocation();
+                        return now != null && (now.equals(transport.getDestination())
+                                || !now.equals(before)
+                                || !Rs2Player.isMoving());
+                    }, 2000);
+                    WorldPoint afterOpen = Rs2Player.getWorldLocation();
+                    if (afterOpen != null && !afterOpen.equals(transport.getDestination())) {
+                        boolean clicked = walkMiniMap(transport.getDestination());
+                        if (!clicked) {
+                            clicked = walkFastCanvas(transport.getDestination());
+                        }
+                        if (clicked) {
+                            sleepUntil(() -> Rs2Player.getWorldLocation().equals(transport.getDestination()), 3000);
+                        }
+                    }
+                }
             }
             return true;
         } else {
@@ -2334,6 +2995,14 @@ public class Rs2Walker {
             }
             return planeChanged;
         }
+    }
+
+    private static boolean isAdjacentSamePlaneTransport(Transport transport) {
+        return transport != null
+                && transport.getOrigin() != null
+                && transport.getDestination() != null
+                && transport.getOrigin().getPlane() == transport.getDestination().getPlane()
+                && transport.getOrigin().distanceTo(transport.getDestination()) <= 1;
     }
 
     private static boolean handleObjectExceptions(Transport transport, TileObject tileObject) {
@@ -2521,9 +3190,17 @@ public class Rs2Walker {
 
         MagicAction magicSpell = Arrays.stream(MagicAction.values()).filter(x -> x.getName().toLowerCase().contains(spellName)).findFirst().orElse(null);
         if (magicSpell != null) {
+            if (magicSpell == MagicAction.LUMBRIDGE_HOME_TELEPORT) {
+                return Rs2Magic.quickCast(magicSpell);
+            }
             return Rs2Magic.cast(magicSpell, option, identifier);
         }
         return false;
+    }
+
+    private static boolean isLumbridgeHomeTeleport(Transport transport) {
+        return transport.getDisplayInfo() != null
+                && transport.getDisplayInfo().toLowerCase().startsWith("lumbridge home teleport");
     }
 
     private static boolean handleTeleportItem(Transport transport) {
@@ -2844,7 +3521,7 @@ public class Rs2Walker {
 
     private static boolean handleSeasonalTransport(Transport transport) {
         String displayInfo = transport.getDisplayInfo();
-        log.info("[MoA] entry: displayInfo='{}'", displayInfo);
+        log.debug("[MoA] entry: displayInfo='{}'", displayInfo);
         if (displayInfo == null) return false;
 
         if (!displayInfo.toLowerCase().contains("map of alacrity")) {
@@ -2943,11 +3620,17 @@ public class Rs2Walker {
         }, 3000);
 
         if (destMatch == null) {
-            log.warn("[MoA] destination '{}' never appeared after clicking region '{}' — name mismatch or locked; blacklisting",
+            // Don't blacklist here: a missing destination widget is ambiguous. Combat,
+            // lag, or the widget being closed by another handler can all manifest as
+            // "never appeared". Blacklisting on ambiguity permanently poisons legitimate
+            // destinations mid-session (e.g. player gets attacked during teleport, widget
+            // closes, we'd blacklist Nemus forever). Just return false and let the
+            // pathfinder/walker retry. Positive-evidence blacklisting (<str> markup on
+            // region or destination) below still applies.
+            log.warn("[MoA] destination '{}' never appeared after clicking region '{}' — retrying later",
                     shortName, region);
             Widget root = Rs2Widget.getWidget(MAP_OF_ALACRITY_WIDGET_GROUP, MAP_OF_ALACRITY_LIST_CHILD);
             if (root != null) dumpMapOfAlacrityWidget(root);
-            blacklistedMoaDestinations.add(packedDest);
             return false;
         }
 
@@ -2961,7 +3644,7 @@ public class Rs2Walker {
 
         // Select via the row's in-game hotkey (1-9 then A-Z). Keybinds work even when the row
         // is scrolled off-screen, which clickWidget cannot handle.
-        log.info("[MoA] selecting destination '{}' (text='{}')", shortName, destText);
+        log.debug("[MoA] selecting destination '{}' (text='{}')", shortName, destText);
         Character hotkey = extractMoaHotkey(destText);
         if (hotkey == null) {
             Widget destRoot = Rs2Widget.getWidget(MAP_OF_ALACRITY_WIDGET_GROUP, MAP_OF_ALACRITY_LIST_CHILD);
@@ -2970,6 +3653,12 @@ public class Rs2Walker {
         if (hotkey != null) {
             Rs2Keyboard.keyPress(hotkey);
             log.debug("[MoA] pressed hotkey '{}' for '{}'", hotkey, shortName);
+            // Wait for the MoA widget to close before returning. Without this, the caller's
+            // !isAnimating check in the walker loop passes instantly (animation hasn't
+            // started yet), and the walker races into the next transport step — e.g.
+            // clicking Royal seed pod mid-teleport, which then teleports the player
+            // back to Grand Tree and kicks off a MoA↔seed-pod loop.
+            sleepUntil(() -> !Rs2Widget.isWidgetVisible(MAP_OF_ALACRITY_WIDGET_GROUP, MAP_OF_ALACRITY_LIST_CHILD), 2000);
             return true;
         }
 
@@ -2993,28 +3682,25 @@ public class Rs2Walker {
         if (normalised.isEmpty()) return null;
         String[] tokens = normalised.split(" ");
         return Microbot.getClientThread().runOnClientThreadOptional(() -> {
-            for (Widget w : collectMoaChildren(root)) {
-                String hay = normaliseMoaText(w.getText());
-                if (hay.isEmpty()) continue;
-                boolean all = true;
-                for (String t : tokens) {
-                    if (t.isEmpty()) continue;
-                    if (!hay.contains(t)) { all = false; break; }
+            Widget[][] groups = { root.getDynamicChildren(), root.getNestedChildren(), root.getStaticChildren() };
+            for (Widget[] g : groups) {
+                if (g == null) continue;
+                for (Widget w : g) {
+                    if (w == null) continue;
+                    String hay = normaliseMoaText(w.getText());
+                    if (hay.isEmpty()) continue;
+                    // Token-set membership avoids substring false positives (e.g. "log" matching "logstrum").
+                    java.util.Set<String> haySet = new java.util.HashSet<>(java.util.Arrays.asList(hay.split(" ")));
+                    boolean all = true;
+                    for (String t : tokens) {
+                        if (t.isEmpty()) continue;
+                        if (!haySet.contains(t)) { all = false; break; }
+                    }
+                    if (all) return w;
                 }
-                if (all) return w;
             }
             return null;
         }).orElse(null);
-    }
-
-    private static java.util.List<Widget> collectMoaChildren(Widget root) {
-        java.util.List<Widget> out = new java.util.ArrayList<>();
-        Widget[][] groups = { root.getDynamicChildren(), root.getNestedChildren(), root.getStaticChildren() };
-        for (Widget[] g : groups) {
-            if (g == null) continue;
-            for (Widget w : g) if (w != null) out.add(w);
-        }
-        return out;
     }
 
     private static String normaliseMoaText(String s) {
@@ -3041,12 +3727,17 @@ public class Rs2Walker {
         if (root == null) return null;
         return Microbot.getClientThread().runOnClientThreadOptional(() -> {
             int idx = 0;
-            for (Widget sibling : collectMoaChildren(root)) {
-                String t = sibling.getText();
-                if (t == null || t.isEmpty()) continue;
-                if (t.contains(MOA_LOCKED_MARKUP)) continue;
-                if (sibling == destMatch) return indexToHotkey(idx);
-                idx++;
+            Widget[][] groups = { root.getDynamicChildren(), root.getNestedChildren(), root.getStaticChildren() };
+            for (Widget[] g : groups) {
+                if (g == null) continue;
+                for (Widget sibling : g) {
+                    if (sibling == null) continue;
+                    String t = sibling.getText();
+                    if (t == null || t.isEmpty()) continue;
+                    if (t.contains(MOA_LOCKED_MARKUP)) continue;
+                    if (sibling == destMatch) return indexToHotkey(idx);
+                    idx++;
+                }
             }
             return null;
         }).orElse(null);
@@ -3089,96 +3780,6 @@ public class Rs2Walker {
             }
             return true;
         });
-    }
-
-    // TEMP: iterate every MoA seasonal transport, attempt it, log landing vs expected.
-    // Run from a dedicated worker thread (blocks). Requires Map of Alacrity in inventory;
-    // locked regions/destinations are reported and skipped via the existing handler's guards.
-    public static void runMoaAudit() {
-        try {
-            while (!Microbot.isLoggedIn()) {
-                if (Thread.currentThread().isInterrupted()) return;
-                sleep(1000);
-            }
-            if (Rs2Inventory.get(MAP_OF_ALACRITY_ITEM_ID) == null) {
-                log.warn("[MoA-AUDIT] Map of Alacrity not in inventory — aborting");
-                return;
-            }
-
-            HashMap<WorldPoint, Set<Transport>> all = Transport.loadAllFromResources();
-            List<Transport> moa = new ArrayList<>();
-            for (Set<Transport> set : all.values()) {
-                for (Transport t : set) {
-                    if (t.getType() == TransportType.SEASONAL_TRANSPORT
-                            && t.getDisplayInfo() != null
-                            && t.getDisplayInfo().toLowerCase().contains("map of alacrity")) {
-                        moa.add(t);
-                    }
-                }
-            }
-            moa.sort(Comparator.comparing(Transport::getDisplayInfo));
-            log.info("[MoA-AUDIT] {} MoA transports queued", moa.size());
-            blacklistedMoaDestinations.clear();
-            lockedMoaRegions.clear();
-
-            int landed = 0, skipped = 0;
-            for (int i = 0; i < moa.size(); i++) {
-                if (Thread.currentThread().isInterrupted()) break;
-                if (!Microbot.isLoggedIn()) { log.warn("[MoA-AUDIT] logged out — stopping"); break; }
-
-                Transport t = moa.get(i);
-                String disp = t.getDisplayInfo();
-                WorldPoint expected = t.getDestination();
-                WorldPoint before = Rs2Player.getWorldLocation();
-                if (before == null) { sleep(500); continue; }
-
-                log.info("[MoA-AUDIT] {}/{}: {} (expected {},{},{})",
-                        i + 1, moa.size(), disp,
-                        expected.getX(), expected.getY(), expected.getPlane());
-
-                if (!handleSeasonalTransport(t)) {
-                    log.info("[MoA-AUDIT]   handler returned false");
-                    closeMoaWidgetIfOpen();
-                    skipped++;
-                    sleep(600);
-                    continue;
-                }
-
-                boolean moved = sleepUntil(() -> {
-                    WorldPoint now = Rs2Player.getWorldLocation();
-                    return now != null && (now.distanceTo(before) > 5 || now.getPlane() != before.getPlane());
-                }, 8000);
-
-                if (!moved) {
-                    log.info("[MoA-AUDIT]   no teleport detected");
-                    closeMoaWidgetIfOpen();
-                    skipped++;
-                    continue;
-                }
-
-                sleep(1500); // settle
-                WorldPoint after = Rs2Player.getWorldLocation();
-                int dist = after.getPlane() == expected.getPlane() ? after.distanceTo(expected) : -1;
-                String marker = dist == 0 ? "EXACT" : (dist > 0 && dist <= 2 ? "close" : (dist > 0 && dist <= 10 ? "NEAR" : "FAR"));
-                log.info("[MoA-AUDIT] LAND {} | actual={},{},{} expected={},{},{} dist={} | {}",
-                        marker,
-                        after.getX(), after.getY(), after.getPlane(),
-                        expected.getX(), expected.getY(), expected.getPlane(),
-                        dist, disp);
-                landed++;
-                sleep(1500);
-            }
-            log.info("[MoA-AUDIT] complete: landed={}/{} skipped={}", landed, moa.size(), skipped);
-        } catch (Exception e) {
-            log.error("[MoA-AUDIT] crashed", e);
-        }
-    }
-
-    private static void closeMoaWidgetIfOpen() {
-        if (Rs2Widget.isWidgetVisible(MAP_OF_ALACRITY_WIDGET_GROUP, MAP_OF_ALACRITY_LIST_CHILD)) {
-            Rs2Keyboard.keyPress(27); // ESC
-            sleep(400);
-        }
     }
 
     private static boolean handleSpiritTree(Transport transport) {

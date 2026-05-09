@@ -69,9 +69,10 @@ Ground Items:
   ground-items pickup <name>             Pick up nearest ground item
 
 Movement:
-  walk <x> <y> [plane] [--wait] [--timeout SECONDS]
+  walk <x> <y> [plane] [--wait] [--timeout SECONDS] [--distance TILES]
                                          Walk to coordinates (non-blocking by default;
-                                         --wait blocks until arrival or timeout, default 30s)
+                                         --wait blocks until arrival or timeout, default 30s;
+                                         --distance defaults to 0 for exact coordinates)
 
 Banking:
   bank                                   Bank status (open/closed, items)
@@ -103,6 +104,10 @@ Scripts:
   scripts health [--class <c>|--name <n>]  Loop heartbeat (stall detection)
   scripts results --class <className>    Get test results
   scripts results post --class <c> --data <json>  Submit test results
+
+Quest Helper:
+  quest-helper status                     Current selected quest helper state
+  quest-helper start --name <questName>   Select/start a quest helper
 
 Keyboard:
   keyboard type <text>                     Type text into the game
@@ -364,12 +369,13 @@ case "$1" in
         ;;
 
     walk)
-        [[ $# -lt 3 ]] && { echo '{"error":"Usage: microbot-cli walk <x> <y> [plane] [--wait] [--timeout SECONDS]"}'; exit 1; }
+        [[ $# -lt 3 ]] && { echo '{"error":"Usage: microbot-cli walk <x> <y> [plane] [--wait] [--timeout SECONDS] [--distance TILES]"}'; exit 1; }
         walk_x="$2"
         walk_y="$3"
         walk_plane=0
         walk_wait="false"
         walk_timeout=30
+        walk_distance=0
         shift 3
         if [[ $# -gt 0 ]] && [[ "$1" != --* ]]; then
             walk_plane="$1"
@@ -379,10 +385,11 @@ case "$1" in
             case "$1" in
                 --wait) walk_wait="true"; shift ;;
                 --timeout) walk_timeout="$2"; shift 2 ;;
+                --distance) walk_distance="$2"; shift 2 ;;
                 *) shift ;;
             esac
         done
-        walk_body="{\"x\":${walk_x},\"y\":${walk_y},\"plane\":${walk_plane},\"wait\":${walk_wait},\"timeout\":${walk_timeout}}"
+        walk_body="{\"x\":${walk_x},\"y\":${walk_y},\"plane\":${walk_plane},\"wait\":${walk_wait},\"timeout\":${walk_timeout},\"distance\":${walk_distance}}"
         if [[ "$walk_wait" == "true" ]]; then
             curl_timeout=$((walk_timeout + 5))
             curl -sf --max-time "$curl_timeout" "${AUTH_HEADER_ARGS[@]}" -X POST -H "Content-Type: application/json" -d "$walk_body" "${BASE}/walk" 2>/dev/null \
@@ -597,6 +604,32 @@ case "$1" in
                 fi
                 ;;
             *) usage ;;
+        esac
+        ;;
+
+    quest-helper)
+        [[ $# -lt 2 ]] && { echo '{"error":"Usage: microbot-cli quest-helper status | start --name <questName>"}'; exit 1; }
+        case "$2" in
+            status)
+                do_get "${BASE}/quest-helper/status"
+                ;;
+            start)
+                shift 2
+                name=""
+                while [[ $# -gt 0 ]]; do
+                    case "$1" in
+                        --name) name="$2"; shift 2 ;;
+                        *) shift ;;
+                    esac
+                done
+                if [[ -z "$name" ]]; then
+                    echo '{"error":"Usage: microbot-cli quest-helper start --name <questName>"}'
+                    exit 1
+                fi
+                escaped=$(json_escape "$name")
+                do_post "${BASE}/quest-helper/start" "{\"name\":\"${escaped}\"}"
+                ;;
+            *) echo '{"error":"Usage: microbot-cli quest-helper status | start --name <questName>"}'; exit 1 ;;
         esac
         ;;
 

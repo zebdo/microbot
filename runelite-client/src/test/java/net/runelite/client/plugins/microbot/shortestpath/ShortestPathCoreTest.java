@@ -214,6 +214,20 @@ public class ShortestPathCoreTest {
 	}
 
 	@Test
+	public void testLumbridgeHomeTeleportTransportLoaded() {
+		HashMap<WorldPoint, Set<Transport>> transports = Transport.loadAllFromResources();
+
+		boolean hasLumbridgeHomeTeleport = transports.values().stream()
+			.flatMap(Set::stream)
+			.anyMatch(t -> t.getType() == TransportType.TELEPORTATION_SPELL
+				&& "Lumbridge Home Teleport".equals(t.getDisplayInfo())
+				&& new WorldPoint(3221, 3218, 0).equals(t.getDestination())
+				&& t.getVarbits().stream().anyMatch(v -> v.getVarbitId() == 12353 && v.getValue() == 0));
+
+		assertTrue("Lumbridge Home Teleport should be loaded and gated by cooldown varbit", hasLumbridgeHomeTeleport);
+	}
+
+	@Test
 	public void testFairyRingTransportsExist() {
 		HashMap<WorldPoint, Set<Transport>> transports = Transport.loadAllFromResources();
 		boolean hasFairyRing = false;

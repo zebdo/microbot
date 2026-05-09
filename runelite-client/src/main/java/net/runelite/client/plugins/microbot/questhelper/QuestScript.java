@@ -768,18 +768,35 @@ public class QuestScript extends Script {
 	}
 
 	private int tradablePrimaryId(ItemRequirement itemRequirement) {
-		return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+		List<Integer> tradableIds = Microbot.getClientThread().runOnClientThreadOptional(() -> {
+			List<Integer> ids = new ArrayList<>();
 			for (Integer id : itemRequirement.getAllIds()) {
 				if (id == null || id <= 0) {
 					continue;
 				}
 				ItemComposition def = Microbot.getClient().getItemDefinition(id);
 				if (def != null && def.isTradeable()) {
-					return id;
+					ids.add(id);
 				}
 			}
+			return ids;
+		}).orElse(new ArrayList<>());
+
+		if (tradableIds.isEmpty()) {
 			return -1;
-		}).orElse(-1);
+		}
+
+		// Pick the cheapest tradable variant to avoid league/cosmetic items priced at MAX_VALUE
+		int bestId = tradableIds.get(0);
+		int bestPrice = Integer.MAX_VALUE;
+		for (int id : tradableIds) {
+			int price = fetchInstabuyReferencePrice(id);
+			if (price > 0 && price < bestPrice) {
+				bestPrice = price;
+				bestId = id;
+			}
+		}
+		return bestId;
 	}
 
 	private int remainingQuantityNeeded(ItemRequirement itemRequirement) {
@@ -1018,10 +1035,11 @@ public class QuestScript extends Script {
 
 	private int fetchInstabuyReferencePrice(int itemId) {
 		WikiPrice priceData = Rs2GrandExchange.getRealTimePrices(itemId);
-		if (priceData != null && priceData.buyPrice > 0) {
+		if (priceData != null && priceData.buyPrice > 0 && priceData.buyPrice < Integer.MAX_VALUE) {
 			return priceData.buyPrice;
 		}
-		return Rs2GrandExchange.getPrice(itemId);
+		int price = Rs2GrandExchange.getPrice(itemId);
+		return (price > 0 && price < Integer.MAX_VALUE) ? price : -1;
 	}
 
 	private int notedVariantId(int unnotedId) {

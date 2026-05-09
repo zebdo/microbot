@@ -475,6 +475,18 @@ public class QuestHelperPlugin extends Plugin
 		return questManager.getSelectedQuest();
 	}
 
+	public boolean startQuestHelper(String questName)
+	{
+		QuestHelper questHelper = QuestHelperQuest.getByName(questName);
+		if (questHelper == null)
+		{
+			return false;
+		}
+
+		questManager.startUpQuest(questHelper, true);
+		return true;
+	}
+
 	public Map<String, QuestHelper> getBackgroundHelpers()
 	{
 		return questManager.backgroundHelpers;
