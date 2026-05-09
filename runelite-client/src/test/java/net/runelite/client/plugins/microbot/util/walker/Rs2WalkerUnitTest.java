@@ -229,6 +229,49 @@ public class Rs2WalkerUnitTest {
         assertEquals("null predicate must not NPE and must allow full scan", 2, idx);
     }
 
+    @Test
+    public void interpolateClickableTarget_usesInterpolatedPointWhenUsable() {
+        WorldPoint player = new WorldPoint(3200, 3200, 0);
+        WorldPoint fallback = new WorldPoint(3206, 3200, 0);
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3200, 3200, 0),
+                fallback,
+                new WorldPoint(3220, 3200, 0));
+
+        WorldPoint target = Rs2Walker.interpolateClickableTarget(path, 2, player, fallback, 12, wp -> true);
+
+        assertEquals(new WorldPoint(3212, 3200, 0), target);
+    }
+
+    @Test
+    public void interpolateClickableTarget_fallsBackWhenInterpolatedPointUnusable() {
+        WorldPoint player = new WorldPoint(3200, 3200, 0);
+        WorldPoint fallback = new WorldPoint(3206, 3200, 0);
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3200, 3200, 0),
+                fallback,
+                new WorldPoint(3220, 3200, 0));
+
+        WorldPoint target = Rs2Walker.interpolateClickableTarget(path, 2, player, fallback, 12, wp -> false);
+
+        assertEquals("unusable interpolated tiles must not replace the known path waypoint",
+                fallback, target);
+    }
+
+    @Test
+    public void interpolateClickableTarget_shortensOutOfReachForwardWaypoint() {
+        WorldPoint player = new WorldPoint(3200, 3200, 0);
+        WorldPoint forward = new WorldPoint(3220, 3200, 0);
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3200, 3200, 0),
+                forward);
+
+        WorldPoint target = Rs2Walker.interpolateClickableTarget(path, 1, player, forward, 12, wp -> true);
+
+        assertEquals("out-of-minimap forward waypoints should be shortened to a clickable tile",
+                new WorldPoint(3212, 3200, 0), target);
+    }
+
     // ---------------------------------------------------------------------------
     // #19 — Quest-lock dialogue heuristic
     // ---------------------------------------------------------------------------

@@ -15,7 +15,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 @Slf4j
@@ -23,6 +22,8 @@ public class WalkHandler extends AgentHandler {
 
 	private static final int DEFAULT_TIMEOUT_SECONDS = 30;
 	private static final int MAX_TIMEOUT_SECONDS = 600;
+	private static final int DEFAULT_REACHED_DISTANCE = 0;
+	private static final int MAX_REACHED_DISTANCE = 20;
 
 	private static final AtomicInteger WALK_THREAD_COUNT = new AtomicInteger(1);
 	private static final ExecutorService WALK_EXECUTOR = Executors.newSingleThreadExecutor(r -> {
@@ -33,6 +34,7 @@ public class WalkHandler extends AgentHandler {
 
 	private static volatile Future<WalkerState> activeWalk;
 	private static volatile WorldPoint activeWalkTarget;
+	private static volatile int activeWalkReachedDistance;
 
 	public WalkHandler(Gson gson) {
 		super(gson);
@@ -78,9 +80,16 @@ public class WalkHandler extends AgentHandler {
 			if (timeoutSeconds > MAX_TIMEOUT_SECONDS) timeoutSeconds = MAX_TIMEOUT_SECONDS;
 		}
 
+		int reachedDistance = DEFAULT_REACHED_DISTANCE;
+		if (body.get("distance") instanceof Number) {
+			reachedDistance = ((Number) body.get("distance")).intValue();
+			if (reachedDistance < 0) reachedDistance = DEFAULT_REACHED_DISTANCE;
+			if (reachedDistance > MAX_REACHED_DISTANCE) reachedDistance = MAX_REACHED_DISTANCE;
+		}
+
 		WorldPoint destination = new WorldPoint(xNum.intValue(), yNum.intValue(), plane);
 
-		Future<WalkerState> walkFuture = submitWalk(destination);
+		Future<WalkerState> walkFuture = submitWalk(destination, reachedDistance);
 
 		Map<String, Object> response = new LinkedHashMap<>();
 		Map<String, Integer> dest = new LinkedHashMap<>();
@@ -88,6 +97,7 @@ public class WalkHandler extends AgentHandler {
 		dest.put("y", destination.getY());
 		dest.put("plane", destination.getPlane());
 		response.put("destination", dest);
+		response.put("reachedDistance", reachedDistance);
 
 		if (!wait) {
 			response.put("success", true);
@@ -98,13 +108,43 @@ public class WalkHandler extends AgentHandler {
 			return;
 		}
 
-		WalkerState state;
-		boolean timedOut = false;
+		WalkerState state = null;
+		boolean timedOut;
+		boolean arrivedByPosition = false;
 		try {
-			state = walkFuture.get(timeoutSeconds, TimeUnit.SECONDS);
-		} catch (TimeoutException te) {
-			state = null;
-			timedOut = true;
+			long deadline = System.nanoTime() + TimeUnit.SECONDS.toNanos(timeoutSeconds);
+			while (true) {
+				if (walkFuture.isDone()) {
+					state = walkFuture.get();
+					timedOut = false;
+					break;
+				}
+
+				int distanceToDestination = distanceTo(destination);
+				if (distanceToDestination >= 0 && distanceToDestination <= reachedDistance) {
+					state = WalkerState.ARRIVED;
+					arrivedByPosition = true;
+					timedOut = false;
+					walkFuture.cancel(true);
+					clearActiveWalk(walkFuture);
+					break;
+				}
+
+				long remainingNanos = deadline - System.nanoTime();
+				if (remainingNanos <= 0) {
+					timedOut = true;
+					break;
+				}
+
+				Thread.sleep(Math.min(100, TimeUnit.NANOSECONDS.toMillis(remainingNanos)));
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			response.put("success", false);
+			response.put("error", "Walk interrupted");
+			addPlayerPosition(response);
+			sendJson(exchange, 500, response);
+			return;
 		} catch (Exception e) {
 			log.warn("Walk failed: {}", e.toString());
 			response.put("success", false);
@@ -115,26 +155,53 @@ public class WalkHandler extends AgentHandler {
 		}
 
 		if (timedOut) {
+			int distanceToDestination = distanceTo(destination);
 			response.put("success", false);
 			response.put("walking", true);
 			response.put("timedOut", true);
 			response.put("message", "Walk did not complete within " + timeoutSeconds + "s; still in progress");
+			if (distanceToDestination >= 0) {
+				response.put("distanceToDestination", distanceToDestination);
+			}
 		} else {
-			response.put("success", state == WalkerState.ARRIVED);
+			int distanceToDestination = distanceTo(destination);
+			response.put("success", state == WalkerState.ARRIVED && distanceToDestination <= reachedDistance);
 			response.put("walking", false);
 			response.put("state", state == null ? "UNKNOWN" : state.name());
+			if (arrivedByPosition) {
+				response.put("arrivedByPosition", true);
+			}
+			if (distanceToDestination >= 0) {
+				response.put("distanceToDestination", distanceToDestination);
+			}
 		}
 		addPlayerPosition(response);
 		sendJson(exchange, 200, response);
 	}
 
-	private static synchronized Future<WalkerState> submitWalk(WorldPoint destination) {
-		if (activeWalk != null && !activeWalk.isDone() && destination.equals(activeWalkTarget)) {
+	private static synchronized Future<WalkerState> submitWalk(WorldPoint destination, int reachedDistance) {
+		if (activeWalk != null && !activeWalk.isDone()
+			&& destination.equals(activeWalkTarget)
+			&& reachedDistance == activeWalkReachedDistance) {
 			return activeWalk;
 		}
 		activeWalkTarget = destination;
-		activeWalk = WALK_EXECUTOR.submit(() -> Rs2Walker.walkWithState(destination));
+		activeWalkReachedDistance = reachedDistance;
+		activeWalk = WALK_EXECUTOR.submit(() -> Rs2Walker.walkWithState(destination, reachedDistance));
 		return activeWalk;
+	}
+
+	private static synchronized void clearActiveWalk(Future<WalkerState> walkFuture) {
+		if (activeWalk == walkFuture) {
+			activeWalk = null;
+			activeWalkTarget = null;
+			activeWalkReachedDistance = DEFAULT_REACHED_DISTANCE;
+		}
+	}
+
+	private static int distanceTo(WorldPoint destination) {
+		WorldPoint playerPos = Microbot.getRs2PlayerStateCache().getLocalPlayerPosition();
+		return playerPos == null ? -1 : playerPos.distanceTo(destination);
 	}
 
 	private static void addPlayerPosition(Map<String, Object> response) {

@@ -51,9 +51,6 @@ public class BlockingEventManager
         // single-threaded executor for running event.execute()
         this.blockingExecutor = Executors.newSingleThreadExecutor(threadFactory);
 
-        // scheduler for periodic validate() calls
-        startLoop();
-
         // pre-register core events
         blockingEvents.add(new WelcomeScreenEvent());
         blockingEvents.add(new DisableLevelUpInterfaceEvent());
@@ -66,6 +63,13 @@ public class BlockingEventManager
 		blockingEvents.add(new HideRoofsEvent());
 
         sortBlockingEvents();
+    }
+
+    public synchronized void start() {
+        if (loopFuture != null && !loopFuture.isCancelled() && !loopFuture.isDone()) {
+            return;
+        }
+        startLoop();
     }
 
     public void shutdown() {
