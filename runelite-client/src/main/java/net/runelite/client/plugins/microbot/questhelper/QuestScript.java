@@ -1039,7 +1039,7 @@ public class QuestScript extends Script {
 			return priceData.buyPrice;
 		}
 		int price = Rs2GrandExchange.getPrice(itemId);
-		return price < Integer.MAX_VALUE ? price : -1;
+		return (price > 0 && price < Integer.MAX_VALUE) ? price : -1;
 	}
 
 	private int notedVariantId(int unnotedId) {
