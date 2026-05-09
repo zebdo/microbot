@@ -39,3 +39,40 @@ if (rawPath != null && path != null && rawPath.size() > path.size()
 **Where this applies:** `Rs2Walker`, `PathSmoother`, and shortest-path obstacle handling.
 
 **Defensive check:** When a path stalls beside a visible door while the pathfinder reports a complete route, compare raw and smoothed path lengths; if the raw path is longer, verify nearby raw-path obstacle probing happens before stall recovery.
+
+## 3. Match wall doors by crossed edge, not nearby tile
+
+Wall-object doors block the edge between the wall object's tile and the neighboring tile indicated by its orientation. Raw-path segment probes must only treat a wall door as relevant when the path segment actually transitions across that edge. Do not match a wall door merely because the path starts on, ends on, or passes near one side of the door.
+
+**Why this matters:** At Draynor Manor's east/back door, the player can stand on the south-side door tile and need to walk southwest into the room. A broad "door near segment" match repeatedly re-opens the back door instead of allowing the next minimap walk step to run.
+
+**Pattern to follow:**
+
+```java
+WorldPoint doorTile = wall.getWorldLocation();
+WorldPoint blockedNeighbor = getWallDoorNeighborPoint(wall.getOrientationA(), doorTile);
+return isDoorEdgeTransition(previousPathTile, nextPathTile, doorTile, blockedNeighbor);
+```
+
+**Where this applies:** `Rs2Walker.handleNearbyRawPathSceneObjects`, `Rs2Walker.findDoorNearSegment`, and any wall-door probe that uses `WallObject.getOrientationA()`.
+
+**Defensive check:** Add a unit test for a path starting on the door's blocked-neighbor tile and moving away from the door; it must return false.
+
+## 4. Do not raw-probe doors while the player is already moving
+
+Raw-path scene-object probing is a recovery aid for smoothed paths that hide nearby obstacles. Once a door interaction has started movement, let that movement settle or reach the door edge before probing again. Re-running raw probes while the player is still moving can repeatedly interact with the same door and prevent the normal minimap/path step from taking over.
+
+**Why this matters:** When leaving Draynor Manor through the east/back door, the walker can click the door, start moving toward it, then immediately re-enter raw-path probing and click the same door again instead of continuing through the path outside.
+
+**Pattern to follow:**
+
+```java
+if (Rs2Player.isMoving()) {
+    return false;
+}
+waitForDoorInteractionProgress(fromWp, toWp);
+```
+
+**Where this applies:** `Rs2Walker.handleNearbyRawPathSceneObjects`, door handlers that call `Rs2GameObject.interact`, and any recovery logic that recurses into `processWalk`.
+
+**Defensive check:** In live testing, a door should produce one interaction followed by movement/path progress, not repeated `Raw path door handler resolved obstacle` messages every tick while the player is moving.
