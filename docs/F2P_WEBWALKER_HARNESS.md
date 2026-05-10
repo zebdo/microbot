@@ -64,3 +64,4 @@ The runner forwards route settings through `microbot.test.webwalker.*` system pr
 | F2P-14 | `3092,3245,0` | `3109,3341,0` | Draynor Manor approach |
 | F2P-15 | `3109,3341,0` | `3106,3363,0` | Draynor Manor door/object handling |
 | F2P-16 | `3106,3363,0` | `3092,3245,0` | Reverse manor exit behavior |
+| F2P-17 | current live player tile | `3237,9858,0` | Captures current origin, then walks to Varrock Sewers 5 times on a F2P world with agility shortcuts and teleports disabled |

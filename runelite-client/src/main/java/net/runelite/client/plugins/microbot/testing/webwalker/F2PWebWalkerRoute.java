@@ -40,7 +40,9 @@ final class F2PWebWalkerRoute {
             route("F2P-15", "Draynor Manor outside to Draynor Manor interior",
                     point(3109, 3341, 0), point(3106, 3363, 0), 1, 1),
             route("F2P-16", "Draynor Manor interior to Draynor bank",
-                    point(3106, 3363, 0), point(3092, 3245, 0), 1, 2)
+                    point(3106, 3363, 0), point(3092, 3245, 0), 1, 2),
+            currentRoute("F2P-17", "Current location to Varrock Sewers",
+                    point(3237, 9858, 0), 1, 1, 5, true, true)
     );
 
     final String id;
@@ -49,6 +51,11 @@ final class F2PWebWalkerRoute {
     final WorldPoint destination;
     final int startTolerance;
     final int destinationTolerance;
+    final int repetitions;
+    final boolean currentLocationStart;
+    final boolean requireF2PWorld;
+    final boolean forceNoAgilityShortcuts;
+    final boolean forceNoTeleports;
 
     private F2PWebWalkerRoute(
             String id,
@@ -56,7 +63,12 @@ final class F2PWebWalkerRoute {
             WorldPoint start,
             WorldPoint destination,
             int startTolerance,
-            int destinationTolerance
+            int destinationTolerance,
+            int repetitions,
+            boolean currentLocationStart,
+            boolean requireF2PWorld,
+            boolean forceNoAgilityShortcuts,
+            boolean forceNoTeleports
     ) {
         this.id = id;
         this.name = name;
@@ -64,6 +76,11 @@ final class F2PWebWalkerRoute {
         this.destination = destination;
         this.startTolerance = startTolerance;
         this.destinationTolerance = destinationTolerance;
+        this.repetitions = repetitions;
+        this.currentLocationStart = currentLocationStart;
+        this.requireF2PWorld = requireF2PWorld;
+        this.forceNoAgilityShortcuts = forceNoAgilityShortcuts;
+        this.forceNoTeleports = forceNoTeleports;
     }
 
     static List<F2PWebWalkerRoute> selected(String routeFilter) {
@@ -96,7 +113,22 @@ final class F2PWebWalkerRoute {
             int startTolerance,
             int destinationTolerance
     ) {
-        return new F2PWebWalkerRoute(id, name, start, destination, startTolerance, destinationTolerance);
+        return new F2PWebWalkerRoute(id, name, start, destination, startTolerance, destinationTolerance,
+                1, false, false, false, false);
+    }
+
+    private static F2PWebWalkerRoute currentRoute(
+            String id,
+            String name,
+            WorldPoint destination,
+            int startTolerance,
+            int destinationTolerance,
+            int repetitions,
+            boolean forceNoAgilityShortcuts,
+            boolean forceNoTeleports
+    ) {
+        return new F2PWebWalkerRoute(id, name, null, destination, startTolerance, destinationTolerance,
+                repetitions, true, true, forceNoAgilityShortcuts, forceNoTeleports);
     }
 
     private static WorldPoint point(int x, int y, int plane) {

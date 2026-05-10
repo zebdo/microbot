@@ -146,7 +146,7 @@ public class Pathfinder implements Runnable {
             return raw;
         }
         if (!smoothed) {
-            smoothedPath = PathSmoother.smooth(raw, map, buildTransportAnchors(raw));
+            smoothedPath = PathSmoother.smooth(raw, map, buildTransportAnchors(raw), config.getBlockedTransportEdgesPacked());
             smoothed = true;
         }
         return smoothedPath;

@@ -57,6 +57,7 @@ import java.util.*;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -250,7 +251,6 @@ public class Rs2Walker {
         }
 
 		closeWorldMap();
-        kickStartShortLocalWalk(target, distance);
         return processWalk(target, distance);
     }
 
@@ -429,11 +429,7 @@ public class Rs2Walker {
             boolean doorOrTransportResult = false;
             boolean inInstance = Microbot.getClient().getTopLevelWorldView().isInstance();
             String exitReason = "end-of-path";
-            final int HANDLER_RANGE = 8;
-            WalkerState directShortWalk = tryDirectShortWalk(target, distance, path, inInstance);
-            if (directShortWalk != WalkerState.MOVING) {
-                return directShortWalk;
-            }
+            final int HANDLER_RANGE = 13;
 
             if (rawPath != null && path != null
                     && handleNearbyRawPathSceneObjects(rawPath, HANDLER_RANGE)) {
@@ -445,6 +441,13 @@ public class Rs2Walker {
                     && handleCurrentTileTransportTowardPath(rawPath, path, target)) {
                 doorOrTransportResult = true;
                 exitReason = "current-tile-transport-handled";
+            }
+
+            if (!doorOrTransportResult) {
+                WalkerState directShortWalk = tryDirectShortWalk(target, distance, rawPath, path, inInstance);
+                if (directShortWalk != WalkerState.MOVING) {
+                    return directShortWalk;
+                }
             }
 
             for (int i = indexOfStartPoint; !doorOrTransportResult && i < path.size(); i++) {
@@ -1529,6 +1532,7 @@ public class Rs2Walker {
 
     private static WalkerState tryDirectShortWalk(WorldPoint target,
                                                   int distance,
+                                                  List<WorldPoint> rawPath,
                                                   List<WorldPoint> path,
                                                   boolean inInstance) {
         WorldPoint playerLoc = Rs2Player.getWorldLocation();
@@ -1552,10 +1556,18 @@ public class Rs2Walker {
             return WalkerState.MOVING;
         }
 
+        if (hasPendingExplicitTransportStepBeforeArrival(rawPath, target, distance)
+                || hasPendingExplicitTransportStepBeforeArrival(path, target, distance)) {
+            return WalkerState.MOVING;
+        }
+
         if (!inInstance && !Rs2Tile.isWalkable(end)) {
             return WalkerState.MOVING;
         }
         if (!inInstance && !Rs2Tile.isTileReachable(end)) {
+            return WalkerState.MOVING;
+        }
+        if (!inInstance && localRouteDetoursFromComputedRoute(rawPath, end, directClickMaxDistance)) {
             return WalkerState.MOVING;
         }
 
@@ -1607,30 +1619,73 @@ public class Rs2Walker {
         return WalkerState.MOVING;
     }
 
-    private static void kickStartShortLocalWalk(WorldPoint target, int distance) {
-        try {
-            WorldPoint playerLoc = Rs2Player.getWorldLocation();
-            if (target == null || playerLoc == null || playerLoc.getPlane() != target.getPlane()) {
-                return;
-            }
+    private static boolean hasPendingExplicitTransportStepBeforeArrival(List<WorldPoint> path,
+                                                                        WorldPoint target,
+                                                                        int distance) {
+        return hasPendingRouteStepBeforeArrival(path, target, distance, i -> hasExplicitTransportStep(path, i));
+    }
 
-            int initialDist = playerLoc.distanceTo(target);
-            if (initialDist <= distance || initialDist > 13) {
-                return;
-            }
-
-            LocalPoint localTarget = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), target);
-            if (localTarget == null || !Rs2Tile.isWalkable(localTarget)) {
-                return;
-            }
-
-            boolean clicked = walkMiniMap(target);
-            if (!clicked) {
-                walkMiniMapToward(target, playerLoc, 12);
-            }
-        } catch (Exception ex) {
-            log.debug("[Walker] short local kick-start failed: {}", ex.getMessage());
+    static boolean hasPendingRouteStepBeforeArrival(List<WorldPoint> path,
+                                                    WorldPoint target,
+                                                    int distance,
+                                                    java.util.function.IntPredicate routeStepAtIndex) {
+        if (path == null || path.size() < 2 || routeStepAtIndex == null) {
+            return false;
         }
+
+        for (int i = 0; i < path.size() - 1; i++) {
+            WorldPoint point = path.get(i);
+            if (target != null && point != null && point.distanceTo(target) <= distance) {
+                return false;
+            }
+            if (routeStepAtIndex.test(i)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean localRouteDetoursFromComputedRoute(List<WorldPoint> rawPath,
+                                                              WorldPoint end,
+                                                              int directClickMaxDistance) {
+        if (rawPath == null || rawPath.size() < 2 || end == null) {
+            return false;
+        }
+
+        WorldPoint playerLoc = Rs2Player.getWorldLocation();
+        if (playerLoc == null || playerLoc.getPlane() != end.getPlane()) {
+            return false;
+        }
+
+        int rawStart = getClosestTileIndex(rawPath);
+        if (rawStart < 0 || rawStart >= rawPath.size() - 1) {
+            return false;
+        }
+
+        int rawEnd = -1;
+        for (int i = rawStart; i < rawPath.size(); i++) {
+            WorldPoint point = rawPath.get(i);
+            if (point == null || point.getPlane() != end.getPlane()) {
+                break;
+            }
+            if (point.equals(end)) {
+                rawEnd = i;
+                break;
+            }
+        }
+        if (rawEnd < 0) {
+            return false;
+        }
+
+        int computedSteps = rawEnd - rawStart;
+        if (computedSteps <= 0) {
+            return false;
+        }
+
+        final int detourSlackTiles = 4;
+        int searchDistance = Math.max(directClickMaxDistance * 3, computedSteps + detourSlackTiles + 1);
+        Integer localSteps = Rs2Tile.getReachableTilesFromTile(playerLoc, searchDistance).get(end);
+        return localSteps == null || localSteps > computedSteps + detourSlackTiles;
     }
 
     private static boolean handleNearbyRawPathSceneObjects(List<WorldPoint> rawPath, int handlerRange) {
@@ -2387,6 +2442,11 @@ public class Rs2Walker {
                 if (pathfinder != null) {
                     pathfinder.cancel();
                 }
+                Future<?> pathfinderFuture = ShortestPathPlugin.getPathfinderFuture();
+                if (pathfinderFuture != null && !pathfinderFuture.isDone()) {
+                    pathfinderFuture.cancel(true);
+                }
+                ShortestPathPlugin.setPathfinderFuture(null);
                 ShortestPathPlugin.setPathfinder(null);
             }
 
@@ -2649,8 +2709,11 @@ public class Rs2Walker {
                                     Rs2Dialogue.clickOption(transport.getDisplayInfo());
                                 }
                                 sleepUntil(() -> !Rs2Player.isAnimating());
-                                sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
+                                boolean reachedDestination = sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
                                 sleepTickJitter(6);
+                                if (reachedDestination) {
+                                    return finishHandledTransport(transport);
+                                }
                             } else {
                                 Rs2Walker.walkFastCanvas(path.get(i));
                                 sleep(1200, 1600);
@@ -2662,7 +2725,7 @@ public class Rs2Walker {
                                 sleepUntil(() -> !Rs2Player.isAnimating());
                                 sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
                                 sleepTickJitter(4); // wait 4 extra ticks before walking
-                                break;
+                                return finishHandledTransport(transport);
                             }
                         }
                     }
@@ -2674,14 +2737,14 @@ public class Rs2Walker {
                         log.debug("[Walker] handlePohTransport({}) returned {}", transport.getDisplayInfo(), pohResult);
                         if (pohResult) {
                             sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET, 10000);
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
                     if (transport.getType() == TransportType.CANOE) {
                         if (handleCanoe(transport)) {
                             sleepTickJitter(2);
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
@@ -2689,28 +2752,28 @@ public class Rs2Walker {
                         if (handleSpiritTree(transport)) {
                             sleepUntil(() -> !Rs2Player.isAnimating());
                             sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
                     if (transport.getType() == TransportType.QUETZAL) {
                         if (handleQuetzal(transport)) {
                             sleepTickJitter(2);
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
                     if (transport.getType() == TransportType.MAGIC_CARPET) {
                         if (handleMagicCarpet(transport)) {
                             sleepTickJitter(2);
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
                     if (transport.getType() == TransportType.WILDERNESS_OBELISK) {
                         if (handleWildernessObelisk(transport)) {
                             sleepTickJitter(2);
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
@@ -2719,21 +2782,21 @@ public class Rs2Walker {
                             sleepUntil(() -> !Rs2Player.isAnimating());
                             sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < 10);
                             sleepTickJitter(3);
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
                     if (transport.getType() == TransportType.FAIRY_RING && !Rs2Player.getWorldLocation().equals(transport.getDestination())) {
                         if (handleFairyRing(transport)) {
                             sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
                     if (transport.getType() == TransportType.TELEPORTATION_MINIGAME) {
                         if (handleMinigameTeleport(transport)) {
                             sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < (OFFSET * 2));
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
@@ -2741,7 +2804,7 @@ public class Rs2Walker {
                         if (handleTeleportItem(transport)) {
                             sleepUntil(() -> !Rs2Player.isAnimating());
                             sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
@@ -2754,7 +2817,7 @@ public class Rs2Walker {
                                 sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
                             }
                             Rs2Tab.switchTo(InterfaceTab.INVENTORY);
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
@@ -2762,7 +2825,7 @@ public class Rs2Walker {
                         if (handleSeasonalTransport(transport)) {
                             sleepUntil(() -> !Rs2Player.isAnimating());
                             sleepUntilTrue(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) < OFFSET);
-                            break;
+                            return finishHandledTransport(transport);
                         }
                     }
 
@@ -2862,7 +2925,12 @@ public class Rs2Walker {
                         }
                         sleepUntil(() -> !Rs2Player.isAnimating());
                         int destinationTolerance = isAdjacentSamePlaneTransport(transport) ? 0 : OFFSET;
-                        return sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) <= destinationTolerance, 5000);
+                        boolean reachedDestination = sleepUntil(() -> Rs2Player.getWorldLocation().distanceTo(transport.getDestination()) <= destinationTolerance, 5000);
+                        if (reachedDestination) {
+                            markAdjacentSamePlaneTransportHandled(transport, object);
+                            return finishHandledTransport(transport);
+                        }
+                        return false;
                     }
                 }
             }
@@ -3003,6 +3071,47 @@ public class Rs2Walker {
                 && transport.getDestination() != null
                 && transport.getOrigin().getPlane() == transport.getDestination().getPlane()
                 && transport.getOrigin().distanceTo(transport.getDestination()) <= 1;
+    }
+
+    private static boolean finishHandledTransport(Transport transport) {
+        if (currentTarget != null && shouldRecalculatePathAfterTransport(transport)) {
+            recalculatePath();
+        }
+        return true;
+    }
+
+    static boolean shouldRecalculatePathAfterTransport(Transport transport) {
+        if (transport == null || transport.getDestination() == null) {
+            return false;
+        }
+        if (TransportType.isTeleport(transport.getType())) {
+            return true;
+        }
+        if (transport.getOrigin() == null) {
+            return false;
+        }
+        return transport.getOrigin().getPlane() != transport.getDestination().getPlane()
+                || transport.getOrigin().distanceTo2D(transport.getDestination()) > OFFSET;
+    }
+
+    private static void markAdjacentSamePlaneTransportHandled(Transport transport, TileObject tileObject) {
+        for (WorldPoint point : adjacentSamePlaneTransportSuppressionPoints(transport, tileObject)) {
+            markStationaryDoorOpened(point);
+        }
+    }
+
+    static Set<WorldPoint> adjacentSamePlaneTransportSuppressionPoints(Transport transport, TileObject tileObject) {
+        if (!isAdjacentSamePlaneTransport(transport)) {
+            return Collections.emptySet();
+        }
+
+        Set<WorldPoint> points = new LinkedHashSet<>();
+        points.add(transport.getOrigin());
+        points.add(transport.getDestination());
+        if (tileObject != null && tileObject.getWorldLocation() != null) {
+            points.add(tileObject.getWorldLocation());
+        }
+        return points;
     }
 
     private static boolean handleObjectExceptions(Transport transport, TileObject tileObject) {
