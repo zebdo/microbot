@@ -232,6 +232,7 @@ public class CollisionMap {
             if (visited.get(neighborPacked)) continue;
             if (config.getRestrictedPointsPacked().contains(neighborPacked)) continue;
             if (config.getCustomRestrictions().contains(neighborPacked)) continue;
+            if (config.isBlockedTransportStep(node.packedPosition, neighborPacked)) continue;
 
             if (ignoreCollisionPacked.contains(node.packedPosition)) {
                 neighbors.add(new Node(neighborPacked, node));

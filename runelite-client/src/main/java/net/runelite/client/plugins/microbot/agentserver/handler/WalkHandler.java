@@ -185,6 +185,10 @@ public class WalkHandler extends AgentHandler {
 			&& reachedDistance == activeWalkReachedDistance) {
 			return activeWalk;
 		}
+		if (activeWalk != null && !activeWalk.isDone()) {
+			activeWalk.cancel(true);
+			Rs2Walker.setTarget(null);
+		}
 		activeWalkTarget = destination;
 		activeWalkReachedDistance = reachedDistance;
 		activeWalk = WALK_EXECUTOR.submit(() -> Rs2Walker.walkWithState(destination, reachedDistance));

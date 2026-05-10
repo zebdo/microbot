@@ -2,6 +2,8 @@ package net.runelite.client.plugins.microbot.util.walker;
 
 import net.runelite.api.WallObject;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.plugins.microbot.shortestpath.Transport;
+import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
 import org.junit.After;
 import org.junit.Before;
@@ -47,6 +49,127 @@ public class Rs2WalkerUnitTest {
     public void tearDown() {
         Rs2Walker.Telemetry.reset();
         Rs2Walker.sessionBlacklistedDoors.clear();
+    }
+
+    @Test
+    public void adjacentTransportSuppression_onlyAdjacentSamePlaneTransports() {
+        Transport door = new Transport(
+                new WorldPoint(3123, 3360, 0),
+                new WorldPoint(3123, 3361, 0),
+                "Door",
+                TransportType.TRANSPORT,
+                false,
+                "Open",
+                "Door",
+                136);
+
+        assertEquals(new HashSet<>(Arrays.asList(
+                        new WorldPoint(3123, 3360, 0),
+                        new WorldPoint(3123, 3361, 0))),
+                Rs2Walker.adjacentSamePlaneTransportSuppressionPoints(door, null));
+    }
+
+    @Test
+    public void adjacentTransportSuppression_ignoresNonAdjacentTransports() {
+        Transport ladder = new Transport(
+                new WorldPoint(3092, 3361, 0),
+                new WorldPoint(3117, 9753, 0),
+                "Ladder",
+                TransportType.TRANSPORT,
+                false,
+                "Climb-down",
+                "Ladder",
+                133);
+
+        assertTrue(Rs2Walker.adjacentSamePlaneTransportSuppressionPoints(ladder, null).isEmpty());
+    }
+
+    @Test
+    public void shouldRecalculatePathAfterTransport_includesOriginlessTeleport() {
+        Transport varrockTeleport = new Transport(
+                new WorldPoint(3213, 3424, 0),
+                "Varrock Teleport",
+                TransportType.TELEPORTATION_SPELL,
+                false,
+                20,
+                Collections.emptyMap());
+
+        assertTrue(Rs2Walker.shouldRecalculatePathAfterTransport(varrockTeleport));
+    }
+
+    @Test
+    public void shouldRecalculatePathAfterTransport_skipsAdjacentSamePlaneTransport() {
+        Transport door = new Transport(
+                new WorldPoint(3123, 3360, 0),
+                new WorldPoint(3123, 3361, 0),
+                "Door",
+                TransportType.TRANSPORT,
+                false,
+                "Open",
+                "Door",
+                136);
+
+        assertFalse(Rs2Walker.shouldRecalculatePathAfterTransport(door));
+    }
+
+    @Test
+    public void shouldRecalculatePathAfterTransport_includesLongDistanceTransport() {
+        Transport ship = new Transport(
+                new WorldPoint(3054, 3245, 0),
+                new WorldPoint(2956, 3146, 0),
+                "Port Sarim to Karamja",
+                TransportType.SHIP,
+                false,
+                "Cross",
+                "Gangplank",
+                2082);
+
+        assertTrue(Rs2Walker.shouldRecalculatePathAfterTransport(ship));
+    }
+
+    @Test
+    public void shouldRecalculatePathAfterTransport_includesSamePlaneCoordinateBandTransport() {
+        Transport varrockSewerLadder = new Transport(
+                new WorldPoint(3237, 9858, 0),
+                new WorldPoint(3236, 3458, 0),
+                "Varrock Sewers ladder",
+                TransportType.TRANSPORT,
+                false,
+                "Climb-up",
+                "Ladder",
+                11806);
+
+        assertTrue(Rs2Walker.shouldRecalculatePathAfterTransport(varrockSewerLadder));
+    }
+
+    @Test
+    public void hasPendingRouteStepBeforeArrival_detectsTransportBeforeDestination() {
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3220, 3473, 0),
+                new WorldPoint(3221, 3473, 0),
+                new WorldPoint(3222, 3473, 0),
+                new WorldPoint(3229, 3473, 0));
+
+        assertTrue(Rs2Walker.hasPendingRouteStepBeforeArrival(
+                path,
+                new WorldPoint(3229, 3473, 0),
+                0,
+                i -> i == 1));
+    }
+
+    @Test
+    public void hasPendingRouteStepBeforeArrival_ignoresStepsInsideArrivalTolerance() {
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3220, 3473, 0),
+                new WorldPoint(3227, 3473, 0),
+                new WorldPoint(3228, 3473, 0),
+                new WorldPoint(3229, 3473, 0));
+
+        assertFalse(Rs2Walker.hasPendingRouteStepBeforeArrival(
+                path,
+                new WorldPoint(3229, 3473, 0),
+                2,
+                i -> i == 2));
     }
 
     // ---------------------------------------------------------------------------

@@ -1027,6 +1027,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
          */
         if (e.getKeyCode() == KeyEvent.VK_X && e.isControlDown()) {
 			shortestPathScript.setTriggerWalker(null);
+            e.consume();
         }
     }
 

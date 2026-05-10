@@ -1,7 +1,7 @@
 # Destination	Skills	Quests	Wilderness level	Varbits	Varplayers	isMembers	Duration	Display info
 # Standard Spellbook - Varbit 4070=0								
-# Lumbridge Home Teleport. Varbit 12353 is BUFF_HOME_TELEPORT_DISABLED.								
-3221 3218 0			19	4070=0;12353=0			20	Lumbridge Home Teleport
+# Lumbridge Home Teleport. Varplayer 892 is LAST_HOME_TELEPORT in epoch minutes.
+3221 3218 0			19	4070=0	892@30		20	Lumbridge Home Teleport
 								
 # Varrock Teleport								
 3213 3424 0	25 Magic		19	4070=0;4585=0			4	Varrock Teleport

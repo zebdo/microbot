@@ -4,6 +4,7 @@ import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import com.google.inject.Inject;
 import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Player;
+import net.runelite.api.WorldType;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.api.events.GameTick;
 import net.runelite.client.eventbus.EventBus;
@@ -106,8 +107,6 @@ public class F2PWebWalkerHarnessPlugin extends Plugin {
                 return;
             }
 
-            applyShortestPathOverrides();
-
             log.info("[F2PWebWalkerHarness] Starting {} route(s): {}", routes.size(), result.selectedRoutes);
             for (F2PWebWalkerRoute route : routes) {
                 if (Thread.currentThread().isInterrupted()) {
@@ -116,6 +115,7 @@ public class F2PWebWalkerHarnessPlugin extends Plugin {
                     break;
                 }
 
+                applyShortestPathOverrides(route);
                 RouteOutcome outcome = runRoute(route, result.walkTimeoutMs);
                 result.routes.add(outcome);
 
@@ -145,11 +145,16 @@ public class F2PWebWalkerHarnessPlugin extends Plugin {
         RouteOutcome outcome = new RouteOutcome();
         outcome.id = route.id;
         outcome.name = route.name;
-        outcome.start = format(route.start);
         outcome.destination = format(route.destination);
         outcome.startTolerance = route.startTolerance;
         outcome.destinationTolerance = route.destinationTolerance;
+        outcome.repetitions = route.repetitions;
+        outcome.currentLocationStart = route.currentLocationStart;
+        outcome.requireF2PWorld = route.requireF2PWorld;
+        outcome.forceNoAgilityShortcuts = route.forceNoAgilityShortcuts;
+        outcome.forceNoTeleports = route.forceNoTeleports;
         outcome.startedAt = Instant.now().toString();
+        outcome.setupPassed = true;
 
         log.info("[F2PWebWalkerHarness] Running {}: {} -> {}", route.id, route.start, route.destination);
 
@@ -161,52 +166,114 @@ public class F2PWebWalkerHarnessPlugin extends Plugin {
             return outcome;
         }
 
-        int initialDistance = distance(current, route.start);
-        outcome.initialDistanceToStart = initialDistance;
-        if (initialDistance > route.startTolerance) {
-            long setupStart = System.currentTimeMillis();
-            outcome.setupState = walk(route.start, route.startTolerance, walkTimeoutMs);
-            outcome.setupDurationMs = System.currentTimeMillis() - setupStart;
-        } else {
-            outcome.setupState = WalkerState.ARRIVED.name();
-            outcome.setupDurationMs = 0;
-        }
-
-        WorldPoint beforeRoute = safeLocation();
-        outcome.routeStartLocation = format(beforeRoute);
-        outcome.distanceToStartAfterSetup = distance(beforeRoute, route.start);
-        outcome.setupPassed = WalkerState.ARRIVED.name().equals(outcome.setupState)
-                && outcome.distanceToStartAfterSetup <= route.startTolerance;
-        if (!outcome.setupPassed) {
-            outcome.setupError = "Setup webwalk failed for " + route.id
-                    + ": state=" + outcome.setupState
-                    + ", location=" + outcome.routeStartLocation
-                    + ", distanceToStart=" + outcome.distanceToStartAfterSetup;
+        boolean membersWorld = Microbot.getClient().getWorldType().contains(WorldType.MEMBERS);
+        outcome.membersWorld = membersWorld;
+        if (route.requireF2PWorld && membersWorld) {
+            outcome.setupPassed = false;
+            outcome.setupError = "Route " + route.id + " requires a F2P world, but the client is on a members world";
             outcome.error = outcome.setupError;
             outcome.finishedAt = Instant.now().toString();
             return outcome;
         }
 
-        long walkStart = System.currentTimeMillis();
-        outcome.walkerState = walk(route.destination, route.destinationTolerance, walkTimeoutMs);
-        outcome.walkDurationMs = System.currentTimeMillis() - walkStart;
-
-        WorldPoint end = safeLocation();
-        outcome.endLocation = format(end);
-        outcome.distanceToDestination = distance(end, route.destination);
-        outcome.passed = WalkerState.ARRIVED.name().equals(outcome.walkerState)
-                && outcome.distanceToDestination <= route.destinationTolerance;
-        if (!outcome.passed) {
-            outcome.error = "Route webwalk failed for " + route.id
-                    + ": state=" + outcome.walkerState
-                    + ", location=" + outcome.endLocation
-                    + ", distanceToDestination=" + outcome.distanceToDestination;
+        WorldPoint start = route.currentLocationStart ? current : route.start;
+        outcome.start = format(start);
+        if (start == null) {
+            outcome.setupPassed = false;
+            outcome.setupError = "Start location unavailable for " + route.id;
+            outcome.error = outcome.setupError;
+            outcome.finishedAt = Instant.now().toString();
+            return outcome;
         }
 
+        for (int i = 1; i <= route.repetitions; i++) {
+            RouteAttemptOutcome attempt = runAttempt(route, start, i, walkTimeoutMs);
+            outcome.attempts.add(attempt);
+            outcome.initialDistanceToStart = i == 1 ? attempt.initialDistanceToStart : outcome.initialDistanceToStart;
+            outcome.setupState = attempt.setupState;
+            outcome.setupDurationMs += attempt.setupDurationMs;
+            outcome.routeStartLocation = attempt.routeStartLocation;
+            outcome.distanceToStartAfterSetup = attempt.distanceToStartAfterSetup;
+            outcome.walkerState = attempt.walkerState;
+            outcome.walkDurationMs += attempt.walkDurationMs;
+            outcome.endLocation = attempt.endLocation;
+            outcome.distanceToDestination = attempt.distanceToDestination;
+
+            if (!attempt.setupPassed) {
+                outcome.setupPassed = false;
+                outcome.setupError = attempt.setupError;
+                outcome.error = attempt.setupError;
+                break;
+            }
+
+            if (!attempt.passed) {
+                outcome.error = attempt.error;
+                break;
+            }
+
+            outcome.successfulAttempts++;
+        }
+
+        outcome.passed = outcome.setupPassed && outcome.successfulAttempts == route.repetitions;
         outcome.finishedAt = Instant.now().toString();
-        log.info("[F2PWebWalkerHarness] {} finished: state={}, end={}, distance={}, duration={}ms",
-                route.id, outcome.walkerState, outcome.endLocation, outcome.distanceToDestination, outcome.walkDurationMs);
+        log.info("[F2PWebWalkerHarness] {} finished: passed={}, attempts={}/{}, state={}, end={}, distance={}, duration={}ms",
+                route.id, outcome.passed, outcome.successfulAttempts, route.repetitions, outcome.walkerState,
+                outcome.endLocation, outcome.distanceToDestination, outcome.walkDurationMs);
         return outcome;
+    }
+
+    private RouteAttemptOutcome runAttempt(F2PWebWalkerRoute route, WorldPoint start, int attemptNumber, int walkTimeoutMs) {
+        RouteAttemptOutcome attempt = new RouteAttemptOutcome();
+        attempt.attempt = attemptNumber;
+        attempt.start = format(start);
+        attempt.destination = format(route.destination);
+        attempt.startedAt = Instant.now().toString();
+
+        WorldPoint current = safeLocation();
+        attempt.initialLocation = format(current);
+        attempt.initialDistanceToStart = distance(current, start);
+        if (attempt.initialDistanceToStart > route.startTolerance) {
+            long setupStart = System.currentTimeMillis();
+            attempt.setupState = walk(start, route.startTolerance, walkTimeoutMs);
+            attempt.setupDurationMs = System.currentTimeMillis() - setupStart;
+        } else {
+            attempt.setupState = WalkerState.ARRIVED.name();
+            attempt.setupDurationMs = 0;
+        }
+
+        WorldPoint beforeRoute = safeLocation();
+        attempt.routeStartLocation = format(beforeRoute);
+        attempt.distanceToStartAfterSetup = distance(beforeRoute, start);
+        attempt.setupPassed = WalkerState.ARRIVED.name().equals(attempt.setupState)
+                && attempt.distanceToStartAfterSetup <= route.startTolerance;
+        if (!attempt.setupPassed) {
+            attempt.setupError = "Setup webwalk failed for " + route.id + " attempt " + attemptNumber
+                    + ": state=" + attempt.setupState
+                    + ", location=" + attempt.routeStartLocation
+                    + ", distanceToStart=" + attempt.distanceToStartAfterSetup;
+            attempt.error = attempt.setupError;
+            attempt.finishedAt = Instant.now().toString();
+            return attempt;
+        }
+
+        long walkStart = System.currentTimeMillis();
+        attempt.walkerState = walk(route.destination, route.destinationTolerance, walkTimeoutMs);
+        attempt.walkDurationMs = System.currentTimeMillis() - walkStart;
+
+        WorldPoint end = safeLocation();
+        attempt.endLocation = format(end);
+        attempt.distanceToDestination = distance(end, route.destination);
+        attempt.passed = WalkerState.ARRIVED.name().equals(attempt.walkerState)
+                && attempt.distanceToDestination <= route.destinationTolerance;
+        if (!attempt.passed) {
+            attempt.error = "Route webwalk failed for " + route.id + " attempt " + attemptNumber
+                    + ": state=" + attempt.walkerState
+                    + ", location=" + attempt.endLocation
+                    + ", distanceToDestination=" + attempt.distanceToDestination;
+        }
+
+        attempt.finishedAt = Instant.now().toString();
+        return attempt;
     }
 
     private String walk(WorldPoint destination, int tolerance, int timeoutMs) {
@@ -219,6 +286,7 @@ public class F2PWebWalkerHarnessPlugin extends Plugin {
             return future.get(timeoutMs, TimeUnit.MILLISECONDS).name();
         } catch (TimeoutException e) {
             future.cancel(true);
+            Rs2Walker.setTarget(null);
             return "TIMEOUT";
         } catch (Exception e) {
             log.warn("[F2PWebWalkerHarness] Webwalker leg failed for destination {}", destination, e);
@@ -232,21 +300,37 @@ public class F2PWebWalkerHarnessPlugin extends Plugin {
         return lastLocation;
     }
 
-    private void applyShortestPathOverrides() {
+    private void applyShortestPathOverrides(F2PWebWalkerRoute route) {
+        Map<String, Object> config = new HashMap<>();
+
         String value = property(TEST_USE_TELEPORTATION_SPELLS_PROPERTY, USE_TELEPORTATION_SPELLS_PROPERTY, "");
-        if (value.isBlank()) {
-            return;
+        if (!value.isBlank()) {
+            config.put("useTeleportationSpells", Boolean.parseBoolean(value));
         }
 
-        boolean useTeleportationSpells = Boolean.parseBoolean(value);
-        Map<String, Object> config = new HashMap<>();
-        config.put("useTeleportationSpells", useTeleportationSpells);
+        if (route.forceNoAgilityShortcuts) {
+            config.put("useAgilityShortcuts", false);
+            config.put("useGrappleShortcuts", false);
+        }
+
+        if (route.forceNoTeleports) {
+            config.put("useTeleportationItems", "None");
+            config.put("useTeleportationLevers", false);
+            config.put("useTeleportationMinigames", false);
+            config.put("useTeleportationPortals", false);
+            config.put("useTeleportationSpells", false);
+            config.put("useWildernessObelisks", false);
+        }
+
+        if (config.isEmpty()) {
+            return;
+        }
 
         Map<String, Object> data = new HashMap<>();
         data.put("config", config);
 
         eventBus.post(new PluginMessage("shortestpath", "path", data));
-        log.info("[F2PWebWalkerHarness] Applied shortest path override: useTeleportationSpells={}", useTeleportationSpells);
+        log.info("[F2PWebWalkerHarness] Applied shortest path overrides for {}: {}", route.id, config);
     }
 
     private static boolean isHarnessTarget() {
@@ -315,6 +399,36 @@ public class F2PWebWalkerHarnessPlugin extends Plugin {
         public String destination;
         public int startTolerance;
         public int destinationTolerance;
+        public int repetitions;
+        public int successfulAttempts;
+        public boolean currentLocationStart;
+        public boolean requireF2PWorld;
+        public boolean membersWorld;
+        public boolean forceNoAgilityShortcuts;
+        public boolean forceNoTeleports;
+        public String startedAt;
+        public String finishedAt;
+        public String initialLocation;
+        public int initialDistanceToStart;
+        public String setupState;
+        public boolean setupPassed;
+        public String setupError;
+        public long setupDurationMs;
+        public String routeStartLocation;
+        public int distanceToStartAfterSetup;
+        public String walkerState;
+        public boolean passed;
+        public String error;
+        public long walkDurationMs;
+        public String endLocation;
+        public int distanceToDestination;
+        public List<RouteAttemptOutcome> attempts = new ArrayList<>();
+    }
+
+    public static class RouteAttemptOutcome {
+        public int attempt;
+        public String start;
+        public String destination;
         public String startedAt;
         public String finishedAt;
         public String initialLocation;
