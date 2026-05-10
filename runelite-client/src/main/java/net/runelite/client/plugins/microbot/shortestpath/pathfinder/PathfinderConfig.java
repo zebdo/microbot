@@ -22,6 +22,8 @@ import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -51,10 +53,10 @@ public class PathfinderConfig {
 	private static final WorldArea NOT_WILDERNESS_4 = new WorldArea(3031, 3525, 2, 2, 0);
 	private static final WorldPoint SPIRIT_TREE_ETCETERIA = new WorldPoint(2613, 3855, 0);
 	private static final WorldPoint SPIRIT_TREE_BRIMHAVEN = new WorldPoint(2800, 3203, 0);
-    private static final WorldPoint SPIRIT_TREE_PORT_SARIM = new WorldPoint(3058, 3257, 0);
+	private static final WorldPoint SPIRIT_TREE_PORT_SARIM = new WorldPoint(3058, 3257, 0);
 	private static final WorldPoint SPIRIT_TREE_HOSIDIUS = new WorldPoint(1693, 3540, 0);
 	private static final WorldPoint SPIRIT_TREE_FARMING_GUILD = new WorldPoint(1251, 3750, 0);
-    private static final Set<Long> STATIC_BLOCKED_EDGES_PACKED = createStaticBlockedEdges();
+	private static final Set<Long> STATIC_BLOCKED_EDGES_PACKED = loadStaticBlockedEdgesFromResources();
 
     private final SplitFlagMap mapData;
     private final ThreadLocal<CollisionMap> map;
@@ -465,22 +467,72 @@ public class PathfinderConfig {
                 WorldPointUtil.packWorldPoint(destination)));
     }
 
-    private static Set<Long> createStaticBlockedEdges() {
+    private static Set<Long> loadStaticBlockedEdgesFromResources() {
         Set<Long> edges = new HashSet<>();
-        // The Varrock Palace garden south fence is underrepresented in the static
-        // collision data. Without these edges, no-agility F2P routes can try to walk
-        // straight through the garden boundary toward the Varrock Sewers manhole.
-        for (int x = 3229; x <= 3241; x++) {
-            addBidirectionalStaticEdge(edges, x, 3472, 0, x, 3471, 0);
+        final String delimColumn = "\t";
+        final String prefixComment = "#";
+
+        try {
+            String s = new String(Util.readAllBytes(
+                    ShortestPathPlugin.class.getResourceAsStream("blocked_edges.tsv")), StandardCharsets.UTF_8);
+            Scanner scanner = new Scanner(s);
+            String headerLine = scanner.nextLine();
+            headerLine = headerLine.startsWith(prefixComment + " ")
+                    ? headerLine.replace(prefixComment + " ", prefixComment)
+                    : headerLine;
+            headerLine = headerLine.startsWith(prefixComment)
+                    ? headerLine.replace(prefixComment, "")
+                    : headerLine;
+            String[] headers = headerLine.split(delimColumn);
+
+            while (scanner.hasNextLine()) {
+                String line = scanner.nextLine();
+                if (line.startsWith(prefixComment) || line.isBlank()) {
+                    continue;
+                }
+
+                String[] fields = line.split(delimColumn);
+                Map<String, String> fieldMap = new HashMap<>();
+                for (int i = 0; i < headers.length; i++) {
+                    if (i < fields.length) {
+                        fieldMap.put(headers[i], fields[i]);
+                    }
+                }
+
+                WorldPoint origin = parseBlockedEdgePoint(fieldMap.get("Origin"));
+                WorldPoint destination = parseBlockedEdgePoint(fieldMap.get("Destination"));
+                boolean bidirectional = Boolean.parseBoolean(fieldMap.getOrDefault("Bidirectional", "false"));
+                addStaticEdge(edges, origin, destination);
+                if (bidirectional) {
+                    addStaticEdge(edges, destination, origin);
+                }
+            }
+            scanner.close();
+        } catch (IOException e) {
+            throw new RuntimeException("Unable to load shortest-path blocked edges", e);
         }
+
         return Collections.unmodifiableSet(edges);
     }
 
-    private static void addBidirectionalStaticEdge(Set<Long> edges, int ax, int ay, int az, int bx, int by, int bz) {
-        int a = WorldPointUtil.packWorldPoint(ax, ay, az);
-        int b = WorldPointUtil.packWorldPoint(bx, by, bz);
-        edges.add(transportEdgeKey(a, b));
-        edges.add(transportEdgeKey(b, a));
+    private static WorldPoint parseBlockedEdgePoint(String point) {
+        if (point == null || point.isBlank()) {
+            throw new IllegalArgumentException("Blocked edge point is blank");
+        }
+        String[] parts = point.trim().split(" ");
+        if (parts.length != 3) {
+            throw new IllegalArgumentException("Blocked edge point must be 'x y plane': " + point);
+        }
+        return new WorldPoint(
+                Integer.parseInt(parts[0]),
+                Integer.parseInt(parts[1]),
+                Integer.parseInt(parts[2]));
+    }
+
+    private static void addStaticEdge(Set<Long> edges, WorldPoint origin, WorldPoint destination) {
+        edges.add(transportEdgeKey(
+                WorldPointUtil.packWorldPoint(origin),
+                WorldPointUtil.packWorldPoint(destination)));
     }
 
     private static boolean blocksWalkingEdgeWhenUnavailable(Transport transport) {

@@ -73,6 +73,8 @@ public class GeLumbridgeTeleportHarnessPlugin extends Plugin {
         if (executor != null) {
             executor.shutdownNow();
         }
+        Rs2Walker.setTarget(null);
+        activeLeg = null;
     }
 
     @Subscribe
@@ -251,6 +253,7 @@ public class GeLumbridgeTeleportHarnessPlugin extends Plugin {
         } catch (TimeoutException e) {
             outcome.walkerThreadDump = dumpWalkerThread();
             future.cancel(true);
+            Rs2Walker.setTarget(null);
             return "TIMEOUT";
         } catch (Exception e) {
             log.warn("[GeLumbridgeTeleportHarness] Webwalker leg failed for destination {}", destination, e);
