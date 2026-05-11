@@ -10,8 +10,8 @@ import net.runelite.api.gameval.ItemID;
 import net.runelite.api.gameval.VarbitID;
 import net.runelite.client.plugins.itemcharges.ItemChargeConfig;
 import net.runelite.client.plugins.microbot.Microbot;
-import net.runelite.client.plugins.microbot.globval.enums.InterfaceTab;
 import net.runelite.client.plugins.microbot.shortestpath.*;
+import net.runelite.client.plugins.microbot.shortestpath.pathfinder.policy.TransportRequirementPolicy;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
@@ -19,14 +19,17 @@ import net.runelite.client.plugins.microbot.util.magic.Rs2Magic;
 import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
+import net.runelite.client.plugins.microbot.util.leaguetransport.Rs2LeaguesTransport;
+import net.runelite.client.plugins.microbot.util.leaguetransport.Rs2MapOfAlacrityTransport;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
-import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import net.runelite.client.plugins.microbot.util.walker.WebWalkLog;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.function.IntFunction;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -57,6 +60,15 @@ public class PathfinderConfig {
 	private static final WorldPoint SPIRIT_TREE_HOSIDIUS = new WorldPoint(1693, 3540, 0);
 	private static final WorldPoint SPIRIT_TREE_FARMING_GUILD = new WorldPoint(1251, 3750, 0);
 	private static final Set<Long> STATIC_BLOCKED_EDGES_PACKED = loadStaticBlockedEdgesFromResources();
+
+	/** Order matches {@link #spiritTreeDestinationToggle(int)} — add destinations in both places only here + switch. */
+	private static final WorldPoint[] SPIRIT_TREE_DESTINATIONS_ORDERED = {
+			SPIRIT_TREE_ETCETERIA,
+			SPIRIT_TREE_BRIMHAVEN,
+			SPIRIT_TREE_PORT_SARIM,
+			SPIRIT_TREE_HOSIDIUS,
+			SPIRIT_TREE_FARMING_GUILD,
+	};
 
     private final SplitFlagMap mapData;
     private final ThreadLocal<CollisionMap> map;
@@ -145,12 +157,19 @@ public class PathfinderConfig {
     private Map<String, int[]> refreshCurrencyCache;
     private static final Skill[] SKILLS = Skill.values();
 
+    /**
+     * Memo of last {@link #refreshTransports} result when {@link #computeTransportRefreshCacheKeyHash} and
+     * verification (boosted skills + transport varbits/varplayers) match. Cleared by {@link #invalidateTransportRefreshCache()}.
+     */
+    private volatile TransportRefreshSnapshot transportRefreshSnapshot;
+
     public PathfinderConfig(SplitFlagMap mapData, Map<WorldPoint, Set<Transport>> transports,
                             List<Restriction> restrictions,
                             Client client, ShortestPathConfig config) {
         this.mapData = mapData;
         this.map = ThreadLocal.withInitial(() -> new CollisionMap(this.mapData));
-        this.allTransports = transports;
+        this.allTransports = new ConcurrentHashMap<>();
+        replaceAllTransports(transports);
         this.usableTeleports = ConcurrentHashMap.newKeySet(allTransports.size() / 20);
         this.transports = new ConcurrentHashMap<>(allTransports.size() / 2);
         this.transportsPacked = new PrimitiveIntHashMap<>(allTransports.size() / 2);
@@ -190,6 +209,9 @@ public class PathfinderConfig {
         useSpiritTreePortSarim = ShortestPathPlugin.override("spiritTreePortSarim", config.spiritTreePortSarim());
         useSpiritTreeHosidius = ShortestPathPlugin.override("spiritTreeHosidius", config.spiritTreeHosidius());
         useSpiritTreeFarmingGuild = ShortestPathPlugin.override("spiritTreeFarmingGuild", config.spiritTreeFarmingGuild());
+
+        // Keep the master spirit-tree toggle authoritative. Destination toggles only
+        // gate explicit optional destinations listed in SPIRIT_TREE_DESTINATIONS_ORDERED.
         useTeleportationItems = ShortestPathPlugin.override("useTeleportationItems", config.useTeleportationItems());
         useTeleportationMinigames = ShortestPathPlugin.override("useTeleportationMinigames", config.useTeleportationMinigames());
         useTeleportationLevers = ShortestPathPlugin.override("useTeleportationLevers", config.useTeleportationLevers());
@@ -214,14 +236,11 @@ public class PathfinderConfig {
             refreshRestrictionData();
             long t2 = System.currentTimeMillis();
 
-            // Do not switch back to inventory tab if we are inside of the telekinetic room in Mage Training Arena
-            if (Rs2Player.getWorldLocation().getRegionID() != 13463) {
-                Rs2Tab.switchTo(InterfaceTab.INVENTORY);
-            }
-            long t3 = System.currentTimeMillis();
+            // Do not switch tabs here. refresh() runs often (pathfinder restarts, walker compareRoutes);
+            // forcing inventory was disruptive and unnecessary — Rs2Inventory reads containers without it.
 
-            log.info("[PathfinderConfig] refresh: transports={}ms, restrictions={}ms, tabSwitch={}ms, total={}ms",
-                    t1 - t0, t2 - t1, t3 - t2, t3 - t0);
+            WebWalkLog.cfg("refresh transports={}ms restr={}ms total={}ms",
+                    t1 - t0, t2 - t1, t2 - t0);
             //END microbot variables
         }
     }
@@ -254,6 +273,7 @@ public class PathfinderConfig {
             }
             transportsPacked.put(packedLocation, usableWildyTeleports);
         }
+
     }
 
     public void filterLocations(Set<WorldPoint> locations, boolean canReviveFiltered) {
@@ -291,6 +311,29 @@ public class PathfinderConfig {
         useGnomeGliders &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
         useSpiritTrees &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
         useQuetzals &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
+
+        final Rs2LeaguesTransport.LeaguesContext leaguesCtx = Rs2LeaguesTransport.leaguesContext();
+        final int refreshCacheKeyHash = computeTransportRefreshCacheKeyHash(target, leaguesCtx);
+
+        TransportRefreshSnapshot snap = transportRefreshSnapshot;
+        if (snap != null && snap.cacheKeyHash == refreshCacheKeyHash && client != null) {
+            int[] boostedProbe = new int[SKILLS.length];
+            Microbot.getClientThread().runOnClientThreadOptional(() -> {
+                for (int i = 0; i < SKILLS.length; i++) {
+                    boostedProbe[i] = client.getBoostedSkillLevel(SKILLS[i]);
+                }
+                return true;
+            });
+            int verProbe = computeTransportRefreshVerificationHash(boostedProbe, snap.sortedVarbits, snap.sortedVarplayers, snap.sortedQuestIds);
+            if (verProbe == snap.verificationHash) {
+                snap.restoreInto(this);
+                if (useBankItems && config != null && config.maxSimilarTransportDistance() > 0) {
+                    filterSimilarTransports(target);
+                }
+                WebWalkLog.cfg("refresh_transports cache_hit key={}", refreshCacheKeyHash);
+                return;
+            }
+        }
 
         transports.clear();
         transportsPacked.clear();
@@ -344,6 +387,11 @@ public class PathfinderConfig {
         int moaSeen = 0;
         int moaKept = 0;
 
+        // One snapshot for this refreshTransports pass (avoid re-querying unlocked regions per transport).
+        // Trade-off: unlock mid-refresh is picked up on next refresh — acceptable vs client-thread churn per edge.
+        // Scripts that must path immediately after unlock should trigger an explicit transport refresh / recalc.
+        // Reviewers: do not "fix" staleness by calling leaguesContext() per transport — intentional batching; callers refresh explicitly when needed.
+
         for (Map.Entry<WorldPoint, Set<Transport>> entry : mergedList.entrySet()) {
             WorldPoint point = entry.getKey();
             Set<Transport> usableTransports = new HashSet<>(entry.getValue().size());
@@ -351,9 +399,7 @@ public class PathfinderConfig {
                 totalTransports++;
                 updateActionBasedOnQuestState(transport);
 
-                boolean isMoa = transport.getType() == TransportType.SEASONAL_TRANSPORT
-                        && transport.getDisplayInfo() != null
-                        && transport.getDisplayInfo().toLowerCase().contains("map of alacrity");
+                boolean isMoa = isMapOfAlacritySeasonalRow(transport);
                 if (isMoa) moaSeen++;
 
                 long t0 = System.nanoTime();
@@ -367,8 +413,14 @@ public class PathfinderConfig {
                 stats[2] += (int)(elapsed / 1_000);
                 if (usable) stats[1]++;
 
+                // stats[1] is incremented when useTransport() is true; isTransportAllowed may still reject below.
+                // moaKept reflects the final kept set; per-type stats[1] can exceed checkedTransports when Leagues filters.
                 if (!usable) {
                     addBlockedTransportEdgeIfNeeded(transport);
+                    continue;
+                }
+
+                if (!Rs2LeaguesTransport.isTransportAllowed(leaguesCtx, transport)) {
                     continue;
                 }
                 checkedTransports++;
@@ -385,6 +437,8 @@ public class PathfinderConfig {
                 transportsPacked.put(WorldPointUtil.packWorldPoint(point), usableTransports);
             }
         }
+
+        Rs2LeaguesTransport.injectLeaguesTransports(this, leaguesCtx, usableTeleports, transports, transportsPacked, typeStats);
         long filterTime = System.currentTimeMillis() - filterStart;
 
         long similarStart = System.currentTimeMillis();
@@ -393,23 +447,41 @@ public class PathfinderConfig {
         }
         long similarTime = System.currentTimeMillis() - similarStart;
 
+        int[] sortedVarbits = varbitIds.stream().mapToInt(Integer::intValue).sorted().toArray();
+        int[] sortedVarplayers = varplayerIds.stream().mapToInt(Integer::intValue).sorted().toArray();
+        int[] sortedQuestIds = mergedList.values().stream()
+                .flatMap(Set::stream)
+                .filter(Objects::nonNull)
+                .map(Transport::getQuests)
+                .filter(Objects::nonNull)
+                .flatMap(m -> m.keySet().stream())
+                .filter(Objects::nonNull)
+                .mapToInt(Quest::getId)
+                .distinct()
+                .sorted()
+                .toArray();
+        int verificationHash = computeTransportRefreshVerificationHash(refreshBoostedLevels, sortedVarbits, sortedVarplayers, sortedQuestIds);
+        transportRefreshSnapshot = TransportRefreshSnapshot.capture(
+                refreshCacheKeyHash, verificationHash, sortedVarbits, sortedVarplayers, sortedQuestIds, transports, usableTeleports);
+
         refreshAvailableItemIds = null;
         refreshBoostedLevels = null;
         refreshCurrencyCache = null;
 
-        log.info("[refreshTransports] merge={}ms, cache={}ms, filter={}ms (useTransport={}ms), similar={}ms, total/usable={}/{}, teleports={}, varbits={}, varplayers={}",
+        // varbit/varplayer counts = distinct ids referenced by merged transport definitions this refresh, not total client var space.
+        WebWalkLog.cfg("refresh_transports merge={}ms cache={}ms filter={}ms useTrans={}ms similar={}ms total/chk={}/{} usablePost={} moaS={} moaK={} vb={} vp={}",
                 mergeTime, cacheTime, filterTime, useTransportTimeNanos / 1_000_000, similarTime,
-                totalTransports, checkedTransports, usableTeleports.size(), varbitIds.size(), varplayerIds.size());
+                totalTransports, checkedTransports, usableTeleports.size(), moaSeen, moaKept, varbitIds.size(), varplayerIds.size());
 
         typeStats.entrySet().stream()
                 .sorted((a, b) -> Integer.compare(b.getValue()[2], a.getValue()[2]))
                 .limit(5)
-                .forEach(e -> log.info("[refreshTransports]   {} : count={}, usable={}, time={}ms",
+                .forEach(e -> WebWalkLog.cfg("refresh_transports type {} cnt={} passed={} timeMs={}",
                         e.getKey(), e.getValue()[0], e.getValue()[1], e.getValue()[2] / 1000));
 
         log.debug("[MoA] refreshTransports: seen={} kept={} (useSeasonalTransports={}, VarbitID.LEAGUE_TYPE={})",
                 moaSeen, moaKept, useSeasonalTransports,
-                Microbot.getVarbitValue(10032));
+                Microbot.getVarbitValue(VarbitID.LEAGUE_TYPE));
     }
 
     public boolean isBlockedTransportEdge(int originPacked, int destinationPacked) {
@@ -577,6 +649,36 @@ public class PathfinderConfig {
         refresh(null);
     }
 
+    /**
+     * Drop {@link #transportRefreshSnapshot} so the next {@link #refresh(WorldPoint)} rebuilds transport maps
+     * (inventory/quest/varbit changes that are not captured by the memo key, script-driven transport mutations, etc.).
+     */
+    public void invalidateTransportRefreshCache() {
+        transportRefreshSnapshot = null;
+    }
+
+    /**
+     * Rebuilds base transport definitions from packaged TSV resources and swaps them into {@link #allTransports}.
+     * The next {@link #refresh(WorldPoint)} will use the reloaded definitions.
+     *
+     * @return number of origin nodes loaded
+     */
+    public int reloadTransportDefinitionsFromResources() {
+        Map<WorldPoint, Set<Transport>> reloaded = Transport.reloadFromResources();
+        replaceAllTransports(reloaded);
+        invalidateTransportRefreshCache();
+        return allTransports.size();
+    }
+
+    private void replaceAllTransports(Map<WorldPoint, Set<Transport>> source) {
+        allTransports.clear();
+        if (source == null || source.isEmpty()) {
+            return;
+        }
+        source.forEach((origin, set) ->
+                allTransports.put(origin, set == null ? Collections.emptySet() : new HashSet<>(set)));
+    }
+
     private void refreshRestrictionData() {
         internalRestrictedPointsPacked.clear();
         List<Restriction> allRestrictions = Stream.concat(resourceRestrictions.stream(), customRestrictions.stream())
@@ -686,20 +788,11 @@ public class PathfinderConfig {
     }
 
     private boolean completedQuests(Transport transport) {
-        return transport.getQuests().entrySet().stream()
-                .allMatch(entry -> {
-                    QuestState playerState = Rs2Player.getQuestState(entry.getKey());
-                    QuestState requiredState = entry.getValue();
-                    int playerIndex = questStateOrder.indexOf(playerState);
-                    int requiredIndex = questStateOrder.indexOf(requiredState);
-                    return playerIndex >= requiredIndex;
-                });
+        return TransportRequirementPolicy.completedQuests(transport, questStateOrder);
     }
 
     private boolean varbitChecks(Transport transport) {
-        return transport.getVarbits().isEmpty() ||
-                transport.getVarbits().stream()
-                        .allMatch(varbitCheck -> varbitCheck.matches(Microbot.getVarbitValue(varbitCheck.getVarbitId())));
+        return TransportRequirementPolicy.varbitChecks(transport);
     }
 
     private boolean varplayerChecks(Transport transport) {
@@ -714,14 +807,22 @@ public class PathfinderConfig {
                 .orElse(0);
     }
 
-    private boolean useTransport(Transport transport) {
-        boolean traceMoa = transport.getType() == TransportType.SEASONAL_TRANSPORT
-                && transport.getDisplayInfo() != null
-                && transport.getDisplayInfo().toLowerCase().contains("map of alacrity");
+    /**
+     * MoA seasonal row: same predicate for refresh stats and {@link #useTransport}.
+     * MoA TSV rows are expected to be {@link TransportType#SEASONAL_TRANSPORT} with a non-null destination.
+     */
+    private static boolean isMapOfAlacritySeasonalRow(Transport transport) {
+        return transport != null
+                && transport.getType() == TransportType.SEASONAL_TRANSPORT
+                && transport.getDestination() != null
+                && Rs2MapOfAlacrityTransport.isMapOfAlacrityTransport(transport);
+    }
 
-        // Session blacklist: once an MoA destination fails at runtime (locked region or
-        // unrecognised name), don't let the pathfinder keep routing through it.
-        if (traceMoa && Rs2Walker.blacklistedMoaDestinations.contains(
+    private boolean useTransport(Transport transport) {
+        boolean traceMoa = isMapOfAlacritySeasonalRow(transport);
+
+        // MoA: fail once -> block same dest this session (avoid reroute spam).
+        if (traceMoa && Rs2MapOfAlacrityTransport.isMoaDestinationBlacklisted(
                 WorldPointUtil.packWorldPoint(transport.getDestination()))) {
             return false;
         }
@@ -731,14 +832,16 @@ public class PathfinderConfig {
         // the pathfinder keeps picking a different Asgarnia/Desert/etc. destination on
         // each re-path — walker fails, blacklists one, re-path picks the next, infinite
         // "running around" loop. Display info format: "Map of Alacrity: <Region> - <Name>".
-        if (traceMoa && !Rs2Walker.lockedMoaRegions.isEmpty()) {
+        if (traceMoa) {
             String disp = transport.getDisplayInfo();
-            int colon = disp.indexOf(':');
-            int dash = colon >= 0 ? disp.indexOf(" - ", colon) : -1;
-            if (colon >= 0 && dash > colon) {
-                String region = disp.substring(colon + 1, dash).trim().toLowerCase();
-                if (Rs2Walker.lockedMoaRegions.contains(region)) {
-                    return false;
+            if (disp != null) {
+                int colon = disp.indexOf(':');
+                int dash = colon >= 0 ? disp.indexOf(" - ", colon) : -1;
+                if (colon >= 0 && dash > colon) {
+                    String region = disp.substring(colon + 1, dash).trim();
+                    if (Rs2MapOfAlacrityTransport.isMoaRegionLocked(region)) {
+                        return false;
+                    }
                 }
             }
         }
@@ -774,7 +877,7 @@ public class PathfinderConfig {
         if (!varbitChecks(transport)) {
             log.debug("Transport ( O: {} D: {} ) requires varbits {}", transport.getOrigin(), transport.getDestination(), transport.getVarbits());
             if (traceMoa) log.debug("[MoA] rejected '{}' — varbit check failed (varbits={}, LEAGUE_TYPE={})",
-                    transport.getDisplayInfo(), transport.getVarbits(), Microbot.getVarbitValue(10032));
+                    transport.getDisplayInfo(), transport.getVarbits(), Microbot.getVarbitValue(VarbitID.LEAGUE_TYPE));
             return false;
         }
 
@@ -804,7 +907,7 @@ public class PathfinderConfig {
         }
 
         // Check if Teleports are globally disabled
-        if (TransportType.isTeleport(transport.getType()) && Rs2Walker.disableTeleports) {
+        if (TransportType.isTeleport(transport.getType(), transport.getOrigin()) && Rs2Walker.disableTeleports) {
             log.debug("Transport ( O: {} D: {} ) is a teleport but teleports are globally disabled", transport.getOrigin(), transport.getDestination());
             return false;
         }
@@ -838,6 +941,21 @@ public class PathfinderConfig {
         }
 
         return true;
+    }
+
+    /**
+     * Same gating as the main {@link #refreshTransports} loop, for rows injected after the merge pass
+     * (Leagues catalog / Area teleports): quest action patch, {@link #useTransport}, {@link Rs2LeaguesTransport#isTransportAllowed}.
+     */
+    public boolean isTransportUsableWithLeaguesContext(Transport transport, Rs2LeaguesTransport.LeaguesContext leaguesCtx) {
+        if (transport == null || leaguesCtx == null) {
+            return false;
+        }
+        updateActionBasedOnQuestState(transport);
+        if (!useTransport(transport)) {
+            return false;
+        }
+        return Rs2LeaguesTransport.isTransportAllowed(leaguesCtx, transport);
     }
 
     /**
@@ -877,25 +995,35 @@ public class PathfinderConfig {
         }
     }
 
+    /**
+     * Toggle for {@link #SPIRIT_TREE_DESTINATIONS_ORDERED}[{@code index}]. Must stay aligned with array length.
+     */
+    private boolean spiritTreeDestinationToggle(int index) {
+        switch (index) {
+            case 0:
+                return useSpiritTreeEtceteria;
+            case 1:
+                return useSpiritTreeBrimhaven;
+            case 2:
+                return useSpiritTreePortSarim;
+            case 3:
+                return useSpiritTreeHosidius;
+            case 4:
+                return useSpiritTreeFarmingGuild;
+            default:
+                throw new AssertionError("spirit tree index " + index);
+        }
+    }
+
     private boolean isSpiritTreeDestinationEnabled(Transport transport) {
         WorldPoint destination = transport.getDestination();
         if (destination == null) {
             return true;
         }
-        if (destination.equals(SPIRIT_TREE_ETCETERIA)) {
-            return useSpiritTreeEtceteria;
-        }
-        if (destination.equals(SPIRIT_TREE_BRIMHAVEN)) {
-            return useSpiritTreeBrimhaven;
-        }
-        if (destination.equals(SPIRIT_TREE_PORT_SARIM)) {
-            return useSpiritTreePortSarim;
-        }
-        if (destination.equals(SPIRIT_TREE_HOSIDIUS)) {
-            return useSpiritTreeHosidius;
-        }
-        if (destination.equals(SPIRIT_TREE_FARMING_GUILD)) {
-            return useSpiritTreeFarmingGuild;
+        for (int i = 0; i < SPIRIT_TREE_DESTINATIONS_ORDERED.length; i++) {
+            if (destination.equals(SPIRIT_TREE_DESTINATIONS_ORDERED[i])) {
+                return spiritTreeDestinationToggle(i);
+            }
         }
         return true;
     }
@@ -1338,6 +1466,215 @@ public class PathfinderConfig {
             return "Transport";
         } else {
             return transport.getType().toString();
+        }
+    }
+
+    private int computeTransportRefreshCacheKeyHash(WorldPoint target, Rs2LeaguesTransport.LeaguesContext leaguesCtx) {
+        assert leaguesCtx != null;
+        int targetPacked = target == null ? 0 : WorldPointUtil.packWorldPoint(target);
+        int invFp = fingerprintInventoryEquipmentBank();
+        int members = (client != null && client.getWorldType().contains(WorldType.MEMBERS)) ? 1 : 0;
+        int preferTp = (config != null && config.preferTransportToTarget()) ? 1 : 0;
+        int maxSimilar = config != null ? config.maxSimilarTransportDistance() : 0;
+        return Objects.hash(
+                packTransportRefreshToggleBits(),
+                useTeleportationItems,
+                ignoreTeleportAndItems,
+                useBankItems,
+                useNpcs,
+                targetPacked,
+                invFp,
+                members,
+                Rs2Walker.disableTeleports,
+                Rs2MapOfAlacrityTransport.moaTransportCacheFingerprint(),
+                Microbot.getVarbitValue(VarbitID.LEAGUE_TYPE),
+                leaguesCtx.isActive(),
+                leaguesCtx.getUnlockedRegions().hashCode(),
+                usePoh,
+                PohTeleports.isInHouse(),
+                maxSimilar,
+                preferTp,
+                distanceBeforeUsingTeleport);
+    }
+
+    private long packTransportRefreshToggleBits() {
+        long bits = 0;
+        int s = 0;
+        if (useAgilityShortcuts) bits |= 1L << s;
+        s++;
+        if (useGrappleShortcuts) bits |= 1L << s;
+        s++;
+        if (useBoats) bits |= 1L << s;
+        s++;
+        if (useCanoes) bits |= 1L << s;
+        s++;
+        if (useCharterShips) bits |= 1L << s;
+        s++;
+        if (useShips) bits |= 1L << s;
+        s++;
+        if (useFairyRings) bits |= 1L << s;
+        s++;
+        if (useGnomeGliders) bits |= 1L << s;
+        s++;
+        if (useMinecarts) bits |= 1L << s;
+        s++;
+        if (usePoh) bits |= 1L << s;
+        s++;
+        if (useQuetzals) bits |= 1L << s;
+        s++;
+        if (useSpiritTrees) bits |= 1L << s;
+        s++;
+        if (useTeleportationLevers) bits |= 1L << s;
+        s++;
+        if (useTeleportationMinigames) bits |= 1L << s;
+        s++;
+        if (useTeleportationPortals) bits |= 1L << s;
+        s++;
+        if (useTeleportationSpells) bits |= 1L << s;
+        s++;
+        if (useMagicCarpets) bits |= 1L << s;
+        s++;
+        if (useHotAirBalloons) bits |= 1L << s;
+        s++;
+        if (useMagicMushtrees) bits |= 1L << s;
+        s++;
+        if (useSeasonalTransports) bits |= 1L << s;
+        s++;
+        if (useWildernessObelisks) bits |= 1L << s;
+        s++;
+        if (useSpiritTreeEtceteria) bits |= 1L << s;
+        s++;
+        if (useSpiritTreeBrimhaven) bits |= 1L << s;
+        s++;
+        if (useSpiritTreePortSarim) bits |= 1L << s;
+        s++;
+        if (useSpiritTreeHosidius) bits |= 1L << s;
+        s++;
+        if (useSpiritTreeFarmingGuild) bits |= 1L << s;
+        s++;
+        if (avoidWilderness) bits |= 1L << s;
+        return bits;
+    }
+
+    private int fingerprintInventoryEquipmentBank() {
+        final int[] h = {1};
+        Rs2Inventory.items().forEach(item -> {
+            h[0] = 31 * h[0] + item.getId();
+            h[0] = 31 * h[0] + item.getQuantity();
+        });
+        Rs2Equipment.all().forEach(item -> {
+            h[0] = 31 * h[0] + item.getId();
+            h[0] = 31 * h[0] + item.getQuantity();
+        });
+        if (useBankItems) {
+            Rs2Bank.getAll().forEach(item -> {
+                h[0] = 31 * h[0] + item.getId();
+                h[0] = 31 * h[0] + item.getQuantity();
+            });
+        }
+        return h[0];
+    }
+
+    private static int computeTransportRefreshVerificationHash(int[] boostedLevels, int[] sortedVarbits, int[] sortedVarplayers, int[] sortedQuestIds) {
+        return computeTransportRefreshVerificationHash(boostedLevels, sortedVarbits, sortedVarplayers, sortedQuestIds, questId -> {
+            Quest quest = resolveQuestById(questId);
+            return quest == null ? QuestState.NOT_STARTED : Rs2Player.getQuestState(quest);
+        });
+    }
+
+    static int computeTransportRefreshVerificationHash(int[] boostedLevels, int[] sortedVarbits, int[] sortedVarplayers,
+            int[] sortedQuestIds, IntFunction<QuestState> questStateProvider) {
+        assert boostedLevels != null;
+        int h = Arrays.hashCode(boostedLevels);
+        for (int id : sortedVarbits) {
+            h = 31 * h + id;
+            h = 31 * h + Microbot.getVarbitValue(id);
+        }
+        for (int id : sortedVarplayers) {
+            h = 31 * h + id;
+            h = 31 * h + Microbot.getVarbitPlayerValue(id);
+        }
+        for (int questId : sortedQuestIds) {
+            h = 31 * h + questId;
+            h = 31 * h + questStateHashCode(questStateProvider.apply(questId));
+        }
+        int clientOfKourendId = Quest.CLIENT_OF_KOUREND.getId();
+        if (Arrays.binarySearch(sortedQuestIds, clientOfKourendId) < 0) {
+            h = 31 * h + clientOfKourendId;
+            h = 31 * h + questStateHashCode(questStateProvider.apply(clientOfKourendId));
+        }
+        return h;
+    }
+
+    private static int questStateHashCode(QuestState state) {
+        if (state == null) {
+            return -1;
+        }
+        switch (state) {
+            case NOT_STARTED:
+                return 0;
+            case IN_PROGRESS:
+                return 1;
+            case FINISHED:
+                return 2;
+            default:
+                return state.ordinal() + 3;
+        }
+    }
+
+    private static Quest resolveQuestById(int questId) {
+        for (Quest quest : Quest.values()) {
+            if (quest.getId() == questId) {
+                return quest;
+            }
+        }
+        return null;
+    }
+
+    private static final class TransportRefreshSnapshot {
+        private final int cacheKeyHash;
+        private final int verificationHash;
+        private final int[] sortedVarbits;
+        private final int[] sortedVarplayers;
+        private final int[] sortedQuestIds;
+        private final Map<WorldPoint, Set<Transport>> transportsData;
+        private final Set<Transport> usableData;
+
+        private TransportRefreshSnapshot(int cacheKeyHash, int verificationHash, int[] sortedVarbits, int[] sortedVarplayers,
+                int[] sortedQuestIds,
+                Map<WorldPoint, Set<Transport>> transportsData, Set<Transport> usableData) {
+            this.cacheKeyHash = cacheKeyHash;
+            this.verificationHash = verificationHash;
+            this.sortedVarbits = sortedVarbits;
+            this.sortedVarplayers = sortedVarplayers;
+            this.sortedQuestIds = sortedQuestIds;
+            this.transportsData = transportsData;
+            this.usableData = usableData;
+        }
+
+        static TransportRefreshSnapshot capture(int cacheKeyHash, int verificationHash, int[] sortedVarbits, int[] sortedVarplayers,
+                int[] sortedQuestIds,
+                Map<WorldPoint, Set<Transport>> srcTransports, Set<Transport> srcUsable) {
+            assert srcTransports != null && srcUsable != null;
+            Map<WorldPoint, Set<Transport>> copy = new HashMap<>(srcTransports.size());
+            for (Map.Entry<WorldPoint, Set<Transport>> e : srcTransports.entrySet()) {
+                copy.put(e.getKey(), new HashSet<>(e.getValue()));
+            }
+            Set<Transport> usableCopy = new HashSet<>(srcUsable);
+            return new TransportRefreshSnapshot(cacheKeyHash, verificationHash, sortedVarbits, sortedVarplayers, sortedQuestIds, copy, usableCopy);
+        }
+
+        void restoreInto(PathfinderConfig c) {
+            c.transports.clear();
+            c.transportsPacked.clear();
+            c.usableTeleports.clear();
+            for (Map.Entry<WorldPoint, Set<Transport>> e : transportsData.entrySet()) {
+                WorldPoint wp = e.getKey();
+                Set<Transport> set = new HashSet<>(e.getValue());
+                c.transports.put(wp, set);
+                c.transportsPacked.put(WorldPointUtil.packWorldPoint(wp), set);
+            }
+            c.usableTeleports.addAll(new HashSet<>(usableData));
         }
     }
 
