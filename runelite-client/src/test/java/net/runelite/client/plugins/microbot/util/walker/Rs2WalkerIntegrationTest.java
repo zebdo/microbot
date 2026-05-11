@@ -134,8 +134,12 @@ public class Rs2WalkerIntegrationTest {
         WorldPoint nearbyTarget = new WorldPoint(playerLoc.getX() + 10, playerLoc.getY() + 10, playerLoc.getPlane());
         log.info("Player at: {}, target: {}", playerLoc, nearbyTarget);
 
-        Rs2Walker.setTarget(null);
-        Thread.sleep(500);
+        Rs2Walker.clearWalkingRoute("test:cleanup");
+        long clearDeadline = System.currentTimeMillis() + 2000;
+        while (ShortestPathPlugin.getPathfinder() != null && System.currentTimeMillis() < clearDeadline) {
+            Thread.sleep(100);
+        }
+        assertNull("Pathfinder should clear during cleanup", ShortestPathPlugin.getPathfinder());
 
         log.info("Setting target...");
         Rs2Walker.setTarget(nearbyTarget);
@@ -167,7 +171,12 @@ public class Rs2WalkerIntegrationTest {
             log.error("Pathfinder did NOT complete within 15 seconds!");
         }
 
-        Rs2Walker.setTarget(null);
+        Rs2Walker.clearWalkingRoute("test:cleanup");
+        clearDeadline = System.currentTimeMillis() + 2000;
+        while (ShortestPathPlugin.getPathfinder() != null && System.currentTimeMillis() < clearDeadline) {
+            Thread.sleep(100);
+        }
+        assertNull("Pathfinder should clear during final cleanup", ShortestPathPlugin.getPathfinder());
 
         assertTrue("Pathfinder should complete within 15 seconds", done);
     }
