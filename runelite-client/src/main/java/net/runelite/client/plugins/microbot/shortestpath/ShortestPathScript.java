@@ -3,6 +3,7 @@ package net.runelite.client.plugins.microbot.shortestpath;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import net.runelite.api.Player;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.Script;
@@ -23,6 +24,10 @@ public class ShortestPathScript extends Script {
     private volatile ShortestPathConfig config;
     private volatile Future<?> walkTaskFuture;
     private final AtomicBoolean walkTaskRunning = new AtomicBoolean(false);
+    private volatile WorldPoint lastExitRetryTarget;
+    private volatile int consecutiveExitRetries = 0;
+    private static final int MAX_CONSECUTIVE_EXIT_RETRIES = 3;
+    private static final long USER_STOP_REASON_WINDOW_MS = 3_000L;
 
     public boolean run(ShortestPathConfig config) {
         this.config = config;
@@ -47,11 +52,20 @@ public class ShortestPathScript extends Script {
     }
 
 	public void setTriggerWalker(WorldPoint point) {
+		setTriggerWalker(point, null);
+	}
+
+	/**
+	 * @param stopReason when {@code point} is null, passed to {@link Rs2Walker#clearWalkingRoute(String)} (e.g. {@code hotkey:ctrl+x})
+	 */
+	public void setTriggerWalker(WorldPoint point, String stopReason) {
 		if (point == null)
 		{
-            log.debug("ShortestPathScript: setTriggerWalker called with null point");
+			String r = stopReason != null && !stopReason.isBlank()
+					? stopReason
+					: "shortest-path-script:trigger-null";
 			triggerWalker = null;
-			Rs2Walker.setTarget(null);
+			Rs2Walker.clearWalkingRoute(r);
             Future<?> future = walkTaskFuture;
             if (future != null && !future.isDone()) {
                 future.cancel(true);
@@ -82,10 +96,15 @@ public class ShortestPathScript extends Script {
                     state = Rs2Walker.walkWithState(target);
                 }
 
-                if (target.equals(getTriggerWalker())
-                        && (state == WalkerState.ARRIVED || state == WalkerState.UNREACHABLE || state == WalkerState.EXIT)) {
-                    triggerWalker = null;
-                    Rs2Walker.setTarget(null);
+                if (target.equals(getTriggerWalker())) {
+                    if (state == WalkerState.EXIT && shouldRetryAfterExit(target)) {
+                        return;
+                    }
+                    if (state == WalkerState.ARRIVED || state == WalkerState.UNREACHABLE || state == WalkerState.EXIT) {
+                        resetExitRetryState();
+                        triggerWalker = null;
+                        Rs2Walker.clearWalkingRoute("shortest-path-script:walk-task-terminal-state");
+                    }
                 }
             } catch (Exception ex) {
                 log.error("Exception in ShortestPathScript walk task: {} - ", ex.getMessage(), ex);
@@ -93,5 +112,63 @@ public class ShortestPathScript extends Script {
                 walkTaskRunning.set(false);
             }
         });
+    }
+
+    private boolean shouldRetryAfterExit(WorldPoint target) {
+        if (target == null || !target.equals(getTriggerWalker())) {
+            resetExitRetryState();
+            return false;
+        }
+        if (isLocalPlayerDead()) {
+            resetExitRetryState();
+            return false;
+        }
+        if (isRecentUserStopClear()) {
+            resetExitRetryState();
+            return false;
+        }
+        if (!target.equals(lastExitRetryTarget)) {
+            lastExitRetryTarget = target;
+            consecutiveExitRetries = 0;
+        }
+        if (consecutiveExitRetries >= MAX_CONSECUTIVE_EXIT_RETRIES) {
+            log.warn("[ShortestPathScript] EXIT retry limit reached for target={} retries={}",
+                    target, consecutiveExitRetries);
+            resetExitRetryState();
+            return false;
+        }
+        consecutiveExitRetries++;
+        log.info("[ShortestPathScript] EXIT auto-retry {}/{} for target={}",
+                consecutiveExitRetries, MAX_CONSECUTIVE_EXIT_RETRIES, target);
+        return true;
+    }
+
+    private boolean isRecentUserStopClear() {
+        long clearAt = Rs2Walker.getLastRouteClearAtMs();
+        if (clearAt <= 0 || System.currentTimeMillis() - clearAt > USER_STOP_REASON_WINDOW_MS) {
+            return false;
+        }
+        String reason = Rs2Walker.getLastRouteClearReason();
+        if (reason == null) {
+            return false;
+        }
+        String normalized = reason.toLowerCase();
+        return normalized.contains("ctrl+x")
+                || normalized.contains("stop-walking-button")
+                || normalized.contains("trigger-null");
+    }
+
+    private boolean isLocalPlayerDead() {
+        return Microbot.getClientThread()
+                .runOnClientThreadOptional(() -> {
+                    Player local = Microbot.getClient().getLocalPlayer();
+                    return local != null && local.isDead();
+                })
+                .orElse(false);
+    }
+
+    private void resetExitRetryState() {
+        lastExitRetryTarget = null;
+        consecutiveExitRetries = 0;
     }
 }

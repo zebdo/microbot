@@ -146,6 +146,9 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
     @Inject
     private KeyManager keyManager;
 
+    @Inject
+    private ConfigManager configManager;
+
 	boolean drawCollisionMap;
 	boolean drawMap;
 	boolean drawMinimap;
@@ -371,13 +374,28 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
         return false;
     }
 
-    private final Pattern TRANSPORT_OPTIONS_REGEX = Pattern.compile("^(avoidWilderness|use\\w+|useTeleportationItems)$");
+    private static final Set<String> PATH_REFRESH_CONFIG_KEYS = Set.of(
+            "avoidWilderness",
+            "distanceBeforeUsingTeleports",
+            "recalculateDistance",
+            "finishDistance",
+            "calculationCutoff",
+            "walkWithBankedTransports",
+            "minBankRouteSavings",
+            "preferNonConsumableTeleportAndSpells",
+            "preferTransportToTarget",
+            "maxSimilarTransportDistance"
+    );
+    private static final String RELOAD_TRANSPORT_DEFINITIONS_KEY = "reloadTransportDefinitions";
+    private final Pattern TRANSPORT_OPTIONS_REGEX = Pattern.compile("^use\\w+$");
 
     @Subscribe
     public void onConfigChanged(ConfigChanged event) {
         if (!CONFIG_GROUP.equals(event.getGroup())) {
             return;
         }
+
+        cacheConfigValues();
 
 		// Reset config in Rs2Walker when changed
 		Rs2Walker.setConfig(config);
@@ -400,11 +418,28 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
             return;
         }
 
-        // Transport option changed; rerun pathfinding
-        if (TRANSPORT_OPTIONS_REGEX.matcher(event.getKey()).find()) {
+        boolean reloadRequested = RELOAD_TRANSPORT_DEFINITIONS_KEY.equals(event.getKey())
+                && Boolean.parseBoolean(event.getNewValue());
+        if (reloadRequested && pathfinderConfig != null) {
+            int reloadedOrigins = pathfinderConfig.reloadTransportDefinitionsFromResources();
+            log.info("[ShortestPath] Reloaded transport TSV definitions from resources (origins={})", reloadedOrigins);
+        }
+
+        // Transport/path option changed; rerun pathfinding so PathfinderConfig.refresh() rehydrates snapshots.
+        if (reloadRequested
+                || TRANSPORT_OPTIONS_REGEX.matcher(event.getKey()).matches()
+                || PATH_REFRESH_CONFIG_KEYS.contains(event.getKey())) {
+            if (pathfinderConfig != null) {
+                pathfinderConfig.invalidateTransportRefreshCache();
+            }
             if (pathfinder != null) {
                 restartPathfinding(pathfinder.getStart(), pathfinder.getTargets());
             }
+        }
+
+        // One-shot developer toggle: switch itself back off after handling.
+        if (reloadRequested) {
+            configManager.setConfiguration(CONFIG_GROUP, RELOAD_TRANSPORT_DEFINITIONS_KEY, false);
         }
     }
 
@@ -518,9 +553,9 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
 
     void handlePendingLoginRefresh() {
         if (pendingLoginRefresh && pathfinderConfig != null) {
-            pendingLoginRefresh = false;
             try {
                 pathfinderConfig.refresh();
+                pendingLoginRefresh = false;
             } catch (Exception e) {
                 log.warn("[ShortestPath] post-login refresh failed", e);
             }
