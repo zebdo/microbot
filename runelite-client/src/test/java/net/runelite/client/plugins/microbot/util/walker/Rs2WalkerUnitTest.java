@@ -41,12 +41,14 @@ public class Rs2WalkerUnitTest {
 
     @Before
     public void resetTelemetry() {
+        Rs2Walker.clearWalkerDedupeForTesting();
         Rs2Walker.Telemetry.reset();
         Rs2Walker.sessionBlacklistedDoors.clear();
     }
 
     @After
     public void tearDown() {
+        Rs2Walker.clearWalkerDedupeForTesting();
         Rs2Walker.Telemetry.reset();
         Rs2Walker.sessionBlacklistedDoors.clear();
     }
@@ -424,6 +426,97 @@ public class Rs2WalkerUnitTest {
                 Rs2Walker.wallDoorTouchesSegment(door,
                         new WorldPoint(3123, 3360, 0),
                         new WorldPoint(3122, 3359, 0)));
+    }
+
+    @Test
+    public void didTraverseInteractedDoor_crossesDoorTowardSegmentDestination_returnsTrue() {
+        assertTrue(Rs2Walker.didTraverseInteractedDoor(
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0),
+                new WorldPoint(2465, 3493, 0),
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)));
+    }
+
+    @Test
+    public void didTraverseInteractedDoor_movesWithoutCrossingObject_returnsFalse() {
+        assertFalse(Rs2Walker.didTraverseInteractedDoor(
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3495, 0),
+                new WorldPoint(2465, 3493, 0),
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)));
+    }
+
+    @Test
+    public void didTraverseInteractedDoor_crossesObjectButMovesAwayFromDestination_returnsFalse() {
+        assertFalse(Rs2Walker.didTraverseInteractedDoor(
+                new WorldPoint(1987, 5568, 0),
+                new WorldPoint(1986, 5568, 0),
+                new WorldPoint(1987, 5568, 0),
+                new WorldPoint(1987, 5568, 0),
+                new WorldPoint(1988, 5568, 0)));
+    }
+
+    @Test
+    public void shouldBlacklistDoorAfterWrongTraversal_teleportAway_returnsTrue() {
+        assertTrue(Rs2Walker.shouldBlacklistDoorAfterWrongTraversal(
+                new WorldPoint(1987, 5568, 0),
+                new WorldPoint(2435, 3519, 0),
+                new WorldPoint(1987, 5568, 0),
+                new WorldPoint(1988, 5569, 0)));
+    }
+
+    @Test
+    public void shouldBlacklistDoorAfterWrongTraversal_progressTowardEdge_returnsFalse() {
+        assertFalse(Rs2Walker.shouldBlacklistDoorAfterWrongTraversal(
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0),
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)));
+    }
+
+    @Test
+    public void markDoorEdgeAttemptThisPass_allowsFirstAttemptOnly() {
+        java.util.Map<String, WorldPoint> attempted = new java.util.HashMap<>();
+        WorldPoint[] segment = new WorldPoint[] {
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)
+        };
+
+        WorldPoint playerPos = new WorldPoint(2465, 3494, 0);
+        assertTrue(Rs2Walker.markDoorEdgeAttemptThisPass(attempted, segment, playerPos));
+        assertFalse(Rs2Walker.markDoorEdgeAttemptThisPass(attempted, segment, playerPos));
+    }
+
+    @Test
+    public void markDoorEdgeAttemptThisPass_treatsReverseEdgeAsDuplicate() {
+        java.util.Map<String, WorldPoint> attempted = new java.util.HashMap<>();
+        WorldPoint[] forward = new WorldPoint[] {
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)
+        };
+        WorldPoint[] reverse = new WorldPoint[] {
+                new WorldPoint(2465, 3493, 0),
+                new WorldPoint(2465, 3494, 0)
+        };
+
+        WorldPoint playerPos = new WorldPoint(2465, 3494, 0);
+        assertTrue(Rs2Walker.markDoorEdgeAttemptThisPass(attempted, forward, playerPos));
+        assertFalse(Rs2Walker.markDoorEdgeAttemptThisPass(attempted, reverse, playerPos));
+    }
+
+    @Test
+    public void markDoorEdgeAttemptThisPass_allowsRetryAfterPlayerProgress() {
+        java.util.Map<String, WorldPoint> attempted = new java.util.HashMap<>();
+        WorldPoint[] segment = new WorldPoint[] {
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)
+        };
+
+        assertTrue(Rs2Walker.markDoorEdgeAttemptThisPass(attempted, segment, new WorldPoint(2465, 3494, 0)));
+        assertTrue("retry should be allowed after moving away from same-edge attempt tile",
+                Rs2Walker.markDoorEdgeAttemptThisPass(attempted, segment, new WorldPoint(2462, 3491, 0)));
     }
 
     // ---------------------------------------------------------------------------

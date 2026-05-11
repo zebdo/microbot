@@ -764,6 +764,17 @@ public interface ShortestPathConfig extends Config {
         return 0;
     }
 
+    @ConfigItem(
+            keyName = "bankTripWhenCacheUnavailable",
+            name = "Bank trip when cache unavailable",
+            description = "When enabled, walker will visit/open nearest bank to bootstrap bank mirror cache before evaluating banked routes.",
+            position = 6,
+            section = sectionAdvanced
+    )
+    default boolean bankTripWhenCacheUnavailable() {
+        return true;
+    }
+
 	@ConfigSection(
 			name = "Spirit tree teleports",
 			description = "Toggle which spirit tree destinations to use",
@@ -823,7 +834,25 @@ public interface ShortestPathConfig extends Config {
 			position = 4,
 			section = sectionSpiritTrees
 	)
-	default boolean spiritTreeFarmingGuild() {
-		return true;
-	}
+    default boolean spiritTreeFarmingGuild() {
+        return true;
+    }
+
+    @ConfigSection(
+            name = "Developer",
+            description = "Optional — most users can ignore.",
+            position = 100
+    )
+    String sectionDeveloper = "sectionDeveloper";
+
+    @ConfigItem(
+            keyName = "reloadTransportDefinitions",
+            name = "Reload transport TSVs",
+            description = "Turn ON to reload web-walker transport tables from the client JAR; saves OFF automatically. Use after replacing packaged TSVs in a dev build.",
+            position = 0,
+            section = sectionDeveloper
+    )
+    default boolean reloadTransportDefinitions() {
+        return false;
+    }
 }
