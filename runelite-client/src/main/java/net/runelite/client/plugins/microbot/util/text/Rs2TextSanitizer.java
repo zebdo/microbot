@@ -24,12 +24,12 @@ public final class Rs2TextSanitizer
 
 	/** Allows empty {@code <>} as well as non-empty tags (chat sometimes emits zero-length markup). */
 	private static final Pattern TAG_STRIP = Pattern.compile("<[^>]*>");
+	private static final Pattern COLOR_TAG_STRIP = Pattern.compile("(?i)</?col(?:=[^>]*?)?>");
 	private static final Pattern DEC_ENTITY = Pattern.compile("&#(\\d{1,7});");
 	private static final Pattern HEX_ENTITY = Pattern.compile("&#(?i)x([0-9a-fA-F]{1,6});");
 	// Extract base name and numeric suffix, e.g. "Super attack (4)" -> "Super attack", 4
 	private static final Pattern ITEM_NAME_SUFFIX_PATTERN = Pattern.compile("^(.*?)(?:\\s*\\((\\d+)\\))?$");
 
-	/** Strip markup tags, repeatedly, and drop dangling {@code <} with no {@code >}. */
 	/**
 	 * Fullwidth / compatibility Unicode colons → ASCII {@code ':'} for prefix parsing (Leagues Area titles, MoA).
 	 */
@@ -42,6 +42,7 @@ public final class Rs2TextSanitizer
 		return raw.replace('\uFF1A', ':').replace('\uFE55', ':').replace('\u2236', ':');
 	}
 
+	/** Strip markup tags, repeatedly, and drop dangling {@code <} with no {@code >}. */
 	public static String stripTags(String raw)
 	{
 		if (raw == null || raw.isEmpty())
@@ -72,6 +73,16 @@ public final class Rs2TextSanitizer
 			s = s.substring(0, lt) + s.substring(lt + 1);
 		}
 		return s;
+	}
+
+	/** Strip only RuneLite/Jagex color tags ({@code <col=...>} and {@code </col>}). */
+	public static String stripColorTags(String raw)
+	{
+		if (raw == null || raw.isEmpty())
+		{
+			return "";
+		}
+		return COLOR_TAG_STRIP.matcher(raw).replaceAll("");
 	}
 
 	/** Strip tags and replace them with a single space (useful for tokenization/matching). */
@@ -225,7 +236,8 @@ public final class Rs2TextSanitizer
 		{
 			return "";
 		}
-		return normalizeApostrophes(stripTags(decodeKnownEntities(normalizeGameText(raw)))).trim();
+		String decoded = stripTags(decodeKnownEntities(normalizeGameText(raw)));
+		return normalizeApostrophes(normalizeGameText(decoded)).trim();
 	}
 
 	public static final class ItemNameWithSuffix

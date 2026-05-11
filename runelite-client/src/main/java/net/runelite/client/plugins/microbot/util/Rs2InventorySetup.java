@@ -46,6 +46,8 @@ public class Rs2InventorySetup {
      * ids, id/name drift, and impossible non-stackable quantities on a single row.
      */
     private static final String PROP_VALIDATE_INVENTORY_SETUP = "microbot.bank.validateInventorySetup";
+    /** Inventory setup value meaning any spellbook is acceptable. */
+    private static final int SPELLBOOK_ANY = 4;
 
 	/**
 	 * {@link Client#getItemDefinition(int)} is client-thread-only; inventory setup runs from script executor threads.
@@ -1108,7 +1110,7 @@ public class Rs2InventorySetup {
      */
     public boolean hasSpellBook() {
 		int setupBook = inventorySetup.getSpellBook();
-		if (setupBook == 4) {
+		if (setupBook == SPELLBOOK_ANY) {
 			return true;
 		}
         return setupBook == Microbot.getVarbitValue(VarbitID.SPELLBOOK);

@@ -37,7 +37,7 @@ public final class Rs2WalkerLifecycleRuntime {
             log.warn("Unable to apply walker destination: client unavailable");
             return;
         }
-        Player localPlayer = client.getLocalPlayer();
+        Player localPlayer = Microbot.getClientThread().invoke(() -> client.getLocalPlayer());
         if (!ShortestPathPlugin.isStartPointSet() && localPlayer == null) {
             log.warn("Start point is not set and player is null");
             return;
@@ -55,37 +55,32 @@ public final class Rs2WalkerLifecycleRuntime {
         ShortestPathPlugin.getMarker().setJumpOnClick(true);
         wmm.add(ShortestPathPlugin.getMarker());
 
-        WorldPoint start;
-        if (client.getTopLevelWorldView().isInstance()) {
-            LocalPoint localLoc = Rs2Player.getLocalLocation();
-            start = localLoc != null ? WorldPoint.fromLocalInstance(client, localLoc) : null;
-            if (start == null) {
-                log.warn("[Walker] setTarget: instance localPoint conversion returned null (localLoc={} target={}) — falling back to raw world location",
-                        localLoc, target);
-                start = Rs2Player.getWorldLocation();
+        WorldPoint start = Microbot.getClientThread().invoke(() -> {
+            if (client.getTopLevelWorldView().isInstance()) {
+                LocalPoint localLoc = Rs2Player.getLocalLocation();
+                WorldPoint computed = localLoc != null ? WorldPoint.fromLocalInstance(client, localLoc) : null;
+                if (computed == null) {
+                    log.warn("[Walker] setTarget: instance localPoint conversion returned null (localLoc={} target={}) — falling back to raw world location",
+                            localLoc, target);
+                    computed = Rs2Player.getWorldLocation();
+                }
+                WorldPoint exitPortal = net.runelite.client.plugins.microbot.shortestpath.PohPanel.getExitPortalTile();
+                if (exitPortal != null) {
+                    Microbot.log("[Walker] In POH instance — remapping pathfinder start " + computed
+                            + " -> exit portal " + exitPortal);
+                    computed = exitPortal;
+                }
+                return computed;
             }
-        } else {
-            start = Rs2Player.getWorldLocation();
-        }
-        if (client.getTopLevelWorldView().isInstance()) {
-            WorldPoint exitPortal = net.runelite.client.plugins.microbot.shortestpath.PohPanel.getExitPortalTile();
-            if (exitPortal != null) {
-                Microbot.log("[Walker] In POH instance — remapping pathfinder start " + start
-                        + " -> exit portal " + exitPortal);
-                start = exitPortal;
-            }
-        }
+            return Rs2Player.getWorldLocation();
+        });
         ShortestPathPlugin.setLastLocation(start);
         final Pathfinder pathfinder = ShortestPathPlugin.getPathfinder();
         if (ShortestPathPlugin.isStartPointSet() && pathfinder != null) {
             start = pathfinder.getStart();
         }
-        if (client.isClientThread()) {
-            final WorldPoint startPoint = start;
-            Microbot.getClientThread().runOnSeperateThread(() -> restartPathfinding(startPoint, target));
-        } else {
-            restartPathfinding(start, target);
-        }
+        final WorldPoint startPoint = start;
+        Microbot.getClientThread().runOnSeperateThread(() -> restartPathfinding(startPoint, target));
     }
 
     public static boolean restartPathfinding(WorldPoint start, WorldPoint end) {
@@ -93,10 +88,6 @@ public final class Rs2WalkerLifecycleRuntime {
     }
 
     public static boolean restartPathfinding(WorldPoint start, Set<WorldPoint> ends) {
-        if (Microbot.getClient().isClientThread()) {
-            return false;
-        }
-
         Pathfinder pathfinder = ShortestPathPlugin.getPathfinder();
         if (pathfinder != null) {
             pathfinder.cancel();
@@ -115,18 +106,31 @@ public final class Rs2WalkerLifecycleRuntime {
         if (Rs2Player.isInCave()) {
             pathfinder = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, ends);
             pathfinder.run();
-            ShortestPathPlugin.getPathfinderConfig().setIgnoreTeleportAndItems(true);
-            Pathfinder pathfinderWithoutTeleports = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, ends);
-            pathfinderWithoutTeleports.run();
-            var lastPath = pathfinderWithoutTeleports.getPath().get(pathfinderWithoutTeleports.getPath().size() - 1);
-            int reachedDistance = Rs2Walker.config != null ? Rs2Walker.config.reachedDistance() : 10;
-            var pathWithoutTeleportsIsReachable = lastPath.distanceTo(ends.stream().findFirst().orElse(lastPath)) <= reachedDistance;
-            if (pathWithoutTeleportsIsReachable && pathfinder.getPath().size() >= pathfinderWithoutTeleports.getPath().size()) {
-                ShortestPathPlugin.setPathfinder(pathfinderWithoutTeleports);
-            } else {
-                ShortestPathPlugin.setPathfinder(pathfinder);
+            try {
+                ShortestPathPlugin.getPathfinderConfig().setIgnoreTeleportAndItems(true);
+                Pathfinder pathfinderWithoutTeleports = new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, ends);
+                pathfinderWithoutTeleports.run();
+
+                boolean noTeleportPathAvailable = !pathfinderWithoutTeleports.getPath().isEmpty();
+                boolean basePathAvailable = pathfinder != null && !pathfinder.getPath().isEmpty();
+                if (!noTeleportPathAvailable) {
+                    ShortestPathPlugin.setPathfinder(basePathAvailable ? pathfinder : pathfinderWithoutTeleports);
+                    return true;
+                }
+
+                WorldPoint lastPath = pathfinderWithoutTeleports.getPath().get(pathfinderWithoutTeleports.getPath().size() - 1);
+                int reachedDistance = Rs2Walker.config != null ? Rs2Walker.config.reachedDistance() : 10;
+                boolean pathWithoutTeleportsIsReachable = lastPath.distanceTo(ends.stream().findFirst().orElse(lastPath)) <= reachedDistance;
+                if (pathWithoutTeleportsIsReachable
+                        && basePathAvailable
+                        && pathfinder.getPath().size() >= pathfinderWithoutTeleports.getPath().size()) {
+                    ShortestPathPlugin.setPathfinder(pathfinderWithoutTeleports);
+                } else {
+                    ShortestPathPlugin.setPathfinder(basePathAvailable ? pathfinder : pathfinderWithoutTeleports);
+                }
+            } finally {
+                ShortestPathPlugin.getPathfinderConfig().setIgnoreTeleportAndItems(false);
             }
-            ShortestPathPlugin.getPathfinderConfig().setIgnoreTeleportAndItems(false);
         } else {
             ShortestPathPlugin.setPathfinder(new Pathfinder(ShortestPathPlugin.getPathfinderConfig(), start, ends));
             ShortestPathPlugin.setPathfinderFuture(ShortestPathPlugin.getPathfindingExecutor().submit(ShortestPathPlugin.getPathfinder()));

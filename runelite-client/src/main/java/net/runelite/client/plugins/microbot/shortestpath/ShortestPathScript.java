@@ -61,6 +61,7 @@ public class ShortestPathScript extends Script {
 	public void setTriggerWalker(WorldPoint point, String stopReason) {
 		if (point == null)
 		{
+			resetExitRetryState();
 			String r = stopReason != null && !stopReason.isBlank()
 					? stopReason
 					: "shortest-path-script:trigger-null";
@@ -72,6 +73,10 @@ public class ShortestPathScript extends Script {
             }
             walkTaskRunning.set(false);
 		} else {
+			if (!point.equals(triggerWalker))
+			{
+				resetExitRetryState();
+			}
 			triggerWalker = point;
             startWalkTask();
 		}

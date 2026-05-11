@@ -136,17 +136,17 @@ public class Rs2UiHelper {
     }
 
     /**
-     * Strips RuneLite/Jagex markup tags from the provided text.
+     * Strips RuneLite/Jagex color tags from the provided text.
      *
-     * @param text the text from which to strip tags.
-     * @return the text without tags.
+     * @param text the text from which to strip color tags.
+     * @return the text without color tags.
 	 *
-	 * @deprecated Use {@link #stripTags(String)} or {@link net.runelite.client.plugins.microbot.util.text.Rs2TextSanitizer#stripTags(String)}.
+	 * @deprecated Use {@link #stripTags(String)} or {@link net.runelite.client.plugins.microbot.util.text.Rs2TextSanitizer#stripTags(String)}
+	 * for full tag removal.
      */
 	@Deprecated
     public static String stripColTags(String text) {
-        // Historic API name; in practice callers want RuneLite/Jagex markup removed, not only <col>.
-        return Rs2TextSanitizer.stripTags(text);
+        return Rs2TextSanitizer.stripColorTags(text);
     }
 
 	/** Strip RuneLite/Jagex markup tags from text. */

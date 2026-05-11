@@ -8,8 +8,8 @@ import static org.junit.Assert.assertTrue;
 public class Rs2WalkerAwaitsTest {
     @Test
     public void shouldAcceptIdleDoorAwait_requiresResolvedEdge() {
-        assertFalse(Rs2WalkerAwaits.shouldAcceptIdleDoorAwait(false, false, 1300L, false));
-        assertTrue(Rs2WalkerAwaits.shouldAcceptIdleDoorAwait(false, false, 1301L, true));
+        assertFalse(Rs2WalkerAwaits.shouldAcceptIdleDoorAwait(false, false, 1200L, false));
+        assertTrue(Rs2WalkerAwaits.shouldAcceptIdleDoorAwait(false, false, 1201L, true));
     }
 
     @Test

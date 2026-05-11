@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -75,7 +76,16 @@ final class LeaguesTransportObservations
 
 	private static final Gson GSON = new GsonBuilder().disableHtmlEscaping().create();
 
-	private static final Map<String, CatalogFileSnapshot> CATALOG_FILE_PARSE_CACHE = new ConcurrentHashMap<>();
+	private static final int CATALOG_FILE_PARSE_CACHE_MAX_ENTRIES = 256;
+	private static final Map<String, CatalogFileSnapshot> CATALOG_FILE_PARSE_CACHE = Collections.synchronizedMap(
+			new LinkedHashMap<String, CatalogFileSnapshot>(128, 0.75f, true)
+			{
+				@Override
+				protected boolean removeEldestEntry(Map.Entry<String, CatalogFileSnapshot> eldest)
+				{
+					return size() > CATALOG_FILE_PARSE_CACHE_MAX_ENTRIES;
+				}
+			});
 	private static final AtomicBoolean LOGGED_OLD_CATALOG_SCHEMA = new AtomicBoolean(false);
 
 	private static final class CatalogFileSnapshot

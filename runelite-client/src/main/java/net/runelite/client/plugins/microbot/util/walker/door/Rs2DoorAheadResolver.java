@@ -12,11 +12,11 @@ public final class Rs2DoorAheadResolver {
     }
 
     public static List<WorldPoint> buildSegmentProbes(WorldPoint fromWp, WorldPoint toWp, WorldPoint doorWp) {
+        if (fromWp == null || toWp == null || doorWp == null) {
+            return List.of();
+        }
         List<WorldPoint> probes = new ArrayList<>();
         probes.add(doorWp);
-        if (fromWp == null || toWp == null || doorWp == null) {
-            return probes;
-        }
 
         boolean diagonal = Math.abs(fromWp.getX() - toWp.getX()) > 0
                 && Math.abs(fromWp.getY() - toWp.getY()) > 0;
@@ -38,8 +38,12 @@ public final class Rs2DoorAheadResolver {
         if (a == null || b == null) {
             return false;
         }
-        return a.toWorldArea().hasLineOfSightTo(
-                Microbot.getClient().getTopLevelWorldView(),
-                b.toWorldArea());
+        WorldPoint from = a;
+        WorldPoint to = b;
+        return Microbot.getClientThread().runOnClientThreadOptional(() ->
+                from.toWorldArea().hasLineOfSightTo(
+                        Microbot.getClient().getTopLevelWorldView(),
+                        to.toWorldArea()))
+                .orElse(false);
     }
 }

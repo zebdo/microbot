@@ -764,6 +764,17 @@ public interface ShortestPathConfig extends Config {
         return 0;
     }
 
+    @ConfigItem(
+            keyName = "bankTripWhenCacheUnavailable",
+            name = "Bank trip when cache unavailable",
+            description = "When enabled, walker will visit/open nearest bank to bootstrap bank mirror cache before evaluating banked routes.",
+            position = 6,
+            section = sectionAdvanced
+    )
+    default boolean bankTripWhenCacheUnavailable() {
+        return true;
+    }
+
 	@ConfigSection(
 			name = "Spirit tree teleports",
 			description = "Toggle which spirit tree destinations to use",

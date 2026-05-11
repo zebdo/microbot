@@ -61,19 +61,28 @@ final class LeaguesTransportPersistence
 
 	private static void ensurePathSnapshot()
 	{
-		if (cachedShareFile != null)
+		int major = leaguesMajor();
+		if (major <= 0)
+		{
+			return;
+		}
+		if (cachedShareFile != null && cachedCatalogVersion != null
+				&& cachedCatalogVersion.equals(resolveCatalogVersion(major)))
 		{
 			return;
 		}
 		synchronized (PATH_SNAPSHOT_LOCK)
 		{
-			if (cachedShareFile != null)
+			major = leaguesMajor();
+			if (major <= 0)
 			{
 				return;
 			}
-			int major = leaguesMajor();
-			String curated = CATALOG_VERSION_BY_MAJOR.get(major);
-			String version = curated != null ? curated : major + ".0.0";
+			String version = resolveCatalogVersion(major);
+			if (cachedShareFile != null && version.equals(cachedCatalogVersion))
+			{
+				return;
+			}
 			Path dir = Path.of(
 					System.getProperty("user.home"),
 					".runelite",
@@ -86,22 +95,46 @@ final class LeaguesTransportPersistence
 		}
 	}
 
+	private static String resolveCatalogVersion(int major)
+	{
+		String curated = CATALOG_VERSION_BY_MAJOR.get(major);
+		return curated != null ? curated : major + ".0.0";
+	}
+
 	static String leaguesCatalogVersion()
 	{
 		ensurePathSnapshot();
-		return cachedCatalogVersion;
+		if (cachedCatalogVersion != null)
+		{
+			return cachedCatalogVersion;
+		}
+		return resolveCatalogVersion(Math.max(0, leaguesMajor()));
 	}
 
 	static Path leaguesVersionDir()
 	{
 		ensurePathSnapshot();
-		return cachedVersionDir;
+		if (cachedVersionDir != null)
+		{
+			return cachedVersionDir;
+		}
+		String version = resolveCatalogVersion(Math.max(0, leaguesMajor()));
+		return Path.of(
+				System.getProperty("user.home"),
+				".runelite",
+				"microbot",
+				"leagues-transport",
+				"v" + version);
 	}
 
 	private static Path shareFile()
 	{
 		ensurePathSnapshot();
-		return cachedShareFile;
+		if (cachedShareFile != null)
+		{
+			return cachedShareFile;
+		}
+		return leaguesVersionDir().resolve("leagues-transport-cache.properties");
 	}
 
 	private static final Set<Integer> PERSIST_BLOCKED_DESTS = ConcurrentHashMap.newKeySet();
@@ -137,11 +170,13 @@ final class LeaguesTransportPersistence
 
 	static boolean isCalibrationConsentAllowed()
 	{
+		ensureLoaded();
 		return CALIBRATION_CONSENT_ALLOWED.get();
 	}
 
 	static boolean isCalibrationConsentDenied()
 	{
+		ensureLoaded();
 		return CALIBRATION_CONSENT_DENIED.get();
 	}
 
@@ -162,12 +197,16 @@ final class LeaguesTransportPersistence
 
 	static void setCalibrationConsentAllowed(boolean allowed)
 	{
+		ensureLoaded();
 		CALIBRATION_CONSENT_ALLOWED.set(allowed);
+		CALIBRATION_CONSENT_DENIED.set(!allowed);
 	}
 
 	static void setCalibrationConsentDenied(boolean denied)
 	{
+		ensureLoaded();
 		CALIBRATION_CONSENT_DENIED.set(denied);
+		CALIBRATION_CONSENT_ALLOWED.set(!denied);
 	}
 
 	static void setCalibrationConsentPromptQueued(boolean queued)

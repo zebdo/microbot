@@ -18,4 +18,18 @@ public class LeaguesTransportLockCatalogueTest
 	{
 		assertEquals("12345|SPELL:Foo", LeaguesTransportLockCatalogue.buildDedupeKey(12345, "SPELL:Foo"));
 	}
+
+	@Test
+	public void normalizeMethodHandlesNullAndEmpty()
+	{
+		assertEquals("", LeaguesTransportLockCatalogue.normalizeLockCatalogueMethod(null));
+		assertEquals("", LeaguesTransportLockCatalogue.normalizeLockCatalogueMethod(""));
+	}
+
+	@Test
+	public void buildDedupeKeyHandlesNullAndEmptyMethod()
+	{
+		assertEquals("12345|", LeaguesTransportLockCatalogue.buildDedupeKey(12345, null));
+		assertEquals("12345|", LeaguesTransportLockCatalogue.buildDedupeKey(12345, ""));
+	}
 }

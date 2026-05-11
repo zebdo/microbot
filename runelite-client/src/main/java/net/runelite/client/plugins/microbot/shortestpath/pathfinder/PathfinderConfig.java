@@ -20,7 +20,6 @@ import net.runelite.client.plugins.microbot.util.magic.Rs2Spells;
 import net.runelite.client.plugins.microbot.util.magic.RuneFilter;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.leaguetransport.Rs2LeaguesTransport;
-import net.runelite.client.plugins.microbot.util.leaguetransport.Rs2MapOfAlacrityTransport;
 import net.runelite.client.plugins.microbot.util.poh.PohTeleports;
 import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
 import net.runelite.client.plugins.microbot.util.walker.WebWalkLog;
@@ -168,7 +167,7 @@ public class PathfinderConfig {
                             Client client, ShortestPathConfig config) {
         this.mapData = mapData;
         this.map = ThreadLocal.withInitial(() -> new CollisionMap(this.mapData));
-        this.allTransports = new ConcurrentHashMap<>();
+        this.allTransports = Collections.synchronizedMap(new HashMap<>());
         replaceAllTransports(transports);
         this.usableTeleports = ConcurrentHashMap.newKeySet(allTransports.size() / 20);
         this.transports = new ConcurrentHashMap<>(allTransports.size() / 2);
@@ -384,9 +383,6 @@ public class PathfinderConfig {
         long useTransportTimeNanos = 0;
         Map<TransportType, int[]> typeStats = new java.util.EnumMap<>(TransportType.class);
 
-        int moaSeen = 0;
-        int moaKept = 0;
-
         // One snapshot for this refreshTransports pass (avoid re-querying unlocked regions per transport).
         // Trade-off: unlock mid-refresh is picked up on next refresh — acceptable vs client-thread churn per edge.
         // Scripts that must path immediately after unlock should trigger an explicit transport refresh / recalc.
@@ -398,9 +394,6 @@ public class PathfinderConfig {
             for (Transport transport : entry.getValue()) {
                 totalTransports++;
                 updateActionBasedOnQuestState(transport);
-
-                boolean isMoa = isMapOfAlacritySeasonalRow(transport);
-                if (isMoa) moaSeen++;
 
                 long t0 = System.nanoTime();
                 boolean usable = useTransport(transport);
@@ -414,7 +407,6 @@ public class PathfinderConfig {
                 if (usable) stats[1]++;
 
                 // stats[1] is incremented when useTransport() is true; isTransportAllowed may still reject below.
-                // moaKept reflects the final kept set; per-type stats[1] can exceed checkedTransports when Leagues filters.
                 if (!usable) {
                     addBlockedTransportEdgeIfNeeded(transport);
                     continue;
@@ -429,7 +421,6 @@ public class PathfinderConfig {
                 } else {
                     usableTransports.add(transport);
                 }
-                if (isMoa) moaKept++;
             }
 
             if (point != null && !usableTransports.isEmpty()) {
@@ -469,9 +460,9 @@ public class PathfinderConfig {
         refreshCurrencyCache = null;
 
         // varbit/varplayer counts = distinct ids referenced by merged transport definitions this refresh, not total client var space.
-        WebWalkLog.cfg("refresh_transports merge={}ms cache={}ms filter={}ms useTrans={}ms similar={}ms total/chk={}/{} usablePost={} moaS={} moaK={} vb={} vp={}",
+        WebWalkLog.cfg("refresh_transports merge={}ms cache={}ms filter={}ms useTrans={}ms similar={}ms total/chk={}/{} usablePost={} vb={} vp={}",
                 mergeTime, cacheTime, filterTime, useTransportTimeNanos / 1_000_000, similarTime,
-                totalTransports, checkedTransports, usableTeleports.size(), moaSeen, moaKept, varbitIds.size(), varplayerIds.size());
+                totalTransports, checkedTransports, usableTeleports.size(), varbitIds.size(), varplayerIds.size());
 
         typeStats.entrySet().stream()
                 .sorted((a, b) -> Integer.compare(b.getValue()[2], a.getValue()[2]))
@@ -479,9 +470,6 @@ public class PathfinderConfig {
                 .forEach(e -> WebWalkLog.cfg("refresh_transports type {} cnt={} passed={} timeMs={}",
                         e.getKey(), e.getValue()[0], e.getValue()[1], e.getValue()[2] / 1000));
 
-        log.debug("[MoA] refreshTransports: seen={} kept={} (useSeasonalTransports={}, VarbitID.LEAGUE_TYPE={})",
-                moaSeen, moaKept, useSeasonalTransports,
-                Microbot.getVarbitValue(VarbitID.LEAGUE_TYPE));
     }
 
     public boolean isBlockedTransportEdge(int originPacked, int destinationPacked) {
@@ -807,50 +795,10 @@ public class PathfinderConfig {
                 .orElse(0);
     }
 
-    /**
-     * MoA seasonal row: same predicate for refresh stats and {@link #useTransport}.
-     * MoA TSV rows are expected to be {@link TransportType#SEASONAL_TRANSPORT} with a non-null destination.
-     */
-    private static boolean isMapOfAlacritySeasonalRow(Transport transport) {
-        return transport != null
-                && transport.getType() == TransportType.SEASONAL_TRANSPORT
-                && transport.getDestination() != null
-                && Rs2MapOfAlacrityTransport.isMapOfAlacrityTransport(transport);
-    }
-
     private boolean useTransport(Transport transport) {
-        boolean traceMoa = isMapOfAlacritySeasonalRow(transport);
-
-        // MoA: fail once -> block same dest this session (avoid reroute spam).
-        if (traceMoa && Rs2MapOfAlacrityTransport.isMoaDestinationBlacklisted(
-                WorldPointUtil.packWorldPoint(transport.getDestination()))) {
-            return false;
-        }
-
-        // Region-level lock: once handleSeasonalTransport sees a region render with
-        // <str>…</str> (locked), reject every destination in that region. Without this,
-        // the pathfinder keeps picking a different Asgarnia/Desert/etc. destination on
-        // each re-path — walker fails, blacklists one, re-path picks the next, infinite
-        // "running around" loop. Display info format: "Map of Alacrity: <Region> - <Name>".
-        if (traceMoa) {
-            String disp = transport.getDisplayInfo();
-            if (disp != null) {
-                int colon = disp.indexOf(':');
-                int dash = colon >= 0 ? disp.indexOf(" - ", colon) : -1;
-                if (colon >= 0 && dash > colon) {
-                    String region = disp.substring(colon + 1, dash).trim();
-                    if (Rs2MapOfAlacrityTransport.isMoaRegionLocked(region)) {
-                        return false;
-                    }
-                }
-            }
-        }
-
         // Check if the feature flag is disabled
         if (!isFeatureEnabled(transport)) {
             log.debug("Transport Type {} is disabled by feature flag", transport.getType());
-            if (traceMoa) log.debug("[MoA] rejected '{}' — feature flag disabled (useSeasonalTransports={})",
-                    transport.getDisplayInfo(), useSeasonalTransports);
             return false;
         }
         // If the transport requires you to be in a members world (used for more granular member requirements)
@@ -876,8 +824,6 @@ public class PathfinderConfig {
         // If the transport has varbit requirements & the varbits do not match
         if (!varbitChecks(transport)) {
             log.debug("Transport ( O: {} D: {} ) requires varbits {}", transport.getOrigin(), transport.getDestination(), transport.getVarbits());
-            if (traceMoa) log.debug("[MoA] rejected '{}' — varbit check failed (varbits={}, LEAGUE_TYPE={})",
-                    transport.getDisplayInfo(), transport.getVarbits(), Microbot.getVarbitValue(VarbitID.LEAGUE_TYPE));
             return false;
         }
 
@@ -934,8 +880,6 @@ public class PathfinderConfig {
             boolean hasRequiredItems = hasRequiredItems(transport);
             if (!hasRequiredItems) {
                 log.debug("Transport ( O: {} D: {} ) requires items {}", transport.getOrigin(), transport.getDestination(), transport.getItemIdRequirements().stream().flatMap(Set::stream).collect(Collectors.toSet()));
-                if (traceMoa) log.debug("[MoA] rejected '{}' — missing required items {}",
-                        transport.getDisplayInfo(), transport.getItemIdRequirements());
             }
             return hasRequiredItems;
         }
@@ -1486,7 +1430,6 @@ public class PathfinderConfig {
                 invFp,
                 members,
                 Rs2Walker.disableTeleports,
-                Rs2MapOfAlacrityTransport.moaTransportCacheFingerprint(),
                 Microbot.getVarbitValue(VarbitID.LEAGUE_TYPE),
                 leaguesCtx.isActive(),
                 leaguesCtx.getUnlockedRegions().hashCode(),

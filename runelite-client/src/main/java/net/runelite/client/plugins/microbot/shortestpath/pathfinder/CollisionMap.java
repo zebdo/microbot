@@ -358,17 +358,12 @@ public class CollisionMap {
             } else if (Math.abs(d.x + d.y) == 1 && isBlocked(x, y, z)) {
                 int wx = x - d.x;
                 int wy = y - d.y;
-                int bpx = wx + d.x;
-                int bpy = wy + d.y;
-                if (bpx != x || bpy != y) {
-                    continue;
-                }
                 Set<Transport> ts = config.getTransportsPacked().getOrDefault(node.packedPosition, Collections.emptySet());
                 for (Transport transport : ts) {
                     if (transport.getOrigin() == null) {
                         continue;
                     }
-                    if (WorldPointUtil.packWorldPoint(transport.getOrigin()) != node.packedPosition) {
+                    if (WorldPointUtil.packWorldPoint(transport.getOrigin()) != prevPacked) {
                         continue;
                     }
                     neighbors.add(new Node(WorldPointUtil.packWorldPoint(wx, wy, z), node));

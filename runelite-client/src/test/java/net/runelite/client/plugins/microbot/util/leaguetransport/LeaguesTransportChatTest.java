@@ -3,7 +3,9 @@ package net.runelite.client.plugins.microbot.util.leaguetransport;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Locked-region gametext: regex capture must yield phrases that {@link LeaguesTransportRegions#parseRegionNameNormalized}
@@ -88,21 +90,21 @@ public class LeaguesTransportChatTest
 	@Test
 	public void gateMatchesExpectedCopy()
 	{
-		assertEquals(true, LeaguesTransportChat.isLeaguesLockedAccessMessage(
+		assertTrue(LeaguesTransportChat.isLeaguesLockedAccessMessage(
 				"You haven't unlocked access to the Misthalin area."));
 	}
 
 	@Test
 	public void gateMatchesGliderCopy()
 	{
-		assertEquals(true, LeaguesTransportChat.isLeaguesLockedAccessMessage(
+		assertTrue(LeaguesTransportChat.isLeaguesLockedAccessMessage(
 				"You cannot take a glider to that destination as you don't have access to the Kharidian Desert area."));
 	}
 
 	@Test
 	public void gateMatchesBlockedTeleportPrefixCopy()
 	{
-		assertEquals(true, LeaguesTransportChat.isLeaguesLockedAccessMessage(
+		assertTrue(LeaguesTransportChat.isLeaguesLockedAccessMessage(
 				"Your teleport is blocked as you haven't unlocked access to the Asgarnia area."));
 	}
 
@@ -117,7 +119,7 @@ public class LeaguesTransportChatTest
 	@Test
 	public void gateRejectsWrongOrder()
 	{
-		assertEquals(false, LeaguesTransportChat.isLeaguesLockedAccessMessage(
+		assertFalse(LeaguesTransportChat.isLeaguesLockedAccessMessage(
 				"Area unlocked access to the Misthalin."));
 	}
 

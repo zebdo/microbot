@@ -101,12 +101,18 @@ public class DyeShipSteps extends DetailedOwnerStep
 		}
 		String normalized = Rs2TextSanitizer.normalizeGameText(text);
 		String[] splitOnNewLines = normalized.split("<br>");
+		boolean handledLines = false;
 		if (splitOnNewLines.length > 1)
 		{
 			for (String splitOnNewLine : splitOnNewLines)
 			{
 				updateCurrentColoursFromString(Rs2TextSanitizer.stripTagsToSpace(splitOnNewLine));
+				handledLines = true;
 			}
+		}
+		if (handledLines)
+		{
+			return;
 		}
 
 		String plain = Rs2TextSanitizer.stripTagsToSpace(normalized);

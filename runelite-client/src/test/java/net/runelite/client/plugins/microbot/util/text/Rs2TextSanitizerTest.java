@@ -21,7 +21,7 @@ public class Rs2TextSanitizerTest
 	public void stripsTagsAndDecodesEntities()
 	{
 		String raw = "<col=ff0000>Zeah</col>&nbsp;(&#39;Test&#39;)&#160;and&#x2019;more";
-		String s = Rs2TextSanitizer.sanitizeLeaguesLockedRegionName(raw).replace('\u00A0', ' ');
+		String s = Rs2TextSanitizer.sanitizeLeaguesLockedRegionName(raw);
 		assertEquals("Zeah ('Test') and'more", s);
 	}
 
@@ -57,7 +57,7 @@ public class Rs2TextSanitizerTest
 	public void sanitizeWidgetMultilineTextRemovesTagsAndBr()
 	{
 		String raw = "<col=ff0>Hello</col><br>World&nbsp;!";
-		assertEquals("Hello World !", Rs2TextSanitizer.sanitizeWidgetMultilineText(raw).replaceAll("\\s+", " ").trim());
+		assertEquals("Hello World !", Rs2TextSanitizer.sanitizeWidgetMultilineText(raw));
 	}
 }
 

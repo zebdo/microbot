@@ -14,8 +14,8 @@ public class PathfinderConfigTransportRefreshHashTest {
         int[] sortedVarbits = new int[0];
         int[] sortedVarplayers = new int[0];
         int trackedQuestId = 987654;
-        int[] sortedQuestIds = new int[]{trackedQuestId};
         int clientOfKourendId = Quest.CLIENT_OF_KOUREND.getId();
+        int[] sortedQuestIds = new int[]{trackedQuestId, clientOfKourendId};
 
         int hashNotStarted = PathfinderConfig.computeTransportRefreshVerificationHash(
                 boostedLevels,

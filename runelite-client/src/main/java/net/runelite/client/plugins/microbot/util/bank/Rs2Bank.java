@@ -102,6 +102,21 @@ public class Rs2Bank {
     }
 
     /**
+     * Clears mirrored bank state when game-mode world context changes (for example seasonal <-> non-seasonal).
+     * This prevents stale bank mirror data from prior world context leaking into routing and setup checks.
+     */
+    public static void invalidateBankMirrorCache(String reason)
+    {
+        rs2BankData.setEmpty();
+        BANK_LIVE_EPOCH.set(0);
+        if (log.isInfoEnabled())
+        {
+            String suffix = (reason == null || reason.isBlank()) ? "" : " reason=" + reason;
+            log.info("[Rs2Bank] bank mirror cache invalidated{}", suffix);
+        }
+    }
+
+    /**
      * Tier C gate: after {@link #openBank()}, {@link #bankItems()} is trustworthy only if a snapshot arrived.
      * If the bank was already open before {@code openBank()}, require {@code getBankLiveEpoch() > 0}; otherwise require
      * the epoch to have advanced past {@code epochBeforeOpenBankCall}.

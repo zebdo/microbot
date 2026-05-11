@@ -136,10 +136,8 @@ public final class LeaguesTransportChat
 			log.info("[Leagues] reroute: locked region='{}' method='{}' destPacked={} (summary every {} msgs)",
 					region, methodSafe, packedDest, LEAGUES_LOCK_REROUTE_INFO_INTERVAL);
 		}
-		if (!Rs2LeaguesTransport.shouldRecalculatePathAfterLock(region, packedDest))
-		{
-			return;
-		}
+		// Recalculate immediately after lock persistence/catalog update so caller flows
+		// (nearest-bank and any other "nearest" routing entry point) reroute in-place.
 		Client client = Microbot.getClient();
 		if (client == null)
 		{

@@ -18,6 +18,9 @@ public final class TransportRequirementPolicy {
                     QuestState requiredState = entry.getValue();
                     int playerIndex = questStateOrder.indexOf(playerState);
                     int requiredIndex = questStateOrder.indexOf(requiredState);
+                    if (requiredIndex < 0 || playerIndex < 0) {
+                        return false;
+                    }
                     return playerIndex >= requiredIndex;
                 });
     }

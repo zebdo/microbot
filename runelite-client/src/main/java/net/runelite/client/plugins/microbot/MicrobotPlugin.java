@@ -58,6 +58,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -79,6 +80,7 @@ public class MicrobotPlugin extends Plugin
 	 * @apiNote Treat as stable external API: renames or semantic changes break scripts — note in changelog when modifying.
 	 */
 	public static final long LEAGUES_LOCK_CHAT_MAX_ATTEMPT_AGE_MS = Rs2LeaguesTransport.LEAGUES_LOCK_CHAT_MAX_ATTEMPT_AGE_MS;
+	private EnumSet<WorldType> lastWorldTypeProfile = null;
 
 	@Inject
 	private Provider<MicrobotPluginListPanel> pluginListPanelProvider;
@@ -305,6 +307,12 @@ public class MicrobotPlugin extends Plugin
 		   // Region-based login detection logic
 		   final Client client = Microbot.getClient();
 		   if (client != null) {
+				EnumSet<WorldType> worldTypeProfile = normalizeWorldTypesForProfileComparison(client.getWorldType());
+				if (lastWorldTypeProfile != null && !lastWorldTypeProfile.equals(worldTypeProfile))
+				{
+					Rs2Bank.invalidateBankMirrorCache("world-type-profile-transition");
+				}
+				lastWorldTypeProfile = worldTypeProfile;
 				int[] currentRegions = client.getTopLevelWorldView().getMapRegions();
 				boolean wasLoggedIn = LoginManager.getLastKnownGameState() == GameState.LOGGED_IN;
 				if (!wasLoggedIn) {
@@ -327,6 +335,21 @@ public class MicrobotPlugin extends Plugin
 	   }
 	   // update last known game state to track login/logout transitions
 	   LoginManager.setLastKnownGameState(gameStateChanged.getGameState());
+	}
+
+	private static EnumSet<WorldType> normalizeWorldTypesForProfileComparison(EnumSet<WorldType> rawTypes)
+	{
+		EnumSet<WorldType> normalized = rawTypes == null
+				? EnumSet.noneOf(WorldType.class)
+				: rawTypes.clone();
+		// Profile compare should ignore normal-world and combat-variant flags.
+		normalized.remove(WorldType.MEMBERS);
+		normalized.remove(WorldType.PVP);
+		normalized.remove(WorldType.BOUNTY);
+		normalized.remove(WorldType.SKILL_TOTAL);
+		normalized.remove(WorldType.HIGH_RISK);
+		normalized.remove(WorldType.LAST_MAN_STANDING);
+		return normalized;
 	}
 
 	@Subscribe

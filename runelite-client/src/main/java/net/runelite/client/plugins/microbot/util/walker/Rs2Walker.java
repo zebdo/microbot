@@ -44,7 +44,6 @@ import net.runelite.client.plugins.microbot.util.npc.Rs2NpcModel;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.player.Rs2Pvp;
 import net.runelite.client.plugins.microbot.util.leaguetransport.Rs2LeaguesTransport;
-import net.runelite.client.plugins.microbot.util.leaguetransport.Rs2MapOfAlacrityTransport;
 import net.runelite.client.plugins.microbot.util.leaguetransport.SeasonalTransportHandler;
 import net.runelite.client.plugins.microbot.util.leaguetransport.SeasonalTransportHandlers;
 import net.runelite.client.plugins.microbot.util.logging.Rs2LogRateLimit;
@@ -6873,9 +6872,9 @@ public class Rs2Walker {
     }
 
     /**
-     * Tries Leagues Area UI then Map of Alacrity for the same {@link Transport} row.
-     * Attempt recording is done inside each handler ({@link Rs2LeaguesTransport#tryHandleLeaguesAreaTransportResult},
-     * {@link Rs2MapOfAlacrityTransport#tryUse}) — use {@link #attemptObservedWithoutAttemptRecord} at the call site.
+     * Tries configured seasonal transport handlers for the same {@link Transport} row.
+     * Attempt recording is done inside each handler (for built-ins, {@link Rs2LeaguesTransport#tryHandleLeaguesAreaTransportResult})
+     * — use {@link #attemptObservedWithoutAttemptRecord} at the call site.
      */
     private static boolean handleSeasonalTransport(Transport transport) {
         if (transport == null) {
@@ -6939,7 +6938,7 @@ public class Rs2Walker {
                 {
                     sample = sample + " destPacked=" + Integer.toHexString(packedTileOrNull);
                 }
-                log.debug("[Walker] seasonal transport unmatched by Leagues Area + MoA (expect pathfinder-only matching rows); key={} sample={}",
+                log.debug("[Walker] seasonal transport unmatched by configured handlers (expect pathfinder-only matching rows); key={} sample={}",
                         missKey, sample);
             }
         }
@@ -8060,7 +8059,8 @@ public class Rs2Walker {
         if (pathfinder != null && !pathfinder.isDone())
             return WalkerState.MOVING;
 
-        if (!forceBanking && Rs2Bank.getBankLiveEpoch() <= 0) {
+        boolean bankTripWhenCacheUnavailable = config == null || config.bankTripWhenCacheUnavailable();
+        if (!forceBanking && bankTripWhenCacheUnavailable && Rs2Bank.getBankLiveEpoch() <= 0) {
             WalkerState bootstrapState = bootstrapBankMirrorForBankedPathing(distance);
             if (bootstrapState == WalkerState.EXIT || bootstrapState == WalkerState.UNREACHABLE) {
                 return bootstrapState;

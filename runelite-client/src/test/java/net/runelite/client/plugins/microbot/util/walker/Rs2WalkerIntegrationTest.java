@@ -139,6 +139,7 @@ public class Rs2WalkerIntegrationTest {
         while (ShortestPathPlugin.getPathfinder() != null && System.currentTimeMillis() < clearDeadline) {
             Thread.sleep(100);
         }
+        assertNull("Pathfinder should clear during cleanup", ShortestPathPlugin.getPathfinder());
 
         log.info("Setting target...");
         Rs2Walker.setTarget(nearbyTarget);
@@ -171,6 +172,11 @@ public class Rs2WalkerIntegrationTest {
         }
 
         Rs2Walker.clearWalkingRoute("test:cleanup");
+        clearDeadline = System.currentTimeMillis() + 2000;
+        while (ShortestPathPlugin.getPathfinder() != null && System.currentTimeMillis() < clearDeadline) {
+            Thread.sleep(100);
+        }
+        assertNull("Pathfinder should clear during final cleanup", ShortestPathPlugin.getPathfinder());
 
         assertTrue("Pathfinder should complete within 15 seconds", done);
     }

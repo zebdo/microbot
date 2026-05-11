@@ -382,6 +382,7 @@ public class ShortestPathPlugin extends Plugin implements KeyListener {
             "calculationCutoff",
             "walkWithBankedTransports",
             "minBankRouteSavings",
+            "bankTripWhenCacheUnavailable",
             "preferNonConsumableTeleportAndSpells",
             "preferTransportToTarget",
             "maxSimilarTransportDistance"

@@ -53,7 +53,6 @@ final class LeaguesTransportTeleport
 	private static final AtomicBoolean CALIBRATION_COMPLETE_PROMPT_SHOWN = new AtomicBoolean(false);
 	private static final AtomicLong CALIBRATION_COMPLETE_RETRY_AFTER_MS = new AtomicLong(0L);
 	private static final AtomicBoolean TELEPORT_IN_PROGRESS = new AtomicBoolean(false);
-	private static final AtomicLong WIDGET_VISIBILITY_CAP_HIT_LOG_MS = new AtomicLong(0L);
 	private static final AtomicLong WIDGET_VISIBILITY_CHECK_TIMEOUT_LOG_MS = new AtomicLong(0L);
 	private static final AtomicLong CALIBRATION_COMPLETE_DIALOG_FAIL_LOG_MS = new AtomicLong(0L);
 	private static final AtomicBoolean LOGGED_TELEPORT_ROW_NAME_MISMATCH = new AtomicBoolean(false);
@@ -87,7 +86,6 @@ final class LeaguesTransportTeleport
 		CALIBRATION_COMPLETE_RETRY_AFTER_MS.set(0L);
 		CALIBRATION_PROBE_MS.set(0L);
 		TELEPORT_IN_PROGRESS.set(false);
-		WIDGET_VISIBILITY_CAP_HIT_LOG_MS.set(0L);
 		WIDGET_VISIBILITY_CHECK_TIMEOUT_LOG_MS.set(0L);
 	}
 
@@ -178,12 +176,10 @@ final class LeaguesTransportTeleport
 		{
 			return false;
 		}
-		Widget slow = w;
-		Widget fast = w;
+		Widget cur = w;
 		final int cap = 20;
-		for (int i = 0; i < cap && slow != null; i++)
+		for (int i = 0; i < cap && cur != null; i++)
 		{
-			Widget cur = slow;
 			if (cur.isHidden())
 			{
 				return false;
@@ -193,29 +189,11 @@ final class LeaguesTransportTeleport
 			{
 				return false;
 			}
-			slow = parent;
-			fast = fast != null ? fast.getParent() : null;
-			fast = fast != null ? fast.getParent() : null;
-			if (slow != null && slow == fast)
-			{
-				return false;
-			}
+			cur = parent;
 		}
-		if (slow == null)
+		if (cur == null)
 		{
 			return true;
-		}
-		if (log.isDebugEnabled())
-		{
-			long now = System.currentTimeMillis();
-			long prev = WIDGET_VISIBILITY_CAP_HIT_LOG_MS.get();
-			if (prev == 0L || (now - prev) >= 3_600_000L)
-			{
-				if (WIDGET_VISIBILITY_CAP_HIT_LOG_MS.compareAndSet(prev, now))
-				{
-					log.debug("[Leagues] widget visibility parent chain exceeded cap={}", cap);
-				}
-			}
 		}
 		return false;
 	}
@@ -694,7 +672,7 @@ final class LeaguesTransportTeleport
 		final long startedAtMs = System.currentTimeMillis();
 		final int teleportDistanceThreshold = 20;
 
-		final boolean animatingStarted = sleepUntilTrue(Rs2Player::isAnimating, POLL_MS, remainingMs(startedAtMs, timeoutMs));
+		sleepUntilTrue(Rs2Player::isAnimating, POLL_MS, remainingMs(startedAtMs, timeoutMs));
 		final long moveWaitStartedAtMs = System.currentTimeMillis();
 		return sleepUntilTrue(() ->
 		{
@@ -712,7 +690,7 @@ final class LeaguesTransportTeleport
 				return true;
 			}
 			return now.distanceTo(before) > teleportDistanceThreshold;
-		}, POLL_MS, remainingMs(moveWaitStartedAtMs, animatingStarted ? remainingMs(startedAtMs, timeoutMs) : remainingMs(startedAtMs, timeoutMs)));
+		}, POLL_MS, remainingMs(moveWaitStartedAtMs, remainingMs(startedAtMs, timeoutMs)));
 	}
 
 	private static boolean performTeleportSequence(LeaguesRegion region, int timeoutMs)

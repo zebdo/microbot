@@ -255,7 +255,7 @@ public class Transport {
                 name = matcher.group(2).trim();    // Second group: menuTarget (name)
                 objectId = Integer.parseInt(matcher.group(3).trim()); // Third group: objectID
             } else {
-                System.out.println("Skipped invalid value: " + value);
+                log.debug("Skipped invalid menuOption/menuTarget/objectID value: {}", value);
             }
         }
 
@@ -615,7 +615,7 @@ public class Transport {
     public static HashMap<WorldPoint, Set<Transport>> loadAllFromResources() {
         HashMap<WorldPoint, Set<Transport>> transports = new HashMap<>();
         appendStandardTransportFiles(transports);
-        System.out.println("Loaded " + transports.size() + " transports");
+        log.info("Loaded {} transports", transports.size());
         return transports;
     }
 
