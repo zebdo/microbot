@@ -38,12 +38,15 @@ import net.runelite.api.gameval.NpcID;
 import net.runelite.api.gameval.ObjectID;
 import net.runelite.api.widgets.Widget;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.plugins.microbot.util.text.Rs2TextSanitizer;
+import lombok.extern.slf4j.Slf4j;
 
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
+@Slf4j
 public class DyeShipSteps extends DetailedOwnerStep
 {
 	boolean coloursKnown = false;
@@ -96,36 +99,54 @@ public class DyeShipSteps extends DetailedOwnerStep
 		{
 			return;
 		}
-		String[] splitOnNewLines = text.split("<br>");
+		String normalized = Rs2TextSanitizer.normalizeGameText(text);
+		String[] splitOnNewLines = normalized.split("<br>");
+		boolean handledLines = false;
 		if (splitOnNewLines.length > 1)
 		{
 			for (String splitOnNewLine : splitOnNewLines)
 			{
-				updateCurrentColoursFromString(splitOnNewLine);
+				if (updateCurrentColoursFromString(Rs2TextSanitizer.stripTagsToSpace(splitOnNewLine)))
+				{
+					handledLines = true;
+				}
 			}
 		}
+		if (handledLines)
+		{
+			return;
+		}
 
-		String[] splitText = text.split("dye the ");
+		String plain = Rs2TextSanitizer.stripTagsToSpace(normalized);
+		String[] splitText = plain.split("dye the ");
 		if (splitText.length < 2)
 		{
+			if (log.isDebugEnabled())
+			{
+				int h = plain.hashCode();
+				int len = plain.length();
+				String prefix = plain.length() > 60 ? plain.substring(0, 60) + "…" : plain;
+				log.debug("DyeShipSteps: expected 'dye the ' in objectbox text; len={} hash={} prefix='{}'", len, Integer.toHexString(h), prefix);
+			}
 			return;
 		}
 
 		updateCurrentColoursFromString(splitText[1]);
 	}
 
-	private void updateCurrentColoursFromString(String text)
+	private boolean updateCurrentColoursFromString(String text)
 	{
 		String[] shapeAndColour = text.split(" (emblem|of the flag) ");
 		if (shapeAndColour.length < 2)
 		{
-			return;
+			return false;
 		}
 		String shape = shapeAndColour[0];
 		String colour = shapeAndColour[1];
 		shape = shape.replace("The ", "");
 		colour = colour.replace("is ", "");
 		currentColours.put(shape, FlagColour.findByKey(colour));
+		return true;
 	}
 
 	public void updateSteps()
