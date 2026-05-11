@@ -56,7 +56,7 @@ public class TransportRouteAnalysis {
                                 BankLocation nearestBank, WorldPoint bankLocation,List<WorldPoint> pathToBank,
                                 List<WorldPoint> pathFromBank,String analysis) {
         this(directPath, nearestBank, bankLocation, pathToBank, pathFromBank, analysis,
-                directPath == null || directPath.isEmpty() ? -1 : directPath.size(),
+                deriveRouteDistance(directPath),
                 deriveBankingRouteDistance(pathToBank, pathFromBank));
     }
 
@@ -124,7 +124,19 @@ public class TransportRouteAnalysis {
     private static int deriveBankingRouteDistance(List<WorldPoint> pathToBank, List<WorldPoint> pathFromBank) {
         if (pathToBank == null || pathFromBank == null ||
                 pathToBank.isEmpty() || pathFromBank.isEmpty()) return -1;
-        return pathToBank.size() + pathFromBank.size();
+        int toBank = deriveRouteDistance(pathToBank);
+        int fromBank = deriveRouteDistance(pathFromBank);
+        if (toBank < 0 || fromBank < 0) {
+            return -1;
+        }
+        return toBank + fromBank;
+    }
+
+    private static int deriveRouteDistance(List<WorldPoint> path) {
+        if (path == null || path.isEmpty()) {
+            return -1;
+        }
+        return Math.max(path.size() - 1, 0);
     }
     
     @Override

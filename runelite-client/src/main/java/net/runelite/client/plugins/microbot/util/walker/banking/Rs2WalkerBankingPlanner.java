@@ -138,12 +138,10 @@ public final class Rs2WalkerBankingPlanner {
                     spellRuneRequirements.forEach((runeItemId, requiredQuantity) -> {
                         try {
                             int bankQuantity = Rs2Bank.count(runeItemId);
-                            if (bankQuantity >= requiredQuantity) {
-                                int currentQuantity = itemQuantityMap.getOrDefault(runeItemId, 0);
-                                itemQuantityMap.put(runeItemId, currentQuantity + requiredQuantity);
-                                log.debug("Added teleportation spell rune requirement: {} (ID: {}) x{} (bank has: {})",
-                                        runeItemId, runeItemId, requiredQuantity, bankQuantity);
-                            }
+                            int currentQuantity = itemQuantityMap.getOrDefault(runeItemId, 0);
+                            itemQuantityMap.put(runeItemId, currentQuantity + requiredQuantity);
+                            log.debug("Added teleportation spell rune requirement: {} (ID: {}) x{} (bank has: {} short={})",
+                                    runeItemId, runeItemId, requiredQuantity, bankQuantity, bankQuantity < requiredQuantity);
                         } catch (Exception e) {
                             log.debug("Could not check bank for rune " + runeItemId + ": " + e.getMessage());
                         }
@@ -154,47 +152,32 @@ public final class Rs2WalkerBankingPlanner {
 
             if (transport.getItemIdRequirements() != null) {
                 for (Set<Integer> alternativeItems : transport.getItemIdRequirements()) {
-                    boolean hasAnyAlternative = alternativeItems.stream().anyMatch(itemId -> {
+                    int requiredQuantity = (isCurrencyBasedTransport(transport.getType()) && transport.getCurrencyAmount() > 0)
+                            ? transport.getCurrencyAmount()
+                            : 1;
+
+                    Integer preferredItemId = null;
+                    int preferredBankQuantity = 0;
+                    for (Integer itemId : alternativeItems) {
+                        int bankQuantity = 0;
                         try {
-                            if (isCurrencyBasedTransport(transport.getType()) && transport.getCurrencyAmount() > 0) {
-                                return Rs2Bank.count(itemId) >= transport.getCurrencyAmount();
-                            }
-                            return Rs2Bank.hasItem(itemId);
+                            bankQuantity = Rs2Bank.count(itemId);
                         } catch (Exception e) {
                             log.debug("Could not check bank for item " + itemId + ": " + e.getMessage());
-                            return false;
                         }
-                    });
-
-                    if (hasAnyAlternative) {
-                        alternativeItems.stream()
-                                .filter(itemId -> {
-                                    try {
-                                        if (isCurrencyBasedTransport(transport.getType()) && transport.getCurrencyAmount() > 0) {
-                                            return Rs2Bank.count(itemId) >= transport.getCurrencyAmount();
-                                        }
-                                        return Rs2Bank.hasItem(itemId);
-                                    } catch (Exception e) {
-                                        log.debug("Could not check bank for item " + itemId + ": " + e.getMessage());
-                                        return false;
-                                    }
-                                })
-                                .findFirst()
-                                .ifPresent(itemId -> {
-                                    int requiredQuantity;
-                                    if (isCurrencyBasedTransport(transport.getType()) && transport.getCurrencyAmount() > 0) {
-                                        requiredQuantity = transport.getCurrencyAmount();
-                                        log.debug("Currency-based transport {} requires {} x{}",
-                                                transport.getType(), transport.getCurrencyName(), requiredQuantity);
-                                    } else {
-                                        requiredQuantity = 1;
-                                    }
-
-                                    int currentQuantity = itemQuantityMap.getOrDefault(itemId, 0);
-                                    itemQuantityMap.put(itemId, currentQuantity + requiredQuantity);
-                                });
-                        break;
+                        if (preferredItemId == null || bankQuantity > preferredBankQuantity) {
+                            preferredItemId = itemId;
+                            preferredBankQuantity = bankQuantity;
+                        }
                     }
+
+                    if (preferredItemId != null) {
+                        int currentQuantity = itemQuantityMap.getOrDefault(preferredItemId, 0);
+                        itemQuantityMap.put(preferredItemId, currentQuantity + requiredQuantity);
+                        log.debug("Added transport item requirement: itemId={} x{} (bank has: {} short={})",
+                                preferredItemId, requiredQuantity, preferredBankQuantity, preferredBankQuantity < requiredQuantity);
+                    }
+                    break;
                 }
             }
         });
@@ -311,7 +294,10 @@ public final class Rs2WalkerBankingPlanner {
                                     .append(" tiles\n");
                         }
 
-                        if (distanceToBank != -1 && distanceFromBank != -1) {
+                        if (distanceToBank != -1
+                                && distanceFromBank != -1
+                                && distanceToBank != Integer.MAX_VALUE
+                                && distanceFromBank != Integer.MAX_VALUE) {
                             bankingRouteDistance = distanceToBank + distanceFromBank;
                         }
                         performanceLog.append("\t-Total banking route distance: ").append(bankingRouteDistance).append(" tiles\n");

@@ -106,8 +106,10 @@ public class DyeShipSteps extends DetailedOwnerStep
 		{
 			for (String splitOnNewLine : splitOnNewLines)
 			{
-				updateCurrentColoursFromString(Rs2TextSanitizer.stripTagsToSpace(splitOnNewLine));
-				handledLines = true;
+				if (updateCurrentColoursFromString(Rs2TextSanitizer.stripTagsToSpace(splitOnNewLine)))
+				{
+					handledLines = true;
+				}
 			}
 		}
 		if (handledLines)
@@ -132,18 +134,19 @@ public class DyeShipSteps extends DetailedOwnerStep
 		updateCurrentColoursFromString(splitText[1]);
 	}
 
-	private void updateCurrentColoursFromString(String text)
+	private boolean updateCurrentColoursFromString(String text)
 	{
 		String[] shapeAndColour = text.split(" (emblem|of the flag) ");
 		if (shapeAndColour.length < 2)
 		{
-			return;
+			return false;
 		}
 		String shape = shapeAndColour[0];
 		String colour = shapeAndColour[1];
 		shape = shape.replace("The ", "");
 		colour = colour.replace("is ", "");
 		currentColours.put(shape, FlagColour.findByKey(colour));
+		return true;
 	}
 
 	public void updateSteps()

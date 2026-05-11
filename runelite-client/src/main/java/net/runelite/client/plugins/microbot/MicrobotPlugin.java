@@ -438,7 +438,10 @@ public class MicrobotPlugin extends Plugin
 			}
 
 			// Leagues: "haven't unlocked access to X area" -> blacklist last transport dest.
-			Rs2LeaguesTransport.onLockedRegionGameMessage(msg);
+			if (msg != null)
+			{
+				Rs2LeaguesTransport.onLockedRegionGameMessage(msg);
+			}
 		}
 		Microbot.getPouchScript().onChatMessage(event);
 		Rs2Gembag.onChatMessage(event);

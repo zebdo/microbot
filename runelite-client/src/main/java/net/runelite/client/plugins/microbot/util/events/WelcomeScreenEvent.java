@@ -53,7 +53,8 @@ public class WelcomeScreenEvent implements BlockingEvent {
                 Rs2Widget.clickWidget(playWidget);
                 return true;
             }
-            log.info("WelcomeScreenEvent execute: Play button is null");
+            log.info("WelcomeScreenEvent execute: required UI not ready (playWidgetNull={} playWidgetVisible={} bannerHandled={} ribbonHandled={})",
+                    playWidget == null, isPlayWidgetVisible, wasNewsBannerHandled, wasUpdateRibbonHandled);
             return false;
         });
 

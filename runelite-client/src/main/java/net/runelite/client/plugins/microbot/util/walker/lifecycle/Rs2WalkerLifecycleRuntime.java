@@ -74,13 +74,12 @@ public final class Rs2WalkerLifecycleRuntime {
             }
             return Rs2Player.getWorldLocation();
         });
-        ShortestPathPlugin.setLastLocation(start);
         final Pathfinder pathfinder = ShortestPathPlugin.getPathfinder();
-        if (ShortestPathPlugin.isStartPointSet() && pathfinder != null) {
-            start = pathfinder.getStart();
-        }
-        final WorldPoint startPoint = start;
-        Microbot.getClientThread().runOnSeperateThread(() -> restartPathfinding(startPoint, target));
+        final WorldPoint effectiveStart = (ShortestPathPlugin.isStartPointSet() && pathfinder != null)
+                ? pathfinder.getStart()
+                : start;
+        ShortestPathPlugin.setLastLocation(effectiveStart);
+        Microbot.getClientThread().runOnSeperateThread(() -> restartPathfinding(effectiveStart, target));
     }
 
     public static boolean restartPathfinding(WorldPoint start, WorldPoint end) {

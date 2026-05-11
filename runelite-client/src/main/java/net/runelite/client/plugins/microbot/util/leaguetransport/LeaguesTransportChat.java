@@ -136,6 +136,10 @@ public final class LeaguesTransportChat
 			log.info("[Leagues] reroute: locked region='{}' method='{}' destPacked={} (summary every {} msgs)",
 					region, methodSafe, packedDest, LEAGUES_LOCK_REROUTE_INFO_INTERVAL);
 		}
+		if (!LeaguesTransportRegions.shouldRecalculatePathAfterLock(region, packedDest))
+		{
+			return;
+		}
 		// Recalculate immediately after lock persistence/catalog update so caller flows
 		// (nearest-bank and any other "nearest" routing entry point) reroute in-place.
 		Client client = Microbot.getClient();
@@ -164,12 +168,7 @@ public final class LeaguesTransportChat
 		{
 			return false;
 		}
-		int accessIdx = lower.indexOf("access to the ");
-		if (accessIdx < 0)
-		{
-			return false;
-		}
-		if (lower.indexOf(LEAGUES_AREA_TOKEN, accessIdx) < 0)
+		if (lower.indexOf(LEAGUES_AREA_TOKEN) < 0)
 		{
 			return false;
 		}

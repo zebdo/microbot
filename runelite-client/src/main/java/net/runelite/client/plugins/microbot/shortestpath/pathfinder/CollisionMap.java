@@ -355,10 +355,11 @@ public class CollisionMap {
 
             if (traversable[i]) {
                 neighbors.add(new Node(prevPacked, node));
-            } else if (Math.abs(d.x + d.y) == 1 && isBlocked(x, y, z)) {
-                int wx = x - d.x;
-                int wy = y - d.y;
-                Set<Transport> ts = config.getTransportsPacked().getOrDefault(node.packedPosition, Collections.emptySet());
+            } else if (Math.abs(d.x + d.y) == 1
+                    && isBlocked(WorldPointUtil.unpackWorldX(prevPacked), WorldPointUtil.unpackWorldY(prevPacked), z)) {
+                int wx = WorldPointUtil.unpackWorldX(prevPacked);
+                int wy = WorldPointUtil.unpackWorldY(prevPacked);
+                Set<Transport> ts = config.getTransportsPacked().getOrDefault(prevPacked, Collections.emptySet());
                 for (Transport transport : ts) {
                     if (transport.getOrigin() == null) {
                         continue;

@@ -253,10 +253,10 @@ public class Rs2Bank {
             return null;
         }
 
-        Rs2ItemModel byName = findBankItem(lookupName, false, 1);
+        Rs2ItemModel byName = findBankItem(lookupName, true, 1);
         if (byName != null && byName.getId() != id)
         {
-            logBankIdDriftDebug(id, byName, "name-fuzzy");
+            logBankIdDriftDebug(id, byName, "name-exact");
         }
         return byName;
     }

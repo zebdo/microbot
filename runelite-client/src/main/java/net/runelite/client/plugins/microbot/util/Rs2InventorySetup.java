@@ -318,18 +318,28 @@ public class Rs2InventorySetup {
 
 		if (Rs2Inventory.isFull()) {
 			int epochBeforeDeposit = Rs2Bank.getBankLiveEpoch();
-			if (Rs2Bank.depositAll()) {
-				Rs2Bank.syncBankInventoryAfterChange(epochBeforeDeposit);
+			if (!Rs2Bank.depositAll()) {
+				logSetup(Level.WARN, "depositAll failed while preparing inventory load");
+				return false;
+			}
+			if (!Rs2Bank.syncBankInventoryAfterChange(epochBeforeDeposit)) {
+				logSetup(Level.WARN, "bank sync timeout after depositAll while preparing inventory load");
+				return false;
 			}
 		} else if (needsDepositCleanupBeforeBanking(retainIds, fuzzy)) {
 			int epochBeforeDeposit = Rs2Bank.getBankLiveEpoch();
-			if (Rs2Bank.depositAllExcept(retainIds, fuzzy)) {
-				Rs2Bank.syncBankInventoryAfterChange(epochBeforeDeposit);
+			if (!Rs2Bank.depositAllExcept(retainIds, fuzzy)) {
+				logSetup(Level.WARN, "depositAllExcept failed while preparing inventory load");
+				return false;
+			}
+			if (!Rs2Bank.syncBankInventoryAfterChange(epochBeforeDeposit)) {
+				logSetup(Level.WARN, "bank sync timeout after depositAllExcept while preparing inventory load");
+				return false;
 			}
 		}
 
 		List<InventorySetupsItem> setupItems = inventorySetup.getInventory();
-		boolean toleratedShortfallWithExistingInventory = false;
+		Set<String> toleratedShortfallKeys = new HashSet<>();
 
 		Set<String> withdrewInventoryGroups = new HashSet<>();
 		for (InventorySetupsItem item : setupItems) {
@@ -370,7 +380,7 @@ public class Rs2InventorySetup {
 					logSetup(Level.INFO,
 							"bank short but continuing %s: bank=%d inv=%d setup_total=%d missing=%d (partial stack mode)",
 							item.getName(), bankAvail, invQty, setupTotal, desiredWithdraw);
-					toleratedShortfallWithExistingInventory = true;
+					toleratedShortfallKeys.add(inventoryShortfallKey(item));
 					continue;
 				}
 				Microbot.pauseAllScripts.compareAndSet(false, true);
@@ -401,7 +411,7 @@ public class Rs2InventorySetup {
 					logSetup(Level.INFO,
 							"bank verify short but continuing %s: bank=%d inv=%d setup_total=%d missing=%d (partial stack mode)",
 							item.getName(), bankAvail, invQty, setupTotal, withdrawQuantity);
-					toleratedShortfallWithExistingInventory = true;
+					toleratedShortfallKeys.add(inventoryShortfallKey(item));
 					continue;
 				}
 				Microbot.pauseAllScripts.compareAndSet(false, true);
@@ -438,12 +448,7 @@ public class Rs2InventorySetup {
 		sleep(800, 1200);
 
         lockLockedItemsFromSetup(inventorySetup);
-		boolean inventoryMatches = doesInventoryMatch();
-		if (!inventoryMatches && toleratedShortfallWithExistingInventory) {
-			logSetup(Level.INFO, "continuing with partial stack shortfall because inventory already has required stack item(s)");
-			return true;
-		}
-		return inventoryMatches;
+		return doesInventoryMatch(toleratedShortfallKeys);
 	}
 
 	private static String firstNonEmptyCompositionName(ItemComposition comp)
@@ -792,13 +797,23 @@ public class Rs2InventorySetup {
         //Clear inventory if full
         if (Rs2Inventory.isFull()) {
             int epochBeforeDeposit = Rs2Bank.getBankLiveEpoch();
-            if (Rs2Bank.depositAll()) {
-                Rs2Bank.syncBankInventoryAfterChange(epochBeforeDeposit);
+            if (!Rs2Bank.depositAll()) {
+				logSetup(Level.WARN, "depositAll failed while preparing equipment load");
+				return false;
+            }
+            if (!Rs2Bank.syncBankInventoryAfterChange(epochBeforeDeposit)) {
+				logSetup(Level.WARN, "bank sync timeout after depositAll while preparing equipment load");
+				return false;
             }
         } else if (needsDepositCleanupBeforeBanking(retainIds, fuzzy)) {
             int epochBeforeDeposit = Rs2Bank.getBankLiveEpoch();
-            if (Rs2Bank.depositAllExcept(retainIds, fuzzy)) {
-                Rs2Bank.syncBankInventoryAfterChange(epochBeforeDeposit);
+            if (!Rs2Bank.depositAllExcept(retainIds, fuzzy)) {
+				logSetup(Level.WARN, "depositAllExcept failed while preparing equipment load");
+				return false;
+            }
+            if (!Rs2Bank.syncBankInventoryAfterChange(epochBeforeDeposit)) {
+				logSetup(Level.WARN, "bank sync timeout after depositAllExcept while preparing equipment load");
+				return false;
             }
         }
 
@@ -934,6 +949,18 @@ public class Rs2InventorySetup {
 	 * @return true if the inventory matches the setup, false otherwise.
 	 */
 	public boolean doesInventoryMatch() {
+		return doesInventoryMatch(Collections.emptySet());
+	}
+
+	private static String inventoryShortfallKey(InventorySetupsItem setupItem) {
+		assert setupItem != null;
+		if (setupItem.isFuzzy()) {
+			return "f:" + setupItem.getName().toLowerCase(Locale.ROOT);
+		}
+		return "i:" + setupItem.getId();
+	}
+
+	private boolean doesInventoryMatch(Set<String> toleratedShortfallKeys) {
 		if (inventorySetup == null || inventorySetup.getInventory() == null) {
 			return false;
 		}
@@ -986,6 +1013,9 @@ public class Rs2InventorySetup {
 					}
 				} else {
 					if (!unslottedInventorySatisfiesPreset(setupItem, withdrawQuantity, useStackQuantity)) {
+						if (toleratedShortfallKeys.contains(inventoryShortfallKey(setupItem))) {
+							continue;
+						}
 						int invHave = useStackQuantity
 								? Rs2Inventory.itemQuantity(setupItem.getName())
 								: Rs2Inventory.count(setupItem.getName(), false);
