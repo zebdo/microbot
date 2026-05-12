@@ -36,7 +36,11 @@ import net.runelite.client.plugins.PluginManager;
 import net.runelite.client.plugins.loottracker.LootTrackerRecord;
 import net.runelite.client.plugins.microbot.configs.SpecialAttackConfigs;
 import net.runelite.client.plugins.microbot.pouch.PouchScript;
+import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
+import net.runelite.client.plugins.microbot.util.combat.Rs2Combat;
+import net.runelite.client.plugins.microbot.util.dialogues.Rs2Dialogue;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2ItemModel;
+import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.item.Rs2ItemManager;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
@@ -363,8 +367,12 @@ public class Microbot {
             return false;
         }
         boolean isHopping = Microbot.getClientThread().runOnClientThreadOptional(() -> {
-            if (Microbot.getClient().getLocalPlayer() != null && Microbot.getClient().getLocalPlayer().isInteracting()) {
-                log.error("Local player is interacting, cannot hop worlds");
+            if (Rs2Combat.inCombat()) {
+                log.error("Player is in combat, cannot hop worlds");
+                return false;
+            }
+            if (Rs2Bank.isOpen() || Rs2Shop.isOpen() || Rs2Dialogue.isInDialogue()) {
+                log.error("Blocking widget open (bank/shop/dialogue), cannot hop worlds");
                 return false;
             }
             if (quickHopTargetWorld != null || Microbot.getClient().getGameState() != GameState.LOGGED_IN) {
