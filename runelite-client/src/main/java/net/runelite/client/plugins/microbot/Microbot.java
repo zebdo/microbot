@@ -366,7 +366,7 @@ public class Microbot {
             log.error("Can't hop world, already trying to hop");
             return false;
         }
-        boolean isHopping = Microbot.getClientThread().runOnClientThreadOptional(() -> {
+        boolean hopIssued = Microbot.getClientThread().runOnClientThreadOptional(() -> {
             if (Rs2Combat.inCombat()) {
                 log.error("Player is in combat, cannot hop worlds");
                 return false;
@@ -380,7 +380,7 @@ public class Microbot {
                 return false;
             }
             if (Microbot.getClient().getWorld() == worldNumber) {
-                return false;
+                return true;
             }
             World newWorld = Microbot.getWorldService().getWorlds().findWorld(worldNumber);
             if (newWorld == null) {
@@ -402,29 +402,46 @@ public class Microbot {
             Microbot.getClient().openWorldHopper();
             Microbot.getClient().hopToWorld(rsWorld);
             quickHopTargetWorld = null;
-            sleep(600);
-            sleepUntil(() -> Microbot.isHopping() || Rs2Widget.getWidget(193, 0) != null, 2000);
-            return Microbot.isHopping();
+            return true;
         }).orElse(false);
-        if (!isHopping) {
+        if (!hopIssued) {
+            log.error("Failed to hop to world {}", worldNumber);
+            return false;
+        }
+        // Wait off the client thread so sleeps actually block. The lambda above runs on
+        // the client thread, where Global.sleep / sleepUntil early-return — so any post-hop
+        // wait inside it is a no-op and the success check fires before the server has
+        // even processed the request. That's the source of "Failed to hop" spam.
+        if (Microbot.getClient().getWorld() != worldNumber) {
+            sleep(600);
+            sleepUntil(() -> Microbot.isHopping()
+                            || Microbot.getClient().getWorld() == worldNumber
+                            || Rs2Widget.getWidget(193, 0) != null, 5000);
+        }
+        boolean hopping = Microbot.isHopping() || Microbot.getClient().getWorld() == worldNumber;
+        if (!hopping) {
             Widget confirmRoot = Rs2Widget.getWidget(193, 0);
             if (confirmRoot != null) {
                 List<Widget> children = Arrays.stream(confirmRoot.getDynamicChildren()).collect(Collectors.toList());
                 Widget switchWorldWidget =
                         sleepUntilNotNull(() -> Rs2Widget.findWidget("Switch world", children, true), 2000);
-                if (switchWorldWidget != null) {
-                    boolean clicked = Rs2Widget.clickWidget(switchWorldWidget);
-                    if (clicked) {
-                        sleepUntil(Microbot::isHopping, 4000);
-                        return Microbot.isHopping();
-                    }
+                if (switchWorldWidget != null && Rs2Widget.clickWidget(switchWorldWidget)) {
+                    sleepUntil(() -> Microbot.isHopping()
+                                    || Microbot.getClient().getWorld() == worldNumber, 4000);
+                    hopping = Microbot.isHopping() || Microbot.getClient().getWorld() == worldNumber;
                 }
             }
         }
-        if (!isHopping) {
+        if (hopping) {
+            // Block until the hop fully lands so callers don't race against HOPPING/LOGIN_SCREEN.
+            sleepUntil(() -> Microbot.getClient().getWorld() == worldNumber
+                            && Microbot.getClient().getGameState() == GameState.LOGGED_IN, 15000);
+        }
+        boolean success = Microbot.getClient().getWorld() == worldNumber;
+        if (!success) {
             log.error("Failed to hop to world {}", worldNumber);
         }
-        return false;
+        return success;
     }
 
     public static void showMessage(String message) {
