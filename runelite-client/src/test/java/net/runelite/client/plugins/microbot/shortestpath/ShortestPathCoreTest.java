@@ -1,5 +1,6 @@
 package net.runelite.client.plugins.microbot.shortestpath;
 
+import net.runelite.api.VarPlayer;
 import net.runelite.api.coords.WorldArea;
 import net.runelite.api.coords.WorldPoint;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.*;
@@ -211,6 +212,51 @@ public class ShortestPathCoreTest {
 		assertTrue("Hot air balloon transports should be loaded", hasHotAirBalloon);
 		assertTrue("Magic mushtree transports should be loaded", hasMagicMushtree);
 		assertTrue("Seasonal transports should be loaded", hasSeasonalTransport);
+	}
+
+	@Test
+	public void testLumbridgeHomeTeleportTransportLoaded() {
+		Transport transport = getLumbridgeHomeTeleportTransport();
+
+		assertTrue("Lumbridge Home Teleport should stay gated to the standard spellbook",
+			transport.getVarbits().stream().anyMatch(v -> v.getVarbitId() == 4070 && v.getValue() == 0));
+		assertFalse("Lumbridge Home Teleport should not depend on the buff-display disabled varbit",
+			transport.getVarbits().stream().anyMatch(v -> v.getVarbitId() == 12353));
+		assertTrue("Lumbridge Home Teleport should be gated by LAST_HOME_TELEPORT cooldown",
+			transport.getVarplayers().stream().anyMatch(v -> v.getVarplayerId() == VarPlayer.LAST_HOME_TELEPORT
+				&& v.getOperator() == TransportVarPlayer.Operator.COOLDOWN_MINUTES
+				&& v.getValue() == 30));
+	}
+
+	@Test
+	public void testLumbridgeHomeTeleportCooldownRejectsRecentUse() {
+		Transport transport = getLumbridgeHomeTeleportTransport();
+		TransportVarPlayer cooldown = transport.getVarplayers().stream()
+			.filter(v -> v.getVarplayerId() == VarPlayer.LAST_HOME_TELEPORT)
+			.findFirst()
+			.orElseThrow(() -> new AssertionError("Lumbridge Home Teleport should have a LAST_HOME_TELEPORT varplayer"));
+
+		int nowMinutes = (int) (System.currentTimeMillis() / 60000);
+		assertFalse("Home teleport should be unavailable shortly after use",
+			cooldown.matches(nowMinutes - 5));
+		assertFalse("Home teleport should stay unavailable until more than 30 minutes have elapsed",
+			cooldown.matches(nowMinutes - 30));
+		assertTrue("Home teleport should be available after the 30 minute cooldown has elapsed",
+			cooldown.matches(nowMinutes - 31));
+	}
+
+	private static Transport getLumbridgeHomeTeleportTransport() {
+		HashMap<WorldPoint, Set<Transport>> transports = Transport.loadAllFromResources();
+
+		Optional<Transport> lumbridgeHomeTeleport = transports.values().stream()
+			.flatMap(Set::stream)
+			.filter(t -> t.getType() == TransportType.TELEPORTATION_SPELL
+				&& "Lumbridge Home Teleport".equals(t.getDisplayInfo())
+				&& new WorldPoint(3221, 3218, 0).equals(t.getDestination()))
+			.findFirst();
+
+		assertTrue("Lumbridge Home Teleport should be loaded", lumbridgeHomeTeleport.isPresent());
+		return lumbridgeHomeTeleport.get();
 	}
 
 	@Test
@@ -550,6 +596,58 @@ public class ShortestPathCoreTest {
 	}
 
 	@Test
+	public void testVarrockSewerPathAvoidsDisabledPalaceTrellisShortcut() {
+		PathfinderConfig config = createConfigWithUnavailableShortcutEdges(TransportType.AGILITY_SHORTCUT);
+		WorldPoint src = new WorldPoint(3203, 3501, 0);
+		WorldPoint dst = new WorldPoint(3237, 9858, 0);
+		WorldPoint northTrellis = new WorldPoint(3228, 3471, 0);
+		WorldPoint southTrellis = new WorldPoint(3228, 3470, 0);
+
+		Pathfinder pf = new Pathfinder(config, src, dst);
+		pf.run();
+
+		assertTrue("Pathfinder should complete", pf.isDone());
+		List<WorldPoint> rawPath = pf.getPath();
+		assertFalse("Path should not be empty", rawPath.isEmpty());
+		assertFalse("Raw path must not cross the disabled Varrock Palace trellis shortcut",
+				hasConsecutiveStep(rawPath, northTrellis, southTrellis));
+
+		List<WorldPoint> smoothedPath = pf.getWalkablePath();
+		assertFalse("Smoothed path must not cross the disabled Varrock Palace trellis shortcut",
+				hasLineSegmentStep(smoothedPath, northTrellis, southTrellis));
+
+		WorldPoint endpoint = rawPath.get(rawPath.size() - 1);
+		assertTrue("Path should still reach Varrock Sewers, ended at " + endpoint,
+				endpoint.distanceTo(dst) <= 1);
+	}
+
+	@Test
+	public void testVarrockSewerPathAvoidsPalaceGardenSouthFenceCollisionGap() {
+		PathfinderConfig config = createConfigWithUnavailableShortcutEdges(TransportType.AGILITY_SHORTCUT);
+		WorldPoint src = new WorldPoint(3236, 3477, 0);
+		WorldPoint dst = new WorldPoint(3237, 9858, 0);
+
+		Pathfinder pf = new Pathfinder(config, src, dst);
+		pf.run();
+
+		assertTrue("Pathfinder should complete", pf.isDone());
+		List<WorldPoint> rawPath = pf.getPath();
+		assertFalse("Path should not be empty", rawPath.isEmpty());
+		String rawCrossing = findFenceConsecutiveCrossing(rawPath, 3229, 3241, 3472, 3471, 0);
+		assertNull("Raw path must not cross the Varrock Palace garden south fence: " + rawCrossing,
+				rawCrossing);
+
+		List<WorldPoint> smoothedPath = pf.getWalkablePath();
+		String smoothedCrossing = findFenceCrossing(smoothedPath, 3229, 3241, 3472, 3471, 0);
+		assertNull("Smoothed path must not cross the Varrock Palace garden south fence: " + smoothedCrossing,
+				smoothedCrossing);
+
+		WorldPoint endpoint = rawPath.get(rawPath.size() - 1);
+		assertTrue("Path should still reach Varrock Sewers, ended at " + endpoint,
+				endpoint.distanceTo(dst) <= 1);
+	}
+
+	@Test
 	public void testIgnoreCollisionPackedIsHashSetLookup() {
 		int packed = WorldPointUtil.packWorldPoint(3142, 3457, 0);
 		assertTrue("Known ignore-collision tile should be in the packed set",
@@ -586,6 +684,111 @@ public class ShortestPathCoreTest {
 			throw new RuntimeException("Failed to configure transports", e);
 		}
 		return config;
+	}
+
+	private PathfinderConfig createConfigWithUnavailableShortcutEdges(TransportType... unavailableTypes) {
+		Set<TransportType> unavailable = new HashSet<>(Arrays.asList(unavailableTypes));
+		HashMap<WorldPoint, Set<Transport>> allTransports = Transport.loadAllFromResources();
+		PathfinderConfig config = new PathfinderConfig(
+				collisionMap,
+				allTransports,
+				Collections.emptyList(),
+				null,
+				null
+		);
+		try {
+			java.lang.reflect.Field f = PathfinderConfig.class.getDeclaredField("calculationCutoffMillis");
+			f.setAccessible(true);
+			f.setLong(config, 10000);
+
+			for (Map.Entry<WorldPoint, Set<Transport>> entry : allTransports.entrySet()) {
+				if (entry.getKey() == null) {
+					continue;
+				}
+				Set<Transport> usable = entry.getValue().stream()
+						.filter(t -> !unavailable.contains(t.getType()))
+						.collect(java.util.stream.Collectors.toSet());
+				entry.getValue().stream()
+						.filter(t -> unavailable.contains(t.getType()))
+						.forEach(config::addBlockedTransportEdgeIfNeeded);
+				if (!usable.isEmpty()) {
+					config.getTransports().put(entry.getKey(), usable);
+					config.getTransportsPacked().put(
+							WorldPointUtil.packWorldPoint(entry.getKey()), usable);
+				}
+			}
+		} catch (Exception e) {
+			throw new RuntimeException("Failed to configure unavailable shortcut edges", e);
+		}
+		return config;
+	}
+
+	private static boolean hasConsecutiveStep(List<WorldPoint> path, WorldPoint a, WorldPoint b) {
+		for (int i = 0; i + 1 < path.size(); i++) {
+			if (isEitherDirection(path.get(i), path.get(i + 1), a, b)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean hasLineSegmentStep(List<WorldPoint> path, WorldPoint a, WorldPoint b) {
+		return findLineSegmentStep(path, a, b) != null;
+	}
+
+	private static String findLineSegmentStep(List<WorldPoint> path, WorldPoint a, WorldPoint b) {
+		for (int i = 0; i + 1 < path.size(); i++) {
+			if (path.get(i).distanceTo2D(path.get(i + 1)) > 10) {
+				continue;
+			}
+			if (lineSegmentContainsStep(path.get(i), path.get(i + 1), a, b)) {
+				return path.get(i) + " -> " + path.get(i + 1);
+			}
+		}
+		return null;
+	}
+
+	private static boolean lineSegmentContainsStep(WorldPoint from, WorldPoint to, WorldPoint a, WorldPoint b) {
+		if (from.getPlane() != to.getPlane()) return false;
+		int x = from.getX();
+		int y = from.getY();
+		while (x != to.getX() || y != to.getY()) {
+			WorldPoint stepFrom = new WorldPoint(x, y, from.getPlane());
+			x += Integer.signum(to.getX() - x);
+			y += Integer.signum(to.getY() - y);
+			WorldPoint stepTo = new WorldPoint(x, y, from.getPlane());
+			if (isEitherDirection(stepFrom, stepTo, a, b)) {
+				return true;
+			}
+		}
+		return false;
+	}
+
+	private static boolean isEitherDirection(WorldPoint from, WorldPoint to, WorldPoint a, WorldPoint b) {
+		return (from.equals(a) && to.equals(b)) || (from.equals(b) && to.equals(a));
+	}
+
+	private static boolean hasFenceCrossing(List<WorldPoint> path, int minX, int maxX, int northY, int southY, int plane) {
+		return findFenceCrossing(path, minX, maxX, northY, southY, plane) != null;
+	}
+
+	private static String findFenceConsecutiveCrossing(List<WorldPoint> path, int minX, int maxX, int northY, int southY, int plane) {
+		for (int x = minX; x <= maxX; x++) {
+			if (hasConsecutiveStep(path, new WorldPoint(x, northY, plane), new WorldPoint(x, southY, plane))) {
+				return x + "," + northY + "<->" + x + "," + southY;
+			}
+		}
+		return null;
+	}
+
+	private static String findFenceCrossing(List<WorldPoint> path, int minX, int maxX, int northY, int southY, int plane) {
+		for (int x = minX; x <= maxX; x++) {
+			String segment = findLineSegmentStep(path, new WorldPoint(x, northY, plane), new WorldPoint(x, southY, plane));
+			if (segment != null) {
+				return x + "," + northY + "<->" + x + "," + southY + " via " + segment;
+			}
+		}
+		return null;
 	}
 
 	// ========================

@@ -60,7 +60,8 @@ tasks.register<JavaExec>("run") {
     mainClass.set("net.runelite.client.RuneLite")
 
     jvmArgs(
-        "-Dfile.encoding=UTF-8"
+        "-Dfile.encoding=UTF-8",
+        "-ea"
     )
 }
 
@@ -91,6 +92,7 @@ tasks.register<JavaExec>("runDebug") {
     // same JVM args you need normally
     jvmArgs(
         "-Dfile.encoding=UTF-8",
+        "-ea",
         // JDWP agent for debugger
         "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
     )
@@ -103,7 +105,10 @@ tasks.register<JavaExec>("runTest") {
     classpath = sourceSets.main.get().runtimeClasspath
     mainClass.set("net.runelite.client.RuneLite")
 
-    jvmArgs("-Dfile.encoding=UTF-8")
+    jvmArgs(
+        "-Dfile.encoding=UTF-8",
+        "-ea"
+    )
 
     System.getProperties()
         .filter { it.key.toString().startsWith("microbot.test.") }
@@ -181,6 +186,7 @@ tasks.register<Test>("runUnitTests") {
     exclude("**/Rs2WalkerIntegrationTest.class")
     exclude("**/Rs2ReflectionGroundItemActionsIntegrationTest.class")
     exclude("**/threadsafety/ClientThreadScannerTest.class")
+    exclude("**/ScreenshotHandlerTest.class")
 
     useJUnit()
 

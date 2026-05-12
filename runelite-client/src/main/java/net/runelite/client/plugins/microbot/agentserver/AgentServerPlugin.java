@@ -148,6 +148,7 @@ public class AgentServerPlugin extends Plugin {
 				new WidgetInvokeHandler(gson),
 				new SettingsHandler(gson),
 				new KeyboardHandler(gson),
+				new QuestHelperHandler(gson),
 				new StateMachineDebugHandler(gson),
 				new ProfileHandler(gson),
 				new DynamicScriptDeployHandler(gson)
@@ -220,14 +221,10 @@ public class AgentServerPlugin extends Plugin {
 			try {
 				return Integer.parseInt(stored);
 			} catch (NumberFormatException ignored) {
+				log.warn("Invalid agent server port '{}'; falling back to configured default {}", stored, config.port());
 			}
 		}
-		int span = AgentServerConfig.PORT_RANDOM_MAX - AgentServerConfig.PORT_RANDOM_MIN + 1;
-		int generated = AgentServerConfig.PORT_RANDOM_MIN
-				+ java.util.concurrent.ThreadLocalRandom.current().nextInt(span);
-		configManager.setConfiguration(AgentServerConfig.GROUP, AgentServerConfig.KEY_PORT, Integer.toString(generated));
-		log.info("Agent server port assigned at random for this install: {}", generated);
-		return generated;
+		return config.port();
 	}
 
 	private String ensureAuthToken() {

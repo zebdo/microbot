@@ -9,6 +9,7 @@ import net.runelite.client.plugins.microbot.Microbot;
 import net.runelite.client.plugins.microbot.util.antiban.Rs2AntibanSettings;
 import net.runelite.client.plugins.microbot.util.math.Rs2Random;
 import net.runelite.client.plugins.microbot.util.menu.NewMenuEntry;
+import net.runelite.client.plugins.microbot.util.text.Rs2TextSanitizer;
 
 import java.awt.*;
 import java.util.concurrent.ThreadLocalRandom;
@@ -17,10 +18,6 @@ import java.util.regex.Pattern;
 
 @Slf4j
 public class Rs2UiHelper {
-
-	public static final Pattern COL_TAG_PATTERN = Pattern.compile("<col=[^>]+>|</col>");
-	// Regex to extract base name and numeric suffix, e.g., "Super attack (4)" -> "Super attack", 4
-	public static final Pattern ITEM_NAME_SUFFIX_PATTERN = Pattern.compile("^(.*?)(?:\\s*\\((\\d+)\\))?$");
 
     public static boolean isRectangleWithinViewport(Rectangle rectangle) {
         int viewportHeight = Microbot.getClient().getViewportHeight();
@@ -139,14 +136,30 @@ public class Rs2UiHelper {
     }
 
     /**
-     * Strips color tags from the provided text.
+     * Strips RuneLite/Jagex color tags from the provided text.
      *
      * @param text the text from which to strip color tags.
      * @return the text without color tags.
+	 *
+	 * @deprecated Use {@link #stripTags(String)} or {@link net.runelite.client.plugins.microbot.util.text.Rs2TextSanitizer#stripTags(String)}
+	 * for full tag removal.
      */
+	@Deprecated
     public static String stripColTags(String text) {
-        return text != null ? COL_TAG_PATTERN.matcher(text).replaceAll("") : "";
+        return Rs2TextSanitizer.stripColorTags(text);
     }
+
+	/** Strip RuneLite/Jagex markup tags from text. */
+	public static String stripTags(String text)
+	{
+		return Rs2TextSanitizer.stripTags(text);
+	}
+
+	/** Strip tags and normalize whitespace to single spaces. */
+	public static String stripTagsToSpace(String text)
+	{
+		return Rs2TextSanitizer.stripTagsToSpace(text);
+	}
 
 	public static Rectangle getDefaultRectangle() {
 		int randomValue = ThreadLocalRandom.current().nextInt(3) - 1;

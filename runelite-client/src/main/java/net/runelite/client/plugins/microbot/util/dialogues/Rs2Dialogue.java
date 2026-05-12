@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 import static net.runelite.client.plugins.microbot.util.Global.sleepUntilTrue;
 
 public class Rs2Dialogue {
+    private static final String CLICK_HERE_TO_CONTINUE = "Click here to continue";
 
     /**
      * Checks if the player is currently in a dialogue state.
@@ -112,13 +113,20 @@ public class Rs2Dialogue {
     /**
      * Checks if there is a "Continue" option in the spell filter dialogue.
      *
-     * <p>This method verifies the visibility of the widget associated with the spell filter continue option.
-     * It checks the widget with interface ID 162 and child ID 43 to determine if the "Continue" option is present.</p>
+     * <p>This method verifies the chatbox widget used by spell filter continue prompts.
+     * It checks the widget text because the same chatbox child is also used for text inputs.</p>
      *
      * @return true if the spell filter continue option is visible, false otherwise.
      */
     private static boolean hasSpellFilterContinue() {
-        return Rs2Widget.isWidgetVisible(162, 44);
+        return Microbot.getClientThread().runOnClientThreadOptional(() -> {
+            Widget widget = Microbot.getClient().getWidget(162, 44);
+            return widget != null && !widget.isHidden() && isContinuePromptText(widget.getText());
+        }).orElse(false);
+    }
+
+    static boolean isContinuePromptText(String text) {
+        return text != null && Rs2UiHelper.stripTagsToSpace(text).equalsIgnoreCase(CLICK_HERE_TO_CONTINUE);
     }
 
     /**

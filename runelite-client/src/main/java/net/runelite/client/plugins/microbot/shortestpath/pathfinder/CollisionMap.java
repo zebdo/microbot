@@ -69,13 +69,9 @@ public class CollisionMap {
 
     /**
      * Single walking step permission check from (x,y,z) in direction (dx,dy).
-     * Mirrors the traversability logic in {@link #getNeighbors} so that a
-     * line-of-sight trace approves exactly the sequences of moves the BFS
-     * could have taken without a transport edge.
-     *
-     * <p>Walls, closed doors, and diagonal corner-cutting are all blocked
-     * here — which is the invariant the path smoother relies on to avoid
-     * skipping across transport origins.
+     * Used by {@link PathSmoother}. Graph expansion uses {@link #fillTraversableLegacy}
+     * instead; they intentionally differ where legacy blocked-tile logic diverges from
+     * {@code canStep}.
      */
     public boolean canStep(int x, int y, int z, int dx, int dy) {
         if (dx == 0 && dy == 0) return true;
@@ -98,6 +94,40 @@ public class CollisionMap {
         return false;
     }
 
+    /**
+     * Legacy neighbor traversability for {@link #getNeighbors} / {@link #getReverseNeighbors}.
+     * {@link #canStep} remains for {@link PathSmoother} line traces.
+     */
+    private void fillTraversableLegacy(int x, int y, int z, boolean[] out) {
+        if (isBlocked(x, y, z)) {
+            boolean westBlocked = isBlocked(x - 1, y, z);
+            boolean eastBlocked = isBlocked(x + 1, y, z);
+            boolean southBlocked = isBlocked(x, y - 1, z);
+            boolean northBlocked = isBlocked(x, y + 1, z);
+            boolean southWestBlocked = isBlocked(x - 1, y - 1, z);
+            boolean southEastBlocked = isBlocked(x + 1, y - 1, z);
+            boolean northWestBlocked = isBlocked(x - 1, y + 1, z);
+            boolean northEastBlocked = isBlocked(x + 1, y + 1, z);
+            out[0] = !westBlocked;
+            out[1] = !eastBlocked;
+            out[2] = !southBlocked;
+            out[3] = !northBlocked;
+            out[4] = !southWestBlocked && !westBlocked && !southBlocked;
+            out[5] = !southEastBlocked && !eastBlocked && !southBlocked;
+            out[6] = !northWestBlocked && !westBlocked && !northBlocked;
+            out[7] = !northEastBlocked && !eastBlocked && !northBlocked;
+        } else {
+            out[0] = w(x, y, z);
+            out[1] = e(x, y, z);
+            out[2] = s(x, y, z);
+            out[3] = n(x, y, z);
+            out[4] = sw(x, y, z);
+            out[5] = se(x, y, z);
+            out[6] = nw(x, y, z);
+            out[7] = ne(x, y, z);
+        }
+    }
+
     private static int packedPointFromOrdinal(int startPacked, OrdinalDirection direction) {
         final int x = WorldPointUtil.unpackWorldX(startPacked);
         final int y = WorldPointUtil.unpackWorldY(startPacked);
@@ -108,6 +138,7 @@ public class CollisionMap {
     // This is only safe if pathfinding is single-threaded
     private final List<Node> neighbors = new ArrayList<>(16);
     private final boolean[] traversable = new boolean[8];
+    private final boolean[] traversableReverseAccum = new boolean[8];
 
     public static final Set<Integer> ignoreCollisionPacked;
     static {
@@ -157,6 +188,7 @@ public class CollisionMap {
         int moaAddedHere = 0;
         int moaVisited = 0;
         int moaIgnored = 0;
+        List<Integer> moaCosts = null;
 
         // Transports are pre-filtered by PathfinderConfig.refreshTransports
         // Thus any transports in the list are guaranteed to be valid per the user's settings
@@ -172,13 +204,18 @@ public class CollisionMap {
                 continue;
             }
 
-            if (TransportType.isTeleport(transport.getType())) {
+            if (TransportType.isTeleport(transport.getType(), transport.getOrigin())) {
                 if (config.isIgnoreTeleportAndItems()) {
                     if (isMoa) moaIgnored++;
                     continue;
                 }
-                neighbors.add(new TransportNode(transport.getDestination(), node, config.getDistanceBeforeUsingTeleport() + transport.getDuration()));
-                if (isMoa) moaAddedHere++;
+                int cost = config.getDistanceBeforeUsingTeleport() + transport.getDuration();
+                neighbors.add(new TransportNode(transport.getDestination(), node, cost));
+                if (isMoa) {
+                    moaAddedHere++;
+                    if (moaCosts == null) moaCosts = new ArrayList<>();
+                    moaCosts.add(cost);
+                }
             } else {
                 neighbors.add(new TransportNode(transport.getDestination(), node, transport.getDuration()));
             }
@@ -186,39 +223,13 @@ public class CollisionMap {
         }
 
         if (moaSeenHere > 0) {
-            log.debug("[MoA] getNeighbors @ ({},{},{}): seen={} added={} visited={} ignored={} (distanceBeforeUsingTeleport={}, cost={})",
+            log.debug("[MoA] getNeighbors @ ({},{},{}): seen={} added={} visited={} ignored={} (distanceBeforeUsingTeleport={}, costs={})",
                     x, y, z, moaSeenHere, moaAddedHere, moaVisited, moaIgnored,
                     config.getDistanceBeforeUsingTeleport(),
-                    config.getDistanceBeforeUsingTeleport() + 4);
+                    moaCosts == null ? "[]" : moaCosts);
         }
 
-        if (isBlocked(x, y, z)) {
-            boolean westBlocked = isBlocked(x - 1, y, z);
-            boolean eastBlocked = isBlocked(x + 1, y, z);
-            boolean southBlocked = isBlocked(x, y - 1, z);
-            boolean northBlocked = isBlocked(x, y + 1, z);
-            boolean southWestBlocked = isBlocked(x - 1, y - 1, z);
-            boolean southEastBlocked = isBlocked(x + 1, y - 1, z);
-            boolean northWestBlocked = isBlocked(x - 1, y + 1, z);
-            boolean northEastBlocked = isBlocked(x + 1, y + 1, z);
-            traversable[0] = !westBlocked;
-            traversable[1] = !eastBlocked;
-            traversable[2] = !southBlocked;
-            traversable[3] = !northBlocked;
-            traversable[4] = !southWestBlocked && !westBlocked && !southBlocked;
-            traversable[5] = !southEastBlocked && !eastBlocked && !southBlocked;
-            traversable[6] = !northWestBlocked && !westBlocked && !northBlocked;
-            traversable[7] = !northEastBlocked && !eastBlocked && !northBlocked;
-        } else {
-            traversable[0] = w(x, y, z);
-            traversable[1] = e(x, y, z);
-            traversable[2] = s(x, y, z);
-            traversable[3] = n(x, y, z);
-            traversable[4] = sw(x, y, z);
-            traversable[5] = se(x, y, z);
-            traversable[6] = nw(x, y, z);
-            traversable[7] = ne(x, y, z);
-        }
+        fillTraversableLegacy(x, y, z, traversable);
 
         for (int i = 0; i < traversable.length; i++) {
             OrdinalDirection d = ORDINAL_VALUES[i];
@@ -226,6 +237,7 @@ public class CollisionMap {
             if (visited.get(neighborPacked)) continue;
             if (config.getRestrictedPointsPacked().contains(neighborPacked)) continue;
             if (config.getCustomRestrictions().contains(neighborPacked)) continue;
+            if (config.isBlockedTransportStep(node.packedPosition, neighborPacked)) continue;
 
             if (ignoreCollisionPacked.contains(node.packedPosition)) {
                 neighbors.add(new Node(neighborPacked, node));
@@ -259,6 +271,103 @@ public class CollisionMap {
                         continue;
                     }
                     neighbors.add(new Node(transport.getOrigin(), node));
+                }
+            }
+        }
+
+        return neighbors;
+    }
+
+    /**
+     * Predecessor expansion for bidirectional search: every forward edge {@code pred → node} appears as
+     * a {@code node} expansion to {@code pred}. Origin-less teleports are omitted (caller builds
+     * {@code incomingByDestPacked} without them).
+     */
+    public List<Node> getReverseNeighbors(Node node, VisitedTiles visitedBackward, PathfinderConfig config,
+            Set<Integer> puzzleAllowPacked, Map<Integer, Set<Transport>> incomingByDestPacked) {
+        final int x = WorldPointUtil.unpackWorldX(node.packedPosition);
+        final int y = WorldPointUtil.unpackWorldY(node.packedPosition);
+        final int z = WorldPointUtil.unpackWorldPlane(node.packedPosition);
+
+        neighbors.clear();
+
+        if (incomingByDestPacked != null) {
+            Set<Transport> incoming = incomingByDestPacked.getOrDefault(node.packedPosition, Collections.emptySet());
+            for (Transport transport : incoming) {
+                WorldPoint origin = transport.getOrigin();
+                if (origin == null) {
+                    continue;
+                }
+                int originPacked = WorldPointUtil.packWorldPoint(origin);
+                if (visitedBackward.get(originPacked)) {
+                    continue;
+                }
+                if (TransportType.isTeleport(transport.getType(), transport.getOrigin())) {
+                    if (config.isIgnoreTeleportAndItems()) {
+                        continue;
+                    }
+                    neighbors.add(new TransportNode(origin, node, config.getDistanceBeforeUsingTeleport() + transport.getDuration()));
+                } else {
+                    neighbors.add(new TransportNode(origin, node, transport.getDuration()));
+                }
+            }
+        }
+
+        for (int i = 0; i < 8; i++) {
+            OrdinalDirection d = ORDINAL_VALUES[i];
+            fillTraversableLegacy(x - d.x, y - d.y, z, traversable);
+            traversableReverseAccum[i] = traversable[i];
+        }
+        System.arraycopy(traversableReverseAccum, 0, traversable, 0, 8);
+
+        for (int i = 0; i < traversable.length; i++) {
+            OrdinalDirection d = ORDINAL_VALUES[i];
+            int prevPacked = WorldPointUtil.packWorldPoint(x - d.x, y - d.y, z);
+            if (visitedBackward.get(prevPacked)) {
+                continue;
+            }
+            if (config.getRestrictedPointsPacked().contains(prevPacked)) {
+                continue;
+            }
+            if (config.getCustomRestrictions().contains(prevPacked)) {
+                continue;
+            }
+            if (config.isBlockedTransportStep(prevPacked, node.packedPosition)) {
+                continue;
+            }
+
+            if (ignoreCollisionPacked.contains(node.packedPosition)) {
+                neighbors.add(new Node(prevPacked, node));
+                continue;
+            }
+
+            if (getCachedRegionId() == TOA_PUZZLE_REGION) {
+                if (!puzzleAllowPacked.contains(prevPacked)) {
+                    WorldPoint globalWorldPoint = Rs2WorldPoint.convertInstancedWorldPoint(WorldPointUtil.unpackWorldPoint(prevPacked));
+                    if (globalWorldPoint != null) {
+                        TileObject go = Rs2GameObject.getGroundObject(globalWorldPoint);
+                        if (go != null && go.getId() == 45340) {
+                            continue;
+                        }
+                    }
+                }
+            }
+
+            if (traversable[i]) {
+                neighbors.add(new Node(prevPacked, node));
+            } else if (Math.abs(d.x + d.y) == 1
+                    && isBlocked(WorldPointUtil.unpackWorldX(prevPacked), WorldPointUtil.unpackWorldY(prevPacked), z)) {
+                int wx = WorldPointUtil.unpackWorldX(prevPacked);
+                int wy = WorldPointUtil.unpackWorldY(prevPacked);
+                Set<Transport> ts = config.getTransportsPacked().getOrDefault(prevPacked, Collections.emptySet());
+                for (Transport transport : ts) {
+                    if (transport.getOrigin() == null) {
+                        continue;
+                    }
+                    if (WorldPointUtil.packWorldPoint(transport.getOrigin()) != prevPacked) {
+                        continue;
+                    }
+                    neighbors.add(new Node(WorldPointUtil.packWorldPoint(wx, wy, z), node));
                 }
             }
         }

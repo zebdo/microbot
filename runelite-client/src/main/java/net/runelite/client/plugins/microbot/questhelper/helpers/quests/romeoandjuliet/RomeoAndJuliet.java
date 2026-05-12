@@ -151,7 +151,7 @@ public class RomeoAndJuliet extends BasicQuestHelper
 		steps.put(50, bringPotionToJuliet);
 
 		var cFinishQuest = new ConditionalStep(this, finishQuest);
-		giveLetterToRomeo.addStep(inJulietRoom, goDownstairsToFinishQuest);
+		cFinishQuest.addStep(inJulietRoom, goDownstairsToFinishQuest);
 		steps.put(60, cFinishQuest);
 
 		return steps;

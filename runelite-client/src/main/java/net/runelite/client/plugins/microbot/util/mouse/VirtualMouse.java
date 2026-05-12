@@ -112,11 +112,18 @@ public class VirtualMouse extends Mouse {
         clicked(point, rightClick ? MouseEvent.BUTTON3 : MouseEvent.BUTTON1);
         setLastClick(point);
     }
+
+    private boolean shouldMoveNaturally(Point point) {
+        return point.getX() > 1
+                && point.getY() > 1
+                && Microbot.naturalMouse != null;
+    }
+
     public Mouse click(Point point, boolean rightClick) {
         if (point == null) return this;
 
         Runnable clickAction = () -> {
-            if (point.getX() > 1 && point.getY() > 1 && Microbot.naturalMouse != null) {
+            if (shouldMoveNaturally(point)) {
                 Microbot.naturalMouse.moveTo(point.getX(), point.getY());
             }
             handleClick(point, rightClick);
@@ -137,7 +144,7 @@ public class VirtualMouse extends Mouse {
 
         Runnable clickAction = () -> {
             Point newPoint = point;
-            if (point.getX() > 1 && point.getY() > 1 && Microbot.naturalMouse != null) {
+            if (shouldMoveNaturally(point)) {
                 Microbot.naturalMouse.moveTo(point.getX(), point.getY());
 
                 if (Rs2UiHelper.hasActor(entry)) {
@@ -287,14 +294,14 @@ public class VirtualMouse extends Mouse {
     public Mouse drag(Point startPoint, Point endPoint) {
         if (startPoint == null || endPoint == null) return this;
 
-        if (startPoint.getX() > 1 && startPoint.getY() > 1 && Microbot.naturalMouse != null)
+        if (shouldMoveNaturally(startPoint))
             Microbot.naturalMouse.moveTo(startPoint.getX(), startPoint.getY());
         else
             move(startPoint);
         sleep(Rs2Random.logNormalBounded(50, 80));
         pressed(startPoint, MouseEvent.BUTTON1);
         sleep(Rs2Random.logNormalBounded(80, 120));
-        if (endPoint.getX() > 1 && endPoint.getY() > 1 && Microbot.naturalMouse != null)
+        if (shouldMoveNaturally(endPoint))
             Microbot.naturalMouse.moveTo(endPoint.getX(), endPoint.getY());
         else
             move(endPoint);

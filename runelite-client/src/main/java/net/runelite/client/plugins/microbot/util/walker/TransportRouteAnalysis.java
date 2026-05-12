@@ -32,6 +32,12 @@ public class TransportRouteAnalysis {
     
     /** Path of WorldPoints from bank to destination, accounting for items available in bank */
     private final List<WorldPoint> pathFromBank;
+
+    /** Explicit direct distance captured at analysis time (tiles), or -1 if unavailable */
+    private final int directDistance;
+
+    /** Explicit banking distance captured at analysis time (tiles), or -1 if unavailable */
+    private final int bankingRouteDistance;
     
     /** Summary text describing the analysis results and recommendation */
     private final String analysis;
@@ -49,12 +55,23 @@ public class TransportRouteAnalysis {
     public TransportRouteAnalysis(List<WorldPoint> directPath, 
                                 BankLocation nearestBank, WorldPoint bankLocation,List<WorldPoint> pathToBank,
                                 List<WorldPoint> pathFromBank,String analysis) {
+        this(directPath, nearestBank, bankLocation, pathToBank, pathFromBank, analysis,
+                deriveRouteDistance(directPath),
+                deriveBankingRouteDistance(pathToBank, pathFromBank));
+    }
+
+    public TransportRouteAnalysis(List<WorldPoint> directPath,
+                                BankLocation nearestBank, WorldPoint bankLocation, List<WorldPoint> pathToBank,
+                                List<WorldPoint> pathFromBank, String analysis,
+                                int directDistance, int bankingRouteDistance) {
         this.directPath = directPath;
         this.nearestBank = nearestBank;
         this.bankLocation = bankLocation;
         this.pathToBank = pathToBank;
         this.pathFromBank = pathFromBank;
         this.analysis = analysis;
+        this.directDistance = directDistance;
+        this.bankingRouteDistance = bankingRouteDistance;
     }
     
     /**
@@ -62,8 +79,7 @@ public class TransportRouteAnalysis {
      * @return The direct route distance, or -1 if path is empty or invalid
      */
     public int getDirectDistance() {
-        if (directPath == null || directPath.isEmpty()) return -1;
-        return directPath.size();
+        return directDistance;
     }
     
     /**
@@ -71,9 +87,7 @@ public class TransportRouteAnalysis {
      * @return The total banking route distance (to bank + from bank), or -1 if paths are invalid
      */
     public int getBankingRouteDistance() {
-        if (pathToBank == null || pathFromBank == null || 
-            pathToBank.isEmpty() || pathFromBank.isEmpty()) return -1;
-        return pathToBank.size() + pathFromBank.size();
+        return bankingRouteDistance;
     }
     
     public int getTileSavings() {
@@ -81,6 +95,12 @@ public class TransportRouteAnalysis {
         int bankingDist = getBankingRouteDistance();
         if (directDist == -1 || bankingDist == -1) return 0;
         return Math.abs(directDist - bankingDist);
+    }
+
+    public boolean isTie() {
+        int directDist = getDirectDistance();
+        int bankingDist = getBankingRouteDistance();
+        return directDist != -1 && bankingDist != -1 && directDist == bankingDist;
     }
     
     /**
@@ -99,6 +119,24 @@ public class TransportRouteAnalysis {
         if (directDist == -1) return false;
         // When equal, direct is considered faster (maintaining existing logic)
         return directDist <= bankingDist;
+    }
+
+    private static int deriveBankingRouteDistance(List<WorldPoint> pathToBank, List<WorldPoint> pathFromBank) {
+        if (pathToBank == null || pathFromBank == null ||
+                pathToBank.isEmpty() || pathFromBank.isEmpty()) return -1;
+        int toBank = deriveRouteDistance(pathToBank);
+        int fromBank = deriveRouteDistance(pathFromBank);
+        if (toBank < 0 || fromBank < 0) {
+            return -1;
+        }
+        return toBank + fromBank;
+    }
+
+    private static int deriveRouteDistance(List<WorldPoint> path) {
+        if (path == null || path.isEmpty()) {
+            return -1;
+        }
+        return Math.max(path.size() - 1, 0);
     }
     
     @Override

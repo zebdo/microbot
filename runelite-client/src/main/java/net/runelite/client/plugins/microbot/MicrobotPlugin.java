@@ -22,12 +22,16 @@ import net.runelite.client.plugins.microbot.ui.MicrobotPluginListPanel;
 import net.runelite.client.plugins.microbot.ui.MicrobotTopLevelConfigPanel;
 import net.runelite.client.plugins.microbot.util.bank.Rs2Bank;
 import net.runelite.client.plugins.microbot.util.equipment.Rs2Equipment;
+import net.runelite.client.plugins.microbot.util.huntkit.Rs2HuntKit;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Gembag;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2Inventory;
 import net.runelite.client.plugins.microbot.util.inventory.Rs2RunePouch;
 import net.runelite.client.plugins.microbot.util.overlay.GembagOverlay;
 import net.runelite.client.plugins.microbot.util.player.Rs2Player;
 import net.runelite.client.plugins.microbot.util.reflection.Rs2Reflection;
+import net.runelite.client.plugins.microbot.util.walker.Rs2Walker;
+import net.runelite.client.plugins.microbot.util.leaguetransport.Rs2LeaguesTransport;
+import net.runelite.client.plugins.microbot.util.leaguetransport.SeasonalTransportHandlers;
 import net.runelite.client.plugins.microbot.api.boat.Rs2BoatCache;
 import net.runelite.client.plugins.microbot.util.shop.Rs2Shop;
 import net.runelite.client.plugins.microbot.util.tabs.Rs2Tab;
@@ -39,6 +43,7 @@ import net.runelite.client.ui.overlay.Overlay;
 import net.runelite.client.ui.overlay.OverlayManager;
 import net.runelite.client.ui.overlay.OverlayMenuEntry;
 import net.runelite.client.util.ImageUtil;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,15 +51,17 @@ import javax.inject.Inject;
 import javax.inject.Provider;
 import javax.inject.Singleton;
 import javax.swing.*;
-import java.awt.*;
+import java.awt.AWTException;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.*;
+import java.util.EnumSet;
 import java.util.List;
-
+import java.util.Objects;
+import java.util.Optional;
 @PluginDescriptor(
 	name = PluginDescriptor.Default + "Microbot",
 	description = "Microbot",
@@ -66,6 +73,14 @@ import java.util.List;
 @Slf4j
 public class MicrobotPlugin extends Plugin
 {
+	/**
+	 * Max age of {@code lastTransportAttempt} for attributing locked-region chat to a click.
+	 * Canonical value is {@link Rs2LeaguesTransport#LEAGUES_LOCK_CHAT_MAX_ATTEMPT_AGE_MS}; kept here for script compatibility.
+	 *
+	 * @apiNote Treat as stable external API: renames or semantic changes break scripts — note in changelog when modifying.
+	 */
+	public static final long LEAGUES_LOCK_CHAT_MAX_ATTEMPT_AGE_MS = Rs2LeaguesTransport.LEAGUES_LOCK_CHAT_MAX_ATTEMPT_AGE_MS;
+	private EnumSet<WorldType> lastWorldTypeProfile = null;
 
 	@Inject
 	private Provider<MicrobotPluginListPanel> pluginListPanelProvider;
@@ -148,6 +163,7 @@ public class MicrobotPlugin extends Plugin
 		);
 
 		Microbot.pauseAllScripts.set(false);
+		Microbot.getBlockingEventManager().start();
 
 		MicrobotPluginListPanel pluginListPanel = pluginListPanelProvider.get();
 		pluginListPanel.addFakePlugin(new MicrobotPluginConfigurationDescriptor(
@@ -173,6 +189,8 @@ public class MicrobotPlugin extends Plugin
 		new InputSelector(clientToolbar);
 
 		Microbot.getPouchScript().startUp();
+
+		Rs2Walker.setSeasonalTransportHandlers(SeasonalTransportHandlers.defaultHandlerList());
 
 		if (overlayManager != null)
 		{
@@ -230,6 +248,10 @@ public class MicrobotPlugin extends Plugin
 		{
 			Rs2Bank.updateLocalBank(event);
 		}
+		else if (event.getContainerId() == InventoryID.HUNTSMANS_KIT)
+		{
+			Rs2HuntKit.updateLocalKit(event);
+		}
 		else if (Arrays.stream(getShopContainerIds()).anyMatch(sid -> Objects.equals(event.getContainerId(), sid))) {
 			Rs2Shop.storeShopItemsInMemory(event, event.getContainerId());
 		}
@@ -285,6 +307,12 @@ public class MicrobotPlugin extends Plugin
 		   // Region-based login detection logic
 		   final Client client = Microbot.getClient();
 		   if (client != null) {
+				EnumSet<WorldType> worldTypeProfile = normalizeWorldTypesForProfileComparison(client.getWorldType());
+				if (lastWorldTypeProfile != null && !lastWorldTypeProfile.equals(worldTypeProfile))
+				{
+					Rs2Bank.invalidateBankMirrorCache("world-type-profile-transition");
+				}
+				lastWorldTypeProfile = worldTypeProfile;
 				int[] currentRegions = client.getTopLevelWorldView().getMapRegions();
 				boolean wasLoggedIn = LoginManager.getLastKnownGameState() == GameState.LOGGED_IN;
 				if (!wasLoggedIn) {
@@ -303,9 +331,25 @@ public class MicrobotPlugin extends Plugin
 		   // and we also handle correct cache loading in onRuneScapeProfileChanged event
 		   LoginManager.markLoggedOut();
 		   Microbot.setLastKnownRegions(null);
+		   Rs2LeaguesTransport.onLogout();
 	   }
 	   // update last known game state to track login/logout transitions
 	   LoginManager.setLastKnownGameState(gameStateChanged.getGameState());
+	}
+
+	private static EnumSet<WorldType> normalizeWorldTypesForProfileComparison(EnumSet<WorldType> rawTypes)
+	{
+		EnumSet<WorldType> normalized = rawTypes == null
+				? EnumSet.noneOf(WorldType.class)
+				: rawTypes.clone();
+		// Profile compare should ignore normal-world and combat-variant flags.
+		normalized.remove(WorldType.MEMBERS);
+		normalized.remove(WorldType.PVP);
+		normalized.remove(WorldType.BOUNTY);
+		normalized.remove(WorldType.SKILL_TOTAL);
+		normalized.remove(WorldType.HIGH_RISK);
+		normalized.remove(WorldType.LAST_MAN_STANDING);
+		return normalized;
 	}
 
 	@Subscribe
@@ -377,16 +421,52 @@ public class MicrobotPlugin extends Plugin
 	@Subscribe
 	private void onChatMessage(ChatMessage event)
 	{
-		if (event.getType() == ChatMessageType.ENGINE && event.getMessage().equalsIgnoreCase("I can't reach that!"))
+		if (event.getType() == ChatMessageType.ENGINE)
 		{
-			Microbot.cantReachTarget = true;
+			String msg = event.getMessage();
+			if (msg != null && msg.equalsIgnoreCase("I can't reach that!"))
+			{
+				Microbot.cantReachTarget = true;
+			}
 		}
-		if (event.getType() == ChatMessageType.GAMEMESSAGE && event.getMessage().toLowerCase().contains("you can't log into a non-members"))
+		if (event.getType() == ChatMessageType.GAMEMESSAGE)
 		{
-			Microbot.cantHopWorld = true;
+			String msg = event.getMessage();
+			if (msg != null && containsIgnoreCase(msg, "you can't log into a non-members"))
+			{
+				Microbot.cantHopWorld = true;
+			}
+
+			// Leagues: "haven't unlocked access to X area" -> blacklist last transport dest.
+			if (msg != null)
+			{
+				Rs2LeaguesTransport.onLockedRegionGameMessage(msg);
+			}
 		}
 		Microbot.getPouchScript().onChatMessage(event);
 		Rs2Gembag.onChatMessage(event);
+	}
+
+	private static boolean containsIgnoreCase(String haystack, String needle)
+	{
+		if (haystack == null || needle == null || needle.isEmpty())
+		{
+			return false;
+		}
+		int hLen = haystack.length();
+		int nLen = needle.length();
+		if (nLen > hLen)
+		{
+			return false;
+		}
+		for (int i = 0; i <= hLen - nLen; i++)
+		{
+			if (haystack.regionMatches(true, i, needle, 0, nLen))
+			{
+				return true;
+			}
+		}
+		return false;
 	}
 
 	@Subscribe
@@ -511,8 +591,8 @@ public class MicrobotPlugin extends Plugin
 	@Subscribe
 	public void onGameTick(GameTick event)
 	{
-		// Cache loading is now handled properly during login/profile changes
-		// No need to call loadInitialCacheFromCurrentConfig on every tick
+		// Start Leagues teleport calibration ASAP after login (non-blocking; prompts for consent once).
+		Rs2LeaguesTransport.tickLeaguesCalibration();
 	}
 
 	@Subscribe(priority = 100)

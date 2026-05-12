@@ -1,6 +1,9 @@
 package net.runelite.client.plugins.microbot.util.walker;
 
+import net.runelite.api.WallObject;
 import net.runelite.api.coords.WorldPoint;
+import net.runelite.client.plugins.microbot.shortestpath.Transport;
+import net.runelite.client.plugins.microbot.shortestpath.TransportType;
 import net.runelite.client.plugins.microbot.shortestpath.pathfinder.Pathfinder;
 import org.junit.After;
 import org.junit.Before;
@@ -38,14 +41,137 @@ public class Rs2WalkerUnitTest {
 
     @Before
     public void resetTelemetry() {
+        Rs2Walker.clearWalkerDedupeForTesting();
         Rs2Walker.Telemetry.reset();
         Rs2Walker.sessionBlacklistedDoors.clear();
     }
 
     @After
     public void tearDown() {
+        Rs2Walker.clearWalkerDedupeForTesting();
         Rs2Walker.Telemetry.reset();
         Rs2Walker.sessionBlacklistedDoors.clear();
+    }
+
+    @Test
+    public void adjacentTransportSuppression_onlyAdjacentSamePlaneTransports() {
+        Transport door = new Transport(
+                new WorldPoint(3123, 3360, 0),
+                new WorldPoint(3123, 3361, 0),
+                "Door",
+                TransportType.TRANSPORT,
+                false,
+                "Open",
+                "Door",
+                136);
+
+        assertEquals(new HashSet<>(Arrays.asList(
+                        new WorldPoint(3123, 3360, 0),
+                        new WorldPoint(3123, 3361, 0))),
+                Rs2Walker.adjacentSamePlaneTransportSuppressionPoints(door, null));
+    }
+
+    @Test
+    public void adjacentTransportSuppression_ignoresNonAdjacentTransports() {
+        Transport ladder = new Transport(
+                new WorldPoint(3092, 3361, 0),
+                new WorldPoint(3117, 9753, 0),
+                "Ladder",
+                TransportType.TRANSPORT,
+                false,
+                "Climb-down",
+                "Ladder",
+                133);
+
+        assertTrue(Rs2Walker.adjacentSamePlaneTransportSuppressionPoints(ladder, null).isEmpty());
+    }
+
+    @Test
+    public void shouldRecalculatePathAfterTransport_includesOriginlessTeleport() {
+        Transport varrockTeleport = new Transport(
+                new WorldPoint(3213, 3424, 0),
+                "Varrock Teleport",
+                TransportType.TELEPORTATION_SPELL,
+                false,
+                20,
+                Collections.emptyMap());
+
+        assertTrue(Rs2Walker.shouldRecalculatePathAfterTransport(varrockTeleport));
+    }
+
+    @Test
+    public void shouldRecalculatePathAfterTransport_skipsAdjacentSamePlaneTransport() {
+        Transport door = new Transport(
+                new WorldPoint(3123, 3360, 0),
+                new WorldPoint(3123, 3361, 0),
+                "Door",
+                TransportType.TRANSPORT,
+                false,
+                "Open",
+                "Door",
+                136);
+
+        assertFalse(Rs2Walker.shouldRecalculatePathAfterTransport(door));
+    }
+
+    @Test
+    public void shouldRecalculatePathAfterTransport_includesLongDistanceTransport() {
+        Transport ship = new Transport(
+                new WorldPoint(3054, 3245, 0),
+                new WorldPoint(2956, 3146, 0),
+                "Port Sarim to Karamja",
+                TransportType.SHIP,
+                false,
+                "Cross",
+                "Gangplank",
+                2082);
+
+        assertTrue(Rs2Walker.shouldRecalculatePathAfterTransport(ship));
+    }
+
+    @Test
+    public void shouldRecalculatePathAfterTransport_includesSamePlaneCoordinateBandTransport() {
+        Transport varrockSewerLadder = new Transport(
+                new WorldPoint(3237, 9858, 0),
+                new WorldPoint(3236, 3458, 0),
+                "Varrock Sewers ladder",
+                TransportType.TRANSPORT,
+                false,
+                "Climb-up",
+                "Ladder",
+                11806);
+
+        assertTrue(Rs2Walker.shouldRecalculatePathAfterTransport(varrockSewerLadder));
+    }
+
+    @Test
+    public void hasPendingRouteStepBeforeArrival_detectsTransportBeforeDestination() {
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3220, 3473, 0),
+                new WorldPoint(3221, 3473, 0),
+                new WorldPoint(3222, 3473, 0),
+                new WorldPoint(3229, 3473, 0));
+
+        assertTrue(Rs2Walker.hasPendingRouteStepBeforeArrival(
+                path,
+                new WorldPoint(3229, 3473, 0),
+                0,
+                i -> i == 1));
+    }
+
+    @Test
+    public void hasPendingRouteStepBeforeArrival_ignoresStepsInsideArrivalTolerance() {
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3220, 3473, 0),
+                new WorldPoint(3227, 3473, 0),
+                new WorldPoint(3228, 3473, 0),
+                new WorldPoint(3229, 3473, 0));
+
+        assertFalse(Rs2Walker.hasPendingRouteStepBeforeArrival(
+                path,
+                new WorldPoint(3229, 3473, 0),
+                2,
+                i -> i == 2));
     }
 
     // ---------------------------------------------------------------------------
@@ -227,6 +353,170 @@ public class Rs2WalkerUnitTest {
         int idx = Rs2Walker.findFurthestClickableIndex(path, 0, player, null, 14);
 
         assertEquals("null predicate must not NPE and must allow full scan", 2, idx);
+    }
+
+    @Test
+    public void interpolateClickableTarget_usesInterpolatedPointWhenUsable() {
+        WorldPoint player = new WorldPoint(3200, 3200, 0);
+        WorldPoint fallback = new WorldPoint(3206, 3200, 0);
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3200, 3200, 0),
+                fallback,
+                new WorldPoint(3220, 3200, 0));
+
+        WorldPoint target = Rs2Walker.interpolateClickableTarget(path, 2, player, fallback, 12, wp -> true);
+
+        assertEquals(new WorldPoint(3212, 3200, 0), target);
+    }
+
+    @Test
+    public void interpolateClickableTarget_fallsBackWhenInterpolatedPointUnusable() {
+        WorldPoint player = new WorldPoint(3200, 3200, 0);
+        WorldPoint fallback = new WorldPoint(3206, 3200, 0);
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3200, 3200, 0),
+                fallback,
+                new WorldPoint(3220, 3200, 0));
+
+        WorldPoint target = Rs2Walker.interpolateClickableTarget(path, 2, player, fallback, 12, wp -> false);
+
+        assertEquals("unusable interpolated tiles must not replace the known path waypoint",
+                fallback, target);
+    }
+
+    @Test
+    public void interpolateClickableTarget_shortensOutOfReachForwardWaypoint() {
+        WorldPoint player = new WorldPoint(3200, 3200, 0);
+        WorldPoint forward = new WorldPoint(3220, 3200, 0);
+        List<WorldPoint> path = Arrays.asList(
+                new WorldPoint(3200, 3200, 0),
+                forward);
+
+        WorldPoint target = Rs2Walker.interpolateClickableTarget(path, 1, player, forward, 12, wp -> true);
+
+        assertEquals("out-of-minimap forward waypoints should be shortened to a clickable tile",
+                new WorldPoint(3212, 3200, 0), target);
+    }
+
+    // ---------------------------------------------------------------------------
+    // Raw-path wall-door segment probing
+    // ---------------------------------------------------------------------------
+
+    @Test
+    public void wallDoorTouchesSegment_crossingDoorEdge_returnsTrue() {
+        WallObject door = mock(WallObject.class);
+        when(door.getWorldLocation()).thenReturn(new WorldPoint(3123, 3361, 0));
+        when(door.getOrientationA()).thenReturn(8); // south-facing door edge
+
+        assertTrue(Rs2Walker.wallDoorTouchesSegment(door,
+                new WorldPoint(3123, 3361, 0),
+                new WorldPoint(3123, 3360, 0)));
+        assertTrue(Rs2Walker.wallDoorTouchesSegment(door,
+                new WorldPoint(3123, 3360, 0),
+                new WorldPoint(3123, 3361, 0)));
+    }
+
+    @Test
+    public void wallDoorTouchesSegment_startingBesideDoorAndMovingAway_returnsFalse() {
+        WallObject door = mock(WallObject.class);
+        when(door.getWorldLocation()).thenReturn(new WorldPoint(3123, 3361, 0));
+        when(door.getOrientationA()).thenReturn(8); // door blocks 3123,3361 <-> 3123,3360
+
+        assertFalse("standing on the door's south neighbor and walking southwest must not re-open the door",
+                Rs2Walker.wallDoorTouchesSegment(door,
+                        new WorldPoint(3123, 3360, 0),
+                        new WorldPoint(3122, 3359, 0)));
+    }
+
+    @Test
+    public void didTraverseInteractedDoor_crossesDoorTowardSegmentDestination_returnsTrue() {
+        assertTrue(Rs2Walker.didTraverseInteractedDoor(
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0),
+                new WorldPoint(2465, 3493, 0),
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)));
+    }
+
+    @Test
+    public void didTraverseInteractedDoor_movesWithoutCrossingObject_returnsFalse() {
+        assertFalse(Rs2Walker.didTraverseInteractedDoor(
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3495, 0),
+                new WorldPoint(2465, 3493, 0),
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)));
+    }
+
+    @Test
+    public void didTraverseInteractedDoor_crossesObjectButMovesAwayFromDestination_returnsFalse() {
+        assertFalse(Rs2Walker.didTraverseInteractedDoor(
+                new WorldPoint(1987, 5568, 0),
+                new WorldPoint(1986, 5568, 0),
+                new WorldPoint(1987, 5568, 0),
+                new WorldPoint(1987, 5568, 0),
+                new WorldPoint(1988, 5568, 0)));
+    }
+
+    @Test
+    public void shouldBlacklistDoorAfterWrongTraversal_teleportAway_returnsTrue() {
+        assertTrue(Rs2Walker.shouldBlacklistDoorAfterWrongTraversal(
+                new WorldPoint(1987, 5568, 0),
+                new WorldPoint(2435, 3519, 0),
+                new WorldPoint(1987, 5568, 0),
+                new WorldPoint(1988, 5569, 0)));
+    }
+
+    @Test
+    public void shouldBlacklistDoorAfterWrongTraversal_progressTowardEdge_returnsFalse() {
+        assertFalse(Rs2Walker.shouldBlacklistDoorAfterWrongTraversal(
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0),
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)));
+    }
+
+    @Test
+    public void markDoorEdgeAttemptThisPass_allowsFirstAttemptOnly() {
+        java.util.Map<String, WorldPoint> attempted = new java.util.HashMap<>();
+        WorldPoint[] segment = new WorldPoint[] {
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)
+        };
+
+        WorldPoint playerPos = new WorldPoint(2465, 3494, 0);
+        assertTrue(Rs2Walker.markDoorEdgeAttemptThisPass(attempted, segment, playerPos));
+        assertFalse(Rs2Walker.markDoorEdgeAttemptThisPass(attempted, segment, playerPos));
+    }
+
+    @Test
+    public void markDoorEdgeAttemptThisPass_treatsReverseEdgeAsDuplicate() {
+        java.util.Map<String, WorldPoint> attempted = new java.util.HashMap<>();
+        WorldPoint[] forward = new WorldPoint[] {
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)
+        };
+        WorldPoint[] reverse = new WorldPoint[] {
+                new WorldPoint(2465, 3493, 0),
+                new WorldPoint(2465, 3494, 0)
+        };
+
+        WorldPoint playerPos = new WorldPoint(2465, 3494, 0);
+        assertTrue(Rs2Walker.markDoorEdgeAttemptThisPass(attempted, forward, playerPos));
+        assertFalse(Rs2Walker.markDoorEdgeAttemptThisPass(attempted, reverse, playerPos));
+    }
+
+    @Test
+    public void markDoorEdgeAttemptThisPass_allowsRetryAfterPlayerProgress() {
+        java.util.Map<String, WorldPoint> attempted = new java.util.HashMap<>();
+        WorldPoint[] segment = new WorldPoint[] {
+                new WorldPoint(2465, 3494, 0),
+                new WorldPoint(2465, 3493, 0)
+        };
+
+        assertTrue(Rs2Walker.markDoorEdgeAttemptThisPass(attempted, segment, new WorldPoint(2465, 3494, 0)));
+        assertTrue("retry should be allowed after moving away from same-edge attempt tile",
+                Rs2Walker.markDoorEdgeAttemptThisPass(attempted, segment, new WorldPoint(2462, 3491, 0)));
     }
 
     // ---------------------------------------------------------------------------
