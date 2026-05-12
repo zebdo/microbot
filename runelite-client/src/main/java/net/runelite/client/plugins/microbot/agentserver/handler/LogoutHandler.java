@@ -71,8 +71,19 @@ public class LogoutHandler extends AgentHandler {
 				wait = Boolean.TRUE.equals(body.get("wait"));
 			}
 			if (body.containsKey("timeout")) {
-				timeoutSeconds = Math.min(((Number) body.get("timeout")).intValue(), MAX_TIMEOUT_SECONDS);
-				if (timeoutSeconds <= 0) timeoutSeconds = DEFAULT_TIMEOUT_SECONDS;
+				Object raw = body.get("timeout");
+				int parsed = 0;
+				if (raw instanceof Number) {
+					parsed = ((Number) raw).intValue();
+				} else if (raw instanceof String) {
+					try {
+						parsed = Integer.parseInt(((String) raw).trim());
+					} catch (NumberFormatException ignored) {
+					}
+				}
+				if (parsed > 0) {
+					timeoutSeconds = Math.min(parsed, MAX_TIMEOUT_SECONDS);
+				}
 			}
 		}
 
