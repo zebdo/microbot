@@ -11,28 +11,29 @@
 </a>
 
 # Microbot
-Microbot is a fun Old School RuneScape side project built on RuneLite. It focuses on learning and sharing automation scripts, not enterprise software.
+Microbot is a RuneLite fork with an always-on Microbot plugin for learning, building, and running automation scripts.
 
-- Core plugin: `runelite-client/src/main/java/net/runelite/client/plugins/microbot`
-- Queryable API docs: `runelite-client/src/main/java/net/runelite/client/plugins/microbot/api/QUERYABLE_API.md` (quick read: `api/README.md`)
-- Helpers/utilities: `microbot/util` inside the plugin tree
+This README is intentionally short. Durable details live in the docs below so high-level context does not rot when implementation details move.
 
-## Installing & Running
-- Download shaded releases from the GitHub releases page (see `docs/installation.md` for step‑by‑step and launcher notes).
-- Linux/macOS/Windows: run the shaded JAR with Java 17+ (`java -jar client-<version>-SNAPSHOT-shaded.jar`), or swap it into RuneLite/Bolt as described in `docs/installation.md`.
-- Stuck? Join the Discord below.
+## Start Here
+- Install or run a release: `docs/installation.md`
+- Set up a development environment: `docs/development.md`
+- Understand the runtime: `docs/ARCHITECTURE.md`
+- Build scripts safely: `runelite-client/src/main/java/net/runelite/client/plugins/microbot/AGENTS.md`
+- Use entity caches/queryables: `runelite-client/src/main/java/net/runelite/client/plugins/microbot/api/QUERYABLE_API.md`
+- Drive a running client: `docs/MICROBOT_CLI.md`
 
-## Building from Source
-- Quick compile: `./gradlew :runelite-client:compileJava`
-- Full build: `./gradlew build`
-- Main sources are included builds defined in `settings.gradle.kts` (cache, runelite-api, runelite-client, runelite-jshell).
-- Development setup guide: `docs/development.md`
+## Common Commands
+- Compile client: `./gradlew :client:compileJava`
+- Run unit tests: `./gradlew :client:runUnitTests`
+- Build all projects: `./gradlew buildAll`
+- Build shaded jar: `./gradlew :client:assemble`
 
-## Developing Scripts
-- New scripts belong in the microbot plugin folder: `runelite-client/src/main/java/net/runelite/client/plugins/microbot`.
-- Share reusable helpers under `microbot/util`.
-- Use the Queryable API caches via `Microbot.getRs2XxxCache().query()`; do not instantiate caches/queryables directly. See `api/QUERYABLE_API.md` and examples under `api/*/*ApiExample.java`.
-- Example scripts live in `runelite-client/src/main/java/net/runelite/client/plugins/microbot/example/`.
+## Code Map
+- Microbot plugin and scripts: `runelite-client/src/main/java/net/runelite/client/plugins/microbot`
+- Reusable helpers: `runelite-client/src/main/java/net/runelite/client/plugins/microbot/util`
+- Queryable caches: `runelite-client/src/main/java/net/runelite/client/plugins/microbot/api`
+- Runtime agent tooling: `runelite-client/src/main/java/net/runelite/client/plugins/microbot/agentserver`
 
 ## Discord
 [![Discord Banner 1](https://discord.com/api/guilds/1087718903985221642/widget.png?style=banner1)](https://discord.gg/zaGrfqFEWE)

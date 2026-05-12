@@ -10,6 +10,7 @@ The CLI is located at the repository root: `./microbot-cli`
 2. The **Agent Server** plugin must be enabled in the plugin list
 3. `curl` must be available on the system (standard on Linux/macOS)
 4. A POSIX shell (`bash`) — the CLI is a bash script. On Windows, run it from **WSL** or **Git Bash**. macOS users with the default `/bin/bash` 3.2 are supported (the script avoids Bash 4+ features like namerefs).
+5. Auth is token-gated. The plugin writes `~/.runelite/.agent-token`; the CLI reads it automatically.
 
 ## Quick Start
 
@@ -42,6 +43,8 @@ The CLI reads three environment variables:
 | `MICROBOT_HOST` | `127.0.0.1` | Agent Server host |
 | `MICROBOT_PORT` | `8081` | Agent Server port (must match plugin config) |
 | `MICROBOT_TIMEOUT` | `30` | Request timeout in seconds |
+| `MICROBOT_TOKEN` | unset | Override the `X-Agent-Token` value |
+| `MICROBOT_TOKEN_FILE` | `~/.runelite/.agent-token` | Token file path |
 
 Example with custom port:
 
