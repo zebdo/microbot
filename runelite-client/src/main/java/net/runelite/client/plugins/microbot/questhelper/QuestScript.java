@@ -1298,7 +1298,7 @@ public class QuestScript extends Script {
         // doesn't mean a direct click will succeed. Require line-of-sight too, or we walk instead.
         if (npc != null && npc.getLocalLocation() != null && Rs2Camera.isTileOnScreen(npc.getLocalLocation())
                 && (Microbot.getClient().isInInstancedRegion() || (Rs2Walker.canReach(npc.getWorldLocation()) && npc.hasLineOfSight()))) {
-             Rs2Walker.clearWalkingRoute("quest-helper:npc-step-visible-interact");
+            Rs2Walker.clearWalkingRoute("quest-helper:npc-step-visible-interact");
 
             if (step.getText().stream().anyMatch(x -> x.toLowerCase().contains("kill"))) {
                 if (!Rs2Combat.inCombat()) {
