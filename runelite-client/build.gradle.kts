@@ -52,6 +52,15 @@ plugins {
 
 }
 
+// Module-system flags required to extend com.apple.eawt.FullScreenAdapter on macOS
+// (OSXFullScreenAdapter). Without these, the JVM throws IllegalAccessError at class load.
+val macEawtJvmArgs = listOf(
+    "--add-opens=java.desktop/com.apple.eawt=ALL-UNNAMED",
+    "--add-opens=java.desktop/com.apple.eawt.event=ALL-UNNAMED",
+    "--add-exports=java.desktop/com.apple.eawt=ALL-UNNAMED",
+    "--add-exports=java.desktop/com.apple.eawt.event=ALL-UNNAMED"
+)
+
 tasks.register<JavaExec>("run") {
     group = "application"
     description = "Run RuneLite client"
@@ -63,6 +72,7 @@ tasks.register<JavaExec>("run") {
         "-Dfile.encoding=UTF-8",
         "-ea"
     )
+    jvmArgs(macEawtJvmArgs)
 }
 
 tasks.register<JavaExec>("seedMenuActionInfo") {
@@ -96,6 +106,7 @@ tasks.register<JavaExec>("runDebug") {
         // JDWP agent for debugger
         "-agentlib:jdwp=transport=dt_socket,server=y,suspend=y,address=5005"
     )
+    jvmArgs(macEawtJvmArgs)
 }
 
 tasks.register<JavaExec>("runTest") {
@@ -109,6 +120,7 @@ tasks.register<JavaExec>("runTest") {
         "-Dfile.encoding=UTF-8",
         "-ea"
     )
+    jvmArgs(macEawtJvmArgs)
 
     System.getProperties()
         .filter { it.key.toString().startsWith("microbot.test.") }
@@ -378,6 +390,11 @@ val shadowJar = tasks.register<Jar>("shadowJar") {
     dependsOn(configurations.runtimeClasspath)
     manifest {
         attributes["Main-Class"] = "net.runelite.client.RuneLite"
+        // Allows OSXFullScreenAdapter (which extends com.apple.eawt.FullScreenAdapter)
+        // to load when launched via `java -jar`. JVM still requires --add-opens to
+        // actually subclass the sealed class; manifest covers reflection access.
+        attributes["Add-Opens"] = "java.desktop/com.apple.eawt java.desktop/com.apple.eawt.event"
+        attributes["Add-Exports"] = "java.desktop/com.apple.eawt java.desktop/com.apple.eawt.event"
     }
 
     duplicatesStrategy = DuplicatesStrategy.EXCLUDE
