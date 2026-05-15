@@ -2982,7 +2982,7 @@ public class Rs2Walker {
     private static boolean hasPendingExplicitTransportStepBeforeArrival(List<WorldPoint> path,
                                                                         WorldPoint target,
                                                                         int distance) {
-        return hasPendingRouteStepBeforeArrival(path, target, distance, i -> hasExplicitTransportStep(path, i));
+        return hasPendingRouteStepBeforeArrival(path, target, distance, i -> isCatalogBackedTransportSegment(path, i));
     }
 
     static boolean hasPendingRouteStepBeforeArrival(List<WorldPoint> path,
@@ -3135,7 +3135,7 @@ public class Rs2Walker {
         if (rawPath == null || index < 0 || index >= rawPath.size() - 1) {
             return false;
         }
-        if (hasExplicitTransportStep(rawPath, index)) {
+        if (isCatalogBackedTransportSegment(rawPath, index)) {
             return false;
         }
         boolean isInstance = Microbot.getClient()
@@ -3540,7 +3540,7 @@ public class Rs2Walker {
             return false;
         }
 
-        if (hasExplicitTransportStep(path, index)) {
+        if (isCatalogBackedTransportSegment(path, index)) {
             return false;
         }
 
@@ -3582,6 +3582,10 @@ public class Rs2Walker {
                     object = Rs2GameObject.getGameObject(o -> o.getWorldLocation().distanceTo2D(probe) <= 1, probe, 3);
                 }
                 if (object == null) continue;
+                if (isCatalogTransportObject(object)) {
+                    Telemetry.recordDoorReject("catalog-transport-object");
+                    continue;
+                }
 
                 ObjectComposition baseComp = Rs2GameObject.convertToObjectComposition(object);
                 ObjectComposition comp = resolveCompositionForDoorProbe(object);
@@ -3744,6 +3748,7 @@ public class Rs2Walker {
                     if (loc.distanceTo2D(playerLoc) > searchDistance) return false;
                     if (sessionBlacklistedDoors.contains(loc)) return false;
                     if (!(o instanceof WallObject) && !(o instanceof GameObject)) return false;
+                    if (isCatalogTransportObject(o)) return false;
                     if (!isDoorOnSegment(o, fromWp, toWp)) return false;
                     ObjectComposition comp = Rs2GameObject.convertToObjectComposition(o);
                     if (!isDoorComposition(comp, doorActions)) return false;
@@ -3756,6 +3761,9 @@ public class Rs2Walker {
     private static boolean tryHandleDoorObject(TileObject object, WorldPoint probe, WorldPoint fromWp, WorldPoint toWp,
                                                List<String> doorActions, boolean allowSegmentProbe) {
         if (object == null || probe == null) return false;
+        if (isCatalogTransportObject(object)) {
+            return false;
+        }
 
         ObjectComposition comp = Rs2GameObject.convertToObjectComposition(object);
         if (!isDoorComposition(comp, doorActions)) return false;
@@ -4095,16 +4103,125 @@ public class Rs2Walker {
         return true;
     }
 
+    /**
+     * Strict catalog step: path tile equals transport origin in {@link ShortestPathPlugin#getTransports()}
+     * and next tile equals that row's destination. Used where the walker must dispatch {@code handleTransports}
+     * from the path index (origin keyed in the TSV-fed multimap).
+     */
     private static boolean hasExplicitTransportStep(List<WorldPoint> path, int index) {
         if (path == null || index < 0 || index >= path.size() - 1) {
             return false;
         }
-        Set<Transport> transports = ShortestPathPlugin.getTransports().get(path.get(index));
+        return matchesDirectedTransportCatalogEdge(path.get(index), path.get(index + 1));
+    }
+
+    /**
+     * Whether this path edge is covered by a transport catalog row (same coordinates loaded from TSV into
+     * {@link ShortestPathPlugin#getTransports()}). Includes strict origin-destination steps and same-plane
+     * hops where the path starts on a tile Chebyshev-adjacent to the catalog origin but still targets that
+     * row's destination, so door probing does not fight {@code handleTransports}.
+     */
+    private static boolean isCatalogBackedTransportSegment(List<WorldPoint> path, int index) {
+        if (path == null || index < 0 || index >= path.size() - 1) {
+            return false;
+        }
+        return isCatalogBackedTransportSegment(path.get(index), path.get(index + 1));
+    }
+
+    private static boolean isCatalogBackedTransportSegment(WorldPoint from, WorldPoint to) {
+        if (from == null || to == null || from.getPlane() != to.getPlane()) {
+            return false;
+        }
+        if (matchesDirectedTransportCatalogEdge(from, to)) {
+            return true;
+        }
+        if (matchesDirectedTransportCatalogEdge(to, from)) {
+            return true;
+        }
+        if (matchesAdjacentOriginShortTransportHop(from, to)) {
+            return true;
+        }
+        if (matchesAdjacentOriginShortTransportHop(to, from)) {
+            return true;
+        }
+        return false;
+    }
+
+    private static boolean matchesDirectedTransportCatalogEdge(WorldPoint origin, WorldPoint dest) {
+        if (origin == null || dest == null || origin.getPlane() != dest.getPlane()) {
+            return false;
+        }
+        Set<Transport> transports = ShortestPathPlugin.getTransports().get(origin);
         if (transports == null || transports.isEmpty()) {
             return false;
         }
-        WorldPoint destination = path.get(index + 1);
-        return transports.stream().anyMatch(t -> Objects.equals(t.getDestination(), destination));
+        return transports.stream().anyMatch(t -> Objects.equals(t.getDestination(), dest));
+    }
+
+    /**
+     * True when some catalog origin one step from {@code from} has a same-plane adjacent transport to {@code to}.
+     * Restricted to {@link #isAdjacentSamePlaneTransport} rows so long-distance transports do not suppress doors.
+     */
+    private static boolean matchesAdjacentOriginShortTransportHop(WorldPoint from, WorldPoint to) {
+        if (from == null || to == null || from.getPlane() != to.getPlane()) {
+            return false;
+        }
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                if (dx == 0 && dy == 0) {
+                    continue;
+                }
+                WorldPoint catalogOrigin = new WorldPoint(from.getX() + dx, from.getY() + dy, from.getPlane());
+                Set<Transport> transports = ShortestPathPlugin.getTransports().get(catalogOrigin);
+                if (transports == null || transports.isEmpty()) {
+                    continue;
+                }
+                for (Transport t : transports) {
+                    if (Objects.equals(t.getDestination(), to) && isAdjacentSamePlaneTransport(t)) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
+    }
+
+    /**
+     * True when this scene object is the interactable listed on a transport catalog row (same
+     * coordinates and object ids as TSV loaded into {@link ShortestPathPlugin#getTransports()}).
+     * Door-ahead / fallback / LOS scans must treat it as non-door so {@link #handleTransports} owns it.
+     */
+    private static boolean isCatalogTransportObject(TileObject object) {
+        if (object == null) {
+            return false;
+        }
+        WorldPoint loc = object.getWorldLocation();
+        if (loc == null) {
+            return false;
+        }
+        int id = object.getId();
+        if (id <= 0) {
+            return false;
+        }
+        Map<WorldPoint, Set<Transport>> map = ShortestPathPlugin.getTransports();
+        if (map == null || map.isEmpty()) {
+            return false;
+        }
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dy = -1; dy <= 1; dy++) {
+                WorldPoint catalogOrigin = new WorldPoint(loc.getX() + dx, loc.getY() + dy, loc.getPlane());
+                Set<Transport> transports = map.get(catalogOrigin);
+                if (transports == null || transports.isEmpty()) {
+                    continue;
+                }
+                for (Transport t : transports) {
+                    if (t != null && t.getObjectId() == id) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 
     private static void waitForDoorInteractionProgress(WorldPoint fromWp, WorldPoint toWp) {
@@ -4413,6 +4530,7 @@ public class Rs2Walker {
 			boolean doorLike = isDoorLikeGameObjectName(comp.getName())
 					|| (action != null && doorActionPriorityIndex(action) < Integer.MAX_VALUE);
 			if (!doorLike) continue;
+			if (isCatalogTransportObject(w)) continue;
 			candidates++;
 
 			// Allow empty-action doors: use default interact.
@@ -4438,6 +4556,7 @@ public class Rs2Walker {
 			boolean doorLike = isDoorLikeGameObjectName(comp.getName())
 					|| (action != null && doorActionPriorityIndex(action) < Integer.MAX_VALUE);
 			if (!doorLike) continue;
+			if (isCatalogTransportObject(g)) continue;
 			candidates++;
 
 			String actionFinal = action == null ? "" : action;
@@ -4503,6 +4622,7 @@ public class Rs2Walker {
 			boolean doorLike = isDoorLikeGameObjectName(comp.getName())
 					|| (action != null && doorActionPriorityIndex(action) < Integer.MAX_VALUE);
 			if (!doorLike) continue;
+			if (isCatalogTransportObject(w)) continue;
 
 			String actionFinal = action == null ? "" : action;
 
@@ -4539,6 +4659,7 @@ public class Rs2Walker {
 			boolean doorLike = isDoorLikeGameObjectName(comp.getName())
 					|| (action != null && doorActionPriorityIndex(action) < Integer.MAX_VALUE);
 			if (!doorLike) continue;
+			if (isCatalogTransportObject(g)) continue;
 
 			String actionFinal = action == null ? "" : action;
 
@@ -4633,6 +4754,7 @@ public class Rs2Walker {
 				boolean doorLike = isDoorLikeGameObjectName(comp.getName())
 						|| (action != null && doorActionPriorityIndex(action) < Integer.MAX_VALUE);
 				if (!doorLike) continue;
+				if (isCatalogTransportObject(w)) continue;
 
 				String actionFinal = action == null ? "" : action;
 
@@ -4671,6 +4793,7 @@ public class Rs2Walker {
 				boolean doorLike = isDoorLikeGameObjectName(comp.getName())
 						|| (action != null && doorActionPriorityIndex(action) < Integer.MAX_VALUE);
 				if (!doorLike) continue;
+				if (isCatalogTransportObject(g)) continue;
 
 				String actionFinal = action == null ? "" : action;
 
@@ -4798,6 +4921,9 @@ public class Rs2Walker {
             WorldPoint to,
             int edgeDist) {
         if (object == null || location == null) {
+            return;
+        }
+        if (isCatalogTransportObject(object)) {
             return;
         }
         String identity = object.getClass().getSimpleName() + "|" + object.getId() + "|"
@@ -5112,6 +5238,7 @@ public class Rs2Walker {
 						.orElse(null);
 				boolean doorLike = isDoorLikeGameObjectName(comp.getName()) || action != null;
 				if (!doorLike) continue;
+				if (isCatalogTransportObject(object)) continue;
 
 				// Found a likely blocker on-path: hand off to existing door handler (which
 				// includes quest-lock detection, blacklisting, and recalculation).
@@ -6055,7 +6182,7 @@ public class Rs2Walker {
         java.util.Deque<WorldPoint> next = new ArrayDeque<>();
         WorldPoint lastAdded = null;
         for (int i = start; i < path.size() - 1; i++) {
-            if (!hasExplicitTransportStep(path, i)) {
+            if (!isCatalogBackedTransportSegment(path, i)) {
                 continue;
             }
             WorldPoint destination = path.get(i + 1);
@@ -6666,13 +6793,16 @@ public class Rs2Walker {
         int from = Math.max(0, startIdx);
         int to = Math.min(path.size() - 2, from + Math.max(0, lookaheadEdges));
         for (int i = from; i <= to; i++) {
-            if (!hasExplicitTransportStep(path, i)) {
+            if (!isCatalogBackedTransportSegment(path, i)) {
                 continue;
             }
-            WorldPoint origin = path.get(i);
-            if (origin != null
-                    && origin.getPlane() == playerLoc.getPlane()
-                    && origin.distanceTo2D(playerLoc) <= Math.max(1, maxDist)) {
+            WorldPoint segFrom = path.get(i);
+            WorldPoint segTo = path.get(i + 1);
+            if (segFrom == null || segTo == null || segFrom.getPlane() != playerLoc.getPlane()) {
+                continue;
+            }
+            int d = Math.min(segFrom.distanceTo2D(playerLoc), segTo.distanceTo2D(playerLoc));
+            if (d <= Math.max(1, maxDist)) {
                 return true;
             }
         }
