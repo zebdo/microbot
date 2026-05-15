@@ -61,13 +61,15 @@ public class SplashScreen extends JFrame implements ActionListener {
 
     private static SplashScreen INSTANCE;
 
-    private final JLabel action = new JLabel("Loading");
+    // JTextField (non-editable) instead of JLabel so text can be selected/copied
+    private final JTextField action = createSelectableLine("Loading");
     private final JProgressBar progress = new JProgressBar();
-    private final JLabel subAction = new JLabel();
+    private final JTextField subAction = createSelectableLine("");
     private final CardLayout detailLayout = new CardLayout();
     private final JPanel detailPanel = new JPanel(detailLayout);
     private final JTextArea errorDetails = new JTextArea();
-    private final JLabel errorSummaryLabel = new JLabel();
+    // JTextArea instead of JLabel so summary text is selectable
+    private final JTextArea errorSummaryLabel = createSelectableBlock();
     private final JButton copyErrorButton = new JButton("Copy error details");
     // Promote errorScroll to a field so we can resize it dynamically when showing errors
     private JScrollPane errorScroll;
@@ -99,6 +101,29 @@ public class SplashScreen extends JFrame implements ActionListener {
 
     static String escape(String s) {
         return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
+    }
+
+    private static JTextField createSelectableLine(String initial) {
+        JTextField field = new JTextField(initial);
+        field.setEditable(false);
+        field.setBorder(null);
+        field.setOpaque(false);
+        field.setHorizontalAlignment(SwingConstants.CENTER);
+        field.setHighlighter(new javax.swing.text.DefaultHighlighter());
+        // Inherit cursor so the drag handler on the root panel can still move the window
+        // when the user clicks the empty area around the (usually short) text.
+        field.setCursor(Cursor.getDefaultCursor());
+        return field;
+    }
+
+    private static JTextArea createSelectableBlock() {
+        JTextArea area = new JTextArea();
+        area.setEditable(false);
+        area.setOpaque(false);
+        area.setLineWrap(true);
+        area.setWrapStyleWord(true);
+        area.setBorder(null);
+        return area;
     }
 
     private JPanel createCloseButton() {
@@ -161,6 +186,11 @@ public class SplashScreen extends JFrame implements ActionListener {
         root.setBackground(ColorScheme.DARKER_GRAY_COLOR);
         setContentPane(root);
 
+        // Window drag — undecorated frames have no native titlebar. Listeners on
+        // text components don't propagate, so dragging the empty area / logo moves
+        // the window while text remains selectable in place.
+        installDragHandler(root);
+
         final Font titleFont = new Font(Font.SANS_SERIF, Font.BOLD, 16);
         final Font bodyFont = new Font(Font.SANS_SERIF, Font.PLAIN, 13);
         final Color fg = new Color(230, 230, 230);
@@ -179,22 +209,23 @@ public class SplashScreen extends JFrame implements ActionListener {
         // Logo
         JLabel logoLabel = new JLabel(new ImageIcon(logo));
         logoLabel.setHorizontalAlignment(SwingConstants.CENTER);
+        installDragHandler(logoLabel);
         gc.gridy++;
         gc.insets = new Insets(0, 0, PAD, 0);
         root.add(logoLabel, gc);
 
-        // Primary action
-        action.setHorizontalAlignment(SwingConstants.CENTER);
+        // Primary action — selectable JTextField styled to look like a label
         action.setFont(titleFont);
         action.setForeground(fg);
+        action.setCaretColor(fg);
         gc.gridy++;
         gc.insets = new Insets(0, 0, 6, 0);
         root.add(action, gc);
 
-        // Sub action
-        subAction.setHorizontalAlignment(SwingConstants.CENTER);
+        // Sub action — selectable JTextField styled to look like a label
         subAction.setFont(bodyFont);
         subAction.setForeground(fgMuted);
+        subAction.setCaretColor(fgMuted);
         gc.gridy++;
         gc.insets = new Insets(0, 0, PAD, 0);
         root.add(subAction, gc);
@@ -264,7 +295,8 @@ public class SplashScreen extends JFrame implements ActionListener {
 
         JTextArea factArea = new JTextArea();
         factArea.setEditable(false);
-        factArea.setFocusable(false);
+        // Focusable so the user can select & copy the fact text
+        factArea.setFocusable(true);
         factArea.setOpaque(false);
         factArea.setLineWrap(true);
         factArea.setWrapStyleWord(true);
@@ -294,6 +326,7 @@ public class SplashScreen extends JFrame implements ActionListener {
 
         errorSummaryLabel.setFont(bodyFont);
         errorSummaryLabel.setForeground(fg);
+        errorSummaryLabel.setBackground(new Color(0, 0, 0, 0));
         errorSummaryLabel.setBorder(new EmptyBorder(0, 0, 8, 0));
         errorCard.add(errorSummaryLabel, BorderLayout.NORTH);
 
@@ -474,7 +507,8 @@ public class SplashScreen extends JFrame implements ActionListener {
         progress.setValue(progress.getMaximum());
         progress.setStringPainted(false);
 
-        errorSummaryLabel.setText("<html><body style='width:100%'>" + summaryText.replace("\n", "<br>") + "</body></html>");
+        // JTextArea handles line wrapping natively; no HTML needed
+        errorSummaryLabel.setText(summaryText);
         errorDetails.setText(detailText);
         errorDetails.setCaretPosition(0);
 
@@ -531,6 +565,31 @@ public class SplashScreen extends JFrame implements ActionListener {
         if (targetFrameHeight > currentFrameHeight) {
             setSize(WIDTH, targetFrameHeight);
         }
+    }
+
+    private void installDragHandler(Component c) {
+        MouseAdapter dragger = new MouseAdapter() {
+            private Point pressPoint;
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                pressPoint = e.getPoint();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                pressPoint = null;
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (pressPoint == null) return;
+                Point screen = e.getLocationOnScreen();
+                setLocation(screen.x - pressPoint.x, screen.y - pressPoint.y);
+            }
+        };
+        c.addMouseListener(dragger);
+        c.addMouseMotionListener(dragger);
     }
 
     private void copyErrorDetails() {
