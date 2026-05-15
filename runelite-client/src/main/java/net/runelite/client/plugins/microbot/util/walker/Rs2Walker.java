@@ -2379,7 +2379,10 @@ public class Rs2Walker {
     }
 
     public static boolean walkFastCanvas(WorldPoint worldPoint, boolean toggleRun) {
-
+        if (worldPoint == null) {
+            log.debug("[Walker] walkFastCanvas rejected: null worldPoint");
+            return false;
+        }
         Rs2Player.toggleRunEnergy(toggleRun);
         Point canv;
         LocalPoint localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), worldPoint);
@@ -2389,7 +2392,13 @@ public class Rs2Walker {
         }
 
         if (localPoint == null) {
-            log.error("Tried to walk worldpoint {} using the canvas but localpoint returned null", worldPoint);
+            WorldPoint playerLoc = Rs2Player.getWorldLocation();
+            if (playerLoc != null
+                    && playerLoc.getPlane() == worldPoint.getPlane()
+                    && walkMiniMapToward(worldPoint, playerLoc, 13)) {
+                return true;
+            }
+            log.debug("[Walker] walkFastCanvas localpoint null for {}", worldPoint);
             return false;
         }
 
@@ -2400,6 +2409,12 @@ public class Rs2Walker {
 
         //if the tile is not on screen, use minimap
         if (!Rs2Camera.isTileOnScreen(localPoint) || canvasX < 0 || canvasY < 0) {
+            WorldPoint playerLoc = Rs2Player.getWorldLocation();
+            if (playerLoc != null
+                    && playerLoc.getPlane() == worldPoint.getPlane()
+                    && walkMiniMapToward(worldPoint, playerLoc, 13)) {
+                return true;
+            }
             return Rs2Walker.walkMiniMap(worldPoint);
         }
 
@@ -5684,7 +5699,20 @@ public class Rs2Walker {
                                     return finishHandledTransport(transport);
                                 }
                             } else {
-                                Rs2Walker.walkFastCanvas(path.get(i));
+                                WorldPoint originTile = path.get(i);
+                                boolean clicked = Rs2Walker.walkFastCanvas(originTile);
+                                if (!clicked) {
+                                    WorldPoint playerLoc = Rs2Player.getWorldLocation();
+                                    if (playerLoc != null) {
+                                        clicked = walkMiniMapToward(originTile, playerLoc, 13);
+                                    }
+                                }
+                                if (!clicked) {
+                                    clicked = Rs2Walker.walkMiniMap(originTile);
+                                }
+                                if (!clicked) {
+                                    log.debug("[Walker] ship/npc/boat fallback click failed for {}", originTile);
+                                }
                                 sleep(1200, 1600);
                             }
                         }
