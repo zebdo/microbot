@@ -4132,9 +4132,10 @@ public class Rs2Walker {
 
     /**
      * Whether this path edge is covered by a transport catalog row (same coordinates loaded from TSV into
-     * {@link ShortestPathPlugin#getTransports()}). Includes strict origin-destination steps and same-plane
-     * hops where the path starts on a tile Chebyshev-adjacent to the catalog origin but still targets that
-     * row's destination, so door probing does not fight {@code handleTransports}.
+     * {@link ShortestPathPlugin#getTransports()}). Includes strict origin-destination steps (including
+     * cross-plane rows such as ladders) and same-plane hops where the path starts on a tile Chebyshev-adjacent
+     * to the catalog origin but still targets that row's destination, so door probing does not fight
+     * {@code handleTransports}.
      */
     private static boolean isCatalogBackedTransportSegment(List<WorldPoint> path, int index) {
         if (path == null || index < 0 || index >= path.size() - 1) {
@@ -4144,7 +4145,7 @@ public class Rs2Walker {
     }
 
     private static boolean isCatalogBackedTransportSegment(WorldPoint from, WorldPoint to) {
-        if (from == null || to == null || from.getPlane() != to.getPlane()) {
+        if (from == null || to == null) {
             return false;
         }
         if (matchesDirectedTransportCatalogEdge(from, to)) {
@@ -4163,7 +4164,7 @@ public class Rs2Walker {
     }
 
     private static boolean matchesDirectedTransportCatalogEdge(WorldPoint origin, WorldPoint dest) {
-        if (origin == null || dest == null || origin.getPlane() != dest.getPlane()) {
+        if (origin == null || dest == null) {
             return false;
         }
         Set<Transport> transports = ShortestPathPlugin.getTransports().get(origin);
