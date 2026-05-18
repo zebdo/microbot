@@ -52,7 +52,6 @@ public class Rs2MiniMap {
         }
 
         if (localPoint == null) {
-            Microbot.log("Tried to walk worldpoint " + worldPoint + " using the canvas but localpoint returned null");
             return null;
         }
 
