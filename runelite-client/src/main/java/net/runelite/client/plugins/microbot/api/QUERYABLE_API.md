@@ -1,9 +1,6 @@
 # Queryable API Documentation
 
-**Version:** 2.1.0  
-**Last Updated:** November 18, 2025
-
----
+This is the long-form guide for the Microbot entity cache/query layer. Use singleton caches from `Microbot.getRs2XxxCache()`; do not instantiate caches or queryables directly.
 
 ## Table of Contents
 
@@ -67,12 +64,10 @@ NPC banker = Rs2Npc.getNpcs().stream()
 
 ```java
 // Clean, readable, and concise
-@Inject private Rs2NpcCache npcCache;
-
-Rs2NpcModel banker = npcCache.query()
+Rs2NpcModel banker = Microbot.getRs2NpcCache().query()
         .withName("Banker")
         .where(npc -> !npc.isInteracting())
-        .nearest();
+        .nearestOnClientThread();
 ```
 
 **Benefits:**
@@ -107,10 +102,10 @@ public interface IEntity {
 
 **Example setup (used throughout examples):**
 ```java
-@Inject private Rs2NpcCache npcCache;
-@Inject private Rs2PlayerCache playerCache;
-@Inject private Rs2TileItemCache tileItemCache;
-@Inject private Rs2TileObjectCache tileObjectCache;
+var npcCache = Microbot.getRs2NpcCache();
+var playerCache = Microbot.getRs2PlayerCache();
+var tileItemCache = Microbot.getRs2TileItemCache();
+var tileObjectCache = Microbot.getRs2TileObjectCache();
 // Use <cache>.query() to build queries.
 ```
 
@@ -153,78 +148,65 @@ Queries are not executed until a terminal operation is called:
 
 ```java
 // No execution yet - just building the query
-@Inject private Rs2NpcCache npcCache;
-
-Rs2NpcQueryable query = npcCache.query()
+Rs2NpcQueryable query = Microbot.getRs2NpcCache().query()
         .withName("Guard")
         .within(10);
 
 // NOW it executes
-Rs2NpcModel guard = query.nearest();  // Terminal operation
+Rs2NpcModel guard = query.nearestOnClientThread();  // Terminal operation
 ```
 
 ---
 
 ## Getting Started
 
-Always inject the corresponding cache and call `query()` from it to build queries against the per-tick cache.
+Always use the corresponding singleton cache from `Microbot` and call `query()` from it to build queries against the per-tick cache.
 
 ### Basic Query Structure
 
 Every query follows this pattern:
 
 ```java
-// 1. Inject the cache for the entity type
-@Inject private Rs2NpcCache npcCache;
-
-// 2. Create queryable from the cache
-npcCache.query()
+// 1. Create queryable from the singleton cache
+Microbot.getRs2NpcCache().query()
     
-// 3. Add filters (optional, chainable)
+// 2. Add filters (optional, chainable)
     .withName("name")
     .where(entity -> condition)
     .within(distance)
     
-// 4. Execute with terminal operation
-    .nearest();  // or first(), toList(), etc.
+// 3. Execute with terminal operation
+    .nearestOnClientThread();  // or firstOnClientThread(), toListOnClientThread(), etc.
 ```
 
 ### Simple Examples
 
 **Find nearest NPC by name:**
 ```java
-@Inject private Rs2NpcCache npcCache;
-
-Rs2NpcModel banker = npcCache.query()
+Rs2NpcModel banker = Microbot.getRs2NpcCache().query()
         .withName("Banker")
-        .nearest();
+        .nearestOnClientThread();
 ```
 
 **Find nearest ground item:**
 ```java
-@Inject private Rs2TileItemCache tileItemCache;
-
-Rs2TileItemModel coins = tileItemCache.query()
+Rs2TileItemModel coins = Microbot.getRs2TileItemCache().query()
         .withName("Coins")
-        .nearest();
+        .nearestOnClientThread();
 ```
 
 **Find nearest player:**
 ```java
-@Inject private Rs2PlayerCache playerCache;
-
-Rs2PlayerModel player = playerCache.query()
+Rs2PlayerModel player = Microbot.getRs2PlayerCache().query()
         .withName("PlayerName")
-        .nearest();
+        .nearestOnClientThread();
 ```
 
 **Find nearest tree (tile object):**
 ```java
-@Inject private Rs2TileObjectCache tileObjectCache;
-
-Rs2TileObjectModel tree = tileObjectCache.query()
+Rs2TileObjectModel tree = Microbot.getRs2TileObjectCache().query()
         .withName("Tree")
-        .nearest();
+        .nearestOnClientThread();
 ```
 
 ---
@@ -1183,6 +1165,4 @@ npcCache.query()
 
 ---
 
-**Last Updated:** November 18, 2025  
-**Microbot Version:** 2.1.0  
 **For questions or issues, please visit our Discord community.**

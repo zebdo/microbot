@@ -32,6 +32,11 @@ Use the settings search bar — tab indices shift on updates. Verify changes via
 ## Before touching `microbot/util/`
 Read `docs/entity-guides/README.md`. Add a gotcha there when you fix an entity-assumption bug.
 
+## Docs maintenance
+- Keep root `README.md`, `docs/README.md`, and `docs/INDEX.md` short routing pages.
+- Put volatile command details, API examples, endpoint lists, generated inventories, and screenshots in the narrowest owning doc.
+- Prefer links to owner docs over copying the same guidance into multiple high-level files.
+
 ## Deeper guides
 - Script authoring & threading: `runelite-client/.../microbot/AGENTS.md`
 - State machines (use for 3+ phase scripts): `.../microbot/statemachine/AGENTS.md`
