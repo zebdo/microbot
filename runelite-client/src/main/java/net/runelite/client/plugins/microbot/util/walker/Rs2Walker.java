@@ -1822,6 +1822,7 @@ public class Rs2Walker {
                             if (isWalkCancelled(target)) return true;
                             long elapsed = System.currentTimeMillis() - clickedAt;
                             if (elapsed < 600) return false;
+                            if (!Rs2Player.isMoving()) return true;
                             WorldPoint now = Rs2Player.getWorldLocation();
                             if (b.distanceTo2D(now) <= proximityWake) return true;
                             return before.distanceTo2D(now) >= progressCap;
