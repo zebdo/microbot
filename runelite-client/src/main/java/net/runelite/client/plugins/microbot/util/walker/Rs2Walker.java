@@ -1442,7 +1442,8 @@ public class Rs2Walker {
                             POST_TRANSPORT_RAW_SCAN_TRANSPORT_MAX_DIST)
                             && !hasRecentDoorAttemptNearIndex(path, i)
                             && !isDoorInteractionSettling()
-                            && !isRecoveryMovementInFlight();
+                            && !isRecoveryMovementInFlight()
+                            && Rs2Tile.isTileReachable(currentWorldPoint);
                     if (skipPostTransportSegmentHandlers) {
                         tmarkPostTransport("post_transport_segment_handler_skip",
                                 target,
@@ -3237,7 +3238,8 @@ public class Rs2Walker {
                         || playerLoc.getPlane() != target.getPlane()
                         || t.getDestination().getPlane() == target.getPlane())
                 .filter(t -> pathPoints.contains(t.getDestination())
-                        || (target != null && t.getDestination().distanceTo(target) < playerLoc.distanceTo(target)))
+                        || (!isNetworkTransport(t)
+                                && target != null && t.getDestination().distanceTo(target) < playerLoc.distanceTo(target)))
                 .sorted(Comparator
                         .comparingInt((Transport t) -> pathPoints.contains(t.getDestination()) ? 0 : 1)
                         .thenComparingInt(t -> target == null ? 0 : t.getDestination().distanceTo(target)))
@@ -4730,7 +4732,7 @@ public class Rs2Walker {
 		if (startIdx >= path.size() - 1) return false;
 
 		int endEdgeIdx = Math.min(path.size() - 2, startIdx + Math.max(0, scanAheadEdges));
-        final int pathEdgeDoorMaxDist = 2;
+        final int pathEdgeDoorMaxDist = 4;
         Map<String, PathAdjDoorCandidate> byIdentity = new LinkedHashMap<>();
 
 		for (int edgeIdx = startIdx; edgeIdx <= endEdgeIdx; edgeIdx++) {
@@ -6145,6 +6147,19 @@ public class Rs2Walker {
                 && transport.getDestination() != null
                 && transport.getOrigin().getPlane() == transport.getDestination().getPlane()
                 && transport.getOrigin().distanceTo(transport.getDestination()) <= 1;
+    }
+
+    private static boolean isNetworkTransport(Transport transport) {
+        if (transport == null || transport.getType() == null) return false;
+        switch (transport.getType()) {
+            case SPIRIT_TREE:
+            case FAIRY_RING:
+            case QUETZAL:
+            case GNOME_GLIDER:
+                return true;
+            default:
+                return false;
+        }
     }
 
     private static boolean finishHandledTransport(Transport transport) {
