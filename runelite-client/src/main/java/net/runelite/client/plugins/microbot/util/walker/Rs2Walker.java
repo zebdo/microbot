@@ -1360,6 +1360,10 @@ public class Rs2Walker {
                 }
             }
 
+            final int REACHABLE_CACHE_RADIUS = 45;
+            Map<WorldPoint, Integer> reachableTilesCache = Rs2Tile.getReachableTilesFromTile(
+                    Rs2Player.getWorldLocation(), REACHABLE_CACHE_RADIUS);
+
             for (int i = indexOfStartPoint; !doorOrTransportResult && i < path.size(); i++) {
                 WorldPoint currentWorldPoint = path.get(i);
                 if (walkCancelledDiag(target, "processWalk:path-loop", processWalkTail)) {
@@ -1443,7 +1447,7 @@ public class Rs2Walker {
                             && !hasRecentDoorAttemptNearIndex(path, i)
                             && !isDoorInteractionSettling()
                             && !isRecoveryMovementInFlight()
-                            && Rs2Tile.isTileReachable(currentWorldPoint);
+                            && reachableTilesCache.containsKey(currentWorldPoint);
                     if (skipPostTransportSegmentHandlers) {
                         tmarkPostTransport("post_transport_segment_handler_skip",
                                 target,
@@ -1495,7 +1499,7 @@ public class Rs2Walker {
                     }
                 }
 
-                boolean tileReachable = Rs2Tile.isTileReachable(currentWorldPoint);
+                boolean tileReachable = reachableTilesCache.containsKey(currentWorldPoint);
                 if (!tileReachable && !inInstance) {
                     // Common stall case: path steps beyond a closed door are unreachable, so the
                     // loop would otherwise "continue" without ever issuing a minimap click and
