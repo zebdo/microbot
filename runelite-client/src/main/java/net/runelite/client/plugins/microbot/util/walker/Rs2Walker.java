@@ -156,7 +156,7 @@ public class Rs2Walker {
     private static final long POST_TRANSPORT_OFFPATH_WAIT_BUDGET_MS = 2_500L;
     private static final int POST_TRANSPORT_OFFPATH_WAIT_SLICE_MS = 450;
     private static final int TRANSPORT_DEST_MATCH_CHEBYSHEV = 1;
-    private static final int PATH_VARIANCE_TOLERANCE_CHEBYSHEV = 3;
+    private static final int PATH_VARIANCE_TOLERANCE_CHEBYSHEV = 6;
     private static final int POST_TRANSPORT_RAW_SCAN_TRANSPORT_LOOKAHEAD_EDGES = 6;
     private static final int POST_TRANSPORT_RAW_SCAN_TRANSPORT_MAX_DIST = 15;
     private static final long TRANSPORT_POST_INTERACT_SETTLE_MS = 900L;
