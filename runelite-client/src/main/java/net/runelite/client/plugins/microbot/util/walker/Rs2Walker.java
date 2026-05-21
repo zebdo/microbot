@@ -1060,6 +1060,9 @@ public class Rs2Walker {
         boolean lastAttemptedMinimapClickOk = false;
         long lastAttemptedMinimapClickAtMs = 0L;
         long pathfinderPendingSinceMs = 0L;
+        final int REACHABLE_CACHE_RADIUS = 45;
+        Map<WorldPoint, Integer> reachableTilesCache = null;
+        WorldPoint reachableTilesCacheOrigin = null;
         for (int processWalkTail = 0; processWalkTail < MAX_PROCESS_WALK_TAIL_ITERATIONS; processWalkTail++) {
         try {
             walkerDiag("tail iteration begin idx=%d/%d target=%s current=%s interim=%s partialRetries=%d",
@@ -1360,9 +1363,11 @@ public class Rs2Walker {
                 }
             }
 
-            final int REACHABLE_CACHE_RADIUS = 45;
-            Map<WorldPoint, Integer> reachableTilesCache = Rs2Tile.getReachableTilesFromTile(
-                    Rs2Player.getWorldLocation(), REACHABLE_CACHE_RADIUS);
+            WorldPoint currentPlayerLoc = Rs2Player.getWorldLocation();
+            if (reachableTilesCache == null || !currentPlayerLoc.equals(reachableTilesCacheOrigin)) {
+                reachableTilesCache = Rs2Tile.getReachableTilesFromTile(currentPlayerLoc, REACHABLE_CACHE_RADIUS);
+                reachableTilesCacheOrigin = currentPlayerLoc;
+            }
 
             for (int i = indexOfStartPoint; !doorOrTransportResult && i < path.size(); i++) {
                 WorldPoint currentWorldPoint = path.get(i);
