@@ -418,6 +418,10 @@ public abstract class Rs2Tile implements Tile {
         return tileDistances;
     }
 
+    public static HashMap<WorldPoint, Integer> getReachableTilesFromTile(WorldPoint tile) {
+        return getReachableTilesFromTile(tile, Integer.MAX_VALUE, false);
+    }
+
     /**
      * This method calculates the reachable tiles from a given starting tile
      * considering collision data during the distance calculation. It is a wrapper

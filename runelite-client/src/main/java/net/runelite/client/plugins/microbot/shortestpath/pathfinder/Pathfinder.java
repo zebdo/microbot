@@ -210,12 +210,11 @@ public class Pathfinder implements Runnable {
             }
 
             visited.set(neighbor.packedPosition);
+            neighbor.heuristic = heuristicToNearestTarget(neighbor.packedPosition);
+            boundary.add(neighbor);
             if (neighbor instanceof TransportNode) {
-                pending.add(neighbor);
                 ++stats.transportsChecked;
             } else {
-                neighbor.heuristic = heuristicToNearestTarget(neighbor.packedPosition);
-                boundary.add(neighbor);
                 ++stats.nodesChecked;
             }
         }
@@ -314,12 +313,11 @@ public class Pathfinder implements Runnable {
             }
 
             visited.set(neighbor.packedPosition);
+            neighbor.heuristic = heuristicToNearestTarget(neighbor.packedPosition);
+            boundary.add(neighbor);
             if (neighbor instanceof TransportNode) {
-                pending.add(neighbor);
                 ++stats.transportsChecked;
             } else {
-                neighbor.heuristic = heuristicToNearestTarget(neighbor.packedPosition);
-                boundary.add(neighbor);
                 ++stats.nodesChecked;
             }
             forwardAt.putIfAbsent(neighbor.packedPosition, neighbor);
@@ -340,12 +338,11 @@ public class Pathfinder implements Runnable {
             }
 
             visitedB.set(pred.packedPosition);
+            pred.heuristic = heuristicFromStart(pred.packedPosition);
+            boundaryBackward.add(pred);
             if (pred instanceof TransportNode) {
-                pendingBackward.add(pred);
                 ++stats.transportsChecked;
             } else {
-                pred.heuristic = heuristicFromStart(pred.packedPosition);
-                boundaryBackward.add(pred);
                 ++stats.nodesChecked;
             }
             backwardAt.putIfAbsent(pred.packedPosition, pred);
@@ -368,15 +365,8 @@ public class Pathfinder implements Runnable {
         config.refreshTeleports(start, 31);
         boolean reachedGoal = false;
         boolean timedOut = false;
-        while (!cancelled && (!boundary.isEmpty() || !pending.isEmpty())) {
-            Node b = boundary.peek();
-            Node p = pending.peek();
-            Node node;
-            if (p != null && (b == null || p.cost < b.cost)) {
-                node = pending.poll();
-            } else {
-                node = boundary.poll();
-            }
+        while (!cancelled && !boundary.isEmpty()) {
+            Node node = boundary.poll();
 
             if (wildernessLevel > 0) {
                 boolean update = false;
@@ -434,7 +424,7 @@ public class Pathfinder implements Runnable {
         String uniExit = cancelled ? "cancelled"
                 : reachedGoal ? "reached-goal"
                 : timedOut ? "time-cutoff"
-                : (boundary.isEmpty() && pending.isEmpty()) ? "queues-drained" : "loop-ended";
+                : boundary.isEmpty() ? "queues-drained" : "loop-ended";
         pathfinderDiag("uni finished exit=%s cancelled=%s boundaryEmpty=%s pendingEmpty=%s bestLastNode=%s cutoffMs=%d",
                 uniExit,
                 cancelled,
@@ -482,16 +472,9 @@ public class Pathfinder implements Runnable {
         long cutoffTimeMillis = System.currentTimeMillis() + cutoffDurationMillis;
         config.refreshTeleports(start, 31);
 
-        while (!cancelled && (!boundary.isEmpty() || !pending.isEmpty() || !boundaryBackward.isEmpty() || !pendingBackward.isEmpty())) {
-            if (!boundary.isEmpty() || !pending.isEmpty()) {
-                Node b = boundary.peek();
-                Node p = pending.peek();
-                Node node;
-                if (p != null && (b == null || p.cost < b.cost)) {
-                    node = pending.poll();
-                } else {
-                    node = boundary.poll();
-                }
+        while (!cancelled && (!boundary.isEmpty() || !boundaryBackward.isEmpty())) {
+            if (!boundary.isEmpty()) {
+                Node node = boundary.poll();
 
                 if (wildernessLevel > 0) {
                     boolean update = false;
@@ -540,15 +523,8 @@ public class Pathfinder implements Runnable {
                 break;
             }
 
-            if (!boundaryBackward.isEmpty() || !pendingBackward.isEmpty()) {
-                Node b = boundaryBackward.peek();
-                Node p = pendingBackward.peek();
-                Node node;
-                if (p != null && (b == null || p.cost < b.cost)) {
-                    node = pendingBackward.poll();
-                } else {
-                    node = boundaryBackward.poll();
-                }
+            if (!boundaryBackward.isEmpty()) {
+                Node node = boundaryBackward.poll();
 
                 if (node.packedPosition == start) {
                     joinedPath = combineBidirectionalPath(forwardAt.get(start), node);
