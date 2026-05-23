@@ -1060,7 +1060,7 @@ public class Rs2Walker {
         boolean lastAttemptedMinimapClickOk = false;
         long lastAttemptedMinimapClickAtMs = 0L;
         long pathfinderPendingSinceMs = 0L;
-        final int REACHABLE_CACHE_RADIUS = 45;
+        final int REACHABLE_CACHE_RADIUS = 200;
         Map<WorldPoint, Integer> reachableTilesCache = null;
         WorldPoint reachableTilesCacheOrigin = null;
         for (int processWalkTail = 0; processWalkTail < MAX_PROCESS_WALK_TAIL_ITERATIONS; processWalkTail++) {
@@ -1129,6 +1129,7 @@ public class Rs2Walker {
 
             final List<WorldPoint> rawPath = pathfinder.getPath();
             final List<WorldPoint> path = pathfinder.getWalkablePath();
+            final int[] smoothedToRaw = mapSmoothedToRaw(path, rawPath);
             int rawSize = rawPath == null ? -1 : rawPath.size();
             int walkSize = path == null ? -1 : path.size();
             markStartupPhase("path_snapshot", target, "raw=" + rawSize + " walk=" + walkSize);
@@ -1364,10 +1365,8 @@ public class Rs2Walker {
             }
 
             WorldPoint currentPlayerLoc = Rs2Player.getWorldLocation();
-            if (reachableTilesCache == null || !currentPlayerLoc.equals(reachableTilesCacheOrigin)) {
-                reachableTilesCache = Rs2Tile.getReachableTilesFromTile(currentPlayerLoc, REACHABLE_CACHE_RADIUS);
-                reachableTilesCacheOrigin = currentPlayerLoc;
-            }
+            reachableTilesCache = Rs2Tile.getReachableTilesFromTile(currentPlayerLoc, REACHABLE_CACHE_RADIUS);
+            reachableTilesCacheOrigin = currentPlayerLoc;
 
             for (int i = indexOfStartPoint; !doorOrTransportResult && i < path.size(); i++) {
                 WorldPoint currentWorldPoint = path.get(i);
@@ -1459,9 +1458,12 @@ public class Rs2Walker {
                                 "i=" + i + " reason=no_nearby_planned_transport");
                     } else {
                     long segmentHandlerStartAt = System.currentTimeMillis();
+                    int rawI = (i < smoothedToRaw.length) ? smoothedToRaw[i] : 0;
+                    int rawEnd = rawEndForSmoothedIndex(i, smoothedToRaw, rawPath, path);
                     if (!isDoorInteractionSettling() && !isRecoveryMovementInFlight()) {
-                        doorOrTransportResult = handleDoorsWithTimeout(path, i,
-                                obstaclePolicy.segmentDoorTimeoutMs(), doorEdgesAttemptedThisTail);
+                        doorOrTransportResult = handleDoorsInRawSegment(rawPath, rawI, rawEnd,
+                                obstaclePolicy.segmentDoorTimeoutMs(), doorEdgesAttemptedThisTail,
+                                reachableTilesCache);
                     }
                     if (doorOrTransportResult) {
                         tmarkPostTransport("post_transport_segment_handler", target,
@@ -1472,7 +1474,7 @@ public class Rs2Walker {
 
                     // Chain step 2: path-adjacent probes after exact segment-door attempt.
                     if (!Rs2Player.isMoving() && obstaclePolicy.allowPathAdjacentProbe()) {
-                        if (tryHandleBlockingPathObjectsWithTimeout(path, i, 5, 10,
+                        if (tryHandleBlockingPathObjectsWithTimeout(rawPath, rawI, 5, 10,
                                 obstaclePolicy.pathAdjacentProbeTimeoutMs(), doorEdgesAttemptedThisTail)) {
                             tmarkPostTransport("post_transport_segment_handler", target,
                                     "stage=path_adj handled=true i=" + i + " ms=" + (System.currentTimeMillis() - segmentHandlerStartAt));
@@ -1481,7 +1483,8 @@ public class Rs2Walker {
                         }
                     }
 
-                    doorOrTransportResult = handleRockfall(path, i);
+                    doorOrTransportResult = handleRockfallInRawSegment(rawPath, rawI, rawEnd,
+                            reachableTilesCache);
                     if (doorOrTransportResult) {
                         tmarkPostTransport("post_transport_segment_handler", target,
                                 "stage=rockfall handled=true i=" + i + " ms=" + (System.currentTimeMillis() - segmentHandlerStartAt));
@@ -1490,7 +1493,7 @@ public class Rs2Walker {
                     }
 
                     if (PohTeleports.isInHouse() || !inInstance) {
-                        doorOrTransportResult = handleTransports(path, i);
+                        doorOrTransportResult = handleTransportsInRawSegment(rawPath, rawI, rawEnd);
                     }
 
                     if (doorOrTransportResult) {
@@ -1506,6 +1509,9 @@ public class Rs2Walker {
 
                 boolean tileReachable = reachableTilesCache.containsKey(currentWorldPoint);
                 if (!tileReachable && !inInstance) {
+                    tileReachable = Rs2Tile.isTileReachable(currentWorldPoint);
+                }
+                if (!tileReachable && !inInstance) {
                     // Common stall case: path steps beyond a closed door are unreachable, so the
                     // loop would otherwise "continue" without ever issuing a minimap click and
                     // without triggering door logic (if the unreachable tile is further than the
@@ -1520,8 +1526,10 @@ public class Rs2Walker {
                                     currentWorldPoint, i, path.size(), playerLoc, target);
 
                             int edgeIdx = Math.max(indexOfStartPoint, i - 1);
-                            WorldPoint edgeFrom = edgeIdx >= 0 && edgeIdx < path.size() ? path.get(edgeIdx) : null;
-                            WorldPoint edgeTo = edgeIdx + 1 >= 0 && edgeIdx + 1 < path.size() ? path.get(edgeIdx + 1) : null;
+                            int rawEdgeStart = (edgeIdx < smoothedToRaw.length) ? smoothedToRaw[edgeIdx] : 0;
+                            int rawEdgeEnd = (i < smoothedToRaw.length) ? smoothedToRaw[i] + 1 : rawPath.size();
+                            WorldPoint edgeFrom = rawEdgeStart >= 0 && rawEdgeStart < rawPath.size() ? rawPath.get(rawEdgeStart) : null;
+                            WorldPoint edgeTo = rawEdgeEnd - 1 >= 0 && rawEdgeEnd - 1 < rawPath.size() ? rawPath.get(rawEdgeEnd - 1) : null;
                             if (hasRecentDoorAttemptOnEdge(edgeFrom, edgeTo)) {
                                 boolean resolvedAfterWait = waitForDoorEdgeResolution(edgeFrom, edgeTo,
                                         obstaclePolicy.edgeResolutionWaitTimeoutMs());
@@ -1532,8 +1540,8 @@ public class Rs2Walker {
                                 }
                                 break;
                             }
-                            if (hasRecentDoorAttemptNearIndex(path, edgeIdx)) {
-                                boolean resolvedAfterNearbyWait = waitForRecentDoorEdgeResolutionNearIndex(path, edgeIdx,
+                            if (hasRecentDoorAttemptNearIndex(rawPath, rawEdgeStart)) {
+                                boolean resolvedAfterNearbyWait = waitForRecentDoorEdgeResolutionNearIndex(rawPath, rawEdgeStart,
                                         obstaclePolicy.edgeResolutionWaitTimeoutMs());
                                 WorldPoint afterNearbyWait = Rs2Player.getWorldLocation();
                                 boolean progressedAfterNearbyWait = afterNearbyWait != null
@@ -1551,8 +1559,9 @@ public class Rs2Walker {
                                     break;
                                 }
                             }
-                            if (handleDoorsWithTimeout(path, edgeIdx,
-                                    obstaclePolicy.unreachableDoorTimeoutMs(), doorEdgesAttemptedThisTail)) {
+                            if (handleDoorsInRawSegment(rawPath, rawEdgeStart, rawEdgeEnd,
+                                    obstaclePolicy.unreachableDoorTimeoutMs(), doorEdgesAttemptedThisTail,
+                                    null)) {
                                 exitReason = "door-handled-unreachable";
                                 break;
                             }
@@ -1561,7 +1570,7 @@ public class Rs2Walker {
                                 break;
                             }
                             boolean gateDoorInteraction = isDoorInteractionSettling() || isDoorEdgePassSkipCoolingDown();
-                            long recentDoorAgeMs = recentDoorAttemptAgeNearIndex(path, edgeIdx);
+                            long recentDoorAgeMs = recentDoorAttemptAgeNearIndex(rawPath, rawEdgeStart);
                             boolean pendingDoorTraversal = recentDoorAgeMs >= 0
                                     && recentDoorAgeMs <= DOOR_TRAVERSAL_RECOVERY_BLOCK_MS
                                     && !Rs2Player.isMoving();
@@ -1584,7 +1593,7 @@ public class Rs2Walker {
                                     && obstaclePolicy.allowNearbyFallback()
                                     && nowMs - lastDoorPathAdjAttemptAtMs > 1200) {
                                 lastDoorPathAdjAttemptAtMs = nowMs;
-                                if (tryResolvePathAdjacentBlocker(playerLoc, path, edgeIdx, 3, 15)) {
+                                if (tryResolvePathAdjacentBlocker(playerLoc, rawPath, rawEdgeStart, 5, 15)) {
                                     exitReason = "door-handled-path-adj-scan";
                                     break;
                                 }
@@ -6157,6 +6166,68 @@ public class Rs2Walker {
                 && transport.getDestination() != null
                 && transport.getOrigin().getPlane() == transport.getDestination().getPlane()
                 && transport.getOrigin().distanceTo(transport.getDestination()) <= 1;
+    }
+
+    private static int[] mapSmoothedToRaw(List<WorldPoint> smoothed, List<WorldPoint> raw) {
+        if (smoothed == null || raw == null || smoothed.isEmpty() || raw.isEmpty()) {
+            return new int[0];
+        }
+        int[] mapping = new int[smoothed.size()];
+        int rawIdx = 0;
+        for (int si = 0; si < smoothed.size(); si++) {
+            WorldPoint sp = smoothed.get(si);
+            while (rawIdx < raw.size() && !raw.get(rawIdx).equals(sp)) {
+                rawIdx++;
+            }
+            mapping[si] = Math.min(rawIdx, raw.size() - 1);
+        }
+        return mapping;
+    }
+
+    private static int rawEndForSmoothedIndex(int smoothedIdx, int[] smoothedToRaw,
+                                               List<WorldPoint> rawPath, List<WorldPoint> path) {
+        if (smoothedIdx + 1 < path.size() && smoothedIdx + 1 < smoothedToRaw.length) {
+            return smoothedToRaw[smoothedIdx + 1];
+        }
+        return rawPath.size();
+    }
+
+    private static boolean handleDoorsInRawSegment(List<WorldPoint> rawPath, int rawFrom, int rawTo,
+                                                    long timeoutMs, Map<String, WorldPoint> attempted,
+                                                    Map<WorldPoint, Integer> reachableCache) {
+        for (int ri = rawFrom; ri < rawTo && ri < rawPath.size() - 1; ri++) {
+            if (reachableCache != null && reachableCache.containsKey(rawPath.get(ri))
+                    && reachableCache.containsKey(rawPath.get(ri + 1))) {
+                continue;
+            }
+            if (handleDoorsWithTimeout(rawPath, ri, timeoutMs, attempted)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean handleRockfallInRawSegment(List<WorldPoint> rawPath, int rawFrom, int rawTo,
+                                                       Map<WorldPoint, Integer> reachableCache) {
+        for (int ri = rawFrom; ri < rawTo && ri < rawPath.size() - 1; ri++) {
+            if (reachableCache != null && reachableCache.containsKey(rawPath.get(ri))
+                    && reachableCache.containsKey(rawPath.get(ri + 1))) {
+                continue;
+            }
+            if (handleRockfall(rawPath, ri)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean handleTransportsInRawSegment(List<WorldPoint> rawPath, int rawFrom, int rawTo) {
+        for (int ri = rawFrom; ri < rawTo && ri < rawPath.size() - 1; ri++) {
+            if (handleTransports(rawPath, ri)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static boolean isNetworkTransport(Transport transport) {

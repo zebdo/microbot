@@ -352,48 +352,66 @@ public abstract class Rs2Tile implements Tile {
 
     private static HashMap<WorldPoint, Integer> getReachableTilesFromTileInternal(WorldPoint tile, int distance, boolean ignoreCollision) {
         final HashMap<WorldPoint, Integer> tileDistances = new HashMap<>();
+        if (tile == null) return tileDistances;
+
+        final int[][] flags = getFlagsInternal();
+        if (flags == null) return tileDistances;
+
+        final WorldView wv = Microbot.getClient().getTopLevelWorldView();
+        final boolean isInstance = wv.getScene().isInstance();
+
+        final ArrayDeque<WorldPoint> queue = new ArrayDeque<>();
         tileDistances.put(tile, 0);
+        queue.add(tile);
 
-        for (int i = 0; i < distance + 1; i++) {
-            int dist = i;
-            for (var kvp : tileDistances.entrySet().stream().filter(x -> x.getValue() == dist).collect(Collectors.toList())) {
-                var point = kvp.getKey();
-                LocalPoint localPoint;
-                if (Microbot.getClient().getTopLevelWorldView().isInstance()) {
-                    WorldPoint worldPoint = WorldPoint.toLocalInstance(Microbot.getClient().getTopLevelWorldView(), point).stream().findFirst().orElse(null);
-                    if (worldPoint == null) break;
-                    localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), worldPoint);
-                } else
-                    localPoint = LocalPoint.fromWorld(Microbot.getClient().getTopLevelWorldView(), point);
+        while (!queue.isEmpty()) {
+            final WorldPoint point = queue.poll();
+            final int dist = tileDistances.get(point);
 
-                CollisionData[] collisionMap = Microbot.getClient().getTopLevelWorldView().getCollisionMaps();
-                if (collisionMap != null && localPoint != null) {
-                    CollisionData collisionData = collisionMap[Microbot.getClient().getTopLevelWorldView().getPlane()];
-                    int[][] flags = collisionData.getFlags();
-                    int data = flags[localPoint.getSceneX()][localPoint.getSceneY()];
+            final LocalPoint lp;
+            if (isInstance) {
+                WorldPoint instancePoint = WorldPoint.toLocalInstance(wv, point).stream().findFirst().orElse(null);
+                if (instancePoint == null) continue;
+                lp = LocalPoint.fromWorld(wv, instancePoint);
+            } else {
+                lp = LocalPoint.fromWorld(wv, point);
+            }
+            if (lp == null) continue;
 
-                    Set<MovementFlag> movementFlags = MovementFlag.getSetFlags(data);
+            final int sx = lp.getSceneX();
+            final int sy = lp.getSceneY();
+            if (!isWithinBounds(sx, sy)) continue;
 
-                    if (!ignoreCollision && !tile.equals(point)) {
-                        if (movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_FULL)
-                                || movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_FLOOR)) {
-                            tileDistances.remove(point);
-                            continue;
-                        }
-                    }
+            final int data = flags[sx][sy];
 
-                    if (kvp.getValue() >= distance)
-                        continue;
-
-                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_EAST))
-                        tileDistances.putIfAbsent(point.dx(1), dist + 1);
-                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_WEST))
-                        tileDistances.putIfAbsent(point.dx(-1), dist + 1);
-                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_NORTH))
-                        tileDistances.putIfAbsent(point.dy(1), dist + 1);
-                    if (!movementFlags.contains(MovementFlag.BLOCK_MOVEMENT_SOUTH))
-                        tileDistances.putIfAbsent(point.dy(-1), dist + 1);
+            if (!ignoreCollision && !tile.equals(point)) {
+                if ((data & CollisionDataFlag.BLOCK_MOVEMENT_FULL) != 0) {
+                    tileDistances.remove(point);
+                    continue;
                 }
+            }
+
+            if (dist >= distance) continue;
+
+            if ((data & CollisionDataFlag.BLOCK_MOVEMENT_EAST) == 0) {
+                WorldPoint neighbor = point.dx(1);
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if ((data & CollisionDataFlag.BLOCK_MOVEMENT_WEST) == 0) {
+                WorldPoint neighbor = point.dx(-1);
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if ((data & CollisionDataFlag.BLOCK_MOVEMENT_NORTH) == 0) {
+                WorldPoint neighbor = point.dy(1);
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
+            }
+            if ((data & CollisionDataFlag.BLOCK_MOVEMENT_SOUTH) == 0) {
+                WorldPoint neighbor = point.dy(-1);
+                if (tileDistances.putIfAbsent(neighbor, dist + 1) == null)
+                    queue.add(neighbor);
             }
         }
 
