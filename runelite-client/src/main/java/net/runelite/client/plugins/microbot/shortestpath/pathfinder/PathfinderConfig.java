@@ -302,14 +302,18 @@ public class PathfinderConfig {
      * @param target Optional target destination for optimized filtering (null for standard filtering)
      */
     private void refreshTransports(WorldPoint target) {
-        useFairyRings &= !QuestState.NOT_STARTED.equals(Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN))
+        useFairyRings = ShortestPathPlugin.override("useFairyRings", config.useFairyRings())
+                && !QuestState.NOT_STARTED.equals(Rs2Player.getQuestState(Quest.FAIRYTALE_II__CURE_A_QUEEN))
                 && (Rs2Inventory.contains(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
                 || Rs2Equipment.isWearing(ItemID.DRAMEN_STAFF, ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)
                 || (ShortestPathPlugin.getPathfinderConfig().useBankItems && (Rs2Bank.hasItem(ItemID.DRAMEN_STAFF) || Rs2Bank.hasItem(ItemID.LUNAR_MOONCLAN_LIMINAL_STAFF)))
                 || Microbot.getVarbitValue(VarbitID.LUMBRIDGE_DIARY_ELITE_COMPLETE) == 1);
-        useGnomeGliders &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
-        useSpiritTrees &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
-        useQuetzals &= QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
+        useGnomeGliders = ShortestPathPlugin.override("useGnomeGliders", config.useGnomeGliders())
+                && QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.THE_GRAND_TREE));
+        useSpiritTrees = ShortestPathPlugin.override("useSpiritTrees", config.useSpiritTrees())
+                && QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TREE_GNOME_VILLAGE));
+        useQuetzals = ShortestPathPlugin.override("useQuetzals", config.useQuetzals())
+                && QuestState.FINISHED.equals(Rs2Player.getQuestState(Quest.TWILIGHTS_PROMISE));
 
         final Rs2LeaguesTransport.LeaguesContext leaguesCtx = Rs2LeaguesTransport.leaguesContext();
         final int refreshCacheKeyHash = computeTransportRefreshCacheKeyHash(target, leaguesCtx);

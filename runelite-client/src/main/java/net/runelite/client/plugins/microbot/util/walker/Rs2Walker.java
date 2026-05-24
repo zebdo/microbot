@@ -1028,6 +1028,9 @@ public class Rs2Walker {
         }
 
 		closeWorldMap();
+        if (Rs2Bank.isOpen()) {
+            Rs2Bank.closeBank();
+        }
         markWalkSessionStart(target);
         return processWalk(target, distance);
     }
@@ -7015,7 +7018,7 @@ public class Rs2Walker {
                 Rs2Player.isAnimating(),
                 Rs2Player.isMoving(),
                 interimTargetWp != null,
-                Rs2Player.isInteracting() && interactingActorNearWalkablePath());
+                (Rs2Player.isMoving() || Rs2Player.isAnimating()) && interactingActorNearWalkablePath());
     }
 
     private static boolean isStuckTooLong() {
